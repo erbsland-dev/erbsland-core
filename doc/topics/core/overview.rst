@@ -76,3 +76,8 @@ Adding Build Version Information
 
 Applications can expose a version derived from Git without copying it into source code.
 :doc:`adding_git_version_to_your_app` explains the CMake setup and how the generated value reaches application metadata.
+
+Creating Release Packages
+=========================
+
+:doc:`release_packages` shows how to create standalone Windows and macOS ZIP packages as part of CMake installation.

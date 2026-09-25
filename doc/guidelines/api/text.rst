@@ -38,6 +38,11 @@ Processing Types
     StringConverter // explicit Erbsland Core and standard string conversion entry point
     StringDecoder, StringEncoder, StringDecodeBuffer // byte codecs and bounded incremental decoding
     StringEncoding, EncodingMode, StringBomMode // encoding, error, and byte-order-mark policies
+    placeholder::Replacer, placeholder::ReplacerOptions // reusable text substitution and syntax configuration
+    placeholder::Source, placeholder::Filter // application-defined value lookup and transformation
+    placeholder::EnvironmentSource, placeholder::VariableSource, placeholder::TextFilter // built-in providers
+    placeholder::EscapeMode, placeholder::ReplacerError, placeholder::ReplacerErrorCategory // syntax and failure policy
+    named_key::Parser, named_key::Format, named_key::Entry, named_key::EntryKind // named-key entry parsing
 
 Formatting and Parsing Types
 ============================
@@ -247,6 +252,33 @@ Layout Renderer Patterns
     o.type()/isTruthy()/itemCount() -> T // inspect immutable value semantics
     o.get(index-or-name) -> Value // tolerant child lookup returning null when missing
     o.as❮Scalar❯() -> T // checked scalar access
+
+Placeholder Patterns
+====================
+
+.. code-block:: text
+
+    T([options]) // create a local replacer with optional syntax settings
+    T::create([options]) -> ReplacerPtr // create a shared replacer
+    o.setFrame(begin, end)/setFilterSeparator(text) -> ReplacerOptions& // configure frame and filter delimiter
+    o.setNameSeparator(text)/setEscapeMode(mode) -> ReplacerOptions& // configure parameters and escaping
+    o.addSource/removeSource(source)/source(name) // manage and find source providers
+    o.addFilter/removeFilter(filter)/filter(name) // manage and find filter providers
+    o.addEnvironmentSource([name])/setVariableSource(variables[, name])/addTextFilters() // register built-ins
+    o.validate(text) -> bool // check expression and provider parameter validity
+    o.validateOrThrow(text) // report invalid syntax or parameters
+    o.replace(text)/replaceOrThrow(text) -> String // tolerant or strict substitution
+
+Named-Key Parsing Patterns
+==========================
+
+.. code-block:: text
+
+    T() // create a named-key format
+    o.setKeys(keys)/set❮Policy❯(value) -> Format& // configure key aliases and entry grammar
+    T(reader, format) // create a parser for named-key or positional entries
+    o.readEntry() -> Entry // read one entry or the terminal entry
+    o.readAllEntries() -> util::List<Entry> // read all remaining entries
 
 Base-N Codec Patterns
 =====================

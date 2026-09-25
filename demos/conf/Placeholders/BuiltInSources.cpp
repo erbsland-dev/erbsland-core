@@ -20,7 +20,7 @@ void builtInEnvironmentSource() {
     environment.removeOrThrow("ERBSLAND_DEMO_RESEARCH_MISSING"_el);
 
     auto parser = el::conf::Parser{};
-    parser.enableEnvironmentPlaceholderSource();
+    parser.addPlaceholderEnvironmentSource();
     const auto document = parser.parseTextOrThrow(
         "[research]\n"
         "title: \"${env:ERBSLAND_DEMO_RESEARCH_TITLE}\"\n"
@@ -37,12 +37,12 @@ void builtInEnvironmentSource() {
 
 /// Provide application-owned values through the built-in `var` placeholder source.
 ///
-/// `setPlaceholderVariables()` copies a map into the parser and enables the `var` source. Variable names follow regular
-/// ELCL name matching, so `collection title` and `COLLECTION_TITLE` select the same entry.
+/// `setPlaceholderVariableSource()` copies a map into the parser and enables the `var` source. Variable names follow
+/// regular ELCL name matching, so `collection title` and `COLLECTION_TITLE` select the same entry.
 void builtInVariableSource() {
     auto parser = el::conf::Parser{};
-    parser.setPlaceholderVariables(
-        el::text::StringMap<el::text::String>{{
+    parser.setPlaceholderVariableSource(
+        el::StringMap<el::String>{{
             {"collection title"_el, "Σκαθάρια του Ολύμπου"_el},
             {"featured species"_el, "Carabus olympiae"_el},
         }});

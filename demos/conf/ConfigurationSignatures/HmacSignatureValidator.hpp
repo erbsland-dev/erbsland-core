@@ -57,8 +57,7 @@ public: // implement `SignatureValidator`
         }
 
         const auto expected =
-            el::text::base_n::BaseNDecoder{authenticatorText, el::text::base_n::BaseNFormat::base64()}.toData(
-                el::ByteLength{32U});
+            el::base_n::BaseNDecoder{authenticatorText, el::base_n::BaseNFormat::base64()}.toData(el::ByteLength{32U});
         if (!expected.has_value()) {
             return Result::Reject;
         }

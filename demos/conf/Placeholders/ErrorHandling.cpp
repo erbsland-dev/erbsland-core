@@ -3,26 +3,27 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/PlaceholderFilter.hpp>
-#include <erbsland/conf/PlaceholderSource.hpp>
+#include <erbsland/text/placeholder/Filter.hpp>
+#include <erbsland/text/placeholder/ReplacerError.hpp>
+#include <erbsland/text/placeholder/Source.hpp>
 
 namespace demo {
 
 /// Create source and filter errors that the parser can enrich with configuration context.
 ///
-/// Providers should report expected lookup and transformation failures as `ConfError`. Choose the category that best
-/// describes the problem and keep the description useful without exposing protected values.
-class RequiredAcademySource final : public el::conf::PlaceholderSource {
+/// Providers should report expected lookup and transformation failures as `ReplacerError`. Choose the category that
+/// best describes the problem and keep the description useful without exposing protected values.
+class RequiredAcademySource final : public el::placeholder::Source {
 public:
     [[nodiscard]] auto sourceNames() const -> el::StringList override { return el::StringList{"academy"_el}; }
     [[nodiscard]] auto resolve(const el::String &, const el::String &parameter) -> el::String override {
-        throw el::conf::ConfError{
-            el::conf::ConfErrorCategory::Access,
+        throw el::placeholder::ReplacerError{
+            el::placeholder::ReplacerErrorCategory::Access,
             el::StringFormat{"The academy registry entry '{}' is unavailable."_el}.build(parameter)};
     }
 };
 
-class ErrorLiteralSource final : public el::conf::PlaceholderSource {
+class ErrorLiteralSource final : public el::placeholder::Source {
 public:
     [[nodiscard]] auto sourceNames() const -> el::StringList override { return el::StringList{"literal"_el}; }
     [[nodiscard]] auto resolve(const el::String &, const el::String &parameter) -> el::String override {
@@ -30,19 +31,19 @@ public:
     }
 };
 
-class SafeRuneFilter final : public el::conf::PlaceholderFilter {
+class SafeRuneFilter final : public el::placeholder::Filter {
 public:
     [[nodiscard]] auto filterNames() const -> el::StringList override { return el::StringList{"safe rune"_el}; }
     [[nodiscard]] auto apply(const el::String &, const el::String &, const el::String &) -> el::String override {
-        throw el::conf::ConfError{
-            el::conf::ConfErrorCategory::Validation,
+        throw el::placeholder::ReplacerError{
+            el::placeholder::ReplacerErrorCategory::Validation,
             "The academy title contains a rune that is not permitted here."_el};
     }
 };
 
 /// Report a source failure at the configuration value that requested it.
 ///
-/// Sources and filters can throw `ConfError` with a meaningful category and description. The parser adds the
+/// Sources and filters can throw `ReplacerError` with a meaningful category and description. The parser adds the
 /// placeholder location, the target value's name path, and an available source excerpt before the error reaches the
 /// application.
 void sourceError() {

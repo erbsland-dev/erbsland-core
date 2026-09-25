@@ -4,9 +4,9 @@
 
 #include "FormatSpec.hpp"
 #include "NamedFormatDomain.hpp"
-#include "NamedKeyEntry.hpp"
-#include "NamedKeyFormat.hpp"
 
+#include "../named_key/Entry.hpp"
+#include "../named_key/Format.hpp"
 #include "../StringCharReader.hpp"
 
 #include <cstdint>
@@ -50,7 +50,7 @@ public:
 
 private:
     /// Get the named-key format accepted by this parser.
-    [[nodiscard]] static auto namedKeyFormat() -> const NamedKeyFormat &;
+    [[nodiscard]] static auto namedKeyFormat() -> const named_key::Format &;
     /// Convert a format-domain name to its domain.
     [[nodiscard]] static auto domainFromName(const String &name) -> std::optional<NamedFormatDomain>;
     /// Test whether an option is valid in a format domain.
@@ -62,7 +62,7 @@ private:
     /// Read the selected option value as one character.
     [[nodiscard]] auto readFill() const -> Char;
     /// Parse one named option entry.
-    void parseOption(Option option, const NamedKeyEntry &entry);
+    void parseOption(Option option, const named_key::Entry &entry);
     /// Require that the selected option has no value.
     void requireKeyWithoutValue() const;
     /// Parse the layout width option.
@@ -108,7 +108,7 @@ private:
     StringCharReader &_reader;
     NamedFormatDomain _domain;
     FormatSpec _spec;
-    const NamedKeyEntry *_entry{};
+    const named_key::Entry *_entry{};
 };
 
 }

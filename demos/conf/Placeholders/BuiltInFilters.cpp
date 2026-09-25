@@ -21,8 +21,8 @@ void builtInTextTransforms() {
     environment.setOrThrow("ERBSLAND_DEMO_RESEARCH_LABEL"_el, ""_el);
 
     auto parser = el::conf::Parser{};
-    parser.enableEnvironmentPlaceholderSource();
-    parser.enableTextPlaceholderFilters();
+    parser.addPlaceholderEnvironmentSource();
+    parser.addPlaceholderTextFilters();
     const auto document = parser.parseTextOrThrow(
         "[result]\n"
         "title: \"${env:ERBSLAND_DEMO_RESEARCH_TITLE|trim|remove:text=-debug|replace:text=_,rep=-|lower}\"\n"
@@ -54,8 +54,8 @@ void builtInTextConditions() {
     environment.setOrThrow("ERBSLAND_DEMO_RESEARCH_ID"_el, "R-104"_el);
 
     auto parser = el::conf::Parser{};
-    parser.enableEnvironmentPlaceholderSource();
-    parser.enableTextPlaceholderFilters();
+    parser.addPlaceholderEnvironmentSource();
+    parser.addPlaceholderTextFilters();
     const auto document = parser.parseTextOrThrow(
         "[publication]\n"
         "markup: \"${env:ERBSLAND_DEMO_RESEARCH_MARKUP|escape:format=html,amount=required}\"\n"
@@ -80,8 +80,8 @@ void builtInFilterValidation() {
     environment.setOrThrow("ERBSLAND_DEMO_RESEARCH_ID"_el, ""_el);
 
     auto parser = el::conf::Parser{};
-    parser.enableEnvironmentPlaceholderSource();
-    parser.enableTextPlaceholderFilters();
+    parser.addPlaceholderEnvironmentSource();
+    parser.addPlaceholderTextFilters();
     const auto document = parser.parseTextOrThrow(
         "[publication]\n"
         "result_id: \"${env:ERBSLAND_DEMO_RESEARCH_ID|required}\"\n"_el);

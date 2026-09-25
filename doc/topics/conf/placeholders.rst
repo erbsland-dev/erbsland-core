@@ -7,9 +7,9 @@
     single: Placeholders; Configuration Text
     single: Configuration; Runtime Values
 
-****************************
-Expanding Configuration Text
-****************************
+****************************************
+Using Placeholders in Configuration Text
+****************************************
 
 Configuration files often need a small amount of information that belongs to the running application rather than the
 file itself: a deployment name, a path selected at startup, or a value held in a protected store.
@@ -58,10 +58,77 @@ Parser control data therefore remains independent from values supplied at runtim
 A dollar that is not immediately followed by ``{`` remains an ordinary character.
 Use ``\$`` when a literal dollar is directly followed by an opening brace and must never start a placeholder.
 
+Enabling Built-in Sources and Filters
+=====================================
+
+The parser starts without placeholder sources or filters.
+For configuration values already held by the application, call
+:cpp:func:`Parser::setPlaceholderVariableSource() <erbsland::conf::Parser::setPlaceholderVariableSource>` with a
+:cpp:type:`StringMap <erbsland::text::StringMap>`.
+This registers ``var`` and replaces its complete variable map when called again.
+For values supplied by the process environment, call
+:cpp:func:`Parser::addPlaceholderEnvironmentSource() <erbsland::conf::Parser::addPlaceholderEnvironmentSource>` to
+register ``env``.
+The environment is read when a placeholder is expanded, not when the source is added.
+
+The built-in filters are a separate choice.
+:cpp:func:`Parser::addPlaceholderTextFilters() <erbsland::conf::Parser::addPlaceholderTextFilters>` registers ``trim``,
+``required``, and the other text filters.
+Registering filters alone does not activate expansion: every expression begins with a source.
+
+This example makes both sources and the filters available to a marine survey document.
+The environment assignment only makes the example repeatable; a running application normally receives that value from
+its parent process.
+
+.. erbsland-demo::
+    :source: conf/Placeholders/BuiltInProviders.cpp
+    :function-blocks: builtInProviders
+    :function-blocks-sha256: 3b148d146c14aa1fa311439e0e12e288211bdf711de45fb710d3555374529a07
+    :exec: conf/placeholders --demo BuiltInProviders
+    :source-sha256: cdcb8ac364bd5fa380566198a8bf940fa82453f0a4f9c2aa210cc3c52bdd81da
+
+.. code-block:: cpp
+
+    void builtInProviders() {
+        auto environment = el::system::EnvironmentVariables{};
+        environment.setOrThrow("ERBSLAND_DEMO_MARINE_AREA"_el, u8"  瀬戸内海  "_el);
+
+        auto parser = el::conf::Parser{};
+        parser.addPlaceholderEnvironmentSource();
+        parser.setPlaceholderVariableSource({{{"species"_el, u8"  アマモ  "_el}}});
+        parser.addPlaceholderTextFilters();
+        const auto document = parser.parseTextOrThrow(
+            "[survey]\n"
+            "area: \"${env:ERBSLAND_DEMO_MARINE_AREA,required|trim}\"\n"
+            "species: \"${var:species|trim}\"\n"_el);
+
+        environment.removeOrThrow("ERBSLAND_DEMO_MARINE_AREA"_el);
+        el::io::printLine("Area: "_el, document->getTextOrThrow("survey.area"_el));
+        el::io::printLine("Species: "_el, document->getTextOrThrow("survey.species"_el));
+    }
+
+.. erbsland-ansi::
+    :escape-char: ␛
+
+    Area: 瀬戸内海
+    Species: アマモ
+
+.. erbsland-demo-end::
+
+The ``,required`` flag on ``env`` rejects a missing environment variable, while ``trim`` removes surrounding whitespace
+from either source's result.
+The inserted text then becomes part of the ordinary quoted ELCL value.
+You can assign a different source name with the optional ``name`` argument of either source method; expressions must
+then use that name instead of ``env`` or ``var``.
+Source and filter names must be unique on the parser, so adding the same environment source or filter set twice raises
+:cpp:class:`LogicError <erbsland::err::LogicError>`.
+The :doc:`/topics/text_placeholders/built_in_sources` and :doc:`/topics/text_placeholders/built_in_filters` topics
+describe the complete lookup, parameter, and transformation rules shared with the standalone text replacer.
+
 Providing Application Values
 ============================
 
-Implement :cpp:class:`PlaceholderSource <erbsland::conf::PlaceholderSource>` when the application owns the lookup.
+Implement :cpp:class:`Source <erbsland::text::placeholder::Source>` when the application owns the lookup.
 The ``sourceNames()`` method announces one or more names handled by the provider, and ``resolve()`` turns a source name
 and parameter into replacement text.
 
@@ -72,7 +139,7 @@ remain in English.
 .. erbsland-demo::
     :source: conf/Placeholders/CustomSource.cpp
     :exec: conf/placeholders --demo CustomSource
-    :source-sha256: bcc8a82ccd14282375b6e7e157e53b0d23a21573fbd1bfa2512ce9bd2411085d
+    :source-sha256: eb1d7dfeb894943bc0add77d3656c05836f3baf451c83ba40f4059423f90fa05
 
 .. code-block:: cpp
 
@@ -80,7 +147,7 @@ remain in English.
     ///
     /// A placeholder source publishes one or more case-insensitive ELCL names. The parser passes the normalized source name
     /// and the decoded, case-preserving parameter to `resolve()`. The returned text replaces the complete placeholder.
-    class AcademySource final : public el::conf::PlaceholderSource {
+    class AcademySource final : public el::placeholder::Source {
     public:
         [[nodiscard]] auto sourceNames() const -> el::StringList override { return el::StringList{"academy"_el}; }
 
@@ -91,8 +158,8 @@ remain in English.
             if (parameter == "library"_el) {
                 return "Biblioteca das Estrelas"_el;
             }
-            throw el::conf::ConfError{
-                el::conf::ConfErrorCategory::ValueNotFound,
+            throw el::placeholder::ReplacerError{
+                el::placeholder::ReplacerErrorCategory::ValueNotFound,
                 el::StringFormat{"The academy value '{}' does not exist."_el}.build(parameter)};
         }
     };
@@ -133,7 +200,7 @@ Once the last source is removed, placeholder interpretation becomes inactive aga
 Transforming Values with Filters
 ================================
 
-A :cpp:class:`PlaceholderFilter <erbsland::conf::PlaceholderFilter>` transforms the current replacement text.
+A :cpp:class:`Filter <erbsland::text::placeholder::Filter>` transforms the current replacement text.
 Its ``filterNames()`` method announces the handled names, while ``apply()`` receives the normalized filter name, the
 decoded parameter, and the text produced by the source or previous filter.
 
@@ -145,7 +212,7 @@ The next demo registers a filter that adds a named academy area in front of a ro
 .. erbsland-demo::
     :source: conf/Placeholders/CustomFilter.cpp
     :exec: conf/placeholders --demo CustomFilter
-    :source-sha256: 9478a3bfb45c1275ff896412f43594040f3f987b775b6d30eb849bbd3f282b34
+    :source-sha256: 5aab01f4b736395fe8ab2699a127a7fe4617c671391ef128fe3b347afb751b9a
 
 .. code-block:: cpp
 
@@ -153,7 +220,7 @@ The next demo registers a filter that adds a named academy area in front of a ro
     ///
     /// A filter publishes one or more names and receives the current text, including changes made by earlier filters in the
     /// chain. Its parameter is decoded but otherwise preserved. This filter adds an application label in front of a value.
-    class AcademyLabelFilter final : public el::conf::PlaceholderFilter {
+    class AcademyLabelFilter final : public el::placeholder::Filter {
     public:
         [[nodiscard]] auto filterNames() const -> el::StringList override { return el::StringList{"academy label"_el}; }
 
@@ -193,8 +260,9 @@ Reporting Lookup and Transformation Errors
 
 A source or filter cannot always produce valid text.
 It may encounter a missing protected value, a denied lookup, or application data that fails a requirement.
-Throw :cpp:class:`ConfError <erbsland::conf::ConfError>` with the category and description that best explain the
-failure.
+Throw :cpp:class:`ReplacerError <erbsland::text::placeholder::ReplacerError>` with the category and description that
+best explain the failure.
+The parser converts this error to a location-aware :cpp:class:`ConfError <erbsland::conf::ConfError>`.
 
 The parser preserves that information and enriches the error with the placeholder location, the target value's name
 path, and a source excerpt when one is available.
@@ -206,25 +274,25 @@ The following demo triggers one source failure and one filter failure so you can
     :exec-exit-code: 1
     :exec-2: conf/placeholders --demo FilterError
     :exec-2-exit-code: 1
-    :source-sha256: 773108932ed4a57f3bfd2f1282411cd62561fbea96a694b2cf4ab432c4168873
+    :source-sha256: e1e4f08ec5387c716d9ea4326ac698951638c7311bcc835f2cd53302c1771038
 
 .. code-block:: cpp
 
     /// Create source and filter errors that the parser can enrich with configuration context.
     ///
-    /// Providers should report expected lookup and transformation failures as `ConfError`. Choose the category that best
-    /// describes the problem and keep the description useful without exposing protected values.
-    class RequiredAcademySource final : public el::conf::PlaceholderSource {
+    /// Providers should report expected lookup and transformation failures as `ReplacerError`. Choose the category that
+    /// best describes the problem and keep the description useful without exposing protected values.
+    class RequiredAcademySource final : public el::placeholder::Source {
     public:
         [[nodiscard]] auto sourceNames() const -> el::StringList override { return el::StringList{"academy"_el}; }
         [[nodiscard]] auto resolve(const el::String &, const el::String &parameter) -> el::String override {
-            throw el::conf::ConfError{
-                el::conf::ConfErrorCategory::Access,
+            throw el::placeholder::ReplacerError{
+                el::placeholder::ReplacerErrorCategory::Access,
                 el::StringFormat{"The academy registry entry '{}' is unavailable."_el}.build(parameter)};
         }
     };
 
-    class ErrorLiteralSource final : public el::conf::PlaceholderSource {
+    class ErrorLiteralSource final : public el::placeholder::Source {
     public:
         [[nodiscard]] auto sourceNames() const -> el::StringList override { return el::StringList{"literal"_el}; }
         [[nodiscard]] auto resolve(const el::String &, const el::String &parameter) -> el::String override {
@@ -232,19 +300,19 @@ The following demo triggers one source failure and one filter failure so you can
         }
     };
 
-    class SafeRuneFilter final : public el::conf::PlaceholderFilter {
+    class SafeRuneFilter final : public el::placeholder::Filter {
     public:
         [[nodiscard]] auto filterNames() const -> el::StringList override { return el::StringList{"safe rune"_el}; }
         [[nodiscard]] auto apply(const el::String &, const el::String &, const el::String &) -> el::String override {
-            throw el::conf::ConfError{
-                el::conf::ConfErrorCategory::Validation,
+            throw el::placeholder::ReplacerError{
+                el::placeholder::ReplacerErrorCategory::Validation,
                 "The academy title contains a rune that is not permitted here."_el};
         }
     };
 
     /// Report a source failure at the configuration value that requested it.
     ///
-    /// Sources and filters can throw `ConfError` with a meaningful category and description. The parser adds the
+    /// Sources and filters can throw `ReplacerError` with a meaningful category and description. The parser adds the
     /// placeholder location, the target value's name path, and an available source excerpt before the error reaches the
     /// application.
     void sourceError() {
@@ -273,7 +341,7 @@ The following demo triggers one source failure and one filter failure so you can
     :escape-char: ␛
 
 
-      ␛[1;91mAccess␛[22m ␛[1mto␛[22m ␛[1ma␛[22m ␛[1mConfiguration␛[22m ␛[1mSource␛[22m ␛[1mWas␛[22m ␛[1mDenied
+      ␛[1;91mUnknown␛[22m ␛[1mError
 
       ␛[22;39mThe academy registry entry 'secret archive' is unavailable.
 
@@ -288,7 +356,11 @@ The following demo triggers one source failure and one filter failure so you can
 
       ␛[90m   1 │ ␛[39m[academy]
       ␛[90m   2 │ ␛[39mname: "␛[91m$␛[39m{academy:secret archive}"
-      ␛[90m     │ ␛[39m       ␛[91m▔␛[0m
+      ␛[90m     │ ␛[39m       ␛[91m▔
+
+    ␛[90m╭─ Caused By:
+    │   ␛[39;1mThe␛[22m ␛[1macademy␛[22m ␛[1mregistry␛[22m ␛[1mentry␛[22m ␛[1m'secret␛[22m ␛[1marchive'␛[22m ␛[1mis␛[22m ␛[1munavailable.
+    ␛[22;90m╰─␛[0m
 
 .. rubric:: ``$ conf/placeholders --demo FilterError``
 
@@ -296,7 +368,7 @@ The following demo triggers one source failure and one filter failure so you can
     :escape-char: ␛
 
 
-      ␛[1;91mValidating␛[22m ␛[1mthe␛[22m ␛[1mConfiguration␛[22m ␛[1mFailed
+      ␛[1;91mUnknown␛[22m ␛[1mError
 
       ␛[22;39mThe academy title contains a rune that is not permitted here.
 
@@ -311,7 +383,11 @@ The following demo triggers one source failure and one filter failure so you can
 
       ␛[90m   1 │ ␛[39m[academy]
       ␛[90m   2 │ ␛[39mtitle: "␛[91m$␛[39m{literal:Grimório Antigo|safe rune}"
-      ␛[90m     │ ␛[39m        ␛[91m▔␛[0m
+      ␛[90m     │ ␛[39m        ␛[91m▔
+
+    ␛[90m╭─ Caused By:
+    │   ␛[39;1mThe␛[22m ␛[1macademy␛[22m ␛[1mtitle␛[22m ␛[1mcontains␛[22m ␛[1ma␛[22m ␛[1mrune␛[22m ␛[1mthat␛[22m ␛[1mis␛[22m ␛[1mnot␛[22m ␛[1mpermitted␛[22m ␛[1mhere.
+    ␛[22;90m╰─␛[0m
 
 .. erbsland-demo-end::
 
@@ -329,6 +405,6 @@ Validate parameters inside the source, return only the required text, and avoid 
 messages.
 
 The library also provides common components.
-:doc:`built-in-sources` describes the environment-variable source, and :doc:`built-in-filters` covers reusable text
-transformations and checks.
+:doc:`/topics/text_placeholders/built_in_sources` describes the environment-variable and application-variable sources.
+:doc:`/topics/text_placeholders/built_in_filters` covers reusable text transformations and checks.
 They use the same registration and error model as the custom providers on this page.

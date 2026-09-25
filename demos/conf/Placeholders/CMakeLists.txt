@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.28)
 erbsland_core_add_demo(placeholders)
 target_sources(placeholders PRIVATE
         BuiltInFilters.cpp
+        BuiltInProviders.cpp
         BuiltInSources.cpp
         CustomFilter.cpp
         CustomSource.cpp

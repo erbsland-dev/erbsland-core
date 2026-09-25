@@ -4,18 +4,8 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
-        EnvironmentPlaceholderSource.cpp
-        EnvironmentPlaceholderSource.hpp
-        PlaceholderResolver.cpp
-        PlaceholderResolver.hpp
-        PlaceholderResolver_fwd.hpp
+        ErrorAdapter.cpp
+        ErrorAdapter.hpp
         PlaceholderTextParser.cpp
         PlaceholderTextParser.hpp
-        TextPlaceholderFilter.cpp
-        TextPlaceholderFilter.hpp
-        TextPlaceholderParameterKey.hpp
-        TextPlaceholderParameters.cpp
-        TextPlaceholderParameters.hpp
-        VariablePlaceholderSource.cpp
-        VariablePlaceholderSource.hpp
 )

@@ -202,7 +202,8 @@ public: // helper methods.
         if (valuePtr == nullptr) {
             throwValueNotFound(thisValue, namePath);
         }
-        if (valuePtr->type() != tValueType) {
+        if (valuePtr->type() != tValueType &&
+            !(tValueType == ValueType::SectionWithNames && valuePtr->type() == ValueType::IntermediateSection)) {
             throwAsTypeMismatch(*valuePtr, tValueType);
         }
         return valuePtr;
@@ -226,7 +227,8 @@ public: // helper methods.
         if (valuePtr == nullptr) {
             return nullptr;
         }
-        if (valuePtr->type() != tValueType) {
+        if (valuePtr->type() != tValueType &&
+            !(tValueType == ValueType::SectionWithNames && valuePtr->type() == ValueType::IntermediateSection)) {
             return nullptr;
         }
         return valuePtr;

@@ -3,7 +3,8 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/PlaceholderSource.hpp>
+#include <erbsland/text/placeholder/ReplacerError.hpp>
+#include <erbsland/text/placeholder/Source.hpp>
 
 namespace demo {
 
@@ -11,7 +12,7 @@ namespace demo {
 ///
 /// A placeholder source publishes one or more case-insensitive ELCL names. The parser passes the normalized source name
 /// and the decoded, case-preserving parameter to `resolve()`. The returned text replaces the complete placeholder.
-class AcademySource final : public el::conf::PlaceholderSource {
+class AcademySource final : public el::placeholder::Source {
 public:
     [[nodiscard]] auto sourceNames() const -> el::StringList override { return el::StringList{"academy"_el}; }
 
@@ -22,8 +23,8 @@ public:
         if (parameter == "library"_el) {
             return "Biblioteca das Estrelas"_el;
         }
-        throw el::conf::ConfError{
-            el::conf::ConfErrorCategory::ValueNotFound,
+        throw el::placeholder::ReplacerError{
+            el::placeholder::ReplacerErrorCategory::ValueNotFound,
             el::StringFormat{"The academy value '{}' does not exist."_el}.build(parameter)};
     }
 };

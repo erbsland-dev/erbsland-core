@@ -1,0 +1,40 @@
+# Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+# SPDX-License-Identifier: Apache-2.0
+cmake_minimum_required(VERSION 3.28)
+project(package-fixture VERSION 1.2.3 LANGUAGES CXX)
+
+if(PACKAGE_CORE_INSTALL)
+    find_package(erbsland-core CONFIG REQUIRED)
+else()
+    add_subdirectory("${PACKAGE_CORE_SOURCE}" core)
+endif()
+
+add_executable(package-client main.cpp)
+add_executable(package-server main.cpp)
+add_library(package-library SHARED library.cpp)
+set_target_properties(package-library PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dependencies")
+target_compile_definitions(package-client PRIVATE PACKAGE_CLIENT)
+target_link_libraries(package-client PRIVATE package-library)
+if(APPLE)
+    add_library(PackageFramework SHARED framework.cpp)
+    set_target_properties(PackageFramework PROPERTIES
+            FRAMEWORK TRUE
+            FRAMEWORK_VERSION A
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dependencies")
+    target_link_libraries(package-client PRIVATE PackageFramework)
+    target_compile_definitions(package-client PRIVATE PACKAGE_FRAMEWORK)
+endif()
+if(WIN32)
+    add_executable(package-signing-tool signing-tool.cpp)
+    if(PACKAGE_CORE_INSTALL)
+        target_link_libraries(package-signing-tool PRIVATE ErbslandDEV::erbsland-core)
+    else()
+        target_link_libraries(package-signing-tool PRIVATE erbsland-core)
+    endif()
+endif()
+if(PACKAGE_OUTPUT_DIRECTORY)
+    set(package_output_arguments OUTPUT_DIRECTORY "${PACKAGE_OUTPUT_DIRECTORY}")
+endif()
+erbsland_core_package(TARGET package-client NAME client ${package_output_arguments})
+erbsland_core_package(TARGET package-server NAME server ${package_output_arguments})
+erbsland_core_package(TARGETS package-client package-server NAME combined ${package_output_arguments})

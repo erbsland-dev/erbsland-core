@@ -10,8 +10,8 @@
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteSpan.hpp"
 #include "../../text/base_n/BaseNFormat_fwd.hpp"
-#include "../../text/impl/NamedKeyEntry_fwd.hpp"
-#include "../../text/impl/NamedKeyFormat_fwd.hpp"
+#include "../../text/named_key/Entry_fwd.hpp"
+#include "../../text/named_key/Format_fwd.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringEditor_fwd.hpp"
 #include "../../text/StringLiteral_fwd.hpp"
@@ -44,7 +44,7 @@ private:
         Data,            ///< The protected verifier.
     };
     /// A list of fields.
-    using FieldList = util::List<text::impl::NamedKeyEntry>;
+    using FieldList = util::List<text::named_key::Entry>;
 
 public:
     /// Test whether the record uses an application key.
@@ -114,7 +114,7 @@ private:
     /// Get the Base64 format used for storage fields.
     [[nodiscard]] static auto storageBase64Format() -> text::base_n::BaseNFormat;
     /// Get the named-key format for password-hash records.
-    [[nodiscard]] static auto passwordHashFormat() -> const text::impl::NamedKeyFormat &;
+    [[nodiscard]] static auto passwordHashFormat() -> const text::named_key::Format &;
     /// Get a field value while validating its key and position.
     [[nodiscard]] static auto fieldValue(const FieldList &fields, unit::ItemIndex index, Field expected)
         -> const text::String &;

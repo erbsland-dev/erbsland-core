@@ -3,6 +3,7 @@
 --[ Main ]------------------------------------------------------------------------------------------------------------
 Source Directories  :
     * "src"
+    * "cmake/tools"
     * "demos"
     * "test/unittest"
     * "test/profiling"

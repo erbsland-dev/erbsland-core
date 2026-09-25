@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../placeholder/PlaceholderResolver.hpp"
-
+#include "../../../text/placeholder/impl/Registry.hpp"
 #include "../../AccessCheck.hpp"
 #include "../../FileAccessCheck.hpp"
 #include "../../FileSourceResolver.hpp"
@@ -29,7 +28,7 @@ struct ParserSettings {
     SignatureValidatorPtr signatureValidator;
 
     /// Sources and filters used for optional placeholder expansion.
-    placeholder::PlaceholderResolverPtr placeholderResolver = std::make_shared<placeholder::PlaceholderResolver>();
+    text::placeholder::impl::RegistryPtr placeholderRegistry = std::make_shared<text::placeholder::impl::Registry>();
 };
 
 }

@@ -1,0 +1,30 @@
+[main]
+filename_format: "base-%{version}"
+
+*[main.files]*
+path: "README.txt"
+target: "docs"
+
+[platform.macos]
+filename_format: "platform-%{version}"
+
+[platform.macos.arm64]
+filename_format: "architecture-%{version}"
+
+[package.client]
+filename_format: "client-%{version}-%{sys:platform}-%{sys:architecture}"
+
+*[package.client.files]*
+path: "client.txt"
+target: "docs"
+
+[package.server]
+app: false
+filename_format: "server-%{version}-%{sys:platform}-%{sys:architecture}"
+
+[target."package-client"]
+bundle_id: "dev.erbsland.package-client"
+
+*[target."package-client".files]*
+path: "target.txt"
+target: "docs"

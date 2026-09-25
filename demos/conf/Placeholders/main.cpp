@@ -10,6 +10,7 @@ using namespace demo;
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
     app.enableTerminal();
+    app.registerDemo("BuiltInProviders"_el, builtInProviders);
     app.registerDemo("BuiltInEnvironmentSource"_el, builtInEnvironmentSource);
     app.registerDemo("BuiltInVariableSource"_el, builtInVariableSource);
     app.registerDemo("BuiltInFilterValidation"_el, builtInFilterValidation);

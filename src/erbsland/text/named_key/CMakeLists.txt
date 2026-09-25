@@ -1,0 +1,15 @@
+# Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 3.28)
+
+target_sources(erbsland-core PRIVATE
+        Entry.hpp
+        Entry_fwd.hpp
+        EntryKind.hpp
+        Format.cpp
+        Format.hpp
+        Format_fwd.hpp
+        Parser.cpp
+        Parser.hpp
+)

@@ -68,19 +68,8 @@ Placeholder Expansion
 filters.
 Expansion is disabled by default, and applications decide which sources and filters are available.
 
-Built-in Placeholder Sources
-============================
-
-:doc:`built-in-sources` explains how to opt into the ``env`` placeholder source for process environment values and the
-``var`` source for application-owned values.
-It covers missing values, safe environment text, portable names, and replacement of the application variable map.
-
-Built-in Placeholder Filters
-============================
-
-:doc:`built-in-filters` shows how to clean, select, escape, choose, and validate placeholder text.
-It includes a complete parameter reference for every built-in filter, with compiled demos for ordinary transformations
-and validation failures.
+The shared :doc:`/topics/text_placeholders/built_in_sources` and :doc:`/topics/text_placeholders/built_in_filters`
+topics explain the available value providers and text transformations.
 
 Document Signatures
 ===================

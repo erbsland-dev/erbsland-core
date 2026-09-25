@@ -10,3 +10,4 @@ Core Functionality
     definitions
     make_one_namespace
     namespaces
+    release_packages

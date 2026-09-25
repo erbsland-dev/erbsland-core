@@ -15,7 +15,11 @@ Topics
     resource/index
     security/index
     cryptology/index
-    text/index
+    text_strings/index
+    text_formatting/index
+    text_rendering/index
+    text_placeholders/index
+    text_parsing_and_encoding/index
     conf/index
     options/index
     err/index

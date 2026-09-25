@@ -18,8 +18,8 @@ void storeDigest() {
     hasher.update("Inventaire: orchidée miniature, parcelle Émeraude-4"_el);
     const auto digest = hasher.finalize();
 
-    const auto format = el::text::base_n::BaseNFormat::base16();
-    const auto encoded = el::text::base_n::BaseNEncoder{digest, format}.toString();
+    const auto format = el::base_n::BaseNFormat::base16();
+    const auto encoded = el::base_n::BaseNEncoder{digest, format}.toString();
 
     auto directoryOptions = el::PathTempDirectoryOptions{};
     directoryOptions.setPrefix("canopée-"_el).setSuffix("-hash-demo"_el);
@@ -29,8 +29,7 @@ void storeDigest() {
     sidecarPath.content().writeTextOrThrow(encoded);
 
     const auto storedText = sidecarPath.content().readTextOrThrow(el::PathReadTextOptions{el::ByteLength{128U}});
-    const auto decoded =
-        el::text::base_n::BaseNDecoder{storedText, format}.toDataOrThrow(hasher.algorithm().digestSize());
+    const auto decoded = el::base_n::BaseNDecoder{storedText, format}.toDataOrThrow(hasher.algorithm().digestSize());
 
     el::io::printLine("Stored characters: "_el, storedText.characterLength().toSizeT());
     el::io::printLine("Round trip matches: "_el, el::BooleanFormat::yesNo(), decoded == digest);

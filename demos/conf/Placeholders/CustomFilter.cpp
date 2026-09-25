@@ -3,12 +3,12 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/PlaceholderFilter.hpp>
-#include <erbsland/conf/PlaceholderSource.hpp>
+#include <erbsland/text/placeholder/Filter.hpp>
+#include <erbsland/text/placeholder/Source.hpp>
 
 namespace demo {
 
-class LiteralSource final : public el::conf::PlaceholderSource {
+class LiteralSource final : public el::placeholder::Source {
 public:
     [[nodiscard]] auto sourceNames() const -> el::StringList override { return el::StringList{"literal"_el}; }
     [[nodiscard]] auto resolve(const el::String &, const el::String &parameter) -> el::String override {
@@ -20,7 +20,7 @@ public:
 ///
 /// A filter publishes one or more names and receives the current text, including changes made by earlier filters in the
 /// chain. Its parameter is decoded but otherwise preserved. This filter adds an application label in front of a value.
-class AcademyLabelFilter final : public el::conf::PlaceholderFilter {
+class AcademyLabelFilter final : public el::placeholder::Filter {
 public:
     [[nodiscard]] auto filterNames() const -> el::StringList override { return el::StringList{"academy label"_el}; }
 

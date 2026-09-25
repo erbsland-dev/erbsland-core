@@ -1,0 +1,13 @@
+[main]
+version_source: "file"
+version_file: "VERSION.txt"
+version_pattern: `v([0-9]+\.[0-9]+\.[0-9]+)`
+target_dir: "%{package:name}-%{version:major}.%{version:minor}.%{version:patch}"
+filename_format: "%{package:name}-%{version}-%{sys:architecture}"
+
+*[main.files]*
+path: "assets"
+target: "assets"
+recursive: true
+include_pattern: "**/*.txt", "*.txt"
+exclude_regex: "(^|.*/)skip\\.txt"

@@ -4,14 +4,14 @@
 
 #include "AccessCheck_fwd.hpp"
 #include "Document.hpp"
-#include "PlaceholderFilter.hpp"
-#include "PlaceholderSource.hpp"
 #include "SignatureValidator.hpp"
 #include "Source.hpp"
 #include "SourceResolver.hpp"
 
 #include "impl/parser/ParserSettings.hpp"
 
+#include "../text/placeholder/Filter.hpp"
+#include "../text/placeholder/Source.hpp"
 #include "../text/StringMap.hpp"
 
 #include <optional>
@@ -51,28 +51,30 @@ public:
     /// Add a provider for one or more placeholder sources.
     /// @throws err::ParameterError If `source` is null.
     /// @throws err::LogicError If the provider has no valid names or a name is already registered.
-    void addPlaceholderSource(const PlaceholderSourcePtr &source);
+    void addPlaceholderSource(const text::placeholder::SourcePtr &source);
     /// Remove a placeholder source provider. A provider that is not registered is ignored.
-    void removePlaceholderSource(const PlaceholderSourcePtr &source) noexcept;
+    void removePlaceholderSource(const text::placeholder::SourcePtr &source) noexcept;
     /// Add a provider for one or more placeholder filters.
     /// @throws err::ParameterError If `filter` is null.
     /// @throws err::LogicError If the provider has no valid names or a name is already registered.
-    void addPlaceholderFilter(const PlaceholderFilterPtr &filter);
+    void addPlaceholderFilter(const text::placeholder::FilterPtr &filter);
     /// Remove a placeholder filter provider. A provider that is not registered is ignored.
-    void removePlaceholderFilter(const PlaceholderFilterPtr &filter) noexcept;
-    /// Enable the built-in `env` placeholder source.
-    /// @throws err::LogicError If the source name is already registered.
-    void enableEnvironmentPlaceholderSource();
-    /// Set the variables for the built-in `var` placeholder source and enable it.
+    void removePlaceholderFilter(const text::placeholder::FilterPtr &filter) noexcept;
+    /// Add the built-in environment placeholder source under `env` or a custom name.
+    /// @param name The source name, or empty to use `env`.
+    /// @throws err::LogicError If the name is invalid or already registered.
+    void addPlaceholderEnvironmentSource(const text::String &name = {});
+    /// Set the variables for the built-in variable placeholder source and add it if needed.
     /// Variable names use regular ELCL name normalization and are therefore case-insensitive, with spaces and
     /// underscores treated as equivalent.
     /// @param variables The replacement text indexed by variable name.
-    /// @throws ConfError If a variable name is invalid.
-    /// @throws err::LogicError If another provider already registered the `var` source name.
-    void setPlaceholderVariables(text::StringMap<text::String> variables);
-    /// Enable the built-in text placeholder filters.
+    /// @param name The source name, or empty to use `var`.
+    /// @throws ConfError If a variable or source name is invalid.
+    /// @throws err::LogicError If another provider already registered the source name.
+    void setPlaceholderVariableSource(text::StringMap<text::String> variables, const text::String &name = {});
+    /// Add the built-in text placeholder filters.
     /// @throws err::LogicError If any filter name is already registered.
-    void enableTextPlaceholderFilters();
+    void addPlaceholderTextFilters();
     /// Parse the given source into a configuration document and throw an exception on any error.
     /// @param source The source to parse. Should be closed.
     /// @return The root node of the parsed configuration tree.

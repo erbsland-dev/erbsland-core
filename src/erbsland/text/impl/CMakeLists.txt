@@ -77,14 +77,6 @@ target_sources(erbsland-core PRIVATE
         NamedFormatDomain.hpp
         NamedFormatParser.cpp
         NamedFormatParser.hpp
-        NamedKeyEntry.hpp
-        NamedKeyEntry_fwd.hpp
-        NamedKeyEntryKind.hpp
-        NamedKeyFormat.cpp
-        NamedKeyFormat.hpp
-        NamedKeyFormat_fwd.hpp
-        NamedKeyParser.cpp
-        NamedKeyParser.hpp
         NoneEscapeFormatter.cpp
         NoneEscapeFormatter.hpp
         PlainTextRenderer.cpp

@@ -8,7 +8,8 @@
 
 #include "../char/CharStream.hpp"
 #include "../lexer/LexerToken.hpp"
-#include "../placeholder/PlaceholderResolver_fwd.hpp"
+
+#include "../../../text/placeholder/impl/Registry_fwd.hpp"
 
 #include <cassert>
 #include <memory>
@@ -22,13 +23,14 @@ namespace erbsland::conf::impl {
 class TokenDecoder final : public Decoder {
 public:
     /// Create a token decoder for a character stream.
-    static auto create(CharStreamPtr decoder, placeholder::PlaceholderResolverPtr placeholderResolver = {}) noexcept
+    static auto create(CharStreamPtr decoder, text::placeholder::impl::RegistryPtr placeholderRegistry = {}) noexcept
         -> TokenDecoderPtr;
 
     /// Create a token decoder around a character stream.
     /// @param decoder The character stream to decode.
-    /// @param placeholderResolver The optional placeholder resolver.
-    explicit TokenDecoder(CharStreamPtr decoder, placeholder::PlaceholderResolverPtr placeholderResolver = {}) noexcept;
+    /// @param placeholderRegistry The optional placeholder resolver.
+    explicit TokenDecoder(
+        CharStreamPtr decoder, text::placeholder::impl::RegistryPtr placeholderRegistry = {}) noexcept;
 
     // defaults
     TokenDecoder() = default;
@@ -148,7 +150,7 @@ private: // implement Decoder transactions
 
 private:
     CharStreamPtr _decoder;                                         ///< The wrapped decoder.
-    placeholder::PlaceholderResolverPtr _placeholderResolver;       ///< Optional placeholder resolver.
+    text::placeholder::impl::RegistryPtr _placeholderRegistry;      ///< Optional placeholder resolver.
     DecodedChar _currentCharacter{text::Char::endOfData(), {}, {}}; ///< The current decoded character.
     unit::CodeLocation _tokenStartPosition;                         ///< The start position of the current token.
     text::String _currentIndentationPattern;                        ///< The current indentation pattern.

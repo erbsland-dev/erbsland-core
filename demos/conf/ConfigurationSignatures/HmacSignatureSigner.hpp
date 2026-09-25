@@ -35,8 +35,7 @@ public: // implement `SignatureSigner`
         authenticator.update("\n"_el);
         authenticator.update(data.documentDigest);
         const auto encoded =
-            el::text::base_n::BaseNEncoder{authenticator.finalize(), el::text::base_n::BaseNFormat::base64()}
-                .toString();
+            el::base_n::BaseNEncoder{authenticator.finalize(), el::base_n::BaseNFormat::base64()}.toString();
         return el::String::fromJoined({"hmac-sha256;"_el, data.signingPersonText, ";"_el, encoded});
     }
 

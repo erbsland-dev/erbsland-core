@@ -39,9 +39,9 @@ public:                                                                         
         _maximumValueCount = value;
         return *this;
     }
-    /// Get the maximum decoded key or string length in bytes.
+    /// Get the maximum decoded key or string length in Unicode code points.
     [[nodiscard]] constexpr auto maximumStringLength() const noexcept -> unit::CpLength { return _maximumStringLength; }
-    /// Set the maximum decoded key or string length in bytes.
+    /// Set the maximum decoded key or string length in Unicode code points.
     constexpr auto setMaximumStringLength(const unit::CpLength value) noexcept -> JsonParseOptions & {
         _maximumStringLength = value;
         return *this;
@@ -51,7 +51,7 @@ private:
     unit::ByteLength _maximumInputLength{cDefaultMaximumInputLength}; ///< Maximum source bytes.
     unit::ItemCount _maximumNesting{cDefaultMaximumNesting};          ///< Maximum open containers.
     unit::ItemCount _maximumValueCount{cDefaultMaximumValueCount};    ///< Maximum total values.
-    unit::CpLength _maximumStringLength{cDefaultMaximumStringLength}; ///< Maximum decoded string bytes.
+    unit::CpLength _maximumStringLength{cDefaultMaximumStringLength}; ///< Maximum decoded string code points.
 };
 
 }

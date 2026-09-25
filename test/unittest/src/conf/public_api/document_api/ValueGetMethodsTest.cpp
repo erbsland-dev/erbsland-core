@@ -505,6 +505,12 @@ public:
         const auto sec = doc->getSectionWithNames(path);
         REQUIRE_EQUAL(sec->size(), 11U);
         REQUIRE_EQUAL(doc->getSectionWithNamesOrThrow(path)->size(), 11U);
+        const auto implicitPath = NamePath::fromText("main.sub.sub"_el);
+        const auto implicitSection = doc->getSectionWithNames(implicitPath);
+        REQUIRE(implicitSection);
+        REQUIRE(implicitSection->isSectionWithNames());
+        REQUIRE_EQUAL(implicitSection->type(), ValueType::IntermediateSection);
+        REQUIRE_EQUAL(doc->getSectionWithNamesOrThrow(implicitPath), implicitSection);
     }
 
     TESTED_TARGETS(getSectionWithTexts)

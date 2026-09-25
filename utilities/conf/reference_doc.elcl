@@ -30,6 +30,7 @@ Excluded Header Globs       :
 # Reference pages maintained entirely by hand and never removed as orphans.
 Manual Reference Pages      :
     * "core/application_error_context.rst"
+    * "core/release_packages.rst"
     * "core/definitions.rst"
     * "core/make_one_namespace.rst"
     * "core/namespaces.rst"

@@ -70,10 +70,11 @@ Placeholder Extension
 ---------------------
 
 The parser can optionally expand ``${source:parameter}`` expressions in ordinary quoted text values.
-Applications add implementations of :cpp:class:`erbsland::conf::PlaceholderSource <erbsland::conf::PlaceholderSource>`
-with
+It uses the shared providers from :doc:`/reference/text/placeholders`.
+Applications add implementations of
+:cpp:class:`erbsland::text::placeholder::Source <erbsland::text::placeholder::Source>` with
 :cpp:func:`erbsland::conf::Parser::addPlaceholderSource <erbsland::conf::Parser::addPlaceholderSource>` and optional
-:cpp:class:`erbsland::conf::PlaceholderFilter <erbsland::conf::PlaceholderFilter>` implementations with
+:cpp:class:`erbsland::text::placeholder::Filter <erbsland::text::placeholder::Filter>` implementations with
 :cpp:func:`erbsland::conf::Parser::addPlaceholderFilter <erbsland::conf::Parser::addPlaceholderFilter>`.
 
 Source and filter names are normalized as regular ELCL names and must be unique within a parser.
@@ -81,15 +82,17 @@ Providers may implement several names.
 Their parameters are escape-decoded but retain case, while the names passed to callbacks are normalized.
 Expansion is inactive when no source is registered, even if filters are present.
 
-:cpp:func:`erbsland::conf::Parser::enableEnvironmentPlaceholderSource
-<erbsland::conf::Parser::enableEnvironmentPlaceholderSource>` registers the built-in ``env`` source.
-:cpp:func:`erbsland::conf::Parser::setPlaceholderVariables
-<erbsland::conf::Parser::setPlaceholderVariables>` registers or updates the built-in ``var`` source.
-:cpp:func:`erbsland::conf::Parser::enableTextPlaceholderFilters
-<erbsland::conf::Parser::enableTextPlaceholderFilters>` registers the built-in text filters.
+:cpp:func:`erbsland::conf::Parser::addPlaceholderEnvironmentSource
+<erbsland::conf::Parser::addPlaceholderEnvironmentSource>` registers the built-in ``env`` source under its default or a
+custom name.
+:cpp:func:`erbsland::conf::Parser::setPlaceholderVariableSource
+<erbsland::conf::Parser::setPlaceholderVariableSource>` registers or updates the built-in ``var`` source under its
+default or a custom name.
+:cpp:func:`erbsland::conf::Parser::addPlaceholderTextFilters
+<erbsland::conf::Parser::addPlaceholderTextFilters>` registers the built-in text filters.
 See
-:doc:`/topics/conf/placeholders`, :doc:`/topics/conf/built-in-sources`, and :doc:`/topics/conf/built-in-filters` for the
-syntax and behavior.
+:doc:`/topics/conf/placeholders`, :doc:`/topics/text_placeholders/built_in_sources`, and
+:doc:`/topics/text_placeholders/built_in_filters` for the syntax and behavior.
 
 Configuration Documents
 =======================
@@ -99,6 +102,10 @@ It provides the complete :cpp:class:`erbsland::conf::Value <erbsland::conf::Valu
 flat map from absolute name paths to values.
 Values retain their source location, allowing errors and diagnostics to point back to the input after parsing has
 finished.
+An implicit parent such as ``server`` in ``[server.tls]`` is internally an intermediate section.
+The public :cpp:func:`erbsland::conf::Value::isSectionWithNames <erbsland::conf::Value::isSectionWithNames>` and
+:cpp:func:`erbsland::conf::Value::getSectionWithNames <erbsland::conf::Value::getSectionWithNames>` methods treat it as
+a regular named section.
 
 Programmatic Construction
 -------------------------
@@ -440,14 +447,6 @@ Interface
 .. doxygenfunction:: erbsland::conf::toString(const NameType nameType) noexcept -> text::String
 .. doxygenclass:: erbsland::conf::Parser
     :members:
-.. doxygenclass:: erbsland::conf::PlaceholderFilter
-    :members:
-
-.. doxygentypedef:: erbsland::conf::PlaceholderFilterPtr
-.. doxygenclass:: erbsland::conf::PlaceholderSource
-    :members:
-
-.. doxygentypedef:: erbsland::conf::PlaceholderSourcePtr
 .. doxygenclass:: erbsland::conf::SignatureSigner
     :members:
 

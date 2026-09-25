@@ -9,7 +9,7 @@
 namespace erbsland::text {
 
 /// Select a Unicode normalization form.
-/// @seedoc{/topics/text/normalizing_strings}
+/// @seedoc{/topics/text_strings/normalizing_strings}
 enum class NormalizationForm : uint8_t {
     Nfc = 0, ///< Canonical decomposition followed by canonical composition.
     Nfd,     ///< Canonical decomposition without composition.

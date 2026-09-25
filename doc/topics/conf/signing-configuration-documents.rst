@@ -49,7 +49,7 @@ public-key workflow should keep the private key in protected storage or behind a
 
 .. erbsland-demo::
     :source: conf/ConfigurationSignatures/HmacSignatureSigner.hpp
-    :source-sha256: bfc55038bbe21b894378941ee10ddbfc013250dc72427c459571b98d4a3f9dcf
+    :source-sha256: e0a3572b454fa7fecd579cbe38236bb40ea4e2792affec20456b49b00a502ecc
 
 .. code-block:: cpp
 
@@ -77,8 +77,7 @@ public-key workflow should keep the private key in protected storage or behind a
             authenticator.update("\n"_el);
             authenticator.update(data.documentDigest);
             const auto encoded =
-                el::text::base_n::BaseNEncoder{authenticator.finalize(), el::text::base_n::BaseNFormat::base64()}
-                    .toString();
+                el::base_n::BaseNEncoder{authenticator.finalize(), el::base_n::BaseNFormat::base64()}.toString();
             return el::String::fromJoined({"hmac-sha256;"_el, data.signingPersonText, ";"_el, encoded});
         }
 

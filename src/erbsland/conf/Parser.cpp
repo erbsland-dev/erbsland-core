@@ -3,12 +3,17 @@
 #include "Parser.hpp"
 
 #include "impl/parser/Parser.hpp"
-#include "impl/placeholder/EnvironmentPlaceholderSource.hpp"
-#include "impl/placeholder/TextPlaceholderFilter.hpp"
-#include "impl/placeholder/VariablePlaceholderSource.hpp"
+#include "impl/placeholder/ErrorAdapter.hpp"
 
 #include "../err/LogicError.hpp"
 #include "../err/ParameterError.hpp"
+#include "../text/placeholder/EnvironmentSource.hpp"
+#include "../text/placeholder/impl/Name.hpp"
+#include "../text/placeholder/ReplacerError.hpp"
+#include "../text/placeholder/TextFilter.hpp"
+#include "../text/placeholder/VariableSource.hpp"
+
+#include <exception>
 
 namespace erbsland::conf {
 
@@ -26,41 +31,48 @@ void Parser::setSignatureValidator(const SignatureValidatorPtr &signatureValidat
     _settings.signatureValidator = signatureValidator;
 }
 
-void Parser::addPlaceholderSource(const PlaceholderSourcePtr &source) {
-    _settings.placeholderResolver->addSource(source);
+void Parser::addPlaceholderSource(const text::placeholder::SourcePtr &source) {
+    _settings.placeholderRegistry->addSource(source);
 }
 
-void Parser::removePlaceholderSource(const PlaceholderSourcePtr &source) noexcept {
-    _settings.placeholderResolver->removeSource(source);
+void Parser::removePlaceholderSource(const text::placeholder::SourcePtr &source) noexcept {
+    _settings.placeholderRegistry->removeSource(source);
 }
 
-void Parser::addPlaceholderFilter(const PlaceholderFilterPtr &filter) {
-    _settings.placeholderResolver->addFilter(filter);
+void Parser::addPlaceholderFilter(const text::placeholder::FilterPtr &filter) {
+    _settings.placeholderRegistry->addFilter(filter);
 }
 
-void Parser::removePlaceholderFilter(const PlaceholderFilterPtr &filter) noexcept {
-    _settings.placeholderResolver->removeFilter(filter);
+void Parser::removePlaceholderFilter(const text::placeholder::FilterPtr &filter) noexcept {
+    _settings.placeholderRegistry->removeFilter(filter);
 }
 
-void Parser::enableEnvironmentPlaceholderSource() {
-    addPlaceholderSource(std::make_shared<impl::placeholder::EnvironmentPlaceholderSource>());
+void Parser::addPlaceholderEnvironmentSource(const text::String &name) {
+    addPlaceholderSource(std::make_shared<text::placeholder::EnvironmentSource>(name));
 }
 
-void Parser::setPlaceholderVariables(text::StringMap<text::String> variables) {
-    const auto source = _settings.placeholderResolver->source("var"_el);
-    if (source != nullptr) {
-        const auto variableSource = std::dynamic_pointer_cast<impl::placeholder::VariablePlaceholderSource>(source);
-        if (variableSource == nullptr) {
-            throw err::LogicError{"Placeholder source name is already registered: var"_el};
+void Parser::setPlaceholderVariableSource(text::StringMap<text::String> variables, const text::String &name) {
+    try {
+        const auto effectiveName = name.isEmpty() ? "var"_el : name;
+        const auto normalizedName = text::placeholder::impl::normalizeName(effectiveName);
+        const auto source = _settings.placeholderRegistry->source(normalizedName);
+        if (source != nullptr) {
+            const auto variableSource = std::dynamic_pointer_cast<text::placeholder::VariableSource>(source);
+            if (variableSource == nullptr) {
+                throw err::LogicError{"The placeholder source name belongs to another provider."_el};
+            }
+            variableSource->setVariables(std::move(variables));
+            return;
         }
-        variableSource->setVariables(std::move(variables));
-        return;
+        addPlaceholderSource(std::make_shared<text::placeholder::VariableSource>(std::move(variables), effectiveName));
+    } catch (const text::placeholder::ReplacerError &error) {
+        throw ConfError{
+            impl::placeholder::toConfErrorCategory(error.category()), {}, error.reason(), std::current_exception()};
     }
-    addPlaceholderSource(std::make_shared<impl::placeholder::VariablePlaceholderSource>(std::move(variables)));
 }
 
-void Parser::enableTextPlaceholderFilters() {
-    addPlaceholderFilter(std::make_shared<impl::placeholder::TextPlaceholderFilter>());
+void Parser::addPlaceholderTextFilters() {
+    addPlaceholderFilter(std::make_shared<text::placeholder::TextFilter>());
 }
 
 auto Parser::parseOrThrow(const SourcePtr &source) -> DocumentPtr {

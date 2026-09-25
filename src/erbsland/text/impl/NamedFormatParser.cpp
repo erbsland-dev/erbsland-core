@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "NamedFormatParser.hpp"
 
-#include "NamedKeyParser.hpp"
-
 #include "../AsciiCategory.hpp"
 #include "../FormatError.hpp"
 #include "../Literals.hpp"
+#include "../named_key/Parser.hpp"
 #include "../StringEditor.hpp"
 
 #include "../../err/ParseError.hpp"
@@ -53,7 +52,7 @@ auto NamedFormatParser::tryReadDomain(StringCharReader &reader) -> std::optional
 
 auto NamedFormatParser::parse() -> FormatSpec {
     try {
-        auto parser = NamedKeyParser{_reader, namedKeyFormat()};
+        auto parser = named_key::Parser{_reader, namedKeyFormat()};
         auto allowedKeys = util::Set<int>{};
         for (auto raw = uint8_t{}; raw <= static_cast<uint8_t>(Option::Truncate); ++raw) {
             const auto option = static_cast<Option>(raw);
@@ -76,8 +75,8 @@ auto NamedFormatParser::parse() -> FormatSpec {
     return _spec;
 }
 
-auto NamedFormatParser::namedKeyFormat() -> const NamedKeyFormat & {
-    static const auto keys = NamedKeyFormat::Keys{{
+auto NamedFormatParser::namedKeyFormat() -> const named_key::Format & {
+    static const auto keys = named_key::Format::Keys{{
         {"width"_el, static_cast<int>(Option::Width)},
         {"w"_el, static_cast<int>(Option::Width)},
         {"alignment"_el, static_cast<int>(Option::Alignment)},
@@ -113,7 +112,7 @@ auto NamedFormatParser::namedKeyFormat() -> const NamedKeyFormat & {
         {"truncate"_el, static_cast<int>(Option::Truncate)},
         {"tr"_el, static_cast<int>(Option::Truncate)},
     }};
-    static const auto format = NamedKeyFormat{}
+    static const auto format = named_key::Format{}
                                    .setKeys(keys)
                                    .setValueListAllowed(false)
                                    .setStopCharacter(U'}')
@@ -196,7 +195,7 @@ auto NamedFormatParser::readFill() const -> Char {
     return _entry->value().charAt(StringSide::Front);
 }
 
-void NamedFormatParser::parseOption(const Option option, const NamedKeyEntry &entry) {
+void NamedFormatParser::parseOption(const Option option, const named_key::Entry &entry) {
     _entry = &entry;
     switch (option) {
     case Option::Width:

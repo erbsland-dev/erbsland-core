@@ -1,0 +1,3 @@
+[main]
+version_source: "git"
+filename_format: "gitpack-%{version}-%{sys:architecture}"

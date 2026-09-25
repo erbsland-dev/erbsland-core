@@ -28,8 +28,8 @@ void managerErrorByteReserve() {
     log->info("The journal destination is occupied."_el);
     writer->waitUntilWriting();
 
-    log->info(el::String::fromCharacter(el::text::Char{U'i'}, el::CpLength{1200U}));
-    const auto shortReport = el::String::fromCharacter(el::text::Char{U'w'}, el::CpLength{300U});
+    log->info(el::String::fromCharacter(el::Char{U'i'}, el::CpLength{1200U}));
+    const auto shortReport = el::String::fromCharacter(el::Char{U'w'}, el::CpLength{300U});
     log->info(shortReport);
     log->warn(shortReport);
     const auto full = manager->statistics();

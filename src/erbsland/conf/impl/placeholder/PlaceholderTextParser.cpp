@@ -2,11 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PlaceholderTextParser.hpp"
 
+#include "ErrorAdapter.hpp"
+
 #include "../char/NamedChars.hpp"
 #include "../lexer/Text.hpp"
 
 #include "../../../text/Literals.hpp"
-#include "../../Name.hpp"
+#include "../../../text/placeholder/impl/Name.hpp"
+#include "../../../text/placeholder/ReplacerError.hpp"
+#include "../../ConfError.hpp"
+
+#include <exception>
 
 namespace erbsland::conf::impl::placeholder {
 
@@ -39,6 +45,9 @@ void PlaceholderTextParser::parse() {
         }
         _decoder.expectAndNext(nc::closingCurlyBracket, "Expected a closing brace for the placeholder."_el);
         _target.append(value);
+    } catch (const text::placeholder::ReplacerError &error) {
+        throw ConfError{
+            toConfErrorCategory(error.category()), {}, error.reason(), startLocation, std::current_exception()};
     } catch (const ConfError &error) {
         throw error.withLocation(startLocation);
     }
@@ -46,7 +55,7 @@ void PlaceholderTextParser::parse() {
 
 auto PlaceholderTextParser::parsePart() -> Part {
     auto result = Part{};
-    result.name = normalizeName(parseContent(true));
+    result.name = text::placeholder::impl::normalizeName(parseContent(true));
     if (_decoder.character() == nc::colon) {
         _decoder.next();
         result.parameter = parseContent(false);
@@ -84,14 +93,6 @@ auto PlaceholderTextParser::parseContent(const bool isName) -> text::String {
         result.append(_decoder.character());
         _decoder.next();
     }
-}
-
-auto PlaceholderTextParser::normalizeName(const text::String &name) -> text::String {
-    auto result = Name::normalize(name);
-    if (result.startsWith("@"_el)) {
-        throw ConfError{ConfErrorCategory::Syntax, "Placeholder names must not be meta names."_el};
-    }
-    return result;
 }
 
 }

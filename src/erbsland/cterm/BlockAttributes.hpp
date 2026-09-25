@@ -6,7 +6,7 @@
 
 #include "impl/HashHelper.hpp"
 
-#include "../text/impl/NamedKeyFormat.hpp"
+#include "../text/named_key/Format.hpp"
 #include "../text/String.hpp"
 
 #include <array>
@@ -51,7 +51,7 @@ private:
     /// Access all supported attribute flags in display order.
     [[nodiscard]] static auto attributeFlags() noexcept -> const std::array<Flag, 8> &;
     /// Access the parser and formatter for named attributes.
-    [[nodiscard]] static auto attributeFormat() -> const text::impl::NamedKeyFormat &;
+    [[nodiscard]] static auto attributeFormat() -> const text::named_key::Format &;
 
 public:
     /// Create attributes with no explicitly specified flags.

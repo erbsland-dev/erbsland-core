@@ -157,7 +157,7 @@ The fifth is dropped because its retained data no longer fits.
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerByteCapacity.cpp
     :exec: log/logging_topics --demo ManagerByteCapacity
-    :source-sha256: 203d0901924ed8a4dde457a4e54bab20452cffe084f2550b038fe7d9772465cf
+    :source-sha256: a81004a21adbe81c7bc2a28c34b3975d9abdc608c536f81bfaaff2247530e0a3
 
 .. code-block:: cpp
 
@@ -178,7 +178,7 @@ The fifth is dropped because its retained data no longer fits.
         log->warn("The journal destination is occupied."_el);
         writer->waitUntilWriting();
 
-        const auto largeReport = el::String::fromCharacter(el::text::Char{U'x'}, el::CpLength{250U * 1024U});
+        const auto largeReport = el::String::fromCharacter(el::Char{U'x'}, el::CpLength{250U * 1024U});
         for (auto index = 0U; index < 4U; ++index) {
             log->warn(largeReport);
         }
@@ -292,7 +292,7 @@ the same size still fits by using the protected 512 bytes.
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerErrorByteReserve.cpp
     :exec: log/logging_topics --demo ManagerErrorByteReserve
-    :source-sha256: 31e6e5c0380c1c8fcd2b7607b85ecdbc135748301683097999b0bbc83c0644d2
+    :source-sha256: fa5aa9110299010a91587d9bc31f4712b15df7d76c196ee54b1df3b60e32829a
 
 .. code-block:: cpp
 
@@ -313,8 +313,8 @@ the same size still fits by using the protected 512 bytes.
         log->info("The journal destination is occupied."_el);
         writer->waitUntilWriting();
 
-        log->info(el::String::fromCharacter(el::text::Char{U'i'}, el::CpLength{1200U}));
-        const auto shortReport = el::String::fromCharacter(el::text::Char{U'w'}, el::CpLength{300U});
+        log->info(el::String::fromCharacter(el::Char{U'i'}, el::CpLength{1200U}));
+        const auto shortReport = el::String::fromCharacter(el::Char{U'w'}, el::CpLength{300U});
         log->info(shortReport);
         log->warn(shortReport);
         const auto full = manager->statistics();

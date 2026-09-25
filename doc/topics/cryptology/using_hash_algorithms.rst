@@ -142,7 +142,7 @@ The following demo requests high security with at least medium relative throughp
 .. erbsland-demo::
     :source: cryptology/HashAlgorithms/SelectAlgorithm.cpp
     :exec: cryptology/hash_algorithms --demo SelectAlgorithm
-    :source-sha256: bb9e3065dce6cc97f00ccdaf6d0a66310eccca0771e02046a61ad132957831e2
+    :source-sha256: 50005629b33a816dcd9422a1b481f0cc047908651c4b12ac734b1714f20c31ae
 
 .. code-block:: cpp
 
@@ -214,7 +214,7 @@ limit.
 .. erbsland-demo::
     :source: cryptology/HashAlgorithms/StoreDigest.cpp
     :exec: cryptology/hash_algorithms --demo StoreDigest
-    :source-sha256: 80e74be7bb81b1fab191079247e0f4bf0e00c670ea970d2bbf866481b0da8410
+    :source-sha256: d5df7533208343d9835ac570e86b91666b462d347d96c0352c1ebb5680908245
 
 .. code-block:: cpp
 
@@ -227,8 +227,8 @@ limit.
         hasher.update("Inventaire: orchidée miniature, parcelle Émeraude-4"_el);
         const auto digest = hasher.finalize();
 
-        const auto format = el::text::base_n::BaseNFormat::base16();
-        const auto encoded = el::text::base_n::BaseNEncoder{digest, format}.toString();
+        const auto format = el::base_n::BaseNFormat::base16();
+        const auto encoded = el::base_n::BaseNEncoder{digest, format}.toString();
 
         auto directoryOptions = el::PathTempDirectoryOptions{};
         directoryOptions.setPrefix("canopée-"_el).setSuffix("-hash-demo"_el);
@@ -238,8 +238,7 @@ limit.
         sidecarPath.content().writeTextOrThrow(encoded);
 
         const auto storedText = sidecarPath.content().readTextOrThrow(el::PathReadTextOptions{el::ByteLength{128U}});
-        const auto decoded =
-            el::text::base_n::BaseNDecoder{storedText, format}.toDataOrThrow(hasher.algorithm().digestSize());
+        const auto decoded = el::base_n::BaseNDecoder{storedText, format}.toDataOrThrow(hasher.algorithm().digestSize());
 
         el::io::printLine("Stored characters: "_el, storedText.characterLength().toSizeT());
         el::io::printLine("Round trip matches: "_el, el::BooleanFormat::yesNo(), decoded == digest);
@@ -279,7 +278,7 @@ Reject unknown identifiers instead of silently substituting a default.
 .. erbsland-demo::
     :source: cryptology/HashAlgorithms/PersistAlgorithm.cpp
     :exec: cryptology/hash_algorithms --demo PersistAlgorithm
-    :source-sha256: d0405c70dc6830c16b7d8176fe8b3293434c6985ca29e252df5b0ebe7e72f53d
+    :source-sha256: de66d8067a4e683b04a673bc1f922caf9c91bbaabab13363a18326e3acdae063
 
 .. code-block:: cpp
 
@@ -349,7 +348,7 @@ algorithm that passes the current safety policy.
 .. erbsland-demo::
     :source: cryptology/HashAlgorithms/HashBoundedInput.cpp
     :exec: cryptology/hash_algorithms --demo HashBoundedInput
-    :source-sha256: 2ab28dbe4b31d38bd6c9a11a35a8ea9db073bf87c08afcd16e2b132d3ae299d8
+    :source-sha256: 27230cc2d6b85b79dfc328cf9b40420194250b0273b0ce5b2f67b0d0d81e6d3a
 
 .. code-block:: cpp
 
@@ -372,9 +371,7 @@ algorithm that passes the current safety policy.
 
         el::io::printLine("Digest bytes: "_el, digest.length().toSizeT());
         el::io::printLine(
-            "MD5 rejected: "_el,
-            el::BooleanFormat::yesNo(),
-            !el::HashSelector{}.isSafe(el::HashAlgorithm::Md5));
+            "MD5 rejected: "_el, el::BooleanFormat::yesNo(), !el::HashSelector{}.isSafe(el::HashAlgorithm::Md5));
     }
 
     /// Hash an untrusted stream without collecting it in memory or accepting unlimited input.

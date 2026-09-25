@@ -49,7 +49,14 @@ install(FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/git-version.cmake"
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/application.cmake"
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/resources.cmake"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/package.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/erbsland-coreConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/erbsland-coreConfigVersion.cmake"
         DESTINATION lib/cmake/erbsland-core
 )
+
+# Keep the package application source available to installed consumers. The executable is
+# configured and compiled only when a consumer declares a package and installs a release build.
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tools/package/"
+        DESTINATION lib/cmake/erbsland-core/package-tool
+        FILES_MATCHING PATTERN "*.hpp" PATTERN "*.cpp" PATTERN "*.cmake" PATTERN "CMakeLists.txt")

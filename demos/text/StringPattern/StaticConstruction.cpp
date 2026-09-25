@@ -11,7 +11,7 @@ namespace demo {
 /// expressed with `OneChar`, `Range`, and `Set`. `Divider` is the single front/back divider that corresponds to `*` in
 /// parsed patterns.
 void staticConstruction() {
-    using namespace el::text::pattern;
+    using namespace el::pattern;
 
     static const auto acceptedRecord = el::StringPattern{
         Text{U"probe-"},

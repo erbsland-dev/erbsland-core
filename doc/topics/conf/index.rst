@@ -21,8 +21,6 @@ application values and safe transformations.
     source-resolving
     access-checks
     placeholders
-    built-in-sources
-    built-in-filters
     document-signatures
     validating-document-signatures
     signing-configuration-documents

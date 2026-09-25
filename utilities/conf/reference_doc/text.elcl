@@ -109,3 +109,15 @@ Header Globs:
     * "text/html/*.hpp"
     * "text/json/*.hpp"
     * "text/render/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/named_keys.rst"
+Title       : "Named-Key Parsing"
+Header Globs:
+    * "text/named_key/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/placeholders.rst"
+Title       : "Text Placeholders"
+Header Globs:
+    * "text/placeholder/*.hpp"

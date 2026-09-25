@@ -6,6 +6,7 @@
 
 namespace demo {
 
+void builtInProviders();
 void builtInEnvironmentSource();
 void builtInVariableSource();
 void builtInFilterValidation();

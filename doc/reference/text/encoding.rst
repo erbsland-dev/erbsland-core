@@ -26,8 +26,8 @@ String Converter
 Introduction
 ------------
 
-``StringConverter`` is the explicit conversion entry point for Erbsland Core strings, editors, literals and the supported
-standard-library string types.
+``StringConverter`` is the explicit conversion entry point for Erbsland Core strings, editors, literals and the
+supported standard-library string types.
 It keeps conversion helpers out of the core string classes while still allowing concise call sites.
 
 .. code-block:: cpp
@@ -115,8 +115,7 @@ String Kind
 construction APIs.
 Use it when user code should decide whether a result is built as UTF-8, UTF-16, or UTF-32 text.
 
-Usage
-^^^^^
+Usage ^^^^^
 
 Pass :cpp:enum:`StringKind <erbsland::text::StringKind>` to
 :cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` when you need an empty builder for a specific output
@@ -254,7 +253,7 @@ An optional :cpp:class:`CharSet <erbsland::text::CharSet>` narrows the canonical
 IDNA2008 checks.
 Dots remain domain separators and are not tested by that filter.
 
-See :doc:`/topics/text/encoding_internationalized_names` for practical codec and domain examples.
+See :doc:`/topics/text_parsing_and_encoding/encoding_internationalized_names` for practical codec and domain examples.
 
 Interface
 =========

@@ -7,8 +7,8 @@
 #include "../assignment/AssignmentStream.hpp"
 #include "../decoder/TokenDecoder.hpp"
 #include "../lexer/Lexer.hpp"
-#include "../placeholder/PlaceholderResolver.hpp"
 
+#include "../../../text/placeholder/impl/Registry.hpp"
 #include "../../Source.hpp"
 
 #include <vector>
@@ -24,20 +24,20 @@ public:
     /// Construct a new parsing context.
     /// @param includeLevel The include level for this source.
     /// @param source Source from which tokens are read.
-    /// @param placeholderResolver The optional placeholder registry.
+    /// @param placeholderRegistry The optional placeholder registry.
     explicit ParserContext(
         std::size_t includeLevel,
         SourcePtr source,
-        placeholder::PlaceholderResolverPtr placeholderResolver,
+        text::placeholder::impl::RegistryPtr placeholderRegistry,
         PrivateTag /*pt*/) noexcept;
 
     /// Create a new context instance.
     /// @param includeLevel The include level for this source.
     /// @param source Source from which tokens are read.
-    /// @param placeholderResolver The optional placeholder registry.
+    /// @param placeholderRegistry The optional placeholder registry.
     /// @return Shared-pointer to the new context.
     [[nodiscard]] static auto create(
-        std::size_t includeLevel, SourcePtr source, placeholder::PlaceholderResolverPtr placeholderResolver = {})
+        std::size_t includeLevel, SourcePtr source, text::placeholder::impl::RegistryPtr placeholderRegistry = {})
         -> ParserContextPtr;
 
     // defaults

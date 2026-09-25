@@ -44,10 +44,12 @@ Copying a tree is inexpensive; the first mutation detaches the changed value.
 Parsing and Formatting
 ----------------------
 
-``fromStringOrThrow()`` strictly parses one complete RFC 8259 value and reports syntax, duplicate-key, encoding, and
-configured-limit failures as :cpp:class:`ParseError <erbsland::err::ParseError>`.
+``fromStringOrThrow()`` parses one complete RFC 8259 value and reports syntax, duplicate-key, and configured-limit
+failures as :cpp:class:`ParseError <erbsland::err::ParseError>`.
+Validate the input string before parsing if malformed UTF-8 must be rejected.
 ``fromString()`` provides the optional-returning form.
-Default limits accept 16 MiB documents, 64 container levels, one million values, and 8 MiB decoded strings.
+Default limits accept 16 MiB documents, 64 container levels, one million values, and eight million decoded string code
+points.
 
 ``toString()`` produces deterministic compact JSON with object keys in ``StringMap`` order.
 ``JsonFormatOptions`` can enable space-indented output and non-ASCII escaping.

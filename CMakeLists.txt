@@ -62,6 +62,7 @@ set(_erbsland_core_install_targets erbsland-core erbsland-core-resource-compiler
 
 include(cmake/application.cmake)
 include(cmake/resources.cmake)
+include(cmake/package.cmake)
 include(cmake/install.cmake)
 include(cmake/tests.cmake)
 

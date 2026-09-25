@@ -9,8 +9,8 @@
 namespace demo {
 
 inline auto signatureDemoKey() -> el::ByteBlock {
-    return el::text::base_n::BaseNDecoder{
-        "WZ3RWS6xYdPNi2s8md8Gf3zkI41qfsRfIcK1QwC3u4A="_el, el::text::base_n::BaseNFormat::base64()}
+    return el::base_n::BaseNDecoder{
+        "WZ3RWS6xYdPNi2s8md8Gf3zkI41qfsRfIcK1QwC3u4A="_el, el::base_n::BaseNFormat::base64()}
         .toDataOrThrow(el::ByteLength{32U});
 }
 

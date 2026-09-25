@@ -1,0 +1,7 @@
+[main]
+
+[platform.windows.signing]
+enabled: true
+tool_path: "${env:PACKAGE_SIGN_TOOL}"
+certificate_sha1: "0123456789ABCDEF0123456789ABCDEF01234567"
+timestamp_server: "https://timestamp.example.invalid"

@@ -454,7 +454,7 @@ public: // Convenience methods.
     /// @{
 
     /// @param namePath The name path, name or index to resolve, relative to this value.
-    /// @return The section map/list or nullptr.
+    /// @return The section map/list or nullptr. Implicit parent sections also count as sections with names.
     [[nodiscard]] auto getSectionWithNames(const NamePathLike &namePath) const noexcept -> ValuePtr;
     /// @param namePath The name path, name or index to resolve, relative to this value.
     /// @return The section map or section list.
@@ -500,8 +500,11 @@ public: // Convenience methods.
     [[nodiscard]] auto isDocument() const noexcept -> bool { return type() == ValueType::Document; }
     /// @copydoc isInteger() const
     [[nodiscard]] auto isRoot() const noexcept -> bool { return type() == ValueType::Document; }
-    /// @copydoc isInteger() const
-    [[nodiscard]] auto isSectionWithNames() const noexcept -> bool { return type() == ValueType::SectionWithNames; }
+    /// Check if this is an explicit or implicit section with names.
+    /// @return `true` for a named section, including an implicit parent section.
+    [[nodiscard]] auto isSectionWithNames() const noexcept -> bool {
+        return type() == ValueType::SectionWithNames || type() == ValueType::IntermediateSection;
+    }
     /// @copydoc isInteger() const
     [[nodiscard]] auto isSectionWithTexts() const noexcept -> bool { return type() == ValueType::SectionWithTexts; }
     /// @copydoc isInteger() const

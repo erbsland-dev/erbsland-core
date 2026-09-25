@@ -3,19 +3,20 @@
 
 #include "ParserTestHelper.hpp"
 
-#include <erbsland/conf/PlaceholderFilter.hpp>
-#include <erbsland/conf/PlaceholderSource.hpp>
 #include <erbsland/err/LogicError.hpp>
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/system/EnvironmentVariables.hpp>
+#include <erbsland/text/placeholder/Filter.hpp>
+#include <erbsland/text/placeholder/ReplacerError.hpp>
+#include <erbsland/text/placeholder/Source.hpp>
 #include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/StringMap.hpp>
 
 using namespace el::text::literals;
 
-TESTED_TARGETS(Parser PlaceholderSource PlaceholderFilter EnvironmentPlaceholderSource TextPlaceholderFilter)
+TESTED_TARGETS(Parser Source Filter EnvironmentSource TextFilter)
 class ParserPlaceholderTest final : public UNITTEST_SUBCLASS(ParserTestHelper) {
-    class EchoSource final : public PlaceholderSource {
+    class EchoSource final : public el::text::placeholder::Source {
     public:
         [[nodiscard]] auto sourceNames() const -> el::text::StringList override {
             return el::text::StringList{"echo"_el, "second source"_el};
@@ -29,7 +30,8 @@ class ParserPlaceholderTest final : public UNITTEST_SUBCLASS(ParserTestHelper) {
                 return "${echo:inner}"_el;
             }
             if (parameter == "fail"_el) {
-                throw ConfError{ConfErrorCategory::Access, "Injected source failure."_el};
+                throw el::text::placeholder::ReplacerError{
+                    el::text::placeholder::ReplacerErrorCategory::Access, "Injected source failure."_el};
             }
             return parameter;
         }
@@ -38,7 +40,7 @@ class ParserPlaceholderTest final : public UNITTEST_SUBCLASS(ParserTestHelper) {
         el::text::String lastParameter;
     };
 
-    class DecorateFilter final : public PlaceholderFilter {
+    class DecorateFilter final : public el::text::placeholder::Filter {
     public:
         [[nodiscard]] auto filterNames() const -> el::text::StringList override {
             return el::text::StringList{"decorate"_el};
@@ -56,7 +58,7 @@ class ParserPlaceholderTest final : public UNITTEST_SUBCLASS(ParserTestHelper) {
         el::text::String lastParameter;
     };
 
-    class EmptySource final : public PlaceholderSource {
+    class EmptySource final : public el::text::placeholder::Source {
     public:
         [[nodiscard]] auto sourceNames() const -> el::text::StringList override { return {}; }
         [[nodiscard]] auto resolve(const el::text::String &, const el::text::String &) -> el::text::String override {
@@ -64,7 +66,7 @@ class ParserPlaceholderTest final : public UNITTEST_SUBCLASS(ParserTestHelper) {
         }
     };
 
-    class CustomVariableSource final : public PlaceholderSource {
+    class CustomVariableSource final : public el::text::placeholder::Source {
     public:
         [[nodiscard]] auto sourceNames() const -> el::text::StringList override {
             return el::text::StringList{"var"_el};
@@ -174,7 +176,7 @@ public:
     void testBuiltInTextFilters() {
         auto parser = Parser{};
         parser.addPlaceholderSource(std::make_shared<EchoSource>());
-        parser.enableTextPlaceholderFilters();
+        parser.addPlaceholderTextFilters();
         REQUIRE_EQUAL(parseValue(parser, R"("${echo:  value  |trim}")"_el), "value"_el);
         REQUIRE_EQUAL(parseValue(parser, R"("${echo:abcdef|slice:start=1,length=3}")"_el), "bcd"_el);
         REQUIRE_EQUAL(parseValue(parser, R"("${echo:abcdef|slice:2}")"_el), "cdef"_el);
@@ -192,7 +194,7 @@ public:
     void testDefaultRequiredAndCaseFilters() {
         auto parser = Parser{};
         parser.addPlaceholderSource(std::make_shared<EchoSource>());
-        parser.enableTextPlaceholderFilters();
+        parser.addPlaceholderTextFilters();
         REQUIRE_EQUAL(parseValue(parser, R"("${echo:|default:fallback}")"_el), "fallback"_el);
         REQUIRE_EQUAL(parseValue(parser, R"("${echo:value|default:fallback}")"_el), "value"_el);
         REQUIRE_EQUAL(parseValue(parser, R"("${echo:|default:a,b}")"_el), "a,b"_el);
@@ -213,7 +215,7 @@ public:
         const auto previousValue = environment.get(variableName);
         REQUIRE(environment.set(variableName, "a\tb\nc\rd"_el));
         auto parser = Parser{};
-        parser.enableEnvironmentPlaceholderSource();
+        parser.addPlaceholderEnvironmentSource();
         REQUIRE_EQUAL(parseValue(parser, R"("${env:ERBSLAND_CORE_PLACEHOLDER_TEST}")"_el), "a\tb\ncd"_el);
         REQUIRE_EQUAL(parseValue(parser, R"("${env:ERBSLAND_CORE_PLACEHOLDER_TEST,unsafe_raw}")"_el), "a\tb\nc\rd"_el);
         REQUIRE_EQUAL(parseValue(parser, R"("${env:ERBSLAND_CORE_PLACEHOLDER_MISSING}")"_el), "undefined"_el);
@@ -221,6 +223,11 @@ public:
         REQUIRE_THROWS_AS(ConfError, parseValue(parser, R"("${env:ERBSLAND_CORE_PLACEHOLDER_TEST,unknown}")"_el));
         REQUIRE_THROWS_AS(ConfError, parseValue(parser, R"("${env:,required}")"_el));
         REQUIRE_THROWS_AS(ConfError, parseValue(parser, R"("${env:ERBSLAND_CORE_PLACEHOLDER_TEST,}")"_el));
+        auto namedParser = Parser{};
+        namedParser.addPlaceholderEnvironmentSource("process environment"_el);
+        REQUIRE_EQUAL(
+            parseValue(namedParser, R"("${PROCESS_ENVIRONMENT:ERBSLAND_CORE_PLACEHOLDER_TEST}")"_el), "a\tb\ncd"_el);
+        REQUIRE_THROWS_AS(el::err::LogicError, namedParser.addPlaceholderEnvironmentSource("Process_Environment"_el));
         if (previousValue.has_value()) {
             REQUIRE(environment.set(variableName, *previousValue));
         } else {
@@ -230,7 +237,7 @@ public:
 
     void testVariableSource() {
         auto parser = Parser{};
-        parser.setPlaceholderVariables(
+        parser.setPlaceholderVariableSource(
             el::text::StringMap<el::text::String>{{
                 {"Project Name"_el, "Erbsland Core"_el},
                 {"empty"_el, ""_el},
@@ -240,11 +247,11 @@ public:
         REQUIRE(parseValue(parser, R"("${var:empty}")"_el).isEmpty());
         REQUIRE_THROWS_AS(ConfError, parseValue(parser, R"("${var:missing}")"_el));
 
-        parser.setPlaceholderVariables(el::text::StringMap<el::text::String>{{{"project_name"_el, "Updated"_el}}});
+        parser.setPlaceholderVariableSource(el::text::StringMap<el::text::String>{{{"project_name"_el, "Updated"_el}}});
         REQUIRE_EQUAL(parseValue(parser, R"("${var:PROJECT NAME}")"_el), "Updated"_el);
         REQUIRE_THROWS_AS(
             ConfError,
-            parser.setPlaceholderVariables(
+            parser.setPlaceholderVariableSource(
                 el::text::StringMap<el::text::String>{{
                     {"duplicate name"_el, "first"_el},
                     {"Duplicate_Name"_el, "second"_el},
@@ -254,7 +261,19 @@ public:
         parserWithCustomVariableSource.addPlaceholderSource(std::make_shared<CustomVariableSource>());
         REQUIRE_THROWS_AS(
             el::err::LogicError,
-            parserWithCustomVariableSource.setPlaceholderVariables(
+            parserWithCustomVariableSource.setPlaceholderVariableSource(
                 el::text::StringMap<el::text::String>{{{"name"_el, "value"_el}}}));
+
+        auto namedParser = Parser{};
+        namedParser.setPlaceholderVariableSource(
+            el::text::StringMap<el::text::String>{{{"survey area"_el, "coast"_el}}}, "survey values"_el);
+        REQUIRE_EQUAL(parseValue(namedParser, R"("${SURVEY_VALUES:survey_area}")"_el), "coast"_el);
+        namedParser.setPlaceholderVariableSource(
+            el::text::StringMap<el::text::String>{{{"survey area"_el, "reef"_el}}}, "Survey_Values"_el);
+        REQUIRE_EQUAL(parseValue(namedParser, R"("${survey values:survey area}")"_el), "reef"_el);
+        REQUIRE_THROWS_AS(
+            ConfError,
+            namedParser.setPlaceholderVariableSource(
+                el::text::StringMap<el::text::String>{{{"area"_el, "reef"_el}}}, "invalid-name"_el));
     }
 };

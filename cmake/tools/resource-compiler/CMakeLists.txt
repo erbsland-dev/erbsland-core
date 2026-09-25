@@ -4,9 +4,9 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_executable(erbsland-core-resource-compiler EXCLUDE_FROM_ALL
-        ResourceCompiler.cpp
-        ResourceCompiler.hpp
-        main.cpp
+        src/ResourceCompiler.cpp
+        src/ResourceCompiler.hpp
+        src/main.cpp
 )
 add_executable(erbsland::core-resource-compiler ALIAS erbsland-core-resource-compiler)
 target_link_libraries(erbsland-core-resource-compiler PRIVATE erbsland-core)

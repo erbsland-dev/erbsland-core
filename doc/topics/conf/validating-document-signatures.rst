@@ -69,7 +69,7 @@ certificate, public-key, hardware-token, or signing-service policy.
 
 .. erbsland-demo::
     :source: conf/ConfigurationSignatures/HmacSignatureValidator.hpp
-    :source-sha256: 15c09bf77a38b331c7b0af4335628b4401e45e4f6273506622effb44b2903cc3
+    :source-sha256: 636c9b55807dc240e819461072ed1b3f46389d67d17310ba11edbf70186d5ecb
 
 .. code-block:: cpp
 
@@ -120,8 +120,7 @@ certificate, public-key, hardware-token, or signing-service policy.
             }
 
             const auto expected =
-                el::text::base_n::BaseNDecoder{authenticatorText, el::text::base_n::BaseNFormat::base64()}.toData(
-                    el::ByteLength{32U});
+                el::base_n::BaseNDecoder{authenticatorText, el::base_n::BaseNFormat::base64()}.toData(el::ByteLength{32U});
             if (!expected.has_value()) {
                 return Result::Reject;
             }

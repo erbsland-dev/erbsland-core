@@ -28,7 +28,7 @@ void managerByteCapacity() {
     log->warn("The journal destination is occupied."_el);
     writer->waitUntilWriting();
 
-    const auto largeReport = el::String::fromCharacter(el::text::Char{U'x'}, el::CpLength{250U * 1024U});
+    const auto largeReport = el::String::fromCharacter(el::Char{U'x'}, el::CpLength{250U * 1024U});
     for (auto index = 0U; index < 4U; ++index) {
         log->warn(largeReport);
     }

@@ -1,0 +1,9 @@
+[main]
+
+*[main.files]*
+path: "README.txt"
+target: "docs"
+
+*[main.files]*
+path: "README.txt"
+target: "docs"

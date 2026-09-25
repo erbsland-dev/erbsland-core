@@ -340,14 +340,14 @@ public: // transform
     /// @param form The explicit normalization form to apply.
     /// @return This editor for chaining.
     /// @usesunidb{Uses the generated Unicode normalization database.}
-    /// @seedoc{/topics/text/normalizing_strings}
+    /// @seedoc{/topics/text_strings/normalizing_strings}
     auto normalize(NormalizationForm form) -> U8StringEditor &;
     /// Return this string in the selected Unicode normalization form.
     /// Malformed UTF-8 is replaced with U+FFFD. Unchanged valid text retains its original storage.
     /// @param form The explicit normalization form to apply.
     /// @return The normalized string, sharing this storage if no change is required.
     /// @usesunidb{Uses the generated Unicode normalization database.}
-    /// @seedoc{/topics/text/normalizing_strings}
+    /// @seedoc{/topics/text_strings/normalizing_strings}
     [[nodiscard]] auto normalized(NormalizationForm form) const -> U8StringEditor;
     /// Return a string truncated to a maximum decoded code-point width.
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const

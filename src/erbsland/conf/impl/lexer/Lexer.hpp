@@ -7,10 +7,10 @@
 #include "TokenGenerator.hpp"
 
 #include "../decoder/TokenDecoder.hpp"
-#include "../placeholder/PlaceholderResolver_fwd.hpp"
 #include "../utilities/InternalView.hpp"
 
 #include "../../../cryptology/HashAlgorithm.hpp"
+#include "../../../text/placeholder/impl/Registry_fwd.hpp"
 
 namespace erbsland::conf::impl {
 
@@ -26,12 +26,12 @@ class Lexer final {
 public:
     /// Create a new lexer, using the given decoder.
     /// @param decoder The decoder to use.
-    /// @param placeholderResolver The optional placeholder registry.
+    /// @param placeholderRegistry The optional placeholder registry.
     /// @return An instance of the lexer.
     [[nodiscard]] static auto create(
-        CharStreamPtr decoder, placeholder::PlaceholderResolverPtr placeholderResolver = {}) noexcept -> LexerPtr {
+        CharStreamPtr decoder, text::placeholder::impl::RegistryPtr placeholderRegistry = {}) noexcept -> LexerPtr {
         return std::make_shared<Lexer>(
-            TokenDecoder::create(std::move(decoder), std::move(placeholderResolver)), PrivateTag{});
+            TokenDecoder::create(std::move(decoder), std::move(placeholderRegistry)), PrivateTag{});
     }
 
     /// Create a new lexer, using the given decoder.

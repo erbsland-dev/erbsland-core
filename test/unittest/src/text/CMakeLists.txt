@@ -29,6 +29,7 @@ target_sources(erbsland-core-unittest PRIVATE
         JsonValueTest.cpp
         NamedKeyParserTest.cpp
         PlatformStringAccessTest.cpp
+        ReplacerTest.cpp
         StdFormatForTextTest.cpp
         StringCharReaderTest.cpp
         StringConverterTest.cpp

@@ -14,12 +14,12 @@
 #include "../../text/base_n/BaseNEncoder.hpp"
 #include "../../text/base_n/BaseNFormat.hpp"
 #include "../../text/CharSet.hpp"
-#include "../../text/impl/NamedKeyEntry.hpp"
-#include "../../text/impl/NamedKeyFormat.hpp"
-#include "../../text/impl/NamedKeyParser.hpp"
 #include "../../text/impl/UnsafeU8StringAccess.hpp"
 #include "../../text/IntegerParseOptions.hpp"
 #include "../../text/Literals.hpp"
+#include "../../text/named_key/Entry.hpp"
+#include "../../text/named_key/Format.hpp"
+#include "../../text/named_key/Parser.hpp"
 #include "../../text/StringCharReader.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../util/List.hpp"
@@ -33,9 +33,9 @@ using namespace text;
 using namespace literals;
 using namespace mem;
 using namespace unit;
-using text::impl::NamedKeyEntry;
-using text::impl::NamedKeyFormat;
-using text::impl::NamedKeyParser;
+using text::named_key::Entry;
+using text::named_key::Format;
+using text::named_key::Parser;
 
 PasswordHashData::PasswordHashData(
     PasswordHashPolicy policy,
@@ -87,7 +87,7 @@ auto PasswordHashData::fromStringOrThrow(const String &text) -> PasswordHashData
     }
 
     auto parserReader = StringCharReader{text};
-    const auto fields = NamedKeyParser{parserReader, passwordHashFormat()}.readAllEntries();
+    const auto fields = Parser{parserReader, passwordHashFormat()}.readAllEntries();
     if (fields.count().toSizeT() < 9U || fieldValue(fields, ItemIndex{0U}, Field::Format) != "el-password-hash"_el ||
         fieldValue(fields, ItemIndex{1U}, Field::Version) != "1"_el) {
         throw err::ParseError{"Unsupported password hash format or version"};
@@ -221,8 +221,8 @@ auto PasswordHashData::storageBase64Format() -> base_n::BaseNFormat {
     return format;
 }
 
-auto PasswordHashData::passwordHashFormat() -> const NamedKeyFormat & {
-    static const auto keys = NamedKeyFormat::Keys{{
+auto PasswordHashData::passwordHashFormat() -> const Format & {
+    static const auto keys = Format::Keys{{
         {"f"_el, static_cast<int>(Field::Format)},
         {"v"_el, static_cast<int>(Field::Version)},
         {"a"_el, static_cast<int>(Field::Algorithm)},
@@ -238,8 +238,7 @@ auto PasswordHashData::passwordHashFormat() -> const NamedKeyFormat & {
         {"d"_el, static_cast<int>(Field::Data)},
     }};
     static const auto format =
-        NamedKeyFormat{}.setKeys(keys).setValueSeparator(U':').setKeysWithoutValuesAllowed(false).setValueListAllowed(
-            false);
+        Format{}.setKeys(keys).setValueSeparator(U':').setKeysWithoutValuesAllowed(false).setValueListAllowed(false);
     return format;
 }
 

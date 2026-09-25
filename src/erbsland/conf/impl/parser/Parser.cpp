@@ -17,7 +17,7 @@ using namespace text::literals;
 Parser::Parser(SourcePtr documentSource, const ParserSettings &settings) : _settings{settings} {
     // Prepare the stack with the root context.
     _contextStack.reserve(limits::maxDocumentNesting + 1);
-    _contextStack.emplace_back(ParserContext::create(0, std::move(documentSource), _settings.placeholderResolver));
+    _contextStack.emplace_back(ParserContext::create(0, std::move(documentSource), _settings.placeholderRegistry));
 }
 
 auto Parser::parse() -> DocumentPtr {
@@ -181,7 +181,7 @@ void Parser::addSourceContext(
                 location};
         }
     }
-    auto newContext = ParserContext::create(includeLevel, source, _settings.placeholderResolver);
+    auto newContext = ParserContext::create(includeLevel, source, _settings.placeholderRegistry);
     newContext->setIncludeLocation(location);
     newContext->setParentSourceIdentifier(parentSourceIdentifier);
     _contextStack.emplace_back(std::move(newContext));

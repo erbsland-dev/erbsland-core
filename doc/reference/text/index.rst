@@ -10,4 +10,6 @@ Text Processing
     encoding
     formatting_and_parsing
     matching_and_splitting
+    named_keys
+    placeholders
     strings

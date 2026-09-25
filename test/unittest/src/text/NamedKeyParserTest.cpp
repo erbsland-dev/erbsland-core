@@ -3,10 +3,10 @@
 
 #include <erbsland/err/LogicError.hpp>
 #include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/impl/NamedKeyEntry.hpp>
-#include <erbsland/text/impl/NamedKeyFormat.hpp>
-#include <erbsland/text/impl/NamedKeyParser.hpp>
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/named_key/Entry.hpp>
+#include <erbsland/text/named_key/Format.hpp>
+#include <erbsland/text/named_key/Parser.hpp>
 #include <erbsland/text/StringCharReader.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u32/U32String.hpp>
@@ -19,12 +19,12 @@
 using namespace el::text;
 using namespace el::text::literals;
 
-TESTED_TARGETS(NamedKeyEntryKind NamedKeyEntry NamedKeyFormat NamedKeyParser)
+TESTED_TARGETS(EntryKind Entry Format Parser)
 class NamedKeyParserTest final : public el::UnitTest {
-    using NamedKeyEntry = el::text::impl::NamedKeyEntry;
-    using NamedKeyEntryKind = el::text::impl::NamedKeyEntryKind;
-    using NamedKeyFormat = el::text::impl::NamedKeyFormat;
-    using NamedKeyParser = el::text::impl::NamedKeyParser;
+    using Entry = el::text::named_key::Entry;
+    using EntryKind = el::text::named_key::EntryKind;
+    using Format = el::text::named_key::Format;
+    using Parser = el::text::named_key::Parser;
 
 private:
     enum Key : int {
@@ -34,8 +34,8 @@ private:
     };
 
 private:
-    [[nodiscard]] static auto standardFormat() -> NamedKeyFormat {
-        return NamedKeyFormat{}
+    [[nodiscard]] static auto standardFormat() -> named_key::Format {
+        return named_key::Format{}
             .setKeys({
                 {"alpha"_el, Alpha},
                 {"a"_el, Alpha},
@@ -60,28 +60,30 @@ private:
 
 public:
     void testKeyTableNormalizationAndCanonicalName() {
-        const auto keys = NamedKeyFormat::Keys{{
+        const auto keys = named_key::Format::Keys{{
             {"alpha_key"_el, Alpha},
             {"alias"_el, Alpha},
         }};
-        auto format = NamedKeyFormat{}.setKeys(keys);
+        auto format = named_key::Format{}.setKeys(keys);
 
         REQUIRE_EQUAL(format.keyIndex("ALPHA_KEY"_el).value(), Alpha);
         REQUIRE_EQUAL(format.keyIndex("alpha key"_el).value(), Alpha);
         REQUIRE_FALSE(format.keyIndex("unknown"_el).has_value());
         REQUIRE_EQUAL(format.keyName(Alpha), "alpha_key"_el);
         REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(format.keyName(Beta)));
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(NamedKeyFormat{}.setKeys({{"Alpha Key"_el, Alpha}})));
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(NamedKeyFormat{}.addKey("ALPHA"_el, Alpha)));
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(NamedKeyFormat{}.addKey("alpha"_el, -1)));
         REQUIRE_THROWS_AS(
-            el::err::LogicError, static_cast<void>(NamedKeyFormat{}.setKeys({{"same"_el, Alpha}, {"same"_el, Beta}})));
+            el::err::LogicError, static_cast<void>(named_key::Format{}.setKeys({{"Alpha Key"_el, Alpha}})));
+        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(named_key::Format{}.addKey("ALPHA"_el, Alpha)));
+        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(named_key::Format{}.addKey("alpha"_el, -1)));
+        REQUIRE_THROWS_AS(
+            el::err::LogicError,
+            static_cast<void>(named_key::Format{}.setKeys({{"same"_el, Alpha}, {"same"_el, Beta}})));
 
         REQUIRE_THROWS_AS(
             el::err::LogicError, static_cast<void>(format.setKeys({{"duplicate"_el, Alpha}, {"duplicate"_el, Beta}})));
         REQUIRE_EQUAL(format.keyName(Alpha), "alpha_key"_el);
 
-        auto incremental = NamedKeyFormat{};
+        auto incremental = named_key::Format{};
         incremental.addKey("alpha"_el, Alpha);
         REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(incremental.addKey("alpha"_el, Beta)));
     }
@@ -89,7 +91,7 @@ public:
     void testKeyFormsPrefixesAndRepeatedEnd() {
         auto format = standardFormat().setStopCharacter(U';');
         auto reader = StringCharReader{String{"+ALPHA,beta=value,w32;tail"_el}};
-        auto parser = NamedKeyParser{reader, format};
+        auto parser = named_key::Parser{reader, format};
 
         const auto alpha = parser.readEntry();
         REQUIRE(alpha.isKey());
@@ -118,17 +120,17 @@ public:
         auto format = standardFormat();
 
         auto reader8 = StringCharReader{String{"alpha,beta=é,w12"_el}};
-        const auto entries8 = NamedKeyParser{reader8, format}.readAllEntries();
+        const auto entries8 = named_key::Parser{reader8, format}.readAllEntries();
         REQUIRE_EQUAL(entries8.count(), el::unit::ItemCount{3U});
         REQUIRE_EQUAL(entries8.get(el::unit::ItemIndex{1U}).value(), "é"_el);
 
         auto reader16 = StringCharReader{U16String{u"alpha,beta=é,w12"_el}};
-        const auto entries16 = NamedKeyParser{reader16, format}.readAllEntries();
+        const auto entries16 = named_key::Parser{reader16, format}.readAllEntries();
         REQUIRE_EQUAL(entries16.count(), el::unit::ItemCount{3U});
         REQUIRE_EQUAL(entries16.get(el::unit::ItemIndex{1U}).value(), "é"_el);
 
         auto reader32 = StringCharReader{U32String{U"alpha,beta=é,w12"_el}};
-        const auto entries32 = NamedKeyParser{reader32, format}.readAllEntries();
+        const auto entries32 = named_key::Parser{reader32, format}.readAllEntries();
         REQUIRE_EQUAL(entries32.count(), el::unit::ItemCount{3U});
         REQUIRE_EQUAL(entries32.get(el::unit::ItemIndex{1U}).value(), "é"_el);
     }
@@ -136,34 +138,34 @@ public:
     void testAllowedKeysAndDuplicateAliases() {
         auto format = standardFormat();
         auto allowedReader = StringCharReader{String{"alpha,w3"_el}};
-        auto allowedParser = NamedKeyParser{allowedReader, format};
+        auto allowedParser = named_key::Parser{allowedReader, format};
         allowedParser.setAllowedKeys(el::util::Set<int>{Alpha, Width});
         REQUIRE_EQUAL(allowedParser.readAllEntries().count(), el::unit::ItemCount{2U});
 
         auto disallowedReader = StringCharReader{String{"beta=value"_el}};
-        auto disallowedParser = NamedKeyParser{disallowedReader, format};
+        auto disallowedParser = named_key::Parser{disallowedReader, format};
         disallowedParser.setAllowedKeys(el::util::Set<int>{Alpha});
         REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(disallowedParser.readEntry()));
 
         auto noneReader = StringCharReader{String{"alpha"_el}};
-        auto noneParser = NamedKeyParser{noneReader, format};
+        auto noneParser = named_key::Parser{noneReader, format};
         noneParser.setAllowedKeys(el::util::Set<int>{});
         REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(noneParser.readEntry()));
 
         auto duplicateReader = StringCharReader{String{"alpha,-a"_el}};
         REQUIRE_THROWS_AS(
-            el::err::ParseError, static_cast<void>(NamedKeyParser{duplicateReader, format}.readAllEntries()));
+            el::err::ParseError, static_cast<void>(named_key::Parser{duplicateReader, format}.readAllEntries()));
 
         format.setUniqueKeysRequired(false);
         auto repeatedReader = StringCharReader{String{"alpha,-a"_el}};
-        auto repeatedParser = NamedKeyParser{repeatedReader, format};
+        auto repeatedParser = named_key::Parser{repeatedReader, format};
         REQUIRE_EQUAL(repeatedParser.readAllEntries().count(), el::unit::ItemCount{2U});
     }
 
     void testPositionalValueModeLocking() {
         auto format = standardFormat();
         auto reader = StringCharReader{String{"first,alpha,beta=value"_el}};
-        const auto entries = NamedKeyParser{reader, format}.readAllEntries();
+        const auto entries = named_key::Parser{reader, format}.readAllEntries();
 
         REQUIRE_EQUAL(entries.count(), el::unit::ItemCount{3U});
         REQUIRE(entries.get(el::unit::ItemIndex{0U}).isValue());
@@ -171,31 +173,33 @@ public:
         REQUIRE_EQUAL(entries.get(el::unit::ItemIndex{2U}).value(), "beta=value"_el);
 
         auto mixedReader = StringCharReader{String{"alpha,unknown"_el}};
-        REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{mixedReader, format}.readAllEntries()));
+        REQUIRE_THROWS_AS(
+            el::err::ParseError, static_cast<void>(named_key::Parser{mixedReader, format}.readAllEntries()));
 
         auto explicitUnknownReader = StringCharReader{String{"unknown=value"_el}};
         REQUIRE_THROWS_AS(
-            el::err::ParseError, static_cast<void>(NamedKeyParser{explicitUnknownReader, format}.readEntry()));
+            el::err::ParseError, static_cast<void>(named_key::Parser{explicitUnknownReader, format}.readEntry()));
     }
 
     void testIndependentEntryFormPolicies() {
         auto noValues = standardFormat().setValuesAllowed(false).setValueListAllowed(true);
         auto keyValueReader = StringCharReader{String{"alpha=value"_el}};
-        REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{keyValueReader, noValues}.readEntry()));
+        REQUIRE_THROWS_AS(
+            el::err::ParseError, static_cast<void>(named_key::Parser{keyValueReader, noValues}.readEntry()));
         auto positionalReader = StringCharReader{String{"free"_el}};
-        REQUIRE(NamedKeyParser{positionalReader, noValues}.readEntry().isValue());
+        REQUIRE(named_key::Parser{positionalReader, noValues}.readEntry().isValue());
 
         auto valuesRequired = standardFormat().setKeysWithoutValuesAllowed(false);
         auto bareReader = StringCharReader{String{"alpha"_el}};
         REQUIRE_THROWS_AS(
-            el::err::ParseError, static_cast<void>(NamedKeyParser{bareReader, valuesRequired}.readEntry()));
+            el::err::ParseError, static_cast<void>(named_key::Parser{bareReader, valuesRequired}.readEntry()));
         auto valuedReader = StringCharReader{String{"alpha=value"_el}};
-        REQUIRE(NamedKeyParser{valuedReader, valuesRequired}.readEntry().isKeyWithValue());
+        REQUIRE(named_key::Parser{valuedReader, valuesRequired}.readEntry().isKeyWithValue());
 
         auto noValueList = standardFormat().setValueListAllowed(false);
         auto unknownReader = StringCharReader{String{"free"_el}};
         REQUIRE_THROWS_AS(
-            el::err::ParseError, static_cast<void>(NamedKeyParser{unknownReader, noValueList}.readEntry()));
+            el::err::ParseError, static_cast<void>(named_key::Parser{unknownReader, noValueList}.readEntry()));
     }
 
     void testValueLimitsAndAllowedCharacters() {
@@ -204,17 +208,19 @@ public:
                           .setMaximumValueLength(el::unit::CpLength{3U})
                           .setAllowedValueChars(CharSet::fromPattern("a-z0-9="_el));
         auto validReader = StringCharReader{String{"foo,bar"_el}};
-        auto validParser = NamedKeyParser{validReader, format};
+        auto validParser = named_key::Parser{validReader, format};
         REQUIRE_EQUAL(validParser.readAllEntries().count(), el::unit::ItemCount{2U});
 
         auto countReader = StringCharReader{String{"a,b,c"_el}};
-        REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{countReader, format}.readAllEntries()));
+        REQUIRE_THROWS_AS(
+            el::err::ParseError, static_cast<void>(named_key::Parser{countReader, format}.readAllEntries()));
 
         auto lengthReader = StringCharReader{String{"abcd"_el}};
-        REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{lengthReader, format}.readEntry()));
+        REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(named_key::Parser{lengthReader, format}.readEntry()));
 
         auto characterReader = StringCharReader{String{"a!"_el}};
-        REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{characterReader, format}.readEntry()));
+        REQUIRE_THROWS_AS(
+            el::err::ParseError, static_cast<void>(named_key::Parser{characterReader, format}.readEntry()));
     }
 
     void testSeparatorsStopsAndPositionedErrors() {
@@ -222,31 +228,31 @@ public:
 
         auto emptyReader = StringCharReader{String{",alpha]"_el}};
         WITH_CONTEXT(requirePositionedParseError(
-            [&]() { static_cast<void>(NamedKeyParser{emptyReader, format}.readEntry()); }, el::unit::CpIndex{0U}));
+            [&]() { static_cast<void>(named_key::Parser{emptyReader, format}.readEntry()); }, el::unit::CpIndex{0U}));
 
         auto trailingReader = StringCharReader{String{"alpha,]"_el}};
         REQUIRE_THROWS_AS(
-            el::err::ParseError, static_cast<void>(NamedKeyParser{trailingReader, format}.readAllEntries()));
+            el::err::ParseError, static_cast<void>(named_key::Parser{trailingReader, format}.readAllEntries()));
 
         auto missingStopReader = StringCharReader{String{"alpha"_el}};
         REQUIRE_THROWS_AS(
-            el::err::ParseError, static_cast<void>(NamedKeyParser{missingStopReader, format}.readAllEntries()));
+            el::err::ParseError, static_cast<void>(named_key::Parser{missingStopReader, format}.readAllEntries()));
 
         auto missingValueReader = StringCharReader{String{"alpha=]"_el}};
         WITH_CONTEXT(requirePositionedParseError(
-            [&]() { static_cast<void>(NamedKeyParser{missingValueReader, format}.readEntry()); },
+            [&]() { static_cast<void>(named_key::Parser{missingValueReader, format}.readEntry()); },
             el::unit::CpIndex{0U}));
 
         auto unsafeReader = StringCharReader{String{"alpha=\n]"_el}};
-        REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{unsafeReader, format}.readEntry()));
+        REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(named_key::Parser{unsafeReader, format}.readEntry()));
     }
 
     void testInvalidFormatConfiguration() {
         auto sameSeparators = standardFormat().setValueSeparator(U',');
         auto reader = StringCharReader{String{"alpha"_el}};
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(NamedKeyParser{reader, sameSeparators}));
+        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(named_key::Parser{reader, sameSeparators}));
 
         auto conflictingCompact = standardFormat().setValueWithoutKeySeparatorChars(CharSet{U'a'});
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(NamedKeyParser{reader, conflictingCompact}));
+        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(named_key::Parser{reader, conflictingCompact}));
     }
 };

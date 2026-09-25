@@ -30,8 +30,6 @@ private:
     [[nodiscard]] auto parsePart() -> Part;
     /// Parse content up to a literal separator or closing brace.
     [[nodiscard]] auto parseContent(bool isName) -> text::String;
-    /// Normalize and validate a placeholder name.
-    [[nodiscard]] static auto normalizeName(const text::String &name) -> text::String;
 
 private:
     TokenDecoder &_decoder;

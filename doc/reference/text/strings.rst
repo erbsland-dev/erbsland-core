@@ -35,8 +35,8 @@ Use :cpp:type:`StringEditor <erbsland::text::StringEditor>` as a local mutable w
 editing or small construction tasks.
 For parameters, read-only storage, and ordinary transformations, prefer ``String`` and its copy-returning operations.
 
-The practical workflow and allocation trade-offs are described in :doc:`/topics/text/overview`,
-:doc:`/topics/text/transforming_strings`, and :doc:`/topics/text/editing_strings_in_place`.
+The practical workflow and allocation trade-offs are described in :doc:`/topics/text_strings/overview`,
+:doc:`/topics/text_strings/transforming_strings`, and :doc:`/topics/text_strings/editing_strings_in_place`.
 
 For a full description of the underlying type, see the string-width variants below.
 
@@ -119,8 +119,8 @@ Unicode Normalization
 
 The read-only and editor types for all three widths support NFC, NFD, NFKC, and NFKD normalization through an explicit
 :cpp:enum:`NormalizationForm <erbsland::text::NormalizationForm>` argument.
-Read :doc:`/topics/text/normalizing_strings` for guidance about choosing a form, compatibility-changing behavior,
-malformed input, storage reuse, and concatenation.
+Read :doc:`/topics/text_strings/normalizing_strings` for guidance about choosing a form, compatibility-changing
+behavior, malformed input, storage reuse, and concatenation.
 
 ``normalized(form)`` returns a read-only value of the same width and is the preferred operation in application code.
 Editors also expose ``normalize(form)`` for an explicit in-place editing workflow.

@@ -3,21 +3,21 @@
 #include "TokenDecoder.hpp"
 
 #include "../char/NamedChars.hpp"
-#include "../placeholder/PlaceholderResolver.hpp"
 
 #include "../../../text/Literals.hpp"
+#include "../../../text/placeholder/impl/Registry.hpp"
 
 namespace erbsland::conf::impl {
 
 using namespace text::literals;
 
-auto TokenDecoder::create(CharStreamPtr decoder, placeholder::PlaceholderResolverPtr placeholderResolver) noexcept
+auto TokenDecoder::create(CharStreamPtr decoder, text::placeholder::impl::RegistryPtr placeholderRegistry) noexcept
     -> TokenDecoderPtr {
-    return std::make_shared<TokenDecoder>(std::move(decoder), std::move(placeholderResolver));
+    return std::make_shared<TokenDecoder>(std::move(decoder), std::move(placeholderRegistry));
 }
 
-TokenDecoder::TokenDecoder(CharStreamPtr decoder, placeholder::PlaceholderResolverPtr placeholderResolver) noexcept :
-    _decoder{std::move(decoder)}, _placeholderResolver{std::move(placeholderResolver)} {
+TokenDecoder::TokenDecoder(CharStreamPtr decoder, text::placeholder::impl::RegistryPtr placeholderRegistry) noexcept :
+    _decoder{std::move(decoder)}, _placeholderRegistry{std::move(placeholderRegistry)} {
     assert(_decoder != nullptr);
 }
 
@@ -48,18 +48,18 @@ auto TokenDecoder::tokenSize() const noexcept -> int {
 }
 
 auto TokenDecoder::hasPlaceholders() const noexcept -> bool {
-    return _placeholderResolver != nullptr && _placeholderResolver->hasSources();
+    return _placeholderRegistry != nullptr && _placeholderRegistry->hasSources();
 }
 
 auto TokenDecoder::resolvePlaceholder(const text::String &name, const text::String &parameter) const -> text::String {
-    assert(_placeholderResolver != nullptr);
-    return _placeholderResolver->resolve(name, parameter);
+    assert(_placeholderRegistry != nullptr);
+    return _placeholderRegistry->resolve(name, parameter);
 }
 
 auto TokenDecoder::applyPlaceholderFilter(
     const text::String &name, const text::String &parameter, const text::String &value) const -> text::String {
-    assert(_placeholderResolver != nullptr);
-    return _placeholderResolver->apply(name, parameter, value);
+    assert(_placeholderRegistry != nullptr);
+    return _placeholderRegistry->apply(name, parameter, value);
 }
 
 void TokenDecoder::expectMoreInLine(text::String message) const {

@@ -3,9 +3,9 @@
 #include "BlockAttributes.hpp"
 
 #include "../err/ParseError.hpp"
-#include "../text/impl/NamedKeyFormat.hpp"
-#include "../text/impl/NamedKeyParser.hpp"
 #include "../text/Literals.hpp"
+#include "../text/named_key/Format.hpp"
+#include "../text/named_key/Parser.hpp"
 #include "../text/StringCharReader.hpp"
 #include "../text/StringEditor.hpp"
 
@@ -29,8 +29,8 @@ auto BlockAttributes::attributeFlags() noexcept -> const std::array<Flag, 8> & {
     return flags;
 }
 
-auto BlockAttributes::attributeFormat() -> const text::impl::NamedKeyFormat & {
-    static const auto keys = text::impl::NamedKeyFormat::Keys{{
+auto BlockAttributes::attributeFormat() -> const text::named_key::Format & {
+    static const auto keys = text::named_key::Format::Keys{{
         {"inherited"_el, cInheritedKey},
         {"bold"_el, BlockAttributes::Bold.value},
         {"dim"_el, BlockAttributes::Dim.value},
@@ -41,7 +41,7 @@ auto BlockAttributes::attributeFormat() -> const text::impl::NamedKeyFormat & {
         {"hidden"_el, BlockAttributes::Hidden.value},
         {"strikethrough"_el, BlockAttributes::Strikethrough.value},
     }};
-    static const auto format = text::impl::NamedKeyFormat{}
+    static const auto format = text::named_key::Format{}
                                    .setKeys(keys)
                                    .setAllowedKeyPrefixes(text::CharSet{U'+', U'-'})
                                    .setValuesAllowed(false)
@@ -83,7 +83,7 @@ auto BlockAttributes::fromStringOrThrow(const text::String &str) -> BlockAttribu
     }
 
     auto reader = text::StringCharReader{str};
-    const auto entries = text::impl::NamedKeyParser{reader, attributeFormat()}.readAllEntries();
+    const auto entries = text::named_key::Parser{reader, attributeFormat()}.readAllEntries();
     if (entries.isEmpty()) {
         throw err::ParseError{"A block attribute list must not be empty."_el};
     }

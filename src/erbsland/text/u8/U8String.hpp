@@ -412,7 +412,7 @@ public: // transform and copy-modify
     /// @param form The explicit normalization form to apply.
     /// @return The normalized string, sharing this storage if no change is required.
     /// @usesunidb{Uses the generated Unicode normalization database.}
-    /// @seedoc{/topics/text/normalizing_strings}
+    /// @seedoc{/topics/text_strings/normalizing_strings}
     [[nodiscard]] auto normalized(NormalizationForm form) const -> U8String;
     /// Return a string truncated to a maximum decoded code-point width.
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const -> U8String;

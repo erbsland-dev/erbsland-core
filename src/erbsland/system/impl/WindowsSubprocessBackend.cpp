@@ -88,8 +88,12 @@ WindowsSubprocessBackend::WindowsSubprocessBackend(
         : options.standardErrorMode() == SubprocessOutputMode::Discard ? nullHandle
                                                                        : GetStdHandle(STD_ERROR_HANDLE);
 
-    const auto executablePath = executable.toStdPath().wstring();
-    auto commandLine = quoteArgument(executablePath);
+    const auto nativeExecutablePath =
+        text::StringConverter{executable.toWindows(path::PathWindowsFormat::Native)}.toStdWString();
+    // Some programs locate configuration beside their executable and cannot interpret the extended path prefix.
+    const auto executablePath =
+        nativeExecutablePath.size() < MAX_PATH ? nativeExecutablePath : executable.toStdPath().wstring();
+    auto commandLine = quoteArgument(nativeExecutablePath);
     for (const auto &argument : arguments) {
         commandLine.push_back(L' ');
         commandLine.append(quoteArgument(text::StringConverter{argument}.toStdWString()));

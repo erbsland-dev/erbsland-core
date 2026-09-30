@@ -1,0 +1,4 @@
+[main]
+version_source: "file"
+version_file: "VERSION.txt"
+version_pattern: `v([0-9]+[.][0-9]+[.][0-9]+)`

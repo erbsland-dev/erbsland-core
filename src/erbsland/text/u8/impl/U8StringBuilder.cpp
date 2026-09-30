@@ -18,8 +18,11 @@
 
 namespace erbsland::text::impl {
 
-U8StringBuilder::U8StringBuilder(const unit::ByteLength capacity) {
-    _text.reserve(capacity);
+U8StringBuilder::U8StringBuilder(const unit::ByteLength capacity, const bool sensitive) : _sensitive{sensitive} {
+    _text.reserve(sensitive && capacity.isZero() ? unit::ByteLength{1U} : capacity);
+    if (sensitive) {
+        _text.markAsSensitive();
+    }
 }
 
 auto U8StringBuilder::clone() const -> U8StringBuilder * {
@@ -101,8 +104,7 @@ auto U8StringBuilder::toU32StringEditor() const -> U32StringEditor {
 
 auto U8StringBuilder::takeU8StringEditor() -> U8StringEditor {
     auto result = std::move(_text);
-    _text = U8StringEditor{};
-    _length = unit::CpLength::zero();
+    resetAfterTake();
     return result;
 }
 
@@ -124,8 +126,17 @@ auto U8StringBuilder::toAnyStringEditor() const -> AnyStringEditor {
 
 auto U8StringBuilder::takeAnyStringEditor() -> AnyStringEditor {
     auto result = AnyStringEditor{std::move(_text)};
-    clear();
+    resetAfterTake();
     return result;
+}
+
+void U8StringBuilder::resetAfterTake() {
+    _text = U8StringEditor{};
+    if (_sensitive) {
+        _text.reserve(unit::ByteLength{1U});
+        _text.markAsSensitive();
+    }
+    _length = unit::CpLength::zero();
 }
 
 }

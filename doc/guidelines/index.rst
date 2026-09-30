@@ -64,6 +64,7 @@ project.
     api/stream
     api/system
     api/text
+    api/data
     api/time
     api/unit
     api/util

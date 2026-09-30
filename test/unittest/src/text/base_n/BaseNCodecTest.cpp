@@ -103,6 +103,17 @@ public:
             });
     }
 
+    void testSensitiveUtf8Encoding() {
+        auto bytes = el::mem::ByteBlock::fromVector(std::vector<uint8_t>{0xfbU, 0xffU});
+        bytes.markAsSensitive();
+        const auto encoded = BaseNEncoder{bytes, BaseNFormat::base64Url()}.toString();
+        REQUIRE_EQUAL(encoded, "-_8="_el);
+        REQUIRE(encoded.isSensitive());
+        const auto decoded = BaseNDecoder{encoded, BaseNFormat::base64Url()}.toDataOrThrow();
+        REQUIRE(decoded.isSensitive());
+        REQUIRE_EQUAL(decoded, bytes);
+    }
+
     void testEveryByteRoundTrips() {
         auto values = std::vector<uint8_t>{};
         for (unsigned int i = 0; i <= 0xffU; ++i) {

@@ -11,8 +11,8 @@
 #include "../http/HttpResponseHead.hpp"
 #include "../source/NetworkErrorContext_fwd.hpp"
 
+#include "../../data/json/JsonValue_fwd.hpp"
 #include "../../mem/ByteBlock.hpp"
-#include "../../text/json/JsonValue_fwd.hpp"
 #include "../../text/String.hpp"
 
 #include <functional>
@@ -28,7 +28,7 @@ using HttpClientTextResponseFn = std::function<void(HttpClientRequestPtr, HttpCl
 /// A completed bounded JSON response handler.
 /// @tested{HttpClientTest}
 using HttpClientJsonResponseFn =
-    std::function<void(HttpClientRequestPtr, HttpClientResponsePtr, text::json::JsonValue)>;
+    std::function<void(HttpClientRequestPtr, HttpClientResponsePtr, data::json::JsonValue)>;
 /// A low-level final-response-head handler.
 /// @tested{HttpClientTest}
 using HttpClientResponseHeadFn = std::function<void(HttpClientRequestPtr, HttpClientResponsePtr)>;

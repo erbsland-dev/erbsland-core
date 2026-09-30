@@ -65,7 +65,9 @@ auto BaseNEncoder::build(const StringKind kind) const -> AnyString {
         }
         outputCharacterCount += lineBreakCount * separatorLength;
     }
-    auto builder = AnyStringBuilder::withCapacity(kind, unit::CpLength::fromSizeTOrThrow(outputCharacterCount));
+    auto builder = kind == StringKind::U8
+        ? AnyStringBuilder::u8(unit::ByteLength::fromSizeTOrThrow(outputCharacterCount), _data.isSensitive())
+        : AnyStringBuilder::withCapacity(kind, unit::CpLength::fromSizeTOrThrow(outputCharacterCount));
     auto linePosition = std::size_t{0};
     const auto appendCharacter = [&](const Char character) -> void {
         if (_format.hasFlag(BaseNFormatFlag::WrapLines) && linePosition == _format.lineLength().toSizeTOrThrow()) {

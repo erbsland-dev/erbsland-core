@@ -84,9 +84,6 @@ Document Types
     PlainTextRenderer // semantic document to plain-text renderer
     CodeSnippet, CodeSnippetMarker // indexed source excerpt and annotation
     html::HtmlParser // tolerant HTML-to-document parser
-    json::JsonValue, json::JsonType // copy-on-write JSON value tree and semantic type
-    json::JsonArray, json::JsonObject // ordered JSON containers
-    json::JsonParseOptions, json::JsonFormatOptions // JSON limits and output controls
 
 Layout Renderer Types
 =====================
@@ -231,7 +228,6 @@ JSON Value Patterns
     T() // create JSON null
     T(primitive-or-array-or-object) // create a JSON value
     o.type()/is(type)/isPrimitive() -> T // inspect the semantic type
-    o.get(index-or-key)/getOrThrow(index-or-key) -> JsonValue // access a child value
     o.get<U>([fallback])/getOrThrow<U>() -> U // access a checked native representation
     o.set(index-or-key, value)/append(value) -> T& // detach and mutate an array or object
     o.toString([options]) -> String // serialize deterministic JSON

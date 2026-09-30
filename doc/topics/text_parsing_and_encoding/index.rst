@@ -22,7 +22,6 @@ Start with :doc:`overview` to find the relevant format or boundary.
     base_n_encoding
     base_n_decoding
     parsing_html_fragments
-    parsing_and_rendering_json
     parsing_named_key_parameters
     configuring_named_key_parameters
     customizing_named_key_syntax

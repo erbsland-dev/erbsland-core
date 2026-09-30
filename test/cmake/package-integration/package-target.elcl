@@ -1,5 +1,5 @@
 [main]
 filename_format: "base-%{version}"
 
-[target."package-server"]
+[target.package_server]
 filename_format: "target-%{target:name}-%{version}"

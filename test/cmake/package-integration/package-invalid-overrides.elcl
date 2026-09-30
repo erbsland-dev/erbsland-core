@@ -1,0 +1,4 @@
+[main]
+
+[package.unused_name.platform.windows.arm64]
+app: "false"

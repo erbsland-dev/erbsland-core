@@ -18,6 +18,8 @@ cryptographic guidance changes.
     overview
     configuring_tls
     creating_tls_certificates
+    authenticating_with_tokens
+    signing_and_verifying_byte_blocks
     storing_and_verifying_passwords
     supported_password_hashing_algorithms
     using_hash_algorithms

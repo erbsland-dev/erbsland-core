@@ -19,7 +19,7 @@ public: // implement network::HttpClientResponseEventEditor
     auto onBodyData(NetworkDataFn callback) -> HttpClientResponseEventEditor & override;
     auto onBody(NetworkDataFn callback) -> HttpClientResponseEventEditor & override;
     auto onText(std::function<void(text::String)> callback) -> HttpClientResponseEventEditor & override;
-    auto onJson(std::function<void(text::json::JsonValue)> callback) -> HttpClientResponseEventEditor & override;
+    auto onJson(std::function<void(data::json::JsonValue)> callback) -> HttpClientResponseEventEditor & override;
     auto onTrailers(std::function<void(const HttpHeaders &)> callback) -> HttpClientResponseEventEditor & override;
     auto onBodyProgress(HttpClientBodyProgressFn callback) -> HttpClientResponseEventEditor & override;
     auto onBodyCompleted(NetworkEventFn callback) -> HttpClientResponseEventEditor & override;

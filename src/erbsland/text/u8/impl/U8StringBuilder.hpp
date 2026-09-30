@@ -14,8 +14,8 @@ namespace erbsland::text::impl {
 /// @tested{AnyStringBuilderTest}
 class U8StringBuilder final : public AnyStringBuilderBase {
 public:
-    /// Create a builder with initial `capacity`.
-    explicit U8StringBuilder(unit::ByteLength capacity);
+    /// Create a builder with initial `capacity` and optional sensitive storage.
+    explicit U8StringBuilder(unit::ByteLength capacity, bool sensitive = false);
 
     // defaults
     U8StringBuilder() = default;
@@ -50,8 +50,13 @@ public:
     [[nodiscard]] auto takeAnyStringEditor() -> AnyStringEditor override;
 
 private:
+    /// Reset the editor after moving out its contents, preserving sensitive mode.
+    void resetAfterTake();
+
+private:
     U8StringEditor _text;                           ///< The built string.
     unit::CpLength _length{unit::CpLength::zero()}; ///< The cached decoded code-point length.
+    bool _sensitive{false};                         ///< Whether newly built UTF-8 text uses sensitive storage.
 };
 
 }

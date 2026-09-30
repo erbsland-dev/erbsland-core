@@ -14,6 +14,9 @@ add_subdirectory(tls)
 target_sources(erbsland-core PRIVATE
         Asn1ObjectIdentifierCodec.cpp
         Asn1ObjectIdentifierCodec.hpp
+        AuthenticationChallengeTestAccess_fwd.hpp
+        AuthenticationCodec.cpp
+        AuthenticationCodec.hpp
         CryptologyConfigurationSnapshot.cpp
         CryptologyConfigurationSnapshot.hpp
         CryptologyOids.hpp

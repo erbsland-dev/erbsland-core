@@ -6,16 +6,26 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(resource-integration)
 
 if(APPLE OR WIN32)
+    # Keep the nested package-tool object paths below the Windows path limit.
     add_test(
             NAME erbsland-core-package-install-integration
             COMMAND ${CMAKE_COMMAND}
                     -DPACKAGE_SOURCE_DIRECTORY=${PROJECT_SOURCE_DIR}
-                    -DPACKAGE_TEST_DIRECTORY=${CMAKE_BINARY_DIR}/test/cmake/package-install-integration
+                    -DPACKAGE_TEST_DIRECTORY=${CMAKE_BINARY_DIR}/package-test
                     -DPACKAGE_GENERATOR=${CMAKE_GENERATOR}
                     -DPACKAGE_CONFIGURATION=$<CONFIG>
                     -P ${PROJECT_SOURCE_DIR}/test/cmake/package-integration/RunPackageIntegration.cmake)
     set_tests_properties(erbsland-core-package-install-integration PROPERTIES RUN_SERIAL TRUE)
 endif()
+
+add_test(
+        NAME erbsland-core-package-unsupported-platform
+        COMMAND ${CMAKE_COMMAND}
+                -DPACKAGE_SOURCE_DIRECTORY=${PROJECT_SOURCE_DIR}
+                -DPACKAGE_TEST_DIRECTORY=${CMAKE_BINARY_DIR}/test/cmake/package-unsupported-platform
+                -DPACKAGE_GENERATOR=${CMAKE_GENERATOR}
+                -P ${PROJECT_SOURCE_DIR}/test/cmake/package-unsupported/RunPackageUnsupported.cmake)
+set_tests_properties(erbsland-core-package-unsupported-platform PROPERTIES RUN_SERIAL TRUE)
 
 add_test(
         NAME erbsland-core-resource-installed-package

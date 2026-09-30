@@ -1,0 +1,25 @@
+# Reference-document groups for serialization formats.
+
+------------*[ Reference Groups ]
+Page        : "data/json.rst"
+Title       : "JSON Values"
+Header Globs:
+    * "data/json/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "data/bson.rst"
+Title       : "BSON Values"
+Header Globs:
+    * "data/bson/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "data/cbor.rst"
+Title       : "CBOR Values"
+Header Globs:
+    * "data/cbor/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "data/xml.rst"
+Title       : "XML Documents"
+Header Globs:
+    * "data/xml/*.hpp"

@@ -67,7 +67,7 @@ public: // implement network::HttpServerRequest
     /// Commit one UTF-8 JSON response.
     void sendJson(text::String body, HttpStatus status, HttpHeaders headers) override;
     /// Serialize and commit one compact JSON response.
-    void sendJson(const text::json::JsonValue &body, HttpStatus status, HttpHeaders headers) override;
+    void sendJson(const data::json::JsonValue &body, HttpStatus status, HttpHeaders headers) override;
     /// Commit one plain-text error response.
     void sendError(HttpStatus status, text::String message) override;
     /// Commit one redirect response.

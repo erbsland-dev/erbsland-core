@@ -27,7 +27,7 @@ auto HttpClientResponseEventEditor::onText(std::function<void(text::String)> cal
     return *this;
 }
 
-auto HttpClientResponseEventEditor::onJson(std::function<void(text::json::JsonValue)> callback)
+auto HttpClientResponseEventEditor::onJson(std::function<void(data::json::JsonValue)> callback)
     -> HttpClientResponseEventEditor & {
     _response._onJson = std::move(callback);
     return *this;

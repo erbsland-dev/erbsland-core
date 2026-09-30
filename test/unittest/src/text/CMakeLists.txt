@@ -25,8 +25,6 @@ target_sources(erbsland-core-unittest PRIVATE
         HtmlParserTest.cpp
         HtmlTokenizerTest.cpp
         IntegerConversionTest.cpp
-        JsonParserTest.cpp
-        JsonValueTest.cpp
         NamedKeyParserTest.cpp
         PlatformStringAccessTest.cpp
         ReplacerTest.cpp

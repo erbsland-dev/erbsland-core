@@ -245,6 +245,11 @@ The encoding-specific factories use the native storage unit of the target string
     auto words = el::AnyStringBuilder::u16(el::U16DataLength{512});
     auto codePoints = el::AnyStringBuilder::u32(el::CpLength{256});
 
+Pass ``true`` as the second argument to ``u8()`` to allocate sensitive UTF-8 storage before appending text.
+The builder keeps sensitive mode when its contents are taken and it is reused.
+The :cpp:class:`AnyString <erbsland::text::AnyString>` wrapper exposes ``isSensitive()`` to inspect UTF-8 storage
+without converting UTF-16 or UTF-32 text.
+
 :cpp:func:`withCapacity() <erbsland::text::AnyStringBuilder::withCapacity>` is the generic form for code that only has
 a :cpp:enum:`StringKind <erbsland::text::StringKind>`.
 Its capacity is a decoded code-point count.

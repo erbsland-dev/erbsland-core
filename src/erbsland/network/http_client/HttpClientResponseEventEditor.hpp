@@ -8,8 +8,8 @@
 #include "../source/NetworkDataFn.hpp"
 #include "../source/NetworkEventFn.hpp"
 
+#include "../../data/json/JsonValue_fwd.hpp"
 #include "../../event/impl/CommonEventEditor.hpp"
-#include "../../text/json/JsonValue_fwd.hpp"
 #include "../../text/String.hpp"
 
 #include <functional>
@@ -32,7 +32,7 @@ public:
     /// Replace the manually aggregated strict UTF-8 body handler.
     virtual auto onText(std::function<void(text::String)> callback) -> HttpClientResponseEventEditor & = 0;
     /// Replace the manually aggregated JSON body handler.
-    virtual auto onJson(std::function<void(text::json::JsonValue)> callback) -> HttpClientResponseEventEditor & = 0;
+    virtual auto onJson(std::function<void(data::json::JsonValue)> callback) -> HttpClientResponseEventEditor & = 0;
     /// Replace the trailer handler.
     virtual auto onTrailers(std::function<void(const HttpHeaders &)> callback) -> HttpClientResponseEventEditor & = 0;
     /// Replace the output-sink progress handler.

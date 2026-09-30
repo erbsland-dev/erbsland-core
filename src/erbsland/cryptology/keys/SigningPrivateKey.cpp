@@ -77,6 +77,27 @@ auto SigningPrivateKey::signTlsCertificateVerify(const TlsSignatureScheme scheme
     return result;
 }
 
+auto SigningPrivateKey::signEd25519Framed(const ConstByteSpan message) const -> ByteBlock {
+    if (_algorithm != SigningKeyAlgorithm::Ed25519 || isEmpty()) {
+        throw err::ParameterError{"Signed byte blocks require an Ed25519 private key."_el, "key"_el};
+    }
+    auto result = ByteBlock{};
+    _privateData.withUnprotectedData(
+        [&](const ConstByteSpan seed) -> void { result = impl::ed25519_signer::sign(seed, message); });
+    return result;
+}
+
+auto SigningPrivateKey::fromEd25519Seed(const ConstByteSpan seed) -> SigningPrivateKey {
+    if (seed.size() != 32U) {
+        throw err::ParameterError{"An Ed25519 seed must contain 32 bytes."_el, "seed"_el};
+    }
+    const auto point = impl::ed25519_signer::publicKey(seed);
+    auto encoder = impl::DerEncoder{};
+    impl::signing_key_encoding::appendEd25519PublicKey(encoder, point.span());
+    auto publicKey = PublicKey::fromDerOrThrow(encoder.encoded());
+    return SigningPrivateKey{SigningKeyAlgorithm::Ed25519, seed, std::move(publicKey)};
+}
+
 void SigningPrivateKey::secureErase() noexcept {
     _privateData.secureErase();
     _publicKey = {};

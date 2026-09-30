@@ -80,4 +80,7 @@ Applications can expose a version derived from Git without copying it into sourc
 Creating Release Packages
 =========================
 
-:doc:`release_packages` shows how to create standalone Windows and macOS ZIP packages as part of CMake installation.
+:doc:`release_packages` starts with a complete Windows and macOS ZIP packaging example.
+:doc:`release_package_cmake` explains package registration and install components.
+:doc:`release_package_configuration` covers archive contents and overrides, while
+:doc:`release_package_signing` guides you through code signing, notarization, and verification.

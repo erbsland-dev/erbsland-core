@@ -59,13 +59,6 @@ their presentation to the source markup.
 :doc:`/topics/text_parsing_and_encoding/parsing_html_fragments` shows how to turn a fragment into a ``TextDocument`` and render the same content with
 different terminal styles.
 
-Parsing and Rendering JSON Data
-===============================
-
-JSON carries structured values between applications and files.
-:doc:`/topics/text_parsing_and_encoding/parsing_and_rendering_json` follows a value from parsing through navigation and construction to serialization,
-with practical limits for untrusted input and options for readable output.
-
 Parsing Compact Named-Key Parameters
 ====================================
 

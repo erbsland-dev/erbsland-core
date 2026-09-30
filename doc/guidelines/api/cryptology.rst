@@ -21,6 +21,11 @@ Primary Types
     Hasher // copy-on-write streaming hash state
     Hmac // move-only keyed streaming authentication state
     Hkdf // algorithm-only HMAC-based extract-and-expand key derivation
+    SignedByteBlock // purpose-separated, self-contained Ed25519-signed binary record
+    AuthenticationTokenPair // generated client credential and public server verifier
+    ClientAuthenticationToken // protected client signing credential
+    ServerAuthenticationToken // copyable public challenge verifier
+    PendingAuthenticationChallenge // one-use bounded challenge state
     ProtectedByteBlock // copyable authenticated ciphertext with scoped plaintext access
     KeyAgreementPrivateKey // move-only protected private material with a cached ordinary public key
     KeyAgreementSharedSecret // move-only protected agreement result for direct key derivation
@@ -78,6 +83,7 @@ X.509 Identity Patterns
     o.dnsNames() -> text::StringList // expose presented IA5 ASCII names without Unicode conversion
     o.category() -> X509CertificateValidationFailureCategory // distinguish malformed SANs from ordinary mismatches
     T::generate([profile]) -> SigningPrivateKey // default to ECDSA P-256
+    T::generate(Ed25519) -> SigningPrivateKey // create an Ed25519 seed for framed data signing
     T::certificateAuthority(commonName) -> X509CertificateBuilder // create a safe CA configuration
     T::tlsServer(commonName) -> X509CertificateBuilder // require a DNS/IP SAN before creation
     o.createSelfSignedCertificate(key) -> X509Certificate // CA profiles only

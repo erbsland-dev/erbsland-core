@@ -24,6 +24,8 @@ public:
     [[nodiscard]] auto generate() const -> SigningPrivateKey;
 
 private:
+    /// Generate a pure Ed25519 key.
+    [[nodiscard]] auto generateEd25519() const -> SigningPrivateKey;
     /// Generate a fixed-profile EC key.
     [[nodiscard]] auto generateEc() const -> SigningPrivateKey;
     /// Generate a fixed-profile two-prime RSA key.

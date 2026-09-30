@@ -144,6 +144,9 @@ Version Patterns
     T(major[, minor, revision, build]) // create a version from strongly typed parts
     o.major()/minor()/revision()/build() -> T // access version parts
     o.compare(version[, precision]) -> std::strong_ordering // compare through a selected part
+    T::fromString(text[, requiredPrecision]) -> std::optional❮T❯ // parse a complete dotted decimal version
+    T::fromStringOrThrow(text[, requiredPrecision]) -> T // parse or throw ParseError
+    o.toString([precision]) -> String // format the selected version parts
     o.toNumber() -> uint64_t // pack all version parts
     T::fromNumber(number) -> T // unpack all version parts
     T::all/atLeast/atMost/between/exact([versions]) -> VersionRange // create a version constraint

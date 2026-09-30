@@ -24,6 +24,22 @@ establish authenticity, and certificates connect identities to public keys.
 These mechanisms often work together, but they are not interchangeable.
 Start with the security property your application needs and then select the matching topic and API.
 
+Authenticating with Tokens
+==========================
+
+A configured client can prove possession of a private Ed25519 credential by signing a fresh server challenge.
+The server stores only a public verifier, and a captured response cannot authenticate a later attempt.
+See :doc:`authenticating_with_tokens` for a complete ELCL-configured TCP example, the limits of the proof, and the
+interoperable token and response formats.
+
+Signing and Verifying Byte Blocks
+=================================
+
+A publisher can sign a binary record so a reader with the matching public key can verify its origin and exact bytes.
+:cpp:class:`SignedByteBlock <erbsland::cryptology::SignedByteBlock>` includes a purpose to keep one use of a key
+separate from another and an optional hint for finding the verifier.
+See :doc:`signing_and_verifying_byte_blocks` for key setup, signing, verification, and the interoperable binary layout.
+
 Storing and Verifying Passwords
 ===============================
 

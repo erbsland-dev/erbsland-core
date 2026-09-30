@@ -41,8 +41,8 @@ auto AnyStringBuilder::u8() -> AnyStringBuilder {
     return AnyStringBuilder{};
 }
 
-auto AnyStringBuilder::u8(const ByteLength capacity) -> AnyStringBuilder {
-    return AnyStringBuilder{impl::createU8StringBuilder(capacity)};
+auto AnyStringBuilder::u8(const ByteLength capacity, const bool sensitive) -> AnyStringBuilder {
+    return AnyStringBuilder{impl::createU8StringBuilder(capacity, sensitive)};
 }
 
 auto AnyStringBuilder::u16() -> AnyStringBuilder {

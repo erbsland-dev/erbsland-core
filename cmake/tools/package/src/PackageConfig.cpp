@@ -7,10 +7,13 @@
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/NamePath.hpp>
 #include <erbsland/conf/Value.hpp>
+#include <erbsland/conf/vr/Rules.hpp>
+#include <erbsland/core/Application.hpp>
 #include <erbsland/path/PathContent.hpp>
 #include <erbsland/path/PathInfo.hpp>
 #include <erbsland/re/RegEx.hpp>
 #include <erbsland/re/Match.hpp>
+#include <erbsland/resource/Resources.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringFormat.hpp>
 #include <erbsland/text/placeholder/Replacer.hpp>
@@ -28,9 +31,9 @@ PackageConfig::PackageConfig(path::Path file) : _baseDirectory{file.parent()} {
         parser.addPlaceholderEnvironmentSource();
         parser.addPlaceholderTextFilters();
         _document = parser.parseFileOrThrow(file);
-        if (!_document->getSectionWithNames(conf::NamePath::fromText("main"_el))) {
-            throw core::ApplicationError{"Package configuration requires a [main] section."_el};
-        }
+        const auto rulesText = application().resources().getTextOrThrow("package-config"_el, "package-rules.elcl"_el);
+        const auto rulesDocument = conf::Parser{}.parseTextOrThrow(rulesText);
+        conf::vr::Rules::createFromDocument(rulesDocument)->validate(_document, 1);
     }
 }
 
@@ -38,20 +41,22 @@ auto PackageConfig::settings(
     const text::String &name, const text::String &platform, const text::String &architecture,
     const text::String &target, const text::String &projectName,
     const text::String &projectVersion) const -> PackageSettings {
+    const auto packageName = validatedName(name);
+    const auto targetName = target.isEmpty() ? text::String{} : validatedName(target);
     auto result = PackageSettings{};
-    result.name = name;
+    result.name = packageName;
     result.projectName = projectName;
     result.version = projectVersion;
     if (_document) {
         applySection(result, "main"_el);
         applySection(result, text::StringFormat{"platform.{}"_el}.build(platform));
         applySection(result, text::StringFormat{"platform.{}.{}"_el}.build(platform, architecture));
-        const auto packagePath = text::StringFormat{"package.{}"_el}.build(pathSegment(name));
+        const auto packagePath = text::StringFormat{"package.{}"_el}.build(packageName);
         applySection(result, packagePath);
         applySection(result, text::StringFormat{"{}.platform.{}"_el}.build(packagePath, platform));
         applySection(result, text::StringFormat{"{}.platform.{}.{}"_el}.build(packagePath, platform, architecture));
-        if (!target.isEmpty()) {
-            const auto targetPath = text::StringFormat{"target.{}"_el}.build(pathSegment(target));
+        if (!targetName.isEmpty()) {
+            const auto targetPath = text::StringFormat{"target.{}"_el}.build(targetName);
             applySection(result, targetPath);
             applySection(result, text::StringFormat{"{}.platform.{}"_el}.build(targetPath, platform));
             applySection(result, text::StringFormat{"{}.platform.{}.{}"_el}.build(targetPath, platform, architecture));
@@ -67,8 +72,8 @@ auto PackageConfig::settings(
         const auto source = versionPath.isAbsolute() ? versionPath : _baseDirectory / versionPath;
         if (!source.info().isRegularFile()) { throw core::ApplicationError{"Version file is missing."_el}; }
         const auto content = source.content().readTextOrThrow();
-        if (!result.versionPattern.isEmpty()) {
-            const auto match = re::RegEx::compile(result.versionPattern)->findFirst(content);
+        if (result.versionPattern) {
+            const auto match = result.versionPattern->findFirst(content);
             if (!match) { throw core::ApplicationError{"Version pattern did not match."_el}; }
             result.version = match->content(re::CaptureGroupIndex{1U});
         } else {
@@ -99,18 +104,17 @@ auto PackageConfig::settings(
     return result;
 }
 
-auto PackageConfig::pathSegment(const text::String &name) -> text::String {
-    if (re::RegEx::compile("^[A-Za-z_][A-Za-z0-9_]*$"_el)->fullMatch(name)) { return name; }
-    if (name.contains("\""_el) || name.contains("\\"_el)) {
-        throw core::ApplicationError{"Package or target name cannot contain quotes or backslashes."_el};
+auto PackageConfig::validatedName(const text::String &name) -> text::String {
+    if (!re::RegEx::compile("^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9]+)*$"_el)->fullMatch(name)) {
+        throw core::ApplicationError{"Package and target names must be regular ELCL names: letters, digits, and single underscores, starting with a letter."_el};
     }
-    return text::StringFormat{"\"{}\""_el}.build(name);
+    return name;
 }
 
 void PackageConfig::applySection(PackageSettings &result, const text::String &sectionPath) const {
     const auto section = _document->value(conf::NamePath::fromText(sectionPath));
     if (!section) { return; }
-    if (!section->isSectionWithNames() && !section->isSectionWithTexts()) {
+    if (!section->isSectionWithNames()) {
         throw core::ApplicationError{"Package configuration override must be a named section."_el};
     }
     const auto text = [&](const text::String &key, text::String &value) -> void {
@@ -119,7 +123,9 @@ void PackageConfig::applySection(PackageSettings &result, const text::String &se
     };
     text("version_source"_el, result.versionSource);
     text("version_file"_el, result.versionFile);
-    text("version_pattern"_el, result.versionPattern);
+    if (section->hasValue("version_pattern"_el)) {
+        result.versionPattern = section->getRegExOrThrow("version_pattern"_el);
+    }
     text("target_dir"_el, result.targetDir);
     text("filename_format"_el, result.filenameFormat);
     text("bundle_id"_el, result.bundleId);

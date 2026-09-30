@@ -11,6 +11,12 @@ namespace conf {}
 namespace core {}
 namespace cryptology {}
 namespace cterm::theme {}
+namespace data {
+namespace bson {}
+namespace cbor {}
+namespace json {}
+namespace xml {}
+}
 namespace debug {}
 namespace err {}
 namespace event {}

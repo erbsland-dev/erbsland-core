@@ -18,8 +18,9 @@ namespace erbsland::text::impl {
 /// Create a builder with capacity expressed in code points.
 [[nodiscard]] auto createAnyStringBuilder(StringKind kind, unit::CpLength capacity)
     -> mem::SharedDataPointer<AnyStringBuilderBase>;
-/// Create a UTF-8 builder with byte capacity.
-[[nodiscard]] auto createU8StringBuilder(unit::ByteLength capacity) -> mem::SharedDataPointer<AnyStringBuilderBase>;
+/// Create a UTF-8 builder with byte capacity and optional sensitive storage.
+[[nodiscard]] auto createU8StringBuilder(unit::ByteLength capacity, bool sensitive = false)
+    -> mem::SharedDataPointer<AnyStringBuilderBase>;
 /// Create a UTF-16 builder with code-unit capacity.
 [[nodiscard]] auto createU16StringBuilder(unit::U16DataLength capacity) -> mem::SharedDataPointer<AnyStringBuilderBase>;
 /// Create a UTF-32 builder with code-point capacity.

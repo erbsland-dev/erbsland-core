@@ -47,8 +47,8 @@ auto createAnyStringBuilder(const StringKind kind, const CpLength capacity) -> S
     return createU8StringBuilder(ByteLength{});
 }
 
-auto createU8StringBuilder(const ByteLength capacity) -> SharedDataPointer<AnyStringBuilderBase> {
-    return SharedDataPointer<AnyStringBuilderBase>{new U8StringBuilder{capacity}};
+auto createU8StringBuilder(const ByteLength capacity, const bool sensitive) -> SharedDataPointer<AnyStringBuilderBase> {
+    return SharedDataPointer<AnyStringBuilderBase>{new U8StringBuilder{capacity, sensitive}};
 }
 
 auto createU16StringBuilder(const U16DataLength capacity) -> SharedDataPointer<AnyStringBuilderBase> {

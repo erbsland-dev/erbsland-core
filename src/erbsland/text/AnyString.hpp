@@ -116,6 +116,12 @@ public: // comparison
 public: // accessors
     /// Test if this read-only string is empty.
     [[nodiscard]] auto isEmpty() const noexcept -> bool { return std::holds_alternative<std::monostate>(_value); }
+    /// Test whether the underlying UTF-8 storage is sensitive without converting the string.
+    /// Empty, UTF-16, and UTF-32 strings return `false`.
+    [[nodiscard]] auto isSensitive() const noexcept -> bool {
+        const auto *utf8 = std::get_if<U8String>(&_value);
+        return utf8 != nullptr && utf8->isSensitive();
+    }
     /// Test if this read-only string does not require conversion to the given target kind.
     [[nodiscard]] auto noConversionForKind(const StringKind kind) const noexcept -> bool {
         if (std::holds_alternative<std::monostate>(_value)) {

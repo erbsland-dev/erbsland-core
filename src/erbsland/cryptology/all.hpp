@@ -22,5 +22,6 @@
 #include "PasswordHasher.hpp"
 #include "PasswordVerification.hpp"
 #include "PemDerFormat.hpp"
+#include "SignedByteBlock.hpp"
 
 

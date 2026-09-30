@@ -112,15 +112,18 @@ public:
         const auto second = TerminalStream::create(terminal);
         auto threads = std::vector<std::thread>{};
         threads.emplace_back([first]() -> void {
-            for (auto index = 0; index < 50; ++index)
+            for (auto index = 0; index < 50; ++index) {
                 first->writeLine("AAAA"_el);
+            }
         });
         threads.emplace_back([second]() -> void {
-            for (auto index = 0; index < 50; ++index)
+            for (auto index = 0; index < 50; ++index) {
                 second->writeLine("BBBB"_el);
+            }
         });
-        for (auto &thread : threads)
+        for (auto &thread : threads) {
             thread.join();
+        }
         first->flush();
         second->flush();
 

@@ -8,6 +8,8 @@
 #include "../codec/Http1Transaction.hpp"
 #include "../HttpGrammar.hpp"
 
+#include "../../../../data/json/JsonParseOptions.hpp"
+#include "../../../../data/json/JsonValue.hpp"
 #include "../../../../err/Exception.hpp"
 #include "../../../../err/LogicError.hpp"
 #include "../../../../err/ParameterError.hpp"
@@ -24,8 +26,6 @@
 #include "../../../../text/AsciiCategory.hpp"
 #include "../../../../text/CaseSensitivity.hpp"
 #include "../../../../text/EncodingMode.hpp"
-#include "../../../../text/json/JsonParseOptions.hpp"
-#include "../../../../text/json/JsonValue.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringBomMode.hpp"
 #include "../../../../text/StringCharReader.hpp"
@@ -252,11 +252,11 @@ void HttpClientResponse::handleAggregatedBody(mem::ByteBlock data) {
         }
         return;
     }
-    auto json = std::optional<text::json::JsonValue>{};
+    auto json = std::optional<data::json::JsonValue>{};
     try {
-        auto options = text::json::JsonParseOptions{};
+        auto options = data::json::JsonParseOptions{};
         options.setMaximumInputLength(data.length());
-        json = text::json::JsonValue::fromStringOrThrow(textBody, options);
+        json = data::json::JsonValue::fromStringOrThrow(textBody, options);
     } catch (...) {
         fail(NetworkErrorReason::HttpResponseValidationFailure, "The HTTP response body is not valid JSON."_el);
         return;

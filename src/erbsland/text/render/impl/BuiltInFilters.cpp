@@ -6,12 +6,12 @@
 
 #include "../Value.hpp"
 
+#include "../../../data/json/JsonContainers.hpp"
+#include "../../../data/json/JsonFormatOptions.hpp"
+#include "../../../data/json/JsonValue.hpp"
 #include "../../../err/ParameterError.hpp"
 #include "../../../math/SaturatingMath.hpp"
 #include "../../../text/CharSet.hpp"
-#include "../../../text/json/JsonContainers.hpp"
-#include "../../../text/json/JsonFormatOptions.hpp"
-#include "../../../text/json/JsonValue.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringEditor.hpp"
 #include "../../../text/StringList.hpp"
@@ -68,33 +68,33 @@ auto less(const Value &left, const Value &right, const bool caseSensitive) -> bo
     throw err::ParameterError{"The values cannot be ordered by this built-in filter."_el, "value"_el};
 }
 
-auto toJson(const Value &value) -> json::JsonValue {
+auto toJson(const Value &value) -> data::json::JsonValue {
     if (value.isNull()) {
         return {};
     }
     if (value.isBoolean()) {
-        return json::JsonValue{value.asBoolean()};
+        return data::json::JsonValue{value.asBoolean()};
     }
     if (value.isInteger()) {
-        return json::JsonValue{value.asInteger()};
+        return data::json::JsonValue{value.asInteger()};
     }
     if (value.isFloat()) {
-        return json::JsonValue{value.asFloat()};
+        return data::json::JsonValue{value.asFloat()};
     }
     if (value.isText()) {
-        return json::JsonValue{value.asText()};
+        return data::json::JsonValue{value.asText()};
     }
     if (value.isList()) {
-        auto result = json::JsonArray{};
+        auto result = data::json::JsonArray{};
         list(value).forEach([&result](const Value &item) -> void { result.append(toJson(item)); });
-        return json::JsonValue{std::move(result)};
+        return data::json::JsonValue{std::move(result)};
     }
     if (value.isMap()) {
-        auto result = json::JsonObject{};
+        auto result = data::json::JsonObject{};
         for (const auto &[key, item] : map(value)) {
             result.set(key, toJson(item));
         }
-        return json::JsonValue{std::move(result)};
+        return data::json::JsonValue{std::move(result)};
     }
     throw err::ParameterError{"Callbacks cannot be converted to JSON."_el, "value"_el};
 }
@@ -396,7 +396,7 @@ auto toJsonText(const Value &value, const ValueList &arguments) -> Value {
             throw err::ParameterError{"The JSON indentation must be between zero and 16."_el, "arguments"_el};
         }
     }
-    auto options = json::JsonFormatOptions{};
+    auto options = data::json::JsonFormatOptions{};
     options.setIndentation(unit::CpLength{static_cast<uint32_t>(indentation)});
     return Value{toJson(value).toString(options)};
 }

@@ -5,12 +5,14 @@
 #include "VersionRange_fwd.hpp"
 #include "VersionUnit.hpp"
 
-#include "../text/StringEditor.hpp"
+#include "../text/String.hpp"
 #include "../util/HashHelper.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <compare>
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <utility>
 
 namespace erbsland::unit {
@@ -107,6 +109,22 @@ public:
     }
 
 public: // conversion
+    /// Parse a dotted decimal version number.
+    /// Each part must be an unsigned, unpadded decimal integer in the range 0–65535.
+    /// @param text One to four version parts separated by `.`; whitespace and trailing text are invalid.
+    /// @param requiredPrecision The least significant part that must be present; omitted parts become zero.
+    /// @return The parsed version, or `std::nullopt` if the text is invalid.
+    [[nodiscard]] static auto fromString(
+        const text::String &text, VersionPart requiredPrecision = VersionPart::Major) noexcept
+        -> std::optional<Version>;
+    /// Parse a dotted decimal version number or report an error.
+    /// Each part must be an unsigned, unpadded decimal integer in the range 0–65535.
+    /// @param text One to four version parts separated by `.`; whitespace and trailing text are invalid.
+    /// @param requiredPrecision The least significant part that must be present; omitted parts become zero.
+    /// @return The parsed version.
+    /// @throws err::ParseError If the text is invalid.
+    [[nodiscard]] static auto fromStringOrThrow(
+        const text::String &text, VersionPart requiredPrecision = VersionPart::Major) -> Version;
     /// Convert this version into dotted decimal text.
     /// @param precision The least significant version part to include.
     /// @return The version text.

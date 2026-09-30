@@ -20,6 +20,7 @@ Topics
     text_rendering/index
     text_placeholders/index
     text_parsing_and_encoding/index
+    data/index
     conf/index
     options/index
     err/index

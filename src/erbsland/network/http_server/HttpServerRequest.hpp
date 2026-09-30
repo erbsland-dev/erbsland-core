@@ -12,9 +12,9 @@
 #include "../http/HttpResponseHead.hpp"
 #include "../source/NetworkSendStatus.hpp"
 
+#include "../../data/json/JsonValue.hpp"
 #include "../../event/EventSource.hpp"
 #include "../../mem/ByteBlock.hpp"
-#include "../../text/json/JsonValue.hpp"
 #include "../../text/String.hpp"
 #include "../../unit/ByteLength.hpp"
 
@@ -65,7 +65,7 @@ public: // response
     virtual void sendJson(text::String body, HttpStatus status = HttpStatus::Ok, HttpHeaders headers = {}) = 0;
     /// Serialize and commit one compact JSON response.
     virtual void sendJson(
-        const text::json::JsonValue &body, HttpStatus status = HttpStatus::Ok, HttpHeaders headers = {}) = 0;
+        const data::json::JsonValue &body, HttpStatus status = HttpStatus::Ok, HttpHeaders headers = {}) = 0;
     /// Commit one plain-text error response.
     virtual void sendError(HttpStatus status, text::String message = {}) = 0;
     /// Commit one redirect with a Location field.

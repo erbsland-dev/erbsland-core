@@ -123,7 +123,7 @@ private:
     NetworkDataFn _onBodyData;                                   ///< Stream handler.
     NetworkDataFn _onBody;                                       ///< Byte aggregate handler.
     std::function<void(text::String)> _onText;                   ///< Text aggregate handler.
-    std::function<void(text::json::JsonValue)> _onJson;          ///< JSON aggregate handler.
+    std::function<void(data::json::JsonValue)> _onJson;          ///< JSON aggregate handler.
     std::function<void(const HttpHeaders &)> _onTrailers;        ///< Trailer handler.
     NetworkEventFn _onBodyCompleted;                             ///< Completion handler.
     HttpClientBodyProgressFn _onBodyProgress;                    ///< Successfully written progress.

@@ -156,8 +156,8 @@ public: // conversion
 public: // factory methods
     /// Create an empty UTF-8 string builder.
     [[nodiscard]] static auto u8() -> AnyStringBuilder;
-    /// Create an empty UTF-8 string builder with the given initial byte capacity.
-    [[nodiscard]] static auto u8(unit::ByteLength capacity) -> AnyStringBuilder;
+    /// Create a UTF-8 builder with initial byte capacity and optional sensitive storage.
+    [[nodiscard]] static auto u8(unit::ByteLength capacity, bool sensitive = false) -> AnyStringBuilder;
     /// Create an empty UTF-16 string builder.
     [[nodiscard]] static auto u16() -> AnyStringBuilder;
     /// Create an empty UTF-16 string builder with the given initial UTF-16 code-unit capacity.

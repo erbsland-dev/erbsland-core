@@ -138,7 +138,7 @@ Reading a Request Body
         "/messages"_el,
         [](network::HttpServerSessionPtr,
            network::HttpServerRequestPtr request,
-           text::json::JsonValue body) {
+           data::json::JsonValue body) {
             storeMessage(body);
             request->sendJson(makeAcknowledgement(body), network::HttpStatus::Accepted);
         },

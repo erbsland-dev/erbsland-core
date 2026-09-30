@@ -11,6 +11,7 @@ namespace erbsland {
 using namespace core;
 using namespace compression;
 using namespace cryptology;
+using namespace data;
 using namespace debug;
 using namespace err;
 using namespace event;

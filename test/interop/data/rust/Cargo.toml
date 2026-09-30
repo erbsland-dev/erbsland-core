@@ -1,0 +1,10 @@
+[package]
+name = "erbsland-core-data-interop-counterpart"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+bson = { version = "=2.15.0", default-features = false }
+ciborium = "=0.2.2"
+roxmltree = "=0.21.1"

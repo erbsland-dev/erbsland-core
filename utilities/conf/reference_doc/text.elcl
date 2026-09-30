@@ -107,7 +107,6 @@ Header Globs:
     * "text/TextNode*.hpp"
     * "text/TextWalk*.hpp"
     * "text/html/*.hpp"
-    * "text/json/*.hpp"
     * "text/render/*.hpp"
 
 ------------*[ Reference Groups ]

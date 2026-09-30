@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(asn1)
+add_subdirectory(authentication)
 add_subdirectory(configuration)
 add_subdirectory(impl)
 add_subdirectory(keys)
@@ -47,5 +48,8 @@ target_sources(erbsland-core PRIVATE
         PasswordVerification.cpp
         PasswordVerification.hpp
         PemDerFormat.hpp
+        SignedByteBlock.cpp
+        SignedByteBlock.hpp
+        SignedByteBlock_fwd.hpp
         StdFormat.hpp
 )

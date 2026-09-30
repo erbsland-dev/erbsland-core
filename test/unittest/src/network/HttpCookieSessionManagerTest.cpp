@@ -51,7 +51,7 @@ class HttpCookieSessionManagerTest final : public el::UnitTest {
         void sendResponse(HttpResponseHead, el::mem::ByteBlock) override {}
         void sendText(String, HttpStatus, HttpHeaders) override {}
         void sendJson(String, HttpStatus, HttpHeaders) override {}
-        void sendJson(const el::text::json::JsonValue &, HttpStatus, HttpHeaders) override {}
+        void sendJson(const el::data::json::JsonValue &, HttpStatus, HttpHeaders) override {}
         void sendError(HttpStatus, String) override {}
         void sendRedirect(String, HttpStatus, HttpHeaders) override {}
         void startResponse(HttpResponseHead) override {}

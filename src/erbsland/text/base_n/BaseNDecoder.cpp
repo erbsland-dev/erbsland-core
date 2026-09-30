@@ -78,7 +78,7 @@ auto BaseNDecoder::toDataOrThrow(const unit::ByteLength maximum) const -> mem::B
     if (maximum.isFinite() && outputSize > maximum.toSizeTOrThrow()) {
         throw err::OutOfRangeError{"The decoded Base-N data exceeds the maximum byte length."};
     }
-    auto output = mem::impl::UnsafeByteBlockBuffer{unit::ByteLength::fromSizeT(outputSize)};
+    auto output = mem::impl::UnsafeByteBlockBuffer{unit::ByteLength::fromSizeT(outputSize), _text.isSensitive()};
     auto outputBytes = output.data();
     auto outputIndex = std::size_t{0};
     reader.reset();

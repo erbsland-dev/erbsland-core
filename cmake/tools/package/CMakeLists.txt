@@ -21,6 +21,11 @@ add_executable(erbsland-core-package-tool EXCLUDE_FROM_ALL
 )
 target_compile_definitions(erbsland-core-package-tool PRIVATE
         ERBSLAND_CORE_PACKAGE_SCRIPT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+erbsland_core_add_resources(
+        TARGET erbsland-core-package-tool
+        DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/data"
+        IDENTIFIER "package-config"
+        SUFFIXES ".elcl")
 if(TARGET erbsland-core)
     target_link_libraries(erbsland-core-package-tool PRIVATE erbsland-core)
     target_include_directories(erbsland-core-package-tool PRIVATE "${PROJECT_SOURCE_DIR}/src")

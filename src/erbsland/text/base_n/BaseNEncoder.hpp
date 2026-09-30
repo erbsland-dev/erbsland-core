@@ -27,9 +27,9 @@ public: // accessors
     [[nodiscard]] auto format() const noexcept -> const BaseNFormat & { return _format; }
 
 public: // conversion
-    /// Encode into the primary UTF-8 string type.
+    /// Encode into the primary UTF-8 string type, preserving sensitive input storage.
     [[nodiscard]] auto toString() const -> String;
-    /// Encode into UTF-8.
+    /// Encode into UTF-8, preserving sensitive input storage.
     [[nodiscard]] auto toU8String() const -> U8String;
     /// Encode into UTF-16.
     [[nodiscard]] auto toU16String() const -> U16String;

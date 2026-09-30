@@ -501,7 +501,7 @@ public:
                 .onJsonRequest(
                     HttpMethod{HttpMethodType::Post},
                     "/json"_el,
-                    [](HttpServerSessionPtr, HttpServerRequestPtr request, el::text::json::JsonValue body) -> void {
+                    [](HttpServerSessionPtr, HttpServerRequestPtr request, el::data::json::JsonValue body) -> void {
                         request->sendJson(body);
                     })
                 .onError([&](const NetworkErrorContext &context) -> void { error = context; })

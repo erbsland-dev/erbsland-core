@@ -178,9 +178,9 @@ void HttpServerConnection::handleAggregatedBody(mem::ByteBlock body) {
         return;
     }
     try {
-        auto parseOptions = text::json::JsonParseOptions{};
+        auto parseOptions = data::json::JsonParseOptions{};
         parseOptions.setMaximumInputLength(_handler.options().maximumBodyLength());
-        auto jsonBody = text::json::JsonValue::fromStringOrThrow(textBody, parseOptions);
+        auto jsonBody = data::json::JsonValue::fromStringOrThrow(textBody, parseOptions);
         const auto callback = std::get<HttpServerJsonRequestFn>(_handler.callback());
         invokeApplication([&]() mutable -> void { callback(_request->session(), _request, std::move(jsonBody)); });
     } catch (const err::Exception &) {

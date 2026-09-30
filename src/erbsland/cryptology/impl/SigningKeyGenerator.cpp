@@ -8,6 +8,7 @@
 #include "SigningKeyEncoding.hpp"
 
 #include "algorithm/ecdsa_signature/EcdsaSigner.hpp"
+#include "algorithm/ed25519_signature/Ed25519Signer.hpp"
 #include "algorithm/rsa_signature/RsaKeyGenerator.hpp"
 #include "algorithm/rsa_signature/RsaSigner.hpp"
 
@@ -26,6 +27,8 @@ using namespace text::literals;
 
 auto SigningKeyGenerator::generate() const -> SigningPrivateKey {
     switch (_profile) {
+    case SigningKeyProfile::Ed25519:
+        return generateEd25519();
     case SigningKeyProfile::EcdsaP256:
     case SigningKeyProfile::EcdsaP384:
         return generateEc();
@@ -35,6 +38,17 @@ auto SigningKeyGenerator::generate() const -> SigningPrivateKey {
         return generateRsa();
     }
     throw CryptologyError{"Unknown signing-key generation profile."_el};
+}
+
+auto SigningKeyGenerator::generateEd25519() const -> SigningPrivateKey {
+    auto seed = core::application().secureRandom().buildByteBlock(unit::ByteLength{32U});
+    seed.markAsSensitive();
+    const auto seedEraseGuard = SecureEraseGuard{seed};
+    const auto point = ed25519_signer::publicKey(seed.span());
+    auto encoder = DerEncoder{};
+    signing_key_encoding::appendEd25519PublicKey(encoder, point.span());
+    auto publicKey = PublicKey::fromDerOrThrow(encoder.encoded());
+    return SigningPrivateKey{SigningKeyAlgorithm::Ed25519, seed.span(), std::move(publicKey)};
 }
 
 auto SigningKeyGenerator::generateRsa() const -> SigningPrivateKey {

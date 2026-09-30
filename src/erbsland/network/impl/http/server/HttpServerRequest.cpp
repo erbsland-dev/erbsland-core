@@ -173,7 +173,7 @@ void HttpServerRequest::sendJson(String body, const HttpStatus status, HttpHeade
         "application/json"_el);
 }
 
-void HttpServerRequest::sendJson(const text::json::JsonValue &body, const HttpStatus status, HttpHeaders headers) {
+void HttpServerRequest::sendJson(const data::json::JsonValue &body, const HttpStatus status, HttpHeaders headers) {
     verifyCurrentOwnerEvents();
     if (_final) {
         return;

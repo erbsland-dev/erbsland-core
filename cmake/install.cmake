@@ -59,4 +59,4 @@ install(FILES
 # configured and compiled only when a consumer declares a package and installs a release build.
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/tools/package/"
         DESTINATION lib/cmake/erbsland-core/package-tool
-        FILES_MATCHING PATTERN "*.hpp" PATTERN "*.cpp" PATTERN "*.cmake" PATTERN "CMakeLists.txt")
+        FILES_MATCHING PATTERN "*.hpp" PATTERN "*.cpp" PATTERN "*.cmake" PATTERN "*.elcl" PATTERN "CMakeLists.txt")

@@ -1,0 +1,179 @@
+# Validation rules for package.elcl. This document is embedded in the package tool.
+
+[vr_template.settings]
+type: "section"
+
+[vr_template.settings.version_source]
+type: "text"
+is_optional: true
+in: "cmake", "file", "git"
+
+[vr_template.settings.version_file]
+type: "text"
+is_optional: true
+
+[vr_template.settings.version_pattern]
+type: "regex"
+is_optional: true
+
+[vr_template.settings.target_dir]
+type: "text"
+is_optional: true
+
+[vr_template.settings.filename_format]
+type: "text"
+is_optional: true
+
+[vr_template.settings.dependency_directories]
+type: "value_list"
+is_optional: true
+
+[vr_template.settings.dependency_directories.vr_entry]
+type: "text"
+
+[vr_template.settings.app]
+type: "boolean"
+is_optional: true
+
+[vr_template.settings.bundle_id]
+type: "text"
+is_optional: true
+
+[vr_template.settings.signing]
+type: "section"
+is_optional: true
+
+[vr_template.settings.signing.enabled]
+type: "boolean"
+is_optional: true
+
+[vr_template.settings.signing.identity]
+type: "text"
+is_optional: true
+
+[vr_template.settings.signing.notarize]
+type: "boolean"
+is_optional: true
+
+[vr_template.settings.signing.notary_profile]
+type: "text"
+is_optional: true
+
+[vr_template.settings.signing.certificate_sha1]
+type: "text"
+is_optional: true
+
+[vr_template.settings.signing.certificate_file]
+type: "text"
+is_optional: true
+
+[vr_template.settings.signing.csp]
+type: "text"
+is_optional: true
+
+[vr_template.settings.signing.key]
+type: "text"
+is_optional: true
+is_secret: true
+
+[vr_template.settings.signing.timestamp_server]
+type: "text"
+is_optional: true
+
+[vr_template.settings.signing.tool_architecture]
+type: "text"
+is_optional: true
+
+[vr_template.settings.signing.tool_path]
+type: "text"
+is_optional: true
+
+[vr_template.settings.files]
+type: "section_list"
+is_optional: true
+
+[vr_template.settings.files.vr_entry.path]
+type: "text"
+
+[vr_template.settings.files.vr_entry.target]
+type: "text"
+is_optional: true
+
+[vr_template.settings.files.vr_entry.recursive]
+type: "boolean"
+is_optional: true
+
+[vr_template.settings.files.vr_entry.include_pattern]
+type: "value_list"
+is_optional: true
+
+[vr_template.settings.files.vr_entry.include_pattern.vr_entry]
+type: "text"
+
+[vr_template.settings.files.vr_entry.exclude_pattern]
+type: "value_list"
+is_optional: true
+
+[vr_template.settings.files.vr_entry.exclude_pattern.vr_entry]
+type: "text"
+
+[vr_template.settings.files.vr_entry.include_regex]
+type: "value_list"
+is_optional: true
+
+[vr_template.settings.files.vr_entry.include_regex.vr_entry]
+type: "text"
+
+[vr_template.settings.files.vr_entry.exclude_regex]
+type: "value_list"
+is_optional: true
+
+[vr_template.settings.files.vr_entry.exclude_regex.vr_entry]
+type: "text"
+
+[main]
+use_template: "settings"
+
+[platform]
+type: "section"
+is_optional: true
+
+[platform.vr_any]
+use_template: "settings"
+
+[platform.vr_any.vr_any]
+use_template: "settings"
+
+[package]
+type: "section"
+is_optional: true
+
+[package.vr_any]
+use_template: "settings"
+
+[package.vr_any.platform]
+type: "section"
+is_optional: true
+
+[package.vr_any.platform.vr_any]
+use_template: "settings"
+
+[package.vr_any.platform.vr_any.vr_any]
+use_template: "settings"
+
+[target]
+type: "section"
+is_optional: true
+
+[target.vr_any]
+use_template: "settings"
+
+[target.vr_any.platform]
+type: "section"
+is_optional: true
+
+[target.vr_any.platform.vr_any]
+use_template: "settings"
+
+[target.vr_any.platform.vr_any.vr_any]
+use_template: "settings"

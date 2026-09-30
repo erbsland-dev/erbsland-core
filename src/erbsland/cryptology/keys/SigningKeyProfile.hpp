@@ -8,6 +8,7 @@ namespace erbsland::cryptology {
 
 /// A modern signing-key generation profile with fixed safe parameters.
 enum class SigningKeyProfile : uint8_t {
+    Ed25519,   ///< Pure Ed25519 using a securely generated 32-octet seed.
     EcdsaP256, ///< ECDSA over NIST P-256.
     EcdsaP384, ///< ECDSA over NIST P-384.
     Rsa2048,   ///< Two-prime RSA with a 2048-bit modulus and e=65537.

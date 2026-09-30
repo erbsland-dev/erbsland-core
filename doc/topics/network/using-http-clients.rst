@@ -24,7 +24,7 @@ It starts active, so you can install fallback callbacks and submit a request imm
         .onJsonResponse([](
             network::HttpClientRequestPtr request,
             network::HttpClientResponsePtr response,
-            text::json::JsonValue body) {
+            data::json::JsonValue body) {
             consumeResult(request->url(), response->head().status(), std::move(body));
         })
         .onError([](network::HttpClientRequestPtr request, const network::NetworkErrorContext &error) {

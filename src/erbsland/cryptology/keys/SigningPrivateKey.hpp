@@ -7,10 +7,12 @@
 #include "SigningKeyProfile.hpp"
 #include "SigningPrivateKey_fwd.hpp"
 
+#include "../authentication/ClientAuthenticationToken_fwd.hpp"
 #include "../impl/PrivateKeyParser_fwd.hpp"
 #include "../impl/SigningKeyGenerator_fwd.hpp"
 #include "../PemDerFormat.hpp"
 #include "../protected_data/ProtectedByteBlock.hpp"
+#include "../SignedByteBlock_fwd.hpp"
 #include "../tls/TlsSignatureScheme.hpp"
 
 #include "../../mem/ByteBlock.hpp"
@@ -30,6 +32,8 @@ namespace erbsland::cryptology {
 class SigningPrivateKey final {
     friend class impl::PrivateKeyParser;
     friend class impl::SigningKeyGenerator;
+    friend class ClientAuthenticationToken;
+    friend class SignedByteBlock;
 
 public:
     /// Create an empty private-key placeholder.
@@ -131,6 +135,10 @@ public: // factories
         -> SigningPrivateKey;
 
 private:
+    /// Sign one already framed application message with an Ed25519 key.
+    [[nodiscard]] auto signEd25519Framed(mem::ConstByteSpan message) const -> mem::ByteBlock;
+    /// Import a validated Ed25519 seed for token authentication.
+    [[nodiscard]] static auto fromEd25519Seed(mem::ConstByteSpan seed) -> SigningPrivateKey;
     /// Create a validated key from normalized secret and cached public material.
     SigningPrivateKey(SigningKeyAlgorithm algorithm, mem::ConstByteSpan privateData, PublicKey publicKey);
 

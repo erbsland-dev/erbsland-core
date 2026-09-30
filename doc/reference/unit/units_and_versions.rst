@@ -49,8 +49,20 @@ You can construct versions from raw part values or from typed part values in any
     auto api = el::Version{1, 2, 0};
     auto selected = el::Version{el::Major{13}, el::Revision{2}}
 
+Parsing
+-------
+
+:cpp:func:`fromString() <erbsland::unit::Version::fromString>` accepts one to four decimal parts separated by dots.
+Each part must contain digits only, have no leading zeros unless it is zero, and fit in an unsigned 16-bit value.
+Whitespace, signs, and trailing characters are invalid.
+The ``requiredPrecision`` argument sets the least significant part that must be present; omitted parts become zero.
+Invalid text returns ``std::nullopt``.
+Use
+:cpp:func:`fromStringOrThrow() <erbsland::unit::Version::fromStringOrThrow>` to receive an
+:cpp:class:`err::ParseError <erbsland::err::ParseError>` instead.
+
 Precision
-^^^^^^^^^
+---------
 
 :cpp:func:`compare() <erbsland::unit::Version::compare>` accepts a
 :cpp:enum:`VersionPart <erbsland::unit::VersionPart>` as precision.
@@ -58,21 +70,21 @@ The selected part is the last compared part.
 For example, minor precision compares major and minor, while revision and build are ignored.
 
 Numeric Representation
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 :cpp:func:`toNumber() <erbsland::unit::Version::toNumber>` packs the four 16-bit parts into a ``uint64_t`` as
 ``major << 48 | minor << 32 | revision << 16 | build``.
 This keeps numeric ordering identical to full version ordering.
 
 Version Part
-~~~~~~~~~~~~
+============
 
 :cpp:enum:`VersionPart <erbsland::unit::VersionPart>` identifies the part of a
 :cpp:class:`Version <erbsland::unit::Version>`.
 It is also used as comparison precision: the selected part is included, and less-significant parts are ignored.
 
 Version Range
-~~~~~~~~~~~~~
+=============
 
 :cpp:class:`VersionRange <erbsland::unit::VersionRange>` stores optional inclusive minimum and maximum version bounds.
 Missing bounds are open-ended, so a default range contains every version.
@@ -81,7 +93,7 @@ Containment uses the same precision rules as :cpp:func:`Version::compare <erbsla
 If both bounds are present and the minimum is greater than the maximum at the selected precision, the range is empty.
 
 Common Ranges
-^^^^^^^^^^^^^
+-------------
 
 Use :cpp:func:`all() <erbsland::unit::VersionRange::all>` for an open range,
 :cpp:func:`atLeast() <erbsland::unit::VersionRange::atLeast>` for a lower-bounded range,
@@ -90,7 +102,7 @@ Use :cpp:func:`all() <erbsland::unit::VersionRange::all>` for an open range,
 :cpp:func:`exact() <erbsland::unit::VersionRange::exact>` for a single version.
 
 Version Unit
-~~~~~~~~~~~~
+============
 
 :cpp:struct:`VersionUnit <erbsland::unit::VersionUnit>` is the shared base unit for unsigned 16-bit version components.
 It disables the ``noIndex()`` sentinel so the full 16-bit range is available to

@@ -12,6 +12,7 @@ target_sources(erbsland-core-unittest PRIVATE
         AesPrimitiveFullTest.cpp
         AesPrimitiveTest.cpp
         Asn1NodeTest.cpp
+        AuthenticationTokenTest.cpp
         ChaCha20BackendFullTest.cpp
         ChaCha20Poly1305FullTest.cpp
         ChaCha20Poly1305Test.cpp
@@ -42,6 +43,7 @@ target_sources(erbsland-core-unittest PRIVATE
         RsaSignatureFullTest.cpp
         RsaSignatureTest.cpp
         Sha3ValidationTest.cpp
+        SignedByteBlockTest.cpp
         SigningPrivateKeyTest.cpp
         SymmetricEncryptionFrontendTest.cpp
         SymmetricEncryptionTypeTest.cpp

@@ -26,10 +26,10 @@ public: // accessors
     [[nodiscard]] auto format() const noexcept -> const BaseNFormat & { return _format; }
 
 public: // conversion
-    /// Decode data, returning no value for malformed text or a size-limit violation.
+    /// Decode data, preserving sensitive input storage and returning no value for invalid input.
     [[nodiscard]] auto toData(unit::ByteLength maximum = unit::ByteLength::infinite()) const
         -> std::optional<mem::ByteBlock>;
-    /// Decode data or throw a detailed error.
+    /// Decode data, preserving sensitive input storage, or throw a detailed error.
     /// @throws err::ParseError If the text is malformed.
     /// @throws err::OutOfRangeError If the decoded data exceeds `maximum`.
     [[nodiscard]] auto toDataOrThrow(unit::ByteLength maximum = unit::ByteLength::infinite()) const -> mem::ByteBlock;

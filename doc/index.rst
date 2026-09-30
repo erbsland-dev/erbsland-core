@@ -66,9 +66,10 @@ Features Available Today
 ========================
 
 Text, data, and utilities
---------------------------
+-------------------------
 
 - Unicode-aware strings, text, and formatting for UTF-8, UTF-16, and UTF-32
+- JSON, BSON, CBOR, and XML value and document APIs for parsing and serialization
 - A safe, reliable regular-expression engine
 - Byte and text streams, text encodings, and buffers
 - Filesystem paths, file and directory operations, and file streams
@@ -76,13 +77,14 @@ Text, data, and utilities
 - Safe numeric utilities, including saturating arithmetic and checked conversions
 - Fast and secure random-number generators with safe APIs
 - Copy-on-write containers, coroutine primitives, enum flags, compression, and more
-- Template render framework with a Jinja like syntax.
+- Text layout rendering with a Jinja-like template language
 
 Applications and system integration
 -----------------------------------
 
 - Command-line option parsing with formatted help and version output
 - An application framework and application-part management to minimize boilerplate
+- Release-package tooling for Windows and macOS applications
 - A resource system for automatically compiled-in resources
 - Terminal output with colors, styles, cursor movement, and terminal-size detection
 - Error classes, diagnostics, and formatted diagnostic output
@@ -101,6 +103,7 @@ Cryptography
 ------------
 
 - An extensive cryptography layer with no dependency on other libraries
+- Signed byte blocks and challenge-response authentication tokens
 
 All Documentation
 =================

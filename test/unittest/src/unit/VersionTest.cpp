@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/err/ParseError.hpp>
 #include <erbsland/text/String.hpp>
 #include <erbsland/unit/all.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -148,6 +149,76 @@ public:
         REQUIRE_EQUAL(Version{}.toString(), "0.0.0"_el);
     }
 
+    void testVersionFromString() {
+        REQUIRE_EQUAL(Version::fromStringOrThrow("0"_el), (Version{}));
+        REQUIRE_EQUAL(Version::fromStringOrThrow("1"_el), (Version{1}));
+        REQUIRE_EQUAL(Version::fromStringOrThrow("1.2"_el), (Version{1, 2}));
+        REQUIRE_EQUAL(Version::fromStringOrThrow("1.2.3"_el), (Version{1, 2, 3}));
+        REQUIRE_EQUAL(Version::fromStringOrThrow("1.2.3.4"_el), (Version{1, 2, 3, 4}));
+        REQUIRE_EQUAL(Version::fromStringOrThrow("65535.0.65535.65535"_el), (Version{65535, 0, 65535, 65535}));
+
+        REQUIRE_EQUAL(Version::fromStringOrThrow("7"_el, VersionPart::Major), (Version{7}));
+        REQUIRE_EQUAL(Version::fromStringOrThrow("7.8"_el, VersionPart::Minor), (Version{7, 8}));
+        REQUIRE_EQUAL(Version::fromStringOrThrow("7.8.9"_el, VersionPart::Revision), (Version{7, 8, 9}));
+        REQUIRE_EQUAL(Version::fromStringOrThrow("7.8.9.10"_el, VersionPart::Build), (Version{7, 8, 9, 10}));
+        REQUIRE_EQUAL(Version::fromStringOrThrow("7.8.9.10"_el, VersionPart::Major), (Version{7, 8, 9, 10}));
+
+        REQUIRE_EQUAL(Version::fromString("1.2.3.4"_el), (Version{1, 2, 3, 4}));
+        REQUIRE_EQUAL(Version::fromString("7.8"_el, VersionPart::Minor), (Version{7, 8}));
+    }
+
+    void testVersionFromStringInvalidStructure() {
+        WITH_CONTEXT(requireInvalidVersion(""_el));
+        WITH_CONTEXT(requireInvalidVersion("."_el));
+        WITH_CONTEXT(requireInvalidVersion(".1"_el));
+        WITH_CONTEXT(requireInvalidVersion("1."_el));
+        WITH_CONTEXT(requireInvalidVersion("1..2"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2."_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2.3."_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2.3.4."_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2.3.4.5"_el));
+        WITH_CONTEXT(requireInvalidVersion("1,2"_el));
+        WITH_CONTEXT(requireInvalidVersion("1-2"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2x"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2.3.4x"_el));
+        WITH_CONTEXT(requireInvalidVersion("v1.2"_el));
+    }
+
+    void testVersionFromStringInvalidPart() {
+        WITH_CONTEXT(requireInvalidVersion("+1"_el));
+        WITH_CONTEXT(requireInvalidVersion("-1"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.+2"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.-2"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.a"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2.a"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2.3.a"_el));
+        WITH_CONTEXT(requireInvalidVersion("１.２"_el));
+        WITH_CONTEXT(requireInvalidVersion("00"_el));
+        WITH_CONTEXT(requireInvalidVersion("01"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.02"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2.003"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2.3.04"_el));
+        WITH_CONTEXT(requireInvalidVersion("0x10"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.0b10"_el));
+        WITH_CONTEXT(requireInvalidVersion("65536"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.65536"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2.65536"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2.3.65536"_el));
+        WITH_CONTEXT(requireInvalidVersion("999999999999999999999999999999"_el));
+    }
+
+    void testVersionFromStringInvalidWhitespaceAndPrecision() {
+        WITH_CONTEXT(requireInvalidVersion(" 1"_el));
+        WITH_CONTEXT(requireInvalidVersion("1 "_el));
+        WITH_CONTEXT(requireInvalidVersion("1\n"_el));
+        WITH_CONTEXT(requireInvalidVersion("1. 2"_el));
+        WITH_CONTEXT(requireInvalidVersion("1 .2"_el));
+        WITH_CONTEXT(requireInvalidVersion("1.2\t.3"_el));
+        WITH_CONTEXT(requireInvalidVersion("1"_el, VersionPart::Minor));
+        WITH_CONTEXT(requireInvalidVersion("1.2"_el, VersionPart::Revision));
+        WITH_CONTEXT(requireInvalidVersion("1.2.3"_el, VersionPart::Build));
+    }
+
     void testVersionRangeRuntimeBehavior() {
 
         const auto all = VersionRange::all();
@@ -195,5 +266,11 @@ public:
         REQUIRE(
             std::hash<VersionRange>{}(VersionRange::exact(Version{1})) ==
             std::hash<VersionRange>{}(VersionRange::exact(Version{1})));
+    }
+
+private:
+    void requireInvalidVersion(const el::text::String &text, VersionPart requiredPrecision = VersionPart::Major) {
+        REQUIRE_FALSE(Version::fromString(text, requiredPrecision).has_value());
+        REQUIRE_THROWS_AS(el::err::ParseError, Version::fromStringOrThrow(text, requiredPrecision));
     }
 };

@@ -14,9 +14,11 @@ primary usage and security guidance.
 .. toctree::
     :maxdepth: 1
 
+    authentication_tokens
     cryptographic_operations
     key_management
     password_hashing
     protected_data
+    signed_byte_blocks
     tls
     x509_certificates

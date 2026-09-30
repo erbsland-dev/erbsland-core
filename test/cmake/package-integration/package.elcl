@@ -22,9 +22,9 @@ target: "docs"
 app: false
 filename_format: "server-%{version}-%{sys:platform}-%{sys:architecture}"
 
-[target."package-client"]
-bundle_id: "dev.erbsland.package-client"
+[target.package_client]
+bundle_id: "dev.erbsland.package_client"
 
-*[target."package-client".files]*
+*[target.package_client.files]*
 path: "target.txt"
 target: "docs"

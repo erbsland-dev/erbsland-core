@@ -1,0 +1,5 @@
+[main]
+filename_format: "base-%{version}"
+
+[target."package_server"]
+filename_format: "quoted-%{version}"

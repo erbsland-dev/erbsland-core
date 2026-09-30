@@ -32,8 +32,8 @@ public:
         const text::String &architecture, const text::String &target) -> text::String;
 
 private:
-    /// Quote a package or target name when ELCL requires a text name.
-    [[nodiscard]] static auto pathSegment(const text::String &name) -> text::String;
+    /// Validate a package or target name for regular ELCL sections.
+    [[nodiscard]] static auto validatedName(const text::String &name) -> text::String;
     /// Merge one existing override section.
     void applySection(PackageSettings &result, const text::String &sectionPath) const;
     /// Append file selection entries from a section list.

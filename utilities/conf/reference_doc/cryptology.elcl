@@ -15,6 +15,18 @@ Header Globs:
     * "cryptology/symmetric/*.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "cryptology/signed_byte_blocks.rst"
+Title       : "Signed Byte Blocks"
+Headers     :
+    * "cryptology/SignedByteBlock.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/authentication_tokens.rst"
+Title       : "Authentication Tokens"
+Header Globs:
+    * "cryptology/authentication/*.hpp"
+
+------------*[ Reference Groups ]
 Page        : "cryptology/protected_data.rst"
 Title       : "Protected Data"
 Header Globs:

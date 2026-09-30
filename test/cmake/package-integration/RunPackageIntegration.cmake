@@ -43,7 +43,7 @@ package_run("${CMAKE_COMMAND}" -S "${fixture}" -B "${source_build}" -G "${PACKAG
         -DERBSLAND_CORE_ENABLE_TESTS=OFF -DERBSLAND_CORE_ENABLE_DEMOS=OFF
         "-DPACKAGE_CORE_SOURCE=${PACKAGE_SOURCE_DIRECTORY}"
         "-DPACKAGE_OUTPUT_DIRECTORY=${source_output}")
-package_run("${CMAKE_COMMAND}" --build "${source_build}" --target package-client --config Release)
+package_run("${CMAKE_COMMAND}" --build "${source_build}" --target package_client --config Release)
 package_run("${CMAKE_COMMAND}" --install "${source_build}" --config Release --component Package-client)
 package_assert_count("${source_output}" 1)
 
@@ -56,7 +56,7 @@ set(client_archive "${client_archives}")
 set(extracted "${PACKAGE_TEST_DIRECTORY}/extracted")
 if(APPLE)
     package_run(/usr/bin/ditto -x -k "${client_archive}" "${extracted}")
-    file(GLOB clients "${extracted}/client-*/*.app/Contents/MacOS/package-client")
+    file(GLOB clients "${extracted}/client-*/*.app/Contents/MacOS/package_client")
     file(GLOB libraries "${extracted}/client-*/*.app/Contents/Frameworks/libpackage-library.dylib")
     file(GLOB framework_binaries
             "${extracted}/client-*/*.app/Contents/Frameworks/PackageFramework.framework/Versions/A/PackageFramework")
@@ -69,7 +69,7 @@ if(APPLE)
     package_run("${clients}")
 elseif(WIN32)
     file(ARCHIVE_EXTRACT INPUT "${client_archive}" DESTINATION "${extracted}")
-    file(GLOB clients "${extracted}/client-*/package-client.exe")
+    file(GLOB clients "${extracted}/client-*/package_client.exe")
     file(GLOB libraries "${extracted}/client-*/package-library.dll")
     if(NOT libraries)
         message(FATAL_ERROR "The Windows package is missing its non-system DLL.")
@@ -88,7 +88,7 @@ if(WIN32)
     set(extra_targets package-signing-tool)
 endif()
 package_run("${CMAKE_COMMAND}" --build "${source_build}"
-        --target package-server erbsland-core-resource-compiler ${extra_targets} --config Release)
+        --target package_server erbsland-core-resource-compiler ${extra_targets} --config Release)
 package_run("${CMAKE_COMMAND}" --install "${source_build}" --config Release --prefix "${core_install}")
 package_assert_count("${source_output}" 3)
 
@@ -98,19 +98,63 @@ package_run("${package_tool}"
         --project-root "${fixture}" --project-name package-fixture --project-version 1.2.3
         --package-name versioned --config "${fixture}/package-version.elcl"
         --output-directory "${version_output}" --architecture testarch --cmake "${CMAKE_COMMAND}"
-        --target-name package-server --target-path "${source_build}/package-server${executable_suffix}")
+        --target-name package_server --target-path "${source_build}/package_server${executable_suffix}")
 package_assert_count("${version_output}" 1)
 set(version_archive "${version_output}/versioned-2.3.4-testarch.zip")
 if(NOT EXISTS "${version_archive}")
     message(FATAL_ERROR "The version file or package placeholders were not applied.")
 endif()
+execute_process(
+        COMMAND "${package_tool}"
+                --project-root "${fixture}" --project-name package-fixture --project-version 1.2.3
+                --package-name versioned --config "${fixture}/package-version-text.elcl"
+                --output-directory "${version_output}" --architecture testarch --cmake "${CMAKE_COMMAND}"
+                --target-name package_server --target-path "${source_build}/package_server${executable_suffix}"
+        RESULT_VARIABLE text_pattern_result OUTPUT_VARIABLE text_pattern_stdout ERROR_VARIABLE text_pattern_stderr)
+if(text_pattern_result EQUAL 0 OR
+        NOT "${text_pattern_stdout}${text_pattern_stderr}" MATCHES "Expected a regular expression")
+    message(FATAL_ERROR "A text-valued version_pattern was not rejected: ${text_pattern_stdout}${text_pattern_stderr}")
+endif()
+execute_process(
+        COMMAND "${package_tool}"
+                --project-root "${fixture}" --project-name package-fixture --project-version 1.2.3
+                --package-name versioned --config "${fixture}/package-invalid-overrides.elcl"
+                --output-directory "${version_output}" --architecture testarch --cmake "${CMAKE_COMMAND}"
+                --target-name package_server --target-path "${source_build}/package_server${executable_suffix}"
+        RESULT_VARIABLE override_result OUTPUT_VARIABLE override_stdout ERROR_VARIABLE override_stderr)
+if(override_result EQUAL 0 OR
+        NOT "${override_stdout}${override_stderr}" MATCHES "Expected a Boolean value")
+    message(FATAL_ERROR "An invalid inactive override was not rejected: ${override_stdout}${override_stderr}")
+endif()
+execute_process(
+        COMMAND "${package_tool}"
+                --project-root "${fixture}" --project-name package-fixture --project-version 1.2.3
+                --package-name versioned --config "${fixture}/package-quoted-name.elcl"
+                --output-directory "${version_output}" --architecture testarch --cmake "${CMAKE_COMMAND}"
+                --target-name package_server --target-path "${source_build}/package_server${executable_suffix}"
+        RESULT_VARIABLE quoted_name_result OUTPUT_VARIABLE quoted_name_stdout ERROR_VARIABLE quoted_name_stderr)
+if(quoted_name_result EQUAL 0 OR
+        NOT "${quoted_name_stdout}${quoted_name_stderr}" MATCHES "Expected a section but got a section with texts")
+    message(FATAL_ERROR "A quoted package or target section was not rejected: ${quoted_name_stdout}${quoted_name_stderr}")
+endif()
+execute_process(
+        COMMAND "${package_tool}"
+                --project-root "${fixture}" --project-name package-fixture --project-version 1.2.3
+                --package-name invalid-name --config "${fixture}/package-version.elcl"
+                --output-directory "${version_output}" --architecture testarch --cmake "${CMAKE_COMMAND}"
+                --target-name package_server --target-path "${source_build}/package_server${executable_suffix}"
+        RESULT_VARIABLE invalid_name_result OUTPUT_VARIABLE invalid_name_stdout ERROR_VARIABLE invalid_name_stderr)
+if(invalid_name_result EQUAL 0 OR
+        NOT "${invalid_name_stdout}${invalid_name_stderr}" MATCHES "regular ELCL names")
+    message(FATAL_ERROR "An invalid package name was not rejected: ${invalid_name_stdout}${invalid_name_stderr}")
+endif()
 set(target_output "${PACKAGE_TEST_DIRECTORY}/target-packages")
 package_run("${package_tool}"
         --project-root "${fixture}" --project-name package-fixture --project-version 1.2.3
-        --package-name target-override --config "${fixture}/package-target.elcl"
+        --package-name target_override --config "${fixture}/package-target.elcl"
         --output-directory "${target_output}" --architecture testarch --cmake "${CMAKE_COMMAND}"
-        --target-name package-server --target-path "${source_build}/package-server${executable_suffix}")
-if(NOT EXISTS "${target_output}/target-package-server-1.2.3.zip")
+        --target-name package_server --target-path "${source_build}/package_server${executable_suffix}")
+if(NOT EXISTS "${target_output}/target-package_server-1.2.3.zip")
     message(FATAL_ERROR "The single-target filename override or target placeholder was not applied.")
 endif()
 set(version_extract "${PACKAGE_TEST_DIRECTORY}/version-extracted")
@@ -150,8 +194,8 @@ package_run("${package_tool}"
         --project-root "${git_root}" --project-name package-fixture --project-version 1.2.3
         --package-name gitpack --config "${fixture}/package-git.elcl"
         --output-directory "${git_output}" --architecture testarch --cmake "${CMAKE_COMMAND}"
-        --git "${package_git}" --target-name package-server
-        --target-path "${source_build}/package-server${executable_suffix}")
+        --git "${package_git}" --target-name package_server
+        --target-path "${source_build}/package_server${executable_suffix}")
 file(GLOB git_archives "${git_output}/gitpack-2.3.4-1-*-testarch.zip")
 list(LENGTH git_archives git_count)
 if(NOT git_count EQUAL 1)
@@ -172,13 +216,13 @@ if(WIN32)
             --project-root "${fixture}" --project-name package-fixture --project-version 1.2.3
             --package-name signing --config "${fixture}/package-signing.elcl"
             --output-directory "${signing_output}" --architecture testarch --cmake "${CMAKE_COMMAND}"
-            --target-name package-client --target-path "${source_build}/package-client.exe")
+            --target-name package_client --target-path "${source_build}/package_client.exe")
     package_assert_count("${signing_output}" 1)
     file(READ "${signing_log}" signing_commands)
     if(NOT signing_commands MATCHES "sign /fd sha256 /td sha256 /tr https://timestamp.example.invalid /sha1 0123456789ABCDEF0123456789ABCDEF01234567" OR
             NOT signing_commands MATCHES "verify /v /pa" OR
             NOT signing_commands MATCHES "package-library.dll" OR
-            NOT signing_commands MATCHES "package-client.exe")
+            NOT signing_commands MATCHES "package_client.exe")
         message(FATAL_ERROR "Unexpected SignTool commands: ${signing_commands}")
     endif()
 endif()
@@ -189,7 +233,7 @@ execute_process(
                 --project-root "${fixture}" --project-name package-fixture --project-version 1.2.3
                 --package-name collision --config "${fixture}/package-collision.elcl"
                 --output-directory "${collision_output}" --architecture testarch --cmake "${CMAKE_COMMAND}"
-                --target-name package-server --target-path "${source_build}/package-server${executable_suffix}"
+                --target-name package_server --target-path "${source_build}/package_server${executable_suffix}"
         RESULT_VARIABLE collision_result OUTPUT_VARIABLE collision_stdout ERROR_VARIABLE collision_stderr)
 if(collision_result EQUAL 0 OR NOT "${collision_stdout}${collision_stderr}" MATCHES "collision")
     message(FATAL_ERROR "A destination collision was not reported: ${collision_stdout}${collision_stderr}")
@@ -200,7 +244,7 @@ if(temporary_directories)
     message(FATAL_ERROR "A failed package left temporary staging files: ${temporary_directories}")
 endif()
 
-file(REMOVE "${source_build}/package-server${executable_suffix}")
+file(REMOVE "${source_build}/package_server${executable_suffix}")
 execute_process(
         COMMAND "${CMAKE_COMMAND}" --install "${source_build}" --config Release --component Package-server
         RESULT_VARIABLE missing_result OUTPUT_VARIABLE missing_output ERROR_VARIABLE missing_error)
@@ -213,6 +257,6 @@ package_run("${CMAKE_COMMAND}" -S "${fixture}" -B "${installed_build}" -G "${PAC
         -DCMAKE_BUILD_TYPE=Release -DCMAKE_UNITY_BUILD=ON
         -DPACKAGE_CORE_INSTALL=ON "-DCMAKE_PREFIX_PATH=${core_install}"
         "-DPACKAGE_OUTPUT_DIRECTORY=${installed_output}")
-package_run("${CMAKE_COMMAND}" --build "${installed_build}" --target package-client --config Release)
+package_run("${CMAKE_COMMAND}" --build "${installed_build}" --target package_client --config Release)
 package_run("${CMAKE_COMMAND}" --install "${installed_build}" --config Release --component Package-client)
 package_assert_count("${installed_output}" 1)

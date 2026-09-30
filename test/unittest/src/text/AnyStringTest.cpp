@@ -46,6 +46,15 @@ public:
         REQUIRE(u32.isEncodingValid());
     }
 
+    void testSensitiveStorageQuery() {
+        REQUIRE_FALSE(AnyString{}.isSensitive());
+        REQUIRE_FALSE(AnyString{U16String{u"text"_el}}.isSensitive());
+        REQUIRE_FALSE(AnyString{U32String{U"text"_el}}.isSensitive());
+        auto secret = StringEditor{"secret"_el};
+        secret.markAsSensitive();
+        REQUIRE(AnyString{String{secret}}.isSensitive());
+    }
+
     void testOwningStringAccessors() {
 
         const auto u8 = AnyStringEditor{StringEditor{"Aé"_el}};

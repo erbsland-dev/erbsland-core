@@ -18,7 +18,7 @@
 #include <erbsland/network/Network.hpp>
 #include <erbsland/network/source/NetworkErrorContext.hpp>
 #include <erbsland/network/url/Url.hpp>
-#include <erbsland/text/json/JsonValue.hpp>
+#include <erbsland/data/json/JsonValue.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -69,7 +69,7 @@ private:
             session = loop->get<Network>().createHttpClientSession();
             session->events()
                 .onJsonResponse(
-                    [&](HttpClientRequestPtr, HttpClientResponsePtr response, el::text::json::JsonValue body) -> void {
+                    [&](HttpClientRequestPtr, HttpClientResponsePtr response, el::data::json::JsonValue body) -> void {
                         result.response = std::move(response);
                         result.jsonReceived = body.getOrThrow("ok"_el).getBoolOrThrow();
                         session->close();

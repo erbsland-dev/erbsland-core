@@ -11,6 +11,7 @@ Reference
     core/index
     cryptology/index
     cterm/index
+    data/index
     debug/index
     err/index
     event/index

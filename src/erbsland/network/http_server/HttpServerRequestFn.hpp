@@ -7,8 +7,8 @@
 
 #include "../http/HttpResponseHead.hpp"
 
+#include "../../data/json/JsonValue.hpp"
 #include "../../mem/ByteBlock.hpp"
-#include "../../text/json/JsonValue.hpp"
 #include "../../text/String.hpp"
 
 #include <functional>
@@ -25,7 +25,7 @@ using HttpServerTextRequestFn = std::function<void(HttpServerSessionPtr, HttpSer
 
 /// An aggregated JSON request handler.
 /// @tested{HttpServerLiveTest HttpServerSessionTest}
-using HttpServerJsonRequestFn = std::function<void(HttpServerSessionPtr, HttpServerRequestPtr, text::json::JsonValue)>;
+using HttpServerJsonRequestFn = std::function<void(HttpServerSessionPtr, HttpServerRequestPtr, data::json::JsonValue)>;
 
 /// A low-level request-head handler selecting its body policy manually.
 /// @tested{HttpServerLiveTest HttpServerSessionTest}

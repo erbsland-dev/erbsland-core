@@ -216,6 +216,10 @@ Use the explicit namespace because these names are intentionally not added to th
     const auto encoded = base_n::BaseNEncoder{data, base_n::BaseNFormat::base64()}.toString();
     const auto decoded = base_n::BaseNDecoder{encoded}.toDataOrThrow();
 
+When input bytes are marked sensitive, UTF-8 encoder output is sensitive from allocation through conversion.
+UTF-16 and UTF-32 encoder output uses ordinary storage because sensitive storage is limited to UTF-8 strings.
+Decoding a sensitive UTF-8 string creates sensitive byte storage before writing decoded data.
+
 Decoding is strict after configured whitespace is removed.
 It rejects unknown characters, malformed or missing required padding, incomplete groups, and non-zero unused bits.
 Use :cpp:func:`BaseNDecoder::toData() <erbsland::text::base_n::BaseNDecoder::toData>` when malformed input and size

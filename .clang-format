@@ -57,6 +57,7 @@ IncludeIsMainRegex: '(_[A-Za-z0-9_]+)?$'
 IndentGotoLabels: false
 IndentWidth: 4
 InsertNewlineAtEOF: true
+InsertBraces: true
 MaxEmptyLinesToKeep: 1
 PackConstructorInitializers: NextLine
 SeparateDefinitionBlocks: Leave

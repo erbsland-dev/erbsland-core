@@ -4,6 +4,7 @@
 
 #include "FileEntry.hpp"
 
+#include <erbsland/re/RegEx.hpp>
 #include <erbsland/text/String.hpp>
 
 #include <vector>
@@ -18,7 +19,7 @@ struct PackageSettings final {
     text::String versionSource{"cmake"};  ///< Version provider.
     text::String version;                 ///< Complete version text.
     text::String versionFile;             ///< Relative version source file.
-    text::String versionPattern;          ///< Version extraction expression.
+    re::RegExPtr versionPattern;          ///< Version extraction regular expression.
     text::String targetDir;               ///< Archive root directory format.
     text::String filenameFormat;          ///< ZIP filename format without extension.
     text::String bundleId;                ///< macOS bundle identifier.

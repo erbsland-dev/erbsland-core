@@ -4,16 +4,17 @@
 
 .. index::
     single: erbsland_core_package
-    single: CMake; Release Packaging
+    single: Release Packages; Reference
 
-*****************
-Release Packaging
-*****************
+***************************
+Release Packaging Reference
+***************************
 
-``erbsland_core_package()`` registers one ZIP package on macOS or Windows.
-The helper is available both when Erbsland Core is part of the source build and after
-``find_package(erbsland-core CONFIG REQUIRED)``.
-Each call creates an install rule in component ``Package-<name>``.
+``erbsland_core_package()`` registers a Windows or macOS ZIP as an install rule in component ``Package-<name>``.
+For a practical introduction, start with :doc:`/topics/core/release_packages`.
+The detailed guides cover :doc:`CMake integration </topics/core/release_package_cmake>`,
+:doc:`configuration and file entries </topics/core/release_package_configuration>`, and
+:doc:`signing and notarization </topics/core/release_package_signing>`.
 
 CMake Interface
 ===============
@@ -21,94 +22,80 @@ CMake Interface
 .. code-block:: cmake
 
     erbsland_core_package(
-            TARGET <executable> | TARGETS <executable>...
-            [NAME <package-name>]
-            [CONFIG <configuration-file>]
-            [OUTPUT_DIRECTORY <directory>])
+        TARGET <executable> | TARGETS <executable>...
+        [NAME <package-name>]
+        [CONFIG <configuration-file>]
+        [OUTPUT_DIRECTORY <directory>])
 
 ``TARGET`` and ``TARGETS`` are mutually exclusive and accept existing executable targets.
-``NAME`` defaults to the root CMake project name and must be unique within the build.
-``CONFIG`` defaults to ``<project-root>/package.elcl``; the default file is optional.
-An explicit ``CONFIG`` must exist.
-``OUTPUT_DIRECTORY`` defaults to ``<project-root>/packages`` and is independent of ``CMAKE_INSTALL_PREFIX``.
+``NAME`` defaults to ``CMAKE_PROJECT_NAME`` and must be unique in the build.
+Package and executable target names must start with a letter and contain only letters, digits, and single underscores
+between words, so they can be used as regular ELCL section names.
+``CONFIG`` defaults to the optional root ``package.elcl``; an explicit file must exist.
+``OUTPUT_DIRECTORY`` defaults to the root ``packages`` directory.
+Relative paths are resolved from the root source directory.
+The install rule builds the package utility for ``Release`` and ``RelWithDebInfo``, but the target executables must
+already be built.
+Other configurations create no ZIP.
+On other platforms, the call warns and adds no package install rule; application targets and other install rules are
+unaffected.
 
-The root project must provide ``project(... VERSION ...)`` when no version source is configured.
-The output directory and configuration path are resolved relative to the root source directory.
-The target executables must be built before installation.
-The package tool itself is built during installation for ``Release`` and ``RelWithDebInfo``.
-Other configurations emit a warning and create no ZIP.
-
-Configuration File
+Configuration Keys
 ==================
 
-The optional ELCL file uses ``[main]`` for shared values.
-Later sections override earlier values in this order: ``[platform.<system>]``, ``[platform.<system>.<architecture>]``,
-``[package.<name>]``, ``[package.<name>.platform.<system>]``, ``[package.<name>.platform.<system>.<architecture>]``, and
-the corresponding ``[target.<target>]`` sections.
-The system is ``macos`` or ``windows``.
-Target names containing a hyphen or other non-name characters require an ELCL text name, for example
-``[target."my-app"]``.
-For a single-target package, the target section can override the package version, root directory, and ZIP name.
-For a multi-target package, those shared values come from the main, platform, architecture, and package sections; target
-sections control each target's files, dependency paths, app settings, and signing.
+A present ELCL file requires ``[main]``.
+The package tool validates it against embedded ELCL Validation Rules before resolving package settings.
+Scalar settings are overridden in this order: main, platform, platform architecture, package, package platform, package
+platform architecture, target, target platform, target platform architecture.
+The platform tokens are ``windows`` and ``macos``.
+File entries and dependency directories accumulate across matching sections.
+See :doc:`/topics/core/release_package_configuration` for the section syntax and examples.
 
-Supported values in these sections are:
-
-.. list-table:: Package configuration values
+.. list-table:: Values allowed in the main, platform, package, and target sections
     :header-rows: 1
 
     *   -   Key
-        -   Meaning
+        -   Value
     *   -   ``version_source``
         -   ``cmake`` (default), ``file``, or ``git``.
     *   -   ``version_file``, ``version_pattern``
-        -   Text file and optional regular expression with the version in capture group one.
-    *   -   ``target_dir``, ``filename_format``
-        -   Archive root directory and ZIP basename formats.
+        -   File path and optional ELCL regular expression with version in capture group one.
+    *   -   ``target_dir``
+        -   Archive root format; default ``%{package:name}-%{version}``.
+    *   -   ``filename_format``
+        -   ZIP basename format; default ``%{package:name}-%{version}-%{sys:platform}-%{sys:architecture}``.
     *   -   ``dependency_directories``
-        -   List of directories searched for non-system runtime libraries.
+        -   List of extra runtime-library search directories.
     *   -   ``app``, ``bundle_id``
-        -   macOS app creation (on by default) and bundle identifier.
+        -   macOS app-bundle switch (default true) and generated bundle identifier.
 
-Relative paths in these values and in file entries are based on the ELCL file directory.
-The Git source uses the nearest reachable ``vMAJOR.MINOR.PATCH`` tag and appends commit distance and hash for later
-commits.
-The file source reads the first nonempty, non-comment line unless ``version_pattern`` is set.
+The naming formats accept ``%{version}`` and its ``major``, ``minor``, ``patch``, ``revision``, and ``build`` parts;
+``%{sys:platform}``, ``%{sys:architecture}``, ``%{project:name}``, ``%{package:name}``, and ``%{target:name}`` for a
+selected single target.
 
-File entries are repeated ELCL section-list entries named ``*[<section>.files]*``.
-Each entry needs ``path`` and may set ``target`` (destination directory), ``recursive``, ``include_pattern``,
+A repeated ``*[<section>.files]*`` entry requires ``path`` and accepts ``target``, ``recursive``, ``include_pattern``,
 ``exclude_pattern``, ``include_regex``, and ``exclude_regex``.
-Patterns are lists; glob ``*`` stays within a directory and ``**`` crosses directories.
-Regular expressions match the whole path relative to the source directory.
-Matching entries from each override layer are added in order.
-An existing destination is an error.
+``path`` and ``target`` refer to source and destination respectively.
+Relative source and dependency paths start at the configuration file directory.
 
-Format Placeholders
-===================
+Signing Keys
+============
 
-``target_dir`` defaults to ``%{package:name}-%{version}``.
-``filename_format`` defaults to ``%{package:name}-%{version}-%{sys:platform}-%{sys:architecture}``.
-These formats accept ``%{version}``, ``%{version:major}``, ``%{version:minor}``, ``%{version:patch}``,
-``%{version:build}``, ``%{sys:platform}``, ``%{sys:architecture}``, ``%{project:name}``, ``%{package:name}``, and
-``%{target:name}`` when a target is selected.
-ELCL values also accept ``${env:VARIABLE}`` from the developer environment.
+Signing is disabled by default.
+Place these keys in a matching ``[<section>.signing]`` section.
+See :doc:`/topics/core/release_package_signing` for certificate setup and verification.
 
-Signing Configuration
-=====================
+.. list-table:: Signing values
+    :header-rows: 1
 
-Signing defaults off.
-Under a section such as ``[main.signing]``, ``enabled`` enables signing.
-On Windows, set ``timestamp_server`` and either ``certificate_sha1`` or ``certificate_file``, ``csp``, and ``key``.
-``tool_path`` overrides SignTool discovery through ``WindowsSdkDir`` and ``WindowsSDKVersion``; ``tool_architecture``
-selects the SignTool host binary independently of the application architecture.
-The package tool signs and verifies the staged executable and DLLs.
+    *   -   Platform
+        -   Keys
+    *   -   Both
+        -   ``enabled``
+    *   -   Windows
+        -   ``timestamp_server``; ``certificate_sha1`` or all of ``certificate_file``, ``csp``,
+            ``key``; optional ``tool_architecture`` and ``tool_path``.
+    *   -   macOS
+        -   ``identity``; optional ``notarize`` and ``notary_profile`` when notarization is enabled.
 
-On macOS, ``identity`` selects a code-signing identity; notarization requires a Developer ID Application identity.
-The tool signs embedded libraries and frameworks from the inside out with a secure timestamp, then signs and verifies
-the app.
-``notarize`` requires signing and ``notary_profile`` names credentials saved with
-``xcrun notarytool store-credentials``.
-The tool submits the app, waits for acceptance, staples the ticket, and validates it.
-The resulting ZIP is created with ``ditto`` so executable permissions and framework links survive.
-
-See :doc:`/topics/core/release_packages` for a complete build and verification example.
+ELCL text values may use ``${env:VARIABLE}`` to read an environment value at packaging time.

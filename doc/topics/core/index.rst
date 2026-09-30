@@ -25,3 +25,6 @@ Start with :doc:`overview` for a guided tour of the available application design
     service_lifecycle
     adding_git_version_to_your_app
     release_packages
+    release_package_cmake
+    release_package_configuration
+    release_package_signing

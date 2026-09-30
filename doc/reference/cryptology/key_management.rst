@@ -48,11 +48,13 @@ Key Generation and Import
 
 :cpp:class:`SigningPrivateKey <erbsland::cryptology::SigningPrivateKey>` is the move-only entry point for TLS server
 signing.
-It generates ECDSA P-256/P-384 and two-prime RSA-2048/3072/4096 keys, or imports one unencrypted PKCS#8
+It generates Ed25519, ECDSA P-256/P-384, and two-prime RSA-2048/3072/4096 keys, or imports one unencrypted PKCS#8
 ``PrivateKeyInfo`` version 0 from canonical DER or one exact ``PRIVATE KEY`` PEM block.
 The default :cpp:enum:`SigningKeyProfile <erbsland::cryptology::SigningKeyProfile>` is ECDSA P-256. The profile enum
 deliberately fixes every algorithm parameter instead of exposing unsafe individual knobs.
-Ed25519 import and signing remain available, but Ed25519 has no generation profile.
+Ed25519 generation uses a fresh 32-octet seed from application secure randomness.
+Generic data signing is available only through the purpose-separated
+:cpp:class:`SignedByteBlock <erbsland::cryptology::SignedByteBlock>` framing API.
 
 The importer accepts RFC 8410 Ed25519 seeds, RFC 5915 P-256 and P-384 keys wrapped by ``id-ecPublicKey``, and RFC 8017
 two-prime RSA keys wrapped by ``rsaEncryption`` or a supported ``id-RSASSA-PSS`` identifier.

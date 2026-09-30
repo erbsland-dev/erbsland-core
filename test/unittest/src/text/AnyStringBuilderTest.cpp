@@ -88,6 +88,18 @@ public:
         REQUIRE_GREATER_EQUAL(u32Editor.capacity(), u32Capacity);
     }
 
+    void testSensitiveUtf8Factory() {
+        auto builder = AnyStringBuilder::u8(ByteLength{}, true);
+        builder.append(U'a');
+        const auto first = builder.takeString();
+        REQUIRE_EQUAL(first, "a"_el);
+        REQUIRE(first.isSensitive());
+        builder.append(U'b');
+        const auto second = builder.takeString();
+        REQUIRE_EQUAL(second, "b"_el);
+        REQUIRE(second.isSensitive());
+    }
+
     void testGenericCapacityFactory() {
         REQUIRE(
             AnyStringBuilder::withCapacity(StringKind::U8, CpLength{3U}).takeU8StringEditor().capacity() >=

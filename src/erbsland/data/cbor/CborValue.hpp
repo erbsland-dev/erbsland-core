@@ -13,7 +13,7 @@
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringMap.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../unit/ItemIndex.hpp"
 #include "../../util/List.hpp"
 
@@ -59,7 +59,7 @@ public: // value constructors
     CborValue(CborMap value); // NOLINT(*-explicit-constructor)
     /// Create a CBOR UTC date/time value.
     /// @param value The UTC date/time to store.
-    CborValue(time::DateTime value); // NOLINT(*-explicit-constructor)
+    CborValue(time::Timestamp value); // NOLINT(*-explicit-constructor)
     /// Create a CBOR CID link value.
     /// @param value The CID link to store.
     CborValue(CborLink value); // NOLINT(*-explicit-constructor)
@@ -109,7 +109,7 @@ public: // accessors
     /// Get a CID link's bytes.
     [[nodiscard]] auto getLinkBytes() const noexcept -> std::optional<mem::ByteBlock>;
     /// Get a tagged date/time.
-    [[nodiscard]] auto getDateTime() const noexcept -> std::optional<time::DateTime>;
+    [[nodiscard]] auto getTimestamp() const noexcept -> std::optional<time::Timestamp>;
     /// Get a copy of an array.
     [[nodiscard]] auto getArray() const noexcept -> std::optional<CborArray>;
     /// Get a copy of a map.

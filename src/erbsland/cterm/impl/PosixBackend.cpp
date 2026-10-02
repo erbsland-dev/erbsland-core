@@ -101,8 +101,8 @@ auto PosixBackend::detectScreenSize() -> std::optional<block::Size> {
         return std::nullopt;
     }
     if (!_firstScreenSizeDetection) {
-        const auto now = clock::now();
-        if ((now - _lastScreenSizeDetection) < cMinimumDelayBetweenScreenSizeDetection) {
+        const auto now = time::TimePoint::now();
+        if ((now - _lastScreenSizeDetection) < time::TimeDelta{cMinimumDelayBetweenScreenSizeDetection}) {
             return _lastScreenSize;
         }
         auto [result, size] = getScreenSize();
@@ -114,7 +114,7 @@ auto PosixBackend::detectScreenSize() -> std::optional<block::Size> {
         return std::nullopt;
     }
     _firstScreenSizeDetection = false;
-    _lastScreenSizeDetection = clock::now();
+    _lastScreenSizeDetection = time::TimePoint::now();
     for (int i = 0; i < 10; ++i) {
         auto [result, size] = getScreenSize();
         if (result == SizeDetectionResult::NoTerminalAttached) {
@@ -125,7 +125,7 @@ auto PosixBackend::detectScreenSize() -> std::optional<block::Size> {
             _lastScreenSize = size;
             return size;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(time::TimeDelta{time::Milliseconds{100}}.toStdNanoseconds());
     }
     return std::nullopt;
 }
@@ -158,36 +158,42 @@ void PosixBackend::setInputMode(const Input::Mode mode) {
     }
 }
 
-auto PosixBackend::readKey(const std::chrono::milliseconds timeout) -> Key {
+auto PosixBackend::readKey(const time::Milliseconds timeout) -> Key {
     auto normalizedTimeout = timeout;
-    if (normalizedTimeout < std::chrono::milliseconds::zero()) {
-        normalizedTimeout = std::chrono::milliseconds::zero();
+    if (normalizedTimeout < time::Milliseconds{}) {
+        normalizedTimeout = time::Milliseconds{};
     }
     if (_inputMode == Input::Mode::ReadLine) {
         return Key::fromConsoleInput(readLine());
     }
-    return readDecodedKey(normalizedTimeout);
+    return readDecodedKey(InputTimeout{normalizedTimeout});
 }
 
 auto PosixBackend::waitForKey() -> Key {
     if (_inputMode == Input::Mode::ReadLine) {
         return Key::fromConsoleInput(readLine());
     }
-    return readDecodedKey(std::nullopt);
+    return readDecodedKey(InputTimeout{});
 }
 
-auto PosixBackend::readDecodedKey(const OptionalTimeout timeout) -> Key {
+auto PosixBackend::readDecodedKey(const InputTimeout &timeout) -> Key {
+    const auto polling = timeout.expired();
+    auto attempted = false;
     while (true) {
+        if (attempted && ((polling && _pendingKeyInput.empty()) || (!polling && timeout.expired()))) {
+            return {};
+        }
+        attempted = true;
         if (_pendingKeyInput.empty()) {
             _pendingEscapeStarted.reset();
-            appendInputChunks(timeout);
+            appendInputChunks(timeout.remaining());
             if (_pendingKeyInput.empty()) {
                 return {};
             }
         }
         if (_pendingKeyInput[0] == '\x1b') {
             markPendingEscapeSequence();
-            appendInputChunks(escapeSequenceWaitTimeout(timeout));
+            appendInputChunks(escapeSequenceWaitTimeout(timeout.remaining()));
         }
         const auto parseResult = KeyDecoder{text::String{_pendingKeyInput}, true}.parseConsoleInputPrefix();
         if (parseResult.status() == KeyParseStatus::Parsed) {
@@ -203,7 +209,7 @@ auto PosixBackend::readDecodedKey(const OptionalTimeout timeout) -> Key {
                 purgePendingInput();
                 return {};
             }
-            appendInputChunks(escapeSequenceWaitTimeout(timeout));
+            appendInputChunks(escapeSequenceWaitTimeout(timeout.remaining()));
             const auto retriedResult = KeyDecoder{text::String{_pendingKeyInput}, true}.parseConsoleInputPrefix();
             if (retriedResult.status() == KeyParseStatus::Parsed) {
                 erasePendingKeyInput(retriedResult.consumedByteCount().toSizeT());
@@ -233,22 +239,22 @@ auto PosixBackend::readDecodedKey(const OptionalTimeout timeout) -> Key {
 
 void PosixBackend::markPendingEscapeSequence() noexcept {
     if (!_pendingEscapeStarted.has_value()) {
-        _pendingEscapeStarted = clock::now();
+        _pendingEscapeStarted = time::TimePoint::now();
     }
 }
 
 auto PosixBackend::escapeSequenceExpired() const noexcept -> bool {
-    return _pendingEscapeStarted.has_value() && clock::now() - *_pendingEscapeStarted >= cEscapeSequenceTimeout;
+    return _pendingEscapeStarted.has_value() &&
+        time::TimePoint::now() - *_pendingEscapeStarted >= time::TimeDelta{cEscapeSequenceTimeout};
 }
 
-auto PosixBackend::escapeSequenceWaitTimeout(const OptionalTimeout timeout) const noexcept
-    -> std::chrono::milliseconds {
+auto PosixBackend::escapeSequenceWaitTimeout(const OptionalTimeout timeout) const noexcept -> time::Milliseconds {
     auto remaining = cEscapeSequenceTimeout;
     if (_pendingEscapeStarted.has_value()) {
-        remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
-            cEscapeSequenceTimeout - (clock::now() - *_pendingEscapeStarted));
-        if (remaining < std::chrono::milliseconds::zero()) {
-            remaining = std::chrono::milliseconds::zero();
+        remaining = InputTimeout::roundedMilliseconds(
+            time::TimeDelta{cEscapeSequenceTimeout} - (time::TimePoint::now() - *_pendingEscapeStarted));
+        if (remaining < time::Milliseconds{}) {
+            remaining = time::Milliseconds{};
         }
     }
     if (!timeout.has_value()) {
@@ -266,7 +272,7 @@ void PosixBackend::erasePendingKeyInput(const std::size_t byteCount) {
     if (_pendingKeyInput.empty() || _pendingKeyInput[0] != '\x1b') {
         _pendingEscapeStarted.reset();
     } else {
-        _pendingEscapeStarted = clock::now();
+        _pendingEscapeStarted = time::TimePoint::now();
     }
 }
 
@@ -350,11 +356,13 @@ auto PosixBackend::waitForInput(const OptionalTimeout timeout) -> bool {
     auto *ptv = static_cast<timeval *>(nullptr);
     if (timeout.has_value()) {
         auto normalizedTimeout = *timeout;
-        if (normalizedTimeout < std::chrono::milliseconds::zero()) {
-            normalizedTimeout = std::chrono::milliseconds::zero();
+        if (normalizedTimeout < time::Milliseconds{}) {
+            normalizedTimeout = time::Milliseconds{};
         }
-        tv.tv_sec = normalizedTimeout.count() / 1000;
-        tv.tv_usec = (static_cast<int>(normalizedTimeout.count()) % 1000) * 1000;
+        const auto [seconds, microseconds] = InputTimeout::posixParts(normalizedTimeout);
+        tv.tv_sec = static_cast<decltype(tv.tv_sec)>(
+            std::min<int64_t>(seconds, std::numeric_limits<decltype(tv.tv_sec)>::max()));
+        tv.tv_usec = static_cast<decltype(tv.tv_usec)>(microseconds);
         ptv = &tv;
     }
     return select(STDIN_FILENO + 1, &set, nullptr, nullptr, ptv) > 0;

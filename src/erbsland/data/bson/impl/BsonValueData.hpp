@@ -20,7 +20,7 @@ public:
         double,
         text::String,
         BsonBinary,
-        time::DateTime,
+        time::Timestamp,
         BsonArray,
         BsonDocument,
         BsonOpaqueValue>;

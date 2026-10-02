@@ -16,5 +16,6 @@ Extensions     :
 Directories    :
     * "src"
     * "test/profiling"
+    * "test/constant-time"
     * "test/unittest"
     * "demos"

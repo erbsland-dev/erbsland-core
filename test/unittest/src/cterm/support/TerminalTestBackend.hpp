@@ -69,7 +69,7 @@ public: // implement Backend
         _inputMode = mode;
     }
     /// Record a key-read request and return its configured result.
-    [[nodiscard]] auto readKey(const std::chrono::milliseconds timeout = {}) -> Key override {
+    [[nodiscard]] auto readKey(const erbsland::time::Milliseconds timeout = {}) -> Key override {
         _readKeyCallCount += 1;
         _readKeyTimeouts.push_back(timeout);
         if (_readKeyResults.empty()) {
@@ -153,7 +153,7 @@ public:
     std::vector<CursorMove> _cursorMoves;
     std::vector<bool> _cursorVisibilityChanges;
     std::vector<bool> _alternateScreenBufferChanges;
-    std::vector<std::chrono::milliseconds> _readKeyTimeouts;
+    std::vector<erbsland::time::Milliseconds> _readKeyTimeouts;
     std::queue<Key> _readKeyResults;
     std::queue<Key> _waitForKeyResults;
     std::queue<erbsland::text::String> _readLineResults;

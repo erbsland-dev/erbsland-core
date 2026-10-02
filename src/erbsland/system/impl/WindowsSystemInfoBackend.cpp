@@ -8,8 +8,8 @@
 #include "../../path/Path.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
-#include "../../time/DateTime.hpp"
 #include "../../time/TimeEpoch.hpp"
+#include "../../time/Timestamp.hpp"
 
 #include <sddl.h>
 #include <tlhelp32.h>
@@ -185,11 +185,11 @@ auto WindowsSystemInfoBackend::loadOpenProcessInfo(const DWORD processId, HANDLE
     if (::GetProcessTimes(process, &creationTime, &exitTime, &kernelTime, &userTime) != 0) {
         const auto ticks = (static_cast<std::uint64_t>(creationTime.dwHighDateTime) << 32U) |
             static_cast<std::uint64_t>(creationTime.dwLowDateTime);
-        data.startTime = time::DateTime::fromTicks(
+        data.startTime = time::Timestamp::fromTicks(
             time::Seconds{static_cast<std::int64_t>(ticks / 10'000'000ULL)},
             time::Nanoseconds{static_cast<std::int64_t>((ticks % 10'000'000ULL) * 100ULL)},
             time::TimeEpoch::Windows)
-                             .value_or(time::DateTime{});
+                             .value_or(time::Timestamp{});
         if (!data.startTime.isValid()) {
             data.startTimeError = error("Process start time cannot be represented."_el, ERROR_ARITHMETIC_OVERFLOW);
         }

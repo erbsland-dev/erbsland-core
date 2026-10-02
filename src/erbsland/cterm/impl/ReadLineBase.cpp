@@ -12,12 +12,10 @@
 #include "../../unit/CpRange.hpp"
 
 #include <algorithm>
-#include <chrono>
 #include <utility>
 
 namespace erbsland::cterm::impl {
 
-using namespace std::chrono_literals;
 using namespace text::literals;
 using namespace unit;
 using namespace time::literals;
@@ -300,8 +298,7 @@ auto ReadLineBase::countdownSeconds(const TimePoint now) const noexcept -> std::
         return -1;
     }
     const auto remaining = std::max(TimeDelta::zero(), TimeDelta{_options.timeout()} - (now - _lastActivity));
-    const auto milliseconds =
-        std::chrono::duration_cast<std::chrono::milliseconds>(remaining.toStdNanoseconds()).count();
+    const auto milliseconds = remaining.toMilliseconds().toRawValue();
     return (milliseconds + 999) / 1000;
 }
 

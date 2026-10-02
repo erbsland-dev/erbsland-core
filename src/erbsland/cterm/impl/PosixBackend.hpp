@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "InputTimeout.hpp"
+
 #include "../Backend.hpp"
 
 #include "../../event/EventSubscription.hpp"
@@ -9,7 +11,6 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -18,17 +19,17 @@
 namespace erbsland::cterm::impl {
 
 /// POSIX terminal backend implementation.
+/// @tested{PosixBackendTest}
 class PosixBackend final : public Backend {
-    using clock = std::chrono::steady_clock;
-    constexpr static auto cMinimumDelayBetweenScreenSizeDetection = std::chrono::milliseconds{100};
-    constexpr static auto cEscapeSequenceTimeout = std::chrono::milliseconds{25};
+    constexpr static auto cMinimumDelayBetweenScreenSizeDetection = time::Milliseconds{100};
+    constexpr static auto cEscapeSequenceTimeout = time::Milliseconds{25};
     constexpr static auto cMaximumPendingKeyInputSize = 1024;
     constexpr static auto cMaximumInputReadSize = 64;
 
 public:
     /// Result of attempting to detect the terminal size.
     enum class SizeDetectionResult : uint8_t { NoTerminalAttached, NoTerminalSize, Success };
-    using OptionalTimeout = std::optional<std::chrono::milliseconds>;
+    using OptionalTimeout = std::optional<time::Milliseconds>;
 
 public:
     /// Create a POSIX terminal backend with requested flags.
@@ -50,7 +51,7 @@ public:
     // input
     [[nodiscard]] auto inputMode() const noexcept -> Input::Mode override;
     void setInputMode(Input::Mode mode) override;
-    [[nodiscard]] auto readKey(std::chrono::milliseconds timeout) -> Key override;
+    [[nodiscard]] auto readKey(time::Milliseconds timeout) -> Key override;
     [[nodiscard]] auto waitForKey() -> Key override;
     [[nodiscard]] auto readLine() -> text::String override;
     void purgePendingInput() noexcept override;
@@ -87,29 +88,29 @@ private:
     /// Test if the pending escape sequence waited long enough for follow-up bytes.
     [[nodiscard]] auto escapeSequenceExpired() const noexcept -> bool;
     /// Calculate the timeout used to collect follow-up escape-sequence bytes.
-    [[nodiscard]] auto escapeSequenceWaitTimeout(OptionalTimeout timeout) const noexcept -> std::chrono::milliseconds;
+    [[nodiscard]] auto escapeSequenceWaitTimeout(OptionalTimeout timeout) const noexcept -> time::Milliseconds;
     /// Remove decoded bytes and clear escape sequence state when appropriate.
     void erasePendingKeyInput(std::size_t byteCount);
     /// Decode one pending key using either a timeout-based poll or a blocking wait.
-    [[nodiscard]] auto readDecodedKey(OptionalTimeout timeout) -> Key;
+    [[nodiscard]] auto readDecodedKey(const InputTimeout &timeout) -> Key;
 
 private:
-    static std::mutex _instanceMutex;                       ///< The mutex to protect the instance.
-    static PosixBackend *_instance;                         ///< The global instance of the PosixBackend.
+    static std::mutex _instanceMutex;                     ///< The mutex to protect the instance.
+    static PosixBackend *_instance;                       ///< The global instance of the PosixBackend.
 
-    TerminalFlags _terminalFlags;                           ///< The terminal flags.
-    bool _isInitialized = false;                            ///< If the platform was initialized.
-    bool _keyInputSessionActive = false;                    ///< If we have an input session that needs to be restored.
-    clock::time_point _lastScreenSizeDetection = {};        ///< Time of last screen size detection.
-    std::optional<block::Size> _lastScreenSize;             ///< The last cached screen size.
-    bool _firstScreenSizeDetection = true;                  ///< A flag to mark the first detection, for extra effort.
-    bool _hasNoTerminalAttached = false;                    ///< If standard output is not an interactive terminal.
-    Input::Mode _inputMode{Input::Mode::ReadLine};          ///< The current input mode.
-    bool _isAlternateScreenActive = false;                  ///< remember if we are in alternate screen mode.
-    termios _originalState{};                               ///< state backup.
-    std::string _pendingKeyInput;                           ///< Buffered raw input that was not yet decoded.
-    std::optional<clock::time_point> _pendingEscapeStarted; ///< Start time for resolving a pending escape sequence.
-    event::EventSubscription _signalSubscription;           ///< Process-signal cleanup subscription.
+    TerminalFlags _terminalFlags;                         ///< The terminal flags.
+    bool _isInitialized = false;                          ///< If the platform was initialized.
+    bool _keyInputSessionActive = false;                  ///< If we have an input session that needs to be restored.
+    time::TimePoint _lastScreenSizeDetection = {};        ///< Time of last screen size detection.
+    std::optional<block::Size> _lastScreenSize;           ///< The last cached screen size.
+    bool _firstScreenSizeDetection = true;                ///< A flag to mark the first detection, for extra effort.
+    bool _hasNoTerminalAttached = false;                  ///< If standard output is not an interactive terminal.
+    Input::Mode _inputMode{Input::Mode::ReadLine};        ///< The current input mode.
+    bool _isAlternateScreenActive = false;                ///< remember if we are in alternate screen mode.
+    termios _originalState{};                             ///< state backup.
+    std::string _pendingKeyInput;                         ///< Buffered raw input that was not yet decoded.
+    std::optional<time::TimePoint> _pendingEscapeStarted; ///< Start time for resolving a pending escape sequence.
+    event::EventSubscription _signalSubscription;         ///< Process-signal cleanup subscription.
 };
 
 }

@@ -345,7 +345,7 @@ void PathOperations::setAccessProfileOrThrow(const PathAccessProfile profile, co
     _impl->setAccessProfile(profile, options);
 }
 
-auto PathOperations::setLastModified(const time::DateTime &value, const PathChangeOptions options) const noexcept
+auto PathOperations::setLastModified(const time::Timestamp &value, const PathChangeOptions options) const noexcept
     -> Result {
     try {
         if (isEmpty()) {
@@ -357,7 +357,7 @@ auto PathOperations::setLastModified(const time::DateTime &value, const PathChan
     }
 }
 
-void PathOperations::setLastModifiedOrThrow(const time::DateTime &value, const PathChangeOptions options) const {
+void PathOperations::setLastModifiedOrThrow(const time::Timestamp &value, const PathChangeOptions options) const {
     if (isEmpty()) {
         throw PathError{PathErrorContext{
             "File modification time could not be changed"_el, "No path was provided for the timestamp change."_el}

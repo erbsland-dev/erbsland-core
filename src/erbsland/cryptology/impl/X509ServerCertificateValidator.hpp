@@ -9,7 +9,7 @@
 
 #include "../../network/Host.hpp"
 #include "../../text/String.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 
 #include <cstddef>
 #include <optional>
@@ -58,7 +58,7 @@ public:
         const X509ServerCertificatePolicy &policy,
         const X509CertificateBundle &peerCertificates,
         const network::Host &referenceIdentity,
-        time::DateTime validationTime) noexcept :
+        time::Timestamp validationTime) noexcept :
         _policy{policy},
         _peerCertificates{peerCertificates},
         _referenceIdentity{referenceIdentity},
@@ -133,7 +133,7 @@ private:
     const X509ServerCertificatePolicy &_policy;
     const X509CertificateBundle &_peerCertificates;
     const network::Host &_referenceIdentity;
-    time::DateTime _validationTime;
+    time::Timestamp _validationTime;
     std::vector<Candidate> _candidates;
     util::List<X509Certificate> _path;
     std::vector<VerifiedEdge> _verifiedEdges;

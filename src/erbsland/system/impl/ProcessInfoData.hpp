@@ -8,7 +8,7 @@
 #include "../UserId.hpp"
 
 #include "../../path/Path.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 
 namespace erbsland::system::impl {
 
@@ -18,7 +18,7 @@ struct ProcessInfoData final {
     bool exists{};                         ///< Whether the platform reports this process.
     path::Path executablePath;             ///< Absolute executable image path, when available.
     ProcessId parentProcessId;             ///< Parent process identifier, when available.
-    time::DateTime startTime;              ///< Process start time in UTC, when available.
+    time::Timestamp startTime;             ///< Process start time in UTC, when available.
     UserId ownerId;                        ///< Platform owner identifier, when available.
     ProcessInfoError lookupError;          ///< Failure to determine the process snapshot.
     ProcessInfoError processError;         ///< Reason attributes are unavailable for an absent process.

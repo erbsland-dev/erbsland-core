@@ -7,7 +7,7 @@
 #include "../CompressionLevel.hpp"
 
 #include "../../text/String.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 
 #include <optional>
 #include <utility>
@@ -37,11 +37,11 @@ public:
         return *this;
     }
     /// Get the optional per-entry modification-time override.
-    [[nodiscard]] auto modificationTime() const noexcept -> const std::optional<time::DateTime> & {
+    [[nodiscard]] auto modificationTime() const noexcept -> const std::optional<time::Timestamp> & {
         return _modificationTime;
     }
     /// Set the per-entry modification-time override.
-    auto setModificationTime(time::DateTime value) noexcept -> ArchiveEntryOptions & {
+    auto setModificationTime(time::Timestamp value) noexcept -> ArchiveEntryOptions & {
         _modificationTime = value;
         return *this;
     }
@@ -56,7 +56,7 @@ public:
 private:
     std::optional<CompressionMethod> _compressionMethod;
     std::optional<compression::CompressionLevel> _compressionLevel;
-    std::optional<time::DateTime> _modificationTime;
+    std::optional<time::Timestamp> _modificationTime;
     std::optional<text::String> _comment;
 };
 

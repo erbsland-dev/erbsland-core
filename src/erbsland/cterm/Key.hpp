@@ -23,6 +23,7 @@ namespace erbsland::cterm {
 
 /// A simple representation of a key press.
 /// Supports Unicode text input and common special keys.
+/// @tested{KeyTest}
 class Key {
 public:
     /// Supported key kinds.
@@ -120,10 +121,6 @@ public: // accessors
     [[nodiscard]] auto hasModifier(KeyModifier modifier) const noexcept -> bool { return _modifiers.has(modifier); }
     /// Create a copy of this key without modifiers.
     [[nodiscard]] auto withoutModifiers() const noexcept -> Key;
-    /// Legacy ASCII accessor for `Type::Character`.
-    /// @deprecated Use `unicode()` or `combined()` to support full Unicode input.
-    /// @return The ASCII character for single-code-point character input, otherwise `0`.
-    [[nodiscard]] auto character() const noexcept -> char;
     /// Get the Unicode code point for `Type::Character`.
     /// @return The single Unicode code point, or `0` if this key does not store exactly one code point.
     [[nodiscard]] auto unicode() const noexcept -> text::Char;

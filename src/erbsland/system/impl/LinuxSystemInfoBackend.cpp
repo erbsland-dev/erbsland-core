@@ -23,8 +23,8 @@
 #include "../../text/StringCharReader.hpp"
 #include "../../text/StringConverter.hpp"
 #include "../../text/StringSide.hpp"
-#include "../../time/DateTime.hpp"
 #include "../../time/TimeEpoch.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../unit/ByteLength.hpp"
 #include "../../unit/CpLength.hpp"
 
@@ -229,7 +229,7 @@ auto LinuxSystemInfoBackend::bootTimeSeconds(ProcessInfoError &operationError) -
 }
 
 auto LinuxSystemInfoBackend::processStartTime(const std::uint64_t startTicks, ProcessInfoError &operationError)
-    -> time::DateTime {
+    -> time::Timestamp {
     const auto boot = bootTimeSeconds(operationError);
     if (!boot.has_value()) {
         return {};
@@ -242,11 +242,11 @@ auto LinuxSystemInfoBackend::processStartTime(const std::uint64_t startTicks, Pr
     const auto ticks = static_cast<std::uint64_t>(ticksPerSecond);
     const auto seconds = *boot + startTicks / ticks;
     const auto nanoseconds = (startTicks % ticks) * 1'000'000'000ULL / ticks;
-    const auto result = time::DateTime::fromTicks(
+    const auto result = time::Timestamp::fromTicks(
         time::Seconds{static_cast<std::int64_t>(seconds)},
         time::Nanoseconds{static_cast<std::int64_t>(nanoseconds)},
         time::TimeEpoch::Posix)
-                            .value_or(time::DateTime{});
+                            .value_or(time::Timestamp{});
     if (!result.isValid()) {
         operationError = error("Process start time is unavailable."_el, EINVAL);
     }

@@ -14,7 +14,7 @@
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringMap.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../unit/ItemIndex.hpp"
 #include "../../util/List.hpp"
 
@@ -74,7 +74,7 @@ public: // value constructors
     BsonValue(mem::ByteBlock value); // NOLINT(*-explicit-constructor)
     /// Create a BSON UTC date/time value.
     /// @param value The UTC date/time to store.
-    BsonValue(time::DateTime value); // NOLINT(*-explicit-constructor)
+    BsonValue(time::Timestamp value); // NOLINT(*-explicit-constructor)
     /// Create a BSON array value.
     /// @param value The array to store.
     BsonValue(BsonArray value); // NOLINT(*-explicit-constructor)
@@ -118,7 +118,7 @@ public: // accessors
     /// Get a binary value and its subtype.
     [[nodiscard]] auto getBinary() const noexcept -> std::optional<BsonBinary>;
     /// Get a UTC millisecond date/time.
-    [[nodiscard]] auto getDateTime() const noexcept -> std::optional<time::DateTime>;
+    [[nodiscard]] auto getTimestamp() const noexcept -> std::optional<time::Timestamp>;
     /// Get a copy of an array.
     [[nodiscard]] auto getArray() const noexcept -> std::optional<BsonArray>;
     /// Get a copy of a document.

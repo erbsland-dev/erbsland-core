@@ -13,8 +13,8 @@
 #include "../../text/String.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../time/Date.hpp"
-#include "../../time/DateTime.hpp"
 #include "../../time/Time.hpp"
+#include "../../time/Timestamp.hpp"
 
 #include <limits>
 #include <set>
@@ -261,7 +261,7 @@ auto X509Parser::parseName(const Asn1Node &node) -> X509Name {
     return X509Name{std::move(rdns), node};
 }
 
-auto X509Parser::parseTime(const Asn1Node &node) -> time::DateTime {
+auto X509Parser::parseTime(const Asn1Node &node) -> time::Timestamp {
     // RFC 5280 section 4.1.2.5 requires UTC Zulu time and the 2050 UTCTime/GeneralizedTime split.
     const auto type = node.universalType();
     const auto contentData = node.contentData();
@@ -300,7 +300,7 @@ auto X509Parser::parseTime(const Asn1Node &node) -> time::DateTime {
     if (!date.isValid()) {
         throwParseError("X.509 validity time contains an invalid calendar date."_el, node);
     }
-    return time::DateTime{date, time::Time{time::Hour{hour}, time::Minute{minute}, time::Second{second}}};
+    return time::Timestamp{date, time::Time{time::Hour{hour}, time::Minute{minute}, time::Second{second}}};
 }
 
 auto X509Parser::parseSubjectPublicKeyInfo(const Asn1Node &node) -> PublicKey {

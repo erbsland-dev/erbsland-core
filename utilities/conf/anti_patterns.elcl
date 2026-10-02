@@ -7,6 +7,8 @@ Source Directories  :
     * "demos"
     * "test/unittest"
     * "test/profiling"
+    * "test/constant-time/app/src"
+    * "test/constant-time/lib/src"
     * "test/adapter"
     * "test/fuzzing"
 
@@ -122,6 +124,10 @@ Reason              : "Collecting multiple traits types in a header is a common 
 --*[ Rule . multiple_types_in_header ]*-------------------------------------------------------------------------------
 Excluded Path       : "**/*Types.hpp"
 Reason              : "The filename ending in Types.hpp is a convention for grouping micro-types in a header."
+
+--*[ Rule . multiple_types_in_header ]*-------------------------------------------------------------------------------
+Excluded Path       : "**/*Tags.hpp"
+Reason              : "The filename ending in Tags.hpp is a convention for grouping related tag types in a header."
 
 --*[ Rule . multiple_types_in_header ]*-------------------------------------------------------------------------------
 Excluded Path       : "src/erbsland/cryptology/impl/algorithm/Sha2.hpp"

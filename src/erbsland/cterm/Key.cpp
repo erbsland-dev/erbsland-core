@@ -238,14 +238,6 @@ auto Key::operator!=(const Type type) const noexcept -> bool {
     return !operator==(type);
 }
 
-auto Key::character() const noexcept -> char {
-    const auto codePoint = unicode();
-    if (codePoint > U'\x7f') {
-        return 0;
-    }
-    return static_cast<char>(codePoint.toRawValue());
-}
-
 auto Key::unicode() const noexcept -> Char {
     if (_type != Character || _character.characterCount() != unit::CpLength::one()) {
         return {};

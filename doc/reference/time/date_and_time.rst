@@ -6,6 +6,7 @@
     single: Date and Time; Reference
     single: Date and Time Types
     single: Duration and Time Amounts
+    single: ISO Date and Time; Formatting
 
 *************
 Date and Time
@@ -18,99 +19,87 @@ Introduction
 ------------
 
 The ``time`` namespace provides types for working with civil dates, wall-clock times, and time spans.
-The calendar helper structs are small aggregate result types for APIs that return more than one calendar component.
-They keep call sites readable by naming the returned values.
-
-.. code-block:: cpp
-
-    const auto parts = date.parts();
-    const auto year = parts.year;
-    const auto month = parts.month;
-    const auto day = parts.day;
-
-    const auto next = el::Month::december().next(el::Year{2026});
-    const auto nextMonth = next.month;
+Calendar and clock parts are bounded labels; the aggregate result structures name related fields.
+Part/amount conversion uses offsets from the part's minimum label, and numeric range checks do not validate calendar
+combinations.
+See :doc:`../../topics/time/working_with_calendar_parts` for construction, numbering, contextual validation, navigation,
+weekday selection, ordinal conversion, and field reconstruction.
 
 Date
 ~~~~
 
-:cpp:class:`Date <erbsland::time::Date>` stores a civil date in the proleptic Gregorian calendar.
-The internal epoch is ``0000-01-01`` and raw day zero is that date.
-The supported range is ``0000-01-01`` through ``9999-12-31``.
-Use :cpp:func:`parts() <erbsland::time::Date::parts>` when you need named
-:cpp:struct:`DateParts <erbsland::time::DateParts>` instead of separate accessor calls.
-
-Date arithmetic saturates at the supported range.
-For example, adding a negative day count to the first supported date keeps the result at ``0000-01-01``.
-Use ``wouldAddSaturate()`` to test for this condition and ``addedOrThrow()`` or ``addOrThrow()`` to reject it with
-:cpp:class:`OverflowError <erbsland::err::OverflowError>`.
+:cpp:class:`Date <erbsland::time::Date>` represents a proleptic Gregorian calendar date in
+``0000-01-01..9999-12-31``, with Core epoch ``0000-01-01``.
+Default construction is invalid; invalid dates compare equal and sort before valid dates.
+Construction validates calendar combinations, and day, month, and year arithmetic offers saturating and throwing forms.
+See :doc:`../../topics/time/working_with_dates` for construction choices, validation, field extraction, conversions,
+month-end adjustment, navigation, and boundary handling.
 
 Date Time
 ~~~~~~~~~
 
-:cpp:class:`DateTime <erbsland::time::DateTime>` represents an instant as UTC date and time plus display offset
-information.
-It converts to and from ISO text, ``std::time_t``, exact typed ticks from the Core, POSIX, Windows, and RFC 868 epochs,
-fixed offsets, and supported named time zones.
-Tick conversion accepts nanoseconds, microseconds, milliseconds, or seconds; a conversion fails when it would lose
-fractional precision, precedes the selected epoch, or exceeds the selected unit's range.
-Use the split seconds-and-nanoseconds conversion for external formats that need their own fractional representation,
-such as Windows ``FILETIME``.
-The value is stored internally as a UTC instant; local accessors and
-:cpp:func:`parts() <erbsland::time::DateTime::parts>` use the display offset or named time zone.
+:cpp:class:`DateTime <erbsland::time::DateTime>` retains a UTC instant plus resolved display-offset or named-zone metadata.
+It shares the date range ``0000-01-01..9999-12-31`` and retains nanosecond fractions.
+Ordering compares UTC instants; equality also compares display metadata.
+Tick conversion accepts nonnegative seconds, milliseconds, microseconds, or nanoseconds relative to ``TimeEpoch`` and
+truncates smaller fractions; split seconds/fractions retain full precision.
+Arithmetic applies ``Duration`` or ``CalendarDelta`` in UTC, with saturating, throwing, and overflow-test variants.
+The distance APIs use whole-second epoch readings; convert to ``Timestamp`` for precise checked distances.
+See :doc:`../../topics/time/working_with_datetime` for construction, field extraction, zone resolution, conversion, and
+calculations, including folds, gaps, and local recurrences.
 
-Date-time arithmetic is performed on the UTC instant and saturates at ``DateTime::first()`` or ``DateTime::last()`` when
-the result would leave the supported range.
-Use ``wouldAddSaturate()`` or ``wouldSubtractSaturate()`` to test for this condition, and use the ``...OrThrow()``
-variants to reject it with
-:cpp:class:`OverflowError <erbsland::err::OverflowError>`.
-
-A ``TimeWithZone`` combines a wall-clock
-:cpp:class:`Time <erbsland::time::Time>` with a :cpp:class:`TimeZone <erbsland::time::TimeZone>`.  It does not
-represent an instant until it is combined with a date.
-Named zones therefore render using their IANA name instead of inventing a numeric offset.
-Constructing a ``DateTime`` from a date and ``TimeWithZone`` resolves the exact offset for the civil date and time,
-converts the value to internally stored UTC, and retains the display zone.
+:cpp:class:`TimeWithZone <erbsland::time::TimeWithZone>` retains a daily wall-clock reading with its intended zone.
+Default construction is midnight UTC; equality compares the stored reading and zone.
+It identifies an instant only after ``DateTime`` resolves it with a local date and, when needed, a fold occurrence.
+See :doc:`../../topics/time/keeping_wall_clock_time_with_zone` for construction, accessors, compact output, transition
+handling, and local recurrences.
 
 Time
 ~~~~
 
-:cpp:class:`Time <erbsland::time::Time>` stores a wall-clock time of day with nanosecond precision.
-Arithmetic that crosses midnight returns the day wrap separately.
-
-Use :cpp:struct:`TimeParts <erbsland::time::TimeParts>` and
-:cpp:struct:`TimeWrapResult <erbsland::time::TimeWrapResult>` as named aggregate results:
-
-.. code-block:: cpp
-
-    const auto parts = time.parts();
-    const auto hour = parts.hour;
-
-    const auto wrapped = time.addedWithWrap(el::Duration{el::Hours{3}});
-    const auto dayCarry = wrapped.days;
-    const auto newTime = wrapped.time;
+:cpp:class:`Time <erbsland::time::Time>` represents a daily clock reading in
+``00:00:00..23:59:59.999999999``.
+Default construction is midnight; there is no invalid sentinel, date, or zone.
+:cpp:struct:`TimeParts <erbsland::time::TimeParts>` names its component fields.
+Wrapping addition accepts ``Duration`` or ``TimeDelta`` and either returns a signed day carry or a
+:cpp:struct:`TimeWrapResult <erbsland::time::TimeWrapResult>` containing the new time and carry.
+See :doc:`../../topics/time/working_with_times` for construction, comparisons, precision-preserving conversions, and
+calculations across midnight.
 
 Time Zone
 ~~~~~~~~~
 
-:cpp:class:`TimeZone <erbsland::time::TimeZone>` represents UTC, a fixed offset, or a supported named IANA zone.
-Lookup factories return ``std::optional`` for tolerant lookup and ``OrThrow`` variants for explicit failure.
-Fixed offsets are normalized only by complete 24-hour rotations, so offsets such as UTC+13 and UTC+14 retain their
-direction.
+:cpp:class:`TimeZone <erbsland::time::TimeZone>` represents UTC, a normalized fixed offset, or a supported named IANA zone.
+Name lookup returns ``std::optional`` or throws ``err::ParseError``; aliases resolve to the primary zone.
+Component construction clamps each signed component; total-duration construction removes complete 24-hour rotations.
+``staticOffset()`` returns zero for named zones; ``DateTime::timeOffset()`` supplies an instant's resolved shift.
+Equality includes zone identity and local origin.
 
-``TimeZone::local()`` identifies and caches the operating system's base time zone for the process lifetime.
-POSIX systems use ``TZ`` and canonical zoneinfo paths; Windows names are mapped to IANA names using generated Unicode
-CLDR data.
-Resolution failures produce UTC with the local-origin marker set.
-Combining the zone with a civil date and time always resolves the bundled database again, retaining historical shifts,
-daylight-saving state, abbreviations, gaps, and folds.
+``local()`` caches the system's base zone for the process lifetime, falling back to local-marked UTC.
+Named-zone offsets still resolve per date using the bundled IANA rules identified by ``databaseVersion()``.
+Local origin is preserved by copies/arithmetic and replaced by the target marker on conversion.
+Default local-origin display omits the zone; explicit ISO ``TimeShift`` output includes the resolved shift.
 
-The local-origin marker records that the current display zone came from the system setting.
-Copies, arithmetic, and UTC normalization preserve it.
-Explicit zone conversion replaces it with the target zone's marker: conversion to UTC or an explicit zone clears it,
-while conversion to ``TimeZone::local()`` sets it.
-Default string formatting omits the zone for local-origin values.
-``DateTime::toIsoString()`` with ``IsoTimeFormat::TimeShift`` still forces the resolved numeric offset.
+:cpp:enum:`TimeOccurrenceInFold <erbsland::time::TimeOccurrenceInFold>` selects the earlier (default ``First``) or later
+(``Second``) UTC match for repeated local readings.
+Gap construction follows the database's transition rule and can retain display metadata that differs from the selected
+instant's refreshed zone metadata; ``isValid()`` does not detect skipped readings.
+
+:cpp:class:`TimeZoneId <erbsland::time::TimeZoneId>` and ``tz::TimeOffset::abbreviationId()`` are transient database indexes.
+:cpp:class:`tz::TimeOffset <erbsland::time::tz::TimeOffset>` holds offset seconds, zone/DST/abbreviation metadata,
+and local origin; its constructors do not resolve named-zone rules.
+See :doc:`../../topics/time/working_with_time_zones` for zone selection, lookup, conversion, transition resolution,
+system-local behavior, persistence choices, detail values, and rule-version queries.
+
+ISO Date and Time Output
+========================
+
+:cpp:type:`IsoTimeFormatFlags <erbsland::time::IsoTimeFormatFlags>` combines
+:cpp:enum:`IsoTimeFormat <erbsland::time::IsoTimeFormat>` flags for ``Date``, ``Time``, and ``DateTime`` ISO output.
+:cpp:enum:`DateTimePrecision <erbsland::time::DateTimePrecision>` controls the last emitted field or fractional digit.
+Defaults use extended fields, whole seconds for time output, and a space without an offset for combined output.
+See :doc:`../../topics/time/customizing_iso_output` for every flag, precision level, and option interaction.
+``Timestamp`` uses its own fixed canonical UTC output; see :doc:`timestamp`.
 
 Duration and Time Amounts
 =========================
@@ -120,38 +109,62 @@ Introduction
 
 Duration and time span types store signed time intervals at different resolutions.
 
-:cpp:class:`Duration <erbsland::time::Duration>` stores a signed span with second resolution. Conversions to coarser
-parts truncate toward zero.
-Conversions to nanosecond precision, such as ``toTimeDelta()``, saturate if the represented nanoseconds exceed the
-target type.
-Use ``wouldConvertToTimeDeltaSaturate()`` or ``toTimeDeltaOrThrow()`` when saturation must be detected or rejected.
+``<erbsland/time/TimeUnitTags.hpp>`` declares :cpp:struct:`SecondsUnitTag <erbsland::time::SecondsUnitTag>`,
+:cpp:struct:`MonthsUnitTag <erbsland::time::MonthsUnitTag>`, and
+:cpp:struct:`YearsUnitTag <erbsland::time::YearsUnitTag>` for the dimensions of time amount types.
 
-:cpp:class:`TimeDelta <erbsland::time::TimeDelta>` stores a signed span with nanosecond resolution. Conversion to
-:cpp:class:`Duration <erbsland::time::Duration>` truncates sub-second nanoseconds toward zero.
-``toSecondsWithFractions()`` and ``toDaysWithFractions()`` return approximate floating-point values and do not treat
-rounding as an error.
-The unit factories from ``nanoseconds()`` through ``weeks()`` saturate when conversion exceeds the stored nanosecond
-range.
-Use the corresponding ``...OrThrow()`` factory, including ``weeksOrThrow()``, when overflow must be rejected.
+Time amounts from :cpp:type:`Nanoseconds <erbsland::time::Nanoseconds>` through
+:cpp:type:`Years <erbsland::time::Years>` are signed 64-bit ``IntegerAmount`` aliases.
+Fixed units through weeks share a seconds dimension; months and years each have their own unit tag.
+Compatible conversions truncate toward zero and offer saturating, overflow-test, and throwing forms.
+See :doc:`../../topics/time/working_with_time_amounts` for unit selection, construction, conversion, arithmetic, and
+calendar application.
+
+The integer suffixes in ``<erbsland/time/Literals.hpp>`` produce typed amounts in ``erbsland::time::literals`` and
+saturate oversized unsigned literal inputs to the signed maximum.
+See :doc:`../../topics/time/writing_time_literals` for scope, suffix types, expressions, and precision limits.
+
+:cpp:class:`Duration <erbsland::time::Duration>` stores a signed 64-bit span in whole seconds, with saturating arithmetic
+and signed component extraction controlled by :cpp:enum:`DurationPart <erbsland::time::DurationPart>`.
+Sub-second inputs truncate toward zero; conversion to ``TimeDelta`` offers saturating, overflow-test, and throwing
+forms.
+See :doc:`../../topics/time/working_with_durations` for construction, comparisons, both split-result structures, chrono
+interoperability, and precision/range tradeoffs.
+
+:cpp:class:`TimeDelta <erbsland::time::TimeDelta>` stores a signed nanosecond interval with saturating arithmetic.
+Whole-unit conversions truncate toward zero; division by zero terminates.
+See :doc:`../../topics/time/working_with_time_deltas` for construction, checked factories, ratios, endpoint behavior,
+chrono interoperability, and exact versus approximate conversions.
 
 :cpp:class:`CalendarDelta <erbsland::time::CalendarDelta>` stores nanoseconds through years as independent signed
-components.
-It deliberately does not normalize its stored parts: one month remains one month, and mixed positive and negative
-components remain visible through the typed accessors.
-Conversion to ``TimeDelta`` is available only when the month and year components are zero and the exact fixed-unit sum
-fits the nanosecond range.
+components, with component equality and saturating component arithmetic.
+Application to ``DateTime`` runs from nanoseconds through years in UTC and retains the display zone.
+Fixed conversion requires zero month/year parts and representable components and intermediate sums;
+``isValidTimeDelta()`` tests conversion success.
+See :doc:`../../topics/time/understanding_calendar_changes` for composition, application order, month-end clamping,
+local recurrences, boundary handling, and fixed conversion.
 
-Applying a ``CalendarDelta`` to a ``DateTime`` processes nanoseconds, microseconds, milliseconds, seconds, minutes,
-hours, days, weeks, months, and years in that order.
-Month and year steps use the same end-of-month clamping semantics as ``Date``.
-Arithmetic is performed on the UTC representation; fixed display offsets are retained and named-zone metadata is
-refreshed for the final instant.
+:cpp:class:`TimeDeltaFormat <erbsland::time::TimeDeltaFormat>` controls fixed and calendar interval presentation.
+It provides short, long, and ELCL presets, custom separators, a smallest fixed unit, and truncating fractional output.
+See :doc:`../../topics/time/customizing_time_interval_output` for every option, precision interactions, zero and sign
+handling, calendar normalization, and ELCL serialization.
 
-:cpp:class:`TimeDeltaFormat <erbsland::time::TimeDeltaFormat>` controls short or long names, separators, the smallest
-fixed unit, and fractional output.
-``TimeDeltaFormat::elcl()`` selects the aliases and separators required for ELCL serialization.
-Calendar-delta formatting always emits non-zero years and months independently and uses exact signed normalization for
-the fixed units without first forcing the total into ``TimeDelta``.
+Measuring Elapsed Time
+======================
+
+:cpp:class:`ElapsedTimer <erbsland::time::ElapsedTimer>` starts a monotonic measurement on construction.
+``elapsed()`` returns a cumulative ``TimeDelta``; ``restart()`` replaces the starting point and returns no interval.
+Copies retain the starting point and can be restarted independently.
+See :doc:`../../topics/time/measuring_elapsed_time` for operation timing, phase measurements, time budgets, and
+interpretation of clock precision and measurement noise.
+
+:cpp:class:`TimePoint <erbsland::time::TimePoint>` wraps a ``std::chrono::steady_clock::time_point``.
+Default construction selects the clock epoch; ``now()`` captures a reading and ``inFuture()`` offsets one from now.
+Subtraction returns signed intervals, comparison orders points, and ``toStdTimePoint()`` preserves the clock domain.
+Point offsets and differences must stay within the underlying clock's representable range; point arithmetic does not
+saturate.
+See :doc:`../../topics/time/working_with_monotonic_time_points` for checkpoints, interval direction, deadlines,
+clock-domain boundaries, and standard library interoperability.
 
 Interface
 =========

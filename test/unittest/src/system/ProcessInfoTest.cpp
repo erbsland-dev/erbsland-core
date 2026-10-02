@@ -69,8 +69,8 @@ private:
         return el::system::impl::ProcessIdAccess::fromNative(value);
     }
 
-    [[nodiscard]] static auto startTime(const std::int64_t seconds) -> el::time::DateTime {
-        return el::time::DateTime::fromSeconds(el::time::Seconds{seconds}, el::time::TimeEpoch::Posix).value();
+    [[nodiscard]] static auto startTime(const std::int64_t seconds) -> el::time::Timestamp {
+        return el::time::Timestamp::fromTicks(el::time::Seconds{seconds}, el::time::TimeEpoch::Posix).value();
     }
 
     [[nodiscard]] static auto snapshot(const std::uint64_t parent, const std::int64_t started)

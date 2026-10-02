@@ -3,6 +3,7 @@
 #include "WindowsBackend.hpp"
 
 #include "InputRecordEraseGuard.hpp"
+#include "InputTimeout.hpp"
 #include "StandardInput.hpp"
 #include "WindowsBackendPrivate.hpp"
 
@@ -14,7 +15,6 @@
 #include <conio.h>
 #include <fcntl.h>
 
-#include <chrono>
 #include <iostream>
 
 namespace erbsland::cterm::impl {
@@ -26,23 +26,34 @@ auto WindowsBackend::readKeyFromConsole(const OptionalTimeout timeout) -> Key {
         _p->_pendingKeys.pop_front();
         return key;
     }
-    using namespace std::chrono;
+    const auto deadline = InputTimeout{timeout};
     const auto inputHandle = GetStdHandle(STD_INPUT_HANDLE);
-    auto timeoutMilliseconds = DWORD{INFINITE};
-    if (timeout.has_value()) {
-        auto normalizedTimeout = *timeout;
-        if (normalizedTimeout < milliseconds::zero()) {
-            normalizedTimeout = milliseconds::zero();
-        }
-        timeoutMilliseconds = static_cast<DWORD>(normalizedTimeout.count());
-    }
-    if (WaitForSingleObject(inputHandle, timeoutMilliseconds) != WAIT_OBJECT_0) {
+    const auto polling = timeout.has_value() && !timeout->isPositive();
+    auto pollEvents = DWORD{};
+    if (polling && GetNumberOfConsoleInputEvents(inputHandle, &pollEvents) == 0) {
         return {};
     }
     for (;;) {
-        DWORD available = 0;
-        if ((GetNumberOfConsoleInputEvents(inputHandle, &available) == 0) || available == 0) {
+        // A zero timeout drains only the original bounded snapshot, preserving combined Unicode events.
+        if (polling && pollEvents == 0) {
             break;
+        }
+        DWORD available = 0;
+        if (GetNumberOfConsoleInputEvents(inputHandle, &available) == 0) {
+            break;
+        }
+        if (available == 0) {
+            const auto remaining = deadline.remaining();
+            const auto nativeTimeout =
+                remaining.has_value() ? InputTimeout::windowsMilliseconds(*remaining) : DWORD{INFINITE};
+            const auto status = WaitForSingleObject(inputHandle, nativeTimeout);
+            if (status == WAIT_TIMEOUT && !deadline.expired()) {
+                continue;
+            }
+            if (status != WAIT_OBJECT_0 || GetNumberOfConsoleInputEvents(inputHandle, &available) == 0 ||
+                available == 0) {
+                break;
+            }
         }
 
         INPUT_RECORD inputRecord{};
@@ -52,12 +63,21 @@ auto WindowsBackend::readKeyFromConsole(const OptionalTimeout timeout) -> Key {
             break;
         }
 
+        if (polling) {
+            --pollEvents;
+        }
         if (inputRecord.EventType != KEY_EVENT) {
+            if (!polling && deadline.expired()) {
+                break;
+            }
             continue;
         }
 
         const auto &keyEvent = inputRecord.Event.KeyEvent;
         if (keyEvent.bKeyDown == 0) {
+            if (!polling && deadline.expired()) {
+                break;
+            }
             continue; // consume, ignore
         }
         const auto keyModifiers = keyModifiersFromControlState(keyEvent.dwControlKeyState);
@@ -180,6 +200,17 @@ auto WindowsBackend::readKeyFromConsole(const OptionalTimeout timeout) -> Key {
                 codePoint.has_value()) {
                 appendTextCodePoint(*codePoint, keyEvent.wRepeatCount);
             }
+            break;
+        }
+        if (!polling && deadline.expired()) {
+            break;
+        }
+        // Return already collected keys without waiting for an additional event.
+        if (GetNumberOfConsoleInputEvents(inputHandle, &available) == 0 ||
+            (available == 0 && _p->_pendingTextInput.has_value())) {
+            break;
+        }
+        if (available == 0 && !_p->_pendingKeys.empty()) {
             break;
         }
     }

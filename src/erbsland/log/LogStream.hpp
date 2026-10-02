@@ -10,7 +10,7 @@
 #include "impl/LogManagerData_fwd.hpp"
 
 #include "../stream/AnyStringBuilderStream.hpp"
-#include "../time/DateTime.hpp"
+#include "../time/Timestamp.hpp"
 
 #include <atomic>
 
@@ -85,7 +85,7 @@ private:
     /// @param args Printable values passed in order to the text-print system.
     template <typename... tArgs>
     void emit(const LogLevel level, const tArgs &...args) {
-        const auto timestamp = time::DateTime::now();
+        const auto timestamp = time::Timestamp::now();
         const auto builder = stream::AnyStringBuilderStream::create();
         builder->print(args...);
         emitText(level, timestamp, builder->takeString());
@@ -95,7 +95,7 @@ private:
     /// @param level The severity to assign to the entry.
     /// @param timestamp The UTC timestamp captured before producer-side formatting.
     /// @param message The formatted message to sanitize and enqueue.
-    void emitText(LogLevel level, time::DateTime timestamp, const text::String &message);
+    void emitText(LogLevel level, time::Timestamp timestamp, const text::String &message);
     /// Update the cached trace-enabled flag.
     /// @param enabled The newly computed trace state.
     void setTraceEnabled(bool enabled) noexcept { _traceEnabled.store(enabled, std::memory_order_relaxed); }

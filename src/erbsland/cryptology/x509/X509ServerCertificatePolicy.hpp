@@ -6,7 +6,7 @@
 #include "X509CertificateValidation.hpp"
 
 #include "../../network/Host.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 
 #include <cstddef>
 
@@ -45,7 +45,7 @@ public: // validation
     [[nodiscard]] auto validate(
         const X509CertificateBundle &peerCertificates,
         const network::Host &referenceIdentity,
-        time::DateTime validationTime) const -> X509CertificateValidation;
+        time::Timestamp validationTime) const -> X509CertificateValidation;
     /// Validate a peer certificate set at the current time.
     /// @param peerCertificates The target certificate first, followed by unordered peer intermediates.
     /// @param referenceIdentity The unresolved DNS name or literal IP address to authenticate.

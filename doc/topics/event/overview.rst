@@ -173,8 +173,8 @@ can start it manually after all initialization work is done.
             // const auto lastWriteTimeStd = std::filesystem::last_write_time(_path);
             // FIXME! There is currently no postable way to get the file time using std::filesystem that works
             // out of the box. Replace this as soon the `Path` feature is available.
-            const auto lastWriteTime = el::DateTime::now(); // FIXME!
-            el::stdOut()->printLine("Last Modification: ", lastWriteTime.toIsoString());
+            const auto lastWriteTime = el::Timestamp::now(); // FIXME!
+            el::stdOut()->printLine("Last Modification: ", lastWriteTime.toString());
         }
 
     private:

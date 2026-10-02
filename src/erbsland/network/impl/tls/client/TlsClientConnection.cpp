@@ -11,7 +11,7 @@
 #include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/Literals.hpp"
-#include "../../../../time/DateTime.hpp"
+#include "../../../../time/Timestamp.hpp"
 
 #include <utility>
 
@@ -99,7 +99,7 @@ void TlsClientConnection::connect(HostEndpoint endpoint, TlsClientConnectOptions
     auto protocol = std::make_unique<TlsClientProtocol>(TlsClientProtocolOptions{
         endpoint.host(),
         *resolution.configuration()->serverCertificatePolicy(),
-        time::DateTime::now(),
+        time::Timestamp::now(),
         options.alpnProtocols(),
         options.bufferLimits()});
 

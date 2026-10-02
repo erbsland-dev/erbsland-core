@@ -8,12 +8,12 @@
 #include "../text/StringEditor.hpp"
 #include "../time/TimeAmounts.hpp"
 
-#include <chrono>
 #include <cstdint>
 
 namespace erbsland::cterm {
 
 /// The input interface.
+/// @tested{InputTest ApiWrapperDispatchTest}
 class Input {
 public:
     /// Supported reading modes for the input backend.
@@ -40,15 +40,11 @@ public:
     /// `Key`.
     /// @param timeout Maximum wait time in `Mode::Key`.
     /// @return The parsed key event, or an invalid key if no supported input was read before the timeout expired.
-    [[nodiscard]] auto readKey(std::chrono::milliseconds timeout = {}) const -> Key {
-        if (timeout < std::chrono::milliseconds::zero()) {
-            timeout = std::chrono::milliseconds::zero();
+    [[nodiscard]] auto readKey(time::Milliseconds timeout = {}) const -> Key {
+        if (timeout < time::Milliseconds{}) {
+            timeout = time::Milliseconds{};
         }
         return readKeyImpl(timeout);
-    }
-    /// @overload
-    [[nodiscard]] auto readKey(const time::Milliseconds timeout = {}) const -> Key {
-        return readKeyImpl(std::chrono::milliseconds{timeout.toValue().toRawValue()});
     }
     /// Wait until one key event is available.
     /// In `Mode::ReadLine`, this call blocks until one line was entered and returns the converted key.
@@ -65,7 +61,7 @@ protected:
     /// @param timeout Maximum wait time in `Mode::Key`; a value of zero performs a non-blocking poll.
     /// Ignored in `Mode::ReadLine`.
     /// @return The parsed key event, or an invalid key if no supported input was read.
-    [[nodiscard]] virtual auto readKeyImpl(std::chrono::milliseconds timeout) const -> Key = 0;
+    [[nodiscard]] virtual auto readKeyImpl(time::Milliseconds timeout) const -> Key = 0;
     /// Implement `waitForKey()`.
     /// @return The parsed key event.
     [[nodiscard]] virtual auto waitForKeyImpl() const -> Key = 0;

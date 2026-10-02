@@ -24,21 +24,27 @@ public:
     void testReadKeyClampsNegativeTimeoutsToZero() {
         const auto input = InputProbe{};
 
-        const auto key = input.readKey(std::chrono::milliseconds{-25});
+        const auto key = input.readKey(erbsland::time::Milliseconds{-25});
 
         REQUIRE_EQUAL(key, Key::Escape);
-        REQUIRE_EQUAL(input._lastTimeout, std::chrono::milliseconds{0});
+        REQUIRE_EQUAL(input._lastTimeout, erbsland::time::Milliseconds{0});
         REQUIRE_EQUAL(input._readKeyCallCount, 1);
     }
 
     void testReadKeyPassesThroughPositiveTimeouts() {
         const auto input = InputProbe{};
 
-        const auto key = input.readKey(std::chrono::milliseconds{125});
+        const auto key = input.readKey(erbsland::time::Milliseconds{125});
 
         REQUIRE_EQUAL(key, Key::Escape);
-        REQUIRE_EQUAL(input._lastTimeout, std::chrono::milliseconds{125});
+        REQUIRE_EQUAL(input._lastTimeout, erbsland::time::Milliseconds{125});
         REQUIRE_EQUAL(input._readKeyCallCount, 1);
+    }
+
+    void testDefaultTimeoutIsANonblockingPoll() {
+        const auto input = InputProbe{};
+        REQUIRE_EQUAL(input.readKey(), Key::Escape);
+        REQUIRE_EQUAL(input._lastTimeout, erbsland::time::Milliseconds{});
     }
 
     void testWaitForKeyUsesTheBlockingHook() {

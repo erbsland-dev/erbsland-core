@@ -73,7 +73,7 @@ private:
                 return;
             }
         }
-        const auto time = el::DateTime::now();
+        const auto time = el::Timestamp::now();
         const auto ticks = time.toTicks<el::Seconds>(el::TimeEpoch::Rfc868);
         if (!ticks.has_value()) {
             // Stop the server for this unexpected error.
@@ -99,7 +99,7 @@ private:
             "Received request from "_el,
             datagram.remoteEndpoint().toString(),
             ", replied with "_el,
-            time.toIsoString());
+            time.toString());
     }
 
     [[noreturn]] void onError(const el::NetworkErrorContext &error) { throw el::NetworkError{error}; }

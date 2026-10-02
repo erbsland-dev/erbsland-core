@@ -86,7 +86,7 @@ private:
         CompressionMethod method,
         unit::ByteLength uncompressedLength,
         uint32_t crc32,
-        time::DateTime modificationTime,
+        time::Timestamp modificationTime,
         text::String comment,
         mem::ByteBlock opaqueLocalExtra = {},
         mem::ByteBlock opaqueCentralExtra = {},

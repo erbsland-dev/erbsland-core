@@ -8,7 +8,7 @@ namespace erbsland::log {
 
 LogEntry::LogEntry(
     const uint64_t sequence,
-    time::DateTime timestamp,
+    time::Timestamp timestamp,
     const LogLevel level,
     LogPath path,
     text::String message,

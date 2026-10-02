@@ -21,7 +21,7 @@
 #include <erbsland/network/impl/tls/TlsAlpnProtocol.hpp>
 #include <erbsland/network/impl/tls/TlsWireWriter.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/time/DateTime.hpp>
+#include <erbsland/time/Timestamp.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -78,7 +78,7 @@ private:
         return TlsClientProtocolOptions{
             Host::fromStringOrThrow(host),
             X509ServerCertificatePolicy{X509CertificateBundle::fromPemOrThrow(readText(trustPath))},
-            el::time::DateTime::now(),
+            el::time::Timestamp::now(),
             std::move(alpn)};
     }
 

@@ -138,9 +138,9 @@ private:
             ticks = el::Seconds{el::saturatingCast<int64_t>(
                 datagram.data().getInteger<std::uint64_t>(el::ByteIndex{}, el::Endianness::Big))};
         }
-        const auto time = el::DateTime::fromTicks(ticks, el::TimeEpoch::Rfc868).value_or(el::DateTime{});
+        const auto time = el::Timestamp::fromTicks(ticks, el::TimeEpoch::Rfc868).value_or(el::Timestamp{});
         terminal()->printLine(fg::BrightGreen, "Received response from "_el, datagram.remoteEndpoint().toString());
-        terminal()->printLine(fg::BrightWhite, "Time is "_el, time.toIsoString());
+        terminal()->printLine(fg::BrightWhite, "Time is "_el, time.toString());
         _state = State::Closing;
         _socket->close();
     }

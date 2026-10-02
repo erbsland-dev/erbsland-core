@@ -8,9 +8,9 @@
 #include <erbsland/err/LogicError.hpp>
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/time/Date.hpp>
-#include <erbsland/time/DateTime.hpp>
 #include <erbsland/time/Time.hpp>
 #include <erbsland/time/TimeAmounts.hpp>
+#include <erbsland/time/Timestamp.hpp>
 #include <erbsland/util/List.hpp>
 
 using namespace el::cryptology;
@@ -55,10 +55,10 @@ public:
     void testTimeSelection() {
         using namespace el::time;
 
-        const auto utc = DateTime{Date::fromYearMonthDay(2049, 12, 31), Time{Hour{23}, Minute{59}, Second{58}}};
-        const auto generalized = DateTime{Date::fromYearMonthDay(2050, 1, 1), Time{Hour{0}, Minute{0}, Second{1}}};
-        const auto generalizedWithOffset =
-            DateTime{Date::fromYearMonthDay(2050, 1, 1), Time{Hour{2}, Minute{0}, Second{1}}, Duration{Hours{2}}};
+        const auto utc = Timestamp{Date::fromYearMonthDay(2049, 12, 31), Time{Hour{23}, Minute{59}, Second{58}}};
+        const auto generalized = Timestamp{Date::fromYearMonthDay(2050, 1, 1), Time{Hour{0}, Minute{0}, Second{1}}};
+        const auto generalizedWithOffset = Timestamp::fromDateTimeOrThrow(
+            DateTime{Date::fromYearMonthDay(2050, 1, 1), Time{Hour{2}, Minute{0}, Second{1}}, Duration{Hours{2}}});
         auto encoder = DerEncoder{};
         encoder.appendTime(utc);
         encoder.appendTime(generalized);

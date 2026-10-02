@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from lib.cleanup import CleanupConfig, IncludeCleanup
+from lib.cleanup import CMakeCleanup, CleanupConfig, IncludeCleanup
 
 
 class IncludeCleanupTest(unittest.TestCase):
@@ -22,6 +22,7 @@ class IncludeCleanupTest(unittest.TestCase):
         (self.project_dir / "src" / "erbsland").mkdir(parents=True)
         (self.project_dir / "test" / "unittest" / "src").mkdir(parents=True)
         (self.project_dir / "demos").mkdir(parents=True)
+        (self.project_dir / "test" / "constant-time").mkdir(parents=True)
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
@@ -98,6 +99,20 @@ class IncludeCleanupTest(unittest.TestCase):
 """,
             self.read_file("demos/text/Sample/main.cpp"),
         )
+
+    def test_cmake_extra_directory_arguments_are_preserved(self) -> None:
+        config = CleanupConfig.read(self.project_dir, Path(__file__).resolve().parents[1] / "conf" / "cleanup.elcl")
+        path = self.project_dir / "test" / "constant-time" / "CMakeLists.txt"
+        for statement in (
+            "add_subdirectory(app EXCLUDE_FROM_ALL)",
+            "add_subdirectory(app other-build-directory)",
+            "add_subdirectory(app SYSTEM)",
+        ):
+            with self.subTest(statement=statement):
+                original = f"cmake_minimum_required(VERSION 3.28)\n\n{statement}\n"
+                path.write_text(original, encoding="utf-8")
+                CMakeCleanup(config, lambda _: None).cleanup_file(path)
+                self.assertEqual(path.read_text(encoding="utf-8"), original)
 
 
 if __name__ == "__main__":

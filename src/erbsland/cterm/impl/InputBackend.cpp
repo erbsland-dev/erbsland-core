@@ -12,7 +12,7 @@ void InputBackend::setMode(const Mode mode) {
     _backend->setInputMode(mode);
 }
 
-auto InputBackend::readKeyImpl(const std::chrono::milliseconds timeout) const -> Key {
+auto InputBackend::readKeyImpl(const time::Milliseconds timeout) const -> Key {
     return _backend->readKey(timeout);
 }
 

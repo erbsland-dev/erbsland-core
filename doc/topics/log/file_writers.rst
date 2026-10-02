@@ -143,13 +143,13 @@ It checks the resulting content rather than relying on file sizes, making the be
         overwritePath.content().writeTextOrThrow("Earlier run\n"_el);
 
         const auto appendWriter = el::LogWriter::createForFile(el::FileLogWriterOptions{appendPath});
-        writeFileDemoLine(appendWriter, el::DateTime::now(), "Current run"_el);
+        writeFileDemoLine(appendWriter, el::Timestamp::now(), "Current run"_el);
         appendWriter->close();
 
         auto overwriteOptions = el::FileLogWriterOptions{overwritePath};
         overwriteOptions.setMode(el::LogFileMode::Overwrite);
         const auto overwriteWriter = el::LogWriter::createForFile(overwriteOptions);
-        writeFileDemoLine(overwriteWriter, el::DateTime::now(), "Current run"_el);
+        writeFileDemoLine(overwriteWriter, el::Timestamp::now(), "Current run"_el);
         overwriteWriter->close();
 
         const auto yesNo = el::BooleanFormat::yesNo();
@@ -215,12 +215,12 @@ The second entry rotates the first day's active file into ``guild.2026-09-01.log
 
         writeFileDemoLine(
             writer,
-            el::DateTime{el::Date::fromYearMonthDay(2026, 9, 1), el::Time{el::Hour{18}, el::Minute{0}}},
+            el::Timestamp{el::Date::fromYearMonthDay(2026, 9, 1), el::Time{el::Hour{18}, el::Minute{0}}},
             "First day"_el,
             1U);
         writeFileDemoLine(
             writer,
-            el::DateTime{el::Date::fromYearMonthDay(2026, 9, 2), el::Time{el::Hour{7}, el::Minute{0}}},
+            el::Timestamp{el::Date::fromYearMonthDay(2026, 9, 2), el::Time{el::Hour{7}, el::Minute{0}}},
             "Second day"_el,
             2U);
         writer->close();
@@ -277,8 +277,8 @@ first numbered archive.
             .setMaximumSize(el::ByteLength{24U});
         const auto writer = el::LogWriter::createForFile(options);
 
-        writeFileDemoLine(writer, el::DateTime::now(), "First observation"_el, 1U);
-        writeFileDemoLine(writer, el::DateTime::now(), "Second observation"_el, 2U);
+        writeFileDemoLine(writer, el::Timestamp::now(), "First observation"_el, 1U);
+        writeFileDemoLine(writer, el::Timestamp::now(), "Second observation"_el, 2U);
         writer->close();
 
         el::io::printLine(
@@ -335,7 +335,7 @@ With retention set to two, the first two numbered archives remain and ``guild.3.
         const auto writer = el::LogWriter::createForFile(options);
 
         for (auto sequence = uint64_t{1U}; sequence <= 4U; ++sequence) {
-            writeFileDemoLine(writer, el::DateTime::now(), "Entry 0001"_el, sequence);
+            writeFileDemoLine(writer, el::Timestamp::now(), "Entry 0001"_el, sequence);
         }
         writer->close();
 

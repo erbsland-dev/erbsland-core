@@ -19,7 +19,7 @@ auto LogStream::createMuted() -> LogStreamPtr {
     return std::make_shared<LogStream>(LogPath{}, LogTraceSection{}, impl::LogManagerDataWeakPtr{}, PrivateTag{});
 }
 
-void LogStream::emitText(const LogLevel level, time::DateTime timestamp, const text::String &message) {
+void LogStream::emitText(const LogLevel level, time::Timestamp timestamp, const text::String &message) {
     if (_manager.expired()) {
         return;
     }

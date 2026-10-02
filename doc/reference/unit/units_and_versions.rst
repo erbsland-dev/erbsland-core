@@ -34,6 +34,25 @@ Finite length multiplication saturates at the largest finite length.
 Infinite lengths remain infinite for scalar multiplication, division and modulo.
 Division and modulo by zero terminate, matching the saturating integer helpers.
 
+Integer Amounts
+===============
+
+:cpp:class:`IntegerAmount <erbsland::unit::IntegerAmount>` stores a signed saturating count with a unit tag and a scale.
+Construction accepts signed counts; unsigned construction is deleted.
+Comparison, addition, and subtraction require the exact same amount type.
+Signed scalar multiplication, division, and remainder preserve the amount type; division and remainder by zero
+terminate.
+Arithmetic saturates, including negation of the minimum value to the maximum.
+Increment and decrement change the count by one and saturate at the bounds.
+
+Compatible conversion requires a shared unit tag and a supported scale ratio.
+``converted<T>()`` saturates on overflow and truncates division toward zero.
+``wouldConvertSaturate<T>()`` and ``convertedOrThrow<T>()`` check overflow, without rejecting discarded remainders.
+``toRawValue()`` returns the native count; ``toValue()`` returns its saturating integer wrapper.
+The Interface section below gives the remaining helpers for extraction, clamping, absolute values, and factories.
+See :doc:`../../topics/time/working_with_time_amounts` for practical construction, conversion, and arithmetic with the
+time aliases.
+
 Version
 =======
 

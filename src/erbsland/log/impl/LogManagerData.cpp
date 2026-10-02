@@ -15,8 +15,8 @@
 #include "../../text/CharSet.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringSide.hpp"
-#include "../../time/DateTime.hpp"
 #include "../../time/TimePoint.hpp"
+#include "../../time/Timestamp.hpp"
 
 #include <algorithm>
 #include <exception>
@@ -52,7 +52,7 @@ auto LogManagerData::createStream(LogPath path, LogTraceSection traceSection) ->
 }
 
 void LogManagerData::enqueue(
-    const LogLevel level, time::DateTime timestamp, const LogPath &path, text::String message) noexcept {
+    const LogLevel level, time::Timestamp timestamp, const LogPath &path, text::String message) noexcept {
     try {
         auto options = LogManagerOptions{};
         {

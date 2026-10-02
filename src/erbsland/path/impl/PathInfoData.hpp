@@ -16,8 +16,8 @@
 #include "../../system/UserId.hpp"
 #include "../../system/UserName.hpp"
 #include "../../text/StringEditor.hpp"
-#include "../../time/DateTime.hpp"
 #include "../../time/TimePoint.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../unit/ByteLength.hpp"
 
 namespace erbsland::path::impl {
@@ -37,25 +37,25 @@ public:
     auto operator=(PathInfoData &&) noexcept -> PathInfoData & = default;
 
 public:
-    Path resolvedPath;                 ///< The resolved physical path.
-    PathInfoParts requestedParts;      ///< The information parts requested for this instance.
-    PathInfoParts loadedParts;         ///< The information parts loaded into this data.
-    time::TimePoint lastRefresh;       ///< The time when the cached data was refreshed.
-    bool exists{false};                ///< If the target exists.
-    bool refreshFailed{false};         ///< If automatic refresh must stop until explicit reload.
-    PathType type{PathType::Unknown};  ///< The target type.
-    unit::ByteLength fileSize;         ///< Size for regular files.
-    system::FileIdentity fileIdentity; ///< Stable identity of the current filesystem object.
-    time::DateTime lastModified;       ///< Last modification time.
-    time::DateTime lastAccessed;       ///< Last access time.
-    time::DateTime birthTime;          ///< Creation/birth time when available.
-    time::DateTime lastMetadataChange; ///< Last metadata change time when available.
-    system::UserName ownerName;        ///< Resolved owner name.
-    system::UserId ownerId;            ///< Platform owner identifier.
-    system::GroupName groupName;       ///< Resolved group name.
-    system::GroupId groupId;           ///< Platform group identifier.
-    PathAccessInfo accessInfo;         ///< Portable access information.
-    PathAttributes attributes;         ///< Native attributes.
+    Path resolvedPath;                  ///< The resolved physical path.
+    PathInfoParts requestedParts;       ///< The information parts requested for this instance.
+    PathInfoParts loadedParts;          ///< The information parts loaded into this data.
+    time::TimePoint lastRefresh;        ///< The time when the cached data was refreshed.
+    bool exists{false};                 ///< If the target exists.
+    bool refreshFailed{false};          ///< If automatic refresh must stop until explicit reload.
+    PathType type{PathType::Unknown};   ///< The target type.
+    unit::ByteLength fileSize;          ///< Size for regular files.
+    system::FileIdentity fileIdentity;  ///< Stable identity of the current filesystem object.
+    time::Timestamp lastModified;       ///< Last modification time.
+    time::Timestamp lastAccessed;       ///< Last access time.
+    time::Timestamp birthTime;          ///< Creation/birth time when available.
+    time::Timestamp lastMetadataChange; ///< Last metadata change time when available.
+    system::UserName ownerName;         ///< Resolved owner name.
+    system::UserId ownerId;             ///< Platform owner identifier.
+    system::GroupName groupName;        ///< Resolved group name.
+    system::GroupId groupId;            ///< Platform group identifier.
+    PathAccessInfo accessInfo;          ///< Portable access information.
+    PathAttributes attributes;          ///< Native attributes.
 };
 
 }

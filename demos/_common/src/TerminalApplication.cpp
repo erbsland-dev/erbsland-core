@@ -20,7 +20,7 @@ auto TerminalApplication::main() -> erbsland::ExitCode {
         return el::ExitCode{exitCode};
     }
     while (!_quitRequested) {
-        const auto key = terminal()->input().readKey(loopInterval());
+        const auto key = terminal()->input().readKey(el::Milliseconds{loopInterval().count()});
         if (key.valid()) {
             onKey(key);
         }

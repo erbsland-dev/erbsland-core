@@ -73,7 +73,7 @@ Text, data, and utilities
 - A safe, reliable regular-expression engine
 - Byte and text streams, text encodings, and buffers
 - Filesystem paths, file and directory operations, and file streams
-- Date and time types, durations, and system-independent time-zone calculation
+- UTC timestamps, calendar date and time types, durations, and system-independent time-zone calculation
 - Safe numeric utilities, including saturating arithmetic and checked conversions
 - Fast and secure random-number generators with safe APIs
 - Copy-on-write containers, coroutine primitives, enum flags, compression, and more
@@ -122,6 +122,8 @@ All Documentation
     guidelines/index
 
 The :doc:`guidelines/index` section is contributor material for developing Core itself.
+The :doc:`topics/time/index` topics provide practical demos for timestamps, calendar calculations, time zones, typed
+intervals, and monotonic clocks.
 
 Documentation Indices
 =====================

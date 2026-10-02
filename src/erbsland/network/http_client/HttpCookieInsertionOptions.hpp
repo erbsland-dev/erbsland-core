@@ -5,7 +5,7 @@
 #include "../http/HttpCookieSameSite.hpp"
 
 #include "../../text/String.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 
 #include <optional>
 #include <utility>
@@ -31,9 +31,9 @@ public:
         return *this;
     }
     /// Get the optional absolute expiry.
-    [[nodiscard]] auto expires() const noexcept -> const std::optional<time::DateTime> & { return _expires; }
+    [[nodiscard]] auto expires() const noexcept -> const std::optional<time::Timestamp> & { return _expires; }
     /// Set the absolute expiry.
-    auto setExpires(time::DateTime value) noexcept -> HttpCookieInsertionOptions & {
+    auto setExpires(time::Timestamp value) noexcept -> HttpCookieInsertionOptions & {
         _expires = std::move(value);
         return *this;
     }
@@ -62,7 +62,7 @@ public:
 private:
     std::optional<text::String> _domain;         ///< Optional Domain attribute.
     std::optional<text::String> _path;           ///< Optional Path attribute.
-    std::optional<time::DateTime> _expires;      ///< Optional expiry.
+    std::optional<time::Timestamp> _expires;     ///< Optional expiry.
     std::optional<HttpCookieSameSite> _sameSite; ///< Optional SameSite attribute.
     bool _secure{};                              ///< Secure attribute.
     bool _httpOnly{};                            ///< HttpOnly attribute.

@@ -85,15 +85,15 @@ auto BsonCodec::readString() -> text::String {
     return value;
 }
 
-auto BsonCodec::readDateTime() -> time::DateTime {
+auto BsonCodec::readDateTime() -> time::Timestamp {
     const auto milliseconds = _reader.readInt64OrThrow();
-    const auto epoch = time::DateTime::epoch(time::TimeEpoch::Posix).toTicksOrThrow<time::Milliseconds>();
+    const auto epoch = time::Timestamp::epoch(time::TimeEpoch::Posix).toTicksOrThrow<time::Milliseconds>();
     const auto core = epoch.toRawValue();
     if ((milliseconds > 0 && core > INT64_MAX - milliseconds) ||
         (milliseconds < 0 && core < INT64_MIN - milliseconds)) {
         fail();
     }
-    const auto result = time::DateTime::fromTicks(time::Milliseconds{core + milliseconds});
+    const auto result = time::Timestamp::fromTicks(time::Milliseconds{core + milliseconds});
     if (!result) {
         fail();
     }
@@ -299,12 +299,12 @@ void BsonCodec::writeString(const text::String &value) {
     _writer.writeUInt8(0U);
 }
 
-void BsonCodec::writeDateTime(const time::DateTime &value) {
-    if (!value.isValid() || value.utcTime().nanosecondFraction().toRawValue() % 1'000'000 != 0) {
+void BsonCodec::writeDateTime(const time::Timestamp &value) {
+    if (!value.isValid() || value.time().nanosecondFraction().toRawValue() % 1'000'000 != 0) {
         throw err::ParameterError{"BSON datetime requires millisecond precision."_el, "value"_el};
     }
     const auto millis = value.toTicksOrThrow<time::Milliseconds>();
-    const auto epoch = time::DateTime::epoch(time::TimeEpoch::Posix).toTicksOrThrow<time::Milliseconds>();
+    const auto epoch = time::Timestamp::epoch(time::TimeEpoch::Posix).toTicksOrThrow<time::Milliseconds>();
     _writer.writeInt64(millis.toRawValue() - epoch.toRawValue());
 }
 
@@ -373,7 +373,7 @@ void BsonCodec::writeValue(const BsonValue &value) {
         break;
     }
     case BsonType::DateTime:
-        writeDateTime(value.getDateTime().value());
+        writeDateTime(value.getTimestamp().value());
         break;
     case BsonType::Array:
         writeContainer(value, true);

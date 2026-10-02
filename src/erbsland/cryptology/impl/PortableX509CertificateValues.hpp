@@ -14,7 +14,7 @@
 #include "../x509/X509Version.hpp"
 
 #include "../../mem/ByteBlock.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../util/List.hpp"
 
 #include <cstdint>
@@ -34,8 +34,8 @@ struct PortableX509CertificateValues final {
     mem::ByteBlock signature;                              ///< Signature BIT STRING data.
     uint8_t signatureUnusedBitCount{};                     ///< Signature unused bits.
     X509Name issuer;                                       ///< Issuer name.
-    time::DateTime validFrom;                              ///< UTC not-before time.
-    time::DateTime validTo;                                ///< UTC not-after time.
+    time::Timestamp validFrom;                             ///< UTC not-before time.
+    time::Timestamp validTo;                               ///< UTC not-after time.
     X509Name subject;                                      ///< Subject name.
     PublicKey publicKey;                                   ///< Subject public key.
     util::List<X509Extension> extensions;                  ///< All extensions.

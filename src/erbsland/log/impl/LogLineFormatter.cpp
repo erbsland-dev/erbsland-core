@@ -16,9 +16,10 @@ namespace erbsland::log::impl {
 using namespace text::literals;
 
 auto LogLineFormatter::format() const -> LogLineConstPtr {
+    const auto utcTimestamp = _entry.timestamp().toDateTime().value_or(time::DateTime{});
     const auto timestamp = _settings.timestampZone() == LogTimestampZone::Local
-        ? _entry.timestamp().toTimeZone(time::TimeZone::local())
-        : _entry.timestamp();
+        ? utcTimestamp.toTimeZone(time::TimeZone::local())
+        : utcTimestamp;
     const auto timeText =
         timestamp.toIsoString(time::IsoTimeFormatFlags{time::IsoTimeFormat::Extended, time::IsoTimeFormat::TimeShift});
     const auto level = _entry.level().toString(_settings.levelFormat());

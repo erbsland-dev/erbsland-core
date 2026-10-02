@@ -26,6 +26,7 @@ Topics
     err/index
     path/index
     random/index
+    time/index
     re/index
     event/index
     log/index

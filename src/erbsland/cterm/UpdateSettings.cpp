@@ -6,25 +6,8 @@
 
 namespace erbsland::cterm {
 
-UpdateSettings::UpdateSettings(
-    const block::Size minimumSize,
-    const Block minimumSizeBackground,
-    const bool showCropMarks,
-    const Block cropMarkRight,
-    const Block cropMarkBottom) noexcept :
-    _minimumSize{minimumSize},
-    _minimumSizeBackground{minimumSizeBackground},
-    _showCropMarks{showCropMarks},
-    _cropMarkRight{cropMarkRight},
-    _cropMarkBottom{cropMarkBottom} {
-}
-
 auto UpdateSettings::minimumSize() const noexcept -> block::Size {
     return _minimumSize;
-}
-
-auto UpdateSettings::minimumSizeMark() const noexcept -> const Block & {
-    return _minimumSizeBackground;
 }
 
 auto UpdateSettings::showCropMarks() const noexcept -> bool {
@@ -61,10 +44,6 @@ auto UpdateSettings::minimumSizeMessage() const noexcept -> const BlockString & 
 
 void UpdateSettings::setMinimumSizeMessage(BlockString message) noexcept {
     _minimumSizeMessage = std::move(message);
-}
-
-void UpdateSettings::setMinimumSizeMark(const Block minimumSizeMark) noexcept {
-    _minimumSizeBackground = minimumSizeMark;
 }
 
 void UpdateSettings::setShowCropMarks(const bool showCropMarks) noexcept {

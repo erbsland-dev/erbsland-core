@@ -41,6 +41,7 @@ target_sources(erbsland-core PRIVATE
         HashHelper.hpp
         InputBackend.cpp
         InputBackend.hpp
+        InputTimeout.hpp
         KeyCodePointParseResult.hpp
         KeyDecoder.cpp
         KeyDecoder.hpp

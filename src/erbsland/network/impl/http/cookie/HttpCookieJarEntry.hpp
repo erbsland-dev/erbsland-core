@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../../../../text/String.hpp"
-#include "../../../../time/DateTime.hpp"
+#include "../../../../time/Timestamp.hpp"
 #include "../../../http/HttpCookieSameSite.hpp"
 
 #include <cstdint>
@@ -19,7 +19,7 @@ struct HttpCookieJarEntry final {
     text::String domain;                        ///< Canonical IDNA ASCII domain.
     text::String path;                          ///< Request path prefix.
     text::String registrableDomain;             ///< Registrable domain used for finite limits.
-    std::optional<time::DateTime> expires;      ///< Absolute expiry, if persistent.
+    std::optional<time::Timestamp> expires;     ///< Absolute expiry, if persistent.
     std::optional<HttpCookieSameSite> sameSite; ///< Retained SameSite attribute.
     std::uint64_t created{};                    ///< Stable creation-order sequence.
     std::uint64_t accessed{};                   ///< Last-access sequence for LRU eviction.

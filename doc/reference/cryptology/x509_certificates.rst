@@ -240,7 +240,7 @@ Path validation follows RFC 5280 sections 4.1.2.5, 4.2.1.3, 4.2.1.9, 4.2.1.12, a
 retained exact ``TBSCertificate`` and must have zero unused BIT STRING bits.
 Every non-anchor certificate must have no compatible-parser profile issue and must satisfy the inclusive
 ``notBefore <= validationTime <= notAfter`` interval.
-The caller may supply a validation time explicitly; the convenience overload uses ``DateTime::now()``.
+The caller may supply a validation time explicitly; the convenience overload uses ``Timestamp::now()``.
 
 An intermediate requires a critical Basic Constraints extension with ``cA=true``.
 If Key Usage exists it must include ``keyCertSign``; if Extended Key Usage exists it must include ``serverAuth`` or

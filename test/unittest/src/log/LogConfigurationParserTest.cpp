@@ -164,7 +164,7 @@ public:
         options.setHostName("host"_el).setApplicationName("app"_el).setProcessId("42"_el).setMessageId("event"_el);
         const auto entry = el::log::LogEntry{
             1U,
-            el::time::DateTime{
+            el::time::Timestamp{
                 el::time::Date::fromYearMonthDay(2026, 8, 31),
                 el::time::Time{el::time::Hour{12}, el::time::Minute{34}, el::time::Second{56}}},
             el::log::LogLevel::Warning,
@@ -186,7 +186,7 @@ public:
             .setMaximumPendingBytes(el::unit::ByteLength{8U});
         auto writer = el::log::impl::SyslogLogWriter{options};
         const auto entry = std::make_shared<el::log::LogEntry>(
-            1U, el::time::DateTime::now(), el::log::LogLevel::Information, el::log::LogPath{}, "message"_el);
+            1U, el::time::Timestamp::now(), el::log::LogLevel::Information, el::log::LogPath{}, "message"_el);
 
         writer.write(
             entry,

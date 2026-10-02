@@ -21,14 +21,14 @@ public:
 
 public:
     Mode _mode = Mode::ReadLine;
-    mutable std::chrono::milliseconds _lastTimeout{};
+    mutable erbsland::time::Milliseconds _lastTimeout{};
     mutable bool _waitForKeyWasCalled = false;
     Key _readResult{Key::Escape};
     Key _waitForKeyResult{Key::Enter};
     std::string _readLineResult = "line";
 
 protected:
-    [[nodiscard]] auto readKeyImpl(const std::chrono::milliseconds timeout) const -> Key override {
+    [[nodiscard]] auto readKeyImpl(const erbsland::time::Milliseconds timeout) const -> Key override {
         _lastTimeout = timeout;
         return _readResult;
     }

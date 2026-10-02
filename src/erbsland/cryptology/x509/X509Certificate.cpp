@@ -54,14 +54,14 @@ auto X509Certificate::issuerId() const -> mem::ByteBlock {
     return data == nullptr ? mem::ByteBlock{} : data->values().authorityKeyIdentifier;
 }
 
-auto X509Certificate::validFrom() const noexcept -> time::DateTime {
+auto X509Certificate::validFrom() const noexcept -> time::Timestamp {
     const auto *data = portableData();
-    return data == nullptr ? time::DateTime{} : data->values().validFrom;
+    return data == nullptr ? time::Timestamp{} : data->values().validFrom;
 }
 
-auto X509Certificate::validTo() const noexcept -> time::DateTime {
+auto X509Certificate::validTo() const noexcept -> time::Timestamp {
     const auto *data = portableData();
-    return data == nullptr ? time::DateTime{} : data->values().validTo;
+    return data == nullptr ? time::Timestamp{} : data->values().validTo;
 }
 
 auto X509Certificate::subject() const -> X509Name {
@@ -196,8 +196,8 @@ auto X509Certificate::toStringTree() const -> text::StringTree {
         "serial"_el, text::base_n::BaseNEncoder{serialNumber(), text::base_n::BaseNFormat::base16()}.toString());
     result.append("signature algorithm"_el, signatureAlgorithmId());
     result.append("issuer"_el, issuer().toString());
-    result.append("valid from"_el, validFrom().toIsoString());
-    result.append("valid to"_el, validTo().toIsoString());
+    result.append("valid from"_el, validFrom().toDateTime().value_or(time::DateTime{}).toIsoString());
+    result.append("valid to"_el, validTo().toDateTime().value_or(time::DateTime{}).toIsoString());
     result.append("subject"_el, subject().toString());
     auto keyTree = text::StringTree{"Public Key"_el};
     keyTree.append("algorithm"_el, publicKey().algorithm().oid().toString());

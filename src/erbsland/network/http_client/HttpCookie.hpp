@@ -5,7 +5,7 @@
 #include "../http/HttpCookieSameSite.hpp"
 
 #include "../../text/String.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 
 #include <optional>
 #include <utility>
@@ -22,7 +22,7 @@ public:
         text::String value,
         text::String domain,
         text::String path,
-        std::optional<time::DateTime> expires,
+        std::optional<time::Timestamp> expires,
         std::optional<HttpCookieSameSite> sameSite,
         bool hostOnly,
         bool secure,
@@ -47,7 +47,7 @@ public:
     /// Get the cookie path.
     [[nodiscard]] auto path() const noexcept -> const text::String & { return _path; }
     /// Get the absolute expiry, if persistent.
-    [[nodiscard]] auto expires() const noexcept -> const std::optional<time::DateTime> & { return _expires; }
+    [[nodiscard]] auto expires() const noexcept -> const std::optional<time::Timestamp> & { return _expires; }
     /// Get the retained SameSite attribute.
     [[nodiscard]] auto sameSite() const noexcept -> std::optional<HttpCookieSameSite> { return _sameSite; }
     /// Test whether this is a host-only cookie.
@@ -62,7 +62,7 @@ private:
     text::String _value;                         ///< Cookie value.
     text::String _domain;                        ///< Canonical IDNA ASCII domain.
     text::String _path;                          ///< Request path prefix.
-    std::optional<time::DateTime> _expires;      ///< Absolute expiry, if persistent.
+    std::optional<time::Timestamp> _expires;     ///< Absolute expiry, if persistent.
     std::optional<HttpCookieSameSite> _sameSite; ///< Retained SameSite attribute.
     bool _hostOnly{};                            ///< Domain attribute was absent.
     bool _secure{};                              ///< Secure attribute.

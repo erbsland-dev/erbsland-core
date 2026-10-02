@@ -9,7 +9,7 @@
 #include "impl/ProcessInfoData.hpp"
 
 #include "../path/Path.hpp"
-#include "../time/DateTime.hpp"
+#include "../time/Timestamp.hpp"
 
 namespace erbsland::system {
 
@@ -50,10 +50,10 @@ public: // tests and attributes
     /// @throws PlatformError If the identifier was unavailable in this snapshot.
     [[nodiscard]] auto parentProcessIdOrThrow() const -> ProcessId;
     /// Get the UTC process start time, or an invalid date/time when unavailable.
-    [[nodiscard]] auto startTime() const noexcept -> time::DateTime { return _data.startTime; }
+    [[nodiscard]] auto startTime() const noexcept -> time::Timestamp { return _data.startTime; }
     /// Get the UTC process start time.
     /// @throws PlatformError If the start time was unavailable in this snapshot.
-    [[nodiscard]] auto startTimeOrThrow() const -> time::DateTime;
+    [[nodiscard]] auto startTimeOrThrow() const -> time::Timestamp;
     /// Get the process owner identifier, or an empty identifier when unavailable.
     [[nodiscard]] auto ownerId() const noexcept -> UserId { return _data.ownerId; }
     /// Get the process owner identifier.

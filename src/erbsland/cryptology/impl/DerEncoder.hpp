@@ -8,7 +8,7 @@
 #include "../../mem/ByteBlockEditor.hpp"
 #include "../../mem/ByteSpan.hpp"
 #include "../../text/String_fwd.hpp"
-#include "../../time/DateTime_fwd.hpp"
+#include "../../time/Timestamp_fwd.hpp"
 #include "../../util/List_fwd.hpp"
 
 #include <cstddef>
@@ -96,7 +96,7 @@ public: // primitive values
     /// Append a BIT STRING.
     void appendBitString(mem::ConstByteSpan content, uint8_t unusedBits = 0U);
     /// Append an RFC 5280 Time value.
-    void appendTime(const time::DateTime &value);
+    void appendTime(const time::Timestamp &value);
     /// Append a primitive context-specific value.
     void appendImplicitPrimitive(uint8_t tagNumber, mem::ConstByteSpan content);
 

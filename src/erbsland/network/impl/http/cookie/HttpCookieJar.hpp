@@ -74,7 +74,7 @@ private:
     /// Split text at one separator.
     [[nodiscard]] static auto split(const text::String &value, text::Char separator) -> std::vector<text::String>;
     /// Parse one supported HTTP cookie date.
-    [[nodiscard]] static auto parseCookieDate(const text::String &value) noexcept -> std::optional<time::DateTime>;
+    [[nodiscard]] static auto parseCookieDate(const text::String &value) noexcept -> std::optional<time::Timestamp>;
     /// Validate __Secure- and __Host- cookie prefix constraints.
     [[nodiscard]] static auto validPrefix(const HttpCookieJarEntry &entry, bool secureOrigin) noexcept -> bool;
 

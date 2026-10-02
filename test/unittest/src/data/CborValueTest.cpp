@@ -65,8 +65,8 @@ public:
     }
     void testTimestampTags() {
         const auto halfSecond = CborValue::fromByteBlockOrThrow(bytes({0xc1, 0xfb, 0x3f, 0xe0, 0, 0, 0, 0, 0, 0}));
-        REQUIRE(halfSecond.getDateTime().has_value());
-        REQUIRE_EQUAL(halfSecond.getDateTime()->utcTime().nanosecondFraction(), el::time::Nanoseconds{500'000'000});
+        REQUIRE(halfSecond.getTimestamp().has_value());
+        REQUIRE_EQUAL(halfSecond.getTimestamp()->time().nanosecondFraction(), el::time::Nanoseconds{500'000'000});
         REQUIRE_FALSE(CborValue::fromByteBlock(bytes({0xc1, 0xfb, 0x7f, 0xf0, 0, 0, 0, 0, 0, 0})).has_value());
     }
 };

@@ -17,7 +17,7 @@
 #include "../system/GroupName.hpp"
 #include "../system/UserId.hpp"
 #include "../system/UserName.hpp"
-#include "../time/DateTime.hpp"
+#include "../time/Timestamp.hpp"
 #include "../unit/ByteLength.hpp"
 
 namespace erbsland::path {
@@ -37,7 +37,7 @@ namespace erbsland::path {
 /// - resolvedPath() returns an empty path.
 /// - type() returns `PathType::Unknown` and therefore all related `is...()` functions return `false`.
 /// - fileSize() returns `0`.
-/// - All time functions return `DateTime::isValid() == false`.
+/// - All time functions return `Timestamp::isValid() == false`.
 /// - All owner/group functions either throw an error or return an empty typed value.
 /// Changing State between Calls:
 /// - If at a point an existing path vanishes or gets inaccessible (causing an error while looking up new
@@ -124,32 +124,32 @@ public: // attributes
     /// The returned time is always in the UTC time zone.
     /// @return The date/time, or an invalid date/time if the file/directory does not exist or the attributes
     ///    cannot be obtained.
-    [[nodiscard]] auto lastModified() const noexcept -> time::DateTime;
+    [[nodiscard]] auto lastModified() const noexcept -> time::Timestamp;
     /// Get the last accessed time.
     /// It is available on all platforms.
     /// The returned time is always in the UTC time zone.
     /// @return The date/time, or an invalid date/time if the file/directory does not exist or the attributes
     ///    cannot be obtained.
-    [[nodiscard]] auto lastAccessed() const noexcept -> time::DateTime;
+    [[nodiscard]] auto lastAccessed() const noexcept -> time::Timestamp;
     /// Get the creation time, when the file/directory originally was created.
     /// It is not available on all Linux filesystems/kernel-versions.
     /// The returned time is always in the UTC time zone.
     /// @return The date/time, or an invalid date/time if the file/directory does not exist or the attributes
     ///    cannot be obtained.
-    [[nodiscard]] auto birthTime() const noexcept -> time::DateTime;
+    [[nodiscard]] auto birthTime() const noexcept -> time::Timestamp;
     /// Get the time of the last metadata change.
     /// This is not available on Windows.
     /// The returned time is always in the UTC time zone.
     /// @return The date/time, or an invalid date/time if the file/directory does not exist or the attributes
     ///    cannot be obtained.
-    [[nodiscard]] auto lastMetadataChange() const noexcept -> time::DateTime;
+    [[nodiscard]] auto lastMetadataChange() const noexcept -> time::Timestamp;
     /// Get the best effort "create" time.
     /// This function tries to get the creation time of the file/directory.
     /// If this time isn't available for this platform, it tries the next best equivalent:
     /// falling back to the last metadata change, falling back to the last modified time.
     /// @return The date/time, or an invalid date/time if the file/directory does not exist or the attributes
     ///    cannot be obtained.
-    [[nodiscard]] auto creationTime() const noexcept -> time::DateTime;
+    [[nodiscard]] auto creationTime() const noexcept -> time::Timestamp;
     /// Get the name of the owner of the file/directory.
     /// Posix: This is the username.
     /// Windows: This is the resolved username with a separate domain.

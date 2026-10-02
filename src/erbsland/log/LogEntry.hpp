@@ -7,7 +7,7 @@
 #include "LogPath.hpp"
 
 #include "../text/String.hpp"
-#include "../time/DateTime.hpp"
+#include "../time/Timestamp.hpp"
 
 #include <cstdint>
 
@@ -26,7 +26,7 @@ public:
     /// @param truncated Whether the producer-side message-size limit truncated the message.
     LogEntry(
         uint64_t sequence,
-        time::DateTime timestamp,
+        time::Timestamp timestamp,
         LogLevel level,
         LogPath path,
         text::String message,
@@ -43,7 +43,7 @@ public:
     /// Get the manager-assigned sequence number.
     [[nodiscard]] auto sequence() const noexcept -> uint64_t { return _sequence; }
     /// Get the retained UTC creation timestamp.
-    [[nodiscard]] auto timestamp() const noexcept -> const time::DateTime & { return _timestamp; }
+    [[nodiscard]] auto timestamp() const noexcept -> const time::Timestamp & { return _timestamp; }
     /// Get the entry severity level.
     [[nodiscard]] auto level() const noexcept -> LogLevel { return _level; }
     /// Get the producing stream path.
@@ -55,7 +55,7 @@ public:
 
 private:
     uint64_t _sequence{};                   ///< Manager-assigned entry sequence.
-    time::DateTime _timestamp;              ///< Producer-captured UTC timestamp.
+    time::Timestamp _timestamp;             ///< Producer-captured UTC timestamp.
     LogLevel _level{LogLevel::Information}; ///< Entry severity.
     LogPath _path;                          ///< Path of the producing stream.
     text::String _message;                  ///< Sanitized message text.

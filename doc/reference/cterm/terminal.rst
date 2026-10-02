@@ -5,6 +5,16 @@
 Terminal Interface
 ******************
 
+Key Input Timeouts
+==================
+
+``Input::readKey()`` accepts a :cpp:type:`Milliseconds <erbsland::time::Milliseconds>` amount.
+In key mode, zero or negative amounts perform a nonblocking poll; positive amounts use one monotonic deadline across
+input collection and decoding.
+An expired wait returns an invalid key if no supported key was decoded.
+``waitForKey()`` waits without a finite deadline.
+In line-reading mode, both operations wait for a complete line and the timeout is ignored.
+
 Interface
 =========
 

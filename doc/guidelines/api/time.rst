@@ -23,6 +23,7 @@ Primary Types
     Time // nanosecond-precision wall-clock time within one day
     TimeWithZone // wall-clock time plus a zone but no date
     DateTime // UTC instant with display offset or named-zone metadata
+    Timestamp // compact UTC instant with signed day/ns fields and an invalid state
     Duration // signed second-resolution span
     TimeDelta // signed nanosecond-resolution span
     CalendarDelta // independent calendar and fixed-unit delta
@@ -186,3 +187,24 @@ Monotonic Time Patterns
     T() // start an elapsed timer at construction
     o.restart() // restart elapsed measurement at the current monotonic point
     o.elapsed() -> TimeDelta // inspect elapsed monotonic time
+
+Timestamp Patterns
+==================
+
+.. code-block:: text
+
+    T(date, time) // create a UTC instant from calendar fields
+    T() // create the canonical invalid value (-1, 0)
+    o.isValid()/isValidDateTime() -> bool // test exact UTC instant representation
+    o.dateAsDays()/timeAsNanoseconds() -> T // inspect unbiased UTC fields
+    o.toRawValue() -> pair<int32_t, int64_t> // inspect canonical signed fields
+    T::fromRawValue/fromRawValueOrThrow(fields) -> T // validate raw fields
+    T::fromDaysAndNanoseconds/fromDaysAndNanosecondsOrThrow(days, ns) -> T // validate amount fields
+    o.toByteBlock() -> ByteBlock // serialize twelve big-endian bytes
+    T::fromByteBlock/fromByteBlockOrThrow(bytes) -> T // validate twelve-byte serialization
+    o.toDateTime/toDateTimeOrThrow() -> DateTime // convert exactly to UTC
+    T::fromDateTime/fromDateTimeOrThrow(value) -> T // discard display metadata
+    o.toIsoString/toIsoStringOrThrow() -> String // format UTC with nine fractional digits
+    T::fromIsoString/fromIsoStringOrThrow(text) -> T // parse seconds with an explicit offset
+    o.❮unit❯To/❮unit❯ToOrThrow(other) -> T // calculate signed distance truncated toward zero
+    o.would❮Unit❯ToSaturate(other) -> bool // test distance overflow

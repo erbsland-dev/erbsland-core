@@ -383,7 +383,7 @@ public:
                 false));
         REQUIRE_FALSE(tools::normalizeEntryPath(el::mem::ByteBlock({0xffU, 'x'}), false).isEmpty());
 
-        const auto expectedTime = el::time::DateTime::fromTimeT(1700000000);
+        const auto expectedTime = el::time::Timestamp::fromTimeT(1700000000);
         auto extra = el::mem::ByteWriter{};
         tools::appendExtendedTimestamp(extra, expectedTime);
         REQUIRE_EQUAL(tools::modificationTimeFromExtra(extra.toByteBlock(), {}), expectedTime);

@@ -59,7 +59,7 @@ BsonValue::BsonValue(BsonBinary value) : _data{std::make_shared<impl::BsonValueD
 BsonValue::BsonValue(mem::ByteBlock value) : BsonValue{BsonBinary{std::move(value), 0U}} {
 }
 
-BsonValue::BsonValue(time::DateTime value) : _data{std::make_shared<impl::BsonValueData>(std::move(value))} {
+BsonValue::BsonValue(time::Timestamp value) : _data{std::make_shared<impl::BsonValueData>(std::move(value))} {
 }
 
 BsonValue::BsonValue(BsonArray value) : _data{std::make_shared<impl::BsonValueData>(std::move(value))} {
@@ -153,7 +153,7 @@ ERBSLAND_BSON_GETTER(getBool, bool)
 ERBSLAND_BSON_GETTER(getDouble, double)
 ERBSLAND_BSON_GETTER(getText, text::String)
 ERBSLAND_BSON_GETTER(getBinary, BsonBinary)
-ERBSLAND_BSON_GETTER(getDateTime, time::DateTime)
+ERBSLAND_BSON_GETTER(getTimestamp, time::Timestamp)
 ERBSLAND_BSON_GETTER(getArray, BsonArray)
 ERBSLAND_BSON_GETTER(getDocument, BsonDocument)
 ERBSLAND_BSON_GETTER(getOpaque, BsonOpaqueValue)

@@ -36,7 +36,7 @@ private:
     /// Parse an X.501 Name value.
     [[nodiscard]] auto parseName(const Asn1Node &node) -> X509Name;
     /// Parse an RFC 5280 validity time.
-    [[nodiscard]] auto parseTime(const Asn1Node &node) -> time::DateTime;
+    [[nodiscard]] auto parseTime(const Asn1Node &node) -> time::Timestamp;
     /// Parse SubjectPublicKeyInfo without interpreting its algorithm-specific bits.
     [[nodiscard]] auto parseSubjectPublicKeyInfo(const Asn1Node &node) -> PublicKey;
     /// Parse the explicit extensions container.

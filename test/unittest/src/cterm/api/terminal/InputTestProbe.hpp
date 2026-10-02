@@ -15,7 +15,7 @@ public:
     [[nodiscard]] auto readLine() -> erbsland::text::String override { return erbsland::text::StringEditor{_line}; }
 
 protected:
-    [[nodiscard]] auto readKeyImpl(const std::chrono::milliseconds timeout) const -> Key override {
+    [[nodiscard]] auto readKeyImpl(const erbsland::time::Milliseconds timeout) const -> Key override {
         _lastTimeout = timeout;
         _readKeyCallCount += 1;
         return _readResult;
@@ -29,7 +29,7 @@ protected:
 public:
     Mode _mode{Mode::ReadLine};
     std::string _line{"typed line"};
-    mutable std::chrono::milliseconds _lastTimeout{-1};
+    mutable erbsland::time::Milliseconds _lastTimeout{-1};
     mutable int _readKeyCallCount{0};
     mutable int _waitForKeyCallCount{0};
     Key _readResult{Key::Escape};

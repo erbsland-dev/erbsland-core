@@ -12,7 +12,6 @@
 #include <conio.h>
 #include <fcntl.h>
 
-#include <chrono>
 #include <iostream>
 
 namespace erbsland::cterm {
@@ -199,9 +198,9 @@ void WindowsBackend::setInputMode(Input::Mode mode) {
     _p->_inputMode = mode;
 }
 
-auto WindowsBackend::readKey(std::chrono::milliseconds timeout) -> Key {
-    if (timeout < std::chrono::milliseconds::zero()) {
-        timeout = std::chrono::milliseconds::zero();
+auto WindowsBackend::readKey(time::Milliseconds timeout) -> Key {
+    if (timeout < time::Milliseconds{}) {
+        timeout = time::Milliseconds{};
     }
     if (_p->_inputMode == Input::Mode::ReadLine) {
         return Key::fromConsoleInput(readLine());

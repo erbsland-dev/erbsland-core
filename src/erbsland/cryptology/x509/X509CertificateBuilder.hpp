@@ -14,7 +14,7 @@
 #include "../../text/String.hpp"
 #include "../../text/StringList.hpp"
 #include "../../time/CalendarDelta.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../util/List.hpp"
 
 #include <cstdint>
@@ -71,11 +71,11 @@ public: // subject
 
 public: // validity and constraints
     /// Set an exact not-before time.
-    auto setValidFrom(time::DateTime value) noexcept -> X509CertificateBuilder &;
+    auto setValidFrom(time::Timestamp value) noexcept -> X509CertificateBuilder &;
     /// Set an exact not-after time and clear a configured lifetime.
-    auto setValidTo(time::DateTime value) noexcept -> X509CertificateBuilder &;
+    auto setValidTo(time::Timestamp value) noexcept -> X509CertificateBuilder &;
     /// Set an exact validity range and clear a configured lifetime.
-    auto setValidity(time::DateTime from, time::DateTime to) noexcept -> X509CertificateBuilder &;
+    auto setValidity(time::Timestamp from, time::Timestamp to) noexcept -> X509CertificateBuilder &;
     /// Set the lifetime relative to the configured or default not-before time.
     auto setLifetime(time::CalendarDelta value) noexcept -> X509CertificateBuilder &;
     /// Set the maximum subordinate-CA depth for a CA profile.
@@ -113,8 +113,8 @@ private:
     std::optional<text::String> _organizationalUnit;
     text::StringList _dnsNames;
     util::List<network::IpAddress> _ipAddresses;
-    std::optional<time::DateTime> _validFrom;
-    std::optional<time::DateTime> _validTo;
+    std::optional<time::Timestamp> _validFrom;
+    std::optional<time::Timestamp> _validTo;
     std::optional<time::CalendarDelta> _lifetime;
     uint32_t _caPathLength{};
     X509Name _sourceSubject;

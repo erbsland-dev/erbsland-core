@@ -14,8 +14,8 @@
 #include <erbsland/path/PathOperations.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/time/Date.hpp>
-#include <erbsland/time/DateTime.hpp>
 #include <erbsland/time/Time.hpp>
+#include <erbsland/time/Timestamp.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -259,7 +259,7 @@ private:
         -> el::log::LogEntryConstPtr {
         return std::make_shared<el::log::LogEntry>(
             1U,
-            el::time::DateTime{
+            el::time::Timestamp{
                 el::time::Date::fromYearMonthDay(year, month, day),
                 el::time::Time{el::time::Hour{hour}, el::time::Minute{}, el::time::Second{}}},
             el::log::LogLevel::Information,

@@ -36,7 +36,7 @@ auto ProcessInfo::parentProcessIdOrThrow() const -> ProcessId {
     return _data.parentProcessId;
 }
 
-auto ProcessInfo::startTimeOrThrow() const -> time::DateTime {
+auto ProcessInfo::startTimeOrThrow() const -> time::Timestamp {
     if (!_data.startTime.isValid()) {
         throwUnavailable(_data.startTimeError, "Process start time is unavailable."_el);
     }

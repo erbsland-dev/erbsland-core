@@ -225,7 +225,7 @@ auto CborCodec::readTag(uint8_t additional, unit::ItemCount depth) -> CborValue 
         if (!date.isValid()) {
             fail();
         }
-        return CborValue{date};
+        return CborValue{time::Timestamp::fromDateTimeOrThrow(date)};
     }
     if (tag == 1U) {
         const auto value = readValue(depth);
@@ -260,12 +260,12 @@ auto CborCodec::readTag(uint8_t additional, unit::ItemCount depth) -> CborValue 
         } else {
             fail();
         }
-        const auto epoch = time::DateTime::epoch(time::TimeEpoch::Posix).toSecondsOrThrow();
+        const auto epoch = time::Timestamp::epoch(time::TimeEpoch::Posix).toTicksOrThrow<time::Seconds>();
         if ((seconds < 0 && seconds < -epoch.toRawValue()) ||
             (seconds > 0 && epoch.toRawValue() > INT64_MAX - seconds)) {
             fail();
         }
-        const auto date = time::DateTime::fromTicks(
+        const auto date = time::Timestamp::fromTicks(
             time::Seconds{epoch.toRawValue() + seconds}, time::Nanoseconds{static_cast<int64_t>(nanoseconds)});
         if (!date) {
             fail();

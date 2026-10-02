@@ -247,7 +247,7 @@ public:
         const auto snapshot = errors->snapshot();
         REQUIRE_EQUAL(snapshot.size(), std::size_t{1U});
         REQUIRE(snapshot.front()->timestamp().isValid());
-        REQUIRE_EQUAL(snapshot.front()->timestamp().timeOffset().toSeconds(), el::time::Seconds{});
+        REQUIRE_EQUAL(snapshot.front()->timestamp().toDateTimeOrThrow().timeOffset().toSeconds(), el::time::Seconds{});
         REQUIRE_EQUAL(snapshot.front()->message(), "first\nsecond\\u{1b}"_el);
     }
 
@@ -493,9 +493,11 @@ public:
         manager->shutdown();
 
         REQUIRE_EQUAL(writer->entries.size(), std::size_t{1U});
-        REQUIRE_EQUAL(writer->entries.front()->timestamp().timeOffset().toSeconds(), el::time::Seconds{});
+        REQUIRE_EQUAL(
+            writer->entries.front()->timestamp().toDateTimeOrThrow().timeOffset().toSeconds(), el::time::Seconds{});
         const auto expected = writer->entries.front()
                                   ->timestamp()
+                                  .toDateTimeOrThrow()
                                   .toTimeZone(el::time::TimeZone::local())
                                   .toIsoString(
                                       el::time::IsoTimeFormatFlags{

@@ -10,6 +10,7 @@ target_sources(erbsland-core-unittest PRIVATE
         InputDispatchProbe.hpp
         InputTest.cpp
         InputTestProbe.hpp
+        InputTimeoutTest.cpp
         KeyModifiersTest.cpp
         KeysTest.cpp
         KeyTest.cpp

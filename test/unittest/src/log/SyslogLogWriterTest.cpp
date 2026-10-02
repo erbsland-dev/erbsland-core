@@ -425,7 +425,7 @@ private:
     [[nodiscard]] static auto makeEntry() -> el::log::LogEntryConstPtr {
         return std::make_shared<el::log::LogEntry>(
             1U,
-            el::time::DateTime{
+            el::time::Timestamp{
                 el::time::Date::fromYearMonthDay(2026, 8, 31),
                 el::time::Time{el::time::Hour{12}, el::time::Minute{34}, el::time::Second{56}}},
             el::log::LogLevel::Information,

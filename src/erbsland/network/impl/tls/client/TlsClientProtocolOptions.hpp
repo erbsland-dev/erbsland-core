@@ -4,7 +4,7 @@
 
 #include "../../../../cryptology/x509/X509ServerCertificatePolicy.hpp"
 #include "../../../../text/String.hpp"
-#include "../../../../time/DateTime.hpp"
+#include "../../../../time/Timestamp.hpp"
 #include "../../../Host.hpp"
 #include "../../../source/SocketBufferLimits.hpp"
 
@@ -26,7 +26,7 @@ public:
     TlsClientProtocolOptions(
         Host host,
         cryptology::X509ServerCertificatePolicy certificatePolicy,
-        time::DateTime validationTime,
+        time::Timestamp validationTime,
         std::vector<text::String> alpnProtocols = {},
         SocketBufferLimits bufferLimits = {}) noexcept :
         _host{std::move(host)},
@@ -50,7 +50,7 @@ public: // accessors
         return _certificatePolicy;
     }
     /// Get the certificate-validation time.
-    [[nodiscard]] auto validationTime() const noexcept -> time::DateTime { return _validationTime; }
+    [[nodiscard]] auto validationTime() const noexcept -> time::Timestamp { return _validationTime; }
     /// Get offered ALPN identifiers.
     [[nodiscard]] auto alpnProtocols() const noexcept -> const std::vector<text::String> & { return _alpnProtocols; }
     /// Get aggregate socket buffer limits.
@@ -59,7 +59,7 @@ public: // accessors
 private:
     Host _host;                                                 ///< Original reference identity.
     cryptology::X509ServerCertificatePolicy _certificatePolicy; ///< Explicit trust and chain policy.
-    time::DateTime _validationTime;                             ///< Exact validation instant.
+    time::Timestamp _validationTime;                            ///< Exact validation instant.
     std::vector<text::String> _alpnProtocols;                   ///< Optional ALPN offer.
     SocketBufferLimits _bufferLimits;                           ///< Aggregate queue limits.
 };

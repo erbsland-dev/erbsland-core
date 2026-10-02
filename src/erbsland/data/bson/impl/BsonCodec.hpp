@@ -54,7 +54,7 @@ private: // parsing
     [[nodiscard]] auto readString() -> text::String;
     /// Read UTC milliseconds into a Core date/time.
     /// @return The decoded, encoded, or checked result.
-    [[nodiscard]] auto readDateTime() -> time::DateTime;
+    [[nodiscard]] auto readDateTime() -> time::Timestamp;
     /// Wrap wire bytes as a tolerant Core string.
     /// @param bytes The complete input bytes or byte sequence.
     /// @return The decoded, encoded, or checked result.
@@ -76,7 +76,7 @@ private: // serialization
     void writeString(const text::String &value);
     /// Write a millisecond-precision UTC timestamp.
     /// @param value The value to read, write, or inspect.
-    void writeDateTime(const time::DateTime &value);
+    void writeDateTime(const time::Timestamp &value);
     /// Select the BSON type code for a value.
     /// @param value The value to read, write, or inspect.
     /// @return The decoded, encoded, or checked result.

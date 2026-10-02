@@ -9,7 +9,7 @@
 #include <erbsland/log/line/LogLine.hpp>
 #include <erbsland/log/LogEntry.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/time/DateTime.hpp>
+#include <erbsland/time/Timestamp.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -34,7 +34,7 @@ public:
         options.setParagraphOptions(paragraph);
         auto writer = el::log::impl::ConsoleLogWriter{terminal, options};
         const auto entry = std::make_shared<el::log::LogEntry>(
-            1U, el::time::DateTime::now(), el::log::LogLevel::Information, el::log::LogPath{}, "AA BB CC"_el);
+            1U, el::time::Timestamp::now(), el::log::LogLevel::Information, el::log::LogPath{}, "AA BB CC"_el);
         const auto line = std::make_shared<el::log::LogLine>(
             std::vector<el::log::LogLineSegment>{{el::log::LogLinePart::Message, "AA BB CC"_el}});
 
@@ -50,7 +50,7 @@ public:
         const auto terminal = std::make_shared<Terminal>(backend);
         auto writer = el::log::impl::ConsoleLogWriter{terminal};
         const auto entry = std::make_shared<el::log::LogEntry>(
-            1U, el::time::DateTime::now(), el::log::LogLevel::Error, el::log::LogPath{}, "plain"_el);
+            1U, el::time::Timestamp::now(), el::log::LogLevel::Error, el::log::LogPath{}, "plain"_el);
 
         writer.write(
             entry,

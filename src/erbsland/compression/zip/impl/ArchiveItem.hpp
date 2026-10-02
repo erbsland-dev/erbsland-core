@@ -30,7 +30,7 @@ public: // implement zip::ArchiveItem
     /// Implement `zip::ArchiveItem::compressionMethod()`.
     [[nodiscard]] auto compressionMethod() const noexcept -> CompressionMethod override;
     /// Implement `zip::ArchiveItem::lastModificationTime()`.
-    [[nodiscard]] auto lastModificationTime() const noexcept -> const time::DateTime & override;
+    [[nodiscard]] auto lastModificationTime() const noexcept -> const time::Timestamp & override;
     /// Implement `zip::ArchiveItem::crc32()`.
     [[nodiscard]] auto crc32() const noexcept -> uint32_t override;
     /// Implement `zip::ArchiveItem::compressedLength()`.

@@ -212,7 +212,7 @@ void HttpCookieJar::insert(HttpCookieJarEntry entry, const bool peerInput) {
     if (entry.registrableDomain.isEmpty()) {
         entry.registrableDomain = entry.domain;
     }
-    const auto now = time::DateTime::now();
+    const auto now = time::Timestamp::now();
     if (entry.expires && *entry.expires <= now) {
         removeCookie(entry.name, entry.domain, entry.path);
         return;
@@ -232,7 +232,7 @@ void HttpCookieJar::insert(HttpCookieJarEntry entry, const bool peerInput) {
 }
 
 void HttpCookieJar::purgeExpired() {
-    const auto now = time::DateTime::now();
+    const auto now = time::Timestamp::now();
     std::erase_if(
         _entries, [&](const HttpCookieJarEntry &entry) -> bool { return entry.expires && *entry.expires <= now; });
 }

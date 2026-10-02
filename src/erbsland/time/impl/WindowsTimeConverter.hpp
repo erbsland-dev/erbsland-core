@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../DateTime.hpp"
+#include "../Timestamp.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
 
@@ -11,9 +11,15 @@
 /// Conversion tools for native Windows FILETIME values.
 namespace erbsland::time::impl::windows_time_converter {
 
-/// Convert a native FILETIME value to a date/time.
-[[nodiscard]] auto fromFileTime(const FILETIME &fileTime) noexcept -> DateTime;
-/// Convert a date/time to a native FILETIME value, truncating fractional precision below 100 nanoseconds.
-[[nodiscard]] auto toFileTime(const DateTime &dateTime) noexcept -> std::optional<FILETIME>;
+/// Convert native FILETIME to a compact UTC instant.
+/// @param fileTime The native value.
+/// @return The timestamp, or invalid outside the calendar range.
+/// @tested{WindowsTimeConverterTest}
+[[nodiscard]] auto fromFileTime(const FILETIME &fileTime) noexcept -> Timestamp;
+/// Convert a UTC timestamp, truncating fractions below 100 nanoseconds.
+/// @param timestamp The timestamp.
+/// @return The native value, or no value if it cannot be represented.
+/// @tested{WindowsTimeConverterTest}
+[[nodiscard]] auto toFileTime(const Timestamp &timestamp) noexcept -> std::optional<FILETIME>;
 
 }

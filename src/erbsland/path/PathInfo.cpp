@@ -20,9 +20,9 @@ namespace erbsland::path {
 
 using namespace text::literals;
 using namespace system;
-using time::DateTime;
 using time::TimeDelta;
 using time::TimePoint;
+using time::Timestamp;
 
 PathInfo::PathInfo(const Path &path, const PathInfoParts parts) noexcept : PathInfo{path, parts, {}} {
 }
@@ -113,7 +113,7 @@ auto PathInfo::fileIdentity() const noexcept -> system::FileIdentity {
     return _cache->data.fileIdentity;
 }
 
-auto PathInfo::lastModified() const noexcept -> DateTime {
+auto PathInfo::lastModified() const noexcept -> Timestamp {
     ensureParts(PathInfoPart::Times);
     if (isEmpty()) {
         return {};
@@ -122,7 +122,7 @@ auto PathInfo::lastModified() const noexcept -> DateTime {
     return _cache->data.lastModified;
 }
 
-auto PathInfo::lastAccessed() const noexcept -> DateTime {
+auto PathInfo::lastAccessed() const noexcept -> Timestamp {
     ensureParts(PathInfoPart::Times);
     if (isEmpty()) {
         return {};
@@ -131,7 +131,7 @@ auto PathInfo::lastAccessed() const noexcept -> DateTime {
     return _cache->data.lastAccessed;
 }
 
-auto PathInfo::birthTime() const noexcept -> DateTime {
+auto PathInfo::birthTime() const noexcept -> Timestamp {
     ensureParts(PathInfoPart::Times);
     if (isEmpty()) {
         return {};
@@ -140,7 +140,7 @@ auto PathInfo::birthTime() const noexcept -> DateTime {
     return _cache->data.birthTime;
 }
 
-auto PathInfo::lastMetadataChange() const noexcept -> DateTime {
+auto PathInfo::lastMetadataChange() const noexcept -> Timestamp {
     ensureParts(PathInfoPart::Times);
     if (isEmpty()) {
         return {};
@@ -149,7 +149,7 @@ auto PathInfo::lastMetadataChange() const noexcept -> DateTime {
     return _cache->data.lastMetadataChange;
 }
 
-auto PathInfo::creationTime() const noexcept -> DateTime {
+auto PathInfo::creationTime() const noexcept -> Timestamp {
     ensureParts(PathInfoPart::Times);
     if (isEmpty()) {
         return {};

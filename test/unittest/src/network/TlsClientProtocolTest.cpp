@@ -19,7 +19,7 @@
 #include <erbsland/network/source/NetworkSendStatus.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/String.hpp>
-#include <erbsland/time/DateTime.hpp>
+#include <erbsland/time/Timestamp.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/List.hpp>
@@ -52,7 +52,7 @@ private:
         return TlsClientProtocolOptions{
             Host::fromStringOrThrow("server.example"_el),
             X509ServerCertificatePolicy{X509CertificateBundle{}},
-            el::time::DateTime::now(),
+            el::time::Timestamp::now(),
             std::move(alpn)};
     }
 
@@ -290,7 +290,7 @@ public:
         auto protocol = TlsClientProtocol{TlsClientProtocolOptions{
             Host::fromStringOrThrow("server.example.test"_el),
             X509ServerCertificatePolicy{X509CertificateBundle{el::util::List<X509Certificate>{root}}},
-            el::time::DateTime::now()}};
+            el::time::Timestamp::now()}};
         auto access = TlsClientProtocolTestAccess{protocol};
         const auto sessionId = ByteBlock{ByteLength{32U}, 0x22U};
         access.start(ByteBlock{ByteLength{32U}, 0x11U}, sessionId, privateKey(0x44U));

@@ -4,36 +4,24 @@
 
 namespace erbsland::time::impl::windows_time_converter {
 
-auto fromFileTime(const FILETIME &fileTime) noexcept -> DateTime {
-    const auto high = static_cast<std::uint64_t>(fileTime.dwHighDateTime);
-    const auto low = static_cast<std::uint64_t>(fileTime.dwLowDateTime);
-    const auto ticks = (high << 32U) | low;
-    const auto seconds = Seconds{static_cast<int64_t>(ticks / 10'000'000ULL)};
-    const auto fractions = Nanoseconds{static_cast<int64_t>((ticks % 10'000'000ULL) * 100ULL)};
-    return DateTime::fromTicks(seconds, fractions, TimeEpoch::Windows).value_or(DateTime{});
+auto fromFileTime(const FILETIME &fileTime) noexcept -> Timestamp {
+    const auto ticks = (static_cast<uint64_t>(fileTime.dwHighDateTime) << 32U) | fileTime.dwLowDateTime;
+    return Timestamp::fromTicks(
+        Seconds{static_cast<int64_t>(ticks / 10'000'000ULL)},
+        Nanoseconds{static_cast<int64_t>((ticks % 10'000'000ULL) * 100ULL)},
+        TimeEpoch::Windows)
+        .value_or(Timestamp{});
 }
 
-auto toFileTime(const DateTime &dateTime) noexcept -> std::optional<FILETIME> {
-    const auto secondsAndFractions = dateTime.toSecondsAndFractions(TimeEpoch::Windows);
-    if (!secondsAndFractions.has_value()) {
+auto toFileTime(const Timestamp &timestamp) noexcept -> std::optional<FILETIME> {
+    const auto parts = timestamp.toSecondsAndFractions(TimeEpoch::Windows);
+    if (!parts || parts->first.isNegative()) {
         return std::nullopt;
     }
-    const auto &[seconds, fractions] = *secondsAndFractions;
-    constexpr auto cFileTimeTicksPerSecond = 10'000'000LL;
-    constexpr auto cFileTimeTickNanoseconds = 100LL;
-    if (seconds.toValue().wouldMultiplySaturate(cFileTimeTicksPerSecond)) {
-        return std::nullopt;
-    }
-    const auto fractionTicks = fractions.toValue().divided(cFileTimeTickNanoseconds);
-    const auto ticks = seconds.toValue().multiplied(cFileTimeTicksPerSecond).added(fractionTicks);
-    if (ticks.isNegative()) {
-        return std::nullopt;
-    }
-    auto result = FILETIME{};
-    const auto value = static_cast<std::uint64_t>(ticks.toRawValue());
-    result.dwLowDateTime = static_cast<DWORD>(value & 0xffffffffULL);
-    result.dwHighDateTime = static_cast<DWORD>(value >> 32U);
-    return result;
+    // Calendar bounds keep the full unsigned FILETIME calculation within uint64_t.
+    const auto ticks = static_cast<uint64_t>(parts->first.toRawValue()) * 10'000'000ULL +
+        static_cast<uint64_t>(parts->second.toRawValue()) / 100ULL;
+    return FILETIME{static_cast<DWORD>(ticks), static_cast<DWORD>(ticks >> 32U)};
 }
 
 }

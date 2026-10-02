@@ -66,8 +66,12 @@ target_sources(erbsland-core PRIVATE
         TimeOccurrenceInFold.hpp
         TimeParts.hpp
         TimePoint.hpp
+        Timestamp.cpp
+        Timestamp.hpp
+        Timestamp.tpp
+        Timestamp_arithmetic.cpp
+        Timestamp_fwd.hpp
         TimeUnitTags.hpp
-        TimeUnitTypes.hpp
         TimeWithZone.cpp
         TimeWithZone.hpp
         TimeWrapResult.hpp

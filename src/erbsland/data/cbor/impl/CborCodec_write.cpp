@@ -125,12 +125,13 @@ void CborCodec::writeValue(const CborValue &value) {
         if (_formatOptions.isDagCbor()) {
             throw err::ParameterError{"DAG-CBOR does not support date/time tags."_el, "value"_el};
         }
-        const auto date = value.getDateTime().value();
+        const auto date = value.getTimestamp().value();
         if (!date.isValid()) {
             throw err::ParameterError{"Invalid CBOR date/time."_el, "value"_el};
         }
         writeHead(6U, 0U);
-        writeText(date.toUtc().toIsoString(time::cDefaultDateTimeFormat, time::DateTimePrecision::Nanosecond));
+        writeText(
+            date.toDateTimeOrThrow().toIsoString(time::cDefaultDateTimeFormat, time::DateTimePrecision::Nanosecond));
         break;
     }
     case CborType::Link: {

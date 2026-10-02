@@ -21,6 +21,7 @@ namespace erbsland::cterm {
 /// The interface to the underlying platform.
 /// This library expects that the platform implementation correctly handles UTF-8 encoding and
 /// VT100 ANSI control codes.
+/// @tested{BackendTest}
 class Backend : public std::enable_shared_from_this<Backend> {
 public:
     // defaults
@@ -142,7 +143,7 @@ public: // input handling.
     /// In `Input::Mode::ReadLine`, the timeout is ignored and this call may block until a line was entered.
     /// @param timeout Maximum wait time in `Mode::Key`.
     /// @return The parsed key event, or an invalid key if no supported input was read before the timeout expired.
-    [[nodiscard]] virtual auto readKey(std::chrono::milliseconds timeout) -> Key = 0;
+    [[nodiscard]] virtual auto readKey(time::Milliseconds timeout) -> Key = 0;
     /// Wait until one key event is available.
     /// In `Input::Mode::ReadLine`, this call blocks until a line was entered and returns the converted key.
     /// @return The parsed key event.

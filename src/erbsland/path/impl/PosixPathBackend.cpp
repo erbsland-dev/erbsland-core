@@ -24,7 +24,7 @@
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../unit/ByteLength.hpp"
 
 #include <dirent.h>
@@ -194,10 +194,10 @@ auto PosixPathBackend::loadResolvedInfoOrThrow(
         result.loadedParts.set(PathInfoPart::Size);
     }
     if (parts.isSet(PathInfoPart::Times)) {
-        const auto dateTimeFromTimespec = [](const timespec &value) noexcept -> time::DateTime {
-            return time::DateTime::fromTicks(
+        const auto dateTimeFromTimespec = [](const timespec &value) noexcept -> time::Timestamp {
+            return time::Timestamp::fromTicks(
                 time::Seconds{value.tv_sec}, time::Nanoseconds{value.tv_nsec}, time::TimeEpoch::Posix)
-                .value_or(time::DateTime{});
+                .value_or(time::Timestamp{});
         };
 #ifdef ERBSLAND_OS_MACOS
         result.lastModified = dateTimeFromTimespec(info.st_mtimespec);

@@ -51,7 +51,7 @@ protected:
     }
     void poll() {
         _pathInfo.reload(el::PathInfoPart::Times);
-        el::stdOut()->printLine("Last Modification: ", _pathInfo.lastModified().toIsoString());
+        el::stdOut()->printLine("Last Modification: ", _pathInfo.lastModified().toString());
     }
 
 private:

@@ -13,11 +13,11 @@ public:
     void testInputReadKeyAndWaitForKeyDelegateToTheImplementation() {
         auto input = InputDispatchProbe{};
 
-        REQUIRE_EQUAL(input.readKey(std::chrono::milliseconds{-5}), Key{Key::Escape});
-        REQUIRE_EQUAL(input._lastTimeout, std::chrono::milliseconds{0});
+        REQUIRE_EQUAL(input.readKey(erbsland::time::Milliseconds{-5}), Key{Key::Escape});
+        REQUIRE_EQUAL(input._lastTimeout, erbsland::time::Milliseconds{0});
 
-        REQUIRE_EQUAL(input.readKey(std::chrono::milliseconds{125}), Key{Key::Escape});
-        REQUIRE_EQUAL(input._lastTimeout, std::chrono::milliseconds{125});
+        REQUIRE_EQUAL(input.readKey(erbsland::time::Milliseconds{125}), Key{Key::Escape});
+        REQUIRE_EQUAL(input._lastTimeout, erbsland::time::Milliseconds{125});
 
         REQUIRE_EQUAL(input.waitForKey(), Key{Key::Enter});
         REQUIRE(input._waitForKeyWasCalled);

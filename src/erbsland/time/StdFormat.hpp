@@ -7,6 +7,7 @@
 #include "DateTime.hpp"
 #include "Time.hpp"
 #include "TimeDelta.hpp"
+#include "Timestamp.hpp"
 #include "TimeWithZone.hpp"
 
 #include "../text/StdFormat.hpp"
@@ -63,6 +64,15 @@ struct std::formatter<erbsland::time::TimeWithZone> : std::formatter<erbsland::t
     using Base = std::formatter<erbsland::text::String>;
 
     auto format(const erbsland::time::TimeWithZone value, std::format_context &ctx) const {
+        return Base::format(value.toString(), ctx);
+    }
+};
+
+template <>
+struct std::formatter<erbsland::time::Timestamp> : std::formatter<erbsland::text::String> {
+    using Base = std::formatter<erbsland::text::String>;
+
+    auto format(const erbsland::time::Timestamp value, std::format_context &ctx) const {
         return Base::format(value.toString(), ctx);
     }
 };

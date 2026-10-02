@@ -180,27 +180,27 @@ auto zipTools::pathsConflict(
     return false;
 }
 
-auto zipTools::dateTimeFromDos(const uint16_t date, const uint16_t timeValue) noexcept -> time::DateTime {
+auto zipTools::dateTimeFromDos(const uint16_t date, const uint16_t timeValue) noexcept -> time::Timestamp {
     const auto year = static_cast<uint16_t>(1980U + ((date >> 9U) & 0x7fU));
     const auto month = static_cast<uint8_t>((date >> 5U) & 0x0fU);
     const auto day = static_cast<uint8_t>(date & 0x1fU);
     const auto hour = static_cast<uint8_t>((timeValue >> 11U) & 0x1fU);
     const auto minute = static_cast<uint8_t>((timeValue >> 5U) & 0x3fU);
     const auto second = static_cast<uint8_t>((timeValue & 0x1fU) * 2U);
-    return time::DateTime{
+    return time::Timestamp{
         time::Date{time::Year{year}, time::Month{month}, time::Day{day}},
         time::Time{time::Hour{hour}, time::Minute{minute}, time::Second{second}}};
 }
 
-void zipTools::dateTimeToDos(const time::DateTime &dateTime, uint16_t &date, uint16_t &timeValue) noexcept {
-    const auto value = dateTime.isValid() ? dateTime : time::DateTime::now();
-    const auto year = std::clamp<uint16_t>(
-        static_cast<uint16_t>(value.utcDate().year().toRawValue()), uint16_t{1980U}, uint16_t{2107U});
-    const auto month = static_cast<uint16_t>(value.utcDate().month().toRawValue());
-    const auto day = static_cast<uint16_t>(value.utcDate().day().toRawValue());
-    const auto hour = static_cast<uint16_t>(value.utcTime().hour().toRawValue());
-    const auto minute = static_cast<uint16_t>(value.utcTime().minute().toRawValue());
-    const auto second = static_cast<uint16_t>(value.utcTime().second().toRawValue());
+void zipTools::dateTimeToDos(const time::Timestamp &dateTime, uint16_t &date, uint16_t &timeValue) noexcept {
+    const auto value = dateTime.isValid() ? dateTime : time::Timestamp::now();
+    const auto year =
+        std::clamp<uint16_t>(static_cast<uint16_t>(value.date().year().toRawValue()), uint16_t{1980U}, uint16_t{2107U});
+    const auto month = static_cast<uint16_t>(value.date().month().toRawValue());
+    const auto day = static_cast<uint16_t>(value.date().day().toRawValue());
+    const auto hour = static_cast<uint16_t>(value.time().hour().toRawValue());
+    const auto minute = static_cast<uint16_t>(value.time().minute().toRawValue());
+    const auto second = static_cast<uint16_t>(value.time().second().toRawValue());
     date = static_cast<uint16_t>((static_cast<uint16_t>(year - 1980U) << 9U) | (month << 5U) | day);
     const auto dosTime = (static_cast<uint32_t>(hour) << 11U) | (static_cast<uint32_t>(minute) << 5U) |
         (static_cast<uint32_t>(second) / 2U);
@@ -208,7 +208,7 @@ void zipTools::dateTimeToDos(const time::DateTime &dateTime, uint16_t &date, uin
 }
 
 auto zipTools::modificationTimeFromExtra(
-    const mem::ByteBlock &extra, const time::DateTime fallback, mem::ByteWriter *opaque) -> time::DateTime {
+    const mem::ByteBlock &extra, const time::Timestamp fallback, mem::ByteWriter *opaque) -> time::Timestamp {
     auto result = fallback;
     auto reader = mem::ByteReader{extra};
     while (!reader.isAtEnd()) {
@@ -232,7 +232,7 @@ auto zipTools::modificationTimeFromExtra(
                 if (length < 5U) {
                     throwMalformed("The Extended Timestamp modification time is truncated."_el);
                 }
-                result = time::DateTime::fromTimeT(static_cast<std::time_t>(fieldReader.readUInt32OrThrow()));
+                result = time::Timestamp::fromTimeT(static_cast<std::time_t>(fieldReader.readUInt32OrThrow()));
             }
         } else if (
             id != cZip64ExtraId && id != cUnicodeCommentExtraId && id != cUnicodePathExtraId && opaque != nullptr) {
@@ -242,8 +242,8 @@ auto zipTools::modificationTimeFromExtra(
     return result;
 }
 
-void zipTools::appendExtendedTimestamp(mem::ByteWriter &extra, const time::DateTime &dateTime) {
-    const auto value = dateTime.isValid() ? dateTime : time::DateTime::now();
+void zipTools::appendExtendedTimestamp(mem::ByteWriter &extra, const time::Timestamp &dateTime) {
+    const auto value = dateTime.isValid() ? dateTime : time::Timestamp::now();
     const auto timeT = value.toTimeT();
     if (timeT < 0 || static_cast<uint64_t>(timeT) > std::numeric_limits<uint32_t>::max()) {
         return;

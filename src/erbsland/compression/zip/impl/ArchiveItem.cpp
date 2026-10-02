@@ -41,7 +41,7 @@ auto ArchiveItem::compressionMethod() const noexcept -> CompressionMethod {
     return _record.compressionMethod;
 }
 
-auto ArchiveItem::lastModificationTime() const noexcept -> const time::DateTime & {
+auto ArchiveItem::lastModificationTime() const noexcept -> const time::Timestamp & {
     return _record.modificationTime;
 }
 

@@ -109,6 +109,11 @@ class CMakeCleanup:
         if unsupported:
             self.print_verbose(f"Skipping complex CMake file {path}: {', '.join(sorted(unsupported))}")
             return False
+        # Additional add_subdirectory arguments affect build behavior and are outside this formatter's grammar.
+        for match in re.finditer(r"(?m)^add_subdirectory\([^)]*\)[ \t]*$", self.strip_comments(text)):
+            if self.RE_TOP_LEVEL_ADD_SUBDIRECTORY.fullmatch(match.group()) is None:
+                self.print_verbose(f"Skipping complex CMake file {path}: add_subdirectory arguments")
+                return False
         return True
 
     def find_cmake_files(self) -> list[Path]:

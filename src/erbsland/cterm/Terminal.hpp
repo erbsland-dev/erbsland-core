@@ -27,6 +27,7 @@
 namespace erbsland::cterm {
 
 /// High-level terminal interface for screen control, color output, and key input.
+/// @tested{TerminalTest}
 class Terminal final : public CursorWriter {
     /// The minimum supported size of a terminal.
     constexpr static auto cMinimumSize = block::Size{1, 1};
@@ -200,25 +201,6 @@ public: // screen handling
     void updateScreen(const ReadableBuffer &buffer, const UpdateSettings &settings = {}) noexcept;
     /// Flush the all buffer immediately to the terminal.
     void flush() noexcept;
-
-public: // backward compatibility.
-    /// Write a terminal line break.
-    /// @deprecated Use `writeLineBreak()` instead.
-    [[deprecated("use writeLineBreak()")]]
-    void lineBreak() noexcept {
-        writeLineBreak();
-    }
-    /// Test if non-text output mode is active.
-    /// @deprecated Use `outputMode()` instead.
-    /// @return `true` if the terminal is not in `OutputMode::BlockText`.
-    [[deprecated("use outputMode()")]] [[nodiscard]] auto colorEnabled() const noexcept -> bool {
-        return _outputMode != OutputMode::BlockText;
-    }
-    /// Enable or disable text-only output mode through the legacy boolean API.
-    /// @deprecated Use `setOutputMode()` instead.
-    /// @param enabled `true` to allow color/control output, `false` for plain text mode.
-    [[deprecated("use setOutputMode()")]]
-    void setColorEnabled(bool enabled) noexcept;
 
 protected: // implements CursorWriter
     auto createPrintContext() noexcept -> BlockPrintContextPtr override;

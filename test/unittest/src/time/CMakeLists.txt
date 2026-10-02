@@ -15,6 +15,9 @@ target_sources(erbsland-core-unittest PRIVATE
         TimeDataTestBase.hpp
         TimeModuleTest.cpp
         TimeOffsetTest.cpp
+        TimestampArithmeticTest.cpp
+        TimestampConverterTest.cpp
+        TimestampTest.cpp
         TimeUnitsTest.cpp
         TimeValuesTest.cpp
         TimeWithZoneTest.cpp

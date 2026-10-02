@@ -47,8 +47,8 @@ private:
 public:
     void testExplicitResultForEmptyInputs() {
         const auto emptyPolicy = X509ServerCertificatePolicy{X509CertificateBundle{}};
-        const auto emptyPeer =
-            emptyPolicy.validate(X509CertificateBundle{}, dnsHost("server.example.test"_el), el::time::DateTime::now());
+        const auto emptyPeer = emptyPolicy.validate(
+            X509CertificateBundle{}, dnsHost("server.example.test"_el), el::time::Timestamp::now());
         REQUIRE(emptyPeer.isRejected());
         REQUIRE_FALSE(emptyPeer.isAccepted());
         REQUIRE(emptyPeer.validatedPath().isEmpty());
@@ -57,7 +57,7 @@ public:
         REQUIRE_FALSE(emptyPeer.failure()->certificate().has_value());
 
         const auto noAnchor =
-            emptyPolicy.validate(bundle({RsaLeaf}), dnsHost("server.example.test"_el), el::time::DateTime::now());
+            emptyPolicy.validate(bundle({RsaLeaf}), dnsHost("server.example.test"_el), el::time::Timestamp::now());
         REQUIRE(noAnchor.isRejected());
         REQUIRE(noAnchor.failure()->category() == X509CertificateValidationFailureCategory::EmptyTrustAnchors);
         REQUIRE_FALSE(noAnchor.failure()->certificate().has_value());
@@ -73,7 +73,7 @@ public:
         const auto result = policy({RsaRoot}).validate(
             bundle({RsaLeaf, RsaWrongIntermediate, RsaIntermediate}),
             dnsHost("server.example.test"_el),
-            el::time::DateTime::now());
+            el::time::Timestamp::now());
         REQUIRE(result.isAccepted());
         REQUIRE_FALSE(result.failure().has_value());
         REQUIRE_EQUAL(result.validatedPath().count(), el::unit::ItemCount{3U});
@@ -85,7 +85,7 @@ public:
     void testConfiguredIntermediateAndDuplicateDeduplication() {
         const auto configured =
             policy({RsaRoot}, {RsaIntermediate})
-                .validate(bundle({RsaLeaf}), dnsHost("server.example.test"_el), el::time::DateTime::now());
+                .validate(bundle({RsaLeaf}), dnsHost("server.example.test"_el), el::time::Timestamp::now());
         REQUIRE(configured.isAccepted());
         REQUIRE_EQUAL(configured.validatedPath().count(), el::unit::ItemCount{3U});
 
@@ -93,14 +93,14 @@ public:
                                     .validate(
                                         bundle({RsaLeaf, RsaIntermediate, RsaIntermediate, RsaRoot}),
                                         dnsHost("server.example.test"_el),
-                                        el::time::DateTime::now());
+                                        el::time::Timestamp::now());
         REQUIRE(duplicated.isAccepted());
         REQUIRE_EQUAL(duplicated.validatedPath().count(), el::unit::ItemCount{3U});
     }
 
     void testMissingIssuerAndAnchor() {
-        const auto missingIssuer =
-            policy({RsaRoot}).validate(bundle({RsaLeaf}), dnsHost("server.example.test"_el), el::time::DateTime::now());
+        const auto missingIssuer = policy({RsaRoot}).validate(
+            bundle({RsaLeaf}), dnsHost("server.example.test"_el), el::time::Timestamp::now());
         REQUIRE(missingIssuer.isRejected());
         REQUIRE(missingIssuer.failure()->category() == X509CertificateValidationFailureCategory::IssuerNotFound);
         REQUIRE(missingIssuer.failure()->certificate().has_value());
@@ -109,7 +109,7 @@ public:
         const auto wrongAnchor =
             policy({P256Root})
                 .validate(
-                    bundle({RsaLeaf, RsaIntermediate}), dnsHost("server.example.test"_el), el::time::DateTime::now());
+                    bundle({RsaLeaf, RsaIntermediate}), dnsHost("server.example.test"_el), el::time::Timestamp::now());
         REQUIRE(wrongAnchor.isRejected());
         REQUIRE(wrongAnchor.failure().has_value());
     }
@@ -133,12 +133,12 @@ public:
         REQUIRE(inclusiveEnd.isAccepted());
 
         const auto notYetValid = policy({RsaLeaf}).validate(
-            bundle({RsaLeaf}), dnsHost("server.example.test"_el), el::time::DateTime::first());
+            bundle({RsaLeaf}), dnsHost("server.example.test"_el), el::time::Timestamp::first());
         REQUIRE(notYetValid.isRejected());
         REQUIRE(notYetValid.failure()->category() == X509CertificateValidationFailureCategory::CertificateNotYetValid);
 
         const auto expired = policy({RsaLeaf}).validate(
-            bundle({RsaLeaf}), dnsHost("server.example.test"_el), el::time::DateTime::last());
+            bundle({RsaLeaf}), dnsHost("server.example.test"_el), el::time::Timestamp::last());
         REQUIRE(expired.isRejected());
         REQUIRE(expired.failure()->category() == X509CertificateValidationFailureCategory::CertificateExpired);
     }
@@ -170,7 +170,7 @@ public:
     void testCommonNameIsNeverFallbackIdentity() {
         const auto result =
             policy({RsaCommonNameLeaf})
-                .validate(bundle({RsaCommonNameLeaf}), dnsHost("cn-only.example.test"_el), el::time::DateTime::now());
+                .validate(bundle({RsaCommonNameLeaf}), dnsHost("cn-only.example.test"_el), el::time::Timestamp::now());
         REQUIRE(result.isRejected());
         REQUIRE(result.failure()->category() == X509CertificateValidationFailureCategory::ServerIdentityMismatch);
     }
@@ -193,8 +193,8 @@ public:
                     }
                     const auto validationTimeText = record.value("ValidationTime"_el);
                     const auto validationTime = validationTimeText.isEmpty()
-                        ? el::time::DateTime::now()
-                        : el::time::DateTime::fromIsoStringOrThrow(validationTimeText);
+                        ? el::time::Timestamp::now()
+                        : el::time::Timestamp::fromIsoStringOrThrow(validationTimeText);
                     const auto anchor = X509Certificate::fromDerOrThrow(bytesFromHex(record.value("AnchorDer"_el)));
                     const auto result =
                         X509ServerCertificatePolicy{X509CertificateBundle{el::util::List<X509Certificate>{anchor}}}
@@ -243,12 +243,13 @@ private:
 
     [[nodiscard]] static auto validateDirect(const Fixture leaf, const el::network::Host &host)
         -> X509CertificateValidation {
-        return policy({leaf}).validate(bundle({leaf}), host, el::time::DateTime::now());
+        return policy({leaf}).validate(bundle({leaf}), host, el::time::Timestamp::now());
     }
 
     void requireAcceptedChain(const Fixture leaf, const Fixture root, const std::optional<Fixture> intermediate = {}) {
         const auto peer = intermediate.has_value() ? bundle({leaf, intermediate.value()}) : bundle({leaf});
-        const auto result = policy({root}).validate(peer, dnsHost("server.example.test"_el), el::time::DateTime::now());
+        const auto result =
+            policy({root}).validate(peer, dnsHost("server.example.test"_el), el::time::Timestamp::now());
         REQUIRE(result.isAccepted());
     }
 };

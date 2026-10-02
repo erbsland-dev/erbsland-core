@@ -57,7 +57,7 @@ private:
     [[nodiscard]] static auto bootTimeSeconds(ProcessInfoError &operationError) -> std::optional<std::uint64_t>;
     /// Convert native process start ticks to UTC.
     [[nodiscard]] static auto processStartTime(std::uint64_t startTicks, ProcessInfoError &operationError)
-        -> time::DateTime;
+        -> time::Timestamp;
     /// Load process information once, retrying when the native identity changes.
     [[nodiscard]] static auto loadNativeProcessInfo(std::uint64_t processId) -> ProcessInfoData;
 };

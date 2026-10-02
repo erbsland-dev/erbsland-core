@@ -9,8 +9,8 @@
 #include "../../text/Literals.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringFormat.hpp"
-#include "../../time/DateTime.hpp"
 #include "../../time/TimeEpoch.hpp"
+#include "../../time/Timestamp.hpp"
 
 #include <libproc.h>
 #include <sys/proc_info.h>
@@ -119,7 +119,7 @@ auto MacosSystemInfoBackend::loadNativeProcessInfo(const std::uint64_t processId
         data.exists = true;
         data.parentProcessId = ProcessIdAccess::fromNative(first.pbi_ppid);
         data.ownerId = UserId{text::StringFormat{"{}"_el}.build(first.pbi_uid)};
-        const auto start = time::DateTime::fromTicks(
+        const auto start = time::Timestamp::fromTicks(
             time::Seconds{static_cast<std::int64_t>(first.pbi_start_tvsec)},
             time::Nanoseconds{static_cast<std::int64_t>(first.pbi_start_tvusec * 1'000ULL)},
             time::TimeEpoch::Posix);

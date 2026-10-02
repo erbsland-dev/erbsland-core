@@ -40,7 +40,7 @@ public: // implement PathBackend
     void setAccessProfileOrThrow(const path::Path &, path::PathAccessProfile, path::PathChangeOptions) const override {
         throwUnsupported();
     }
-    void setLastModifiedOrThrow(const path::Path &, const time::DateTime &, path::PathChangeOptions) const override {
+    void setLastModifiedOrThrow(const path::Path &, const time::Timestamp &, path::PathChangeOptions) const override {
         throwUnsupported();
     }
     void addAttributesOrThrow(const path::Path &, path::PathAttributes, path::PathChangeOptions) const override {

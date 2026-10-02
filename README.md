@@ -12,7 +12,7 @@ boilerplate. It supports Linux, macOS, and Windows and has no required dependenc
 - A safe, reliable regular-expression engine
 - Byte and text streams, text encodings, and buffers
 - Filesystem paths, file and directory operations, and file streams
-- Date and time types, durations, and system-independent time-zone calculation
+- UTC timestamps, calendar date and time types, durations, and system-independent time-zone calculation
 - Safe numeric utilities, including saturating arithmetic and checked conversions
 - Fast and secure random-number generators with safe APIs
 - Copy-on-write containers, coroutine primitives, enum flags, compression, and more
@@ -75,7 +75,7 @@ contains the complete layout and commands; an
 Ninja is optional. See the [requirements page](https://core.erbsland.dev/addendum/requirements.html) for supported platforms and
 Core-development tooling.
 
-## Development
+## Contribute
 
 The [contributor guidelines](https://core.erbsland.dev/guidelines/) cover the API, source, documentation, and platform
 rules used to develop Erbsland Core.

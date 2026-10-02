@@ -6,3 +6,11 @@ Title       : "Date and Time"
 Header Globs:
     * "time/*.hpp"
     * "time/tz/*.hpp"
+Excluded Header Globs:
+    * "time/Timestamp.hpp"
+
+------------*[ Reference Groups ]
+Page        : "time/timestamp.rst"
+Title       : "UTC Timestamps"
+Headers:
+    * "time/Timestamp.hpp"

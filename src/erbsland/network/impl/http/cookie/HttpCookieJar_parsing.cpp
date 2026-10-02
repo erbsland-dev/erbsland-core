@@ -41,7 +41,7 @@ auto HttpCookieJar::parsePeerCookie(const Url &url, const text::String &field) c
     entry.path = defaultPath(url);
     entry.hostOnly = true;
     auto maxAgeSeen = false;
-    auto expires = std::optional<time::DateTime>{};
+    auto expires = std::optional<time::Timestamp>{};
     if (!isCookieToken(entry.name) || !isCookieValue(entry.value)) {
         return {};
     }
@@ -89,8 +89,8 @@ auto HttpCookieJar::parsePeerCookie(const Url &url, const text::String &field) c
         } else if (name == "max-age"_el) {
             try {
                 const auto seconds = value.toIntegerOrThrow<std::int64_t>();
-                entry.expires = seconds <= 0 ? time::DateTime::fromTimeT(0)
-                                             : time::DateTime::now() + time::Duration{time::Seconds{seconds}};
+                entry.expires = seconds <= 0 ? time::Timestamp::fromTimeT(0)
+                                             : time::Timestamp::now() + time::Duration{time::Seconds{seconds}};
                 maxAgeSeen = true;
             } catch (...) {
                 // Invalid Max-Age attributes are ignored; a valid Expires may still apply.
@@ -206,7 +206,7 @@ auto HttpCookieJar::split(const text::String &value, const text::Char separator)
     return result;
 }
 
-auto HttpCookieJar::parseCookieDate(const text::String &value) noexcept -> std::optional<time::DateTime> {
+auto HttpCookieJar::parseCookieDate(const text::String &value) noexcept -> std::optional<time::Timestamp> {
     try {
         auto tokens = std::vector<String>{};
         auto reader = StringCharReader{value};
@@ -293,7 +293,7 @@ auto HttpCookieJar::parseCookieDate(const text::String &value) noexcept -> std::
         if (!date.isValid()) {
             return {};
         }
-        return time::DateTime{date, time::Time{time::Hour{hour}, time::Minute{minute}, time::Second{second}}};
+        return time::Timestamp{date, time::Time{time::Hour{hour}, time::Minute{minute}, time::Second{second}}};
     } catch (...) {
         return {};
     }

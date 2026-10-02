@@ -14,7 +14,7 @@ namespace erbsland::cterm::impl {
 /// @notest{Platform integration is covered through terminal integration tests.}
 class WindowsBackend : public Backend {
 public:
-    using OptionalTimeout = std::optional<std::chrono::milliseconds>;
+    using OptionalTimeout = std::optional<time::Milliseconds>;
 
     /// Create a Windows terminal backend with requested flags.
     /// @param terminalFlags The requested terminal features.
@@ -40,7 +40,7 @@ public: // implement backend
 public: // input
     [[nodiscard]] auto inputMode() const noexcept -> Input::Mode override;
     void setInputMode(Input::Mode mode) override;
-    [[nodiscard]] auto readKey(std::chrono::milliseconds timeout) -> Key override;
+    [[nodiscard]] auto readKey(time::Milliseconds timeout) -> Key override;
     [[nodiscard]] auto waitForKey() -> Key override;
     [[nodiscard]] auto readLine() -> text::String override;
     void purgePendingInput() noexcept override;

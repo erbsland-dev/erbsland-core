@@ -26,7 +26,7 @@
 #include "../../text/String.hpp"
 #include "../../text/StringList.hpp"
 #include "../../text/StringTree.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../util/List.hpp"
 
 #include <cstdint>
@@ -73,9 +73,9 @@ public: // common attributes
     /// Get the Authority Key Identifier keyIdentifier, or an empty block.
     [[nodiscard]] auto issuerId() const -> mem::ByteBlock;
     /// Get the not-before time, or an invalid date/time.
-    [[nodiscard]] auto validFrom() const noexcept -> time::DateTime;
+    [[nodiscard]] auto validFrom() const noexcept -> time::Timestamp;
     /// Get the not-after time, or an invalid date/time.
-    [[nodiscard]] auto validTo() const noexcept -> time::DateTime;
+    [[nodiscard]] auto validTo() const noexcept -> time::Timestamp;
     /// Get the subject name.
     [[nodiscard]] auto subject() const -> X509Name;
     /// Get the Subject Key Identifier, or an empty block.

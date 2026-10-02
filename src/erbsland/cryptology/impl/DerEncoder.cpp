@@ -13,7 +13,7 @@
 #include "../../text/impl/UnsafeU8StringAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/String.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../unit/ByteIndex.hpp"
 #include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteRange.hpp"
@@ -195,11 +195,11 @@ void DerEncoder::appendBitString(const ConstByteSpan content, const uint8_t unus
     end(scope);
 }
 
-void DerEncoder::appendTime(const time::DateTime &value) {
+void DerEncoder::appendTime(const time::Timestamp &value) {
     if (!value.isValid()) {
         throw err::ParameterError{"A DER time value must be valid."_el, "value"_el};
     }
-    const auto parts = value.toUtc().parts();
+    const auto parts = value.toDateTimeOrThrow().parts();
     const auto year = static_cast<uint16_t>(parts.year.toRawValue());
     auto bytes = ByteArray<15U>{};
     auto offset = std::size_t{};

@@ -10,7 +10,7 @@
 #include "../../path/Path.hpp"
 #include "../../stream/ByteOutputStream.hpp"
 #include "../../text/String.hpp"
-#include "../../time/DateTime.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../unit/ByteLength.hpp"
 
 #include <cstdint>
@@ -44,7 +44,7 @@ public: // metadata
     /// Get the method used for this entry payload.
     [[nodiscard]] virtual auto compressionMethod() const noexcept -> CompressionMethod = 0;
     /// Get the preferred Extended Timestamp or DOS fallback modification time.
-    [[nodiscard]] virtual auto lastModificationTime() const noexcept -> const time::DateTime & = 0;
+    [[nodiscard]] virtual auto lastModificationTime() const noexcept -> const time::Timestamp & = 0;
     /// Get the declared CRC-32 of the uncompressed bytes.
     [[nodiscard]] virtual auto crc32() const noexcept -> uint32_t = 0;
     /// Get the declared compressed payload length.

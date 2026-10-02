@@ -21,6 +21,7 @@ The following declarations count as one logical header type:
 
 * A primary class template and its explicit or partial specializations, provided they have the same name and namespace.
 * Multiple thematically related trait types in a header ending in ``Traits.hpp``.
+* Multiple thematically related tag types in a header ending in ``Tags.hpp``.
 * A coherent collection of micro-types in a header ending in ``Types.hpp``. Typical micro-types are aliases, concepts,
   or lightweight shells derived from one detailed base and adding only one or two overrides.
 

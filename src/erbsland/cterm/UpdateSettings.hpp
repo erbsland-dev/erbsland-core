@@ -13,6 +13,7 @@
 namespace erbsland::cterm {
 
 /// Settings controlling how `Terminal::updateScreen()` renders a buffer.
+/// @tested{UpdateSettingsTest}
 class UpdateSettings final {
 public:
     /// Create default screen update settings.
@@ -73,32 +74,6 @@ public: // tools
     void applyTo(BufferViewBase &view) const noexcept;
     /// Shared default value.
     [[nodiscard]] static auto defaultSettings() noexcept -> const UpdateSettings &;
-
-public: // compatibility
-    /// Set the minimum-size background character through the legacy name.
-    /// @deprecated Use `setMinimumSizeBackground()` instead.
-    /// @param minimumSizeMark The background character shown when the terminal is too small.
-    [[deprecated("Use setMinimumSizeBackground() instead.")]]
-    void setMinimumSizeMark(Block minimumSizeMark) noexcept;
-    /// Get the minimum-size background character through the legacy name.
-    /// @deprecated Use `minimumSizeBackground()` instead.
-    /// @return The background character shown when the terminal is too small.
-    [[deprecated("Use minimumSizeBackground() instead.")]] [[nodiscard]] auto minimumSizeMark() const noexcept
-        -> const Block &;
-    /// Construct update settings using the deprecated aggregate-style compatibility constructor.
-    /// @deprecated Construct `UpdateSettings{}` and configure it with setters instead.
-    /// @param minimumSize The minimum terminal size required for normal rendering.
-    /// @param minimumSizeBackground The fill character for the size-too-small background.
-    /// @param showCropMarks `true` to show crop marks for truncated content.
-    /// @param cropMarkRight The crop mark to draw at the right edge.
-    /// @param cropMarkBottom The crop mark to draw at the bottom edge.
-    [[deprecated("Construct and use setters to change defaults.")]]
-    UpdateSettings(
-        block::Size minimumSize,
-        Block minimumSizeBackground,
-        bool showCropMarks,
-        Block cropMarkRight,
-        Block cropMarkBottom) noexcept;
 
 private:
     block::Size _minimumSize{};                   ///< The minimum required terminal size.

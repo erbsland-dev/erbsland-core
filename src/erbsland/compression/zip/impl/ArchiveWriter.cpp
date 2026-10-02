@@ -18,7 +18,7 @@
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringEditor.hpp"
 #include "../../../text/StringEncoder.hpp"
-#include "../../../time/DateTime.hpp"
+#include "../../../time/Timestamp.hpp"
 
 #include <exception>
 #include <limits>
@@ -212,7 +212,7 @@ void ArchiveWriter::addCompressed(
     const CompressionMethod method,
     const unit::ByteLength uncompressedLength,
     const uint32_t crcValue,
-    time::DateTime modificationTime,
+    time::Timestamp modificationTime,
     text::String comment,
     mem::ByteBlock opaqueLocalExtra,
     mem::ByteBlock opaqueCentralExtra,
@@ -273,7 +273,7 @@ void ArchiveWriter::addCompressed(
     }
     auto record = ZipEntryRecord{};
     record.path = normalized;
-    record.modificationTime = modificationTime.isValid() ? modificationTime : time::DateTime::now();
+    record.modificationTime = modificationTime.isValid() ? modificationTime : time::Timestamp::now();
     record.compressionMethod = directory ? CompressionMethod::Stored : method;
     record.flags = static_cast<uint16_t>(
         zipTools::cUtf8Flag | (producer ? zipTools::cDescriptorFlag : 0U) |

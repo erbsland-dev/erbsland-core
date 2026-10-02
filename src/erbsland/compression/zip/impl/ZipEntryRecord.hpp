@@ -7,7 +7,7 @@
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../path/Path.hpp"
 #include "../../../text/String.hpp"
-#include "../../../time/DateTime.hpp"
+#include "../../../time/Timestamp.hpp"
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/ByteLength.hpp"
 
@@ -21,7 +21,7 @@ struct ZipEntryRecord final {
     path::Path path;
     mem::ByteBlock name;
     text::String comment;
-    time::DateTime modificationTime;
+    time::Timestamp modificationTime;
     CompressionMethod compressionMethod{CompressionMethod::Stored};
     uint16_t versionNeeded{};
     uint16_t flags{};

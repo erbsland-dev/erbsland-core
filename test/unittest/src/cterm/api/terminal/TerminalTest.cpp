@@ -37,10 +37,10 @@ public:
         REQUIRE_EQUAL(input.mode(), Input::Mode::Key);
 
         firstBackend->_readKeyResults.push(Key{Key::F5});
-        REQUIRE_EQUAL(input.readKey(std::chrono::milliseconds{125}), Key{Key::F5});
+        REQUIRE_EQUAL(input.readKey(erbsland::time::Milliseconds{125}), Key{Key::F5});
         REQUIRE_EQUAL(firstBackend->_readKeyCallCount, 1);
         REQUIRE_EQUAL(firstBackend->_readKeyTimeouts.size(), std::size_t{1});
-        REQUIRE_EQUAL(firstBackend->_readKeyTimeouts[0], std::chrono::milliseconds{125});
+        REQUIRE_EQUAL(firstBackend->_readKeyTimeouts[0], erbsland::time::Milliseconds{125});
 
         firstBackend->_waitForKeyResults.push(Key{Key::Enter});
         REQUIRE_EQUAL(input.waitForKey(), Key{Key::Enter});
@@ -62,10 +62,10 @@ public:
         REQUIRE_EQUAL(firstBackend->_setInputModeCallCount, 1);
 
         secondBackend->_readKeyResults.push(Key{Key::Escape});
-        REQUIRE_EQUAL(input.readKey(std::chrono::milliseconds{250}), Key{Key::Escape});
+        REQUIRE_EQUAL(input.readKey(erbsland::time::Milliseconds{250}), Key{Key::Escape});
         REQUIRE_EQUAL(secondBackend->_readKeyCallCount, 1);
         REQUIRE_EQUAL(secondBackend->_readKeyTimeouts.size(), std::size_t{1});
-        REQUIRE_EQUAL(secondBackend->_readKeyTimeouts[0], std::chrono::milliseconds{250});
+        REQUIRE_EQUAL(secondBackend->_readKeyTimeouts[0], erbsland::time::Milliseconds{250});
         REQUIRE_EQUAL(firstBackend->_readKeyCallCount, 1);
 
         secondBackend->_waitForKeyResults.push(Key{Key::Backspace});

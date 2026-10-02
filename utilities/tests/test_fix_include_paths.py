@@ -40,6 +40,7 @@ class FixIncludePathsTest(unittest.TestCase):
         (self.project_dir / "src" / "erbsland").mkdir(parents=True)
         (self.project_dir / "test" / "unittest" / "src").mkdir(parents=True)
         (self.project_dir / "demos" / "_common" / "src").mkdir(parents=True)
+        (self.project_dir / "test" / "constant-time" / "lib" / "src").mkdir(parents=True)
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
@@ -330,6 +331,21 @@ class FixIncludePathsTest(unittest.TestCase):
         self.assertIn('#include "SampleDemos.hpp"', text)
         self.assertIn("#include <erbsland/text/StringEditor.hpp>", text)
         self.assertIn("#include <DemoCommon.hpp>", text)
+
+    def test_constant_time_tool_keeps_harness_and_core_include_roots(self) -> None:
+        self.write_file("src/erbsland/text/String.hpp", "#pragma once\n")
+        self.write_file("test/constant-time/lib/src/Fixture.hpp", "#pragma once\n")
+        self.write_file(
+            "test/constant-time/app/src/main.cpp",
+            "// Copyright (c) 2026 Tobias Erbsland\n// SPDX-License-Identifier: Apache-2.0\n\n"
+            '#include <Fixture.hpp>\n#include "../../../../src/erbsland/text/String.hpp"\n',
+        )
+
+        self.run_fix_include_paths()
+
+        text = self.read_file("test/constant-time/app/src/main.cpp")
+        self.assertIn("#include <Fixture.hpp>", text)
+        self.assertIn("#include <erbsland/text/String.hpp>", text)
 
     def test_unit_tests_report_unknown_quoted_project_include(self) -> None:
         self.write_file(

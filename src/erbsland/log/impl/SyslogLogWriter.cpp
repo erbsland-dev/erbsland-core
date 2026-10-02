@@ -83,9 +83,13 @@ void SyslogLogWriter::close() noexcept {
 auto SyslogLogWriter::formatMessage(const LogEntry &entry, const LogLine &line, const SyslogLogWriterOptions &options)
     -> text::String {
     const auto priority = static_cast<unsigned>(options.facility()) * 8U + severity(entry.level());
-    const auto timestamp = entry.timestamp().toIsoString(
-        time::IsoTimeFormatFlags{
-            time::IsoTimeFormat::Extended, time::IsoTimeFormat::TimePrefix, time::IsoTimeFormat::TimeShift});
+    const auto timestamp =
+        entry.timestamp()
+            .toDateTime()
+            .value_or(time::DateTime{})
+            .toIsoString(
+                time::IsoTimeFormatFlags{
+                    time::IsoTimeFormat::Extended, time::IsoTimeFormat::TimePrefix, time::IsoTimeFormat::TimeShift});
     static const auto cMessageFormat = text::StringFormat{"<{}>1 {} {} {} {} {} - {}"_el};
     return cMessageFormat.build(
         priority,

@@ -12,7 +12,8 @@ Relation File vs. Type
     header.
 3.  A header ending in ``Traits.hpp`` can collect multiple thematically related traits. A header ending in
     ``Types.hpp`` can collect a coherent set of micro-types, such as aliases, concepts, or lightweight shells derived
-    from one detailed base and adding only one or two overrides.
+    from one detailed base and adding only one or two overrides. A header ending in ``Tags.hpp`` can collect
+    thematically related tag types.
 4.  Relaxed ``impl`` directories: a ``hpp/cpp`` module can also contain a logical group of helper
     functions/templates/types.
 5.  The filename of a source file always matches its primary type. E.g. the file for the class ``Example`` is

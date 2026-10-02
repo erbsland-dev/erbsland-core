@@ -9,14 +9,14 @@ namespace erbsland::cryptology {
 auto X509ServerCertificatePolicy::validate(
     const X509CertificateBundle &peerCertificates,
     const network::Host &referenceIdentity,
-    const time::DateTime validationTime) const -> X509CertificateValidation {
+    const time::Timestamp validationTime) const -> X509CertificateValidation {
     return impl::X509ServerCertificateValidator{*this, peerCertificates, referenceIdentity, validationTime}.validate();
 }
 
 auto X509ServerCertificatePolicy::validate(
     const X509CertificateBundle &peerCertificates, const network::Host &referenceIdentity) const
     -> X509CertificateValidation {
-    return validate(peerCertificates, referenceIdentity, time::DateTime::now());
+    return validate(peerCertificates, referenceIdentity, time::Timestamp::now());
 }
 
 }

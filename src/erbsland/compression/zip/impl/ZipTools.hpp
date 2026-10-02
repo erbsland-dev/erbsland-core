@@ -41,14 +41,14 @@ inline constexpr uint16_t cDescriptorFlag = 0x0008U;
 [[nodiscard]] auto pathsConflict(
     const path::Path &left, bool leftDirectory, const path::Path &right, bool rightDirectory) noexcept -> bool;
 /// Convert the mandatory DOS fields to a UTC timestamp.
-[[nodiscard]] auto dateTimeFromDos(uint16_t date, uint16_t time) noexcept -> time::DateTime;
+[[nodiscard]] auto dateTimeFromDos(uint16_t date, uint16_t time) noexcept -> time::Timestamp;
 /// Convert a UTC timestamp to the mandatory DOS fields.
-void dateTimeToDos(const time::DateTime &dateTime, uint16_t &date, uint16_t &time) noexcept;
+void dateTimeToDos(const time::Timestamp &dateTime, uint16_t &date, uint16_t &time) noexcept;
 /// Parse Extended Timestamp and retain every unmanaged extra field.
 [[nodiscard]] auto modificationTimeFromExtra(
-    const mem::ByteBlock &extra, time::DateTime fallback, mem::ByteWriter *opaque = nullptr) -> time::DateTime;
+    const mem::ByteBlock &extra, time::Timestamp fallback, mem::ByteWriter *opaque = nullptr) -> time::Timestamp;
 /// Append the managed Extended Timestamp modification-time field.
-void appendExtendedTimestamp(mem::ByteWriter &extra, const time::DateTime &dateTime);
+void appendExtendedTimestamp(mem::ByteWriter &extra, const time::Timestamp &dateTime);
 /// Match a normalized ZIP path against the documented `*`, `?`, and `**` syntax.
 [[nodiscard]] auto globMatches(const text::String &pattern, const text::String &value) noexcept -> bool;
 

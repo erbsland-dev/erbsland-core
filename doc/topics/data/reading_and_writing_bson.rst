@@ -266,7 +266,7 @@ This table separates values that Core interprets from recognized BSON types it p
       - ``getBinary()`` returns bytes and the subtype.
     * - UTC datetime
       - ``DateTime``
-      - ``getDateTime()`` returns a Core ``DateTime`` at millisecond precision.
+      - ``getTimestamp()`` returns a Core ``Timestamp`` at millisecond precision.
     * - Array and embedded document
       - ``Array``, ``Document``
       - Read with ``getArray()`` and ``getDocument()`` or navigate by index and key.
@@ -281,7 +281,7 @@ unsigned 64-bit integer value.
 The constructor's chosen integer width matters if another application distinguishes 32-bit from 64-bit values.
 
 BSON UTC datetimes count milliseconds from the Unix epoch.
-Core rejects a :cpp:class:`DateTime <erbsland::time::DateTime>` with a finer fraction when writing BSON, instead of
+Core rejects a :cpp:class:`Timestamp <erbsland::time::Timestamp>` with a finer fraction when writing BSON, instead of
 silently rounding it.
 The datetime must also be valid and representable.
 For binary subtype 2, the old binary format includes an extra length field; Core reads and writes that framing while

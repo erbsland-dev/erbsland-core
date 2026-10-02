@@ -37,7 +37,7 @@ CborValue::CborValue(CborArray value) : _data{std::make_shared<impl::CborValueDa
 CborValue::CborValue(CborMap value) : _data{std::make_shared<impl::CborValueData>(std::move(value))} {
 }
 
-CborValue::CborValue(time::DateTime value) : _data{std::make_shared<impl::CborValueData>(std::move(value))} {
+CborValue::CborValue(time::Timestamp value) : _data{std::make_shared<impl::CborValueData>(std::move(value))} {
 }
 
 CborValue::CborValue(CborLink value) : _data{std::make_shared<impl::CborValueData>(std::move(value))} {
@@ -125,7 +125,7 @@ ERBSLAND_CBOR_GETTER(getBool, bool)
 ERBSLAND_CBOR_GETTER(getFloat, double)
 ERBSLAND_CBOR_GETTER(getText, text::String)
 ERBSLAND_CBOR_GETTER(getBytes, mem::ByteBlock)
-ERBSLAND_CBOR_GETTER(getDateTime, time::DateTime)
+ERBSLAND_CBOR_GETTER(getTimestamp, time::Timestamp)
 ERBSLAND_CBOR_GETTER(getArray, CborArray)
 ERBSLAND_CBOR_GETTER(getMap, CborMap)
 #undef ERBSLAND_CBOR_GETTER

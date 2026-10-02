@@ -22,7 +22,7 @@ public:
         mem::ByteBlock,
         CborArray,
         CborMap,
-        time::DateTime,
+        time::Timestamp,
         CborLink>;
     /// Store one typed wire value.
     /// @tparam T The supported value type.

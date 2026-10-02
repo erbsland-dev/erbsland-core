@@ -24,8 +24,8 @@
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
-#include "../../time/DateTime.hpp"
 #include "../../time/TimeEpoch.hpp"
+#include "../../time/Timestamp.hpp"
 #include "../../unit/ByteLength.hpp"
 
 #include <dirent.h>
@@ -85,7 +85,7 @@ void PosixPathBackend::setAccessProfileOrThrow(
 }
 
 void PosixPathBackend::setLastModifiedOrThrow(
-    const Path &path, const time::DateTime &value, const PathChangeOptions options) const {
+    const Path &path, const time::Timestamp &value, const PathChangeOptions options) const {
     const auto timestamp = value.toSecondsAndFractions(time::TimeEpoch::Posix);
     if (!timestamp.has_value()) {
         throw PathError{PathErrorContext{

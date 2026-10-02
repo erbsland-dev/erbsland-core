@@ -17,7 +17,7 @@ public:
 public:
     [[nodiscard]] auto mode() const noexcept -> Mode override;
     void setMode(Mode mode) override;
-    [[nodiscard]] auto readKeyImpl(std::chrono::milliseconds timeout) const -> Key override;
+    [[nodiscard]] auto readKeyImpl(time::Milliseconds timeout) const -> Key override;
     [[nodiscard]] auto waitForKeyImpl() const -> Key override;
     [[nodiscard]] auto readLine() -> text::String override;
     void purgePendingInput() noexcept override;

@@ -79,7 +79,7 @@ class PathInfoTest final : public el::UnitTest {
             }
             if (parts.isSet(PathInfoPart::Times)) {
                 result.lastModified =
-                    el::time::DateTime::fromTicks(el::time::Seconds{42}, el::time::TimeEpoch::Posix).value();
+                    el::time::Timestamp::fromTicks(el::time::Seconds{42}, el::time::TimeEpoch::Posix).value();
             }
             if (parts.isSet(PathInfoPart::OwnerId)) {
                 result.ownerId = el::system::UserId{"42"_el};

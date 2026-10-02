@@ -239,7 +239,7 @@ auto PathOperations::setAccessProfile(const PathAccessProfile profile, const Pat
         options, [profile](const Path &path) -> void { pathBackend().setAccessProfileOrThrow(path, profile, {}); });
 }
 
-auto PathOperations::setLastModified(const time::DateTime &value, const PathChangeOptions options) const -> bool {
+auto PathOperations::setLastModified(const time::Timestamp &value, const PathChangeOptions options) const -> bool {
     return applyChange(options, [&value, &options](const Path &path) -> void {
         pathBackend().setLastModifiedOrThrow(path, value, options);
     });

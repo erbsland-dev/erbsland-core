@@ -13,7 +13,7 @@
 #include "../../../stream/ByteInputStream.hpp"
 #include "../../../stream/StreamReadStatus.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../time/DateTime.hpp"
+#include "../../../time/Timestamp.hpp"
 #include "../../ByteCompressor.hpp"
 #include "../../impl/CompressionCodec.hpp"
 #include "../../impl/CompressionCrc32.hpp"
@@ -80,7 +80,7 @@ void ArchiveWriter::addStream(
             method,
             length.isFinite() ? length : unit::ByteLength{},
             0U,
-            options.modificationTime().value_or(time::DateTime::now()),
+            options.modificationTime().value_or(time::Timestamp::now()),
             options.comment().value_or(text::String{}),
             {},
             {},

@@ -97,18 +97,18 @@ auto X509CertificateBuilder::addIpAddress(network::IpAddress value) -> X509Certi
     return *this;
 }
 
-auto X509CertificateBuilder::setValidFrom(const time::DateTime value) noexcept -> X509CertificateBuilder & {
+auto X509CertificateBuilder::setValidFrom(const time::Timestamp value) noexcept -> X509CertificateBuilder & {
     _validFrom = value;
     return *this;
 }
 
-auto X509CertificateBuilder::setValidTo(const time::DateTime value) noexcept -> X509CertificateBuilder & {
+auto X509CertificateBuilder::setValidTo(const time::Timestamp value) noexcept -> X509CertificateBuilder & {
     _validTo = value;
     _lifetime.reset();
     return *this;
 }
 
-auto X509CertificateBuilder::setValidity(const time::DateTime from, const time::DateTime to) noexcept
+auto X509CertificateBuilder::setValidity(const time::Timestamp from, const time::Timestamp to) noexcept
     -> X509CertificateBuilder & {
     _validFrom = from;
     _validTo = to;

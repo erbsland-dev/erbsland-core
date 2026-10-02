@@ -154,10 +154,6 @@ void Terminal::setCursorVisible(const bool visible) noexcept {
     }
 }
 
-void Terminal::setColorEnabled(const bool enabled) noexcept {
-    setOutputMode(enabled ? OutputMode::FullControl : OutputMode::BlockText);
-}
-
 void Terminal::refreshScreen() noexcept {
     if (_afterResize) {
         _afterResize = false;

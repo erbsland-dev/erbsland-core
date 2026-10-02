@@ -15,6 +15,7 @@ target_sources(erbsland-core PRIVATE
         TimePart.hpp
         TimePartBases.hpp
         TimePartWithAmount.hpp
+        TimestampTraits.hpp
 )
 
 if(WIN32)

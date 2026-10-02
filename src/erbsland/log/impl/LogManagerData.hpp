@@ -58,7 +58,7 @@ public:
     /// @param timestamp The UTC timestamp captured before producer-side formatting.
     /// @param path The path of the producing stream.
     /// @param message The formatted message to sanitize and enqueue.
-    void enqueue(LogLevel level, time::DateTime timestamp, const LogPath &path, text::String message) noexcept;
+    void enqueue(LogLevel level, time::Timestamp timestamp, const LogPath &path, text::String message) noexcept;
     /// Synchronously install a replacement configuration.
     /// @param configuration The complete replacement configuration.
     /// @throws err::LogicError If shutdown started or a writer is active in another manager.

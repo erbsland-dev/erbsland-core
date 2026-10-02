@@ -24,7 +24,7 @@
 #include <erbsland/network/source/ConnectionQuota.hpp>
 #include <erbsland/network/tls/TlsServerConnection.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/time/DateTime.hpp>
+#include <erbsland/time/Timestamp.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -137,7 +137,7 @@ private:
             Host::fromStringOrThrow(host),
             X509ServerCertificatePolicy{
                 X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/ca.pem"))},
-            el::time::DateTime::now()};
+            el::time::Timestamp::now()};
     }
 
     [[nodiscard]] static auto makeHarness() -> Harness {

@@ -81,7 +81,7 @@ Partial Access
 
 An existing process can expose only part of its information because of platform permissions or native limitations.
 The non-throwing accessors return the normal invalid sentinel for an unavailable field: an empty ``Path``, invalid
-``ProcessId`` or ``DateTime``, or empty ``UserId``.
+``ProcessId`` or ``Timestamp``, or empty ``UserId``.
 Each throwing accessor reports the native diagnostic cached when the snapshot was loaded; it does not perform a second
 lookup.
 

@@ -15,7 +15,7 @@
 #include "../PathProgress.hpp"
 #include "../PathRemoveOptions.hpp"
 
-#include "../../time/DateTime_fwd.hpp"
+#include "../../time/Timestamp_fwd.hpp"
 
 #include <functional>
 #include <utility>
@@ -49,7 +49,7 @@ public:
     /// Apply an access profile to the path.
     auto setAccessProfile(PathAccessProfile profile, PathChangeOptions options) const -> bool;
     /// Set the last-modification time on the path.
-    auto setLastModified(const time::DateTime &value, PathChangeOptions options) const -> bool;
+    auto setLastModified(const time::Timestamp &value, PathChangeOptions options) const -> bool;
     /// Add attributes to the path.
     auto addAttributes(PathAttributes attributes, PathChangeOptions options) const -> bool;
     /// Clear attributes from the path.

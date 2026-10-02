@@ -166,7 +166,7 @@ void WindowsPathBackend::setAccessProfileOrThrow(
 }
 
 void WindowsPathBackend::setLastModifiedOrThrow(
-    const Path &path, const time::DateTime &value, const PathChangeOptions options) const {
+    const Path &path, const time::Timestamp &value, const PathChangeOptions options) const {
     const auto fileTime = time::impl::windows_time_converter::toFileTime(value);
     if (!fileTime.has_value()) {
         throw PathError{PathErrorContext{

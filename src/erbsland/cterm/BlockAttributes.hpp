@@ -229,16 +229,6 @@ public: // per-attribute modifiers
     /// Make the strikethrough attribute inherit from the base state.
     constexpr void setStrikethroughInherited() noexcept { setInheritedFlag(Strikethrough); }
 
-public: // deprecated methods
-    /// Return these attributes resolved against a base state.
-    /// @param base The base attributes.
-    /// @return The resolved attributes.
-    /// @deprecated Use ``withBase()`` instead.
-    [[deprecated("Please use withBase(base)"), nodiscard]]
-    constexpr auto resolvedWith(const BlockAttributes base) const noexcept -> BlockAttributes {
-        return withBase(base);
-    }
-
 private:
     /// Create attributes from low-level enabled and specified masks.
     constexpr BlockAttributes(const uint8_t enabledMask, const uint8_t specifiedMask) noexcept :

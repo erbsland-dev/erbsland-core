@@ -137,17 +137,18 @@ auto X509ArtifactWriter::createCertificateImpl(
     if (subjectKey.isEmpty() || issuerKey.isEmpty()) {
         throw err::LogicError{"Certificate creation requires nonempty signing keys."_el};
     }
-    const auto now = time::DateTime::now();
+    const auto now = time::Timestamp::now();
     auto validFrom = _builder._validFrom.value_or(now - time::Duration{time::Minutes{5}});
-    auto validTo = time::DateTime{};
+    auto validTo = time::Timestamp{};
     if (_builder._validTo.has_value()) {
         validTo = *_builder._validTo;
     } else if (_builder._lifetime.has_value()) {
-        validTo = validFrom.addedOrThrow(*_builder._lifetime);
+        validTo = time::Timestamp::fromDateTimeOrThrow(validFrom.toDateTimeOrThrow().addedOrThrow(*_builder._lifetime));
     } else if (_builder._profile == X509CertificateProfile::CertificateAuthority) {
-        validTo = now.addedOrThrow(time::CalendarDelta{time::Years{10}});
+        validTo = time::Timestamp::fromDateTimeOrThrow(
+            now.toDateTimeOrThrow().addedOrThrow(time::CalendarDelta{time::Years{10}}));
     } else {
-        validTo = now.addedOrThrow(time::CalendarDelta{time::Days{397}});
+        validTo = now.addedOrThrow(time::Duration{time::Days{397}});
     }
     if (!validFrom.isValid() || !validTo.isValid() || validFrom >= validTo) {
         throw err::ParameterError{"Certificate validity must be a nonempty valid range."_el, "validity"_el};

@@ -269,7 +269,7 @@ This table shows how it relates to the CBOR item you exchange.
       - ``Array`` / ``getArray()``; ``Map`` / ``getMap()``
       - Maps require unique text keys.
     * - Date/time tags 0 and 1
-      - ``DateTime`` / ``getDateTime()``
+      - ``DateTime`` / ``getTimestamp()``
       - Ordinary CBOR only; written with tag 0 as UTC text.
     * - CID link tag 42
       - ``Link`` / ``getLinkBytes()``
@@ -287,7 +287,7 @@ Dates and CID Links
 -------------------
 
 In ordinary CBOR, tag 0 carries a date/time as text and tag 1 carries seconds relative to the Unix epoch.
-Core reads either as :cpp:class:`DateTime <erbsland::time::DateTime>` and writes a ``DateTime`` with tag 0 in UTC.
+Core reads either as :cpp:class:`Timestamp <erbsland::time::Timestamp>` and writes a ``Timestamp`` with tag 0 in UTC.
 Malformed or unrepresentable dates fail parsing; an invalid date fails serialization.
 Date/time tags are excluded from DAG-CBOR.
 

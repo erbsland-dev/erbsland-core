@@ -22,7 +22,6 @@ public:
     void testDefaultConstructor() {
         Key key;
         REQUIRE_EQUAL(key.type(), Key::None);
-        REQUIRE_EQUAL(key.character(), 0);
         REQUIRE_EQUAL(key.unicode(), 0);
         REQUIRE_EQUAL(key.combined(), erbsland::text::U32StringEditor{});
         REQUIRE(!key.valid());
@@ -32,7 +31,6 @@ public:
         Key key{Key::Character, U'a'};
         REQUIRE_EQUAL(key.type(), Key::Character);
         REQUIRE(key.modifiers().empty());
-        REQUIRE_EQUAL(key.character(), 'a');
         REQUIRE_EQUAL(key.unicode(), U'a');
         REQUIRE_EQUAL(key.combined(), U"a"_el);
         REQUIRE(key.valid());
@@ -43,7 +41,6 @@ public:
 
         const auto combined = Key{Key::Combined, U"e\u0301"_el};
         REQUIRE_EQUAL(combined.type(), Key::Combined);
-        REQUIRE_EQUAL(combined.character(), 0);
         REQUIRE_EQUAL(combined.unicode(), 0);
         REQUIRE_EQUAL(combined.combined(), U"e\u0301"_el);
 
@@ -214,20 +211,17 @@ public:
         REQUIRE_EQUAL(Key::fromString("shift+x"_el), Key{Key::None});
     }
 
-    void testLegacyAsciiAndUnicodeAccessors() {
+    void testUnicodeAccessors() {
         const auto ascii = Key{Key::Character, U'A'};
         const auto unicode = Key{Key::Character, U'\u00e4'};
         const auto combined = Key{Key::Combined, U"e\u0301"_el};
 
-        REQUIRE_EQUAL(ascii.character(), 'A');
         REQUIRE_EQUAL(ascii.unicode(), U'A');
         REQUIRE_EQUAL(ascii.combined(), U"A"_el);
 
-        REQUIRE_EQUAL(unicode.character(), 0);
         REQUIRE_EQUAL(unicode.unicode(), U'\u00e4');
         REQUIRE_EQUAL(unicode.combined(), U"\u00e4"_el);
 
-        REQUIRE_EQUAL(combined.character(), 0);
         REQUIRE_EQUAL(combined.unicode(), 0);
         REQUIRE_EQUAL(combined.combined(), U"e\u0301"_el);
     }

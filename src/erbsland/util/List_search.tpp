@@ -39,11 +39,7 @@ auto List<tElement, tSelf>::findFirstIf(Function function, const Index start) co
 
 template <typename tElement, typename tSelf>
 auto List<tElement, tSelf>::findLast(const Element &value) const -> Index {
-    const auto &data = raw();
-    if (data.empty()) {
-        return Index::noIndex();
-    }
-    return findLast(value, Index::fromSizeT(data.size() - 1U));
+    return findLast(value, lastIndex());
 }
 
 template <typename tElement, typename tSelf>
@@ -54,11 +50,10 @@ auto List<tElement, tSelf>::findLast(const Element &value, const Index start) co
 template <typename tElement, typename tSelf>
 template <typename Function>
 auto List<tElement, tSelf>::findLastIf(Function function) const -> Index {
-    const auto &data = raw();
-    if (data.empty()) {
+    if (isEmpty()) {
         return Index::noIndex();
     }
-    return findLastIf(function, Index::fromSizeT(data.size() - 1U));
+    return findLastIf(function, lastIndex());
 }
 
 template <typename tElement, typename tSelf>

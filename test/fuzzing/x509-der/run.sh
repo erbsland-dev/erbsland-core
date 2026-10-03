@@ -8,7 +8,9 @@ scriptDir="$(cd "$(dirname "$0")" && pwd)"
 projectDir="$(cd "${scriptDir}/../../.." && pwd)"
 buildDir="${ERBSLAND_CORE_FUZZ_BUILD_DIR:-${projectDir}/cmake-build-fuzzing}"
 compiler="${CXX:-/opt/local/bin/clang++-mp-22}"
-corpusDir="${buildDir}/corpus/x509-der"
+outputDir="${projectDir}/fuzzing/x509-der"
+corpusDir="${outputDir}/corpus"
+artifactDir="${outputDir}/artifacts"
 seedCertificate="${scriptDir}/corpus/example-certificate.pem"
 
 if [[ ! -x "${compiler}" ]]; then
@@ -28,6 +30,8 @@ cmake -S "${projectDir}" -B "${buildDir}" -G Ninja \
     -DERBSLAND_CORE_ENABLE_TESTS=OFF
 cmake --build "${buildDir}" --target x509-der-fuzz
 
-mkdir -p "${corpusDir}"
+buildDir="$(cd "${buildDir}" && pwd)"
+mkdir -p "${corpusDir}" "${artifactDir}"
 openssl x509 -inform PEM -in "${seedCertificate}" -outform DER -out "${corpusDir}/example-certificate.der"
-exec "${buildDir}/test/fuzzing/x509-der/x509-der-fuzz" "${corpusDir}" "$@"
+cd "${outputDir}"
+exec "${buildDir}/test/fuzzing/x509-der/x509-der-fuzz" "${corpusDir}" "-artifact_prefix=${artifactDir}/" "$@"

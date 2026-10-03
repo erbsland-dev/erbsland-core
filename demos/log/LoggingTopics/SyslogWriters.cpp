@@ -2,7 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/HostEndpoint.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogLevel.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/LogWriterFilter.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/SyslogLogWriterOptions.hpp>
+#include <erbsland/SyslogTransport.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -24,12 +33,12 @@ void syslogWriters() {
         .setProcessId("314"_el)
         .setMessageId("route"_el)
         .setTlsConfigurationLabel("guild/syslog"_el)
-        .setMaximumPendingBytes(el::ByteLength{256U * 1024U});
+        .setMaximumPendingBytes(el::ByteCount{256U * 1024U});
 
     auto configuration = el::LogConfiguration{};
     configuration.addWriter(
         el::LogWriter::createForSyslog(options),
-        el::LogWriterFilter{el::LogLevels{el::LogLevel::Warning, el::LogLevel::Error}});
+        el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Warning, el::LogLevel::Error}));
 
     el::io::printLine("Syslog endpoint: "_el, options.endpoint().toString());
 }

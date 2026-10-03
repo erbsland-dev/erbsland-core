@@ -10,6 +10,8 @@ Core Semantics
     option = named flag, typed value, choice, or positional argument
     option set = group of option definitions
     module = named action-specific collection of option sets
+    title = brief description or section title for sets
+    description = detailed description displayed when requested or below
 
 Primary Types
 =============
@@ -91,6 +93,7 @@ Definition Name Patterns
     T::isValid❮NameForm❯(name) -> bool // validate a supported name form
     o.has❮NameForm❯(name) -> bool // test a configured name or positional identity
     o.hasConflictingOptionName(other) -> bool // test definition-name conflicts
+    o.helpNames()/setHelpNames(names) // inspect or replace choice help aliases independently of accepted values
 
 Definition Property Patterns
 ============================
@@ -117,7 +120,6 @@ Parsing Patterns
     o.parseOrThrow(arguments) -> OptionValuesPtr // parse and mask or throw OptionError
     T::convertCommandLineArguments(argc, argv) -> core::CommandLineArguments // convert the native process boundary
     o.options() -> OptionsPtr // access the root definition
-    o.displayText()/setDisplayTextMap(map) // inspect or replace display wording
 
 Display Patterns
 ================

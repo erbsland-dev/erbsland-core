@@ -4,8 +4,19 @@
 #include "Client.hpp"
 #include "Server.hpp"
 
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/AuthenticationTokenPair.hpp>
+#include <erbsland/ClientAuthenticationToken.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/cryptology/authentication/AuthenticationTokenPair.hpp>
+#include <erbsland/Host.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/Port.hpp>
+#include <erbsland/ServerAuthenticationToken.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <memory>
 
@@ -17,22 +28,18 @@ class TokenAuthenticationApp final : public el::Application {
 public:
     using Application::Application;
 
-protected:
+protected: // implement Application
     void initialize() override { info().setApplicationName("Token Authentication Demo"_el); }
 
     void registerCommandLineOptions(const el::OptionsPtr &options) override {
         options->setHelpDescription("Generate a token pair or authenticate over JSONL/TCP."_el);
-        options->addOption("mode"_el).setRequired().setHelpDescription("generate, server, or client"_el);
-        options->addOption("value"_el).setRequired().setHelpDescription("identifier or ELCL configuration path"_el);
+        options->addOption("mode"_el).setRequired().setHelpTitle("generate, server, or client"_el);
+        options->addOption("value"_el).setRequired().setHelpTitle("identifier or ELCL configuration path"_el);
     }
 
-    void parseCommandLine() override {
-        Application::parseCommandLine();
-        if (optionValues() == nullptr) {
-            return;
-        }
-        const auto mode = optionValues()->getText("mode"_el);
-        const auto value = optionValues()->getText("value"_el);
+    void handleCommandLineOptions(const el::OptionValuesPtr &values) override {
+        const auto mode = values->getText("mode"_el);
+        const auto value = values->getText("value"_el);
         if (mode == "generate"_el) {
             auto pair = el::cryptology::AuthenticationTokenPair::generate(value);
             el::io::printLine("Server token: "_el, pair.server().toString());

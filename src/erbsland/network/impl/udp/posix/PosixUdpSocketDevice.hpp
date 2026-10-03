@@ -27,7 +27,7 @@ public:
     ~PosixUdpSocketDevice() override;
 
 public: // implement UdpSocketDevice
-    [[nodiscard]] auto bind(IpEndpoint localEndpoint, unit::ByteLength maximumDatagramSize) -> IpEndpoint override;
+    [[nodiscard]] auto bind(IpEndpoint localEndpoint, unit::ByteCount maximumDatagramSize) -> IpEndpoint override;
     [[nodiscard]] auto send(const UdpDatagram &datagram) -> UdpSocketDeviceSendStatus override;
     void setReceiving(bool enabled) override;
     void close() noexcept override;
@@ -56,7 +56,7 @@ private:
     std::atomic<int> _descriptor{-1};         ///< Native socket descriptor.
     RegistrationPtr _registration;            ///< Current readiness registration.
     std::optional<IpEndpoint> _localEndpoint; ///< Actual bound endpoint.
-    unit::ByteLength _maximumDatagramSize;    ///< Native receive buffer size.
+    unit::ByteCount _maximumDatagramSize;     ///< Native receive buffer size.
     bool _read{false};                        ///< Whether read readiness is registered.
     bool _write{false};                       ///< Whether write readiness is registered.
 };

@@ -15,12 +15,15 @@
 
 #include <array>
 #include <cstring>
+#include <optional>
 #include <span>
+#include <utility>
 
 namespace erbsland::text::impl {
 
-/// Copy-modify algorithms for UTF-8 strings.
-/// @tested{U8StringModifierTest}
+/// Modification algorithms for UTF-8 strings.
+/// Change-aware replacement and removal preserve unchanged storage; kept ranges deliberately create pruned copies.
+/// @tested{StringReplacementTest U8StringModifierTest StringUnchangedResultTest}
 class U8StringModifyTools final {
 public:
     /// Create modification tools for the given UTF-8 data.
@@ -78,44 +81,76 @@ public:
 
 public:
     /// Return storage with a byte range removed.
-    [[nodiscard]] auto removed(unit::ByteRange range) const -> U8StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto removedIfChanged(unit::ByteRange range) const -> std::optional<U8StringSharedStorage>;
     /// Return storage with a character-based range removed.
-    [[nodiscard]] auto removed(unit::CpRange range) const -> U8StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto removedIfChanged(unit::CpRange range) const -> std::optional<U8StringSharedStorage>;
     /// Return storage with all characters from the set removed.
-    [[nodiscard]] auto removedAll(const CharSet &characters) const -> U8StringSharedStorage;
+    /// @param characters The characters to remove.
+    /// @return Modified storage, or `std::nullopt` if no match is found.
+    [[nodiscard]] auto removedAllIfChanged(const CharSet &characters) const -> std::optional<U8StringSharedStorage>;
     /// Return storage with all occurrences of decoded UTF-8 text removed.
-    [[nodiscard]] auto removed(const U8StringDataView &text, CharCompareFn compareFn = {}) const
-        -> U8StringSharedStorage;
+    /// @param text The decoded text to remove.
+    /// @param compareFn The optional character comparison function.
+    /// @return Modified storage, or `std::nullopt` if no match is found.
+    [[nodiscard]] auto removedAllIfChanged(const U8StringDataView &text, CharCompareFn compareFn = {}) const
+        -> std::optional<U8StringSharedStorage>;
     /// Return storage keeping only a byte range.
     [[nodiscard]] auto kept(unit::ByteRange range) const -> U8StringSharedStorage;
     /// Return storage keeping only a character-based range.
     [[nodiscard]] auto kept(unit::CpRange range) const -> U8StringSharedStorage;
     /// Return storage with text inserted at a byte index.
-    [[nodiscard]] auto inserted(unit::ByteIndex index, const U8StringDataView &text) const -> U8StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto insertedIfChanged(unit::ByteIndex index, const U8StringDataView &text) const
+        -> std::optional<U8StringSharedStorage>;
     /// Return storage with text inserted at a character index.
-    [[nodiscard]] auto inserted(unit::CpIndex index, const U8StringDataView &text) const -> U8StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto insertedIfChanged(unit::CpIndex index, const U8StringDataView &text) const
+        -> std::optional<U8StringSharedStorage>;
     /// Return storage with a byte range replaced by text.
-    [[nodiscard]] auto replaced(unit::ByteRange range, const U8StringDataView &text) const -> U8StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto replacedIfChanged(unit::ByteRange range, const U8StringDataView &text) const
+        -> std::optional<U8StringSharedStorage>;
     /// Return storage with a character range replaced by text.
-    [[nodiscard]] auto replaced(unit::CpRange range, const U8StringDataView &text) const -> U8StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto replacedIfChanged(unit::CpRange range, const U8StringDataView &text) const
+        -> std::optional<U8StringSharedStorage>;
     /// Return storage with the first occurrence of decoded UTF-8 text removed.
-    [[nodiscard]] auto removedFirst(const U8StringDataView &text, CharCompareFn compareFn = {}) const
-        -> U8StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto removedFirstIfChanged(const U8StringDataView &text, CharCompareFn compareFn = {}) const
+        -> std::optional<U8StringSharedStorage>;
     /// Return storage with the first occurrence of decoded UTF-8 text replaced.
-    [[nodiscard]] auto replacedFirst(
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto replacedFirstIfChanged(
         const U8StringDataView &text, const U8StringDataView &replacement, CharCompareFn compareFn = {}) const
-        -> U8StringSharedStorage;
+        -> std::optional<U8StringSharedStorage>;
     /// Return storage with all characters from the set replaced by one character.
-    [[nodiscard]] auto replacedAll(const CharSet &characters, Char replacement) const -> U8StringSharedStorage;
+    /// @param characters The characters to replace.
+    /// @param replacement The replacement character or text.
+    /// @return Modified storage, or `std::nullopt` if the original data is unchanged.
+    [[nodiscard]] auto replacedAllIfChanged(const CharSet &characters, Char replacement) const
+        -> std::optional<U8StringSharedStorage>;
     /// Return storage with all characters from the set replaced by text.
-    [[nodiscard]] auto replacedAll(const CharSet &characters, const U8StringDataView &replacement) const
-        -> U8StringSharedStorage;
+    /// @param characters The characters to replace.
+    /// @param replacement The replacement character or text.
+    /// @return Modified storage, or `std::nullopt` if the original data is unchanged.
+    [[nodiscard]] auto replacedAllIfChanged(const CharSet &characters, const U8StringDataView &replacement) const
+        -> std::optional<U8StringSharedStorage>;
     /// Return storage with all occurrences of decoded UTF-8 text replaced.
-    [[nodiscard]] auto replacedAll(
+    /// @param text The decoded text to replace.
+    /// @param replacement The replacement character or text.
+    /// @param compareFn The optional character comparison function.
+    /// @return Modified storage, or `std::nullopt` if the original data is unchanged.
+    [[nodiscard]] auto replacedAllIfChanged(
         const U8StringDataView &text, const U8StringDataView &replacement, CharCompareFn compareFn = {}) const
-        -> U8StringSharedStorage;
+        -> std::optional<U8StringSharedStorage>;
 
 private:
+    /// Append native data units without decoding or modifying their representation.
+    /// @param storage The destination storage.
+    /// @param data The native data units to append.
+    static void appendData(U8StringSharedStorage &storage, std::span<const char> data);
     /// Test whether two spans overlap in memory.
     template <typename T>
     [[nodiscard]] static auto spansOverlap(std::span<const T> first, std::span<const T> second) noexcept -> bool;
@@ -124,15 +159,15 @@ private:
     /// Get the encoded UTF-8 code units for one character.
     [[nodiscard]] static auto characterByteSpan(Char character, const std::array<char, 4> &bytes) noexcept
         -> std::span<const char>;
-    /// Return storage with matching characters replaced.
+    /// Return storage with characters selected by a predicate replaced with UTF-8 text.
     template <typename Predicate>
-    [[nodiscard]] auto replacedCharacters(Predicate predicate, std::span<const char> replacement) const
-        -> U8StringSharedStorage;
+    [[nodiscard]] auto replacedCharactersIfChanged(Predicate predicate, std::span<const char> replacement) const
+        -> std::optional<U8StringSharedStorage>;
     /// Return storage with matching text replaced.
-    [[nodiscard]] auto replacedText(
+    [[nodiscard]] auto replacedTextIfChanged(
         const U8StringDataView &text, std::span<const char> replacement, CharCompareFn compareFn) const
-        -> U8StringSharedStorage;
-    /// Replace matching characters in existing storage.
+        -> std::optional<U8StringSharedStorage>;
+    /// Replace characters selected by a predicate directly in the shared storage with UTF-8 text.
     template <typename Predicate>
     static auto replaceCharactersInStorage(
         U8StringSharedStorage &storage, Predicate predicate, std::span<const char> replacement)
@@ -149,19 +184,6 @@ private:
     /// Convert a character index into a byte index.
     [[nodiscard]] static auto byteIndexForCharacterIndex(const U8StringDataView &data, unit::CpIndex index) noexcept
         -> unit::ByteIndex;
-    /// Find the first byte range matching text.
-    [[nodiscard]] static auto findFirstTextRange(
-        const U8StringDataView &data, const U8StringDataView &text, CharCompareFn compareFn) noexcept
-        -> unit::ByteRange;
-    /// Test whether UTF-8 data matches text at an index.
-    [[nodiscard]] static auto matchesText(
-        std::span<const char> data, unit::ByteIndex start, std::span<const char> text, CharCompareFn compareFn) noexcept
-        -> bool;
-    /// Get the byte index immediately after a text match.
-    [[nodiscard]] static auto endOfMatch(
-        std::span<const char> data, unit::ByteIndex start, std::span<const char> text) noexcept -> unit::ByteIndex;
-    /// Compare two characters using an optional comparison function.
-    [[nodiscard]] static auto charactersEqual(Char left, Char right, CharCompareFn compareFn) noexcept -> bool;
 
 private:
     U8StringDataView _data;
@@ -169,52 +191,45 @@ private:
 };
 
 template <typename Predicate>
-/// Replace characters selected by a predicate with UTF-8 text.
-auto U8StringModifyTools::replacedCharacters(Predicate predicate, const std::span<const char> replacement) const
-    -> U8StringSharedStorage {
+auto U8StringModifyTools::replacedCharactersIfChanged(
+    Predicate predicate, const std::span<const char> replacement) const -> std::optional<U8StringSharedStorage> {
     const auto data = _data.dataSpan();
-    if (data.empty()) {
-        return {};
-    }
-
-    auto newSize = std::size_t{0};
+    auto result = std::optional<U8StringSharedStorage>{};
+    auto copyStart = std::size_t{0};
     auto position = unit::ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
-        const auto characterStart = position;
+        const auto begin = position.toSizeT();
         const auto character = utf8::decodeCharOrReplace(data, position);
-        if (predicate(character)) {
-            newSize = U8StringSharedStorage::checkedAddSize(
-                newSize, replacement.size(), "Modified string exceeds size bounds");
-        } else {
-            newSize = U8StringSharedStorage::checkedAddSize(
-                newSize, position.toSizeT() - characterStart.toSizeT(), "Modified string exceeds size bounds");
+        if (!predicate(character)) {
+            continue;
         }
-    }
-    U8StringSharedStorage::validateSize(newSize);
-    auto storage = U8StringSharedStorage::forSize(newSize, _sensitive);
-    auto writePosition = std::size_t{0};
-    position = unit::ByteIndex::zero();
-    while (position.toSizeT() < data.size()) {
-        const auto characterStart = position;
-        const auto character = utf8::decodeCharOrReplace(data, position);
-        if (predicate(character)) {
-            if (!replacement.empty()) {
-                std::memcpy(storage.dataForWrite() + writePosition, replacement.data(), replacement.size());
-                writePosition = U8StringSharedStorage::checkedAddSize(
-                    writePosition, replacement.size(), "Modified string write exceeds size bounds");
+        const auto matchSize = position.toSizeT() - begin;
+        if (matchSize == replacement.size() &&
+            std::memcmp(data.data() + begin, replacement.data(), matchSize * sizeof(char)) == 0) {
+            continue;
+        }
+        if (!result) {
+            result.emplace();
+            const auto initialCapacity =
+                U8StringSharedStorage::checkedAddSize(data.size() - matchSize, replacement.size());
+            if (initialCapacity > 0U) {
+                result->ensureMutableCapacity(initialCapacity);
             }
-        } else {
-            const auto characterSize = position.toSizeT() - characterStart.toSizeT();
-            std::memcpy(storage.dataForWrite() + writePosition, data.data() + characterStart.toSizeT(), characterSize);
-            writePosition = U8StringSharedStorage::checkedAddSize(
-                writePosition, characterSize, "Modified string write exceeds size bounds");
+            if (_sensitive) {
+                result->markAsSensitive();
+            }
         }
+        appendData(result.value(), data.subspan(copyStart, begin - copyStart));
+        appendData(result.value(), replacement);
+        copyStart = position.toSizeT();
     }
-    return storage;
+    if (result) {
+        appendData(result.value(), data.subspan(copyStart));
+    }
+    return result;
 }
 
 template <typename Predicate>
-/// Replace characters selected by a predicate directly in the shared storage.
 auto U8StringModifyTools::replaceCharactersInStorage(
     U8StringSharedStorage &storage, Predicate predicate, const std::span<const char> replacement)
     -> U8StringSharedStorage & {
@@ -234,18 +249,19 @@ auto U8StringModifyTools::replaceCharactersInStorage(
         const auto characterSize = position.toSizeT() - characterStart.toSizeT();
         if (predicate(character)) {
             hasMatch = true;
-            newSize = U8StringSharedStorage::checkedAddSize(
-                newSize, replacement.size(), "Modified string exceeds size bounds");
+            newSize = U8StringSharedStorage::checkedAddSize(newSize, replacement.size());
         } else {
-            newSize =
-                U8StringSharedStorage::checkedAddSize(newSize, characterSize, "Modified string exceeds size bounds");
+            newSize = U8StringSharedStorage::checkedAddSize(newSize, characterSize);
         }
     }
     if (!hasMatch) {
         return storage;
     }
     if (!canWriteInPlace) {
-        storage = U8StringModifyTools{dataView, storage.isSensitive()}.replacedCharacters(predicate, replacement);
+        if (auto result = U8StringModifyTools{dataView, storage.isSensitive()}.replacedCharactersIfChanged(
+                predicate, replacement)) {
+            storage = std::move(result.value());
+        }
         return storage;
     }
 
@@ -260,8 +276,7 @@ auto U8StringModifyTools::replaceCharactersInStorage(
                 std::memmove(
                     storage.dataForWrite() + writePosition, data.data() + characterStart.toSizeT(), characterSize);
             }
-            writePosition = U8StringSharedStorage::checkedAddSize(
-                writePosition, characterSize, "Modified string write exceeds size bounds");
+            writePosition = U8StringSharedStorage::checkedAddSize(writePosition, characterSize);
         }
     }
     storage.resize(newSize);

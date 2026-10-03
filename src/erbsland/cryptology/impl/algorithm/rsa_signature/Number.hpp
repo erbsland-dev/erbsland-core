@@ -4,6 +4,7 @@
 
 #include "../../../../mem/ByteBlock.hpp"
 #include "../../../../mem/ByteSpan.hpp"
+#include "../../../../random/Random_fwd.hpp"
 
 #include <array>
 #include <cstddef>
@@ -40,7 +41,10 @@ public: // factories
     /// Convert a big-endian octet string to a fixed-width value.
     [[nodiscard]] static auto fromBigEndian(mem::ConstByteSpan bytes, std::size_t wordCount) -> Number;
     /// Generate a probable prime with the exact requested width.
-    [[nodiscard]] static auto generatePrime(std::size_t bits) -> Number;
+    /// @param bits The candidate width in bits.
+    /// @param random A retained cryptographically secure generator used for candidates and primality testing.
+    /// @return A probable prime with the requested width.
+    [[nodiscard]] static auto generatePrime(std::size_t bits, random::Random &random) -> Number;
 
 public: // access
     /// Return the active fixed width in 32-bit limbs.
@@ -100,7 +104,9 @@ public: // fixed-schedule secret arithmetic
 
 public: // RSA generation
     /// Apply trial division and bounded Miller-Rabin rounds.
-    [[nodiscard]] auto isProbablePrime() const -> bool;
+    /// @param random A retained cryptographically secure generator used for independent bases.
+    /// @return Whether this candidate passes every primality check.
+    [[nodiscard]] auto isProbablePrime(random::Random &random) const -> bool;
     /// Calculate the inverse of 65537 modulo this even RSA totient factor.
     [[nodiscard]] auto inversePublicExponent() const noexcept -> Number;
     /// Test whether another candidate prime has the required separation.
@@ -127,7 +133,7 @@ private:
     /// Compute R squared modulo this modulus.
     [[nodiscard]] auto montgomeryR2() const noexcept -> Number;
     /// Select one random Miller-Rabin base.
-    [[nodiscard]] auto randomMillerRabinBase() const -> Number;
+    [[nodiscard]] auto randomMillerRabinBase(random::Random &random) const -> Number;
 
 private:
     std::array<uint32_t, cMaximumWords> _words{}; ///< Little-endian base-2^32 limbs.

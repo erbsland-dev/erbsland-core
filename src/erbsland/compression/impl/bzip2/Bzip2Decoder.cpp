@@ -14,6 +14,8 @@
 
 namespace erbsland::compression::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
 Bzip2Decoder::Bzip2Decoder(CodecReader &input, const DecompressionOptions &options, CodecOutput::Write output) :
@@ -29,7 +31,7 @@ void Bzip2Decoder::decode() {
         throw CompressionError{CompressionErrorReason::MalformedData, "Bzip2 block-size level is invalid."_el};
     }
     _blockSize = static_cast<std::size_t>(levelByte - '0') * cBlockSizeStep;
-    const auto workspace = unit::ByteLength::fromSizeT(_blockSize * cWorkspaceFactor + cWorkspaceOverhead);
+    const auto workspace = ByteCount::fromSizeT(_blockSize * cWorkspaceFactor + cWorkspaceOverhead);
     if (workspace > _options.maximumWorkspaceLength()) {
         throw err::OutOfRangeError{"Bzip2 workspace exceeds the configured maximum."_el};
     }
@@ -55,7 +57,7 @@ void Bzip2Decoder::decode() {
 }
 
 void Bzip2Decoder::append(const uint8_t value, const std::size_t count) {
-    _output.append(mem::Byte{value}, unit::ByteLength::fromSizeT(count));
+    _output.append(Byte{value}, ByteCount::fromSizeT(count));
 }
 
 auto Bzip2Decoder::readAlphabet() -> std::vector<uint8_t> {
@@ -129,10 +131,10 @@ auto Bzip2Decoder::readSelectors(const std::size_t groupCount) -> std::vector<ui
 [[nodiscard]] auto Bzip2Decoder::decodeSymbols(
     const std::vector<uint8_t> &alphabet,
     const std::vector<uint8_t> &selectors,
-    const std::vector<Bzip2HuffmanTable> &tables) -> mem::ByteBlock {
+    const std::vector<Bzip2HuffmanTable> &tables) -> ByteBlock {
     auto list = alphabet;
-    auto result = mem::ByteBlockEditor{};
-    result.reserve(unit::ByteLength::fromSizeT(_blockSize));
+    auto result = ByteBlockEditor{};
+    result.reserve(ByteCount::fromSizeT(_blockSize));
     auto selector = std::size_t{};
     auto remaining = std::size_t{};
     auto tableIndex = uint8_t{};
@@ -164,7 +166,7 @@ auto Bzip2Decoder::readSelectors(const std::size_t groupCount) -> std::vector<ui
             if (run > _blockSize - result.length().toSizeT()) {
                 throw CompressionError{CompressionErrorReason::MalformedData, "Bzip2 block exceeds its limit."_el};
             }
-            result.append(mem::Byte{list.front()}, unit::ByteLength::fromSizeT(run));
+            result.append(Byte{list.front()}, ByteCount::fromSizeT(run));
             if (symbol == endSymbol) {
                 break;
             }
@@ -179,14 +181,14 @@ auto Bzip2Decoder::readSelectors(const std::size_t groupCount) -> std::vector<ui
         if (result.length().toSizeT() >= _blockSize) {
             throw CompressionError{CompressionErrorReason::MalformedData, "Bzip2 block exceeds its limit."_el};
         }
-        result.append(mem::Byte{value});
+        result.append(Byte{value});
         symbol = nextSymbol();
     }
     return result;
 }
 
-[[nodiscard]] auto Bzip2Decoder::inverseBwt(const mem::ConstByteSpan lastColumn, const std::size_t originalPointer)
-    -> mem::ByteBlock {
+[[nodiscard]] auto Bzip2Decoder::inverseBwt(const ConstByteSpan lastColumn, const std::size_t originalPointer)
+    -> ByteBlock {
     if (originalPointer >= lastColumn.size()) {
         throw CompressionError{CompressionErrorReason::MalformedData, "Bzip2 BWT pointer is invalid."_el};
     }
@@ -203,8 +205,8 @@ auto Bzip2Decoder::readSelectors(const std::size_t groupCount) -> std::vector<ui
     for (auto index = std::size_t{}; index < lastColumn.size(); ++index) {
         next[positions[lastColumn[index].toUInt8()]++] = index;
     }
-    auto result = mem::ByteBlockEditor{};
-    result.reserve(unit::ByteLength::fromSizeT(lastColumn.size()));
+    auto result = ByteBlockEditor{};
+    result.reserve(ByteCount::fromSizeT(lastColumn.size()));
     auto row = originalPointer;
     for (auto index = std::size_t{}; index < lastColumn.size(); ++index) {
         row = next[row];
@@ -213,7 +215,7 @@ auto Bzip2Decoder::readSelectors(const std::size_t groupCount) -> std::vector<ui
     return result;
 }
 
-void Bzip2Decoder::undoRle1(const mem::ConstByteSpan data, Bzip2Crc &crc) {
+void Bzip2Decoder::undoRle1(const ConstByteSpan data, Bzip2Crc &crc) {
     auto position = std::size_t{};
     auto previous = uint8_t{};
     auto run = std::size_t{};

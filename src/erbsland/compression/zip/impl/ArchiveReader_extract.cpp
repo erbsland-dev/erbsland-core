@@ -4,8 +4,8 @@
 
 #include "ArchiveItem.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 #include <algorithm>
@@ -17,18 +17,19 @@ using namespace text::literals;
 
 void ArchiveReader::extractToDirectory(const path::Path &root, ArchiveExtractionOptions options, Filter filter) const {
     if (!_isOpen) {
-        throw err::LogicError{"The ZIP archive reader is closed."_el};
+        throw err::LogicFailure{"The ZIP archive reader is closed."_el};
     }
     if (root.isEmpty()) {
-        throw err::ParameterError{"The ZIP extraction root must not be empty."_el, "root"_el};
+        throw err::ParameterFailure{"The ZIP extraction root must not be empty."_el, "root"_el};
     }
-    auto totalLength = unit::ByteLength{};
+    auto totalLength = unit::ByteCount{};
     auto selected = std::vector<std::shared_ptr<ArchiveItem>>{};
     for (const auto &itemValue : _items) {
         if (filter && !filter(*itemValue)) {
             continue;
         }
-        if (totalLength.wouldAddSaturate(itemValue->uncompressedLength()) ||
+        if ((totalLength.isInfinite() || itemValue->uncompressedLength().isInfinite() ||
+                itemValue->uncompressedLength() > unit::ByteCount::maximum() - totalLength) ||
             totalLength + itemValue->uncompressedLength() > _options.maximumBulkExtractionLength()) {
             throwArchiveError(
                 ZipErrorReason::ResourceLimit,

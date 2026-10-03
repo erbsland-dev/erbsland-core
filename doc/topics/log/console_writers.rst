@@ -47,7 +47,7 @@ the process exits.
 .. erbsland-demo::
     :source: log/LoggingTopics/ConsoleWriters.cpp
     :exec: log/logging_topics --demo ConsoleWriters
-    :source-sha256: 107fb53b01808690118d2227aec2814b06a1c304eb98918900aa297b27cea9df
+    :sha256: c14c1b5629b66b3729141f7dfafa8d1f04010db1fe003e52cee02dc22ec85693
 
 .. code-block:: cpp
 
@@ -75,11 +75,13 @@ the process exits.
         log->warn("A snow squall is crossing the ridge."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mguild/weather␛[97m] Northern ridge observation opened.
-    ␛[93mWRN [␛[95mguild/weather␛[93m] A snow squall is crossing the ridge.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mINF [␛[95;49mguild/weather␛[97;49m] Northern ridge observation opened.
+        ␛[93;49mWRN [␛[95;49mguild/weather␛[93;49m] A snow squall is crossing the ridge.␛[0m
 
 .. erbsland-demo-end::
 
@@ -87,8 +89,8 @@ When configuration comes from ELCL, construct
 :cpp:class:`LogConfigurationParser <erbsland::log::LogConfigurationParser>` with the same terminal.
 A parser without a terminal rejects a console writer because there would be nowhere to render it.
 
-Create and Pass the Options Object
-==================================
+Console Log Writer Options
+==========================
 
 :cpp:class:`ConsoleLogWriterOptions <erbsland::log::ConsoleLogWriterOptions>` is a value object.
 Construct it with its default constructor, change the settings you need, and pass it as the second argument to
@@ -140,10 +142,9 @@ deeper continuation indent, one permitted wrap, and the default single-character
 
 .. erbsland-demo::
     :source: log/LoggingTopics/ConsoleWriterOptions.cpp
-    :function-blocks: consoleWriterParagraphOptions
-    :function-blocks-sha256: b57e2c2879787e67cfe49bfc1d98a45fb6ed60b7a34217b17f331df98fc7c46b
+    :show: f:consoleWriterParagraphOptions
     :exec: log/logging_topics --demo ConsoleWriterParagraphOptions
-    :source-sha256: ef660e43f122f50934fbedccdbc579172f66041db5c7ca5586989aa3c156d6cb
+    :sha256: 28190afe24ae1a7f263fe242c2450fc1541cf1ef2513f27f3f41b1efcdc24963
 
 .. code-block:: cpp
 
@@ -170,11 +171,13 @@ deeper continuation indent, one permitted wrap, and the default single-character
             "operator's terminal even when the available line width is limited and several route notes follow."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-        ␛[97mThe northern survey report contains a long sequence of observations that should remain
-    ␛[39m        ␛[97mcompact on an operator's terminal even when the available line width is limited␛[39m…
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m    ␛[97;49mThe northern survey report contains a long sequence of observations that should remain
+        ␛[39;49m        ␛[97;49mcompact on an operator's terminal even when the available line width is limited␛[39;49m…␛[0m
 
 .. erbsland-demo-end::
 
@@ -204,10 +207,9 @@ background in the following demo untouched.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/ConsoleWriterOptions.cpp
-    :function-blocks: consoleWriterBaseStyle
-    :function-blocks-sha256: e06f6083853d07d8d22b205da136aff490f07f0d3aa7e93f23a5fb1e608eb010
+    :show: f:consoleWriterBaseStyle
     :exec: log/logging_topics --demo ConsoleWriterBaseStyle
-    :source-sha256: ef660e43f122f50934fbedccdbc579172f66041db5c7ca5586989aa3c156d6cb
+    :sha256: 288acce413cb15cee56f6d3248c193b9afe951f6c678c9a73be672052fc83e98
 
 .. code-block:: cpp
 
@@ -225,10 +227,12 @@ background in the following demo untouched.
         manager.rootStream()->info("The base style supplies the blue background."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97;44mINF The base style supplies the blue background.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;44mINF The base style supplies the blue background.␛[0m
 
 .. erbsland-demo-end::
 
@@ -254,10 +258,9 @@ Only the specified foreground and attribute are changed; any inherited backgroun
 
 .. erbsland-demo::
     :source: log/LoggingTopics/ConsoleWriterOptions.cpp
-    :function-blocks: consoleWriterLevelStyles
-    :function-blocks-sha256: afc29ffb0fcbdcf61f0404183217369f7d311a63b8b7aafda3f92dfde78f250b
+    :show: f:consoleWriterLevelStyles
     :exec: log/logging_topics --demo ConsoleWriterLevelStyles
-    :source-sha256: ef660e43f122f50934fbedccdbc579172f66041db5c7ca5586989aa3c156d6cb
+    :sha256: 26e15fd80cd06b4ecacc132b4868622dd51560cb2ceeb2f3d4a7c0011d14bcc5
 
 .. code-block:: cpp
 
@@ -283,17 +286,19 @@ Only the specified foreground and attribute are changed; any inherited backgroun
         log->error("The emergency beacon did not answer."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[92mINF The expedition registry opened.
-    ␛[1;93mWRN␛[22m ␛[1mThe␛[22m ␛[1mwestern␛[22m ␛[1mtrail␛[22m ␛[1mreport␛[22m ␛[1mis␛[22m ␛[1moverdue.
-    ␛[4;91mERR␛[24m ␛[4mThe␛[24m ␛[4memergency␛[24m ␛[4mbeacon␛[24m ␛[4mdid␛[24m ␛[4mnot␛[24m ␛[4manswer.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[92;49mINF The expedition registry opened.
+        ␛[93;49m␛[1mWRN␛[22m ␛[1mThe␛[22m ␛[1mwestern␛[22m ␛[1mtrail␛[22m ␛[1mreport␛[22m ␛[1mis␛[22m ␛[1moverdue.
+        ␛[91;49m␛[4mERR␛[24m ␛[4mThe␛[24m ␛[4memergency␛[24m ␛[4mbeacon␛[24m ␛[4mdid␛[24m ␛[4mnot␛[24m ␛[4manswer.␛[0m
 
 .. erbsland-demo-end::
 
-Style One Semantic Part Across All Levels
-=========================================
+Semantic Field Styles across Severity Levels
+============================================
 
 The two-argument :cpp:func:`setPartStyle() <erbsland::log::ConsoleLogWriterOptions::setPartStyle>` overload assigns a
 base style to one :cpp:class:`LogLinePart <erbsland::log::LogLinePart>` across every severity.
@@ -312,10 +317,9 @@ foregrounds.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/ConsoleWriterOptions.cpp
-    :function-blocks: consoleWriterPartStyles
-    :function-blocks-sha256: 88b0a382af753e47ac9de948ab68e787aa2699a2ab3968d04630fe2a3ffe3b39
+    :show: f:consoleWriterPartStyles
     :exec: log/logging_topics --demo ConsoleWriterPartStyles
-    :source-sha256: ef660e43f122f50934fbedccdbc579172f66041db5c7ca5586989aa3c156d6cb
+    :sha256: 804c0356bbfda30e7eb6b6b481b920d4bc72226c4d18eaa7ec91340bb03494ad
 
 .. code-block:: cpp
 
@@ -335,15 +339,17 @@ foregrounds.
         manager.createStream("guild/archive"_el)->info("The route ledger was indexed."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[92mINF␛[97m [␛[96mguild/archive␛[97m] ␛[3mThe␛[23m ␛[3mroute␛[23m ␛[3mledger␛[23m ␛[3mwas␛[23m ␛[3mindexed.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[92;49mINF␛[97;49m [␛[96;49mguild/archive␛[97;49m] ␛[3mThe␛[23m ␛[3mroute␛[23m ␛[3mledger␛[23m ␛[3mwas␛[23m ␛[3mindexed.␛[0m
 
 .. erbsland-demo-end::
 
-Refine One Part for One Severity
-================================
+Severity-Specific Field Style Overrides
+=======================================
 
 The three-argument :cpp:func:`setPartStyle() <erbsland::log::ConsoleLogWriterOptions::setPartStyle>` overload adds the
 final and most specific style layer.
@@ -356,10 +362,9 @@ Because this is an overlay, the name style and literal punctuation remain indepe
 
 .. erbsland-demo::
     :source: log/LoggingTopics/ConsoleWriterOptions.cpp
-    :function-blocks: consoleWriterLevelPartStyles
-    :function-blocks-sha256: 8ca6cd02e4ab97b55b15d3f13c50be140c03542abd7831604cf760cdf94fd797
+    :show: f:consoleWriterLevelPartStyles
     :exec: log/logging_topics --demo ConsoleWriterLevelPartStyles
-    :source-sha256: ef660e43f122f50934fbedccdbc579172f66041db5c7ca5586989aa3c156d6cb
+    :sha256: 498bfe748420e93bd61dcd0673936b469f8caea5936a5099e6ebfc9fab572e94
 
 .. code-block:: cpp
 
@@ -382,10 +387,12 @@ Because this is an overlay, the name style and literal punctuation remain indepe
         manager.createStream("guild/dispatch"_el)->error("No guide is available for the eastern pass."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mERR [␛[96mguild/dispatch␛[97m] ␛[1;91mNo␛[22m ␛[1mguide␛[22m ␛[1mis␛[22m ␛[1mavailable␛[22m ␛[1mfor␛[22m ␛[1mthe␛[22m ␛[1meastern␛[22m ␛[1mpass.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mERR [␛[96;49mguild/dispatch␛[97;49m] ␛[91;49m␛[1mNo␛[22m ␛[1mguide␛[22m ␛[1mis␛[22m ␛[1mavailable␛[22m ␛[1mfor␛[22m ␛[1mthe␛[22m ␛[1meastern␛[22m ␛[1mpass.␛[0m
 
 .. erbsland-demo-end::
 

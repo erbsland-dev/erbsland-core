@@ -6,7 +6,8 @@
 #include "RunConfiguration.hpp"
 #include "Scenario.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/List.hpp>
 
 namespace erbsland::profiling {
 

@@ -11,21 +11,19 @@
 
 namespace erbsland::re {
 
+using namespace text;
 using namespace text::literals;
 
-RegExError::RegExError(const ErrorCategory category, text::String title) noexcept :
+RegExError::RegExError(const ErrorCategory category, String title) noexcept :
     RegExError{RegExErrorContext{category, std::move(title)}} {
 }
 
-RegExError::RegExError(const ErrorCategory category, text::String title, const unit::CodeLocation location) noexcept :
+RegExError::RegExError(const ErrorCategory category, String title, const unit::CodeLocation location) noexcept :
     RegExError{RegExErrorContext{category, std::move(title), {}, location}} {
 }
 
 RegExError::RegExError(
-    const ErrorCategory category,
-    text::String title,
-    text::String description,
-    const unit::CodeLocation location) noexcept :
+    const ErrorCategory category, String title, String description, const unit::CodeLocation location) noexcept :
     RegExError{RegExErrorContext{category, std::move(title), std::move(description), location}} {
 }
 
@@ -33,11 +31,11 @@ RegExError::RegExError(RegExErrorContext context) noexcept :
     err::RuntimeError{context.title()}, _context{std::move(context)} {
 }
 
-auto RegExError::toString() const noexcept -> text::String {
+auto RegExError::toString() const noexcept -> String {
     if (description().isEmpty()) {
-        return text::StringFormat{"{}: {}"_el}.build(re::toString(category()), title());
+        return StringFormat{"{}: {}"_el}.build(re::toString(category()), title());
     }
-    return text::StringFormat{"{}: {}. {}"_el}.build(re::toString(category()), title(), description());
+    return StringFormat{"{}: {}. {}"_el}.build(re::toString(category()), title(), description());
 }
 
 auto RegExError::diagnostic() const -> err::DiagnosticConstPtr {

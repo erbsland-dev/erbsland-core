@@ -57,10 +57,9 @@ It also reads an indefinite array and shows that writing it again gives it a def
 
 .. erbsland-demo::
     :source: data/DataFormats/CborExamples.cpp
-    :function-blocks: parseCborBlock
-    :function-blocks-sha256: a1de74090b93d18f169dbe842a13f0a5b3128528c920a652be8a1c3f8f818159
+    :show: f:parseCborBlock
     :exec: data/data_formats --demo ParseCborBlock
-    :source-sha256: 63ad7d16ab3c36c5d50ad02474dbf039e4d4274aa3f120b1d8bb2a5131588e74
+    :sha256: bb577ad0140d5c683af22ccf3ad3531f8ed3b0ff1fe11847db18b3b6e4bb63b4
 
 .. code-block:: cpp
 
@@ -83,13 +82,15 @@ It also reads an indefinite array and shows that writing it again gives it a def
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Work: Lua
-    Array items: 2
-    Rewritten bytes: 3
-    Invalid CBOR item
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWork: Lua
+        Array items: 2
+        Rewritten bytes: 3
+        Invalid CBOR item␛[0m
 
 .. erbsland-demo-end::
 
@@ -109,10 +110,9 @@ It shows how you can construct a nested tree without first creating a CBOR byte 
 
 .. erbsland-demo::
     :source: data/DataFormats/CborExamples.cpp
-    :function-blocks: makeExhibition buildCborValue
-    :function-blocks-sha256: afca94cd5742c2825652dd71f39a7ad966b5ff4eb68a4d688c371231b596d077
+    :show: f:makeExhibition, f:buildCborValue
     :exec: data/data_formats --demo BuildCborValue
-    :source-sha256: 63ad7d16ab3c36c5d50ad02474dbf039e4d4274aa3f120b1d8bb2a5131588e74
+    :sha256: d26b891c90aec126b8717b59218402806644c45b5604497f6dd4144aaa3dcc69
 
 .. code-block:: cpp
 
@@ -132,11 +132,13 @@ It shows how you can construct a nested tree without first creating a CBOR byte 
         el::io::printLine("Works: "_el, exhibition.getOrThrow("obras"_el).itemCount().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Fields: 3
-    Works: 2
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFields: 3
+        Works: 2␛[0m
 
 .. erbsland-demo-end::
 
@@ -157,10 +159,9 @@ The numeric value is unchanged, and ``getSigned()`` can still read it while it f
 
 .. erbsland-demo::
     :source: data/DataFormats/CborExamples.cpp
-    :function-blocks: serializeCborValue
-    :function-blocks-sha256: 128a820ec2eb38222cb4ea0ff693a3c4ed7978f201edd1f81c0cd6908327d32e
+    :show: f:serializeCborValue
     :exec: data/data_formats --demo SerializeCborValue
-    :source-sha256: 63ad7d16ab3c36c5d50ad02474dbf039e4d4274aa3f120b1d8bb2a5131588e74
+    :sha256: df3ad2eb3409de2a7dd619c80faf7172ee933799b921a11fe0c5d3078365ff14
 
 .. code-block:: cpp
 
@@ -175,12 +176,14 @@ The numeric value is unchanged, and ``getSigned()`` can still read it while it f
         el::io::printLine("Positive integer reads as unsigned: "_el, roundTrip.is(CborType::Unsigned));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Encoded bytes: 56
-    Exhibition: Esculturas do Mar
-    Positive integer reads as unsigned: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mEncoded bytes: 56
+        Exhibition: Esculturas do Mar
+        Positive integer reads as unsigned: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -206,10 +209,9 @@ To change a nested child, edit the copy and set it back.
 
 .. erbsland-demo::
     :source: data/DataFormats/CborExamples.cpp
-    :function-blocks: inspectCborValue
-    :function-blocks-sha256: d4c9a700bbfc30dd8ac74b934a62c85bfb521a7199271d2edbf60a4eb9528e3d
+    :show: f:inspectCborValue
     :exec: data/data_formats --demo InspectCborValue
-    :source-sha256: 63ad7d16ab3c36c5d50ad02474dbf039e4d4274aa3f120b1d8bb2a5131588e74
+    :sha256: fad6598dc246daee8ee1db6f3fd0a6ae2816852d9aeba4c85a96c1a659322909
 
 .. code-block:: cpp
 
@@ -227,13 +229,15 @@ To change a nested child, edit the copy and set it back.
         el::io::printLine("Revised works: "_el, revised.getOrThrow("obras"_el).itemCount().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    First work: Maré
-    Missing is null: true
-    Original works: 2
-    Revised works: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFirst work: Maré
+        Missing is null: true
+        Original works: 2
+        Revised works: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -301,10 +305,9 @@ It then writes the date as tag 0 and constructs a new link value from the CID by
 
 .. erbsland-demo::
     :source: data/DataFormats/CborExamples.cpp
-    :function-blocks: readCborTags
-    :function-blocks-sha256: 7ee8bc4f393a6f52e0a696e900b8b07ebb39a3a27eeefa90f8b19043c9e8e8b8
+    :show: f:readCborTags
     :exec: data/data_formats --demo ReadCborTags
-    :source-sha256: 63ad7d16ab3c36c5d50ad02474dbf039e4d4274aa3f120b1d8bb2a5131588e74
+    :sha256: 2364f05af6c820b53bcfb0b1d1b0b5c6bb768dece53c4ee9c02a892dff9e2994
 
 .. code-block:: cpp
 
@@ -327,13 +330,15 @@ It then writes the date as tag 0 and constructs a new link value from the CID by
         el::io::printLine("Link round trip: "_el, rewritten == el::ByteBlock::fromVector(linkWire));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Date/time value: true
-    Written date/time: true
-    CID bytes: 34
-    Link round trip: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDate/time value: true
+        Written date/time: true
+        CID bytes: 34
+        Link round trip: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -356,10 +361,9 @@ validating bytes received under this profile.
 
 .. erbsland-demo::
     :source: data/DataFormats/CborExamples.cpp
-    :function-blocks: useDagCbor
-    :function-blocks-sha256: 29771f6dcd3837c4e7ee4efb970b7e0f7a1425fbbe679dc5a437d0839d98b245
+    :show: f:useDagCbor
     :exec: data/data_formats --demo UseDagCbor
-    :source-sha256: 63ad7d16ab3c36c5d50ad02474dbf039e4d4274aa3f120b1d8bb2a5131588e74
+    :sha256: 4bcd5f05f8e1611457588c3054f1ec25ad12d4ae698d294b68e042d17c445410
 
 .. code-block:: cpp
 
@@ -376,12 +380,14 @@ validating bytes received under this profile.
             "DAG-CBOR accepts: "_el, CborValue::fromByteBlock(longOne, CborParseOptions{}.setDagCbor(true)).has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    DAG-CBOR works: 2
-    Ordinary accepts: true
-    DAG-CBOR accepts: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDAG-CBOR works: 2
+        Ordinary accepts: true
+        DAG-CBOR accepts: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -396,39 +402,40 @@ This demo applies each one to the same exhibition block so you can see what it p
 
 .. erbsland-demo::
     :source: data/DataFormats/CborExamples.cpp
-    :function-blocks: limitCborInput
-    :function-blocks-sha256: 0cbd7443a084dad05374eb9f9c6d4c065d99cca3a44054fad89ac972a1d69111
+    :show: f:limitCborInput
     :exec: data/data_formats --demo LimitCborInput
-    :source-sha256: 63ad7d16ab3c36c5d50ad02474dbf039e4d4274aa3f120b1d8bb2a5131588e74
+    :sha256: d91b78a54ae826aa82aa261bd11f6fc6115f3bb26011cd552d06e5a31074d8e7
 
 .. code-block:: cpp
 
     void limitCborInput() {
         const auto bytes = makeExhibition().toByteBlock();
-        const auto input = CborParseOptions{}.setMaximumInputLength(el::ByteLength{10U});
+        const auto input = CborParseOptions{}.setMaximumInputLength(el::ByteCount{10U});
         const auto nesting = CborParseOptions{}.setMaximumNesting(el::ItemCount{1U});
         const auto values = CborParseOptions{}.setMaximumValueCount(el::ItemCount{3U});
-        const auto strings = CborParseOptions{}.setMaximumStringLength(el::ByteLength{4U});
+        const auto strings = CborParseOptions{}.setMaximumStringLength(el::ByteCount{4U});
         el::io::printLine("Input accepted: "_el, CborValue::fromByteBlock(bytes, input).has_value());
         el::io::printLine("Nesting accepted: "_el, CborValue::fromByteBlock(bytes, nesting).has_value());
         el::io::printLine("Values accepted: "_el, CborValue::fromByteBlock(bytes, values).has_value());
         el::io::printLine("Text accepted: "_el, CborValue::fromByteBlock(bytes, strings).has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Input accepted: false
-    Nesting accepted: false
-    Values accepted: false
-    Text accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInput accepted: false
+        Nesting accepted: false
+        Values accepted: false
+        Text accepted: false␛[0m
 
 .. erbsland-demo-end::
 
 Maximum Input Length
 --------------------
 
-``setMaximumInputLength(ByteLength{...})`` bounds the complete byte block before parsing begins.
+``setMaximumInputLength(ByteCount{...})`` bounds the complete byte block before parsing begins.
 The default is 16 MiB.
 In the demo, a ten-byte limit rejects the whole exhibition block even though its individual strings are small.
 
@@ -450,7 +457,7 @@ end.
 Maximum String Length
 ---------------------
 
-``setMaximumStringLength(ByteLength{...})`` bounds the byte length of each text string, including map keys.
+``setMaximumStringLength(ByteCount{...})`` bounds the byte length of each text string, including map keys.
 The default is 8 MiB.
 It is a per-string limit, rather than a total text budget; the complete block still obeys the input-length limit.
 The demo's four-byte setting rejects longer text in the exhibition.

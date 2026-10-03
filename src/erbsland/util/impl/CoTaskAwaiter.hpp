@@ -5,7 +5,7 @@
 #include "CoTaskAwaiterBase.hpp"
 #include "CoTaskState.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 
 #include <exception>
 #include <memory>
@@ -28,8 +28,8 @@ public:
 
 public:
     /// Consume the completed task result.
+    /// The result must not have been consumed already.
     /// @return The task result.
-    /// @throws err::LogicError If the result was already consumed.
     /// @throws CoTaskCancelled If a parent task was cancelled.
     /// @throws Any exception produced by the task coroutine.
     auto await_resume() -> tValue {
@@ -39,7 +39,7 @@ public:
             std::rethrow_exception(Base::_state->exception);
         }
         if (Base::_state->consumed) {
-            throw err::LogicError{"The CoTask result was already consumed."};
+            throw err::LogicFailure{"The CoTask result was already consumed."};
         }
         Base::_state->consumed = true;
         return std::move(*Base::_state->value);

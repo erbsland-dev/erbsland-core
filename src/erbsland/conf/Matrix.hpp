@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../err/OutOfRangeError.hpp"
+#include "../err/OutOfRangeFailure.hpp"
 #include "../unit/ItemCount.hpp"
 #include "../unit/ItemIndex.hpp"
 
@@ -24,9 +25,8 @@ public:
     /// Create an empty matrix.
     Matrix() = default;
     /// Create a matrix with a given size.
-    /// @param rowCount The number of rows.
-    /// @param columnCount The number of columns.
-    /// @throws err::OutOfRangeError if the matrix exceeds `cMaximumValueCount`.
+    /// @param rowCount The number of rows. The product with `columnCount` must not exceed `cMaximumValueCount`.
+    /// @param columnCount The number of columns. The product with `rowCount` must not exceed `cMaximumValueCount`.
     Matrix(const unit::ItemCount rowCount, const unit::ItemCount columnCount) :
         _rowCount{rowCount},
         _columnCount{columnCount},
@@ -71,33 +71,33 @@ public: // access
         return _values[toIndex(row, column)];
     }
     /// Access a value by row and column and throw on bounds errors.
-    /// @param row The row index.
-    /// @param column The column index.
+    /// @param row The row index. Must identify a row inside the matrix.
+    /// @param column The column index. Must identify a column inside the matrix.
     /// @return The value or a default value if it was not defined.
-    /// @throws err::OutOfRangeError if the row or column is outside the matrix.
+    /// @throws err::OutOfRangeError If the row or column is outside the matrix.
     [[nodiscard]] auto valueOrThrow(const unit::ItemIndex row, const unit::ItemIndex column) const -> const T & {
-        requireIndices(row, column);
+        if (!row.isWithin(_rowCount) || !column.isWithin(_columnCount)) {
+            throw err::OutOfRangeError{"Matrix cell index out of range"};
+        }
         return _values[toIndex(row, column)];
     }
     /// Set a value.
-    /// @param row The row index.
-    /// @param column The column index.
+    /// @param row The row index. Must identify a row inside the matrix.
+    /// @param column The column index. Must identify a column inside the matrix.
     /// @param value The value to set.
-    /// @throws err::OutOfRangeError if the row or column is outside the matrix.
     void setValue(const unit::ItemIndex row, const unit::ItemIndex column, const T &value) {
         requireIndices(row, column);
         _values[toIndex(row, column)] = value;
         updateActualColumnCount(row, column.distanceFromZero() + unit::ItemCount::one());
     }
     /// Set values for a complete row.
-    /// @param row The row index.
+    /// @param row The row index. Must identify a row inside the matrix.
     /// @param values The values to set.
-    /// @throws err::OutOfRangeError if the row is outside the matrix.
     void setRow(const unit::ItemIndex row, const std::vector<T> &values) {
         using namespace text::literals;
         requireRowIndex(row);
         if (values.size() > _columnCount.toSizeT()) {
-            throw err::OutOfRangeError("Matrix column index out of range"_el);
+            throw err::OutOfRangeFailure("Matrix column index out of range"_el);
         }
         for (unit::ItemIndex column = {}; column.toSizeT() < values.size(); ++column) {
             _values[toIndex(row, column)] = values[column.toSizeT()];
@@ -114,7 +114,7 @@ private:
     void requireRowIndex(const unit::ItemIndex row) const {
         using namespace text::literals;
         if (!row.isWithin(_rowCount)) {
-            throw err::OutOfRangeError("Matrix row index out of range"_el);
+            throw err::OutOfRangeFailure("Matrix row index out of range"_el);
         }
     }
     /// Validate a row and column index pair.
@@ -122,7 +122,7 @@ private:
         using namespace text::literals;
         requireRowIndex(row);
         if (!column.isWithin(_columnCount)) {
-            throw err::OutOfRangeError("Matrix column index out of range"_el);
+            throw err::OutOfRangeFailure("Matrix column index out of range"_el);
         }
     }
     /// Track the populated column count of a row.
@@ -137,7 +137,7 @@ private:
         const auto maximumValueCount = static_cast<unit::ItemCount::Value>(cMaximumValueCount);
         if (!rowCount.isFinite() || !columnCount.isFinite() || rowCount.toRawValue() > maximumValueCount ||
             (rowCount.toRawValue() != 0U && columnCount.toRawValue() > maximumValueCount / rowCount.toRawValue())) {
-            throw err::OutOfRangeError("Matrix size exceeds maximum allowed"_el);
+            throw err::OutOfRangeFailure("Matrix size exceeds maximum allowed"_el);
         }
     }
     /// Get the allocation size for row metadata.

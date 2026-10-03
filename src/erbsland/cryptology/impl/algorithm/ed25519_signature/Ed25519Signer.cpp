@@ -4,7 +4,7 @@
 
 #include "Ed25519Signature.hpp"
 
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../mem/ByteBlockEditor.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../unit/ByteIndex.hpp"
@@ -14,13 +14,14 @@
 
 namespace erbsland::cryptology::impl::ed25519_signer {
 
+using namespace mem;
 using namespace text::literals;
 using namespace unit;
 using namespace ed25519_signature;
 
-auto publicKey(const mem::ConstByteSpan seed) -> mem::ByteArray<32U> {
+auto publicKey(const ConstByteSpan seed) -> ByteArray<32U> {
     if (seed.size() != 32U) {
-        throw err::ParameterError{"An Ed25519 private seed must contain exactly 32 octets."_el, "seed"_el};
+        throw err::ParameterFailure{"An Ed25519 private seed must contain exactly 32 octets."_el, "seed"_el};
     }
 
     // RFC 8032 section 5.1.5 steps 1-2: h = SHA-512(seed), then prune the lower half into the secret scalar a.
@@ -38,9 +39,9 @@ auto publicKey(const mem::ConstByteSpan seed) -> mem::ByteArray<32U> {
     return encodePoint(point);
 }
 
-auto sign(const mem::ConstByteSpan seed, const mem::ConstByteSpan message) -> mem::ByteBlock {
+auto sign(const ConstByteSpan seed, const ConstByteSpan message) -> ByteBlock {
     if (seed.size() != 32U) {
-        throw err::ParameterError{"An Ed25519 private seed must contain exactly 32 octets."_el, "seed"_el};
+        throw err::ParameterFailure{"An Ed25519 private seed must contain exactly 32 octets."_el, "seed"_el};
     }
 
     // RFC 8032 section 5.1.6 step 1: h = SHA-512(seed); its lower half yields a and its upper half is prefix.
@@ -88,20 +89,20 @@ auto sign(const mem::ConstByteSpan seed, const mem::ConstByteSpan message) -> me
     const auto responseEraseGuard = SecureEraseGuard{response};
 
     // RFC 8032 section 5.1.6 step 6: return ENC(R) || ENC(S).
-    auto signature = mem::ByteBlockEditor{};
+    auto signature = ByteBlockEditor{};
     signature.append(encodedNoncePoint.span());
     signature.append(response.span());
-    return mem::ByteBlock{signature};
+    return ByteBlock{signature};
 }
 
-auto expandedScalar(const mem::ConstByteSpan digest) -> Scalar {
+auto expandedScalar(const ConstByteSpan digest) -> Scalar {
     auto result = Scalar::fromSpanOrThrow(digest.first(32U));
-    result.set(ByteIndex{0U}, mem::Byte{static_cast<uint8_t>(result.get(ByteIndex{0U}).toUInt8() & 248U)});
-    result.set(ByteIndex{31U}, mem::Byte{static_cast<uint8_t>((result.get(ByteIndex{31U}).toUInt8() & 63U) | 64U)});
+    result.set(ByteIndex{0U}, Byte{static_cast<uint8_t>(result.get(ByteIndex{0U}).toUInt8() & 248U)});
+    result.set(ByteIndex{31U}, Byte{static_cast<uint8_t>((result.get(ByteIndex{31U}).toUInt8() & 63U) | 64U)});
     return result;
 }
 
-auto multiplyBaseSecret(const mem::ConstByteSpan scalar) noexcept -> Point {
+auto multiplyBaseSecret(const ConstByteSpan scalar) noexcept -> Point {
     auto result = identity();
     const auto point = basePoint();
     // RFC 8032 section 5.1.5 notation [a]B: execute one doubling and one addition for every one of 256 scalar bits.
@@ -129,11 +130,11 @@ auto encodePoint(const Point &point) noexcept -> Scalar {
     const auto y = FieldElement::multiply(point.y, inverseZ);
     auto result = y.toBytes();
     const auto sign = static_cast<uint8_t>(x.isNegative() ? 0x80U : 0U);
-    result.set(ByteIndex{31U}, result.get(ByteIndex{31U}) | mem::Byte{sign});
+    result.set(ByteIndex{31U}, result.get(ByteIndex{31U}) | Byte{sign});
     return result;
 }
 
-auto reduceScalar(const mem::ConstByteSpan value) noexcept -> Scalar {
+auto reduceScalar(const ConstByteSpan value) noexcept -> Scalar {
     auto result = Scalar{};
     const auto bitCount = value.size() * 8U;
     // RFC 8032 section 5.1.6 interprets SHA-512 output little-endian modulo L. Fixed bitwise reduction keeps every
@@ -151,7 +152,7 @@ auto addScalars(const Scalar &left, const Scalar &right) noexcept -> Scalar {
     for (auto index = std::size_t{}; index < 32U; ++index) {
         const auto value = static_cast<uint16_t>(result.get(ByteIndex::fromSizeT(index)).toUInt8()) +
             right.get(ByteIndex::fromSizeT(index)).toUInt8() + carry;
-        result.set(ByteIndex::fromSizeT(index), mem::Byte{static_cast<uint8_t>(value)});
+        result.set(ByteIndex::fromSizeT(index), Byte{static_cast<uint8_t>(value)});
         carry = static_cast<uint16_t>(value >> 8U);
     }
     reduceOnce(result);
@@ -169,7 +170,7 @@ auto multiplyScalars(const Scalar &left, const Scalar &right) noexcept -> Scalar
         for (auto index = std::size_t{}; index < 32U; ++index) {
             const auto value = static_cast<uint16_t>(candidate.get(ByteIndex::fromSizeT(index)).toUInt8()) +
                 addend.get(ByteIndex::fromSizeT(index)).toUInt8() + carry;
-            candidate.set(ByteIndex::fromSizeT(index), mem::Byte{static_cast<uint8_t>(value)});
+            candidate.set(ByteIndex::fromSizeT(index), Byte{static_cast<uint8_t>(value)});
             carry = static_cast<uint16_t>(value >> 8U);
         }
         reduceOnce(candidate);
@@ -179,7 +180,7 @@ auto multiplyScalars(const Scalar &left, const Scalar &right) noexcept -> Scalar
             const auto replacement = candidate.get(ByteIndex::fromSizeT(index)).toUInt8();
             result.set(
                 ByteIndex::fromSizeT(index),
-                mem::Byte{static_cast<uint8_t>((current & static_cast<uint8_t>(~mask)) | (replacement & mask))});
+                Byte{static_cast<uint8_t>((current & static_cast<uint8_t>(~mask)) | (replacement & mask))});
         }
         shiftAppendReduce(addend, 0U);
     }
@@ -190,7 +191,7 @@ void shiftAppendReduce(Scalar &value, const uint8_t bit) noexcept {
     auto carry = bit;
     for (auto index = std::size_t{}; index < 32U; ++index) {
         const auto current = value.get(ByteIndex::fromSizeT(index)).toUInt8();
-        value.set(ByteIndex::fromSizeT(index), mem::Byte{static_cast<uint8_t>((current << 1U) | carry)});
+        value.set(ByteIndex::fromSizeT(index), Byte{static_cast<uint8_t>((current << 1U) | carry)});
         carry = static_cast<uint8_t>(current >> 7U);
     }
     reduceOnce(value);
@@ -235,7 +236,7 @@ void reduceOnce(Scalar &value) noexcept {
     for (auto index = std::size_t{}; index < 32U; ++index) {
         const auto current = uint16_t{value.get(ByteIndex::fromSizeT(index)).toUInt8()};
         const auto subtrahend = static_cast<uint16_t>(order[index]) + borrow;
-        difference.set(ByteIndex::fromSizeT(index), mem::Byte{static_cast<uint8_t>(current - subtrahend)});
+        difference.set(ByteIndex::fromSizeT(index), Byte{static_cast<uint8_t>(current - subtrahend)});
         borrow = current < subtrahend ? 1U : 0U;
     }
     const auto useDifferenceMask = static_cast<uint8_t>(0U - static_cast<uint8_t>(borrow ^ 1U));
@@ -244,7 +245,7 @@ void reduceOnce(Scalar &value) noexcept {
         const auto reduced = difference.get(ByteIndex::fromSizeT(index)).toUInt8();
         value.set(
             ByteIndex::fromSizeT(index),
-            mem::Byte{static_cast<uint8_t>(
+            Byte{static_cast<uint8_t>(
                 (original & static_cast<uint8_t>(~useDifferenceMask)) | (reduced & useDifferenceMask))});
     }
 }

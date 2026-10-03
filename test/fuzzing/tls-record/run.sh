@@ -8,7 +8,9 @@ scriptDir="$(cd "$(dirname "$0")" && pwd)"
 projectDir="$(cd "${scriptDir}/../../.." && pwd)"
 buildDir="${ERBSLAND_CORE_FUZZ_BUILD_DIR:-${projectDir}/cmake-build-fuzzing}"
 compiler="${CXX:-/opt/local/bin/clang++-mp-22}"
-corpusDir="${buildDir}/corpus/tls-record"
+outputDir="${projectDir}/fuzzing/tls-record"
+corpusDir="${outputDir}/corpus"
+artifactDir="${outputDir}/artifacts"
 
 if [[ ! -x "${compiler}" ]]; then
     echo "C++ compiler not found: ${compiler}" >&2
@@ -27,9 +29,11 @@ cmake -S "${projectDir}" -B "${buildDir}" -G Ninja \
     -DERBSLAND_CORE_ENABLE_TESTS=OFF
 cmake --build "${buildDir}" --target tls-record-fuzz
 
-mkdir -p "${corpusDir}"
+buildDir="$(cd "${buildDir}" && pwd)"
+mkdir -p "${corpusDir}" "${artifactDir}"
 for source in "${scriptDir}"/corpus/*.hex; do
     destination="${corpusDir}/$(basename "${source}" .hex)"
     xxd -r -p "${source}" "${destination}"
 done
-exec "${buildDir}/test/fuzzing/tls-record/tls-record-fuzz" "${corpusDir}" "$@"
+cd "${outputDir}"
+exec "${buildDir}/test/fuzzing/tls-record/tls-record-fuzz" "${corpusDir}" "-artifact_prefix=${artifactDir}/" "$@"

@@ -5,7 +5,7 @@
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../mem/ByteSpan.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 
 #include <optional>
 
@@ -19,7 +19,7 @@ class TlsRecordStream final {
 public:
     /// Create a record deframer with an aggregate receive-buffer bound.
     /// @param bufferLimit Maximum incomplete TCP bytes retained.
-    explicit TlsRecordStream(unit::ByteLength bufferLimit) noexcept : _bufferLimit{bufferLimit} {}
+    explicit TlsRecordStream(unit::ByteCount bufferLimit) noexcept : _bufferLimit{bufferLimit} {}
 
     // defaults
     ~TlsRecordStream() = default;
@@ -42,13 +42,13 @@ public:
 
 public: // accessors
     /// Get the number of retained incomplete TCP bytes.
-    [[nodiscard]] auto bufferedLength() const noexcept -> unit::ByteLength { return _buffer.length(); }
+    [[nodiscard]] auto bufferedLength() const noexcept -> unit::ByteCount { return _buffer.length(); }
 
 private:
     static constexpr std::size_t cHeaderLength{5U};              ///< TLSPlaintext/TLSCiphertext header size.
     static constexpr std::size_t cMaximumFragmentLength{16640U}; ///< RFC 8446 Section 5.2 ciphertext limit.
 
-    unit::ByteLength _bufferLimit;                               ///< Configured aggregate incomplete input limit.
+    unit::ByteCount _bufferLimit;                                ///< Configured aggregate incomplete input limit.
     mem::ByteBlockEditor _buffer;                                ///< Incremental TCP bytes.
 };
 

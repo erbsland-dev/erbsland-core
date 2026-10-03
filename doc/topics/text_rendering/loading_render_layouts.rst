@@ -18,8 +18,8 @@ You can keep layouts in an editable directory, compile them into the application
 that your application owns.
 This page shows each approach and explains how several loaders can work together.
 
-Names That Stay the Same Across Sources
-=======================================
+Logical Layout Names
+====================
 
 The environment passes a validated logical name such as ``lessons/tempo.txt`` to its loaders.
 Names use lowercase ASCII letters, digits, ``-``, ``_``, ``.``, and ``/``.
@@ -34,8 +34,13 @@ The environment tries the next loader after a miss.
 An actual loading error is reported as :cpp:class:`RenderError <erbsland::text::render::RenderError>` during rendering;
 it is not treated as a miss.
 
-Use Files While Editing Layouts
-===============================
+For a custom loader, prefer ``RenderError`` with category ``Load`` and set the requested name on its
+``RenderErrorContext``.
+Existing specific runtime exceptions such as ``PathError`` may also propagate; the environment wraps them as loading
+errors and preserves the cause.
+
+Loading Layouts with FileSystemLoader
+=====================================
 
 :cpp:class:`FileSystemLoader <erbsland::text::render::FileSystemLoader>` looks below one or more existing, absolute
 directories.
@@ -45,10 +50,9 @@ The following demo uses two directories with the same layout name; the first one
 
 .. erbsland-demo::
     :source: text/RenderLayouts/LoaderExamples.cpp
-    :function-blocks: fileLoader
-    :function-blocks-sha256: 240c25a959f5d5426bde069c1096df2ea63395126a72b85ccdf10ae260a8fabb
+    :show: f:fileLoader
     :exec: text/render_layouts --demo FileLoader
-    :source-sha256: a27ec7b7cd8665f31f15276ca82bc7b4c0901ed49c67d3443348665eb0f59783
+    :sha256: 63365fdaa3109de13a16de1d0a237c3641419d76603f6f937e26219a22482e26
 
 .. code-block:: cpp
 
@@ -64,10 +68,12 @@ The following demo uses two directories with the same layout name; the first one
         el::io::print(environment->render("lesson.txt"_el, el::render::Context{}.set("pattern"_el, "yavaş-hızlı"_el)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    İlk alıştırma: yavaş-hızlı
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mİlk alıştırma: yavaş-hızlı␛[0m
 
 .. erbsland-demo-end::
 
@@ -77,8 +83,8 @@ UTF-8 layout text.
 :cpp:class:`FileSystemLoaderOptions <erbsland::text::render::FileSystemLoaderOptions>` is accepted by the factory;
 it currently has no configurable settings.
 
-Use Layouts Compiled into the Application
-=========================================
+Loading Compiled Layouts with ResourceLoader
+============================================
 
 Compiled layouts are useful when the application ships a stable set of defaults.
 :cpp:class:`ResourceLoader <erbsland::text::render::ResourceLoader>` resolves a name against an exact resource
@@ -101,10 +107,9 @@ The runtime code still asks the environment for the logical name:
 
 .. erbsland-demo::
     :source: text/RenderLayouts/LoaderExamples.cpp
-    :function-blocks: resourceLoader
-    :function-blocks-sha256: 3df427a4ad85a1e6491093291f242e72e5079f93b1b84cb51ad7ffe29da9c074
+    :show: f:resourceLoader
     :exec: text/render_layouts --demo ResourceLoader
-    :source-sha256: a27ec7b7cd8665f31f15276ca82bc7b4c0901ed49c67d3443348665eb0f59783
+    :sha256: 7b14d9ee90060d3346770a84d82860f3ce309d441124f1926ab8dc7b6aad3270
 
 .. code-block:: cpp
 
@@ -115,10 +120,12 @@ The runtime code still asks the environment for the logical name:
             "note.txt"_el, el::render::Context{}.set("pattern"_el, "yavaş-hızlı"_el).set("bpm"_el, 84)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Çalışma: yavaş-hızlı (84 BPM)
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mÇalışma: yavaş-hızlı (84 BPM)␛[0m
 
 .. erbsland-demo-end::
 
@@ -130,7 +137,7 @@ The optional prefix is a normalized relative path with ``/`` separators; it does
 ``render()``.
 For the build-time resource workflow, see :doc:`/topics/resource/compiled_resources`.
 
-Combine Defaults with Local Overrides
+Loader Priorities and Local Overrides
 =====================================
 
 Register more than one loader when a user-editable layout should take precedence over a compiled default.
@@ -140,10 +147,9 @@ If the file exists, it is used; otherwise, the resource loader may provide the l
 
 .. erbsland-demo::
     :source: text/RenderLayouts/LoaderExamples.cpp
-    :function-blocks: layeredLoaders
-    :function-blocks-sha256: baedd4e30ca770d323d0c019269dbe9e931b0a75f7e89a8559dbc45e09df9cca
+    :show: f:layeredLoaders
     :exec: text/render_layouts --demo LayeredLoaders
-    :source-sha256: a27ec7b7cd8665f31f15276ca82bc7b4c0901ed49c67d3443348665eb0f59783
+    :sha256: 4f1a2096cd2a225c4356851b9105787261730f92e4109c2270e0a9c6f6c236ff
 
 .. code-block:: cpp
 
@@ -159,11 +165,13 @@ If the file exists, it is used; otherwise, the resource loader may provide the l
         el::io::print(environment->render("default.txt"_el, context));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Yerel: yavaş-hızlı
-    Varsayılan: yavaş-hızlı
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mYerel: yavaş-hızlı
+        Varsayılan: yavaş-hızlı␛[0m
 
 .. erbsland-demo-end::
 
@@ -172,7 +180,7 @@ This choice is made for every named layout, including :doc:`included layouts <te
 One local partial can therefore override its compiled counterpart without copying the entire layout tree.
 When automatic reload is enabled, the environment checks sources again at render time and picks up changed revisions.
 
-Supply Layouts from Your Own Source
+Implementing a Custom Layout Loader
 ===================================
 
 You can implement :cpp:class:`Loader <erbsland::text::render::Loader>` for layouts held by an application service or
@@ -183,7 +191,7 @@ The class appears with the demo because it is the part you would adapt for your 
 .. erbsland-demo::
     :source: text/RenderLayouts/CustomLoader.cpp
     :exec: text/render_layouts --demo CustomLoader
-    :source-sha256: b81f9712aa7e205f1e9c8f2729b3f00319dcdd34215a14bc4934b6f6591ad31c
+    :sha256: 9855f84e5b9b75007580dd87ce167508597cc8101c7df647fdd4b3507d178412
 
 .. code-block:: cpp
 
@@ -213,10 +221,12 @@ The class appears with the demo because it is the part you would adapt for your 
         el::io::print(environment->render("lesson.txt"_el, el::render::Context{}.set("pattern"_el, "yavaş-hızlı"_el)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Alıştırma: yavaş-hızlı
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAlıştırma: yavaş-hızlı␛[0m
 
 .. erbsland-demo-end::
 

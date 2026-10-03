@@ -10,39 +10,40 @@
 
 namespace erbsland::path {
 
+using namespace text;
 using namespace text::literals;
 using system::PlatformErrorCategory;
 using system::PlatformErrorContextConstPtr;
 
-PathErrorContext::PathErrorContext(text::String title, text::String description) noexcept :
+PathErrorContext::PathErrorContext(String title, String description) noexcept :
     _title{std::move(title)}, _description{std::move(description)} {
 }
 
-auto PathErrorContext::setTitle(text::String title) noexcept -> PathErrorContext & {
+auto PathErrorContext::setTitle(String title) noexcept -> PathErrorContext & {
     _title = std::move(title);
     return *this;
 }
 
-auto PathErrorContext::setDescription(text::String description) noexcept -> PathErrorContext & {
+auto PathErrorContext::setDescription(String description) noexcept -> PathErrorContext & {
     _description = std::move(description);
     return *this;
 }
 
-auto PathErrorContext::help() const noexcept -> text::String {
+auto PathErrorContext::help() const noexcept -> String {
     return !_help.isEmpty() ? _help : categoryHelp();
 }
 
-auto PathErrorContext::setHelp(text::String help) noexcept -> PathErrorContext & {
+auto PathErrorContext::setHelp(String help) noexcept -> PathErrorContext & {
     _help = std::move(help);
     return *this;
 }
 
-auto PathErrorContext::setSourcePath(text::String sourcePath) noexcept -> PathErrorContext & {
+auto PathErrorContext::setSourcePath(String sourcePath) noexcept -> PathErrorContext & {
     _sourcePath = std::move(sourcePath);
     return *this;
 }
 
-auto PathErrorContext::setTargetPath(text::String targetPath) noexcept -> PathErrorContext & {
+auto PathErrorContext::setTargetPath(String targetPath) noexcept -> PathErrorContext & {
     _targetPath = std::move(targetPath);
     return *this;
 }
@@ -52,7 +53,7 @@ auto PathErrorContext::setPlatformContext(PlatformErrorContextConstPtr platformC
     return *this;
 }
 
-auto PathErrorContext::categoryHelp() const noexcept -> text::String {
+auto PathErrorContext::categoryHelp() const noexcept -> String {
     if (_platformContext == nullptr) {
         return {};
     }

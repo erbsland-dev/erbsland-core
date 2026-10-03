@@ -27,6 +27,8 @@ four-byte big-endian payload length + key ID + UTF-8 purpose + payload + 64-byte
 The signature covers every preceding byte.
 The key ID is absent or matches ``[_a-z0-9]{1,64}``; the purpose is one to 255 bytes.
 Parsing rejects malformed lengths, invalid text, trailing data, and unsupported versions or algorithms.
+Malformed records and payloads exceeding the configured limit raise ``ParseError`` in ``fromByteBlockOrThrow()``.
+``fromByteBlock()`` returns an empty value for these failures and for an infinite limit.
 
 Interface
 =========

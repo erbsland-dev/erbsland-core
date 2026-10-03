@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/network/http/HttpFieldType.hpp>
-#include <erbsland/network/http_client/HttpCookieJar.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/HttpCookieJar.hpp>
+#include <erbsland/HttpFieldType.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/http/cookie/HttpCookieJar.hpp>
 #include <erbsland/network/impl/http/cookie/PublicSuffixList.hpp>
-#include <erbsland/network/url/Url.hpp>
-#include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/Url.hpp>
 
 using namespace el::event;
 using namespace el::network;

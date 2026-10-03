@@ -14,7 +14,6 @@
 #include <iterator>
 #include <limits>
 #include <utility>
-#include <vector>
 
 namespace erbsland::conf::impl {
 
@@ -25,7 +24,7 @@ using namespace text::literals;
 template <typename T>
 class InConstraint : public Constraint {
 public:
-    using Values = std::conditional_t<std::is_same_v<T, text::String>, text::StringList, std::vector<T>>;
+    using Values = std::conditional_t<std::is_same_v<T, text::String>, text::StringList, util::List<T>>;
 
     /// Creates a membership constraint from its allowed values.
     /// @tparam Fwd A forwarding reference to the allowed-values collection.

@@ -13,4 +13,6 @@ Worse, code sometimes converts the value back after using the API, causing unnec
 Mechanical Detection
 ====================
 
-The scanner does not currently detect this anti-pattern.
+The scanner does not detect general conversion and copying inefficiencies.
+The narrower :doc:`unnecessary_unit_conversion` and :doc:`unnecessary_type_construction` rules cover known mechanical
+forms.

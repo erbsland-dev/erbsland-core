@@ -7,7 +7,7 @@
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteSpan.hpp"
 #include "../../text/String_fwd.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <cstddef>
 
@@ -43,7 +43,7 @@ public: // tests
 
 public: // accessors
     /// Get the number of bytes.
-    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteLength { return _data.length(); }
+    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteCount { return _data.length(); }
     /// Get the number of bits.
     [[nodiscard]] auto bitLength() const noexcept -> std::size_t { return byteLength().toSizeT() * 8U; }
 

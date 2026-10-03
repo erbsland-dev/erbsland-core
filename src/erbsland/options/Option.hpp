@@ -11,7 +11,8 @@
 #include "OptionValueStorage.hpp"
 
 #include "../text/StringEditor.hpp"
-#include "../unit/ArgumentUnit.hpp"
+#include "../text/StringList.hpp"
+#include "../unit/ArgumentCount.hpp"
 
 #include <initializer_list>
 #include <optional>
@@ -29,7 +30,9 @@ class Option {
 public:
     /// Create an empty option.
     Option() = default;
-    /// Create an option with names.
+    /// Create an option with normalized names.
+    /// @param names The names and aliases to canonicalize. Each must satisfy `isValidOptionName()` or
+    /// `isValidPositionalName()`.
     Option(std::initializer_list<text::String> names);
 
     // defaults
@@ -44,8 +47,9 @@ public:
     /// @return A shared option with no names and the default implicit text type.
     [[nodiscard]] static auto create() -> OptionPtr;
     /// Create a shared option with names.
-    /// @param names The command-line names and lookup aliases for this option.
-    /// @return A shared option whose implicit type is derived from the names.
+    /// @param names The command-line names and lookup aliases. Each must satisfy `isValidOptionName()` or
+    /// `isValidPositionalName()`.
+    /// @return A shared option whose implicit type is derived from the canonical names.
     [[nodiscard]] static auto create(std::initializer_list<text::String> names) -> OptionPtr;
     /// Test if a name is a long command line option name.
     /// @param name The name to classify.
@@ -53,29 +57,31 @@ public:
     [[nodiscard]] static auto isLongName(const text::String &name) noexcept -> bool;
     /// Test if a name is a short command line option name.
     /// @param name The name to classify.
-    /// @return `true` if the name starts with one dash and contains exactly one option character.
+    /// @return `true` if the name starts with one literal dash, but not two; validity is tested separately.
     [[nodiscard]] static auto isShortName(const text::String &name) noexcept -> bool;
     /// Test if a name is a command line option name.
     [[nodiscard]] static auto isOptionName(const text::String &name) noexcept -> bool;
     /// Test if a name is a positional argument name.
     [[nodiscard]] static auto isPositionalName(const text::String &name) noexcept -> bool;
-    /// Test if a name is a valid long command line option name.
+    /// Test if a long name with literal dash prefix is valid after body normalization.
     [[nodiscard]] static auto isValidLongName(const text::String &name) noexcept -> bool;
     /// Test if a name is a valid short command line option name.
     [[nodiscard]] static auto isValidShortName(const text::String &name) noexcept -> bool;
     /// Test if a name is a valid command line option name.
     [[nodiscard]] static auto isValidOptionName(const text::String &name) noexcept -> bool;
-    /// Test if a name is a valid positional argument name.
+    /// Test if a bare name is valid after normalization.
     [[nodiscard]] static auto isValidPositionalName(const text::String &name) noexcept -> bool;
     /// Add a command-line name or lookup alias for this option.
-    /// @param name The name to append. Dashed names are accepted on the command line, dashless names are lookup aliases
-    ///     or positional argument names.
-    void addName(text::String name);
+    /// @param name The name to append. Must satisfy `isValidOptionName()` or `isValidPositionalName()`. Dashed names
+    /// are command-line options; dashless names are lookup aliases or positional argument names.
+    void addName(const text::String &name);
 
 public: // accessors
     /// Get all names for this option.
-    [[nodiscard]] auto names() const noexcept -> const std::vector<text::String> & { return _names; }
-    /// Replace all names for this option.
+    [[nodiscard]] auto names() const noexcept -> const text::StringList & { return _names; }
+    /// Replace all names atomically with validated canonical names.
+    /// @param names Replacement names, or empty to clear them. Each must satisfy `isValidOptionName()` or
+    /// `isValidPositionalName()`.
     void setNames(std::initializer_list<text::String> names);
     /// Test if this option is disabled.
     [[nodiscard]] auto isDisabled() const noexcept -> bool;
@@ -105,13 +111,13 @@ public: // accessors
     /// @param help The replacement help metadata.
     void setHelp(OptionHelp help) { _help = std::move(help); }
     /// Set the help title for this option.
-    /// @param title Short title used when no description is available.
+    /// @param title Brief text shown in overview output.
     void setHelpTitle(text::String title) { _help.setTitle(std::move(title)); }
     /// Set the help description for this option.
-    /// @param description User-facing description shown next to this option in help output.
+    /// @param description Detailed description shown on the option help page.
     void setHelpDescription(text::String description) { _help.setDescription(std::move(description)); }
     /// Set the help epilog for this option.
-    /// @param epilog Optional trailing text for renderers that support option-level epilogs.
+    /// @param epilog Trailing text shown after the option detail page.
     void setHelpEpilog(text::String epilog) { _help.setEpilog(std::move(epilog)); }
     /// Set the detailed-help example for this option.
     /// @param example Short usage example for detailed help.
@@ -162,7 +168,7 @@ private:
     void updateImplicitTypeFromNames() noexcept;
 
 private:
-    std::vector<text::String> _names;                         ///< The names for this option.
+    text::StringList _names;                                  ///< The names for this option.
     OptionHelp _help;                                         ///< The help text for the option.
     text::String _valueName;                                  ///< The custom value name for help output.
     OptionType _type;                                         ///< The value type.

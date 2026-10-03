@@ -3,17 +3,19 @@
 
 #include "PathTestHelper.hpp"
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathCreateMode.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/path/PathReadDataOptions.hpp>
-#include <erbsland/path/SymlinkMode.hpp>
-#include <erbsland/stream/TextOutputStream.hpp>
-#include <erbsland/text/EncodingError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/EncodingError.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathCreateMode.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathInfoParts.hpp>
+#include <erbsland/PathReadDataOptions.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/SymlinkMode.hpp>
+#include <erbsland/TextOutputStream.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>
@@ -169,6 +171,22 @@ public:
         REQUIRE_FALSE(content.readText(options).has_value());
     }
 
+    void testReadUsesOpenedFileSizeInsteadOfCachedPathSize() {
+        const auto fixture = Fixture{"cached-size"};
+        const auto path = pathFromStd(fixture.path() / "changing.bin");
+        path.content().writeTextOrThrow("a longer previous value"_el);
+        const auto info =
+            path.info(el::path::PathInfoParts{el::path::PathInfoPart::Type, el::path::PathInfoPart::Size});
+        REQUIRE_GREATER(info.fileSize(), el::unit::ByteCount{3U});
+        path.content().writeTextOrThrow(
+            "new"_el, PathWriteTextOptions{}.setCreationMode(PathCreateMode::CreateOrOverwrite));
+        REQUIRE_EQUAL(
+            path.content().readTextOrThrow(PathReadTextOptions{}.setMaximumByteLength(el::unit::ByteCount{3U})),
+            "new"_el);
+        const auto stream = path.content().openByteInputStream();
+        REQUIRE_EQUAL(stream->initialFileSize(), el::unit::ByteCount{3U});
+    }
+
     void testReadLimits() {
         const auto fixture = Fixture{"limits"};
         const auto path = pathFromStd(fixture.path() / "limits.txt");
@@ -176,11 +194,11 @@ public:
         content.writeTextOrThrow("abc"_el);
 
         auto dataOptions = PathReadDataOptions{};
-        dataOptions.setMaximumByteLength(el::unit::ByteLength{2U});
+        dataOptions.setMaximumByteLength(el::unit::ByteCount{2U});
         REQUIRE_THROWS_AS(PathError, content.readDataOrThrow(dataOptions));
         REQUIRE_FALSE(content.readData(dataOptions).has_value());
 
-        auto options = PathReadTextOptions{el::unit::CpLength{2U}};
+        auto options = PathReadTextOptions{el::unit::CpCount{2U}};
         REQUIRE_THROWS_AS(PathError, content.readTextOrThrow(options));
         REQUIRE_FALSE(content.readText(options).has_value());
     }

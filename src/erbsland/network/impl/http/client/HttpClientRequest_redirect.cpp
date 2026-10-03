@@ -13,8 +13,9 @@
 #include "../codec/Http1TransactionOptions.hpp"
 #include "../cookie/PublicSuffixList.hpp"
 
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../http/HttpFieldType.hpp"
@@ -40,6 +41,9 @@
 #include <vector>
 
 namespace erbsland::network::impl {
+
+using namespace err;
+using namespace text;
 using namespace text::literals;
 
 auto HttpClientRequest::handleRedirect(const Http1DecodeEvent &event, const bool hasBody) -> bool {
@@ -67,7 +71,7 @@ auto HttpClientRequest::handleRedirect(const Http1DecodeEvent &event, const bool
         discardBody = true;
     }
     auto constraint = HttpClientRedirectConstraint::None;
-    const auto canonical = target.isValid() ? canonicalRequestUrl(target) : text::String{};
+    const auto canonical = target.isValid() ? canonicalRequestUrl(target) : String{};
     if (!target.isValid() || (target.scheme() != UrlScheme::Http && target.scheme() != UrlScheme::Https)) {
         constraint = HttpClientRedirectConstraint::InvalidTarget;
     } else if (_redirectCount >= _redirectOptions.maximumRedirects()) {
@@ -171,7 +175,7 @@ auto HttpClientRequest::handleRedirect(const Http1DecodeEvent &event, const bool
     }
     _hopMethod = std::move(nextMethod);
     _effectiveUrl = std::move(target);
-    _redirectHistory.emplace_back(canonical);
+    _redirectHistory.append(canonical);
     ++_redirectCount;
     _followingRedirect = true;
     if (hasBody) {
@@ -193,7 +197,7 @@ void HttpClientRequest::startRedirectHop() {
     start();
 }
 
-auto HttpClientRequest::canonicalRequestUrl(const Url &url) -> text::String {
+auto HttpClientRequest::canonicalRequestUrl(const Url &url) -> String {
     auto options = UrlFormatOptions{};
     options.setIncludeFragment(false);
     return url.toString(options);
@@ -276,7 +280,7 @@ void HttpClientRequest::fail(NetworkErrorContext context) {
     if (_onError) {
         try {
             _onError(std::static_pointer_cast<HttpClientRequest>(shared_from_this()), context);
-        } catch (...) {}
+        } catch (const RuntimeError &) {}
     }
 }
 
@@ -293,7 +297,7 @@ void HttpClientRequest::finishFinal() {
     if (_onFinal) {
         try {
             _onFinal();
-        } catch (...) {}
+        } catch (const RuntimeError &) {}
     }
     if (const auto session = _session.lock()) {
         session->requestFinalized(std::static_pointer_cast<HttpClientRequest>(shared_from_this()));
@@ -304,16 +308,16 @@ void HttpClientRequest::finishFinal() {
 
 void HttpClientRequest::verifyPrepared() const {
     if (_submitted || _state != NetworkSourceState::Inactive) {
-        throw err::LogicError{"An HTTP client request can only be prepared before submission."_el};
+        throw LogicFailure{"An HTTP client request can only be prepared before submission."_el};
     }
 }
 
 void HttpClientRequest::validateSubmission() const {
     if (!_url._data || _url._data->hasUserInfo) {
-        throw err::ParameterError{"HTTP client URL user-info is not supported."_el, "url"_el};
+        throw ParameterFailure{"HTTP client URL user-info is not supported."_el, "url"_el};
     }
     if (_fixedBody.length() > _options.maximumBodyLength()) {
-        throw err::ParameterError{"The fixed HTTP request body exceeds the configured limit."_el, "body"_el};
+        throw ParameterFailure{"The fixed HTTP request body exceeds the configured limit."_el, "body"_el};
     }
     const auto validateFields = [this](const HttpHeaders &headers) -> void {
         for (const auto &field : headers.fields()) {
@@ -321,11 +325,11 @@ void HttpClientRequest::validateSubmission() const {
             if (type == HttpFieldType::Host || type == HttpFieldType::ContentLength ||
                 type == HttpFieldType::TransferEncoding || type == HttpFieldType::Expect ||
                 type == HttpFieldType::Upgrade) {
-                throw err::ParameterError{
+                throw ParameterFailure{
                     "Host, framing, Expect, and Upgrade fields are controlled by the HTTP client."_el, "headers"_el};
             }
             if (_options.automaticCookiesEnabled() && type == HttpFieldType::Cookie) {
-                throw err::ParameterError{
+                throw ParameterFailure{
                     "Cookie fields are controlled by the enabled HTTP client cookie jar."_el, "headers"_el};
             }
         }
@@ -333,13 +337,13 @@ void HttpClientRequest::validateSubmission() const {
     validateFields(_defaultHeaders);
     validateFields(_headers);
     if (_method.standardType() == HttpMethodType::Connect) {
-        throw err::ParameterError{"CONNECT is not supported by the HTTP/1.1 client."_el, "method"_el};
+        throw ParameterFailure{"CONNECT is not supported by the HTTP/1.1 client."_el, "method"_el};
     }
     if (_responseHandler.kind() != HttpClientResponseHandler::Kind::Head &&
         (_responseHandler.options().maximumBodyLength().isZero() ||
             _responseHandler.options().maximumBodyLength().isInfinite() ||
             _responseHandler.options().maximumBodyLength() > _options.maximumBodyLength())) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "Automatic HTTP response aggregation must use a positive finite limit within the session bound."_el,
             "responseOptions"_el};
     }
@@ -365,18 +369,18 @@ auto HttpClientRequest::buildHeaders() const -> HttpHeaders {
         }
     }
     if (_bodyMode == BodyMode::Fixed) {
-        result.setField(HttpFieldType::ContentLength, text::String::fromInteger(_fixedBody.length().toRawValue()));
+        result.setField(HttpFieldType::ContentLength, String::fromInteger(_fixedBody.length().toRawValue()));
     } else if (_bodyMode == BodyMode::Streaming) {
         result.setField(HttpFieldType::TransferEncoding, "chunked"_el);
     }
     return result;
 }
 
-auto HttpClientRequest::requestTarget() const -> text::String {
+auto HttpClientRequest::requestTarget() const -> String {
     return UrlWriter{*_effectiveUrl._data, {}}.writeRequestTarget();
 }
 
-auto HttpClientRequest::hostFieldValue() const -> text::String {
+auto HttpClientRequest::hostFieldValue() const -> String {
     return UrlWriter{*_effectiveUrl._data, {}}.writeHostField();
 }
 

@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TlsClientProtocol.hpp"
 
+#include "../TlsExtensionRules.hpp"
 #include "../TlsProtocolError.hpp"
 #include "../TlsWireReader.hpp"
 #include "../TlsWireWriter.hpp"
 
 #include "../../../../cryptology/tls_record/TlsRecordContentType.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../mem/Byte.hpp"
 #include "../../../../mem/ByteArray.hpp"
 #include "../../../../text/Literals.hpp"
-#include "../../../../unit/ByteLength.hpp"
+#include "../../../../unit/ByteCount.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -19,9 +21,10 @@
 
 namespace erbsland::network::impl {
 
+using namespace mem;
 using namespace text::literals;
 
-auto TlsClientProtocol::sendApplication(const mem::ConstByteSpan data) -> NetworkSendStatus {
+auto TlsClientProtocol::sendApplication(const ConstByteSpan data) -> NetworkSendStatus {
     if (_state != TlsClientProtocolState::Established ||
         (hasCheckpoint() && checkpoint() != TlsClientProtocolCheckpoint::HandshakeCompleted) || _localCloseNotify ||
         _peerCloseNotify) {
@@ -31,7 +34,7 @@ auto TlsClientProtocol::sendApplication(const mem::ConstByteSpan data) -> Networ
         return NetworkSendStatus::Accepted;
     }
     if (data.size() > (std::size_t{1U} << 14U)) {
-        throw err::ParameterError{"One TLS application send cannot exceed 2^14 bytes."_el, "data"_el};
+        throw err::ParameterFailure{"One TLS application send cannot exceed 2^14 bytes."_el, "data"_el};
     }
 
     // RFC 8446 sections 5.2 and 5.5: reserve capacity atomically for a possible KeyUpdate plus the complete no-padding
@@ -66,7 +69,7 @@ auto TlsClientProtocol::sendApplication(const mem::ConstByteSpan data) -> Networ
     return NetworkSendStatus::Accepted;
 }
 
-void TlsClientProtocol::processPostHandshake(const mem::ByteBlock &message) {
+void TlsClientProtocol::processPostHandshake(const ByteBlock &message) {
     const auto type = message.getOrThrow(unit::ByteIndex::zero()).toUInt8();
     if (type == 4U) {
         // RFC 8446 section 4.6.1: parse NewSessionTicket strictly, but discard it because PSK resumption is deferred.
@@ -82,9 +85,8 @@ void TlsClientProtocol::processPostHandshake(const mem::ByteBlock &message) {
         reader.requireEnd();
         forEachExtension(extensionBytes, [&](const ExtensionView &extension) -> void {
             if (extension.type != 42U) {
-                throw TlsProtocolError{
-                    TlsAlertDescription::UnsupportedExtension,
-                    "NewSessionTicket contains an unsupported extension."_el};
+                tls_extension_rules::requireIgnorableSessionTicket(extension.type);
+                return;
             }
             auto extensionReader = TlsWireReader{extension.data};
             [[maybe_unused]] const auto maximumEarlyDataSize = extensionReader.readU32();
@@ -144,7 +146,7 @@ void TlsClientProtocol::close() {
 void TlsClientProtocol::queueAlert(const TlsAlertDescription description) noexcept {
     try {
         const auto level = description == TlsAlertDescription::CloseNotify ? uint8_t{1U} : uint8_t{2U};
-        const auto content = mem::ByteArray<2U>{mem::Byte{level}, mem::Byte{static_cast<uint8_t>(description)}};
+        const auto content = ByteArray<2U>{Byte{level}, Byte{static_cast<uint8_t>(description)}};
 
         if (!_encryptor.isEmpty()) {
             // RFC 8446 section 6: alerts are exactly one authenticated alert record under the current write keys.
@@ -169,7 +171,7 @@ void TlsClientProtocol::queueAlert(const TlsAlertDescription description) noexce
         if (queueTransport(record.finish()) && description == TlsAlertDescription::CloseNotify) {
             _localCloseNotify = true;
         }
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         // Alert transmission is best effort on a terminal or closing path; no exception may mask the original failure.
     }
 }
@@ -188,6 +190,8 @@ void TlsClientProtocol::fail(const TlsAlertDescription alert, text::String diagn
 }
 
 void TlsClientProtocol::eraseSecurityState() noexcept {
+    _pendingSignature.reset();
+    _pendingCertificateValidation.reset();
     // Keep every terminal secret release visible in protocol ownership order: ECDHE, schedule, transcript-dependent
     // state, active record generations, then authenticated plaintext queued for the application.
     _privateKey.secureErase();

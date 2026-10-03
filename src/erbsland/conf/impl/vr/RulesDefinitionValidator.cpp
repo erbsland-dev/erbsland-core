@@ -23,6 +23,7 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 RulesDefinitionValidator::RulesDefinitionValidator(RulePtr root) : _root{std::move(root)} {
@@ -183,8 +184,8 @@ void RulesDefinitionValidator::testValueList(const RulePtr &rule) {
             }
         } else if (!entryRule->type().isScalar()) {
             throwValidationError(
-                text::StringFormat{"Unexpected 'vr_entry' node-rules definition type for a value list. "
-                                   "Expected a scalar value type, but got {} type"_el}
+                StringFormat{"Unexpected 'vr_entry' node-rules definition type for a value list. "
+                             "Expected a scalar value type, but got {} type"_el}
                     .build(entryRule->type().expectedValueTypeText()));
         } else {
             testVrEntryCommonConstraints(entryRule);
@@ -211,7 +212,7 @@ void RulesDefinitionValidator::testNoOtherSubsectionInListDefinitions(const Rule
     for (const auto &child : rule->childrenImpl()) {
         if (child->ruleName() != Name::vrName(Name::VR::ReservedEntry)) {
             throwValidationError(
-                text::StringFormat{"Unexpected sub-node-rules definition in '{}' rule: only 'vr_entry' is permitted"_el}
+                StringFormat{"Unexpected sub-node-rules definition in '{}' rule: only 'vr_entry' is permitted"_el}
                     .build(rule->type().toText()),
                 child->namePath(),
                 child->location());
@@ -226,7 +227,7 @@ void RulesDefinitionValidator::testDefaultsAndOptionality(const RulePtr &rule) {
     if (rule->hasDefault()) {
         if (!rule->type().matchesValueType(rule->defaultValue()->type())) {
             throwValidationError(
-                text::StringFormat{
+                StringFormat{
                     "The default value of a node-rules definition must match its type. Expected {}, but got {}"_el}
                     .build(
                         rule->type().expectedValueTypeText(), rule->defaultValue()->type().toValueDescription(true)));
@@ -240,8 +241,8 @@ void RulesDefinitionValidator::testSecretMarkerType(const RulePtr &rule) {
     }
     if (!rule->type().isScalar()) {
         throwValidationError(
-            text::StringFormat{"The 'is_secret' marker can only be used for scalar value types. Found {} type"_el}
-                .build(rule->type().toText()));
+            StringFormat{"The 'is_secret' marker can only be used for scalar value types. Found {} type"_el}.build(
+                rule->type().toText()));
     }
 }
 

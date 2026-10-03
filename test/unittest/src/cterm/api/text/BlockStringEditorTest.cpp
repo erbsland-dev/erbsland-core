@@ -3,7 +3,7 @@
 
 #include "../../support/TestHelper.hpp"
 
-#include <erbsland/text/U8EncodingError.hpp>
+#include <erbsland/U8EncodingError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>
@@ -40,7 +40,7 @@ public:
         try {
             static_cast<void>(BlockStringEditor{}.at(BlockIndex{0U}));
             REQUIRE(false);
-        } catch (const erbsland::err::OutOfRangeError &error) {
+        } catch (const erbsland::err::OutOfRangeFailure &error) {
             REQUIRE_EQUAL(error.toString(), "BlockStringEditor index out of range."_el);
         }
     }
@@ -89,7 +89,7 @@ public:
         REQUIRE_EQUAL(cropped[BlockIndex{0}], U'2');
         REQUIRE_EQUAL(cropped[BlockIndex{2}], U'4');
         REQUIRE(cropped[BlockIndex{3}].isEmpty());
-        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, cropped.at(BlockIndex{3}));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeFailure, cropped.at(BlockIndex{3}));
     }
 
     void testMutableIndexedAccessIgnoresOutOfBounds() {

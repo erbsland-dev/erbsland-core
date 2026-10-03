@@ -8,6 +8,7 @@
 #include "../ByteWriter.hpp"
 
 #include "../../err/OutOfRangeError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
 #include "../../math/SignedMagnitude.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringEncoder.hpp"
@@ -17,6 +18,7 @@
 
 namespace erbsland::mem::impl {
 
+using namespace err;
 using namespace text;
 using namespace text::literals;
 using namespace unit;
@@ -44,14 +46,14 @@ auto ByteWriterTools::rawValueOrThrow(
     const bool isNegative, const uint64_t magnitude, const ByteIntegerFormat format) const -> uint64_t {
     if (!format.isSigned()) {
         if (isNegative) {
-            throw err::OutOfRangeError("A negative integer cannot use an unsigned wire format"_el);
+            throw OutOfRangeError("A negative integer cannot use an unsigned wire format"_el);
         }
         if (!format.isVariableLength()) {
             const auto bitCount = format.byteCount().toSizeT() * 8U;
             const auto maximum =
                 bitCount == 64U ? std::numeric_limits<uint64_t>::max() : (uint64_t{1U} << bitCount) - 1U;
             if (magnitude > maximum) {
-                throw err::OutOfRangeError("Integer does not fit the unsigned wire format"_el);
+                throw OutOfRangeError("Integer does not fit the unsigned wire format"_el);
             }
         }
         return magnitude;
@@ -62,7 +64,7 @@ auto ByteWriterTools::rawValueOrThrow(
     const auto minimum = bitCount == 64U ? std::numeric_limits<int64_t>::min() : -(int64_t{1U} << (bitCount - 1U));
     const auto maximum = bitCount == 64U ? std::numeric_limits<int64_t>::max() : (int64_t{1U} << (bitCount - 1U)) - 1;
     if (value.wouldSaturate(minimum, maximum)) {
-        throw err::OutOfRangeError("Integer does not fit the signed wire format"_el);
+        throw OutOfRangeError("Integer does not fit the signed wire format"_el);
     }
     if (format.isVariableLength()) {
         return isNegative ? magnitude * 2U - 1U : magnitude * 2U;
@@ -70,7 +72,7 @@ auto ByteWriterTools::rawValueOrThrow(
     return isNegative ? uint64_t{0U} - magnitude : magnitude;
 }
 
-void ByteWriterTools::encodeStaticInteger(const uint64_t value, const ByteLength byteCount) const {
+void ByteWriterTools::encodeStaticInteger(const uint64_t value, const ByteCount byteCount) const {
     ByteArray<8> bytes;
     switch (byteCount.toSizeT()) {
     case 1U:
@@ -90,18 +92,21 @@ void ByteWriterTools::encodeStaticInteger(const uint64_t value, const ByteLength
     case 6U:
     case 7U:
         if (_writer.endianness() == Endianness::Big) {
-            for (auto byteIndex = std::size_t{}; byteIndex < byteCount.toSizeT(); ++byteIndex) {
-                const auto shift = (byteCount.toSizeT() - byteIndex - 1U) * 8U;
-                bytes.set(ByteIndex{byteIndex}, Byte{static_cast<uint8_t>(value >> shift)});
-            }
+            byteCount.forEach([&](const ByteIndex byteIndex) -> void {
+                const auto shift =
+                    ((byteCount.uncheckedSubtracted(byteIndex.distanceFromZero()).uncheckedSubtracted(ByteCount::one()))
+                            .toSizeT()) *
+                    8U;
+                bytes.set(byteIndex, Byte{static_cast<uint8_t>(value >> shift)});
+            });
         } else {
-            for (auto byteIndex = std::size_t{}; byteIndex < byteCount.toSizeT(); ++byteIndex) {
-                bytes.set(ByteIndex{byteIndex}, Byte{static_cast<uint8_t>(value >> (byteIndex * 8U))});
-            }
+            byteCount.forEach([&](const ByteIndex byteIndex) -> void {
+                bytes.set(byteIndex, Byte{static_cast<uint8_t>(value >> (byteIndex.toSizeT() * 8U))});
+            });
         }
         break;
     default:
-        throw err::OutOfRangeError("Invalid static integer byte width"_el);
+        throw OutOfRangeFailure("Invalid static integer byte width"_el);
     }
     _writer.writeBytes(bytes.span().subspan(0U, byteCount.toSizeT()));
 }
@@ -153,13 +158,13 @@ void ByteWriterTools::encodeBase128Integer(const uint64_t value) const {
 auto ByteWriterTools::makeTextFrame(const String &text, const ByteTextOptions &options, const bool strict)
     -> ByteBlock {
     if (options.format() == ByteTextFormat::PaddedField && !options.length().isFinite()) {
-        throw err::OutOfRangeError("A padded text field requires a finite byte length"_el);
+        throw OutOfRangeFailure("A padded text field requires a finite byte length"_el);
     }
     const auto textTools = ByteTextTools{options};
     const auto unitSize = textTools.unitSize();
     const auto encodedMark = textTools.encodedEndMark();
     const auto encodePrefix = [&](const std::size_t characterCount) -> ByteBlock {
-        return StringEncoder{text.slice(StringSide::Front, CpLength::fromSizeT(characterCount))}.encode(
+        return StringEncoder{text.slice(StringSide::Front, CpCount::fromSizeT(characterCount))}.encode(
             options.encoding(), StringBomMode::Reject);
     };
     const auto buildFrame = [&](const ByteBlock &payload) -> ByteBlock {
@@ -182,7 +187,7 @@ auto ByteWriterTools::makeTextFrame(const String &text, const ByteTextOptions &o
     auto payload = encodePrefix(characterCount);
     if (!fits(payload)) {
         if (strict) {
-            throw err::OutOfRangeError(
+            throw OutOfRangeError(
                 options.format() == ByteTextFormat::PaddedField
                     ? "Encoded text exceeds the padded field length"_el
                     : "Encoded text exceeds the configured maximum length"_el);
@@ -199,7 +204,7 @@ auto ByteWriterTools::makeTextFrame(const String &text, const ByteTextOptions &o
         }
         payload = encodePrefix(lower);
         if (!fits(payload)) {
-            throw err::OutOfRangeError("Text framing does not fit the padded field length"_el);
+            throw OutOfRangeError("Text framing does not fit the padded field length"_el);
         }
     }
 

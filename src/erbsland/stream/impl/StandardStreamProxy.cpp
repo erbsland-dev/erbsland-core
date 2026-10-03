@@ -6,15 +6,17 @@
 
 namespace erbsland::stream::impl {
 
+using namespace text;
+
 StandardStreamProxy::StandardStreamProxy(const StandardStreamSlot slot) : _slot{slot} {
 }
 
-auto StandardStreamProxy::encoding() const noexcept -> text::StringEncoding {
-    return text::StringEncoding::Utf8;
+auto StandardStreamProxy::encoding() const noexcept -> StringEncoding {
+    return StringEncoding::Utf8;
 }
 
-auto StandardStreamProxy::effectiveEncoding() const noexcept -> text::StringEncoding {
-    return text::StringEncoding::Utf8;
+auto StandardStreamProxy::effectiveEncoding() const noexcept -> StringEncoding {
+    return StringEncoding::Utf8;
 }
 
 auto StandardStreamProxy::outputSettings() const noexcept -> const OutputStreamSettings & {
@@ -44,11 +46,11 @@ auto StandardStreamProxy::close() -> StreamCloseStatus {
 void StandardStreamProxy::abort() noexcept {
 }
 
-auto StandardStreamProxy::write(const text::Char character) -> StreamWriteStatus {
+auto StandardStreamProxy::write(const Char character) -> StreamWriteStatus {
     return target()->write(character);
 }
 
-auto StandardStreamProxy::write(const text::String &text) -> StreamWriteStatus {
+auto StandardStreamProxy::write(const String &text) -> StreamWriteStatus {
     return target()->write(text);
 }
 
@@ -56,7 +58,7 @@ auto StandardStreamProxy::writeLine() -> StreamWriteStatus {
     return target()->writeLine();
 }
 
-auto StandardStreamProxy::writeLine(const text::String &text) -> StreamWriteStatus {
+auto StandardStreamProxy::writeLine(const String &text) -> StreamWriteStatus {
     return target()->writeLine(text);
 }
 

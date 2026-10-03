@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
+#include <erbsland/ApplicationPartIdentifier.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 

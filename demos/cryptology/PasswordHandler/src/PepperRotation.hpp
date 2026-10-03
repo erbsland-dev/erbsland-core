@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/core/MakeOneNamespace.hpp>
-#include <erbsland/cryptology/PasswordHasher.hpp>
-#include <erbsland/cryptology/PasswordHashKey.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/PasswordHasher.hpp>
+#include <erbsland/PasswordHashKey.hpp>
 
 namespace demo {
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "SecureRandom.hpp"
 
-#include "RandomError.hpp"
+#include "RandomFailure.hpp"
 
 #include "../system/PlatformError.hpp"
 
@@ -54,7 +54,7 @@ void SecureRandom::fillBytes(const std::span<std::byte> destination) {
     try {
         _entropySource->fillBytes(destination);
     } catch (const system::PlatformError &) {
-        throw RandomError{"System entropy source failed"_el, std::current_exception()};
+        throw RandomFailure{"System entropy source failed"_el, std::current_exception()};
     }
 }
 

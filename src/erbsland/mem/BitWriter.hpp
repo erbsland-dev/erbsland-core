@@ -77,16 +77,19 @@ public: // write
     /// Reserve storage for at least the requested number of bytes.
     auto reserveBytes(std::size_t byteCapacity) -> BitWriter &;
     /// Write the requested low-order bits and advance.
-    /// @throws err::OutOfRangeError If `bitCount` exceeds 64 or the position overflows.
+    /// @param bitCount The number of low-order bits to write. Must be at most 64 and must not overflow the bit
+    /// position.
+    /// @param value The source value whose low-order bits are written.
     auto writeBits(uint64_t value, std::size_t bitCount) -> BitWriter &;
     /// Write one bit and advance.
     auto writeBool(bool value) -> BitWriter &;
     /// Write eight consecutive bits and advance.
     auto writeByte(Byte value) -> BitWriter &;
     /// Write a byte-aligned field without changing the selected bit order.
-    /// @param bytes Bytes to overwrite or append at the current position; aliased input is supported.
+    /// The current bit position must be byte-aligned.
+    /// @param bytes Bytes to overwrite or append. Aliased input is supported; writing these bytes must not overflow the
+    /// bit position.
     /// @return This writer.
-    /// @throws err::OutOfRangeError If unaligned or the bit position would overflow.
     auto writeBytes(ConstByteSpan bytes) -> BitWriter &;
     /// Return the physical bytes containing all written bits.
     [[nodiscard]] auto toByteBlock() const noexcept -> ByteBlock;

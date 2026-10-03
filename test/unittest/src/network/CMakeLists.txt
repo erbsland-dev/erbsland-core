@@ -30,8 +30,10 @@ target_sources(erbsland-core-unittest PRIVATE
         TcpConnectionTest.cpp
         TcpListenerTest.cpp
         TcpSocketLiveTest.cpp
+        TlsBackgroundOperationTest.cpp
         TlsClientConnectionTest.cpp
         TlsClientProtocolTest.cpp
+        TlsMutualAuthenticationTest.cpp
         TlsServerConnectionTest.cpp
         TlsServerProtocolTest.cpp
         TlsWireCodecTest.cpp

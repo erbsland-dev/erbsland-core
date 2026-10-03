@@ -21,14 +21,17 @@ public:
 public: // factory
     /// Create the default driver for the current platform.
     /// @return A kqueue, epoll, or IOCP based driver.
+    /// @throws system::PlatformError If the native queue or wake mechanism cannot be created.
     [[nodiscard]] static auto createDefault() -> EventLoopDriverPtr;
 
 public: // interface
     /// Wait until the driver is woken or a native source is ready.
+    /// @throws system::PlatformError If the native wait fails.
     virtual void wait() = 0;
     /// Wait until the driver is woken, a native source is ready, or the maximum wait elapsed.
     /// A zero or negative duration only polls immediately available native events.
     /// @param maximumWait The maximum wait duration.
+    /// @throws system::PlatformError If the native wait fails.
     virtual void wait(time::TimeDelta maximumWait) = 0;
     /// Wake the driver.
     /// This method is thread-safe.

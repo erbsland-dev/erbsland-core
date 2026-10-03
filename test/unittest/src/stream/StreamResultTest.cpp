@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/stream/StreamCloseStatus.hpp>
-#include <erbsland/stream/StreamReadResult.hpp>
-#include <erbsland/stream/StreamWaitStatus.hpp>
-#include <erbsland/stream/StreamWriteStatus.hpp>
+#include <erbsland/StreamCloseStatus.hpp>
+#include <erbsland/StreamReadResult.hpp>
+#include <erbsland/StreamWaitStatus.hpp>
+#include <erbsland/StreamWriteStatus.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>

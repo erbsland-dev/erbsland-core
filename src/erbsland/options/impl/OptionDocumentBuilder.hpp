@@ -5,6 +5,7 @@
 #include "OptionDisplayGroup_fwd.hpp"
 #include "OptionDisplayModel_fwd.hpp"
 #include "OptionDisplayRow_fwd.hpp"
+#include "OptionHelpTarget.hpp"
 
 #include "../Option_fwd.hpp"
 #include "../OptionErrorContext.hpp"
@@ -12,12 +13,11 @@
 #include "../Options_fwd.hpp"
 #include "../OptionSet_fwd.hpp"
 
-#include "../../i18n/DisplayTextMap_fwd.hpp"
 #include "../../text/String.hpp"
 #include "../../text/TextDocument.hpp"
 #include "../../text/TextNode_fwd.hpp"
 #include "../../text/TextNodeType.hpp"
-#include "../../unit/ArgumentUnit.hpp"
+#include "../../unit/ArgumentIndex.hpp"
 #include "../../unit/ColumnCount.hpp"
 #include "../../unit/ItemIndex.hpp"
 #include "../../unit/LineCount.hpp"
@@ -32,7 +32,7 @@ namespace erbsland::options::impl {
 class OptionDocumentBuilder final {
 public:
     /// Create a builder for the given options and wording.
-    OptionDocumentBuilder(OptionsPtr options, i18n::DisplayTextMapConstPtr displayText);
+    OptionDocumentBuilder(OptionsPtr options);
 
     // defaults
     ~OptionDocumentBuilder() = default;
@@ -46,7 +46,7 @@ public:
     [[nodiscard]] auto helpDocument(const text::String &moduleName) const -> text::TextDocument;
     /// Build the reduced root module overview.
     [[nodiscard]] auto moduleOverviewDocument() const -> text::TextDocument;
-    /// Build detailed help for one option name.
+    /// Build detailed help or search results for a module, option or choice.
     [[nodiscard]] auto detailedHelpDocument(const text::String &moduleName, const text::String &helpName) const
         -> text::TextDocument;
     /// Build the application version document.
@@ -55,12 +55,6 @@ public:
     [[nodiscard]] auto errorDocument(const OptionErrorContext &errorContext) const -> text::TextDocument;
 
 private:
-    /// One visible option and the module scope that owns it, or null for global scope.
-    struct DetailedHelpEntry final {
-        OptionPtr option;
-        OptionModulePtr module;
-    };
-
     static constexpr auto cMaximumArgumentLines = unit::LineCount{12U};
     static constexpr auto cPreferredLinesBeforeError = unit::LineCount{5U};
 
@@ -72,22 +66,42 @@ private:
     [[nodiscard]] static auto markerLength(const text::String &text) noexcept -> unit::ColumnCount;
     /// Get the localized default title for an error reason.
     [[nodiscard]] auto defaultErrorTitle(OptionErrorReason reason) const -> text::String;
-    /// Collect visible detailed-help entries in lookup order.
-    [[nodiscard]] auto detailedHelpEntries(const text::String &moduleName) const -> std::vector<DetailedHelpEntry>;
-    /// Append visible options from one set to detailed-help entries.
-    void appendDetailedHelpEntries(
-        std::vector<DetailedHelpEntry> &entries, const OptionSetPtr &optionSet, const OptionModulePtr &module) const;
-    /// Test if an option has the requested detailed-help alias.
-    [[nodiscard]] static auto matchesDetailedHelpName(const OptionPtr &option, const text::String &helpName) -> bool;
-    /// Select the first alias of an option matching a detailed-help request.
-    [[nodiscard]] static auto matchingDetailedHelpName(const OptionPtr &option, const text::String &helpName)
-        -> text::String;
-    /// Build a detailed-help command for an entry.
-    [[nodiscard]] auto detailedHelpCommand(const DetailedHelpEntry &entry, const text::String &name) const
-        -> text::String;
-    /// Build one generated usage line for a dashed option alias.
-    [[nodiscard]] auto detailedUsageLine(const DetailedHelpEntry &entry, const text::String &name) const
-        -> text::String;
+    /// Build grouped matching help targets, capped at ten rows before grouping.
+    [[nodiscard]] auto helpResultsDocument(
+        const std::vector<OptionHelpTarget> &matches,
+        const text::String &helpName,
+        const text::String &moduleName) const -> text::TextDocument;
+    /// Get result scopes in selected-module, global, and other-module order.
+    [[nodiscard]] auto helpResultScopes(const text::String &moduleName) const -> std::vector<OptionModulePtr>;
+    /// Append a nonempty result section with semantic names and brief titles.
+    void appendHelpResultSection(
+        const text::TextNodePtr &parent, const text::String &title, const std::vector<OptionHelpTarget> &matches) const;
+    /// Append a title and separate semantic identity for a detail page.
+    void appendDetailedHeader(text::TextDocument &document, const OptionHelpTarget &target) const;
+    /// Append a nonempty description and the optional example and epilog.
+    void appendDetailedDescription(text::TextDocument &document, const OptionHelpTarget &target) const;
+    /// Append an optional example.
+    void appendDetailedExample(text::TextDocument &document, const OptionHelp &help) const;
+    /// Append an optional epilog after generated content.
+    void appendDetailedEnding(text::TextDocument &document, const OptionHelp &help) const;
+    /// Get a localized brief title, including built-in option wording.
+    [[nodiscard]] auto detailedBrief(const OptionHelpTarget &target) const -> text::String;
+    /// Append a command executable and its optional module or module placeholder.
+    void appendCommandPrefix(
+        const text::TextNodePtr &parent, const OptionModulePtr &module, bool modulePlaceholder = false) const;
+    /// Append a dashed option alias without option-list alignment semantics.
+    void appendOptionAlias(const text::TextNodePtr &parent, const text::String &name) const;
+    /// Append the generated detailed-help title.
+    void appendDetailedTitle(
+        const text::TextNodePtr &parent, const OptionPtr &option, bool withPlaceholder = true) const;
+    /// Append a detailed-help command for an entry.
+    void appendDetailedHelpCommand(const text::TextNodePtr &parent, const OptionHelpTarget &entry) const;
+    /// Append one generated usage line for a dashed option alias.
+    void appendDetailedUsage(
+        const text::TextNodePtr &parent, const OptionHelpTarget &entry, const text::String &name) const;
+    /// Append a suggestion using its known option, module or value semantics.
+    void appendSuggestion(
+        const text::TextNodePtr &parent, const text::String &suggestion, const OptionErrorContext &context) const;
 
     /// Append a document heading.
     void appendHeading(const text::TextNodePtr &parent, text::String title) const;
@@ -124,8 +138,7 @@ private:
     void appendFullHelpCommand(text::TextDocument &document, const OptionErrorContext &context) const;
 
 private:
-    OptionsPtr _options;                       ///< The options root to use for document building.
-    i18n::DisplayTextMapConstPtr _displayText; ///< The wording configuration.
+    OptionsPtr _options; ///< The options root to use for document building.
 };
 
 }

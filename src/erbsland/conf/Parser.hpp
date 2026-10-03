@@ -49,43 +49,39 @@ public:
     ///     disable signature validation.
     void setSignatureValidator(const SignatureValidatorPtr &signatureValidator) noexcept;
     /// Add a provider for one or more placeholder sources.
-    /// @throws err::ParameterError If `source` is null.
-    /// @throws err::LogicError If the provider has no valid names or a name is already registered.
+    /// @param source The placeholder source provider. Must not be null and must expose valid, unregistered source
+    /// names.
     void addPlaceholderSource(const text::placeholder::SourcePtr &source);
     /// Remove a placeholder source provider. A provider that is not registered is ignored.
     void removePlaceholderSource(const text::placeholder::SourcePtr &source) noexcept;
     /// Add a provider for one or more placeholder filters.
-    /// @throws err::ParameterError If `filter` is null.
-    /// @throws err::LogicError If the provider has no valid names or a name is already registered.
+    /// @param filter The placeholder filter provider. Must not be null and must expose valid, unregistered filter
+    /// names.
     void addPlaceholderFilter(const text::placeholder::FilterPtr &filter);
     /// Remove a placeholder filter provider. A provider that is not registered is ignored.
     void removePlaceholderFilter(const text::placeholder::FilterPtr &filter) noexcept;
     /// Add the built-in environment placeholder source under `env` or a custom name.
-    /// @param name The source name, or empty to use `env`.
-    /// @throws err::LogicError If the name is invalid or already registered.
+    /// @param name The source name, or empty to use `env`. The effective name must be valid and unregistered.
     void addPlaceholderEnvironmentSource(const text::String &name = {});
     /// Set the variables for the built-in variable placeholder source and add it if needed.
     /// Variable names use regular ELCL name normalization and are therefore case-insensitive, with spaces and
     /// underscores treated as equivalent.
     /// @param variables The replacement text indexed by variable name.
-    /// @param name The source name, or empty to use `var`.
+    /// @param name The source name, or empty to use `var`. Must not be registered by another provider.
     /// @throws ConfError If a variable or source name is invalid.
-    /// @throws err::LogicError If another provider already registered the source name.
     void setPlaceholderVariableSource(text::StringMap<text::String> variables, const text::String &name = {});
     /// Add the built-in text placeholder filters.
-    /// @throws err::LogicError If any filter name is already registered.
+    /// The built-in filter names must not already be registered.
     void addPlaceholderTextFilters();
     /// Parse the given source into a configuration document and throw an exception on any error.
-    /// @param source The source to parse. Should be closed.
+    /// @param source The source to parse. Must not be null. Should be closed.
     /// @return The root node of the parsed configuration tree.
     /// @throws ConfError if there was any problem with the parsed source or document.
-    /// @throws err::ParameterError if `source` is `nullptr`.
     auto parseOrThrow(const SourcePtr &source) -> DocumentPtr;
     /// Parse the given source into a configuration document.
-    /// @param source The source to parse. Should be closed.
+    /// @param source The source to parse. Must not be null. Should be closed.
     /// @return The root node of the parsed configuration tree or nullptr on any parsing error.
     ///     Use `lastError()` to access the last error.
-    /// @throws err::ParameterError if `source` is `nullptr`.
     auto parse(const SourcePtr &source) -> DocumentPtr;
     /// Access the last error.
     /// @return The context of the last error, or an empty context if no parse error is available.

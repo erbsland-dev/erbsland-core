@@ -36,7 +36,7 @@ protected: // implement CompressionCodec
         const CodecOutput::Write &output,
         const CompressionTransferOptions &transfer,
         const DecompressionOptions &options) const override;
-    [[nodiscard]] auto maximumPayloadLength(unit::ByteLength length) const -> unit::ByteLength override;
+    [[nodiscard]] auto maximumPayloadLength(unit::ByteCount length) const -> unit::ByteCount override;
 };
 
 }

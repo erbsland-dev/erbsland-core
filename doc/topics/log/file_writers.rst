@@ -44,7 +44,7 @@ An :cpp:class:`Application <erbsland::core::Application>` shuts its own manager 
 .. erbsland-demo::
     :source: log/LoggingTopics/FileWriters.cpp
     :exec: log/logging_topics --demo FileWriters
-    :source-sha256: 70a0845e3e535e3c939d60bb7cef810c1baa9f64c3146033c3c1ffbd4451c523
+    :sha256: 2d672727f35130221cdef1ce60c11c0973815868f9748b196b72ebd7d5b9b018
 
 .. code-block:: cpp
 
@@ -54,7 +54,7 @@ An :cpp:class:`Application <erbsland::core::Application>` shuts its own manager 
     /// daily, and weekly rotation derive archive names from entry timestamps.
     void fileWriters() {
         auto temporaryOptions = el::PathTempDirectoryOptions{};
-        temporaryOptions.setPrefix("retkikunta-"_el).setRandomLength(el::CpLength{8U});
+        temporaryOptions.setPrefix("retkikunta-"_el).setRandomLength(el::CpCount{8U});
         const auto temporary =
             el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
         const auto path = temporary->path() / "guild.log"_el;
@@ -62,7 +62,7 @@ An :cpp:class:`Application <erbsland::core::Application>` shuts its own manager 
         auto writerOptions = el::FileLogWriterOptions{path};
         writerOptions.setMode(el::LogFileMode::Overwrite)
             .setRotation(el::LogFileRotation::Size)
-            .setMaximumSize(el::ByteLength{150U})
+            .setMaximumSize(el::ByteCount{150U})
             .setRetention(2U);
 
         auto format = el::LogLineFormat{};
@@ -84,16 +84,18 @@ An :cpp:class:`Application <erbsland::core::Application>` shuts its own manager 
             "First archive exists: "_el, el::BooleanFormat::yesNo(), path.withStem("guild.1"_el).info().exists());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Active log exists: yes
-    First archive exists: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mActive log exists: yes
+        First archive exists: yes␛[0m
 
 .. erbsland-demo-end::
 
-Create the Options With the Active Path
-=======================================
+File Writer Path and Options
+============================
 
 Unlike the other file settings, the active path is required by the
 :cpp:class:`FileLogWriterOptions <erbsland::log::FileLogWriterOptions>` constructor and has no later setter.
@@ -128,10 +130,9 @@ It checks the resulting content rather than relying on file sizes, making the be
 
 .. erbsland-demo::
     :source: log/LoggingTopics/FileWriterOptions.cpp
-    :function-blocks: fileWriterModes
-    :function-blocks-sha256: 38b71d3cf5363196ba307c83c788ab165479dd318a16f807778cd9588e27a978
+    :show: f:fileWriterModes
     :exec: log/logging_topics --demo FileWriterModes
-    :source-sha256: 0cb33f36e027adbec4e7eb41e66cd77275a0b38d420097413f667ee5779e7d33
+    :sha256: 81c5370792bfd16262c438ba6df65d341a909abd144d8d88b035ff07543a6a9a
 
 .. code-block:: cpp
 
@@ -163,16 +164,18 @@ It checks the resulting content rather than relying on file sizes, making the be
             overwritePath.content().readTextOrThrow().contains("Earlier run"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Append preserved earlier content   : yes
-    Overwrite preserved earlier content: no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAppend preserved earlier content   : yes
+        Overwrite preserved earlier content: no␛[0m
 
 .. erbsland-demo-end::
 
-Select When the File Rotates
-============================
+Time-Based and Size-Based File Rotation
+=======================================
 
 :cpp:func:`setRotation() <erbsland::log::FileLogWriterOptions::setRotation>` chooses a
 :cpp:class:`LogFileRotation <erbsland::log::LogFileRotation>` policy.
@@ -199,10 +202,9 @@ The second entry rotates the first day's active file into ``guild.2026-09-01.log
 
 .. erbsland-demo::
     :source: log/LoggingTopics/FileWriterOptions.cpp
-    :function-blocks: fileWriterRotation
-    :function-blocks-sha256: 04dc64de17a0cd86ef52a86c751621b4caec06be25ac17cef54113cde31a3f75
+    :show: f:fileWriterRotation
     :exec: log/logging_topics --demo FileWriterRotation
-    :source-sha256: 0cb33f36e027adbec4e7eb41e66cd77275a0b38d420097413f667ee5779e7d33
+    :sha256: 245f46da17bc0250a38e1b0355c0cedfdefbb5f8f053661a4220fb700a74f6ac
 
 .. code-block:: cpp
 
@@ -230,11 +232,13 @@ The second entry rotates the first day's active file into ``guild.2026-09-01.log
         el::io::printLine("Archive exists: "_el, el::BooleanFormat::yesNo(), archive.info().exists());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Daily archive: guild.2026-09-01.log
-    Archive exists: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDaily archive: guild.2026-09-01.log
+        Archive exists: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -242,7 +246,7 @@ Set the Byte Threshold for Size Rotation
 ========================================
 
 :cpp:func:`setMaximumSize() <erbsland::log::FileLogWriterOptions::setMaximumSize>` supplies the
-:cpp:type:`ByteLength <erbsland::unit::ByteLength>` threshold used only when rotation is
+:cpp:type:`ByteCount <erbsland::unit::ByteCount>` threshold used only when rotation is
 :cpp:enumerator:`Size <erbsland::log::LogFileRotation::Size>`.
 The default is 10 MiB, or 10,485,760 bytes.
 A zero threshold is invalid for size rotation and is rejected when the writer is constructed.
@@ -261,10 +265,9 @@ first numbered archive.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/FileWriterOptions.cpp
-    :function-blocks: fileWriterMaximumSize
-    :function-blocks-sha256: 00782194267f34b697710a436deea49e7b6645a4360781e52f8c54f98b22f897
+    :show: f:fileWriterMaximumSize
     :exec: log/logging_topics --demo FileWriterMaximumSize
-    :source-sha256: 0cb33f36e027adbec4e7eb41e66cd77275a0b38d420097413f667ee5779e7d33
+    :sha256: fb54184b3526b2377d5ba47fe688e72743c1e8aaf7b4c84ebaee875c9d473bff
 
 .. code-block:: cpp
 
@@ -274,7 +277,7 @@ first numbered archive.
         auto options = el::FileLogWriterOptions{path};
         options.setMode(el::LogFileMode::Overwrite)
             .setRotation(el::LogFileRotation::Size)
-            .setMaximumSize(el::ByteLength{24U});
+            .setMaximumSize(el::ByteCount{24U});
         const auto writer = el::LogWriter::createForFile(options);
 
         writeFileDemoLine(writer, el::Timestamp::now(), "First observation"_el, 1U);
@@ -285,15 +288,17 @@ first numbered archive.
             "Rotation created guild.1.log: "_el, el::BooleanFormat::yesNo(), path.withStem("guild.1"_el).info().exists());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Rotation created guild.1.log: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRotation created guild.1.log: yes␛[0m
 
 .. erbsland-demo-end::
 
-Limit the Number of Retained Archives
-=====================================
+Rotated Archive Retention
+=========================
 
 :cpp:func:`setRetention() <erbsland::log::FileLogWriterOptions::setRetention>` sets how many rotated archives the
 writer retains.
@@ -317,10 +322,9 @@ With retention set to two, the first two numbered archives remain and ``guild.3.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/FileWriterOptions.cpp
-    :function-blocks: fileWriterRetention
-    :function-blocks-sha256: 3a9d255497ec5be4b120248fee5f22241bb8b6db28cd253f67903075d0ed7642
+    :show: f:fileWriterRetention
     :exec: log/logging_topics --demo FileWriterRetention
-    :source-sha256: 0cb33f36e027adbec4e7eb41e66cd77275a0b38d420097413f667ee5779e7d33
+    :sha256: 4d1124f76828a22e5989f924509160959ad146864f4720707401630ec1486517
 
 .. code-block:: cpp
 
@@ -330,7 +334,7 @@ With retention set to two, the first two numbered archives remain and ``guild.3.
         auto options = el::FileLogWriterOptions{path};
         options.setMode(el::LogFileMode::Overwrite)
             .setRotation(el::LogFileRotation::Size)
-            .setMaximumSize(el::ByteLength{12U})
+            .setMaximumSize(el::ByteCount{12U})
             .setRetention(2U);
         const auto writer = el::LogWriter::createForFile(options);
 
@@ -345,17 +349,19 @@ With retention set to two, the first two numbered archives remain and ``guild.3.
         el::io::printLine("guild.3.log exists: "_el, yesNo, path.withStem("guild.3"_el).info().exists());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    guild.1.log exists: yes
-    guild.2.log exists: yes
-    guild.3.log exists: no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mguild.1.log exists: yes
+        guild.2.log exists: yes
+        guild.3.log exists: no␛[0m
 
 .. erbsland-demo-end::
 
-Cooperate With External File Replacement
-========================================
+External File Replacement and Automatic Reopening
+=================================================
 
 Some deployments rotate logs outside the application.
 A collector may rename the active file and create a replacement at the configured path, or an administrator may remove
@@ -371,8 +377,8 @@ No signal or explicit reopen call is required from application code.
 This check complements built-in rotation: choose either policy according to the deployment, but both use the same stable
 active path.
 
-Understand Failures and Recovery
-================================
+File Writer Failures and Recovery
+=================================
 
 Opening, writing, rotating, and flushing all depend on the host filesystem.
 A directory may become unwritable, a volume may be full, or an external collector may temporarily leave an invalid path.
@@ -380,7 +386,8 @@ When an operation fails, the writer closes its stream and schedules another atte
 30 seconds.
 The failed delivery is not silently replayed later; retrying repairs the destination for future entries.
 
-The manager contains exceptions raised by writers and increments
+The manager contains concrete :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` subclasses raised by writers,
+and increments
 :cpp:member:`writerFailures <erbsland::log::LogManagerStatistics::writerFailures>` in its
 :cpp:struct:`LogManagerStatistics <erbsland::log::LogManagerStatistics>` snapshot.
 Monitor that counter when the file is operationally important, and consider a second destination for high-severity

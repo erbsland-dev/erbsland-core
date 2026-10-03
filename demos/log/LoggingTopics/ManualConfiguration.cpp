@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogLevel.hpp>
+#include <erbsland/LogLineFormat.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/LogWriterFilter.hpp>
 
 #include <memory>
 
@@ -20,11 +26,12 @@ void manualConfiguration() {
     configuration.setLineFormat(std::move(lineFormat));
     configuration.addWriter(
         el::LogWriter::createForConsole(el::application().terminal()),
-        el::LogWriterFilter{el::LogLevels{
-            el::LogLevel::Information,
-            el::LogLevel::Warning,
-            el::LogLevel::Error,
-        }});
+        el::LogWriterFilter{}.setAcceptedLevels(
+            el::LogLevels{
+                el::LogLevel::Information,
+                el::LogLevel::Warning,
+                el::LogLevel::Error,
+            }));
 
     const auto manager = el::LogManager::create();
     manager->setConfiguration(std::move(configuration));

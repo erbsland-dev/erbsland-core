@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/err/ParseError.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/http/server/HttpRequestTarget.hpp>
 #include <erbsland/network/impl/http/server/HttpRoutes.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ParseError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::network;
@@ -27,13 +27,13 @@ public:
         const auto target = HttpRequestTarget{"/caf%C3%A9/a%2Fb?raw=%2F+value"_el};
         REQUIRE_EQUAL(target.path(), "/café/a/b"_el);
         REQUIRE_EQUAL(target.query(), "raw=%2F+value"_el);
-        REQUIRE_EQUAL(target.segments().size(), 2U);
-        REQUIRE_EQUAL(target.segments()[0], "café"_el);
-        REQUIRE_EQUAL(target.segments()[1], "a/b"_el);
+        REQUIRE_EQUAL(target.segments().count().toSizeT(), 2U);
+        REQUIRE_EQUAL(target.segments().getRef(el::ItemIndex{0}), "café"_el);
+        REQUIRE_EQUAL(target.segments().getRef(el::ItemIndex{1}), "a/b"_el);
 
         const auto normalized = HttpRequestTarget{"/cafe%CC%81"_el};
         REQUIRE_EQUAL(normalized.path(), "/café"_el);
-        REQUIRE_EQUAL(normalized.segments()[0], "café"_el);
+        REQUIRE_EQUAL(normalized.segments().getRef(el::ItemIndex{0}), "café"_el);
     }
 
     void testMalformedRequestTargets() {
@@ -99,13 +99,13 @@ public:
 
     void testPatternValidation() {
         auto routes = HttpRoutes{};
-        REQUIRE_THROWS_AS(el::err::ParameterError, routes.add("users/{id}"_el, handler()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, routes.add("/users/{id}/{id}"_el, handler()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, routes.add("/users/{1id}"_el, handler()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, routes.add("/files/{*path}/tail"_el, handler()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, routes.add("/files/{bad-name}"_el, handler()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, routes.add("/query?bad"_el, handler()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, routes.add("/empty"_el, HttpRouteHandler{}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, routes.add("users/{id}"_el, handler()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, routes.add("/users/{id}/{id}"_el, handler()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, routes.add("/users/{1id}"_el, handler()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, routes.add("/files/{*path}/tail"_el, handler()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, routes.add("/files/{bad-name}"_el, handler()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, routes.add("/query?bad"_el, handler()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, routes.add("/empty"_el, HttpRouteHandler{}));
     }
 
     void testAutomaticRouteOptionsValidation() {
@@ -113,11 +113,12 @@ public:
             HttpServerRequestFn{[](HttpServerSessionPtr, HttpServerRequestPtr, el::mem::ByteBlock) {}};
         auto routes = HttpRoutes{};
         auto options = HttpServerRouteOptions{};
-        options.setAcceptedContentTypes({"application/json"_el, "text/*"_el, "*/*"_el, "application/*+json"_el});
+        options.setAcceptedContentTypes(
+            el::StringList{"application/json"_el, "text/*"_el, "*/*"_el, "application/*+json"_el});
         REQUIRE_NOTHROW(routes.add("/valid"_el, HttpRouteHandler{callback, options}));
-        options.setAcceptedContentTypes({"application"_el});
-        REQUIRE_THROWS_AS(el::err::ParameterError, routes.add("/invalid"_el, HttpRouteHandler{callback, options}));
-        options = HttpServerRouteOptions{}.setMaximumBodyLength(el::unit::ByteLength{});
-        REQUIRE_THROWS_AS(el::err::ParameterError, routes.add("/zero"_el, HttpRouteHandler{callback, options}));
+        options.setAcceptedContentTypes(el::StringList{"application"_el});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, routes.add("/invalid"_el, HttpRouteHandler{callback, options}));
+        options = HttpServerRouteOptions{}.setMaximumBodyLength(el::unit::ByteCount{});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, routes.add("/zero"_el, HttpRouteHandler{callback, options}));
     }
 };

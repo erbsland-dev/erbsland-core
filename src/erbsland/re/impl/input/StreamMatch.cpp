@@ -8,8 +8,8 @@ namespace erbsland::re::impl {
 
 auto StreamMatch::getContentForGroup(const CaptureGroup &group) const noexcept -> text::String {
     const auto index = static_cast<std::size_t>(group.index());
-    ERBSLAND_CORE_RE_REQUIRE_SAFETY(index < _content.size(), "Capture group content index out of bounds"_el);
-    return _content[index];
+    ERBSLAND_CORE_RE_REQUIRE_SAFETY(index < _content.count().toSizeT(), "Capture group content index out of bounds"_el);
+    return _content.getRef(unit::ItemIndex{index, unit::ItemIndex::Unchecked{}});
 }
 
 }

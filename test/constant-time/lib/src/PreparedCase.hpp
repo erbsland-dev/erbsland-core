@@ -4,12 +4,11 @@
 
 #include "TestCase.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ItemIndex.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Random.hpp>
 
 #include <memory>
 
@@ -22,18 +21,18 @@ template <typename tFixture>
 class PreparedCase : public TestCase {
 public: // implement TestCase
     [[nodiscard]] auto metadata() const noexcept -> const TestMetadata & override { return _metadata; }
-    [[nodiscard]] auto fixtureBytes() const noexcept -> el::ByteLength override { return _bytes; }
+    [[nodiscard]] auto fixtureBytes() const noexcept -> el::ByteCount override { return _bytes; }
     void clear() override { _fixtures.clear(); }
     void prepare(el::Random &random, bool population) override { _fixtures.append(createFixture(random, population)); }
-    [[nodiscard]] auto execute(std::size_t index, uint64_t repetitions) -> uint64_t override {
-        return _fixtures.getRefOrThrow(el::ItemIndex{index})->measure(repetitions);
+    [[nodiscard]] auto execute(el::ItemIndex index, uint64_t repetitions) -> uint64_t override {
+        return _fixtures.getRefOrThrow(index)->measure(repetitions);
     }
 
 protected:
     /// Set metadata and the conservative per-fixture memory bound.
     /// @param metadata Stable scenario description and actual backend.
     /// @param bytes Conservative fixture estimate.
-    void configure(TestMetadata metadata, el::ByteLength bytes) {
+    void configure(TestMetadata metadata, el::ByteCount bytes) {
         _metadata = std::move(metadata);
         _bytes = bytes;
     }
@@ -45,7 +44,7 @@ protected:
 
 private:
     TestMetadata _metadata{};                      ///< Stable configuration and actual backend.
-    el::ByteLength _bytes{};                       ///< Conservative per-fixture memory estimate.
+    el::ByteCount _bytes{};                        ///< Conservative per-fixture memory estimate.
     el::List<std::shared_ptr<tFixture>> _fixtures; ///< Independently owned prepared samples.
 };
 

@@ -4,7 +4,7 @@
 
 #include "EncodingError.hpp"
 
-#include "../unit/U16DataIndex.hpp"
+#include "../unit/U16Index.hpp"
 
 namespace erbsland::text {
 
@@ -14,7 +14,7 @@ public:
     /// Create a UTF-16 encoding error exception with a reason.
     /// @param reason The reason for the encoding error.
     /// @param index The word index where the error occurred.
-    explicit U16EncodingError(const std::string_view reason, const unit::U16DataIndex index) noexcept :
+    explicit U16EncodingError(const std::string_view reason, const unit::U16Index index) noexcept :
         EncodingError{reason}, _index(index) {}
 
     // defaults
@@ -22,10 +22,10 @@ public:
 
 public:
     /// Get the UTF-16 data index where the malformed sequence was detected.
-    [[nodiscard]] auto index() const noexcept -> unit::U16DataIndex { return _index; }
+    [[nodiscard]] auto index() const noexcept -> unit::U16Index { return _index; }
 
 private:
-    unit::U16DataIndex _index;
+    unit::U16Index _index;
 };
 
 }

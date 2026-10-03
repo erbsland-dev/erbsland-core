@@ -4,6 +4,7 @@
 
 #include "ProfileTypes.hpp"
 
+#include <erbsland/StringList.hpp>
 #include <erbsland/text/render/impl/CompiledLayout_fwd.hpp>
 
 #include <vector>
@@ -42,7 +43,7 @@ private:
     const PreparedLayout &_layout; ///< Preloaded root and named dependency sources.
     const erbsland::StringMap<erbsland::text::render::FilterFn> &_filters;           ///< Identity filter registry.
     erbsland::StringMap<erbsland::text::render::impl::ConstCompiledLayoutPtr> _memo; ///< Compiled unique nodes.
-    std::vector<erbsland::String> _stack; ///< Active cycle/depth detection stack.
+    erbsland::StringList _stack; ///< Active cycle/depth detection stack.
 };
 
 }

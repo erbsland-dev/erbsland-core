@@ -5,13 +5,16 @@
 #include "ArchiveItem.hpp"
 #include "ZipTools.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../mem/ByteWriter.hpp"
-#include "../../../path/PathMoveOptions.hpp"
+#include "../../../path/PathCommitOptions.hpp"
+#include "../../../path/PathError.hpp"
+#include "../../../path/PathGlobPattern.hpp"
 #include "../../../path/PathOperations.hpp"
 #include "../../../stream/StreamError.hpp"
 #include "../../../stream/StreamWriteStatus.hpp"
+#include "../../../stream/TempByteOutputStream.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringEditor.hpp"
 #include "../../../text/StringEncoder.hpp"
@@ -21,31 +24,36 @@
 
 namespace erbsland::compression::zip::impl {
 
+using namespace err;
+using namespace mem;
+using namespace path;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 void ArchiveWriter::requireWritable() const {
     if (_finalized) {
-        throw err::LogicError{"The ZIP archive writer is already finalized."_el};
+        throw LogicFailure{"The ZIP archive writer is already finalized."_el};
     }
     if (_aborted) {
-        throw err::LogicError{"The ZIP archive writer was aborted."_el};
+        throw LogicFailure{"The ZIP archive writer was aborted."_el};
     }
 }
 
-auto ArchiveWriter::normalizedStoragePath(const path::Path &value, const bool directory) const -> path::Path {
+auto ArchiveWriter::normalizedStoragePath(const Path &value, const bool directory) const -> Path {
     if (value.isEmpty()) {
-        throw err::ParameterError{"The ZIP storage path must not be empty."_el, "value"_el};
+        throw ParameterFailure{"The ZIP storage path must not be empty."_el, "value"_el};
     }
     auto text = value.toString();
     if (directory && !text.endsWith("/"_el)) {
-        auto editor = text::StringEditor{text};
-        editor.append(text::Char{U'/'});
+        auto editor = StringEditor{text};
+        editor.append(Char{U'/'});
         text = editor;
     }
     try {
-        return zipTools::normalizeEntryPath(text::StringEncoder{text}.encode(text::StringEncoding::Utf8), directory);
+        return zipTools::normalizeEntryPath(StringEncoder{text}.encode(StringEncoding::Utf8), directory);
     } catch (const ZipError &) {
-        throw err::ParameterError{"The ZIP storage path must be a safe, portable relative path."_el, "value"_el};
+        throw ParameterFailure{"The ZIP storage path must be a safe, portable relative path."_el, "value"_el};
     }
 }
 
@@ -53,7 +61,7 @@ void ArchiveWriter::addItem(const zip::ArchiveItem &source) {
     requireWritable();
     const auto *item = dynamic_cast<const impl::ArchiveItem *>(&source);
     if (item == nullptr) {
-        throw err::ParameterError{"The ZIP item must originate from an Erbsland ZIP archive reader."_el, "source"_el};
+        throw ParameterFailure{"The ZIP item must originate from an Erbsland ZIP archive reader."_el, "source"_el};
     }
     const auto &record = item->record();
     const auto entryData = item->entryData();
@@ -70,8 +78,8 @@ void ArchiveWriter::addItem(const zip::ArchiveItem &source) {
         record.opaqueCentralExtra,
         record.directory,
         [&](ZipEntryRecord &written) {
-            item->copyPayload([&](mem::ConstByteSpan bytes) {
-                auto block = mem::ByteBlockEditor{};
+            item->copyPayload([&](ConstByteSpan bytes) {
+                auto block = ByteBlockEditor{};
                 block.append(bytes);
                 write(block);
             });
@@ -86,19 +94,19 @@ void ArchiveWriter::addItem(const zip::ArchiveItem &source) {
 void ArchiveWriter::writeCentralDirectory() {
     const auto directoryOffset = _offset;
     auto archiveNeedsZip64 = _options.zip64Policy() == Zip64Policy::Always || _entries.size() >= 0xffffU;
-    auto directoryLength = unit::ByteLength{};
+    auto directoryLength = ByteCount{};
     for (const auto &entry : _entries) {
         const auto &record = entry.record;
         const auto zip64Entry = _options.zip64Policy() == Zip64Policy::Always || record.zip64 ||
-            record.localHeaderOffset >= unit::ByteIndex{0xffffffffU};
+            record.localHeaderOffset >= ByteIndex{0xffffffffU};
         archiveNeedsZip64 = archiveNeedsZip64 || zip64Entry;
-        directoryLength = directoryLength.addedOrThrow(unit::ByteLength{46U})
+        directoryLength = directoryLength.addedOrThrow(ByteCount{46U})
                               .addedOrThrow(entry.name.length())
                               .addedOrThrow(entry.centralExtra.length())
                               .addedOrThrow(entry.comment.length());
     }
-    archiveNeedsZip64 = archiveNeedsZip64 || directoryOffset >= unit::ByteLength{0xffffffffU} ||
-        directoryLength >= unit::ByteLength{0xffffffffU};
+    archiveNeedsZip64 =
+        archiveNeedsZip64 || directoryOffset >= ByteCount{0xffffffffU} || directoryLength >= ByteCount{0xffffffffU};
     if (_options.zip64Policy() == Zip64Policy::Never && archiveNeedsZip64) {
         throwWriterError(
             ZipErrorReason::ResourceLimit,
@@ -108,10 +116,10 @@ void ArchiveWriter::writeCentralDirectory() {
     }
     auto finalLength = directoryOffset.addedOrThrow(directoryLength);
     if (archiveNeedsZip64) {
-        finalLength = finalLength.addedOrThrow(unit::ByteLength{76U});
+        finalLength = finalLength.addedOrThrow(ByteCount{76U});
     }
     // Validate the full archive extent before emitting any central-directory bytes.
-    finalLength.addOrThrow(unit::ByteLength{22U}).addOrThrow(_comment.length());
+    finalLength.addOrThrow(ByteCount{22U}).addOrThrow(_comment.length());
 
     // Emit one central entry at a time without retaining the serialized directory.
     for (const auto &entry : _entries) {
@@ -123,11 +131,10 @@ void ArchiveWriter::writeCentralDirectory() {
 void ArchiveWriter::writeCentralEntry(const WrittenEntry &entry) {
     const auto &record = entry.record;
     const auto zip64Entry = _options.zip64Policy() == Zip64Policy::Always || record.zip64 ||
-        record.localHeaderOffset >= unit::ByteIndex{0xffffffffU};
+        record.localHeaderOffset >= ByteIndex{0xffffffffU};
     const auto versionNeeded = zipTools::minimumVersion(record.compressionMethod, zip64Entry);
-    auto directory = mem::ByteWriter{};
-    directory.reserve(
-        unit::ByteLength{46U} + entry.name.length() + entry.centralExtra.length() + entry.comment.length());
+    auto directory = ByteWriter{};
+    directory.reserve(ByteCount{46U} + entry.name.length() + entry.centralExtra.length() + entry.comment.length());
     directory.writeUInt32(zipTools::cCentralHeaderSignature)
         .writeUInt16(static_cast<uint16_t>((3U << 8U) | 63U))
         .writeUInt16(static_cast<uint16_t>(versionNeeded))
@@ -153,12 +160,12 @@ void ArchiveWriter::writeCentralEntry(const WrittenEntry &entry) {
 }
 
 void ArchiveWriter::writeEndRecords(
-    const unit::ByteLength directoryOffset, const unit::ByteLength directoryLength, const bool archiveNeedsZip64) {
+    const ByteCount directoryOffset, const ByteCount directoryLength, const bool archiveNeedsZip64) {
     if (archiveNeedsZip64) {
         // APPNOTE 4.3.14-4.3.15: append the ZIP64 end record and its single-disk locator.
         const auto zip64Offset = _offset;
-        auto zip64 = mem::ByteWriter{};
-        zip64.reserve(unit::ByteLength{76U});
+        auto zip64 = ByteWriter{};
+        zip64.reserve(ByteCount{76U});
         zip64.writeUInt32(zipTools::cZip64EndSignature)
             .writeUInt64(44U)
             .writeUInt16(static_cast<uint16_t>((3U << 8U) | 63U))
@@ -176,8 +183,8 @@ void ArchiveWriter::writeEndRecords(
         write(zip64.toByteBlock());
     }
     // APPNOTE 4.3.16: EOCD terminates the archive and owns the archive comment.
-    auto end = mem::ByteWriter{};
-    end.reserve(unit::ByteLength{22U}.addedOrThrow(_comment.length()));
+    auto end = ByteWriter{};
+    end.reserve(ByteCount{22U}.addedOrThrow(_comment.length()));
     end.writeUInt32(zipTools::cEndSignature)
         .writeUInt16(0U)
         .writeUInt16(0U)
@@ -190,7 +197,7 @@ void ArchiveWriter::writeEndRecords(
     write(end.toByteBlock());
 }
 
-void ArchiveWriter::write(const mem::ByteBlock &data) {
+void ArchiveWriter::write(const ByteBlock &data) {
     if (data.isEmpty()) {
         return;
     }
@@ -200,7 +207,7 @@ void ArchiveWriter::write(const mem::ByteBlock &data) {
             std::min(std::size_t{65536U}, _destination->outputSettings().backBufferLimit().toSizeTOrThrow());
         while (!bytes.empty()) {
             const auto part = bytes.first(std::min(bytes.size(), maximum));
-            const auto nextOffset = _offset.addedOrThrow(unit::ByteLength::fromSizeT(part.size()));
+            const auto nextOffset = _offset.addedOrThrow(ByteCount::fromSizeT(part.size()));
             if (_destination->write(part) != stream::StreamWriteStatus::Success) {
                 throwWriterError(
                     ZipErrorReason::StreamFailure,
@@ -232,35 +239,34 @@ void ArchiveWriter::commitPathDestination() {
     if (_temporary == nullptr) {
         return;
     }
-    _temporaryPath.operations().moveToOrThrow(
-        _destinationPath,
-        path::PathMoveOptions{}.setCreateParents(true).setCollisionMode(path::PathCollisionMode::Overwrite));
+    try {
+        _temporary->commitToOrThrow(
+            _destinationPath,
+            PathCommitOptions{}.setCreateParents(true).setCollisionMode(PathCollisionMode::Overwrite));
+    } catch (const PathError &) {
+        throw ZipError{
+            ZipErrorContext{
+                ZipErrorReason::PathFailure,
+                ZipOperationPhase::Finalization,
+                "ZIP archive could not be committed"_el,
+                "Finalizing or replacing the path-backed archive failed."_el}
+                .setDestinationPath(_destinationPath),
+            std::current_exception()};
+    }
     _temporaryPath = {};
     _temporary.reset();
 }
 
-auto ArchiveWriter::includeDirectoryPath(const text::String &storagePath, const ArchiveDirectoryOptions &options) const
+auto ArchiveWriter::includeDirectoryPath(const Path &storagePath, const ArchiveDirectoryOptions &options) const
     -> bool {
-    auto included = options.includeGlobs().isEmpty();
-    for (const auto &pattern : options.includeGlobs()) {
-        if (zipTools::globMatches(pattern, storagePath)) {
-            included = true;
-            break;
-        }
-    }
-    if (!included) {
+    if (options.includeGlobs() != nullptr && !options.includeGlobs()->fullMatch(storagePath)) {
         return false;
     }
-    for (const auto &pattern : options.excludeGlobs()) {
-        if (zipTools::globMatches(pattern, storagePath)) {
-            return false;
-        }
-    }
-    return true;
+    return options.excludeGlobs() == nullptr || !options.excludeGlobs()->fullMatch(storagePath);
 }
 
 void ArchiveWriter::throwWriterError(
-    const ZipErrorReason reason, const ZipOperationPhase phase, text::String title, text::String description) const {
+    const ZipErrorReason reason, const ZipOperationPhase phase, String title, String description) const {
     throw ZipError{
         ZipErrorContext{reason, phase, std::move(title), std::move(description)}.setDestinationPath(_destinationPath)};
 }

@@ -3,7 +3,8 @@
 #pragma once
 
 #include "../../text/String.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../text/StringList.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <optional>
 #include <utility>
@@ -16,30 +17,30 @@ namespace erbsland::network {
 class HttpClientResponseOptions final {
 public:
     /// Default automatic response-body aggregation limit.
-    static constexpr auto cDefaultMaximumBodyLength = unit::ByteLength{1024U * 1024U};
+    static constexpr auto cDefaultMaximumBodyLength = unit::ByteCount{1024U * 1024U};
 
 public:
     /// Get the automatic response-body aggregation limit.
-    [[nodiscard]] auto maximumBodyLength() const noexcept -> unit::ByteLength { return _maximumBodyLength; }
+    [[nodiscard]] auto maximumBodyLength() const noexcept -> unit::ByteCount { return _maximumBodyLength; }
     /// Set the positive finite automatic response-body aggregation limit.
-    auto setMaximumBodyLength(unit::ByteLength value) noexcept -> HttpClientResponseOptions & {
+    auto setMaximumBodyLength(unit::ByteCount value) noexcept -> HttpClientResponseOptions & {
         _maximumBodyLength = value;
         return *this;
     }
     /// Get explicitly configured accepted media-type patterns.
     /// No value selects the handler-family defaults; an empty list disables filtering.
-    [[nodiscard]] auto acceptedContentTypes() const noexcept -> const std::optional<std::vector<text::String>> & {
+    [[nodiscard]] auto acceptedContentTypes() const noexcept -> const std::optional<text::StringList> & {
         return _acceptedContentTypes;
     }
     /// Replace accepted media-type patterns; an empty list disables filtering.
-    auto setAcceptedContentTypes(std::vector<text::String> value) noexcept -> HttpClientResponseOptions & {
+    auto setAcceptedContentTypes(text::StringList value) noexcept -> HttpClientResponseOptions & {
         _acceptedContentTypes = std::move(value);
         return *this;
     }
 
 private:
-    unit::ByteLength _maximumBodyLength{cDefaultMaximumBodyLength}; ///< Automatic aggregate bound.
-    std::optional<std::vector<text::String>> _acceptedContentTypes; ///< Optional media-type patterns.
+    unit::ByteCount _maximumBodyLength{cDefaultMaximumBodyLength}; ///< Automatic aggregate bound.
+    std::optional<text::StringList> _acceptedContentTypes;         ///< Optional media-type patterns.
 };
 
 }

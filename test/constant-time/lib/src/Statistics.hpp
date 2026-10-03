@@ -5,9 +5,8 @@
 #include "Evidence.hpp"
 #include "WelchTest.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/List.hpp>
 
 #include <array>
 
@@ -35,4 +34,5 @@ private:
     std::array<WelchTest, 102> _tests;     ///< Raw, cropped, and second-order comparisons.
     std::array<double, 100> _thresholds{}; ///< Pilot-derived class-independent thresholds.
 };
+
 }

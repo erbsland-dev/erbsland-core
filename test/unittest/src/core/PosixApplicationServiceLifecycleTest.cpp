@@ -3,7 +3,7 @@
 
 #include "ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>

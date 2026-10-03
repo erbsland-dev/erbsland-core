@@ -6,6 +6,8 @@
 
 #include "../source/NetworkErrorContext_fwd.hpp"
 
+#include "../../core/Definitions.hpp"
+
 #include <functional>
 
 namespace erbsland::network {

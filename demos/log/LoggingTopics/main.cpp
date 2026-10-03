@@ -4,12 +4,13 @@
 #include "LoggingTopicsDemos.hpp"
 
 #include <DemoCommon.hpp>
+#include <DemoTerminal.hpp>
 
 using namespace demo;
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
-    app.enableTerminal();
+    DemoTerminal::enable(app);
     app.registerDemo("ApplicationLogging"_el, applicationLogging);
     app.registerDemo("ConsoleWriterBaseStyle"_el, consoleWriterBaseStyle);
     app.registerDemo("ConsoleWriterLevelPartStyles"_el, consoleWriterLevelPartStyles);

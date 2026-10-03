@@ -2,10 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
-#include <erbsland/data/json/JsonValue.hpp>
-#include <erbsland/text/base_n/BaseNDecoder.hpp>
-#include <erbsland/text/base_n/BaseNEncoder.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/base_n/BaseNDecoder.hpp>
+#include <erbsland/base_n/BaseNEncoder.hpp>
+#include <erbsland/base_n/BaseNFormat.hpp>
+#include <erbsland/base_n/BaseNFormatFlag.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/EncodingMode.hpp>
+#include <erbsland/json/JsonParseOptions.hpp>
+#include <erbsland/json/JsonType.hpp>
+#include <erbsland/json/JsonValue.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringBomMode.hpp>
+#include <erbsland/StringDecoder.hpp>
+#include <erbsland/StringEncoder.hpp>
+#include <erbsland/StringEncoding.hpp>
 
 namespace demo {
 
@@ -26,7 +42,7 @@ public:
         return el::text::base_n::BaseNEncoder{bytes, base64Format()}.toString();
     }
 
-    [[nodiscard]] static auto unbase64(const el::String &text, const el::ByteLength maximum) -> el::ByteBlock {
+    [[nodiscard]] static auto unbase64(const el::String &text, const el::ByteCount maximum) -> el::ByteBlock {
         const auto result = el::text::base_n::BaseNDecoder{text, base64Format()}.toDataOrThrow(maximum);
         if (base64(result) != text) {
             throw el::ApplicationError{"Noncanonical Base64url in authentication record."_el};
@@ -45,14 +61,14 @@ public:
                     el::StringEncoding::Utf8, el::StringBomMode::Reject, el::EncodingMode::Strict);
                 _buffer.clear();
                 auto limits = el::json::JsonParseOptions{};
-                limits.setMaximumInputLength(el::ByteLength{4096U});
+                limits.setMaximumInputLength(el::ByteCount{4096U});
                 const auto value = el::json::JsonValue::fromStringOrThrow(source, limits);
                 if (!value.is(el::json::JsonType::Object)) {
                     throw el::ApplicationError{"Authentication record must be a JSON object."_el};
                 }
                 onLine(value);
             } else {
-                if (_buffer.length() >= el::ByteLength{4096U} || byte == el::Byte{'\r'}) {
+                if (_buffer.length() >= el::ByteCount{4096U} || byte == el::Byte{'\r'}) {
                     throw el::ApplicationError{"Authentication record is too long or contains CR."_el};
                 }
                 _buffer.append(byte);

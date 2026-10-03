@@ -44,10 +44,9 @@ public: // factories
     /// @return The parsed identifier, or an empty value on error.
     [[nodiscard]] static auto fromDer(const mem::ByteBlock &der) noexcept -> X509AlgorithmIdentifier;
     /// Parse one canonical DER AlgorithmIdentifier.
-    /// @param der The complete DER AlgorithmIdentifier.
+    /// @param der The complete DER AlgorithmIdentifier. Must fit the fixed DER parser resource limits.
     /// @return The parsed identifier.
     /// @throws err::ParseError If the DER or AlgorithmIdentifier structure is malformed.
-    /// @throws err::OutOfRangeError If a fixed parser resource limit is exceeded.
     [[nodiscard]] static auto fromDerOrThrow(const mem::ByteBlock &der) -> X509AlgorithmIdentifier;
 
 private:

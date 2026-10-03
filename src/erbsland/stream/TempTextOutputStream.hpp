@@ -6,6 +6,8 @@
 #include "TextOutputStream.hpp"
 
 #include "../path/Path.hpp"
+#include "../path/PathCommitOptions.hpp"
+#include "../util/impl/worker_executor/WorkerExecutor.hpp"
 
 namespace erbsland::stream {
 
@@ -13,7 +15,7 @@ namespace erbsland::stream {
 ///
 /// A successful close removes the file synchronously. Destruction never closes or waits: it aborts immediately and
 /// schedules removal, unless `release()` was called or automatic cleanup was disabled.
-/// @tested{PathTemporaryTest}
+/// @tested{PathTemporaryTest PathReplacementTest}
 class TempTextOutputStream final : public TextOutputStream {
     friend class path::PathOperations;
 
@@ -41,6 +43,20 @@ public: // accessors
     /// Disable automatic cleanup and return the file path.
     [[nodiscard]] auto release() noexcept -> path::Path;
 
+public: // commit
+    /// Finalize and commit this temporary file, retaining the cleanup policy on failure.
+    /// @param destination The destination, absent or a regular file.
+    /// @param options Replacement, backup, and pre-commit policies.
+    /// @return Success after committing, or Failure on any error.
+    [[nodiscard]] auto commitTo(const path::Path &destination, path::PathCommitOptions options = {}) noexcept
+        -> util::Result;
+    /// Finalize and commit this temporary file; destruction never commits implicitly.
+    /// @param destination The destination, absent or a regular file.
+    /// @param options Replacement, backup, and pre-commit policies.
+    /// @throws path::PathError If any stage fails, retaining the underlying cause.
+    /// @seedoc{/reference/path/file_system_paths}
+    void commitToOrThrow(const path::Path &destination, path::PathCommitOptions options = {});
+
 public: // implement OutputStream / TextOutputStream
     using StreamErrorSource::throwError;
 
@@ -61,7 +77,8 @@ public: // implement OutputStream / TextOutputStream
 
 private:
     /// Create a temporary text output stream for an existing path and stream.
-    TempTextOutputStream(path::Path path, TextOutputStreamPtr stream, bool removeOnClose);
+    TempTextOutputStream(
+        path::Path path, TextOutputStreamPtr stream, bool removeOnClose, util::impl::WorkerReservation cleanup);
 
 private:
     /// Throw a stream error with the captured platform context.
@@ -69,6 +86,7 @@ private:
         text::String title, text::String description, system::PlatformErrorContextConstPtr platformContext) const;
 
 private:
+    util::impl::WorkerReservation _cleanup; ///< Reserved before creating the temporary file.
     path::Path _path;
     TextOutputStreamPtr _stream;
     OutputStreamSettings _settings;

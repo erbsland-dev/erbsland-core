@@ -3,11 +3,13 @@
 
 #include "ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/core/ApplicationError.hpp>
-#include <erbsland/i18n/DisplayTextMap.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/TextDocument.hpp>
+#include "../i18n/DisplayTextTestLayer.hpp"
+
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/DisplayText.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/TextDocument.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;
@@ -16,6 +18,7 @@ TESTED_TARGETS(Application ApplicationError ApplicationErrorContext)
 class ApplicationErrorTest final : public el::UnitTest {
 public:
     void testReasonConstructorPreservesDiagnosticTitle() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto error = el::core::ApplicationError{"Startup failed"_el};
         REQUIRE_EQUAL(error.title(), "Startup failed"_el);
         const auto text = error.diagnostic()->toTextDocument().toString();
@@ -23,6 +26,7 @@ public:
     }
 
     void testContextRendersAllDetails() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto context = el::core::ApplicationErrorContext{"Invalid configuration"_el, "Correct the marked value."_el};
         context.setSourceName("application settings"_el)
             .setSourcePath("/tmp/app.conf"_el)
@@ -43,23 +47,22 @@ public:
     void testCustomAndResetApplicationDisplayText() {
         auto scope = ApplicationTestScope<>{};
         REQUIRE(scope.app().displayText());
-        auto map = scope.app().displayText()->clone();
-        map->set("UnknownError"_el, "Unbekannter Fehler"_el);
-        scope.app().setDisplayTextMap(map);
-
-        const auto localizedText = scope.app().displayText()->text("UnknownError"_el);
-        REQUIRE_EQUAL(localizedText, "Unbekannter Fehler"_el);
-        scope.app().setDisplayTextMap(nullptr);
-        REQUIRE(scope.app().displayText());
-        const auto defaultText = scope.app().displayText()->text("UnknownError"_el);
-        REQUIRE_EQUAL(defaultText, "Unknown Error"_el);
+        {
+            auto layer = DisplayTextTestLayer{
+                {""_el, "unknown_error"_el, "Unbekannter Fehler"_el},
+            };
+            REQUIRE_EQUAL(el::i18n::displayText("unknown_error"_el), "Unbekannter Fehler"_el);
+        }
+        REQUIRE_EQUAL(el::i18n::displayText("unknown_error"_el), "Unknown Error"_el);
     }
 
     void testEmptyTitleUsesProvidedDisplayText() {
-        auto map = el::i18n::DisplayTextMap::defaultMap()->clone();
-        map->set("UnknownError"_el, "Unspecified"_el);
+        auto applicationScope = ApplicationTestScope<>{};
+        auto map = DisplayTextTestLayer{
+            {""_el, "unknown_error"_el, "Unspecified"_el},
+        };
         const auto error = el::core::ApplicationError{el::core::ApplicationErrorContext{}, {}};
-        const auto text = error.diagnostic()->toTextDocument(map).toString();
+        const auto text = error.diagnostic()->toTextDocument().toString();
         REQUIRE(text.contains("Unspecified"_el));
     }
 };

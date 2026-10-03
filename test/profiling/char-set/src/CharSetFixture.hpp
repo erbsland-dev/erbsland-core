@@ -2,7 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
+#include <erbsland/AsciiCategory.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CharRange.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Set.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U8String.hpp>
+#include <erbsland/UnicodeCategory.hpp>
+#include <erbsland/UnicodeCategoryGroup.hpp>
 
 #include <cstdint>
 

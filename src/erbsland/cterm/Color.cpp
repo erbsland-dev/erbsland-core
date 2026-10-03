@@ -5,9 +5,11 @@
 #include "../err/ParseError.hpp"
 #include "../text/CharSet.hpp"
 #include "../text/Literals.hpp"
+#include "../text/StringJoins.hpp"
 
 namespace erbsland::cterm {
 
+using namespace text;
 using namespace text::literals;
 
 auto Color::overlayWith(const Color &overlay) const -> Color {
@@ -21,14 +23,14 @@ auto Color::overlayWith(const Color &overlay) const -> Color {
     return result;
 }
 
-auto Color::toString() const -> text::String {
+auto Color::toString() const -> String {
     if (_background == Background::Inherited) {
         return _foreground.toString();
     }
-    return text::String::fromJoined({_foreground.toString(), ":"_el, _background.toString()});
+    return text::join(_foreground.toString(), ":"_el, _background.toString());
 }
 
-auto Color::fromString(const text::String &str, Color defaultValue) -> Color {
+auto Color::fromString(const String &str, Color defaultValue) -> Color {
     try {
         return fromStringOrThrow(str);
     } catch (const err::ParseError &) {
@@ -36,11 +38,10 @@ auto Color::fromString(const text::String &str, Color defaultValue) -> Color {
     }
 }
 
-auto Color::fromStringOrThrow(const text::String &str) -> Color {
-    static const auto separatorCharacters = text::CharSet{U':'};
-    if (const auto splitPos = str.findFirstOf(separatorCharacters); !splitPos.isNoIndex()) {
-        const auto fgStr = str.slice(unit::ByteRange{unit::ByteIndex::zero(), splitPos});
-        const auto bgStr = str.slice(unit::ByteRange{splitPos + unit::ByteLength::one(), unit::ByteLength::infinite()});
+auto Color::fromStringOrThrow(const String &str) -> Color {
+    static const auto separatorCharacters = CharSet{U':'};
+    if (const auto parts = str.splitAtFirst(separatorCharacters)) {
+        const auto &[fgStr, bgStr] = *parts;
         if (!bgStr.findFirstOf(separatorCharacters).isNoIndex()) {
             throw err::ParseError{"A terminal color must have one or two fields."_el};
         }

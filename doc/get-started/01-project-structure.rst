@@ -11,7 +11,7 @@ The Project Structure
 *********************
 
 Organize Erbsland Core Libraries Together
-====================================
+=========================================
 
 Erbsland Core is designed to live at ``<project>/erbsland/core``.
 Future Erbsland Core extension libraries can then be placed next to it at ``<project>/erbsland/<extension>``.

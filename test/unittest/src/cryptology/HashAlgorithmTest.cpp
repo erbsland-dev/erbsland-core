@@ -3,12 +3,12 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/HashAlgorithm.hpp>
-#include <erbsland/cryptology/HashSelector.hpp>
-#include <erbsland/cryptology/StdFormat.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/HashSelector.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::cryptology;
@@ -22,7 +22,7 @@ public:
         const auto selector = HashSelector{};
         for (const auto algorithm : {HashAlgorithm::Sha3_256, HashAlgorithm::Sha2_256}) {
             const auto hash = HashAlgorithm{algorithm};
-            REQUIRE_EQUAL(hash.digestSize(), el::unit::ByteLength{32U});
+            REQUIRE_EQUAL(hash.digestSize(), el::unit::ByteCount{32U});
             REQUIRE_EQUAL(selector.status(hash), CryptographicStatus::Acceptable);
             REQUIRE_EQUAL(hash.security(), CryptographicSecurity::Standard);
             REQUIRE_EQUAL(hash.throughput(), HashThroughput::High);
@@ -30,7 +30,7 @@ public:
         }
         for (const auto algorithm : {HashAlgorithm::Sha3_384, HashAlgorithm::Sha2_384}) {
             const auto hash = HashAlgorithm{algorithm};
-            REQUIRE_EQUAL(hash.digestSize(), el::unit::ByteLength{48U});
+            REQUIRE_EQUAL(hash.digestSize(), el::unit::ByteCount{48U});
             REQUIRE_EQUAL(selector.status(hash), CryptographicStatus::Acceptable);
             REQUIRE_EQUAL(hash.security(), CryptographicSecurity::High);
             REQUIRE_EQUAL(hash.throughput(), HashThroughput::Medium);
@@ -38,14 +38,14 @@ public:
         }
         for (const auto algorithm : {HashAlgorithm::Sha3_512, HashAlgorithm::Sha2_512}) {
             const auto hash = HashAlgorithm{algorithm};
-            REQUIRE_EQUAL(hash.digestSize(), el::unit::ByteLength{64U});
+            REQUIRE_EQUAL(hash.digestSize(), el::unit::ByteCount{64U});
             REQUIRE_EQUAL(selector.status(hash), CryptographicStatus::Acceptable);
             REQUIRE_EQUAL(hash.security(), CryptographicSecurity::High);
             REQUIRE_EQUAL(hash.throughput(), HashThroughput::Low);
             REQUIRE(selector.isSafe(hash));
         }
-        REQUIRE_EQUAL(HashAlgorithm{HashAlgorithm::Sha1}.digestSize(), el::unit::ByteLength{20U});
-        REQUIRE_EQUAL(HashAlgorithm{HashAlgorithm::Md5}.digestSize(), el::unit::ByteLength{16U});
+        REQUIRE_EQUAL(HashAlgorithm{HashAlgorithm::Sha1}.digestSize(), el::unit::ByteCount{20U});
+        REQUIRE_EQUAL(HashAlgorithm{HashAlgorithm::Md5}.digestSize(), el::unit::ByteCount{16U});
         const auto sha1 = HashAlgorithm{HashAlgorithm::Sha1};
         const auto md5 = HashAlgorithm{HashAlgorithm::Md5};
         REQUIRE_EQUAL(selector.status(sha1), CryptographicStatus::Disallowed);

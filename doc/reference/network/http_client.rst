@@ -98,9 +98,13 @@ destination.
 HTTPS Policy
 ============
 
-``HttpClientTlsOptions`` selects the ``http/client`` configuration label by default.
-HTTPS requests resolve the corresponding immutable TLS configuration, validate the server through its explicit trust
-anchors, and offer only ``http/1.1`` through ALPN.
+:cpp:class:`HttpClientTlsOptions <erbsland::network::HttpClientTlsOptions>` selects the ``http`` configuration label by default.
+HTTPS requests retain the selected TLS configuration, validate the server through its system-trust or explicit-anchor
+policy, and offer only ``http/1.1`` through ALPN.
+Lookup selects the client role and uses its normal ancestor and built-in default resolution.
+The built-in client uses system trust subject to shared TLS settings.
+A selected profile with no effective trust source fails instead of falling back to another profile.
+See :doc:`/topics/cryptology/configuring_tls` for trust policies, client identities, and label resolution.
 
 See :doc:`/topics/network/using-http-clients` for request preparation, response policies, streaming, errors, and
 lifecycle examples.

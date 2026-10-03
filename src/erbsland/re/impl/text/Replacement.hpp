@@ -6,7 +6,7 @@
 
 #include "../../../text/String.hpp"
 #include "../../../text/StringEditor.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 #include "../../CaptureGroup.hpp"
 #include "../../Match.hpp"
 
@@ -30,12 +30,11 @@ public:
 public:
     // defaults
     Replacement() = default;
+    ~Replacement() = default;
     Replacement(const Replacement &) = default;
     Replacement(Replacement &&) = default;
-    Replacement &operator=(const Replacement &) = default;
-    Replacement &operator=(Replacement &&) = default;
-    // defaults
-    ~Replacement() = default;
+    auto operator=(const Replacement &) -> Replacement & = default;
+    auto operator=(Replacement &&) -> Replacement & = default;
 
 public: // setup
     /// Add a new part with static text.
@@ -53,7 +52,7 @@ public: // use
 
     /// Get the size of the replacement for the given match.
     /// @param match The match to use for the replacement.
-    [[nodiscard]] auto length(const MatchPtr &match) const -> unit::ByteLength;
+    [[nodiscard]] auto length(const MatchPtr &match) const -> unit::ByteCount;
 
 public:
     /// Create a replacement for the given format string.

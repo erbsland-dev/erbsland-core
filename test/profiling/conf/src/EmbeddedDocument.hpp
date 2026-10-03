@@ -4,7 +4,7 @@
 
 #include "EmbeddedDocument_fwd.hpp"
 
-#include <erbsland/text/StringLiteral.hpp>
+#include <erbsland/StringLiteral.hpp>
 
 namespace app::conf {
 

@@ -7,16 +7,18 @@ Core Semantics
 
 .. code-block:: text
 
-    source text = built-in English text or format pattern
-    display text = source text after optional translation
-    key = dot-separated domain, optional subdomain, and final text name
+    source text = compiled English text or format pattern
+    display text = resolved source text after optional translation
+    key = normalized ELCL names separated by dots
+    layer = one immutable DisplayTextData instance registered by object identity
 
 Primary Types
 =============
 
 .. code-block:: text
 
-    DisplayTextMap  // keyed source texts, translated results, and compiled-format caches
+    DisplayText  // application-owned registry, translations, and compiled-format caches
+    DisplayTextData  // immutable sorted domain/entry arrays with exact binary lookup
     DisplayTextTranslator  // translation interface for resolved English source text
 
 Secondary Types
@@ -24,25 +26,36 @@ Secondary Types
 
 .. code-block:: text
 
-    DisplayTextMapPtr, DisplayTextMapConstPtr // mutable and immutable shared display-text maps
-    DisplayTextTranslatorPtr, DisplayTextTranslatorConstPtr // mutable and immutable shared translators
+    DisplayTextPtr, DisplayTextConstPtr // shared registry interface
+    DisplayTextDataPtr, DisplayTextDataConstPtr // shared immutable catalog data
+    DisplayTextTranslatorPtr, DisplayTextTranslatorConstPtr // shared translators
 
-Map Patterns
-============
+Registry Patterns
+=================
 
 .. code-block:: text
 
-    T()  // create a mutable map populated with built-in English text
-    T::defaultMap() -> const DisplayTextMapConstPtr&  // immutable process-wide English defaults
-    o.clone() -> DisplayTextMapPtr  // copy sources and translator without cached results
-    o.text(key) -> String  // resolve and translate text; return key if it is missing
-    o.format(key) -> StringFormat  // resolve, translate, compile, and cache a format
-    o.set(key, text)/remove(key) -> DisplayTextMap&  // edit source text and clear caches
-    o.translator()/setTranslator(translator)  // access or replace translation behavior
+    application().displayText() -> DisplayTextPtr // access the application-owned registry
+    o.text(key) -> String // resolve and translate; return the requested key if missing
+    o.format(key) -> StringFormat // resolve, translate, compile, and cache
+    o.addData(data) // register a new top layer; duplicate identity leaves ordering unchanged
+    o.removeData(data) -> bool // remove an application layer; preserve the built-in bottom layer
+    o.translator()/setTranslator(translator) // access or replace translation behavior
+    displayText(key) -> String // resolve through the application registry
+    displayFormat(key) -> StringFormat // resolve a format through the application registry
+
+Data Patterns
+=============
+
+.. code-block:: text
+
+    o.domains() -> span<const impl::DisplayTextDomain> // immutable sorted domains and entries
+    o.findText(key) -> optional<String> // exact source lookup without translation or fallback
+    T::create() -> DisplayTextDataPtr // share permanent generated backing arrays
 
 Translator Patterns
 ===================
 
 .. code-block:: text
 
-    o.translate(key, sourceText) -> String  // translate source text; empty keeps the English source
+    o.translate(key, sourceText) -> String // original requested key; empty keeps the source text

@@ -123,10 +123,9 @@ public: // conversion
     /// Build a complete OpenSSL-like certificate display tree.
     [[nodiscard]] auto toStringTree() const -> text::StringTree;
     /// Write this certificate to a file.
+    /// This certificate must not be empty.
     /// @param path The destination path.
-    /// @param format The explicit format or suffix-selected `Automatic` format.
-    /// @throws err::LogicError If the certificate is empty.
-    /// @throws err::ParameterError If automatic output cannot select a format.
+    /// @param format The explicit format or `Automatic`. Automatic selection requires a recognized destination suffix.
     /// @throws path::PathError If writing fails.
     void writeToFile(const path::Path &path, PemDerFormat format = PemDerFormat::Automatic) const;
 
@@ -136,8 +135,9 @@ public: // factories
         const text::String &text, X509CertificateProfileMode mode = X509CertificateProfileMode::Strict) noexcept
         -> X509Certificate;
     /// Parse exactly one strict CERTIFICATE PEM block.
+    /// @param text The PEM certificate text. Text and decoded certificate must fit the fixed parser resource limits.
+    /// @param mode The certificate profile validation mode.
     /// @throws err::ParseError If textual or certificate data is malformed or rejected by the selected profile mode.
-    /// @throws err::OutOfRangeError If a fixed resource limit is exceeded.
     [[nodiscard]] static auto fromPemOrThrow(
         const text::String &text, X509CertificateProfileMode mode = X509CertificateProfileMode::Strict)
         -> X509Certificate;
@@ -146,8 +146,9 @@ public: // factories
         const mem::ByteBlock &data, X509CertificateProfileMode mode = X509CertificateProfileMode::Strict) noexcept
         -> X509Certificate;
     /// Parse exactly one complete canonical DER certificate.
+    /// @param data The complete DER certificate. Must fit the fixed DER parser resource limits.
+    /// @param mode The certificate profile validation mode.
     /// @throws err::ParseError If DER or certificate data is malformed or rejected by the selected profile mode.
-    /// @throws err::OutOfRangeError If a fixed resource limit is exceeded.
     [[nodiscard]] static auto fromDerOrThrow(
         const mem::ByteBlock &data, X509CertificateProfileMode mode = X509CertificateProfileMode::Strict)
         -> X509Certificate;
@@ -157,9 +158,11 @@ public: // factories
         PemDerFormat format = PemDerFormat::Automatic,
         X509CertificateProfileMode mode = X509CertificateProfileMode::Strict) noexcept -> X509Certificate;
     /// Read one certificate from a file.
+    /// @param path The certificate file. Its contents must fit the fixed parser resource limits.
+    /// @param format The input format, or Automatic for detection.
+    /// @param mode The certificate profile validation mode.
     /// @throws path::PathError If reading fails.
     /// @throws err::ParseError If certificate data is malformed.
-    /// @throws err::OutOfRangeError If a fixed resource limit is exceeded.
     [[nodiscard]] static auto fromFileOrThrow(
         const path::Path &path,
         PemDerFormat format = PemDerFormat::Automatic,

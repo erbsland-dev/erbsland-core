@@ -8,7 +8,8 @@
 
 #include "../../../../cryptology/tls_record/TlsRecordContentType.hpp"
 #include "../../../../err/Exception.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../mem/Byte.hpp"
 #include "../../../../mem/ByteArray.hpp"
 #include "../../../../text/Literals.hpp"
@@ -17,14 +18,15 @@
 
 namespace erbsland::network::impl {
 
+using namespace mem;
 using namespace text::literals;
 
-auto TlsServerProtocol::sendApplication(const mem::ConstByteSpan data) -> NetworkSendStatus {
+auto TlsServerProtocol::sendApplication(const ConstByteSpan data) -> NetworkSendStatus {
     if (_state != TlsServerProtocolState::Established || hasCheckpoint() || _localCloseNotify || _peerCloseNotify) {
         return NetworkSendStatus::Closed;
     }
     if (data.size() > (std::size_t{1U} << 14U)) {
-        throw err::ParameterError{"A TLS application send exceeds 2^14 bytes."_el, "data"_el};
+        throw err::ParameterFailure{"A TLS application send exceeds 2^14 bytes."_el, "data"_el};
     }
     if (data.empty()) {
         return NetworkSendStatus::Accepted;
@@ -58,14 +60,14 @@ auto TlsServerProtocol::sendApplication(const mem::ConstByteSpan data) -> Networ
             fail(TlsAlertDescription::InternalError, "A preflighted TLS application record was not queued."_el, false);
             return NetworkSendStatus::Closed;
         }
-    } catch (const err::Exception &error) {
+    } catch (const err::RuntimeError &error) {
         fail(TlsAlertDescription::InternalError, error.reason());
         return NetworkSendStatus::Closed;
     }
     return NetworkSendStatus::Accepted;
 }
 
-void TlsServerProtocol::processPostHandshake(const mem::ByteBlock &message) {
+void TlsServerProtocol::processPostHandshake(const ByteBlock &message) {
     const auto type = message.getOrThrow(unit::ByteIndex::zero()).toUInt8();
     if (type != 24U) {
         // RFC 8446 Sections 4.6.1--4.6.2: clients never send NewSessionTicket and this profile does not request or
@@ -101,7 +103,7 @@ void TlsServerProtocol::processPostHandshake(const mem::ByteBlock &message) {
     }
 }
 
-void TlsServerProtocol::processAlert(const mem::ConstByteSpan content) {
+void TlsServerProtocol::processAlert(const ConstByteSpan content) {
     // RFC 8446 Section 6: every alert record contains exactly AlertLevel and AlertDescription.
     if (content.size() != 2U) {
         throw TlsProtocolError{TlsAlertDescription::DecodeError, "A TLS alert must contain exactly two bytes."_el};
@@ -132,12 +134,12 @@ void TlsServerProtocol::processAlert(const mem::ConstByteSpan content) {
     fail(static_cast<TlsAlertDescription>(description), "TLS client reported a fatal alert."_el, false);
 }
 
-void TlsServerProtocol::processApplicationData(const mem::ConstByteSpan content) {
+void TlsServerProtocol::processApplicationData(const ConstByteSpan content) {
     if (_peerCloseNotify || content.empty()) {
         return;
     }
     requireReceiveCapacity(content.size());
-    auto block = mem::ByteBlock::fromSpan(content);
+    auto block = ByteBlock::fromSpan(content);
     block.markAsSensitive();
     _applicationInputBytes += block.length().toSizeT();
     _applicationInput.push_back(std::move(block));
@@ -157,7 +159,7 @@ void TlsServerProtocol::close() {
     }
 }
 
-void TlsServerProtocol::queueProtectedHandshake(const mem::ConstByteSpan message) {
+void TlsServerProtocol::queueProtectedHandshake(const ConstByteSpan message) {
     const auto recordLength = 5U + message.size() + 1U + 16U;
     const auto limit = _options.bufferLimits().send().toSizeT();
     if (recordLength > limit || _transportOutputBytes > limit - recordLength) {
@@ -173,7 +175,7 @@ void TlsServerProtocol::queueProtectedHandshake(const mem::ConstByteSpan message
 void TlsServerProtocol::queueAlert(const TlsAlertDescription description) noexcept {
     try {
         const auto level = description == TlsAlertDescription::CloseNotify ? uint8_t{1U} : uint8_t{2U};
-        const auto content = mem::ByteArray<2U>{mem::Byte{level}, mem::Byte{static_cast<uint8_t>(description)}};
+        const auto content = ByteArray<2U>{Byte{level}, Byte{static_cast<uint8_t>(description)}};
         if (!_encryptor.isEmpty()) {
             constexpr auto cProtectedAlertRecordLength = std::size_t{5U + 2U + 1U + 16U};
             const auto limit = _options.bufferLimits().send().toSizeT();
@@ -197,7 +199,7 @@ void TlsServerProtocol::queueAlert(const TlsAlertDescription description) noexce
         if (queueTransport(record.finish()) && description == TlsAlertDescription::CloseNotify) {
             _localCloseNotify = true;
         }
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         // A best-effort alert must never replace the original failure or escape a noexcept terminal path.
     }
 }
@@ -216,6 +218,12 @@ void TlsServerProtocol::fail(const TlsAlertDescription alert, text::String diagn
 }
 
 void TlsServerProtocol::eraseSecurityState() noexcept {
+    _pendingCertificateValidation.reset();
+    if (!_peerAuthenticated) {
+        _validatedClientPath = {};
+    }
+    _pendingSignature.reset();
+    _pendingFlight = {};
     // Keep every secret release visible in ownership order: ephemeral X25519, schedule, transcript-dependent state,
     // active record generations, deframed sensitive bytes, then authenticated plaintext queued for the application.
     _privateKey.secureErase();

@@ -3,10 +3,10 @@
 
 #include "PathTestHelper.hpp"
 
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/path/impl/PathNameTools.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/StdFormat.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;

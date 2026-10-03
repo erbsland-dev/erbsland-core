@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "LexerValueTestHelper.hpp"
-
 // NOTES:
 // - Omitted tests for layouts that aren't valid in the language. (e.g., section with text name at the beginning).
 

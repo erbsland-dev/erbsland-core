@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/Alignment.hpp>
 #include <erbsland/block/Position.hpp>
 #include <erbsland/block/StdFormat.hpp>
-#include <erbsland/geometry/Alignment.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <concepts>

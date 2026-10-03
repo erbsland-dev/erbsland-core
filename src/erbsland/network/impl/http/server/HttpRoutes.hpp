@@ -5,6 +5,7 @@
 #include "HttpRouteHandler.hpp"
 
 #include "../../../../text/String.hpp"
+#include "../../../../text/StringList.hpp"
 #include "../../../http/HttpMethod.hpp"
 #include "../../../http/HttpMethodType.hpp"
 
@@ -63,20 +64,20 @@ public:
     /// Add a scope fallback route.
     void addFallback(HttpRouteHandler handler);
     /// Find the first registration-ordered method and path match.
-    [[nodiscard]] auto match(const HttpMethod &method, const std::vector<text::String> &segments) const -> Match;
+    [[nodiscard]] auto match(const HttpMethod &method, const text::StringList &segments) const -> Match;
 
 private:
     /// Parse and validate one brace-pattern path.
     [[nodiscard]] static auto parsePattern(text::String pattern) -> std::vector<Segment>;
     /// Split one normalized pattern on literal slashes.
-    [[nodiscard]] static auto splitPath(const text::String &path) -> std::vector<text::String>;
+    [[nodiscard]] static auto splitPath(const text::String &path) -> text::StringList;
     /// Expand standard method flags into exact method values.
     [[nodiscard]] static auto methodsFromFlags(HttpMethodTypes methods) -> std::vector<HttpMethod>;
     /// Test exact method selection or HEAD-to-GET fallback.
     [[nodiscard]] static auto methodMatches(const Entry &entry, const HttpMethod &method, bool getFallback) -> bool;
     /// Test decoded segments and capture complete parameters.
-    [[nodiscard]] static auto pathMatches(
-        const Entry &entry, const std::vector<text::String> &segments, Parameters &parameters) -> bool;
+    [[nodiscard]] static auto pathMatches(const Entry &entry, const text::StringList &segments, Parameters &parameters)
+        -> bool;
     /// Add unique permitted methods, including implicit HEAD.
     static void appendAllowed(const Entry &entry, std::vector<HttpMethod> &allowed);
     /// Validate automatic-body bounds and configured media patterns.

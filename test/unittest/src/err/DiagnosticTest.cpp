@@ -1,19 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/DiagnosticHelper.hpp>
-#include <erbsland/err/Exception.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/i18n/DisplayTextMap.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathErrorContext.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/stream/StreamErrorContext.hpp>
+#include "../core/ApplicationTestScope.hpp"
+#include "../i18n/DisplayTextTestLayer.hpp"
+
+#include <erbsland/DiagnosticHelper.hpp>
+#include <erbsland/DisplayText.hpp>
+#include <erbsland/Exception.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathErrorContext.hpp>
+#include <erbsland/PlatformError.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/StreamErrorContext.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/system/impl/PosixErrorContext.hpp>
-#include <erbsland/system/PlatformError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/TextDocument.hpp>
+#include <erbsland/TextDocument.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cerrno>
@@ -29,6 +32,7 @@ TESTED_TARGETS(
 class DiagnosticTest final : public el::UnitTest {
 public:
     void testDefaultExceptionDiagnostic() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto error = el::err::Exception{"Broken value"_el};
         const auto diagnostic = error.diagnostic();
 
@@ -41,6 +45,7 @@ public:
     }
 
     void testParseErrorDiagnosticLocation() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto error = el::err::ParseError{"Invalid integer"_el, el::unit::CpIndex{4U}};
         const auto diagnostic = error.diagnostic();
 
@@ -50,6 +55,7 @@ public:
     }
 
     void testPathDiagnosticPathMetadata() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto error = el::path::PathError{
             el::path::PathErrorContext{"File could not be read"_el, "The file is unavailable."_el}.setSourcePath(
                 "/tmp/missing.txt"_el)};
@@ -67,6 +73,7 @@ public:
     }
 
     void testPathDiagnosticEmbedsPlatformContext() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto context = std::make_shared<const el::system::impl::PosixErrorContext>(2, "No such file"_el);
         auto error =
             el::path::PathError{el::path::PathErrorContext{"File could not be read"_el, "The file is unavailable."_el}
@@ -96,6 +103,7 @@ public:
     }
 
     void testPathContextSourceTargetAndExplicitHelp() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto context = el::path::PathErrorContext{"File or directory could not be copied"_el, "Copy failed."_el};
         context.setSourcePath("/from/a"_el)
             .setTargetPath("/to/b"_el)
@@ -113,6 +121,7 @@ public:
     }
 
     void testPathContextNoPathAndTargetOnlyLabels() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto noPath = el::path::PathError{el::path::PathErrorContext{"Path operation failed"_el}};
         const auto noPathText = toStdString(noPath.diagnostic()->toTextDocument().toString());
         WITH_CONTEXT(requireMissing(noPathText, "target path"));
@@ -127,6 +136,7 @@ public:
     }
 
     void testPathContextCanKeepIndependentCause() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto cause = std::make_exception_ptr(el::err::Exception{"Configuration lookup failed"_el});
         auto error = el::path::PathError{el::path::PathErrorContext{"Path operation failed"_el}, cause};
 
@@ -137,6 +147,7 @@ public:
     }
 
     void testStreamDiagnosticEmbedsPlatformContext() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto platform =
             std::make_shared<const el::system::impl::PosixErrorContext>(EACCES, "Permission denied"_el);
         const auto error = el::stream::StreamError{
@@ -165,6 +176,7 @@ public:
     }
 
     void testExternalPathAndSystemTextAreEscaped() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto unsafePath = el::text::StringEditor{"/tmp/a"_el};
         unsafePath.append(U'\x1b').append("b"_el);
         auto unsafeMessage = el::text::StringEditor{"bad"_el};
@@ -183,6 +195,7 @@ public:
     }
 
     void testForeignExceptionTextIsEscaped() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto message = std::string{"foreign"};
         message.push_back('\x1b');
         message += "message";
@@ -193,19 +206,22 @@ public:
         WITH_CONTEXT(requireContains(text, "foreign\\u{1b}message"));
     }
 
-    void testCauseHeadingUsesDisplayTextMap() {
+    void testCauseHeadingUsesDisplayTextLayer() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto cause = std::make_exception_ptr(el::err::Exception{"Underlying failure"_el});
         auto error = el::err::Exception{"Top-level failure"_el, cause};
-        auto displayText = el::i18n::DisplayTextMap::defaultMap()->clone();
-        displayText->set("CausedByHeading"_el, "Reason Chain"_el);
+        auto displayText = DisplayTextTestLayer{
+            {""_el, "caused_by_heading"_el, "Reason Chain"_el},
+        };
 
-        const auto text = toStdString(el::err::DiagnosticHelper{error, displayText}.toDocument().toString());
+        const auto text = toStdString(el::err::DiagnosticHelper{error}.toDocument().toString());
 
         WITH_CONTEXT(requireContains(text, "Reason Chain"));
         WITH_CONTEXT(requireContains(text, "Underlying failure"));
     }
 
     void testCauseHeadingPrecedesStyledBlockquote() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto nested = std::make_exception_ptr(el::err::Exception{"Deep failure"_el});
         auto cause = std::make_exception_ptr(el::err::Exception{"Underlying failure"_el, nested});
         auto error = el::err::Exception{"Top-level failure"_el, cause};

@@ -5,10 +5,10 @@
 
 #include <erbsland/re/Features.hpp>
 #include <erbsland/re/Flags.hpp>
-#include <erbsland/re/RegEx.hpp>
 #include <erbsland/re/RegExError.hpp>
 #include <erbsland/re/Settings.hpp>
 #include <erbsland/re/StdFormat.hpp>
+#include <erbsland/RegEx.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <concepts>
@@ -91,7 +91,7 @@ public:
 
     void testCompileRespectsMaximumPatternLength() {
         Settings settings;
-        settings.setMaximumPatternLength(el::unit::CpLength{3U});
+        settings.setMaximumPatternLength(el::unit::CpCount{3U});
 
         try {
             (void)RegEx::compile("abcd"_el, {}, settings);

@@ -6,11 +6,14 @@
 #include "../SecureErase.hpp"
 
 #include "../../err/OutOfRangeError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
 
 #include <algorithm>
 #include <utility>
 
 namespace erbsland::mem::impl {
+
+using namespace err;
 
 BitReaderImpl::BitReaderImpl(ByteBlock data, const std::size_t bitPosition) noexcept :
     _block{std::move(data)}, _data{_block.span()} {
@@ -18,12 +21,12 @@ BitReaderImpl::BitReaderImpl(ByteBlock data, const std::size_t bitPosition) noex
 }
 
 BitReaderImpl::~BitReaderImpl() {
-    secureErase(std::span{_prefix});
+    mem::secureErase(std::span{_prefix});
 }
 
 void BitReaderImpl::refill(ByteBlock data) {
     if (remainingBitCount() > 64U) {
-        throw err::OutOfRangeError{"Bit reader refill requires at most 64 unread bits."};
+        throw OutOfRangeFailure{"Bit reader refill requires at most 64 unread bits."};
     }
     const auto begin = bytePosition();
     const auto count = byteCount() - begin;
@@ -36,9 +39,12 @@ void BitReaderImpl::refill(ByteBlock data) {
     _data = _block.span();
 }
 
-auto BitReaderImpl::readBytesOrThrow(const unit::ByteLength length) -> ByteBlock {
-    if (!isByteAligned() || !length.isFinite() || length.toRawValue() > remainingBitCount() / 8U) {
-        throw err::OutOfRangeError{"Byte read requires alignment and sufficient buffered input."};
+auto BitReaderImpl::readBytesOrThrow(const unit::ByteCount length) -> ByteBlock {
+    if (!isByteAligned() || !length.isFinite()) {
+        throw OutOfRangeFailure{"Byte read requires alignment and a finite length."};
+    }
+    if (length.toRawValue() > remainingBitCount() / 8U) {
+        throw OutOfRangeError{"Byte read exceeds the available data."};
     }
     const auto count = length.toSizeTOrThrow();
     const auto begin = bytePosition();
@@ -102,8 +108,11 @@ auto BitReaderImpl::readBits(const std::size_t bitCountValue, const uint64_t def
 }
 
 auto BitReaderImpl::readBitsOrThrow(const std::size_t bitCountValue) -> uint64_t {
-    if (bitCountValue > 64U || !canRead(bitCountValue)) {
-        throw err::OutOfRangeError{"Bit read exceeds the available data."};
+    if (bitCountValue > 64U) {
+        throw OutOfRangeFailure{"Bit read exceeds 64 bits."};
+    }
+    if (!canRead(bitCountValue)) {
+        throw OutOfRangeError{"Bit read exceeds the available data."};
     }
     return readBitsUnchecked(bitCountValue);
 }

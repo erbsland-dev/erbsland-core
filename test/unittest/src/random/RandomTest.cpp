@@ -1,23 +1,23 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/math/IntegerRange.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/HashSet.hpp>
+#include <erbsland/IntegerRange.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/mem/impl/ByteBlockData.hpp>
 #include <erbsland/mem/impl/SecureErase.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/CharSet.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/OutOfRangeFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/Set.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 #include <erbsland/text/u8/impl/U8StringData.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/HashSet.hpp>
-#include <erbsland/util/List.hpp>
-#include <erbsland/util/Set.hpp>
 
 #include <algorithm>
 #include <array>
@@ -33,8 +33,8 @@ using el::random::Random;
 using el::text::CharSet;
 using el::text::String;
 using el::text::StringList;
-using el::unit::ByteLength;
-using el::unit::CpLength;
+using el::unit::ByteCount;
+using el::unit::CpCount;
 using el::unit::ItemCount;
 using el::util::HashSet;
 using el::util::List;
@@ -167,13 +167,13 @@ public:
         REQUIRE(random.selectIndex(ItemCount::infinite()).isNoIndex());
         REQUIRE_EQUAL(random.selectElement(std::vector<int>{}, 99), 99);
         REQUIRE(random.buildIntegerList(ItemCount::zero(), 1, 3).count().isZero());
-        REQUIRE(random.buildString(CpLength{4}, CharSet{}).isEmpty());
-        REQUIRE(random.buildString(CpLength::zero(), CharSet::fromPattern("A-Z"_el)).isEmpty());
-        REQUIRE(random.buildByteBlock(ByteLength::zero()).isEmpty());
-        REQUIRE(random.buildByteBuffer(ByteLength::zero()).isEmpty());
+        REQUIRE(random.buildString(CpCount{4}, CharSet{}).isEmpty());
+        REQUIRE(random.buildString(CpCount::zero(), CharSet::fromPattern("A-Z"_el)).isEmpty());
+        REQUIRE(random.buildByteBlock(ByteCount::zero()).isEmpty());
+        REQUIRE(random.buildByteBuffer(ByteCount::zero()).isEmpty());
 
         auto secureRandom = SecureCountingRandom{};
-        const auto emptySecureBuffer = secureRandom.buildByteBuffer(ByteLength::zero());
+        const auto emptySecureBuffer = secureRandom.buildByteBuffer(ByteCount::zero());
         REQUIRE(emptySecureBuffer.isEmpty());
         REQUIRE(emptySecureBuffer.isSensitive());
     }
@@ -181,33 +181,33 @@ public:
     void testStringAndBytes() {
         auto random = CountingRandom{};
 
-        const auto text = random.buildString(CpLength{3}, CharSet::fromPattern("A-C"_el));
+        const auto text = random.buildString(CpCount{3}, CharSet::fromPattern("A-C"_el));
         REQUIRE_EQUAL(text, "ABC"_el);
 
-        const auto block = random.buildByteBlock(ByteLength{4});
-        REQUIRE_EQUAL(block.length(), ByteLength{4});
+        const auto block = random.buildByteBlock(ByteCount{4});
+        REQUIRE_EQUAL(block.length(), ByteCount{4});
         REQUIRE_FALSE(block.isSensitive());
         REQUIRE_FALSE(random.isSecure());
         REQUIRE_EQUAL(block.toUInt8Vector(), (std::vector<uint8_t>{3U, 4U, 5U, 6U}));
 
-        const auto buffer = random.buildByteBuffer(ByteLength{4});
-        REQUIRE_EQUAL(buffer.length(), ByteLength{4});
+        const auto buffer = random.buildByteBuffer(ByteCount{4});
+        REQUIRE_EQUAL(buffer.length(), ByteCount{4});
         REQUIRE_EQUAL(buffer.toUInt8Vector(), (std::vector<uint8_t>{7U, 8U, 9U, 10U}));
     }
 
     void testStringRejectsUnrepresentableCapacity() {
         auto random = CountingRandom{};
 
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, random.buildString(CpLength::maximum(), CharSet{"🦊"_el}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, random.buildString(CpCount::maximum(), CharSet{"🦊"_el}));
     }
 
     void testSecureStringAndBytesUseProtectedAllocations() {
         const auto guard = RandomEraseObserverGuard{};
         {
             auto random = SecureCountingRandom{};
-            const auto sensitiveText = random.buildString(CpLength{3U}, CharSet{"Aé🦊"_el});
+            const auto sensitiveText = random.buildString(CpCount{3U}, CharSet{"Aé🦊"_el});
             REQUIRE(sensitiveText.isSensitive());
-            REQUIRE_EQUAL(sensitiveText.characterLength(), CpLength{3U});
+            REQUIRE_EQUAL(sensitiveText.characterLength(), CpCount{3U});
             REQUIRE_EQUAL(sensitiveText.charAt(el::unit::CpIndex{0U}), el::text::Char{U'A'});
             REQUIRE_EQUAL(sensitiveText.charAt(el::unit::CpIndex{1U}), el::text::Char{U'é'});
             REQUIRE_EQUAL(sensitiveText.charAt(el::unit::CpIndex{2U}), el::text::Char{U'🦊'});
@@ -222,8 +222,8 @@ public:
         {
             auto random = SecureCountingRandom{};
             REQUIRE(random.isSecure());
-            const auto sensitiveBytes = random.buildByteBlock(ByteLength{4U});
-            REQUIRE_EQUAL(sensitiveBytes.length(), ByteLength{4U});
+            const auto sensitiveBytes = random.buildByteBlock(ByteCount{4U});
+            REQUIRE_EQUAL(sensitiveBytes.length(), ByteCount{4U});
             REQUIRE(sensitiveBytes.isSensitive());
             REQUIRE_EQUAL(sensitiveBytes.get(el::unit::ByteIndex{0U}), el::mem::Byte{0U});
             REQUIRE_EQUAL(sensitiveBytes.get(el::unit::ByteIndex{3U}), el::mem::Byte{3U});
@@ -237,9 +237,9 @@ public:
         gRandomEraseEvents.clear();
         {
             auto random = SecureCountingRandom{};
-            const auto sensitiveBytes = random.buildByteBuffer(ByteLength{4U});
+            const auto sensitiveBytes = random.buildByteBuffer(ByteCount{4U});
             REQUIRE(sensitiveBytes.isSensitive());
-            REQUIRE_EQUAL(sensitiveBytes.length(), ByteLength{4U});
+            REQUIRE_EQUAL(sensitiveBytes.length(), ByteCount{4U});
         }
         REQUIRE_FALSE(gRandomEraseEvents.empty());
     }
@@ -248,7 +248,7 @@ public:
         const auto guard = RandomEraseObserverGuard{};
         {
             auto random = ThrowingRandom{};
-            REQUIRE_THROWS(random.buildString(CpLength{3U}, CharSet::fromPattern("A-C"_el)));
+            REQUIRE_THROWS(random.buildString(CpCount{3U}, CharSet::fromPattern("A-C"_el)));
         }
         REQUIRE_EQUAL(gRandomEraseEvents.size(), std::size_t{1U});
         REQUIRE_EQUAL(
@@ -258,7 +258,7 @@ public:
         gRandomEraseEvents.clear();
         {
             auto random = ThrowingRandom{};
-            REQUIRE_THROWS(random.buildByteBlock(ByteLength{4U}));
+            REQUIRE_THROWS(random.buildByteBlock(ByteCount{4U}));
         }
         REQUIRE_EQUAL(gRandomEraseEvents.size(), std::size_t{1U});
         REQUIRE_EQUAL(
@@ -292,7 +292,7 @@ public:
 
         auto random = CountingRandom{};
         const auto selected = random.selectElement(choices);
-        const auto defaultSelected = random.selectElement(StringList{}, String{"white"_el});
+        const auto defaultSelected = random.selectElement(StringList{}, "white"_el);
         REQUIRE_EQUAL(selected, "red"_el);
         REQUIRE_EQUAL(defaultSelected, "white"_el);
 
@@ -307,6 +307,19 @@ public:
         static_assert(std::is_same_v<decltype(unique), StringList>);
         const auto uniqueText = unique.join("|"_el);
         REQUIRE_EQUAL(uniqueText, "blue|green"_el);
+    }
+
+    void testConvertibleSelectionDefaults() {
+        auto random = CountingRandom{};
+        const auto fallback = el::StringEditor{"fallback"_el};
+        REQUIRE_EQUAL(random.selectElement(StringList{}, fallback), "fallback"_el);
+        REQUIRE_EQUAL(random.selectElement(StringList{}, "literal"_el), "literal"_el);
+        REQUIRE_EQUAL(random.selectElement(std::span<const String>{}, "literal"_el), "literal"_el);
+        REQUIRE_EQUAL(random.selectElement(std::initializer_list<String>{}, "literal"_el), "literal"_el);
+        REQUIRE_EQUAL(random.selectElement(Set<String>{}, "literal"_el), "literal"_el);
+        REQUIRE_EQUAL(random.selectElement(HashSet<String>{}, "literal"_el), "literal"_el);
+        REQUIRE_EQUAL(random.selectElement(StringList{"selected"_el}, fallback), "selected"_el);
+        REQUIRE_EQUAL(random.selectElement(std::vector<int>{}, short{42}), 42);
     }
 
     void testShuffle() {

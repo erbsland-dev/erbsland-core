@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/block/StdFormat.hpp>
-#include <erbsland/geometry/Orientation.hpp>
+#include <erbsland/Orientation.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <type_traits>

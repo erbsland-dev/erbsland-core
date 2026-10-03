@@ -18,3 +18,4 @@ add_test(
         NAME erbsland-profiling-unittest
         COMMAND $<TARGET_FILE:erbsland-profiling-unittest> --no-color
 )
+set_tests_properties(erbsland-profiling-unittest PROPERTIES LABELS ci)

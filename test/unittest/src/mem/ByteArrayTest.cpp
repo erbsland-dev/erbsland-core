@@ -1,17 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteArray.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/mem/ByteIntegerAccess.hpp>
-#include <erbsland/mem/ByteSpan.hpp>
-#include <erbsland/mem/Endianness.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/ByteSpan.hpp>
+#include <erbsland/Endianness.hpp>
 #include <erbsland/mem/impl/UnsafeByteArrayAccess.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ByteRange.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <concepts>
@@ -28,8 +28,8 @@ using el::mem::ConstByteSpan;
 using el::mem::Endianness;
 using el::mem::FixedByteSpan;
 using el::mem::FixedConstByteSpan;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteRange;
 
 static_assert(std::same_as<decltype(ByteArray{Byte{1U}, Byte{2U}}), ByteArray<2>>);
@@ -37,7 +37,7 @@ static_assert(ByteArray<4>{0xf0U, std::byte{0x28U}, uint8_t{0x8cU}, Byte{0x28U}}
 static_assert(std::same_as<decltype(ByteArray<3>{}.span()), FixedConstByteSpan<3>>);
 static_assert(std::same_as<decltype(std::declval<const ByteArray<3> &>().span()), FixedConstByteSpan<3>>);
 static_assert(ByteArray<0>::isEmpty());
-static_assert(ByteArray<4>::length() == ByteLength{4U});
+static_assert(ByteArray<4>::length() == ByteCount{4U});
 static_assert(ByteArray<4>::endIndex() == ByteIndex{4U});
 static_assert(ByteArray{Byte{0x12U}, Byte{0x34U}}.shiftedLeft(4U).get(ByteIndex{0U}).toUInt8() == 0x23U);
 static_assert([]() constexpr {
@@ -53,7 +53,7 @@ static_assert([]() constexpr {
     auto value = uint32_t{};
     return bytes.getInteger<int16_t>(ByteIndex{1U}) == int16_t{-2} &&
         bytes.getIntegerInto(value, ByteIndex{3U}, Endianness::Big) && value == uint32_t{0x12345678U} &&
-        bytes.span(ByteIndex{6U}, ByteLength::infinite()).size() == 2U;
+        bytes.span(ByteIndex{6U}, ByteCount::infinite()).size() == 2U;
 }());
 static_assert([]() constexpr {
     auto bytes = std::array<Byte, 8>{};
@@ -76,7 +76,7 @@ public:
         const auto &constBytes = bytes;
 
         REQUIRE_FALSE(bytes.isEmpty());
-        REQUIRE_EQUAL(bytes.length(), ByteLength{3U});
+        REQUIRE_EQUAL(bytes.length(), ByteCount{3U});
         REQUIRE_EQUAL(bytes.get(ByteIndex{1U}), Byte{2U});
         REQUIRE_EQUAL(constBytes.get(ByteIndex{2U}), Byte{3U});
         REQUIRE_EQUAL(bytes.get(ByteIndex{99U}, Byte{8U}), Byte{8U});
@@ -111,8 +111,8 @@ public:
 
         REQUIRE_FALSE(ByteArray<2>::fromSpan(source.span()).has_value());
         REQUIRE_FALSE(ByteArray<4>::fromSpan(source.span()).has_value());
-        REQUIRE_THROWS_AS(el::err::ParameterError, ByteArray<2>::fromSpanOrThrow(source.span()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, ByteArray<4>::fromSpanOrThrow(source.span()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ByteArray<2>::fromSpanOrThrow(source.span()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ByteArray<4>::fromSpanOrThrow(source.span()));
     }
 
     void testConstantTimeEquality() {
@@ -196,31 +196,31 @@ public:
     void testUnitAwareSpans() {
         auto bytes = ByteArray{Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}, Byte{5U}};
 
-        const auto readOnlyRange = bytes.span(ByteRange{ByteIndex{1U}, ByteLength{2U}});
+        const auto readOnlyRange = bytes.span(ByteRange{ByteIndex{1U}, ByteCount{2U}});
         REQUIRE_EQUAL(readOnlyRange.size(), std::size_t{2U});
         bytes.set(ByteIndex{1U}, Byte{9U});
         REQUIRE_EQUAL(bytes.get(ByteIndex{1U}), Byte{9U});
 
         const auto &constBytes = bytes;
-        const auto constRange = constBytes.span(ByteIndex{2U}, ByteLength{2U});
+        const auto constRange = constBytes.span(ByteIndex{2U}, ByteCount{2U});
         REQUIRE_EQUAL(constRange.size(), std::size_t{2U});
         REQUIRE_EQUAL(constRange[0], Byte{3U});
         REQUIRE_EQUAL(constRange[1], Byte{4U});
 
-        const auto clamped = constBytes.span(ByteRange{ByteIndex{3U}, ByteLength{99U}});
+        const auto clamped = constBytes.span(ByteRange{ByteIndex{3U}, ByteCount{99U}});
         REQUIRE_EQUAL(clamped.size(), std::size_t{2U});
         REQUIRE_EQUAL(clamped[1], Byte{5U});
-        REQUIRE_EQUAL(constBytes.span(ByteRange{ByteIndex{2U}, ByteLength::infinite()}).size(), std::size_t{3U});
-        REQUIRE(constBytes.span(ByteRange{ByteIndex{99U}, ByteLength{2U}}).empty());
-        REQUIRE(constBytes.span(ByteRange{ByteIndex::noIndex(), ByteLength{2U}}).empty());
+        REQUIRE_EQUAL(constBytes.span(ByteRange{ByteIndex{2U}, ByteCount::infinite()}).size(), std::size_t{3U});
+        REQUIRE(constBytes.span(ByteRange{ByteIndex{99U}, ByteCount{2U}}).empty());
+        REQUIRE(constBytes.span(ByteRange{ByteIndex::noIndex(), ByteCount{2U}}).empty());
         REQUIRE(constBytes.span(ByteRange::noRange()).empty());
-        REQUIRE(constBytes.span(ByteIndex::noIndex(), ByteLength{2U}).empty());
+        REQUIRE(constBytes.span(ByteIndex::noIndex(), ByteCount{2U}).empty());
     }
 
     void testBulkMutation() {
         auto bytes = ByteArray{Byte{0U}, Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}, Byte{5U}};
-        bytes.fill(ByteRange{ByteIndex{1U}, ByteLength{2U}}, Byte{9U});
-        bytes.overwrite(ByteRange{ByteIndex{3U}, ByteLength::infinite()}, ByteArray{Byte{8U}, Byte{7U}}.span());
+        bytes.fill(ByteRange{ByteIndex{1U}, ByteCount{2U}}, Byte{9U});
+        bytes.overwrite(ByteRange{ByteIndex{3U}, ByteCount::infinite()}, ByteArray{Byte{8U}, Byte{7U}}.span());
         REQUIRE_EQUAL(bytes.toByteBuffer(), ByteBuffer({Byte{0U}, Byte{9U}, Byte{9U}, Byte{8U}, Byte{7U}, Byte{5U}}));
 
         bytes.overwrite(ByteIndex{99U}, ByteArray{Byte{1U}}.span());
@@ -229,13 +229,12 @@ public:
         REQUIRE_EQUAL(bytes.toByteBuffer(), ByteBuffer({Byte{0U}, Byte{9U}, Byte{9U}, Byte{8U}, Byte{7U}, Byte{5U}}));
 
         auto overlap = ByteArray{Byte{0U}, Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}};
-        overlap.overwrite(ByteIndex{1U}, overlap.span(ByteIndex{0U}, ByteLength{4U}));
+        overlap.overwrite(ByteIndex{1U}, overlap.span(ByteIndex{0U}, ByteCount{4U}));
         REQUIRE_EQUAL(overlap.toByteBuffer(), ByteBuffer({Byte{0U}, Byte{0U}, Byte{1U}, Byte{2U}, Byte{3U}}));
-        overlap.overwrite(ByteRange{ByteIndex{0U}, ByteLength{4U}}, overlap.span(ByteIndex{1U}, ByteLength{4U}));
+        overlap.overwrite(ByteRange{ByteIndex{0U}, ByteCount{4U}}, overlap.span(ByteIndex{1U}, ByteCount{4U}));
         REQUIRE_EQUAL(overlap.toByteBuffer(), ByteBuffer({Byte{0U}, Byte{1U}, Byte{2U}, Byte{3U}, Byte{3U}}));
 
-        bytes.xorWith(
-            ByteRange{ByteIndex{1U}, ByteLength{3U}}, ByteArray{Byte{0xffU}, Byte{0x0fU}, Byte{0xf0U}}.span());
+        bytes.xorWith(ByteRange{ByteIndex{1U}, ByteCount{3U}}, ByteArray{Byte{0xffU}, Byte{0x0fU}, Byte{0xf0U}}.span());
         REQUIRE_EQUAL(
             bytes.toByteBuffer(), ByteBuffer({Byte{0U}, Byte{0xf6U}, Byte{0x06U}, Byte{0xf8U}, Byte{7U}, Byte{5U}}));
         REQUIRE_FALSE(bytes.xorWith(ByteArray{Byte{1U}}.span()));
@@ -244,7 +243,7 @@ public:
         strict.xorWithOrThrow(ByteArray{Byte{0xaaU}, Byte{0x55U}}.span());
         REQUIRE_EQUAL(strict.toByteBuffer(), ByteBuffer({Byte{0x5aU}, Byte{0x5aU}}));
         const auto strictSnapshot = strict;
-        REQUIRE_THROWS_AS(el::err::ParameterError, strict.xorWithOrThrow(ByteArray{Byte{1U}}.span()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, strict.xorWithOrThrow(ByteArray{Byte{1U}}.span()));
         REQUIRE_EQUAL(strict, strictSnapshot);
     }
 

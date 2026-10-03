@@ -11,8 +11,10 @@
 namespace erbsland::math {
 
 // A native integer type supported by the math helpers.
+// This includes all integral types except `bool`, `char8_t` and integers larger than 64bits.
 template <typename T>
-concept NativeInteger = std::integral<T> && std::same_as<T, std::remove_cv_t<T>> && !std::same_as<bool, T>;
+concept NativeInteger =
+    std::integral<T> && std::same_as<T, std::remove_cv_t<T>> && !std::same_as<bool, T> && sizeof(T) <= 8;
 
 // Check if both types are supported native integer types.
 template <typename tFirst, typename tSecond>

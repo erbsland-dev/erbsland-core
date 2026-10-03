@@ -2,26 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "LineBuffer.hpp"
 
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteRange.hpp"
 
 #include <cassert>
 
 namespace erbsland::cterm::impl {
 
+using namespace text;
+using namespace unit;
+
 void LineBuffer::setCachingEnabled(const bool enabled) noexcept {
     if (_cachingEnabled != enabled) {
         _cachingEnabled = enabled;
         if (enabled) {
-            _buffer.reserve(unit::ByteLength::fromSizeT(cEnabledSize));
+            _buffer.reserve(ByteCount::fromSizeT(cEnabledSize));
         } else {
             handleEmit(true);
         }
     }
 }
 
-void LineBuffer::write(const text::String &text) noexcept {
+void LineBuffer::write(const String &text) noexcept {
     _buffer.append(text);
     if (text.containsOneOf(newLineCharacters())) {
         _hasNewLine = true;
@@ -39,7 +42,7 @@ void LineBuffer::handleEmit(const bool forceEmit) noexcept {
     if (!_cachingEnabled || forceEmit) {
         emitFullLineBuffer();
     }
-    if (_buffer.length() >= unit::ByteLength::fromSizeT(cMaxSize)) { // force emit if the buffer gets too large.
+    if (_buffer.length() >= ByteCount::fromSizeT(cMaxSize)) { // force emit if the buffer gets too large.
         emitFullLineBuffer();
         return;
     }
@@ -51,9 +54,9 @@ void LineBuffer::handleEmit(const bool forceEmit) noexcept {
         emitFullLineBuffer();
         return;
     }
-    const auto emittedEnd = nlPos + unit::ByteLength::one();
-    _backend->emitText(_buffer.slice(text::StringSide::Front, emittedEnd));
-    _buffer.remove(unit::ByteRange{unit::ByteIndex::zero(), emittedEnd});
+    const auto emittedEnd = nlPos + ByteCount::one();
+    _backend->emitText(_buffer.slice(StringSide::Front, emittedEnd));
+    _buffer.remove(ByteRange{ByteIndex::zero(), emittedEnd});
 }
 
 void LineBuffer::shutdown() noexcept {
@@ -62,8 +65,8 @@ void LineBuffer::shutdown() noexcept {
     _buffer.shrinkToFit();
 }
 
-auto LineBuffer::newLineCharacters() -> const text::CharSet & {
-    static const auto cNewLineCharacters = text::CharSet{U'\n'};
+auto LineBuffer::newLineCharacters() -> const CharSet & {
+    static const auto cNewLineCharacters = CharSet{U'\n'};
     return cNewLineCharacters;
 }
 

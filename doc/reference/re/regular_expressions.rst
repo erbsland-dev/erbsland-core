@@ -39,9 +39,39 @@ Every overload returns :cpp:type:`RegExPtr <erbsland::re::RegExPtr>` and produce
 
 Invalid syntax and configured limits throw :cpp:class:`RegExError <erbsland::re::RegExError>`.
 Pattern length is measured in decoded code points, independently of the source encoding.
-The compiled object retains the normalized UTF-8 source text returned by
+The compiled object retains the source pattern in its original Core string encoding, returned by
 :cpp:func:`pattern() <erbsland::re::RegEx::pattern>`.
-UTF-16 and UTF-32 patterns therefore produce the same stored representation as an equivalent UTF-8 pattern.
+``flags()`` returns the initial construction flags for eager and lazy expressions without triggering compilation.
+Inline flag changes remain part of the pattern, rather than modifying this accessor's result.
+
+Cached Literal Expressions
+--------------------------
+
+``re::compile(pattern)`` returns a ``ConstRegExPtr`` from a bounded application-scoped cache.
+The pattern must be a ``StringLiteral``; compilation uses default settings and accepts inline flags.
+``RegEx.hpp`` also exposes these functions through ``RegExCached.hpp``.
+
+``re::match``, ``re::fullMatch``, ``re::findFirst``, ``re::findAll``, and ``re::collectAll`` take the pattern followed
+by a Core string subject and preserve the corresponding ``RegEx`` method's semantics and result type.
+UTF-8, UTF-16, and UTF-32 subjects are supported.
+``re::replaceAll(pattern, text, replacement)`` accepts a UTF-8 subject and requires both pattern and replacement
+expression to be ``StringLiteral`` values.
+Only compiled patterns are cached; replacement expressions are parsed by the existing replacement implementation.
+Use ``RegEx::compile`` for dynamic patterns, custom settings, custom inputs, streams, and replacement callbacks.
+
+The cache is created on first use in the current application data.
+It searches a 64-entry FIFO before a 512-entry LRU, promotes backing-cache hits into the FIFO, and retains only
+successful compilations.
+FIFO hits do not refresh backing-cache recency, so the two caches may retain different entries.
+These capacities are implementation tuning values, not a public configuration contract.
+Concurrent misses may compile the same pattern more than once; compilation and matching happen outside the cache lock.
+Errors propagate normally, and cache eviction does not invalidate returned expressions or match results.
+
+Cached ``findAll`` compiles before returning its generator.
+The generator retains its expression and subject until destruction, including across eviction or application-scope
+teardown; matching remains lazy.
+Keep a named local static expression compiled through ``RegEx::compile`` for repeatedly executed fixed tool patterns
+when no lookup is needed.
 
 Lazy Compilation
 ----------------
@@ -106,7 +136,7 @@ After a successful match, the API seeks to each captured range and copies its te
 reused or destroyed.
 
 Capture copying restores the stream's logical position before the next matching operation continues.
-Streams that do not support positioning cause :cpp:class:`err::ParameterError <erbsland::err::ParameterError>`.
+Streams that do not support positioning cause :cpp:class:`err::ParameterFailure <erbsland::err::ParameterFailure>`.
 Read or positioning timeouts cause :cpp:class:`stream::StreamError <erbsland::stream::StreamError>` and are never
 treated as end-of-input.
 
@@ -130,6 +160,16 @@ Replacement
 :cpp:type:`MatchPtr <erbsland::re::MatchPtr>`. The callback returns an owning
 :cpp:class:`text::String <erbsland::text::U8String>`, allowing it to reuse unchanged input or match content
 without creating an intermediate string copy.
+``validateReplacement(expression)`` checks replacement syntax and named or numeric capture references without matching
+subject text.
+It accepts empty replacements, ``{0}`` or ``{}`` for the complete match, ``{1}`` or ``{name}`` for captures, and doubled
+braces for literal braces.
+For example, ``"[{name}]"_el`` surrounds a named capture with square brackets.
+A callback such as ``[](el::re::MatchPtr match) -> el::String { return match->content(); }`` returns literal replacement
+text; its return value is not parsed as a replacement expression, and callback exceptions propagate.
+It compiles a lazy pattern if needed and throws ``RegExError`` for invalid patterns or replacements.
+Validation uses the string reader without constructing replacement text or output fragments.
+``replaceAll`` uses the same validation, including rejecting references to nonexistent groups when no match is found.
 Use :cpp:func:`text::U8String::toEscaped <erbsland::text::U8String::toEscaped>` with
 :cpp:enumerator:`text::EscapeFormat::RegEx <erbsland::text::EscapeFormat::RegEx>` to escape text for insertion as a
 literal pattern.
@@ -281,8 +321,8 @@ implement:
 
 *   :cpp:func:`peek <erbsland::re::InputBase::peek>` to look ahead without
     consuming input
-*   :cpp:func:`skip <erbsland::re::InputBase::skip>` to advance by a :cpp:type:`unit::CpLength
-    <erbsland::unit::CpLength>`
+*   :cpp:func:`skip <erbsland::re::InputBase::skip>` to advance by a :cpp:type:`unit::CpCount
+    <erbsland::unit::CpCount>`
 
 These methods allow the engine to treat ``CRLF`` sequences as a single logical line break while preserving correct
 positional information.
@@ -517,6 +557,15 @@ Malformed UTF-8 units become U+FFFD before tokenization.
 Syntax and limit failures are reported as :cpp:class:`RegExError <erbsland::re::RegExError>` with an ``Assembler``
 category and a zero-based structured source location; the rendered diagnostic presents locations one-based.
 
+Capture Coordinates
+===================
+
+``CaptureRange`` and ``CaptureGroup`` expose bounds as ``ItemIndex`` and sizes as ``ItemCount``.
+Each position counts storage units in the matched input: UTF-8 bytes, UTF-16 code units, or UTF-32 code units.
+The begin position is inclusive and the end position is exclusive.
+Convert these positions to the matching string index type when slicing a concrete string.
+``MatchBase::begin()`` and ``MatchBase::end()`` retain native ``InputPosition`` values at the matching interface.
+
 Interface
 =========
 
@@ -597,6 +646,39 @@ Interface
 .. doxygentypedef:: erbsland::re::RegExPtr
 
 .. doxygentypedef:: erbsland::re::ConstRegExPtr
+.. doxygenfunction:: erbsland::re::compile(text::StringLiteral pattern) -> ConstRegExPtr
+
+.. doxygenfunction:: erbsland::re::match(text::StringLiteral pattern, const text::String &text) -> MatchPtr
+
+.. doxygenfunction:: erbsland::re::match(text::StringLiteral pattern, const text::U16String &text) -> Match16Ptr
+
+.. doxygenfunction:: erbsland::re::match(text::StringLiteral pattern, const text::U32String &text) -> Match32Ptr
+
+.. doxygenfunction:: erbsland::re::fullMatch(text::StringLiteral pattern, const text::String &text) -> MatchPtr
+
+.. doxygenfunction:: erbsland::re::fullMatch(text::StringLiteral pattern, const text::U16String &text) -> Match16Ptr
+
+.. doxygenfunction:: erbsland::re::fullMatch(text::StringLiteral pattern, const text::U32String &text) -> Match32Ptr
+
+.. doxygenfunction:: erbsland::re::findFirst(text::StringLiteral pattern, const text::String &text) -> MatchPtr
+
+.. doxygenfunction:: erbsland::re::findFirst(text::StringLiteral pattern, const text::U16String &text) -> Match16Ptr
+
+.. doxygenfunction:: erbsland::re::findFirst(text::StringLiteral pattern, const text::U32String &text) -> Match32Ptr
+
+.. doxygenfunction:: erbsland::re::findAll(text::StringLiteral pattern, const text::String &text) -> MatchGenerator
+
+.. doxygenfunction:: erbsland::re::findAll(text::StringLiteral pattern, const text::U16String &text) -> Match16Generator
+
+.. doxygenfunction:: erbsland::re::findAll(text::StringLiteral pattern, const text::U32String &text) -> Match32Generator
+
+.. doxygenfunction:: erbsland::re::collectAll(text::StringLiteral pattern, const text::String &text) -> MatchList
+
+.. doxygenfunction:: erbsland::re::collectAll(text::StringLiteral pattern, const text::U16String &text) -> Match16List
+
+.. doxygenfunction:: erbsland::re::collectAll(text::StringLiteral pattern, const text::U32String &text) -> Match32List
+
+.. doxygenfunction:: erbsland::re::replaceAll(text::StringLiteral pattern, const text::String &text, text::StringLiteral replacement) -> text::String
 .. doxygenclass:: erbsland::re::RegExError
     :members:
 .. doxygenclass:: erbsland::re::RegExErrorContext

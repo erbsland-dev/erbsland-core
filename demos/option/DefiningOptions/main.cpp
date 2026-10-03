@@ -1,7 +1,29 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationInfo.hpp>
+#include <erbsland/ArgumentCount.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/CommandLineArguments.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Option.hpp>
+#include <erbsland/OptionError.hpp>
+#include <erbsland/OptionErrorContext.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValue.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/Version.hpp>
 
 #include <initializer_list>
 
@@ -11,7 +33,7 @@ using namespace el::text::literals;
 
 [[nodiscard]] auto makeArgs(std::initializer_list<el::String> args) -> el::CommandLineArguments {
     auto result = el::CommandLineArguments{};
-    result.reserve(el::ItemCount{args.size()});
+    result.reserve(el::ItemCount::fromInteger(args.size()));
     for (const auto &arg : args) {
         result.append(arg.copy());
     }
@@ -34,17 +56,17 @@ auto createDefinitionOptions() -> el::OptionsPtr {
     options->addOption({"-i"_el, "--instrument"_el, "instrument"_el})
         .setType(el::OptionType::Text)
         .setRequired()
-        .setHelpDescription("Instrument used for the sequence."_el);
+        .setHelpTitle("Instrument used for the sequence."_el);
     options->addOption({"-l"_el, "--level"_el, "level"_el})
         .setType(el::OptionType::Integer)
         .setMaximum(el::ArgumentCount{3U})
-        .setHelpDescription("Intensity levels to test. Can be repeated up to three times."_el);
+        .setHelpTitle("Intensity levels to test. Can be repeated up to three times."_el);
     options->addOption({"-m"_el, "--mode"_el, "mode"_el})
         .addChoice("fast"_el)
         .addChoice("precise"_el)
         .addChoice("night"_el)
         .setDefaultValue("precise"_el)
-        .setHelpDescription("Measurement mode for the output."_el);
+        .setHelpTitle("Measurement mode for the output."_el);
     options->addOption({"--minimum-signal"_el, "minimum-signal"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{3})
@@ -55,8 +77,8 @@ auto createDefinitionOptions() -> el::OptionsPtr {
                 throw el::OptionError{context};
             }
         })
-        .setHelpDescription("Minimum accepted signal on a scale from 1 to 9."_el);
-    options->addOption("sample"_el).setHelpDescription("Sample placed in the optical holder."_el);
+        .setHelpTitle("Minimum accepted signal on a scale from 1 to 9."_el);
+    options->addOption("sample"_el).setHelpTitle("Sample placed in the optical holder."_el);
     return options;
 }
 
@@ -85,7 +107,7 @@ auto definingOptions() -> el::ExitCode {
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     app.setMainFn(demo::definingOptions);
     return app.run();
 }

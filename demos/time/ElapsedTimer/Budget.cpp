@@ -3,8 +3,11 @@
 
 #include "ElapsedTimerDemos.hpp"
 
-#include <erbsland/time/ElapsedTimer.hpp>
-#include <erbsland/time/Literals.hpp>
+#include <erbsland/ElapsedTimer.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/TimeDelta.hpp>
 
 #include <algorithm>
 #include <cstddef>

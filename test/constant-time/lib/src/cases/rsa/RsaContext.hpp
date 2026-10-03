@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/core/Definitions.hpp>
+#include <erbsland/ByteBlock.hpp>
 #include <erbsland/cryptology/impl/algorithm/rsa_signature/RsaSigner.hpp>
-#include <erbsland/cryptology/keys/PublicKey.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/PublicKey.hpp>
 
 namespace app::constant_time {
 

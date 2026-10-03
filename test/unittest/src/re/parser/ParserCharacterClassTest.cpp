@@ -4,11 +4,19 @@
 #include "ParserBase.hpp"
 
 #include <erbsland/re/StdFormat.hpp>
+#include <erbsland/StringList.hpp>
 
 TESTED_TARGETS(Parser)
 TAGS(Parsing)
 class ParserCharacterClassTest final : public UNITTEST_SUBCLASS(ParserBase) {
 public:
+    void testUnclosedCharacterClassesFailAtEndOfInput() {
+        for (const auto &pattern : {"["_el, "[abc"_el, "[^"_el, "[a-z"_el, "[\\d"_el}) {
+            parser = Parser{pattern};
+            REQUIRE_THROWS(node = parser.parse());
+        }
+    }
+
     void testBasicLiteralsAndRanges() {
         // Single literal
         WITH_CONTEXT(parseAndTest(
@@ -233,7 +241,7 @@ public:
 
     void testNegatedClassesAndAnchorsNotAllowed() {
         // Negated ranges inside class are not allowed
-        const std::vector<String> negated = {
+        const el::StringList negated{
             "[\\D]"_el, "[\\S]"_el, "[\\W]"_el, "[\\H]"_el, "[\\N]"_el, "[\\V]"_el, "[\\P{Ll}]"_el};
         for (const auto &pat : negated) {
             runWithContext(
@@ -242,10 +250,10 @@ public:
                     parser = Parser{pat};
                     REQUIRE_THROWS(node = parser.parse());
                 },
-                [&]() { return std::format("pattern: {}", pat.toSafeString(el::unit::CpLength{200U})); });
+                [&]() { return std::format("pattern: {}", pat.toSafeString(el::unit::CpCount{200U})); });
         }
         // Anchors are not allowed in classes
-        const std::vector<String> anchors = {"[\\A]"_el, "[\\z]"_el, "[\\Z]"_el, "[\\b]"_el, "[\\B]"_el};
+        const el::StringList anchors{"[\\A]"_el, "[\\z]"_el, "[\\Z]"_el, "[\\b]"_el, "[\\B]"_el};
         for (const auto &pat : anchors) {
             runWithContext(
                 SOURCE_LOCATION(),
@@ -253,7 +261,7 @@ public:
                     parser = Parser{pat};
                     REQUIRE_THROWS(node = parser.parse());
                 },
-                [&]() { return std::format("pattern: {}", pat.toSafeString(el::unit::CpLength{200U})); });
+                [&]() { return std::format("pattern: {}", pat.toSafeString(el::unit::CpCount{200U})); });
         }
     }
 

@@ -4,15 +4,27 @@
 
 #include "CorpusDirectory.hpp"
 
-#include <erbsland/text/render/Context.hpp>
-#include <erbsland/text/render/FileSystemLoader.hpp>
-#include <erbsland/text/render/Value.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/conf/ValueList.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/render/Context.hpp>
+#include <erbsland/render/Delimiters.hpp>
+#include <erbsland/render/EnvironmentOptions.hpp>
+#include <erbsland/render/FileSystemLoader.hpp>
+#include <erbsland/render/LayoutSource.hpp>
+#include <erbsland/render/Value.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/StringMap.hpp>
 
 #include <memory>
 
 namespace app::render::corpus {
 
 namespace el = erbsland;
+namespace render = el::text::render;
 
 using namespace el::text::literals;
 
@@ -189,7 +201,15 @@ auto entries() -> const el::List<CorpusEntry> & {
 }
 
 auto load(const el::String &selection) -> el::List<PreparedLayout> {
-    const auto loader = el::text::render::FileSystemLoader::create(el::Path{el::String{cCorpusDirectory}});
+    constexpr auto cActiveKey = "active"_el;
+    constexpr auto cDisabledKey = "disabled"_el;
+    constexpr auto cDisplayNameKey = "display_name"_el;
+    constexpr auto cNameKey = "name"_el;
+    constexpr auto cNumberKey = "number"_el;
+    constexpr auto cPendingKey = "pending"_el;
+    constexpr auto cSuspendedKey = "suspended"_el;
+
+    const auto loader = render::FileSystemLoader::create(el::Path{el::String{cCorpusDirectory}});
     auto result = el::List<PreparedLayout>{};
     for (const auto &entry : entries()) {
         const auto legacy = entry.id != "language-completion.html"_el;
@@ -204,22 +224,22 @@ auto load(const el::String &selection) -> el::List<PreparedLayout> {
             return legacy ? text.replacedAll("| escape"_el, "| legacy"_el) : text;
         };
         auto parts = el::StringList{};
-        parts.reserve(el::ItemCount{entry.repetitions});
+        parts.reserve(el::ItemCount::fromInteger(entry.repetitions));
         for (auto repetition = std::uint32_t{}; repetition < entry.repetitions; ++repetition) {
             parts.append(prepareText(loaded->text()));
         }
-        auto options = el::text::render::EnvironmentOptions{};
+        auto options = render::EnvironmentOptions{};
         if (legacy) {
             options.setAutomaticEscapingEnabled(false);
         }
         if (entry.customDelimiters) {
-            options.setExpressionDelimiters(el::text::render::Delimiters{"[["_el, "]]"_el})
-                .setStatementDelimiters(el::text::render::Delimiters{"<%"_el, "%>"_el})
-                .setCommentDelimiters(el::text::render::Delimiters{"(#"_el, "#)"_el});
+            options.setExpressionDelimiters(render::Delimiters{"[["_el, "]]"_el})
+                .setStatementDelimiters(render::Delimiters{"<%"_el, "%>"_el})
+                .setCommentDelimiters(render::Delimiters{"(#"_el, "#)"_el});
         }
-        auto rootSource = el::text::render::LayoutSource{parts.join(), loaded->origin(), loaded->revision()};
-        auto sources = el::StringMap<std::shared_ptr<const el::text::render::LayoutSource>>{};
-        sources.set(entry.id, std::make_shared<const el::text::render::LayoutSource>(rootSource));
+        auto rootSource = render::LayoutSource{parts.join(), loaded->origin(), loaded->revision()};
+        auto sources = el::StringMap<std::shared_ptr<const render::LayoutSource>>{};
+        sources.set(entry.id, std::make_shared<const render::LayoutSource>(rootSource));
         for (const auto &dependency : entry.dependencies) {
             const auto dependencySource = loader->load(dependency);
             if (!dependencySource.has_value()) {
@@ -227,85 +247,83 @@ auto load(const el::String &selection) -> el::List<PreparedLayout> {
             }
             sources.set(
                 dependency,
-                std::make_shared<const el::text::render::LayoutSource>(
+                std::make_shared<const render::LayoutSource>(
                     prepareText(dependencySource->text()), dependencySource->origin(), dependencySource->revision()));
         }
 
-        auto account = el::text::render::ValueMap{};
-        account.set("name"_el, "Erbsland"_el)
+        auto account = render::ValueMap{};
+        account.set(cNameKey, "Erbsland"_el)
             .set("trial"_el, false)
-            .set("suspended"_el, false)
-            .set("active"_el, true)
-            .set("disabled"_el, false)
+            .set(cSuspendedKey, false)
+            .set(cActiveKey, true)
+            .set(cDisabledKey, false)
             .set("region"_el, "Zürich"_el)
             .set("days_left"_el, 14);
-        auto navigation = el::text::render::ValueList{};
-        for (const auto label : {"Overview"_el, "Services"_el, "Reports"_el}) {
-            auto item = el::text::render::ValueMap{};
-            item.set("label"_el, label)
-                .set("url"_el, "/page"_el)
-                .set("active"_el, el::String{label} == el::String{"Overview"_el});
+        auto navigation = render::ValueList{};
+        for (const el::String label : {"Overview"_el, "Services"_el, "Reports"_el}) {
+            auto item = render::ValueMap{};
+            item.set("label"_el, label).set("url"_el, "/page"_el).set(cActiveKey, label == "Overview"_el);
             navigation.append(item);
         }
-        auto services = el::text::render::ValueList{};
+        auto services = render::ValueList{};
         for (const auto name : {"API"_el, "Storage"_el}) {
-            auto metrics = el::text::render::ValueMap{};
+            auto metrics = render::ValueMap{};
             metrics.set("latency"_el, 12).set("errors"_el, 0);
-            auto service = el::text::render::ValueMap{};
-            service.set("id"_el, name).set("name"_el, name).set("healthy"_el, true).set("metrics"_el, metrics);
+            auto service = render::ValueMap{};
+            service.set("id"_el, name).set(cNameKey, name).set("healthy"_el, true).set("metrics"_el, metrics);
             services.append(service);
         }
-        auto userProfile = el::text::render::ValueMap{};
-        userProfile.set("display_name"_el, "Ada Lovelace"_el);
-        auto user = el::text::render::ValueMap{};
-        user.set("display_name"_el, " Ada "_el)
-            .set("name"_el, " Ada "_el)
+        auto userProfile = render::ValueMap{};
+        userProfile.set(cDisplayNameKey, "Ada Lovelace"_el);
+        auto user = render::ValueMap{};
+        user.set(cDisplayNameKey, " Ada "_el)
+            .set(cNameKey, " Ada "_el)
             .set("profile"_el, userProfile)
             .set("email"_el, "ada@example.test"_el)
             .set("show_details"_el, true)
-            .set("disabled"_el, false)
-            .set("active"_el, true)
-            .set("suspended"_el, false)
-            .set("pending"_el, false)
+            .set(cDisabledKey, false)
+            .set(cActiveKey, true)
+            .set(cSuspendedKey, false)
+            .set(cPendingKey, false)
             .set("invited"_el, false);
-        auto invoice = el::text::render::ValueMap{};
+        auto invoice = render::ValueMap{};
         invoice.set("overdue"_el, false)
             .set("due_soon"_el, true)
-            .set("number"_el, "INV-42"_el)
+            .set(cNumberKey, "INV-42"_el)
             .set("amount"_el, "120 CHF"_el)
             .set("due_date"_el, "2026-09-01"_el);
-        auto links = el::text::render::ValueMap{};
+        auto links = render::ValueMap{};
         links.set("preferences"_el, "https://example.test/preferences"_el)
             .set("support"_el, "https://example.test/support"_el);
-        auto order = el::text::render::ValueMap{};
+        auto order = render::ValueMap{};
         order.set("identifier"_el, "A-42"_el).set("total"_el, 120.5).set("currency"_el, "CHF"_el);
-        auto owner = el::text::render::ValueMap{};
-        owner.set("name"_el, "Ada"_el).set("team"_el, "Operations"_el);
-        auto incident = el::text::render::ValueMap{};
-        incident.set("number"_el, 42)
+        auto owner = render::ValueMap{};
+        owner.set(cNameKey, "Ada"_el).set("team"_el, "Operations"_el);
+        auto incident = render::ValueMap{};
+        incident.set(cNumberKey, 42)
             .set("title"_el, "Network delay"_el)
             .set("resolved"_el, false)
             .set("mitigated"_el, true)
             .set("owner"_el, owner)
             .set("generated_at"_el, "2026-08-29"_el);
-        auto event = el::text::render::ValueMap{};
+        auto event = render::ValueMap{};
         event.set("time"_el, "10:00"_el).set("summary"_el, "Detected"_el).set("details"_el, "Investigating"_el);
-        auto events = el::text::render::ValueList{event};
-        auto details = el::text::render::ValueMap{};
-        details.set("status"_el, "degraded"_el).set("regions"_el, el::text::render::ValueList{"eu"_el, "us"_el});
-        auto affected = el::text::render::ValueMap{};
+        auto events = render::ValueList{event};
+        auto details = render::ValueMap{};
+        details.set("status"_el, "degraded"_el).set("regions"_el, render::ValueList{"eu"_el, "us"_el});
+        auto affected = render::ValueMap{};
         affected.set("api"_el, details);
-        auto labels = el::text::render::ValueMap{};
+        auto labels = render::ValueMap{};
         labels.set("priority"_el, "high"_el);
-        auto product = el::text::render::ValueMap{};
-        product.set("name"_el, "Core"_el);
-        auto environment = el::text::render::ValueMap{};
-        environment.set("name"_el, "production"_el);
-        auto release = el::text::render::ValueMap{};
+        auto product = render::ValueMap{};
+        product.set(cNameKey, "Core"_el);
+        auto environment = render::ValueMap{};
+        environment.set(cNameKey, "production"_el);
+        auto release = render::ValueMap{};
         release.set("revision"_el, "abc123"_el);
-        auto primaryItem = el::text::render::ValueMap{};
-        primaryItem.set("visible"_el, true).set("pending"_el, false).set("name"_el, "first"_el);
-        auto context = el::text::render::Context{};
+        auto primaryItem = render::ValueMap{};
+        primaryItem.set("visible"_el, true).set(cPendingKey, false).set(cNameKey, "first"_el);
+        auto context = render::Context{};
         context.set("account"_el, account)
             .set("navigation"_el, navigation)
             .set("services"_el, services)
@@ -327,9 +345,9 @@ auto load(const el::String &selection) -> el::List<PreparedLayout> {
             .set("environment"_el, environment)
             .set("release"_el, release)
             .set("primary"_el, true)
-            .set("primary_items"_el, el::text::render::ValueList{primaryItem})
+            .set("primary_items"_el, render::ValueList{primaryItem})
             .set("secondary"_el, false)
-            .set("secondary_values"_el, el::text::render::ValueMap{})
+            .set("secondary_values"_el, render::ValueMap{})
             .set("company"_el, "Erbsland"_el);
         context.set("benchmark_text"_el, "<&*\""_el);
         result.append(

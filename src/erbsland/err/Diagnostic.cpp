@@ -2,16 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Diagnostic.hpp"
 
+#include "RuntimeError.hpp"
+
 #include "../text/PlainTextRenderer.hpp"
 #include "../text/TextDocument.hpp"
 
 namespace erbsland::err {
 
-auto Diagnostic::sourceName() const noexcept -> text::String {
+using namespace text;
+
+auto Diagnostic::sourceName() const noexcept -> String {
     return {};
 }
 
-auto Diagnostic::sourcePath() const noexcept -> text::String {
+auto Diagnostic::sourcePath() const noexcept -> String {
     return {};
 }
 
@@ -19,21 +23,17 @@ auto Diagnostic::location() const noexcept -> unit::CodeLocation {
     return {};
 }
 
-auto Diagnostic::toString() const noexcept -> text::String {
+auto Diagnostic::toString() const noexcept -> String {
     try {
         auto document = toTextDocument();
-        return text::PlainTextRenderer{document}.build();
-    } catch (...) {
+        return PlainTextRenderer{document}.build();
+    } catch (const err::RuntimeError &) {
         return {};
     }
 }
 
-auto Diagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &) const -> text::TextDocument {
+auto Diagnostic::toTextDocument() const -> TextDocument {
     return {};
-}
-
-auto Diagnostic::toTextDocument() const -> text::TextDocument {
-    return toTextDocument({});
 }
 
 }

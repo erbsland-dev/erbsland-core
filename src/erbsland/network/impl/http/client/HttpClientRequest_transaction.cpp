@@ -13,8 +13,8 @@
 #include "../codec/Http1TransactionOptions.hpp"
 #include "../cookie/PublicSuffixList.hpp"
 
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../http/HttpFieldType.hpp"
@@ -40,6 +40,7 @@
 #include <vector>
 
 namespace erbsland::network::impl {
+
 using namespace text::literals;
 
 void HttpClientRequest::startTransaction() {
@@ -130,9 +131,9 @@ void HttpClientRequest::pumpPreparedBody() {
         }
         return;
     }
-    constexpr auto cChunkLength = unit::ByteLength{16U * 1024U};
+    constexpr auto cChunkLength = unit::ByteCount{16U * 1024U};
     while (_bodyMode == BodyMode::Fixed && _fixedBodyOffset.isWithin(_fixedBody.length())) {
-        const auto remaining = _fixedBody.length() - unit::ByteLength{_fixedBodyOffset.toRawValue()};
+        const auto remaining = _fixedBody.length().remainingFrom(_fixedBodyOffset);
         const auto length = std::min(remaining, cChunkLength);
         const auto block = _fixedBody.slice(_fixedBodyOffset, length);
         const auto result = _transaction->sendBody(block);
@@ -263,7 +264,7 @@ void HttpClientRequest::completeTransactionFinal() {
     auto returned = false;
     if (!_failed && _transaction != nullptr && _transaction->isConnectionReusable() && _connection != nullptr &&
         _connection->state() == ConnectionState::Active &&
-        ConnectionProtocolAccess::takeRetainedInput(*_connection).isEmpty()) {
+        ConnectionProtocolAccess{*_connection}.takeRetainedInput().isEmpty()) {
         _completedTransactions += unit::ItemCount::one();
         if (const auto session = _session.lock(); session && session->_state != NetworkSourceState::Closed &&
             session->_state != NetworkSourceState::Closing &&

@@ -4,6 +4,9 @@
 
 #include "../ProfileTypes.hpp"
 
+#include <erbsland/Char.hpp>
+#include <erbsland/String.hpp>
+
 namespace app::regex::impl::built_in_catalog {
 
 /// Return the generated corpus named by `name`.

@@ -4,6 +4,7 @@
 
 #include "../Limits.hpp"
 
+#include "../../../text/AnyString.hpp"
 #include "../../../text/StringFormat.hpp"
 #include "../../RegExError.hpp"
 
@@ -12,127 +13,124 @@
 
 namespace erbsland::re::impl {
 
+using namespace text;
 using namespace text::literals;
+using namespace unit;
 
-ReplacementParser::ReplacementParser(const text::String &expression, const CaptureGroupNames &groupNames) :
-    _reader{expression}, _nameMap{createCaptureGroupNameToIndexMap(groupNames)} {
+ReplacementParser::ReplacementParser(const String &expression, const CaptureGroupNames &groupNames) :
+    _reader{expression}, _groupNames{groupNames} {
 }
 
 auto ReplacementParser::parse() -> Replacement {
+    _replacement = Replacement{};
+    parseContent();
+    return std::move(*_replacement);
+}
+
+void ReplacementParser::validate() {
+    _replacement.reset();
+    parseContent();
+}
+
+void ReplacementParser::parseContent() {
+    _reader.reset();
+    while (!_reader.isAtEnd()) {
+        _reader.startCapture();
+        _reader.advanceUntil(CharSet{U'{', U'}'}, limits::maximumReplacementTextLength + CpCount::one());
+        if (_reader.position().distanceFromZero() > limits::maximumReplacementTextLength) {
+            throwError(
+                StringFormat{"The maximum replacement-expression length is {} characters."_el}.build(
+                    limits::maximumReplacementTextLength));
+        }
+        addCapturedText();
+        if (_reader.isAtEnd()) {
+            break;
+        }
+        const auto character = _reader.read(); // read either `{` or `}`
+        _reader.startCapture();
+        if (_reader.advanceIf(character)) {    // if a second `{` or `}` follows, capture this as static text.
+            addCapturedText();
+        } else if (character == U'}') {        // with no second `}`, a lone `}` is an error.
+            throwError("Unexpected '}' in replacement expression"_el);
+        } else {
+            const auto index = parseExpression();
+            if (_replacement) {
+                _replacement->addCaptureGroup(index);
+            }
+        }
+    }
+}
+
+void ReplacementParser::addCapturedText() {
+    if (_replacement) {
+        const auto text = _reader.takeCapture().toU8String();
+        if (!text.isEmpty()) {
+            _replacement->addStaticText(text);
+        }
+    }
+}
+
+auto ReplacementParser::parseExpression() -> CaptureGroupIndex {
+    if (_reader.advanceIf(U'}')) {
+        return 0U;
+    }
+    if (_reader.peek().isDigitValue(IntegerBase::Decimal)) {
+        return parseGroupIndex();
+    }
+    if (_reader.peek().isAsciiWord()) {
+        return parseGroupName();
+    }
     if (_reader.isAtEnd()) {
-        return {};
-    }
-    readNext();
-    while (!_currentChar.isEndOfData()) {
-        switch (_currentChar.toRawValue()) {
-        case U'{':
-            readNext();
-            requireMoreContent();
-            if (_currentChar == U'{') {
-                _staticText.append(_currentChar);
-                readNext();
-            } else {
-                if (!_staticText.isEmpty()) {
-                    _replacement.addStaticText(_staticText);
-                    _staticText.clear();
-                }
-                parseExpression();
-            }
-            break;
-        case U'}':
-            readNext();
-            if (_currentChar == U'}') {
-                _staticText.append(_currentChar);
-                readNext();
-            } else {
-                throwError("Unexpected '}' in replacement expression"_el);
-            }
-            break;
-        default:
-            _staticText.append(_currentChar);
-            readNext();
-            break;
-        }
-    }
-    if (!_staticText.isEmpty()) {
-        _replacement.addStaticText(_staticText);
-    }
-    return _replacement;
-}
-
-void ReplacementParser::readNext() {
-    if (_reader.position().distanceFromZero() > limits::maximumReplacementTextLength) {
-        throwError(
-            text::StringFormat{"The maximum replacement-expression length is {} characters."_el}.build(
-                limits::maximumReplacementTextLength));
-    }
-    _currentChar = _reader.read();
-}
-
-void ReplacementParser::parseExpression() {
-    if (_currentChar.isDigitValue(text::IntegerBase::Decimal)) {
-        parseGroupIndex();
-    } else if (_currentChar.isAsciiWord()) {
-        parseGroupName();
-    } else if (_currentChar == U'}') {
-        _replacement.addCaptureGroup(0U);
-        readNext();
-    } else {
-        throwError("Invalid character in replacement expression"_el);
-    }
-}
-
-void ReplacementParser::parseGroupIndex() {
-    auto groupIndex = std::uint32_t{};
-    while (_currentChar.isDigitValue(text::IntegerBase::Decimal)) {
-        groupIndex = (groupIndex * 10U) + _currentChar.digitValue(text::IntegerBase::Decimal).value();
-        if (groupIndex > std::numeric_limits<CaptureGroupIndex>::max()) {
-            throwError("Capture group index is out of range"_el);
-        }
-        readNext();
-    }
-    requireMoreContent();
-    if (_currentChar != U'}') {
-        throwError("Invalid character in replacement expression. Expected a group index"_el);
-    }
-    readNext();
-    _replacement.addCaptureGroup(static_cast<CaptureGroupIndex>(groupIndex));
-}
-
-void ReplacementParser::parseGroupName() {
-    text::StringEditor groupName;
-    while (_currentChar.isAsciiWord()) {
-        groupName.append(_currentChar);
-        readNext();
-    }
-    requireMoreContent();
-    if (_currentChar != U'}') {
-        throwError("Invalid character in replacement expression. Expected a group name"_el);
-    }
-    readNext();
-    const auto groupIndex = _nameMap.get(groupName);
-    if (!groupIndex.has_value()) {
-        throwError("Group name not found in this pattern"_el);
-    }
-    _replacement.addCaptureGroup(groupIndex.value());
-}
-
-void ReplacementParser::requireMoreContent() {
-    if (_currentChar.isEndOfData()) {
         throwError("Unterminated replacement expression"_el);
     }
+    throwError("Invalid character in replacement expression"_el);
 }
 
-void ReplacementParser::throwError(text::String description) const {
-    auto position = _reader.position();
-    if (!_currentChar.isSignal()) {
-        position -= unit::CpLength::one();
+auto ReplacementParser::parseGroupIndex() -> CaptureGroupIndex {
+    const auto index = _reader.parseInteger(
+        IntegerParseOptions{}
+            .setFixedBase(IntegerBase::Decimal)
+            .setMaximumDigits(limits::maximumReplacementTextLength));
+    if (index.status != ReadNumberStatus::Success || index.value > std::numeric_limits<CaptureGroupIndex>::max()) {
+        throwError("Capture group index is out of range"_el);
     }
+    requireClosingBrace("Invalid character in replacement expression. Expected a group index"_el);
+    if (ItemCount::fromInteger(index.value) > _groupNames.count()) {
+        throwError("Group index not found in this pattern"_el);
+    }
+    return static_cast<CaptureGroupIndex>(index.value);
+}
+
+auto ReplacementParser::parseGroupName() -> CaptureGroupIndex {
+    _reader.startCapture();
+    _reader.advanceWhile(AsciiCategory::Word, limits::maximumReplacementTextLength);
+    const auto groupName = _reader.takeCapture().toU8String();
+    requireClosingBrace("Invalid character in replacement expression. Expected a group name"_el);
+    auto index = CaptureGroupIndex{1};
+    for (const auto &name : _groupNames) {
+        if (name.compare(groupName, Char::compareCaseFolded) == std::strong_ordering::equal) {
+            return index;
+        }
+        ++index;
+    }
+    throwError("Group name not found in this pattern"_el);
+}
+
+void ReplacementParser::requireClosingBrace(const String &description) {
+    if (_reader.isAtEnd()) {
+        throwError("Unterminated replacement expression"_el);
+    }
+    if (!_reader.advanceIf(U'}')) {
+        throwError(description);
+    }
+}
+
+void ReplacementParser::throwError(String description) const {
     throw RegExError{
         ErrorCategory::Format,
         "Failed to parse replacement expression"_el,
         std::move(description),
-        unit::CodeLocation{}.setPosition(position)};
+        CodeLocation{}.setPosition(_reader.position())};
 }
 
 }

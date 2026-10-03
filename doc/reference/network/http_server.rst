@@ -15,10 +15,12 @@ Server Lifecycle
 Configure transport, HTTP, TLS, and session options while it is inactive, register routes through its event editor, and
 then bind it to an ``IpEndpoint``.
 Without ``enableTls()`` it accepts plaintext HTTP.
-Calling ``enableTls()`` selects the ``http/server`` identity through the normal configuration fallback chain and forces
-the single ALPN protocol ``http/1.1``.
-``HttpServerTlsOptions`` exposes only the identity label, exact SNI mappings, handshake capacity, and handshake
-deadline; transport, cipher, buffer, and closure details remain safe server-owned defaults.
+Calling ``enableTls()`` selects the ``http`` server profile through normal label resolution and forces the single ALPN
+protocol ``http/1.1``.
+:cpp:class:`HttpServerTlsOptions <erbsland::network::HttpServerTlsOptions>` configures the profile label, exact SNI mappings, handshake capacity, and handshake deadline.
+Each SNI mapping selects a complete server profile, including its identity, client-authentication mode, and trust
+policy.
+Transport, cipher, buffer, and closure details remain server-owned defaults.
 
 The effective endpoint becomes available after ``onListening``.
 ``close()`` stops accepting, disables keep-alive reuse, drains committed responses, and then reports ``onClosed`` and
@@ -36,7 +38,7 @@ Patterns match the decoded NFC path while ignoring the exact query.
 An explicit ``HEAD`` route wins; otherwise a matching ``GET`` route handles ``HEAD`` while response body bytes are
 suppressed.
 
-``HttpServerRequest`` retains the immutable request head, decoded path, exact query, route parameters, endpoints,
+:cpp:class:`HttpServerRequest <erbsland::network::HttpServerRequest>` retains the immutable request head, decoded path, exact query, route parameters, endpoints,
 concrete connection, and selected logical session.
 Ordinary byte, text, and JSON routes aggregate automatically under a one-MiB default and optional route-specific
 Content-Type policy.
@@ -44,6 +46,8 @@ Text routes require strict UTF-8 and JSON routes parse one complete value before
 ``onRequestHead`` is the low-level family for selecting streaming, bounded aggregation, or rejection manually.
 Fixed response helpers, response start, and response finish are queued by the framework; only streamed ``sendBody``
 reports atomic back-pressure.
+``sendJson()`` accepts a ``String``, ``StringEditor``, or Core string literal as preformatted JSON text.
+Passing a ``JsonValue`` instead serializes that value as compact JSON.
 A request retained beyond its transaction remains safe: void response operations do nothing and ``sendBody`` reports
 closed.
 
@@ -88,8 +92,9 @@ the owning event loop and output retains at most one back-pressured block.
 ``HttpMediaTypeMapping::defaultMapping()`` supplies common web suffixes and an ``application/octet-stream`` fallback.
 Use ``create()`` for an empty mapping or ``defaultMapping()->copy()`` for an editable built-in clone.
 Matching is ASCII-case-insensitive and longest-suffix-first.
-Resource handlers retain an explicit ``ResourcesConstPtr`` or borrow the application-lifetime manager, and enforce a
+Resource handlers retain an explicit ``ResourcesConstPtr`` or the application's resource component, and enforce a
 one-MiB per-resource logical-size default before loading data.
+Content objects retain the same provider independently of the handler, without retaining unrelated application services.
 They expose resource bytes through ``ByteBlockInputStream`` without another content copy.
 
 Sessions
@@ -108,6 +113,21 @@ Expiry and least-recently-used eviction use ordered structures, and invalidation
 
 See :doc:`/topics/network/using-http-servers` for configuration, routing, body handling, streamed responses, TLS, and
 cookie-session examples.
+
+TLS Peer Authentication
+=======================
+
+:cpp:func:`HttpServerRequest::connectionInfo() <erbsland::network::HttpServerRequest::connectionInfo>` exposes an immutable :cpp:class:`HttpConnectionInfo <erbsland::network::HttpConnectionInfo>` snapshot.
+Its :cpp:func:`HttpConnectionInfo::tls() <erbsland::network::HttpConnectionInfo::tls>` value is present for HTTPS and
+contains :cpp:class:`HttpTlsConnectionInfo <erbsland::network::HttpTlsConnectionInfo>` from the completed handshake.
+:cpp:func:`HttpTlsConnectionInfo::isPeerAuthenticated() <erbsland::network::HttpTlsConnectionInfo::isPeerAuthenticated>` reports whether the client authenticated with a certificate;
+:cpp:func:`HttpTlsConnectionInfo::peerCertificatePath() <erbsland::network::HttpTlsConnectionInfo::peerCertificatePath>` returns the validated path in client-to-anchor order.
+Anonymous clients report false and an empty path, including when optional authentication was requested.
+
+Metadata is available to connection and request callbacks and remains in retained connection information after normal
+closure.
+The application maps the certificate identity to accounts and authorization rules.
+See :doc:`/topics/network/using-http-servers` for using client certificates in request handlers.
 
 Interface
 =========

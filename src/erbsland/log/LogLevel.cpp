@@ -9,9 +9,10 @@
 
 namespace erbsland::log {
 
+using namespace text;
 using namespace text::literals;
 
-auto LogLevel::toString() const -> text::String {
+auto LogLevel::toString() const -> String {
     switch (_value) {
     case Trace:
         return "trace"_el;
@@ -27,7 +28,7 @@ auto LogLevel::toString() const -> text::String {
     return {};
 }
 
-auto LogLevel::toString(const LogLevelFormat format) const -> text::String {
+auto LogLevel::toString(const LogLevelFormat format) const -> String {
     switch (format.toRawValue()) {
     case LogLevelFormat::ThreeLetterUpper:
         switch (_value) {
@@ -77,11 +78,11 @@ auto LogLevel::toString(const LogLevelFormat format) const -> text::String {
     return "unknown"_el;
 }
 
-auto LogLevel::allStrings() -> text::StringList {
-    return text::StringList{"trace"_el, "information"_el, "info"_el, "warning"_el, "warn"_el, "error"_el, "all"_el};
+auto LogLevel::allStrings() -> StringList {
+    return StringList{"trace"_el, "information"_el, "info"_el, "warning"_el, "warn"_el, "error"_el, "all"_el};
 }
 
-auto LogLevel::fromString(const text::String &text) noexcept -> std::optional<LogLevel> {
+auto LogLevel::fromString(const String &text) noexcept -> std::optional<LogLevel> {
     const auto compare = ::erbsland::text::cCaseInsensitive.asciiComparisonFn();
     if (text.compare("trace"_el, compare) == std::strong_ordering::equal) {
         return Trace;
@@ -103,7 +104,7 @@ auto LogLevel::fromString(const text::String &text) noexcept -> std::optional<Lo
     return std::nullopt;
 }
 
-auto LogLevel::fromStringOrThrow(const text::String &text) -> LogLevel {
+auto LogLevel::fromStringOrThrow(const String &text) -> LogLevel {
     if (const auto result = fromString(text); result.has_value()) {
         return *result;
     }

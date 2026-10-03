@@ -1,7 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "Seed.hpp"
+
+#include <erbsland/U8StringConstIterator.hpp>
 
 namespace erbsland::profiling {
 

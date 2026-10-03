@@ -30,10 +30,12 @@ auto HttpVersion::fromString(const text::String &text) noexcept -> HttpVersion {
 }
 
 auto HttpVersion::fromStringOrThrow(const text::String &text) -> HttpVersion {
-    if (text == "HTTP/1.0"_el)
+    if (text == "HTTP/1.0"_el) {
         return Http10;
-    if (text == "HTTP/1.1"_el)
+    }
+    if (text == "HTTP/1.1"_el) {
         return Http11;
+    }
     throw err::ParseError{"The HTTP version is malformed or unsupported."_el};
 }
 

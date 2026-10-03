@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteSpan.hpp>
+#include <erbsland/RingBuffer.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <array>
 
@@ -13,7 +21,7 @@ namespace demo {
 /// either queues a complete sequence or leaves the ring unchanged. Reads likewise
 /// consume either into caller-owned storage or into a new `ByteBlock`.
 void readingAndWritingBytes() {
-    auto current = el::RingBuffer{el::ByteLength{4U}, el::ByteLength{6U}};
+    auto current = el::RingBuffer{el::ByteCount{4U}, el::ByteCount{6U}};
 
     // Queue a complete observation and reject an atomic record that cannot fit.
     const auto first = el::ByteArray{el::Byte{10U}, el::Byte{20U}, el::Byte{30U}, el::Byte{40U}};
@@ -25,7 +33,7 @@ void readingAndWritingBytes() {
     const auto prefixLength = current.read(el::ByteSpan{prefixStorage});
     const auto partialWrite =
         current.write(el::ByteArray{el::Byte{50U}, el::Byte{60U}, el::Byte{70U}, el::Byte{80U}}.span());
-    const auto remaining = current.read(el::ByteLength::infinite());
+    const auto remaining = current.read(el::ByteCount::infinite());
 
     el::io::printLine("Corrente          : Canale della barriera"_el);
     el::io::printLine("First write       : "_el, firstWrite.toSizeT());

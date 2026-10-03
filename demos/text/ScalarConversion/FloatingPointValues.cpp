@@ -3,6 +3,15 @@
 
 #include "ScalarConversionDemos.hpp"
 
+#include <erbsland/FloatFormat.hpp>
+#include <erbsland/FloatParseFlag.hpp>
+#include <erbsland/FloatParseOptions.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/LetterCase.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+
 namespace demo {
 
 /// Parse floating-point measurements and select their output notation and precision.
@@ -26,7 +35,7 @@ void floatingPointValues() {
     try {
         const auto unexpectedValue = el::String{"21,5"_el}.toFloatOrThrow<double>();
         el::io::printLine("21,5 ..............: "_el, unexpectedValue);
-    } catch (const el::Exception &) {
+    } catch (const el::ParseError &) {
         el::io::printLine("21,5 ..............: parse error"_el);
     }
 

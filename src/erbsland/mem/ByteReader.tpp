@@ -22,17 +22,37 @@ auto ByteReader::readInteger(const T defaultOnError) noexcept -> T {
 template <impl::NativeByteInteger T>
 auto ByteReader::readIntegerOrThrow() -> T {
     const auto result = impl::ByteReadTools{dataView()}.getIntegerOrThrow<T>(_position, _endianness);
-    advance(unit::ByteLength{sizeof(T)});
+    advance(unit::ByteCount{sizeof(T)});
     return result;
 }
 
 template <impl::NativeByteInteger T>
 auto ByteReader::readInteger(const ByteIntegerFormat format) -> std::optional<T> {
-    try {
-        return readIntegerOrThrow<T>(format);
-    } catch (...) {
+    const auto value = impl::ByteReadTools{dataView()}.getInteger(_position, format, _endianness);
+    if (!value.has_value()) {
         return std::nullopt;
     }
+    auto result = T{};
+    if (!value->isNegative) {
+        if (math::willCastOverflow<T>(value->magnitude)) {
+            return std::nullopt;
+        }
+        result = static_cast<T>(value->magnitude);
+    } else {
+        if constexpr (std::unsigned_integral<T>) {
+            return std::nullopt;
+        } else {
+            const auto magnitude = math::SignedMagnitude<int64_t>{true, value->magnitude};
+            const auto minimum = static_cast<int64_t>(std::numeric_limits<T>::min());
+            const auto maximum = static_cast<int64_t>(std::numeric_limits<T>::max());
+            if (magnitude.wouldSaturate(minimum, maximum)) {
+                return std::nullopt;
+            }
+            result = static_cast<T>(magnitude.toSaturatingValue(minimum, maximum));
+        }
+    }
+    advance(value->byteLength);
+    return result;
 }
 
 template <impl::NativeByteInteger T>
@@ -76,7 +96,7 @@ auto ByteReader::readIntegerInto(T &value) noexcept -> bool {
     if (!impl::ByteReadTools{dataView()}.getIntegerInto(value, _position, _endianness)) {
         return false;
     }
-    advance(unit::ByteLength{sizeof(T)});
+    advance(unit::ByteCount{sizeof(T)});
     return true;
 }
 

@@ -3,6 +3,8 @@
 
 #include "RegExBase.hpp"
 
+#include <erbsland/StringList.hpp>
+
 using namespace el::re;
 
 /// Test if atomic groups actually "lock-in" the greedy match and do not "back-track".
@@ -24,7 +26,7 @@ public:
         };
         WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "a"_el,
             "aa"_el,
@@ -36,9 +38,9 @@ public:
     TESTED_TARGETS(fullMatch)
     void testFullMatch() {
         compilePattern();
-        auto veryLongMatch = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{10'000U});
+        auto veryLongMatch = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpCount{10'000U});
         veryLongMatch.append("b"_el);
-        const auto matchCases = std::vector<String>{
+        const auto matchCases = StringList{
             "ab"_el,
             "aab"_el,
             "aaab"_el,
@@ -46,8 +48,8 @@ public:
         };
         WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-        const auto veryLongNoMatch = String::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{10'000U});
-        const auto noMatchCases = std::vector<String>{
+        const auto veryLongNoMatch = String::fromCharacter(el::text::Char{U'a'}, el::unit::CpCount{10'000U});
+        const auto noMatchCases = StringList{
             ""_el,
             "a"_el,
             "aa"_el,
@@ -68,7 +70,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(matchCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "a"_el,
             "aa"_el,

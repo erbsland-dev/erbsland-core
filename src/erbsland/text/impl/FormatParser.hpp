@@ -11,7 +11,8 @@
 #include "../StringLiteral.hpp"
 #include "../u8/U8String.hpp"
 
-#include "../../unit/ArgumentUnit.hpp"
+#include "../../unit/ArgumentCount.hpp"
+#include "../../unit/ArgumentIndex.hpp"
 
 #include <cstddef>
 #include <optional>
@@ -22,9 +23,9 @@ namespace erbsland::text::impl {
 /// @tested{U8FormatTest}
 class FormatParser final {
     static constexpr auto cMaximumFields = unit::ArgumentCount{128U};
-    static constexpr auto cMaximumFieldWidth = unit::CpLength{1024U};
-    static constexpr auto cMaximumDecimalDigits = unit::CpLength{4U};
-    static constexpr auto cMaximumArgumentIndexDigits = unit::CpLength{3U};
+    static constexpr auto cMaximumFieldWidth = unit::CpCount{1024U};
+    static constexpr auto cMaximumDecimalDigits = unit::CpCount{4U};
+    static constexpr auto cMaximumArgumentIndexDigits = unit::CpCount{3U};
 
 public:
     /// Create a parser for the given format pattern.
@@ -52,7 +53,7 @@ private:
     /// Consume one character from a format specification.
     auto consumeSpecificationChar() -> Char;
     /// Read a decimal value subject to its supported digit limit.
-    [[nodiscard]] auto readLimitedDecimal(const StringLiteral &tooLargeMessage) -> unit::CpLength;
+    [[nodiscard]] auto readLimitedDecimal(const StringLiteral &tooLargeMessage) -> unit::CpCount;
     /// Parse a field format specification.
     [[nodiscard]] auto parseSpecification() -> FormatSpec;
     /// Parse a legacy field format specification.

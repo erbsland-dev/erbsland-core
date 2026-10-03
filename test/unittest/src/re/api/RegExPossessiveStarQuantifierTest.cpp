@@ -3,6 +3,8 @@
 
 #include "RegExBase.hpp"
 
+#include <erbsland/StringList.hpp>
+
 using namespace el::re;
 
 TESTED_TARGETS(RegEx)
@@ -40,7 +42,7 @@ public:
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
             // The possessive quantifier consumes the longest possible match and does not backtrack.
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "xab"_el,
                 "xabab"_el,
@@ -56,14 +58,14 @@ public:
     void testFullMatch() {
         WITH_CONTEXT(compileAmbiguousGroupZeroOrMorePostfix());
         {
-            const auto matchCases = std::vector<String>{
+            const auto matchCases = StringList{
                 "xb"_el,
                 "xabb"_el,
                 "xababb"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "xab"_el,
                 "xabab"_el,
@@ -86,7 +88,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(testCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "xabab"_el,
             "zzxabab"_el,
@@ -111,7 +113,7 @@ public:
         WITH_CONTEXT(requireFindAll("xabb xabab xabb"_el));
         WITH_CONTEXT(requireLines(matchLines, expectedLines));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "xabab"_el,
             "xaba"_el,

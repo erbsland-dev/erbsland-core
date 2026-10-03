@@ -5,6 +5,7 @@
 #include "ScenarioTemplate.hpp"
 
 #include <erbsland/conf/Value.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::string::impl {
 

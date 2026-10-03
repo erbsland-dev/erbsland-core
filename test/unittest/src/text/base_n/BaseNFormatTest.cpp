@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/text/base_n/BaseNFormat.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/base_n/BaseNFormat.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text;
@@ -23,7 +23,7 @@ public:
 
         const auto pem = BaseNFormat::base64Pem();
         REQUIRE(pem.hasFlag(BaseNFormatFlag::WrapLines));
-        REQUIRE_EQUAL(pem.lineLength(), el::unit::CpLength{64U});
+        REQUIRE_EQUAL(pem.lineLength(), el::unit::CpCount{64U});
         REQUIRE_EQUAL(pem.lineSeparator(), U"\n"_el);
     }
 
@@ -36,31 +36,31 @@ public:
         REQUIRE(format.whitespace().contains(U'~'));
         format.setLineSeparator(U32String{U"~"_el});
         format.addFlags(BaseNFormatFlag::WrapLines);
-        format.setLineLength(el::unit::CpLength{10U});
-        REQUIRE_EQUAL(format.lineLength(), el::unit::CpLength{10U});
+        format.setLineLength(el::unit::CpCount{10U});
+        REQUIRE_EQUAL(format.lineLength(), el::unit::CpCount{10U});
     }
 
     void testInvalidFormats() {
-        REQUIRE_THROWS_AS(el::err::ParameterError, (BaseNFormat{U32String{U"0123456789ABCDE"_el}}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, (BaseNFormat{U32String{U"00123456789ABCDE"_el}}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, (BaseNFormat{U32String{U"0123456789ABCDE"_el}}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, (BaseNFormat{U32String{U"00123456789ABCDE"_el}}));
 
         auto format = BaseNFormat::base64();
         const auto originalAlphabet = format.alphabet();
-        REQUIRE_THROWS_AS(el::err::ParameterError, format.setPadding(U'A'));
-        REQUIRE_THROWS_AS(el::err::ParameterError, format.setWhitespace(CharSet{U'A'}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, format.setWhitespace(CharSet{U'='}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, format.setPadding(std::nullopt));
-        REQUIRE_THROWS_AS(el::err::ParameterError, format.setPadding(Char::noCodePoint()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, format.setPadding(U'A'));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, format.setWhitespace(CharSet{U'A'}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, format.setWhitespace(CharSet{U'='}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, format.setPadding(std::nullopt));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, format.setPadding(Char::noCodePoint()));
         REQUIRE_EQUAL(format.alphabet(), originalAlphabet);
         REQUIRE_EQUAL(format.padding(), std::optional<Char>{U'='});
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
-            format.setLineLength(el::unit::CpLength::zero()).addFlags(BaseNFormatFlag::WrapLines));
+            el::err::ParameterFailure,
+            format.setLineLength(el::unit::CpCount::zero()).addFlags(BaseNFormatFlag::WrapLines));
 
         auto noPadding = BaseNFormat{U32String{U"0123456789ABCDEF"_el}};
-        REQUIRE_THROWS_AS(el::err::ParameterError, noPadding.addFlags(BaseNFormatFlag::EmitPadding));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, noPadding.addFlags(BaseNFormatFlag::EmitPadding));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             noPadding.setLineSeparator(U32String{U"x"_el}).addFlags(BaseNFormatFlag::WrapLines));
     }
 

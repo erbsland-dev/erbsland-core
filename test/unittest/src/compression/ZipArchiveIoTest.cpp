@@ -1,16 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/compression/zip/ArchiveReader.hpp>
-#include <erbsland/compression/zip/ArchiveWriter.hpp>
-#include <erbsland/compression/zip/CompressionMethod.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/ByteOutputStream.hpp>
+#include <erbsland/ByteWriter.hpp>
 #include <erbsland/compression/zip/impl/ZipTools.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/mem/ByteWriter.hpp>
-#include <erbsland/stream/ByteInputStream.hpp>
-#include <erbsland/stream/ByteOutputStream.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/zip/ArchiveReader.hpp>
+#include <erbsland/zip/ArchiveWriter.hpp>
+#include <erbsland/zip/CompressionMethod.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -28,7 +28,7 @@ class ZipArchiveIoTest final : public el::UnitTest {
     class SparseInputStream final : public el::stream::ByteInputStream {
     private:
         struct Segment final {
-            uint64_t offset{};
+            el::unit::ByteIndex offset{};
             el::mem::ByteBlock data;
         };
 
@@ -39,9 +39,9 @@ class ZipArchiveIoTest final : public el::UnitTest {
         };
 
     public:
-        explicit SparseInputStream(const uint64_t length) : _length{length} {}
+        explicit SparseInputStream(const el::unit::ByteCount length) : _length{length} {}
 
-        void addSegment(const uint64_t offset, el::mem::ByteBlock data) {
+        void addSegment(const el::unit::ByteIndex offset, el::mem::ByteBlock data) {
             _segments.push_back(Segment{offset, std::move(data)});
         }
 
@@ -62,48 +62,49 @@ class ZipArchiveIoTest final : public el::UnitTest {
 
     protected: // implement ByteInputStream
         [[nodiscard]] auto readFromSource(el::mem::ByteSpan destination, ReadDeadline)
-            -> el::stream::StreamReadResult<el::unit::ByteLength> override {
-            if (_position >= _length) {
-                return {el::stream::StreamReadStatus::Finished, el::unit::ByteLength{}};
+            -> el::stream::StreamReadResult<el::unit::ByteCount> override {
+            if (!_position.isWithin(_length)) {
+                return {el::stream::StreamReadStatus::Finished, el::unit::ByteCount{}};
             }
             const auto readOffset = _position;
-            const auto count = static_cast<std::size_t>(std::min<uint64_t>(destination.size(), _length - _position));
-            std::fill_n(destination.data(), count, el::mem::Byte{});
-            const auto readEnd = _position + count;
+            const auto count =
+                std::min(el::unit::ByteCount::fromSizeT(destination.size()), _length.remainingFrom(_position));
+            std::fill_n(destination.data(), count.toSizeT(), el::mem::Byte{});
+            const auto readEnd = _position.advanced(count);
             for (const auto &segment : _segments) {
-                const auto segmentEnd = segment.offset + segment.data.length().toRawValue();
+                const auto segmentEnd = segment.offset.advanced(segment.data.length());
                 const auto overlapBegin = std::max(_position, segment.offset);
                 const auto overlapEnd = std::min(readEnd, segmentEnd);
                 if (overlapBegin >= overlapEnd) {
                     continue;
                 }
-                const auto sourceIndex = static_cast<std::size_t>(overlapBegin - segment.offset);
-                const auto destinationIndex = static_cast<std::size_t>(overlapBegin - _position);
-                const auto overlapLength = static_cast<std::size_t>(overlapEnd - overlapBegin);
+                const auto sourceIndex = segment.offset.absoluteDistanceTo(overlapBegin).toSizeT();
+                const auto destinationIndex = _position.absoluteDistanceTo(overlapBegin).toSizeT();
+                const auto overlapLength = overlapBegin.absoluteDistanceTo(overlapEnd).toSizeT();
                 std::copy_n(
                     segment.data.span().data() + sourceIndex, overlapLength, destination.data() + destinationIndex);
             }
             _position = readEnd;
-            bytesRead += count;
-            readCalls.push_back(ReadCall{readOffset, count});
-            return {el::stream::StreamReadStatus::Data, el::unit::ByteLength::fromSizeT(count)};
+            bytesRead += count.toRawValue();
+            readCalls.push_back(ReadCall{readOffset.toRawValue(), count.toSizeT()});
+            return {el::stream::StreamReadStatus::Data, count};
         }
         [[nodiscard]] auto sourceSupportsPositioning() const noexcept -> bool override { return true; }
-        [[nodiscard]] auto sourcePosition() const -> el::unit::ByteIndex override {
-            return el::unit::ByteIndex{_position};
-        }
+        [[nodiscard]] auto sourcePosition() const -> el::unit::ByteIndex override { return _position; }
         auto setSourcePosition(const el::unit::ByteIndex position) -> el::stream::StreamPositionStatus override {
-            _position = position.toRawValue();
-            seekPositions.push_back(_position);
+            _position = position;
+            seekPositions.push_back(_position.toRawValue());
             return el::stream::StreamPositionStatus::Success;
         }
         auto moveSourcePosition(const el::stream::StreamPositionOrigin origin, const el::unit::ByteOffset offset)
             -> el::stream::StreamPositionStatus override {
-            const auto base = origin == el::stream::StreamPositionOrigin::Start
-                ? el::unit::ByteIndex{}
-                : (origin == el::stream::StreamPositionOrigin::Current ? el::unit::ByteIndex{_position}
-                                                                       : el::unit::ByteIndex{_length});
-            _position = base.movedOrThrow(offset).toRawValue();
+            auto base = el::unit::ByteIndex{};
+            if (origin == el::stream::StreamPositionOrigin::Current) {
+                base = _position;
+            } else if (origin == el::stream::StreamPositionOrigin::End) {
+                base = el::unit::ByteIndex::end(_length);
+            }
+            _position = base.movedOrThrow(offset);
             return el::stream::StreamPositionStatus::Success;
         }
 
@@ -113,8 +114,8 @@ class ZipArchiveIoTest final : public el::UnitTest {
         std::vector<ReadCall> readCalls;
 
     private:
-        uint64_t _length{};
-        uint64_t _position{};
+        el::unit::ByteCount _length{};
+        el::unit::ByteIndex _position{};
         std::vector<Segment> _segments;
         el::stream::InputStreamSettings _settings;
         el::stream::StreamState _state{el::stream::StreamState::Open};
@@ -181,11 +182,13 @@ public:
             .writeUInt16(0U);
         const auto valid = end.toByteBlock();
         REQUIRE(el::compression::zip::ArchiveReader::create(valid)->isZip64());
-        for (const auto field : {4U, 40U, 48U, 64U}) {
+        for (
+            const auto field :
+            {el::unit::ByteIndex{4U}, el::unit::ByteIndex{40U}, el::unit::ByteIndex{48U}, el::unit::ByteIndex{64U}}) {
             for (
                 const auto value : {std::numeric_limits<uint64_t>::max(), std::numeric_limits<uint64_t>::max() - 16U}) {
                 auto invalid = el::mem::ByteBlockEditor{valid};
-                REQUIRE(invalid.setInteger<uint64_t>(el::unit::ByteIndex{field}, value));
+                REQUIRE(invalid.setInteger<uint64_t>(field, value));
                 REQUIRE_THROWS_AS(el::compression::zip::ZipError, el::compression::zip::ArchiveReader::create(invalid));
             }
         }
@@ -242,9 +245,9 @@ public:
             .writeUInt32(0xffffffffU)
             .writeUInt16(0U);
         const auto archiveLength = zip64Offset + end.length().toRawValue();
-        auto source = std::make_shared<SparseInputStream>(archiveLength);
-        source->addSegment(cDirectoryOffset, directory.toByteBlock());
-        source->addSegment(zip64Offset, end.toByteBlock());
+        auto source = std::make_shared<SparseInputStream>(el::unit::ByteCount::fromInteger(archiveLength));
+        source->addSegment(el::unit::ByteIndex{cDirectoryOffset}, directory.toByteBlock());
+        source->addSegment(el::unit::ByteIndex::fromInteger(zip64Offset), end.toByteBlock());
 
         const auto reader = el::compression::zip::ArchiveReader::create(source);
         REQUIRE(reader->isZip64());
@@ -268,8 +271,7 @@ public:
         options.setCompressionMethod(el::compression::zip::CompressionMethod::Stored);
         for (auto index = std::size_t{}; index < cEntryCount; ++index) {
             auto name = el::text::String{"entry"_el};
-            name = name.inserted(
-                el::unit::CpIndex{name.characterLength().toRawValue()}, el::text::String::fromInteger(index));
+            name = name.inserted(el::unit::CpIndex::end(name.characterLength()), el::text::String::fromInteger(index));
             writer->addData(el::mem::ByteBlock{}, el::path::Path::fromPosix(name), options);
         }
         const auto writesBeforeFinalization = destination->writeLengths.size();

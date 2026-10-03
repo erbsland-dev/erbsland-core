@@ -8,8 +8,8 @@
 
 namespace erbsland::conf::impl {
 
-auto Decoder::advanceWhile(const text::AsciiCategory category, unit::CpLength maximum) -> unit::CpLength {
-    auto count = unit::CpLength::zero();
+auto Decoder::advanceWhile(const text::AsciiCategory category, unit::CpCount maximum) -> unit::CpCount {
+    auto count = unit::CpCount::zero();
     while (character().isAsciiCategory(category) && (maximum.isInfinite() || count < maximum)) {
         next();
         ++count;

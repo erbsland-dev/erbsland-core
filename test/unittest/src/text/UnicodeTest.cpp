@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/text/impl/UnicodeData.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/UnicodeVersion.hpp>
+#include <erbsland/UnicodeVersion.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using el::text::ucdVersion;

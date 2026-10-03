@@ -4,20 +4,21 @@
 
 #include "../RenderError.hpp"
 
-#include "../../../text/AnyString.hpp"
-#include "../../../text/IntegerBase.hpp"
-#include "../../../text/Literals.hpp"
-#include "../../../text/StringSide.hpp"
-#include "../../../text/u8/U8StringConstIterator.hpp"
 #include "../../../unit/ColumnIndex.hpp"
 #include "../../../unit/CpIndex.hpp"
 #include "../../../unit/LineIndex.hpp"
+#include "../../AnyString.hpp"
+#include "../../IntegerBase.hpp"
+#include "../../Literals.hpp"
+#include "../../StringSide.hpp"
+#include "../../u8/U8StringConstIterator.hpp"
 
 namespace erbsland::text::render::impl {
 
+using namespace unit;
 using namespace text::literals;
 
-auto Tokenizer::readNumber(const unit::CodeLocation location) -> Token {
+auto Tokenizer::readNumber(const CodeLocation location) -> Token {
     _reader.startCapture();
     const auto hasIntegerDigits = !readWhile(AsciiCategory::Digit).isZero();
     auto isFloat = false;
@@ -45,7 +46,7 @@ auto Tokenizer::readNumber(const unit::CodeLocation location) -> Token {
     return Token{isFloat ? TokenKind::Float : TokenKind::Integer, _reader.takeCapture().toString(), location};
 }
 
-auto Tokenizer::readString(const Char quote, const unit::CodeLocation location) -> Token {
+auto Tokenizer::readString(const Char quote, const CodeLocation location) -> Token {
     _reader.clearBuffer();
     while (!_reader.isAtEnd()) {
         const auto characterLocation = _location;
@@ -105,7 +106,7 @@ auto Tokenizer::readString(const Char quote, const unit::CodeLocation location) 
     throwSyntax("Invalid layout expression"_el, "A string literal is not terminated."_el, location);
 }
 
-auto Tokenizer::readUnicodeEscape(const unit::CodeLocation location) -> Char {
+auto Tokenizer::readUnicodeEscape(const CodeLocation location) -> Char {
     const auto first = readHexCodeUnit(location);
     if (Char::isHighSurrogate(first)) {
         if (read() != U'\\' || read() != U'u') {
@@ -137,7 +138,7 @@ auto Tokenizer::readUnicodeEscape(const unit::CodeLocation location) -> Char {
     return result;
 }
 
-auto Tokenizer::readHexCodeUnit(const unit::CodeLocation location) -> uint16_t {
+auto Tokenizer::readHexCodeUnit(const CodeLocation location) -> uint16_t {
     auto result = uint16_t{0U};
     for (auto index = 0U; index < 4U; ++index) {
         const auto value = _reader.peek().digitValue(IntegerBase::Hexadecimal);

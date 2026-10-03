@@ -30,7 +30,7 @@ structured fields.
 .. erbsland-demo::
     :source: err/Diagnostic/InspectDiagnostic.cpp
     :exec: err/diagnostic --demo InspectDiagnostic
-    :source-sha256: a73edfd105a9cffa938870f764118b5123d61b9a1d66b4e4112720914ade7aff
+    :sha256: c6032813a36ce6a8b82b568c1d9e737fd919fd52c75ed67f8dbb8ca2ca9b0d54
 
 .. code-block:: cpp
 
@@ -46,16 +46,17 @@ structured fields.
 
         el::io::printLine("Source: "_el, diagnostic->sourceName());
         el::io::printLine("Path: "_el, diagnostic->sourcePath());
-        el::io::printLine(
-            "Location: "_el, location.line().toSizeT() + 1, ":"_el, location.column().toSizeT() + 1);
+        el::io::printLine("Location: "_el, location.line().toSizeT() + 1, ":"_el, location.column().toSizeT() + 1);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Source: 夜の演奏
-    Path: scores/夜の演奏.music
-    Location: 4:6
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSource: 夜の演奏
+        Path: scores/夜の演奏.music
+        Location: 4:6␛[0m
 
 .. erbsland-demo-end::
 
@@ -78,7 +79,7 @@ conversions:
 .. erbsland-demo::
     :source: err/Diagnostic/BuildDiagnosticDocument.cpp
     :exec: err/diagnostic --demo BuildDiagnosticDocument
-    :source-sha256: 0935438425ed9f80ed7ea3eb16c0f75ab676586ef2819da9cca66b3cfff31aa9
+    :sha256: 1ef3b008a6106ac893bc2125c0074c31fc510d1f395d64e155f95e081e11863c
 
 .. code-block:: cpp
 
@@ -88,21 +89,23 @@ conversions:
         try {
             try {
                 throw std::runtime_error{"MIDI input stopped responding"};
-            } catch (...) {
+            } catch (const std::runtime_error &) {
                 throw el::RuntimeError{"The digital-piano input could not be read."_el, std::current_exception()};
             }
-        } catch (const el::Exception &error) {
+        } catch (const el::RuntimeError &error) {
             auto document = el::DiagnosticHelper{error}.toDocument();
             el::io::printLine(document.toString());
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Error: The digital-piano input could not be read.
-    Caused By:
-      MIDI input stopped responding
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mError: The digital-piano input could not be read.
+        Caused By:
+          MIDI input stopped responding␛[0m
 
 .. erbsland-demo-end::
 
@@ -132,7 +135,7 @@ does not use ``Application``.
 .. erbsland-demo::
     :source: err/Diagnostic/RenderDiagnosticDocument.cpp
     :exec: err/diagnostic --demo RenderDiagnosticDocument
-    :source-sha256: 431f4c7291e69db5d0c65c1b7de6b9176169f5085192f230dd59768df7090eab
+    :sha256: a1e61732b9f706b713427c33f7c4332aee483648a75324a38bf9d0b5a99bd0a3
 
 .. code-block:: cpp
 
@@ -155,26 +158,28 @@ does not use ``Application``.
         renderer.renderTo(*el::application().terminal(), document);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    --- Plain text ---
-    Error: The score could not be read.
-      The tempo-marking value is out of range.
-    Error Source:
-      Path:   scores/朝の合奏.music
-      Line:   7
-      Column: 15
-    --- Terminal document ---
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-      ␛[1;91mThe␛[22m ␛[1mscore␛[22m ␛[1mcould␛[22m ␛[1mnot␛[22m ␛[1mbe␛[22m ␛[1mread.
+        ␛[0m--- Plain text ---
+        Error: The score could not be read.
+          The tempo-marking value is out of range.
+        Error Source:
+          Path:   scores/朝の合奏.music
+          Line:   7
+          Column: 15
+        --- Terminal document ---
 
-      ␛[22;39mThe tempo-marking value is out of range.
+          ␛[91;49m␛[1mThe␛[22m ␛[1mscore␛[22m ␛[1mcould␛[22m ␛[1mnot␛[22m ␛[1mbe␛[22m ␛[1mread.
 
-    ␛[1mError␛[22m ␛[1mSource:
-      ␛[22;90mPath:␛[39m   scores/朝の合奏.music
-      ␛[90mLine:␛[39m   7
-      ␛[90mColumn:␛[39m 15
+          ␛[39;49m␛[22mThe tempo-marking value is out of range.
+
+        ␛[1mError␛[22m ␛[1mSource:
+          ␛[90;49m␛[22mPath:␛[39;49m   scores/朝の合奏.music
+          ␛[90;49mLine:␛[39;49m   7
+          ␛[90;49mColumn:␛[39;49m 15␛[0m
 
 .. erbsland-demo-end::
 
@@ -185,13 +190,13 @@ It is not a substitute for ``DiagnosticHelper::toDocument()`` when an exception 
 Display Text and Localization
 =============================
 
-Diagnostic conversion accepts an optional :cpp:class:`DisplayTextMap <erbsland::i18n::DisplayTextMap>`.
-It supplies structural wording such as section labels and cause headings.
-A null pointer selects the library's English defaults; ``Application`` passes its configured display-text map
-automatically.
+Diagnostic conversion uses the application's :cpp:class:`DisplayText <erbsland::i18n::DisplayText>` registry for
+structural wording such as section labels and cause headings.
+Register a compiled catalog to customize this wording, or install a translator to translate the resolved texts.
+The compiled English Core catalog supplies the built-in defaults.
 
 Domain-authored titles and descriptions are kept separate from this structural wording.
-Translate application text in the application, and use a display-text map to adapt reusable diagnostic labels.
+Translate application text in the application, and use the registry to adapt reusable diagnostic labels.
 This keeps domain context intact while allowing the same semantic document to be rendered for different audiences.
 
 Read :doc:`writing_custom_exceptions` to create diagnostics for your own domain without coupling the exception itself to

@@ -1,0 +1,19 @@
+# Reference-document groups for the conf domain.
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "conf/configuration_language.rst"
+Title                        : "Configuration Language"
+Header Globs                 :
+    * "conf/*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "conf/validation_rules.rst"
+Title                        : "Configuration Validation Rules"
+Header Globs                 :
+    * "conf/vr/**/*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "conf/syntax_formatting.rst"
+Title                        : "ELCL Syntax and Formatting"
+Header Globs                 :
+    * "conf/syntax/*.hpp"

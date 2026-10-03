@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Random.hpp"
 
-#include "../err/OutOfRangeError.hpp"
+#include "../err/OutOfRangeFailure.hpp"
 #include "../math/SaturatingMath.hpp"
 #include "../mem/impl/SecureErase.hpp"
 #include "../mem/impl/UnsafeByteBlockBuffer.hpp"
@@ -18,9 +18,12 @@
 
 namespace erbsland::random {
 
+using namespace mem;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-auto Random::buildString(const unit::CpLength length, const text::CharSet &characters) -> text::String {
+auto Random::buildString(const CpCount length, const CharSet &characters) -> String {
     if (length.isZero() || length.isInfinite() || characters.isEmpty()) {
         return {};
     }
@@ -31,22 +34,22 @@ auto Random::buildString(const unit::CpLength length, const text::CharSet &chara
     }
     const auto characterCount = length.toSizeTOrThrow();
     if (math::willMultiplyOverflow(characterCount, maximumCharacterSize)) {
-        throw err::OutOfRangeError{"Random string exceeds size bounds"_el};
+        throw err::OutOfRangeFailure{"Random string exceeds size bounds"_el};
     }
     const auto capacityValue = characterCount * maximumCharacterSize;
     if (text::impl::UnsafeU8StringBuffer::wouldExceedCapacity(capacityValue + 1U)) {
-        throw err::OutOfRangeError{"Random string exceeds size bounds"_el};
+        throw err::OutOfRangeFailure{"Random string exceeds size bounds"_el};
     }
-    const auto capacity = unit::ByteLength::fromSizeTOrThrow(capacityValue);
+    const auto capacity = ByteCount::fromSizeTOrThrow(capacityValue);
     auto buffer = text::impl::UnsafeU8StringBuffer{capacity, isSecure()};
     auto writer = text::impl::U8Writer{std::span<char>{buffer.data(), capacity.toSizeT()}};
-    for (auto i = unit::CpLength{}; i < length; ++i) {
+    for (auto i = CpCount{}; i < length; ++i) {
         writer.write(selectElement(choices));
     }
-    return text::String{buffer.take(unit::ByteLength::fromSizeTOrThrow(writer.position()))};
+    return String{buffer.take(ByteCount::fromSizeTOrThrow(writer.position()))};
 }
 
-auto Random::buildByteBlock(const unit::ByteLength length) -> mem::ByteBlock {
+auto Random::buildByteBlock(const ByteCount length) -> ByteBlock {
     if (length.isZero() || length.isInfinite()) {
         return {};
     }
@@ -60,11 +63,11 @@ auto Random::buildByteBlock(const unit::ByteLength length) -> mem::ByteBlock {
         }
         throw;
     }
-    return mem::ByteBlock{buffer.take(length)};
+    return ByteBlock{buffer.take(length)};
 }
 
-auto Random::buildByteBuffer(const unit::ByteLength length) -> mem::ByteBuffer {
-    auto result = mem::ByteBuffer{};
+auto Random::buildByteBuffer(const ByteCount length) -> ByteBuffer {
+    auto result = ByteBuffer{};
     result.setSensitive(isSecure());
     if (length.isZero() || length.isInfinite()) {
         return result;
@@ -80,12 +83,12 @@ auto Random::buildByteBuffer(const unit::ByteLength length) -> mem::ByteBuffer {
     return result;
 }
 
-auto Random::selectIndex(const unit::ItemCount count) -> unit::ItemIndex {
+auto Random::selectIndex(const ItemCount count) -> ItemIndex {
     if (count.isZero() || count.isInfinite()) {
-        return unit::ItemIndex::noIndex();
+        return ItemIndex::noIndex();
     }
-    const auto rawIndex = selectInteger<unit::ItemIndex::Value>(0U, count.toRawValue() - 1U);
-    return unit::ItemIndex{rawIndex};
+    const auto rawIndex = selectInteger<ItemIndex::Value>(0U, count.toRawValue() - 1U);
+    return ItemIndex{rawIndex, ItemIndex::Unchecked{}};
 }
 
 }

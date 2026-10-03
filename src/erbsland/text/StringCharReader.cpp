@@ -27,9 +27,10 @@
 
 namespace erbsland::text {
 
+using namespace unit;
 using namespace literals;
+using unit::CpCount;
 using unit::CpIndex;
-using unit::CpLength;
 
 auto StringCharReader::createBackendForAnyString(const AnyString &text) -> impl::StringReaderBase * {
     if (text.isEmpty()) {
@@ -77,6 +78,18 @@ auto StringCharReader::position() const noexcept -> CpIndex {
     return _reader->position();
 }
 
+auto StringCharReader::u8Position() const -> ByteIndex {
+    return _reader->u8Position();
+}
+
+auto StringCharReader::u16Position() const -> U16Index {
+    return _reader->u16Position();
+}
+
+auto StringCharReader::u32Position() const -> CpIndex {
+    return _reader->u32Position();
+}
+
 auto StringCharReader::save() const noexcept -> StringCharReaderState {
     return _reader->save();
 }
@@ -101,39 +114,39 @@ auto StringCharReader::readIf(const CharSet &expected) noexcept -> std::optional
     return _reader->readIf(expected);
 }
 
-auto StringCharReader::readWhile(const ReadFn &readFn, const CharSet &expected, CpLength maximum) noexcept
+auto StringCharReader::readWhile(const ReadFn &readFn, const CharSet &expected, CpCount maximum) noexcept
     -> util::LoopResult {
     return _reader->readWhile(readFn, expected, maximum);
 }
 
-auto StringCharReader::readWhile(const ReadFn &readFn, const AsciiCategory expected, CpLength maximum) noexcept
+auto StringCharReader::readWhile(const ReadFn &readFn, const AsciiCategory expected, CpCount maximum) noexcept
     -> util::LoopResult {
     return _reader->readWhile(readFn, expected, maximum);
 }
 
-auto StringCharReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, CpLength maximum) noexcept
+auto StringCharReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, CpCount maximum) noexcept
     -> util::LoopResult {
     return _reader->readUntil(readFn, stopSet, maximum);
 }
 
-auto StringCharReader::readUntil(const ReadFn &readFn, const AsciiCategory stopCategory, CpLength maximum) noexcept
+auto StringCharReader::readUntil(const ReadFn &readFn, const AsciiCategory stopCategory, CpCount maximum) noexcept
     -> util::LoopResult {
     return _reader->readUntil(readFn, stopCategory, maximum);
 }
 
-auto StringCharReader::advanceWhile(const CharSet &expected, CpLength maximum) noexcept -> CpLength {
+auto StringCharReader::advanceWhile(const CharSet &expected, CpCount maximum) noexcept -> CpCount {
     return _reader->advanceWhile(expected, maximum);
 }
 
-auto StringCharReader::advanceWhile(const AsciiCategory expected, CpLength maximum) noexcept -> CpLength {
+auto StringCharReader::advanceWhile(const AsciiCategory expected, CpCount maximum) noexcept -> CpCount {
     return _reader->advanceWhile(expected, maximum);
 }
 
-auto StringCharReader::advanceUntil(const CharSet &stopSet, CpLength maximum) noexcept -> CpLength {
+auto StringCharReader::advanceUntil(const CharSet &stopSet, CpCount maximum) noexcept -> CpCount {
     return _reader->advanceUntil(stopSet, maximum);
 }
 
-auto StringCharReader::advanceUntil(const AsciiCategory stopCategory, CpLength maximum) noexcept -> CpLength {
+auto StringCharReader::advanceUntil(const AsciiCategory stopCategory, CpCount maximum) noexcept -> CpCount {
     return _reader->advanceUntil(stopCategory, maximum);
 }
 
@@ -145,15 +158,15 @@ auto StringCharReader::isAtEnd() const noexcept -> bool {
     return _reader->isAtEnd();
 }
 
-auto StringCharReader::canRead(const CpLength count) const noexcept -> bool {
+auto StringCharReader::canRead(const CpCount count) const noexcept -> bool {
     return _reader->canRead(count);
 }
 
 auto StringCharReader::advance() noexcept -> bool {
-    return advance(CpLength::one());
+    return advance(CpCount::one());
 }
 
-auto StringCharReader::advance(const CpLength count) noexcept -> bool {
+auto StringCharReader::advance(const CpCount count) noexcept -> bool {
     return _reader->advance(count);
 }
 
@@ -167,7 +180,7 @@ auto StringCharReader::advanceIf(const CharSet &expected) noexcept -> bool {
 
 auto StringCharReader::advanceIf(const String &expected, const CharCompareFn compareFn) noexcept -> bool {
     const auto saved = save();
-    auto expectedPosition = unit::ByteIndex::zero();
+    auto expectedPosition = ByteIndex::zero();
     while (true) {
         const auto expectedCharacter = expected.readCharAndAdvance(expectedPosition);
         if (expectedCharacter.isEndOfData()) {
@@ -185,10 +198,10 @@ auto StringCharReader::advanceIf(const String &expected, const CharCompareFn com
 }
 
 void StringCharReader::advanceOrThrow() {
-    advanceOrThrow(CpLength::one());
+    advanceOrThrow(CpCount::one());
 }
 
-void StringCharReader::advanceOrThrow(const CpLength count) {
+void StringCharReader::advanceOrThrow(const CpCount count) {
     if (!advance(count)) {
         throw err::OutOfRangeError("String reader cannot advance by the requested number of characters"_el);
     }
@@ -218,7 +231,7 @@ auto StringCharReader::bufferView() const noexcept -> AnyString {
     return _reader->bufferView();
 }
 
-auto StringCharReader::bufferCharacterLength() const noexcept -> CpLength {
+auto StringCharReader::bufferCharacterLength() const noexcept -> CpCount {
     return _reader->bufferCharacterLength();
 }
 
@@ -254,19 +267,19 @@ auto StringCharReader::readToBufferIf(const CharSet &expected) -> std::optional<
     return _reader->readToBufferIf(expected);
 }
 
-auto StringCharReader::readToBufferWhile(const CharSet &expected, CpLength maximum) -> util::LoopResult {
+auto StringCharReader::readToBufferWhile(const CharSet &expected, CpCount maximum) -> util::LoopResult {
     return _reader->readToBufferWhile(expected, maximum);
 }
 
-auto StringCharReader::readToBufferWhile(const AsciiCategory expected, CpLength maximum) -> util::LoopResult {
+auto StringCharReader::readToBufferWhile(const AsciiCategory expected, CpCount maximum) -> util::LoopResult {
     return _reader->readToBufferWhile(expected, maximum);
 }
 
-auto StringCharReader::readToBufferUntil(const CharSet &stopSet, CpLength maximum) -> util::LoopResult {
+auto StringCharReader::readToBufferUntil(const CharSet &stopSet, CpCount maximum) -> util::LoopResult {
     return _reader->readToBufferUntil(stopSet, maximum);
 }
 
-auto StringCharReader::readToBufferUntil(const AsciiCategory stopCategory, CpLength maximum) -> util::LoopResult {
+auto StringCharReader::readToBufferUntil(const AsciiCategory stopCategory, CpCount maximum) -> util::LoopResult {
     return _reader->readToBufferUntil(stopCategory, maximum);
 }
 
@@ -318,11 +331,16 @@ auto StringCharReader::scanInteger(const IntegerParseOptions &options) -> ReadIn
         const auto prefixedBase =
             prefix.isSignal() ? std::optional<IntegerBase>{} : IntegerBase::fromPrefixChar(prefix);
         if (prefixedBase.has_value()) {
-            if (options.hasFixedBase()) {
-                return fail(ReadNumberStatus::ParseError);
+            if (const auto fixedBase = options.fixedBase(); fixedBase.has_value()) {
+                // In hexadecimal text, `b` and `B` are digits, even after a leading zero.
+                if (!prefix.isDigitValue(fixedBase.value())) {
+                    return fail(ReadNumberStatus::ParseError);
+                }
+                restore(prefixState);
+            } else {
+                base = prefixedBase.value();
+                advance();
             }
-            base = prefixedBase.value();
-            advance();
         } else {
             restore(prefixState);
         }
@@ -336,7 +354,7 @@ auto StringCharReader::scanInteger(const IntegerParseOptions &options) -> ReadIn
     const auto stopAtMaximum = options.hasFlag(IntegerParseFlag::StopAtMaximum);
     const auto separator = options.separator();
     auto result = std::uint64_t{0U};
-    auto digitCount = CpLength::zero();
+    auto digitCount = CpCount::zero();
     auto lastWasSeparator = false;
 
     while (true) {

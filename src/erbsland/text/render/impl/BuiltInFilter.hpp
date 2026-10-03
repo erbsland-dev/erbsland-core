@@ -16,6 +16,7 @@ enum class BuiltInFilter : uint8_t {
     First,
     Last,
     Join,
+    Batch,
     Length,
     Reverse,
     Sort,

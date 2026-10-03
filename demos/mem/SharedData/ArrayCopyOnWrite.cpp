@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/mem/SharedArrayData.hpp>
-#include <erbsland/mem/SharedDataPointer.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/SharedArrayData.hpp>
+#include <erbsland/SharedDataPointer.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <cstdint>
 

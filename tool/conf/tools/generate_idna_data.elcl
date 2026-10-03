@@ -1,0 +1,7 @@
+#
+# The configuration for the generate_idna_data tool
+#
+----[ Generate IDNA Data ]--------------------------------------------------------------------------------------------
+# All paths are relative to the detected project root.
+
+Output File           : "src/erbsland/text/punycode/impl/IdnaData.cpp"

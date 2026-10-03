@@ -32,7 +32,7 @@ public:
     auto additionalErrorMessages() -> std::string override {
         try {
             std::string result;
-            result += std::format("pattern: \"{}\"\n", pattern.toSafeString(el::unit::CpLength{200U}));
+            result += std::format("pattern: \"{}\"\n", pattern.toSafeString(el::unit::CpCount{200U}));
             result += std::format("groupFlags: \"{}\"\n", groupFlags.toString());
             return result;
         } catch (...) {

@@ -22,34 +22,31 @@ namespace erbsland::text::impl {
 
 using namespace unit;
 
-auto U32StringAppendTools::append(const U32StringDataView &text) -> unit::CpLength {
+auto U32StringAppendTools::append(const U32StringDataView &text) -> CpCount {
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return unit::CpLength::zero();
+        return CpCount::zero();
     }
     const auto oldSize = _storage.range().length().toSizeT();
-    const auto newSize = U32StringSharedStorage::checkedAddSize(
-        oldSize, source.size(), "StringEditor append exceeds string size bounds");
+    const auto newSize = U32StringSharedStorage::checkedAddSize(oldSize, source.size());
     _storage.ensureMutableCapacity(newSize);
     std::memcpy(_storage.dataForWrite() + oldSize, source.data(), source.size() * sizeof(char32_t));
     _storage.resize(newSize);
-    return unit::CpLength::fromSizeT(source.size());
+    return CpCount::fromSizeT(source.size());
 }
 
-auto U32StringAppendTools::append(const U32StringDataView &text, const unit::ItemCount count) -> unit::CpLength {
+auto U32StringAppendTools::append(const U32StringDataView &text, const ItemCount count) -> CpCount {
     if (count.isZero()) {
-        return unit::CpLength::zero();
+        return CpCount::zero();
     }
     const auto countSize = repeatCountToSize(count);
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return unit::CpLength::zero();
+        return CpCount::zero();
     }
-    const auto appendSize = U32StringSharedStorage::checkedMultiplySize(
-        source.size(), countSize, "Repeated string append exceeds string size bounds");
+    const auto appendSize = U32StringSharedStorage::checkedMultiplySize(source.size(), countSize);
     const auto oldSize = _storage.range().length().toSizeT();
-    const auto newSize = U32StringSharedStorage::checkedAddSize(
-        oldSize, appendSize, "Repeated string append exceeds string size bounds");
+    const auto newSize = U32StringSharedStorage::checkedAddSize(oldSize, appendSize);
     _storage.ensureMutableCapacity(newSize);
     auto *writePosition = _storage.dataForWrite() + oldSize;
     for (auto i = std::size_t{0}; i < countSize; ++i) {
@@ -57,18 +54,17 @@ auto U32StringAppendTools::append(const U32StringDataView &text, const unit::Ite
         writePosition += source.size();
     }
     _storage.resize(newSize);
-    return repeatedCharacterCount(CpLength::fromSizeTOrThrow(source.size()), countSize);
+    return repeatedCharacterCount(CpCount::fromSizeTOrThrow(source.size()), countSize);
 }
 
-auto U32StringAppendTools::append(const U8StringDataView &text) -> CpLength {
+auto U32StringAppendTools::append(const U8StringDataView &text) -> CpCount {
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return CpLength::zero();
+        return CpCount::zero();
     }
     const auto appendedLength = countDecodedCharacters(source);
     const auto oldSize = _storage.range().length().toSizeT();
-    const auto newSize = U32StringSharedStorage::checkedAddSize(
-        oldSize, appendedLength.toSizeTOrThrow(), "StringEditor append exceeds string size bounds");
+    const auto newSize = U32StringSharedStorage::checkedAddSize(oldSize, appendedLength.toSizeTOrThrow());
     _storage.ensureMutableCapacity(newSize);
     U32Writer writer{std::span<char32_t>{_storage.dataForWrite() + oldSize, appendedLength.toSizeTOrThrow()}};
     auto position = ByteIndex::zero();
@@ -79,20 +75,19 @@ auto U32StringAppendTools::append(const U8StringDataView &text) -> CpLength {
     return appendedLength;
 }
 
-auto U32StringAppendTools::append(const U8StringDataView &text, const ItemCount count) -> CpLength {
+auto U32StringAppendTools::append(const U8StringDataView &text, const ItemCount count) -> CpCount {
     if (count.isZero()) {
-        return CpLength::zero();
+        return CpCount::zero();
     }
     const auto countSize = repeatCountToSize(count);
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return CpLength::zero();
+        return CpCount::zero();
     }
     const auto characterCount = countDecodedCharacters(source);
     const auto appendedLength = repeatedCharacterCount(characterCount, countSize);
     const auto oldSize = _storage.range().length().toSizeT();
-    const auto newSize = U32StringSharedStorage::checkedAddSize(
-        oldSize, appendedLength.toSizeTOrThrow(), "Repeated string append exceeds string size bounds");
+    const auto newSize = U32StringSharedStorage::checkedAddSize(oldSize, appendedLength.toSizeTOrThrow());
     _storage.ensureMutableCapacity(newSize);
     U32Writer writer{std::span<char32_t>{_storage.dataForWrite() + oldSize, appendedLength.toSizeTOrThrow()}};
     for (auto i = std::size_t{0}; i < countSize; ++i) {
@@ -105,18 +100,17 @@ auto U32StringAppendTools::append(const U8StringDataView &text, const ItemCount 
     return appendedLength;
 }
 
-auto U32StringAppendTools::append(const U16StringDataView &text) -> CpLength {
+auto U32StringAppendTools::append(const U16StringDataView &text) -> CpCount {
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return CpLength::zero();
+        return CpCount::zero();
     }
     const auto appendedLength = countDecodedCharacters(source);
     const auto oldSize = _storage.range().length().toSizeT();
-    const auto newSize = U32StringSharedStorage::checkedAddSize(
-        oldSize, appendedLength.toSizeTOrThrow(), "StringEditor append exceeds string size bounds");
+    const auto newSize = U32StringSharedStorage::checkedAddSize(oldSize, appendedLength.toSizeTOrThrow());
     _storage.ensureMutableCapacity(newSize);
     U32Writer writer{std::span<char32_t>{_storage.dataForWrite() + oldSize, appendedLength.toSizeTOrThrow()}};
-    auto position = U16DataIndex::zero();
+    auto position = U16Index::zero();
     while (position.toSizeT() < source.size()) {
         writer.write(utf16::decodeCharOrReplace(source, position));
     }
@@ -124,24 +118,23 @@ auto U32StringAppendTools::append(const U16StringDataView &text) -> CpLength {
     return appendedLength;
 }
 
-auto U32StringAppendTools::append(const U16StringDataView &text, const ItemCount count) -> CpLength {
+auto U32StringAppendTools::append(const U16StringDataView &text, const ItemCount count) -> CpCount {
     if (count.isZero()) {
-        return CpLength::zero();
+        return CpCount::zero();
     }
     const auto countSize = repeatCountToSize(count);
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return CpLength::zero();
+        return CpCount::zero();
     }
     const auto characterCount = countDecodedCharacters(source);
     const auto appendedLength = repeatedCharacterCount(characterCount, countSize);
     const auto oldSize = _storage.range().length().toSizeT();
-    const auto newSize = U32StringSharedStorage::checkedAddSize(
-        oldSize, appendedLength.toSizeTOrThrow(), "Repeated string append exceeds string size bounds");
+    const auto newSize = U32StringSharedStorage::checkedAddSize(oldSize, appendedLength.toSizeTOrThrow());
     _storage.ensureMutableCapacity(newSize);
     U32Writer writer{std::span<char32_t>{_storage.dataForWrite() + oldSize, appendedLength.toSizeTOrThrow()}};
     for (auto i = std::size_t{0}; i < countSize; ++i) {
-        auto position = U16DataIndex::zero();
+        auto position = U16Index::zero();
         while (position.toSizeT() < source.size()) {
             writer.write(utf16::decodeCharOrReplace(source, position));
         }
@@ -150,35 +143,32 @@ auto U32StringAppendTools::append(const U16StringDataView &text, const ItemCount
     return appendedLength;
 }
 
-auto U32StringAppendTools::append(const Char character) -> unit::CpLength {
+auto U32StringAppendTools::append(const Char character) -> CpCount {
     if (!character.isValidUnicode()) {
-        return unit::CpLength::zero();
+        return CpCount::zero();
     }
     const auto oldSize = _storage.range().length().toSizeT();
     const auto appendSize = impl::utf32::encodedLength(character).toSizeTOrThrow();
-    const auto newSize =
-        U32StringSharedStorage::checkedAddSize(oldSize, appendSize, "Character append exceeds string size bounds");
+    const auto newSize = U32StringSharedStorage::checkedAddSize(oldSize, appendSize);
     _storage.ensureMutableCapacity(newSize);
     U32Writer writer{std::span<char32_t>{_storage.dataForWrite() + oldSize, appendSize}};
     writer.write(character);
     _storage.resize(newSize);
-    return unit::CpLength::one();
+    return CpCount::one();
 }
 
-auto U32StringAppendTools::append(const Char character, unit::CpLength count) -> unit::CpLength {
+auto U32StringAppendTools::append(const Char character, CpCount count) -> CpCount {
     if (count.isZero()) {
-        return unit::CpLength::zero();
+        return CpCount::zero();
     }
     const auto countSize = repeatCountToSize(count);
     if (!character.isValidUnicode()) {
-        return unit::CpLength::zero();
+        return CpCount::zero();
     }
     const auto oldSize = _storage.range().length().toSizeT();
     const auto characterSize = impl::utf32::encodedLength(character).toSizeTOrThrow();
-    const auto appendSize = U32StringSharedStorage::checkedMultiplySize(
-        characterSize, countSize, "Repeated character append exceeds string size bounds");
-    const auto newSize = U32StringSharedStorage::checkedAddSize(
-        oldSize, appendSize, "Repeated character append exceeds string size bounds");
+    const auto appendSize = U32StringSharedStorage::checkedMultiplySize(characterSize, countSize);
+    const auto newSize = U32StringSharedStorage::checkedAddSize(oldSize, appendSize);
     _storage.ensureMutableCapacity(newSize);
     U32Writer writer{std::span<char32_t>{_storage.dataForWrite() + oldSize, appendSize}};
     for (auto i = std::size_t{0}; i < countSize; ++i) {
@@ -188,15 +178,15 @@ auto U32StringAppendTools::append(const Char character, unit::CpLength count) ->
     return count;
 }
 
-auto U32StringAppendTools::append(const U8String &text) -> unit::CpLength {
+auto U32StringAppendTools::append(const U8String &text) -> CpCount {
     return append(UnsafeU8StringAccess{text}.dataView());
 }
 
-auto U32StringAppendTools::append(const U16String &text) -> unit::CpLength {
+auto U32StringAppendTools::append(const U16String &text) -> CpCount {
     return append(UnsafeU16StringAccess{text}.dataView());
 }
 
-auto U32StringAppendTools::append(const U32String &text) -> unit::CpLength {
+auto U32StringAppendTools::append(const U32String &text) -> CpCount {
     return append(UnsafeU32StringAccess{text}.dataView());
 }
 

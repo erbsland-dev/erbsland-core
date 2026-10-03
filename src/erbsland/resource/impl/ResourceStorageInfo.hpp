@@ -9,7 +9,7 @@
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteSpan.hpp"
 #include "../../text/String.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <optional>
 
@@ -42,7 +42,7 @@ public:
     text::String identifier;                                               ///< Resource identifier.
     text::String path;                                                     ///< Normalized relative resource path.
     mem::ByteBlock storedData;                                             ///< Exact embedded representation.
-    unit::ByteLength originalSize;                                         ///< Original logical byte size.
+    unit::ByteCount originalSize;                                          ///< Original logical byte size.
     std::optional<compression::CompressionAlgorithm> compressionAlgorithm; ///< Optional compression algorithm.
     std::optional<cryptology::HashAlgorithm> hashAlgorithm;                ///< Optional logical-data hash algorithm.
     mem::ByteBlock hash;                                                   ///< Logical-data digest.

@@ -2,16 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogEntry.hpp>
+#include <erbsland/LogLine.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/StreamErrorContext.hpp>
 
 #include <condition_variable>
 #include <mutex>
-#include <stdexcept>
 
 namespace demo {
 
+using namespace el::text::literals;
+
 /// A demo writer that holds its first write until explicitly released.
-/// @notest{This support type is exercised by the compiled logging topic demos.}
 class BlockingLogWriter final : public el::log::LogWriter {
 public: // implement LogWriter
     void write(
@@ -44,18 +50,16 @@ private:
 };
 
 /// A demo writer that simulates a failed destination.
-/// @notest{This support type is exercised by the compiled statistics demo.}
 class FailingLogWriter final : public el::log::LogWriter {
 public: // implement LogWriter
     void write(
         [[maybe_unused]] const el::log::LogEntryConstPtr &entry,
         [[maybe_unused]] const el::log::LogLineConstPtr &line) override {
-        throw std::runtime_error{"Simulated log destination failure."};
+        throw el::StreamError{el::StreamErrorContext{"Log output failed"_el, "Simulated log destination failure."_el}};
     }
 };
 
 /// A demo writer that retains the most recently delivered entry.
-/// @notest{This support type is exercised by the compiled message-size demo.}
 class CapturingLogWriter final : public el::log::LogWriter {
 public: // implement LogWriter
     void write(const el::log::LogEntryConstPtr &entry, [[maybe_unused]] const el::log::LogLineConstPtr &line) override {

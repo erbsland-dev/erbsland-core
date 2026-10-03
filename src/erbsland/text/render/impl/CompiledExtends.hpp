@@ -5,8 +5,8 @@
 #include "CompiledExtends_fwd.hpp"
 #include "CompiledLayout_fwd.hpp"
 
-#include "../../../text/String.hpp"
 #include "../../../unit/CodeLocation.hpp"
+#include "../../String.hpp"
 
 namespace erbsland::text::render::impl {
 

@@ -2,27 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "BufferedByteInputStreamData.hpp"
 
-#include "IoService.hpp"
 #include "StreamBufferSizes.hpp"
 
+#include "../../err/RuntimeError.hpp"
 #include "../../mem/impl/UnsafeByteBlockBuffer.hpp"
 #include "../../mem/impl/UnsafeRingBufferAccess.hpp"
 
+#include <memory>
 #include <optional>
 #include <span>
 #include <utility>
 
 namespace erbsland::stream::impl {
 
+using namespace mem;
+
 BufferedByteInputStreamData::BufferedByteInputStreamData(
     NativeByteStreamPtr nativeStream, InputStreamSettings streamSettings, const bool useRuntimeSensitive) :
-    native{std::move(nativeStream)},
-    settings{streamSettings},
-    front{streamBufferSizes(settings.buffering()).ioRing},
-    back{streamBufferSizes(settings.buffering()).ioRing},
-    runtimeSensitive{useRuntimeSensitive} {
-    front.setSensitive(settings.isSensitive());
-    back.setSensitive(settings.isSensitive());
+    native{std::move(nativeStream)}, settings{streamSettings}, runtimeSensitive{useRuntimeSensitive} {
     if (native->supportsPositioning()) {
         logicalPosition.store(native->position().toRawValue());
     }
@@ -30,18 +27,22 @@ BufferedByteInputStreamData::BufferedByteInputStreamData(
 
 void BufferedByteInputStreamData::scheduleRead() {
     if (readInProgress || positioning || finished || aborted.load() || streamState.load() != StreamState::Open ||
-        !back.isEmpty()) {
+        !backIsEmpty()) {
         return;
+    }
+    if (!back) {
+        back = std::make_unique<RingBuffer>(streamBufferSizes(settings.buffering()).ioRing);
+        back->setSensitive(settings.isSensitive());
     }
     readInProgress = true;
     auto self = shared_from_this();
-    IoService::submitIoWork([self = std::move(self)]() -> void { self->performRead(); });
+    work.submit([self = std::move(self)]() -> void { self->performRead(); });
 }
 
 void BufferedByteInputStreamData::performRead() {
     auto access = std::optional<mem::impl::UnsafeRingBufferAccess>{};
     auto transfer = std::optional<mem::impl::UnsafeByteBlockBuffer>{};
-    auto destination = mem::ByteSpan{};
+    auto destination = ByteSpan{};
     auto epoch = uint64_t{};
     {
         const auto lock = std::scoped_lock{mutex};
@@ -52,19 +53,30 @@ void BufferedByteInputStreamData::performRead() {
         }
         epoch = sensitivityEpoch.load();
         if (runtimeSensitive) {
-            transfer.emplace(back.available(), true);
+            transfer.emplace(back->available(), true);
             destination = transfer->data();
         } else {
-            access.emplace(back);
+            access.emplace(*back);
             destination = access->writableSpans()[0];
         }
     }
 
-    auto readLength = unit::ByteLength::zero();
+    auto readLength = unit::ByteCount::zero();
+    auto reachedEnd = false;
     auto failure = std::exception_ptr{};
     try {
-        readLength = native->read(destination);
-    } catch (...) {
+        // Regular files may complete short reads before EOF (including files that change after opening).
+        // Confirm EOF in this same worker operation, but never wait for another chunk from a pipe or device.
+        const auto fillBuffer = native->initialFileSize().isFinite();
+        do {
+            const auto count = native->read(destination.subspan(readLength.toSizeT()));
+            if (count.isZero()) {
+                reachedEnd = true;
+                break;
+            }
+            readLength += count;
+        } while (fillBuffer && readLength.toSizeT() < destination.size() && !aborted.load());
+    } catch (const err::RuntimeError &) {
         failure = std::current_exception();
     }
 
@@ -73,13 +85,13 @@ void BufferedByteInputStreamData::performRead() {
         if (!aborted.load() && !failure && epoch == sensitivityEpoch.load()) {
             if (runtimeSensitive) {
                 const auto privateBytes = transfer->take(readLength);
-                if (back.write(privateBytes.span()) != readLength) {
+                if (back->write(privateBytes.span()) != readLength) {
                     std::terminate();
                 }
             } else {
                 access->commitWritten(readLength);
             }
-            finished = readLength.isZero();
+            finished = reachedEnd;
         }
         access.reset();
         readInProgress = false;
@@ -87,7 +99,7 @@ void BufferedByteInputStreamData::performRead() {
             error = failure;
             streamState.store(StreamState::Failed);
         } else if (!aborted.load()) {
-            if (front.isEmpty() && !back.isEmpty()) {
+            if (frontIsEmpty() && !backIsEmpty()) {
                 front.swap(back);
             }
             scheduleRead();

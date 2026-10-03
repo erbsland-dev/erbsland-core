@@ -1,6 +1,8 @@
 @version: "1.0"
 
 # Compare PathWalker traversal with the standard-library recursive iterator.
+# Use --suite source-tree for C++ file reads beneath demos, src, and test.
+# For sampling, select one scenario, e.g. --scenario source-tree:src:text --mode profile.
 
 ---[ Run ]-------------------------------------------------------------------
 Mode                : "benchmark"

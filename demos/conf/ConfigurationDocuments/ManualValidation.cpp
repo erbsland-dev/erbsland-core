@@ -3,6 +3,9 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

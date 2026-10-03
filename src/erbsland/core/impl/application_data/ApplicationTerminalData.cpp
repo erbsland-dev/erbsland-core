@@ -6,6 +6,7 @@
 #include "../../../cterm/Terminal.hpp"
 #include "../../../cterm/TerminalDocumentRenderer.hpp"
 #include "../../../cterm/TerminalStream.hpp"
+#include "../../../err/RuntimeError.hpp"
 #include "../../../stream/StandardStreams.hpp"
 #include "../../../stream/TextOutputStream.hpp"
 #include "../../../text/Literals.hpp"
@@ -17,6 +18,7 @@
 
 namespace erbsland::core::impl {
 
+using namespace stream;
 using namespace text::literals;
 
 void ApplicationTerminalData::enable(cterm::TerminalPtr terminal) {
@@ -30,7 +32,7 @@ void ApplicationTerminalData::enable(cterm::TerminalPtr terminal) {
     _isEnabled = true;
     if (_terminal->isInteractive()) {
         const auto [output, error] = cterm::TerminalStream::createStandardStreams(_terminal);
-        _streamRedirect = stream::redirectStandardStreams(output, error);
+        _streamRedirect = redirectStandardStreams(output, error);
     }
 }
 
@@ -55,6 +57,7 @@ void ApplicationTerminalData::renderSystemOutput(const text::TextDocument &docum
         return;
     }
     if (_isEnabled && _terminal != nullptr && _terminal->isInteractive()) {
+        auto guard = _terminal->synchronizeOutput();
         auto renderer = cterm::TerminalDocumentRenderer{_systemOutputStyle};
         renderer.renderTo(*_terminal, document);
         _terminal->setStyle(cterm::BlockStyle::reset());
@@ -70,8 +73,8 @@ void ApplicationTerminalData::renderSystemOutput(const text::TextDocument &docum
 void ApplicationTerminalData::cleanup() noexcept {
     try {
         if (_streamRedirect.isActive()) {
-            stream::stdOut()->flush();
-            stream::stdErr()->flush();
+            stdOut()->flush();
+            stdErr()->flush();
         }
         if (_isEnabled && _terminal != nullptr) {
             _terminal->restoreScreen();
@@ -79,13 +82,12 @@ void ApplicationTerminalData::cleanup() noexcept {
             _terminal = nullptr;
         }
         _streamRedirect.reset();
-    } catch (...) {}
+    } catch (const err::RuntimeError &) {}
 }
 
-auto ApplicationTerminalData::plainSystemOutputStream(const text::TextDocument &document)
-    -> stream::TextOutputStreamPtr {
+auto ApplicationTerminalData::plainSystemOutputStream(const text::TextDocument &document) -> TextOutputStreamPtr {
     const auto isErrorDocument = document.root()->style() == "error"_el;
-    return isErrorDocument ? stream::stdErr() : stream::stdOut();
+    return isErrorDocument ? stdErr() : stdOut();
 }
 
 }

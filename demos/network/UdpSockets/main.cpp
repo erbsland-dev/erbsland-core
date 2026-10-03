@@ -4,7 +4,7 @@
 #include "UdpSocketsDemos.hpp"
 
 #include <DemoCommon.hpp>
-#include <erbsland/network/udp/all.hpp>
+#include <erbsland/all_network_udp.hpp>
 
 using namespace demo;
 

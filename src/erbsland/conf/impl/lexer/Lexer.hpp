@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 Tobias Erbsland - https://erbsland.dev
+// Copyright (c) 2024-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
@@ -22,6 +22,10 @@ namespace erbsland::conf::impl {
 /// The method `tokens()` can only be called once.
 class Lexer final {
     class PrivateTag {};
+    constexpr static auto cBeginKey = text::StringLiteral{"begin"};
+    constexpr static auto cDecoderKey = text::StringLiteral{"decoder"};
+    constexpr static auto cEndKey = text::StringLiteral{"end"};
+    constexpr static auto cValueKey = text::StringLiteral{"value"};
 
 public:
     /// Create a new lexer, using the given decoder.
@@ -73,6 +77,7 @@ private:
 public: // testing
 #ifdef ERBSLAND_CORE_CONF_INTERNAL_VIEWS
     friend auto internalView(const Lexer &object) -> InternalViewPtr;
+    friend auto internalView(const LexerToken &token) noexcept -> InternalViewPtr;
 #endif
 
 private:

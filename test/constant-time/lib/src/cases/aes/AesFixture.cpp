@@ -1,19 +1,19 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "AesFixture.hpp"
 
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesKeySchedule.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
 using namespace el::text::literals;
 
 AesFixture::AesFixture(
-    el::Random &random, const bool population, std::size_t keySize, AesOperation operation, bool automatic) :
+    el::Random &random, const bool population, el::ByteCount keySize, AesOperation operation, bool automatic) :
     _operation{operation} {
 
     auto key = input(random, population, keySize);
@@ -51,7 +51,7 @@ auto AesFixture::measure(const uint64_t repetitions) -> uint64_t {
     case AesOperation::Decrypt:
         return repeat(repetitions, [this]() -> uint64_t { return sample<AesOperation::Decrypt>(); });
     }
-    throw el::LogicError{"Unknown sample operation."_el};
+    throw el::LogicFailure{"Unknown sample operation."_el};
 }
 
 }

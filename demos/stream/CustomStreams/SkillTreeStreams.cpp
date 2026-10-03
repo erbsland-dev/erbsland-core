@@ -1,7 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "SkillTreeStreams.hpp"
+
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/StreamCloseStatus.hpp>
+#include <erbsland/StreamReadResult.hpp>
+#include <erbsland/StreamReadStatus.hpp>
+#include <erbsland/StreamState.hpp>
+#include <erbsland/StreamWaitStatus.hpp>
+#include <erbsland/StreamWriteStatus.hpp>
 
 #include <algorithm>
 
@@ -31,19 +39,19 @@ void SkillTreeInputStream::abort() noexcept {
 
 auto SkillTreeInputStream::readFromSource(
     const std::span<el::Byte> destination, [[maybe_unused]] const ReadDeadline deadline)
-    -> el::StreamReadResult<el::ByteLength> {
+    -> el::StreamReadResult<el::ByteCount> {
     if (_state != el::StreamState::Open) {
         throwError("The skill tree could not be read."_el, "The input stream is closed."_el);
     }
     if (_position == _bytes.size()) {
-        return {el::StreamReadStatus::Finished, el::ByteLength::zero()};
+        return {el::StreamReadStatus::Finished, el::ByteCount::zero()};
     }
     const auto count = std::min({destination.size(), _bytes.size() - _position, std::size_t{3U}});
     for (auto index = std::size_t{0U}; index < count; ++index) {
         destination[index] = el::Byte{_bytes[_position + index]};
     }
     _position += count;
-    return {el::StreamReadStatus::Data, el::ByteLength::fromSizeT(count)};
+    return {el::StreamReadStatus::Data, el::ByteCount::fromSizeT(count)};
 }
 
 auto SkillTreeOutputStream::create() -> std::shared_ptr<SkillTreeOutputStream> {

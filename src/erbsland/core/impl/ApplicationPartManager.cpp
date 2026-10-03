@@ -4,7 +4,7 @@
 
 #include "ApplicationPartIdentifier.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../event/Events.hpp"
 #include "../../event/UnmanagedEventThread.hpp"
 #include "../../text/Literals.hpp"
@@ -15,6 +15,7 @@
 
 namespace erbsland::core::impl {
 
+using namespace err;
 using namespace text::literals;
 
 auto ApplicationPartManager::create(event::EventsPtr controlEvents) -> std::shared_ptr<ApplicationPartManager> {
@@ -96,7 +97,7 @@ auto ApplicationPartManager::state() const noexcept -> ApplicationPartManagerSta
 auto ApplicationPartManager::partState(const ApplicationPartIdentifierPtr &identifier) const -> ApplicationPartState {
     const auto lock = std::scoped_lock{_mutex};
     if (!_prepared) {
-        throw err::LogicError{"The application-part manager is not prepared."_el};
+        throw LogicFailure{"The application-part manager is not prepared."_el};
     }
     return _records[resolveIdentifierLocked(identifier) - 1].state;
 }
@@ -104,7 +105,7 @@ auto ApplicationPartManager::partState(const ApplicationPartIdentifierPtr &ident
 auto ApplicationPartManager::part(const ApplicationPartIdentifierPtr &identifier) const -> ApplicationPartPtr {
     const auto lock = std::scoped_lock{_mutex};
     if (!_prepared) {
-        throw err::LogicError{"The application-part manager is not prepared."_el};
+        throw LogicFailure{"The application-part manager is not prepared."_el};
     }
     return _records[resolveIdentifierLocked(identifier) - 1].part;
 }
@@ -112,7 +113,7 @@ auto ApplicationPartManager::part(const ApplicationPartIdentifierPtr &identifier
 auto ApplicationPartManager::waitForRunning() -> bool {
     auto lock = std::unique_lock{_mutex};
     if (isWaitForbiddenLocked()) {
-        throw err::LogicError{"Can not wait for the application-part manager from one of its event threads."_el};
+        throw LogicFailure{"Can not wait for the application-part manager from one of its event threads."_el};
     }
     _stateChanged.wait(lock, [this]() -> bool {
         return _state == ApplicationPartManagerState::Running || _state == ApplicationPartManagerState::Stopping ||
@@ -124,7 +125,7 @@ auto ApplicationPartManager::waitForRunning() -> bool {
 auto ApplicationPartManager::waitForStopped() -> bool {
     auto lock = std::unique_lock{_mutex};
     if (isWaitForbiddenLocked()) {
-        throw err::LogicError{"Can not wait for the application-part manager from one of its event threads."_el};
+        throw LogicFailure{"Can not wait for the application-part manager from one of its event threads."_el};
     }
     _stateChanged.wait(lock, [this]() -> bool {
         return _state == ApplicationPartManagerState::Stopped || _state == ApplicationPartManagerState::Failed;
@@ -135,10 +136,10 @@ auto ApplicationPartManager::waitForStopped() -> bool {
 auto ApplicationPartManager::waitForRunning(const ApplicationPartIdentifierPtr &identifier) -> bool {
     auto lock = std::unique_lock{_mutex};
     if (!_prepared) {
-        throw err::LogicError{"The application-part manager is not prepared."_el};
+        throw LogicFailure{"The application-part manager is not prepared."_el};
     }
     if (isWaitForbiddenLocked()) {
-        throw err::LogicError{"Can not wait for an application part from one of the manager's event threads."_el};
+        throw LogicFailure{"Can not wait for an application part from one of the manager's event threads."_el};
     }
     const auto number = resolveIdentifierLocked(identifier);
     _stateChanged.wait(lock, [this, number]() -> bool {
@@ -152,10 +153,10 @@ auto ApplicationPartManager::waitForRunning(const ApplicationPartIdentifierPtr &
 auto ApplicationPartManager::waitForStopped(const ApplicationPartIdentifierPtr &identifier) -> bool {
     auto lock = std::unique_lock{_mutex};
     if (!_prepared) {
-        throw err::LogicError{"The application-part manager is not prepared."_el};
+        throw LogicFailure{"The application-part manager is not prepared."_el};
     }
     if (isWaitForbiddenLocked()) {
-        throw err::LogicError{"Can not wait for an application part from one of the manager's event threads."_el};
+        throw LogicFailure{"Can not wait for an application part from one of the manager's event threads."_el};
     }
     const auto number = resolveIdentifierLocked(identifier);
     _stateChanged.wait(lock, [this, number]() -> bool {

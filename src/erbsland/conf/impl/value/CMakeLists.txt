@@ -33,6 +33,9 @@ target_sources(erbsland-core PRIVATE
         Value.cpp
         Value.hpp
         Value_fwd.hpp
+        ValueDigest.cpp
+        ValueDigest.hpp
+        ValueDigest_fwd.hpp
         ValueHelper.hpp
         ValueList.hpp
         ValueMap.cpp

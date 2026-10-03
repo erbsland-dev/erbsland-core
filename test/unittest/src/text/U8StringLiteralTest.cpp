@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/StorageIdentifier.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u8/U8StringLiteral.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StorageIdentifier.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/U8StringLiteral.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>

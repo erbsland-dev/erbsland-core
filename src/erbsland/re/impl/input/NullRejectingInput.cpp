@@ -29,8 +29,8 @@ auto NullRejectingInput::peek() -> CharAndPosition {
     return validate(_input->peek());
 }
 
-void NullRejectingInput::skip(const unit::CpLength characterCount) {
-    for (auto index = unit::CpLength{}; index < characterCount; ++index) {
+void NullRejectingInput::skip(const unit::CpCount characterCount) {
+    for (auto index = unit::CpCount{}; index < characterCount; ++index) {
         if (read().character.isEndOfData()) {
             return;
         }

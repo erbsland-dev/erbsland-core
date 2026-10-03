@@ -20,8 +20,10 @@ target_sources(erbsland-core-unittest PRIVATE
         ReadSecretTest.cpp
         TerminalConvenienceTest.cpp
         TerminalFlagsTest.cpp
+        TerminalFullScreenTest.cpp
         TerminalStreamTest.cpp
         TerminalTest.cpp
+        VirtualBackendTest.cpp
         WritableBufferDispatchProbe.hpp
 )
 

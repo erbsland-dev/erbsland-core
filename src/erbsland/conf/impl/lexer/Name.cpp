@@ -7,6 +7,8 @@
 #include "../char/NamedChars.hpp"
 #include "../utilities/YieldMacros.hpp"
 
+#include "../../../text/StringTransformations.hpp"
+
 namespace erbsland::conf::impl::lexer {
 
 using namespace text::literals;
@@ -75,7 +77,7 @@ auto expectRegularOrMetaName(Decoder &decoder, const AcceptedNameEnd acceptedNam
         decoder.throwError(ConfErrorCategory::LimitExceeded, "A name must not exceed 100 characters."_el);
     }
     // Convert the captured name into its normalized form.
-    auto name = nameTransaction.capturedString().transformed(text::Char::toIdentifierNormalized);
+    auto name = text::toIdentifierNormalized(nameTransaction.capturedString());
     nameTransaction.commit();
     return {isMetaName, std::move(name)};
 }

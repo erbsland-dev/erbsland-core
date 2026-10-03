@@ -11,10 +11,10 @@
 
 #include "../ByteSpan.hpp"
 
-#include "../../err/OutOfRangeError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
 #include "../../text/Literals.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteRange.hpp"
 
 #include <algorithm>
@@ -55,14 +55,14 @@ public: // accessors
             unit::ByteRange::fromSizeT(static_cast<std::size_t>(data->size()))};
     }
     /// Get the visible byte length.
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength {
-        return isNull() ? unit::ByteLength::zero()
-                        : unit::ByteLength::fromSizeT(static_cast<std::size_t>(constData()->size()));
+    [[nodiscard]] auto length() const noexcept -> unit::ByteCount {
+        return isNull() ? unit::ByteCount::zero()
+                        : unit::ByteCount::fromSizeT(static_cast<std::size_t>(constData()->size()));
     }
     /// Get the allocated byte capacity.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength {
-        return isNull() ? unit::ByteLength::zero()
-                        : unit::ByteLength::fromSizeT(static_cast<std::size_t>(constData()->capacity()));
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteCount {
+        return isNull() ? unit::ByteCount::zero()
+                        : unit::ByteCount::fromSizeT(static_cast<std::size_t>(constData()->capacity()));
     }
     /// Access writable visible bytes after detaching.
     [[nodiscard]] auto writableData() -> ByteSpan {
@@ -98,7 +98,7 @@ public: // storage
         data->setSize(0U);
     }
     /// Reserve at least the requested capacity.
-    void reserve(unit::ByteLength requestedCapacity) {
+    void reserve(unit::ByteCount requestedCapacity) {
         if (requestedCapacity > capacity()) {
             ensureCapacity(requestedCapacity.toSizeTOrThrow());
         }
@@ -131,7 +131,7 @@ public: // storage
 
 public: // modification
     /// Resize visible storage, zero-filling growth.
-    void resize(unit::ByteLength newLengthValue) {
+    void resize(unit::ByteCount newLengthValue) {
         const auto oldLength = length().toSizeT();
         const auto newLength = newLengthValue.toSizeTOrThrow();
         if (newLength == oldLength) {
@@ -152,7 +152,7 @@ public: // modification
         ensureCapacity(newLength);
         auto *data = mutableData();
         ByteWriteTools{ByteSpan{data->data(), newLength}}.fill(
-            unit::ByteRange{unit::ByteIndex::fromSizeT(oldLength), unit::ByteLength::fromSizeT(newLength - oldLength)},
+            unit::ByteRange{unit::ByteIndex::fromSizeT(oldLength), unit::ByteCount::fromSizeT(newLength - oldLength)},
             Byte{});
         data->setSize(static_cast<typename Data::SizeType>(newLength));
     }
@@ -165,7 +165,7 @@ public: // modification
         ensureUnique();
         auto *data = mutableData();
         const auto oldLength = static_cast<std::size_t>(data->size());
-        const auto start = clamped.index().toSizeT();
+        const auto start = clamped.beginIndex().toSizeT();
         const auto count = clamped.length().toSizeT();
         const auto tailStart = start + count;
         const auto tailLength = oldLength - tailStart;
@@ -193,7 +193,7 @@ public: // modification
         auto *data = mutableData();
         const auto count = clamped.length().toSizeT();
         const auto oldLength = static_cast<std::size_t>(data->size());
-        std::memmove(data->data(), data->data() + clamped.index().toSizeT(), count * sizeof(Byte));
+        std::memmove(data->data(), data->data() + clamped.beginIndex().toSizeT(), count * sizeof(Byte));
         if constexpr (!cSupportsSharedOwnership) {
             if (isSensitive()) {
                 impl::secureErase(std::as_writable_bytes(ByteSpan{data->data() + count, oldLength - count}));
@@ -207,8 +207,8 @@ public: // modification
             return;
         }
         const auto oldLength = length().toSizeT();
-        const auto clamped = range.clampedTo(unit::ByteLength::fromSizeT(oldLength));
-        const auto start = clamped.index().toSizeT();
+        const auto clamped = range.clampedTo(unit::ByteCount::fromSizeT(oldLength));
+        const auto start = clamped.beginIndex().toSizeT();
         const auto removedLength = clamped.length().toSizeT();
         const auto sourceBytes = sourceView.dataSpan();
         if (sourceIsSensitive && !sourceBytes.empty()) {
@@ -250,7 +250,7 @@ public: // modification
         replace(unit::ByteRange::emptyAt(unit::ByteIndex::fromSizeT(position)), source, sourceIsSensitive);
     }
     /// Append one or more bytes.
-    void append(const Byte value, const unit::ByteLength length) {
+    void append(const Byte value, const unit::ByteCount length) {
         const auto oldLength = this->length().toSizeT();
         const auto newLength = checkedCombinedLength(oldLength, length.toSizeT());
         ensureCapacity(newLength);
@@ -283,15 +283,15 @@ public: // modification
         data->setSize(static_cast<typename Data::SizeType>(newLength));
     }
     /// Append bytes by cyclically repeating an existing source range.
-    void appendRepeated(const unit::ByteRange sourceRange, const unit::ByteLength outputLength) {
+    void appendRepeated(const unit::ByteRange sourceRange, const unit::ByteCount outputLength) {
         const auto oldLength = length();
         if (outputLength.isZero()) {
             return;
         }
         if (sourceRange.isEmpty() || !sourceRange.isWithin(oldLength)) {
-            throw err::OutOfRangeError{"Repeated byte source exceeds the available data."_el};
+            throw err::OutOfRangeFailure{"Repeated byte source exceeds the available data."_el};
         }
-        const auto source = sourceRange.index().toSizeT();
+        const auto source = sourceRange.beginIndex().toSizeT();
         const auto sourceLength = sourceRange.length().toSizeT();
         const auto appendedLength = outputLength.toSizeTOrThrow();
         const auto oldSize = oldLength.toSizeT();
@@ -364,7 +364,7 @@ public: // modification
         ByteWriteTools{writableData()}.xorWith(clamped, ByteDataView{sourceBytes});
     }
     /// Append zero-filled bytes and return their first index.
-    [[nodiscard]] auto appendZeroed(unit::ByteLength appendedLength) -> unit::ByteIndex {
+    [[nodiscard]] auto appendZeroed(unit::ByteCount appendedLength) -> unit::ByteIndex {
         const auto offset = unit::ByteIndex::end(length());
         resize(length() + appendedLength);
         return offset;
@@ -380,7 +380,9 @@ public: // factories
         return result;
     }
     /// Create storage with a visible size and capacity.
-    /// @throws err::OutOfRangeError If `size` or `capacity` exceeds the supported storage limit.
+    /// @param size The visible size. Must not exceed `capacity`.
+    /// @param capacity The allocated capacity. Must not exceed the supported storage limit.
+    /// @param sensitive Whether to mark the new storage as sensitive.
     [[nodiscard]] static auto createData(std::size_t size, std::size_t capacity, bool sensitive = false) -> DataOwner {
         if constexpr (!std::same_as<DataOwner, Data>) {
             if (size == 0U && capacity == 0U) {
@@ -388,7 +390,7 @@ public: // factories
             }
         }
         if (size > capacity || !Data::canAllocateWithCapacity(capacity)) {
-            throw err::OutOfRangeError{"Byte storage size exceeds the supported limit"_el};
+            throw err::OutOfRangeFailure{"Byte storage size exceeds the supported limit"_el};
         }
         if constexpr (std::same_as<DataOwner, Data>) {
             return Data::create(
@@ -410,7 +412,7 @@ private:
     [[nodiscard]] static auto checkedCombinedLength(std::size_t first, std::size_t second) -> std::size_t {
         constexpr auto cMaximumLength = static_cast<std::size_t>(std::numeric_limits<typename Data::SizeType>::max());
         if (math::willAddOverflow(first, second) || first + second > cMaximumLength) {
-            throw err::OutOfRangeError{"Byte block size exceeds the supported limit"_el};
+            throw err::OutOfRangeFailure{"Byte block size exceeds the supported limit"_el};
         }
         return first + second;
     }
@@ -426,7 +428,7 @@ private:
     void ensureCapacity(std::size_t requestedCapacity) {
         const auto oldLength = length().toSizeT();
         if (!Data::canAllocateWithCapacity(requestedCapacity)) {
-            throw err::OutOfRangeError{"Byte storage capacity exceeds the supported limit"_el};
+            throw err::OutOfRangeFailure{"Byte storage capacity exceeds the supported limit"_el};
         }
         const auto *oldData = constData();
         const auto oldCapacity = oldData == nullptr ? std::size_t{} : static_cast<std::size_t>(oldData->capacity());

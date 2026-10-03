@@ -10,8 +10,8 @@ namespace erbsland::compression::impl {
 /// @tested{CompressionCodecTest ByteCompressionTest}
 class LzmaCodec final : public CompressionCodec {
 private:
-    static constexpr auto cZipPayloadOverhead = unit::ByteLength{64U}; ///< Worst-case ZIP payload allowance.
-    static constexpr auto cRawPayloadOverhead = unit::ByteLength{68U}; ///< Worst-case raw payload allowance.
+    static constexpr auto cZipPayloadOverhead = unit::ByteCount{64U}; ///< Worst-case ZIP payload allowance.
+    static constexpr auto cRawPayloadOverhead = unit::ByteCount{68U}; ///< Worst-case raw payload allowance.
 
 public:
     /// Create an LZMA codec.
@@ -33,7 +33,7 @@ protected: // implement CompressionCodec
         const CodecOutput::Write &output,
         const CompressionTransferOptions &transfer,
         const DecompressionOptions &options) const override;
-    [[nodiscard]] auto maximumPayloadLength(unit::ByteLength length) const -> unit::ByteLength override;
+    [[nodiscard]] auto maximumPayloadLength(unit::ByteCount length) const -> unit::ByteCount override;
 };
 
 }

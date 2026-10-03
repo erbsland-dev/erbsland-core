@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/Endianness.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <cstdint>
 
@@ -22,14 +32,14 @@ void editingBlocks() {
         .appendInteger(uint16_t{0x1234U}, el::Endianness::Big);
 
     // Adjust selected fields without changing the overall size.
-    build.replace(el::ByteRange{el::ByteIndex{2U}, el::ByteLength{1U}}, el::ByteBlock{el::Byte{0x22U}});
+    build.replace(el::ByteRange{el::ByteIndex{2U}, el::ByteCount{1U}}, el::ByteBlock{el::Byte{0x22U}});
     build.overwrite(el::ByteIndex{3U}, el::ByteArray{el::Byte{0x33U}, el::Byte{0x44U}}.span());
-    build.fill(el::ByteRange{el::ByteIndex{5U}, el::ByteLength{1U}}, el::Byte{0x55U});
+    build.fill(el::ByteRange{el::ByteIndex{5U}, el::ByteCount{1U}}, el::Byte{0x55U});
 
     // Remove a retired node, keep the record payload, and apply an equal-size mask.
-    build.remove(el::ByteRange{el::ByteIndex{1U}, el::ByteLength{1U}});
-    build.keep(el::ByteRange{el::ByteIndex{0U}, el::ByteLength{6U}});
-    build.xorWithOrThrow(el::ByteBlock{el::ByteLength{6U}, el::Byte{0x0fU}});
+    build.remove(el::ByteRange{el::ByteIndex{1U}, el::ByteCount{1U}});
+    build.keep(el::ByteRange{el::ByteIndex{0U}, el::ByteCount{6U}});
+    build.xorWithOrThrow(el::ByteBlock{el::ByteCount{6U}, el::Byte{0x0fU}});
 
     el::io::printLine("Skill build        : Gardien des étoiles"_el);
     el::io::printLine("Encoded build      : "_el, el::ByteFormat::separated(), el::ByteBlock{build});

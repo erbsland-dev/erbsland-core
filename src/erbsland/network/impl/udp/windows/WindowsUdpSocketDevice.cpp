@@ -17,7 +17,7 @@ WindowsUdpSocketDevice::~WindowsUdpSocketDevice() {
     close();
 }
 
-auto WindowsUdpSocketDevice::bind(IpEndpoint localEndpoint, const unit::ByteLength maximumDatagramSize) -> IpEndpoint {
+auto WindowsUdpSocketDevice::bind(IpEndpoint localEndpoint, const unit::ByteCount maximumDatagramSize) -> IpEndpoint {
     return _state->bind(std::move(localEndpoint), maximumDatagramSize);
 }
 

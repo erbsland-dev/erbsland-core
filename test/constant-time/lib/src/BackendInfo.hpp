@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <typeinfo>
 #include <utility>

@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/RingBuffer.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -11,13 +17,13 @@ namespace demo {
 /// the hard limit for atomic writes. Reserving prepares capacity without adding
 /// data; clearing makes data unreadable but keeps the allocation for reuse.
 void managingCapacity() {
-    auto observations = el::RingBuffer{el::ByteLength{4U}, el::ByteLength{12U}};
+    auto observations = el::RingBuffer{el::ByteCount{4U}, el::ByteCount{12U}};
 
     // Reserve enough current capacity for an upcoming atomic observation.
-    const auto reserved = observations.reserveAdditional(el::ByteLength{7U});
+    const auto reserved = observations.reserveAdditional(el::ByteCount{7U});
     const auto reservedCapacity = observations.capacity();
-    const auto canWriteTwelve = observations.canWrite(el::ByteLength{12U});
-    const auto canWriteThirteen = observations.canWrite(el::ByteLength{13U});
+    const auto canWriteTwelve = observations.canWrite(el::ByteCount{12U});
+    const auto canWriteThirteen = observations.canWrite(el::ByteCount{13U});
 
     // Queue data, inspect state, then reuse and finally release excess capacity.
     const auto queued = observations.write(el::ByteArray{el::Byte{2U}, el::Byte{3U}, el::Byte{5U}}.span());

@@ -5,12 +5,14 @@
 #include "ZstandardFrame.hpp"
 
 #include "../../../err/OutOfRangeError.hpp"
+#include "../../../err/OutOfRangeFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 #include <array>
 
 namespace erbsland::compression::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 void ZstandardCodec::compressPayload(
@@ -19,8 +21,10 @@ void ZstandardCodec::compressPayload(
     const CompressionTransferOptions &transfer,
     const CompressionOptions &options) const {
     constexpr auto windowBits = std::array<unsigned, 5U>{17U, 19U, 21U, 23U, 25U};
-    const auto workspace = (uint64_t{1U} << windowBits[static_cast<std::size_t>(level())]) * 7U + 16U * 1024U * 1024U;
-    if (unit::ByteLength{workspace} > availableWorkspace(transfer, options.maximumWorkspaceLength())) {
+    const auto window =
+        ByteCount{uint64_t{1U} << windowBits[static_cast<std::size_t>(level())], ByteCount::Unchecked{}};
+    const auto workspace = window * 7U + ByteCount{16U * 1024U * 1024U};
+    if (workspace > availableWorkspace(transfer, options.maximumWorkspaceLength())) {
         throw err::OutOfRangeError{"Codec workspace limit exceeded."_el};
     }
     ZstandardFrame{}.compressStream(input, level(), output);
@@ -33,7 +37,7 @@ void ZstandardCodec::decompressPayload(
     const DecompressionOptions &options) const {
     auto codecOptions = options;
     const auto workspace = availableWorkspace(transfer, options.maximumWorkspaceLength());
-    constexpr auto minimumWorkspace = unit::ByteLength{2U * 1024U * 1024U};
+    constexpr auto minimumWorkspace = ByteCount{2U * 1024U * 1024U};
     if (minimumWorkspace > workspace) {
         throw err::OutOfRangeError{"Codec workspace limit exceeded."_el};
     }
@@ -41,13 +45,13 @@ void ZstandardCodec::decompressPayload(
     ZstandardFrame{}.decompressStream(input, codecOptions, output);
 }
 
-auto ZstandardCodec::maximumPayloadLength(const unit::ByteLength length) const -> unit::ByteLength {
+auto ZstandardCodec::maximumPayloadLength(const ByteCount length) const -> ByteCount {
     if (!length.isFinite()) {
-        throw err::OutOfRangeError{"Compression length must be finite."_el};
+        throw err::OutOfRangeFailure{"Compression length must be finite."_el};
     }
     const auto value = length.toSizeTOrThrow();
     return length.addedOrThrow(
-        unit::ByteLength::fromSizeT((value / cMaximumBlockSize + 1U) * cBlockHeaderLength + cFrameOverhead));
+        ByteCount::fromSizeT((value / cMaximumBlockSize + 1U) * cBlockHeaderLength + cFrameOverhead));
 }
 
 }

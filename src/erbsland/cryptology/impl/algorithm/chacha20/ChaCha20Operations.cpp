@@ -11,6 +11,9 @@
 
 namespace erbsland::cryptology::impl::chacha20 {
 
+using namespace unit;
+using namespace mem;
+
 void quarterRound(
     State &state, const std::size_t a, const std::size_t b, const std::size_t c, const std::size_t d) noexcept {
     // RFC 8439, Section 2.1.1: add, XOR, and rotate with the fixed 16/12/8/7 rotation sequence.
@@ -28,8 +31,7 @@ void quarterRound(
     state[b] = std::rotl(state[b], 7);
 }
 
-auto initialState(const mem::ConstByteSpan key, const mem::ConstByteSpan nonce, const uint32_t counter) noexcept
-    -> State {
+auto initialState(const ConstByteSpan key, const ConstByteSpan nonce, const uint32_t counter) noexcept -> State {
     // RFC 8439, Section 2.3: constants, eight key words, counter, and three nonce words in little-endian order.
     auto result = State{
         0x61707865U,
@@ -38,17 +40,18 @@ auto initialState(const mem::ConstByteSpan key, const mem::ConstByteSpan nonce, 
         0x6b206574U,
     };
     for (auto index = std::size_t{}; index < 8U; ++index) {
-        result[index + 4U] = mem::getInteger<uint32_t>(key, unit::ByteIndex{index * 4U}, mem::Endianness::Little);
+        result[index + 4U] =
+            getInteger<uint32_t>(key, ByteIndex{index * 4U, ByteIndex::Unchecked{}}, Endianness::Little);
     }
     result[12] = counter;
     for (auto index = std::size_t{}; index < 3U; ++index) {
-        result[index + 13U] = mem::getInteger<uint32_t>(nonce, unit::ByteIndex{index * 4U}, mem::Endianness::Little);
+        result[index + 13U] =
+            getInteger<uint32_t>(nonce, ByteIndex{index * 4U, ByteIndex::Unchecked{}}, Endianness::Little);
     }
     return result;
 }
 
-auto block(const mem::ConstByteSpan key, const mem::ConstByteSpan nonce, const uint32_t counter) noexcept
-    -> mem::ByteArray<64> {
+auto block(const ConstByteSpan key, const ConstByteSpan nonce, const uint32_t counter) noexcept -> ByteArray<64> {
     auto initial = initialState(key, nonce, counter);
     auto working = initial;
 
@@ -65,10 +68,10 @@ auto block(const mem::ConstByteSpan key, const mem::ConstByteSpan nonce, const u
     }
 
     // RFC 8439, Section 2.3: add the initial state and serialize every word little-endian.
-    auto result = mem::ByteArray<64>{};
+    auto result = ByteArray<64>{};
     for (auto index = std::size_t{}; index < working.size(); ++index) {
         working[index] += initial[index];
-        result.setIntegerOrThrow(unit::ByteIndex{index * 4U}, working[index], mem::Endianness::Little);
+        result.setIntegerOrThrow(ByteIndex{index * 4U, ByteIndex::Unchecked{}}, working[index], Endianness::Little);
     }
     mem::secureErase(std::span{working});
     mem::secureErase(std::span{initial});

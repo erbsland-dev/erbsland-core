@@ -4,9 +4,9 @@
 #include "../../support/TerminalTestBackend.hpp"
 
 #include <erbsland/cterm/ReadSecret.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -33,11 +33,13 @@ public:
         auto testTerminal = createTerminal();
         auto options = ReadLineOptions{};
         options.setHistory(erbsland::text::StringList{"old"_el});
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, ReadSecret::create(testTerminal.terminal, std::move(options)));
+        REQUIRE_THROWS_AS(
+            erbsland::err::ParameterFailure, ReadSecret::create(testTerminal.terminal, std::move(options)));
 
         options = ReadLineOptions{};
         options.setCurrentText("draft"_el);
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, ReadSecret::create(testTerminal.terminal, std::move(options)));
+        REQUIRE_THROWS_AS(
+            erbsland::err::ParameterFailure, ReadSecret::create(testTerminal.terminal, std::move(options)));
     }
 
     void testProtectedUnicodeEditingAndMasking() {
@@ -64,6 +66,18 @@ public:
         REQUIRE_EQUAL(visibleAePosition, std::string::npos);
         REQUIRE_EQUAL(visibleBPosition, std::string::npos);
         REQUIRE_FALSE(editor->isActive());
+    }
+
+    void testIgnoresNullAndOtherControlCharacters() {
+        auto testTerminal = createTerminal();
+        for (const auto key : {Key{U'a'}, Key{U'\0'}, Key{U'\n'}, Key{U'b'}, Key{Key::Enter}}) {
+            testTerminal.backend->_readKeyResults.push(key);
+        }
+        const auto editor = ReadSecret::create(testTerminal.terminal);
+        const auto result = editor->waitForInput();
+        REQUIRE(result.isCommitted());
+        REQUIRE_EQUAL(result.data(), "ab"_el);
+        REQUIRE(result.data().isSensitive());
     }
 
     void testCursorDeletionAndCancellation() {
@@ -97,7 +111,7 @@ public:
     void testMaximumLengthIsCappedAt1024CodePoints() {
         auto testTerminal = createTerminal();
         auto options = ReadLineOptions{};
-        options.setMaximumLength(erbsland::unit::CpLength{4096U});
+        options.setMaximumLength(erbsland::unit::CpCount{4096U});
         const auto editor = ReadSecret::create(testTerminal.terminal, options);
         for (auto i = std::size_t{}; i < 1025U; ++i) {
             testTerminal.backend->_readKeyResults.push(Key{U'x'});
@@ -106,13 +120,13 @@ public:
         const auto result = editor->waitForInput();
         REQUIRE(result.isCommitted());
         const auto characterLength = result.data().characterLength();
-        REQUIRE_EQUAL(characterLength, erbsland::unit::CpLength{1024U});
+        REQUIRE_EQUAL(characterLength, erbsland::unit::CpCount{1024U});
     }
 
     void testMaximumLengthIsCappedAt1024CodePointsLight() {
         auto testTerminal = createTerminal();
         auto options = ReadLineOptions{};
-        options.setMaximumLength(erbsland::unit::CpLength{4U});
+        options.setMaximumLength(erbsland::unit::CpCount{4U});
         const auto editor = ReadSecret::create(testTerminal.terminal, options);
         for (auto i = std::size_t{}; i < 5U; ++i) {
             testTerminal.backend->_readKeyResults.push(Key{U'x'});
@@ -120,6 +134,6 @@ public:
         testTerminal.backend->_readKeyResults.push(Key::Enter);
         const auto result = editor->waitForInput();
         REQUIRE(result.isCommitted());
-        REQUIRE_EQUAL(result.data().characterLength(), erbsland::unit::CpLength{4U});
+        REQUIRE_EQUAL(result.data().characterLength(), erbsland::unit::CpCount{4U});
     }
 };

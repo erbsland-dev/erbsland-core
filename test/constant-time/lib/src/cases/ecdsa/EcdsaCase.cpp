@@ -1,13 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "EcdsaCase.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace app::constant_time {
 
@@ -17,7 +16,7 @@ EcdsaCase::EcdsaCase(ci::NistPrimeCurve::Name name, EcdsaOperation operation) : 
     const auto id =
         el::StringFormat{"ecdsa/p{}/{}"_el}.build(name == ci::NistPrimeCurve::Name::P256 ? 256 : 384, operationName());
 
-    configure(TestMetadata{id, "NIST curve secret arithmetic and deterministic signing"_el}, el::ByteLength{4096});
+    configure(TestMetadata{id, "NIST curve secret arithmetic and deterministic signing"_el}, el::ByteCount{4096});
 }
 
 auto EcdsaCase::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {
@@ -43,7 +42,7 @@ auto EcdsaCase::operationName() const -> el::String {
     case EcdsaOperation::BaseMultiply:
         return "base-multiply"_el;
     }
-    throw el::LogicError{"Unknown scenario operation."_el};
+    throw el::LogicFailure{"Unknown scenario operation."_el};
 }
 
 }

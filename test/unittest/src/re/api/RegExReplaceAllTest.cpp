@@ -3,7 +3,6 @@
 
 #include "RegExBase.hpp"
 
-#include <erbsland/err/ParameterError.hpp>
 #include <erbsland/re/RegExError.hpp>
 #include <erbsland/re/StdFormat.hpp>
 
@@ -11,10 +10,27 @@
 
 using namespace el::re;
 
-TESTED_TARGETS(RegEx replaceAll)
+TESTED_TARGETS(RegEx replaceAll validateReplacement)
 TAGS(Api)
 class RegExReplaceAllTest final : public UNITTEST_SUBCLASS(RegExBase) {
 public:
+    void testValidateReplacementWithoutSubjectText() {
+        const auto expression = RegEx::lazyCompile("(?<first>a)(b)?"_el);
+        REQUIRE_FALSE(expression->isCompiled());
+        for (const auto &replacement : {""_el, "literal"_el, "{}-{0}-{1}-{2}-{first}-{FIRST}-{{}}"_el}) {
+            REQUIRE_NOTHROW(expression->validateReplacement(replacement));
+        }
+        REQUIRE(expression->isCompiled());
+        for (const auto &replacement : {"{"_el, "}"_el, "{unknown}"_el, "{3}"_el, "{65536}"_el}) {
+            REQUIRE_THROWS_AS(RegExError, expression->validateReplacement(replacement));
+        }
+        const auto noGroups = RegEx::compile("literal"_el);
+        REQUIRE_NOTHROW(noGroups->validateReplacement("{0}{}"_el));
+        REQUIRE_THROWS_AS(RegExError, noGroups->validateReplacement("{1}"_el));
+        const auto invalid = RegEx::lazyCompile("["_el);
+        REQUIRE_THROWS_AS(RegExError, invalid->validateReplacement(""_el));
+    }
+
     void testReplaceAllExpression_BasicAndEdgeCases() {
         WITH_CONTEXT(requireCompile("a"_el));
 
@@ -110,8 +126,9 @@ public:
             }
         }
 
-        // Runtime error: group index out of range is reported by the match.
-        REQUIRE_THROWS_AS(el::err::ParameterError, (void)regex->replaceAll("ab"_el, "{3}"_el));
+        // Invalid capture references fail even when the subject has no matches.
+        REQUIRE_THROWS_AS(RegExError, (void)regex->replaceAll("ab"_el, "{3}"_el));
+        REQUIRE_THROWS_AS(RegExError, (void)regex->replaceAll("no match"_el, "{3}"_el));
     }
 
     void testReplaceAllFn_BasicAndEdgeCases() {

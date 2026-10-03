@@ -3,12 +3,12 @@
 
 #include "PathTestFixture.hpp"
 
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/path/PathWalkDirection.hpp>
-#include <erbsland/path/PathWalker.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathWalkDirection.hpp>
+#include <erbsland/PathWalker.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>

@@ -4,20 +4,21 @@
 
 namespace erbsland::text::impl {
 
-auto U32StringTrimTools::trimmedRange(const Side side) const noexcept -> unit::CpRange {
+using namespace unit;
+
+auto U32StringTrimTools::trimmedRange(const Side side) const noexcept -> CpRange {
     return trimmedRangeFor(side, [](const Char character) noexcept -> bool { return character.isAsciiWhitespace(); });
 }
 
-auto U32StringTrimTools::trimmedRange(const CharSet &characters, const Side side) const noexcept -> unit::CpRange {
+auto U32StringTrimTools::trimmedRange(const CharSet &characters, const Side side) const noexcept -> CpRange {
     return trimmedRangeFor(side, [&](const Char character) noexcept -> bool { return characters.contains(character); });
 }
 
-auto U32StringTrimTools::toAbsoluteRange(const unit::CpIndex begin, const unit::CpIndex end) const noexcept
-    -> unit::CpRange {
+auto U32StringTrimTools::toAbsoluteRange(const CpIndex begin, const CpIndex end) const noexcept -> CpRange {
     if (begin >= end) {
-        return unit::CpRange::empty();
+        return CpRange::empty();
     }
-    return unit::CpRange{begin, end}.withOrigin(_data.range().index());
+    return CpRange{begin, end}.toAbsolute(_data.range().beginIndex());
 }
 
 }

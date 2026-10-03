@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Date.hpp>
+#include <erbsland/Hour.hpp>
+#include <erbsland/Minute.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/Time.hpp>
+#include <erbsland/Timestamp.hpp>
 
 namespace demo {
 
@@ -31,7 +39,7 @@ void create() {
     try {
         const auto unexpected = el::Timestamp::fromDaysAndNanosecondsOrThrow(el::Days{3'652'425}, el::Nanoseconds{});
         el::io::printLine(el::StringFormat{"Unexpected successful result: {}"_el}.build(unexpected.toString()));
-    } catch (const el::err::ParameterError &) {
+    } catch (const el::err::OutOfRangeError &) {
         el::io::printLine("Checked construction rejects an out-of-range day count."_el);
     }
 }

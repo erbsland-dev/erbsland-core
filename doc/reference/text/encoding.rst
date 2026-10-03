@@ -51,7 +51,19 @@ Encoding Mode
 ``Tolerant`` is the default and replaces malformed input with Unicode replacement characters when transcoding.
 Compatible representations may instead be copied unchanged without validation.
 ``Strict`` throws :cpp:class:`EncodingError <erbsland::text::EncodingError>` when malformed input is encountered.
-Use strict mode when a conversion must also validate its source, including an existing Erbsland Core string.
+
+.. important::
+
+    Strict conversion can be **much slower** than tolerant conversion, even for valid input.
+    In particular, compatible representations that tolerant mode can share or copy directly must be validated in strict
+    mode.
+    Keep ``Tolerant`` for ordinary conversions and select ``Strict`` only when encoding validity **must be enforced at
+    this boundary**, including when the source is already an Erbsland Core string.
+    Examples include security-sensitive processing or untrusted network input that must be rejected if its encoding is
+    invalid.
+    At such a boundary, enforcing validity takes priority over the additional decoding time.
+
+For practical conversion guidance, see :doc:`/topics/text_parsing_and_encoding/conversion`.
 
 String Decoder
 ~~~~~~~~~~~~~~
@@ -70,8 +82,18 @@ The decoder accepts :cpp:class:`StringEncoding <erbsland::text::StringEncoding>`
 :cpp:enum:`StringBomMode <erbsland::text::StringBomMode>`, and
 :cpp:enum:`EncodingMode <erbsland::text::EncodingMode>` for all target string widths.
 Only an encoded ``U+FEFF`` signature at the start of the byte input is interpreted as a BOM.
-A repeated or embedded ``U+FEFF`` is invalid content and follows ``EncodingMode``; it is never returned as a character
-in the decoded string.
+For UTF-8 input with a UTF-8 result, tolerant decoding copies the payload bytes without validating or repairing them.
+Malformed sequences and repeated or embedded ``U+FEFF`` bytes remain in storage; character operations on the resulting
+string handle them tolerantly.
+Strict decoding validates the complete payload before copying it and rejects malformed sequences, including repeated or
+embedded ``U+FEFF``.
+UTF-16/32 decoding continues to interpret and transcode the input, replacing malformed content in tolerant mode.
+The strict validation pass can make UTF-8 decoding much slower than the tolerant byte copy, even when all input is
+valid.
+This also applies to whole-file text reads through
+:cpp:func:`PathContent::readTextOrThrow() <erbsland::path::PathContent::readTextOrThrow>`.
+Choose strict decoding only when this read is a required encoding-validation boundary.
+Incremental text-stream behavior and mode selection are described in :doc:`/reference/stream/streams`.
 
 Use ``validateOrThrow()`` when encoded bytes must be checked without constructing a decoded string.
 It applies strict validation together with the selected encoding and BOM policy, traverses the input once, and allocates
@@ -101,8 +123,7 @@ Explicit BOM output is generated as an encoding signature.
 When the source and target representations match, the encoder copies the native units directly without a validation pass
 because Erbsland Core strings are assumed to contain valid text.
 When transcoding is necessary, malformed source sequences become Unicode replacement characters.
-Call the matching ``isValidUtf8()``, ``isValidUtf16()``, or ``isValidUtf32()`` method before encoding when invalid
-internal text must be detected.
+Call ``isEncodingValid()`` or ``encodingValidOrThrow()`` before encoding when invalid internal text must be detected.
 An ordinary ``Char{0xFEFF}`` in source content is never interpreted as a signature; during transcoding it becomes a
 replacement character like other invalid content.
 
@@ -179,7 +200,7 @@ materializing a second byte block.
 
 .. code-block:: cpp
 
-    auto buffer = el::text::StringDecodeBuffer{el::ByteLength{4096}, el::StringEncoding::Utf8};
+    auto buffer = el::text::StringDecodeBuffer{el::ByteCount{4096}, el::StringEncoding::Utf8};
     buffer.write(bytes);
     auto text = buffer.takeString();
 
@@ -224,8 +245,8 @@ Decoding is strict after configured whitespace is removed.
 It rejects unknown characters, malformed or missing required padding, incomplete groups, and non-zero unused bits.
 Use :cpp:func:`BaseNDecoder::toData() <erbsland::text::base_n::BaseNDecoder::toData>` when malformed input and size
 limit failures should both produce an empty optional.
-Use :cpp:func:`BaseNDecoder::toDataOrThrow() <erbsland::text::base_n::BaseNDecoder::toDataOrThrow>` when diagnostics
-must distinguish parse failures from decoded-size limits.
+Use :cpp:func:`BaseNDecoder::toDataOrThrow() <erbsland::text::base_n::BaseNDecoder::toDataOrThrow>` when diagnostics are
+needed: malformed input and decoded-size limits both raise ``ParseError`` with a specific reason.
 
 Punycode and IDNA2008
 =====================
@@ -258,6 +279,14 @@ IDNA2008 checks.
 Dots remain domain separators and are not tested by that filter.
 
 See :doc:`/topics/text_parsing_and_encoding/encoding_internationalized_names` for practical codec and domain examples.
+
+Capacity and Position Preconditions
+===================================
+
+Encoded output lengths must fit the supported finite byte length.
+Exceeding that capacity reports a fatal ``OutOfRangeFailure``.
+Low-level strict character decoders also report ``OutOfRangeFailure`` when called without a character at the supplied
+read position.
 
 Interface
 =========

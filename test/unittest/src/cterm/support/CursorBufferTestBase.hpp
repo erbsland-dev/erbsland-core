@@ -4,7 +4,7 @@
 
 #include "TestHelper.hpp"
 
-#include <erbsland/cterm/all.hpp>
+#include <erbsland/all_cterm.hpp>
 #include <erbsland/cterm/CursorBuffer.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

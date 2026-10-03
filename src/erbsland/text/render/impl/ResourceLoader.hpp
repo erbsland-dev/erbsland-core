@@ -34,10 +34,9 @@ private:
     [[nodiscard]] auto resourcePath(const String &layout) const -> String;
 
 private:
-    resource::ResourcesConstPtr _retainedResources; ///< Explicit provider ownership, if supplied.
-    const resource::Resources *_resources{};        ///< Active custom or application provider.
-    String _identifier;                             ///< Exact compiled-resource identifier.
-    String _pathPrefix;                             ///< Optional normalized resource path prefix.
+    resource::ResourcesConstPtr _resources; ///< Retained custom or application provider.
+    String _identifier;                     ///< Exact compiled-resource identifier.
+    String _pathPrefix;                     ///< Optional normalized resource path prefix.
 };
 
 }

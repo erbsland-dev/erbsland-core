@@ -12,6 +12,7 @@
 #include <optional>
 
 namespace erbsland::data::xml {
+
 /// A mutable XML document with ordered prolog and root nodes.
 /// @seedoc{/reference/data/xml}
 /// @tested{XmlDocumentTest}
@@ -46,4 +47,5 @@ public: // conversion
 private:                           // data
     util::List<XmlNodePtr> _nodes; ///< Prolog, document element, and epilog nodes.
 };
+
 }

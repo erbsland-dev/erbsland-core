@@ -5,6 +5,15 @@
 #include "BuiltInCatalog.hpp"
 #include "BuiltInConfiguration_fwd.hpp"
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/re/Flag.hpp>
+#include <erbsland/re/Flags.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringFormat.hpp>
+
 #include <algorithm>
 #include <array>
 
@@ -44,7 +53,7 @@ private:
 
     /// Create a string consisting of a repeated character.
     [[nodiscard]] static auto repeatCharacter(const el::Char character, const std::size_t count) -> el::String {
-        return el::String::fromCharacter(character, el::CpLength::fromSizeTOrThrow(count));
+        return el::String::fromCharacter(character, el::CpCount::fromSizeTOrThrow(count));
     }
 
     /// Create a pattern with the requested number of alternatives.

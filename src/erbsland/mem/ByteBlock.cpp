@@ -16,8 +16,8 @@
 
 namespace erbsland::mem {
 
+using unit::ByteCount;
 using unit::ByteIndex;
-using unit::ByteLength;
 using unit::ByteRange;
 
 ByteBlock::ByteBlock() = default;
@@ -32,7 +32,7 @@ auto ByteBlock::operator=(const ByteBlock &) -> ByteBlock & = default;
 
 auto ByteBlock::operator=(ByteBlock &&) noexcept -> ByteBlock & = default;
 
-ByteBlock::ByteBlock(const ByteLength length, const Byte value) : ByteBlock{ByteBlockEditor{length, value}} {
+ByteBlock::ByteBlock(const ByteCount length, const Byte value) : ByteBlock{ByteBlockEditor{length, value}} {
 }
 
 ByteBlock::ByteBlock(const std::initializer_list<Byte> bytes) :
@@ -138,7 +138,7 @@ auto ByteBlock::contains(const ConstByteSpan byteSequence) const noexcept -> boo
     return impl::ByteComparisonTools{dataView()}.contains(impl::ByteDataView{byteSequence});
 }
 
-auto ByteBlock::length() const noexcept -> ByteLength {
+auto ByteBlock::length() const noexcept -> ByteCount {
     return dataView().length();
 }
 
@@ -162,7 +162,7 @@ auto ByteBlock::slice(const ByteIndex begin, const ByteIndex end) const noexcept
     return slice(ByteRange{begin, end});
 }
 
-auto ByteBlock::slice(const ByteIndex begin, const ByteLength length) const noexcept -> ByteBlock {
+auto ByteBlock::slice(const ByteIndex begin, const ByteCount length) const noexcept -> ByteBlock {
     return slice(ByteRange{begin, length});
 }
 

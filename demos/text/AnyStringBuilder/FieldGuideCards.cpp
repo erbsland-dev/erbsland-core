@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/AnyStringBuilder.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringKind.hpp>
 
 namespace demo {
 
@@ -100,14 +108,14 @@ void appendFieldGuideCard(el::AnyStringBuilder &builder, const Observation &obse
         .append(U' ')
         .append(observation.species)
         .append(U' ')
-        .append(U'─', el::CpLength{53} - observation.species.characterLength() - observation.symbol.characterLength())
+        .append(U'─', el::CpCount{53} - observation.species.characterLength() - observation.symbol.characterLength())
         .append("╮\n"_el);
     builder.append(u"│ Place : "_el).append(observation.place).append(U'\n');
     builder.append("│ Count : "_el).appendInteger(observation.count).append(U'\n');
     builder.append("│ Moist.: "_el).appendFloat(observation.moisture).append(" %\n"_el);
     builder.append("│ Sample: "_el).appendByteBlock(observation.sampleId, el::ByteFormat::compact()).append(U'\n');
     builder.append("│ Note  : "_el).append(observation.note).append(U'\n');
-    builder.append(U'╰').append(U'─', el::CpLength{58}).append("╯\n"_el);
+    builder.append(U'╰').append(U'─', el::CpCount{58}).append("╯\n"_el);
 }
 
 }

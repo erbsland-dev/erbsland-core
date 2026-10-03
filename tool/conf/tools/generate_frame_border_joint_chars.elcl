@@ -1,0 +1,5 @@
+#
+# Configuration for the `generate_frame_border_joint_chars` tool.
+#
+----[ Generate Frame Border Joint Chars ]-----------------------------------------------------------------------------
+Output File                 : "src/erbsland/cterm/impl/FrameBorder_data.hpp"

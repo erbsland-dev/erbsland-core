@@ -7,7 +7,9 @@
 
 #include "../value/Value.hpp"
 
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../text/StringEditor.hpp"
+#include "../../vr/builder/attribute/Attribute.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -15,7 +17,28 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
+
+void Rule::setEntryType(const vr::RuleType type) {
+    if (_type != vr::RuleType::ValueList || !type.isScalar() || !_entryType.isUndefined()) {
+        throwValidationError("EntryType requires a value list, a scalar entry type, and no previous EntryType."_el);
+    }
+    _entryType = type;
+}
+
+void Rule::addEntryAttributes(std::vector<std::shared_ptr<const vr::builder::Attribute>> attributes) {
+    if (_type != vr::RuleType::ValueList) {
+        throwValidationError("Entry attributes require a value list."_el);
+    }
+    for (const auto &attribute : attributes) {
+        if (attribute == nullptr) {
+            throw err::ParameterFailure{"An entry attribute cannot be null."_el, "attributes"_el};
+        }
+    }
+    _hasEntryAttributes = true;
+    _entryAttributes.insert(_entryAttributes.end(), attributes.begin(), attributes.end());
+}
 
 void Rule::setDefaultValue(const conf::ValuePtr &value) {
     _defaultValue = std::dynamic_pointer_cast<impl::Value>(value);
@@ -24,16 +47,15 @@ void Rule::setDefaultValue(const conf::ValuePtr &value) {
     }
 }
 
-void Rule::addConstraint(
-    const vr::ConstraintPtr &constraint, text::String name, const bool isNegated, text::String errorMessage) {
+void Rule::addConstraint(const vr::ConstraintPtr &constraint, String name, const bool isNegated, String errorMessage) {
     auto constraintImpl = std::dynamic_pointer_cast<impl::Constraint>(constraint);
     if (constraintImpl == nullptr) {
         throwValidationError("The constraint was not created by the validation-rule builder"_el);
     }
     if (isNegated) {
-        text::StringEditor prefixedName{"not_"_el};
+        StringEditor prefixedName{"not_"_el};
         prefixedName.append(name);
-        name = text::String{prefixedName};
+        name = prefixedName;
     }
     constraintImpl->setName(std::move(name));
     constraintImpl->setNegated(isNegated);
@@ -47,7 +69,7 @@ void Rule::addDependency(
     const vr::DependencyMode mode,
     const std::vector<NamePathLike> &sources,
     const std::vector<NamePathLike> &targets,
-    text::String errorMessage) {
+    String errorMessage) {
     auto sourcePaths = parseNamePathList(sources);
     auto targetPaths = parseNamePathList(targets);
     addDependencyDefinition(
@@ -55,7 +77,7 @@ void Rule::addDependency(
 }
 
 void Rule::addKeyIndex(
-    const Name &name, const std::vector<NamePathLike> &keyPaths, const text::CaseSensitivity caseSensitivity) {
+    const Name &name, const std::vector<NamePathLike> &keyPaths, const CaseSensitivity caseSensitivity) {
     addKeyDefinition(KeyDefinition::create(name, parseNamePathList(keyPaths), caseSensitivity, {}));
 }
 
@@ -63,14 +85,14 @@ void Rule::limitVersions(const std::vector<Integer> &versions, const bool isNega
     if (versions.empty()) {
         throwValidationError("The version list must not be empty"_el);
     }
-    std::vector<Integer> uniqueVersions;
-    uniqueVersions.reserve(versions.size());
+    auto uniqueVersions = util::List<Integer>{};
+    uniqueVersions.reserve(unit::ItemCount{versions.size(), unit::ItemCount::Unchecked{}});
     for (const auto version : versions) {
         if (version < 0) {
             throwValidationError("Versions must be non-negative integers"_el);
         }
         if (std::ranges::find(uniqueVersions, version) == uniqueVersions.end()) {
-            uniqueVersions.push_back(version);
+            uniqueVersions.append(version);
         }
     }
     auto mask = VersionMask::fromIntegers(uniqueVersions);
@@ -111,12 +133,12 @@ auto Rule::hasConstraint(vr::ConstraintType type) const -> bool {
         _constraints, [&](const auto &constraint) -> bool { return constraint->type() == type; });
 }
 
-auto Rule::hasConstraint(const text::String &name) const -> bool {
+auto Rule::hasConstraint(const String &name) const -> bool {
     return std::ranges::any_of(
         _constraints, [&](const auto &constraint) -> bool { return constraint->name() == name; });
 }
 
-auto Rule::constraint(const text::String &name) const -> ConstraintPtr {
+auto Rule::constraint(const String &name) const -> ConstraintPtr {
     const auto it =
         std::ranges::find_if(_constraints, [&](const auto &constraint) -> bool { return constraint->name() == name; });
     if (it != _constraints.end()) {
@@ -186,34 +208,35 @@ auto internalView(const Rule &rule) -> InternalViewPtr {
     if (rule._defaultValue != nullptr) {
         result->setValue("defaultValue", rule._defaultValue->toTestText());
     } else {
-        result->setValue("defaultValue", text::String{"<null>"_el});
+        result->setValue("defaultValue", "<null>"_el);
     }
     result->setValue("versionMask", rule._versionMask.toText());
     if (rule._parent.expired()) {
-        result->setValue("parent", text::String{"<null>"_el});
+        result->setValue("parent", "<null>"_el);
     } else {
         result->setValue("parent", rule._parent.lock()->namePath().toText());
     }
     result->setValue(
         "constraints",
         InternalView::createNamedList(
-            rule._constraints.begin(), rule._constraints.end(), [](const ConstraintPtr &constraint) -> text::String {
-                return text::StringFormat{"Constraint \"{}\""_el}.build(constraint->name());
+            rule._constraints.begin(), rule._constraints.end(), [](const ConstraintPtr &constraint) -> String {
+                return StringFormat{"Constraint \"{}\""_el}.build(constraint->name());
             }));
     result->setValue(
         "children",
-        InternalView::createNamedList(
-            rule._children.begin(), rule._children.end(), [](const RulePtr &child) -> text::String {
-                return text::StringFormat{"Rule \"{}\""_el}.build(child->ruleNamePath().toText());
-            }));
+        InternalView::createNamedList(rule._children.begin(), rule._children.end(), [](const RulePtr &child) -> String {
+            return StringFormat{"Rule \"{}\""_el}.build(child->ruleNamePath().toText());
+        }));
     return result;
 }
+
 auto internalView(const RulePtr &rule) -> InternalViewPtr {
     if (rule == nullptr) {
         return InternalView::create();
     }
     return internalView(*rule);
 }
+
 #endif
 
 }

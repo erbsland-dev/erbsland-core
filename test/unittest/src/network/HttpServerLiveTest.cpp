@@ -3,37 +3,37 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/keys/SigningPrivateKey.hpp>
-#include <erbsland/cryptology/tls/TlsConfiguration.hpp>
-#include <erbsland/cryptology/tls/TlsServerIdentity.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
-#include <erbsland/cryptology/x509/X509ServerCertificatePolicy.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/network/http_server/HttpCookieSessionManager.hpp>
-#include <erbsland/network/http_server/HttpMediaTypeMapping.hpp>
-#include <erbsland/network/http_server/HttpServer.hpp>
-#include <erbsland/network/http_server/HttpServerRequest.hpp>
-#include <erbsland/network/http_server/HttpServerSession.hpp>
-#include <erbsland/network/http_server/HttpStaticContent.hpp>
-#include <erbsland/network/http_server/HttpStaticContentHandler.hpp>
-#include <erbsland/network/http_server/HttpStaticFileHandler.hpp>
-#include <erbsland/network/http_server/HttpStaticResourceHandler.hpp>
-#include <erbsland/network/Network.hpp>
-#include <erbsland/network/source/ConnectionQuota.hpp>
-#include <erbsland/network/source/NetworkErrorContext.hpp>
-#include <erbsland/network/tcp/TcpConnection.hpp>
-#include <erbsland/network/tls/TlsClientConnection.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/stream/ByteBlockInputStream.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimeUnitTags.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockInputStream.hpp>
+#include <erbsland/ConnectionQuota.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/HttpCookieSessionManager.hpp>
+#include <erbsland/HttpMediaTypeMapping.hpp>
+#include <erbsland/HttpServer.hpp>
+#include <erbsland/HttpServerRequest.hpp>
+#include <erbsland/HttpServerSession.hpp>
+#include <erbsland/HttpStaticContent.hpp>
+#include <erbsland/HttpStaticContentHandler.hpp>
+#include <erbsland/HttpStaticFileHandler.hpp>
+#include <erbsland/HttpStaticResourceHandler.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/SigningPrivateKey.hpp>
+#include <erbsland/TcpConnection.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeUnitTags.hpp>
+#include <erbsland/TlsClientConnection.hpp>
+#include <erbsland/TlsConfiguration.hpp>
+#include <erbsland/TlsIdentity.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/X509CertificateBundle.hpp>
+#include <erbsland/X509TlsCertificatePolicy.hpp>
 
 #include <array>
 #include <atomic>
@@ -56,10 +56,10 @@ private:
     public:
         DynamicContent() : _data{bytes("custom-content")} {}
 
-        [[nodiscard]] auto length() const noexcept -> el::unit::ByteLength override { return _data.length(); }
+        [[nodiscard]] auto length() const noexcept -> el::unit::ByteCount override { return _data.length(); }
         [[nodiscard]] auto open() -> el::stream::ByteInputStreamPtr override {
             if (_opened.exchange(true)) {
-                throw el::err::LogicError{"Dynamic test content was opened more than once."_el};
+                throw el::err::LogicFailure{"Dynamic test content was opened more than once."_el};
             }
             return std::make_shared<el::stream::ByteBlockInputStream>(_data);
         }
@@ -74,15 +74,24 @@ private:
     public:
         DynamicHandler() : HttpStaticContentHandler{"/custom"_el} {}
 
+        [[nodiscard]] auto sawUnexpectedPath() const noexcept -> bool { return _sawUnexpectedPath.load(); }
+
         [[nodiscard]] auto hasPath(const el::path::Path &relativePath) const -> bool override {
-            return relativePath == el::path::Path{"content.txt"_el};
+            if (relativePath != el::path::Path{"content.txt"_el}) {
+                _sawUnexpectedPath.store(true);
+                return false;
+            }
+            return true;
         }
         [[nodiscard]] auto getContent(const el::path::Path &relativePath) const -> HttpStaticContentPtr override {
             if (!hasPath(relativePath)) {
-                throw el::err::LogicError{"Dynamic test content was requested for an unknown path."_el};
+                throw el::err::LogicFailure{"Dynamic test content was requested for an unknown path."_el};
             }
             return std::make_shared<DynamicContent>();
         }
+
+    private:
+        mutable std::atomic_bool _sawUnexpectedPath{};
     };
 
     [[nodiscard]] static auto bytes(const std::string_view text) -> el::mem::ByteBlock {
@@ -93,19 +102,37 @@ private:
         return el::text::String{el::unittest::fh::readDataText(path)};
     }
 
-    static void registerTlsConfigurations() {
+    static void registerTlsConfigurations(bool mutual = false) {
         auto serverConfiguration = el::cryptology::TlsConfiguration{};
-        serverConfiguration.setServerIdentity(
-            el::cryptology::TlsServerIdentity{
+        serverConfiguration.setServer(
+            el::cryptology::TlsServerConfiguration{el::cryptology::TlsIdentity{
                 el::cryptology::X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/server.pem")),
                 el::cryptology::SigningPrivateKey::fromPemOrThrow(
-                    readText("data/network/tls-interop/server-key.pem"))});
+                    readText("data/network/tls-interop/server-key.pem"))}});
+        if (mutual) {
+            auto profile = *serverConfiguration.server();
+            profile.setClientAuthentication(el::cryptology::TlsClientAuthentication::Required);
+            profile.setTrust(
+                el::cryptology::TlsTrustConfiguration{el::cryptology::X509CertificateBundle::fromPemOrThrow(
+                    readText("data/network/tls-interop/client-ca.pem"))});
+            serverConfiguration.setServer(std::move(profile));
+        }
         el::core::application().cryptologyConfiguration().setTlsConfiguration(
             "http"_el, std::move(serverConfiguration));
-        auto clientConfiguration = el::cryptology::TlsConfiguration{el::cryptology::X509ServerCertificatePolicy{
-            el::cryptology::X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/ca.pem"))}};
-        el::core::application().cryptologyConfiguration().setTlsConfiguration(
-            "tls/client"_el, std::move(clientConfiguration));
+        auto clientConfiguration = el::cryptology::TlsConfiguration{
+            el::cryptology::TlsClientConfiguration{el::cryptology::TlsTrustConfiguration{
+                el::cryptology::X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/ca.pem"))}}};
+        if (mutual) {
+            auto profile = *clientConfiguration.client();
+            profile.setIdentity(
+                std::make_shared<const el::cryptology::TlsIdentity>(
+                    el::cryptology::X509CertificateBundle::fromPemOrThrow(
+                        readText("data/network/tls-interop/client.pem")),
+                    el::cryptology::SigningPrivateKey::fromPemOrThrow(
+                        readText("data/network/tls-interop/client-key.pem"))));
+            clientConfiguration.setClient(std::move(profile));
+        }
+        el::core::application().cryptologyConfiguration().setTlsConfiguration("tls"_el, std::move(clientConfiguration));
     }
 
     [[nodiscard]] static auto raw(const el::mem::ByteBlock &block) -> std::string {
@@ -161,7 +188,7 @@ public:
         loop->invoke([&]() -> void {
             server = loop->get<Network>().createHttpServer();
             auto options = HttpServerOptions{};
-            options.setStaticContentChunkLength(el::unit::ByteLength{8U});
+            options.setStaticContentChunkLength(el::unit::ByteCount{8U});
             server->setOptions(options);
             const auto fileRoot = el::path::Path{el::unittest::fh::resolveDataPath("data/network/tls-interop")};
             auto overlay = HttpStaticFileHandler::create(fileRoot, "/res"_el);
@@ -221,18 +248,18 @@ public:
                 .onFinal([&]() -> void {
                     REQUIRE_NOTHROW(mediaTypes->setSuffix(".pem"_el, "application/x-released"_el));
                     REQUIRE_NOTHROW(customHandler->setPriority(2));
-                    REQUIRE_NOTHROW(resourceHandler->setMaximumContentLength(el::unit::ByteLength{2048U}));
+                    REQUIRE_NOTHROW(resourceHandler->setMaximumContentLength(el::unit::ByteCount{2048U}));
                     REQUIRE_NOTHROW(fileHandler->setIndexFileNames(el::text::StringList{{"index.html"_el}}));
                     serverFinal = true;
                 })
                 .onListening([&]() -> void {
                     REQUIRE_THROWS_AS(
-                        el::err::LogicError, mediaTypes->setSuffix(".pem"_el, "application/x-mutated"_el));
-                    REQUIRE_THROWS_AS(el::err::LogicError, customHandler->setUrlPrefix("/changed"_el));
+                        el::err::LogicFailure, mediaTypes->setSuffix(".pem"_el, "application/x-mutated"_el));
+                    REQUIRE_THROWS_AS(el::err::LogicFailure, customHandler->setUrlPrefix("/changed"_el));
                     REQUIRE_THROWS_AS(
-                        el::err::LogicError, resourceHandler->setMaximumContentLength(el::unit::ByteLength{2048U}));
+                        el::err::LogicFailure, resourceHandler->setMaximumContentLength(el::unit::ByteCount{2048U}));
                     REQUIRE_THROWS_AS(
-                        el::err::LogicError, fileHandler->setIndexFileNames(el::text::StringList{{"index.html"_el}}));
+                        el::err::LogicFailure, fileHandler->setIndexFileNames(el::text::StringList{{"index.html"_el}}));
                     client = loop->get<Network>().createTcpConnection();
                     client->events()
                         .onConnected([&]() -> void {
@@ -245,6 +272,12 @@ public:
                                         "GET /res/dynamic HTTP/1.1\r\nHost: local\r\n\r\n"
                                         "GET /files/?x=1 HTTP/1.1\r\nHost: local\r\n\r\n"
                                         "GET /files/server.pem HTTP/1.1\r\nHost: local\r\n\r\n"
+                                        "GET /custom/content%00.txt HTTP/1.1\r\nHost: local\r\n\r\n"
+                                        "GET /custom/content.%00txt HTTP/1.1\r\nHost: local\r\n\r\n"
+                                        "GET /custom/content.txt%00 HTTP/1.1\r\nHost: local\r\n\r\n"
+                                        "GET /custom/content.txt%2F..%2Fcontent.txt HTTP/1.1\r\nHost: local\r\n\r\n"
+                                        "GET /custom/content.txt%5C..%5Ccontent.txt HTTP/1.1\r\nHost: local\r\n\r\n"
+                                        "GET /custom/content.txt%3Astream HTTP/1.1\r\nHost: local\r\n\r\n"
                                         "GET /custom/content.txt HTTP/1.1\r\nHost: local\r\nConnection: close\r\n\r\n"))
                                     .isAccepted());
                         })
@@ -263,7 +296,7 @@ public:
         runUntil(loop, [&]() -> bool { return (serverFinal && clientFinal) || error.has_value(); });
         REQUIRE_FALSE(error.has_value());
         REQUIRE_EQUAL(occurrences(responseWire, "HTTP/1.1 405"), 1U);
-        REQUIRE_EQUAL(occurrences(responseWire, "HTTP/1.1 404"), 1U);
+        REQUIRE_EQUAL(occurrences(responseWire, "HTTP/1.1 404"), 7U);
         REQUIRE_EQUAL(occurrences(responseWire, "HTTP/1.1 500"), 0U);
         REQUIRE_EQUAL(occurrences(responseWire, "HTTP/1.1 200"), 6U);
         REQUIRE_EQUAL(occurrences(responseWire, "HTTP/1.1 308"), 0U);
@@ -278,11 +311,12 @@ public:
         REQUIRE_EQUAL(activeConnections, 1U);
         REQUIRE_EQUAL(finalConnections, 1U);
         REQUIRE_EQUAL(sessions, 1U);
-        REQUIRE_EQUAL(requests, 8U);
-        REQUIRE_EQUAL(responses, 8U);
+        REQUIRE_EQUAL(requests, 14U);
+        REQUIRE_EQUAL(responses, 14U);
         REQUIRE_EQUAL(connectionErrors, 0U);
         REQUIRE_EQUAL(requestErrors, 0U);
         REQUIRE(responseConnectionInfoAvailable);
+        REQUIRE_FALSE(customHandler->sawUnexpectedPath());
     }
 
     void testPlaintextPipeliningRoutingSessionsAndGracefulClose() {
@@ -482,7 +516,7 @@ public:
         loop->invoke([&]() -> void {
             server = loop->get<Network>().createHttpServer();
             auto byteOptions = HttpServerRouteOptions{};
-            byteOptions.setAcceptedContentTypes({"application/octet-stream"_el});
+            byteOptions.setAcceptedContentTypes(el::StringList{"application/octet-stream"_el});
             server->events()
                 .onRequest(
                     HttpMethod{HttpMethodType::Post},
@@ -562,7 +596,7 @@ public:
         loop->invoke([&]() -> void {
             server = loop->get<Network>().createHttpServer();
             auto options = HttpServerRouteOptions{};
-            options.setMaximumBodyLength(el::unit::ByteLength{3U});
+            options.setMaximumBodyLength(el::unit::ByteCount{3U});
             server->events()
                 .onTextRequest(
                     HttpMethod{HttpMethodType::Post},
@@ -610,11 +644,11 @@ public:
         REQUIRE(responses[1].find("HTTP/1.1 415") != std::string::npos);
     }
 
-    void testHttpsAlpnAndCookieSecurity() {
-        SKIP_BY_DEFAULT()
-        TAGS(FullRun)
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
+    void testHttpsAlpnCookieSecurityAndAuthenticatedClientMetadata() {
         const auto applicationScope = ApplicationTestScope<>{};
-        registerTlsConfigurations();
+        registerTlsConfigurations(true);
         const auto loop = EventLoop::create();
         auto server = HttpServerPtr{};
         auto client = TlsClientConnectionPtr{};
@@ -667,7 +701,7 @@ public:
                             server->close();
                         });
                     auto clientOptions = TlsClientConnectOptions{};
-                    clientOptions.setAlpnProtocols({"http/1.1"_el});
+                    clientOptions.setAlpnProtocols(el::StringList{"http/1.1"_el});
                     client->connect(
                         HostEndpoint{Host::fromStringOrThrow("localhost"_el), server->localEndpoint()->port()},
                         std::move(clientOptions));
@@ -687,12 +721,14 @@ public:
         REQUIRE_EQUAL(connectionInfo->tls()->negotiatedAlpn(), "http/1.1"_el);
         REQUIRE(connectionInfo->tls()->cipherSuite().has_value());
         REQUIRE(connectionInfo->tls()->signatureScheme().has_value());
+        REQUIRE(connectionInfo->tls()->isPeerAuthenticated());
+        REQUIRE_FALSE(connectionInfo->tls()->peerCertificatePath().isEmpty());
         REQUIRE(responseInfoSecure);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testHttpsTcpConnectionAbandonedBeforeHandshakeIsNormal() {
-        SKIP_BY_DEFAULT()
-        TAGS(FullRun)
         const auto applicationScope = ApplicationTestScope<>{};
         registerTlsConfigurations();
         const auto loop = EventLoop::create();
@@ -740,9 +776,9 @@ public:
         REQUIRE(serverFinal);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testHttpsAbruptClientCloseAfterResponseIsNormal() {
-        SKIP_BY_DEFAULT()
-        TAGS(FullRun)
         const auto applicationScope = ApplicationTestScope<>{};
         registerTlsConfigurations();
         const auto loop = EventLoop::create();
@@ -792,7 +828,7 @@ public:
                         .onError([&](const NetworkErrorContext &context) -> void { listenerError = context; })
                         .onFinal([&]() -> void { clientFinal = true; });
                     auto clientOptions = TlsClientConnectOptions{};
-                    clientOptions.setAlpnProtocols({"http/1.1"_el});
+                    clientOptions.setAlpnProtocols(el::StringList{"http/1.1"_el});
                     client->connect(
                         HostEndpoint{Host::fromStringOrThrow("localhost"_el), server->localEndpoint()->port()},
                         std::move(clientOptions));

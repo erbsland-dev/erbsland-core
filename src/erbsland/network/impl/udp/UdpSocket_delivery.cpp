@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "UdpSocket.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../err/RuntimeError.hpp"
 #include "../../../event/Events.hpp"
 #include "../../../text/Literals.hpp"
@@ -14,6 +14,8 @@
 #include <utility>
 
 namespace erbsland::network::impl {
+
+using namespace err;
 using namespace text::literals;
 
 void UdpSocket::deliverBound(const std::uint64_t generation) {
@@ -190,44 +192,42 @@ void UdpSocket::cleanupDevice() noexcept {
 
 void UdpSocket::validateStart(const IpEndpoint &localEndpoint, const UdpSocketOptions &options) const {
     if (localEndpoint.address().isV4() && localEndpoint.scopeId().isSpecified()) {
-        throw err::ParameterError{"An IPv4 local endpoint cannot contain an IPv6 scope."_el, "localEndpoint"_el};
+        throw ParameterFailure{"An IPv4 local endpoint cannot contain an IPv6 scope."_el, "localEndpoint"_el};
     }
     if (!options.maximumDatagramSize().isFinite() || options.maximumDatagramSize().isZero() ||
         options.maximumDatagramSize() > UdpSocketOptions::cMaximumPortableDatagramSize) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The maximum UDP datagram size must be positive, finite, and portable."_el,
             "options.maximumDatagramSize"_el};
     }
     if (!options.sendQueueLimit().isFinite() || options.sendQueueLimit().isZero()) {
-        throw err::ParameterError{
-            "The UDP send queue limit must be positive and finite."_el, "options.sendQueueLimit"_el};
+        throw ParameterFailure{"The UDP send queue limit must be positive and finite."_el, "options.sendQueueLimit"_el};
     }
 }
 
 void UdpSocket::validateDatagram(const UdpDatagram &datagram) const {
     if (datagram.remoteEndpoint().port().isAutomatic()) {
-        throw err::ParameterError{"A UDP destination port must not be automatic."_el, "datagram.remoteEndpoint"_el};
+        throw ParameterFailure{"A UDP destination port must not be automatic."_el, "datagram.remoteEndpoint"_el};
     }
     if (datagram.remoteEndpoint().address().isV4() && datagram.remoteEndpoint().scopeId().isSpecified()) {
-        throw err::ParameterError{"An IPv4 destination cannot contain an IPv6 scope."_el, "datagram.remoteEndpoint"_el};
+        throw ParameterFailure{"An IPv4 destination cannot contain an IPv6 scope."_el, "datagram.remoteEndpoint"_el};
     }
     const auto local = localEndpoint();
     if (!local.has_value() || local->address().version() != datagram.remoteEndpoint().address().version()) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The UDP destination address family must match the bound socket."_el, "datagram.remoteEndpoint"_el};
     }
     const auto length = datagram.data().length();
     if (length > _options.maximumDatagramSize()) {
-        throw err::ParameterError{
-            "The UDP payload exceeds the configured maximum datagram size."_el, "datagram.data"_el};
+        throw ParameterFailure{"The UDP payload exceeds the configured maximum datagram size."_el, "datagram.data"_el};
     }
     if (queueCharge(datagram) > _options.sendQueueLimit()) {
-        throw err::ParameterError{"The UDP payload exceeds the configured send queue limit."_el, "datagram.data"_el};
+        throw ParameterFailure{"The UDP payload exceeds the configured send queue limit."_el, "datagram.data"_el};
     }
 }
 
-auto UdpSocket::queueCharge(const UdpDatagram &datagram) noexcept -> unit::ByteLength {
-    return datagram.data().length().isZero() ? unit::ByteLength::one() : datagram.data().length();
+auto UdpSocket::queueCharge(const UdpDatagram &datagram) noexcept -> unit::ByteCount {
+    return datagram.data().length().isZero() ? unit::ByteCount::one() : datagram.data().length();
 }
 
 auto UdpSocket::isCurrent(const std::uint64_t generation) const noexcept -> bool {

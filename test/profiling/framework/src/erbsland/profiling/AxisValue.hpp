@@ -4,7 +4,7 @@
 
 #include "AxisValue_fwd.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/String.hpp>
 
 namespace erbsland::profiling {
 

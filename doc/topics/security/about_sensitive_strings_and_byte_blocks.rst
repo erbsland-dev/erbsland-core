@@ -17,11 +17,14 @@
 About Sensitive Strings and Byte Blocks
 ***************************************
 
-Erbsland Core can reduce the lifetime of secret remnants in heap memory.
-Text secrets use a marked :cpp:type:`String <erbsland::text::String>`.
-Binary secrets use an ordinary :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` or
-:cpp:class:`ByteBlockEditor <erbsland::mem::ByteBlockEditor>` whose shared allocation is marked as sensitive, or a
-:cpp:class:`ByteBuffer <erbsland::mem::ByteBuffer>` in sensitive mode.
+Passwords, tokens, and other secrets can remain in heap memory after your code stops using them.
+Erbsland Core's sensitive-storage mark tells its string and byte containers to erase their allocations before releasing
+them.
+You keep the ordinary container interface while reducing the lifetime of those remnants.
+
+This page explains how to choose a container, how the mark follows shared storage and copied data, and when erasure
+happens.
+It also shows where conversions and borrowed views require you to take responsibility for a separate copy.
 
 .. important::
 
@@ -29,21 +32,45 @@ Binary secrets use an ordinary :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>`
     Plaintext remains readable in the process address space.
     A debugger, memory-disclosure bug, injected code, crash dump, or compromised process can still expose it.
 
-Marked Strings and Byte Storage
-===============================
+Choosing Storage for a Secret
+=============================
 
-``String`` and ``StringEditor`` are the UTF-8 aliases and provide ``markAsSensitive()`` and ``isSensitive()``.
-The mark controls secure cleanup of their shared allocation and cannot be cleared.
-It does not restrict the ordinary string interface.
+For passwords and other UTF-8 text, :cpp:type:`String <erbsland::text::String>` and
+:cpp:type:`StringEditor <erbsland::text::StringEditor>` provide ``markAsSensitive()`` and ``isSensitive()``.
+The mark controls cleanup of their shared allocation and cannot be cleared.
+It does not prevent ordinary operations such as reading, comparing, or displaying the text.
 
-Byte blocks use runtime metadata instead of a separate sensitive type.
-Call ``ByteBlock::markAsSensitive()`` or ``ByteBlockEditor::markAsSensitive()`` to set the mark.
-The mark cannot be cleared through an API.
-It controls secure cleanup of the allocation; it does not restrict which ordinary byte-block operations are available.
+For binary keys or tokens, :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` provides the same allocation-level mark.
+When you need to assemble or modify the bytes, a
+:cpp:class:`ByteBlockEditor <erbsland::mem::ByteBlockEditor>` keeps that mark while you edit.
+Both types share storage, so the last owner determines when the allocation can be erased.
 
-``ByteBuffer`` uses the reversible object mode ``setSensitive(bool)`` following ``RingBuffer``.
-Each copy owns independent storage and copies the mode; moves transfer storage and mode.
-Disabling the mode erases the complete allocation, discards visible bytes, and retains capacity.
+:cpp:class:`ByteBuffer <erbsland::mem::ByteBuffer>` is useful when you need independently owned mutable storage.
+Its ``setSensitive(true)`` mode also erases vacated bytes during mutation.
+Copies own independent storage and copy the mode; moves transfer storage and mode.
+Disabling the mode erases the complete allocation and discards its visible bytes while retaining capacity.
+
+Receiving Sensitive Values
+==========================
+
+Whenever possible, choose a producer that marks storage before it writes secret bytes.
+For example, :cpp:class:`SecureRandom <erbsland::random::SecureRandom>` creates sensitive results through
+``buildByteBlock()``, ``buildString()``, and ``buildByteBuffer()``.
+An empty result that has no storage has no allocation to erase.
+
+For file or stream input, enable
+:cpp:func:`InputStreamSettings::setSensitive() <erbsland::stream::InputStreamSettings::setSensitive>` when opening
+the stream.
+Byte-stream reads, including their coroutine variants, then return marked blocks and protect the library's retained and
+transport buffers.
+Text streams return marked strings from their generic read methods with the same setting.
+This keeps the cleanup policy attached to input as you pass it through your application.
+
+Secure-storage placeholders also return marked UTF-8 text, which keeps its mark through built-in filters and
+replacement.
+See :doc:`/topics/cryptology/configuring_tls` for an example that reads a signing-key password this way.
+Memory sensitivity and configuration secrecy serve different purposes: mark secret configuration fields in your
+validation rules as well, so logging and export can recognize them.
 
 Allocation-Level Marking
 ========================
@@ -54,54 +81,67 @@ Marking any alias therefore marks the complete allocation for every alias.
 
 Copy-on-write detachment, cloning, capacity growth, shrinking, and replacement allocations preserve the mark.
 Assigning or resetting a complete value can replace its allocation with an ordinary or empty one.
-An empty value without allocated storage cannot retain metadata, so marking it is a no-op and ``isSensitive()`` returns
-``false``.
+An empty byte block without allocated storage cannot retain metadata, so marking it is a no-op and ``isSensitive()``
+returns ``false``.
+An explicitly marked empty UTF-8 string does retain the mark.
+This matters when an empty password passes through a placeholder filter: an empty value can still be sensitive.
 An empty editor that still has reserved storage can be marked because it still owns an allocation.
 
 This allocation-level behavior is important when reviewing ownership.
 A small slice can keep a larger allocation alive, and that allocation is erased only after its final alias is released.
 
-Propagation Is Type-Specific
-============================
+Building and Copying Sensitive Values
+=====================================
 
-UTF-8 copies, slices, trims, copy-on-write detachment, and same-string modified results preserve their source mark.
-Appending, inserting, replacing, or joining marked source text into an unmarked destination does not mark that
-destination.
-A marked destination remains marked during mutation.
-Conversions to another string width, encoded bytes, standard-library text, escaped text, formatted text, or diagnostic
-text produce ordinary unmarked results.
+When you build a message from marked UTF-8 text, the destination becomes sensitive too.
+Appending, inserting, replacing, and joining mark the destination before copying the source bytes.
+Copies, slices, trims, escaped text, and modified results preserve the source mark, and a marked destination stays
+marked during mutation.
+UTF-8 builders and formatters also preserve marked string arguments.
+For example, a formatted string containing a marked password receives sensitive storage, but it still contains a
+readable password; the mark does not redact output.
 
-Operations that receive an owning byte block can observe its sensitivity mark.
-Successful deep copies, appends, inserts, replacements, overwrites, XOR operations, and joins propagate sensitivity to
-their destination.
-Once propagated, the destination mark cannot be removed.
+Owning byte blocks carry the same cleanup information into deep copies, appends, inserts, replacements, overwrites, XOR
+operations, and joins.
+The destination keeps the mark once it has received sensitive data.
 
-Borrowed spans do not carry ownership metadata.
-Passing ``sensitiveBlock.span()`` to an overload that accepts ``ConstByteSpan`` therefore does **not** mark the
-destination.
-Use an owning-block overload when propagation is required, or mark the destination explicitly before writing.
-The same limitation applies at native and third-party API boundaries.
+Borrowed Views and Conversions
+------------------------------
 
-Formatting and Ordinary Conversions
-===================================
+A borrowed span carries bytes without their ownership metadata.
+If you pass ``sensitiveBlock.span()`` to an overload accepting ``ConstByteSpan``, the destination cannot detect the
+source's mark.
+Pass the owning block when the operation supports it, or mark the destination before copying the bytes.
+This distinction also matters when passing data to native or third-party APIs.
 
-A marked byte block retains the complete ordinary byte-block interface.
-It can be formatted, compared, converted with ``toByteBuffer()``, or copied into ``uint8_t`` and ``char`` vectors.
-These operations can create ordinary, unprotected copies.
-The sensitivity mark is not a data-flow tracking system and does not follow bytes into arbitrary containers.
+String conversions to another character width, encoded bytes, or standard-library strings produce ordinary unmarked
+results.
+Similarly, a marked byte block can be converted to a byte buffer, formatted, or copied into a vector without protecting
+that separate destination.
+Custom formatters and diagnostic code are responsible for the copies they create.
 
-This is an accepted tradeoff of the unified API.
-Code that logs, displays, serializes, or converts a marked block must treat the resulting destination as a separate
-security boundary.
-Redact before logging and protect persisted or transmitted data independently.
+Treat each such conversion as a new place where the secret is stored.
+Keep its lifetime short, arrange cleanup where the destination supports it, and redact secrets before logging them.
+Sensitive storage governs memory cleanup; persisted and transmitted data need their own protection.
+
+Copies Made Before Marking
+--------------------------
+
+Marking an existing allocation does not erase earlier copies.
+A command-line parser, terminal editor, configuration parser, file reader, network stack, or third-party library may
+already have stored the same secret in ordinary memory.
+Moving or releasing one wrapper does not clear unrelated allocations.
+
+Prefer producers that mark storage before sensitive bytes are written.
+When an ordinary boundary is unavoidable, shorten the ordinary value's lifetime, avoid additional copies, and erase it
+explicitly when its type provides a reliable operation.
 
 When Erasure Happens
 ====================
 
 When a marked allocation is replaced during reallocation or finally destroyed, Erbsland Core securely erases the
 complete allocation before deallocation.
-The erased region includes shared metadata, visible bytes, unused capacity, and layout padding.
-The platform-specific primitive is selected so the compiler must not optimize the overwrite away.
+Erasure covers the allocation's full capacity, including unused space that may contain earlier values.
 
 Removing bytes, truncating, clearing, keeping a smaller range, or making a shorter replacement does not immediately
 erase the vacated part of an allocation.
@@ -127,45 +167,6 @@ Where available, prefer a higher-level password, message-authentication, signatu
 
 String comparisons are also ordinary and do not provide a constant-time guarantee.
 
-Creating Sensitive Values
-=========================
-
-:cpp:class:`SecureRandom <erbsland::random::SecureRandom>` reports ``isSecure() == true``.
-Its inherited :cpp:func:`Random::buildByteBlock() <erbsland::random::Random::buildByteBlock>` marks storage before the
-generator writes random bytes.
-Its inherited ``buildString()`` and ``buildByteBuffer()`` likewise select sensitive storage before writing.
-Other random generators return ordinary byte blocks unless their ``isSecure()`` override says otherwise.
-Storage-less empty results remain unmarked.
-
-Byte input streams opened with
-:cpp:func:`InputStreamSettings::setSensitive() <erbsland::stream::InputStreamSettings::setSensitive>` automatically
-return marked blocks from ``read()``, ``readExact()``, ``readAll()``, and their coroutine variants.
-The setting also protects library-owned retained and transport buffers.
-Ordinary streams return ordinary blocks.
-Text streams return marked strings from their generic read methods when the same setting is enabled.
-
-Import Boundaries
-=================
-
-Marking an existing allocation does not erase earlier copies.
-A command-line parser, terminal editor, configuration parser, file reader, network stack, or third-party library may
-already have stored the same secret in ordinary memory.
-Moving or releasing one wrapper does not clear unrelated allocations.
-
-Prefer producers that mark storage before sensitive bytes are written.
-When an ordinary boundary is unavoidable, shorten the ordinary value's lifetime, avoid additional copies, and erase it
-explicitly when its type provides a reliable operation.
-
-Choosing a Type
-===============
-
-Use a marked ``String`` for passwords and other text secrets that benefit from UTF-8 validation and best-effort
-allocation cleanup.
-Use a marked ``ByteBlock`` for binary keys, tokens, peppers, salts, and secret cryptographic intermediates.
-Use a marked ``ByteBlockEditor`` while those bytes must be assembled or modified, then share it as a read-only block.
-Use ``ByteBuffer::setSensitive(true)`` for directly owned, independently copied byte storage with immediate cleanup of
-vacated bytes and old allocations.
-
 Limits of the Guarantee
 =======================
 
@@ -173,7 +174,7 @@ Sensitive storage does not:
 
 *   lock pages or prevent swapping, suspension, or hibernation copies;
 *   sanitize CPU registers, stacks, or temporary buffers created by called code;
-*   erase caller-owned inputs, formatted output, vectors, or converted buffers;
+*   erase earlier copies or copies held in unmarked output, vectors, or converted buffers;
 *   protect crash dumps or guarantee cleanup after forced termination;
 *   encrypt persisted or transmitted data;
 *   prevent privileged inspection, memory-disclosure bugs, or a compromised process.

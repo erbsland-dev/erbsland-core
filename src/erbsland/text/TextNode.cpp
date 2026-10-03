@@ -12,10 +12,10 @@
 #include "impl/CodeBlockData.hpp"
 #include "impl/CodeLineMarkerData.hpp"
 #include "impl/CodeSnippetData.hpp"
-#include "impl/EscapeFormatter.hpp"
+#include "impl/escape/EscapeFormatter.hpp"
 #include "impl/LinkData.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../unit/ItemIndex.hpp"
 #include "../unit/LineIndex.hpp"
 
@@ -24,14 +24,14 @@
 
 namespace erbsland::text {
 
+using namespace unit;
 using namespace literals;
 
-auto TextNode::codeSnippetLineIndex(const unit::LineIndex startLine, const std::size_t localLine) noexcept
-    -> unit::LineIndex {
+auto TextNode::codeSnippetLineIndex(const LineIndex startLine, const std::size_t localLine) noexcept -> LineIndex {
     if (startLine.isNoIndex()) {
-        return unit::LineIndex::fromSizeT(localLine);
+        return LineIndex::fromSizeT(localLine);
     }
-    return unit::LineIndex::fromSizeT(startLine.toSizeT() + localLine);
+    return LineIndex::fromSizeT(startLine.toSizeT() + localLine);
 }
 
 TextNode::TextNode(
@@ -120,7 +120,7 @@ auto TextNode::createCodeSnippet(CodeSnippet snippet, CodeSnippetMarkerList mark
         if (!snippet.startLine.isNoIndex()) {
             line->add(Type::CodeLineNumber)->addText(String::fromInteger(lineIndex.toSizeT() + 1U));
         }
-        line->add(Type::CodeLineText)->addText(snippet.lines.get(unit::ItemIndex::fromSizeT(localIndex)));
+        line->add(Type::CodeLineText)->addText(snippet.lines.get(ItemIndex::fromSizeT(localIndex)));
         for (const auto &marker : markers) {
             if (marker.line() == lineIndex && !marker.column().isNoIndex()) {
                 line->add(Type::CodeLineMarker)
@@ -397,7 +397,7 @@ auto TextNode::createNode(
 
 auto TextNode::appendChild(TextNodePtr child) -> TextNodePtr {
     if (child == nullptr) {
-        throw err::ParameterError{"The child text node must not be null."_el, "child"_el};
+        throw err::ParameterFailure{"The child text node must not be null."_el, "child"_el};
     }
     child->_parent = shared_from_this();
     _children.append(child);

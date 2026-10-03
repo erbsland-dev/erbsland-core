@@ -78,7 +78,7 @@ private:
     [[nodiscard]] static auto formattedAlignment(const NamedLayoutSpec &spec, geometry::AlignmentFlag defaultAlignment)
         -> geometry::Alignment;
     /// Add leading zeroes until text reaches a width.
-    [[nodiscard]] static auto zeroPaddedNumericText(const String &text, unit::CpLength width) -> U8StringEditor;
+    [[nodiscard]] static auto zeroPaddedNumericText(const String &text, unit::CpCount width) -> U8StringEditor;
     /// Apply a legacy precision limit to text.
     [[nodiscard]] static auto applyPrecision(const String &text, const LegacyFormatSpec &spec) -> StringEditor;
     /// Apply legacy width, fill, and alignment to text.
@@ -99,7 +99,6 @@ private:
     AnyStringBuilder &_builder; ///< The destination builder.
 };
 
-/// Format an integer value with a legacy specification.
 template <math::AnyIntegerType T>
 auto FormatWriter::integerFieldText(T value, const LegacyFormatSpec &spec) -> U8StringEditor {
     return U8StringEditor{String::fromInteger(value, integerFormat(spec))};

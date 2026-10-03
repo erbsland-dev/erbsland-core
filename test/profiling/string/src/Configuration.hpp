@@ -4,6 +4,8 @@
 
 #include "RunOverrides.hpp"
 
+#include <erbsland/Path.hpp>
+
 namespace app::string {
 
 /// A validated and expanded configuration.

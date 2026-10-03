@@ -26,10 +26,10 @@
 #include "../math/IntegerTraits.hpp"
 #include "../mem/ByteBlock_fwd.hpp"
 #include "../mem/SharedDataPointer.hpp"
-#include "../unit/ByteLength.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/ByteCount.hpp"
+#include "../unit/CpCount.hpp"
 #include "../unit/ItemCount.hpp"
-#include "../unit/U16DataLength.hpp"
+#include "../unit/U16Count.hpp"
 
 #include <cstddef>
 
@@ -59,7 +59,7 @@ public: // accessors
     /// Get the target string kind.
     [[nodiscard]] auto kind() const noexcept -> StringKind;
     /// Get the current decoded code-point length.
-    [[nodiscard]] auto length() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto length() const noexcept -> unit::CpCount;
 
 public: // tests
     /// Test if this builder is empty.
@@ -73,7 +73,7 @@ public: // modifiers
     /// Append one Unicode code point.
     auto append(char32_t codePoint) -> AnyStringBuilder &;
     /// Append one Unicode code point multiple times.
-    auto append(Char character, unit::CpLength count) -> AnyStringBuilder &;
+    auto append(Char character, unit::CpCount count) -> AnyStringBuilder &;
     /// Append a UTF-8 read-only string.
     auto append(const U8String &text) -> AnyStringBuilder &;
     /// Append a UTF-8 read-only string multiple times.
@@ -157,25 +157,25 @@ public: // factory methods
     /// Create an empty UTF-8 string builder.
     [[nodiscard]] static auto u8() -> AnyStringBuilder;
     /// Create a UTF-8 builder with initial byte capacity and optional sensitive storage.
-    [[nodiscard]] static auto u8(unit::ByteLength capacity, bool sensitive = false) -> AnyStringBuilder;
+    [[nodiscard]] static auto u8(unit::ByteCount capacity, bool sensitive = false) -> AnyStringBuilder;
     /// Create an empty UTF-16 string builder.
     [[nodiscard]] static auto u16() -> AnyStringBuilder;
     /// Create an empty UTF-16 string builder with the given initial UTF-16 code-unit capacity.
-    [[nodiscard]] static auto u16(unit::U16DataLength capacity) -> AnyStringBuilder;
+    [[nodiscard]] static auto u16(unit::U16Count capacity) -> AnyStringBuilder;
     /// Create an empty UTF-32 string builder.
     [[nodiscard]] static auto u32() -> AnyStringBuilder;
     /// Create an empty UTF-32 string builder with the given initial code-point capacity.
-    [[nodiscard]] static auto u32(unit::CpLength capacity) -> AnyStringBuilder;
+    [[nodiscard]] static auto u32(unit::CpCount capacity) -> AnyStringBuilder;
     /// Create an empty string builder with the given decoded code-point capacity.
-    [[nodiscard]] static auto withCapacity(StringKind kind, unit::CpLength capacity) -> AnyStringBuilder;
+    [[nodiscard]] static auto withCapacity(StringKind kind, unit::CpCount capacity) -> AnyStringBuilder;
     /// Create a UTF-8 builder initialized with text and additional native capacity.
-    [[nodiscard]] static auto basedOn(const U8String &initial, unit::ByteLength additionalCapacity = {})
+    [[nodiscard]] static auto basedOn(const U8String &initial, unit::ByteCount additionalCapacity = {})
         -> AnyStringBuilder;
     /// Create a UTF-16 builder initialized with text and additional native capacity.
-    [[nodiscard]] static auto basedOn(const U16String &initial, unit::U16DataLength additionalCapacity = {})
+    [[nodiscard]] static auto basedOn(const U16String &initial, unit::U16Count additionalCapacity = {})
         -> AnyStringBuilder;
     /// Create a UTF-32 builder initialized with text and additional native capacity.
-    [[nodiscard]] static auto basedOn(const U32String &initial, unit::CpLength additionalCapacity = {})
+    [[nodiscard]] static auto basedOn(const U32String &initial, unit::CpCount additionalCapacity = {})
         -> AnyStringBuilder;
 
 private:

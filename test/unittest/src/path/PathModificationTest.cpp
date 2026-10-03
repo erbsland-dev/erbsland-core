@@ -3,9 +3,9 @@
 
 #include "PathTestHelper.hpp"
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/unit/ItemRange.hpp>
+#include <erbsland/ItemRange.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
@@ -51,6 +51,46 @@ public:
         mutablePath /= "expedicao"_el;
         mutablePath /= Path{"dia1.txt"_el};
         REQUIRE_EQUAL(toStdString(mutablePath), "diario/expedicao/dia1.txt");
+    }
+
+    void testNativeJoin() {
+        const auto base = Path{"arquivo"_el};
+        const auto joined = base.joinedNative("rotas/🌍.txt"_el);
+        REQUIRE_EQUAL(joined, Path{"arquivo/rotas/🌍.txt"_el});
+        REQUIRE_EQUAL(base, Path{"arquivo"_el});
+
+        auto mutablePath = base;
+        REQUIRE_EQUAL(&mutablePath.joinNative("rotas/🌍.txt"_el), &mutablePath);
+        REQUIRE_EQUAL(mutablePath, joined);
+        REQUIRE_EQUAL(base.joinedNative("./rotas/../manha.txt"_el), Path{"arquivo/./rotas/../manha.txt"_el});
+
+        const auto native = base.joinedNative(R"(a\b.txt)"_el);
+        mutablePath = base;
+        mutablePath.joinNative(R"(a\b.txt)"_el);
+        REQUIRE_EQUAL(mutablePath, native);
+#ifdef ERBSLAND_OS_WINDOWS
+        REQUIRE_EQUAL(native.elementCount(), ItemCount{3U});
+        REQUIRE_EQUAL(native.name(), "b.txt"_el);
+        REQUIRE_EQUAL(base.joinedNative(R"(C:\rotas\manha.txt)"_el), Path{"arquivo/rotas/manha.txt"_el});
+#else
+        REQUIRE_EQUAL(native.elementCount(), ItemCount{2U});
+        REQUIRE_EQUAL(native.name(), R"(a\b.txt)"_el);
+        REQUIRE_EQUAL(base.joinedNative("/rotas/manha.txt"_el), Path{"arquivo/rotas/manha.txt"_el});
+#endif
+        REQUIRE_EQUAL(base.joined(R"(a\b.txt)"_el), Path{"arquivo/a/b.txt"_el});
+    }
+
+    void testNativeJoinEmptyAndInvalidText() {
+        const auto base = Path{"arquivo"_el};
+        for (const auto &text : {el::text::String{}, el::text::String{"a\0b"_el}}) {
+            REQUIRE_EQUAL(base.joinedNative(text), base);
+            auto mutablePath = base;
+            REQUIRE_EQUAL(&mutablePath.joinNative(text), &mutablePath);
+            REQUIRE_EQUAL(mutablePath, base);
+        }
+        auto empty = Path{};
+        REQUIRE(empty.joinedNative("rotas"_el).isEmpty());
+        REQUIRE(empty.joinNative("rotas"_el).isEmpty());
     }
 
     void testSlice() {

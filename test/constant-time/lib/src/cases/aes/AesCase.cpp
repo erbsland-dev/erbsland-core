@@ -1,27 +1,26 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "AesCase.hpp"
 
 #include "../../BackendInfo.hpp"
 
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesBlockCipherFactory.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace app::constant_time {
 
 using namespace el::text::literals;
 
-AesCase::AesCase(std::size_t keySize, AesOperation operation, bool automatic) :
+AesCase::AesCase(el::ByteCount keySize, AesOperation operation, bool automatic) :
     _keySize{keySize}, _operation{operation}, _automatic{automatic} {
-    const auto id = el::StringFormat{"aes/{}/{}"_el}.build(keySize * 8, operationName());
-    const auto key = el::ByteBuffer{el::ByteLength{keySize}, el::Byte{0x55U}};
+    const auto id = el::StringFormat{"aes/{}/{}"_el}.build(keySize.toRawValue() * 8, operationName());
+    const auto key = el::ByteBuffer{keySize, el::Byte{0x55U}};
     const auto probe = automatic ? ci::createAesBlockCipher(key.span()) : ci::createPortableAesBlockCipher(key.span());
     configure(
         TestMetadata{
@@ -30,7 +29,7 @@ AesCase::AesCase(std::size_t keySize, AesOperation operation, bool automatic) :
             "fixed-vs-random-key"_el,
             BackendInfo{*probe, operation == AesOperation::KeyExpansion || !probe->isHardwareAccelerated()}.name(),
             operation != AesOperation::KeyExpansion},
-        el::ByteLength{4096});
+        el::ByteCount{4096});
 }
 
 auto AesCase::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {
@@ -50,7 +49,7 @@ auto AesCase::operationName() const -> el::String {
     case AesOperation::Decrypt:
         return "decrypt"_el;
     }
-    throw el::LogicError{"Unknown scenario operation."_el};
+    throw el::LogicFailure{"Unknown scenario operation."_el};
 }
 
 }

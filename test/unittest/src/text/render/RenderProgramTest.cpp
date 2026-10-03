@@ -1,9 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/EnvironmentOptions.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/render/EnvironmentOptions.hpp>
+#include <erbsland/render/LayoutSource.hpp>
+#include <erbsland/StringList.hpp>
 #include <erbsland/text/render/impl/CompiledLayout.hpp>
 #include <erbsland/text/render/impl/Compiler.hpp>
 #include <erbsland/text/render/impl/Engine.hpp>
@@ -11,9 +13,7 @@
 #include <erbsland/text/render/impl/ProgramError.hpp>
 #include <erbsland/text/render/impl/ProgramReader.hpp>
 #include <erbsland/text/render/impl/ProgramWriter.hpp>
-#include <erbsland/text/render/LayoutSource.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/text/ToString.hpp>
+#include <erbsland/ToString.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <bit>

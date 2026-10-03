@@ -10,10 +10,12 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-StringSource::StringSource(text::String text) noexcept :
-    _lineSplitter{std::move(text), text::Char{U'\n'}, text::StringSplitMode::KeepSeparator} {
+StringSource::StringSource(String text) noexcept :
+    _lineSplitter{std::move(text), Char{U'\n'}, StringSplitMode::KeepSeparator} {
 }
 
 auto StringSource::identifier() const noexcept -> SourceIdentifierPtr {
@@ -30,7 +32,7 @@ void StringSource::open() {
     _atEnd = false;
 }
 
-auto StringSource::readLine() -> text::String {
+auto StringSource::readLine() -> String {
     if (_atEnd) {
         return {};
     }
@@ -49,16 +51,16 @@ auto StringSource::readLine() -> text::String {
     return result;
 }
 
-auto StringSource::codeSnippet(const unit::CodeLocation location) noexcept -> std::optional<text::CodeSnippet> {
+auto StringSource::codeSnippet(const CodeLocation location) noexcept -> std::optional<CodeSnippet> {
     const auto &text = _lineSplitter.text();
     if (location.line().isNoIndex() || text.isEmpty()) {
         return std::nullopt;
     }
-    static const auto newLineOrCR = text::CharSet{"\r\n"_el};
-    const auto firstLine = location.line().retreated(unit::LineCount{2U});
-    const auto lastLine = location.line().advanced(unit::LineCount{2U});
-    auto splitter = text::StringSplitter{text, text::Char{U'\n'}, text::StringSplitMode::KeepSeparator};
-    auto lineIndex = unit::LineIndex::zero();
+    static const auto newLineOrCR = CharSet{"\r\n"_el};
+    const auto firstLine = location.line().retreated(LineCount{2U});
+    const auto lastLine = location.line().advanced(LineCount{2U});
+    auto splitter = StringSplitter{text, Char{U'\n'}, StringSplitMode::KeepSeparator};
+    auto lineIndex = LineIndex::zero();
     while (lineIndex < firstLine) {
         if (splitter.isAtEnd()) {
             return std::nullopt;
@@ -67,10 +69,10 @@ auto StringSource::codeSnippet(const unit::CodeLocation location) noexcept -> st
         ++lineIndex;
     }
 
-    auto lines = text::StringList{};
+    auto lines = StringList{};
     auto found = false;
     while (lineIndex <= lastLine && !splitter.isAtEnd()) {
-        auto line = splitter.next().trimmed(newLineOrCR, text::StringSide::Back);
+        auto line = splitter.next().trimmed(newLineOrCR, StringSide::Back);
         lines.append(std::move(line));
         found = found || lineIndex == location.line();
         ++lineIndex;
@@ -78,14 +80,14 @@ auto StringSource::codeSnippet(const unit::CodeLocation location) noexcept -> st
     if (!found) {
         return std::nullopt;
     }
-    return text::CodeSnippet{std::move(lines), firstLine, "elcl"_el};
+    return CodeSnippet{std::move(lines), firstLine, "elcl"_el};
 }
 
 void StringSource::throwLineLengthExceeded() {
     close();
     throw ConfError(
         ConfErrorCategory::LimitExceeded,
-        text::StringFormat{"The line exceeds the maximum size of {} bytes."_el}.build(limits::maxLineLength),
+        StringFormat{"The line exceeds the maximum size of {} bytes."_el}.build(limits::maxLineLength),
         Location{identifier()});
 }
 

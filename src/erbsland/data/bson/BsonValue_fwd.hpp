@@ -6,7 +6,9 @@
 #include "../../util/List_fwd.hpp"
 
 namespace erbsland::data::bson {
+
 class BsonValue;
 using BsonArray = util::List<BsonValue>;
 using BsonDocument = text::StringMap<BsonValue>;
+
 }

@@ -9,7 +9,7 @@
 
 #include "../text/String.hpp"
 #include "../text/StringList.hpp"
-#include "../unit/ArgumentUnit.hpp"
+#include "../unit/ArgumentCount.hpp"
 
 #include <unordered_map>
 #include <vector>
@@ -19,7 +19,9 @@ namespace erbsland::options {
 /// A set of parsed command line option values.
 ///
 /// Each accepted lookup name maps to the same parsed value instance. For example, an option registered as
-/// `{"--verbose", "verbose"}` can be read through either name.
+/// `{"--verbose", "verbose"}` can be read through either name. Lookups normalize word separators and ASCII case,
+/// while short-option names remain case-sensitive.
+/// @seedoc{/reference/options/command_line_options}
 /// @tested{OptionsFrameworkTest}
 class OptionValues {
 public:
@@ -37,13 +39,15 @@ public:
     /// Create an empty shared value set.
     /// @return A shared value set without selected module or parsed values.
     [[nodiscard]] static auto create() -> OptionValuesPtr;
-    /// Set a value for one lookup name.
-    /// @param name Lookup name to associate with the value.
+    /// Set a value for one validated canonical lookup name.
+    /// @param name The lookup name to associate with the value. Must satisfy `Option::isValidOptionName()` or
+    /// `Option::isValidPositionalName()`.
     /// @param value Parsed value pointer. Null pointers are stored as-is and behave like absent values in typed
     /// getters.
     void setValue(const text::String &name, OptionValuePtr value);
     /// Set a value for multiple lookup names.
-    /// @param names Lookup names that shall all resolve to the same value.
+    /// @param names The lookup names for the value. Each must satisfy `Option::isValidOptionName()` or
+    /// `Option::isValidPositionalName()`.
     /// @param value Parsed value pointer.
     void setValue(std::initializer_list<text::String> names, OptionValuePtr value);
 
@@ -51,8 +55,9 @@ public: // accessors
     /// Get the selected module name.
     [[nodiscard]] auto moduleName() const noexcept -> const text::String & { return _moduleName; }
     /// Set the selected module name.
-    /// @param moduleName The module name selected on the command line, or empty for root parsing.
-    void setModuleName(text::String moduleName) { _moduleName = std::move(moduleName); }
+    /// @param moduleName The module selected on the command line, or empty for root parsing. Non-empty names must
+    /// satisfy `Option::isValidPositionalName()`.
+    void setModuleName(const text::String &moduleName);
     /// Get the selected module.
     [[nodiscard]] auto module() const noexcept -> const OptionModulePtr & { return _module; }
     /// Set the selected module.

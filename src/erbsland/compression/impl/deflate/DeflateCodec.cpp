@@ -6,10 +6,12 @@
 #include "DeflateEncoder.hpp"
 
 #include "../../../err/OutOfRangeError.hpp"
+#include "../../../err/OutOfRangeFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 namespace erbsland::compression::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 void DeflateCodec::compressPayload(
@@ -17,7 +19,7 @@ void DeflateCodec::compressPayload(
     const CodecOutput::Write &output,
     const CompressionTransferOptions &transfer,
     const CompressionOptions &options) const {
-    constexpr auto workspace = unit::ByteLength{2U * 1024U * 1024U};
+    constexpr auto workspace = ByteCount{2U * 1024U * 1024U};
     if (workspace > availableWorkspace(transfer, options.maximumWorkspaceLength())) {
         throw err::OutOfRangeError{"Codec workspace limit exceeded."_el};
     }
@@ -29,20 +31,20 @@ void DeflateCodec::decompressPayload(
     const CodecOutput::Write &output,
     const CompressionTransferOptions &transfer,
     const DecompressionOptions &options) const {
-    constexpr auto workspace = unit::ByteLength{2U * 1024U * 1024U};
+    constexpr auto workspace = ByteCount{2U * 1024U * 1024U};
     if (workspace > availableWorkspace(transfer, options.maximumWorkspaceLength())) {
         throw err::OutOfRangeError{"Codec workspace limit exceeded."_el};
     }
     DeflateDecoder{input, options, output}.decode();
 }
 
-auto DeflateCodec::maximumPayloadLength(const unit::ByteLength length) const -> unit::ByteLength {
+auto DeflateCodec::maximumPayloadLength(const ByteCount length) const -> ByteCount {
     if (!length.isFinite()) {
-        throw err::OutOfRangeError{"Compression length must be finite."_el};
+        throw err::OutOfRangeFailure{"Compression length must be finite."_el};
     }
     const auto value = length.toSizeTOrThrow();
     return length.addedOrThrow(
-        unit::ByteLength::fromSizeT((value / cStoredBlockMaximum + 1U) * cStoredBlockOverhead + cStreamOverhead));
+        ByteCount::fromSizeT((value / cStoredBlockMaximum + 1U) * cStoredBlockOverhead + cStreamOverhead));
 }
 
 }

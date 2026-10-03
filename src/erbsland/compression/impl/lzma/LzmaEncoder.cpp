@@ -10,6 +10,8 @@
 
 namespace erbsland::compression::impl {
 
+using namespace unit;
+
 LzmaEncoder::LzmaEncoder(const uint32_t dictionarySize, const std::size_t depth) :
     _dictionarySize{dictionarySize}, _depth{depth}, _head(cHashTableSize, cNone) {
 }
@@ -179,7 +181,7 @@ void LzmaEncoder::encodeEndMarker() {
 void LzmaEncoder::encodeStream(CodecReader &input, const CodecOutput::Write &output) {
     _encoder.setOutput(output);
     auto history = mem::ByteBlockEditor{};
-    history.reserve(unit::ByteLength{65536U});
+    history.reserve(ByteCount{65536U});
     _previousChain.reserve(static_cast<std::size_t>(_dictionarySize) + 65536U);
     // Bounded indexes cover a dictionary and one input block.
 
@@ -206,7 +208,7 @@ void LzmaEncoder::encodeStream(CodecReader &input, const CodecOutput::Write &out
             }
         }
         _position -= removed;
-        history.remove(unit::ByteRange{unit::ByteIndex{}, unit::ByteLength::fromSizeT(removed)});
+        history.remove(ByteRange{ByteIndex{}, ByteCount::fromSizeT(removed)});
     }
     encodeEndMarker();
     _encoder.finalize();

@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../../core/Definitions.hpp"
+
 #include <cstdint>
 
 namespace erbsland::data::bson {
+
 /// Semantic types supported by a BSON value.
 enum class BsonType : uint8_t {
     Null,     ///< Null.
@@ -19,4 +22,5 @@ enum class BsonType : uint8_t {
     Document, ///< Named document fields.
     Opaque,   ///< Known BSON type retained without interpretation.
 };
+
 }

@@ -30,7 +30,7 @@ public:
     }
 
     void testVeryLongSequence() {
-        const auto veryLongPattern = String::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{300U});
+        const auto veryLongPattern = String::fromCharacter(el::text::Char{U'a'}, el::unit::CpCount{300U});
 
         // This should not throw and should generate two SEQUENCE operations.
         WITH_CONTEXT(compileAndDisassemble(veryLongPattern));
@@ -50,7 +50,7 @@ public:
     }
 
     void testVeryLongCiSequence() {
-        const auto veryLongPattern = String::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{300U});
+        const auto veryLongPattern = String::fromCharacter(el::text::Char{U'a'}, el::unit::CpCount{300U});
 
         // This should not throw and should generate two CI SEQUENCE operations.
         WITH_CONTEXT(compileAndDisassemble(veryLongPattern, GroupFlag::IgnoreCase));

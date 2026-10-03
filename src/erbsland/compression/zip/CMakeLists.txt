@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
+        ArchiveDirectoryOptions.cpp
         ArchiveDirectoryOptions.hpp
         ArchiveEntryOptions.hpp
         ArchiveExtractionOptions.hpp

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/text/render/Context.hpp>
+#include <erbsland/render/Context.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

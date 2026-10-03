@@ -4,8 +4,8 @@
 
 #include "PackageConfig.hpp"
 
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
 
 namespace erbsland::package {
 
@@ -32,7 +32,7 @@ private:
 
 private:
     path::Path _baseDirectory; ///< Configuration file directory.
-    path::Path _packageRoot; ///< Staging root for this package.
+    path::Path _packageRoot;   ///< Staging root for this package.
 };
 
 }

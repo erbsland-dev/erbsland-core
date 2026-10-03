@@ -17,7 +17,7 @@
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../stream/ByteInputStream_fwd.hpp"
 #include "../../stream/ByteOutputStream_fwd.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::compression::impl {
 
@@ -32,37 +32,43 @@ public:
 
 public:
     /// Compress a complete byte value in the configured representation.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     [[nodiscard]] auto compress(const mem::ByteBlock &data, const CompressionOptions &options = {}) const
         -> mem::ByteBlock;
     /// Decompress a complete byte value in the configured representation.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     [[nodiscard]] auto decompress(const mem::ByteBlock &data, const DecompressionOptions &options) const
         -> mem::ByteBlock;
     /// Compress through synchronous bounded callbacks.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     auto compress(
         CodecReader::Read read,
         CodecOutput::Write write,
         const CompressionTransferOptions &transfer,
         const CompressionOptions &options) const -> CompressionTransferResult;
     /// Decompress through synchronous bounded callbacks.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     auto decompress(
         CodecReader::Read read,
         CodecOutput::Write write,
         const CompressionTransferOptions &transfer,
         const DecompressionOptions &options) const -> CompressionTransferResult;
     /// Compress between borrowed streams; neither stream is closed or flushed.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     auto compress(
         stream::ByteInputStream &source,
         stream::ByteOutputStream &destination,
         CompressionTransferOptions transfer,
         const CompressionOptions &options) const -> CompressionTransferResult;
     /// Decompress between borrowed streams; neither stream is closed or flushed.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     auto decompress(
         stream::ByteInputStream &source,
         stream::ByteOutputStream &destination,
         CompressionTransferOptions transfer,
         const DecompressionOptions &options) const -> CompressionTransferResult;
     /// Calculate the worst-case compressed length for the configured representation.
-    [[nodiscard]] auto maximumCompressedLength(unit::ByteLength length) const -> unit::ByteLength;
+    [[nodiscard]] auto maximumCompressedLength(unit::ByteCount length) const -> unit::ByteCount;
     /// Get the compression algorithm implemented by this codec.
     [[nodiscard]] virtual auto algorithm() const noexcept -> CompressionAlgorithm = 0;
     /// Get the selected compressed representation.
@@ -72,7 +78,9 @@ public:
     /// Test whether this codec uses bounded native streaming.
     [[nodiscard]] virtual auto supportsStreaming() const noexcept -> bool { return true; }
     /// Create a codec for the selected configuration.
-    /// @throws err::ParameterError If a value or combination is unsupported.
+    /// @param algorithm The compression algorithm. Must support the selected format.
+    /// @param format The compression representation. Must be supported by the selected algorithm.
+    /// @param level The compression effort. Must be a valid level.
     [[nodiscard]] static auto create(
         CompressionAlgorithm algorithm, CompressionFormat format, CompressionLevel level = CompressionLevel::Default)
         -> CompressionCodecPtr;
@@ -84,21 +92,23 @@ protected:
     [[nodiscard]] auto payloadFormat() const noexcept -> CompressionFormat;
     /// Calculate workspace available after reserving common transfer buffers.
     [[nodiscard]] static auto availableWorkspace(
-        const CompressionTransferOptions &transfer, unit::ByteLength configuredLimit) -> unit::ByteLength;
+        const CompressionTransferOptions &transfer, unit::ByteCount configuredLimit) -> unit::ByteCount;
     /// Compress one native payload.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     virtual void compressPayload(
         CodecReader &input,
         const CodecOutput::Write &output,
         const CompressionTransferOptions &transfer,
         const CompressionOptions &options) const = 0;
     /// Decompress one native payload.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     virtual void decompressPayload(
         CodecReader &input,
         const CodecOutput::Write &output,
         const CompressionTransferOptions &transfer,
         const DecompressionOptions &options) const = 0;
     /// Calculate the worst-case algorithm payload length.
-    [[nodiscard]] virtual auto maximumPayloadLength(unit::ByteLength length) const -> unit::ByteLength = 0;
+    [[nodiscard]] virtual auto maximumPayloadLength(unit::ByteCount length) const -> unit::ByteCount = 0;
 
 private:
     CompressionFormat _format; ///< Selected representation.

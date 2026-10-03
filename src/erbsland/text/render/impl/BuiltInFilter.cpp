@@ -1,9 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
+
 #include "BuiltInFilters.hpp"
 
-#include "../../../text/Literals.hpp"
-#include "../../../text/String.hpp"
+#include "../../Literals.hpp"
+#include "../../String.hpp"
 
 namespace erbsland::text::render::impl::built_in_filters {
 
@@ -48,6 +49,9 @@ auto find(const String &name) noexcept -> std::optional<BuiltInFilter> {
         }
         return {};
     case 5U:
+        if (name == "batch"_el) {
+            return BuiltInFilter::Batch;
+        }
         if (name == "lower"_el) {
             return BuiltInFilter::Lower;
         }
@@ -98,4 +102,5 @@ auto find(const String &name) noexcept -> std::optional<BuiltInFilter> {
         return {};
     }
 }
+
 }

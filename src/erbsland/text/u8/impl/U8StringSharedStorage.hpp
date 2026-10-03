@@ -9,7 +9,7 @@
 
 #include "../../../mem/StorageIdentifier.hpp"
 #include "../../../mem/UnsafeCharPtr.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 #include "../../../unit/ByteRange.hpp"
 
 #include <span>
@@ -18,7 +18,7 @@
 namespace erbsland::text::impl {
 
 /// Storage for shared UTF-8 string data.
-/// @tested{U8StringSharedStorageTest}
+/// @tested{U8StringSharedStorageTest StringStorageBoundsTest}
 class U8StringSharedStorage final {
 public:
     /// Create empty shared storage.
@@ -73,13 +73,18 @@ public:
     /// Create uninitialized string storage for the given byte size.
     [[nodiscard]] static auto forSize(std::size_t size, bool sensitive = false) -> U8StringSharedStorage;
     /// Throw if a size cannot be represented by the byte length type.
+    /// @param size A finite size representable by the string length type.
     static void validateSize(std::size_t size);
     /// Add two sizes and validate the result as a string byte length.
-    [[nodiscard]] static auto checkedAddSize(std::size_t first, std::size_t second, std::string_view reason)
-        -> std::size_t;
+    /// @param first The first size.
+    /// @param second The second size.
+    /// @return The sum, which must fit the finite string length range.
+    [[nodiscard]] static auto checkedAddSize(std::size_t first, std::size_t second) -> std::size_t;
     /// Multiply two sizes and validate the result as a string byte length.
-    [[nodiscard]] static auto checkedMultiplySize(std::size_t first, std::size_t second, std::string_view reason)
-        -> std::size_t;
+    /// @param first The first size.
+    /// @param second The second size.
+    /// @return The product, which must fit the finite string length range.
+    [[nodiscard]] static auto checkedMultiplySize(std::size_t first, std::size_t second) -> std::size_t;
 
 public:
     /// Clear the storage.
@@ -89,13 +94,13 @@ public:
     /// Resize the visible string data and write the trailing null byte.
     void resize(std::size_t size) noexcept;
     /// Reserve usable capacity for the current string value.
-    void reserve(unit::ByteLength capacity);
+    void reserve(unit::ByteCount capacity);
     /// Shrink storage to the exact size of the visible string value.
     void shrinkToFit();
     /// Get the usable capacity for the current string value.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteCount;
     /// Get the estimated retained heap memory usage.
-    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteCount;
     /// Detach shared data and materialize sliced data when necessary.
     void detach();
     /// Get a view to this storage.
@@ -108,7 +113,6 @@ private:
     [[nodiscard]] auto isFullRange(std::size_t dataSize) const noexcept -> bool;
     /// Materialize the visible string value into standalone full-range storage with the requested capacity.
     void rematerialize(std::size_t reservedCapacity);
-    /// Test if this string has shared or literal storage.
 
 private:
     U8StringDataPtr _data;                            ///< The COW string data.

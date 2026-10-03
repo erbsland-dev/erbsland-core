@@ -9,7 +9,7 @@
 #include "../CharSet.hpp"
 #include "../u32/U32String.hpp"
 
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <array>
 #include <cstdint>
@@ -27,8 +27,7 @@ public:
     BaseNFormat();
     /// Create an unpadded format for a custom alphabet.
     /// ASCII whitespace is accepted while decoding.
-    /// @param alphabet An alphabet containing exactly 16, 32, or 64 distinct Unicode scalar values.
-    /// @throws err::ParameterError If the alphabet is invalid.
+    /// @param alphabet Exactly 16, 32, or 64 distinct Unicode scalar values. Must not contain ASCII whitespace.
     explicit BaseNFormat(U32String alphabet);
 
     // defaults
@@ -42,40 +41,46 @@ public: // accessors
     /// Get the digit alphabet.
     [[nodiscard]] auto alphabet() const noexcept -> const U32String & { return _alphabet; }
     /// Set the digit alphabet.
-    /// @throws err::ParameterError If the resulting format is invalid.
+    /// @param alphabet Exactly 16, 32, or 64 distinct Unicode scalar values. Must not overlap the padding or whitespace
+    /// characters.
     auto setAlphabet(U32String alphabet) -> BaseNFormat &;
     /// Get the optional padding character.
     [[nodiscard]] auto padding() const noexcept -> std::optional<Char> { return _padding; }
     /// Set or clear the padding character.
-    /// @throws err::ParameterError If the resulting format is invalid.
+    /// @param padding The optional Unicode scalar padding character. Must not overlap the alphabet or whitespace;
+    /// required by enabled padding flags.
     auto setPadding(std::optional<Char> padding) -> BaseNFormat &;
     /// Get the characters ignored while decoding.
     [[nodiscard]] auto whitespace() const noexcept -> const CharSet & { return _whitespace; }
     /// Set the characters ignored while decoding.
-    /// @throws err::ParameterError If the resulting format is invalid.
+    /// @param whitespace The ignored characters. Must not overlap the alphabet or padding and must include every
+    /// separator character when wrapping is enabled.
     auto setWhitespace(CharSet whitespace) -> BaseNFormat &;
     /// Get the active behavior flags.
     [[nodiscard]] auto flags() const noexcept -> BaseNFormatFlags { return _flags; }
     /// Set the behavior flags.
-    /// @throws err::ParameterError If the resulting format is invalid.
+    /// @param flags The behavior flags. Padding flags require a padding character; wrapping requires a positive finite
+    /// line length and a non-empty whitespace-only separator.
     auto setFlags(BaseNFormatFlags flags) -> BaseNFormat &;
     /// Add behavior flags.
-    /// @throws err::ParameterError If the resulting format is invalid.
+    /// @param flags The flags to add. Padding flags require a padding character; wrapping requires a positive finite
+    /// line length and a non-empty whitespace-only separator.
     auto addFlags(BaseNFormatFlags flags) -> BaseNFormat &;
     /// Clear behavior flags.
-    /// @throws err::ParameterError If the resulting format is invalid.
+    /// @param flags The flags to clear. The resulting format must retain valid padding and line-wrapping settings.
     auto clearFlags(BaseNFormatFlags flags) -> BaseNFormat &;
     /// Test whether a behavior flag is set.
     [[nodiscard]] auto hasFlag(BaseNFormatFlag flag) const noexcept -> bool { return _flags.contains(flag); }
     /// Get the encoded digit count per line.
-    [[nodiscard]] auto lineLength() const noexcept -> unit::CpLength { return _lineLength; }
+    [[nodiscard]] auto lineLength() const noexcept -> unit::CpCount { return _lineLength; }
     /// Set the encoded digit count per line.
-    /// @throws err::ParameterError If the resulting format is invalid.
-    auto setLineLength(unit::CpLength lineLength) -> BaseNFormat &;
+    /// @param lineLength The encoded digit count per line. Must be positive and finite when line wrapping is enabled.
+    auto setLineLength(unit::CpCount lineLength) -> BaseNFormat &;
     /// Get the separator inserted between encoded lines.
     [[nodiscard]] auto lineSeparator() const noexcept -> const U32String & { return _lineSeparator; }
     /// Set the separator inserted between encoded lines.
-    /// @throws err::ParameterError If the resulting format is invalid.
+    /// @param lineSeparator The separator between lines. When wrapping is enabled, must be non-empty and consist only
+    /// of accepted whitespace characters.
     auto setLineSeparator(U32String lineSeparator) -> BaseNFormat &;
 
 public: // encoding tools
@@ -109,7 +114,7 @@ private:
         std::optional<Char> padding,
         CharSet whitespace,
         BaseNFormatFlags flags,
-        unit::CpLength lineLength,
+        unit::CpCount lineLength,
         U32String lineSeparator);
     /// Validate base-N formatting options.
     void validate() const;
@@ -121,7 +126,7 @@ private:
     std::optional<Char> _padding;
     CharSet _whitespace;
     BaseNFormatFlags _flags;
-    unit::CpLength _lineLength{64U};
+    unit::CpCount _lineLength{64U};
     U32String _lineSeparator;
     std::array<int8_t, 128> _asciiLookup{};
 };

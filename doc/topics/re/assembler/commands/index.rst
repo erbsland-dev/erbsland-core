@@ -1,6 +1,6 @@
-********
-Commands
-********
+*************************************
+Regular-Expression Assembler Commands
+*************************************
 
 This section describes the syntax of each assembler command in detail.
 

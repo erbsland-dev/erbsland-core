@@ -5,7 +5,8 @@
 #include "X509Certificate.hpp"
 #include "X509CertificateValidationFailureCategory.hpp"
 
-#include "../impl/X509ServerCertificateValidator_fwd.hpp"
+#include "../impl/system_trust/SystemTrustBackend_fwd.hpp"
+#include "../impl/X509TlsCertificateValidator_fwd.hpp"
 
 #include "../../text/String.hpp"
 #include "../../util/List.hpp"
@@ -16,9 +17,10 @@ namespace erbsland::cryptology {
 
 /// Structured context for one rejected X.509 server-certificate validation.
 /// @seedoc{/reference/cryptology/x509_certificates}
-/// @tested{X509ServerCertificatePolicyTest}
+/// @tested{X509TlsCertificatePolicyTest}
 class X509CertificateValidationFailure final {
-    friend class impl::X509ServerCertificateValidator;
+    friend class impl::X509TlsCertificateValidator;
+    friend class impl::SystemTrustBackend;
 
 public: // accessors
     /// Get the stable failure category.

@@ -5,6 +5,7 @@
 #include "TlsSignatureScheme_fwd.hpp"
 
 #include "../keys/PublicKey_fwd.hpp"
+#include "../keys/SigningPrivateKey_fwd.hpp"
 #include "../x509/X509AlgorithmIdentifier_fwd.hpp"
 
 #include "../../text/String_fwd.hpp"
@@ -24,19 +25,23 @@ namespace erbsland::cryptology {
 /// @tested{TlsSignatureSchemeTest TlsSignatureSchemeFullTest}
 class TlsSignatureScheme final {
     friend class PublicKey;
+    friend class SigningPrivateKey;
 
 public:
     /// The supported RFC 8446 SignatureScheme values.
     enum Value : uint16_t {
         RsaPkcs1Sha256 = 0x0401U,       ///< Certificate-only RSASSA-PKCS1-v1_5 with SHA-256.
         RsaPkcs1Sha384 = 0x0501U,       ///< Certificate-only RSASSA-PKCS1-v1_5 with SHA-384.
+        RsaPkcs1Sha512 = 0x0601U,       ///< Certificate-only RSASSA-PKCS1-v1_5 with SHA-512.
         EcdsaSecp256r1Sha256 = 0x0403U, ///< ECDSA with P-256 and SHA-256.
         EcdsaSecp384r1Sha384 = 0x0503U, ///< ECDSA with P-384 and SHA-384.
         RsaPssRsaeSha256 = 0x0804U,     ///< RSASSA-PSS/SHA-256 with an rsaEncryption public key.
         RsaPssRsaeSha384 = 0x0805U,     ///< RSASSA-PSS/SHA-384 with an rsaEncryption public key.
+        RsaPssRsaeSha512 = 0x0806U,     ///< RSASSA-PSS/SHA-512 with an rsaEncryption public key.
         Ed25519 = 0x0807U,              ///< Pure Ed25519.
         RsaPssPssSha256 = 0x0809U,      ///< RSASSA-PSS/SHA-256 with an id-RSASSA-PSS public key.
         RsaPssPssSha384 = 0x080aU,      ///< RSASSA-PSS/SHA-384 with an id-RSASSA-PSS public key.
+        RsaPssPssSha512 = 0x080bU,      ///< RSASSA-PSS/SHA-512 with an id-RSASSA-PSS public key.
     };
 
 public:

@@ -1,10 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ParserScenarioWorkload.hpp"
 
 #include "EmbeddedDocuments.hpp"
 #include "ParserWorkerWorkload.hpp"
+
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/String.hpp>
 
 #include <variant>
 

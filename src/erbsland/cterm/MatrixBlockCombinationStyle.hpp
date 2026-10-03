@@ -17,9 +17,9 @@ namespace erbsland::cterm {
 class MatrixBlockCombinationStyle : public BlockCombinationStyle {
 public:
     /// Create a new matrix-based combination style.
-    /// @param characters The supported Unicode characters in matrix index order.
-    /// @param resultMatrix The result matrix in row-major order using result indexes.
-    /// @throws err::ParameterError If the matrix size is invalid or the character count exceeds 255.
+    /// @param characters The supported Unicode characters in matrix index order. Must contain at most 255 characters.
+    /// @param resultMatrix The row-major result indexes. Must contain exactly the square of the character count in
+    /// entries.
     MatrixBlockCombinationStyle(const text::U32String &characters, std::span<const uint8_t> resultMatrix);
 
 public: // implement BlockCombinationStyle

@@ -5,11 +5,11 @@
 
 #include <erbsland/cterm/BlockStringEditor.hpp>
 #include <erbsland/cterm/Terminal.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/log/impl/ConsoleLogWriter.hpp>
-#include <erbsland/log/line/LogLine.hpp>
-#include <erbsland/log/LogEntry.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/Timestamp.hpp>
+#include <erbsland/LogEntry.hpp>
+#include <erbsland/LogLine.hpp>
+#include <erbsland/Timestamp.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>

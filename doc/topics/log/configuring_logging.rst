@@ -18,8 +18,8 @@ startup pattern where command-line options or an application file determine the 
 The last section draws a clear boundary between the manager owned by
 :cpp:class:`Application <erbsland::core::Application>` and a standalone manager whose lifetime you control yourself.
 
-Install an Application-Owned Policy During Initialization
-=========================================================
+Logging Configuration during Application Initialization
+=======================================================
 
 An :cpp:class:`Application <erbsland::core::Application>` already owns its
 :cpp:class:`LogManager <erbsland::log::LogManager>`. You do not construct another manager for normal application
@@ -36,7 +36,7 @@ Components created afterwards can receive the configured manager and retain thei
 .. erbsland-demo::
     :source: log/LoggingSetups/ApplicationConfiguration.cpp
     :exec: log/logging_setups application-configuration
-    :source-sha256: f8f7aec29202f9dfb8fafe0799c82a98f090e35a1808675ded63422d11606608
+    :sha256: eb3dfcb7efde4cd8084a543e240330af0b504ee0686d2a2e3d343f73d89db1d0
 
 .. code-block:: cpp
 
@@ -80,17 +80,19 @@ Components created afterwards can receive the configured manager and retain thei
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[90mTRC [␛[95mguild/routes␛[90m] Compared the ridge and lake routes.
-    ␛[97mINF [␛[95mguild/routes␛[97m] Selected the ridge route for 'Revontuli'.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTRC [guild/routes] Compared the ridge and lake routes.
+        INF [guild/routes] Selected the ridge route for 'Revontuli'.␛[0m
 
 .. erbsland-demo-end::
 
 The :cpp:class:`LogConfiguration <erbsland::log::LogConfiguration>` in this example is the whole policy, not just a
 collection of optional changes.
-Its line format defines the shared representation of entries.
+Its line format defines the default representation for routes without a custom format.
 The enabled trace section makes route-search diagnostics available, and the console writer route gives accepted entries
 an actual destination.
 Without a writer route the manager can accept entries, but there is nowhere to deliver them.
@@ -101,8 +103,8 @@ lifecycle handles an Erbsland Core exception.
 Application code is responsible for stopping its own producer work through the normal lifecycle; manager shutdown
 remains an application service.
 
-Treat Configuration as One Complete Policy
-==========================================
+Replacing the Complete Logging Configuration
+============================================
 
 Sometimes the final policy is not the one installed initially.
 An application may load an operator-selected profile, enable a diagnostic mode for a controlled run, or replace a
@@ -121,14 +123,14 @@ persistent application support and survives ordinary configuration replacement.
 .. erbsland-demo::
     :source: log/LoggingTopics/ConfigurationReplacement.cpp
     :exec: log/logging_topics --demo ConfigurationReplacement
-    :source-sha256: 879d34b834bdea086f1cb1c34446b10b43f217880fc4cdcd94dc17502b4579b7
+    :sha256: 524201f0ff4361b1e72c3cdb1a5578286454501324b7e5228630c1e262e14b69
 
 .. code-block:: cpp
 
     /// Replace the active logging policy with one complete configuration snapshot.
     ///
     /// Existing streams remain valid. `setConfiguration()` returns only after their cached trace flags reflect the new
-    /// trace sections and routes, so guarded diagnostic preparation can use the new policy immediately.
+    /// enabled trace sections, so guarded diagnostic preparation can use the new policy immediately.
     void configurationReplacement() {
         auto &manager = el::application().log();
         const auto log = manager.createStream("guild/routes"_el, el::LogTraceSection{"route-search"_el});
@@ -146,18 +148,20 @@ persistent application support and survives ordinary configuration replacement.
         log->trace("Prepared the detailed ridge-route comparison."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Trace before replacement: no
-    Trace after replacement: yes
-    ␛[90mTRC [␛[95mguild/routes␛[90m] Prepared the detailed ridge-route comparison.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTrace before replacement: no
+        Trace after replacement: yes
+        ␛[90;49mTRC [␛[95;49mguild/routes␛[90;49m] Prepared the detailed ridge-route comparison.␛[0m
 
 .. erbsland-demo-end::
 
 The stream is created before replacement and remains the same object afterwards.
 The first check reports that its trace section is inactive.
-The replacement enables that section and supplies a trace-capable route; when ``setConfiguration()`` returns, the
+The replacement enables that section and supplies a route for delivery; when ``setConfiguration()`` returns, the
 stream's cached :cpp:func:`traceEnabled() <erbsland::log::LogStream::traceEnabled>` flag has already been refreshed.
 Expensive diagnostic preparation can therefore consult the new policy immediately.
 
@@ -167,8 +171,8 @@ This well-defined handover makes startup and explicit reconfiguration boundaries
 a per-message switch.
 Frequent replacement creates coordination work and makes an operational log much harder to interpret.
 
-Retain Startup Messages Until the Policy Is Known
-=================================================
+Buffering Startup Messages with pause() and resume()
+====================================================
 
 Many applications cannot build their final logging policy in ``initialize()``.
 The configuration path may come from a command-line option, and the selected application file may contain writer
@@ -186,11 +190,11 @@ After command-line parsing and configuration loading have succeeded, install the
 .. erbsland-demo::
     :source: log/LoggingSetups/DeferredConfiguration.cpp
     :exec: log/logging_setups deferred-configuration
-    :source-sha256: c6a4746c618ab70f4b82196f9c54595e8d5f9986c6368b2805f871da031c6fe5
+    :sha256: 50090e8402d1fb503c84e6a54802a35c95343908db4ce388c3bd4e4a7c289ad0
 
 .. code-block:: cpp
 
-    /// Retain startup entries until command-line parsing has selected the final logging policy.
+    /// Retain startup entries until the final logging policy is installed after command-line parsing.
     ///
     /// Pausing is the first initialization action, before any startup message is written. After options and configuration
     /// are available, the application installs the complete snapshot and resumes delivery through the new writer route.
@@ -198,15 +202,13 @@ After command-line parsing and configuration loading have succeeded, install the
     public:
         using Application::Application;
 
-    protected:
+    protected: // implement Application
         void initialize() override {
             log().pause();
             logStream()->info("Application initialization started."_el);
         }
 
-        void parseCommandLine() override {
-            Application::parseCommandLine();
-
+        void handleCommandLineOptions([[maybe_unused]] const el::OptionValuesPtr &values) override {
             auto lineFormat = el::LogLineFormat{};
             lineFormat.setPattern("configured: {level} - {message}"_el);
             auto configuration = el::LogConfiguration{};
@@ -228,12 +230,14 @@ After command-line parsing and configuration loading have succeeded, install the
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mconfigured: INF - Application initialization started.
-    configured: INF - Logging configuration loaded.
-    configured: INF - Explorer registry opened.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mconfigured: INF - Application initialization started.
+        configured: INF - Logging configuration loaded.
+        configured: INF - Explorer registry opened.␛[0m
 
 .. erbsland-demo-end::
 
@@ -249,8 +253,8 @@ final configuration is active.
 The mechanism protects a modest sequence of important startup messages; it is not an unbounded memory buffer or a way to
 freeze writer activity indefinitely.
 
-Shut Down Only a Standalone Manager Explicitly
-==============================================
+Application-Owned and Standalone Log Manager Shutdown
+=====================================================
 
 Code using :cpp:class:`Application <erbsland::core::Application>` normally never calls
 :cpp:func:`shutdown() <erbsland::log::LogManager::shutdown>`. The application performs that step automatically during
@@ -266,7 +270,7 @@ and releases writer resources before their surrounding context disappears.
 .. erbsland-demo::
     :source: log/LoggingTopics/ManualConfiguration.cpp
     :exec: log/logging_topics --demo ManualConfiguration
-    :source-sha256: 89b197547b4d52da66a0a7062af06f3bc068979e8c143e4c4b1a1ca781e9dc4a
+    :sha256: 6cb4b6eb61fada894ec27aaf82a5b703b99223b6dd5f946fd183d289b4083556
 
 .. code-block:: cpp
 
@@ -282,11 +286,12 @@ and releases writer resources before their surrounding context disappears.
         configuration.setLineFormat(std::move(lineFormat));
         configuration.addWriter(
             el::LogWriter::createForConsole(el::application().terminal()),
-            el::LogWriterFilter{el::LogLevels{
-                el::LogLevel::Information,
-                el::LogLevel::Warning,
-                el::LogLevel::Error,
-            }});
+            el::LogWriterFilter{}.setAcceptedLevels(
+                el::LogLevels{
+                    el::LogLevel::Information,
+                    el::LogLevel::Warning,
+                    el::LogLevel::Error,
+                }));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -298,11 +303,13 @@ and releases writer resources before their surrounding context disappears.
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mguild/archive␛[97m] Map collection 'Järvien maa' was archived.
-    ␛[93mWRN [␛[95mguild/archive␛[93m] One map sheet still needs a waterproof cover.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mINF [␛[95;49mguild/archive␛[97;49m] Map collection 'Järvien maa' was archived.
+        ␛[93;49mWRN [␛[95;49mguild/archive␛[93;49m] One map sheet still needs a waterproof cover.␛[0m
 
 .. erbsland-demo-end::
 

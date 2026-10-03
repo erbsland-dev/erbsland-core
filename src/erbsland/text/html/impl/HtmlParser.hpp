@@ -114,8 +114,6 @@ private:
 
     /// Collapse runs of whitespace and report whether the input contained only whitespace.
     [[nodiscard]] static auto normalizeWhitespace(const String &text, bool &whitespaceOnly) -> String;
-    /// Convert ASCII letters in `text` to lowercase.
-    [[nodiscard]] static auto toLowerAscii(const String &text) -> String;
     /// Find metadata for `tagName`.
     [[nodiscard]] static auto findTagInfo(const String &tagName) -> const TagInfo *;
     /// Access the parser's known HTML tag metadata.

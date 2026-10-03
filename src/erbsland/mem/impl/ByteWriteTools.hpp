@@ -8,8 +8,8 @@
 #include "../ByteIntegerAccess.hpp"
 #include "../Endianness.hpp"
 
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteRange.hpp"
 
 #include <concepts>
@@ -32,6 +32,7 @@ public: // indexed write
         }
     }
     /// Set a byte or throw for an invalid index.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     constexpr void setOrThrow(const unit::ByteIndex index, const Byte value) {
         if (!index.isValid() || index.toSizeT() >= _data.size()) {
             throwOutOfRange("Byte write position out of range");
@@ -45,6 +46,7 @@ public: // indexed write
         }
     }
     /// XOR a byte or throw for an invalid index.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     constexpr void xorAtOrThrow(const unit::ByteIndex index, const Byte value) {
         if (!index.isValid() || index.toSizeT() >= _data.size()) {
             throwOutOfRange("Byte write position out of range");
@@ -61,6 +63,7 @@ public: // integer write
         return mem::setInteger(_data, index, value, endianness);
     }
     /// Store a native integer or throw for an invalid range.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     constexpr void setIntegerOrThrow(

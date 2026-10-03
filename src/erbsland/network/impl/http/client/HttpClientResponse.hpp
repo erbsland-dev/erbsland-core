@@ -9,9 +9,11 @@
 
 #include "../codec/Http1Transaction_fwd.hpp"
 
+#include "../../../../event/impl/EventContinuation.hpp"
 #include "../../../../path/Path.hpp"
 #include "../../../../stream/ByteOutputStream_fwd.hpp"
 #include "../../../../stream/TempByteOutputStream_fwd.hpp"
+#include "../../../../util/impl/worker_executor/WorkerExecutor.hpp"
 #include "../../../http/HttpMediaType.hpp"
 #include "../../../http_client/HttpClientResponse.hpp"
 #include "../../../source/NetworkErrorReason.hpp"
@@ -47,7 +49,7 @@ public:
         bool hasBody,
         Url effectiveUrl,
         unit::ItemCount redirectCount,
-        std::optional<unit::ByteLength> expectedLength);
+        std::optional<unit::ByteCount> expectedLength);
     ~HttpClientResponse() override;
 
 public: // implement network::HttpClientResponse
@@ -56,9 +58,9 @@ public: // implement network::HttpClientResponse
     [[nodiscard]] auto effectiveUrl() const noexcept -> const Url & override;
     [[nodiscard]] auto redirectCount() const noexcept -> unit::ItemCount override;
     void streamBody() override;
-    void aggregateBody(unit::ByteLength maximumLength) override;
-    void aggregateText(unit::ByteLength maximumLength) override;
-    void aggregateJson(unit::ByteLength maximumLength) override;
+    void aggregateBody(unit::ByteCount maximumLength) override;
+    void aggregateText(unit::ByteCount maximumLength) override;
+    void aggregateJson(unit::ByteCount maximumLength) override;
     void writeBodyTo(stream::ByteOutputStreamPtr output) override;
     void writeBodyTo(path::Path destination) override;
     void rejectBody() override;
@@ -98,7 +100,7 @@ private:
     [[nodiscard]] static auto matchesContentTypePattern(const text::String &pattern, const HttpMediaType &mediaType)
         -> bool;
     /// Report a local response failure through the request.
-    void fail(NetworkErrorReason reason, text::String description);
+    void fail(NetworkErrorReason reason, text::String description, std::exception_ptr cause = {});
     /// Require a body awaiting policy selection.
     void verifyAwaitingPolicy() const;
     /// Emit response finalization exactly once.
@@ -112,6 +114,8 @@ private:
     Url _effectiveUrl;                                           ///< Final effective request URL.
     unit::ItemCount _redirectCount;                              ///< Followed redirect count.
     Http1TransactionPtr _transaction;                            ///< Active internal transaction.
+    event::impl::EventContinuationPtr _sinkCompletion;           ///< Reserved sink-completion capacity.
+    util::impl::WorkerReservation _sinkWork;                     ///< Admission retained until sink finalization.
     stream::ByteOutputStreamPtr _output;                         ///< Optional sink.
     stream::TempByteOutputStreamPtr _temporaryOutput;            ///< Atomic path-download file.
     std::optional<path::Path> _destination;                      ///< Atomic path destination.
@@ -133,8 +137,8 @@ private:
     bool _sinkPending{};                                         ///< Worker operation guard.
     bool _inputCompleted{};                                      ///< Transaction input completed.
     bool _final{};                                               ///< Finalization guard.
-    unit::ByteLength _committedLength;                           ///< Successfully written sink bytes.
-    std::optional<unit::ByteLength> _expectedLength;             ///< Content-Length when known.
+    unit::ByteCount _committedLength;                            ///< Successfully written sink bytes.
+    std::optional<unit::ByteCount> _expectedLength;              ///< Content-Length when known.
 };
 
 }

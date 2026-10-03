@@ -51,7 +51,7 @@ each time.
 .. erbsland-demo::
     :source: text/HtmlFragments/RenderFragment.cpp
     :exec: text/html_fragments --demo RenderFragment
-    :source-sha256: e539c031f2c7c70b16706c6dd5cda57cc100225dc147db580bc1b6a443401243
+    :sha256: 7ae39c457537e9ae79fa272b255b2174112dfcb4eebd68fbcffa844f181f883b
 
 .. code-block:: cpp
 
@@ -74,20 +74,22 @@ each time.
             *el::application().terminal(), document);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Simple style:
-    ␛[1;96;40mYankı
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[22;37mA ␛[1mbright␛[22m patch with ␛[3msoft␛[23m echoes & a long tail.
+        ␛[0mSimple style:
+        ␛[96;40m␛[1mYankı
 
-    ␛[39;49mStyled style:
+        ␛[37;40m␛[22mA ␛[1mbright␛[22m patch with ␛[3msoft␛[23m echoes & a long tail.
+
+        ␛[39;49mStyled style:
 
 
-       ␛[1;36;40m-◆ ␛[96mYankı␛[36m ◆-␛[90m──────────────────────────────────────────────────────────────────────────
+           ␛[36;40m␛[1m-◆ ␛[96;40mYankı␛[36;40m ◆-␛[90;40m──────────────────────────────────────────────────────────────────────────
 
-          ␛[22;37mA ␛[1mbright␛[22m patch with ␛[3msoft␛[23m echoes & a long tail.␛[0m
+              ␛[37;40m␛[22mA ␛[1mbright␛[22m patch with ␛[3msoft␛[23m echoes & a long tail.␛[0m
 
 .. erbsland-demo-end::
 
@@ -99,8 +101,8 @@ HTML input.
 The predefined ``defaultSimple()`` and ``defaultStyled()`` styles give you two starting points.
 You can also provide a custom style, or call ``document.toString()`` when plain text is all you need.
 
-When the Markup Is Imperfect
-============================
+Malformed and Unsupported HTML
+==============================
 
 For user-facing fragments, ``parse()`` is usually the simplest choice.
 It returns the best document the parser can produce, even when it has to recover from damaged markup.

@@ -4,6 +4,13 @@
 #include "SharedTools.hpp"
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringSide.hpp>
+#include <erbsland/UnicodeCategoryGroup.hpp>
 
 namespace demo {
 

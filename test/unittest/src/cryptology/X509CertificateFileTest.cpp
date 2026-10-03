@@ -5,17 +5,17 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/x509/X509Certificate.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/TempDirectory.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/TempDirectory.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/X509Certificate.hpp>
+#include <erbsland/X509CertificateBundle.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -56,6 +56,6 @@ public:
         badPemPath.content().writeDataOrThrow(certificate.toDer());
         REQUIRE_THROWS_AS(el::err::ParseError, X509Certificate::fromFileOrThrow(badPemPath));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, certificate.writeToFile(directory->path() / "certificate.unknown"_el));
+            el::err::ParameterFailure, certificate.writeToFile(directory->path() / "certificate.unknown"_el));
     }
 };

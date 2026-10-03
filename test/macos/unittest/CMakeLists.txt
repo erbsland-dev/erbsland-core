@@ -37,10 +37,6 @@ add_subdirectory(
 
 add_executable(erbsland-core-macos-unittest MACOSX_BUNDLE)
 erbsland_set_required_compiler_options(erbsland-core-macos-unittest)
-target_sources(erbsland-core-macos-unittest PRIVATE
-        MacosProtectedDataTest.cpp
-        main.cpp
-)
 target_link_libraries(erbsland-core-macos-unittest PRIVATE erbsland::core)
 target_include_directories(erbsland-core-macos-unittest PRIVATE "${ERBSLAND_CORE_ROOT}/src")
 set_target_properties(erbsland-core-macos-unittest PROPERTIES
@@ -50,6 +46,8 @@ set_target_properties(erbsland-core-macos-unittest PROPERTIES
         XCODE_GENERATE_SCHEME TRUE
         XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "${ERBSLAND_MACOS_BUNDLE_IDENTIFIER}"
 )
+
+add_subdirectory(src)
 
 erbsland_unittest(TARGET erbsland-core-macos-unittest)
 

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "attribute/Attribute_fwd.hpp"
+
 #include "../Constraint_fwd.hpp"
 #include "../DependencyMode.hpp"
 #include "../RuleType.hpp"
@@ -12,12 +14,14 @@
 #include "../../NamePath.hpp"
 #include "../../Value_fwd.hpp"
 
+#include <memory>
 #include <vector>
 
 namespace erbsland::conf::vr::builder {
 
 /// Stable mutation interface used while a validation rule is being built.
-/// Instances are owned by `RulesBuilder`; attributes may only modify the rule passed to `Attribute::apply()`.
+/// Instances are owned by `RulesBuilder`; attributes may only modify the rule passed to `Attribute::apply()`, including
+/// queuing its entry configuration.
 /// @tested{VrBuilderApiTest VrManualConstructionTest}
 class RuleDefinition {
 public:
@@ -32,6 +36,15 @@ public: // properties
     /// Set the configured rule type.
     /// @param type The new rule type.
     virtual void setType(RuleType type) = 0;
+    /// Select the scalar type of an implicit entry rule for a value list.
+    /// @param type A scalar rule type, including `RuleType::Value`.
+    /// @throws ConfError (Validation) If this is not a value list, the type is not scalar, or an entry type is set
+    /// twice.
+    virtual void setEntryType(RuleType type) = 0;
+    /// Queue owned attributes for the implicit scalar entry, applied after all parent attributes.
+    /// @param attributes Entry attributes in application order; all pointers must be non-null.
+    /// @throws ConfError (Validation) If this rule is not a value list or EntryType is missing from this declaration.
+    virtual void addEntryAttributes(std::vector<std::shared_ptr<const Attribute>> attributes) = 0;
     /// Set the user-facing title.
     /// @param title The new title.
     virtual void setTitle(text::String title) = 0;

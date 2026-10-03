@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/network/Network.hpp>
-#include <erbsland/network/source/ConnectionCloseContext.hpp>
-#include <erbsland/network/source/NetworkErrorContext.hpp>
-#include <erbsland/network/tcp/TcpConnection.hpp>
-#include <erbsland/network/tcp/TcpConnectionRequest.hpp>
-#include <erbsland/network/tcp/TcpListener.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimeUnitTags.hpp>
+#include <erbsland/ConnectionCloseContext.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/TcpConnection.hpp>
+#include <erbsland/TcpConnectionRequest.hpp>
+#include <erbsland/TcpListener.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeUnitTags.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>
@@ -106,7 +106,7 @@ private:
         auto serverFinal = false;
         auto clientOrigin = std::optional<ConnectionCloseOrigin>{};
         auto serverOrigin = std::optional<ConnectionCloseOrigin>{};
-        const auto payload = el::mem::ByteBlock{el::unit::ByteLength{32U}, el::mem::Byte{0x5aU}};
+        const auto payload = el::mem::ByteBlock{el::unit::ByteCount{32U}, el::mem::Byte{0x5aU}};
 
         loop->invoke([&]() -> void {
             auto &network = loop->get<Network>();

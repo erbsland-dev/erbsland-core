@@ -326,9 +326,9 @@ void BlockStringEditor::replace(BlockRange range, const Block replacement) noexc
         return;
     }
     if (range.length().isOne() && !replacement.isEmpty()) { // fast path.
-        if (this->at(range.index()) != replacement) {
+        if (this->at(range.beginIndex()) != replacement) {
             detach();
-            (*this)[range.index()] = replacement;
+            (*this)[range.beginIndex()] = replacement;
         }
         return;
     }
@@ -336,11 +336,11 @@ void BlockStringEditor::replace(BlockRange range, const Block replacement) noexc
         remove(range);
         return;
     }
-    remove(BlockRange{range.index() + BlockCount::one(), range.length() - BlockCount::one()});
-    if (at(range.index()) != replacement) {
+    remove(BlockRange{range.beginIndex() + BlockCount::one(), range.length() - BlockCount::one()});
+    if (at(range.beginIndex()) != replacement) {
         detach();
         _data->invalidateDisplayWidth();
-        _data->chars()[range.index().toSizeT()] = replacement;
+        _data->chars()[range.beginIndex().toSizeT()] = replacement;
     }
 }
 
@@ -354,7 +354,7 @@ void BlockStringEditor::replace(BlockRange range, const BlockString &replacement
         return;
     }
     auto replacementChars = std::span(replacement.cbegin(), replacement.cend());
-    const auto start = range.index().toSizeT();
+    const auto start = range.beginIndex().toSizeT();
     const auto rangeLength = range.length().toSizeT();
     const auto rangeEnd = range.endIndex().toSizeT();
     if (rangeLength == replacementChars.size()) { // fast path.
@@ -406,13 +406,13 @@ void BlockStringEditor::remove(BlockRange range) noexcept {
         return;
     }
     if (range.endIndex() >= BlockIndex::end(length())) { // fast path, string only needs trimming at the end.
-        _range.setLength(BlockCount::fromSizeT(range.index().toSizeT()));
+        _range.setLength(BlockCount::fromSizeT(range.beginIndex().toSizeT()));
         return;
     }
     detach();
     using Diff = BlockStringData::Storage::difference_type;
     _data->chars().erase(
-        _data->chars().begin() + static_cast<Diff>(range.index().toSizeT()),
+        _data->chars().begin() + static_cast<Diff>(range.beginIndex().toSizeT()),
         _data->chars().begin() + static_cast<Diff>(range.endIndex().toSizeT()));
     _data->invalidateDisplayWidth();
     syncRangeWithStorage();

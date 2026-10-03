@@ -18,6 +18,9 @@ Introduction
 For parsing, construction, navigation, serialization, and reference behavior, see
 :doc:`/topics/data/reading_and_writing_xml`.
 
+``textContentOrThrow()`` reports unresolved entity references with ``NotFoundError``.
+``textContent()`` returns no value for the same condition.
+
 Interface
 =========
 

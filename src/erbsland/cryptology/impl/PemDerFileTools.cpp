@@ -4,7 +4,7 @@
 
 #include "PemCodec.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../path/PathAccessProfile.hpp"
@@ -20,33 +20,37 @@
 #include "../../text/StringBomMode.hpp"
 #include "../../text/StringDecoder.hpp"
 #include "../../text/StringEncoding.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <array>
 #include <utility>
 
 namespace erbsland::cryptology::impl {
 
+using namespace err;
+using namespace mem;
+using namespace path;
+using namespace text;
 using namespace text::literals;
 
-PemDerFileTools::PemDerFileTools(path::Path path, const Artifact artifact, const bool sensitive) noexcept :
+PemDerFileTools::PemDerFileTools(Path path, const Artifact artifact, const bool sensitive) noexcept :
     _path{std::move(path)}, _artifact{artifact}, _sensitive{sensitive} {
 }
 
-auto PemDerFileTools::read() const -> mem::ByteBlock {
-    auto options = path::PathReadDataOptions{};
-    options.setMaximumByteLength(unit::ByteLength{PemCodec::cMaximumBundleTextLength});
-    return path::PathContent{_path}.readDataOrThrow(options);
+auto PemDerFileTools::read() const -> ByteBlock {
+    auto options = PathReadDataOptions{};
+    options.setMaximumByteLength(unit::ByteCount{PemCodec::cMaximumBundleTextLength});
+    return PathContent{_path}.readDataOrThrow(options);
 }
 
-auto PemDerFileTools::inputFormat(const mem::ByteBlock &data, const PemDerFormat requested) const -> PemDerFormat {
+auto PemDerFileTools::inputFormat(const ByteBlock &data, const PemDerFormat requested) const -> PemDerFormat {
     if (requested != PemDerFormat::Automatic) {
         return requested;
     }
     const auto suffix = suffixFormat();
     if (suffix != PemDerFormat::Automatic) {
         if ((suffix == PemDerFormat::Pem) != looksLikePem(data)) {
-            throw err::ParseError{"The artifact content does not match the format selected by its suffix."_el};
+            throw ParseError{"The artifact content does not match the format selected by its suffix."_el};
         }
         return suffix;
     }
@@ -59,43 +63,42 @@ auto PemDerFileTools::outputFormat(const PemDerFormat requested) const -> PemDer
     }
     const auto result = suffixFormat();
     if (result == PemDerFormat::Automatic) {
-        throw err::ParameterError{"Automatic output requires a recognized artifact suffix."_el, "path"_el};
+        throw ParameterFailure{"Automatic output requires a recognized artifact suffix."_el, "path"_el};
     }
     return result;
 }
 
-auto PemDerFileTools::toPemText(const mem::ByteBlock &data) -> text::String {
+auto PemDerFileTools::toPemText(const ByteBlock &data) -> String {
     if (!data.isEmpty() && data.span().size() >= 3U && data.span()[0U].toUInt8() == 0xefU &&
         data.span()[1U].toUInt8() == 0xbbU && data.span()[2U].toUInt8() == 0xbfU) {
-        throw err::ParseError{"PEM source must be BOM-free valid UTF-8."_el};
+        throw ParseError{"PEM source must be BOM-free valid UTF-8."_el};
     }
     try {
-        return text::StringDecoder{data}.decode(
-            text::StringEncoding::Utf8, text::StringBomMode::Reject, text::EncodingMode::Strict);
-    } catch (const text::EncodingError &) {
-        throw err::ParseError{"PEM source must be BOM-free valid UTF-8."_el};
+        return StringDecoder{data}.decode(StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict);
+    } catch (const EncodingError &) {
+        throw ParseError{"PEM source must be BOM-free valid UTF-8."_el};
     }
 }
 
-void PemDerFileTools::writePem(const text::String &text) const {
-    auto options = path::PathWriteTextOptions{text::StringEncoding::Utf8};
-    options.setBomMode(text::StringBomMode::Reject);
+void PemDerFileTools::writePem(const String &text) const {
+    auto options = PathWriteTextOptions{StringEncoding::Utf8};
+    options.setBomMode(StringBomMode::Reject);
     if (_sensitive) {
-        options.setAccessProfile(path::PathAccessProfile::UserOnly);
+        options.setAccessProfile(PathAccessProfile::UserOnly);
     }
-    path::PathContent{_path}.writeTextOrThrow(text, options);
+    PathContent{_path}.writeTextOrThrow(text, options);
 }
 
-void PemDerFileTools::writeDer(const mem::ByteBlock &data) const {
-    auto options = path::PathWriteDataOptions{};
+void PemDerFileTools::writeDer(const ByteBlock &data) const {
+    auto options = PathWriteDataOptions{};
     if (_sensitive) {
-        options.setAccessProfile(path::PathAccessProfile::UserOnly);
+        options.setAccessProfile(PathAccessProfile::UserOnly);
     }
-    path::PathContent{_path}.writeDataOrThrow(data, options);
+    PathContent{_path}.writeDataOrThrow(data, options);
 }
 
-auto PemDerFileTools::suffixIs(const text::String &suffix) const noexcept -> bool {
-    return _path.suffix().compare(suffix, text::Char::compareAsciiFolded) == std::strong_ordering::equal;
+auto PemDerFileTools::suffixIs(const String &suffix) const noexcept -> bool {
+    return _path.suffix().compare(suffix, Char::compareAsciiFolded) == std::strong_ordering::equal;
 }
 
 auto PemDerFileTools::suffixFormat() const noexcept -> PemDerFormat {
@@ -139,7 +142,7 @@ auto PemDerFileTools::suffixFormat() const noexcept -> PemDerFormat {
     return PemDerFormat::Automatic;
 }
 
-auto PemDerFileTools::looksLikePem(const mem::ByteBlock &data) noexcept -> bool {
+auto PemDerFileTools::looksLikePem(const ByteBlock &data) noexcept -> bool {
     constexpr auto cBoundary = std::array<uint8_t, 11U>{'-', '-', '-', '-', '-', 'B', 'E', 'G', 'I', 'N', ' '};
     auto offset = std::size_t{};
     while (offset < data.span().size()) {

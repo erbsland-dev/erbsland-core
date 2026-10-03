@@ -151,7 +151,7 @@ public:
         REQUIRE_THROWS_AS(ConfError, name = Name::createRegular(""_el));
         // names must not exceed maximum length.
         const auto longName = el::text::StringEditor::fromCharacter(
-            el::text::Char{U'a'}, el::unit::CpLength{el::conf::impl::limits::maxNameLength + 1});
+            el::text::Char{U'a'}, el::unit::CpCount{el::conf::impl::limits::maxNameLength + 1});
         REQUIRE_THROWS_AS(ConfError, name = Name::createRegular(longName));
         // names must not start with space or underscore.
         REQUIRE_THROWS_AS(ConfError, name = Name::createRegular("_name"_el));
@@ -190,7 +190,7 @@ public:
         // names must not exceed the maximum length.
         const auto longName = el::text::StringEditor::fromCharacter(
             el::text::Char{U'a'},
-            el::unit::CpLength{el::conf::impl::limits::maxLineLength + 20}); // +20 because of detection tolerance.
+            el::unit::CpCount{el::conf::impl::limits::maxLineLength + 20}); // +20 because of detection tolerance.
         REQUIRE_THROWS_AS(ConfError, name = Name::createText(longName));
         // Illegal code-points: zero is not allowed
         REQUIRE_THROWS_AS(

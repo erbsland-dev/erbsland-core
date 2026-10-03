@@ -129,15 +129,6 @@ auto HtmlParser::normalizeWhitespace(const String &text, bool &whitespaceOnly) -
     return result;
 }
 
-auto HtmlParser::toLowerAscii(const String &text) -> String {
-    auto reader = StringCharReader{text};
-    auto result = StringEditor{};
-    while (!reader.isAtEnd()) {
-        result.append(reader.read().toAsciiLowercase());
-    }
-    return result;
-}
-
 auto HtmlParser::findTagInfo(const String &tagName) -> const TagInfo * {
     for (const auto &[name, tagInfo] : tagInfoMap()) {
         if (name == tagName) {

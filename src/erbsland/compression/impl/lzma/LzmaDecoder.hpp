@@ -43,10 +43,12 @@ public:
         CodecOutput::Write output);
 
     /// Decode and validate the complete payload.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     void decode();
 
 private:
     /// Append one byte while enforcing the output limit.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     void append(uint8_t value);
     /// Decode one literal byte in the current state.
     void decodeLiteral();
@@ -63,6 +65,7 @@ private:
     /// Decode a reverse probability tree stored without its unused root entry.
     [[nodiscard]] auto decodeCompactReverseTree(std::span<uint16_t> probabilities, unsigned bitCount) -> uint32_t;
     /// Copy a match from the active repeated distance.
+    /// @throws err::OutOfRangeError If the match exceeds the configured output limit.
     void copyMatch(uint32_t length);
 
 private:

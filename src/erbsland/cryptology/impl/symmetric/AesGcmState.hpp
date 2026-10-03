@@ -65,7 +65,7 @@ private:
     Block _initialCounter;                   ///< J0 = nonce || 0x00000001.
     Block _counter;                          ///< Current inc32 counter value.
     Block _keyStream;                        ///< Current encrypted counter block.
-    std::size_t _keyStreamOffset{16U};       ///< Next byte in `_keyStream`.
+    unit::ByteIndex _keyStreamOffset{16U};   ///< Next byte in `_keyStream`.
     uint64_t _authenticatedDataLength{};     ///< Accepted AAD bytes.
     uint64_t _payloadLength{};               ///< Accepted payload bytes.
 };

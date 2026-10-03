@@ -1,9 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/all.hpp>
+#include <erbsland/all_unit.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>
@@ -14,32 +16,19 @@
 #include <type_traits>
 
 using namespace el::unit;
-
 using namespace el::text::literals;
 
-TESTED_TARGETS(
-    VersionPart VersionUnit MajorUnit MinorUnit RevisionUnit BuildNumberUnit Major Minor Revision BuildNumber Version
-        VersionRange)
+TESTED_TARGETS(VersionPart VersionComponent Major Minor Revision BuildNumber Version VersionRange)
 class VersionTest final : public el::UnitTest {
 public:
     void testCompileTimeContracts() {
 
-        static_assert(std::derived_from<VersionUnit, IntegerUnit>);
-        static_assert(std::derived_from<MajorUnit, VersionUnit>);
-        static_assert(std::derived_from<MinorUnit, VersionUnit>);
-        static_assert(std::derived_from<RevisionUnit, VersionUnit>);
-        static_assert(std::derived_from<BuildNumberUnit, VersionUnit>);
-        static_assert(std::same_as<Major, IntegerUnitIndex<MajorUnit>>);
-        static_assert(std::same_as<Minor, IntegerUnitIndex<MinorUnit>>);
-        static_assert(std::same_as<Revision, IntegerUnitIndex<RevisionUnit>>);
-        static_assert(std::same_as<BuildNumber, IntegerUnitIndex<BuildNumberUnit>>);
         static_assert(std::same_as<typename Major::Value, uint16_t>);
-        static_assert(!Major::cHasNoIndex);
         static_assert(Major::cRawMaximum == std::numeric_limits<uint16_t>::max());
-        static_assert(MajorUnit::cPart == VersionPart::Major);
-        static_assert(MinorUnit::cPart == VersionPart::Minor);
-        static_assert(RevisionUnit::cPart == VersionPart::Revision);
-        static_assert(BuildNumberUnit::cPart == VersionPart::Build);
+        static_assert(Major::cPart == VersionPart::Major);
+        static_assert(Minor::cPart == VersionPart::Minor);
+        static_assert(Revision::cPart == VersionPart::Revision);
+        static_assert(BuildNumber::cPart == VersionPart::Build);
 
         static_assert(!std::equality_comparable_with<Major, Minor>);
         static_assert(!std::constructible_from<Version, Major, Major>);
@@ -51,11 +40,10 @@ public:
         static_assert(Major::one().isOne());
         static_assert(Major::minimum().isMinimum());
         static_assert(Major::maximum().isMaximum());
-        static_assert(!Major::maximum().isNoIndex());
         static_assert(Major::maximum().incremented().isMaximum());
         static_assert(Major::zero().decremented().isZero());
         static_assert(Major{42}.toRawValue() == 42U);
-        static_assert(Major{42}.toSizeT() == 42U);
+        // anti-pattern: allow unnecessary_unit_conversion -- Verify the native size conversion itself.
 
         static_assert(Version{}.toNumber() == 0U);
         static_assert(Version{1}.major() == Major{1});
@@ -89,7 +77,7 @@ public:
         static_assert(VersionRange::between(Version{2}, Version{1}).isEmpty());
     }
 
-    void testVersionUnitRuntimeBehavior() {
+    void testVersionComponentRuntimeBehavior() {
 
         auto major = Major{7};
         REQUIRE_EQUAL(major, Major{7});
@@ -272,5 +260,26 @@ private:
     void requireInvalidVersion(const el::text::String &text, VersionPart requiredPrecision = VersionPart::Major) {
         REQUIRE_FALSE(Version::fromString(text, requiredPrecision).has_value());
         REQUIRE_THROWS_AS(el::err::ParseError, Version::fromStringOrThrow(text, requiredPrecision));
+    }
+
+public:
+    void testComponentArithmeticAndFactories() {
+        REQUIRE_EQUAL(std::format("{}", Major{42}), "42");
+        REQUIRE_EQUAL(el::StringFormat{"{}"_el}.build(Major{42}), "42"_el);
+        static_assert(sizeof(Major) == 2 && sizeof(Version) == 8);
+        static_assert(Major{65535} == Major::maximum());
+        static_assert(Major{4} + 3U == Major{7});
+        static_assert(Minor{4} - 9U == Minor{});
+        static_assert(!std::constructible_from<Major, double>);
+        static_assert(!std::constructible_from<Major, bool>);
+        REQUIRE_EQUAL(Major::fromInteger(-1), Major{});
+        REQUIRE_EQUAL(Major::fromInteger(UINT64_MAX), Major::maximum());
+        REQUIRE_THROWS(Major::fromIntegerOrThrow(65536));
+        REQUIRE_THROWS(Major::fromIntegerOrThrow(-1));
+        REQUIRE_EQUAL(Major{4}.added(UINT64_MAX), Major::maximum());
+        REQUIRE_THROWS(Major{4}.addedOrThrow(UINT64_MAX));
+        REQUIRE_THROWS(Major{4}.subtractedOrThrow(5U));
+        REQUIRE_EQUAL(Version::fromNumber(UINT64_MAX), (Version{65535, 65535, 65535, 65535}));
+        REQUIRE_EQUAL(std::hash<Major>{}(Major{7}), std::hash<uint16_t>{}(7));
     }
 };

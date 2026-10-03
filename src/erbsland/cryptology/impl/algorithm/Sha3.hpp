@@ -4,7 +4,7 @@
 
 #include "Keccak.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../mem/ByteArray.hpp"
 #include "../../../mem/ByteSpan.hpp"
 #include "../../../mem/impl/SecureErase.hpp"
@@ -47,18 +47,18 @@ public:
     }
 
     /// Update the hash with more data.
+    /// Must not be called after the digest has been calculated.
     /// @param data A block of data.
-    /// @throws err::LogicError If data is added after the digest was calculated.
     void update(const ConstByteSpan data) {
         using namespace text::literals;
         if (_hasDigest) {
-            throw err::LogicError("Adding more data, via `update()` after calling `digest()` is not allowed."_el);
+            throw err::LogicFailure("Adding more data, via `update()` after calling `digest()` is not allowed."_el);
         }
         auto dataPosition = std::size_t{};
         while (dataPosition < data.size()) {
             const auto copyLength = std::min(tRateBytes - _bufferPosition.toSizeT(), data.size() - dataPosition);
             _buffer.overwrite(_bufferPosition, data.subspan(dataPosition, copyLength));
-            _bufferPosition.uncheckedAdvance(ByteLength::fromSizeT(copyLength));
+            _bufferPosition.uncheckedAdvance(ByteCount::fromSizeT(copyLength));
             dataPosition += copyLength;
             if (_bufferPosition == _buffer.endIndex()) {
                 absorbBlock();
@@ -85,13 +85,13 @@ private:
         _buffer.fill(ByteRange{_bufferPosition, _buffer.length() - _bufferPosition.distanceFromZero()}, Byte{});
         // Apply the padding.
         _buffer.xorAt(_bufferPosition, Byte{0x06U});
-        _buffer.xorAt(_buffer.endIndex().decremented(), Byte{0x80U});
+        _buffer.xorAt(_buffer.lastIndex(), Byte{0x80U});
         absorbBlock();
         // Every supported fixed digest fits into one rate block and consists of complete 64-bit lanes.
         auto digestIndex = ByteIndex::zero();
         for (const auto lane : std::span{_state}.first(tDigestBytes / sizeof(uint64_t))) {
             _digest.setIntegerOrThrow(digestIndex, lane);
-            digestIndex.uncheckedAdvance(ByteLength{sizeof(uint64_t)});
+            digestIndex.uncheckedAdvance(ByteCount{sizeof(uint64_t)});
         }
         _hasDigest = true;
     }
@@ -102,7 +102,7 @@ private:
         auto bufferIndex = ByteIndex::zero();
         for (auto &lane : std::span{_state}.first(tRateBytes / sizeof(uint64_t))) {
             lane ^= _buffer.template getInteger<uint64_t>(bufferIndex);
-            bufferIndex.uncheckedAdvance(ByteLength{sizeof(uint64_t)});
+            bufferIndex.uncheckedAdvance(ByteCount{sizeof(uint64_t)});
         }
         keccakF1600Permutation(_state);
         _bufferPosition = ByteIndex::zero();

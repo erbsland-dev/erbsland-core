@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/AnyString.hpp>
-#include <erbsland/text/AnyStringEditor.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/AnyString.hpp>
+#include <erbsland/AnyStringEditor.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -18,7 +18,7 @@
 
 using namespace el::text::literals;
 
-using el::unit::CpLength;
+using el::unit::CpCount;
 using namespace el::text;
 
 namespace th = erbsland::unittest::th;
@@ -36,13 +36,13 @@ public:
         const auto u32 = AnyString{U32String{u32Text}};
 
         REQUIRE_EQUAL(u8.kind().value(), StringKind::U8);
-        REQUIRE_EQUAL(u8.characterLength(), CpLength{2U});
+        REQUIRE_EQUAL(u8.characterLength(), CpCount{2U});
         REQUIRE(u8.isEncodingValid());
         REQUIRE_EQUAL(u16.kind().value(), StringKind::U16);
-        REQUIRE_EQUAL(u16.characterLength(), CpLength{2U});
+        REQUIRE_EQUAL(u16.characterLength(), CpCount{2U});
         REQUIRE(u16.isEncodingValid());
         REQUIRE_EQUAL(u32.kind().value(), StringKind::U32);
-        REQUIRE_EQUAL(u32.characterLength(), CpLength{2U});
+        REQUIRE_EQUAL(u32.characterLength(), CpCount{2U});
         REQUIRE(u32.isEncodingValid());
     }
 
@@ -61,11 +61,11 @@ public:
         const auto u16 = AnyStringEditor{U16StringEditor{std::u16string_view{u"β\n"}}};
         const auto u32 = AnyStringEditor{U32StringEditor{std::u32string_view{U"中!"}}};
 
-        REQUIRE_EQUAL(u8.characterLength(), CpLength{2U});
+        REQUIRE_EQUAL(u8.characterLength(), CpCount{2U});
         REQUIRE(u8.isEncodingValid());
-        REQUIRE_EQUAL(u16.characterLength(), CpLength{2U});
+        REQUIRE_EQUAL(u16.characterLength(), CpCount{2U});
         REQUIRE(u16.isEncodingValid());
-        REQUIRE_EQUAL(u32.characterLength(), CpLength{2U});
+        REQUIRE_EQUAL(u32.characterLength(), CpCount{2U});
         REQUIRE(u32.isEncodingValid());
     }
 
@@ -79,7 +79,7 @@ public:
     void testSameWidthConversionSharesSliceStorage() {
 
         const auto editor = StringEditor{"oversized backing storage with a compact visible value"_el};
-        const auto slice = String{editor}.slice({el::unit::ByteIndex{33U}, el::unit::ByteLength{7U}});
+        const auto slice = String{editor}.slice({el::unit::ByteIndex{33U}, el::unit::ByteCount{7U}});
         const auto converted = AnyString{slice}.toU8String();
 
         REQUIRE_EQUAL(converted, "compact"_el);

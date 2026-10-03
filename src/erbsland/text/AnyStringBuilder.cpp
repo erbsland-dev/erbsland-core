@@ -23,10 +23,10 @@
 
 namespace erbsland::text {
 
-using unit::ByteLength;
-using unit::CpLength;
+using unit::ByteCount;
+using unit::CpCount;
 using unit::ItemCount;
-using unit::U16DataLength;
+using unit::U16Count;
 
 AnyStringBuilder::AnyStringBuilder() : AnyStringBuilder{StringKind::U8} {
 }
@@ -41,7 +41,7 @@ auto AnyStringBuilder::u8() -> AnyStringBuilder {
     return AnyStringBuilder{};
 }
 
-auto AnyStringBuilder::u8(const ByteLength capacity, const bool sensitive) -> AnyStringBuilder {
+auto AnyStringBuilder::u8(const ByteCount capacity, const bool sensitive) -> AnyStringBuilder {
     return AnyStringBuilder{impl::createU8StringBuilder(capacity, sensitive)};
 }
 
@@ -49,7 +49,7 @@ auto AnyStringBuilder::u16() -> AnyStringBuilder {
     return AnyStringBuilder{StringKind::U16};
 }
 
-auto AnyStringBuilder::u16(const U16DataLength capacity) -> AnyStringBuilder {
+auto AnyStringBuilder::u16(const U16Count capacity) -> AnyStringBuilder {
     return AnyStringBuilder{impl::createU16StringBuilder(capacity)};
 }
 
@@ -57,27 +57,27 @@ auto AnyStringBuilder::u32() -> AnyStringBuilder {
     return AnyStringBuilder{StringKind::U32};
 }
 
-auto AnyStringBuilder::u32(const CpLength capacity) -> AnyStringBuilder {
+auto AnyStringBuilder::u32(const CpCount capacity) -> AnyStringBuilder {
     return AnyStringBuilder{impl::createU32StringBuilder(capacity)};
 }
 
-auto AnyStringBuilder::withCapacity(const StringKind kind, const CpLength capacity) -> AnyStringBuilder {
+auto AnyStringBuilder::withCapacity(const StringKind kind, const CpCount capacity) -> AnyStringBuilder {
     return AnyStringBuilder{impl::createAnyStringBuilder(kind, capacity)};
 }
 
-auto AnyStringBuilder::basedOn(const U8String &initial, const ByteLength additionalCapacity) -> AnyStringBuilder {
+auto AnyStringBuilder::basedOn(const U8String &initial, const ByteCount additionalCapacity) -> AnyStringBuilder {
     auto result = AnyStringBuilder::u8(initial.length() + additionalCapacity);
     result.append(initial);
     return result;
 }
 
-auto AnyStringBuilder::basedOn(const U16String &initial, const U16DataLength additionalCapacity) -> AnyStringBuilder {
+auto AnyStringBuilder::basedOn(const U16String &initial, const U16Count additionalCapacity) -> AnyStringBuilder {
     auto result = AnyStringBuilder::u16(initial.length() + additionalCapacity);
     result.append(initial);
     return result;
 }
 
-auto AnyStringBuilder::basedOn(const U32String &initial, const CpLength additionalCapacity) -> AnyStringBuilder {
+auto AnyStringBuilder::basedOn(const U32String &initial, const CpCount additionalCapacity) -> AnyStringBuilder {
     auto result = AnyStringBuilder::u32(initial.length() + additionalCapacity);
     result.append(initial);
     return result;
@@ -87,7 +87,7 @@ auto AnyStringBuilder::kind() const noexcept -> StringKind {
     return _builder->kind();
 }
 
-auto AnyStringBuilder::length() const noexcept -> CpLength {
+auto AnyStringBuilder::length() const noexcept -> CpCount {
     return _builder->length();
 }
 
@@ -108,7 +108,7 @@ auto AnyStringBuilder::append(const char32_t codePoint) -> AnyStringBuilder & {
     return append(Char{codePoint});
 }
 
-auto AnyStringBuilder::append(const Char character, CpLength count) -> AnyStringBuilder & {
+auto AnyStringBuilder::append(const Char character, CpCount count) -> AnyStringBuilder & {
     _builder->append(character, count);
     return *this;
 }

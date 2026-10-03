@@ -12,6 +12,7 @@
 #include "../../text/Literals.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringEditor.hpp"
+#include "../../text/StringSet.hpp"
 #include "../../time/Date.hpp"
 #include "../../time/Time.hpp"
 #include "../../time/Timestamp.hpp"
@@ -65,7 +66,7 @@ auto X509Parser::parseCertificate() -> X509Certificate {
         "signatureValue"_el);
     const auto signatureContent = signatureNode.contentData();
     _values.signatureUnusedBitCount = signatureContent.span().front().toUInt8();
-    _values.signature = signatureContent.slice(ByteIndex{1U}, signatureContent.length() - ByteLength{1U});
+    _values.signature = signatureContent.slice(ByteIndex{1U}, signatureContent.length() - ByteCount{1U});
     if (_values.signatureUnusedBitCount != 0U) {
         throwParseError("An X.509 signature BIT STRING must contain complete octets."_el, signatureNode);
     }
@@ -213,7 +214,7 @@ auto X509Parser::parseAlgorithmIdentifierNode(const Asn1Node &node) -> X509Algor
         throwParseError("AlgorithmIdentifier starts with no OBJECT IDENTIFIER."_el, node);
     }
     return X509AlgorithmIdentifier{
-        *oid, node.childCount() == ItemCount{2U} ? node.child(ItemIndex{1U}) : Asn1Node{}, node.encodedData()};
+        *oid, node.childCount() == ItemCount{2U} ? node.child(ItemIndex::one()) : Asn1Node{}, node.encodedData()};
 }
 
 auto X509Parser::parseName(const Asn1Node &node) -> X509Name {
@@ -282,7 +283,11 @@ auto X509Parser::parseTime(const Asn1Node &node) -> time::Timestamp {
         }
         year = decimalQuad(content, 0U, contentByteIndex);
         if (year < 2050U) {
-            throwParseError("RFC 5280 requires UTCTime for years before 2050."_el, node);
+            addIssue(
+                X509CertificateProfileIssueCategory::ValidityEncoding,
+                "validity"_el,
+                {},
+                "RFC 5280 requires UTCTime for years before 2050."_el);
         }
         position = 4U;
     } else {
@@ -325,7 +330,7 @@ auto X509Parser::parseSubjectPublicKeyInfo(const Asn1Node &node) -> PublicKey {
     const auto content = keyNode.contentData();
     return PublicKey{
         std::move(algorithm),
-        content.slice(ByteIndex{1U}, content.length() - ByteLength{1U}),
+        content.slice(ByteIndex{1U}, content.length() - ByteCount{1U}),
         content.span().front().toUInt8(),
         node,
         node.encodedData()};
@@ -342,7 +347,7 @@ void X509Parser::parseExtensions(const Asn1Node &explicitNode) {
     if (sequence.childCount() == ItemCount{}) {
         throwParseError("Extensions must contain at least one extension."_el, sequence);
     }
-    auto seen = std::set<String>{};
+    auto seen = StringSet{};
     for (const auto &extensionNode : sequence.children()) {
         requireNode(
             extensionNode,
@@ -353,16 +358,16 @@ void X509Parser::parseExtensions(const Asn1Node &explicitNode) {
         if (extensionNode.childCount() < ItemCount{2U} || extensionNode.childCount() > ItemCount{3U}) {
             throwParseError("Extension must contain OID, optional critical flag, and extnValue."_el, extensionNode);
         }
-        auto childIndex = std::size_t{};
-        const auto oid = extensionNode.child(ItemIndex{childIndex++}).toObjectIdentifier();
+        auto childIndex = ItemIndex::zero();
+        const auto oid = extensionNode.child(childIndex++).toObjectIdentifier();
         if (!oid.has_value()) {
             throwParseError("Extension has no OBJECT IDENTIFIER."_el, extensionNode);
         }
-        if (!seen.insert(oid->toString()).second) {
+        if (!seen.tryInsert(oid->toString())) {
             throwParseError("Certificate contains a duplicate extension OID."_el, extensionNode);
         }
         auto critical = false;
-        auto valueNode = extensionNode.child(ItemIndex{childIndex});
+        auto valueNode = extensionNode.child(childIndex);
         if (valueNode.universalType() == Asn1UniversalType::Boolean) {
             critical = *valueNode.toBoolean();
             ++childIndex;
@@ -370,10 +375,10 @@ void X509Parser::parseExtensions(const Asn1Node &explicitNode) {
                 throwParseError("DER Extension must omit the default false critical flag."_el, valueNode);
             }
         }
-        if (childIndex + 1U != extensionNode.childCount().toSizeT()) {
+        if (childIndex.incremented() != ItemIndex::end(extensionNode.childCount())) {
             throwParseError("Extension has an invalid field order."_el, extensionNode);
         }
-        valueNode = extensionNode.child(ItemIndex{childIndex});
+        valueNode = extensionNode.child(childIndex);
         requireNode(
             valueNode,
             Asn1TagClass::Universal,

@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
+#include <erbsland/EncodingError.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/stream/impl/EncodedTextInputStream.hpp>
 #include <erbsland/stream/impl/EncodedTextOutputStream.hpp>
 #include <erbsland/stream/impl/InputStreamFactory.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/text/EncodingError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEncoder.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEncoder.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -31,8 +31,8 @@ using el::stream::StreamError;
 using el::stream::StreamReadStatus;
 using el::stream::TextInputStream;
 using el::text::EncodingError;
-using el::unit::ByteLength;
-using el::unit::CpLength;
+using el::unit::ByteCount;
+using el::unit::CpCount;
 using namespace el::text;
 using namespace el::text::literals;
 
@@ -71,7 +71,7 @@ class EncodedTextStreamTest final : public el::UnitTest {
 
     protected:
         [[nodiscard]] auto readFromSource(el::mem::ByteSpan destination, const ReadDeadline deadline)
-            -> el::stream::StreamReadResult<ByteLength> override {
+            -> el::stream::StreamReadResult<ByteCount> override {
             if (_state != el::stream::StreamState::Open) {
                 throw StreamError{el::stream::StreamErrorContext{
                     "Failed to read from the test stream."_el, "The test input stream is closed."_el}};
@@ -79,13 +79,13 @@ class EncodedTextStreamTest final : public el::UnitTest {
             deadlines.push_back(deadline);
             _readCall += 1U;
             if (_timeoutCall == _readCall) {
-                return {StreamReadStatus::Timeout, ByteLength::zero()};
+                return {StreamReadStatus::Timeout, ByteCount::zero()};
             }
             const auto available = _bytes.size() - _position;
             const auto count = std::min(std::min(destination.size(), available), _maximumRead);
             std::copy_n(_bytes.data() + _position, count, destination.data());
             _position += count;
-            return {count == 0U ? StreamReadStatus::Finished : StreamReadStatus::Data, ByteLength::fromSizeT(count)};
+            return {count == 0U ? StreamReadStatus::Finished : StreamReadStatus::Data, ByteCount::fromSizeT(count)};
         }
 
     public:
@@ -148,7 +148,7 @@ class EncodedTextStreamTest final : public el::UnitTest {
         el::stream::StreamState _state{el::stream::StreamState::Open};
     };
 
-    static auto readLineBlocking(el::stream::impl::EncodedTextInputStream &stream, const CpLength maximum)
+    static auto readLineBlocking(el::stream::impl::EncodedTextInputStream &stream, const CpCount maximum)
         -> StringEditor {
         auto result = StringEditor{};
         while (result.characterLength() < maximum) {
@@ -207,7 +207,7 @@ public:
         REQUIRE_EQUAL(textStream.encoding(), StringEncoding::Utf8);
         REQUIRE_EQUAL(textStream.effectiveEncoding(), StringEncoding::Utf8);
         REQUIRE_EQUAL(textStream.readChar().data(), Char{U'H'});
-        REQUIRE_EQUAL(StringConverter{textStream.read(CpLength{2U}).data()}.toStdString(), std::string{"el"});
+        REQUIRE_EQUAL(StringConverter{textStream.read(CpCount{2U}).data()}.toStdString(), std::string{"el"});
         REQUIRE_EQUAL(StringConverter{textStream.read().data()}.toStdString(), std::string{"lo"});
         const auto end = textStream.read();
         REQUIRE_EQUAL(end, StreamReadStatus::Finished);
@@ -235,7 +235,7 @@ public:
         byteStream->setSensitive();
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
-        const auto line = stream.readLine(CpLength{16U});
+        const auto line = stream.readLine(CpCount{16U});
         REQUIRE(line.hasData());
         REQUIRE_EQUAL(line.data(), "alpha\n"_el);
         REQUIRE(line.data().isSensitive());
@@ -243,7 +243,7 @@ public:
         REQUIRE(all.hasData());
         REQUIRE_EQUAL(all.data(), "beta"_el);
         REQUIRE(all.data().isSensitive());
-        const auto empty = stream.read(CpLength::zero());
+        const auto empty = stream.read(CpCount::zero());
         REQUIRE(empty.data().isEmpty());
     }
 
@@ -253,12 +253,12 @@ public:
         byteStream->setSensitive();
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
-        const auto timeout = stream.readLine(CpLength{8U});
+        const auto timeout = stream.readLine(CpCount{8U});
         REQUIRE(timeout.isTimeout());
-        const auto prefix = stream.read(CpLength{2U});
+        const auto prefix = stream.read(CpCount{2U});
         REQUIRE_EQUAL(prefix.data(), "ab"_el);
         REQUIRE(prefix.data().isSensitive());
-        const auto suffix = stream.readLine(CpLength{8U});
+        const auto suffix = stream.readLine(CpCount{8U});
         REQUIRE_EQUAL(suffix.data(), "c\n"_el);
         REQUIRE(suffix.data().isSensitive());
     }
@@ -270,7 +270,7 @@ public:
         auto stream = el::stream::impl::EncodedTextInputStream{
             byteStream, StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Tolerant};
 
-        const auto ordinary = stream.readAll(CpLength{8U});
+        const auto ordinary = stream.readAll(CpCount{8U});
         REQUIRE_EQUAL(
             StringConverter{ordinary.data()}.toStdString(), std::string{"A"} + th::stdStringFromHex("EF BF BD") + "B");
         REQUIRE(ordinary.data().isSensitive());
@@ -282,10 +282,10 @@ public:
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
         auto &textStream = static_cast<TextInputStream &>(stream);
 
-        REQUIRE_EQUAL(StringConverter{textStream.readLine(CpLength{2U}).data()}.toStdString(), std::string{"a\r"});
-        REQUIRE_EQUAL(StringConverter{textStream.readLine(CpLength{8U}).data()}.toStdString(), std::string{"\n"});
-        REQUIRE_EQUAL(StringConverter{textStream.readLine(CpLength{8U}).data()}.toStdString(), std::string{"b\rc\n"});
-        REQUIRE_EQUAL(StringConverter{textStream.readAll(CpLength{2U}).data()}.toStdString(), std::string{"la"});
+        REQUIRE_EQUAL(StringConverter{textStream.readLine(CpCount{2U}).data()}.toStdString(), std::string{"a\r"});
+        REQUIRE_EQUAL(StringConverter{textStream.readLine(CpCount{8U}).data()}.toStdString(), std::string{"\n"});
+        REQUIRE_EQUAL(StringConverter{textStream.readLine(CpCount{8U}).data()}.toStdString(), std::string{"b\rc\n"});
+        REQUIRE_EQUAL(StringConverter{textStream.readAll(CpCount{2U}).data()}.toStdString(), std::string{"la"});
         REQUIRE_EQUAL(StringConverter{textStream.readAll().data()}.toStdString(), std::string{"st"});
         const auto end = textStream.readLine();
         REQUIRE_EQUAL(end, StreamReadStatus::Finished);
@@ -296,11 +296,11 @@ public:
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 2U, 2U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
-        const auto timeout = stream.readLine(CpLength{8U});
+        const auto timeout = stream.readLine(CpCount{8U});
         REQUIRE(timeout.isTimeout());
         REQUIRE(timeout.data().isEmpty());
 
-        const auto completed = stream.readLine(CpLength{8U});
+        const auto completed = stream.readLine(CpCount{8U});
         REQUIRE(completed.hasData());
         REQUIRE_EQUAL(StringConverter{completed.data()}.toStdString(), std::string{"abc\n"});
     }
@@ -310,8 +310,8 @@ public:
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 2U, 2U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
-        REQUIRE(stream.readAll(CpLength{8U}).isTimeout());
-        const auto completed = stream.readAll(CpLength{8U});
+        REQUIRE(stream.readAll(CpCount{8U}).isTimeout());
+        const auto completed = stream.readAll(CpCount{8U});
         REQUIRE(completed.hasData());
         REQUIRE_EQUAL(StringConverter{completed.data()}.toStdString(), std::string{"abcd"});
     }
@@ -321,12 +321,12 @@ public:
         auto lineByteStream =
             std::make_shared<MemoryInputStream>(bytes, std::numeric_limits<std::size_t>::max(), std::nullopt, false);
         auto lineStream = el::stream::impl::EncodedTextInputStream{lineByteStream, StringEncoding::Utf8};
-        REQUIRE_EQUAL(StringConverter{lineStream.readLine(CpLength{8U}).data()}.toStdString(), std::string{"last"});
+        REQUIRE_EQUAL(StringConverter{lineStream.readLine(CpCount{8U}).data()}.toStdString(), std::string{"last"});
 
         auto allByteStream =
             std::make_shared<MemoryInputStream>(bytes, std::numeric_limits<std::size_t>::max(), std::nullopt, false);
         auto allStream = el::stream::impl::EncodedTextInputStream{allByteStream, StringEncoding::Utf8};
-        REQUIRE_EQUAL(StringConverter{allStream.readAll(CpLength{8U}).data()}.toStdString(), std::string{"last"});
+        REQUIRE_EQUAL(StringConverter{allStream.readAll(CpCount{8U}).data()}.toStdString(), std::string{"last"});
     }
 
     void testLineReadUsesOneDeadlineForAllShortRefills() {
@@ -334,7 +334,7 @@ public:
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 1U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
-        REQUIRE(stream.readLine(CpLength{8U}).hasData());
+        REQUIRE(stream.readLine(CpCount{8U}).hasData());
         REQUIRE_EQUAL(byteStream->deadlines.size(), std::size_t{4U});
         REQUIRE(
             std::all_of(byteStream->deadlines.begin(), byteStream->deadlines.end(), [&byteStream](const auto deadline) {
@@ -349,11 +349,11 @@ public:
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 3U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
-        const auto line = stream.readLine(CpLength{20'000U});
+        const auto line = stream.readLine(CpCount{20'000U});
         REQUIRE(line.hasData());
-        REQUIRE_EQUAL(line.data().characterLength(), CpLength{10'001U});
+        REQUIRE_EQUAL(line.data().characterLength(), CpCount{10'001U});
         REQUIRE_EQUAL(line.data().charAt(StringSide::Back), Char{U'\n'});
-        REQUIRE_EQUAL(StringConverter{stream.readLine(CpLength{20'000U}).data()}.toStdString(), std::string{"next\n"});
+        REQUIRE_EQUAL(StringConverter{stream.readLine(CpCount{20'000U}).data()}.toStdString(), std::string{"next\n"});
     }
 
     void testChangingTextReadReplaysRetainedText() {
@@ -361,9 +361,9 @@ public:
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 2U, 2U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
-        REQUIRE(stream.readLine(CpLength{8U}).isTimeout());
-        REQUIRE_EQUAL(StringConverter{stream.read(CpLength{2U}).data()}.toStdString(), std::string{"ab"});
-        REQUIRE_EQUAL(StringConverter{stream.readLine(CpLength{8U}).data()}.toStdString(), std::string{"c\n"});
+        REQUIRE(stream.readLine(CpCount{8U}).isTimeout());
+        REQUIRE_EQUAL(StringConverter{stream.read(CpCount{2U}).data()}.toStdString(), std::string{"ab"});
+        REQUIRE_EQUAL(StringConverter{stream.readLine(CpCount{8U}).data()}.toStdString(), std::string{"c\n"});
     }
 
     void testMixedInputReadsPreserveOrder() {
@@ -372,16 +372,16 @@ public:
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
         REQUIRE_EQUAL(stream.readChar().data(), Char{U'A'});
-        REQUIRE_EQUAL(StringConverter{readLineBlocking(stream, CpLength{8U})}.toStdString(), std::string{"\n"});
+        REQUIRE_EQUAL(StringConverter{readLineBlocking(stream, CpCount{8U})}.toStdString(), std::string{"\n"});
         auto middle = StringEditor{};
-        while (middle.characterLength() < CpLength{2U}) {
-            const auto value = stream.read(CpLength{2U} - middle.characterLength());
+        while (middle.characterLength() < CpCount{2U}) {
+            const auto value = stream.read(CpCount{2U} - middle.characterLength());
             if (value == StreamReadStatus::Data) {
                 middle.append(value.data());
             }
         }
         REQUIRE_EQUAL(StringConverter{middle}.toStdString(), std::string{"BC"});
-        REQUIRE_EQUAL(StringConverter{readLineBlocking(stream, CpLength{8U})}.toStdString(), std::string{"\n"});
+        REQUIRE_EQUAL(StringConverter{readLineBlocking(stream, CpCount{8U})}.toStdString(), std::string{"\n"});
         REQUIRE_EQUAL(StringConverter{readAllBlocking(stream)}.toStdString(), std::string{"D"});
         const auto end = stream.readChar();
         REQUIRE_EQUAL(end, StreamReadStatus::Finished);
@@ -392,8 +392,8 @@ public:
         auto byteStream = std::make_shared<MemoryInputStream>(bytes);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
-        REQUIRE(stream.read(CpLength::zero()).data().isEmpty());
-        REQUIRE_EQUAL(StringConverter{stream.readAll(CpLength{3U}).data()}.toStdString(), std::string{"abc"});
+        REQUIRE(stream.read(CpCount::zero()).data().isEmpty());
+        REQUIRE_EQUAL(StringConverter{stream.readAll(CpCount{3U}).data()}.toStdString(), std::string{"abc"});
     }
 
     void testAllocatingReadsRejectInfiniteMaximum() {
@@ -401,9 +401,9 @@ public:
         auto byteStream = std::make_shared<MemoryInputStream>(bytes);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
-        REQUIRE_THROWS_AS(el::err::ParameterError, stream.read(CpLength::infinite()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, stream.readLine(CpLength::infinite()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, stream.readAll(CpLength::infinite()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, stream.read(CpCount::infinite()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, stream.readLine(CpCount::infinite()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, stream.readAll(CpCount::infinite()));
     }
 
     void testBomAndEffectiveEncoding() {
@@ -432,7 +432,7 @@ public:
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
         REQUIRE_EQUAL(
-            StringConverter{readLineBlocking(stream, CpLength{8U})}.toStdString(),
+            StringConverter{readLineBlocking(stream, CpCount{8U})}.toStdString(),
             std::string{"A"} + th::stdStringFromHex("F0 9F 98 80") + "\r\n");
         REQUIRE_EQUAL(StringConverter{readAllBlocking(stream)}.toStdString(), std::string{"B"});
         const auto end = stream.read();
@@ -446,7 +446,7 @@ public:
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf16};
 
         REQUIRE_EQUAL(
-            StringConverter{readLineBlocking(stream, CpLength{8U})}.toStdString(),
+            StringConverter{readLineBlocking(stream, CpCount{8U})}.toStdString(),
             std::string{"A"} + th::stdStringFromHex("F0 9F 98 80") + "\n");
         REQUIRE_EQUAL(StringConverter{readAllBlocking(stream)}.toStdString(), std::string{"B"});
         const auto end = stream.read();

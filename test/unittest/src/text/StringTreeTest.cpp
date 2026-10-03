@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/IntegerFormatFlag.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringTree.hpp>
+#include <erbsland/IntegerFormatFlag.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringTree.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
@@ -17,7 +17,7 @@ using el::text::IntegerFormat;
 using el::text::IntegerFormatFlag;
 using el::text::StringConverter;
 using el::text::StringTree;
-using el::unit::CpLength;
+using el::unit::CpCount;
 
 TESTED_TARGETS(StringTree)
 class StringTreeTest final : public el::UnitTest {
@@ -49,7 +49,7 @@ public:
         tree.append("empty"_el, StringTree{});
 
         REQUIRE_EQUAL(
-            StringConverter{tree.toString(CpLength{2U})}.toStdString(),
+            StringConverter{tree.toString(CpCount{2U})}.toStdString(),
             std::string{"Root:\n"
                         "  child:\n"
                         "    Child:\n"

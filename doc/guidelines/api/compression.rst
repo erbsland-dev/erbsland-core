@@ -56,6 +56,8 @@ Archive Patterns
     o.addData(bytes, storage-path) // append one byte value
     o.addStream(stream, storage-path[, options/length]) // own and append a byte stream
     o.addDirectory(path[, options]) // append a filtered directory tree
+    o.includeGlobs()/excludeGlobs() -> PathGlobPatternPtr // shared compiled directory filters, null when unset
+    o.setIncludeGlobs/setExcludeGlobs(pattern-or-text-or-list) // compile text immediately or share a compiled glob
     o.addItem(item) // copy validated structure and compressed payload without recompression
     o.finalize() // required, idempotent successful completion
     o.abort() // immediate terminal cancellation
@@ -67,7 +69,7 @@ Byte Compression Patterns
 
     T(algorithm, format[, level/options]) // immutable codec configuration
     o.compress(bytes)/decompress(bytes) -> ByteBlock // transform one complete value
-    o.maximumCompressedLength(length) -> ByteLength // configured representation bound
+    o.maximumCompressedLength(length) -> ByteCount // configured representation bound
     o.compress(input-stream, output-stream[, transfer-options]) -> CompressionTransferResult // borrowed streams
     o.decompress(input-stream, output-stream[, transfer-options]) -> CompressionTransferResult // borrowed streams
     o.supportsStreaming() // native bounded-memory support for the configured direction and representation

@@ -13,6 +13,7 @@
 namespace erbsland::core::impl {
 
 /// The manager for the global application instance.
+/// @tested{ApplicationTestScopeTest TlsBackgroundOperationTest}
 class ApplicationInstanceManager {
 public:
     // defaults
@@ -21,7 +22,7 @@ public:
 
 public:
     /// Register the user-created application instance.
-    /// @return An existing application data instance, or nullptr if no application instance was registered.
+    /// @return Existing or newly created application data.
     virtual auto registerUserInstance(Application *appInstance) -> ApplicationDataPtr;
     /// Unregister the user-created application instance.
     /// @return `true` if this unregistered the user-owned application instance,
@@ -31,6 +32,9 @@ public:
     virtual void linkWith(Application &app);
 
 public:
+    /// Retain scoped application data, falling back to process data without creating a facade.
+    /// @return Nonnull owning application data.
+    [[nodiscard]] auto retainData() -> ApplicationDataPtr;
     /// Access the application instance.
     /// Guaranteed to return a valid application instance.
     /// If `application()` is called before the application instance is created in `main()`, a temporary
@@ -55,6 +59,9 @@ public: // methods for unit tests
 #endif
 
 protected:
+    /// Retain process application data independently of any execution scope.
+    /// @return Existing or lazily created process data.
+    [[nodiscard]] virtual auto retainGlobalData() -> ApplicationDataPtr;
 #if defined(ERBSLAND_CORE_DEVELOPER_BUILD) || defined(ERBSLAND_UNITTEST_BUILD)
     /// Reset the simulated main method state.
     virtual void resetSimulatedMain();
@@ -65,6 +72,7 @@ private:
     inline static ApplicationInstanceManager *_instance{}; ///< The singleton instance.
     Application *_userInstance{};                          ///< The user-owned application instance.
     std::unique_ptr<Application> _tempInstance;            ///< A temporary application instance.
+    ApplicationDataPtr _data;                              ///< Current process data, independent of its facade.
 };
 
 }

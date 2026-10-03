@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogLineFormat.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogNameFormat.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 #include <memory>
 #include <utility>
@@ -14,7 +22,7 @@ namespace demo {
 /// `setNameLimit()` is consulted only for `LogNameFormat::LeftTruncated`. Keeping the right side preserves the most
 /// specific path segments; a zero limit disables name shortening even when that format is selected.
 void lineNameLimits() {
-    const auto showLimit = [](const el::String &label, const el::CpLength limit) -> void {
+    const auto showLimit = [](const el::String &label, const el::CpCount limit) -> void {
         el::io::printLine(label, ":"_el);
         auto lineFormat = el::LogLineFormat{};
         lineFormat.setPattern("{name}: {message}"_el)
@@ -30,9 +38,9 @@ void lineNameLimits() {
         manager->shutdown();
     };
 
-    showLimit("32 characters"_el, el::CpLength{32U});
-    showLimit("18 characters"_el, el::CpLength{18U});
-    showLimit("Unlimited"_el, el::CpLength::zero());
+    showLimit("32 characters"_el, el::CpCount{32U});
+    showLimit("18 characters"_el, el::CpCount{18U});
+    showLimit("Unlimited"_el, el::CpCount::zero());
 }
 
 }

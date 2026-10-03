@@ -7,6 +7,8 @@
 #include "../Filter.hpp"
 #include "../Source.hpp"
 
+#include "../../StringList.hpp"
+
 #include <vector>
 
 namespace erbsland::text::placeholder::impl {
@@ -49,9 +51,9 @@ private:
     /// Normalize and validate a provider name.
     [[nodiscard]] static auto normalizeProviderName(const String &name, const String &kind) -> String;
     /// Check a pending source name for collisions.
-    void verifySourceName(const String &name, const std::vector<String> &pending) const;
+    void verifySourceName(const String &name, const StringList &pending) const;
     /// Check a pending filter name for collisions.
-    void verifyFilterName(const String &name, const std::vector<String> &pending) const;
+    void verifyFilterName(const String &name, const StringList &pending) const;
 
 private:
     std::vector<SourceEntry> _sources;

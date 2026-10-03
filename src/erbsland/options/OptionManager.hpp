@@ -8,48 +8,15 @@
 #include "Options_fwd.hpp"
 
 #include "../core/CommandLineArguments.hpp"
-#include "../i18n/DisplayTextMap_fwd.hpp"
 #include "../stream/TextOutputStream_fwd.hpp"
 #include "../text/TextDocument.hpp"
 
 namespace erbsland::options {
 
 /// The option manager orchestrates parsing and validation of command line options.
-///
-/// Command line parsing follows the most common standards that are safe and user-friendly:
-/// <code>
-/// cmd -a -b -c           # short options, case-sensitive
-/// cmd -abc               # grouped short options
-/// cmd --long             # long options, case-insensitive. Must start with a letter [a-zA-Z].
-/// cmd module -a --long   # module names are case-insensitive. Same rules as long options.
-/// # Option names: ASCII letters [a-zA-Z] and numbers [0-9]
-/// # Long options: Can also contain [-_].
-/// # Limits: Maximum name length is 100 characters. A maximum 5'000 arguments are supported.
-/// cmd -a -b -- other     # -- terminates command line option parsing early.
-/// # Flags
-/// cmd -a --long          # Flag definitions are valueless and count occurrences.
-/// # Values
-/// cmd -a [value] --long [value]  # Any text that follows an option without `-` or `--` is considered a value.
-/// cmd -a=[value] --long=[value]  # The alternative syntax is using a `=`, that also allows values starting with `-`.
-/// # Boolean definitions accept true/on/yes/enabled and false/off/no/disabled.
-/// # Value definitions with OptionFlag::AcceptAsFlag may also occur bare.
-/// # Positional arguments
-/// cmd [arg1] [arg2] ...  # Any text that does not start with `-` or `--` is considered a positional argument.
-/// # Positional arguments, flags, and values can be mixed in any order.
-/// # The argument index(es) is stored for every value, allowing advanced apps to reconstruct the order if required.
-/// # Modules ("actions"):
-/// # - If the option definition contains one or more modules, the command line must start with the module name.
-/// # - **no flags and values are allowed before the module name**, except enabled built-in display requests.
-/// #   (that's the main difference to common standards, but makes implementation much simpler and safer).
-/// cmd module-name -a --long [value] arg1 arg2
-/// # Help and Version:
-/// # The special `-h`, `--help[=<name>]` and `--version` requests are enabled by default.
-/// # Applications can disable the help and version requests individually with `OptionParserFlag` and then reuse their
-/// # names for ordinary options.
-/// # If one of these flags is encountered, the parsing is stopped and the corresponding action is performed.
-/// # Any other, even invalid or unknown options are silently ignored.
-/// # No callbacks are made for these flags.
-/// </code>
+/// Names use canonical dash-separated ASCII words; single-dash short options remain case-sensitive.
+/// See the options reference for syntax, normalization, validation, and built-in requests.
+/// @seedoc{/reference/options/command_line_options}
 /// @tested{OptionsParserTest}
 class OptionManager {
 public:
@@ -59,8 +26,7 @@ public:
     OptionManager();
     /// Create an option manager for an options root.
     /// @param options The root options definition. If null, parsing behaves as if an empty root was supplied.
-    /// @param displayText The display texts, or the English defaults if null.
-    explicit OptionManager(OptionsPtr options, const i18n::DisplayTextMapConstPtr &displayText = {});
+    explicit OptionManager(OptionsPtr options);
 
     // defaults
     ~OptionManager() = default;
@@ -72,13 +38,8 @@ public:
 public: // accessors
     /// Get the options root.
     [[nodiscard]] auto options() const noexcept -> const OptionsPtr & { return _options; }
-    /// Get the display text.
-    [[nodiscard]] auto displayText() const noexcept -> const i18n::DisplayTextMapConstPtr & { return _displayText; }
 
 public:
-    /// Change the display text used to build output documents.
-    /// @param displayText Replacement wording for help, version, and error documents.
-    void setDisplayTextMap(i18n::DisplayTextMapConstPtr displayText) noexcept;
     /// Parse already converted command line arguments.
     /// Calls all registered pre-hooks before parsing.
     /// Calls the affected post-hooks after parsing.
@@ -104,7 +65,7 @@ public:
     /// The default renderer writes the output to the terminal or standard output.
     /// @param moduleName The name of the module to display help for. Empty for main help.
     void displayHelp(const text::String &moduleName) const;
-    /// Display detailed help for one option.
+    /// Display detailed help or matching topics for a module, option or choice.
     /// @param moduleName Selected module name, or empty for root search order.
     /// @param helpName Raw detailed-help target.
     void displayDetailedHelp(const text::String &moduleName, const text::String &helpName) const;
@@ -123,11 +84,11 @@ public:
     /// @param moduleName The selected module name, or empty for root help.
     /// @return A neutral document tree that can be rendered as plain text or terminal output.
     [[nodiscard]] auto helpDocument(const text::String &moduleName) const -> text::TextDocument;
-    /// Build detailed help for one option.
+    /// Build detailed help or matching topics for a module, option or choice.
     /// @param moduleName Selected module name, or empty for root search order.
     /// @param helpName Raw detailed-help target.
-    /// @return A neutral detailed-help document.
-    /// @throws OptionError If the target is not a visible option alias.
+    /// @return A neutral detail page or compact list of matching help topics.
+    /// @throws OptionError If the selector is malformed or no visible help target matches.
     [[nodiscard]] auto detailedHelpDocument(const text::String &moduleName, const text::String &helpName) const
         -> text::TextDocument;
     /// Build the reduced module overview.
@@ -194,8 +155,7 @@ private:
     /// Render a text document to plain-text output.
     static void renderPlainDocument(const text::TextDocument &document, const stream::TextOutputStreamPtr &output);
 
-    OptionsPtr _options;                       ///< The options root.
-    i18n::DisplayTextMapConstPtr _displayText; ///< The wording used for display documents.
+    OptionsPtr _options; ///< The options root.
 };
 
 }

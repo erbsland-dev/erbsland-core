@@ -133,8 +133,14 @@ auto DocumentValidator::handleAlternatives(const RulePtr &rule, const ValuePtr &
     RulePtr matchingRule = {};
     for (const auto &alternativeRule : matchingRules) {
         try {
-            validateValueConstraints(alternativeRule, value);
-            matchingRule = alternativeRule;
+            if (alternativeRule->type() == vr::RuleType::ValueList) {
+                matchingRule = handleValueLists(alternativeRule, value);
+            } else if (alternativeRule->type() == vr::RuleType::ValueMatrix) {
+                matchingRule = handleValueMatrix(alternativeRule, value);
+            } else {
+                validateValueConstraints(alternativeRule, value);
+                matchingRule = alternativeRule;
+            }
             break;
         } catch (const ConfError &error) {
             if (!firstError.has_value()) {

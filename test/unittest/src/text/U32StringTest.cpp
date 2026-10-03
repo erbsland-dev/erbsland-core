@@ -1,23 +1,23 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/AsciiCategory.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringDecoder.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringEncoder.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u32/U32StringList.hpp>
-#include <erbsland/unit/CpIndex.hpp>
-#include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/CpRange.hpp>
-#include <erbsland/unit/ItemCount.hpp>
-#include <erbsland/unit/ItemIndex.hpp>
+#include <erbsland/AsciiCategory.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/CpRange.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringDecoder.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringEncoder.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
+#include <erbsland/U32StringList.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>
@@ -27,9 +27,8 @@
 #include <vector>
 
 using namespace el::text::literals;
-
+using el::unit::CpCount;
 using el::unit::CpIndex;
-using el::unit::CpLength;
 using el::unit::CpRange;
 using el::unit::ItemCount;
 using el::unit::ItemIndex;
@@ -45,14 +44,14 @@ public:
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{});
         REQUIRE(StringConverter{text}.toStdU32String().empty());
         REQUIRE_EQUAL(text.length().toSizeT(), std::size_t{0});
-        REQUIRE(text.isValidUtf32());
+        REQUIRE(text.isEncodingValid());
         REQUIRE(text.charAt(StringSide::Front).isNull());
         REQUIRE(text.charAt(StringSide::Back).isNull());
         REQUIRE(text.charAt(text.indexAt(StringSide::Back)).isEndOfData());
         REQUIRE(text.charAt(CpIndex::noIndex()).isNoCodePoint());
-        REQUIRE(text.slice(StringSide::Front, CpLength{1U}).isEmpty());
-        REQUIRE(text.slice(StringSide::Back, CpLength{1U}).isEmpty());
-        REQUIRE(U32String{text}.slice(StringSide::Front, CpLength{1U}).isEmpty());
+        REQUIRE(text.slice(StringSide::Front, CpCount{1U}).isEmpty());
+        REQUIRE(text.slice(StringSide::Back, CpCount{1U}).isEmpty());
+        REQUIRE(U32String{text}.slice(StringSide::Front, CpCount{1U}).isEmpty());
         const auto [emptyCharacter, emptyRemaining] = text.slice(StringSide::Front);
         REQUIRE(emptyCharacter.isEndOfData());
         REQUIRE(emptyRemaining.isEmpty());
@@ -66,7 +65,7 @@ public:
         static_assert(!std::is_convertible_v<std::u32string_view, U32String>);
 
         REQUIRE_EQUAL(U32String{std::u32string_view{U"utf-32"}}, U"utf-32"_el);
-        REQUIRE_EQUAL(U32String::fromCharacter(Char{U'\U0001F600'}, CpLength{2U}), U"\U0001F600\U0001F600"_el);
+        REQUIRE_EQUAL(U32String::fromCharacter(Char{U'\U0001F600'}, CpCount{2U}), U"\U0001F600\U0001F600"_el);
         REQUIRE_EQUAL(U32String::fromJoined({U"one"_el, U"-"_el, U"two"_el}), U"one-two"_el);
         REQUIRE_EQUAL(U32String::fromInteger(-42), U"-42"_el);
         REQUIRE_EQUAL(U32String::fromFloat(1.25), U32String{U32StringEditor::fromFloat(1.25)});
@@ -85,19 +84,19 @@ public:
     void testRepeatedAppend() {
 
         const auto source = U32StringEditor{std::u32string_view{U"xA\U0001F600"}};
-        const auto view = U32String{source}.slice(CpRange{CpIndex{1U}, CpLength{2U}});
+        const auto view = U32String{source}.slice(CpRange{CpIndex{1U}, CpCount{2U}});
 
         auto repeatedText = U32StringEditor{};
         repeatedText.append(view, ItemCount{2U});
         REQUIRE_EQUAL(StringConverter{repeatedText}.toStdU32String(), std::u32string{U"A\U0001F600A\U0001F600"});
-        REQUIRE_EQUAL(repeatedText.length(), CpLength{4U});
+        REQUIRE_EQUAL(repeatedText.length(), CpCount{4U});
 
         auto repeatedCharacter = U32StringEditor{};
-        repeatedCharacter.append(Char{U'\U0001F600'}, CpLength{3U});
+        repeatedCharacter.append(Char{U'\U0001F600'}, CpCount{3U});
         REQUIRE_EQUAL(
             StringConverter{repeatedCharacter}.toStdU32String(), std::u32string{U"\U0001F600\U0001F600\U0001F600"});
-        REQUIRE_EQUAL(repeatedCharacter.length(), CpLength{3U});
-        REQUIRE_EQUAL(U32StringEditor::fromCharacter(Char{U'\U0001F600'}, CpLength{3U}), repeatedCharacter);
+        REQUIRE_EQUAL(repeatedCharacter.length(), CpCount{3U});
+        REQUIRE_EQUAL(U32StringEditor::fromCharacter(Char{U'\U0001F600'}, CpCount{3U}), repeatedCharacter);
         REQUIRE_EQUAL(U32StringEditor::fromCharacter(Char{U'A'}), U"A"_el);
         REQUIRE(U32StringEditor::fromJoined({}).isEmpty());
         REQUIRE_EQUAL(U32StringEditor::fromJoined({U"solo"_el}), U"solo"_el);
@@ -106,17 +105,17 @@ public:
             std::u32string{U"prefix-A\U0001F600-suffix"});
 
         auto appended = U32StringEditor{std::u32string_view{U">"}};
-        appended.append(view, ItemCount{2U}).append(Char{U'!'}, CpLength{2U});
+        appended.append(view, ItemCount{2U}).append(Char{U'!'}, CpCount{2U});
         REQUIRE_EQUAL(StringConverter{appended}.toStdU32String(), std::u32string{U">A\U0001F600A\U0001F600!!"});
-        REQUIRE_EQUAL(appended.length(), CpLength{7U});
+        REQUIRE_EQUAL(appended.length(), CpCount{7U});
 
         REQUIRE(U32StringEditor{}.append(view, ItemCount::zero()).isEmpty());
         REQUIRE(U32StringEditor{}.append(U32String{}, ItemCount{5U}).isEmpty());
-        REQUIRE(U32StringEditor{}.append(Char::noCodePoint(), CpLength{5U}).isEmpty());
-        REQUIRE(U32StringEditor::fromCharacter(Char{U'A'}, CpLength::zero()).isEmpty());
-        REQUIRE(U32StringEditor::fromCharacter(Char::noCodePoint(), CpLength{5U}).isEmpty());
+        REQUIRE(U32StringEditor{}.append(Char::noCodePoint(), CpCount{5U}).isEmpty());
+        REQUIRE(U32StringEditor::fromCharacter(Char{U'A'}, CpCount::zero()).isEmpty());
+        REQUIRE(U32StringEditor::fromCharacter(Char::noCodePoint(), CpCount{5U}).isEmpty());
         REQUIRE_THROWS(U32StringEditor{}.append(view, ItemCount::infinite()));
-        REQUIRE_THROWS(U32StringEditor::fromCharacter(Char{U'A'}, CpLength::infinite()));
+        REQUIRE_THROWS(U32StringEditor::fromCharacter(Char{U'A'}, CpCount::infinite()));
     }
 
     void testBooleanConversion() {
@@ -129,7 +128,7 @@ public:
         REQUIRE_EQUAL(U32StringEditor::fromBoolean(false, BooleanFormat::onOff()), U"off"_el);
         REQUIRE_EQUAL(
             U32StringEditor::fromBoolean(
-                true, BooleanFormat::enabledDisabled().setCapitalization(Capitalization::Titlecase)),
+                true, BooleanFormat::enabledDisabled().setCapitalization(Capitalization::Capitalized)),
             U"Enabled"_el);
     }
 
@@ -138,7 +137,7 @@ public:
         static_assert(!std::is_convertible_v<std::u32string_view, U32StringEditor>);
 
         const auto text = U32StringEditor{std::u32string_view{U"xA\U0001F600x"}};
-        const auto view = U32String{text}.slice(CpRange{CpIndex{1U}, CpLength{2U}});
+        const auto view = U32String{text}.slice(CpRange{CpIndex{1U}, CpCount{2U}});
         const auto copy = view.copy();
 
         REQUIRE_EQUAL(copy, U"A\U0001F600"_el);
@@ -149,7 +148,7 @@ public:
         const auto text = U32StringEditor{std::u32string_view{U"A\u00A2\U0001F600"}};
 
         REQUIRE_EQUAL(text.length().toSizeT(), std::size_t{3});
-        REQUIRE(text.isValidUtf32());
+        REQUIRE(text.isEncodingValid());
         REQUIRE_EQUAL(text.charAt(StringSide::Front).toRawValue(), U'A');
         REQUIRE_EQUAL(text.charAt(StringSide::Back).toRawValue(), U'\U0001F600');
         {
@@ -202,13 +201,13 @@ public:
 
         REQUIRE(text.advance(index));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
-        REQUIRE(text.advance(index, CpLength{2}));
+        REQUIRE(text.advance(index, CpCount{2}));
         REQUIRE_EQUAL(index, text.indexAt(StringSide::Back));
         REQUIRE_FALSE(text.advance(index));
 
         REQUIRE(text.retreat(index));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
-        REQUIRE(text.retreat(index, CpLength::infinite()));
+        REQUIRE(text.retreat(index, CpCount::infinite()));
         REQUIRE(index.isZero());
 
         REQUIRE_EQUAL(text.indexAt(CpIndex{2}), CpIndex{2});
@@ -267,7 +266,7 @@ public:
         const auto invalid = std::u32string{U'A', static_cast<char32_t>(0x110000U), U'B'};
         const auto text = U32StringEditor{std::u32string_view{invalid}};
 
-        REQUIRE_FALSE(text.isValidUtf32());
+        REQUIRE_FALSE(text.isEncodingValid());
         REQUIRE_EQUAL(text.length().toSizeT(), std::size_t{3});
         REQUIRE_EQUAL(text.charAt(CpIndex{0}).toRawValue(), U'A');
         REQUIRE(text.charAt(CpIndex{1}).isReplacement());
@@ -347,7 +346,7 @@ public:
         REQUIRE_EQUAL(
             StringConverter{literalView.transformed(Char::toAsciiLowercase)}.toStdU32String(), std::u32string{U"abc"});
 
-        const auto slicedView = U32String{U"xabcx"_el}.slice(CpRange{CpIndex{1U}, CpLength{3U}});
+        const auto slicedView = U32String{U"xabcx"_el}.slice(CpRange{CpIndex{1U}, CpCount{3U}});
         const auto slicedLower = slicedView.transformed(Char::toAsciiLowercase);
         REQUIRE_EQUAL(StringConverter{slicedLower}.toStdU32String(), std::u32string{U"abc"});
 
@@ -373,31 +372,31 @@ public:
 
         const auto text = U32StringEditor{std::u32string_view{U"  Alpha,Beta,Gamma  "}};
         const auto trimmed = text.trimmed();
-        const auto parts = U32StringList::fromSplit(trimmed, CharSet{Char{U','}});
+        const auto parts = U32StringList::fromSplit(trimmed, CharSet{U','});
         const auto joined = parts.join(U"+"_el);
 
         REQUIRE_EQUAL(StringConverter{trimmed}.toStdString(), std::string{"Alpha,Beta,Gamma"});
         REQUIRE_EQUAL(parts.count().toSizeT(), std::size_t{3});
         REQUIRE_EQUAL(StringConverter{parts.getRefOrThrow(ItemIndex{1})}.toStdString(), std::string{"Beta"});
-        REQUIRE_EQUAL(U32StringList::fromSplit(trimmed, CharSet{Char{U','}}).count().toSizeT(), std::size_t{3});
+        REQUIRE_EQUAL(U32StringList::fromSplit(trimmed, CharSet{U','}).count().toSizeT(), std::size_t{3});
         REQUIRE_EQUAL(StringConverter{joined}.toStdString(), std::string{"Alpha+Beta+Gamma"});
         REQUIRE_EQUAL(trimmed.find(U"Beta"_el), CpIndex{6});
         REQUIRE_EQUAL(
-            StringConverter{trimmed.slice(CpRange{CpIndex{6}, CpLength{4}})}.toStdString(), std::string{"Beta"});
+            StringConverter{trimmed.slice(CpRange{CpIndex{6}, CpCount{4}})}.toStdString(), std::string{"Beta"});
 
         const auto unicode = U32StringEditor{std::u32string_view{U"A\u00A2\u20AC\U0001F600BC"}};
         const auto unicodeView = U32String{unicode};
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(CpRange{CpIndex{1}, CpLength{3}})}.toStdU32String(),
+            StringConverter{unicode.slice(CpRange{CpIndex{1}, CpCount{3}})}.toStdU32String(),
             std::u32string{U"\u00A2\u20AC\U0001F600"});
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(StringSide::Front, CpLength{4})}.toStdU32String(),
+            StringConverter{unicode.slice(StringSide::Front, CpCount{4})}.toStdU32String(),
             std::u32string{U"A\u00A2\u20AC\U0001F600"});
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(StringSide::Back, CpLength{3})}.toStdU32String(),
+            StringConverter{unicode.slice(StringSide::Back, CpCount{3})}.toStdU32String(),
             std::u32string{U"\U0001F600BC"});
         REQUIRE_EQUAL(
-            StringConverter{unicodeView.slice(StringSide::Back, CpLength{3})}.toStdU32String(),
+            StringConverter{unicodeView.slice(StringSide::Back, CpCount{3})}.toStdU32String(),
             std::u32string{U"\U0001F600BC"});
         REQUIRE_EQUAL(
             StringConverter{unicode.slice(StringSide::Front, CpIndex{3})}.toStdU32String(),
@@ -423,23 +422,23 @@ public:
             StringConverter{unicode}.toStdU32String());
         REQUIRE(unicodeView.slice(StringSide::Back, CpIndex{99}).isEmpty());
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(StringSide::Back, CpLength{99})}.toStdU32String(),
+            StringConverter{unicode.slice(StringSide::Back, CpCount{99})}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(StringSide::Back, CpLength::infinite())}.toStdU32String(),
+            StringConverter{unicode.slice(StringSide::Back, CpCount::infinite())}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(StringSide::Front, CpLength::infinite())}.toStdU32String(),
+            StringConverter{unicode.slice(StringSide::Front, CpCount::infinite())}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
         REQUIRE_EQUAL(
-            StringConverter{unicodeView.slice(StringSide::Front, CpLength::infinite())}.toStdU32String(),
+            StringConverter{unicodeView.slice(StringSide::Front, CpCount::infinite())}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
-        REQUIRE(unicode.slice(StringSide::Front, CpLength::zero()).isEmpty());
-        REQUIRE(unicode.slice(StringSide::Back, CpLength::zero()).isEmpty());
-        REQUIRE(unicode.slice(CpRange{CpIndex{2}, CpLength::zero()}).isEmpty());
+        REQUIRE(unicode.slice(StringSide::Front, CpCount::zero()).isEmpty());
+        REQUIRE(unicode.slice(StringSide::Back, CpCount::zero()).isEmpty());
+        REQUIRE(unicode.slice(CpRange{CpIndex{2}, CpCount::zero()}).isEmpty());
         REQUIRE(unicode.slice(CpRange::noRange()).isEmpty());
-        REQUIRE(unicode.slice(CpRange{CpIndex::noIndex(), CpLength{1}}).isEmpty());
-        REQUIRE(unicode.slice(CpRange{CpIndex{99}, CpLength{1}}).isEmpty());
+        REQUIRE(unicode.slice(CpRange{CpIndex::noIndex(), CpCount{1}}).isEmpty());
+        REQUIRE(unicode.slice(CpRange{CpIndex{99}, CpCount{1}}).isEmpty());
 
         {
             const auto [left, right] = unicode.splitAt(CpIndex{3});
@@ -499,23 +498,23 @@ public:
         const auto source = U32StringEditor{std::u32string_view{U"A\U0001F600BC"}};
 
         REQUIRE_EQUAL(
-            StringConverter{source.removed(CpRange{CpIndex{1U}, CpLength{1U}})}.toStdU32String(),
+            StringConverter{source.removed(CpRange{CpIndex{1U}, CpCount{1U}})}.toStdU32String(),
             std::u32string{U"ABC"});
         REQUIRE_EQUAL(
-            StringConverter{source.kept(CpRange{CpIndex{1U}, CpLength{1U}})}.toStdU32String(),
+            StringConverter{source.kept(CpRange{CpIndex{1U}, CpCount{1U}})}.toStdU32String(),
             std::u32string{U"\U0001F600"});
         REQUIRE_EQUAL(
             StringConverter{source.inserted(CpIndex{2U}, U"X"_el)}.toStdU32String(), std::u32string{U"A\U0001F600XBC"});
         REQUIRE_EQUAL(
-            StringConverter{source.replaced(CpRange{CpIndex{1U}, CpLength{1U}}, U"X"_el)}.toStdU32String(),
+            StringConverter{source.replaced(CpRange{CpIndex{1U}, CpCount{1U}}, U"X"_el)}.toStdU32String(),
             std::u32string{U"AXBC"});
 
         auto text = U32StringEditor{std::u32string_view{U"abef"}};
-        text.reserve(CpLength{16U});
+        text.reserve(CpCount{16U});
         const auto capacity = text.capacity();
 
         text.insert(CpIndex{2U}, U"cd"_el);
-        text.replace(CpRange{CpIndex{2U}, CpLength{2U}}, U"XY"_el);
+        text.replace(CpRange{CpIndex{2U}, CpCount{2U}}, U"XY"_el);
         text.insert(CpIndex{99U}, U"!"_el);
         text.insert(CpIndex::noIndex(), U"?"_el);
         text.replace(CpRange::noRange(), U"?"_el);
@@ -540,11 +539,11 @@ public:
     void testViewAliasingAndMalformedModifiers() {
 
         const auto source = U32StringEditor{std::u32string_view{U"--alpha--"}};
-        const auto view = U32String{source}.slice(CpRange{CpIndex{2U}, CpLength{5U}});
+        const auto view = U32String{source}.slice(CpRange{CpIndex{2U}, CpCount{5U}});
 
         REQUIRE_EQUAL(StringConverter{view.inserted(CpIndex{2U}, U"!"_el)}.toStdU32String(), std::u32string{U"al!pha"});
         REQUIRE_EQUAL(
-            StringConverter{view.replaced(CpRange{CpIndex{2U}, CpLength{2U}}, U"X"_el)}.toStdU32String(),
+            StringConverter{view.replaced(CpRange{CpIndex{2U}, CpCount{2U}}, U"X"_el)}.toStdU32String(),
             std::u32string{U"alXa"});
         REQUIRE_EQUAL(StringConverter{view.removedFirst(U"ph"_el)}.toStdU32String(), std::u32string{U"ala"});
         REQUIRE_EQUAL(
@@ -552,26 +551,26 @@ public:
             std::u32string{U"ALpha"});
 
         auto insertAlias = U32StringEditor{std::u32string_view{U"abcdef"}};
-        insertAlias.reserve(CpLength{16U});
-        const auto insertView = U32String{insertAlias}.slice(CpRange{CpIndex{1U}, CpLength{3U}});
+        insertAlias.reserve(CpCount{16U});
+        const auto insertView = U32String{insertAlias}.slice(CpRange{CpIndex{1U}, CpCount{3U}});
         insertAlias.insert(CpIndex{3U}, insertView);
         REQUIRE_EQUAL(StringConverter{insertAlias}.toStdU32String(), std::u32string{U"abcbcddef"});
 
         auto replaceAlias = U32StringEditor{std::u32string_view{U"abcdef"}};
-        replaceAlias.reserve(CpLength{16U});
-        const auto replaceView = U32String{replaceAlias}.slice(CpRange{CpIndex{1U}, CpLength{4U}});
-        replaceAlias.replace(CpRange{CpIndex{2U}, CpLength{2U}}, replaceView);
+        replaceAlias.reserve(CpCount{16U});
+        const auto replaceView = U32String{replaceAlias}.slice(CpRange{CpIndex{1U}, CpCount{4U}});
+        replaceAlias.replace(CpRange{CpIndex{2U}, CpCount{2U}}, replaceView);
         REQUIRE_EQUAL(StringConverter{replaceAlias}.toStdU32String(), std::u32string{U"abbcdeef"});
 
         auto base = U32StringEditor{std::u32string_view{U"xxabcdefyy"}};
-        auto sliced = base.slice(CpRange{CpIndex{2U}, CpLength{6U}});
+        auto sliced = base.slice(CpRange{CpIndex{2U}, CpCount{6U}});
         sliced.insert(CpIndex{3U}, U"!"_el);
         REQUIRE_EQUAL(StringConverter{sliced}.toStdU32String(), std::u32string{U"abc!def"});
         REQUIRE_EQUAL(StringConverter{base}.toStdU32String(), std::u32string{U"xxabcdefyy"});
 
         const auto malformedData = std::u32string{U'A', static_cast<char32_t>(0x110000U), U'B'};
         auto malformed = U32StringEditor{std::u32string_view{malformedData}};
-        malformed.replace(CpRange{CpIndex{1U}, CpLength{1U}}, U"?"_el);
+        malformed.replace(CpRange{CpIndex{1U}, CpCount{1U}}, U"?"_el);
         malformed.insert(CpIndex{99U}, U"!"_el);
         REQUIRE_EQUAL(StringConverter{malformed}.toStdU32String(), std::u32string{U"A?B!"});
     }

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../../../../text/String.hpp"
+#include "../../../../text/StringList.hpp"
 
 #include <vector>
 
@@ -21,16 +22,16 @@ public:
     /// Get the exact query without its question mark.
     [[nodiscard]] auto query() const noexcept -> const text::String & { return _query; }
     /// Get decoded segments split before percent decoding.
-    [[nodiscard]] auto segments() const noexcept -> const std::vector<text::String> & { return _segments; }
+    [[nodiscard]] auto segments() const noexcept -> const text::StringList & { return _segments; }
 
 private:
     /// Strictly percent-decode and NFC-normalize one segment.
     [[nodiscard]] static auto decodeSegment(const text::String &segment) -> text::String;
 
 private:
-    text::String _path;                  ///< Decoded NFC path.
-    text::String _query;                 ///< Exact query without question mark.
-    std::vector<text::String> _segments; ///< Decoded segments.
+    text::String _path;         ///< Decoded NFC path.
+    text::String _query;        ///< Exact query without question mark.
+    text::StringList _segments; ///< Decoded segments.
 };
 
 }

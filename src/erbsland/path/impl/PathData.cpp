@@ -21,8 +21,7 @@ using namespace text::literals;
 using namespace text;
 using namespace unit;
 
-PathData::PathData(
-    const PathFormat format, text::String root, text::StringList elements, const unit::CpLength characterLength) :
+PathData::PathData(const PathFormat format, String root, StringList elements, const unit::CpCount characterLength) :
     _format{format}, _root{std::move(root)}, _elements{std::move(elements)}, _characterLength{characterLength} {
 }
 
@@ -70,6 +69,24 @@ auto PathData::operator=(PathData &&other) noexcept -> PathData & {
     return *this;
 }
 
+auto PathData::compare(const PathData &other, const CharCompareFn compareFn) const noexcept -> std::strong_ordering {
+    const auto rootOrder = _root.compare(other._root, compareFn);
+    if (rootOrder != std::strong_ordering::equal) {
+        return rootOrder;
+    }
+    auto left = _elements.begin();
+    auto right = other._elements.begin();
+    while (left != _elements.end() && right != other._elements.end()) {
+        const auto order = left->compare(*right, compareFn);
+        if (order != std::strong_ordering::equal) {
+            return order;
+        }
+        ++left;
+        ++right;
+    }
+    return _elements.count() <=> other._elements.count();
+}
+
 auto PathData::isAbsolute() const noexcept -> bool {
     return !_root.isEmpty();
 }
@@ -82,11 +99,11 @@ auto PathData::format() const noexcept -> PathFormat {
     return _format;
 }
 
-auto PathData::root() const noexcept -> text::String {
+auto PathData::root() const noexcept -> String {
     return _root;
 }
 
-auto PathData::elements() const noexcept -> text::StringList {
+auto PathData::elements() const noexcept -> StringList {
     return _elements;
 }
 
@@ -95,13 +112,13 @@ void PathData::setFormat(PathFormat format) noexcept {
     resetInfoCache();
 }
 
-void PathData::setRoot(text::String root) noexcept {
+void PathData::setRoot(String root) noexcept {
     _root = std::move(root);
     updateCharacterLength();
     resetInfoCache();
 }
 
-void PathData::setElements(text::StringList elements) noexcept {
+void PathData::setElements(StringList elements) noexcept {
     _elements = std::move(elements);
     updateCharacterLength();
     resetInfoCache();
@@ -115,7 +132,7 @@ auto PathData::publicItemCount() const noexcept -> unit::ItemCount {
     return result;
 }
 
-auto PathData::publicElements() const -> text::StringList {
+auto PathData::publicElements() const -> StringList {
     auto result = StringList{};
     result.reserve(publicItemCount());
     if (!_root.isEmpty()) {
@@ -147,7 +164,7 @@ void PathData::updateCharacterLength() noexcept {
     auto first = true;
     for (const auto &element : _elements) {
         if (!first) {
-            _characterLength += CpLength::one();
+            _characterLength += CpCount::one();
         }
         _characterLength += element.characterLength();
         first = false;
@@ -222,7 +239,7 @@ auto PathData::create(const PathFormat format, const String &root, StringList el
     if (publicItemCount.isZero() || publicItemCount > cMaximumPathElements) {
         return {};
     }
-    CpLength totalLength = root.characterLength();
+    CpCount totalLength = root.characterLength();
     if (!root.isEmpty() && root.containsOneOf(invalidPathCharacters())) {
         return {};
     }
@@ -232,7 +249,7 @@ auto PathData::create(const PathFormat format, const String &root, StringList el
         if (first) {
             first = false;
         } else {
-            totalLength += CpLength::one();
+            totalLength += CpCount::one();
         }
         if (element.containsOneOf(invalidPathCharacters())) {
             return {};
@@ -253,7 +270,7 @@ auto PathData::createJoined(const PathData &base, const String &element) noexcep
     const auto elementCount = base.publicItemCount() + ItemCount::one();
     auto characterLength = base._characterLength + element.characterLength();
     if (!base._elements.isEmpty()) {
-        characterLength += CpLength::one();
+        characterLength += CpCount::one();
     }
     if (elementCount > cMaximumPathElements || characterLength > cMaximumPathCharacters) {
         return {};
@@ -283,13 +300,13 @@ auto PathData::backend() noexcept -> PathBackend & {
     return pathBackend();
 }
 
-auto PathData::windowsRootLength(const PathWindowsFormat format) const noexcept -> ByteLength {
+auto PathData::windowsRootLength(const PathWindowsFormat format) const noexcept -> ByteCount {
     if (_root.isEmpty() || _root == cSlash) {
         return {};
     }
     if (_root.startsWith(cDoubleSlash)) {
         if (format == PathWindowsFormat::Extended) {
-            return cWindowsExtendedNativeUncPathPrefix.length() + _root.length() - ByteLength::one();
+            return cWindowsExtendedNativeUncPathPrefix.length() + _root.length() - ByteCount::one();
         }
         return _root.length();
     }

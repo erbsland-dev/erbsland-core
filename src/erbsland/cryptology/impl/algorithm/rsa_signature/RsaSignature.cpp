@@ -6,8 +6,8 @@
 #include "../../../../mem/ByteBlockEditor.hpp"
 #include "../../../../mem/Endianness.hpp"
 #include "../../../../text/Literals.hpp"
+#include "../../../../unit/ByteCount.hpp"
 #include "../../../../unit/ByteIndex.hpp"
-#include "../../../../unit/ByteLength.hpp"
 #include "../../../Hasher.hpp"
 
 #include <array>
@@ -17,14 +17,15 @@
 
 namespace erbsland::cryptology::impl::rsa_signature {
 
+using namespace mem;
 using namespace text::literals;
 using namespace unit;
 
 auto verify(
     const PublicKey &publicKey,
     const X509AlgorithmIdentifier &signatureAlgorithm,
-    const mem::ConstByteSpan message,
-    const mem::ConstByteSpan signature) -> bool {
+    const ConstByteSpan message,
+    const ConstByteSpan signature) -> bool {
     // RFC 5280 sections 4.1.1.2 and 4.1.2.7 bind a signature AlgorithmIdentifier to the issuer's public-key info.
     const auto parameters = decodeSignatureParameters(signatureAlgorithm);
     const auto key = decodePublicKey(publicKey);
@@ -46,8 +47,8 @@ auto verify(
 auto verifyPss(
     const PublicKeyData &key,
     const SignatureParameters &parameters,
-    const mem::ConstByteSpan message,
-    const mem::ByteBlock &encodedMessage) -> bool {
+    const ConstByteSpan message,
+    const ByteBlock &encodedMessage) -> bool {
     // RFC 8017 section 8.1.2 step 2 sets `emBits = modBits - 1`; I2OSP may therefore contribute one leading octet.
     const auto emBits = key.modulusBits - 1U;
     const auto emLength = (emBits + 7U) / 8U;
@@ -86,26 +87,25 @@ auto verifyPss(
 
     // RFC 8017 section 9.1.2 steps 7--9 compute dbMask = MGF(H), recover DB, and clear its unused high bits.
     const auto dbMask = mgf1(parameters.hash, encodedHash, maskedDbLength);
-    auto db = mem::ByteBlockEditor::fromSpan(maskedDb);
+    auto db = ByteBlockEditor::fromSpan(maskedDb);
     db.xorWithOrThrow(dbMask);
     db.set(
-        ByteIndex::zero(),
-        mem::Byte{static_cast<uint8_t>(db.get(ByteIndex::zero()).toUInt8() & (0xffU >> unusedHighBits))});
+        ByteIndex::zero(), Byte{static_cast<uint8_t>(db.get(ByteIndex::zero()).toUInt8() & (0xffU >> unusedHighBits))});
 
     // RFC 8017 section 9.1.2 step 10 requires DB = PS || 0x01 || salt with an all-zero PS.
-    const auto psLength = emLength - hashLength - parameters.saltLength - 2U;
-    for (auto index = std::size_t{}; index < psLength; ++index) {
-        if (db.get(ByteIndex{index}).toUInt8() != 0U) {
+    const auto psLength = ByteCount::fromSizeT(emLength - hashLength - parameters.saltLength - 2U);
+    for (auto index = ByteIndex::zero(); index.isWithin(psLength); index.uncheckedIncrement()) {
+        if (db.get(index).toUInt8() != 0U) {
             return false;
         }
     }
-    if (db.get(ByteIndex{psLength}).toUInt8() != 1U) {
+    if (db.get(ByteIndex::end(psLength)).toUInt8() != 1U) {
         return false;
     }
-    const auto salt = db.slice(ByteIndex{psLength + 1U}, ByteLength::fromSizeT(parameters.saltLength));
+    const auto salt = db.slice(ByteIndex::end(psLength).incremented(), ByteCount::fromSizeT(parameters.saltLength));
 
     // RFC 8017 section 9.1.2 steps 11--13 compute H' = Hash(0x00^8 || mHash || salt) and compare it with H.
-    auto hashInput = mem::ByteBlockEditor{ByteLength{8U}};
+    auto hashInput = ByteBlockEditor{ByteCount{8U}};
     hashInput.append(messageHash);
     hashInput.append(salt);
     const auto expectedHash =
@@ -116,8 +116,8 @@ auto verifyPss(
 auto verifyPkcs1V15(
     [[maybe_unused]] const PublicKeyData &key,
     const SignatureParameters &parameters,
-    const mem::ConstByteSpan message,
-    const mem::ByteBlock &encodedMessage) -> bool {
+    const ConstByteSpan message,
+    const ByteBlock &encodedMessage) -> bool {
     // RFC 8017 section 9.2 steps 1--2 hash M and encode the digest in the algorithm-specific DER DigestInfo T.
     const auto digest = hashMessage(parameters.hash, message);
     // RFC 8017 section 9.2 note 1 gives the exact DER DigestInfo prefixes for SHA-256 and SHA-384.
@@ -161,9 +161,32 @@ auto verifyPkcs1V15(
         0x00U,
         0x04U,
         0x30U};
-    const auto digestInfo = parameters.hash == HashAlgorithm::Sha2_256
-        ? mem::toConstByteSpan(std::span<const uint8_t>{cSha256DigestInfo})
-        : mem::toConstByteSpan(std::span<const uint8_t>{cSha384DigestInfo});
+    static constexpr auto cSha512DigestInfo = std::array<uint8_t, 19U>{
+        0x30U,
+        0x51U,
+        0x30U,
+        0x0dU,
+        0x06U,
+        0x09U,
+        0x60U,
+        0x86U,
+        0x48U,
+        0x01U,
+        0x65U,
+        0x03U,
+        0x04U,
+        0x02U,
+        0x03U,
+        0x05U,
+        0x00U,
+        0x04U,
+        0x40U};
+    auto digestInfo = toConstByteSpan(std::span<const uint8_t>{cSha256DigestInfo});
+    if (parameters.hash == HashAlgorithm::Sha2_384) {
+        digestInfo = toConstByteSpan(std::span<const uint8_t>{cSha384DigestInfo});
+    } else if (parameters.hash == HashAlgorithm::Sha2_512) {
+        digestInfo = toConstByteSpan(std::span<const uint8_t>{cSha512DigestInfo});
+    }
     const auto encodedLength = encodedMessage.span().size();
     const auto trailerLength = digestInfo.size() + digest.span().size();
     if (encodedLength < trailerLength + 11U) {
@@ -172,12 +195,12 @@ auto verifyPkcs1V15(
 
     // RFC 8017 section 9.2 steps 4--5 construct EM = 0x00 || 0x01 || PS || 0x00 || T with at least eight 0xff bytes.
     const auto paddingLength = encodedLength - trailerLength - 3U;
-    auto expected = mem::ByteBlockEditor{};
-    expected.reserve(ByteLength::fromSizeT(encodedLength));
-    expected.append(mem::Byte{0x00U});
-    expected.append(mem::Byte{0x01U});
-    expected.append(mem::Byte{0xffU}, ByteLength::fromSizeT(paddingLength));
-    expected.append(mem::Byte{0x00U});
+    auto expected = ByteBlockEditor{};
+    expected.reserve(ByteCount::fromSizeT(encodedLength));
+    expected.append(Byte{0x00U});
+    expected.append(Byte{0x01U});
+    expected.append(Byte{0xffU}, ByteCount::fromSizeT(paddingLength));
+    expected.append(Byte{0x00U});
     expected.append(digestInfo);
     expected.append(digest);
 
@@ -185,23 +208,23 @@ auto verifyPkcs1V15(
     return expected.isEqualConstTime(encodedMessage.span());
 }
 
-auto mgf1(const HashAlgorithm hash, const mem::ConstByteSpan seed, const std::size_t length) -> mem::ByteBlock {
-    auto mask = mem::ByteBlockEditor{};
-    mask.reserve(ByteLength::fromSizeT(length));
+auto mgf1(const HashAlgorithm hash, const ConstByteSpan seed, const std::size_t length) -> ByteBlock {
+    auto mask = ByteBlockEditor{};
+    mask.reserve(ByteCount::fromSizeT(length));
     // RFC 8017 appendix B.2.1 steps 1--3 concatenate Hash(seed || I2OSP(counter, 4)) blocks.
     for (auto counter = uint32_t{}; mask.length().toSizeT() < length; ++counter) {
         auto hasher = Hasher{hash};
         hasher.update(seed);
-        auto counterBytes = mem::ByteBlockEditor{};
-        counterBytes.appendInteger(counter, mem::Endianness::Big);
+        auto counterBytes = ByteBlockEditor{};
+        counterBytes.appendInteger(counter, Endianness::Big);
         hasher.update(counterBytes.slice(ByteIndex::zero(), counterBytes.length()));
         mask.append(hasher.finalize());
     }
-    mask.resize(ByteLength::fromSizeT(length));
-    return mem::ByteBlock{mask};
+    mask.resize(ByteCount::fromSizeT(length));
+    return ByteBlock{mask};
 }
 
-auto hashMessage(const HashAlgorithm hash, const mem::ConstByteSpan message) -> mem::ByteBlock {
+auto hashMessage(const HashAlgorithm hash, const ConstByteSpan message) -> ByteBlock {
     auto hasher = Hasher{hash};
     hasher.update(message);
     return hasher.finalize();

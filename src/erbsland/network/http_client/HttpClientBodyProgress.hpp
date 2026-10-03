@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <optional>
 
@@ -13,19 +13,19 @@ namespace erbsland::network {
 class HttpClientBodyProgress final {
 public:
     /// Create one progress value.
-    HttpClientBodyProgress(unit::ByteLength committedLength, std::optional<unit::ByteLength> expectedLength) noexcept :
+    HttpClientBodyProgress(unit::ByteCount committedLength, std::optional<unit::ByteCount> expectedLength) noexcept :
         _committedLength{committedLength}, _expectedLength{expectedLength} {}
 
     /// Get the number of bytes successfully written to the sink.
-    [[nodiscard]] constexpr auto committedLength() const noexcept -> unit::ByteLength { return _committedLength; }
+    [[nodiscard]] constexpr auto committedLength() const noexcept -> unit::ByteCount { return _committedLength; }
     /// Get the expected decoded body length when known from Content-Length.
-    [[nodiscard]] constexpr auto expectedLength() const noexcept -> std::optional<unit::ByteLength> {
+    [[nodiscard]] constexpr auto expectedLength() const noexcept -> std::optional<unit::ByteCount> {
         return _expectedLength;
     }
 
 private:
-    unit::ByteLength _committedLength;               ///< Successfully written bytes.
-    std::optional<unit::ByteLength> _expectedLength; ///< Known decoded body length.
+    unit::ByteCount _committedLength;               ///< Successfully written bytes.
+    std::optional<unit::ByteCount> _expectedLength; ///< Known decoded body length.
 };
 
 }

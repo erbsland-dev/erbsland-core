@@ -1,10 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "Result.hpp"
 
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <cmath>
 

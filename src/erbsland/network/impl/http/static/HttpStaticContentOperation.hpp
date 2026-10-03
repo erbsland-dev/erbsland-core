@@ -7,11 +7,14 @@
 #include "../server/HttpServer_fwd.hpp"
 #include "../server/HttpServerRequest_fwd.hpp"
 
+#include "../../../../event/impl/EventContinuation.hpp"
 #include "../../../../mem/ByteBlock.hpp"
 #include "../../../../path/Path.hpp"
 #include "../../../../stream/ByteInputStream_fwd.hpp"
 #include "../../../../text/String.hpp"
-#include "../../../../unit/ByteLength.hpp"
+#include "../../../../text/StringList.hpp"
+#include "../../../../unit/ByteCount.hpp"
+#include "../../../../util/impl/worker_executor/WorkerExecutor.hpp"
 #include "../../../http/HttpStatus.hpp"
 #include "../../../http_server/HttpStaticContent_fwd.hpp"
 #include "../../../http_server/HttpStaticContentHandler_fwd.hpp"
@@ -55,11 +58,11 @@ private:
     /// Build exact candidates for matching URL prefixes and trailing-slash indexes.
     void buildCandidates(const std::vector<HttpStaticContentHandlerPtr> &handlers);
     /// Parse one decoded URL prefix into complete segments.
-    [[nodiscard]] static auto prefixSegments(const text::String &prefix) -> std::vector<text::String>;
+    [[nodiscard]] static auto prefixSegments(const text::String &prefix) -> text::StringList;
     /// Test one decoded suffix segment against portable safety rules.
     [[nodiscard]] static auto isSafeSegment(const text::String &segment) noexcept -> bool;
     /// Build one relative path from decoded suffix segments.
-    [[nodiscard]] static auto relativePath(const std::vector<text::String> &segments) -> path::Path;
+    [[nodiscard]] static auto relativePath(const text::StringList &segments) -> path::Path;
     /// Continue with the next handler/path probe.
     void probeNext();
     /// Handle one probe completion.
@@ -88,22 +91,24 @@ private:
     void sourceFailed();
 
 private:
-    std::weak_ptr<HttpServer> _server;           ///< Owning server.
-    std::weak_ptr<HttpServerRequest> _request;   ///< Active request.
-    HttpStaticContentUsePtr _contentUse;         ///< Keeps handler configuration frozen across workers.
-    std::vector<Candidate> _candidates;          ///< Ordered exact probes.
-    std::size_t _candidateIndex{};               ///< Next probe index.
-    Candidate *_selected{};                      ///< Authoritative positive candidate.
-    HttpStaticContentPtr _content;               ///< Generic selected representation.
-    stream::ByteInputStreamPtr _stream;          ///< One-shot opened stream for GET.
-    std::optional<mem::ByteBlock> _pendingBlock; ///< Retained rejected output block.
-    unit::ByteLength _offset;                    ///< Bytes accepted by HTTP output.
-    unit::ByteLength _length;                    ///< Exact declared representation length.
-    unit::ByteLength _reservedMemoryLength;      ///< Aggregate retained-content reservation.
-    unit::ByteLength _reservedQueueLength;       ///< Current output queue reservation.
-    bool _activeReservation{};                   ///< Active-response quota reservation.
-    bool _workerPending{};                       ///< One outstanding worker operation.
-    bool _cancelled{};                           ///< Cancellation/generation guard.
+    event::impl::EventContinuationPtr _completion; ///< Reserved owner-loop completion capacity.
+    util::impl::WorkerReservation _work;           ///< Admission includes terminal cleanup.
+    std::weak_ptr<HttpServer> _server;             ///< Owning server.
+    std::weak_ptr<HttpServerRequest> _request;     ///< Active request.
+    HttpStaticContentUsePtr _contentUse;           ///< Keeps handler configuration frozen across workers.
+    std::vector<Candidate> _candidates;            ///< Ordered exact probes.
+    std::size_t _candidateIndex{};                 ///< Next probe index.
+    Candidate *_selected{};                        ///< Authoritative positive candidate.
+    HttpStaticContentPtr _content;                 ///< Generic selected representation.
+    stream::ByteInputStreamPtr _stream;            ///< One-shot opened stream for GET.
+    std::optional<mem::ByteBlock> _pendingBlock;   ///< Retained rejected output block.
+    unit::ByteCount _offset;                       ///< Bytes accepted by HTTP output.
+    unit::ByteCount _length;                       ///< Exact declared representation length.
+    unit::ByteCount _reservedMemoryLength;         ///< Aggregate retained-content reservation.
+    unit::ByteCount _reservedQueueLength;          ///< Current output queue reservation.
+    bool _activeReservation{};                     ///< Active-response quota reservation.
+    bool _workerPending{};                         ///< One outstanding worker operation.
+    bool _cancelled{};                             ///< Cancellation/generation guard.
 };
 
 using HttpStaticContentOperationPtr = std::shared_ptr<HttpStaticContentOperation>;

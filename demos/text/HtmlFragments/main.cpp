@@ -4,12 +4,13 @@
 #include "HtmlFragmentsDemos.hpp"
 
 #include <DemoCommon.hpp>
+#include <DemoTerminal.hpp>
 
 using namespace demo;
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
-    app.enableTerminal();
+    DemoTerminal::enable(app);
     app.registerDemo("RenderFragment"_el, renderFragment);
     return app.run();
 }

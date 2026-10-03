@@ -3,9 +3,9 @@
 
 #include "ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/resource/Resources.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Resources.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;

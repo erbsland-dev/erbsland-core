@@ -6,9 +6,9 @@
 #include <erbsland/conf/impl/value/ValueTreeWalker.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringList.hpp>
 
 using namespace el;
 using namespace el::conf;

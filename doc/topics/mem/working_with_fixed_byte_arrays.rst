@@ -53,7 +53,7 @@ The following example uses the indexed form to find the crest of a compact sampl
 .. erbsland-demo::
     :source: mem/ByteArray/AccessingBytes.cpp
     :exec: mem/byte_array --demo AccessingBytes
-    :source-sha256: 7f83ce52cabdaf3cb8f88fb762d9d8fe822dce91319a7a94df41d9eb08f8838e
+    :sha256: 51ce04a3892bbd29f2a90d089863287eb6a686689a129403aa4c6c4fb019f4b3
 
 .. code-block:: cpp
 
@@ -94,18 +94,20 @@ The following example uses the indexed form to find the crest of a compact sampl
             "Visited all samples : "_el, el::BooleanFormat::yesNo(), iterationResult == el::LoopResult::Success);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Wave               : Havsvåg
-    Sample count       : 5
-    End index          : 5
-    Array is empty     : no
-    First sample       : 24
-    Crest sample       : 112
-    Missing fallback   : 255
-    Peak index         : 2
-    Visited all samples : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWave               : Havsvåg
+        Sample count       : 5
+        End index          : 5
+        Array is empty     : no
+        First sample       : 24
+        Crest sample       : 112
+        Missing fallback   : 255
+        Peak index         : 2
+        Visited all samples : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -126,7 +128,7 @@ clear operation.
 .. erbsland-demo::
     :source: mem/ByteArray/ChangingBytes.cpp
     :exec: mem/byte_array --demo ChangingBytes
-    :source-sha256: 53e6049675071e0525780c3cc072d3e39705e549ebc71422bd96f4722644f39c
+    :sha256: d989e09740ee48016d1fd5443ef76e2a58d73dd598ecf50b391839dc6cdc9bef
 
 .. code-block:: cpp
 
@@ -156,12 +158,14 @@ clear operation.
         el::io::printLine("Invalid writes ignored: "_el, el::BooleanFormat::yesNo(), waveSamples == beforeIgnoredWrites);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Wave               : Havsvåg
-    Adjusted samples   : 28 48 60 48 28
-    Invalid writes ignored: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWave               : Havsvåg
+        Adjusted samples   : 28 48 60 48 28
+        Invalid writes ignored: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -180,13 +184,13 @@ reaches beyond the end cannot enlarge or overrun the array.
 The whole-array form accepts only an equally sized source and returns ``false`` without changing anything when the
 length differs.
 :cpp:func:`xorWithOrThrow() <erbsland::mem::ByteArray::xorWithOrThrow>` expresses the same equal-length requirement as
-an invariant and raises :cpp:class:`ParameterError <erbsland::err::ParameterError>` on a mismatch.
+an invariant and raises :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` on a mismatch.
 The range form is intentionally more permissive: it combines as many bytes as fit in the clamped target.
 
 .. erbsland-demo::
     :source: mem/ByteArray/ChangingRanges.cpp
     :exec: mem/byte_array --demo ChangingRanges
-    :source-sha256: b1d88d65d01b90baa788a71d02aa6b6c34615d7e0cb3434a14e01ea87e0cbd6f
+    :sha256: bb64c869dc0f5b2038b59a1ca0cb096cb91b8cda7437e573dbf9fb510fb05c79
 
 .. code-block:: cpp
 
@@ -200,19 +204,19 @@ The range form is intentionally more permissive: it combines as many bytes as fi
 
         // Establish a quiet baseline, then raise a three-sample pulse in the middle.
         waveSamples.fill(el::Byte{16U});
-        waveSamples.fill(el::ByteRange{el::ByteIndex{2U}, el::ByteLength{3U}}, el::Byte{64U});
+        waveSamples.fill(el::ByteRange{el::ByteIndex{2U}, el::ByteCount{3U}}, el::Byte{64U});
 
         // Copy complete or partial source waves into selected positions.
         waveSamples.overwrite(el::ByteArray{el::Byte{20U}, el::Byte{30U}}.span());
         waveSamples.overwrite(
             el::ByteIndex{5U}, el::ByteArray{el::Byte{80U}, el::Byte{96U}, el::Byte{112U}, el::Byte{128U}}.span());
         waveSamples.overwrite(
-            el::ByteRange{el::ByteIndex{3U}, el::ByteLength{2U}},
+            el::ByteRange{el::ByteIndex{3U}, el::ByteCount{2U}},
             el::ByteArray{el::Byte{70U}, el::Byte{78U}, el::Byte{86U}}.span());
 
         // Apply a partial mask, then require an exact-size mask for the complete array.
         waveSamples.xorWith(
-            el::ByteRange{el::ByteIndex{2U}, el::ByteLength{3U}},
+            el::ByteRange{el::ByteIndex{2U}, el::ByteCount{3U}},
             el::ByteArray{el::Byte{1U}, el::Byte{2U}, el::Byte{4U}}.span());
         const auto shortMaskAccepted = waveSamples.xorWith(el::ByteArray{el::Byte{255U}}.span());
         waveSamples.xorWithOrThrow(
@@ -232,12 +236,14 @@ The range form is intentionally more permissive: it combines as many bytes as fi
         el::io::printLine("Short mask accepted: "_el, el::BooleanFormat::yesNo(), shortMaskAccepted);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Wave               : Havsvåg
-    Combined samples   : 14 1e 41 44 4a 50 60 7f
-    Short mask accepted: no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWave               : Havsvåg
+        Combined samples   : 14 1e 41 44 4a 50 60 7f
+        Short mask accepted: no␛[0m
 
 .. erbsland-demo-end::
 
@@ -277,7 +283,7 @@ No bit crosses from one byte into its neighbor.
 .. erbsland-demo::
     :source: mem/ByteArray/MovingBits.cpp
     :exec: mem/byte_array --demo MovingBits
-    :source-sha256: c356588dd63b150ea68bc9a3f485d4b856c17b769b344af88786d5f9f4618bab
+    :sha256: be7fa6a67dabfe2ccdf7611139228022436fcf233624767935fe3727250b76ae
 
 .. code-block:: cpp
 
@@ -337,19 +343,21 @@ No bit crosses from one byte into its neighbor.
         el::io::printLine("In-place forms agree: "_el, el::BooleanFormat::yesNo(), inPlaceFormsAgree);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Wave               : Havsvåg
-    Whole shift left   : 03 00
-    Each byte left     : 02 00
-    Whole shift right  : 40 c0
-    Each byte right    : 40 40
-    Whole rotate left  : 02 81
-    Each byte left rot.: 03 80
-    Whole rotate right : 40 a0
-    Each byte right rot: c0 20
-    In-place forms agree: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWave               : Havsvåg
+        Whole shift left   : 03 00
+        Each byte left     : 02 00
+        Whole shift right  : 40 c0
+        Each byte right    : 40 40
+        Whole rotate left  : 02 81
+        Each byte left rot.: 03 80
+        Whole rotate right : 40 a0
+        Each byte right rot: c0 20
+        In-place forms agree: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -371,7 +379,7 @@ Keep these views local and short-lived, and use an owning container when the byt
 .. erbsland-demo::
     :source: mem/ByteArray/BorrowingRanges.cpp
     :exec: mem/byte_array --demo BorrowingRanges
-    :source-sha256: ade805c083e856d11e5b3eca5873a38aee3646bc9a76e79361768229cc200c65
+    :sha256: 95606064ca180956ce77fa95a730483cdf4718a83e7205529802e58199b78224
 
 .. code-block:: cpp
 
@@ -386,9 +394,9 @@ Keep these views local and short-lived, and use an owning container when the byt
 
         // Borrow the whole fixed extent and two ranges selected at runtime.
         const auto completeWave = waveSamples.span();
-        const auto crest = waveSamples.span(el::ByteRange{el::ByteIndex{2U}, el::ByteLength{3U}});
-        const auto clampedTail = waveSamples.span(el::ByteIndex{4U}, el::ByteLength{99U});
-        const auto outside = waveSamples.span(el::ByteIndex{99U}, el::ByteLength{2U});
+        const auto crest = waveSamples.span(el::ByteRange{el::ByteIndex{2U}, el::ByteCount{3U}});
+        const auto clampedTail = waveSamples.span(el::ByteIndex{4U}, el::ByteCount{99U});
+        const auto outside = waveSamples.span(el::ByteIndex{99U}, el::ByteCount{2U});
         static_assert(decltype(completeWave)::extent == 6U);
 
         // A span observes later in-place changes because it still views the array.
@@ -407,15 +415,17 @@ Keep these views local and short-lived, and use an owning container when the byt
         el::io::printLine("Updated crest sum  : "_el, crestSum);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Wave               : Havsvåg
-    Complete length    : 6
-    Crest length       : 3
-    Clamped tail length: 2
-    Outside is empty   : yes
-    Updated crest sum  : 295
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWave               : Havsvåg
+        Complete length    : 6
+        Crest length       : 3
+        Clamped tail length: 2
+        Outside is empty   : yes
+        Updated crest sum  : 295␛[0m
 
 .. erbsland-demo-end::
 
@@ -428,14 +438,14 @@ otherwise returns an empty ``std::optional``.
 This form suits parsed or external input whose length is part of normal validation.
 
 :cpp:func:`fromSpanOrThrow() <erbsland::mem::ByteArray::fromSpanOrThrow>` performs the same exact-size copy but raises
-:cpp:class:`ParameterError <erbsland::err::ParameterError>` on a mismatch.
+:cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` on a mismatch.
 Use it when an earlier layer or a fixed format has already guaranteed the extent.
 Neither factory keeps a reference to the source, so later changes to the source do not affect the array.
 
 .. erbsland-demo::
     :source: mem/ByteArray/CopyingFromSpan.cpp
     :exec: mem/byte_array --demo CopyingFromSpan
-    :source-sha256: 55ffd361f7df28b2a067a2f569da93d08beb85a481a6c76d0f9f65a2a6803171
+    :sha256: 95713f593628705d065a9f6a27b939cae865b0aa6d0aaea195b4169832e89d9a
 
 .. code-block:: cpp
 
@@ -469,20 +479,22 @@ Neither factory keeps a reference to the source, so later changes to the source 
         el::io::printLine("Copy first sample  : "_el, copiedWave->get(el::ByteIndex{0U}).toUInt32());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Wave               : Havsvåg
-    Copied samples     : 1f 4a 79 4a
-    Wrong extent copied: no
-    Strict copy agrees : yes
-    Source first sample: 255
-    Copy first sample  : 31
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWave               : Havsvåg
+        Copied samples     : 1f 4a 79 4a
+        Wrong extent copied: no
+        Strict copy agrees : yes
+        Source first sample: 255
+        Copy first sample  : 31␛[0m
 
 .. erbsland-demo-end::
 
-Growing Beyond the Fixed Array
-==============================
+Converting Fixed Arrays to Dynamic Byte Storage
+===============================================
 
 Occasionally an algorithm begins with a fixed block but later discovers or produces more bytes.
 :cpp:func:`toByteBuffer() <erbsland::mem::ByteArray::toByteBuffer>` copies the current array into a
@@ -492,7 +504,7 @@ The copy keeps the boundary explicit: appending to the buffer does not change th
 .. erbsland-demo::
     :source: mem/ByteArray/GrowingIntoBuffer.cpp
     :exec: mem/byte_array --demo GrowingIntoBuffer
-    :source-sha256: 9fca0fd1488e4b9b74aa46a56fb605c853e28f37237cf6828a46da212c7b8851
+    :sha256: a06d4d41960bdebe8df6f8df74641ba0d9c414d417bfbe8a6b73c158769176cf
 
 .. code-block:: cpp
 
@@ -517,19 +529,21 @@ The copy keeps the boundary explicit: appending to the buffer does not change th
         el::io::printLine("Buffer length      : "_el, recordedWave.length().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Wave               : Havsvåg
-    Initial samples    : 16 3a 68 3a
-    Growing buffer     : 16 3a 68 3a 16 0a 04
-    Initial length     : 4
-    Buffer length      : 7
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWave               : Havsvåg
+        Initial samples    : 16 3a 68 3a
+        Growing buffer     : 16 3a 68 3a 16 0a 04
+        Initial length     : 4
+        Buffer length      : 7␛[0m
 
 .. erbsland-demo-end::
 
-From Arrays to Application Data
-===============================
+Choosing Byte Blocks, Buffers, and Ring Buffers
+===============================================
 
 Fixed byte arrays are best kept close to the low-level operation that needs their exact extent.
 For an arbitrary immutable value that must be stored, shared, or passed through application code, use

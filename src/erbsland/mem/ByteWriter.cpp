@@ -27,7 +27,7 @@ auto ByteWriter::takeByteBlockEditor() noexcept -> ByteBlockEditor {
     return result;
 }
 
-auto ByteWriter::reserve(const ByteLength capacity) -> ByteWriter & {
+auto ByteWriter::reserve(const ByteCount capacity) -> ByteWriter & {
     _block.reserve(capacity);
     return *this;
 }
@@ -38,7 +38,7 @@ auto ByteWriter::writeByte(const Byte value) -> ByteWriter & {
     } else {
         _block.set(_position, value);
     }
-    setPosition(_position + ByteLength::one());
+    setPosition(_position + ByteCount::one());
     return *this;
 }
 
@@ -47,11 +47,11 @@ auto ByteWriter::writeBytes(const ConstByteSpan &data) -> ByteWriter & {
         _block.append(data);
     } else {
         _block.overwrite(_position, data);
-        if (_position + ByteLength::fromSizeT(data.size()) > ByteIndex::end(length())) {
+        if (_position + ByteCount::fromSizeT(data.size()) > ByteIndex::end(length())) {
             _block.append(data.subspan(length().toSizeT() - _position.toSizeT()));
         }
     }
-    setPosition(_position + ByteLength::fromSizeT(data.size()));
+    setPosition(_position + ByteCount::fromSizeT(data.size()));
     return *this;
 }
 

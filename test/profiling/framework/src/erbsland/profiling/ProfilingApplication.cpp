@@ -1,12 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ProfilingApplication.hpp"
 
 #include "ConfigurationLoader.hpp"
 #include "WorkloadRunner.hpp"
 
+#include <erbsland/ApplicationError.hpp>
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <optional>
 
@@ -79,7 +81,7 @@ void ProfilingApplication::registerCommandLineOptions(const OptionsPtr &options)
         .setHelpDescription("Select expanded scenario IDs or groups; repeat as needed."_el);
     options->addOption({"--list-scenarios"_el, "list-scenarios"_el})
         .setHelpDescription("Print expanded scenario identifiers and exit."_el);
-    options->addOption({"--list-coverage"_el, "list-coverage"_el})
+    options->addOption({"--list-coverage"_el, cListCoverageOption})
         .setHelpDescription("Print registered public API coverage and exit."_el);
     options->addOption({"--dry-run"_el, "dry-run"_el})
         .setHelpDescription("Validate and print expanded work without executing it."_el);
@@ -202,7 +204,7 @@ auto ProfilingApplication::runRegisteredProfiling() -> ExitCode {
             return true;
         });
     }
-    if (configuration.scenarios.isEmpty() && !optionValues()->getFlag("list-coverage"_el)) {
+    if (configuration.scenarios.isEmpty() && !optionValues()->getFlag(cListCoverageOption)) {
         throw ApplicationError{"No expanded scenario matches the requested filters."_el};
     }
     ConfigurationLoader::updateDigest(configuration);
@@ -211,7 +213,7 @@ auto ProfilingApplication::runRegisteredProfiling() -> ExitCode {
         runner.printDryRun();
         return ExitCode::success();
     }
-    if (optionValues()->getFlag("list-coverage"_el)) {
+    if (optionValues()->getFlag(cListCoverageOption)) {
         runner.printCoverage();
         return ExitCode::success();
     }
@@ -222,7 +224,7 @@ auto ProfilingApplication::parseTimeDeltaOverride(const String &value) -> TimeDe
     const auto source = StringFormat{"@version: \"1.0\"\n---[ Override ]---\nValue : {}\n"_el}.build(value);
     const auto result = conf::Parser{}
                             .parseTextOrThrow(source)
-                            ->valueOrThrow("override"_el)
+                            ->valueOrThrow(cOverrideValue)
                             ->getCalendarDeltaOrThrow("value"_el)
                             .toTimeDeltaOrThrow();
     if (result <= TimeDelta{}) {
@@ -231,14 +233,14 @@ auto ProfilingApplication::parseTimeDeltaOverride(const String &value) -> TimeDe
     return result;
 }
 
-auto ProfilingApplication::parseByteLengthOverride(const String &value) -> ByteLength {
+auto ProfilingApplication::parseByteLengthOverride(const String &value) -> ByteCount {
     const auto source = StringFormat{"@version: \"1.0\"\n---[ Override ]---\nValue : {}\n"_el}.build(value);
     const auto result =
-        conf::Parser{}.parseTextOrThrow(source)->valueOrThrow("override"_el)->getIntegerOrThrow("value"_el);
+        conf::Parser{}.parseTextOrThrow(source)->valueOrThrow(cOverrideValue)->getIntegerOrThrow("value"_el);
     if (result < 1) {
         throw ApplicationError{"A profiling byte-count override must be positive."_el};
     }
-    return ByteLength{static_cast<std::uint64_t>(result)};
+    return ByteCount::fromInteger(static_cast<std::uint64_t>(result));
 }
 
 }

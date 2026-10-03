@@ -17,8 +17,8 @@ recommended approaches are provided.
 Numeric and Ambiguous Escapes
 =============================
 
-:esc_code:`0<dd>`
------------------
+Zero-Prefixed Numeric Escape: :esc_code:`0<dd>`
+-----------------------------------------------
 
 Zero-prefixed numeric escapes are interpreted inconsistently across regex engines:
 
@@ -32,8 +32,8 @@ To avoid this ambiguity entirely, this engine rejects :esc_code:`0<dd>` syntax.
 * Explicit octal escapes: :esc_code:`o{<ddd…>}`
 * Unicode escapes: :esc_code:`u{<hh…>}`
 
-:esc_code:`<ddd>`
-------------------
+Plain Numeric Escape: :esc_code:`<ddd>`
+---------------------------------------
 
 A plain numeric escape is ambiguous in many regex dialects and often overlaps with
 replacement syntax.
@@ -49,8 +49,8 @@ notation to make intent clear.
 Byte-Oriented and Line-Oriented Escapes
 =======================================
 
-:esc_code:`C`
--------------
+Raw Byte Matching: :esc_code:`C`
+--------------------------------
 
 In some engines, :esc_code:`C` matches a single raw byte.
 
@@ -60,8 +60,8 @@ processing.
 
 For safety and correctness, :esc_code:`C` is not supported.
 
-:esc_code:`R`
--------------
+Any Line-Break Sequence: :esc_code:`R`
+--------------------------------------
 
 The :esc_code:`R` escape usually means “any line break sequence”.
 
@@ -79,8 +79,8 @@ To avoid surprising behavior, this escape is rejected.
 Unicode and Text Segmentation
 =============================
 
-:esc_code:`X`
--------------
+Extended Grapheme Cluster: :esc_code:`X`
+----------------------------------------
 
 In some engines, :esc_code:`X` matches an extended grapheme cluster.
 
@@ -109,8 +109,8 @@ backreferences.
 * Capture substrings
 * Compare them explicitly in application code
 
-:expression:`(?|...)`
----------------------
+Branch-Reset Groups: :expression:`(?|...)`
+------------------------------------------
 
 Branch-reset groups change capture numbering depending on which alternative matched.
 
@@ -146,8 +146,8 @@ These constructs are rejected to maintain safety and performance guarantees.
 Control-Flow and State-Based Syntax
 ===================================
 
-:esc_code:`G`
--------------
+Previous-Match-End Anchor: :esc_code:`G`
+----------------------------------------
 
 The :esc_code:`G` anchor matches at the end of the previous match in some engines.
 
@@ -158,8 +158,8 @@ between searches.
 
 * Resume matching at a specific offset using the API
 
-:esc_code:`K`
--------------
+Resetting the Reported Match Start: :esc_code:`K`
+-------------------------------------------------
 
 The :esc_code:`K` escape resets the start of the reported match mid-pattern.
 
@@ -167,24 +167,24 @@ This primarily exists to support replacement shortcuts in engines without rich c
 APIs. In this library, captures are first-class and provide the same functionality without
 altering match semantics.
 
-:expression:`(?C)` / :expression:`(?C<n>)`
-------------------------------------------
+Matching Callouts: :expression:`(?C)` / :expression:`(?C<n>)`
+-------------------------------------------------------------
 
 Callout expressions embed user callbacks into the matching process.
 
 This engine exposes structured debugging and inspection facilities through its API instead,
 so embedding callbacks into the pattern is unnecessary and unsupported.
 
-:expression:`(?J)`
-------------------
+Duplicate Group Names: :expression:`(?J)`
+-----------------------------------------
 
 Allowing duplicate group names makes it unclear which capture is returned and complicates
 maintenance.
 
 This engine enforces unique group names to keep captures deterministic and readable.
 
-:expression:`(?U)`
-------------------
+Ungreedy Default Mode: :expression:`(?U)`
+-----------------------------------------
 
 This mode flips quantifiers to be ungreedy by default.
 
@@ -198,8 +198,8 @@ Unicode-related :expression:`(?u)` flag.
 Parser and Engine Directives
 ============================
 
-:expression:`(*...)`
---------------------
+Inline Parser and Engine Directives: :expression:`(*...)`
+---------------------------------------------------------
 
 The :expression:`(*...)` verbs act as parser or engine tuning directives in some regex
 flavors.

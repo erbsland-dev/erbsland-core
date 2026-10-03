@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-********
-Terminal
-********
+***********************************
+Terminal Setup and Screen Rendering
+***********************************
 
 The terminal classes provide the runtime connection between your rendered content and the real console.
 ``Terminal`` manages the application lifecycle, refresh strategy, cursor control, direct text output, and the platform
@@ -15,11 +15,9 @@ For the shared streaming output API used by both ``Terminal`` and ``CursorBuffer
 :doc:`cursor-output`. For custom backend implementations and capability
 fallback behavior, see :doc:`backend`.
 
-Usage
-=====
 
 Preparing and Rendering a Screen
---------------------------------
+================================
 
 ``Terminal`` is the high-level entry point for full-screen terminal applications.
 It owns the platform backend, manages the visible screen state, and renders ``ReadableBuffer`` objects with clipping and
@@ -46,17 +44,20 @@ optional crop marks.
     terminal.flush();
     terminal.restoreScreen();
 
-``Terminal::size()`` returns the drawable size used by ``updateScreen()``.
-By default, this includes a one-column and one-row compatibility margin so full-screen buffers work out of the box.
+``Terminal::size()`` returns the full screen size used by ``updateScreen()``, including the last column and row.
+Screen updates position rows explicitly and disable automatic wrapping while drawing, avoiding unwanted scrolling.
+Constructor dimensions and ``setSize()`` use this same full-screen size.
 
-Disable that margin with ``setSafeMarginEnabled(false)`` if you want to use the full detected terminal size and rely
-purely on cursor-based updates.
+For output captured through a pipe, construct the terminal with ``TerminalFlag::VirtualTty`` and an explicit size.
+The virtual backend emits ANSI on every platform without native terminal setup or input.
+``setSize()`` simulates resizing, and ``testScreenSize()`` retains the supplied dimensions.
+See :doc:`/reference/cterm/terminal` for its lifecycle and input contract.
 
 For short-lived tools that should leave their output in the normal terminal history, disable alternate-screen switching
 via ``UpdateSettings`` as shown above.
 
 Render Loop for Interactive Applications
-----------------------------------------
+========================================
 
 The following example shows a minimal render loop for an interactive terminal application.
 
@@ -132,7 +133,7 @@ By default, rendering is optimized to update only the parts of the screen that a
 This makes frequent refresh rates practical, as only modified regions are written to the terminal.
 
 Direct Writes, Line Buffering, and Refresh Modes
-------------------------------------------------
+================================================
 
 For simpler tools and status output, you can use ``Terminal`` without a full-screen buffer.
 ``print()``, ``printLine()``, and ``write()`` send text directly to the terminal while still applying color handling.
@@ -159,7 +160,7 @@ For full-screen applications:
   the back buffer for efficient updates.
 
 Controlling Screen Update Settings
-----------------------------------
+==================================
 
 ``UpdateSettings`` controls how ``Terminal::updateScreen()`` behaves when content does not fit the terminal or the
 terminal is too small.
@@ -178,7 +179,7 @@ Use this to define minimum sizes, customize fallback backgrounds, and control cr
 rendered as intended.
 
 Output Modes
-------------
+============
 
 ``Terminal`` supports two output modes:
 
@@ -194,7 +195,7 @@ The terminal always owns a backend internally, but most applications can treat i
 on the high-level API.
 
 Scoped Terminal Sessions
-------------------------
+========================
 
 ``TerminalSession`` is the small RAII helper for code that should always pair ``initializeScreen()`` and
 ``restoreScreen()``.

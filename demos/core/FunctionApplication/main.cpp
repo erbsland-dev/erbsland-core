@@ -1,7 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -20,7 +29,7 @@ auto main(const int argc, char *argv[]) -> int {
             ->addOption({"-e"_el, "--environment"_el, "environment"_el})
             .setType(el::OptionType::Text)
             .setDefaultValue("staging"_el)
-            .setHelpDescription("Environment written into the deployment label."_el);
+            .setHelpTitle("Environment written into the deployment label."_el);
     });
     app.setMainFn([&app]() -> el::ExitCode {
         el::io::printLine("deployment environment: "_el, app.optionValues()->getText("environment"_el));

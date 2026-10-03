@@ -1,0 +1,14 @@
+----[ Doc Process Rst ]-----------------------------------------------------------------------------------------------
+Line Width                   : 120
+Doxygen Index                : "_build/breathe/doxygen/erbsland-core/xml/index.xml"
+Demo Executable Root         : "cmake-build-debug/demo-apps"
+
+# Present the public terminal API in demo source excerpts.
+-----*[ . Demo Text Replacement ]*---
+Pattern                      : /(?m)^(?<indent>[ \t]*)(?:demo::)?DemoTerminal::enable\(\*this\);/
+Replacement                  : "{indent}enableTerminal();"
+
+-----*[ . Demo Text Replacement ]*---
+Pattern                      :
+    /(?m)^(?<indent>[ \t]*)(?:demo::)?DemoTerminal::enable\((?<application>[A-Za-z_]\w*)\);/
+Replacement                  : "{indent}{application}.enableTerminal();"

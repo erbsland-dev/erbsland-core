@@ -4,7 +4,7 @@
 
 #include "HttpStaticFileContent.hpp"
 
-#include "../../../../err/LogicError.hpp"
+#include "../../../../err/LogicFailure.hpp"
 #include "../../../../path/PathInfo.hpp"
 #include "../../../../path/PathInfoParts.hpp"
 #include "../../../../text/CaseSensitivity.hpp"
@@ -14,26 +14,27 @@
 
 namespace erbsland::network::impl {
 
+using namespace path;
 using namespace text;
 using namespace text::literals;
 
-HttpStaticFileHandler::HttpStaticFileHandler(path::Path rootPath, text::String urlPrefix) :
+HttpStaticFileHandler::HttpStaticFileHandler(Path rootPath, text::String urlPrefix) :
     network::HttpStaticFileHandler{std::move(rootPath), std::move(urlPrefix)} {
 }
 
-auto HttpStaticFileHandler::hasPath(const path::Path &relativePath) const -> bool {
+auto HttpStaticFileHandler::hasPath(const Path &relativePath) const -> bool {
     return resolveCandidate(relativePath).has_value();
 }
 
-auto HttpStaticFileHandler::getContent(const path::Path &relativePath) const -> HttpStaticContentPtr {
+auto HttpStaticFileHandler::getContent(const Path &relativePath) const -> HttpStaticContentPtr {
     const auto candidate = resolveCandidate(relativePath);
     if (!candidate.has_value()) {
-        throw err::LogicError{"A probed static file is no longer available."_el};
+        throw err::LogicFailure{"A probed static file is no longer available."_el};
     }
     return std::make_shared<HttpStaticFileContent>(candidate->path, candidate->length);
 }
 
-auto HttpStaticFileHandler::resolveCandidate(const path::Path &relativePath) const -> std::optional<Candidate> {
+auto HttpStaticFileHandler::resolveCandidate(const Path &relativePath) const -> std::optional<Candidate> {
     if (relativePath.isEmpty() || !relativePath.isValid() || !relativePath.isRelative()) {
         return std::nullopt;
     }
@@ -41,8 +42,8 @@ auto HttpStaticFileHandler::resolveCandidate(const path::Path &relativePath) con
     auto elementIndex = unit::ItemIndex::zero();
     for (const auto &element : relativePath.elements()) {
         candidatePath /= element;
-        const auto info = candidatePath.info(
-            path::PathInfoParts{path::PathInfoPart::Type, path::PathInfoPart::Size, path::PathInfoPart::AccessRights});
+        const auto info =
+            candidatePath.info(PathInfoParts{PathInfoPart::Type, PathInfoPart::Size, PathInfoPart::AccessRights});
         if (!info.exists() || info.isSymlink() || info.isReparsePoint() || info.resolvedPath().isEmpty() ||
             !isBelowRoot(info.resolvedPath()) || info.resolvedPath().name() != element) {
             return std::nullopt;
@@ -63,7 +64,7 @@ auto HttpStaticFileHandler::resolveCandidate(const path::Path &relativePath) con
     return std::nullopt;
 }
 
-auto HttpStaticFileHandler::isBelowRoot(const path::Path &candidate) const noexcept -> bool {
+auto HttpStaticFileHandler::isBelowRoot(const Path &candidate) const noexcept -> bool {
     const auto &root = rootPath();
     if (candidate.isEmpty() || candidate.elementCount() <= root.elementCount()) {
         return false;

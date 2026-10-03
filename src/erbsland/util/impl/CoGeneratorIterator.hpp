@@ -4,7 +4,7 @@
 
 #include "CoGeneratorPromise.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 
 #include <coroutine>
 #include <cstddef>
@@ -32,12 +32,12 @@ public:
     explicit CoGeneratorIterator(const Handle handle) noexcept : _handle{handle} {}
 
     /// Access the current yielded value.
+    /// This iterator must point to a yielded value.
     /// @return A reference to the current value.
-    /// @throws err::LogicError If this iterator does not point to a yielded value.
     [[nodiscard]] auto operator*() const -> reference { return currentValue(); }
     /// Access the current yielded value.
+    /// This iterator must point to a yielded value.
     /// @return A pointer to the current value.
-    /// @throws err::LogicError If this iterator does not point to a yielded value.
     [[nodiscard]] auto operator->() const -> pointer { return &currentValue(); }
     /// Advance to the next yielded value.
     /// @return A reference to this iterator.
@@ -65,7 +65,7 @@ private:
     /// @return A reference to the current value.
     [[nodiscard]] auto currentValue() const -> reference {
         if (!_handle || _handle.done() || !_handle.promise()._currentValue.has_value()) {
-            throw err::LogicError{"Dereferencing an invalid CoGenerator iterator."};
+            throw err::LogicFailure{"Dereferencing an invalid CoGenerator iterator."};
         }
         if (_handle.promise()._exception) {
             std::rethrow_exception(_handle.promise()._exception);
@@ -76,7 +76,7 @@ private:
     /// @throws Any exception that escaped from the coroutine body.
     void resume() {
         if (!_handle) {
-            throw err::LogicError{"Incrementing an invalid CoGenerator iterator."};
+            throw err::LogicFailure{"Incrementing an invalid CoGenerator iterator."};
         }
         if (_handle.done()) {
             _handle.promise()._currentValue.reset();

@@ -5,34 +5,38 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/compression/zip/ArchiveItem.hpp>
-#include <erbsland/compression/zip/ArchiveReader.hpp>
-#include <erbsland/compression/zip/ArchiveWriter.hpp>
-#include <erbsland/compression/zip/CompressionMethod.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/ByteWriter.hpp>
 #include <erbsland/compression/zip/impl/ZipTools.hpp>
-#include <erbsland/compression/zip/Zip64Policy.hpp>
-#include <erbsland/compression/zip/ZipError.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/mem/ByteWriter.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/TempDirectory.hpp>
-#include <erbsland/stream/ByteInputStream.hpp>
-#include <erbsland/stream/InputStreamSettings.hpp>
-#include <erbsland/stream/StreamCloseStatus.hpp>
-#include <erbsland/stream/StreamPositionOrigin.hpp>
-#include <erbsland/stream/StreamPositionStatus.hpp>
-#include <erbsland/stream/StreamReadStatus.hpp>
-#include <erbsland/stream/StreamState.hpp>
-#include <erbsland/stream/StreamWaitStatus.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEncoder.hpp>
+#include <erbsland/DiagnosticHelper.hpp>
+#include <erbsland/InputStreamSettings.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathGlobPattern.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/StreamCloseStatus.hpp>
+#include <erbsland/StreamPositionOrigin.hpp>
+#include <erbsland/StreamPositionStatus.hpp>
+#include <erbsland/StreamReadStatus.hpp>
+#include <erbsland/StreamState.hpp>
+#include <erbsland/StreamWaitStatus.hpp>
+#include <erbsland/StringEncoder.hpp>
+#include <erbsland/TempDirectory.hpp>
+#include <erbsland/TextDocument.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/zip/ArchiveItem.hpp>
+#include <erbsland/zip/ArchiveReader.hpp>
+#include <erbsland/zip/ArchiveWriter.hpp>
+#include <erbsland/zip/CompressionMethod.hpp>
+#include <erbsland/zip/Zip64Policy.hpp>
+#include <erbsland/zip/ZipError.hpp>
 
 #include <algorithm>
 #include <array>
@@ -44,8 +48,8 @@ using namespace el::text::literals;
 
 TESTED_TARGETS(
     ArchiveReader ArchiveItem ArchiveWriter ArchiveReaderOptions ArchiveWriterOptions ArchiveEntryOptions
-        ArchiveExtractionOptions ArchiveDirectoryOptions ZipError CompressionMethod Zip64Policy globMatches
-            normalizeEntryPath modificationTimeFromExtra appendExtendedTimestamp)
+        ArchiveExtractionOptions ArchiveDirectoryOptions ZipError CompressionMethod Zip64Policy normalizeEntryPath
+            modificationTimeFromExtra appendExtendedTimestamp)
 class ZipArchiveTest final : public el::UnitTest {
     using TrackingInputStream = erbsland::test::ZipTrackingInputStream;
 
@@ -163,14 +167,14 @@ public:
         writer->finalize();
 
         auto reader = el::compression::zip::ArchiveReader::create(archivePath);
-        REQUIRE_EQUAL(reader->itemCount(), el::unit::ItemCount{methods.size()});
+        REQUIRE_EQUAL(reader->itemCount(), el::unit::ItemCount::fromInteger(methods.size()));
         REQUIRE_EQUAL(reader->comment(), "archive comment"_el);
         for (auto index = std::size_t{}; index < methods.size(); ++index) {
             const auto item = reader->item(el::unit::ItemIndex::fromSizeT(index));
             REQUIRE(item != nullptr);
             REQUIRE_EQUAL(item->compressionMethod(), methods[index]);
             REQUIRE_EQUAL(item->comment(), "item comment"_el);
-            REQUIRE_EQUAL(item->extract(el::unit::ByteLength{1024U}), expected);
+            REQUIRE_EQUAL(item->extract(el::unit::ByteCount{1024U}), expected);
         }
     }
 
@@ -195,7 +199,7 @@ public:
         copiedWriter->finalize();
         auto copiedReader = el::compression::zip::ArchiveReader::create(secondPath);
         REQUIRE_EQUAL(
-            copiedReader->item(el::unit::ItemIndex{0U})->extract(el::unit::ByteLength{16U}),
+            copiedReader->item(el::unit::ItemIndex{0U})->extract(el::unit::ByteCount{16U}),
             el::mem::ByteBlock({'c', 'o', 'p', 'y'}));
     }
 
@@ -211,16 +215,17 @@ public:
         auto bytes = el::mem::ByteBlockEditor{archivePath.content().readDataOrThrow()};
         const auto nameLength = bytes.getInteger<uint16_t>(el::unit::ByteIndex{26U});
         const auto extraLength = bytes.getInteger<uint16_t>(el::unit::ByteIndex{28U});
-        const auto payloadOffset = el::unit::ByteIndex{static_cast<uint64_t>(30U + nameLength + extraLength)};
+        const auto payloadOffset =
+            el::unit::ByteIndex::fromInteger(static_cast<uint64_t>(30U + nameLength + extraLength));
         bytes.set(payloadOffset, el::mem::Byte{'z'});
         const auto corruptPath = temporary->path() / "corrupt.zip"_el;
         corruptPath.content().writeDataOrThrow(bytes);
         auto reader = el::compression::zip::ArchiveReader::create(corruptPath);
         const auto item = reader->item(el::unit::ItemIndex{0U});
-        REQUIRE_THROWS_AS(el::compression::zip::ZipError, item->extract(el::unit::ByteLength{16U}));
+        REQUIRE_THROWS_AS(el::compression::zip::ZipError, item->extract(el::unit::ByteCount{16U}));
         reader->close();
         REQUIRE_EQUAL(item->path(), el::path::Path::fromPosix("x"_el));
-        REQUIRE_THROWS_AS(el::err::LogicError, item->extract(el::unit::ByteLength{16U}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, item->extract(el::unit::ByteCount{16U}));
     }
 
     void testOwnedStreamsAndPositioningRequirement() {
@@ -230,7 +235,7 @@ public:
         auto writer = el::compression::zip::ArchiveWriter::create(archivePath);
         const auto itemSource =
             std::make_shared<TrackingInputStream>(el::mem::ByteBlock({'a', 'b', 'c', 'd', 'e'}), false);
-        writer->addStream(itemSource, el::path::Path::fromPosix("part.bin"_el), {}, el::unit::ByteLength{3U});
+        writer->addStream(itemSource, el::path::Path::fromPosix("part.bin"_el), {}, el::unit::ByteCount{3U});
         REQUIRE_EQUAL(itemSource->bytesRead, std::size_t{3U});
         REQUIRE_EQUAL(itemSource->closeCount, std::size_t{1U});
         REQUIRE_EQUAL(itemSource->abortCount, std::size_t{});
@@ -238,7 +243,7 @@ public:
 
         const auto archiveData = archivePath.content().readDataOrThrow();
         const auto nonPositionable = std::make_shared<TrackingInputStream>(archiveData, false);
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::compression::zip::ArchiveReader::create(nonPositionable));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::compression::zip::ArchiveReader::create(nonPositionable));
         REQUIRE_EQUAL(nonPositionable->bytesRead, std::size_t{});
         REQUIRE_EQUAL(nonPositionable->closeCount, std::size_t{1U});
         REQUIRE_EQUAL(nonPositionable->abortCount, std::size_t{});
@@ -248,7 +253,7 @@ public:
         const auto applicationScope = ApplicationTestScope<>{};
         const auto temporary = el::path::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow();
         const auto archivePath = temporary->path() / "lazy.zip"_el;
-        const auto payload = el::mem::ByteBlock(el::unit::ByteLength{1024U * 1024U}, el::mem::Byte{'x'});
+        const auto payload = el::mem::ByteBlock(el::unit::ByteCount{1024U * 1024U}, el::mem::Byte{'x'});
         auto entryOptions = el::compression::zip::ArchiveEntryOptions{};
         entryOptions.setCompressionMethod(el::compression::zip::CompressionMethod::Stored);
         auto writer = el::compression::zip::ArchiveWriter::create(archivePath);
@@ -295,10 +300,10 @@ public:
         const auto archivePath = temporary->path() / "paths.zip"_el;
         auto writer = el::compression::zip::ArchiveWriter::create(archivePath);
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             writer->addData(el::mem::ByteBlock({'x'}), el::path::Path::fromPosix("../escape"_el)));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             writer->addData(el::mem::ByteBlock({'x'}), el::path::Path::fromPosix("dir\\file"_el)));
         writer->addData(el::mem::ByteBlock({'x'}), el::path::Path::fromPosix("file"_el));
         REQUIRE_THROWS_AS(
@@ -306,7 +311,51 @@ public:
             writer->addData(el::mem::ByteBlock({'y'}), el::path::Path::fromPosix("file/child"_el)));
         writer->abort();
         REQUIRE_THROWS_AS(
-            el::err::LogicError, writer->addData(el::mem::ByteBlock({'z'}), el::path::Path::fromPosix("later"_el)));
+            el::err::LogicFailure, writer->addData(el::mem::ByteBlock({'z'}), el::path::Path::fromPosix("later"_el)));
+    }
+
+    void testDirectoryGlobOptions() {
+        auto options = el::compression::zip::ArchiveDirectoryOptions{};
+        REQUIRE(options.includeGlobs() == nullptr);
+        REQUIRE(options.excludeGlobs() == nullptr);
+
+        const auto compiled = el::PathGlobPattern::compile(" literal "_el, el::PathGlobPatternFlags{});
+        options.setIncludeGlobs(compiled).setExcludeGlobs(compiled);
+        REQUIRE(options.includeGlobs() == compiled);
+        REQUIRE(options.excludeGlobs() == compiled);
+        const auto copied = options;
+        REQUIRE(copied.includeGlobs() == compiled);
+        REQUIRE(copied.excludeGlobs() == compiled);
+        REQUIRE(copied.includeGlobs()->fullMatch(" literal "_el));
+
+        options.setIncludeGlobs(" **/*.txt ; **/*.hpp\r\n#literal "_el);
+        REQUIRE(options.includeGlobs()->fullMatch("nested/a.txt"_el));
+        REQUIRE(options.includeGlobs()->fullMatch("a.hpp"_el));
+        REQUIRE(options.includeGlobs()->fullMatch("#literal"_el));
+        REQUIRE_FALSE(options.includeGlobs()->fullMatch("a.cpp"_el));
+        options.setExcludeGlobs(el::StringList{" a[;]b "_el, R"(c\;d)"_el, "**/*.bin"_el});
+        REQUIRE(options.excludeGlobs()->fullMatch("a;b"_el));
+        REQUIRE(options.excludeGlobs()->fullMatch("c;d"_el));
+        REQUIRE(options.excludeGlobs()->fullMatch("a/b.bin"_el));
+
+        const auto included = options.includeGlobs();
+        const auto excluded = options.excludeGlobs();
+        REQUIRE_THROWS_AS(el::ParseError, options.setIncludeGlobs("bad["_el));
+        REQUIRE_THROWS_AS(el::ParseError, options.setExcludeGlobs("bad["_el));
+        REQUIRE_THROWS_AS(el::ParseError, options.setIncludeGlobs(el::StringList{"**"_el, "bad["_el}));
+        REQUIRE_THROWS_AS(el::ParseError, options.setExcludeGlobs(el::StringList{"**"_el, "bad["_el}));
+        REQUIRE_THROWS_AS(el::ParseError, options.setIncludeGlobs(""_el));
+        REQUIRE_THROWS_AS(el::ParseError, options.setExcludeGlobs(" ; \n"_el));
+        REQUIRE(options.includeGlobs() == included);
+        REQUIRE(options.excludeGlobs() == excluded);
+
+        options.setIncludeGlobs(el::StringList{}).setExcludeGlobs(el::StringList{});
+        REQUIRE(options.includeGlobs() == nullptr);
+        REQUIRE(options.excludeGlobs() == nullptr);
+        options.setIncludeGlobs(compiled).setExcludeGlobs(compiled);
+        options.setIncludeGlobs(nullptr).setExcludeGlobs(nullptr);
+        REQUIRE(options.includeGlobs() == nullptr);
+        REQUIRE(options.excludeGlobs() == nullptr);
     }
 
     void testDirectoryFilteringAndExtraction() {
@@ -319,11 +368,12 @@ public:
         (source / "public/a.txt"_el).content().writeDataOrThrow(el::mem::ByteBlock({'a'}));
         (source / "public/a.bin"_el).content().writeDataOrThrow(el::mem::ByteBlock({'b'}));
         (source / "private/b.txt"_el).content().writeDataOrThrow(el::mem::ByteBlock({'c'}));
+        (source / "root.txt"_el).content().writeDataOrThrow(el::mem::ByteBlock({'r'}));
         const auto archivePath = temporary->path() / "filtered.zip"_el;
         auto callbackCount = std::size_t{};
         auto options = el::compression::zip::ArchiveDirectoryOptions{};
-        options.setIncludeGlobs(el::text::StringList{"**/*.txt"_el})
-            .setExcludeGlobs(el::text::StringList{"private/**"_el})
+        options.setIncludeGlobs(el::text::StringList{"**/*.txt"_el, "**/*.bin"_el})
+            .setExcludeGlobs("private/**; **/*.bin"_el)
             .setFilter([&callbackCount](const el::path::Path &, const el::path::PathInfo &info) {
                 ++callbackCount;
                 return info.isRegularFile();
@@ -331,14 +381,16 @@ public:
         auto writer = el::compression::zip::ArchiveWriter::create(archivePath);
         writer->addDirectory(source, options);
         writer->finalize();
-        REQUIRE(callbackCount > 0U);
+        REQUIRE_EQUAL(callbackCount, 2U);
 
         auto reader = el::compression::zip::ArchiveReader::create(archivePath);
-        REQUIRE_EQUAL(reader->itemCount(), el::unit::ItemCount{1U});
+        REQUIRE_EQUAL(reader->itemCount(), el::unit::ItemCount{2U});
         REQUIRE_EQUAL(reader->item(el::unit::ItemIndex{0U})->path(), el::path::Path::fromPosix("public/a.txt"_el));
+        REQUIRE_EQUAL(reader->item(el::unit::ItemIndex{1U})->path(), el::path::Path::fromPosix("root.txt"_el));
         const auto extractionRoot = temporary->path() / "output"_el;
         reader->extractToDirectory(extractionRoot);
         REQUIRE_EQUAL((extractionRoot / "public/a.txt"_el).content().readDataOrThrow(), el::mem::ByteBlock({'a'}));
+        REQUIRE_EQUAL((extractionRoot / "root.txt"_el).content().readDataOrThrow(), el::mem::ByteBlock({'r'}));
         REQUIRE_FALSE((extractionRoot / "private/b.txt"_el).info().exists());
     }
 
@@ -367,10 +419,11 @@ public:
     }
 
     void testFormatTools() {
+        auto applicationScope = ApplicationTestScope<>{};
         namespace tools = el::compression::zip::impl::zipTools;
-        REQUIRE(tools::globMatches("reports/**/*.txt"_el, "reports/2026/september/result.txt"_el));
-        REQUIRE(tools::globMatches("reports/??.txt"_el, "reports/ab.txt"_el));
-        REQUIRE_FALSE(tools::globMatches("reports/*.txt"_el, "reports/2026/result.txt"_el));
+        REQUIRE(el::PathGlobPattern::compile("reports/**/*.txt"_el)->fullMatch("reports/2026/september/result.txt"_el));
+        REQUIRE(el::PathGlobPattern::compile("reports/??.txt"_el)->fullMatch("reports/ab.txt"_el));
+        REQUIRE_FALSE(el::PathGlobPattern::compile("reports/*.txt"_el)->fullMatch("reports/2026/result.txt"_el));
         REQUIRE_EQUAL(
             tools::normalizeEntryPath(
                 el::text::StringEncoder{el::text::String{"/root/file.txt"_el}}.encode(el::text::StringEncoding::Utf8),
@@ -389,6 +442,27 @@ public:
         REQUIRE_EQUAL(tools::modificationTimeFromExtra(extra.toByteBlock(), {}), expectedTime);
     }
 
+    void testPathFinalizationFailureRetainsCause() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        const auto temporary = el::path::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow();
+        const auto destination = temporary->path() / "archive.zip"_el;
+        auto writer = el::compression::zip::ArchiveWriter::create(destination);
+        writer->addData(el::mem::ByteBlock({'x'}), el::path::Path{"file"_el});
+        destination.operations().createDirectoryOrThrow();
+        try {
+            writer->finalize();
+            REQUIRE(false);
+        } catch (const el::compression::zip::ZipError &error) {
+            REQUIRE(error.hasCause());
+            const auto rendered = el::err::DiagnosticHelper{error}.toDocument().toString();
+            REQUIRE(rendered.contains("ZIP archive could not be committed"_el));
+            REQUIRE(rendered.contains("Validating the replacement"_el));
+            REQUIRE(rendered.contains(destination.toString()));
+            REQUIRE(rendered.contains("destination must be absent or a regular file"_el));
+        }
+        REQUIRE(destination.info().isDirectory());
+    }
+
     void testAtomicExtractionFailureCleanup() {
         const auto applicationScope = ApplicationTestScope<>{};
         const auto temporary = el::path::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow();
@@ -404,11 +478,12 @@ public:
     }
 
     void testSignedAndUnsignedDataDescriptors() {
+        auto applicationScope = ApplicationTestScope<>{};
         for (const auto signedDescriptor : {false, true}) {
             auto reader = el::compression::zip::ArchiveReader::create(makeDescriptorArchive(signedDescriptor));
             REQUIRE_EQUAL(reader->itemCount(), el::unit::ItemCount{1U});
             REQUIRE_EQUAL(
-                reader->item(el::unit::ItemIndex{0U})->extract(el::unit::ByteLength{3U}),
+                reader->item(el::unit::ItemIndex{0U})->extract(el::unit::ByteCount{3U}),
                 el::mem::ByteBlock({'a', 'b', 'c'}));
         }
 
@@ -417,23 +492,25 @@ public:
         auto reader = el::compression::zip::ArchiveReader::create(malformed);
         REQUIRE_EQUAL(reader->itemCount(), el::unit::ItemCount{1U});
         REQUIRE_THROWS_AS(
-            el::compression::zip::ZipError, reader->item(el::unit::ItemIndex{})->extract(el::unit::ByteLength{3U}));
+            el::compression::zip::ZipError, reader->item(el::unit::ItemIndex{})->extract(el::unit::ByteCount{3U}));
     }
 
     void testLocalVariableFieldsCannotCrossDirectory() {
-        for (const auto field : {26U, 28U}) {
+        auto applicationScope = ApplicationTestScope<>{};
+        for (const auto field : {el::unit::ByteIndex{26U}, el::unit::ByteIndex{28U}}) {
             auto invalid = el::mem::ByteBlockEditor{makeDescriptorArchive(false)};
-            REQUIRE(invalid.setInteger<uint16_t>(el::unit::ByteIndex{field}, 65535U));
+            REQUIRE(invalid.setInteger<uint16_t>(field, 65535U));
             const auto reader = el::compression::zip::ArchiveReader::create(invalid);
             REQUIRE_THROWS_AS(
-                el::compression::zip::ZipError, reader->item(el::unit::ItemIndex{})->extract(el::unit::ByteLength{3U}));
+                el::compression::zip::ZipError, reader->item(el::unit::ItemIndex{})->extract(el::unit::ByteCount{3U}));
         }
     }
 
     void testMalformedAndUnsupportedRecords() {
+        auto applicationScope = ApplicationTestScope<>{};
         constexpr auto cDirectoryOffset = uint64_t{46U};
         auto truncated = makeDescriptorArchive(false);
-        truncated = truncated.slice({}, truncated.length() - el::unit::ByteLength::one());
+        truncated = truncated.slice({}, truncated.length() - el::unit::ByteCount::one());
         requireOpenReason(truncated, el::compression::zip::ZipErrorReason::MalformedArchive);
 
         auto encrypted = el::mem::ByteBlockEditor{makeDescriptorArchive(false)};
@@ -458,11 +535,12 @@ public:
         REQUIRE_EQUAL(inconsistentReader->itemCount(), el::unit::ItemCount{1U});
         REQUIRE_THROWS_AS(
             el::compression::zip::ZipError,
-            inconsistentReader->item(el::unit::ItemIndex{0U})->extract(el::unit::ByteLength{3U}));
+            inconsistentReader->item(el::unit::ItemIndex{0U})->extract(el::unit::ByteCount{3U}));
 
         auto multiDisk = el::mem::ByteBlockEditor{makeDescriptorArchive(false)};
-        const auto endOffset = multiDisk.length() - el::unit::ByteLength{22U};
-        REQUIRE(multiDisk.setInteger<uint16_t>(el::unit::ByteIndex{endOffset.toRawValue() + 4U}, 1U));
+        const auto endOffset = multiDisk.length() - el::unit::ByteCount{22U};
+        REQUIRE(
+            multiDisk.setInteger<uint16_t>(el::unit::ByteIndex::end(endOffset).advanced(el::unit::ByteCount{4U}), 1U));
         requireOpenReason(multiDisk, el::compression::zip::ZipErrorReason::UnsupportedFeature);
 
         auto dotPath = el::mem::ByteBlockEditor{makeDescriptorArchive(false)};

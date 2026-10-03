@@ -7,9 +7,9 @@
     single: FormatError
     single: FormatAs
 
-************************
-Formatting Text Patterns
-************************
+*********************************
+Formatting Text with StringFormat
+*********************************
 
 Manual concatenation becomes difficult to read as soon as output has a stable shape or values appear in a different
 order.
@@ -22,8 +22,8 @@ Formatting options are intentionally separate: :doc:`/topics/text_formatting/for
 primary named syntax, while
 :doc:`/topics/text_formatting/compatibility_format_specifications` covers the compact C++-style compatibility layer.
 
-Create the Pattern Once
-=======================
+Creating and Reusing a StringFormat Pattern
+===========================================
 
 Constructing a format parses and validates its pattern.
 Keeping the resulting ``StringFormat`` is useful when the same shape is applied repeatedly, because later calls do not
@@ -39,7 +39,7 @@ Supplying a wrong argument count, an invalid position, or a specification that d
 .. erbsland-demo::
     :source: text/StringFormat/FormattingPatterns.cpp
     :exec: text/string_format --demo FormattingPatterns
-    :source-sha256: 4abed9a193044b06fcbfcec507835bbc4551c6050deca756c7f4cd27790934dd
+    :sha256: 5e6a2a678e9c057d68b5a2f705b6e76172c0a81e04a0f14d37adbdb238a084ca
 
 .. code-block:: cpp
 
@@ -70,19 +70,21 @@ Supplying a wrong argument count, an invalid position, or a specification that d
         el::io::print(htmlOutput);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ISO date-time: 2026-05-30T21:41:56
-    HTML output:
-    <h1>Hello World</h1>
-    <p>This paragraph was appended to a string builder.</p>
-    <p>We add another &lt;p&gt; tag with &quot;useful&quot; text.</p>
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mISO date-time: 2026-05-30T21:41:56
+        HTML output:
+        <h1>Hello World</h1>
+        <p>This paragraph was appended to a string builder.</p>
+        <p>We add another &lt;p&gt; tag with &quot;useful&quot; text.</p>␛[0m
 
 .. erbsland-demo-end::
 
-Let Empty Placeholders Follow the Arguments
-===========================================
+Empty Placeholders and Automatic Argument Numbering
+===================================================
 
 Regular text appears unchanged in the result, while ``{}`` consumes the next argument and applies its default format.
 Placeholders are processed from left to right, and every supplied argument must be consumed.
@@ -91,7 +93,7 @@ Write ``{{`` or ``}}`` when a literal brace belongs in the output.
 .. erbsland-demo::
     :source: text/StringFormat/EmptyPlaceholder.cpp
     :exec: text/string_format --demo EmptyPlaceholder
-    :source-sha256: 97da395741c84458a05993f32a3a5146d412165d3937b2788f22c191b1d2fb7f
+    :sha256: b2c5e51c18e2355e971ff7b4cd09fe653d30202cb0fd1d7f462f9cf8918f30f2
 
 .. code-block:: cpp
 
@@ -101,15 +103,17 @@ Write ``{{`` or ``}}`` when a literal brace belongs in the output.
         el::io::printLine(pattern.build(123, false, 76.92, "text"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    a: 123 b: false c: 76.92 d: text
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0ma: 123 b: false c: 76.92 d: text␛[0m
 
 .. erbsland-demo-end::
 
-Reorder and Reuse Values with Positions
-=======================================
+Positional Placeholders and Argument Reuse
+==========================================
 
 An explicit index such as ``{1}`` selects the second argument and can select the same value more than once.
 Explicit positions must form a consecutive set beginning at zero, which catches missing or accidentally unused values
@@ -119,7 +123,7 @@ Do not mix automatic and explicit selection in one pattern.
 .. erbsland-demo::
     :source: text/StringFormat/PositionalPlaceholders.cpp
     :exec: text/string_format --demo PositionalPlaceholders
-    :source-sha256: 40cbe6bcb13b3eb5a0bf3e83a96e949ddb1db513030bf28e7e2783a1c63d27a1
+    :sha256: 45319646c1db9d6cd1e985949383dc0d481aa30d65ef6f0ef4e8d7b61d0f4075
 
 .. code-block:: cpp
 
@@ -129,15 +133,17 @@ Do not mix automatic and explicit selection in one pattern.
         el::io::printLine(pattern.build("text"_el, "h1"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    <h1>text</h1>
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m<h1>text</h1>␛[0m
 
 .. erbsland-demo-end::
 
-Pass Values Without Preparing Temporary Strings
-===============================================
+Supported Value Types and Custom FormatAs Representations
+=========================================================
 
 The formatter accepts Core and standard-library text, ``Char``, Boolean values, signed and unsigned integers,
 floating-point values, saturated integers, and ``ByteBlock``.
@@ -152,7 +158,7 @@ silently changing the output.
 .. erbsland-demo::
     :source: text/StringFormat/SupportedTypes.cpp
     :exec: text/string_format --demo SupportedTypes
-    :source-sha256: b00b0a269cbd1e690236a6866a61176a53c822f16405c33de0c5a0da6e47e060
+    :sha256: 5dad4abd9d55f43ccfe0bb0242e1c83bbaeca5dec4ae3f17db3c3c91cbee9471
 
 .. code-block:: cpp
 
@@ -162,9 +168,11 @@ silently changing the output.
         el::io::printLine(pattern.build(42, 3.14, true, 'A', "hello"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    42 3.14 true A hello
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m42 3.14 true A hello␛[0m
 
 .. erbsland-demo-end::

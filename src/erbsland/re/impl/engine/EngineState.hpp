@@ -221,7 +221,7 @@ public: // threads
         if (next.character == U'\r') {
             auto const [character, position] = _input->peek();
             if (character == U'\n') {
-                _input->skip(unit::CpLength::one());
+                _input->skip(unit::CpCount::one());
                 next.character = U'\n'; // overwrite
             }
         }
@@ -347,7 +347,7 @@ public: // capture groups and result.
     /// @param names The capture group names.
     [[nodiscard]] auto createCaptureGroups(const CaptureGroupNames &names) const -> CaptureGroupList {
         if (!_captureGroupManager) {
-            ERBSLAND_CORE_RE_REQUIRE_SAFETY(names.empty(), "Direct matches cannot contain capture groups"_el);
+            ERBSLAND_CORE_RE_REQUIRE_SAFETY(names.isEmpty(), "Direct matches cannot contain capture groups"_el);
             return CaptureGroupList{CaptureGroup{0U, CaptureRange{_bestMatchStart, _bestMatchEnd}, text::String{}}};
         }
         return _captureGroupManager->createCaptureGroupList(_bestMatch, names);

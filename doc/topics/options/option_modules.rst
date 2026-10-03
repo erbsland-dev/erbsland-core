@@ -33,7 +33,7 @@ Set ``OptionParserFlag::ErrorOnMissingModule`` when an empty command must remain
 .. erbsland-demo::
     :source: option/OptionModules/main.cpp
     :exec: option/option_modules scan --range 7 --verbose microscopio
-    :source-sha256: f01d1bc1017506215848f19244267e999500fad41945952646a70ad1fc54111a
+    :sha256: effae2f842e422c3e8662f3bcfc2de9a14a95404e5d6522febad832afa2f2683
 
 .. code-block:: cpp
 
@@ -56,7 +56,7 @@ Set ``OptionParserFlag::ErrorOnMissingModule`` when an empty command must remain
             options->setHelpTitle("Instrument Archive"_el);
             options->setHelpDescription("Manages small records for scientific instruments."_el);
             options->addOption({"-v"_el, "--verbose"_el, "verbose"_el})
-                .setHelpDescription("Prints additional progress details."_el)
+                .setHelpTitle("Prints additional progress details."_el)
                 .setHelpVisibility(el::OptionHelpVisibility::Overview);
 
             auto scan = el::OptionModule::create("scan"_el);
@@ -65,8 +65,8 @@ Set ``OptionParserFlag::ErrorOnMissingModule`` when an empty command must remain
             scan->addOption({"-r"_el, "--range"_el, "range"_el})
                 .setType(el::OptionType::Integer)
                 .setDefaultValue(el::OptionInteger{5})
-                .setHelpDescription("Reading range around the starting point."_el);
-            scan->addOption("instrument"_el).setRequired().setHelpDescription("Instrument to scan."_el);
+                .setHelpTitle("Reading range around the starting point."_el);
+            scan->addOption("instrument"_el).setRequired().setHelpTitle("Instrument to scan."_el);
             scan->setMainFn([](const el::OptionValuesPtr &values) -> el::ExitCode {
                 el::io::printLine("module: "_el, values->moduleName());
                 el::io::printLine("instrument: "_el, values->getText("instrument"_el));
@@ -84,8 +84,8 @@ Set ``OptionParserFlag::ErrorOnMissingModule`` when an empty command must remain
                 .addChoice("chart"_el)
                 .addChoice("data"_el)
                 .setDefaultValue("text"_el)
-                .setHelpDescription("Output format for the record."_el);
-            render->addOption("instrument"_el).setRequired().setHelpDescription("Instrument to render."_el);
+                .setHelpTitle("Output format for the record."_el);
+            render->addOption("instrument"_el).setRequired().setHelpTitle("Instrument to render."_el);
             render->setMainFn([](const el::OptionValuesPtr &values) -> el::ExitCode {
                 el::io::printLine("module: "_el, values->moduleName());
                 el::io::printLine("instrument: "_el, values->getText("instrument"_el));
@@ -102,13 +102,15 @@ Set ``OptionParserFlag::ErrorOnMissingModule`` when an empty command must remain
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    module: scan
-    instrument: microscopio
-    range: 7
-    verbose: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mmodule: scan
+        instrument: microscopio
+        range: 7
+        verbose: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -126,7 +128,7 @@ Use module help to explain how one command is configured.
     :exec: option/option_module_callbacks --help
     :exec-2: option/option_module_callbacks observe --help
     :exec-3: option/option_module_callbacks observe --duration 45 dune-edge
-    :source-sha256: ca4e644128468349786e2b6c5feb28d7a7ae29a7a0fa6534787a0f83eb440a2a
+    :sha256: fc8fc2d6f34af9f0f77c3a3a929a906be4f47df986a83fd58a1ceefb1d6411c6
 
 .. code-block:: cpp
 
@@ -149,13 +151,13 @@ Use module help to explain how one command is configured.
             options->setHelpTitle("Night Watch Modules"_el);
             options->setHelpDescription("Manages observation rounds through separate command modules."_el);
             options->addOption({"-l"_el, "--loud"_el, "loud"_el})
-                .setHelpDescription("Prints extra progress information."_el)
+                .setHelpTitle("Prints extra progress information."_el)
                 .setHelpVisibility(el::OptionHelpVisibility::Overview);
             options->addModule(createObserveModule());
             options->addModule(createExportModule());
 
             auto debug = el::OptionModule::create("debug"_el);
-            debug->setHelpDescription("Hidden diagnostic module for developers."_el);
+            debug->setHelpTitle("Hidden diagnostic module for developers."_el);
             debug->setHelpVisibility(el::OptionHelpVisibility::Hidden);
             debug->setMainFn([](el::OptionValuesPtr) -> el::ExitCode {
                 el::io::printLine("debug module"_el);
@@ -165,53 +167,70 @@ Use module help to explain how one command is configured.
         }
     };
 
-.. rubric:: ``$ option/option_module_callbacks --help``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    Manages observation rounds through separate command modules.
+        $ option/option_module_callbacks --help
 
-    ␛[1mUsage:
-      ␛[22;92moption_module_callbacks␛[39m ␛[90m<␛[92mmodule␛[90m>␛[39m ␛[90m[␛[96moptions␛[90m]
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[39;1mModules:
-      ␛[22;92mobserve␛[39m  Starts an observation round in a nighttime area.
-      ␛[92mexport␛[39m   Writes an existing observation as text or a table.
+        ␛[0mManages observation rounds through separate command modules.
 
-    ␛[1mOptions:
-      ␛[22;93m-h␛[39m, ␛[96m--help␛[39m     Display this help.
-      ␛[93m-l␛[39m, ␛[96m--loud␛[39m     Prints extra progress information.
-          ␛[96m--version␛[39m  Display version information.
+        ␛[1mUsage:
+          ␛[92;49m␛[22moption_module_callbacks␛[39;49m ␛[90;49m<␛[92;49mmodule␛[90;49m>␛[39;49m ␛[90;49m[␛[96;49moptions␛[90;49m]
 
-.. rubric:: ``$ option/option_module_callbacks observe --help``
+        ␛[39;49m␛[1mModules:
+          ␛[92;49m␛[22mobserve␛[39;49m  Observe Area
+          ␛[92;49mexport␛[39;49m   Export Logbook
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[1mOptions:
+          ␛[93;49m␛[22m-h␛[39;49m, ␛[96;49m--help␛[39;49m[=␛[90;49m<␛[92;49mkeyword␛[90;49m>␛[39;49m]  Display this help.
+          ␛[93;49m-l␛[39;49m, ␛[96;49m--loud␛[39;49m              Prints extra progress information.
+              ␛[96;49m--version␛[39;49m           Display version information.␛[0m
 
-    Starts an observation round in a nighttime area.
+.. erbsland-demo-run::
 
-    ␛[1mUsage:
-      ␛[22;92moption_module_callbacks␛[39m ␛[92mobserve␛[39m ␛[90m[␛[96moptions␛[90m]␛[39m ␛[90m<␛[95marea␛[90m>
+    .. code-block:: console
 
-    ␛[39;1mOptions:
-      ␛[22m    ␛[90m<␛[95marea␛[90m>␛[39m                Area to observe.
-      ␛[93m-d␛[39m, ␛[96m--duration␛[39m ␛[90m<␛[92minteger␛[90m>␛[39m  Duration of the round in minutes.
-      ␛[93m-h␛[39m, ␛[96m--help␛[39m                Display this help.
-      ␛[93m-l␛[39m, ␛[96m--loud␛[39m                Prints extra progress information.
-          ␛[96m--version␛[39m             Display version information.
+        $ option/option_module_callbacks observe --help
 
-    Example: night-watch observe --duration 45 dune-edge
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. rubric:: ``$ option/option_module_callbacks observe --duration 45 dune-edge``
+        ␛[0m
+        ␛[1mObserve␛[22m ␛[1mArea
+        ␛[92;49m␛[22mobserve
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[39;49m␛[1mUsage:
+          ␛[92;49m␛[22moption_module_callbacks␛[39;49m ␛[92;49mobserve␛[39;49m ␛[90;49m[␛[96;49moptions␛[90;49m]␛[39;49m ␛[90;49m<␛[95;49marea␛[90;49m>
 
-    module: observe
-    area: dune-edge
-    duration: 45
-    loud: no
+        ␛[39;49m␛[1mDescription:
+        ␛[22mStarts an observation round in a nighttime area.
+
+        ␛[1mOptions:
+          ␛[22m    ␛[90;49m<␛[95;49marea␛[90;49m>␛[39;49m                Area to observe.
+          ␛[93;49m-d␛[39;49m, ␛[96;49m--duration␛[39;49m ␛[90;49m<␛[92;49minteger␛[90;49m>␛[39;49m  Duration of the round in minutes.
+          ␛[93;49m-h␛[39;49m, ␛[96;49m--help␛[39;49m[=␛[90;49m<␛[92;49mkeyword␛[90;49m>␛[39;49m]    Display this help.
+          ␛[93;49m-l␛[39;49m, ␛[96;49m--loud␛[39;49m                Prints extra progress information.
+              ␛[96;49m--version␛[39;49m             Display version information.
+
+        Example: night-watch observe --duration 45 dune-edge␛[0m
+
+.. erbsland-demo-run::
+
+    .. code-block:: console
+
+        $ option/option_module_callbacks observe --duration 45 dune-edge
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mmodule: observe
+        area: dune-edge
+        duration: 45
+        loud: no␛[0m
 
 .. erbsland-demo-end::
 

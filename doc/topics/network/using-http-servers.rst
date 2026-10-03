@@ -95,7 +95,7 @@ Filesystem and resource handlers share prefix, priority, index, and media-type c
     server->addStaticContentHandler(files);
     server->addStaticContentHandler(resources);
 
-The resource factory above borrows ``Application::resources()``.
+The resource factory above retains the application's resource provider.
 Pass a ``ResourcesConstPtr`` as the first argument to retain an injected provider, which is useful for tests and custom
 stores.
 Providers must support concurrent calls to their const lookup methods.
@@ -142,7 +142,7 @@ Reading a Request Body
             storeMessage(body);
             request->sendJson(makeAcknowledgement(body), network::HttpStatus::Accepted);
         },
-        network::HttpServerRouteOptions{}.setMaximumBodyLength(unit::ByteLength{64U * 1024U}));
+        network::HttpServerRouteOptions{}.setMaximumBodyLength(unit::ByteCount{64U * 1024U}));
 
 Automatic routes can restrict accepted representation types with exact patterns, ``type/*``, ``*/*``, or structured
 suffix patterns such as ``application/*+json``.
@@ -201,8 +201,8 @@ Never submit a different block while an earlier one is waiting for capacity.
 Enabling HTTPS
 ==============
 
-Register the server identity under ``http/server`` (or a parent/global fallback) in the application cryptology
-configuration as described in :doc:`using-tls-server-connections`.
+Register a server profile with its certificate and matching key under ``http`` in the application cryptology
+configuration, as described in :doc:`/topics/cryptology/configuring_tls`.
 Then enable HTTPS before starting:
 
 .. code-block:: cpp
@@ -210,8 +210,9 @@ Then enable HTTPS before starting:
     server->enableTls();
     server->start(network::IpEndpoint{network::IpAddress::anyV6(), network::Port{8443U}});
 
-Use ``HttpServerTlsOptions`` only when the identity label, exact SNI mappings, handshake capacity, or handshake timeout
-must differ from the secure defaults:
+:cpp:class:`HttpServerTlsOptions <erbsland::network::HttpServerTlsOptions>` lets you select another profile label, map SNI host names to profiles, and adjust handshake
+capacity or timeouts.
+For example, you can limit how many clients are completing a handshake at once:
 
 .. code-block:: cpp
 
@@ -220,10 +221,35 @@ must differ from the secure defaults:
     server->enableTls(std::move(tls));
 
 The same routes and request types handle plaintext and authenticated TLS streams.
-``connection()`` exposes the concrete ``ConnectionPtr`` when transport metadata is needed.
+:cpp:func:`HttpServerRequest::connectionInfo() <erbsland::network::HttpServerRequest::connectionInfo>` provides an immutable snapshot of the request's connection, including endpoints
+and negotiated TLS information.
 The HTTP server owns cipher, TLS buffer, accepted TCP, and graceful-close integration and always forces the single
 ``http/1.1`` ALPN identifier.
 Connections that do not negotiate it are rejected.
+
+Client Certificates in Request Handlers
+---------------------------------------
+
+An HTTPS service can require client certificates through its selected server profile.
+Configure its client-authentication mode and trusted issuers as described in
+:doc:`/topics/cryptology/configuring_tls`.
+SNI mappings select the complete profile, so a shared listener can apply a different requirement to each host.
+
+In a request handler,
+:cpp:func:`HttpServerRequest::connectionInfo() <erbsland::network::HttpServerRequest::connectionInfo>` describes the
+connection carrying that request.
+Its :cpp:func:`HttpConnectionInfo::tls() <erbsland::network::HttpConnectionInfo::tls>` value is present for HTTPS and
+provides :cpp:class:`HttpTlsConnectionInfo <erbsland::network::HttpTlsConnectionInfo>`.
+Check
+:cpp:func:`HttpTlsConnectionInfo::isPeerAuthenticated() <erbsland::network::HttpTlsConnectionInfo::isPeerAuthenticated>`
+before using
+:cpp:func:`HttpTlsConnectionInfo::peerCertificatePath() <erbsland::network::HttpTlsConnectionInfo::peerCertificatePath>`
+to identify the client and apply your application's account permissions.
+The path has already been validated when the handler runs.
+
+With optional client authentication, HTTPS requests can also arrive without a client certificate.
+Those requests still have TLS information, but ``isPeerAuthenticated()`` is false and the path is empty.
+This lets your handler distinguish an encrypted connection from one carrying an authenticated client identity.
 
 Complete HTTPS Server Demo
 ==========================
@@ -235,18 +261,18 @@ The first ``--static-root`` has the highest priority.
 
 .. erbsland-demo::
     :source: network/HttpsServer/HttpsServerApp.cpp
-    :source-sha256: 41304731977290ced788783c0ff4f82881bab6fec3e1b29203db2915b1941c6c
+    :sha256: 8db8235a940d9f787fc6561d90e130dfc5ee60316d4473335baee30afc0c792f
 
 .. code-block:: cpp
 
     /// Register the certificate and matching private key under the HTTP server's standard TLS configuration label.
     void HttpsServerApp::configureTls() {
         auto configuration = el::cryptology::TlsConfiguration{};
-        configuration.setServerIdentity(
-            el::cryptology::TlsServerIdentity{
+        configuration.setServer(
+            el::cryptology::TlsServerConfiguration{el::cryptology::TlsIdentity{
                 el::cryptology::X509CertificateBundle::fromFileOrThrow(_certificatePath),
-                el::cryptology::SigningPrivateKey::fromPemOrThrow(_privateKeyPath.content().readTextOrThrow())});
-        cryptologyConfiguration().setTlsConfiguration("http/server"_el, std::move(configuration));
+                el::cryptology::SigningPrivateKey::fromPemOrThrow(_privateKeyPath.content().readTextOrThrow())}});
+        cryptologyConfiguration().setTlsConfiguration("http"_el, std::move(configuration));
     }
 
     /// Mount repeated static roots at one URL prefix, preserving command-line order as overlay priority.
@@ -331,7 +357,7 @@ from ``onWritable``:
 
 .. erbsland-demo::
     :source: network/HttpsServer/StreamedResponse.cpp
-    :source-sha256: 4910bdf3eedab266ab288fe07c54927db82b5c08086ba5e83db6292ea0c894d9
+    :sha256: a4ad707ac304ac6df0de2520baacf084898f8306d72611b635cc8be2cbb9d4fd
 
 .. code-block:: cpp
 

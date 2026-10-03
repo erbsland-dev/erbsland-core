@@ -5,9 +5,9 @@
 
 #include <erbsland/conf/impl/source/TextStreamSource.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/stream/TextInputStream.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/TextInputStream.hpp>
 
 #include <deque>
 #include <stdexcept>
@@ -64,11 +64,11 @@ class TextStreamSourceTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
             return {el::stream::StreamReadStatus::Finished, el::text::Char{}};
         }
 
-        [[nodiscard]] auto read(el::unit::CpLength maximum) -> el::stream::StreamReadResult<el::text::String> override {
+        [[nodiscard]] auto read(el::unit::CpCount maximum) -> el::stream::StreamReadResult<el::text::String> override {
             return readLine(maximum);
         }
 
-        [[nodiscard]] auto readLine(el::unit::CpLength) -> el::stream::StreamReadResult<el::text::String> override {
+        [[nodiscard]] auto readLine(el::unit::CpCount) -> el::stream::StreamReadResult<el::text::String> override {
             if (_steps.empty()) {
                 return {el::stream::StreamReadStatus::Finished, el::text::String{}};
             }
@@ -88,7 +88,7 @@ class TextStreamSourceTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
             throw std::logic_error{"unexpected test stream action"};
         }
 
-        [[nodiscard]] auto readAll(el::unit::CpLength maximum)
+        [[nodiscard]] auto readAll(el::unit::CpCount maximum)
             -> el::stream::StreamReadResult<el::text::String> override {
             return readLine(maximum);
         }

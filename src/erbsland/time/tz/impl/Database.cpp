@@ -8,6 +8,7 @@
 #include "../../../text/CharSet.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringEditor.hpp"
+#include "../../../text/StringJoins.hpp"
 #include "../../../text/StringList.hpp"
 #include "../../../text/u8/impl/U8StringLiteralFactory.hpp"
 
@@ -15,18 +16,19 @@
 
 namespace erbsland::time::tz::impl {
 
+using namespace unit;
 using namespace text::literals;
 using namespace text;
 
 auto Database::zoneNameToString(const ZoneName &zoneName) -> String {
     const auto secondText = zoneName.text2 == cEmptyTextId ? String{} : Database::textFromIndex(zoneName.text2);
     const auto thirdText = zoneName.text3 == cEmptyTextId ? String{} : Database::textFromIndex(zoneName.text3);
-    return String::fromJoined(
-        {Database::textFromIndex(zoneName.text1),
-            zoneName.text2 == cEmptyTextId ? String{} : String{"/"_el},
-            secondText,
-            zoneName.text3 == cEmptyTextId ? String{} : String{"/"_el},
-            thirdText});
+    return text::join(
+        Database::textFromIndex(zoneName.text1),
+        zoneName.text2 == cEmptyTextId ? String{} : String{"/"_el},
+        secondText,
+        zoneName.text3 == cEmptyTextId ? String{} : String{"/"_el},
+        thirdText);
 }
 
 auto Database::names() const -> StringList {
@@ -46,15 +48,13 @@ auto Database::zoneIdFromName(const String &zoneName) const noexcept -> ZoneId {
     if (zoneName.isEmpty()) {
         return cZoneIdNotFound;
     }
-    const auto parts = StringList::fromSplit(zoneName, separatorCharacters, unit::ItemCount{3U}, true);
-    if (parts.isEmpty() || parts.count() > unit::ItemCount{3U}) {
+    const auto parts = StringList::fromSplit(zoneName, separatorCharacters, ItemCount{3U}, true);
+    if (parts.isEmpty() || parts.count() > ItemCount{3U}) {
         return cZoneIdNotFound;
     }
-    const auto text1 = indexFromText(parts.get(unit::ItemIndex::zero()));
-    const auto text2 =
-        parts.count() < unit::ItemCount{2U} ? cEmptyTextId : indexFromText(parts.get(unit::ItemIndex{1U}));
-    const auto text3 =
-        parts.count() < unit::ItemCount{3U} ? cEmptyTextId : indexFromText(parts.get(unit::ItemIndex{2U}));
+    const auto text1 = indexFromText(parts.get(ItemIndex::zero()));
+    const auto text2 = parts.count() < ItemCount{2U} ? cEmptyTextId : indexFromText(parts.get(ItemIndex::one()));
+    const auto text3 = parts.count() < ItemCount{3U} ? cEmptyTextId : indexFromText(parts.get(ItemIndex{2U}));
     if (text1 == cEmptyTextId) {
         return cZoneIdNotFound;
     }

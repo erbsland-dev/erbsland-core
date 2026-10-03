@@ -9,9 +9,10 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
-auto Constraint::name() const -> text::String {
+auto Constraint::name() const -> String {
     return _name;
 }
 
@@ -23,7 +24,7 @@ auto Constraint::hasCustomError() const -> bool {
     return !_errorMessage.isEmpty();
 }
 
-auto Constraint::customError() const -> text::String {
+auto Constraint::customError() const -> String {
     return _errorMessage;
 }
 
@@ -74,7 +75,7 @@ void Constraint::validateValue(const ValidationContext &context) const {
         validateFloat(context, directStorageAccess<Float>(value));
         break;
     case ValueType::Text:
-        validateText(context, directStorageAccess<text::String>(value));
+        validateText(context, directStorageAccess<String>(value));
         break;
     case ValueType::Date:
         validateDate(context, directStorageAccess<time::Date>(value));
@@ -137,7 +138,7 @@ void Constraint::validateFloat(
 }
 
 void Constraint::validateText(
-    [[maybe_unused]] const ValidationContext &context, [[maybe_unused]] const text::String &value) const {
+    [[maybe_unused]] const ValidationContext &context, [[maybe_unused]] const String &value) const {
     // ignore by default
 }
 
@@ -191,11 +192,11 @@ void Constraint::validateSectionWithTexts([[maybe_unused]] const ValidationConte
     // ignore by default
 }
 
-void Constraint::setName(text::String name) {
+void Constraint::setName(String name) {
     _name = std::move(name);
 }
 
-void Constraint::setErrorMessage(text::String errorMessage) {
+void Constraint::setErrorMessage(String errorMessage) {
     _errorMessage = std::move(errorMessage);
 }
 
@@ -231,6 +232,7 @@ auto Constraint::internalView() const -> InternalViewPtr {
     result->setValue("isNegated", _isNegated);
     return result;
 }
+
 #endif
 
 }

@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "KeyDecoder.hpp"
 
+#include "../../text/EncodingError.hpp"
 #include "../../text/EncodingMode.hpp"
 #include "../../text/IntegerParseOptions.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/ReadNumberStatus.hpp"
 #include "../../text/StringCharReader.hpp"
 #include "../../text/StringDecodeBuffer.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -38,7 +39,7 @@ auto KeyDecoder::simpleSequenceDefinitions() noexcept -> const std::array<Simple
 }
 
 auto KeyDecoder::createCharacterKey(const CombinedChar &character) noexcept -> Key {
-    if (character.characterCount() <= CpLength::one()) {
+    if (character.characterCount() <= CpCount::one()) {
         return Key{Key::Character, character.first()};
     }
     return Key{Key::Combined, character.toU32String()};
@@ -49,28 +50,28 @@ auto KeyDecoder::decodeCodePointPrefix(const String &text, const ByteIndex offse
         return KeyCodePointParseResult{KeyParseStatus::Invalid, offset};
     }
 
-    const auto remainingLength = ByteLength::fromSizeT(text.length().toSizeT() - offset.toSizeT());
-    const auto prefixLength = std::min(remainingLength, ByteLength{4U});
-    auto buffer = StringDecodeBuffer{ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict};
+    const auto remainingLength = ByteCount::fromSizeT(text.length().toSizeT() - offset.toSizeT());
+    const auto prefixLength = std::min(remainingLength, ByteCount{4U});
+    auto buffer = StringDecodeBuffer{ByteCount{4U}, StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict};
 
     for (auto byteOffset = std::size_t{0U}; byteOffset < prefixLength.toSizeT(); ++byteOffset) {
-        const auto currentOffset = offset + ByteLength::fromSizeT(byteOffset);
-        buffer.writeStringBytes(text.slice(ByteRange{currentOffset, ByteLength::one()}));
+        const auto currentOffset = offset + ByteCount::fromSizeT(byteOffset);
+        buffer.writeStringBytes(text.slice(ByteRange{currentOffset, ByteCount::one()}));
 
         const auto status = buffer.codePointStatus();
         if (status == StringDecodeBuffer::CodePointStatus::Invalid) {
-            return KeyCodePointParseResult{KeyParseStatus::Invalid, offset + ByteLength::one()};
+            return KeyCodePointParseResult{KeyParseStatus::Invalid, offset + ByteCount::one()};
         }
-        if (buffer.decodableCharacters(CpLength::one()) == CpLength::one()) {
+        if (buffer.decodableCharacters(CpCount::one()) == CpCount::one()) {
             const auto beforeLength = buffer.byteLength();
             try {
-                const auto decodedText = buffer.takeString(CpLength::one());
+                const auto decodedText = buffer.takeString(CpCount::one());
                 auto reader = StringCharReader{decodedText};
                 const auto character = reader.read();
                 const auto consumedLength = beforeLength - buffer.byteLength();
                 return KeyCodePointParseResult{KeyParseStatus::Parsed, character, offset + consumedLength};
-            } catch (...) {
-                return KeyCodePointParseResult{KeyParseStatus::Invalid, offset + ByteLength::one()};
+            } catch (const text::EncodingError &) {
+                return KeyCodePointParseResult{KeyParseStatus::Invalid, offset + ByteCount::one()};
             }
         }
     }
@@ -118,7 +119,7 @@ auto KeyDecoder::parseCsiParameters(const String &text) noexcept -> std::optiona
     if (text.isEmpty()) {
         return result;
     }
-    constexpr static auto cMaximumDigitCount = CpLength{8U};
+    constexpr static auto cMaximumDigitCount = CpCount{8U};
     constexpr static auto cMaximumParameterCount = 16U;
     auto parseOptions = IntegerParseOptions::parserDefault();
     parseOptions.setFixedBase(IntegerBase::Decimal).setMaximumDigits(cMaximumDigitCount);
@@ -242,7 +243,7 @@ auto KeyDecoder::decodeCsi(const String &text) noexcept -> KeyParseResult {
     if (!finalIndex.has_value()) {
         return KeyParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
     }
-    const auto sequenceSize = *finalIndex + ByteLength::one();
+    const auto sequenceSize = *finalIndex + ByteCount::one();
     const auto finalByte = text.charAt(*finalIndex);
     if (finalByte == U'Z') {
         if (*finalIndex == cCsiPrefixIndex) {
@@ -294,7 +295,7 @@ auto KeyDecoder::decodeCsi(const String &text) noexcept -> KeyParseResult {
 }
 
 auto KeyDecoder::decodeSs3(const String &text) noexcept -> KeyParseResult {
-    if (text.length() < ByteLength{3U}) {
+    if (text.length() < ByteCount{3U}) {
         return KeyParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
     }
     switch (text.charAt(ByteIndex{2U}).toRawValue()) {
@@ -328,7 +329,7 @@ auto KeyDecoder::parseConsoleInputPrefix() const noexcept -> KeyParseResult {
     }
 
     if (_text.startsWith("\x1b"_el)) {
-        if (_text.length() == ByteLength::one()) {
+        if (_text.length() == ByteCount::one()) {
             return KeyParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
         }
         if (_text.charAt(ByteIndex::one()) == U'[') {

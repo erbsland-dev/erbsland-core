@@ -3,10 +3,14 @@
 
 #include "PlaceholderDemos.hpp"
 
-#include <erbsland/text/placeholder/Filter.hpp>
-#include <erbsland/text/placeholder/Replacer.hpp>
-#include <erbsland/text/placeholder/ReplacerError.hpp>
-#include <erbsland/text/StringFormat.hpp>
+#include <erbsland/placeholder/Filter.hpp>
+#include <erbsland/placeholder/Replacer.hpp>
+#include <erbsland/placeholder/ReplacerError.hpp>
+#include <erbsland/placeholder/ReplacerErrorCategory.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <memory>
 

@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/CoAsyncGenerator.hpp>
+#include <erbsland/CoTask.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/CoAsyncGenerator.hpp>
-#include <erbsland/util/CoTask.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -72,7 +72,7 @@ public:
 
         waitFor(second);
         REQUIRE(second.isComplete());
-        REQUIRE_THROWS_AS(el::err::LogicError, second.result());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, second.result());
 
         release.store(true);
         waitFor(first);

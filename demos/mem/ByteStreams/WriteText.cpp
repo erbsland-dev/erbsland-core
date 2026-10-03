@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteReader.hpp>
+#include <erbsland/ByteTextOptions.hpp>
+#include <erbsland/ByteWriter.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -12,7 +18,7 @@ namespace demo {
 /// `writeTextOrThrow()` requires an exact representation.
 void writeText() {
     auto options = el::ByteTextOptions::compact();
-    options.setLength(el::ByteLength{16U});
+    options.setLength(el::ByteCount{16U});
     auto writer = el::ByteWriter{};
 
     // Encode two compact UTF-8 fields using identical framing.

@@ -1,11 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/EncodingError.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringDecoder.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/EncodingError.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringDecoder.hpp>
+#include <erbsland/text/impl/UnsafeU8StringAccess.hpp>
+#include <erbsland/U8EncodingError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -59,6 +61,47 @@ public:
             std::u32string{U"A\uFFFDB"});
         REQUIRE_THROWS(
             StringDecoder{malformed}.toU8String(StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Strict));
+    }
+
+    void testStrictUtf8ErrorOffsetIncludesBom() {
+        try {
+            static_cast<void>(StringDecoder{makeBlock({0xEFU, 0xBBU, 0xBFU, 0x41U, 0xC0U})}.decode(
+                StringEncoding::Utf8, StringBomMode::Require, EncodingMode::Strict));
+            REQUIRE(false);
+        } catch (const el::text::U8EncodingError &error) {
+            REQUIRE_EQUAL(error.index(), el::unit::ByteIndex{4U});
+        }
+    }
+
+    void testTolerantUtf8PreservesMalformedBytes() {
+        const auto cases = std::vector<std::vector<uint8_t>>{
+            {},
+            {0x00U, 0x41U},
+            {0x80U},
+            {0xC0U, 0xAFU},
+            {0xE2U, 0x82U},
+            {0xEDU, 0xA0U, 0x80U},
+            {0xF4U, 0x90U, 0x80U, 0x80U},
+            {0x41U, 0xEFU, 0xBBU, 0xBFU, 0x42U},
+            {0xFFU, 0xFEU, 0x41U}};
+        for (const auto &bytes : cases) {
+            // An explicit UTF-8 BOM allows arbitrary malformed payload bytes after the signature.
+            auto withBom = std::vector<uint8_t>{0xEFU, 0xBBU, 0xBFU};
+            withBom.insert(withBom.end(), bytes.begin(), bytes.end());
+            const auto decoded = StringDecoder{makeBlock(withBom)}.decode(
+                StringEncoding::Utf8, StringBomMode::Require, EncodingMode::Tolerant);
+            const auto access = el::text::impl::UnsafeU8StringAccess{decoded};
+            REQUIRE_EQUAL(access.dataSpan().size(), bytes.size());
+            for (auto i = std::size_t{0U}; i < bytes.size(); ++i) {
+                REQUIRE_EQUAL(static_cast<uint8_t>(access.dataSpan()[i]), bytes[i]);
+            }
+            if (!bytes.empty() && bytes.front() != 0x00U) {
+                REQUIRE_THROWS_AS(
+                    el::text::EncodingError,
+                    StringDecoder{makeBlock(withBom)}.decode(
+                        StringEncoding::Utf8, StringBomMode::Require, EncodingMode::Strict));
+            }
+        }
     }
 
     void testValidateEncodedDataWithoutDecoding() {
@@ -160,7 +203,7 @@ public:
         auto bytes = std::vector<uint8_t>(64U * 1024U, 0x61U);
         const auto decoded =
             StringDecoder{makeBlock(bytes)}.decode(StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict);
-        REQUIRE_EQUAL(decoded.length(), el::unit::ByteLength{64U * 1024U});
+        REQUIRE_EQUAL(decoded.length(), el::unit::ByteCount{64U * 1024U});
         REQUIRE_EQUAL(StringConverter{decoded}.toStdString(), std::string(64U * 1024U, 'a'));
 
         const auto tolerantDecoded =

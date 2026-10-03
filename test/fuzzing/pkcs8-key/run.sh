@@ -8,7 +8,9 @@ scriptDir="$(cd "$(dirname "$0")" && pwd)"
 projectDir="$(cd "${scriptDir}/../../.." && pwd)"
 buildDir="${ERBSLAND_CORE_FUZZ_BUILD_DIR:-${projectDir}/cmake-build-fuzzing}"
 compiler="${CXX:-/opt/local/bin/clang++-mp-22}"
-corpusDir="${buildDir}/corpus/pkcs8-key"
+outputDir="${projectDir}/fuzzing/pkcs8-key"
+corpusDir="${outputDir}/corpus"
+artifactDir="${outputDir}/artifacts"
 
 if [[ ! -x "${compiler}" ]]; then
     echo "C++ compiler not found: ${compiler}" >&2
@@ -27,9 +29,11 @@ cmake -S "${projectDir}" -B "${buildDir}" -G Ninja \
     -DERBSLAND_CORE_ENABLE_TESTS=OFF
 cmake --build "${buildDir}" --target pkcs8-key-fuzz
 
-mkdir -p "${corpusDir}"
+buildDir="$(cd "${buildDir}" && pwd)"
+mkdir -p "${corpusDir}" "${artifactDir}"
 for seed in "${scriptDir}"/corpus/*.hex; do
     xxd -r -p "${seed}" "${corpusDir}/$(basename "${seed}" .hex)"
 done
 cp "${projectDir}/test/unittest/data/cryptology/signing/rsa-2048-pkcs8.pem" "${corpusDir}/rsa-2048-pkcs8.pem"
-exec "${buildDir}/test/fuzzing/pkcs8-key/pkcs8-key-fuzz" "${corpusDir}" "$@"
+cd "${outputDir}"
+exec "${buildDir}/test/fuzzing/pkcs8-key/pkcs8-key-fuzz" "${corpusDir}" "-artifact_prefix=${artifactDir}/" "$@"

@@ -3,11 +3,13 @@
 #include "SchedulerBackend.hpp"
 
 #include "CallbackEventData.hpp"
+#include "EventContinuation.hpp"
 #include "EventTimer.hpp"
 #include "TimerEventData.hpp"
 
 #include "../Event.hpp"
 #include "../EventBackendTarget.hpp"
+#include "../EventLoop.hpp"
 #include "../EventRegistry.hpp"
 
 #include <algorithm>
@@ -30,7 +32,7 @@ void SchedulerBackend::attach(EventBackendTargetWeakPtr target, [[maybe_unused]]
 
 void SchedulerBackend::poll(const time::TimePoint now) {
     auto dueTimers = std::vector<std::pair<impl::EventTimerPtr, impl::EventTimer::CallbackExecution>>{};
-    auto dueInvocations = std::vector<EventCallback>{};
+    auto dueInvocations = std::vector<DelayedInvocation>{};
     auto target = EventBackendTargetPtr{};
     {
         std::scoped_lock lock{_state->mutex};
@@ -40,7 +42,7 @@ void SchedulerBackend::poll(const time::TimePoint now) {
         delayedInvocations.reserve(_state->delayedInvocations.size());
         for (auto &delayedInvocation : _state->delayedInvocations) {
             if (delayedInvocation.dueTime <= now) {
-                dueInvocations.emplace_back(std::move(delayedInvocation.callback));
+                dueInvocations.emplace_back(std::move(delayedInvocation));
                 continue;
             }
             delayedInvocations.emplace_back(std::move(delayedInvocation));
@@ -67,12 +69,25 @@ void SchedulerBackend::poll(const time::TimePoint now) {
     if (target == nullptr) {
         return;
     }
-    for (auto &callback : dueInvocations) {
-        target->postFromBackend(Event{id::InvocationEvent, std::make_unique<CallbackEventData>(std::move(callback))});
+    for (auto &invocation : dueInvocations) {
+        if (invocation.continuation != nullptr) {
+            invocation.continuation->queue(std::move(invocation.callback), EventContinuation::State::Scheduled);
+        } else {
+            target->postFromBackend(
+                Event{id::InvocationEvent, std::make_unique<CallbackEventData>(std::move(invocation.callback))});
+        }
     }
     for (auto &[timer, execution] : dueTimers) {
-        target->postFromBackend(
-            Event{id::TimerEvent, std::make_unique<TimerEventData>(std::move(timer), std::move(execution))});
+        const auto accepted =
+            target->postFromBackend(Event{id::TimerEvent, std::make_unique<TimerEventData>(timer, execution)});
+        if (!accepted) {
+            const auto loop = dynamic_cast<event::EventLoop *>(target.get());
+            if (loop != nullptr && loop->isQuitRequested()) {
+                timer->discardCallback(execution);
+            } else {
+                timer->finishCallback(execution, time::TimePoint::now());
+            }
+        }
     }
 }
 
@@ -151,6 +166,39 @@ void SchedulerBackend::invokeAfter(const time::TimeDelta delay, EventCallback ca
                 .dueTime = time::TimePoint::inFuture(delay),
                 .callback = std::move(callback),
             });
+    }
+    wakeAttachedTarget(_state);
+}
+
+void SchedulerBackend::invokeAfterReserved(
+    const time::TimeDelta delay, EventContinuationPtr continuation, EventCallback callback) {
+    if (!delay.isPositive()) {
+        continuation->invoke(std::move(callback));
+        return;
+    }
+    {
+        const auto lock = std::scoped_lock{_state->mutex};
+        if (continuation->_state.load() == EventContinuation::State::Cancelled) {
+            return;
+        }
+        _state->delayedInvocations.push_back(
+            DelayedInvocation{time::TimePoint::inFuture(delay), std::move(callback), std::move(continuation)});
+    }
+    wakeAttachedTarget(_state);
+}
+
+void SchedulerBackend::cancelReserved(const EventContinuation *continuation) noexcept {
+    auto discarded = std::optional<DelayedInvocation>{};
+    {
+        const auto lock = std::scoped_lock{_state->mutex};
+        auto &pending = _state->delayedInvocations;
+        for (auto iterator = pending.begin(); iterator != pending.end(); ++iterator) {
+            if (iterator->continuation.get() == continuation) {
+                discarded = std::move(*iterator);
+                pending.erase(iterator);
+                break;
+            }
+        }
     }
     wakeAttachedTarget(_state);
 }

@@ -3,10 +3,12 @@
 
 #include "../StringHelper.hpp"
 
-#include <erbsland/err/RuntimeError.hpp>
+#include "../../core/ApplicationTestScope.hpp"
+
+#include <erbsland/Literals.hpp>
 #include <erbsland/re/RegExError.hpp>
 #include <erbsland/re/StdFormat.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/RuntimeError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
@@ -27,6 +29,7 @@ private:
 
 public:
     void testRuntimeErrorAndSimpleConstructor() {
+        auto applicationScope = ApplicationTestScope<>{};
         static_assert(std::is_base_of_v<el::err::RuntimeError, RegExError>);
         const auto error = RegExError{ErrorCategory::Parser, "Pattern is invalid"_el};
 
@@ -41,6 +44,7 @@ public:
     }
 
     void testCompleteContextAndConvenienceAccessors() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto location =
             el::unit::CodeLocation{el::unit::LineIndex{2U}, el::unit::ColumnIndex{4U}, el::unit::CpIndex{8U}};
         const auto error = RegExError{RegExErrorContext{
@@ -60,6 +64,7 @@ public:
     }
 
     void testDiagnosticContainsAllDetails() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto error = RegExError{
             ErrorCategory::Format,
             "Replacement expression is invalid"_el,
@@ -79,6 +84,7 @@ public:
     }
 
     void testPlainStringUsesConciseSingleLineFormat() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto error = RegExError{
             ErrorCategory::Assembler,
             "Failed to assemble regular expression"_el,

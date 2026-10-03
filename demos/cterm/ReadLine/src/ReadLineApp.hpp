@@ -2,11 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
-#include <erbsland/conf/all.hpp>
-#include <erbsland/core/MakeOneNamespace.hpp>
-#include <erbsland/cterm/all.hpp>
-#include <erbsland/stream/StandardStreams.hpp>
+#include <erbsland/all_conf.hpp>
+#include <erbsland/all_cterm.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/conf/Document.hpp>
+#include <erbsland/conf/Value.hpp>
+#include <erbsland/cterm/Block.hpp>
+#include <erbsland/cterm/BlockString.hpp>
+#include <erbsland/cterm/BlockStyle.hpp>
+#include <erbsland/cterm/Color.hpp>
+#include <erbsland/cterm/FrameBorder.hpp>
+#include <erbsland/cterm/FrameStyle.hpp>
+#include <erbsland/cterm/Key.hpp>
+#include <erbsland/cterm/ReadLine.hpp>
+#include <erbsland/cterm/ReadLineDisplayStyle.hpp>
+#include <erbsland/cterm/ReadLineOptions.hpp>
+#include <erbsland/cterm/ReadLineResult.hpp>
+#include <erbsland/cterm/ReadLineStatus.hpp>
+#include <erbsland/EventTimer.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
 
 #include <optional>
 

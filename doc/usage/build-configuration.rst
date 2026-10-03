@@ -31,6 +31,10 @@ CMake Options
         - On
         - Off
         - Builds and registers the Core unit-test executable.
+    *   - ``ERBSLAND_CORE_ENABLE_TOOLS``
+        - On
+        - Off
+        - Builds the repository development tool and, when tests are enabled, its unit tests.
     *   - ``ERBSLAND_CORE_ENABLE_DEMOS``
         - On
         - Off
@@ -43,10 +47,6 @@ CMake Options
         - On
         - Off
         - Uses Core's private standard-library precompiled header to reduce full-build time.
-    *   - ``ERBSLAND_CORE_DO_NOT_FLATTEN_NS``
-        - On
-        - Off
-        - Keeps APIs in their domain namespaces instead of importing them into ``erbsland``.
     *   - ``ERBSLAND_CORE_DEVELOPER_BUILD``
         - On
         - Off
@@ -121,9 +121,19 @@ Regular consumer builds flatten domain namespaces into ``erbsland``.
 This makes ``erbsland::text::String`` available as ``erbsland::String`` and provides the short alias ``el`` so user-code
 can use ``el::String``.
 
-Set ``ERBSLAND_CORE_DO_NOT_FLATTEN_NS`` to keep types only in their domain namespaces.
-The CMake option publishes the corresponding compile definition through ``erbsland::core`` so Core and its consumers use
-the same header configuration.
+Core itself always compiles with explicit domain namespaces.
+Its private ``ERBSLAND_CORE_BUILDING_LIBRARY`` marker is not propagated to consumers, so demos, tools, and tests receive
+the flattened view even in a top-level development build.
+
+To keep domain namespaces explicit in a consumer, define ``ERBSLAND_CORE_DO_NOT_FLATTEN_NS`` on that target:
+
+.. code-block:: cmake
+
+    target_compile_definitions(example PRIVATE ERBSLAND_CORE_DO_NOT_FLATTEN_NS=1)
+
+This macro is a consumer compile definition, not a Core CMake option.
+No manual flattening-header include is needed; public headers select the view through ``Definitions.hpp``.
+See :doc:`../reference/core/make_one_namespace` for details.
 
 Two consumer compile definitions control only the short namespace alias:
 

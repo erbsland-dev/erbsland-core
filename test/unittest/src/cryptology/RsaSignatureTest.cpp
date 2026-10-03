@@ -1,16 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "CryptologyResponseKeys.hpp"
 #include "CryptologyResponseReader.hpp"
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/keys/PublicKey.hpp>
-#include <erbsland/cryptology/x509/X509AlgorithmIdentifier.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/PublicKey.hpp>
+#include <erbsland/X509AlgorithmIdentifier.hpp>
 
 using namespace el::cryptology;
 using namespace el::text::literals;
@@ -24,8 +25,8 @@ public:
         const auto &record = records.front();
         const auto publicKey = PublicKey::fromDerOrThrow(bytesFromHex(record.setting("PublicKeyDer"_el)));
         const auto algorithm = X509AlgorithmIdentifier::fromDerOrThrow(bytesFromHex(record.setting("AlgorithmDer"_el)));
-        const auto message = bytesFromHex(record.value("Msg"_el));
-        const auto signature = bytesFromHex(record.value("Sig"_el));
+        const auto message = bytesFromHex(record.value(response_key::cMessageField));
+        const auto signature = bytesFromHex(record.value(response_key::cSignatureField));
         REQUIRE(publicKey.verifySignature(algorithm, message.span(), signature.span()));
 
         REQUIRE_FALSE(
@@ -35,11 +36,11 @@ public:
     void testMalformedStateAndAlgorithm() {
         const auto records = CryptologyResponseReader{"data/cryptology/signature/PSS_SHA256.rsp"_el}.read();
         const auto &record = records.front();
-        const auto message = bytesFromHex(record.value("Msg"_el));
-        const auto signature = bytesFromHex(record.value("Sig"_el));
+        const auto message = bytesFromHex(record.value(response_key::cMessageField));
+        const auto signature = bytesFromHex(record.value(response_key::cSignatureField));
         const auto algorithm = X509AlgorithmIdentifier::fromDerOrThrow(bytesFromHex(record.setting("AlgorithmDer"_el)));
         REQUIRE_THROWS_AS(
-            el::err::LogicError, PublicKey{}.verifySignature(algorithm, message.span(), signature.span()));
+            el::err::LogicFailure, PublicKey{}.verifySignature(algorithm, message.span(), signature.span()));
 
         auto mixedHashAlgorithm = el::mem::ByteBlockEditor{algorithm.toDer()};
         mixedHashAlgorithm.set(

@@ -10,6 +10,7 @@
 
 namespace erbsland::time::impl {
 
+using namespace text;
 using namespace text::literals;
 
 constexpr auto cTimeDeltaUnitDefinitions = std::array{
@@ -33,14 +34,14 @@ auto timeDeltaUnitDefinition(const TimeDeltaUnit unit) noexcept -> const TimeDel
     return cTimeDeltaUnitDefinitions.back();
 }
 
-void appendTimeDeltaUnitSeparator(text::StringEditor &result, const TimeDeltaFormat &format) {
+void appendTimeDeltaUnitSeparator(StringEditor &result, const TimeDeltaFormat &format) {
     if (!result.isEmpty()) {
         result.append(format.unitSeparator());
     }
 }
 
 void appendTimeDeltaUnitName(
-    text::StringEditor &result,
+    StringEditor &result,
     const int64_t value,
     const bool hasFraction,
     const TimeDeltaUnitDefinition &definition,
@@ -54,29 +55,29 @@ void appendTimeDeltaUnitName(
 }
 
 void appendTimeDeltaFraction(
-    text::StringEditor &result, int64_t remainder, const int64_t factor, const uint8_t maximumDigits) {
-    static const auto cZeroCharacters = text::CharSet{U'0'};
+    StringEditor &result, int64_t remainder, const int64_t factor, const uint8_t maximumDigits) {
+    static const auto cZeroCharacters = CharSet{U'0'};
     if (remainder == 0 || maximumDigits == 0) {
         return;
     }
     if (remainder < 0) {
         remainder = -remainder;
     }
-    auto fraction = text::StringEditor{};
+    auto fraction = StringEditor{};
     for (uint8_t index = 0; index < maximumDigits && remainder != 0; ++index) {
         remainder *= 10;
-        fraction.append(text::Char{static_cast<char32_t>(U'0' + remainder / factor)});
+        fraction.append(Char{static_cast<char32_t>(U'0' + remainder / factor)});
         remainder %= factor;
     }
-    fraction.trim(cZeroCharacters, text::StringSide::Back);
+    fraction.trim(cZeroCharacters, StringSide::Back);
     if (!fraction.isEmpty()) {
         result.append(U'.');
         result.append(fraction);
     }
 }
 
-auto formatTimeDelta(const Nanoseconds value, const TimeDeltaFormat &format, const bool includeZero) -> text::String {
-    auto result = text::StringEditor{};
+auto formatTimeDelta(const Nanoseconds value, const TimeDeltaFormat &format, const bool includeZero) -> String {
+    auto result = StringEditor{};
     auto remaining = value.toRawValue();
     const auto &smallest = timeDeltaUnitDefinition(format.smallestUnit());
     for (const auto &definition : cTimeDeltaUnitDefinitions) {
@@ -92,7 +93,7 @@ auto formatTimeDelta(const Nanoseconds value, const TimeDeltaFormat &format, con
             if (component == 0 && remaining < 0) {
                 result.append(U'-');
             }
-            result.append(text::String::fromInteger(component));
+            result.append(String::fromInteger(component));
             if (isSmallest && format.showFractions()) {
                 appendTimeDeltaFraction(result, remaining, definition.factor, format.maximumFractionDigits());
             }
@@ -106,7 +107,7 @@ auto formatTimeDelta(const Nanoseconds value, const TimeDeltaFormat &format, con
         const auto &zeroUnit = timeDeltaUnitDefinition(
             smallest.factor > timeDeltaUnitDefinition(TimeDeltaUnit::Seconds).factor ? smallest.unit
                                                                                      : TimeDeltaUnit::Seconds);
-        result.append(text::String::fromInteger(0));
+        result.append(String::fromInteger(0));
         appendTimeDeltaUnitName(result, 0, false, zeroUnit, format);
     }
     return result;
@@ -122,7 +123,7 @@ auto formatCalendarFixedDelta(
     const Days days,
     const Weeks weeks,
     const TimeDeltaFormat &format,
-    const bool includeZero) -> text::String {
+    const bool includeZero) -> String {
     constexpr auto cFactors = std::array<uint64_t, 8>{
         1ULL,
         1'000ULL,
@@ -162,7 +163,7 @@ auto formatCalendarFixedDelta(
         return static_cast<int64_t>(result);
     };
 
-    auto result = text::StringEditor{};
+    auto result = StringEditor{};
     for (const auto &definition : cTimeDeltaUnitDefinitions) {
         const auto unitIndex = static_cast<std::size_t>(definition.unit);
         if (unitIndex < smallestIndex) {
@@ -191,7 +192,7 @@ auto formatCalendarFixedDelta(
                 if (negative) {
                     result.append(U'-');
                 }
-                result.append(text::String::fromInteger(magnitude));
+                result.append(String::fromInteger(magnitude));
                 if (hasFraction) {
                     appendTimeDeltaFraction(
                         result, remainder, static_cast<int64_t>(cFactors[unitIndex]), format.maximumFractionDigits());
@@ -215,18 +216,18 @@ auto formatCalendarFixedDelta(
 }
 
 void appendCalendarDeltaPart(
-    text::StringEditor &result,
+    StringEditor &result,
     const int64_t value,
-    const text::String &singular,
-    const text::String &plural,
-    const text::String &shortName,
-    const text::String &elclName,
+    const String &singular,
+    const String &plural,
+    const String &shortName,
+    const String &elclName,
     const TimeDeltaFormat &format) {
     if (value == 0) {
         return;
     }
     appendTimeDeltaUnitSeparator(result, format);
-    result.append(text::String::fromInteger(value));
+    result.append(String::fromInteger(value));
     result.append(format.valueSeparator());
     if (format.unitStyle() == TimeDeltaFormat::UnitStyle::Long) {
         result.append(value == 1 || value == -1 ? singular : plural);

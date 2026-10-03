@@ -4,20 +4,24 @@
 #include "CryptologyTestHelper.hpp"
 
 #include "../core/ApplicationTestScope.hpp"
+#include "../ParallelTestWork.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/cryptology/impl/DerParser.hpp>
-#include <erbsland/cryptology/keys/SigningPrivateKey.hpp>
-#include <erbsland/cryptology/protected_data/ProtectedDataMode.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBuilder.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/network/IpAddress.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/TempDirectory.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/ProtectedDataMode.hpp>
+#include <erbsland/SigningPrivateKey.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/TempDirectory.hpp>
+#include <erbsland/X509CertificateBuilder.hpp>
+
+#include <array>
 
 using namespace el::cryptology;
 using namespace el::text::literals;
@@ -102,11 +106,11 @@ public:
         REQUIRE(dual.serialNumber() != server.serialNumber());
 
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             X509CertificateBuilder::tlsServer("missing-san.example.test"_el)
                 .createCertificate(leafKey, intermediate, intermediateKey));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             X509CertificateBuilder::certificateAuthority("Forbidden Intermediate"_el)
                 .createCertificate(SigningPrivateKey::generate(), intermediate, intermediateKey));
     }
@@ -159,20 +163,42 @@ public:
     void testRsaGenerationProfiles() {
         const auto applicationScope = ApplicationTestScope<>{};
         el::core::application().cryptologyConfiguration().setProtectedDataMode(ProtectedDataMode::InternalOnly);
-        for (
-            const auto profile : {SigningKeyProfile::Rsa2048, SigningKeyProfile::Rsa3072, SigningKeyProfile::Rsa4096}) {
-            const auto key = SigningPrivateKey::generate(profile);
-            REQUIRE(key.algorithm() == SigningKeyAlgorithm::Rsa);
-            REQUIRE(SigningPrivateKey::fromDerOrThrow(key.toDer()).matches(key.publicKey()));
-            REQUIRE_EQUAL(PublicKey::fromDerOrThrow(key.publicKey().toDer()).toDer(), key.publicKey().toDer());
-            const auto certificate =
-                X509CertificateBuilder::certificateAuthority("RSA Profile CA"_el).createSelfSignedCertificate(key);
-            REQUIRE(key.publicKey().verifySignature(
-                certificate.signatureAlgorithm(),
-                certificate.tbsCertificateDer().span(),
-                certificate.signatureData().span()));
-            const auto request = X509CertificateBuilder::tlsClient("RSA Profile Client"_el).createSigningRequest(key);
-            REQUIRE_FALSE(request.isEmpty());
+        const auto profiles =
+            std::array{SigningKeyProfile::Rsa2048, SigningKeyProfile::Rsa3072, SigningKeyProfile::Rsa4096};
+        const auto results =
+            parallel_test_work::run(profiles.size(), [&](const std::size_t index) -> std::array<bool, 5U> {
+                const auto key = SigningPrivateKey::generate(profiles[index]);
+                const auto algorithmMatches = key.algorithm() == SigningKeyAlgorithm::Rsa;
+                const auto privateRoundTrip = SigningPrivateKey::fromDerOrThrow(key.toDer()).matches(key.publicKey());
+                const auto publicRoundTrip =
+                    PublicKey::fromDerOrThrow(key.publicKey().toDer()).toDer() == key.publicKey().toDer();
+                const auto certificate =
+                    X509CertificateBuilder::certificateAuthority("RSA Profile CA"_el).createSelfSignedCertificate(key);
+                const auto signatureMatches = key.publicKey().verifySignature(
+                    certificate.signatureAlgorithm(),
+                    certificate.tbsCertificateDer().span(),
+                    certificate.signatureData().span());
+                const auto request =
+                    X509CertificateBuilder::tlsClient("RSA Profile Client"_el).createSigningRequest(key);
+                return {algorithmMatches, privateRoundTrip, publicRoundTrip, signatureMatches, !request.isEmpty()};
+            });
+        for (auto index = std::size_t{}; index < profiles.size(); ++index) {
+            runWithContext(
+                SOURCE_LOCATION(),
+                [&]() -> void {
+                    REQUIRE_NOTHROW(results[index].value());
+                    const auto &checks = results[index].value();
+                    REQUIRE(checks[0]);
+                    REQUIRE(checks[1]);
+                    REQUIRE(checks[2]);
+                    REQUIRE(checks[3]);
+                    REQUIRE(checks[4]);
+                },
+                [&]() -> std::string {
+                    return el::StringConverter{
+                        el::StringFormat{"RSA generation profile {}"_el}.build(static_cast<unsigned>(profiles[index]))}
+                        .toStdString();
+                });
         }
     }
 
@@ -183,11 +209,34 @@ public:
         el::core::application().cryptologyConfiguration().setProtectedDataMode(ProtectedDataMode::InternalOnly);
         const auto key = SigningPrivateKey::generate();
         const auto password = el::String{"correct horse battery staple"};
-        const auto encrypted = key.toEncryptedDer(password);
-        REQUIRE(SigningPrivateKey::fromEncryptedDerOrThrow(encrypted, password).matches(key.publicKey()));
-        REQUIRE(
-            SigningPrivateKey::fromEncryptedPemOrThrow(key.toEncryptedPem(password), password)
-                .matches(key.publicKey()));
-        REQUIRE(SigningPrivateKey::fromEncryptedDer(encrypted, el::String{"wrong password"}).isEmpty());
+        // Separate key objects keep all mutable cryptographic state local to one worker.
+        const auto keyDer = key.toDer();
+        const auto results = parallel_test_work::run(2U, [&](const std::size_t index) -> std::array<bool, 2U> {
+            const auto localKey = SigningPrivateKey::fromDerOrThrow(keyDer);
+            if (index == 0U) {
+                const auto encrypted = localKey.toEncryptedDer(password);
+                const auto restored = SigningPrivateKey::fromEncryptedDerOrThrow(encrypted, password);
+                const auto wrongPasswordRejected =
+                    SigningPrivateKey::fromEncryptedDer(encrypted, el::String{"wrong password"}).isEmpty();
+                return {restored.matches(localKey.publicKey()), wrongPasswordRejected};
+            }
+            const auto restored =
+                SigningPrivateKey::fromEncryptedPemOrThrow(localKey.toEncryptedPem(password), password);
+            return {restored.matches(localKey.publicKey()), true};
+        });
+        for (auto index = std::size_t{}; index < results.size(); ++index) {
+            runWithContext(
+                SOURCE_LOCATION(),
+                [&]() -> void {
+                    REQUIRE_NOTHROW(results[index].value());
+                    REQUIRE(results[index].value()[0]);
+                    if (index == 0U) {
+                        REQUIRE(results[index].value()[1]);
+                    }
+                },
+                [&]() -> std::string {
+                    return index == 0U ? "Encrypted DER round trip and wrong password" : "Encrypted PEM round trip";
+                });
+        }
     }
 };

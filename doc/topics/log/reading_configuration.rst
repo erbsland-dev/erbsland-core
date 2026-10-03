@@ -16,8 +16,8 @@ In both, the application opens a known file, obtains the value that represents t
 it, and installs the resulting
 :cpp:class:`LogConfiguration <erbsland::log::LogConfiguration>` before ordinary work begins.
 
-Give Logging One Fixed Place
-============================
+Logging Configuration File Locations
+====================================
 
 A dedicated ``log.elcl`` is a good fit when logging has its own deployment lifecycle.
 Operations can replace or mount the file independently, and every value in the document belongs to logging.
@@ -50,7 +50,7 @@ It parses the complete document, and installs it in the application-owned manage
 .. erbsland-demo::
     :source: log/LoggingTopics/LoadStandaloneLogConfiguration.cpp
     :exec: log/logging_topics --demo LoadStandaloneLogConfiguration
-    :source-sha256: e1f6d4565f1196e6d4b8a37c790983d9d9730e61567a618d69188344c0745b99
+    :sha256: e92cdc34a3252157baa147e5ff7bdb1262a38af2a930b6e46c18b4b8898b49aa
 
 .. code-block:: cpp
 
@@ -71,10 +71,12 @@ It parses the complete document, and installs it in the application-owned manage
         log->info("Loaded logging from log.elcl."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mlog/startup␛[97m] Loaded logging from log.elcl.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mINF [␛[95;49mlog/startup␛[97;49m] Loaded logging from log.elcl.␛[0m
 
 .. erbsland-demo-end::
 
@@ -97,7 +99,7 @@ The returned value becomes the logging-schema root for validation and parsing.
 .. erbsland-demo::
     :source: log/LoggingTopics/LoadApplicationLogConfiguration.cpp
     :exec: log/logging_topics --demo LoadApplicationLogConfiguration
-    :source-sha256: fccded8518e7b5daef3f5b5bc07f1b9d982565534216fc05a2303058b8283f68
+    :sha256: df22a5f61ccffad40bdcba3fcab16462237011e951c00e616f4058ce5be5e09f
 
 .. code-block:: cpp
 
@@ -123,10 +125,12 @@ The returned value becomes the logging-schema root for validation and parsing.
         log->info("Loaded logging from application.elcl."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mapplication/startup␛[97m] Loaded logging from application.elcl.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mINF [␛[95;49mapplication/startup␛[97;49m] Loaded logging from application.elcl.␛[0m
 
 .. erbsland-demo-end::
 
@@ -153,8 +157,8 @@ the snapshot.
 Explicit validation does not make parsing safer a second time; it gives a larger application a clean phase boundary and
 a way to combine logging validation with the rest of its configuration checks.
 
-Construct and Install the Complete Snapshot
-===========================================
+Parsing and Installing a Logging Configuration Snapshot
+=======================================================
 
 :cpp:class:`LogConfigurationParser <erbsland::log::LogConfigurationParser>` turns the validated value into one complete
 configuration.
@@ -172,8 +176,8 @@ of ``initialize()`` and resume it immediately after installation succeeds.
 The retained startup entries then pass through the intended routes.
 :doc:`configuring_logging` develops this lifecycle pattern in detail.
 
-Use the Flexible Demo to Explore Scenarios
-==========================================
+Root, Nested, and Invalid Logging Configuration Examples
+========================================================
 
 The ``configured_logging`` executable serves a different purpose from the two application patterns above.
 It is a scenario runner for this documentation: a command-line path selects a fixture, and an optional ``--branch`` lets
@@ -192,7 +196,7 @@ The third run deliberately fails validation and confirms that configuration diag
     :exec-2: log/configured_logging demos/log/ConfiguredLogging/data/nested.elcl --branch application.logging
     :exec-3: log/configured_logging demos/log/ConfiguredLogging/data/invalid.elcl
     :exec-3-exit-code: 1
-    :source-sha256: 5dc977fa5b621977b81dd172b322dfa9eac3f51f3d7895487120b7cc1940eaa8
+    :sha256: 1db3e54a4d5c765c7ff865cce114eae28614b6e2ac444bf4e0262c19c3143e6b
 
 .. code-block:: cpp
 
@@ -210,23 +214,18 @@ The third run deliberately fails validation and confirms that configuration diag
         options->setHelpDescription("Load an application logging configuration from an ELCL file."_el);
         options->addOption("configuration"_el)
             .setRequired()
-            .setHelpDescription("ELCL file containing the logging configuration."_el);
+            .setHelpTitle("ELCL file containing the logging configuration."_el);
         options->addOption({"-b"_el, "--branch"_el, "branch"_el})
             .setType(el::OptionType::Text)
-            .setHelpDescription("Optional dot-separated branch containing the logging configuration."_el);
+            .setHelpTitle("Optional dot-separated branch containing the logging configuration."_el);
     }
 
-    void ConfiguredLoggingApp::parseCommandLine() {
-        Application::parseCommandLine();
-        if (optionValues() == nullptr) {
-            return;
-        }
-
+    void ConfiguredLoggingApp::handleCommandLineOptions(const el::OptionValuesPtr &values) {
         // Parse the application configuration file and select the requested branch.
-        const auto path = el::Path::fromNativeOrThrow(optionValues()->getText("configuration"_el));
+        const auto path = el::Path::fromNativeOrThrow(values->getText("configuration"_el));
         const auto document = el::conf::Parser{}.parseFileOrThrow(path);
         auto branch = el::conf::ValuePtr{document};
-        const auto branchName = optionValues()->getText("branch"_el);
+        const auto branchName = values->getText("branch"_el);
         if (!branchName.isEmpty()) {
             branch = document->valueOrThrow(branchName);
         }
@@ -249,48 +248,66 @@ The third run deliberately fails validation and confirms that configuration diag
         return el::ExitCode::success();
     }
 
-.. rubric:: ``$ log/configured_logging demos/log/ConfiguredLogging/data/root.elcl``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    ␛[97mINF [␛[95mguild/configured␛[97m] The explorer guild loaded its logging configuration.
-    ␛[93mWRN [␛[95mguild/configured␛[93m] One route marker still needs confirmation.␛[0m
+        $ log/configured_logging demos/log/ConfiguredLogging/data/root.elcl
 
-.. rubric:: ``$ log/configured_logging demos/log/ConfiguredLogging/data/nested.elcl --branch application.logging``
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[0m␛[97;49mThe explorer guild loaded its logging configuration.
+        ␛[93;49mOne route marker still needs confirmation.␛[0m
 
-    ␛[90mTRC ␛[95mconfigured␛[90m: Candidate route: Turku → Jääjärvi → Majakka
-    ␛[97mINF ␛[95mconfigured␛[97m: The explorer guild loaded its logging configuration.
-    ␛[93mWRN ␛[95mconfigured␛[93m: One route marker still needs confirmation.␛[0m
+.. erbsland-demo-run::
 
-.. rubric:: ``$ log/configured_logging demos/log/ConfiguredLogging/data/invalid.elcl``
+    .. code-block:: console
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        $ log/configured_logging demos/log/ConfiguredLogging/data/nested.elcl --branch application.logging
 
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-      ␛[1;91mValidating␛[22m ␛[1mthe␛[22m ␛[1mConfiguration␛[22m ␛[1mFailed
+        ␛[0m␛[90;49mTRC ␛[95;49mconfigured␛[90;49m: Candidate route: Turku → Jääjärvi → Majakka
+        ␛[97;49mINF ␛[95;49mconfigured␛[97;49m: The explorer guild loaded its logging configuration.
+        ␛[93;49mWRN ␛[95;49mconfigured␛[93;49m: One route marker still needs confirmation.␛[0m
 
-      ␛[22;39mThe value must be at least 1
+.. erbsland-demo-run::
 
-    ␛[1mError␛[22m ␛[1mSource:
-      ␛[22;90mPath:␛[39m     /var/folders/f2/rq38shx1797_b7m0vy142phw0000gn/T/erbsland-demo-doc-7r59jojt/fi
-                xture-0.elcl
-      ␛[90mLine:␛[39m     3
-      ␛[90mColumn:␛[39m   1
-      ␛[90mPosition:␛[39m 159
+    .. code-block:: console
 
-    ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
-      ␛[22;90mcategory:␛[39m  Validation
-      ␛[90mname path:␛[39m queue.maximum_entries
+        $ log/configured_logging demos/log/ConfiguredLogging/data/invalid.elcl
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m
+          ␛[91;49m␛[1mValidating␛[22m ␛[1mthe␛[22m ␛[1mConfiguration␛[22m ␛[1mFailed
+
+          ␛[39;49m␛[22mThe value must be at least 1
+
+        ␛[1mError␛[22m ␛[1mSource:
+          ␛[90;49m␛[22mPath:␛[39;49m     demos/log/ConfiguredLogging/data/invalid.elcl
+          ␛[90;49mLine:␛[39;49m     3
+          ␛[90;49mColumn:␛[39;49m   1
+          ␛[90;49mPosition:␛[39;49m 159
+
+        ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
+          ␛[90;49m␛[22mcategory:␛[39;49m  Validation
+          ␛[90;49mname path:␛[39;49m queue.maximum_entries
+
+          ␛[90;49m   1 │ ␛[39;49m# The queue capacity must be positive.
+          ␛[90;49m   2 │ ␛[39;49m--[ Queue ]----------------------------------------------------------------------
+        -------------------------------------
+          ␛[90;49m   3 │ ␛[91;49mM␛[39;49maximum Entries             : 0
+          ␛[90;49m     │ ␛[91;49m▔
+          ␛[0m
 
 .. erbsland-demo-end::
 
-Let Configuration Errors Reach the Application Boundary
-=======================================================
+Application Reporting of Logging Configuration Errors
+=====================================================
 
 The invalid scenario is as important as the successful ones.
 No startup method catches

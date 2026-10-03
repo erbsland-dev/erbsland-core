@@ -25,7 +25,7 @@
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../time/Timestamp.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -50,14 +50,19 @@
 
 namespace erbsland::path::impl {
 
+using namespace stream;
+using namespace text;
+using text::impl::PlatformU8StringAccess;
+using text::impl::UnsafeU8StringBuffer;
+using namespace unit;
 using namespace text::literals;
 
 auto PosixPathBackend::currentDirectoryOrThrow() const -> Path {
     auto bufferSize = std::size_t{1024U};
     while (true) {
-        auto buffer = text::impl::UnsafeU8StringBuffer{bufferSize};
+        auto buffer = UnsafeU8StringBuffer{bufferSize};
         if (::getcwd(buffer.data(), buffer.dataSize()) != nullptr) {
-            const auto length = unit::ByteLength::fromSizeT(std::strlen(buffer.data()));
+            const auto length = ByteCount::fromSizeT(std::strlen(buffer.data()));
             return Path::fromPosixOrThrow(buffer.take(length));
         }
         if (errno != ERANGE) {
@@ -98,7 +103,7 @@ auto PosixPathBackend::userHomeDirectoryOrThrow() const -> Path {
                 {},
                 ENOENT);
         }
-        const auto home = Path::fromPosix(text::String{std::string_view{result->pw_dir}});
+        const auto home = Path::fromPosix(String{std::string_view{result->pw_dir}});
         if (home.isEmpty() || !home.isAbsolute()) {
             throw PathError{PathErrorContext{
                 "User home directory is unavailable"_el,
@@ -116,7 +121,7 @@ auto PosixPathBackend::systemTempDirectoryOrThrow() const -> Path {
             const auto absolutePath = path.toAbsolute();
             if (!absolutePath.isEmpty()) {
                 const auto pathText = pathTextOrThrow(absolutePath);
-                const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+                const auto pathAccess = PlatformU8StringAccess{pathText};
                 struct stat info{};
                 if (::stat(pathAccess.nullTerminatedCharPtr(), &info) == 0 && S_ISDIR(info.st_mode) != 0) {
                     return absolutePath;
@@ -126,7 +131,7 @@ auto PosixPathBackend::systemTempDirectoryOrThrow() const -> Path {
     }
     const auto fallback = Path::fromPosix("/tmp"_el);
     const auto fallbackText = pathTextOrThrow(fallback);
-    const auto fallbackAccess = text::impl::PlatformU8StringAccess{fallbackText};
+    const auto fallbackAccess = PlatformU8StringAccess{fallbackText};
     struct stat fallbackInfo{};
     errno = 0;
     const auto fallbackResult = ::stat(fallbackAccess.nullTerminatedCharPtr(), &fallbackInfo);
@@ -169,7 +174,7 @@ auto PosixPathBackend::loadResolvedInfoOrThrow(
     result.resolvedPath = resolvedPath;
 
     const auto pathText = pathTextOrThrow(result.resolvedPath);
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     struct stat info{};
     if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) != 0) {
         throwSystemError(
@@ -189,7 +194,7 @@ auto PosixPathBackend::loadResolvedInfoOrThrow(
     }
     if (parts.isSet(PathInfoPart::Size)) {
         if (result.type == PathType::RegularFile && info.st_size >= 0) {
-            result.fileSize = unit::ByteLength::fromSizeT(static_cast<std::size_t>(info.st_size));
+            result.fileSize = ByteCount::fromSizeT(static_cast<std::size_t>(info.st_size));
         }
         result.loadedParts.set(PathInfoPart::Size);
     }
@@ -212,11 +217,11 @@ auto PosixPathBackend::loadResolvedInfoOrThrow(
         result.loadedParts.set(PathInfoPart::Times);
     }
     if (parts.isSet(PathInfoPart::OwnerId)) {
-        result.ownerId = system::UserId{text::String::fromInteger(static_cast<unsigned long>(info.st_uid))};
+        result.ownerId = system::UserId{String::fromInteger(static_cast<unsigned long>(info.st_uid))};
         result.loadedParts.set(PathInfoPart::OwnerId);
     }
     if (parts.isSet(PathInfoPart::GroupId)) {
-        result.groupId = system::GroupId{text::String::fromInteger(static_cast<unsigned long>(info.st_gid))};
+        result.groupId = system::GroupId{String::fromInteger(static_cast<unsigned long>(info.st_gid))};
         result.loadedParts.set(PathInfoPart::GroupId);
     }
     if (parts.isSet(PathInfoPart::AccessRights)) {
@@ -248,7 +253,7 @@ auto PosixPathBackend::loadResolvedInfoOrThrow(
 }
 
 auto PosixPathBackend::openByteInputStreamOrThrow(const Path &path, const PathReadDataOptions options) const
-    -> stream::ByteInputStreamPtr {
+    -> ByteInputStreamPtr {
     const auto fileDescriptor = openInputFileDescriptorOrThrow(path, options.symlinkMode());
     auto native = std::make_shared<stream::impl::PosixNativeStream>(
         fileDescriptor, stream::impl::NativeStreamOwnership::Owned, path.toString());
@@ -258,7 +263,7 @@ auto PosixPathBackend::openByteInputStreamOrThrow(const Path &path, const PathRe
 auto PosixPathBackend::openInputFileDescriptorOrThrow(const Path &path, const SymlinkMode symlinkMode) -> int {
     if (symlinkMode == SymlinkMode::Follow) {
         const auto pathText = pathTextOrThrow(path);
-        const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+        const auto pathAccess = PlatformU8StringAccess{pathText};
         const auto fileDescriptor = ::open(pathAccess.nullTerminatedCharPtr(), O_RDONLY | O_CLOEXEC);
         if (fileDescriptor >= 0) {
             return fileDescriptor;
@@ -280,10 +285,10 @@ auto PosixPathBackend::openInputFileDescriptorOrThrow(const Path &path, const Sy
             errno);
     }
     const auto elements = absolutePath.elements();
-    for (auto index = unit::ItemIndex::one(); index.isWithin(elements.count()); ++index) {
+    for (auto index = ItemIndex::one(); index.isWithin(elements.count()); ++index) {
         const auto name = elements.get(index);
-        const auto nameAccess = text::impl::PlatformU8StringAccess{name};
-        const auto isFinal = !index.advanced(unit::ItemCount::one()).isWithin(elements.count());
+        const auto nameAccess = PlatformU8StringAccess{name};
+        const auto isFinal = !index.advanced(ItemCount::one()).isWithin(elements.count());
         const auto flags = O_RDONLY | O_CLOEXEC | O_NOFOLLOW | (isFinal ? 0 : O_DIRECTORY);
         const auto next = ::openat(descriptor, nameAccess.nullTerminatedCharPtr(), flags);
         const auto errorCode = errno;

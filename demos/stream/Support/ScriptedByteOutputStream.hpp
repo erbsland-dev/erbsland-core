@@ -3,6 +3,17 @@
 #pragma once
 
 #include <DemoCommon.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteOffset.hpp>
+#include <erbsland/ByteOutputStream.hpp>
+#include <erbsland/OutputStreamSettings.hpp>
+#include <erbsland/StreamCloseStatus.hpp>
+#include <erbsland/StreamPositionOrigin.hpp>
+#include <erbsland/StreamPositionStatus.hpp>
+#include <erbsland/StreamState.hpp>
+#include <erbsland/StreamWaitStatus.hpp>
+#include <erbsland/StreamWriteStatus.hpp>
 
 #include <atomic>
 #include <cstddef>

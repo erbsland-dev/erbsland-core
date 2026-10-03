@@ -8,6 +8,8 @@
 
 namespace erbsland::mem::impl {
 
+using namespace unit;
+
 auto BestGrowth::alignUp(const std::size_t value, const std::size_t alignment) noexcept -> std::size_t {
     const auto remainder = value % alignment;
     if (remainder == 0U) {
@@ -15,54 +17,53 @@ auto BestGrowth::alignUp(const std::size_t value, const std::size_t alignment) n
     }
     const auto increment = alignment - remainder;
     if (math::willAddOverflow(value, increment)) {
-        return unit::ByteLength::maximum().toSizeT();
+        return ByteCount::maximum().toSizeT();
     }
     return value + increment;
 }
 
-auto BestGrowth::compactGrowth(const unit::ByteLength requestedAllocationSize) noexcept -> unit::ByteLength {
+auto BestGrowth::compactGrowth(const ByteCount requestedAllocationSize) noexcept -> ByteCount {
     const auto requestedSize = requestedAllocationSize.toSizeT();
     const auto maximumBlockSize = cMaximumGrowthBlock.toSizeT();
     if (requestedAllocationSize > cMaximumGrowthBlock) {
         const auto aligned = alignUp(requestedSize, maximumBlockSize);
         if (aligned == requestedSize) {
             if (math::willAddOverflow(requestedSize, maximumBlockSize)) {
-                return unit::ByteLength::maximum();
+                return ByteCount::maximum();
             }
-            return unit::ByteLength::fromSizeT(requestedSize + maximumBlockSize);
+            return ByteCount::fromSizeT(requestedSize + maximumBlockSize);
         }
-        return unit::ByteLength::fromSizeT(aligned);
+        return ByteCount::fromSizeT(aligned);
     }
 
     auto result = std::size_t{1U};
     while (result <= requestedSize) {
-        if (result > unit::ByteLength::maximum().toSizeT() / 2U) {
-            return unit::ByteLength::maximum();
+        if (result > ByteCount::maximum().toSizeT() / 2U) {
+            return ByteCount::maximum();
         }
         result *= 2U;
     }
-    return unit::ByteLength::fromSizeT(result);
+    return ByteCount::fromSizeT(result);
 }
 
 auto BestGrowth::geometricGrowth(
-    const unit::ByteLength currentAllocationSize, const unit::ByteLength requestedAllocationSize) noexcept
-    -> unit::ByteLength {
+    const ByteCount currentAllocationSize, const ByteCount requestedAllocationSize) noexcept -> ByteCount {
     const auto pageSize = cAllocationPageSize.toSizeT();
-    const auto maximum = unit::ByteLength::maximum().toSizeT();
+    const auto maximum = ByteCount::maximum().toSizeT();
     const auto requested = alignUp(requestedAllocationSize.toSizeT(), pageSize);
     auto result = std::max(pageSize, alignUp(currentAllocationSize.toSizeT(), pageSize));
     while (result < requested) {
         if (result > maximum / 2U) {
-            return unit::ByteLength::maximum();
+            return ByteCount::maximum();
         }
         result *= 2U;
     }
-    return unit::ByteLength::fromSizeT(result);
+    return ByteCount::fromSizeT(result);
 }
 
-auto BestGrowth::bestGrowth(const BestGrowthStrategy strategy) const noexcept -> unit::ByteLength {
-    const auto currentAllocationSize = unit::ByteLength::fromSizeT(_current);
-    const auto requestedAllocationSize = unit::ByteLength::fromSizeT(_requested);
+auto BestGrowth::bestGrowth(const BestGrowthStrategy strategy) const noexcept -> ByteCount {
+    const auto currentAllocationSize = ByteCount::fromSizeT(_current);
+    const auto requestedAllocationSize = ByteCount::fromSizeT(_requested);
     if (requestedAllocationSize <= currentAllocationSize) {
         return currentAllocationSize;
     }

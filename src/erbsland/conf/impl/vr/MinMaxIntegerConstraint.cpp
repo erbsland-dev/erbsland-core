@@ -10,23 +10,23 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 void MinMaxIntegerConstraint::validateInteger(
     [[maybe_unused]] const ValidationContext &context, const Integer value) const {
 
     if (isNotValid(value)) {
-        throwValidationError(text::StringFormat{"The value must be {} {}"_el}.build(comparisonText(), _value));
+        throwValidationError(StringFormat{"The value must be {} {}"_el}.build(comparisonText(), _value));
     }
 }
 
 void MinMaxIntegerConstraint::validateText(
-    [[maybe_unused]] const ValidationContext &context, const text::String &value) const {
+    [[maybe_unused]] const ValidationContext &context, const String &value) const {
 
     if (isNotValid(math::saturatingCast<Integer>(value.characterLength().toSizeT()))) {
         throwValidationError(
-            text::StringFormat{"The number of characters in this text must be {} {}"_el}.build(
-                comparisonText(), _value));
+            StringFormat{"The number of characters in this text must be {} {}"_el}.build(comparisonText(), _value));
     }
 }
 
@@ -34,8 +34,7 @@ void MinMaxIntegerConstraint::validateBytes(
     [[maybe_unused]] const ValidationContext &context, const mem::ByteBlock &value) const {
 
     if (isNotValid(math::saturatingCast<Integer>(value.length().toSizeT()))) {
-        throwValidationError(
-            text::StringFormat{"The number of bytes must be {} {}"_el}.build(comparisonText(), _value));
+        throwValidationError(StringFormat{"The number of bytes must be {} {}"_el}.build(comparisonText(), _value));
     }
 }
 
@@ -46,14 +45,14 @@ void MinMaxIntegerConstraint::validateValueList(const ValidationContext &context
     }
     if (isNotValid(math::saturatingCast<Integer>(valueCount))) {
         throwValidationError(
-            text::StringFormat{"The number of values in this list must be {} {}"_el}.build(comparisonText(), _value));
+            StringFormat{"The number of values in this list must be {} {}"_el}.build(comparisonText(), _value));
     }
 }
 
 void MinMaxIntegerConstraint::validateSectionList(const ValidationContext &context) const {
     if (isNotValid(math::saturatingCast<Integer>(context.value->size()))) {
         throwValidationError(
-            text::StringFormat{"The number of entries in this section list must be {} {}"_el}.build(
+            StringFormat{"The number of entries in this section list must be {} {}"_el}.build(
                 comparisonText(), _value));
     }
 }
@@ -61,16 +60,14 @@ void MinMaxIntegerConstraint::validateSectionList(const ValidationContext &conte
 void MinMaxIntegerConstraint::validateSectionWithNames(const ValidationContext &context) const {
     if (isNotValid(math::saturatingCast<Integer>(context.value->size()))) {
         throwValidationError(
-            text::StringFormat{"The number of entries in this section must be {} {}"_el}.build(
-                comparisonText(), _value));
+            StringFormat{"The number of entries in this section must be {} {}"_el}.build(comparisonText(), _value));
     }
 }
 
 void MinMaxIntegerConstraint::validateSectionWithTexts(const ValidationContext &context) const {
     if (isNotValid(math::saturatingCast<Integer>(context.value->size()))) {
         throwValidationError(
-            text::StringFormat{"The number of entries in this section must be {} {}"_el}.build(
-                comparisonText(), _value));
+            StringFormat{"The number of entries in this section must be {} {}"_el}.build(comparisonText(), _value));
     }
 }
 

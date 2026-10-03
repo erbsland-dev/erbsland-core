@@ -27,7 +27,7 @@ private:
 public:
     /// Create a POSIX TCP connection device.
     PosixTcpConnectionDevice(
-        event::EventLoopDriverPtr driver, unit::ByteLength receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks);
+        event::EventLoopDriverPtr driver, unit::ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks);
     ~PosixTcpConnectionDevice() override;
 
 public: // implement TcpConnectionDevice
@@ -35,7 +35,7 @@ public: // implement TcpConnectionDevice
     void accept(TcpAcceptedSocketPtr socket) override;
     [[nodiscard]] auto canAccept(const TcpAcceptedSocket &socket) const noexcept -> bool override;
     [[nodiscard]] auto send(mem::ByteBlock data) -> TcpConnectionDeviceSendStatus override;
-    void setReceiving(unit::ByteLength maximumBytes) override;
+    void setReceiving(unit::ByteCount maximumBytes) override;
     void close() noexcept override;
     void abort() noexcept override;
 
@@ -67,14 +67,14 @@ private:
     TcpConnectionDeviceCallbacks _callbacks;   ///< Core callbacks.
     RegistrationPtr _registration;             ///< Current readiness registration.
     std::atomic<int> _descriptor{-1};          ///< Native socket descriptor.
-    unit::ByteLength _receiveChunkLimit;       ///< Largest native receive chunk.
+    unit::ByteCount _receiveChunkLimit;        ///< Largest native receive chunk.
     std::optional<IpEndpoint> _localEndpoint;  ///< Local endpoint after connection.
     std::optional<IpEndpoint> _remoteEndpoint; ///< Remote endpoint after connection.
     mem::ByteBlock _sendData;                  ///< Retained partial send block.
     std::size_t _sendOffset{};                 ///< Bytes already written from retained block.
     bool _connecting{false};                   ///< Whether connect completion is pending.
     bool _connected{false};                    ///< Whether the socket is established.
-    unit::ByteLength _maximumReceiveSize;      ///< Largest next native receive, or zero.
+    unit::ByteCount _maximumReceiveSize;       ///< Largest next native receive, or zero.
     bool _sendPending{false};                  ///< Whether output awaits write readiness.
 };
 

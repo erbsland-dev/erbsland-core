@@ -20,14 +20,14 @@ class LogLevel final {
 public:
     /// The raw severity value and flag bit.
     enum class Value : uint8_t {
-        Trace = 1U << 0U,                                        ///< Detailed diagnostics disabled by default.
-        Information = 1U << 1U,                                  ///< Normal application progress and state.
-        Warning = 1U << 2U,                                      ///< A recoverable problem or unexpected condition.
-        Error = 1U << 3U,                                        ///< An operation failure requiring attention.
+        Trace = 1U << 0U,       ///< Detailed diagnostics optionally gated by a trace section.
+        Information = 1U << 1U, ///< Normal application progress and state.
+        Warning = 1U << 2U,     ///< A recoverable problem or unexpected condition.
+        Error = 1U << 3U,       ///< An operation failure requiring attention.
         All = (1U << 0U) | (1U << 1U) | (1U << 2U) | (1U << 3U), ///< All available severity levels.
     };
 
-    static constexpr auto Trace = Value::Trace;             ///< Detailed diagnostics disabled by default.
+    static constexpr auto Trace = Value::Trace; ///< Detailed diagnostics optionally gated by a trace section.
     static constexpr auto Information = Value::Information; ///< Normal application progress and state.
     static constexpr auto Warning = Value::Warning;         ///< A recoverable problem or unexpected condition.
     static constexpr auto Error = Value::Error;             ///< An operation failure requiring attention.

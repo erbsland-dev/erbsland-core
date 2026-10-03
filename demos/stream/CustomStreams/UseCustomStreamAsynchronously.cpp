@@ -3,6 +3,8 @@
 
 #include "SkillTreeStreams.hpp"
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/StandardStreams.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -11,7 +13,7 @@ namespace demo {
 /// The coroutine wrapper retains the custom stream while its bounded source operation runs on the worker service.
 void useCustomStreamAsynchronously() {
     const auto input = SkillTreeInputStream::create({9U, 8U, 7U, 6U});
-    auto task = input->coReadExact(el::ByteLength{4U});
+    auto task = input->coReadExact(el::ByteCount{4U});
     waitForTask(task);
     el::io::printLine("Asynchronous read completed: "_el, task.result().hasData());
 }

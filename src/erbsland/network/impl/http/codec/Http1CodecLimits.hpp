@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../../unit/ByteLength.hpp"
+#include "../../../../unit/ByteCount.hpp"
 #include "../../../http/HttpHeaderLimits.hpp"
 
 namespace erbsland::network::impl {
@@ -12,37 +12,37 @@ namespace erbsland::network::impl {
 class Http1CodecLimits final {
 public:
     /// Default maximum start-line length.
-    static constexpr auto cDefaultMaximumStartLineLength = unit::ByteLength{8U * 1024U};
+    static constexpr auto cDefaultMaximumStartLineLength = unit::ByteCount{8U * 1024U};
     /// Default maximum chunk-size and extension line length.
-    static constexpr auto cDefaultMaximumChunkMetadataLength = unit::ByteLength{8U * 1024U};
+    static constexpr auto cDefaultMaximumChunkMetadataLength = unit::ByteCount{8U * 1024U};
     /// Default maximum decoded body length.
-    static constexpr auto cDefaultMaximumBodyLength = unit::ByteLength{16U * 1024U * 1024U};
+    static constexpr auto cDefaultMaximumBodyLength = unit::ByteCount{16U * 1024U * 1024U};
     /// Default maximum retained input or queued output.
-    static constexpr auto cDefaultMaximumQueueLength = unit::ByteLength{1024U * 1024U};
+    static constexpr auto cDefaultMaximumQueueLength = unit::ByteCount{1024U * 1024U};
     /// Maximum body bytes returned or accepted in one event.
-    static constexpr auto cMaximumBodyChunkLength = unit::ByteLength{16U * 1024U};
+    static constexpr auto cMaximumBodyChunkLength = unit::ByteCount{16U * 1024U};
     /// Initial allocation for retained input and queued output.
-    static constexpr auto cInitialQueueLength = unit::ByteLength{8U * 1024U};
+    static constexpr auto cInitialQueueLength = unit::ByteCount{8U * 1024U};
 
 public: // queue storage
     /// Get the initial physical ring-buffer capacity for a configured queue limit.
-    [[nodiscard]] static constexpr auto initialQueueCapacity(const unit::ByteLength maximum) noexcept
-        -> unit::ByteLength {
+    [[nodiscard]] static constexpr auto initialQueueCapacity(const unit::ByteCount maximum) noexcept
+        -> unit::ByteCount {
         if (maximum.isZero()) {
-            return unit::ByteLength::one();
+            return unit::ByteCount::one();
         }
         return maximum < cInitialQueueLength ? maximum : cInitialQueueLength;
     }
     /// Get the physical ring-buffer limit for a configured queue limit.
-    [[nodiscard]] static constexpr auto queueStorageLimit(const unit::ByteLength maximum) noexcept -> unit::ByteLength {
-        return maximum.isZero() ? unit::ByteLength::one() : maximum;
+    [[nodiscard]] static constexpr auto queueStorageLimit(const unit::ByteCount maximum) noexcept -> unit::ByteCount {
+        return maximum.isZero() ? unit::ByteCount::one() : maximum;
     }
 
 public: // accessors
     /// Get the maximum start-line length.
-    [[nodiscard]] constexpr auto maximumStartLineLength() const noexcept -> unit::ByteLength { return _startLine; }
+    [[nodiscard]] constexpr auto maximumStartLineLength() const noexcept -> unit::ByteCount { return _startLine; }
     /// Set the maximum start-line length.
-    constexpr auto setMaximumStartLineLength(unit::ByteLength value) noexcept -> Http1CodecLimits & {
+    constexpr auto setMaximumStartLineLength(unit::ByteCount value) noexcept -> Http1CodecLimits & {
         _startLine = value;
         return *this;
     }
@@ -61,44 +61,44 @@ public: // accessors
         return *this;
     }
     /// Get the maximum chunk metadata length.
-    [[nodiscard]] constexpr auto maximumChunkMetadataLength() const noexcept -> unit::ByteLength {
+    [[nodiscard]] constexpr auto maximumChunkMetadataLength() const noexcept -> unit::ByteCount {
         return _chunkMetadata;
     }
     /// Set the maximum chunk metadata length.
-    constexpr auto setMaximumChunkMetadataLength(unit::ByteLength value) noexcept -> Http1CodecLimits & {
+    constexpr auto setMaximumChunkMetadataLength(unit::ByteCount value) noexcept -> Http1CodecLimits & {
         _chunkMetadata = value;
         return *this;
     }
     /// Get the maximum decoded body length.
-    [[nodiscard]] constexpr auto maximumBodyLength() const noexcept -> unit::ByteLength { return _body; }
+    [[nodiscard]] constexpr auto maximumBodyLength() const noexcept -> unit::ByteCount { return _body; }
     /// Set the maximum decoded body length.
-    constexpr auto setMaximumBodyLength(unit::ByteLength value) noexcept -> Http1CodecLimits & {
+    constexpr auto setMaximumBodyLength(unit::ByteCount value) noexcept -> Http1CodecLimits & {
         _body = value;
         return *this;
     }
     /// Get the maximum retained input length.
-    [[nodiscard]] constexpr auto maximumInputLength() const noexcept -> unit::ByteLength { return _input; }
+    [[nodiscard]] constexpr auto maximumInputLength() const noexcept -> unit::ByteCount { return _input; }
     /// Set the maximum retained input length.
-    constexpr auto setMaximumInputLength(unit::ByteLength value) noexcept -> Http1CodecLimits & {
+    constexpr auto setMaximumInputLength(unit::ByteCount value) noexcept -> Http1CodecLimits & {
         _input = value;
         return *this;
     }
     /// Get the maximum queued output length.
-    [[nodiscard]] constexpr auto maximumOutputLength() const noexcept -> unit::ByteLength { return _output; }
+    [[nodiscard]] constexpr auto maximumOutputLength() const noexcept -> unit::ByteCount { return _output; }
     /// Set the maximum queued output length.
-    constexpr auto setMaximumOutputLength(unit::ByteLength value) noexcept -> Http1CodecLimits & {
+    constexpr auto setMaximumOutputLength(unit::ByteCount value) noexcept -> Http1CodecLimits & {
         _output = value;
         return *this;
     }
 
 private:
-    unit::ByteLength _startLine{cDefaultMaximumStartLineLength};         ///< Start-line bound.
-    HttpHeaderLimits _headers;                                           ///< Header bounds.
-    HttpHeaderLimits _trailers;                                          ///< Trailer bounds.
-    unit::ByteLength _chunkMetadata{cDefaultMaximumChunkMetadataLength}; ///< Chunk metadata bound.
-    unit::ByteLength _body{cDefaultMaximumBodyLength};                   ///< Decoded body bound.
-    unit::ByteLength _input{cDefaultMaximumQueueLength};                 ///< Retained input bound.
-    unit::ByteLength _output{cDefaultMaximumQueueLength};                ///< Queued output bound.
+    unit::ByteCount _startLine{cDefaultMaximumStartLineLength};         ///< Start-line bound.
+    HttpHeaderLimits _headers;                                          ///< Header bounds.
+    HttpHeaderLimits _trailers;                                         ///< Trailer bounds.
+    unit::ByteCount _chunkMetadata{cDefaultMaximumChunkMetadataLength}; ///< Chunk metadata bound.
+    unit::ByteCount _body{cDefaultMaximumBodyLength};                   ///< Decoded body bound.
+    unit::ByteCount _input{cDefaultMaximumQueueLength};                 ///< Retained input bound.
+    unit::ByteCount _output{cDefaultMaximumQueueLength};                ///< Queued output bound.
 };
 
 }

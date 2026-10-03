@@ -45,10 +45,10 @@ public: // state and services
     /// Get the current lifecycle state.
     [[nodiscard]] auto state() const noexcept -> ApplicationPartState { return _state.load(); }
     /// Access the manager-local part registry.
-    /// @throws err::LogicError If this part was not prepared by a manager.
+    /// The part must have been prepared by a manager.
     [[nodiscard]] auto partManager() const -> ApplicationPartManagerAccess &;
     /// Access this part's event target.
-    /// @throws err::LogicError If the part has not started yet.
+    /// The part must have started.
     [[nodiscard]] auto events() const -> event::EventsPtr;
 
 public: // implement ApplicationPartCommandLine
@@ -59,6 +59,7 @@ protected: // lifecycle customization
     /// Decide whether this part starts during initial automatic startup.
     [[nodiscard]] virtual auto automaticStart() -> bool;
     /// Get the maximum graceful-shutdown time before the event loop is forced to quit.
+    /// Expiry is reported to the manager as an ApplicationError.
     [[nodiscard]] virtual auto shutdownTimeout() const noexcept -> time::TimeDelta;
     /// Initialize this part on its dedicated event thread.
     virtual void initialize();

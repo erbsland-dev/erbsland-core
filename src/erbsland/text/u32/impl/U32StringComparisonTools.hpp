@@ -5,10 +5,12 @@
 #include "U32StringDataView.hpp"
 
 #include "../../../unit/CpIndex.hpp"
+#include "../../../unit/CpRange.hpp"
 #include "../../../unit/ItemCount.hpp"
 #include "../../AsciiCategory.hpp"
 #include "../../CharCompareFn.hpp"
 #include "../../CharSet.hpp"
+#include "../../StringSide.hpp"
 
 #include <compare>
 #include <span>
@@ -16,7 +18,7 @@
 namespace erbsland::text::impl {
 
 /// Comparison and containment algorithms on UTF-32 string data.
-/// @tested{U32StringTest}
+/// @tested{U32StringTest StringSeparatorSplitTest}
 class U32StringComparisonTools final {
 public:
     /// A set of Unicode code-points for decoded character lookups.
@@ -39,6 +41,30 @@ public: // find
     [[nodiscard]] auto find(
         const U32StringDataView &text, unit::CpIndex start, CharCompareFn compareFn = {}) const noexcept
         -> unit::CpIndex;
+
+    /// Find the first non-empty separator and retain its native boundaries.
+    /// @param text The separator data.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return The relative match range, or no-range for an absent or empty separator.
+    [[nodiscard]] auto findFirstRange(const U32StringDataView &text, CharCompareFn compareFn = {}) const noexcept
+        -> unit::CpRange;
+    /// Find the rightmost non-empty separator, including overlapping matches.
+    /// @param text The separator data.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return The relative match range, or no-range for an absent or empty separator.
+    [[nodiscard]] auto findLastRange(const U32StringDataView &text, CharCompareFn compareFn = {}) const noexcept
+        -> unit::CpRange;
+    /// Match a decoded separator at one candidate position.
+    /// @param data The source data span.
+    /// @param start The candidate's native start index.
+    /// @param text The separator span.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return The actual source end of the match, or no-index on mismatch.
+    [[nodiscard]] static auto endOfTextMatch(
+        std::span<const char32_t> data,
+        unit::CpIndex start,
+        std::span<const char32_t> text,
+        CharCompareFn compareFn) noexcept -> unit::CpIndex;
 
 public: // tests
     /// Test if the view starts with the given decoded text.
@@ -69,6 +95,11 @@ public: // character traversal
     /// Test if UTF-32 data contains one decoded character from the given character set.
     [[nodiscard]] static auto containsOneDecodedCharacter(
         std::span<const char32_t> data, const CharacterSet &characters) -> bool;
+
+private:
+    /// Search in the selected direction and retain the match boundaries.
+    [[nodiscard]] auto findTextRange(
+        const U32StringDataView &text, StringSide side, CharCompareFn compareFn) const noexcept -> unit::CpRange;
 
 private:
     /// Compare two decoded UTF-32 spans with an optional character comparator.

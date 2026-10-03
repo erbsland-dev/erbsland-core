@@ -1,20 +1,19 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/core/MakeOneNamespace.hpp>
-#include <erbsland/text/AnyString.hpp>
-#include <erbsland/text/AnyStringBuilder.hpp>
-#include <erbsland/text/html/HtmlParser.hpp>
+#include <erbsland/AnyString.hpp>
+#include <erbsland/AnyStringBuilder.hpp>
+#include <erbsland/html/HtmlParser.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/text/impl/LinkData.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/TextDocument.hpp>
-#include <erbsland/text/TextNode.hpp>
-#include <erbsland/text/TextNodeData.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/TextDocument.hpp>
+#include <erbsland/TextNode.hpp>
+#include <erbsland/TextNodeData.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <initializer_list>

@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-********
-Geometry
-********
+************************
+Terminal Layout Geometry
+************************
 
 The geometry classes provide the building blocks for positioning and layout inside a terminal buffer.
 They describe sizes, positions, rectangles, and directions, and let you derive new regions from existing ones.
@@ -18,11 +18,9 @@ Using explicit geometry types keeps layout code readable and makes it easier to 
     72 terminal columns. This makes it easy to regenerate the visual
     output together with the code snippets.
 
-Usage
-=====
 
 Deriving Layout Regions from a Canvas
--------------------------------------
+=====================================
 
 The geometry types are designed to make screen layout explicit and easy to follow.
 Instead of calculating coordinates manually, you derive smaller regions from a larger canvas and keep each intermediate
@@ -64,7 +62,7 @@ This is especially useful for headers, footers, and sidebars that should stretch
     ␛[97;40m                                                                        ␛[39;49m
 
 Combining, Intersecting, and Testing Rectangles
------------------------------------------------
+===============================================
 
 ``Rectangle`` supports union and intersection directly.
 This is useful when you need to compute redraw regions, selection overlaps, or the visible area shared by two panels.
@@ -103,7 +101,7 @@ The inexpensive ``Rectangle::overlaps()`` check is often the right guard before 
     ␛[97;40m               ␛[90munion␛[97m                            ␛[90mintersection␛[97m            ␛[39;49m
 
 Aligning Smaller Content and Cropping Larger Sources
-----------------------------------------------------
+====================================================
 
 There are two closely related alignment tools:
 
@@ -152,7 +150,7 @@ The same alignment value handles both cases.
     ␛[97;40m                       ␛[90mcenter crop of 18x5 source␛[97m                       ␛[39;49m
 
 Splitting a Rectangle into Grid Cells
-------------------------------------------
+=====================================
 
 ``Rectangle::gridCells()`` divides a larger canvas into evenly spaced sub-rectangles.
 This is useful for dashboards, menu grids, option panels, and any row-major layout where each cell should stay
@@ -195,7 +193,7 @@ If the requested number of rows, columns, and spacing no longer fits into the re
     ␛[97;40m                                                                        ␛[39;49m
 
 Walking Neighbors and Frame Perimeters
---------------------------------------
+======================================
 
 ``Position`` and ``Rectangle`` include traversal helpers that are useful for custom layout logic, collision
 checks, and procedural drawing.
@@ -243,7 +241,7 @@ can convert to and from deltas and strings.
     ␛[97;40m                                                                        ␛[39;49m
 
 Deriving Bounds and Keeping Cursors in Range
---------------------------------------------
+============================================
 
 Two other helpers are worth using regularly:
 
@@ -290,7 +288,7 @@ boundary instead of spilling outside the drawable area.
     ␛[97;40m                                                                        ␛[39;49m
 
 Orientation Helpers and Coordinate Values
-----------------------------------------------
+=========================================
 
 ``Orientation`` and ``Coordinate`` are the small glue types that keep geometry code readable when logic needs to
 switch between horizontal and vertical behavior.

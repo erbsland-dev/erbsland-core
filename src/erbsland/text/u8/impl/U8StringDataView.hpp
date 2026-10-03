@@ -4,8 +4,8 @@
 
 #include "U8StringDataView_fwd.hpp"
 
+#include "../../../unit/ByteCount.hpp"
 #include "../../../unit/ByteIndex.hpp"
-#include "../../../unit/ByteLength.hpp"
 #include "../../../unit/ByteRange.hpp"
 
 #include <algorithm>
@@ -30,7 +30,7 @@ public: // tests
             return false;
         }
         const auto backingLength = _data.back() == '\0' ? _data.size() - 1U : _data.size();
-        return !_range.index().isZero() || _range.length().toSizeT() != backingLength;
+        return !_range.beginIndex().isZero() || _range.length().toSizeT() != backingLength;
     }
 
 public: // accessors
@@ -43,7 +43,7 @@ public: // accessors
         if (_data.empty() || !_range.isValid() || _range.isEmpty()) {
             return {};
         }
-        const auto start = _range.index().toSizeT();
+        const auto start = _range.beginIndex().toSizeT();
         if (start >= _data.size()) {
             return {};
         }
@@ -57,13 +57,13 @@ public: // accessors
         if (span.empty() || !range.isValid()) {
             return unit::ByteRange::empty();
         }
-        const auto origin = _range.index().toSizeT();
-        if (range.index().toSizeT() < origin) {
+        const auto origin = _range.beginIndex().toSizeT();
+        if (range.beginIndex().toSizeT() < origin) {
             return unit::ByteRange::empty();
         }
-        const auto relativeStart = range.index().toSizeT() - origin;
+        const auto relativeStart = range.beginIndex().toSizeT() - origin;
         return unit::ByteRange{unit::ByteIndex::fromSizeT(relativeStart), range.length()}.clampedTo(
-            unit::ByteLength::fromSizeT(span.size()));
+            unit::ByteCount::fromSizeT(span.size()));
     }
 
 private:

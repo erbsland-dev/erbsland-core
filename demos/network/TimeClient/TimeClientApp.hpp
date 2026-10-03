@@ -2,11 +2,49 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
+#include <erbsland/all_network_host_lookup.hpp>
+#include <erbsland/all_network_source.hpp>
+#include <erbsland/all_network_udp.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/cterm/BlockAttributes.hpp>
+#include <erbsland/cterm/ColorPart.hpp>
 #include <erbsland/cterm/Terminal.hpp>
-#include <erbsland/network/host_lookup/all.hpp>
-#include <erbsland/network/source/all.hpp>
-#include <erbsland/network/udp/all.hpp>
+#include <erbsland/Endianness.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/EventTimer.hpp>
+#include <erbsland/Host.hpp>
+#include <erbsland/HostLookup.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/IpEndpoint.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkError.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/OptionError.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValue.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/Port.hpp>
+#include <erbsland/SaturatingMath.hpp>
+#include <erbsland/Set.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/Time.hpp>
+#include <erbsland/TimeAmounts.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeEpoch.hpp>
+#include <erbsland/Timestamp.hpp>
+#include <erbsland/UdpDatagram.hpp>
+#include <erbsland/UdpSocket.hpp>
 
 #include <cstdint>
 #include <utility>
@@ -40,17 +78,17 @@ protected: // implement Application
         options->setHelpDescription("Queries an RFC 868 UDP time service."_el);
         options->addOption("host"_el)
             .setRequired()
-            .setHelpDescription("Server host name or IP address."_el)
+            .setHelpTitle("Server host name or IP address."_el)
             .setValidateTextValue<el::Host>("The host argument does not specify a valid host name or IP address"_el);
         options->addOption({"-p"_el, "--port"_el, "port"_el})
             .setType(el::OptionType::Text)
-            .setHelpDescription("Server UDP port."_el)
+            .setHelpTitle("Server UDP port."_el)
             .setDefaultValue("37"_el)
             .setValidateTextValue<el::Port>("The port option does not specify a valid port number"_el);
         options->addOption({"--protocol"_el, "protocol"_el})
             .setType(el::OptionType::Integer)
             .setValueName("version"_el)
-            .setHelpDescription("Server protocol version. 1 = RFC868, 2 = 64bit."_el)
+            .setHelpTitle("Server protocol version. 1 = RFC868, 2 = 64bit."_el)
             .setDefaultValue(1)
             .setValidateFn([](const el::OptionValuePtr &value, const el::OptionValuesPtr &) -> void {
                 if (value->getInteger() < 1 || value->getInteger() > 2) {
@@ -127,11 +165,11 @@ private:
             return; // ignore random packets from unknown sources
         }
         const auto dataSize = datagram.data().length();
-        if (dataSize != el::ByteLength{4} && dataSize != el::ByteLength{8}) {
+        if (dataSize != el::ByteCount{4} && dataSize != el::ByteCount{8}) {
             return; // ignore invalid lengths
         }
         el::Seconds ticks;
-        if (dataSize == el::ByteLength{4}) {
+        if (dataSize == el::ByteCount{4}) {
             ticks = el::Seconds{
                 static_cast<int64_t>(datagram.data().getInteger<std::uint32_t>(el::ByteIndex{}, el::Endianness::Big))};
         } else {

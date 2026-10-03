@@ -4,7 +4,8 @@
 
 #include "PortableChaCha20Backend.hpp"
 
-#include "../../../../core/Application.hpp"
+#include "../../../../core/impl/application_data/ApplicationCryptologyData.hpp"
+#include "../../../../core/impl/ApplicationDataAccess.hpp"
 #include "../../../configuration/CryptologyConfiguration.hpp"
 
 #if defined(ERBSLAND_CHACHA20_ARM_BACKEND)
@@ -16,9 +17,11 @@
 
 namespace erbsland::cryptology::impl {
 
-auto createChaCha20Backend(const mem::ConstByteSpan key, const mem::ConstByteSpan nonce)
-    -> std::unique_ptr<ChaCha20Backend> {
-    if (core::application().cryptologyConfiguration().hardwareAccelerationEnabled()) {
+using namespace mem;
+
+auto createChaCha20Backend(const ConstByteSpan key, const ConstByteSpan nonce) -> std::unique_ptr<ChaCha20Backend> {
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    if (cryptologyData->configuration().hardwareAccelerationEnabled()) {
 #if defined(ERBSLAND_CHACHA20_ARM_BACKEND)
         return std::make_unique<ArmChaCha20Backend>(key, nonce);
 #elif defined(ERBSLAND_CHACHA20_X86_BACKEND)
@@ -28,7 +31,7 @@ auto createChaCha20Backend(const mem::ConstByteSpan key, const mem::ConstByteSpa
     return createPortableChaCha20Backend(key, nonce);
 }
 
-auto createPortableChaCha20Backend(const mem::ConstByteSpan key, const mem::ConstByteSpan nonce)
+auto createPortableChaCha20Backend(const ConstByteSpan key, const ConstByteSpan nonce)
     -> std::unique_ptr<ChaCha20Backend> {
     return std::make_unique<PortableChaCha20Backend>(key, nonce);
 }

@@ -13,7 +13,7 @@ auto StringEncoder<T>::encode(const StringEncoding encoding, const StringBomMode
 
 template <impl::AnyStringOrStringEditorType T>
 auto StringEncoder<T>::encodedLength(const StringEncoding encoding, const StringBomMode bomMode) const
-    -> unit::ByteLength {
+    -> unit::ByteCount {
     return impl::StringConversionTools::encodedLength(*_source, encoding, bomMode);
 }
 

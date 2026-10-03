@@ -7,8 +7,8 @@
 namespace erbsland::event {
 
 /// Access the events interface for the event loop currently running on this thread.
+/// The calling thread must be running an event loop.
 /// @return The events interface for the loop bound to the current thread.
-/// @throws err::LogicError If the current thread is not running an event loop.
 [[nodiscard]] auto currentEvents() -> EventsPtr;
 
 }

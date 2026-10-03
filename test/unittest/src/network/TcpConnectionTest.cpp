@@ -1,19 +1,19 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/EventLoopDriver.hpp>
+#include <erbsland/ConnectionQuota.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventLoopDriver.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/host/HostResolver.hpp>
 #include <erbsland/network/impl/tcp/TcpAcceptedSocket.hpp>
 #include <erbsland/network/impl/tcp/TcpConnection.hpp>
 #include <erbsland/network/impl/tcp/TcpConnectionDevice.hpp>
 #include <erbsland/network/impl/tcp/TcpConnectionRequest.hpp>
-#include <erbsland/network/source/ConnectionQuota.hpp>
-#include <erbsland/network/source/NetworkError.hpp>
-#include <erbsland/network/tcp/TcpConnection.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/TimeUnitTags.hpp>
+#include <erbsland/NetworkError.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/TcpConnection.hpp>
+#include <erbsland/TimeUnitTags.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>
@@ -69,8 +69,8 @@ class TcpConnectionTest final : public el::UnitTest {
     struct FakeState final {
         TcpConnectionDeviceCallbacks callbacks;
         std::optional<IpEndpoint> connectEndpoint;
-        unit::ByteLength receiveLimit;
-        unit::ByteLength maximumReceive;
+        unit::ByteCount receiveLimit;
+        unit::ByteCount maximumReceive;
         std::deque<TcpConnectionDeviceSendStatus> sendResults;
         std::vector<mem::ByteBlock> sends;
         bool accepted{false};
@@ -100,7 +100,7 @@ class TcpConnectionTest final : public el::UnitTest {
             _state->sendResults.pop_front();
             return result;
         }
-        void setReceiving(const unit::ByteLength maximumBytes) override { _state->maximumReceive = maximumBytes; }
+        void setReceiving(const unit::ByteCount maximumBytes) override { _state->maximumReceive = maximumBytes; }
         void close() noexcept override { _state->closed = true; }
         void abort() noexcept override { _state->aborted = true; }
 
@@ -188,7 +188,7 @@ public:
     void testBoundedStreamFlowPauseAndCloseOrdering() {
         auto harness = makeHarness({IpAddress::loopbackV4()});
         auto options = TcpConnectOptions{};
-        options.setBufferLimits(SocketBufferLimits{unit::ByteLength{5U}, unit::ByteLength{5U}});
+        options.setBufferLimits(SocketBufferLimits{unit::ByteCount{5U}, unit::ByteCount{5U}});
         auto received = std::vector<mem::ByteBlock>{};
         auto events = std::vector<int>{};
         run(harness, [&]() -> void {
@@ -210,19 +210,19 @@ public:
                 IpEndpoint{IpAddress::loopbackV4(), Port{49153U}}, IpEndpoint{IpAddress::loopbackV4(), Port{9030U}});
         });
         run(harness, [&]() -> void {
-            const auto first = mem::ByteBlock{unit::ByteLength{4U}, mem::Byte{0x31U}};
-            const auto blocked = mem::ByteBlock{unit::ByteLength{2U}, mem::Byte{0x32U}};
+            const auto first = mem::ByteBlock{unit::ByteCount{4U}, mem::Byte{0x31U}};
+            const auto blocked = mem::ByteBlock{unit::ByteCount{2U}, mem::Byte{0x32U}};
             REQUIRE(harness.connection->send(first).isAccepted());
             REQUIRE(harness.connection->send(blocked).wouldBlock());
             harness.connection->pauseReceiving();
             REQUIRE(harness.devices->front()->maximumReceive.isZero());
-            harness.devices->front()->callbacks.data(mem::ByteBlock{unit::ByteLength{3U}, mem::Byte{0x44U}});
+            harness.devices->front()->callbacks.data(mem::ByteBlock{unit::ByteCount{3U}, mem::Byte{0x44U}});
             REQUIRE(harness.devices->front()->maximumReceive.isZero());
         });
         REQUIRE(received.empty());
         run(harness, [&]() -> void {
             harness.connection->resumeReceiving();
-            REQUIRE_EQUAL(harness.devices->front()->maximumReceive, unit::ByteLength{2U});
+            REQUIRE_EQUAL(harness.devices->front()->maximumReceive, unit::ByteCount{2U});
             harness.devices->front()->callbacks.sendCompleted();
         });
         static_cast<void>(harness.loop->runUntilIdle());
@@ -245,7 +245,7 @@ public:
             std::make_unique<FakeSocket>(local, remote), std::move(*lease), [&]() -> void { releaseCount += 1; });
         *harness.compatibility = false;
         run(harness, [&]() -> void {
-            REQUIRE_THROWS_AS(el::err::ParameterError, harness.connection->accept(request));
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, harness.connection->accept(request));
             REQUIRE_EQUAL(request->state(), TcpConnectionRequestState::Pending);
             REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Inactive);
         });
@@ -256,14 +256,14 @@ public:
             harness.connection->events().onConnected([&]() -> void { connected = true; });
             harness.connection->accept(
                 request,
-                TcpAcceptOptions{}.setBufferLimits(SocketBufferLimits{unit::ByteLength{17U}, unit::ByteLength{19U}}));
+                TcpAcceptOptions{}.setBufferLimits(SocketBufferLimits{unit::ByteCount{17U}, unit::ByteCount{19U}}));
         });
         static_cast<void>(harness.loop->runUntilIdle());
         REQUIRE(connected);
         REQUIRE_EQUAL(request->state(), TcpConnectionRequestState::Accepted);
         REQUIRE_EQUAL(releaseCount, 1);
-        REQUIRE_EQUAL(harness.connection->bufferLimits().send(), unit::ByteLength{17U});
-        REQUIRE_EQUAL(harness.devices->back()->receiveLimit, unit::ByteLength{19U});
+        REQUIRE_EQUAL(harness.connection->bufferLimits().send(), unit::ByteCount{17U});
+        REQUIRE_EQUAL(harness.devices->back()->receiveLimit, unit::ByteCount{19U});
         REQUIRE(harness.devices->back()->accepted);
         REQUIRE_EQUAL(quota->current(), unit::ItemCount{1U});
 
@@ -287,7 +287,7 @@ private:
             result.driver,
             result.resolver,
             [devices, compatibility](
-                EventLoopDriverPtr, const unit::ByteLength receiveLimit, TcpConnectionDeviceCallbacks callbacks) {
+                EventLoopDriverPtr, const unit::ByteCount receiveLimit, TcpConnectionDeviceCallbacks callbacks) {
                 auto state = std::make_shared<FakeState>();
                 state->receiveLimit = receiveLimit;
                 state->compatible = *compatibility;

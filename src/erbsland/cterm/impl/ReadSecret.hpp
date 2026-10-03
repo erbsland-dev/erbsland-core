@@ -17,7 +17,7 @@ private:
     /// Stores sanitized secret-line options and the capped length.
     struct PreparedOptions final {
         ReadLineOptions options;
-        unit::CpLength maximumLength;
+        unit::CpCount maximumLength;
     };
 
 public:
@@ -47,9 +47,9 @@ private: // implement ReadLineBase storage
     void discardText() noexcept override;
     void commitText() override;
     [[nodiscard]] auto displayText() const noexcept -> const text::U32StringEditor & override { return _mask; }
-    [[nodiscard]] auto insertKeyText(const Key &key, unit::CpIndex index) -> unit::CpLength override;
+    [[nodiscard]] auto insertKeyText(const Key &key, unit::CpIndex index) -> unit::CpCount override;
     [[nodiscard]] auto insertNewLine(unit::CpIndex index) -> bool override;
-    void eraseText(unit::CpIndex index, unit::CpLength length) noexcept override;
+    void eraseText(unit::CpIndex index, unit::CpCount length) noexcept override;
     [[nodiscard]] auto previousUnitStart(unit::CpIndex index) const noexcept -> unit::CpIndex override;
     [[nodiscard]] auto nextUnitEnd(unit::CpIndex index) const noexcept -> unit::CpIndex override;
 
@@ -64,7 +64,7 @@ private:
 private:
     std::array<text::Char, 1024U> _characters{}; ///< Fixed protected code-point storage.
     std::size_t _length{};                       ///< Active protected code points.
-    unit::CpLength _maximumLength;               ///< Effective capped maximum.
+    unit::CpCount _maximumLength;                ///< Effective capped maximum.
     text::U32StringEditor _mask;                 ///< Ordinary bullet-only display representation.
     text::String _committed;                     ///< Marked committed result.
 };

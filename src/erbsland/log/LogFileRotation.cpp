@@ -9,9 +9,10 @@
 
 namespace erbsland::log {
 
+using namespace text;
 using namespace text::literals;
 
-auto LogFileRotation::toString() const -> text::String {
+auto LogFileRotation::toString() const -> String {
     switch (_value) {
     case None:
         return "none"_el;
@@ -27,11 +28,11 @@ auto LogFileRotation::toString() const -> text::String {
     return {};
 }
 
-auto LogFileRotation::allStrings() -> text::StringList {
-    return text::StringList{"none"_el, "hourly"_el, "daily"_el, "weekly"_el, "size"_el};
+auto LogFileRotation::allStrings() -> StringList {
+    return StringList{"none"_el, "hourly"_el, "daily"_el, "weekly"_el, "size"_el};
 }
 
-auto LogFileRotation::fromString(const text::String &text) noexcept -> std::optional<LogFileRotation> {
+auto LogFileRotation::fromString(const String &text) noexcept -> std::optional<LogFileRotation> {
     const auto compare = ::erbsland::text::cCaseInsensitive.asciiComparisonFn();
     if (text.compare("none"_el, compare) == std::strong_ordering::equal) {
         return None;
@@ -51,7 +52,7 @@ auto LogFileRotation::fromString(const text::String &text) noexcept -> std::opti
     return std::nullopt;
 }
 
-auto LogFileRotation::fromStringOrThrow(const text::String &text) -> LogFileRotation {
+auto LogFileRotation::fromStringOrThrow(const String &text) -> LogFileRotation {
     if (const auto result = fromString(text); result.has_value()) {
         return *result;
     }

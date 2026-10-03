@@ -3,7 +3,7 @@
 
 #include <erbsland/block/Coordinate.hpp>
 #include <erbsland/block/StdFormat.hpp>
-#include <erbsland/math/SaturatingInteger.hpp>
+#include <erbsland/SaturatingInteger.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <concepts>

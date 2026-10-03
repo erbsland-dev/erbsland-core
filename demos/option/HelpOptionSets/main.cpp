@@ -1,7 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ArgumentCount.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/Diagnostic.hpp>
+#include <erbsland/Duration.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionHelpVisibility.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionSet.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -14,47 +29,47 @@ using namespace el::text::literals;
     set->addOption({"-a"_el, "--area"_el, "area"_el})
         .setType(el::OptionType::Text)
         .setValueName("area"_el)
-        .setHelpDescription("Laboratory area to study."_el);
+        .setHelpTitle("Laboratory area to study."_el);
     set->addOption({"--line"_el, "line"_el})
         .setType(el::OptionType::Text)
         .setValueName("line"_el)
-        .setHelpDescription(
+        .setHelpTitle(
             "Main optical line in the setup, including its bench, guide segment, and reference mirror when the "
             "laboratory uses shared paths."_el);
     set->addOption({"--radius"_el, "radius"_el})
         .setType(el::OptionType::Integer)
         .setValueName("millimeters"_el)
         .setDefaultValue(el::OptionInteger{12})
-        .setHelpDescription("Search radius around the stand, in millimeters."_el);
+        .setHelpTitle("Search radius around the stand, in millimeters."_el);
     set->addOption({"--count"_el, "count"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{8})
-        .setHelpDescription("Number of observation samples."_el);
+        .setHelpTitle("Number of observation samples."_el);
     set->addOption({"--layer"_el, "layer"_el})
         .setType(el::OptionType::Integer)
         .setValueName("index"_el)
         .setMaximum(el::ArgumentCount{4U})
-        .setHelpDescription("Data layer to include. Can be repeated."_el);
+        .setHelpTitle("Data layer to include. Can be repeated."_el);
     set->addOption({"--shift"_el, "shift"_el})
         .addChoice("morning"_el)
         .addChoice("afternoon"_el)
         .addChoice("night"_el)
-        .setHelpDescription("Laboratory shift for the measurement."_el);
+        .setHelpTitle("Laboratory shift for the measurement."_el);
     set->addOption({"--environment"_el, "environment"_el})
         .addChoice("dry"_el)
         .addChoice("stable"_el)
         .addChoice("vibration"_el)
         .setValueName("condition"_el)
-        .setHelpDescription("Environmental condition observed during sampling."_el);
+        .setHelpTitle("Environmental condition observed during sampling."_el);
     set->addOption({"--extended-thermal-drift-correction"_el, "extended-thermal-drift-correction"_el})
         .setType(el::OptionType::Integer)
         .setValueName("minutes"_el)
-        .setHelpDescription(
+        .setHelpTitle(
             "Duration used to compensate for slow thermal drift before fixing reference samples on benches exposed to "
             "ventilation changes."_el);
     set->addOption({"--include-spare"_el, "include-spare"_el})
-        .setHelpDescription("Includes spare sensors in the reading."_el);
-    set->addOption({"--trial"_el, "trial"_el}).setHelpDescription("Validates sampling without writing results."_el);
+        .setHelpTitle("Includes spare sensors in the reading."_el);
+    set->addOption({"--trial"_el, "trial"_el}).setHelpTitle("Validates sampling without writing results."_el);
     return set;
 }
 
@@ -65,41 +80,41 @@ using namespace el::text::literals;
     set->addOption({"-o"_el, "--output"_el, "output"_el})
         .setType(el::OptionType::Text)
         .setValueName("path"_el)
-        .setHelpDescription("Path to the output file."_el);
+        .setHelpTitle("Path to the output file."_el);
     set->addOption({"--format"_el, "format"_el})
         .addChoice("text"_el)
         .addChoice("json"_el)
         .addChoice("table"_el)
         .setValueName("format"_el)
         .setDefaultValue("text"_el)
-        .setHelpDescription("Report format."_el);
+        .setHelpTitle("Report format."_el);
     set->addOption({"--theme"_el, "theme"_el})
         .addChoice("light"_el)
         .addChoice("dark"_el)
         .addChoice("ink"_el)
-        .setHelpDescription("Visual theme for the report."_el);
+        .setHelpTitle("Visual theme for the report."_el);
     set->addOption({"--language"_el, "language"_el})
         .addChoice("es"_el)
         .addChoice("en"_el)
         .addChoice("de"_el)
         .setDefaultValue("en"_el)
-        .setHelpDescription("Natural language for labels."_el);
+        .setHelpTitle("Natural language for labels."_el);
     set->addOption({"--title"_el, "title"_el})
         .setType(el::OptionType::Text)
         .setValueName("text"_el)
-        .setHelpDescription("Report title."_el);
+        .setHelpTitle("Report title."_el);
     set->addOption({"--subtitle"_el, "subtitle"_el})
         .setType(el::OptionType::Text)
         .setValueName("text"_el)
-        .setHelpDescription(
+        .setHelpTitle(
             "Subtitle printed below the title, used to distinguish repeated campaigns that share instruments and "
             "review dates."_el);
     set->addOption({"--width"_el, "width"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{80})
-        .setHelpDescription("Preferred width for text tables."_el);
-    set->addOption({"--no-color"_el, "no-color"_el}).setHelpDescription("Disables color in the output."_el);
-    set->addOption({"--overwrite"_el, "overwrite"_el}).setHelpDescription("Overwrites an existing file."_el);
+        .setHelpTitle("Preferred width for text tables."_el);
+    set->addOption({"--no-color"_el, "no-color"_el}).setHelpTitle("Disables color in the output."_el);
+    set->addOption({"--overwrite"_el, "overwrite"_el}).setHelpTitle("Overwrites an existing file."_el);
     return set;
 }
 
@@ -111,32 +126,32 @@ using namespace el::text::literals;
         .setType(el::OptionType::Text)
         .setValueName("sensor"_el)
         .setMaximum(el::ArgumentCount{6U})
-        .setHelpDescription(
+        .setHelpTitle(
             "Sensor to read. Can be repeated to compare primary instruments, control replicas, and auxiliary "
             "channels in the same execution."_el);
-    set->addOption({"--temperature"_el, "temperature"_el}).setHelpDescription("Includes temperature readings."_el);
-    set->addOption({"--humidity"_el, "humidity"_el}).setHelpDescription("Includes humidity readings."_el);
-    set->addOption({"--light"_el, "light"_el}).setHelpDescription("Includes light readings."_el);
-    set->addOption({"--sound"_el, "sound"_el}).setHelpDescription("Includes acoustic readings."_el);
+    set->addOption({"--temperature"_el, "temperature"_el}).setHelpTitle("Includes temperature readings."_el);
+    set->addOption({"--humidity"_el, "humidity"_el}).setHelpTitle("Includes humidity readings."_el);
+    set->addOption({"--light"_el, "light"_el}).setHelpTitle("Includes light readings."_el);
+    set->addOption({"--sound"_el, "sound"_el}).setHelpTitle("Includes acoustic readings."_el);
     set->addOption({"--interval"_el, "interval"_el})
         .setType(el::OptionType::Integer)
         .setValueName("seconds"_el)
         .setDefaultValue(el::OptionInteger{60})
-        .setHelpDescription("Sampling interval in seconds."_el);
+        .setHelpTitle("Sampling interval in seconds."_el);
     set->addOption({"--window"_el, "window"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{15})
-        .setHelpDescription("Aggregation window in minutes."_el);
+        .setHelpTitle("Aggregation window in minutes."_el);
     set->addOption({"--calibration"_el, "calibration"_el})
         .addChoice("none"_el)
         .addChoice("field"_el)
         .addChoice("laboratory"_el)
         .setValueName("profile"_el)
-        .setHelpDescription("Calibration profile applied to the sensors."_el);
+        .setHelpTitle("Calibration profile applied to the sensors."_el);
     set->addOption({"--extended-laboratory-calibration-profile"_el, "extended-laboratory-calibration-profile"_el})
         .setType(el::OptionType::Text)
         .setValueName("profile"_el)
-        .setHelpDescription(
+        .setHelpTitle(
             "Extended calibration profile loaded from the laboratory registry for sensors that require nonlinear "
             "curves and subsequent manual review."_el);
     return set;
@@ -146,26 +161,26 @@ using namespace el::text::literals;
     auto set = el::OptionSet::create();
     set->setHelpTitle("Diagnostics"_el);
     set->setHelpDescription("Validation, safety, and internal traces."_el);
-    set->addOption({"--strict"_el, "strict"_el}).setHelpDescription("Rejects incomplete observations."_el);
+    set->addOption({"--strict"_el, "strict"_el}).setHelpTitle("Rejects incomplete observations."_el);
     set->addOption({"--allow-estimates"_el, "allow-estimates"_el})
-        .setHelpDescription("Allows values estimated by secondary instruments."_el);
+        .setHelpTitle("Allows values estimated by secondary instruments."_el);
     set->addOption({"--max-pause"_el, "max-pause"_el})
         .setType(el::OptionType::Integer)
         .setValueName("seconds"_el)
         .setDefaultValue(el::OptionInteger{5})
-        .setHelpDescription("Maximum accepted pause between samples."_el);
+        .setHelpTitle("Maximum accepted pause between samples."_el);
     set->addOption({"--retries"_el, "retries"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{2})
-        .setHelpDescription("Retries for transient instrument errors."_el);
+        .setHelpTitle("Retries for transient instrument errors."_el);
     set->addOption({"--log"_el, "log"_el})
         .addChoice("error"_el)
         .addChoice("info"_el)
         .addChoice("debug"_el)
         .setValueName("level"_el)
-        .setHelpDescription("Diagnostic log level."_el);
+        .setHelpTitle("Diagnostic log level."_el);
     set->addOption({"--trace-parser"_el, "trace-parser"_el})
-        .setHelpDescription("Traces internal decisions by the option parser."_el)
+        .setHelpTitle("Traces internal decisions by the option parser."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Hidden);
     return set;
 }
@@ -177,7 +192,7 @@ public:
 
 protected:
     void initialize() override {
-        enableTerminal();
+        DemoTerminal::enable(*this);
         info().setApplicationName("Prism Notebook"_el);
         info().setApplicationVersion(el::Version{0, 8, 0});
         info().setAuthorName("Erbsland DEV"_el);
@@ -194,7 +209,7 @@ protected:
         options->addOption("project"_el)
             .setRequired()
             .setValueName("project"_el)
-            .setHelpDescription("Identifier of the laboratory project."_el)
+            .setHelpTitle("Identifier of the laboratory project."_el)
             .setHelpVisibility(el::OptionHelpVisibility::Usage);
     }
     [[nodiscard]] auto main() -> el::ExitCode override { return el::ExitCode::success(); }

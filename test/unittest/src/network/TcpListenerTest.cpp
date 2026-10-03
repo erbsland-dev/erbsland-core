@@ -1,21 +1,21 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/EventLoopDriver.hpp>
+#include <erbsland/ConnectionQuota.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventLoopDriver.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/tcp/TcpAcceptedSocket.hpp>
 #include <erbsland/network/impl/tcp/TcpListener.hpp>
 #include <erbsland/network/impl/tcp/TcpListenerDevice.hpp>
-#include <erbsland/network/source/ConnectionQuota.hpp>
-#include <erbsland/network/tcp/TcpConnectionRequest.hpp>
-#include <erbsland/network/tcp/TcpListener.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/TcpConnectionRequest.hpp>
+#include <erbsland/TcpListener.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -143,14 +143,14 @@ public:
             harness.listener->start(
                 IpEndpoint{IpAddress::loopbackV4(), Port{}},
                 TcpListenerOptions{}.setConnectionFilter([](const IpEndpoint &) -> TcpConnectionFilterResult {
-                    throw std::runtime_error{"filter failure"};
+                    throw el::err::RuntimeError{"filter failure"};
                 }));
         });
         harness.loop->invoke([&]() -> void { harness.device->callbacks.accepted(makeSocket(42000U, destroyed)); });
         REQUIRE(harness.loop->runOnce());
         REQUIRE(harness.loop->hasError());
         REQUIRE_EQUAL(*destroyed, 1);
-        REQUIRE_THROWS_AS(std::runtime_error, std::rethrow_exception(harness.loop->takeError()));
+        REQUIRE_THROWS_AS(el::err::RuntimeError, std::rethrow_exception(harness.loop->takeError()));
     }
 
     void testClosingKeepsEmittedRequestValidAndOrdersFinal() {

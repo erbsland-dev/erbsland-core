@@ -15,7 +15,7 @@ namespace erbsland::cryptology::impl {
 ///
 /// The outer structure follows RFC 5208 section 6. Ed25519 private-key encoding follows RFC 8410 section 7. ECDSA
 /// and RSA algorithm-specific structures are accepted only in the narrow profiles documented by SigningPrivateKey.
-/// @tested{SigningPrivateKeyTest}
+/// @tested{SigningPrivateKeyTest EcSigningKeyTest}
 class PrivateKeyParser final {
 public:
     /// Bind a parser to one bounded DER source.

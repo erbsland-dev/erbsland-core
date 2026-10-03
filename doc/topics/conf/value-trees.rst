@@ -51,7 +51,7 @@ constructs or reuses paths dynamically.
 .. erbsland-demo::
     :source: conf/ValueTrees/NamePaths.cpp
     :exec: conf/value_trees --demo NamePaths
-    :source-sha256: 8dd59eb5c6ac8b107d534248433255f11f35903d7805380397c838e9d7b0fa34
+    :sha256: 55e8a974c2359bedc14956be37e64b605baf61446c25048f51c20178d1b64ab0
 
 .. code-block:: cpp
 
@@ -79,10 +79,12 @@ constructs or reuses paths dynamically.
         el::io::printLine(patchName, " waveform: "_el, firstOscillator->getTextOrThrow("waveform"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Gökyüzü waveform: sine
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mGökyüzü waveform: sine␛[0m
 
 .. erbsland-demo-end::
 
@@ -103,7 +105,7 @@ different indexed paths.
 .. erbsland-demo::
     :source: conf/ValueTrees/ValueNames.cpp
     :exec: conf/value_trees --demo ValueNames
-    :source-sha256: bbf7dd5fdc03f32c3c040c2a3a5451acd65814608484dc4c7f8b2951166fa941
+    :sha256: 1ae61e72ba14bee8f9ade86c34e3d0ab5ccdeb27b4ea8e600d21e188d28b6d1b
 
 .. code-block:: cpp
 
@@ -123,11 +125,13 @@ different indexed paths.
         el::io::printLine("Absolute path: "_el, waveform->namePath().toText());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Local name: waveform
-    Absolute path: patch.oscillators[1].waveform
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLocal name: waveform
+        Absolute path: patch.oscillators[1].waveform␛[0m
 
 .. erbsland-demo-end::
 
@@ -156,7 +160,7 @@ The document itself has no parent and returns ``nullptr``.
 .. erbsland-demo::
     :source: conf/ValueTrees/NavigatingTree.cpp
     :exec: conf/value_trees --demo NavigatingTree
-    :source-sha256: 2e38a6f9bb49c13f5cd542d3785573bcfca3b1e1f866d4be866892dabf0f5698
+    :sha256: fe72c088ff0e0f49ca2f7e33679bc99f5e2f8c93b7a76db477520f5cc1bb4050
 
 .. code-block:: cpp
 
@@ -183,12 +187,14 @@ The document itself has no parent and returns ``nullptr``.
         el::io::printLine("Document has parent: "_el, el::BooleanFormat::yesNo(), document->hasParent());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Cutoff: 2400 Hz
-    Container: patch.filter
-    Document has parent: no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCutoff: 2400 Hz
+        Container: patch.filter
+        Document has parent: no␛[0m
 
 .. erbsland-demo-end::
 
@@ -209,7 +215,7 @@ other node.
 .. erbsland-demo::
     :source: conf/ValueTrees/IteratingLists.cpp
     :exec: conf/value_trees --demo IteratingLists
-    :source-sha256: c4307ef9dbb2def0ba8723a676c342e29d45a53c5492a366ee1a56b8d9d23d9b
+    :sha256: 6902c0e45c936b7198d30139476a752591ded53233f433851d1aee1979d40dff
 
 .. code-block:: cpp
 
@@ -238,12 +244,14 @@ other node.
         el::io::printLine("Last oscillator: "_el, last->getTextOrThrow("waveform"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    sine at octave 0
-    triangle at octave 1
-    Last oscillator: triangle
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0msine at octave 0
+        triangle at octave 1
+        Last oscillator: triangle␛[0m
 
 .. erbsland-demo-end::
 

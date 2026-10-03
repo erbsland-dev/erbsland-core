@@ -6,7 +6,7 @@
 #include "Dimensionality.hpp"
 #include "Orientation.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <array>
@@ -21,23 +21,20 @@ namespace erbsland::geometry {
 class AxisMapping final {
 public:
     /// Create a one-dimensional mapping.
-    /// @param x The source axis for destination X.
-    /// @throws err::ParameterError if `x` is not X.
+    /// @param x The source axis for destination X. Must be X.
     constexpr explicit AxisMapping(Axis x) : _sources{x, Axis::Y, Axis::Z}, _dimensionality{Dimensionality::One} {
         validate();
     }
     /// Create a two-dimensional mapping.
-    /// @param x The source axis for destination X.
-    /// @param y The source axis for destination Y.
-    /// @throws err::ParameterError if the axes are not an exact X/Y permutation.
+    /// @param x The source axis for destination X. Must be X or Y and differ from `y`.
+    /// @param y The source axis for destination Y. Must be X or Y and differ from `x`.
     constexpr AxisMapping(Axis x, Axis y) : _sources{x, y, Axis::Z}, _dimensionality{Dimensionality::Two} {
         validate();
     }
     /// Create a three-dimensional mapping.
-    /// @param x The source axis for destination X.
+    /// @param x The source axis for destination X. Together with `y` and `z`, must form an X/Y/Z permutation.
     /// @param y The source axis for destination Y.
     /// @param z The source axis for destination Z.
-    /// @throws err::ParameterError if the axes are not an exact X/Y/Z permutation.
     constexpr AxisMapping(Axis x, Axis y, Axis z) : _sources{x, y, z}, _dimensionality{Dimensionality::Three} {
         validate();
     }
@@ -73,14 +70,13 @@ public: // attributes
     /// Get the dimensionality declared by this mapping.
     [[nodiscard]] constexpr auto dimensionality() const noexcept -> Dimensionality { return _dimensionality; }
     /// Get the source axis used for a destination axis.
-    /// @param destination The destination axis to inspect.
+    /// @param destination The destination axis to inspect. Must be inside this mapping's dimensionality.
     /// @return The source axis for `destination`.
-    /// @throws err::ParameterError if `destination` is outside this mapping's dimensionality.
     [[nodiscard]] constexpr auto source(const Axis destination) const -> Axis {
         using namespace text::literals;
         const auto index = static_cast<std::size_t>(destination);
         if (index >= static_cast<std::size_t>(_dimensionality)) {
-            throw err::ParameterError{
+            throw err::ParameterFailure{
                 "The destination axis is outside the mapping dimensionality."_el, "destination"_el};
         }
         return _sources[index];
@@ -88,18 +84,18 @@ public: // attributes
 
 private:
     /// Validate that the active sources form an exact permutation.
-    /// @throws err::ParameterError if the mapping is invalid.
+    /// The active sources must form an exact permutation of the axes in this dimensionality.
     constexpr void validate() const {
         using namespace text::literals;
         const auto count = static_cast<std::size_t>(_dimensionality);
         for (auto index = std::size_t{0}; index < count; ++index) {
             const auto sourceIndex = static_cast<std::size_t>(_sources[index]);
             if (sourceIndex >= count) {
-                throw err::ParameterError{"A source axis is outside the mapping dimensionality."_el, "axes"_el};
+                throw err::ParameterFailure{"A source axis is outside the mapping dimensionality."_el, "axes"_el};
             }
             for (auto previous = std::size_t{0}; previous < index; ++previous) {
                 if (_sources[previous] == _sources[index]) {
-                    throw err::ParameterError{"Each source axis must occur exactly once."_el, "axes"_el};
+                    throw err::ParameterFailure{"Each source axis must occur exactly once."_el, "axes"_el};
                 }
             }
         }

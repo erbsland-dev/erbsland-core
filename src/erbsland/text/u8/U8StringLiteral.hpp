@@ -8,11 +8,12 @@
 
 #include "impl/U8StringDataView.hpp"
 
+#include "../impl/UnsafeU8StringLiteralAccess_fwd.hpp"
 #include "../StringSide.hpp"
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteRange.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <cstddef>
 #include <span>
@@ -22,11 +23,12 @@ namespace erbsland::text {
 /// A thin wrapper around a UTF-8 string literal.
 /// This class provides a safe and efficient way to work with UTF-8 string literals.
 /// It allows work with literals that are only copied if a modification is required.
-/// @tested{U8StringLiteralTest}
+/// @tested{U8StringLiteralTest StringEncodingValidationTest}
 template <typename tChar>
 class U8StringLiteral final {
     friend class U8StringEditor;
     friend class U8String;
+    friend class impl::UnsafeU8StringLiteralAccess<tChar>;
     friend constexpr auto impl::createU8StringLiteral(const char *data, std::size_t size) noexcept
         -> U8StringLiteral<char>;
     friend constexpr auto impl::createU8StringLiteral(const char8_t *data, std::size_t size) noexcept
@@ -41,13 +43,16 @@ public: // tests
     /// Test if this string is empty.
     [[nodiscard]] constexpr auto isEmpty() const noexcept -> bool;
     /// Test if this string is valid UTF-8.
-    [[nodiscard]] auto isValidUtf8() const noexcept -> bool;
+    [[nodiscard]] auto isEncodingValid() const noexcept -> bool;
+    /// Validate this string without modifying its contents.
+    /// @throws U8EncodingError If malformed encoding is detected, with a byte index relative to this string.
+    void encodingValidOrThrow() const;
 
 public: // accessors
     /// Get the byte length of this string.
-    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteLength;
+    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteCount;
     /// Get the code-point length of this string.
-    [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto characterLength() const noexcept -> unit::CpCount;
     /// Get the native data index for one side of the string.
     [[nodiscard]] constexpr auto indexAt(StringSide side) const noexcept -> unit::ByteIndex;
 

@@ -12,9 +12,9 @@ namespace erbsland::compression {
 class CompressionTransferOptions final {
 public:
     /// Get the optional exact input prefix length.
-    [[nodiscard]] auto inputLength() const noexcept -> const std::optional<unit::ByteLength> & { return _inputLength; }
+    [[nodiscard]] auto inputLength() const noexcept -> const std::optional<unit::ByteCount> & { return _inputLength; }
     /// Set the exact input prefix length.
-    auto setInputLength(unit::ByteLength value) -> CompressionTransferOptions & {
+    auto setInputLength(unit::ByteCount value) -> CompressionTransferOptions & {
         _inputLength = value;
         return *this;
     }
@@ -24,16 +24,16 @@ public:
         return *this;
     }
     /// Get the transfer buffer size.
-    [[nodiscard]] auto bufferLength() const noexcept -> unit::ByteLength { return _bufferLength; }
+    [[nodiscard]] auto bufferLength() const noexcept -> unit::ByteCount { return _bufferLength; }
     /// Set the positive finite transfer buffer size.
-    auto setBufferLength(unit::ByteLength value) -> CompressionTransferOptions & {
+    auto setBufferLength(unit::ByteCount value) -> CompressionTransferOptions & {
         _bufferLength = value;
         return *this;
     }
     /// Get the limit for each complete fallback value.
-    [[nodiscard]] auto maximumBufferedLength() const noexcept -> unit::ByteLength { return _maximumBufferedLength; }
+    [[nodiscard]] auto maximumBufferedLength() const noexcept -> unit::ByteCount { return _maximumBufferedLength; }
     /// Set the fallback input and output limit.
-    auto setMaximumBufferedLength(unit::ByteLength value) -> CompressionTransferOptions & {
+    auto setMaximumBufferedLength(unit::ByteCount value) -> CompressionTransferOptions & {
         _maximumBufferedLength = value;
         return *this;
     }
@@ -53,10 +53,11 @@ public:
     }
 
 private:
-    std::optional<unit::ByteLength> _inputLength;                                        ///< Exact source prefix.
-    unit::ByteLength _bufferLength{65536U};                                              ///< I/O chunk size.
-    unit::ByteLength _maximumBufferedLength{256U * 1024U * 1024U};                       ///< Fallback cap per value.
+    std::optional<unit::ByteCount> _inputLength;                                         ///< Exact source prefix.
+    unit::ByteCount _bufferLength{65536U};                                               ///< I/O chunk size.
+    unit::ByteCount _maximumBufferedLength{256U * 1024U * 1024U};                        ///< Fallback cap per value.
     CompressionFallbackPolicy _fallbackPolicy{CompressionFallbackPolicy::AllowBuffered}; ///< Fallback policy.
     CompressionProgressFn _progress;                                                     ///< Synchronous observer.
 };
+
 }

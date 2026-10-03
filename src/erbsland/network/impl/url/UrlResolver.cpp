@@ -17,6 +17,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace unit;
 using namespace text;
 using namespace text::literals;
 
@@ -24,7 +25,7 @@ auto UrlResolver::resolve() const -> std::shared_ptr<UrlData> {
     if (_reference.length() > _options.maximumLength()) {
         throw err::ParseError{"The URI reference exceeds the configured length limit."_el};
     }
-    if (!_reference.isValidUtf8()) {
+    if (!_reference.isEncodingValid()) {
         throw err::ParseError{"The URI reference is not valid UTF-8."_el};
     }
     if (!hasHierarchicalBase()) {
@@ -122,22 +123,22 @@ auto UrlResolver::mergePath(const String &path) const -> String {
     if (separator.isNoIndex()) {
         return path;
     }
-    return join(_base.path.slice(StringSide::Front, separator.advanced(unit::ByteLength::one())), path);
+    return join(_base.path.slice(StringSide::Front, separator.advanced(ByteCount::one())), path);
 }
 
 auto UrlResolver::removeDotSegments(String input) -> String {
     auto output = String{};
     while (!input.isEmpty()) {
         if (input.startsWith("../"_el)) {
-            input = removePrefix(input, unit::ByteLength{3U});
+            input = removePrefix(input, ByteCount{3U});
             continue;
         }
         if (input.startsWith("./"_el)) {
-            input = removePrefix(input, unit::ByteLength{2U});
+            input = removePrefix(input, ByteCount{2U});
             continue;
         }
         if (input.startsWith("/./"_el)) {
-            input = join("/"_el, removePrefix(input, unit::ByteLength{3U}));
+            input = join("/"_el, removePrefix(input, ByteCount{3U}));
             continue;
         }
         if (input == "/."_el) {
@@ -145,7 +146,7 @@ auto UrlResolver::removeDotSegments(String input) -> String {
             continue;
         }
         if (input.startsWith("/../"_el)) {
-            input = join("/"_el, removePrefix(input, unit::ByteLength{4U}));
+            input = join("/"_el, removePrefix(input, ByteCount{4U}));
             output = removeLastSegment(output);
             continue;
         }
@@ -158,7 +159,10 @@ auto UrlResolver::removeDotSegments(String input) -> String {
             input = {};
             continue;
         }
-        const auto searchStart = input.startsWith("/"_el) ? unit::ByteIndex{1U} : unit::ByteIndex::zero();
+        auto searchStart = ByteIndex::zero();
+        if (input.startsWith("/"_el)) {
+            searchStart = ByteIndex::one();
+        }
         const auto separator = input.find("/"_el, searchStart);
         if (separator.isNoIndex()) {
             output = join(output, input);
@@ -172,16 +176,18 @@ auto UrlResolver::removeDotSegments(String input) -> String {
 }
 
 auto UrlResolver::removeLastSegment(const String &path) -> String {
-    const auto separator = path.findLastOf(CharSet{U'/'});
-    return separator.isNoIndex() ? String{} : path.slice(StringSide::Front, separator);
+    if (const auto parts = path.splitAtLast(CharSet{U'/'})) {
+        return parts->first;
+    }
+    return {};
 }
 
-auto UrlResolver::removePrefix(const String &text, const unit::ByteLength length) -> String {
-    return text.slice(StringSide::Back, unit::ByteIndex::end(length));
+auto UrlResolver::removePrefix(const String &text, const ByteCount length) -> String {
+    return text.slice(StringSide::Back, ByteIndex::end(length));
 }
 
 auto UrlResolver::join(const String &first, const String &second) -> String {
-    return String{StringEditor{first}.append(second)};
+    return StringEditor{first}.append(second);
 }
 
 }

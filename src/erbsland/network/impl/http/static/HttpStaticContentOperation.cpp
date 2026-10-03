@@ -5,7 +5,8 @@
 #include "../server/HttpServer.hpp"
 #include "../server/HttpServerRequest.hpp"
 
-#include "../../../../err/LogicError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../stream/ByteInputStream.hpp"
 #include "../../../../stream/StreamReadStatus.hpp"
@@ -13,6 +14,8 @@
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringCharReader.hpp"
 #include "../../../../text/StringEditor.hpp"
+#include "../../../../text/StringList.hpp"
+#include "../../../../util/impl/worker_executor/WorkerServices.hpp"
 #include "../../../http/HttpFieldType.hpp"
 #include "../../../http/HttpHeaders.hpp"
 #include "../../../http/HttpMethod.hpp"
@@ -23,13 +26,14 @@
 #include "../../../http_server/HttpStaticContentHandler.hpp"
 #include "../../../source/Connection.hpp"
 #include "../../../source/NetworkErrorContext.hpp"
-#include "../../ResolverService.hpp"
 
 #include <algorithm>
 #include <utility>
 
 namespace erbsland::network::impl {
 
+using namespace err;
+using namespace unit;
 using namespace text;
 using namespace text::literals;
 
@@ -58,6 +62,13 @@ void HttpStaticContentOperation::start() {
         return;
     }
     _activeReservation = true;
+    try {
+        _work = util::impl::worker_services::blocking().reserve();
+        _completion = event::impl::EventContinuation::create(server->ownerEvents());
+    } catch (const RuntimeError &) {
+        sendError(HttpStatus::ServiceUnavailable);
+        return;
+    }
     request->rejectBody();
     probeNext();
 }
@@ -91,21 +102,17 @@ void HttpStaticContentOperation::cancel() noexcept {
     auto stream = std::move(_stream);
     auto content = std::move(_content);
     _contentUse.reset();
+    _completion.reset();
+    auto cleanup = std::move(_work);
     if (stream == nullptr && content == nullptr) {
         return;
     }
-    try {
-        ResolverService::submit([stream = std::move(stream), content = std::move(content)]() mutable -> void {
-            if (stream != nullptr) {
-                stream->abort();
-            }
-            content.reset();
-        });
-    } catch (...) {
+    cleanup.submit([stream = std::move(stream), content = std::move(content)]() mutable -> void {
         if (stream != nullptr) {
             stream->abort();
         }
-    }
+        content.reset();
+    });
 }
 
 void HttpStaticContentOperation::buildCandidates(const std::vector<HttpStaticContentHandlerPtr> &handlers) {
@@ -117,12 +124,12 @@ void HttpStaticContentOperation::buildCandidates(const std::vector<HttpStaticCon
     const auto trailingSlash = request->path().endsWith("/"_el);
     for (const auto &handler : handlers) {
         const auto prefix = prefixSegments(handler->urlPrefix());
-        if (requestSegments.size() < prefix.size()) {
+        if (requestSegments.count() < prefix.count()) {
             continue;
         }
         auto matches = true;
-        for (std::size_t index = 0U; index < prefix.size(); ++index) {
-            if (requestSegments[index] != prefix[index]) {
+        for (auto index = ItemIndex{0U}; index.isWithin(prefix.count()); index.uncheckedIncrement()) {
+            if (requestSegments.getRef(index) != prefix.getRef(index)) {
                 matches = false;
                 break;
             }
@@ -130,10 +137,9 @@ void HttpStaticContentOperation::buildCandidates(const std::vector<HttpStaticCon
         if (!matches) {
             continue;
         }
-        auto suffix = std::vector<String>{
-            requestSegments.begin() + static_cast<std::ptrdiff_t>(prefix.size()), requestSegments.end()};
-        if (trailingSlash && !suffix.empty() && suffix.back().isEmpty()) {
-            suffix.pop_back();
+        auto suffix = requestSegments.slice(ItemRange::fromBegin(ItemIndex::end(prefix.count())));
+        if (trailingSlash && !suffix.isEmpty() && suffix.last().isEmpty()) {
+            suffix.removeLast();
         }
         if (std::ranges::any_of(suffix, [](const String &segment) -> bool { return !isSafeSegment(segment); })) {
             continue;
@@ -141,13 +147,13 @@ void HttpStaticContentOperation::buildCandidates(const std::vector<HttpStaticCon
         if (trailingSlash) {
             for (const auto &indexName : handler->indexFileNames()) {
                 auto indexed = suffix;
-                indexed.emplace_back(indexName);
+                indexed.append(indexName);
                 auto path = relativePath(indexed);
                 if (!path.isEmpty() && path.isValid() && path.isRelative()) {
                     _candidates.emplace_back(Candidate{handler, std::move(path)});
                 }
             }
-        } else if (!suffix.empty()) {
+        } else if (!suffix.isEmpty()) {
             auto path = relativePath(suffix);
             if (!path.isEmpty() && path.isValid() && path.isRelative()) {
                 _candidates.emplace_back(Candidate{handler, std::move(path)});
@@ -156,47 +162,49 @@ void HttpStaticContentOperation::buildCandidates(const std::vector<HttpStaticCon
     }
 }
 
-auto HttpStaticContentOperation::prefixSegments(const String &prefix) -> std::vector<String> {
-    auto result = std::vector<String>{};
+auto HttpStaticContentOperation::prefixSegments(const String &prefix) -> StringList {
+    auto result = StringList{};
     auto reader = StringCharReader{prefix};
     reader.advanceIf(U'/');
     auto segment = StringEditor{};
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
         if (character == U'/') {
-            result.emplace_back(String{segment});
+            result.append(segment);
             segment.clear();
         } else {
             segment.append(character);
         }
     }
     if (!segment.isEmpty()) {
-        result.emplace_back(String{segment});
+        result.append(segment);
     }
     return result;
 }
 
 auto HttpStaticContentOperation::isSafeSegment(const String &segment) noexcept -> bool {
-    if (!segment.isValidUtf8() || segment.isEmpty() || segment == "."_el || segment == ".."_el ||
-        segment.endsWith("."_el) || segment.endsWith(" "_el) || segment.length() > unit::ByteLength{255U}) {
+    if (!segment.isEncodingValid() || segment.isEmpty() || segment == "."_el || segment == ".."_el ||
+        segment.endsWith("."_el) || segment.endsWith(" "_el) || segment.length() > ByteCount{255U}) {
         return false;
     }
     auto reader = StringCharReader{segment};
     auto baseName = StringEditor{};
+    auto inBaseName = true;
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
         if (character == U'\0' || character == U'/' || character == U'\\' || character == U':') {
             return false;
         }
         if (character == U'.') {
-            break;
+            inBaseName = false;
+        } else if (inBaseName) {
+            baseName.append(character);
         }
-        baseName.append(character);
     }
     const auto base = String{baseName};
     const auto compare = cCaseInsensitive.asciiComparisonFn();
     const auto isDevicePrefix = [&](const StringLiteral &prefix) -> bool {
-        return base.length() == unit::ByteLength{4U} && base.startsWith(prefix, compare) &&
+        return base.length() == ByteCount{4U} && base.startsWith(prefix, compare) &&
             base.charAt(StringSide::Back).isAsciiDigit() && base.charAt(StringSide::Back) != U'0';
     };
     return base.compare("con"_el, compare) != std::strong_ordering::equal &&
@@ -206,7 +214,7 @@ auto HttpStaticContentOperation::isSafeSegment(const String &segment) noexcept -
         !isDevicePrefix("lpt"_el);
 }
 
-auto HttpStaticContentOperation::relativePath(const std::vector<String> &segments) -> path::Path {
+auto HttpStaticContentOperation::relativePath(const StringList &segments) -> path::Path {
     auto result = StringEditor{};
     for (const auto &segment : segments) {
         if (!result.isEmpty()) {
@@ -214,7 +222,7 @@ auto HttpStaticContentOperation::relativePath(const std::vector<String> &segment
         }
         result.append(segment);
     }
-    return path::Path{String{result}};
+    return path::Path{result};
 }
 
 void HttpStaticContentOperation::probeNext() {
@@ -238,24 +246,24 @@ void HttpStaticContentOperation::probeNext() {
     _workerPending = true;
     const auto weakSelf = std::weak_ptr<HttpStaticContentOperation>{shared_from_this()};
     const auto weakServer = std::weak_ptr<HttpServer>{server};
-    const auto ownerEvents = server->ownerEvents();
+    const auto continuation = _completion;
     const auto handler = _selected->handler;
     const auto path = _selected->path;
     auto contentUse = _contentUse;
     try {
-        ResolverService::submit([weakSelf, weakServer, ownerEvents, handler, path, contentUse]() mutable -> void {
+        _work.submit([weakSelf, weakServer, continuation, handler, path, contentUse]() mutable -> void {
             auto found = false;
             auto failure = std::exception_ptr{};
             try {
                 if (contentUse == nullptr) {
-                    throw err::LogicError{"Static-content configuration is no longer frozen."_el};
+                    throw LogicFailure{"Static-content configuration is no longer frozen."_el};
                 }
                 found = handler->hasPath(path);
-            } catch (...) {
+            } catch (const RuntimeError &) {
                 failure = std::current_exception();
             }
             contentUse.reset();
-            ownerEvents->invoke([weakSelf, weakServer, found, failure]() -> void {
+            continuation->invoke([weakSelf, weakServer, found, failure]() -> void {
                 if (const auto target = weakServer.lock()) {
                     target->releaseStaticOperation();
                 }
@@ -264,7 +272,7 @@ void HttpStaticContentOperation::probeNext() {
                 }
             });
         });
-    } catch (...) {
+    } catch (const RuntimeError &) {
         _workerPending = false;
         server->releaseStaticOperation();
         sendError(HttpStatus::ServiceUnavailable);

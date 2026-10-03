@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/core/MakeOneNamespace.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathCollisionMode.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringEditor.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathCollisionMode.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
 
 namespace demo {
 

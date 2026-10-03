@@ -8,12 +8,14 @@
 
 #include "../../../text/String.hpp"
 #include "../../../text/StringCharReader.hpp"
-#include "../../../text/StringCIHashMap.hpp"
 #include "../../CaptureGroup.hpp"
+
+#include <optional>
 
 namespace erbsland::re::impl {
 
 /// A parser for replacement text.
+/// @tested{ReplacementParserTest RegExReplaceAllTest}
 class ReplacementParser {
 public:
     /// Create a parser for a replacement `expression` and its capture-group names.
@@ -22,27 +24,29 @@ public:
 public:
     /// Parse the configured replacement expression.
     [[nodiscard]] auto parse() -> Replacement;
+    /// Validate the expression without allocating replacement parts or temporary text.
+    void validate();
 
 private:
-    /// Read the next replacement-expression character.
-    void readNext();
+    /// Parse the expression, optionally collecting its replacement parts.
+    void parseContent();
+    /// Add a captured source slice when collecting replacement parts.
+    void addCapturedText();
     /// Parse a replacement-expression fragment.
-    void parseExpression();
+    [[nodiscard]] auto parseExpression() -> CaptureGroupIndex;
     /// Parse a numeric capture-group reference.
-    void parseGroupIndex();
+    [[nodiscard]] auto parseGroupIndex() -> CaptureGroupIndex;
     /// Parse a named capture-group reference.
-    void parseGroupName();
-    /// Require another expression character.
-    void requireMoreContent();
+    [[nodiscard]] auto parseGroupName() -> CaptureGroupIndex;
+    /// Consume the closing brace or report a missing or invalid reference terminator.
+    void requireClosingBrace(const text::String &description);
     /// Throw an error for the replacement expression.
     [[noreturn]] void throwError(text::String description) const;
 
 private:
-    Replacement _replacement;
     text::StringCharReader _reader;
-    text::Char _currentChar{text::Char::noCodePoint()};
-    text::StringCIHashMap<CaptureGroupIndex> _nameMap;
-    text::StringEditor _staticText;
+    const CaptureGroupNames &_groupNames;
+    std::optional<Replacement> _replacement;
 };
 
 }

@@ -6,6 +6,8 @@
 
 #include "impl/EventSubscriptionControl.hpp"
 
+#include "../core/Definitions.hpp"
+
 #include <utility>
 
 namespace erbsland::event {

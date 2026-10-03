@@ -3,13 +3,13 @@
 
 #include "AllocationTestScope.hpp"
 
-#include <erbsland/text/NormalizationForm.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
+#include <erbsland/NormalizationForm.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
+#include <erbsland/U8String.hpp>
+#include <erbsland/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text;
@@ -19,7 +19,7 @@ class UnicodeNormalizationAllocationTest final : public el::UnitTest {
 public:
     void testUnchangedInputDoesNotAllocate() {
         auto source = U32StringEditor{};
-        source.append(Char{U'A'}, el::unit::CpLength{1024});
+        source.append(Char{U'A'}, el::unit::CpCount{1024});
         const auto u32 = U32String{source};
         const auto u16 = StringConverter{u32}.toU16String();
         const auto u8 = StringConverter{u32}.toU8String();
@@ -47,7 +47,7 @@ public:
     TAGS(FullRun)
     void testLargeUnchangedInputDoesNotAllocate() {
         auto editor = U8StringEditor{};
-        editor.append(Char{U'A'}, el::unit::CpLength{1'000'000});
+        editor.append(Char{U'A'}, el::unit::CpCount{1'000'000});
         const auto source = U8String{editor};
 
         auto scope = erbsland::test::AllocationTestScope{};

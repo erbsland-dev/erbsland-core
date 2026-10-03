@@ -3,7 +3,11 @@
 
 #include "DurationDemos.hpp"
 
-#include <erbsland/time/all.hpp>
+#include <erbsland/all_time.hpp>
+#include <erbsland/Duration.hpp>
+#include <erbsland/DurationPart.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <array>
 #include <utility>

@@ -3,7 +3,7 @@
 #include "PathErrorDiagnostic.hpp"
 
 #include "../../err/ErrorDocumentBuilder.hpp"
-#include "../../i18n/DisplayTextMap.hpp"
+#include "../../i18n/DisplayText.hpp"
 #include "../../system/PlatformErrorContext.hpp"
 #include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
@@ -50,9 +50,9 @@ void PathErrorDiagnostic::appendPath(TextNode &content, const String &path) {
     flushSegment();
 }
 
-auto PathErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const -> TextDocument {
-    const auto resolvedDisplayText = displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap();
-    auto builder = err::ErrorDocumentBuilder{_context.title(), _context.description(), resolvedDisplayText};
+auto PathErrorDiagnostic::toTextDocument() const -> TextDocument {
+
+    auto builder = err::ErrorDocumentBuilder{_context.title(), _context.description()};
     const auto help = _context.help();
     if (!help.isEmpty()) {
         builder.root()->addParagraph()->setStyle("diagnostic-help"_el).addText(help);
@@ -61,7 +61,7 @@ auto PathErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &dis
     const auto hasSource = !_context.sourcePath().isEmpty();
     const auto hasTarget = !_context.targetPath().isEmpty();
     if (hasSource || hasTarget) {
-        builder.addSection(resolvedDisplayText->text("PathValuesHeading"_el));
+        builder.addSection(i18n::displayText("path_values_heading"_el));
         auto list = builder.root()->add(TextNodeType::FieldList);
         const auto addPath = [&list](const String &label, const String &path) -> void {
             auto item = list->add(TextNodeType::FieldItem);
@@ -79,7 +79,7 @@ auto PathErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &dis
     }
 
     if (_context.platformContext() != nullptr) {
-        builder.addSection(resolvedDisplayText->text("PlatformErrorHeading"_el));
+        builder.addSection(i18n::displayText("platform_error_heading"_el));
         auto platformDocument = _context.platformContext()->toTextDocument();
         for (const auto &child : platformDocument.root()->children()) {
             builder.root()->add(child->clone());

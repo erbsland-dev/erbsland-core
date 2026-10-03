@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/math/ConstexprSaturatingMath.hpp>
+#include <erbsland/ConstexprSaturatingMath.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <concepts>

@@ -107,6 +107,25 @@ The public :cpp:func:`erbsland::conf::Value::isSectionWithNames <erbsland::conf:
 :cpp:func:`erbsland::conf::Value::getSectionWithNames <erbsland::conf::Value::getSectionWithNames>` methods treat it as
 a regular named section.
 
+Uniform Lists
+-------------
+
+``getList<T>(path, defaultValue)`` and ``getListOrThrow<T>(path)`` return ``el::List<T>``.
+The corresponding ``asList<T>()`` methods use the same container.
+A matching scalar becomes a one-element list; a mixed or incompatible list fails conversion.
+The non-throwing getter returns its supplied default on a missing path or conversion failure, and an empty list when no
+default is supplied.
+``getStringList(path, defaultValue)`` and ``getStringListOrThrow(path)`` provide the same behavior as
+``el::StringList``.
+``asStringList()`` and ``asStringListOrThrow()`` convert an already selected value directly to the same string-list
+type.
+The throwing getters also accept a default: ``getListOrThrow<T>(path, defaultValue)`` and
+``getStringListOrThrow(path, defaultValue)`` use it only for a missing path.
+Invalid paths and incompatible values still raise ``ConfError``, so optional configuration settings retain type
+checking.
+These copy-on-write containers can be passed around without copying their elements.
+See :doc:`/topics/conf/individual-values` for typed collection examples.
+
 Programmatic Construction
 -------------------------
 
@@ -316,6 +335,34 @@ Core strings use copy-on-write ownership rather than borrowed views.
 
 Use :cpp:func:`erbsland::conf::Document::toFlatValueMap <erbsland::conf::Document::toFlatValueMap>` when a complete
 absolute-path index is more convenient than tree traversal.
+
+Local Change Detection
+======================
+
+Use ``Value::digest()`` to detect local changes to a document, section, or scalar value:
+
+.. code-block:: cpp
+
+    const auto previous = configuration->digest(erbsland::cryptology::HashAlgorithm::Sha2_256);
+    const auto current = updatedConfiguration->digest(erbsland::cryptology::HashAlgorithm::Sha2_256);
+    const auto changed = previous != current;
+
+The digest includes the selected value's own name and type, its stored contents, and every descendant in configuration
+order.
+Reordering section members or list entries changes the digest when the resulting parsed sequence differs.
+Ancestor paths, source locations, comments, formatting, and validation metadata do not participate.
+Equivalent source spellings that produce the same parsed values produce the same digest.
+Values inserted as defaults during validation are part of the current tree and therefore participate.
+
+Hashing streams the stored values directly, without building a textual representation.
+Regular expressions contribute their pattern and initial flags without being compiled; later compilation leaves their
+digest unchanged.
+Floating-point representations are preserved, including signed zero and NaN payload bits.
+
+This API provides a local change detector.
+Digest bytes have no compatibility guarantee across platforms or library versions, and should be recomputed after such
+changes.
+Use the signing APIs below for ELCL document signatures.
 
 Configuration Signing
 =====================

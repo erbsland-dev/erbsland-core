@@ -34,8 +34,8 @@ auto CombinedChar::toU32String() const -> U32String {
     return result;
 }
 
-auto CombinedChar::byteCount() const noexcept -> unit::ByteLength {
-    auto result = unit::ByteLength::zero();
+auto CombinedChar::byteCount() const noexcept -> unit::ByteCount {
+    auto result = unit::ByteCount::zero();
     for (const auto codePoint : _characters) {
         if (codePoint.isNull()) {
             break;
@@ -50,9 +50,6 @@ auto CombinedChar::withCombining(const Char codePoint) const noexcept -> Combine
         return *this;
     }
     if (!codePoint.isValidUnicode()) {
-        return *this;
-    }
-    if (codePoint.isNull()) {
         return *this;
     }
     if (codePoint.isControl()) {
@@ -138,7 +135,7 @@ void CombinedChar::normalizeDecodedTextCodePoint(
         return;
     }
     if (!hasBaseCodePoint) {
-        if (codePoint.isNull() || codePoint.isControl() || codePoint.displayWidth() == 0) {
+        if (codePoint.isControl() || codePoint.displayWidth() == 0) {
             mustReplace = true;
             return;
         }
@@ -146,7 +143,7 @@ void CombinedChar::normalizeDecodedTextCodePoint(
         hasBaseCodePoint = true;
         return;
     }
-    if (codePoint.isNull() || codePoint.isControl()) {
+    if (codePoint.isControl()) {
         mustReplace = true;
         return;
     }

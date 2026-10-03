@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include <DemoTerminal.hpp>
 #include <erbsland/all_core.hpp>
 #include <erbsland/all_err.hpp>
 #include <erbsland/all_event.hpp>
@@ -10,22 +11,33 @@
 #include <erbsland/all_stream.hpp>
 #include <erbsland/all_text.hpp>
 #include <erbsland/all_time.hpp>
-
-#include <chrono>
-#include <filesystem>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/EventTimer.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathResolveMode.hpp>
 
 namespace demo {
 
 using namespace el::text::literals;
 
-/// Here we demonstrate how to enter the main loop if you derive from `Application`.
-/// The whole logic is in this derived class, which is not recommended for a real application.
-class FileTimeMonitorApp : public el::Application {
+/// Initialize resources, enter the main event loop, and release resources when it returns.
+/// `PathInfo` reloads filesystem timestamps for each timer callback.
+/// @notest{Verified by running the file_time_monitor demo.}
+class FileTimeMonitorApp final : public el::Application {
 public:
     using Application::Application;
 
-protected:
-    void initialize() override { info().setApplicationName("File Time Monitor"_el); }
+protected: // implement Application
+    void initialize() override {
+        DemoTerminal::enable(*this);
+        info().setApplicationName("File Time Monitor"_el);
+    }
     void registerCommandLineOptions(const el::OptionsPtr &options) override {
         options->addOption("file"_el).setRequired().setHelp("The path to the file to monitor"_el);
         options->addOption({"-t"_el, "--timeout"_el, "timeout"_el})
@@ -34,30 +46,40 @@ protected:
             .setDefaultValue(5);
     }
     [[nodiscard]] auto main() -> el::ExitCode override {
-        _path = el::Path::fromNativeOrThrow(optionValues()->getText("file"_el));
-        _pathInfo = _path.info();
-        if (!_path.info().exists()) {
-            throw el::ApplicationError{"File does not exist."_el};
+        _path = el::Path::fromNativeOrThrow(optionValues()->getText("file"_el))
+                    .resolveOrThrow(el::PathResolveMode::Physical);
+        _pathInfo = _path.info(el::PathInfoPart::Type);
+        if (!_pathInfo.isRegularFile()) {
+            throw el::ApplicationError{"The path must name a regular file."_el};
         }
         const auto timeout = el::Seconds{optionValues()->getInteger("timeout"_el)};
+        if (timeout.isNegative()) {
+            throw el::ApplicationError{"The timeout must be non-negative."_el};
+        }
         if (timeout.isPositive()) {
             events()->invokeAfter(timeout, []() -> void { el::application().quit(); });
         }
         _pollTimer = events()->createTimer([this]() -> void { poll(); });
         _pollTimer->startFixedDelay(el::Seconds{1});
-        el::stdOut()->printLine("Monitoring file: ", _path);
-        // at this point, enter the main event loop.
-        return runEventLoop();
+        el::stdOut()->printLine("Monitoring file: "_el, _path);
+        // Enter the event loop after setup; execution resumes here when it exits.
+        const auto exitCode = runEventLoop();
+        _pollTimer->stop();
+        el::stdOut()->printLine("Monitoring stopped."_el);
+        return exitCode;
     }
+    void cleanup() noexcept override { _pollTimer.reset(); }
+
+private:
     void poll() {
         _pathInfo.reload(el::PathInfoPart::Times);
-        el::stdOut()->printLine("Last Modification: ", _pathInfo.lastModified().toString());
+        el::stdOut()->printLine("Last modification: "_el, _pathInfo.lastModified().toString());
     }
 
 private:
-    el::EventTimerPtr _pollTimer;
-    el::Path _path;
-    el::PathInfo _pathInfo;
+    el::EventTimerPtr _pollTimer; ///< Retains the repeating timer.
+    el::Path _path;               ///< File being monitored.
+    el::PathInfo _pathInfo;       ///< Reloadable filesystem information.
 };
 
 }

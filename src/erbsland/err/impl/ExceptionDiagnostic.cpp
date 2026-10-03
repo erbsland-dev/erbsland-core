@@ -4,7 +4,7 @@
 
 #include "../ErrorDocumentBuilder.hpp"
 
-#include "../../i18n/DisplayTextMap.hpp"
+#include "../../i18n/DisplayText.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../text/TextDocument.hpp"
@@ -22,8 +22,7 @@ using text::StringEditor;
 using text::TextDocument;
 using text::TextNodeType;
 
-ExceptionDiagnostic::ExceptionDiagnostic(String message, const i18n::DisplayTextMapConstPtr &displayText) noexcept :
-    _message{std::move(message)}, _displayText{displayText} {
+ExceptionDiagnostic::ExceptionDiagnostic(String message) noexcept : _message{std::move(message)} {
 }
 
 auto ExceptionDiagnostic::setSourceName(String sourceName) noexcept -> ExceptionDiagnostic & {
@@ -62,14 +61,10 @@ auto ExceptionDiagnostic::toString() const noexcept -> String {
     return _message;
 }
 
-auto ExceptionDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const -> TextDocument {
-    const auto resolvedDisplayText = displayText != nullptr
-        ? displayText
-        : (_displayText != nullptr ? _displayText : i18n::DisplayTextMap::defaultMap());
+auto ExceptionDiagnostic::toTextDocument() const -> TextDocument {
+
     auto builder = ErrorDocumentBuilder{
-        _message.isEmpty() ? resolvedDisplayText->text("ExceptionWithoutDiagnosticText"_el) : _message,
-        {},
-        resolvedDisplayText};
+        _message.isEmpty() ? i18n::displayText("exception_without_diagnostic_text"_el) : _message, {}};
     if (!_fields.isEmpty()) {
         auto list = builder.root()->add(TextNodeType::FieldList);
         for (const auto &field : _fields) {

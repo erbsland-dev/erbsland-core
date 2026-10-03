@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/text/u16/impl/U16Encoding.hpp>
 #include <erbsland/text/u8/impl/U8StringReadTools.hpp>
 #include <erbsland/unittest/TextHelper.hpp>

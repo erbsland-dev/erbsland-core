@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/CharSet.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/punycode/PunycodeDecoder.hpp>
+#include <erbsland/punycode/PunycodeEncoder.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/text/punycode/impl/IdnaData.hpp>
-#include <erbsland/text/punycode/PunycodeDecoder.hpp>
-#include <erbsland/text/punycode/PunycodeEncoder.hpp>
-#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>
@@ -83,7 +83,7 @@ public:
 
     void testDnsLimits() {
         auto label = StringEditor{};
-        label.append(Char{U'a'}, el::unit::CpLength{63U});
+        label.append(Char{U'a'}, el::unit::CpCount{63U});
         REQUIRE((PunycodeEncoder{label, PunycodeOptions::idna2008Label()}.encode().has_value()));
         label.append(Char{U'a'});
         REQUIRE_FALSE((PunycodeEncoder{label, PunycodeOptions::idna2008Label()}.encode().has_value()));

@@ -12,6 +12,7 @@
 #include "../../text/Literals.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringEditor.hpp"
+#include "../../text/StringSet.hpp"
 #include "../../time/Date.hpp"
 #include "../../time/Time.hpp"
 #include "../../time/Timestamp.hpp"
@@ -96,7 +97,7 @@ auto X509Parser::parseGeneralName(const Asn1Node &node) -> X509GeneralName {
         }
         const auto kind = tag == 1U ? X509GeneralName::Kind::Email
                                     : (tag == 2U ? X509GeneralName::Kind::Dns : X509GeneralName::Kind::Uri);
-        return X509GeneralName{kind, String{value}, {}, {}, {}, node};
+        return X509GeneralName{kind, value, {}, {}, {}, node};
     }
     if (tag == 4U) {
         if (!node.isConstructed() || node.childCount() != ItemCount{1U}) {
@@ -119,7 +120,7 @@ auto X509Parser::parseGeneralName(const Asn1Node &node) -> X509GeneralName {
                 Endianness::Big);
         } else {
             for (auto part = std::size_t{}; part < 2U; ++part) {
-                const auto partIndex = ByteIndex{part * 8U};
+                const auto partIndex = ByteIndex{part * 8U, ByteIndex::Unchecked{}};
                 addressBytes.setIntegerOrThrow(
                     partIndex, content.getIntegerOrThrow<uint64_t>(partIndex, Endianness::Big), Endianness::Big);
             }
@@ -204,24 +205,22 @@ void X509Parser::parseBasicConstraints(const X509Extension &extension) {
     const auto root = extension.asn1();
     requireNode(
         root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "basicConstraints"_el);
-    auto index = std::size_t{};
+    auto index = ItemIndex::zero();
     auto certificateAuthority = false;
     auto pathLength = std::optional<uint32_t>{};
-    if (root.childCount().toSizeT() > index &&
-        root.child(ItemIndex{index}).universalType() == Asn1UniversalType::Boolean) {
-        certificateAuthority = *root.child(ItemIndex{index++}).toBoolean();
+    if (ItemIndex::end(root.childCount()) > index && root.child(index).universalType() == Asn1UniversalType::Boolean) {
+        certificateAuthority = *root.child(index++).toBoolean();
         if (!certificateAuthority) {
             throwParseError("Basic Constraints must omit its default false cA value."_el, root);
         }
     }
-    if (root.childCount().toSizeT() > index) {
-        pathLength = static_cast<uint32_t>(
-            unsignedInteger(root.child(ItemIndex{index++}), std::numeric_limits<uint32_t>::max()));
+    if (ItemIndex::end(root.childCount()) > index) {
+        pathLength = static_cast<uint32_t>(unsignedInteger(root.child(index++), std::numeric_limits<uint32_t>::max()));
         if (!certificateAuthority) {
             throwParseError("Basic Constraints pathLenConstraint requires cA true."_el, root);
         }
     }
-    if (index != root.childCount().toSizeT()) {
+    if (index != ItemIndex::end(root.childCount())) {
         throwParseError("Basic Constraints contains unexpected fields."_el, root);
     }
     _values.basicConstraints = X509BasicConstraints{certificateAuthority, pathLength};
@@ -269,13 +268,13 @@ void X509Parser::parseExtendedKeyUsage(const X509Extension &extension) {
     if (root.childCount() == ItemCount{}) {
         throwParseError("Extended Key Usage must not be empty."_el, root);
     }
-    auto seen = std::set<String>{};
+    auto seen = StringSet{};
     for (const auto &child : root.children()) {
         const auto oid = child.toObjectIdentifier();
         if (!oid.has_value()) {
             throwParseError("Extended Key Usage contains a non-OID value."_el, child);
         }
-        if (!seen.insert(oid->toString()).second) {
+        if (!seen.tryInsert(oid->toString())) {
             throwParseError("Extended Key Usage contains a duplicate OID."_el, child);
         }
         _values.extendedKeyUsage.append(*oid);
@@ -379,8 +378,8 @@ auto X509Parser::unsignedInteger(const Asn1Node &node, const uint64_t maximum) c
     if ((content.span().front().toUInt8() & 0x80U) != 0U) {
         throwParseError("Expected a nonnegative INTEGER."_el, node);
     }
-    if (content.length() > ByteLength::one() && content.span().front().toUInt8() == 0U) {
-        content = content.slice(ByteIndex{1U}, content.length() - ByteLength::one());
+    if (content.length() > ByteCount::one() && content.span().front().toUInt8() == 0U) {
+        content = content.slice(ByteIndex{1U}, content.length() - ByteCount::one());
     }
     const auto format = [&]() -> ByteIntegerFormat {
         switch (content.length().toSizeT()) {
@@ -431,7 +430,7 @@ void X509Parser::requireNode(
         message.append("Unexpected ASN.1 node for "_el);
         message.append(name);
         message.append(U'.');
-        throwParseError(String{message}, node);
+        throwParseError(message, node);
     }
 }
 
@@ -444,21 +443,21 @@ auto X509Parser::asciiText(const Asn1Node &node) const -> String {
         }
         result.append(Char{byte.toUInt32()});
     }
-    return String{result};
+    return result;
 }
 
 auto X509Parser::fieldDiagnostic(const String &name, const String &detail) -> String {
     auto result = StringEditor{};
     result.append(name);
     result.append(detail);
-    return String{result};
+    return result;
 }
 
 auto X509Parser::decimalDigit(const ConstByteSpan bytes, const std::size_t index, const ByteIndex contentByteIndex)
     -> uint32_t {
     if (index >= bytes.size() || bytes[index].toUInt8() < '0' || bytes[index].toUInt8() > '9') {
         throw err::ParseError{
-            "X.509 time contains a nondigit component."_el, contentByteIndex + ByteLength::fromSizeT(index)};
+            "X.509 time contains a nondigit component."_el, contentByteIndex + ByteCount::fromSizeT(index)};
     }
     return bytes[index].toUInt32() - static_cast<uint32_t>('0');
 }

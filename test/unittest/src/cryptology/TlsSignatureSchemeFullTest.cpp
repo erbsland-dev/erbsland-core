@@ -1,16 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "CryptologyResponseKeys.hpp"
 #include "CryptologyResponseReader.hpp"
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/keys/PublicKey.hpp>
-#include <erbsland/cryptology/tls/TlsSignatureScheme.hpp>
-#include <erbsland/cryptology/x509/X509AlgorithmIdentifier.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/PublicKey.hpp>
+#include <erbsland/TlsSignatureScheme.hpp>
+#include <erbsland/X509AlgorithmIdentifier.hpp>
 
 using namespace el::cryptology;
 using namespace el::text::literals;
@@ -61,12 +62,12 @@ public:
         const auto rsaeKey = PublicKey::fromDerOrThrow(bytesFromHex(rsaeRecord.setting("PublicKeyDer"_el)));
         const auto pssKey = PublicKey::fromDerOrThrow(bytesFromHex(pssRecord.setting("PublicKeyDer"_el)));
         const auto ecdsaKey = PublicKey::fromDerOrThrow(bytesFromHex(ecdsaRecord.setting("PublicKeyDer"_el)));
-        const auto rsaeMessage = bytesFromHex(rsaeRecord.value("Msg"_el));
-        const auto rsaeSignature = bytesFromHex(rsaeRecord.value("Sig"_el));
-        const auto pssMessage = bytesFromHex(pssRecord.value("Msg"_el));
-        const auto pssSignature = bytesFromHex(pssRecord.value("Sig"_el));
-        const auto ecdsaMessage = bytesFromHex(ecdsaRecord.value("Msg"_el));
-        const auto ecdsaSignature = bytesFromHex(ecdsaRecord.value("Sig"_el));
+        const auto rsaeMessage = bytesFromHex(rsaeRecord.value(response_key::cMessageField));
+        const auto rsaeSignature = bytesFromHex(rsaeRecord.value(response_key::cSignatureField));
+        const auto pssMessage = bytesFromHex(pssRecord.value(response_key::cMessageField));
+        const auto pssSignature = bytesFromHex(pssRecord.value(response_key::cSignatureField));
+        const auto ecdsaMessage = bytesFromHex(ecdsaRecord.value(response_key::cMessageField));
+        const auto ecdsaSignature = bytesFromHex(ecdsaRecord.value(response_key::cSignatureField));
 
         REQUIRE_THROWS_AS(
             el::err::ParseError,
@@ -81,7 +82,7 @@ public:
             ecdsaKey.verifyTlsCertificateVerifySignature(
                 TlsSignatureScheme::Ed25519, ecdsaMessage.span(), ecdsaSignature.span()));
         REQUIRE_THROWS_AS(
-            el::err::LogicError,
+            el::err::LogicFailure,
             PublicKey{}.verifyTlsCertificateVerifySignature(
                 TlsSignatureScheme::Ed25519, ecdsaMessage.span(), ecdsaSignature.span()));
     }
@@ -92,8 +93,8 @@ public:
         const auto records = CryptologyResponseReader{"data/cryptology/signature/ED25519.rsp"_el}.read();
         const auto &record = records.front();
         const auto publicKey = PublicKey::fromDerOrThrow(bytesFromHex(record.setting("PublicKeyDer"_el)));
-        const auto message = bytesFromHex(record.value("Msg"_el));
-        auto signature = el::ByteBlockEditor{bytesFromHex(record.value("Sig"_el))};
+        const auto message = bytesFromHex(record.value(response_key::cMessageField));
+        auto signature = el::ByteBlockEditor{bytesFromHex(record.value(response_key::cSignatureField))};
         signature.xorAt(el::ByteIndex{17U}, el::Byte{1U});
         REQUIRE_FALSE(publicKey.verifyTlsCertificateVerifySignature(
             TlsSignatureScheme::Ed25519, message.span(), signature.span()));
@@ -105,8 +106,8 @@ public:
         const auto records = CryptologyResponseReader{"data/cryptology/signature/PSS_SHA256_SALT0.rsp"_el}.read();
         const auto &record = records.front();
         const auto publicKey = PublicKey::fromDerOrThrow(bytesFromHex(record.setting("PublicKeyDer"_el)));
-        const auto message = bytesFromHex(record.value("Msg"_el));
-        const auto signature = bytesFromHex(record.value("Sig"_el));
+        const auto message = bytesFromHex(record.value(response_key::cMessageField));
+        const auto signature = bytesFromHex(record.value(response_key::cSignatureField));
 
         // RFC 8446 section 4.2.3 requires the PSS salt length to equal the selected hash output length.
         REQUIRE_FALSE(publicKey.verifyTlsCertificateVerifySignature(
@@ -125,8 +126,8 @@ private:
         const TlsSignatureScheme::Value value,
         const CryptologyResponseReader::Record &record,
         const PublicKey &publicKey) {
-        const auto message = bytesFromHex(record.value("Msg"_el));
-        const auto signature = bytesFromHex(record.value("Sig"_el));
+        const auto message = bytesFromHex(record.value(response_key::cMessageField));
+        const auto signature = bytesFromHex(record.value(response_key::cSignatureField));
         REQUIRE(publicKey.verifyTlsCertificateVerifySignature(value, message.span(), signature.span()));
     }
 
@@ -135,8 +136,8 @@ private:
         const auto &record = records.front();
         const auto publicKey = PublicKey::fromDerOrThrow(bytesFromHex(record.setting("PublicKeyDer"_el)));
         const auto algorithm = X509AlgorithmIdentifier::fromDerOrThrow(bytesFromHex(record.setting("AlgorithmDer"_el)));
-        const auto message = bytesFromHex(record.value("Msg"_el));
-        const auto signature = bytesFromHex(record.value("Sig"_el));
+        const auto message = bytesFromHex(record.value(response_key::cMessageField));
+        const auto signature = bytesFromHex(record.value(response_key::cSignatureField));
         REQUIRE(publicKey.verifySignature(algorithm, message.span(), signature.span()));
         REQUIRE_THROWS_AS(
             el::err::ParseError,
@@ -152,7 +153,7 @@ private:
             "a00f300d06096086480165030402020500"
             "a11c301a06092a864886f70d010108300d06096086480165030402020500"
             "a203020130"));
-        der.append(rsaePublicKey.slice(el::ByteIndex{19U}, rsaePublicKey.length() - el::ByteLength{19U}));
+        der.append(rsaePublicKey.slice(el::ByteIndex{19U}, rsaePublicKey.length() - el::ByteCount{19U}));
         return PublicKey::fromDerOrThrow(el::ByteBlock{der});
     }
 };

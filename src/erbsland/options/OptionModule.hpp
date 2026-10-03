@@ -20,7 +20,8 @@ class OptionModule : public OptionSetManager {
 public:
     /// Create an empty option module.
     OptionModule() = default;
-    /// Create a module with a command line name.
+    /// Create a module with a normalized command line name.
+    /// @param name The bare module name to canonicalize. Must satisfy `Option::isValidPositionalName()`.
     explicit OptionModule(const text::String &name);
 
     // defaults
@@ -37,12 +38,12 @@ public:
     /// @return A shared module without a command-line name.
     [[nodiscard]] static auto create() -> OptionModulePtr;
     /// Create a shared module with a command line name.
-    /// @param name The module selector accepted on the command line.
-    /// @return A shared module with the given selector.
+    /// @param name The module selector accepted on the command line. Must satisfy `Option::isValidPositionalName()`.
+    /// @return A shared module with the canonical selector.
     [[nodiscard]] static auto create(const text::String &name) -> OptionModulePtr;
     /// Test if a module name is valid.
     /// @param name The module selector to validate.
-    /// @return `true` if the name can be used as a module selector.
+    /// @return `true` if the bare name is valid after normalization.
     [[nodiscard]] static auto isValidName(const text::String &name) noexcept -> bool;
     /// Add an option set to this module.
     /// @param optionSet The set that becomes active when this module is selected.
@@ -58,7 +59,8 @@ public: // accessors
     /// Get the command line module name.
     [[nodiscard]] auto name() const noexcept -> const text::String & { return _name; }
     /// Set the command line module name.
-    /// @param name The selector accepted as the first ordinary argument.
+    /// @param name The selector accepted as the first ordinary argument. Must satisfy
+    /// `Option::isValidPositionalName()`.
     void setName(const text::String &name);
     /// Test if the given name matches this module.
     [[nodiscard]] auto hasName(const text::String &name) const -> bool;
@@ -68,10 +70,10 @@ public: // accessors
     /// @param help The replacement help metadata. The description is shown in the root module list.
     void setHelp(OptionHelp help) { _help = std::move(help); }
     /// Set the help title for this module.
-    /// @param title Short module title used when no description is available.
+    /// @param title Brief text shown beside the module name in overview output.
     void setHelpTitle(text::String title) { _help.setTitle(std::move(title)); }
     /// Set the help description for this module.
-    /// @param description Description shown for this module and as module-help summary.
+    /// @param description Detailed description shown in full module help.
     void setHelpDescription(text::String description) { _help.setDescription(std::move(description)); }
     /// Set the help epilog for this module.
     /// @param epilog Text rendered after module-specific help output.

@@ -3,9 +3,14 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/text/placeholder/Filter.hpp>
-#include <erbsland/text/placeholder/ReplacerError.hpp>
-#include <erbsland/text/placeholder/Source.hpp>
+#include <erbsland/placeholder/Filter.hpp>
+#include <erbsland/placeholder/ReplacerError.hpp>
+#include <erbsland/placeholder/ReplacerErrorCategory.hpp>
+#include <erbsland/placeholder/Source.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace demo {
 

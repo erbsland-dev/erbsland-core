@@ -8,6 +8,7 @@
 #include "impl/PathWalker.hpp"
 
 #include "../err/Exception.hpp"
+#include "../err/RuntimeError.hpp"
 #include "../text/Literals.hpp"
 
 #include <memory>
@@ -42,7 +43,7 @@ auto PathWalker::path() const -> const Path & {
 auto PathWalker::walk(const PathWalkFn &walkFn, const PathWalkOptions options) const -> PathWalkResult {
     try {
         return walkOrThrow(walkFn, options);
-    } catch (const err::Exception &) {
+    } catch (const err::RuntimeError &) {
         return PathWalkResult::Failure;
     }
 }
@@ -50,7 +51,7 @@ auto PathWalker::walk(const PathWalkFn &walkFn, const PathWalkOptions options) c
 auto PathWalker::walk(const PathInfoWalkFn &walkFn, const PathWalkOptions options) const -> PathWalkResult {
     try {
         return walkOrThrow(walkFn, options);
-    } catch (const err::Exception &) {
+    } catch (const err::RuntimeError &) {
         return PathWalkResult::Failure;
     }
 }

@@ -1,15 +1,24 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "CompressionScenarioWorkload.hpp"
 
 #include "CompressionWorkerWorkload.hpp"
 #include "Corpus.hpp"
 
-#include <erbsland/compression/ByteCompressor.hpp>
-#include <erbsland/compression/ByteDecompressor.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCompressor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteDecompressor.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/CompressionFormat.hpp>
+#include <erbsland/CompressionLevel.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/ItemIndex.hpp>
 #include <erbsland/profiling/RunConfiguration.hpp>
-#include <erbsland/stream/StandardStreams.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <algorithm>
 #include <limits>
@@ -28,10 +37,10 @@ void CompressionScenarioWorkload::prepare(const pf::RunConfiguration &run, const
     _algorithm = el::compression::CompressionAlgorithm::fromStringOrThrow(algorithmId);
     _format = parseFormat(axisValue(scenario, "format"_el));
     _level = parseLevel(axisValue(scenario, "level"_el));
-    auto inputSize = el::ByteLength{};
+    auto inputSize = el::ByteCount{};
     for (const auto &parameter : scenario.parameters) {
         if (parameter.parameter == "input-size"_el) {
-            inputSize = std::get<el::ByteLength>(parameter.value);
+            inputSize = std::get<el::ByteCount>(parameter.value);
         }
     }
     if (inputSize.isZero()) {

@@ -86,6 +86,23 @@ public: // public interface
     void setTargetNamePath(const NamePath &namePath) { _targetNamePath = namePath; }
     /// Set the rule type.
     void setType(const vr::RuleType type) override { _type = type; }
+    /// Set the requested implicit entry type.
+    void setEntryType(vr::RuleType type) override;
+    void addEntryAttributes(std::vector<std::shared_ptr<const vr::builder::Attribute>> attributes) override;
+    /// Get the queued entry attributes for this builder call.
+    [[nodiscard]] auto entryAttributes() const -> const std::vector<std::shared_ptr<const vr::builder::Attribute>> & {
+        return _entryAttributes;
+    }
+    /// Test whether entry attributes were requested, including an empty constraint pack.
+    [[nodiscard]] auto hasEntryAttributes() const -> bool { return _hasEntryAttributes; }
+    /// Clear the temporary entry request after a builder call.
+    void clearEntryRequest() {
+        _entryType = vr::RuleType::Undefined;
+        _entryAttributes.clear();
+        _hasEntryAttributes = false;
+    }
+    /// Get the requested implicit entry type, or Undefined when no entry was requested.
+    [[nodiscard]] auto entryType() const -> vr::RuleType { return _entryType; }
     /// Set the optional title.
     void setTitle(text::String title) override { _title = std::move(title); }
     /// Set the optional description.
@@ -176,10 +193,13 @@ public: // tests
 #endif
 
 private:
-    Location _location;                              ///< The source location of a rule
-    NamePath _ruleNamePath;                          ///< The name path of the rule definition.
-    NamePath _targetNamePath;                        ///< The path that points to the entry in the validated document.
-    vr::RuleType _type;                              ///< The type of the rule.
+    Location _location;       ///< The source location of a rule
+    NamePath _ruleNamePath;   ///< The name path of the rule definition.
+    NamePath _targetNamePath; ///< The path that points to the entry in the validated document.
+    vr::RuleType _type;       ///< The type of the rule.
+    vr::RuleType _entryType;  ///< Requested scalar entry type for the current builder call.
+    std::vector<std::shared_ptr<const vr::builder::Attribute>> _entryAttributes; ///< Owned entry configuration.
+    bool _hasEntryAttributes{false};                 ///< Whether the current call requested entry configuration.
     text::String _title;                             ///< A title for this rule.
     text::String _description;                       ///< A description of the rule.
     text::String _errorMessage;                      ///< A custom error message.

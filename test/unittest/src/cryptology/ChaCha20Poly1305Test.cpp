@@ -5,14 +5,14 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/CryptologyError.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
 #include <erbsland/cryptology/impl/symmetric/ChaCha20Poly1305State.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricDecryptor.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricEncryptor.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/CryptologyError.hpp>
+#include <erbsland/LogicFailure.hpp>
 #include <erbsland/mem/impl/SecureErase.hpp>
+#include <erbsland/SymmetricDecryptor.hpp>
+#include <erbsland/SymmetricEncryptor.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -22,29 +22,40 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace unit;
+
 /// Unit-test access for otherwise unreachable RFC 8439 length and counter boundaries.
 class ChaCha20Poly1305StateTestAccess final {
 public:
-    static void setPayloadPosition(
-        ChaCha20Poly1305State &state, const uint64_t length, const uint64_t nextCounter) noexcept {
-        state._payloadLength = length;
-        state._nextCounter = nextCounter;
-        state._keyStreamOffset = 0U;
-        state._keyStreamLength = 0U;
+    /// Bind access to the target instance, which must outlive this helper.
+    /// @param state The accessed instance.
+    explicit ChaCha20Poly1305StateTestAccess(ChaCha20Poly1305State &state) noexcept : _state{state} {}
+
+public: // access
+    void setPayloadPosition(const uint64_t length, const uint64_t nextCounter) noexcept {
+        _state._payloadLength = ByteCount::fromInteger(length);
+        _state._nextCounter = nextCounter;
+        _state._keyStreamOffset = ByteIndex::fromInteger(0U);
+        _state._keyStreamLength = ByteCount::fromInteger(0U);
     }
 
-    static void setAuthenticatedDataLength(ChaCha20Poly1305State &state, const uint64_t length) noexcept {
-        state._authenticatedDataLength = length;
+    void setAuthenticatedDataLength(const uint64_t length) noexcept {
+        _state._authenticatedDataLength = ByteCount::fromInteger(length);
     }
 
     [[nodiscard]] static constexpr auto maximumPayloadLength() noexcept -> uint64_t {
         return ChaCha20Poly1305State::maximumPayloadLength;
     }
+
+private:
+    ChaCha20Poly1305State &_state; ///< The accessed instance.
 };
 
 }
 
 using namespace el::cryptology;
+
+using namespace el::unit;
 
 TESTED_TARGETS(ChaCha20Poly1305State ChaCha20Poly1305EncryptorData ChaCha20Poly1305DecryptorData)
 class ChaCha20Poly1305Test final : public UNITTEST_SUBCLASS(CryptologyTestHelper) {
@@ -108,8 +119,8 @@ public:
         auto actual = el::mem::ByteBlockEditor{};
 
         // RFC 8439, Section 2.4.2: update boundaries do not alter the counter-one ChaCha20 stream.
-        actual.append(encryptor.encrypt(message.span(el::unit::ByteIndex{}, el::unit::ByteLength{1U})));
-        actual.append(encryptor.encrypt(message.span(el::unit::ByteIndex{1U}, el::unit::ByteLength{63U})));
+        actual.append(encryptor.encrypt(message.span(ByteIndex{}, ByteCount{1U})));
+        actual.append(encryptor.encrypt(message.span(ByteIndex{1U}, ByteCount{63U})));
         actual.append(encryptor.encrypt(message.span().subspan(64U)));
         REQUIRE_EQUAL(actual, expected);
         REQUIRE(encryptor.finalize().isEmpty());
@@ -132,14 +143,13 @@ public:
     void testIrregularStreamingAndEmptyPayloadKeepsAadOpen() {
         const auto applicationScope = ApplicationTestScope<>{};
         auto encryptor = SymmetricEncryptor{SymmetricEncryptionType::ChaCha20Poly1305, key(), nonce()};
-        encryptor.addAuthenticatedData(aad().span(el::unit::ByteIndex{}, el::unit::ByteLength{3U}));
+        encryptor.addAuthenticatedData(aad().span(ByteIndex{}, ByteCount{3U}));
         REQUIRE(encryptor.encrypt(el::mem::ConstByteSpan{}).isEmpty());
-        encryptor.addAuthenticatedData(aad().span(el::unit::ByteIndex{3U}, el::unit::ByteLength{9U}));
+        encryptor.addAuthenticatedData(aad().span(ByteIndex{3U}, ByteCount{9U}));
 
         auto actualCiphertext = el::mem::ByteBlockEditor{};
-        for (auto index = std::size_t{}; index < plaintext().length().toSizeT(); ++index) {
-            actualCiphertext.append(
-                encryptor.encrypt(plaintext().span(el::unit::ByteIndex{index}, el::unit::ByteLength::one())));
+        for (auto index = ByteIndex::zero(); index.isWithin(plaintext().length()); index.uncheckedIncrement()) {
+            actualCiphertext.append(encryptor.encrypt(plaintext().span(index, ByteCount::one())));
         }
         static_cast<void>(encryptor.finalize());
         REQUIRE_EQUAL(actualCiphertext, ciphertext());
@@ -149,12 +159,12 @@ public:
     void testAuthenticationFailureIsGenericAndFacadeFails() {
         const auto applicationScope = ApplicationTestScope<>{};
         auto invalidTag = el::mem::ByteBlockEditor{bytesFromHex("1ae10b594f09e26a7e902ecbd0600691")};
-        invalidTag.xorAt(el::unit::ByteIndex{8U}, el::mem::Byte{1U});
+        invalidTag.xorAt(ByteIndex{8U}, el::mem::Byte{1U});
         auto decryptor = SymmetricDecryptor{SymmetricEncryptionType::ChaCha20Poly1305, key(), nonce()};
         decryptor.addAuthenticatedData(aad());
         static_cast<void>(decryptor.decrypt(ciphertext()));
         REQUIRE_THROWS_AS(CryptologyError, decryptor.finalize(SymmetricTag{invalidTag}));
-        REQUIRE_THROWS_AS(el::err::LogicError, decryptor.decrypt(el::mem::ConstByteSpan{}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, decryptor.decrypt(el::mem::ConstByteSpan{}));
     }
 
     void testAadCiphertextAndEveryTagRegionAreAuthenticated() {
@@ -170,16 +180,16 @@ public:
         };
 
         auto modifiedAad = el::mem::ByteBlockEditor{aad()};
-        modifiedAad.xorAt(el::unit::ByteIndex{3U}, el::mem::Byte{1U});
+        modifiedAad.xorAt(ByteIndex{3U}, el::mem::Byte{1U});
         requireFailure(modifiedAad, ciphertext(), expectedTag);
 
         auto modifiedCiphertext = el::mem::ByteBlockEditor{ciphertext()};
-        modifiedCiphertext.xorAt(el::unit::ByteIndex{64U}, el::mem::Byte{1U});
+        modifiedCiphertext.xorAt(ByteIndex{64U}, el::mem::Byte{1U});
         requireFailure(aad(), modifiedCiphertext, expectedTag);
 
-        for (const auto index : {0U, 4U, 8U, 12U, 15U}) {
+        for (const auto index : {ByteIndex{0U}, ByteIndex{4U}, ByteIndex{8U}, ByteIndex{12U}, ByteIndex{15U}}) {
             auto modifiedTag = el::mem::ByteBlockEditor{expectedTag.data()};
-            modifiedTag.xorAt(el::unit::ByteIndex{index}, el::mem::Byte{1U});
+            modifiedTag.xorAt(index, el::mem::Byte{1U});
             requireFailure(aad(), ciphertext(), SymmetricTag{modifiedTag});
         }
     }
@@ -197,7 +207,7 @@ public:
         auto aadOnly = SymmetricEncryptor{SymmetricEncryptionType::ChaCha20Poly1305, emptyKey, emptyNonce};
         aadOnly.addAuthenticatedData(bytesFromHex("00"));
         static_cast<void>(aadOnly.finalize());
-        REQUIRE_EQUAL(aadOnly.tag().data().length(), el::unit::ByteLength{16U});
+        REQUIRE_EQUAL(aadOnly.tag().data().length(), ByteCount{16U});
         REQUIRE_NOT_EQUAL(aadOnly.tag().data(), empty.tag().data());
 
         auto aadOnlyDecryptor = SymmetricDecryptor{SymmetricEncryptionType::ChaCha20Poly1305, emptyKey, emptyNonce};
@@ -211,14 +221,12 @@ public:
         const auto stateNonce = bytesFromHex("070000004041424344454647");
         auto state = el::cryptology::impl::ChaCha20Poly1305State{stateKey.span(), stateNonce.span()};
         const auto maximum = el::cryptology::impl::ChaCha20Poly1305StateTestAccess::maximumPayloadLength();
-        el::cryptology::impl::ChaCha20Poly1305StateTestAccess::setPayloadPosition(state, maximum - 64U, 0xffffffffU);
-        REQUIRE_EQUAL(
-            state.transform(el::mem::ByteBlock{el::unit::ByteLength{64U}}.span(), true).length(),
-            el::unit::ByteLength{64U});
+        el::cryptology::impl::ChaCha20Poly1305StateTestAccess{state}.setPayloadPosition(maximum - 64U, 0xffffffffU);
+        REQUIRE_EQUAL(state.transform(el::mem::ByteBlock{ByteCount{64U}}.span(), true).length(), ByteCount{64U});
         REQUIRE_THROWS_AS(CryptologyError, state.transform(bytesFromHex("00").span(), true));
 
-        el::cryptology::impl::ChaCha20Poly1305StateTestAccess::setAuthenticatedDataLength(
-            state, std::numeric_limits<uint64_t>::max());
+        el::cryptology::impl::ChaCha20Poly1305StateTestAccess{state}.setAuthenticatedDataLength(
+            std::numeric_limits<uint64_t>::max());
         REQUIRE_THROWS_AS(CryptologyError, state.addAuthenticatedData(bytesFromHex("00").span()));
     }
 

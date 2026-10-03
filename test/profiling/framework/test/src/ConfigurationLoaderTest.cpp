@@ -1,6 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/List.hpp>
 #include <erbsland/profiling/ConfigurationLoader.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -43,13 +46,13 @@ public:
         axis.addValue({.id = "u8"_el}).addValue({.id = "u16"_el});
         definition.addAxis(std::move(axis))
             .addParameter(
-                {.id = "input-size"_el, .configurationName = "input_size"_el, .type = pf::ParameterType::ByteLength})
+                {.id = "input-size"_el, .configurationName = "input_size"_el, .type = pf::ParameterType::ByteCount})
             .addFunctionality({.id = "noop"_el});
         const auto configuration = pf::ConfigurationLoader::load(definition);
         REQUIRE_EQUAL(configuration.scenarios.count().toRawValue(), 2);
         REQUIRE_EQUAL(configuration.scenarios.first().id, "matrix:noop:u8"_el);
         REQUIRE_EQUAL(
-            std::get<el::ByteLength>(configuration.scenarios.first().parameters.first().value), el::ByteLength{4096U});
+            std::get<el::ByteCount>(configuration.scenarios.first().parameters.first().value), el::ByteCount{4096U});
     }
 
     void testCompatibilityRejection() {

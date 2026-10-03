@@ -7,7 +7,7 @@
 #include "../u32/U32String_fwd.hpp"
 #include "../u8/U8String_fwd.hpp"
 
-#include "../../unit/CpLength_fwd.hpp"
+#include "../../unit/CpCount_fwd.hpp"
 
 #include <cstddef>
 #include <span>
@@ -26,27 +26,26 @@ public:
     /// Append a single character.
     /// @param character The character to append.
     /// @return The number of code points appended.
-    virtual auto append(Char character) -> unit::CpLength = 0;
+    virtual auto append(Char character) -> unit::CpCount = 0;
     /// Append text from the given string.
     /// @param text The text to append.
     /// @return The number of code points appended.
-    virtual auto append(const U8String &text) -> unit::CpLength = 0;
+    virtual auto append(const U8String &text) -> unit::CpCount = 0;
     /// @overload
-    virtual auto append(const U16String &text) -> unit::CpLength = 0;
+    virtual auto append(const U16String &text) -> unit::CpCount = 0;
     /// @overload
-    virtual auto append(const U32String &text) -> unit::CpLength = 0;
+    virtual auto append(const U32String &text) -> unit::CpCount = 0;
 
 protected:
     /// Count decoded characters in UTF-8 data, treating invalid sequences as replacement characters.
-    [[nodiscard]] static auto countDecodedCharacters(std::span<const char> source) noexcept -> unit::CpLength;
+    [[nodiscard]] static auto countDecodedCharacters(std::span<const char> source) noexcept -> unit::CpCount;
     /// Count decoded characters in UTF-16 data, treating invalid sequences as replacement characters.
-    [[nodiscard]] static auto countDecodedCharacters(std::span<const char16_t> source) noexcept -> unit::CpLength;
+    [[nodiscard]] static auto countDecodedCharacters(std::span<const char16_t> source) noexcept -> unit::CpCount;
     /// Count decoded characters in UTF-32 data, treating invalid code points as replacement characters.
-    [[nodiscard]] static auto countDecodedCharacters(std::span<const char32_t> source) noexcept -> unit::CpLength;
+    [[nodiscard]] static auto countDecodedCharacters(std::span<const char32_t> source) noexcept -> unit::CpCount;
     /// Calculate the decoded length of repeated text.
-    /// @throws OverflowError if the result exceeds the finite code-point length range.
-    [[nodiscard]] static auto repeatedCharacterCount(unit::CpLength characterCount, std::size_t count)
-        -> unit::CpLength;
+    /// The result must fit the finite code-point length range.
+    [[nodiscard]] static auto repeatedCharacterCount(unit::CpCount characterCount, std::size_t count) -> unit::CpCount;
 };
 
 }

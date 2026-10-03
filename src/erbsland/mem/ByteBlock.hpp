@@ -15,8 +15,8 @@
 #include "impl/ByteReadTools.hpp"
 #include "impl/UnsafeByteBlockAccess_fwd.hpp"
 
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 #include "../unit/ByteRange.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 #include "../util/LoopResult.hpp"
@@ -35,7 +35,7 @@ namespace erbsland::mem {
 /// Use this type to store, read and pass byte sequences.
 /// A `ByteBlockEditor` is implicitly convertible to a `ByteBlock` without copying data.
 /// Copying, moving and slicing are fast and copy-free operations.
-/// @tested{ByteBlockTest}
+/// @tested{ByteBlockTest LastIndexTest}
 class ByteBlock final {
     friend class ByteBlockEditor;
     friend class impl::UnsafeByteBlockAccess;
@@ -44,7 +44,7 @@ public:
     /// Create a byte block filled with the given byte value.
     /// @param length The number of bytes.
     /// @param value The byte value used to fill the block.
-    explicit ByteBlock(unit::ByteLength length, Byte value = Byte{});
+    explicit ByteBlock(unit::ByteCount length, Byte value = Byte{});
     /// Create a byte block by copying explicit byte values.
     explicit ByteBlock(std::initializer_list<Byte> bytes);
     /// Create a byte block by copying a fixed byte array.
@@ -80,7 +80,7 @@ public: // main operations
     /// Return a slice from the given start to the given end.
     [[nodiscard]] auto slice(unit::ByteIndex begin, unit::ByteIndex end) const noexcept -> ByteBlock;
     /// Return a slice from the given start with the given length.
-    [[nodiscard]] auto slice(unit::ByteIndex begin, unit::ByteLength length) const noexcept -> ByteBlock;
+    [[nodiscard]] auto slice(unit::ByteIndex begin, unit::ByteCount length) const noexcept -> ByteBlock;
     /// Create an independent block containing a clamped range of visible bytes.
     [[nodiscard]] auto kept(unit::ByteRange range) const -> ByteBlock;
     /// Securely erase this block while preserving its length.
@@ -143,13 +143,16 @@ public: // tests
 
 public: // read
     /// Get the length of this block.
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto length() const noexcept -> unit::ByteCount;
     /// Get the index after the last byte.
     [[nodiscard]] auto endIndex() const noexcept -> unit::ByteIndex { return unit::ByteIndex::end(length()); }
+    /// Get the final byte index, or noIndex() if this block is empty.
+    [[nodiscard]] auto lastIndex() const noexcept -> unit::ByteIndex { return unit::ByteIndex::last(length()); }
     /// Get a byte or return a default value when the index is out of range.
     [[nodiscard]] auto get(unit::ByteIndex index, Byte defaultValue = Byte{}) const noexcept -> Byte;
     /// Get a byte or throw when the index is out of range.
-    /// @throws err::OutOfRangeError If the index is out of range.
+    /// @param index The byte index. Must identify an existing byte.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     [[nodiscard]] auto getOrThrow(unit::ByteIndex index) const -> Byte;
     /// Access all visible bytes through a read-only borrowed span.
     [[nodiscard]] auto span() const noexcept -> ConstByteSpan { return dataView().dataSpan(); }
@@ -158,7 +161,7 @@ public: // read
         return impl::ByteReadTools{dataView()}.span(range);
     }
     /// Access a clamped visible range through a read-only borrowed span.
-    [[nodiscard]] auto span(unit::ByteIndex index, unit::ByteLength lengthValue) const noexcept -> ConstByteSpan {
+    [[nodiscard]] auto span(unit::ByteIndex index, unit::ByteCount lengthValue) const noexcept -> ConstByteSpan {
         return span(unit::ByteRange{index, lengthValue});
     }
     /// Invoke a callback for every visible byte and its optional index.
@@ -184,10 +187,10 @@ public: // integers
     }
     /// Get an integer or throw if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
-    /// @param offset The first byte index.
+    /// @param offset The first byte index. The complete `sizeof(T)`-byte integer must fit at this position.
     /// @param endianness The byte order.
     /// @return The decoded value.
-    /// @throws err::OutOfRangeError If the integer does not fit at `offset`.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     [[nodiscard]] auto getIntegerOrThrow(

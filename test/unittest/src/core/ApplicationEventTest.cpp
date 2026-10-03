@@ -3,29 +3,42 @@
 
 #include "ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/core/ApplicationError.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/event/CurrentEvents.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/Events.hpp>
-#include <erbsland/event/ManagedEventThread.hpp>
-#include <erbsland/event/UnmanagedEventThread.hpp>
-#include <erbsland/stream/AnyStringBuilderStream.hpp>
-#include <erbsland/stream/StandardStreams.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/unit/ExitCode.hpp>
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/CurrentEvents.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventLoopOptions.hpp>
+#include <erbsland/EventQueueFullError.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ManagedEventThread.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/UnmanagedEventThread.hpp>
 
 #include <atomic>
+#include <future>
 #include <stdexcept>
+#include <thread>
 
 using el::core::Application;
 using el::event::ManagedEventThreadPtr;
 using el::event::UnmanagedEventThread;
 using el::unit::ExitCode;
 using namespace el::text::literals;
+
+class ManagedFailureCleanupApplication final : public Application {
+public:
+    using Application::eventLoop;
+    bool cleanupCalled{false};
+
+protected:
+    void cleanup() noexcept override { cleanupCalled = true; }
+};
 
 TESTED_TARGETS(Application EventLoop ManagedEventThread UnmanagedEventThread)
 class ApplicationEventTest final : public el::UnitTest {
@@ -134,6 +147,137 @@ public:
 
         REQUIRE_EQUAL(app.run(), ExitCode::success().toRawValue());
         REQUIRE(matched.load());
+    }
+
+    void testManagedFailureBeforeMainLoopStartup() {
+        auto scope = ApplicationTestScope<Application>{};
+        auto &app = scope.app();
+        const auto worker = app.createEventThread(
+            el::event::EventLoopOptions{}.setErrorPolicy(el::event::EventLoopErrorPolicy::FailApplication));
+        worker->events()->invoke([]() -> void { throw el::err::RuntimeError{"worker failure"}; });
+        worker->start();
+        worker->join();
+        auto dispatched = false;
+        app.events()->invoke([&]() -> void {
+            dispatched = true;
+            app.quit();
+        });
+        REQUIRE_EQUAL(app.run(), ExitCode::failure().toRawValue());
+        REQUIRE_FALSE(dispatched);
+        REQUIRE_FALSE(worker->isRunning());
+        REQUIRE(worker->eventLoop().hasError());
+    }
+
+    void testManagedFailureWakesRunningMainLoop() {
+        auto scope = ApplicationTestScope<Application>{};
+        auto &app = scope.app();
+        const auto worker = app.createEventThread(
+            el::event::EventLoopOptions{}.setErrorPolicy(el::event::EventLoopErrorPolicy::FailApplication));
+        app.events()->invoke([worker]() -> void {
+            worker->events()->invoke([]() -> void { throw el::err::RuntimeError{"worker failure"}; });
+            worker->start();
+        });
+        REQUIRE_EQUAL(app.run(), ExitCode::failure().toRawValue());
+        REQUIRE_FALSE(worker->isRunning());
+    }
+
+    void testManagedFailureDuringWorkerJoinsRunsCleanup() {
+        auto scope = ApplicationTestScope<ManagedFailureCleanupApplication>{};
+        auto &app = scope.app();
+        const auto worker = app.createEventThread(
+            el::event::EventLoopOptions{}.setErrorPolicy(el::event::EventLoopErrorPolicy::FailApplication));
+        auto started = std::promise<void>{};
+        worker->events()->invoke([worker, &started]() -> void {
+            started.set_value();
+            while (!worker->eventLoop().isQuitRequested()) {
+                std::this_thread::yield();
+            }
+            throw el::err::RuntimeError{"failure during join"};
+        });
+        worker->start();
+        started.get_future().wait();
+        // Stop only the main loop. finishRun() requests worker quit after snapshotting its thread list.
+        app.events()->invoke([&app]() -> void { app.eventLoop().stop(); });
+        REQUIRE_EQUAL(app.run(), ExitCode::failure().toRawValue());
+        REQUIRE(app.cleanupCalled);
+        REQUIRE_FALSE(worker->isRunning());
+    }
+
+    void testProceduralMainForwardsManagedFailureAfterCleanup() {
+        auto scope = ApplicationTestScope<ManagedFailureCleanupApplication>{};
+        auto &app = scope.app();
+        const auto worker = app.createEventThread(
+            el::event::EventLoopOptions{}.setErrorPolicy(el::event::EventLoopErrorPolicy::FailApplication));
+        worker->events()->invoke([]() -> void { throw el::err::RuntimeError{"procedural worker failure"}; });
+        app.setMainFn([worker]() -> ExitCode {
+            worker->start();
+            worker->join();
+            return ExitCode::success();
+        });
+        REQUIRE_EQUAL(app.run(), ExitCode::failure().toRawValue());
+        REQUIRE(app.cleanupCalled);
+        REQUIRE_FALSE(worker->isRunning());
+    }
+
+    void testManagedFailureQuitsReceiverDuringProceduralMain() {
+        auto scope = ApplicationTestScope<ManagedFailureCleanupApplication>{};
+        auto &app = scope.app();
+        const auto receiver = app.createEventThread();
+        const auto worker = app.createEventThread(
+            el::event::EventLoopOptions{}.setErrorPolicy(el::event::EventLoopErrorPolicy::FailApplication));
+        auto receiverWasQuit = false;
+        worker->events()->invoke([]() -> void { throw el::err::RuntimeError{"worker failure with waiting receiver"}; });
+        app.setMainFn([receiver, worker, &receiverWasQuit]() -> ExitCode {
+            receiver->start();
+            worker->start();
+            worker->join();
+            receiverWasQuit = receiver->eventLoop().isQuitRequested();
+            // Ensure a regression fails the assertion rather than hanging in join().
+            receiver->quit();
+            receiver->join();
+            return ExitCode::success();
+        });
+
+        REQUIRE_EQUAL(app.run(), ExitCode::failure().toRawValue());
+        REQUIRE(receiverWasQuit);
+        REQUIRE(app.cleanupCalled);
+        REQUIRE_FALSE(receiver->isRunning());
+        REQUIRE_FALSE(worker->isRunning());
+    }
+
+    void testManagedOverflowFailsApplicationAndKeepsFirstFailure() {
+        const auto errorOutput = el::stream::AnyStringBuilderStream::create();
+        auto errorRedirect = el::stream::redirectStdErr(errorOutput);
+        auto scope = ApplicationTestScope<Application>{};
+        auto &app = scope.app();
+        const auto worker = app.createEventThread(
+            el::event::EventLoopOptions{}
+                .setMaximumQueuedEvents(1)
+                .setQueueOverflowAction(el::event::EventQueueOverflowAction::FailApplication)
+                .setErrorPolicy(el::event::EventLoopErrorPolicy::FailApplication));
+        worker->events()->invoke([]() -> void { throw el::core::ApplicationError{"later failure"_el, ExitCode{17}}; });
+        worker->events()->invoke([]() -> void {});
+        REQUIRE(worker->eventLoop().isQuitRequested());
+        REQUIRE_EQUAL(worker->eventLoop().queuedEventCount(), std::size_t{1});
+        worker->start();
+        worker->join();
+        REQUIRE_EQUAL(app.run(), ExitCode::failure().toRawValue());
+        const auto error = worker->eventLoop().takeError();
+        REQUIRE(error);
+        REQUIRE_THROWS_AS(el::event::EventQueueFullError, std::rethrow_exception(error));
+    }
+
+    void testManagedApplicationErrorKeepsExitCode() {
+        const auto errorOutput = el::stream::AnyStringBuilderStream::create();
+        auto errorRedirect = el::stream::redirectStdErr(errorOutput);
+        auto scope = ApplicationTestScope<Application>{};
+        auto &app = scope.app();
+        const auto worker = app.createEventThread(
+            el::event::EventLoopOptions{}.setErrorPolicy(el::event::EventLoopErrorPolicy::FailApplication));
+        worker->events()->invoke([]() -> void { throw el::core::ApplicationError{"worker"_el, ExitCode{17}}; });
+        worker->start();
+        worker->join();
+        REQUIRE_EQUAL(app.run(), 17);
     }
 
     void testUnmanagedThreadIsNotQuitByApplication() {

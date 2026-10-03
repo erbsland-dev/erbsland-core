@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Attribute_fwd.hpp"
+
 #include "../RuleDefinition.hpp"
 
 #include "../../../../text/String.hpp"

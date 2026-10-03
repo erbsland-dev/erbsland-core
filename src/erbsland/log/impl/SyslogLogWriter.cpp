@@ -4,7 +4,7 @@
 
 #include "../line/LogLine.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../event/CurrentEvents.hpp"
 #include "../../event/Events.hpp"
 #include "../../network/Network.hpp"
@@ -25,20 +25,21 @@
 
 namespace erbsland::log::impl {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 SyslogLogWriter::SyslogLogWriter(SyslogLogWriterOptions options) : _options{std::move(options)} {
     if (_options.endpoint().port().isAutomatic()) {
-        throw err::ParameterError{"A syslog destination requires a nonzero port."_el, "options"_el};
+        throw err::ParameterFailure{"A syslog destination requires a nonzero port."_el, "options"_el};
     }
     if (_options.transport() == SyslogTransport::Udp && !_options.endpoint().host().isAddress()) {
-        throw err::ParameterError{"A UDP syslog destination must use a numeric IP address."_el, "options"_el};
+        throw err::ParameterFailure{"A UDP syslog destination must use a numeric IP address."_el, "options"_el};
     }
-    if (!isHeaderField(_options.hostName(), unit::CpLength{255U}) ||
-        !isHeaderField(_options.applicationName(), unit::CpLength{48U}) ||
-        !isHeaderField(_options.processId(), unit::CpLength{128U}) ||
-        !isHeaderField(_options.messageId(), unit::CpLength{32U})) {
-        throw err::ParameterError{"Invalid RFC 5424 header field in syslog options."_el, "options"_el};
+    if (!isHeaderField(_options.hostName(), CpCount{255U}) ||
+        !isHeaderField(_options.applicationName(), CpCount{48U}) ||
+        !isHeaderField(_options.processId(), CpCount{128U}) || !isHeaderField(_options.messageId(), CpCount{32U})) {
+        throw err::ParameterFailure{"Invalid RFC 5424 header field in syslog options."_el, "options"_el};
     }
 }
 
@@ -56,7 +57,7 @@ void SyslogLogWriter::write(const LogEntryConstPtr &entry, const LogLineConstPtr
     if (_options.transport() != SyslogTransport::Udp) {
         message = frameMessage(message);
     }
-    enqueue(text::StringEncoder{message}.encode(text::StringEncoding::Utf8, text::StringBomMode::Reject));
+    enqueue(StringEncoder{message}.encode(StringEncoding::Utf8, StringBomMode::Reject));
     ensureTransport();
     drainPending();
 }
@@ -81,7 +82,7 @@ void SyslogLogWriter::close() noexcept {
 }
 
 auto SyslogLogWriter::formatMessage(const LogEntry &entry, const LogLine &line, const SyslogLogWriterOptions &options)
-    -> text::String {
+    -> String {
     const auto priority = static_cast<unsigned>(options.facility()) * 8U + severity(entry.level());
     const auto timestamp =
         entry.timestamp()
@@ -90,7 +91,7 @@ auto SyslogLogWriter::formatMessage(const LogEntry &entry, const LogLine &line, 
             .toIsoString(
                 time::IsoTimeFormatFlags{
                     time::IsoTimeFormat::Extended, time::IsoTimeFormat::TimePrefix, time::IsoTimeFormat::TimeShift});
-    static const auto cMessageFormat = text::StringFormat{"<{}>1 {} {} {} {} {} - {}"_el};
+    static const auto cMessageFormat = StringFormat{"<{}>1 {} {} {} {} {} - {}"_el};
     return cMessageFormat.build(
         priority,
         timestamp,
@@ -101,8 +102,8 @@ auto SyslogLogWriter::formatMessage(const LogEntry &entry, const LogLine &line, 
         line.text());
 }
 
-auto SyslogLogWriter::frameMessage(const text::String &message) -> text::String {
-    static const auto cFrameFormat = text::StringFormat{"{} {}"_el};
+auto SyslogLogWriter::frameMessage(const String &message) -> String {
+    static const auto cFrameFormat = StringFormat{"{} {}"_el};
     return cFrameFormat.build(message.length().toRawValue(), message);
 }
 
@@ -122,12 +123,12 @@ auto SyslogLogWriter::severity(const LogLevel level) noexcept -> uint8_t {
     return 5U;
 }
 
-auto SyslogLogWriter::isHeaderField(const text::String &value, const unit::CpLength maximum) noexcept -> bool {
+auto SyslogLogWriter::isHeaderField(const String &value, const CpCount maximum) noexcept -> bool {
     if (value.isEmpty() || value.characterLength() > maximum) {
         return false;
     }
-    static const auto cHeaderCharacters = []() -> text::CharSet {
-        auto result = text::CharSet::fromRange(U'!', U'~');
+    static const auto cHeaderCharacters = []() -> CharSet {
+        auto result = CharSet::fromRange(U'!', U'~');
         result.remove(U'=');
         result.remove(U']');
         result.remove(U'"');

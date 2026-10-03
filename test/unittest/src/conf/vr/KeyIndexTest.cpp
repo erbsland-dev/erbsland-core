@@ -3,10 +3,10 @@
 
 #include "../ConfTestHelper.hpp"
 
+#include <erbsland/CaseSensitivity.hpp>
 #include <erbsland/conf/ConfError.hpp>
 #include <erbsland/conf/impl/vr/KeyIndex.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/text/CaseSensitivity.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>

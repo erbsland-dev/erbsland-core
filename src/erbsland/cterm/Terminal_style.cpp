@@ -141,54 +141,7 @@ auto Terminal::normalizedSupportedAttributes(BlockAttributes attributes) const n
 
 void Terminal::emitCharAttributeCodes(
     const BlockAttributes previousAttributes, const BlockAttributes newAttributes) noexcept {
-    auto codes = std::vector<int>{};
-    if (previousAttributes.isBold() != newAttributes.isBold() || previousAttributes.isDim() != newAttributes.isDim()) {
-        if (!newAttributes.isBold() && !newAttributes.isDim()) {
-            codes.push_back(22);
-        } else {
-            if (previousAttributes.isBold() || previousAttributes.isDim()) {
-                codes.push_back(22);
-            }
-            if (newAttributes.isBold()) {
-                codes.push_back(1);
-            }
-            if (newAttributes.isDim()) {
-                codes.push_back(2);
-            }
-        }
-    }
-    if (previousAttributes.isItalic() != newAttributes.isItalic()) {
-        codes.push_back(newAttributes.isItalic() ? 3 : 23);
-    }
-    if (previousAttributes.isUnderline() != newAttributes.isUnderline()) {
-        codes.push_back(newAttributes.isUnderline() ? 4 : 24);
-    }
-    if (previousAttributes.isBlink() != newAttributes.isBlink()) {
-        codes.push_back(newAttributes.isBlink() ? 5 : 25);
-    }
-    if (previousAttributes.isReverse() != newAttributes.isReverse()) {
-        codes.push_back(newAttributes.isReverse() ? 7 : 27);
-    }
-    if (previousAttributes.isHidden() != newAttributes.isHidden()) {
-        codes.push_back(newAttributes.isHidden() ? 8 : 28);
-    }
-    if (previousAttributes.isStrikethrough() != newAttributes.isStrikethrough()) {
-        codes.push_back(newAttributes.isStrikethrough() ? 9 : 29);
-    }
-    if (codes.empty()) {
-        return;
-    }
-    auto sequence = text::StringEditor{"\x1b["_el};
-    auto firstCode = true;
-    for (const auto code : codes) {
-        if (!firstCode) {
-            sequence.append(U';');
-        }
-        sequence.append(text::String::fromInteger(code));
-        firstCode = false;
-    }
-    sequence.append(U'm');
-    _lineBuffer.write(sequence);
+    _lineBuffer.write(impl::ansi_sequence::attributes(previousAttributes, newAttributes));
     _lineBuffer.handleEmit();
 }
 

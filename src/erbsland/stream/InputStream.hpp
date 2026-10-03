@@ -10,7 +10,7 @@
 #include "StreamState.hpp"
 #include "StreamWaitStatus.hpp"
 
-#include "../err/LogicError.hpp"
+#include "../err/LogicFailure.hpp"
 
 namespace erbsland::stream {
 
@@ -43,12 +43,12 @@ public: // lifecycle
 
 protected:
     /// Obtain shared ownership for a suspended coroutine operation.
+    /// This stream must be owned by a shared pointer.
     /// @return Shared ownership of this stream.
-    /// @throws err::LogicError If this stream is not owned by a shared pointer.
     [[nodiscard]] auto sharedInputStream() -> InputStreamPtr {
         auto result = weak_from_this().lock();
         if (!result) {
-            throw err::LogicError{"Coroutine input operations require a shared-owned stream."};
+            throw err::LogicFailure{"Coroutine input operations require a shared-owned stream."};
         }
         return result;
     }

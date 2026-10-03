@@ -54,7 +54,7 @@ Their callers establish enough destination capacity before extracting the addres
 .. erbsland-demo::
     :source: mem/UnsafePointers/MarkedBoundary.cpp
     :exec: mem/unsafe_pointers --demo MarkedBoundary
-    :source-sha256: 3eede240fb9780bc0a5b7a170eee6b6f43d030910f872eb1377ff040edb903ab
+    :sha256: 0033028c8459227d46d49e2b337d44ac8e4bcdc031622f629a2dc892c5542b31
 
 .. code-block:: cpp
 
@@ -85,10 +85,12 @@ Their callers establish enough destination capacity before extracting the addres
         el::io::printLine("Copied concept    : "_el, destination.data());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Copied concept    : form
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCopied concept    : form␛[0m
 
 .. erbsland-demo-end::
 

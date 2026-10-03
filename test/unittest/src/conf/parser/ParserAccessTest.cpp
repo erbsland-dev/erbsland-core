@@ -4,7 +4,7 @@
 #include "ParserTestHelper.hpp"
 
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/err/ParameterError.hpp>
+#include <erbsland/ParameterFailure.hpp>
 
 #include <array>
 
@@ -13,12 +13,12 @@ using namespace el::text::literals;
 TESTED_TARGETS(Parser FileAccessCheck)
 class ParserAccessTest final : public UNITTEST_SUBCLASS(ParserTestHelper) {
 public:
-    void testInvalidFileAccessFeaturesAreParameterErrors() {
+    void testInvalidFileAccessFeaturesAreParameterFailures() {
         auto accessCheck = FileAccessCheck::create();
         const auto invalidFeature = static_cast<FileAccessCheck::Feature>(FileAccessCheck::_featureCount);
-        REQUIRE_THROWS_AS(el::err::ParameterError, accessCheck->enable(invalidFeature));
-        REQUIRE_THROWS_AS(el::err::ParameterError, accessCheck->disable(invalidFeature));
-        REQUIRE_THROWS_AS(el::err::ParameterError, accessCheck->isEnabled(invalidFeature));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, accessCheck->enable(invalidFeature));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, accessCheck->disable(invalidFeature));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, accessCheck->isEnabled(invalidFeature));
     }
 
     void tearDown() override {

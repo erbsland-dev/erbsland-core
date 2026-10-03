@@ -3,8 +3,8 @@
 
 #include "ParserBase.hpp"
 
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u32/U32String.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U32String.hpp>
 
 TESTED_TARGETS(Parser)
 TAGS(Parsing)
@@ -19,7 +19,7 @@ public:
     void testCustomLimitExactBoundary() {
         // At exactly the custom limit the parser rejects (position >= limit triggers error).
         Settings settings;
-        settings.setMaximumPatternLength(el::unit::CpLength{3U});
+        settings.setMaximumPatternLength(el::unit::CpCount{3U});
 
         parser = Parser{"abc"_el, {}, settings}; // size == limit
         REQUIRE_THROWS(node = parser.parse());
@@ -27,7 +27,7 @@ public:
 
     void testExceedWithAsciiCharacters() {
         Settings settings;
-        settings.setMaximumPatternLength(el::unit::CpLength{2U});
+        settings.setMaximumPatternLength(el::unit::CpCount{2U});
 
         parser = Parser{"aaaaaaaaaaaa"_el, {}, settings};
         REQUIRE_THROWS(node = parser.parse());
@@ -35,7 +35,7 @@ public:
 
     void testExceedByCharacterCountOnly() {
         Settings settings;
-        settings.setMaximumPatternLength(el::unit::CpLength{5U});
+        settings.setMaximumPatternLength(el::unit::CpCount{5U});
 
         parser = Parser{"aaaaaa"_el, {}, settings};
         REQUIRE_THROWS(node = parser.parse());
@@ -43,7 +43,7 @@ public:
 
     void testExceedByCharacterCountOnlyWithMultibyte() {
         Settings settings;
-        settings.setMaximumPatternLength(el::unit::CpLength{2U});
+        settings.setMaximumPatternLength(el::unit::CpCount{2U});
 
         parser = Parser{"ééééé"_el, {}, settings};
         REQUIRE_THROWS(node = parser.parse());
@@ -51,14 +51,14 @@ public:
 
     void testUtf16AndUtf32LimitsCountCodePoints() {
         Settings settings;
-        settings.setMaximumPatternLength(el::unit::CpLength{3U});
+        settings.setMaximumPatternLength(el::unit::CpCount{3U});
 
         parser = Parser{el::text::U16String{u"😀😀😀"_el}, {}, settings};
         REQUIRE_THROWS(node = parser.parse());
         parser = Parser{el::text::U32String{U"😀😀😀"_el}, {}, settings};
         REQUIRE_THROWS(node = parser.parse());
 
-        settings.setMaximumPatternLength(el::unit::CpLength{4U});
+        settings.setMaximumPatternLength(el::unit::CpCount{4U});
         parser = Parser{el::text::U16String{u"😀😀😀"_el}, {}, settings};
         REQUIRE_NOTHROW(node = parser.parse());
         parser = Parser{el::text::U32String{U"😀😀😀"_el}, {}, settings};

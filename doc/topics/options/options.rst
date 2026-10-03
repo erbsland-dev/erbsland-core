@@ -12,16 +12,16 @@
 
 .. _options-options:
 
-******************
-Option Definitions
-******************
+*******************************
+Command-Line Option Definitions
+*******************************
 
 An :cpp:class:`Option <erbsland::options::Option>` describes one accepted command-line value.
 This page explains how option names, value types, repeated values, defaults, validation, flags, choices, and help
 metadata work together.
 
-Start With the User-Facing Value
-================================
+Option Names, Aliases, and Positional Arguments
+===============================================
 
 The most useful way to design an option is to start with the value the user wants to provide.
 Then decide how that value should be spelled on the command line and how application code should read it.
@@ -45,7 +45,7 @@ This makes complete option declarations compact while still keeping the importan
 .. erbsland-demo::
     :source: option/DefiningOptions/main.cpp
     :exec: option/option_definitions
-    :source-sha256: b6d84a6d8284de4aaee946c220eb65e81ea767bdd19703bd24d5e183bfc69fa7
+    :sha256: fc9a14b4ca7e6c72a10918db68717cd2b6f15b9312e168d6cde26d1e69cbfd9b
 
 .. code-block:: cpp
 
@@ -65,17 +65,17 @@ This makes complete option declarations compact while still keeping the importan
         options->addOption({"-i"_el, "--instrument"_el, "instrument"_el})
             .setType(el::OptionType::Text)
             .setRequired()
-            .setHelpDescription("Instrument used for the sequence."_el);
+            .setHelpTitle("Instrument used for the sequence."_el);
         options->addOption({"-l"_el, "--level"_el, "level"_el})
             .setType(el::OptionType::Integer)
             .setMaximum(el::ArgumentCount{3U})
-            .setHelpDescription("Intensity levels to test. Can be repeated up to three times."_el);
+            .setHelpTitle("Intensity levels to test. Can be repeated up to three times."_el);
         options->addOption({"-m"_el, "--mode"_el, "mode"_el})
             .addChoice("fast"_el)
             .addChoice("precise"_el)
             .addChoice("night"_el)
             .setDefaultValue("precise"_el)
-            .setHelpDescription("Measurement mode for the output."_el);
+            .setHelpTitle("Measurement mode for the output."_el);
         options->addOption({"--minimum-signal"_el, "minimum-signal"_el})
             .setType(el::OptionType::Integer)
             .setDefaultValue(el::OptionInteger{3})
@@ -86,8 +86,8 @@ This makes complete option declarations compact while still keeping the importan
                     throw el::OptionError{context};
                 }
             })
-            .setHelpDescription("Minimum accepted signal on a scale from 1 to 9."_el);
-        options->addOption("sample"_el).setHelpDescription("Sample placed in the optical holder."_el);
+            .setHelpTitle("Minimum accepted signal on a scale from 1 to 9."_el);
+        options->addOption("sample"_el).setHelpTitle("Sample placed in the optical holder."_el);
         return options;
     }
 
@@ -112,14 +112,16 @@ This makes complete option declarations compact while still keeping the importan
         return el::ExitCode::success();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    instrument: Prisma-7
-    mode: night
-    sample: vidrio azul
-    levels: 2
-    minimum signal: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0minstrument: Prisma-7
+        mode: night
+        sample: vidrio azul
+        levels: 2
+        minimum signal: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -166,24 +168,25 @@ Hidden choices remain parseable, but do not appear in the help output.
     :exec-2: option/option_help_details --species bat --phase dusk --quiet dune-edge
     :exec-3: option/option_help_details --species bat --round 9 dune-edge
     :exec-3-exit-code: 1
-    :source-sha256: 3e8c843f0e1c8c8f0642758dac3205ef2290ed98de445b05f1e2c26b4952d268
+    :sha256: d5361240f944c2ae080e87fd2f7681e2834d0c1ede78a48c19319cc95326b916
 
 .. code-block:: cpp
 
     /// Build a choice list when individual choices need their own help metadata.
     ///
     /// `OptionEditor::addChoice()` is enough for simple choices.
-    /// `OptionChoices::addChoice()` returns an editor for adding help details to each choice.
+    /// Create `OptionChoice` objects when choices need descriptions or visibility settings of their own.
     /// Hidden choices remain accepted by the parser, but are omitted from generated help output.
     [[nodiscard]] auto activityChoices() -> el::OptionChoicesPtr {
         auto choices = el::OptionChoices::create();
 
-        choices->addChoice("dusk"_el).setHelpDescription("Activity around dusk."_el);
-        choices->addChoice("night"_el).setHelpDescription("Activity in full darkness."_el);
-        choices->addChoice("dawn"_el).setHelpDescription("Activity shortly before sunrise."_el);
-        choices->addChoice("internal"_el)
-            .setHelpDescription("Internal test choice that does not appear in regular help."_el)
-            .setHelpVisibility(el::OptionHelpVisibility::Hidden);
+        choices->addChoice(el::OptionChoice::create("dusk"_el, el::OptionHelp{"Activity around dusk."_el}));
+        choices->addChoice(el::OptionChoice::create("night"_el, el::OptionHelp{"Activity in full darkness."_el}));
+        choices->addChoice(el::OptionChoice::create("dawn"_el, el::OptionHelp{"Activity shortly before sunrise."_el}));
+
+        auto internalHelp = el::OptionHelp{"Internal test choice that does not appear in regular help."_el};
+        internalHelp.setVisibility(el::OptionHelpVisibility::Hidden);
+        choices->addChoice(el::OptionChoice::create("internal"_el, internalHelp));
         return choices;
     }
 
@@ -210,12 +213,12 @@ Hidden choices remain parseable, but do not appear in the help output.
                 .setType(el::OptionType::Text)
                 .setValueName("animal"_el)
                 .setRequired()
-                .setHelpDescription("Animal species tracked during the round."_el)
+                .setHelpTitle("Animal species tracked during the round."_el)
                 .setHelpVisibility(el::OptionHelpVisibility::Usage);
             options->addOption({"-f"_el, "--phase"_el, "phase"_el})
                 .setChoices(activityChoices())
                 .setDefaultValue("night"_el)
-                .setHelpDescription("Time window in which the observation occurs."_el);
+                .setHelpTitle("Time window in which the observation occurs."_el);
             options->addOption({"-r"_el, "--round"_el, "round"_el})
                 .setType(el::OptionType::Integer)
                 .setDefaultValue(el::OptionInteger{2})
@@ -227,16 +230,14 @@ Hidden choices remain parseable, but do not appear in the help output.
                         throw el::OptionError{context};
                     }
                 })
-                .setHelpDescription("Number of observation rounds in this area."_el);
+                .setHelpTitle("Number of observation rounds in this area."_el);
             options->addOption({"-q"_el, "--quiet"_el, "quiet"_el})
-                .setHelpDescription("Writes only the final result."_el)
+                .setHelpTitle("Writes only the final result."_el)
                 .setHelpVisibility(el::OptionHelpVisibility::Hidden);
             options->addOption({"--old-log"_el, "old-log"_el})
                 .setFlag(el::OptionFlag::Disabled)
-                .setHelpDescription("Old logging option that is no longer accepted."_el);
-            options->addOption("area"_el)
-                .setRequired()
-                .setHelpDescription("Area where the observation takes place."_el);
+                .setHelpTitle("Old logging option that is no longer accepted."_el);
+            options->addOption("area"_el).setRequired().setHelpTitle("Area where the observation takes place."_el);
         }
         [[nodiscard]] auto main() -> el::ExitCode override {
             const auto values = optionValues();
@@ -249,81 +250,94 @@ Hidden choices remain parseable, but do not appear in the help output.
         }
     };
 
-.. rubric:: ``$ option/option_help_details --help``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    Records short observations of nocturnal animal behavior.
+        $ option/option_help_details --help
 
-    ␛[1mUsage:
-      ␛[22;92moption_help_details␛[39m ␛[90m[␛[96moptions␛[90m]␛[39m ␛[90m[␛[96m--species ␛[90m<␛[92manimal␛[90m>]␛[39m ␛[90m<␛[95marea␛[90m>
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[39;1mOptions:
-      ␛[22m    ␛[90m<␛[95marea␛[90m>␛[39m          Area where the observation takes place.
-      ␛[93m-h␛[39m, ␛[96m--help␛[39m          Display this help.
-      ␛[93m-f␛[39m, ␛[96m--phase␛[39m ␛[90m<␛[92mchoice␛[90m>
-      ␛[39m                    Time window in which the observation occurs. Choices: dusk, night,
-                          dawn.
-          ␛[92mdusk␛[39m   Activity around dusk.
-          ␛[92mnight␛[39m  Activity in full darkness.
-          ␛[92mdawn␛[39m   Activity shortly before sunrise.
-      ␛[93m-r␛[39m, ␛[96m--round␛[39m ␛[90m<␛[92minteger␛[90m>
-      ␛[39m                    Number of observation rounds in this area.
-      ␛[93m-s␛[39m, ␛[96m--species␛[39m ␛[90m<␛[92manimal␛[90m>
-      ␛[39m                    Animal species tracked during the round.
-          ␛[96m--version␛[39m       Display version information.
+        ␛[0mRecords short observations of nocturnal animal behavior.
 
-    Hidden options remain usable, but do not appear in this help.
+        ␛[1mUsage:
+          ␛[92;49m␛[22moption_help_details␛[39;49m ␛[90;49m[␛[96;49moptions␛[90;49m]␛[39;49m ␛[90;49m[␛[96;49m--species ␛[90;49m<␛[92;49manimal␛[90;49m>]␛[39;49m ␛[90;49m<␛[95;49marea␛[90;49m>
 
-.. rubric:: ``$ option/option_help_details --species bat --phase dusk --quiet dune-edge``
+        ␛[39;49m␛[1mOptions:
+          ␛[22m    ␛[90;49m<␛[95;49marea␛[90;49m>␛[39;49m          Area where the observation takes place.
+          ␛[93;49m-h␛[39;49m, ␛[96;49m--help␛[39;49m[=␛[90;49m<␛[92;49mkeyword␛[90;49m>␛[39;49m]
+                              Display this help.
+          ␛[93;49m-f␛[39;49m, ␛[96;49m--phase␛[39;49m ␛[90;49m<␛[92;49mchoice␛[90;49m>
+          ␛[39;49m                    Time window in which the observation occurs. Choices: dusk, night,
+                              dawn.
+              ␛[92;49mdusk␛[39;49m   Activity around dusk.
+              ␛[92;49mnight␛[39;49m  Activity in full darkness.
+              ␛[92;49mdawn␛[39;49m   Activity shortly before sunrise.
+          ␛[93;49m-r␛[39;49m, ␛[96;49m--round␛[39;49m ␛[90;49m<␛[92;49minteger␛[90;49m>
+          ␛[39;49m                    Number of observation rounds in this area.
+          ␛[93;49m-s␛[39;49m, ␛[96;49m--species␛[39;49m ␛[90;49m<␛[92;49manimal␛[90;49m>
+          ␛[39;49m                    Animal species tracked during the round.
+              ␛[96;49m--version␛[39;49m       Display version information.
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        Hidden options remain usable, but do not appear in this help.␛[0m
 
-    species: bat
-    area: dune-edge
-    phase: dusk
-    rounds: 2
-    quiet: yes
+.. erbsland-demo-run::
 
-.. rubric:: ``$ option/option_help_details --species bat --round 9 dune-edge``
+    .. code-block:: console
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        $ option/option_help_details --species bat --phase dusk --quiet dune-edge
 
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-      ␛[1;91mInvalid␛[22m ␛[1mround␛[22m ␛[1mcount
+        ␛[0mspecies: bat
+        area: dune-edge
+        phase: dusk
+        rounds: 2
+        quiet: yes␛[0m
 
-      ␛[22;39mThe round count must be between 1 and 6.
+.. erbsland-demo-run::
 
-    ␛[1mError␛[22m ␛[1mSource:
-      ␛[22;92mCommand Line Arguments
-      ␛[93mArgument: 4
+    .. code-block:: console
 
-    ␛[39;1mCommand␛[22m ␛[1mLine␛[22m ␛[1mArguments:
+        $ option/option_help_details --species bat --round 9 dune-edge
 
-      ␛[22;90m   0 │ ␛[39mcmake-build-debug/demo-apps/option/option_help_details
-      ␛[90m   1 │ ␛[39m--species
-      ␛[90m   2 │ ␛[39mbat
-      ␛[90m   3 │ ␛[39m--round
-      ␛[90m   4 │ ␛[91m9
-      ␛[90m     │ ␛[91m▔
-      ␛[90m   5 │ ␛[39mdune-edge
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[1mUsage:
-      ␛[22;92moption_help_details␛[39m ␛[90m[␛[96moptions␛[90m]␛[39m ␛[90m[␛[96m--species ␛[90m<␛[92manimal␛[90m>]␛[39m ␛[90m<␛[95marea␛[90m>
+        ␛[0m
+          ␛[91;49m␛[1mInvalid␛[22m ␛[1mround␛[22m ␛[1mcount
 
-    ␛[39;1mOption␛[22m ␛[1mHelp:
-      ␛[22;93m-r␛[39m, ␛[96m--round␛[39m ␛[90m<␛[92minteger␛[90m>␛[39m  Number of observation rounds in this area.
+          ␛[39;49m␛[22mThe round count must be between 1 and 6.
 
-    ␛[1mView␛[22m ␛[1mFull␛[22m ␛[1mHelp:
-      ␛[22;92moption_help_details␛[39m ␛[96m--help␛[0m
+        ␛[1mError␛[22m ␛[1mSource:
+          ␛[92;49m␛[22mCommand Line Arguments
+          ␛[93;49mArgument: 4
+
+        ␛[39;49m␛[1mCommand␛[22m ␛[1mLine␛[22m ␛[1mArguments:
+
+          ␛[90;49m␛[22m   1 │ ␛[39;49m/Users/tobias/Documents/Source/erbsland-core/cmake-build-debug/demo-apps/option/␛[90;49m…
+             2 │ ␛[39;49m--species
+          ␛[90;49m   3 │ ␛[39;49mbat
+          ␛[90;49m   4 │ ␛[39;49m--round
+          ␛[90;49m   5 │ ␛[91;49m9
+          ␛[90;49m     │ ␛[91;49m▔
+          ␛[90;49m   6 │ ␛[39;49mdune-edge
+
+        ␛[1mUsage:
+          ␛[92;49m␛[22moption_help_details␛[39;49m ␛[90;49m[␛[96;49moptions␛[90;49m]␛[39;49m ␛[90;49m[␛[96;49m--species ␛[90;49m<␛[92;49manimal␛[90;49m>]␛[39;49m ␛[90;49m<␛[95;49marea␛[90;49m>
+
+        ␛[39;49m␛[1mOption␛[22m ␛[1mHelp:
+          ␛[93;49m␛[22m-r␛[39;49m, ␛[96;49m--round␛[39;49m ␛[90;49m<␛[92;49minteger␛[90;49m>␛[39;49m  Number of observation rounds in this area.
+
+        ␛[1mView␛[22m ␛[1mFull␛[22m ␛[1mHelp:
+          ␛[92;49m␛[22moption_help_details␛[39;49m ␛[96;49m--help␛[0m
 
 .. erbsland-demo-end::
 
-Repeated Values and Maximum
-===========================
+Repeated Values and Maximum Occurrences
+=======================================
 
 :cpp:func:`setMaximum() <erbsland::options::OptionEditor::setMaximum>` controls how many values an option may store.
 For a text or integer option, this turns the parsed result into a list.
@@ -395,10 +409,12 @@ For ordinary definitions, use the direct editor methods:
 :cpp:func:`setHelpEpilog() <erbsland::options::OptionEditor::setHelpEpilog>`, and
 :cpp:func:`setHelpVisibility() <erbsland::options::OptionEditor::setHelpVisibility>`.
 
-The description is the main text shown next to the option.
-The title is used by renderers when a short label is needed.
+The title is the brief text shown next to the option and the heading of its detail page.
+The description is displayed on the detailed ``--help=<name>`` page, below the separate option-alias identity line.
+The string ``setHelp()`` overload also sets the brief title; it does not set a description.
+There is no fallback between title and description.
 The example is shown in detailed ``--help=<name>`` output.
-The epilog is available for renderers that expose trailing option details.
+The epilog is displayed at the end of the detail page.
 The value name changes the placeholder shown in help, for example ``<dier>`` instead of the generic ``<value>``.
 
 Help Visibility

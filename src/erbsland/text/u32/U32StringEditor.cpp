@@ -19,7 +19,7 @@
 #include "impl/U32Writer.hpp"
 
 #include "../EncodingMode.hpp"
-#include "../impl/StringSafeTransformTools.hpp"
+#include "../impl/escape/StringSafeTransformTools.hpp"
 #include "../StringConverter.hpp"
 #include "../u16/impl/U16Encoding.hpp"
 #include "../u16/U16StringEditor.hpp"
@@ -30,6 +30,7 @@
 #include "../../util/HashHelper.hpp"
 
 #include <cstring>
+#include <utility>
 
 namespace erbsland::text {
 
@@ -69,8 +70,12 @@ auto U32StringEditor::toHashCI() const noexcept -> std::size_t {
     return result;
 }
 
-auto U32StringEditor::isValidUtf32() const noexcept -> bool {
-    return U32StringReadTools{dataView()}.isValidUtf32();
+auto U32StringEditor::isEncodingValid() const noexcept -> bool {
+    return U32StringReadTools{dataView()}.isEncodingValid();
+}
+
+void U32StringEditor::encodingValidOrThrow() const {
+    U32StringReadTools{dataView()}.encodingValidOrThrow();
 }
 
 auto U32StringEditor::findFirstOf(const CharSet &characters) const noexcept -> CpIndex {
@@ -114,11 +119,11 @@ auto U32StringEditor::find(const U32String &text, const CpIndex start, const Cha
     return U32StringComparisonTools{dataView()}.find(text.dataView(), start, compareFn);
 }
 
-auto U32StringEditor::length() const noexcept -> CpLength {
+auto U32StringEditor::length() const noexcept -> CpCount {
     return U32StringReadTools{dataView()}.length();
 }
 
-auto U32StringEditor::characterLength() const noexcept -> CpLength {
+auto U32StringEditor::characterLength() const noexcept -> CpCount {
     return U32StringReadTools{dataView()}.length();
 }
 
@@ -160,11 +165,11 @@ auto U32StringEditor::operator[](const CpIndex index) const noexcept -> Char {
     return charAt(index);
 }
 
-auto U32StringEditor::advance(CpIndex &index, const CpLength count) const noexcept -> bool {
+auto U32StringEditor::advance(CpIndex &index, const CpCount count) const noexcept -> bool {
     return U32StringReadTools{dataView()}.advance(index, count);
 }
 
-auto U32StringEditor::retreat(CpIndex &index, const CpLength count) const noexcept -> bool {
+auto U32StringEditor::retreat(CpIndex &index, const CpCount count) const noexcept -> bool {
     return U32StringReadTools{dataView()}.retreat(index, count);
 }
 
@@ -180,7 +185,7 @@ auto U32StringEditor::slice(const CpRange range) const noexcept -> U32StringEdit
     return withRange(U32StringReadTools{dataView()}.sliceRange(range));
 }
 
-auto U32StringEditor::slice(const StringSide side, const CpLength length) const noexcept -> U32StringEditor {
+auto U32StringEditor::slice(const StringSide side, const CpCount length) const noexcept -> U32StringEditor {
     if (side == StringSide::Front) {
         return slice(CpRange(CpIndex::zero(), length));
     }
@@ -229,7 +234,7 @@ auto U32StringEditor::append(const U32String &text, const ItemCount count) -> U3
     return *this;
 }
 
-auto U32StringEditor::append(const Char character, CpLength count) -> U32StringEditor & {
+auto U32StringEditor::append(const Char character, CpCount count) -> U32StringEditor & {
     U32StringAppendTools{_storage}.append(character, count);
     return *this;
 }
@@ -291,79 +296,37 @@ auto U32StringEditor::replaceAll(const U32String &text, const U32String &replace
     return *this;
 }
 
-auto U32StringEditor::truncate(const CpLength maximumWidth, const TruncateMode mode) -> U32StringEditor & {
+auto U32StringEditor::truncate(const CpCount maximumWidth, const TruncateMode mode) -> U32StringEditor & {
     return truncate(maximumWidth, mode, U32String{});
 }
 
-auto U32StringEditor::truncate(const CpLength maximumWidth, const TruncateMode mode, const U32String &ellipsis)
+auto U32StringEditor::truncate(const CpCount maximumWidth, const TruncateMode mode, const U32String &ellipsis)
     -> U32StringEditor & {
     *this = truncated(maximumWidth, mode, ellipsis);
     return *this;
 }
 
-auto U32StringEditor::removed(const CpRange range) const -> U32StringEditor {
-    return U32StringEditor{U32StringModifyTools{dataView()}.removed(range)};
-}
-
-auto U32StringEditor::removedAll(const CharSet &characters) const -> U32StringEditor {
-    return U32StringEditor{U32StringModifyTools{dataView()}.removedAll(characters)};
-}
-
-auto U32StringEditor::removedAll(const U32String &text, const CharCompareFn compareFn) const -> U32StringEditor {
-    return U32StringEditor{U32StringModifyTools{dataView()}.removed(text.dataView(), compareFn)};
-}
-
-auto U32StringEditor::removedFirst(const U32String &text, const CharCompareFn compareFn) const -> U32StringEditor {
-    return U32StringEditor{U32StringModifyTools{dataView()}.removedFirst(text.dataView(), compareFn)};
-}
-
-auto U32StringEditor::kept(const CpRange range) const -> U32StringEditor {
-    return U32StringEditor{U32StringModifyTools{dataView()}.kept(range)};
-}
-
-auto U32StringEditor::inserted(const CpIndex index, const U32String &text) const -> U32StringEditor {
-    return U32StringEditor{U32StringModifyTools{dataView()}.inserted(index, text.dataView())};
-}
-
-auto U32StringEditor::replaced(const CpRange range, const U32String &text) const -> U32StringEditor {
-    return U32StringEditor{U32StringModifyTools{dataView()}.replaced(range, text.dataView())};
-}
-
-auto U32StringEditor::replacedFirst(
-    const U32String &text, const U32String &replacement, const CharCompareFn compareFn) const -> U32StringEditor {
-    return U32StringEditor{
-        U32StringModifyTools{dataView()}.replacedFirst(text.dataView(), replacement.dataView(), compareFn)};
-}
-
-auto U32StringEditor::replacedAll(const CharSet &characters, const Char replacement) const -> U32StringEditor {
-    return U32StringEditor{U32StringModifyTools{dataView()}.replacedAll(characters, replacement)};
-}
-
-auto U32StringEditor::replacedAll(const CharSet &characters, const U32String &replacement) const -> U32StringEditor {
-    return U32StringEditor{U32StringModifyTools{dataView()}.replacedAll(characters, replacement.dataView())};
-}
-
-auto U32StringEditor::replacedAll(
-    const U32String &text, const U32String &replacement, const CharCompareFn compareFn) const -> U32StringEditor {
-    return U32StringEditor{
-        U32StringModifyTools{dataView()}.replacedAll(text.dataView(), replacement.dataView(), compareFn)};
-}
-
-auto U32StringEditor::truncated(const CpLength maximumWidth, const TruncateMode mode) const -> U32StringEditor {
+auto U32StringEditor::truncated(const CpCount maximumWidth, const TruncateMode mode) const -> U32StringEditor {
     return truncated(maximumWidth, mode, U32String{});
 }
 
-auto U32StringEditor::truncated(const CpLength maximumWidth, const TruncateMode mode, const U32String &ellipsis) const
+auto U32StringEditor::truncated(const CpCount maximumWidth, const TruncateMode mode, const U32String &ellipsis) const
     -> U32StringEditor {
-    return U32StringEditor{U32StringTransformTools{dataView()}.truncated(maximumWidth, mode, ellipsis.dataView())};
+    if (auto result = U32StringTransformTools{dataView()}.truncatedIfChanged(maximumWidth, mode, ellipsis.dataView())) {
+        return U32StringEditor{std::move(result.value())};
+    }
+    return *this;
 }
 
-auto U32StringEditor::aligned(const CpLength length, const geometry::Alignment alignment, const Char fill) const
+auto U32StringEditor::aligned(const CpCount length, const geometry::Alignment alignment, const Char fill) const
     -> U32StringEditor {
-    return U32StringEditor{U32StringTransformTools{dataView()}.aligned(length, alignment, fill)};
+    if (auto result = U32StringTransformTools{dataView()}.alignedIfChanged(length, alignment, fill)) {
+        return U32StringEditor{std::move(result.value())};
+    }
+    return *this;
 }
 
-auto U32StringEditor::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const -> U32StringEditor {
+auto U32StringEditor::toSafeString(const CpCount maximumWidth, const SafeStringFlags flags) const -> U32StringEditor {
     if (auto result =
             StringSafeTransformTools{*this, dataView().dataSpan(), maximumWidth, flags}.toSafeStringIfChanged()) {
         return result.value();
@@ -376,15 +339,18 @@ void swap(U32StringEditor &first, U32StringEditor &second) noexcept {
     swap(first._storage, second._storage);
 }
 
-auto U32StringEditor::escapedSize(const EscapeFormat format, const EscapeAmount amount) const noexcept -> CpLength {
+auto U32StringEditor::escapedSize(const EscapeFormat format, const EscapeAmount amount) const noexcept -> CpCount {
     return U32StringTransformTools{dataView()}.escapedSize(format, amount);
 }
 
 auto U32StringEditor::toEscaped(const EscapeFormat format, const EscapeAmount amount) const -> U32StringEditor {
-    return U32StringTransformTools{dataView()}.toEscaped(format, amount);
+    if (auto result = U32StringTransformTools{dataView()}.toEscapedIfChanged(U32String{*this}, format, amount)) {
+        return U32StringEditor{std::move(result.value())};
+    }
+    return *this;
 }
 
-auto U32StringEditor::fromCharacter(const Char character, const CpLength count) -> U32StringEditor {
+auto U32StringEditor::fromCharacter(const Char character, const CpCount count) -> U32StringEditor {
     auto storage = U32StringSharedStorage{};
     U32StringAppendTools{storage}.append(character, count);
     return U32StringEditor{std::move(storage)};
@@ -393,8 +359,7 @@ auto U32StringEditor::fromCharacter(const Char character, const CpLength count) 
 auto U32StringEditor::fromJoined(const std::initializer_list<U32String> parts) -> U32StringEditor {
     auto finalSize = std::size_t{0};
     for (const auto &part : parts) {
-        finalSize = U32StringSharedStorage::checkedAddSize(
-            finalSize, part.length().toSizeT(), "Joined string exceeds size bounds");
+        finalSize = U32StringSharedStorage::checkedAddSize(finalSize, part.length().toSizeT());
     }
     if (finalSize == 0U) {
         return {};
@@ -408,8 +373,7 @@ auto U32StringEditor::fromJoined(const std::initializer_list<U32String> parts) -
             continue;
         }
         std::memcpy(storage.dataForWrite() + writePosition, data.data(), data.size() * sizeof(char32_t));
-        writePosition = U32StringSharedStorage::checkedAddSize(
-            writePosition, data.size(), "Joined string write exceeds size bounds");
+        writePosition = U32StringSharedStorage::checkedAddSize(writePosition, data.size());
     }
     return U32StringEditor{std::move(storage)};
 }
@@ -443,7 +407,7 @@ auto U32StringEditor::storageId() const noexcept -> mem::StorageIdentifier {
     return _storage.storageId();
 }
 
-void U32StringEditor::reserve(const CpLength capacity) {
+void U32StringEditor::reserve(const CpCount capacity) {
     _storage.reserve(capacity);
 }
 
@@ -451,11 +415,11 @@ void U32StringEditor::shrinkToFit() {
     _storage.shrinkToFit();
 }
 
-auto U32StringEditor::capacity() const noexcept -> CpLength {
+auto U32StringEditor::capacity() const noexcept -> CpCount {
     return _storage.capacity();
 }
 
-auto U32StringEditor::memoryUsage() const noexcept -> ByteLength {
+auto U32StringEditor::memoryUsage() const noexcept -> ByteCount {
     return _storage.memoryUsage();
 }
 

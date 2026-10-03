@@ -40,6 +40,7 @@ void ZstandardChecksum::update(mem::ConstByteSpan input) noexcept {
         }
     }
 }
+
 auto ZstandardChecksum::value() const noexcept -> uint64_t {
     std::size_t position{};
     uint64_t hash;

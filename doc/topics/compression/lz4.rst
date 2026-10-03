@@ -176,10 +176,9 @@ knows only the algorithm, representation, and expected output length.
 
 .. erbsland-demo::
     :source: compression/ByteCompression/CompareCompressionLevels.cpp
-    :function-blocks: compareCompressionLevels compareLz4Levels
-    :function-blocks-sha256: 9e9638a3b8ff0e6e5297ce64407cedadb058c3458624269a9715fed8e083107f
+    :show: f:compareCompressionLevels, f:compareLz4Levels
     :exec: compression/byte_compression --demo CompareLz4Levels
-    :source-sha256: b3c7307dcd75e59cb0081271e8b3969dddac878977706dc3b308f7400b5dfcb7
+    :sha256: fd64f7c989f928f65093cd1735c16e3b15d082ffa825282823c45cb8affca05b
 
 .. code-block:: cpp
 
@@ -190,8 +189,8 @@ knows only the algorithm, representation, and expected output length.
         const auto readings = createObservatoryReadings();
         const auto options = el::DecompressionOptions{}
                                  .setExpectedOutputLength(readings.length())
-                                 .setMaximumOutputLength(el::ByteLength{16U * 1024U})
-                                 .setMaximumWorkspaceLength(el::ByteLength{64U * 1024U * 1024U});
+                                 .setMaximumOutputLength(el::ByteCount{16U * 1024U})
+                                 .setMaximumWorkspaceLength(el::ByteCount{64U * 1024U * 1024U});
 
         el::io::printLine("Instrument        : radiotelescópio"_el);
         el::io::printLine("Algorithm         : "_el, algorithmName);
@@ -217,16 +216,18 @@ knows only the algorithm, representation, and expected output length.
         compareCompressionLevels(el::CompressionAlgorithm::Lz4Block, el::CompressionFormat::Raw, "lz4-block"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Instrument        : radiotelescópio
-    Algorithm         : lz4-block
-    Original bytes    : 3584
-    Fastest bytes: 58, restored: yes
-    Fast bytes: 41, restored: yes
-    Default bytes: 41, restored: yes
-    High bytes: 41, restored: yes
-    Highest bytes: 41, restored: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInstrument        : radiotelescópio
+        Algorithm         : lz4-block
+        Original bytes    : 3584
+        Fastest bytes: 58, restored: yes
+        Fast bytes: 41, restored: yes
+        Default bytes: 41, restored: yes
+        High bytes: 41, restored: yes
+        Highest bytes: 41, restored: yes␛[0m
 
 .. erbsland-demo-end::

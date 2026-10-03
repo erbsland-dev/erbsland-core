@@ -6,6 +6,11 @@
 #include "ScriptedByteOutputStream.hpp"
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/CoTask.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TempDirectory.hpp>
 
 #include <chrono>
 #include <memory>
@@ -23,7 +28,7 @@ void waitForTask(el::CoTask<tValue> &task) {
         std::this_thread::yield();
     }
     if (!task.isComplete()) {
-        throw el::LogicError{"The stream demo coroutine did not complete."};
+        throw el::LogicFailure{"The stream demo coroutine did not complete."};
     }
 }
 

@@ -5,6 +5,12 @@
 #include "DefaultConfiguration.hpp"
 #include "ParserScenarioWorkload.hpp"
 
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Version.hpp>
+
 namespace app::conf {
 
 namespace pf = erbsland::profiling;
@@ -18,7 +24,7 @@ void ConfParserProfileApplication::configureProfiling(pf::ProfilingDefinition &d
             el::Version{1, 0, 0},
             "ELCL Parser Profiler and Benchmark"_el,
             "Profiles the Erbsland Configuration Language parser using a deterministic embedded corpus."_el)
-        .setDefaultConfiguration(el::String{cDefaultConfigurationText})
+        .setDefaultConfiguration(cDefaultConfigurationText)
         .addMetric({.id = "documents"_el, .unit = "documents"_el, .reportRate = true})
         .addMetric({.id = "bytes"_el, .unit = "bytes"_el, .reportRate = true})
         .addParameter(

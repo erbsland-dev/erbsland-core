@@ -1,8 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/mem/BitReader.hpp>
+#include <erbsland/BitReader.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/OutOfRangeFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -71,7 +72,7 @@ public:
         REQUIRE_EQUAL(reader.bitPosition(), 4U);
         REQUIRE_THROWS_AS(el::err::OutOfRangeError, reader.readBitsOrThrow(5U));
         REQUIRE_EQUAL(reader.bitPosition(), 4U);
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, reader.readBitsOrThrow(65U));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, reader.readBitsOrThrow(65U));
     }
 
     void testBitAndBytePositions() {
@@ -130,9 +131,11 @@ public:
             for (std::size_t offset{}; offset < 8U; ++offset) {
                 for (std::size_t width{}; width <= 64U; ++width) {
                     auto expected = BitReader{data, order, offset};
-                    auto reader = BitReader{data.slice(el::unit::ByteIndex{}, el::unit::ByteLength{1U}), order, offset};
-                    for (std::size_t index{1U}; index < 9U; ++index) {
-                        reader.refill(data.slice(el::unit::ByteIndex{index}, el::unit::ByteLength{1U}));
+                    auto reader = BitReader{data.slice(el::unit::ByteIndex{}, el::unit::ByteCount{1U}), order, offset};
+                    for (
+                        auto index = el::unit::ByteIndex{1U}; index.isWithin(el::unit::ByteCount{9U});
+                        index.uncheckedIncrement()) {
+                        reader.refill(data.slice(index, el::unit::ByteCount{1U}));
                         if (reader.canRead(width)) {
                             break;
                         }
@@ -147,7 +150,7 @@ public:
     void testRefillIsBoundedAndTransactional() {
         const auto data = ByteBlock{0x91U, 0x23U, 0x45U, 0x67U, 0x89U, 0xabU, 0xcdU, 0xefU, 0x10U};
         auto reader = BitReader{data};
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, reader.refill(ByteBlock{0xffU}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, reader.refill(ByteBlock{0xffU}));
         REQUIRE_EQUAL(reader.bitPosition(), 0U);
         REQUIRE_EQUAL(reader.byteCount(), 9U);
         reader.advance(8U);
@@ -172,20 +175,20 @@ public:
         for (const auto order : {BitOrder::MostSignificantFirst, BitOrder::LeastSignificantFirst}) {
             auto reader = BitReader{data, order};
             reader.advanceBytes(1U);
-            const auto field = reader.readBytesOrThrow(el::unit::ByteLength{2U});
+            const auto field = reader.readBytesOrThrow(el::unit::ByteCount{2U});
             REQUIRE_EQUAL(field, ByteBlock({0x23U, 0x45U}));
             REQUIRE(field.span().data() == data.span().data() + 1U);
             REQUIRE(field.isSensitive());
             REQUIRE_EQUAL(reader.bitPosition(), 24U);
-            REQUIRE_THROWS_AS(el::err::OutOfRangeError, reader.readBytesOrThrow(el::unit::ByteLength{2U}));
-            REQUIRE_THROWS_AS(el::err::OutOfRangeError, reader.readBytesOrThrow(el::unit::ByteLength::infinite()));
+            REQUIRE_THROWS_AS(el::err::OutOfRangeError, reader.readBytesOrThrow(el::unit::ByteCount{2U}));
+            REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, reader.readBytesOrThrow(el::unit::ByteCount::infinite()));
             REQUIRE_EQUAL(reader.bitPosition(), 24U);
             reader.advance(1U);
-            REQUIRE_THROWS_AS(el::err::OutOfRangeError, reader.readBytesOrThrow(el::unit::ByteLength{}));
+            REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, reader.readBytesOrThrow(el::unit::ByteCount{}));
             REQUIRE_EQUAL(reader.bitPosition(), 25U);
         }
         auto empty = BitReader{};
-        REQUIRE(empty.readBytesOrThrow(el::unit::ByteLength{}).isEmpty());
+        REQUIRE(empty.readBytesOrThrow(el::unit::ByteCount{}).isEmpty());
     }
 
     void testByteFieldsAcrossRefillTail() {
@@ -194,13 +197,13 @@ public:
             reader.advance(3U);
             reader.refill(ByteBlock{0x78U, 0x9aU});
             reader.alignToByte();
-            const auto tail = reader.readBytesOrThrow(el::unit::ByteLength{1U});
+            const auto tail = reader.readBytesOrThrow(el::unit::ByteCount{1U});
             REQUIRE_EQUAL(tail, ByteBlock({0x34U}));
             REQUIRE(tail.isSensitive());
-            const auto joined = reader.readBytesOrThrow(el::unit::ByteLength{2U});
+            const auto joined = reader.readBytesOrThrow(el::unit::ByteCount{2U});
             REQUIRE_EQUAL(joined, ByteBlock({0x56U, 0x78U}));
             REQUIRE(joined.isSensitive());
-            REQUIRE_EQUAL(reader.readBytesOrThrow(el::unit::ByteLength{1U}), ByteBlock({0x9aU}));
+            REQUIRE_EQUAL(reader.readBytesOrThrow(el::unit::ByteCount{1U}), ByteBlock({0x9aU}));
             REQUIRE(reader.isAtEnd());
         }
     }

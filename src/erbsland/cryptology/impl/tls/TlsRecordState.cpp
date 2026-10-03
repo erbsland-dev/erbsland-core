@@ -6,7 +6,7 @@
 
 #include "../SecureEraseGuard.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../mem/Byte.hpp"
 #include "../../../mem/ByteArray.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
@@ -21,15 +21,16 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
 using namespace text::literals;
 
 TlsRecordState::TlsRecordState(const TlsCipherSuite suite, TlsTrafficSecret &&trafficSecret) :
     _suite{suite}, _trafficSecret{std::move(trafficSecret)} {
     if (!TlsCipherSuite::fromRawValue(_suite.toRawValue()).has_value()) {
-        throw err::ParameterError{"The TLS cipher suite is not supported."_el, "suite"_el};
+        throw err::ParameterFailure{"The TLS cipher suite is not supported."_el, "suite"_el};
     }
     if (_trafficSecret.isEmpty() || _trafficSecret.hashAlgorithm() != _suite.hashAlgorithm()) {
-        throw err::ParameterError{
+        throw err::ParameterFailure{
             "The TLS traffic secret does not match the cipher suite hash."_el, "trafficSecret"_el};
     }
     // RFC 8446 section 7.3: derive write_key and write_iv before the first record uses sequence number zero.
@@ -42,15 +43,15 @@ TlsRecordState::~TlsRecordState() {
 
 auto TlsRecordState::recordNonce() const -> SymmetricNonce {
     // RFC 8446 section 5.3 step 1: encode the 64-bit sequence in network order and left-pad it to iv_length.
-    auto paddedSequence = mem::ByteBlockEditor{unit::ByteLength{12U}};
+    auto paddedSequence = ByteBlockEditor{unit::ByteCount{12U}};
     paddedSequence.markAsSensitive();
-    paddedSequence.setIntegerOrThrow<uint64_t>(unit::ByteIndex{4U}, _sequenceNumber, mem::Endianness::Big);
+    paddedSequence.setIntegerOrThrow<uint64_t>(unit::ByteIndex{4U}, _sequenceNumber, Endianness::Big);
 
     // RFC 8446 section 5.3 step 2: nonce = write_iv XOR padded_sequence_number.
-    auto nonce = mem::ByteBlockEditor{_staticIv.data()};
+    auto nonce = ByteBlockEditor{_staticIv.data()};
     nonce.xorWithOrThrow(paddedSequence.span());
     paddedSequence.secureErase();
-    return SymmetricNonce{mem::ByteBlock{nonce}};
+    return SymmetricNonce{ByteBlock{nonce}};
 }
 
 void TlsRecordState::requireRecordAvailable() const {
@@ -116,12 +117,12 @@ auto TlsRecordState::isKeyUpdateRequired() const noexcept -> bool {
 }
 
 void TlsRecordState::deriveKeyAndIv(const TlsTrafficSecret &secret, SymmetricKey &key, SymmetricNonce &staticIv) const {
-    static constexpr auto cKeyLabel = mem::ByteArray<3U>{mem::Byte{'k'}, mem::Byte{'e'}, mem::Byte{'y'}};
-    static constexpr auto cIvLabel = mem::ByteArray<2U>{mem::Byte{'i'}, mem::Byte{'v'}};
+    static constexpr auto cKeyLabel = ByteArray<3U>{Byte{'k'}, Byte{'e'}, Byte{'y'}};
+    static constexpr auto cIvLabel = ByteArray<2U>{Byte{'i'}, Byte{'v'}};
     const auto tlsHkdf = Tls13Hkdf{_suite.hashAlgorithm()};
 
     // Resolve Secret only for the two RFC 8446 section 7.3 expansions; ProtectedByteBlock erases on every exit.
-    secret._data.withUnprotectedData([&](const mem::ConstByteSpan secretBytes) -> void {
+    secret._data.withUnprotectedData([&](const ConstByteSpan secretBytes) -> void {
         // RFC 8446 section 7.3: write_key = HKDF-Expand-Label(Secret, "key", "", key_length).
         auto keyBytes = tlsHkdf.expandLabel(secretBytes, cKeyLabel.span(), {}, _suite.encryptionType().keyLength());
         keyBytes.markAsSensitive();
@@ -129,7 +130,7 @@ void TlsRecordState::deriveKeyAndIv(const TlsTrafficSecret &secret, SymmetricKey
         key = SymmetricKey{keyBytes.span()};
 
         // RFC 8446 section 7.3: write_iv = HKDF-Expand-Label(Secret, "iv", "", iv_length).
-        auto ivBytes = tlsHkdf.expandLabel(secretBytes, cIvLabel.span(), {}, unit::ByteLength{12U});
+        auto ivBytes = tlsHkdf.expandLabel(secretBytes, cIvLabel.span(), {}, unit::ByteCount{12U});
         ivBytes.markAsSensitive();
         const auto ivEraseGuard = SecureEraseGuard{ivBytes};
         staticIv = SymmetricNonce{ivBytes.span()};
@@ -137,23 +138,23 @@ void TlsRecordState::deriveKeyAndIv(const TlsTrafficSecret &secret, SymmetricKey
 }
 
 auto TlsRecordState::deriveUpdatedTrafficSecret() const -> TlsTrafficSecret {
-    static constexpr auto cTrafficUpdateLabel = mem::ByteArray<11U>{
-        mem::Byte{'t'},
-        mem::Byte{'r'},
-        mem::Byte{'a'},
-        mem::Byte{'f'},
-        mem::Byte{'f'},
-        mem::Byte{'i'},
-        mem::Byte{'c'},
-        mem::Byte{' '},
-        mem::Byte{'u'},
-        mem::Byte{'p'},
-        mem::Byte{'d'}};
+    static constexpr auto cTrafficUpdateLabel = ByteArray<11U>{
+        Byte{'t'},
+        Byte{'r'},
+        Byte{'a'},
+        Byte{'f'},
+        Byte{'f'},
+        Byte{'i'},
+        Byte{'c'},
+        Byte{' '},
+        Byte{'u'},
+        Byte{'p'},
+        Byte{'d'}};
     auto result = TlsTrafficSecret{};
     const auto tlsHkdf = Tls13Hkdf{_suite.hashAlgorithm()};
 
     // Resolve application_traffic_secret_N only within protected storage's erased callback temporary.
-    _trafficSecret._data.withUnprotectedData([&](const mem::ConstByteSpan secretBytes) -> void {
+    _trafficSecret._data.withUnprotectedData([&](const ConstByteSpan secretBytes) -> void {
         // RFC 8446 section 7.2: application_traffic_secret_N+1 = HKDF-Expand-Label(N, "traffic upd", "", Hash.length).
         auto nextBytes =
             tlsHkdf.expandLabel(secretBytes, cTrafficUpdateLabel.span(), {}, _suite.hashAlgorithm().digestSize());

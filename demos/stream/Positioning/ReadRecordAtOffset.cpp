@@ -1,6 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/StandardStreams.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -14,7 +19,7 @@ void readRecordAtOffset() {
     const auto input = path.content().openByteInputStream();
 
     input->setPosition(el::ByteIndex{3U});
-    const auto record = input->readExact(el::ByteLength{3U});
+    const auto record = input->readExact(el::ByteCount{3U});
     el::io::printLine("First byte of the second record: "_el, record.data().get(el::ByteIndex{0U}).toUInt8());
 }
 

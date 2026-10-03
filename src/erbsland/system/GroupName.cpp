@@ -3,7 +3,7 @@
 #include "GroupName.hpp"
 
 #include "../text/Literals.hpp"
-#include "../unit/ByteIndex.hpp"
+#include "../text/StringJoins.hpp"
 
 namespace erbsland::system {
 
@@ -13,16 +13,13 @@ auto GroupName::toString() const -> text::String {
     if (_domain.isEmpty()) {
         return _name;
     }
-    return text::String::fromJoined({_domain, "\\"_el, _name});
+    return text::join(_domain, "\\"_el, _name);
 }
 
 auto GroupName::fromString(const text::String &text) -> GroupName {
-    constexpr auto cSeparator = "\\"_el;
-    const auto separator = text.find(cSeparator);
-    if (!separator.isNoIndex()) {
-        const auto [domain, nameWithSeparator] = text.splitAt(separator);
-        return GroupName{
-            nameWithSeparator.slice(text::StringSide::Back, unit::ByteIndex::end(cSeparator.length())), domain};
+    if (const auto parts = text.splitAtFirst("\\"_el)) {
+        const auto &[domain, name] = *parts;
+        return GroupName{name, domain};
     }
     return GroupName{text};
 }

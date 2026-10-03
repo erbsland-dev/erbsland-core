@@ -1,24 +1,24 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/AsciiCategory.hpp>
-#include <erbsland/text/CharSet.hpp>
+#include <erbsland/AsciiCategory.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/CpRange.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/text/impl/UnsafeU8StringEditorAccess.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/text/u8/impl/U8StringData.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ByteRange.hpp>
-#include <erbsland/unit/CpIndex.hpp>
-#include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/CpRange.hpp>
-#include <erbsland/unit/ItemCount.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -28,7 +28,6 @@
 #include <type_traits>
 
 using namespace el::text::literals;
-
 using namespace el::text;
 using namespace el::unit;
 
@@ -44,15 +43,15 @@ public:
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{});
         REQUIRE(StringConverter{text}.toStdU8String().empty());
         REQUIRE_EQUAL(text.length().toSizeT(), std::size_t{0});
-        REQUIRE_EQUAL(text.characterLength(), CpLength::zero());
-        REQUIRE(text.isValidUtf8());
+        REQUIRE_EQUAL(text.characterLength(), CpCount::zero());
+        REQUIRE(text.isEncodingValid());
         REQUIRE_EQUAL(text.indexAt(StringSide::Front), ByteIndex::zero());
         REQUIRE_EQUAL(text.indexAt(StringSide::Back), ByteIndex::zero());
         REQUIRE(text.charAt(StringSide::Front).isNull());
         REQUIRE(text.charAt(StringSide::Back).isNull());
         REQUIRE(text.charAt(text.indexAt(StringSide::Back)).isEndOfData());
-        REQUIRE(text.slice(StringSide::Front, ByteLength{1U}).isEmpty());
-        REQUIRE(text.slice(StringSide::Back, ByteLength{1U}).isEmpty());
+        REQUIRE(text.slice(StringSide::Front, ByteCount{1U}).isEmpty());
+        REQUIRE(text.slice(StringSide::Back, ByteCount{1U}).isEmpty());
         const auto [emptyCharacter, emptyRemaining] = text.slice(StringSide::Front);
         REQUIRE(emptyCharacter.isEndOfData());
         REQUIRE(emptyRemaining.isEmpty());
@@ -89,32 +88,32 @@ public:
     void testRepeatedAppend() {
 
         const auto source = String{"xA¢"_el};
-        const auto view = String{source}.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
+        const auto view = String{source}.slice({ByteIndex{1U}, ByteCount{3U}});
 
         auto repeatedText = StringEditor{};
         repeatedText.append(view, ItemCount{3U});
         REQUIRE_EQUAL(StringConverter{repeatedText}.toStdU8String(), std::u8string{u8"A¢A¢A¢"});
-        REQUIRE_EQUAL(repeatedText.length(), ByteLength{9U});
-        REQUIRE_EQUAL(repeatedText.characterLength(), CpLength{6U});
+        REQUIRE_EQUAL(repeatedText.length(), ByteCount{9U});
+        REQUIRE_EQUAL(repeatedText.characterLength(), CpCount{6U});
 
         auto repeatedCharacter = StringEditor{};
-        repeatedCharacter.append(Char{U'\u20AC'}, CpLength{3U});
+        repeatedCharacter.append(Char{U'\u20AC'}, CpCount{3U});
         REQUIRE_EQUAL(StringConverter{repeatedCharacter}.toStdU8String(), std::u8string{u8"€€€"});
-        REQUIRE_EQUAL(repeatedCharacter.length(), ByteLength{9U});
-        REQUIRE_EQUAL(repeatedCharacter.characterLength(), CpLength{3U});
-        REQUIRE_EQUAL(StringEditor::fromCharacter(Char{U'\u20AC'}, CpLength{3U}), repeatedCharacter);
+        REQUIRE_EQUAL(repeatedCharacter.length(), ByteCount{9U});
+        REQUIRE_EQUAL(repeatedCharacter.characterLength(), CpCount{3U});
+        REQUIRE_EQUAL(StringEditor::fromCharacter(Char{U'\u20AC'}, CpCount{3U}), repeatedCharacter);
         REQUIRE_EQUAL(StringEditor::fromCharacter(Char{U'A'}), "A"_el);
 
         REQUIRE(StringEditor{}.append(view, ItemCount::zero()).isEmpty());
         REQUIRE(StringEditor{}.append(""_el, ItemCount{5U}).isEmpty());
-        REQUIRE(StringEditor{}.append(Char::noCodePoint(), CpLength{5U}).isEmpty());
-        REQUIRE(StringEditor::fromCharacter(Char{U'A'}, CpLength::zero()).isEmpty());
-        REQUIRE(StringEditor::fromCharacter(Char::noCodePoint(), CpLength{5U}).isEmpty());
+        REQUIRE(StringEditor{}.append(Char::noCodePoint(), CpCount{5U}).isEmpty());
+        REQUIRE(StringEditor::fromCharacter(Char{U'A'}, CpCount::zero()).isEmpty());
+        REQUIRE(StringEditor::fromCharacter(Char::noCodePoint(), CpCount{5U}).isEmpty());
         REQUIRE(StringEditor::fromJoined({}).isEmpty());
         REQUIRE_EQUAL(StringEditor::fromJoined({"solo"_el}), "solo"_el);
         REQUIRE_EQUAL(StringEditor::fromJoined({"prefix-"_el, ""_el, view, "-suffix"_el}), u8"prefix-A¢-suffix"_el);
         REQUIRE_THROWS(StringEditor{}.append("x"_el, ItemCount::infinite()));
-        REQUIRE_THROWS(StringEditor::fromCharacter(Char{U'A'}, CpLength::infinite()));
+        REQUIRE_THROWS(StringEditor::fromCharacter(Char{U'A'}, CpCount::infinite()));
     }
 
     void testBooleanConversion() {
@@ -125,25 +124,25 @@ public:
             "NO"_el);
         REQUIRE_EQUAL(
             StringEditor::fromBoolean(
-                true, BooleanFormat::enabledDisabled().setCapitalization(Capitalization::Titlecase)),
+                true, BooleanFormat::enabledDisabled().setCapitalization(Capitalization::Capitalized)),
             "Enabled"_el);
     }
 
     void testClear() {
         auto text = StringEditor{"Hello"_el};
-        text.reserve(ByteLength{8U});
+        text.reserve(ByteCount{8U});
 
         text.clear();
 
         REQUIRE(text.isEmpty());
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{});
-        REQUIRE_EQUAL(text.capacity(), ByteLength{8U});
+        REQUIRE_EQUAL(text.capacity(), ByteCount{8U});
         REQUIRE_EQUAL(text.memoryUsage(), expectedMemoryUsage(8U));
     }
 
     void testResetReleasesReservedStorage() {
         auto text = StringEditor{"Hello"_el};
-        text.reserve(ByteLength{8U});
+        text.reserve(ByteCount{8U});
 
         text.reset();
 
@@ -156,8 +155,8 @@ public:
         const auto text = String{"A¢€😀"_el};
 
         REQUIRE_EQUAL(text.length().toSizeT(), std::size_t{10});
-        REQUIRE_EQUAL(text.characterLength(), CpLength{4});
-        REQUIRE(text.isValidUtf8());
+        REQUIRE_EQUAL(text.characterLength(), CpCount{4});
+        REQUIRE(text.isEncodingValid());
         REQUIRE_EQUAL(text.charAt(StringSide::Front).toRawValue(), U'A');
         REQUIRE_EQUAL(text.charAt(StringSide::Back).toRawValue(), U'\U0001F600');
         {
@@ -297,7 +296,7 @@ public:
         REQUIRE_EQUAL(
             StringConverter{literalView.transformed(Char::toAsciiLowercase)}.toStdString(), std::string{"abc"});
 
-        const auto slicedView = String{"xabcx"_el}.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
+        const auto slicedView = String{"xabcx"_el}.slice({ByteIndex{1U}, ByteCount{3U}});
         const auto slicedLower = slicedView.transformed(Char::toAsciiLowercase);
         REQUIRE_EQUAL(StringConverter{slicedLower}.toStdString(), std::string{"abc"});
 
@@ -332,7 +331,7 @@ public:
 
         REQUIRE(text.advance(index));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
-        REQUIRE(text.advance(index, CpLength{2}));
+        REQUIRE(text.advance(index, CpCount{2}));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{6});
         REQUIRE(text.advance(index));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{10});
@@ -340,14 +339,14 @@ public:
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{10});
 
         index = ByteIndex{4};
-        REQUIRE_FALSE(text.advance(index, CpLength::zero()));
+        REQUIRE_FALSE(text.advance(index, CpCount::zero()));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{4});
 
         REQUIRE(text.advance(index));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{5});
 
         index = ByteIndex::zero();
-        REQUIRE(text.advance(index, CpLength::infinite()));
+        REQUIRE(text.advance(index, CpCount::infinite()));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{10});
 
         index = ByteIndex{99};
@@ -363,7 +362,7 @@ public:
         const auto text = String{"A¢€😀"_el};
         auto index = ByteIndex{5};
 
-        REQUIRE_FALSE(text.retreat(index, CpLength::zero()));
+        REQUIRE_FALSE(text.retreat(index, CpCount::zero()));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{5});
 
         REQUIRE(text.retreat(index));
@@ -374,7 +373,7 @@ public:
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{6});
 
         // `true`, because an actual movement was performed.
-        REQUIRE(text.retreat(index, CpLength::infinite()));
+        REQUIRE(text.retreat(index, CpCount::infinite()));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{0});
     }
 
@@ -405,9 +404,9 @@ public:
         const auto data = invalidUtf8Data();
         const auto text = StringEditor{std::string_view{data}};
 
-        REQUIRE_FALSE(text.isValidUtf8());
+        REQUIRE_FALSE(text.isEncodingValid());
         REQUIRE_EQUAL(text.length().toSizeT(), std::size_t{3});
-        REQUIRE_EQUAL(text.characterLength(), CpLength{3});
+        REQUIRE_EQUAL(text.characterLength(), CpCount{3});
         REQUIRE_EQUAL(text.charAt(ByteIndex{0}).toRawValue(), U'A');
         REQUIRE(text.charAt(ByteIndex{1}).isReplacement());
         REQUIRE_EQUAL(text.charAt(ByteIndex{2}).toRawValue(), U'B');
@@ -428,22 +427,21 @@ public:
     void testSlice() {
         const auto text = StringEditor{"abcdef"_el};
 
-        REQUIRE_EQUAL(StringConverter{text.slice(ByteRange{ByteIndex{2}, ByteLength{3}})}.toStdString(), "cde");
-        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Front, ByteLength{2})}.toStdString(), "ab");
-        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Back, ByteLength{2})}.toStdString(), "ef");
-        REQUIRE(text.slice(ByteRange{ByteIndex{2}, ByteLength{0}}).isEmpty());
-        REQUIRE(text.slice(ByteRange{ByteIndex{9}, ByteLength{1}}).isEmpty());
-        REQUIRE_EQUAL(StringConverter{text.slice(ByteRange{ByteIndex{4}, ByteLength{99}})}.toStdString(), "ef");
-        REQUIRE_EQUAL(
-            StringConverter{text.slice(ByteRange{ByteIndex{3}, ByteLength::infinite()})}.toStdString(), "def");
+        REQUIRE_EQUAL(StringConverter{text.slice({ByteIndex{2}, ByteCount{3}})}.toStdString(), "cde");
+        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Front, ByteCount{2})}.toStdString(), "ab");
+        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Back, ByteCount{2})}.toStdString(), "ef");
+        REQUIRE(text.slice({ByteIndex{2}, ByteCount{0}}).isEmpty());
+        REQUIRE(text.slice({ByteIndex{9}, ByteCount{1}}).isEmpty());
+        REQUIRE_EQUAL(StringConverter{text.slice({ByteIndex{4}, ByteCount{99}})}.toStdString(), "ef");
+        REQUIRE_EQUAL(StringConverter{text.slice(ByteRange{ByteIndex{3}, ByteCount::infinite()})}.toStdString(), "def");
         REQUIRE(text.slice(ByteRange::noRange()).isEmpty());
-        REQUIRE(text.slice(ByteRange{ByteIndex::noIndex(), ByteLength{1}}).isEmpty());
-        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Front, ByteLength{99})}.toStdString(), "abcdef");
-        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Front, ByteLength::infinite())}.toStdString(), "abcdef");
-        REQUIRE(text.slice(StringSide::Front, ByteLength{0}).isEmpty());
-        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Back, ByteLength{99})}.toStdString(), "abcdef");
-        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Back, ByteLength::infinite())}.toStdString(), "abcdef");
-        REQUIRE(text.slice(StringSide::Back, ByteLength{0}).isEmpty());
+        REQUIRE(text.slice(ByteRange{ByteIndex::noIndex(), ByteCount{1}}).isEmpty());
+        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Front, ByteCount{99})}.toStdString(), "abcdef");
+        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Front, ByteCount::infinite())}.toStdString(), "abcdef");
+        REQUIRE(text.slice(StringSide::Front, ByteCount{0}).isEmpty());
+        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Back, ByteCount{99})}.toStdString(), "abcdef");
+        REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Back, ByteCount::infinite())}.toStdString(), "abcdef");
+        REQUIRE(text.slice(StringSide::Back, ByteCount{0}).isEmpty());
         REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Front, ByteIndex{2})}.toStdString(), "ab");
         REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Back, ByteIndex{2})}.toStdString(), "cdef");
         REQUIRE(text.slice(StringSide::Front, ByteIndex::zero()).isEmpty());
@@ -458,17 +456,17 @@ public:
 
         const auto unicode = String{"A¢€😀BC"_el};
         const auto charView = unicode;
-        const auto range = CpRange{CpIndex{1}, CpLength{3}};
+        const auto range = CpRange{CpIndex{1}, CpCount{3}};
 
         REQUIRE_EQUAL(StringConverter{unicode.slice(range)}.toStdU32String(), std::u32string{U"¢€\U0001F600"});
         REQUIRE_EQUAL(
             StringConverter{unicode.slice(range)}.toStdU32String(),
             StringConverter{charView.slice(range)}.toStdU32String());
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(StringSide::Front, CpLength{4})}.toStdU32String(),
+            StringConverter{unicode.slice(StringSide::Front, CpCount{4})}.toStdU32String(),
             std::u32string{U"A¢€\U0001F600"});
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(StringSide::Back, CpLength{3})}.toStdU32String(),
+            StringConverter{unicode.slice(StringSide::Back, CpCount{3})}.toStdU32String(),
             std::u32string{U"\U0001F600BC"});
         REQUIRE_EQUAL(
             StringConverter{unicode.slice(StringSide::Front, ByteIndex{3})}.toStdU32String(),
@@ -483,23 +481,23 @@ public:
             StringConverter{unicode.slice(StringSide::Back, CpIndex{3})}.toStdU32String(),
             std::u32string{U"\U0001F600BC"});
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(StringSide::Back, CpLength{99})}.toStdU32String(),
+            StringConverter{unicode.slice(StringSide::Back, CpCount{99})}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(StringSide::Back, CpLength::infinite())}.toStdU32String(),
+            StringConverter{unicode.slice(StringSide::Back, CpCount::infinite())}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
         REQUIRE_EQUAL(
-            StringConverter{unicode.slice(StringSide::Front, CpLength::infinite())}.toStdU32String(),
+            StringConverter{unicode.slice(StringSide::Front, CpCount::infinite())}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
-        REQUIRE(unicode.slice(StringSide::Front, CpLength::zero()).isEmpty());
-        REQUIRE(unicode.slice(StringSide::Back, CpLength::zero()).isEmpty());
+        REQUIRE(unicode.slice(StringSide::Front, CpCount::zero()).isEmpty());
+        REQUIRE(unicode.slice(StringSide::Back, CpCount::zero()).isEmpty());
         REQUIRE(unicode.slice(CpRange::noRange()).isEmpty());
-        REQUIRE(unicode.slice(CpRange{CpIndex::noIndex(), CpLength{1}}).isEmpty());
-        REQUIRE(unicode.slice(CpRange{CpIndex{99}, CpLength{1}}).isEmpty());
+        REQUIRE(unicode.slice(CpRange{CpIndex::noIndex(), CpCount{1}}).isEmpty());
+        REQUIRE(unicode.slice(CpRange{CpIndex{99}, CpCount{1}}).isEmpty());
 
-        const auto nested = unicode.slice(CpRange{CpIndex{1}, CpLength{4}});
+        const auto nested = unicode.slice(CpRange{CpIndex{1}, CpCount{4}});
         REQUIRE_EQUAL(
-            StringConverter{nested.slice(StringSide::Back, CpLength{2})}.toStdU32String(),
+            StringConverter{nested.slice(StringSide::Back, CpCount{2})}.toStdU32String(),
             std::u32string{U"\U0001F600B"});
 
         {
@@ -541,8 +539,8 @@ public:
 
     void testNestedSlice() {
         const auto text = StringEditor{"abcdef"_el};
-        const auto first = text.slice(ByteRange{ByteIndex{1}, ByteLength{4}});
-        const auto second = first.slice(ByteRange{ByteIndex{1}, ByteLength{2}});
+        const auto first = text.slice({ByteIndex{1}, ByteCount{4}});
+        const auto second = first.slice({ByteIndex{1}, ByteCount{2}});
 
         REQUIRE_EQUAL(StringConverter{first}.toStdString(), "bcde");
         REQUIRE_EQUAL(StringConverter{second}.toStdString(), "cd");
@@ -550,16 +548,16 @@ public:
 
     void testSliceThroughUtf8Sequence() {
         const auto text = String{"A¢€"_el};
-        const auto slice = text.slice(ByteRange{ByteIndex{2}, ByteLength{2}});
+        const auto slice = text.slice({ByteIndex{2}, ByteCount{2}});
 
         REQUIRE_EQUAL(th::toStdU32String(StringConverter{slice}.toStdString()), std::u32string{U"\uFFFD\uFFFD"});
-        REQUIRE_FALSE(slice.isValidUtf8());
+        REQUIRE_FALSE(slice.isEncodingValid());
         REQUIRE(slice.charAt(ByteIndex::zero()).isReplacement());
     }
 
     void testPredicateChecks() {
 
-        const auto text = String{"xxA¢€😀yy"_el}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
+        const auto text = String{"xxA¢€😀yy"_el}.slice({ByteIndex{2}, ByteCount{10}});
 
         REQUIRE(text.startsWith(u8"A¢"_el));
         REQUIRE(text.startsWith(u8"A"_el));
@@ -650,7 +648,7 @@ public:
         const auto data = invalidUtf8Data();
         const auto text = StringEditor{std::string_view{data}};
 
-        REQUIRE_FALSE(text.isValidUtf8());
+        REQUIRE_FALSE(text.isEncodingValid());
         REQUIRE(text.contains(u8"\uFFFD"_el));
         REQUIRE_EQUAL(text.count(u8"\uFFFD"_el), ItemCount{1U});
         REQUIRE_EQUAL(text.count(u8"\uFFFD"_el, Char::compareCaseFolded), ItemCount{1U});
@@ -662,7 +660,7 @@ public:
 
     void testForwardFind() {
 
-        const auto text = String{"xxA¢€😀yy"_el}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
+        const auto text = String{"xxA¢€😀yy"_el}.slice({ByteIndex{2}, ByteCount{10}});
 
         REQUIRE_EQUAL(text.find(u8"¢€"_el), ByteIndex{1U});
         REQUIRE_EQUAL(text.find(String{}, ByteIndex{3U}), ByteIndex{3U});
@@ -681,7 +679,7 @@ public:
 
     void testReverseFind() {
 
-        const auto text = String{"xxA¢€😀yy"_el}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
+        const auto text = String{"xxA¢€😀yy"_el}.slice({ByteIndex{2}, ByteCount{10}});
 
         REQUIRE_EQUAL(text.findLastOf(CharSet{Char{0x20ACU}}), ByteIndex{3U});
         REQUIRE_EQUAL(text.findLastOf(CharSet{Char{0x20ACU}}, ByteIndex{6U}), ByteIndex{3U});
@@ -730,10 +728,10 @@ public:
     void testReserveOnEmptyStringCreatesCapacity() {
         auto text = StringEditor{};
 
-        text.reserve(ByteLength{7U});
+        text.reserve(ByteCount{7U});
 
         REQUIRE(text.isEmpty());
-        REQUIRE_EQUAL(text.capacity(), ByteLength{7U});
+        REQUIRE_EQUAL(text.capacity(), ByteCount{7U});
         REQUIRE_EQUAL(text.memoryUsage(), expectedMemoryUsage(7U));
     }
 
@@ -741,52 +739,52 @@ public:
         auto text = StringEditor{"Hello"_el};
         const auto *originalData = el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data();
 
-        text.reserve(ByteLength{9U});
+        text.reserve(ByteCount{9U});
 
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{"Hello"});
-        REQUIRE_EQUAL(text.capacity(), ByteLength{9U});
+        REQUIRE_EQUAL(text.capacity(), ByteCount{9U});
         REQUIRE_EQUAL(text.memoryUsage(), expectedMemoryUsage(9U));
         REQUIRE_NOT_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data(), originalData);
 
         const auto *reservedData = el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data();
-        text.reserve(ByteLength{3U});
+        text.reserve(ByteCount{3U});
         REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data(), reservedData);
     }
 
     void testReserveOnSliceMaterializesStandaloneStorage() {
-        auto text = StringEditor{"abcdef"_el}.slice(ByteRange{ByteIndex{2U}, ByteLength{2U}});
+        auto text = StringEditor{"abcdef"_el}.slice({ByteIndex{2U}, ByteCount{2U}});
 
-        text.reserve(ByteLength{6U});
+        text.reserve(ByteCount{6U});
 
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{"cd"});
-        REQUIRE_EQUAL(text.capacity(), ByteLength{6U});
+        REQUIRE_EQUAL(text.capacity(), ByteCount{6U});
         REQUIRE_EQUAL(text.memoryUsage(), expectedMemoryUsage(6U));
     }
 
     void testShrinkToFitReleasesUnusedCapacity() {
         auto text = StringEditor{"Hello"_el};
-        text.reserve(ByteLength{9U});
+        text.reserve(ByteCount{9U});
 
         text.shrinkToFit();
 
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{"Hello"});
-        REQUIRE_EQUAL(text.capacity(), ByteLength{5U});
+        REQUIRE_EQUAL(text.capacity(), ByteCount{5U});
         REQUIRE_EQUAL(text.memoryUsage(), expectedMemoryUsage(5U));
     }
 
     void testShrinkToFitMaterializesSliceToExactSize() {
-        auto text = StringEditor{"abcdef"_el}.slice(ByteRange{ByteIndex{2U}, ByteLength{2U}});
+        auto text = StringEditor{"abcdef"_el}.slice({ByteIndex{2U}, ByteCount{2U}});
 
         text.shrinkToFit();
 
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{"cd"});
-        REQUIRE_EQUAL(text.capacity(), ByteLength{2U});
+        REQUIRE_EQUAL(text.capacity(), ByteCount{2U});
         REQUIRE_EQUAL(text.memoryUsage(), expectedMemoryUsage(2U));
     }
 
     void testStdConversions() {
         const auto text = String{"A¢€😀"_el};
-        const auto slice = String{"xxA¢€😀yy"_el}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
+        const auto slice = String{"xxA¢€😀yy"_el}.slice({ByteIndex{2}, ByteCount{10}});
 
         REQUIRE_EQUAL(StringConverter{text}.toStdU16String(), th::stdU16StringFromHex("0041 00A2 20AC D83D DE00"));
         REQUIRE_EQUAL(StringConverter{text}.toStdU32String(), std::u32string{U"A¢€😀"});
@@ -870,8 +868,8 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto expectedMemoryUsage(const std::size_t capacity) -> ByteLength {
-        return ByteLength::fromSizeT(sizeof(el::text::impl::U8StringData) + capacity + 1U);
+    [[nodiscard]] static auto expectedMemoryUsage(const std::size_t capacity) -> ByteCount {
+        return ByteCount::fromSizeT(sizeof(el::text::impl::U8StringData) + capacity + 1U);
     }
 
     [[nodiscard]] static auto invalidUtf8Data() -> std::string {

@@ -6,7 +6,7 @@
 
 namespace erbsland::stream::impl {
 
-using unit::ByteLength;
+using unit::ByteCount;
 
 auto streamBufferSizes(const StreamBuffering buffering) noexcept -> StreamBufferSizes {
     constexpr auto kib = std::size_t{1024U};
@@ -14,39 +14,31 @@ auto streamBufferSizes(const StreamBuffering buffering) noexcept -> StreamBuffer
     switch (buffering) {
     case StreamBuffering::MinimalMemory:
         return {
-            ByteLength{4U * kib},
-            ByteLength{16U * kib},
-            ByteLength{4U * kib},
-            ByteLength{4U * kib},
-            ByteLength{256U * kib}};
+            ByteCount{4U * kib}, ByteCount{16U * kib}, ByteCount{4U * kib}, ByteCount{4U * kib}, ByteCount{256U * kib}};
     case StreamBuffering::Interactive:
         return {
-            ByteLength{16U * kib},
-            ByteLength{32U * kib},
-            ByteLength{16U * kib},
-            ByteLength{4U * kib},
-            ByteLength{1U * mib}};
+            ByteCount{16U * kib}, ByteCount{32U * kib}, ByteCount{16U * kib}, ByteCount{4U * kib}, ByteCount{1U * mib}};
     case StreamBuffering::Balanced:
         return {
-            ByteLength{64U * kib},
-            ByteLength{64U * kib},
-            ByteLength{64U * kib},
-            ByteLength{16U * kib},
-            ByteLength{16U * mib}};
+            ByteCount{64U * kib},
+            ByteCount{64U * kib},
+            ByteCount{64U * kib},
+            ByteCount{16U * kib},
+            ByteCount{16U * mib}};
     case StreamBuffering::Throughput:
         return {
-            ByteLength{256U * kib},
-            ByteLength{256U * kib},
-            ByteLength{128U * kib},
-            ByteLength{64U * kib},
-            ByteLength{64U * mib}};
+            ByteCount{256U * kib},
+            ByteCount{256U * kib},
+            ByteCount{128U * kib},
+            ByteCount{64U * kib},
+            ByteCount{64U * mib}};
     case StreamBuffering::Bulk:
         return {
-            ByteLength{1U * mib},
-            ByteLength{1U * mib},
-            ByteLength{256U * kib},
-            ByteLength{256U * kib},
-            ByteLength{256U * mib}};
+            ByteCount{1U * mib},
+            ByteCount{1U * mib},
+            ByteCount{256U * kib},
+            ByteCount{256U * kib},
+            ByteCount{256U * mib}};
     }
     return {};
 }

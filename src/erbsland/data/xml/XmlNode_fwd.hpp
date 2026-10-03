@@ -5,6 +5,8 @@
 #include <memory>
 
 namespace erbsland::data::xml {
+
 class XmlNode;
 using XmlNodePtr = std::shared_ptr<XmlNode>;
+
 }

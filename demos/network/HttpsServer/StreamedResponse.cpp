@@ -1,18 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "StreamedResponse.hpp"
 
-#include <erbsland/network/http/HttpFieldType.hpp>
-#include <erbsland/network/http/HttpHeaders.hpp>
-#include <erbsland/network/http/HttpMediaType.hpp>
-#include <erbsland/network/http/HttpResponseHead.hpp>
-#include <erbsland/network/http/HttpStatus.hpp>
-#include <erbsland/network/http/HttpVersion.hpp>
-#include <erbsland/network/http_server/HttpServerRequestEventEditor.hpp>
-#include <erbsland/text/StringBomMode.hpp>
-#include <erbsland/text/StringEncoder.hpp>
-#include <erbsland/text/StringFormat.hpp>
+#include <erbsland/HttpFieldType.hpp>
+#include <erbsland/HttpHeaders.hpp>
+#include <erbsland/HttpMediaType.hpp>
+#include <erbsland/HttpResponseHead.hpp>
+#include <erbsland/HttpServerRequestEventEditor.hpp>
+#include <erbsland/HttpStatus.hpp>
+#include <erbsland/HttpVersion.hpp>
+#include <erbsland/StringBomMode.hpp>
+#include <erbsland/StringEncoder.hpp>
+#include <erbsland/StringEncoding.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace demo {
 

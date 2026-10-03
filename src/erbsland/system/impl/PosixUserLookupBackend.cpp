@@ -6,12 +6,12 @@
 
 #include "../PlatformError.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/IntegerBase.hpp"
 #include "../../text/IntegerParseOptions.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <grp.h>
 #include <pwd.h>
@@ -27,9 +27,10 @@
 
 namespace erbsland::system::impl {
 
+using namespace text;
 using namespace text::literals;
 
-void PosixUserLookupBackend::throwLookupError(text::String reason, const int status) {
+void PosixUserLookupBackend::throwLookupError(String reason, const int status) {
     throw system::PlatformError{std::move(reason), system::impl::PosixErrorContext::fromErrorCode(status)};
 }
 
@@ -44,7 +45,7 @@ auto PosixUserLookupBackend::userNameForId(const UserId &id) -> UserName {
         auto *result = static_cast<passwd *>(nullptr);
         const auto status = ::getpwuid_r(uid, &password, buffer.get(), bufferSize, &result);
         if (status == 0 && result != nullptr) {
-            return UserName{text::String{std::string_view{result->pw_name}}};
+            return UserName{String{std::string_view{result->pw_name}}};
         }
         if (status == ERANGE) {
             bufferSize *= 2U;
@@ -68,7 +69,7 @@ auto PosixUserLookupBackend::groupNameForId(const GroupId &id) -> GroupName {
         auto *result = static_cast<::group *>(nullptr);
         const auto status = ::getgrgid_r(gid, &group, buffer.get(), bufferSize, &result);
         if (status == 0 && result != nullptr) {
-            return GroupName{text::String{std::string_view{result->gr_name}}};
+            return GroupName{String{std::string_view{result->gr_name}}};
         }
         if (status == ERANGE) {
             bufferSize *= 2U;
@@ -82,7 +83,7 @@ auto PosixUserLookupBackend::groupNameForId(const GroupId &id) -> GroupName {
 }
 
 auto PosixUserLookupBackend::userIdForName(const UserName &name) -> UserId {
-    const auto nameText = text::StringConverter{name.name()}.toStdString();
+    const auto nameText = StringConverter{name.name()}.toStdString();
     const auto configuredBufferSize = ::sysconf(_SC_GETPW_R_SIZE_MAX);
     auto bufferSize =
         configuredBufferSize > 1024L ? static_cast<std::size_t>(configuredBufferSize) : std::size_t{1024U};
@@ -92,7 +93,7 @@ auto PosixUserLookupBackend::userIdForName(const UserName &name) -> UserId {
         auto *result = static_cast<passwd *>(nullptr);
         const auto status = ::getpwnam_r(nameText.c_str(), &password, buffer.get(), bufferSize, &result);
         if (status == 0 && result != nullptr) {
-            return UserId{text::String::fromInteger(static_cast<unsigned long>(result->pw_uid))};
+            return UserId{String::fromInteger(static_cast<unsigned long>(result->pw_uid))};
         }
         if (status == ERANGE) {
             bufferSize *= 2U;
@@ -106,7 +107,7 @@ auto PosixUserLookupBackend::userIdForName(const UserName &name) -> UserId {
 }
 
 auto PosixUserLookupBackend::groupIdForName(const GroupName &name) -> GroupId {
-    const auto nameText = text::StringConverter{name.name()}.toStdString();
+    const auto nameText = StringConverter{name.name()}.toStdString();
     const auto configuredBufferSize = ::sysconf(_SC_GETGR_R_SIZE_MAX);
     auto bufferSize =
         configuredBufferSize > 1024L ? static_cast<std::size_t>(configuredBufferSize) : std::size_t{1024U};
@@ -116,7 +117,7 @@ auto PosixUserLookupBackend::groupIdForName(const GroupName &name) -> GroupId {
         auto *result = static_cast<::group *>(nullptr);
         const auto status = ::getgrnam_r(nameText.c_str(), &group, buffer.get(), bufferSize, &result);
         if (status == 0 && result != nullptr) {
-            return GroupId{text::String::fromInteger(static_cast<unsigned long>(result->gr_gid))};
+            return GroupId{String::fromInteger(static_cast<unsigned long>(result->gr_gid))};
         }
         if (status == ERANGE) {
             bufferSize *= 2U;
@@ -129,12 +130,12 @@ auto PosixUserLookupBackend::groupIdForName(const GroupName &name) -> GroupId {
     }
 }
 
-auto PosixUserLookupBackend::parseId(const text::String &id, const text::String &kind) -> unsigned long {
-    auto options = text::IntegerParseOptions{};
-    options.setFixedBase(text::IntegerBase::Decimal).setMinimumDigits(unit::CpLength::one());
+auto PosixUserLookupBackend::parseId(const String &id, const String &kind) -> unsigned long {
+    auto options = IntegerParseOptions{};
+    options.setFixedBase(IntegerBase::Decimal).setMinimumDigits(unit::CpCount::one());
     const auto result = id.toInteger<unsigned long>(std::numeric_limits<unsigned long>::max(), options);
     if (result > std::numeric_limits<unsigned int>::max()) {
-        throw err::ParameterError{"Invalid POSIX user or group identifier."_el, kind};
+        throw err::ParameterFailure{"Invalid POSIX user or group identifier."_el, kind};
     }
     return result;
 }

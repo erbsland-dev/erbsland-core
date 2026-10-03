@@ -8,7 +8,10 @@
 #include "OptionType.hpp"
 
 #include "impl/ExecutableName.hpp"
+#include "impl/OptionLiterals.hpp"
 
+#include "../i18n/DisplayText.hpp"
+#include "../i18n/impl/DisplayTextCore.hpp"
 #include "../text/Literals.hpp"
 
 #include <memory>
@@ -61,13 +64,15 @@ auto Options::defaultOptionSet() -> OptionSetPtr {
 
 auto Options::createBuiltInOptionSet() -> OptionSetPtr {
     auto optionSet = OptionSet::create();
-    optionSet->addOption({"-h"_el, "--help"_el})
+    optionSet->addOption({impl::option_literal::cHelpShortName, impl::option_literal::cHelpLongName})
         .setType(OptionType::Text)
         .setFlag(OptionFlag::AcceptAsFlag)
-        .setHelp("Display this help."_el)
+        .setHelp(i18n::impl::DisplayTextCore{}.findText("options.help_option_description"_el).value())
+        .setHelpDescription(i18n::impl::DisplayTextCore{}.findText("options.help_option_details"_el).value())
         .setHelpVisibility(OptionHelpVisibility::Overview);
-    optionSet->addOption("--version"_el)
-        .setHelp("Display version information."_el)
+    optionSet->addOption(impl::option_literal::cVersionLongName)
+        .setHelp(i18n::impl::DisplayTextCore{}.findText("options.version_option_description"_el).value())
+        .setHelpDescription(i18n::impl::DisplayTextCore{}.findText("options.version_option_details"_el).value())
         .setHelpVisibility(OptionHelpVisibility::Overview);
     return optionSet;
 }

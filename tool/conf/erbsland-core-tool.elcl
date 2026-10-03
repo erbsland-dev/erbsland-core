@@ -1,0 +1,8 @@
+#
+# Erbsland Core maintenance tool configuration
+# ====================================================================================================================
+# All detail configurations are included from this point.
+#
+@include: "misc/*.elcl"
+@include: "source/*.elcl"
+@include: "tools/*.elcl"

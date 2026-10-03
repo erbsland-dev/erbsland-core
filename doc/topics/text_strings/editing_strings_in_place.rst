@@ -28,8 +28,8 @@ showing where search positions and storage ownership need care.
 Once the edit is complete, expose the result as :cpp:type:`String <erbsland::text::String>` and return to the ordinary
 read-only model.
 
-Follow One Value Through a Sequence of Edits
-============================================
+StringEditor Mutations and Index Validity
+=========================================
 
 Search functions return positions in the editor's current text.
 Apply positions before an earlier mutation invalidates them, or search again after the mutation.
@@ -39,7 +39,7 @@ required.
 .. erbsland-demo::
     :source: text/StringEditor/EditingText.cpp
     :exec: text/string_editor --demo EditingText
-    :source-sha256: a930e4a87a66c07ce7de47ebbb62f4d2cc8e953c0261fb2fdd114f79ba35baf9
+    :sha256: 178420311fb30add2c049a89ac24668d3ca98ebf65bd88e5f9f87fadf080bc09
 
 .. code-block:: cpp
 
@@ -54,8 +54,8 @@ required.
         const auto intro = el::String{"A short alpine field note:"_el};
 
         // Find the insertion position after the first sentence.
-        auto firstFullStopIndex = story.findFirstOf({U'.'});
-        story.advance(firstFullStopIndex, el::CpLength{2});
+        auto firstFullStopIndex = story.findFirstOf(el::CharSet{U'.'});
+        story.advance(firstFullStopIndex, el::CpCount{2});
 
         // Insert a new sentence after the first sentence.
         story.insert(firstFullStopIndex, "Sunlight reaches the wet limestone. "_el);
@@ -80,18 +80,20 @@ required.
         el::io::printLine(story);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    A short alpine field note:
-    The frost lifts from the valley.
-    Sunlight reaches the wet limestone.
-    A violet gentian opens beside the stone.
-     🌿 The day begins quietly.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mA short alpine field note:
+        The frost lifts from the valley.
+        Sunlight reaches the wet limestone.
+        A violet gentian opens beside the stone.
+         🌿 The day begins quietly.␛[0m
 
 .. erbsland-demo-end::
 
-Narrow the Working Text by Range
+Removing and Keeping Text Ranges
 ================================
 
 ``remove()`` deletes the selected range from the editor.
@@ -102,7 +104,7 @@ is sufficient.
 .. erbsland-demo::
     :source: text/StringEditor/RemoveAndKeepRanges.cpp
     :exec: text/string_editor --demo RemoveAndKeepRanges
-    :source-sha256: 08fba8790fb976498d1963c57d714dadbf5e129fa55cef8083ad301338b08cca
+    :sha256: 07756adadf4a44a8713f053b243116b95168c29abfb06e10f7174c82a98a6721
 
 .. code-block:: cpp
 
@@ -130,7 +132,7 @@ is sufficient.
 
         // Code-point ranges are readable for small labels with fixed structure.
         auto label = el::StringEditor{"🌙Luna-04"_el};
-        label.keep(el::CpRange{el::CpIndex{1U}, el::CpLength{4U}});
+        label.keep(el::CpRange{el::CpIndex{1U}, el::CpCount{4U}});
 
         el::io::printLine("Original: "_el, record);
         el::io::printLine("After remove: "_el, compactRecord);
@@ -138,18 +140,20 @@ is sufficient.
         el::io::printLine("Kept label text: "_el, label);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Original: site=Åsen|weather=klart|note=sol
-    After remove: site=Åsen|note=sol
-    Kept site: Åsen
-    Kept label text: Luna
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOriginal: site=Åsen|weather=klart|note=sol
+        After remove: site=Åsen|note=sol
+        Kept site: Åsen
+        Kept label text: Luna␛[0m
 
 .. erbsland-demo-end::
 
-Remove What the Text Contains
-=============================
+Removing Matching Text and Character Sets
+=========================================
 
 ``removeFirst()`` changes the first matching text occurrence.
 ``removeAll()`` removes every matching text occurrence or every character from a
@@ -159,7 +163,7 @@ An optional character comparison function supports operations such as case-folde
 .. erbsland-demo::
     :source: text/StringEditor/RemoveFirstAndAll.cpp
     :exec: text/string_editor --demo RemoveFirstAndAll
-    :source-sha256: fe2e79066f6d12ddfef2ab74e9e2b4ac032ed6a80fb1e9ab06a2beed7af74ab3
+    :sha256: 782ccc093fdd24e41a1c553a2d4a532fc8c036f6c93ff2a693126115f53cf8df
 
 .. code-block:: cpp
 
@@ -192,14 +196,16 @@ An optional character comparison function supports operations such as case-folde
         el::io::printLine("Case-folded removal: "_el, folded);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Source: mist :: frost :: mist :: aurora
-    First text removed:  :: frost :: mist :: aurora
-    All text removed:  :: frost ::  :: aurora
-    Characters removed: mistfrostmistaurora
-    Case-folded removal:  |  | aster
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSource: mist :: frost :: mist :: aurora
+        First text removed:  :: frost :: mist :: aurora
+        All text removed:  :: frost ::  :: aurora
+        Characters removed: mistfrostmistaurora
+        Case-folded removal:  |  | aster␛[0m
 
 .. erbsland-demo-end::
 
@@ -215,7 +221,7 @@ therefore be more expensive than appending.
 .. erbsland-demo::
     :source: text/StringEditor/InsertAndReplace.cpp
     :exec: text/string_editor --demo InsertAndReplace
-    :source-sha256: f69e4c84af30fc0cc81c444200f4f0a4923f6b54f451820dfece85745faef4ca
+    :sha256: 441a5e16d6f98db3164df266964115265ba4e601ccdfa0815a4766e07e3ed4b6
 
 .. code-block:: cpp
 
@@ -244,22 +250,24 @@ therefore be more expensive than appending.
         report.replaceAll(el::CharSet{"|="_el}, U'·');
 
         auto token = el::StringEditor{"AβC"_el};
-        token.replace(el::CpRange{el::CpIndex{1U}, el::CpLength{1U}}, "beta"_el);
+        token.replace(el::CpRange{el::CpIndex{1U}, el::CpCount{1U}}, "beta"_el);
 
         el::io::printLine("Edited report: "_el, report);
         el::io::printLine("Edited token: "_el, token);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Edited report: ☀ Plot 08 · himmel·clear · himmel·grey
-    Edited token: AbetaC
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mEdited report: ☀ Plot 08 · himmel·clear · himmel·grey
+        Edited token: AbetaC␛[0m
 
 .. erbsland-demo-end::
 
-Fit Text into a Character Width
-===============================
+Truncating and Aligning Text by Code-Point Width
+================================================
 
 ``truncate()`` shortens the editor to a decoded code-point width and can retain the beginning, middle, or end.
 ``align()`` pads the value to a requested code-point width.
@@ -268,7 +276,7 @@ Both mutate the working value; the corresponding past-tense ``String`` methods r
 .. erbsland-demo::
     :source: text/StringEditor/AlignAndTruncate.cpp
     :exec: text/string_editor --demo AlignAndTruncate
-    :source-sha256: 7e423803c272716581e26aefb31db457d3707bcbb40718ee0a5cd32f4975008b
+    :sha256: ad4b1cfcc995bfaa51839eaa4905b0183461e7498dd24e74732db93dcf1bccea
 
 .. code-block:: cpp
 
@@ -276,23 +284,25 @@ Both mutate the working value; the corresponding past-tense ``String`` methods r
     /// editor in place. Both use decoded code-point lengths rather than UTF-8 bytes.
     void alignAndTruncate() {
         const auto label = el::String{"Alpenrose"_el};
-        el::io::printLine("Aligned: |"_el, label.aligned(el::CpLength{14U}, el::Alignment::HCenter, U'.'), "|"_el);
+        el::io::printLine("Aligned: |"_el, label.aligned(el::CpCount{14U}, el::Alignment::HCenter, U'.'), "|"_el);
 
         auto observation = el::StringEditor{"Observation: Alpenrose beside pale limestone under morning light"_el};
-        observation.truncate(el::CpLength{28U}, el::TruncateMode::Middle, "..."_el);
+        observation.truncate(el::CpCount{28U}, el::TruncateMode::Middle, "..."_el);
         el::io::printLine("Truncated: "_el, observation);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Aligned: |..Alpenrose...|
-    Truncated: Observation: ...orning light
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAligned: |..Alpenrose...|
+        Truncated: Observation: ...orning light␛[0m
 
 .. erbsland-demo-end::
 
-Reuse an Editor for Another Pass
-================================
+Reusing Editor Capacity with clear() and reset()
+================================================
 
 ``clear()`` removes text while keeping capacity for another edit pass.
 ``reset()`` releases the editor state and returns it to a fresh empty value.
@@ -302,7 +312,7 @@ reallocate and copy the accumulated character data.
 .. erbsland-demo::
     :source: text/StringEditor/ClearResetAndAppend.cpp
     :exec: text/string_editor --demo ClearResetAndAppend
-    :source-sha256: 956c77607bc7f40df1719483ced732bd3f94f849374e754e02bac7521343221e
+    :sha256: f319c7116e011d9d5716425fcfc8a5a66e5718fca68b101c9926468e79801057
 
 .. code-block:: cpp
 
@@ -315,11 +325,11 @@ reallocate and copy the accumulated character data.
     /// append operation.
     void clearResetAndAppend() {
         auto draft = el::StringEditor{"ridge log"_el};
-        draft.reserve(el::ByteLength{80U});
+        draft.reserve(el::ByteCount{80U});
 
         // Append text and repeated code points directly to the editable string.
         draft.append(": "_el).append("lichen"_el).append(", "_el).append("moss"_el);
-        draft.append(U'·', el::CpLength{3U});
+        draft.append(U'·', el::CpCount{3U});
         printDraftState("Draft"_el, draft);
 
         // Clear keeps the reserved storage for the next edit pass.
@@ -338,20 +348,22 @@ reallocate and copy the accumulated character data.
         el::io::printLine("  bytes="_el, editor.length().toSizeT(), " capacity="_el, editor.capacity().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Draft: ridge log: lichen, moss···
-      bytes=29 capacity=80
-    After clear: reused after clear
-      bytes=18 capacity=80
-    After reset: fresh after reset
-      bytes=17 capacity=47
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDraft: ridge log: lichen, moss···
+          bytes=29 capacity=80
+        After clear: reused after clear
+          bytes=18 capacity=80
+        After reset: fresh after reset
+          bytes=17 capacity=47␛[0m
 
 .. erbsland-demo-end::
 
-Normalize as Part of the Edit
-=============================
+In-Place Unicode Normalization
+==============================
 
 ``normalize()`` applies a Unicode normalization form to the editor in place.
 Use it inside a wider mutation workflow; use ``String::normalized()`` when normalization is the only transformation and
@@ -360,7 +372,7 @@ the source should remain read-only.
 .. erbsland-demo::
     :source: text/StringEditor/NormalizeText.cpp
     :exec: text/string_editor --demo NormalizeText
-    :source-sha256: b7ef58bf0458c383cd8590fa14237b9ed411d4c1542511aeb4d6bd6e502da882
+    :sha256: 9caebfcb2ecf9b86d1e5e7641f78b33759013aab39c31678aa253eed9301441a
 
 .. code-block:: cpp
 
@@ -375,11 +387,13 @@ the source should remain read-only.
         el::io::printLine("After NFC : "_el, elementName);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Before NFC: カリウム
-    After NFC : ガリウム
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBefore NFC: ガリウム
+        After NFC : ガリウム␛[0m
 
 .. erbsland-demo-end::
 

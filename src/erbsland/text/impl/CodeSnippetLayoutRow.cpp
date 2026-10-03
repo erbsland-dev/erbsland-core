@@ -19,18 +19,18 @@ auto CodeSnippetLayoutRow::markerPlacement(const unit::ColumnRange range) const 
     -> std::optional<MarkerPlacement> {
     if (range.isEmpty()) {
         if (_cells.empty()) {
-            return range.index().isZero() ? std::optional{MarkerPlacement{0, 1}} : std::nullopt;
+            return range.beginIndex().isZero() ? std::optional{MarkerPlacement{0, 1}} : std::nullopt;
         }
         const auto first = std::ranges::find_if(_cells, [](const auto &cell) -> bool { return !cell.isEllipsis; });
         const auto last = std::ranges::find_if(
             _cells.rbegin(), _cells.rend(), [](const auto &cell) -> bool { return !cell.isEllipsis; });
-        if (first == _cells.end() || last == _cells.rend() || range.index() < first->range.index() ||
-            range.index() > last->range.endIndex()) {
+        if (first == _cells.end() || last == _cells.rend() || range.beginIndex() < first->range.beginIndex() ||
+            range.beginIndex() > last->range.endIndex()) {
             return std::nullopt;
         }
         auto start = 0;
         for (const auto &cell : _cells) {
-            if (cell.containsOrFollows(range.index())) {
+            if (cell.containsOrFollows(range.beginIndex())) {
                 break;
             }
             start += cell.width;

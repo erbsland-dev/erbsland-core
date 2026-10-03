@@ -23,12 +23,10 @@ public:
     virtual void startOnce(time::TimeDelta delay) = 0;
     /// Start this timer repeatedly with a fixed delay after each callback finishes.
     /// @param interval The positive interval between callback completion and the next execution.
-    /// @throws err::ParameterError If `interval` is zero or negative.
     virtual void startFixedDelay(time::TimeDelta interval) = 0;
     /// Start this timer repeatedly with a fixed rate.
     /// Missed ticks are skipped and never queued as catch-up bursts.
     /// @param interval The positive interval between scheduled callback times.
-    /// @throws err::ParameterError If `interval` is zero or negative.
     virtual void startFixedRate(time::TimeDelta interval) = 0;
     /// Stop this timer.
     virtual void stop() noexcept = 0;

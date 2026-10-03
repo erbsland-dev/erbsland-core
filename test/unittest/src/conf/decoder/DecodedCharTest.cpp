@@ -3,10 +3,10 @@
 
 #include "../ConfTestHelper.hpp"
 
+#include <erbsland/CodeLocation.hpp>
 #include <erbsland/conf/impl/char/NamedChars.hpp>
 #include <erbsland/conf/impl/decoder/DecodedChar.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/unit/CodeLocation.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace erbsland::conf;

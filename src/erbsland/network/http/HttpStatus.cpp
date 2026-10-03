@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HttpStatus.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/OutOfRangeError.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../text/IntegerBase.hpp"
 #include "../../text/IntegerParseOptions.hpp"
 #include "../../text/Literals.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 namespace erbsland::network {
 
+using namespace err;
 using namespace text;
 using namespace text::literals;
 
@@ -124,7 +125,7 @@ auto HttpStatus::toString() const noexcept -> String {
 auto HttpStatus::fromCodeOrThrow(const uint16_t code) -> HttpStatus {
     const auto result = fromCode(code);
     if (!result.isValid()) {
-        throw err::ParameterError{"An HTTP status code must be in the range 100 through 599."_el, "code"_el};
+        throw OutOfRangeError{"An HTTP status code must be in the range 100 through 599."_el};
     }
     return result;
 }
@@ -132,7 +133,7 @@ auto HttpStatus::fromCodeOrThrow(const uint16_t code) -> HttpStatus {
 auto HttpStatus::fromString(const String &text) noexcept -> HttpStatus {
     try {
         return fromStringOrThrow(text);
-    } catch (const err::ParseError &) {
+    } catch (const ParseError &) {
         return {};
     }
 }
@@ -141,14 +142,14 @@ auto HttpStatus::fromStringOrThrow(const String &text) -> HttpStatus {
     try {
         const auto options = IntegerParseOptions{}
                                  .setFixedBase(IntegerBase::Decimal)
-                                 .setMinimumDigits(unit::CpLength{3U})
-                                 .setMaximumDigits(unit::CpLength{3U});
+                                 .setMinimumDigits(unit::CpCount{3U})
+                                 .setMaximumDigits(unit::CpCount{3U});
         const auto result = fromCode(text.toIntegerOrThrow<uint16_t>(options));
         if (result.isValid()) {
             return result;
         }
-    } catch (const err::ParseError &) {}
-    throw err::ParseError{"An HTTP status must be exactly three digits from 100 through 599."_el};
+    } catch (const ParseError &) {}
+    throw ParseError{"An HTTP status must be exactly three digits from 100 through 599."_el};
 }
 
 }

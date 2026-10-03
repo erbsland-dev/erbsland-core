@@ -11,24 +11,30 @@
 #include "impl/PathBackend.hpp"
 #include "impl/PathOperations.hpp"
 
-#include "../core/Application.hpp"
-#include "../err/Exception.hpp"
+#include "../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../core/impl/ApplicationDataAccess.hpp"
+#include "../err/RuntimeError.hpp"
 #include "../random/Random.hpp"
-#include "../random/RandomError.hpp"
+#include "../random/RandomFailure.hpp"
 #include "../stream/TempByteOutputStream.hpp"
 #include "../stream/TempTextOutputStream.hpp"
 #include "../system/PlatformErrorCategory.hpp"
 #include "../system/PlatformErrorContext.hpp"
 #include "../text/CharSet.hpp"
 #include "../text/Literals.hpp"
+#include "../text/StringJoins.hpp"
+#include "../util/impl/worker_executor/WorkerServices.hpp"
 
 #include <exception>
 #include <memory>
 
 namespace erbsland::path {
 
+using namespace stream;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
-using err::Exception;
+using err::RuntimeError;
 using util::Result;
 
 PathOperations::PathOperations() = default;
@@ -61,7 +67,7 @@ auto PathOperations::remove(const PathRemoveOptions options, const PathProgressF
         }
         _impl->removeOrThrow(options, progressFn);
         return Result::Success;
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return Result::Failure;
     }
 }
@@ -87,7 +93,7 @@ auto PathOperations::copyTo(
         }
         _impl->copyToOrThrow(destination, options, progressFn);
         return Result::Success;
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return Result::Failure;
     }
 }
@@ -113,7 +119,7 @@ auto PathOperations::moveTo(const Path &destination, const PathMoveOptions optio
         }
         _impl->moveToOrThrow(destination, options);
         return Result::Success;
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return Result::Failure;
     }
 }
@@ -135,7 +141,7 @@ auto PathOperations::createFile(const PathCreateFileOptions options) const noexc
     try {
         createFileOrThrow(options);
         return Result::Success;
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return Result::Failure;
     }
 }
@@ -151,7 +157,7 @@ auto PathOperations::createDirectory(const PathCreateDirectoryOptions options) c
     try {
         createDirectoryOrThrow(options);
         return Result::Success;
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return Result::Failure;
     }
 }
@@ -166,7 +172,7 @@ void PathOperations::createDirectoryOrThrow(const PathCreateDirectoryOptions opt
 auto PathOperations::createTempDirectory(PathTempDirectoryOptions options) const noexcept -> TempDirectoryPtr {
     try {
         return createTempDirectoryOrThrow(options);
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
@@ -181,48 +187,41 @@ auto PathOperations::createTempDirectoryOrThrow(PathTempDirectoryOptions options
         throw PathError{PathErrorContext{
             "Temporary directory could not be created"_el, "The random length or attempt count is invalid."_el}};
     }
-    const auto probeText = text::String::fromJoined({options.prefix(), "x"_el, options.suffix()});
+    const auto probeText = text::join(options.prefix(), "x"_el, options.suffix());
     const auto nameProbe = Path{probeText};
-    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ItemCount::one()) {
+    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != ItemCount::one()) {
         throw PathError{PathErrorContext{
             "Temporary directory could not be created"_el, "The prefix and suffix must form one valid path name."_el}};
     }
-    try {
-        auto &random = core::application().secureRandom();
-        static const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
-        for (auto attempt = unit::ItemCount{}; attempt < options.maximumAttempts(); ++attempt) {
-            const auto name = text::String::fromJoined(
-                {options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix()});
-            const auto temporaryPath = path() / name;
-            try {
-                impl::pathBackend().createDirectoryEntryOrThrow(temporaryPath, options.accessProfile());
-                return TempDirectoryPtr{new TempDirectory{temporaryPath, options.removeOnDestroy()}};
-            } catch (const PathError &error) {
-                if (!isAlreadyExistsError(error)) {
-                    throw;
-                }
+    const auto randomData = core::impl::applicationData()->random().get();
+    auto &random = randomData->secureRandom();
+    static const auto alphabet = CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
+    for (auto attempt = ItemCount{}; attempt < options.maximumAttempts(); ++attempt) {
+        const auto name =
+            text::join(options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix());
+        const auto temporaryPath = path() / name;
+        try {
+            impl::pathBackend().createDirectoryEntryOrThrow(temporaryPath, options.accessProfile());
+            return TempDirectoryPtr{new TempDirectory{temporaryPath, options.removeOnDestroy()}};
+        } catch (const PathError &error) {
+            if (!isAlreadyExistsError(error)) {
+                throw;
             }
         }
-    } catch (const random::RandomError &) {
-        throw PathError{
-            PathErrorContext{"Temporary directory could not be created"_el, "Secure random data is unavailable."_el},
-            std::current_exception()};
     }
     throw PathError{PathErrorContext{
         "Temporary directory could not be created"_el, "No unique temporary directory name could be created."_el}};
 }
 
-auto PathOperations::openTempByteOutputStream(PathTempFileOptions options) const noexcept
-    -> stream::TempByteOutputStreamPtr {
+auto PathOperations::openTempByteOutputStream(PathTempFileOptions options) const noexcept -> TempByteOutputStreamPtr {
     try {
         return openTempByteOutputStreamOrThrow(options);
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
 
-auto PathOperations::openTempByteOutputStreamOrThrow(PathTempFileOptions options) const
-    -> stream::TempByteOutputStreamPtr {
+auto PathOperations::openTempByteOutputStreamOrThrow(PathTempFileOptions options) const -> TempByteOutputStreamPtr {
     if (isEmpty()) {
         throw PathError{
             PathErrorContext{"Temporary file could not be created"_el, "No parent directory was provided."_el}};
@@ -232,53 +231,48 @@ auto PathOperations::openTempByteOutputStreamOrThrow(PathTempFileOptions options
         throw PathError{PathErrorContext{
             "Temporary file could not be created"_el, "The random length or attempt count is invalid."_el}};
     }
-    const auto probeText = text::String::fromJoined({options.prefix(), "x"_el, options.suffix()});
+    const auto probeText = text::join(options.prefix(), "x"_el, options.suffix());
     const auto nameProbe = Path{probeText};
-    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ItemCount::one()) {
+    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != ItemCount::one()) {
         throw PathError{PathErrorContext{
             "Temporary file could not be created"_el, "The prefix and suffix must form one valid path name."_el}};
     }
-    try {
-        auto &random = core::application().secureRandom();
-        static const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
-        for (auto attempt = unit::ItemCount{}; attempt < options.maximumAttempts(); ++attempt) {
-            const auto name = text::String::fromJoined(
-                {options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix()});
-            const auto temporaryPath = path() / name;
-            try {
-                auto writeOptions = PathWriteDataOptions{}.setStreamSettings(options.streamSettings());
-                writeOptions.setCreationMode(PathCreateMode::CreateNew);
-                writeOptions.setAccessProfile(options.accessProfile());
-                auto stream = temporaryPath.content().openByteOutputStream(writeOptions);
-                return stream::TempByteOutputStreamPtr{
-                    new stream::TempByteOutputStream{temporaryPath, std::move(stream), options.removeOnClose()}};
-            } catch (const PathError &error) {
-                if (!isAlreadyExistsError(error)) {
-                    throw;
-                }
+    const auto randomData = core::impl::applicationData()->random().get();
+    auto &random = randomData->secureRandom();
+    static const auto alphabet = CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
+    const auto cleanup = util::impl::worker_services::io().reserve();
+    for (auto attempt = ItemCount{}; attempt < options.maximumAttempts(); ++attempt) {
+        const auto name =
+            text::join(options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix());
+        const auto temporaryPath = path() / name;
+        try {
+            auto writeOptions = PathWriteDataOptions{}.setStreamSettings(options.streamSettings());
+            writeOptions.setCreationMode(PathCreateMode::CreateNew);
+            writeOptions.setAccessProfile(options.accessProfile());
+            auto stream = temporaryPath.content().openByteOutputStream(writeOptions);
+            return TempByteOutputStreamPtr{
+                new TempByteOutputStream{temporaryPath, std::move(stream), options.removeOnClose(), cleanup}};
+        } catch (const PathError &error) {
+            if (!isAlreadyExistsError(error)) {
+                throw;
             }
         }
-    } catch (const random::RandomError &) {
-        throw PathError{
-            PathErrorContext{"Temporary file could not be created"_el, "Secure random data is unavailable."_el},
-            std::current_exception()};
     }
     throw PathError{PathErrorContext{
         "Temporary file could not be created"_el, "No unique temporary file name could be created."_el}};
 }
 
 auto PathOperations::openTempTextOutputStream(
-    PathTempFileOptions temporaryOptions, PathWriteTextOptions writeOptions) const noexcept
-    -> stream::TempTextOutputStreamPtr {
+    PathTempFileOptions temporaryOptions, PathWriteTextOptions writeOptions) const noexcept -> TempTextOutputStreamPtr {
     try {
         return openTempTextOutputStreamOrThrow(temporaryOptions, writeOptions);
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
 
 auto PathOperations::openTempTextOutputStreamOrThrow(
-    PathTempFileOptions temporaryOptions, PathWriteTextOptions writeOptions) const -> stream::TempTextOutputStreamPtr {
+    PathTempFileOptions temporaryOptions, PathWriteTextOptions writeOptions) const -> TempTextOutputStreamPtr {
     if (isEmpty()) {
         throw PathError{
             PathErrorContext{"Temporary file could not be created"_el, "No parent directory was provided."_el}};
@@ -288,37 +282,33 @@ auto PathOperations::openTempTextOutputStreamOrThrow(
         throw PathError{PathErrorContext{
             "Temporary file could not be created"_el, "The random length or attempt count is invalid."_el}};
     }
-    const auto probeText = text::String::fromJoined({temporaryOptions.prefix(), "x"_el, temporaryOptions.suffix()});
+    const auto probeText = text::join(temporaryOptions.prefix(), "x"_el, temporaryOptions.suffix());
     const auto nameProbe = Path{probeText};
-    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ItemCount::one()) {
+    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != ItemCount::one()) {
         throw PathError{PathErrorContext{
             "Temporary file could not be created"_el, "The prefix and suffix must form one valid path name."_el}};
     }
-    try {
-        auto &random = core::application().secureRandom();
-        static const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
-        for (auto attempt = unit::ItemCount{}; attempt < temporaryOptions.maximumAttempts(); ++attempt) {
-            const auto name = text::String::fromJoined(
-                {temporaryOptions.prefix(),
-                    random.buildString(temporaryOptions.randomLength(), alphabet),
-                    temporaryOptions.suffix()});
-            const auto temporaryPath = path() / name;
-            try {
-                writeOptions.setCreationMode(PathCreateMode::CreateNew);
-                writeOptions.setAccessProfile(temporaryOptions.accessProfile());
-                auto stream = temporaryPath.content().openTextOutputStream(writeOptions);
-                return stream::TempTextOutputStreamPtr{new stream::TempTextOutputStream{
-                    temporaryPath, std::move(stream), temporaryOptions.removeOnClose()}};
-            } catch (const PathError &error) {
-                if (!isAlreadyExistsError(error)) {
-                    throw;
-                }
+    const auto randomData = core::impl::applicationData()->random().get();
+    auto &random = randomData->secureRandom();
+    static const auto alphabet = CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
+    const auto cleanup = util::impl::worker_services::io().reserve();
+    for (auto attempt = ItemCount{}; attempt < temporaryOptions.maximumAttempts(); ++attempt) {
+        const auto name = text::join(
+            temporaryOptions.prefix(),
+            random.buildString(temporaryOptions.randomLength(), alphabet),
+            temporaryOptions.suffix());
+        const auto temporaryPath = path() / name;
+        try {
+            writeOptions.setCreationMode(PathCreateMode::CreateNew);
+            writeOptions.setAccessProfile(temporaryOptions.accessProfile());
+            auto stream = temporaryPath.content().openTextOutputStream(writeOptions);
+            return TempTextOutputStreamPtr{
+                new TempTextOutputStream{temporaryPath, std::move(stream), temporaryOptions.removeOnClose(), cleanup}};
+        } catch (const PathError &error) {
+            if (!isAlreadyExistsError(error)) {
+                throw;
             }
         }
-    } catch (const random::RandomError &) {
-        throw PathError{
-            PathErrorContext{"Temporary file could not be created"_el, "Secure random data is unavailable."_el},
-            std::current_exception()};
     }
     throw PathError{PathErrorContext{
         "Temporary file could not be created"_el, "No unique temporary file name could be created."_el}};
@@ -331,7 +321,7 @@ auto PathOperations::setAccessProfile(const PathAccessProfile profile, const Pat
             return Result::Failure;
         }
         return _impl->setAccessProfile(profile, options) ? Result::Success : Result::Failure;
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return Result::Failure;
     }
 }
@@ -352,7 +342,7 @@ auto PathOperations::setLastModified(const time::Timestamp &value, const PathCha
             return Result::Failure;
         }
         return _impl->setLastModified(value, options) ? Result::Success : Result::Failure;
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return Result::Failure;
     }
 }
@@ -373,7 +363,7 @@ auto PathOperations::addAttributes(const PathAttributes attributes, const PathCh
             return Result::Failure;
         }
         return _impl->addAttributes(attributes, options) ? Result::Success : Result::Failure;
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return Result::Failure;
     }
 }
@@ -394,7 +384,7 @@ auto PathOperations::clearAttributes(const PathAttributes attributes, const Path
             return Result::Failure;
         }
         return _impl->clearAttributes(attributes, options) ? Result::Success : Result::Failure;
-    } catch (const Exception &) {
+    } catch (const RuntimeError &) {
         return Result::Failure;
     }
 }

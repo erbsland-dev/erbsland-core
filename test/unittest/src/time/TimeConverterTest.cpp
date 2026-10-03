@@ -1,9 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/time/DateTime.hpp>
+#include <erbsland/DateTime.hpp>
+#include <erbsland/OutOfRangeError.hpp>
 #include <erbsland/time/impl/DateTimeEpochs.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -61,10 +60,10 @@ public:
         REQUIRE_FALSE(DateTime::fromTicks(Seconds{}, Nanoseconds{-1}).has_value());
         REQUIRE_FALSE(DateTime::fromTicks(Seconds{}, Nanoseconds{1'000'000'000}).has_value());
         REQUIRE_FALSE(DateTime::fromTicks(Seconds{315'569'520'000}).has_value());
-        REQUIRE_THROWS_AS(el::err::ParameterError, DateTime::fromTicksOrThrow(Seconds{-1}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, DateTime::fromTicksOrThrow(Nanoseconds{-1}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, DateTime::fromTicksOrThrow(Seconds{-1}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, DateTime::fromTicksOrThrow(Nanoseconds{-1}));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::OutOfRangeError,
             DateTime::fromTicksOrThrow(Seconds{}, Nanoseconds{1'000'000'000}, TimeEpoch::Core));
         REQUIRE_THROWS_AS(el::err::OutOfRangeError, DateTime::fromTicksOrThrow(Seconds{315'569'520'000}));
         REQUIRE_THROWS_AS(el::err::OutOfRangeError, DateTime{}.toSecondsAndFractionsOrThrow());

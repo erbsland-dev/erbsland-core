@@ -29,7 +29,7 @@ public:
                 bytesToStdString({0x41U, 0xC3U, 0x9FU, 0xE2U, 0x82U, 0xACU, 0xF0U, 0x9FU, 0x98U, 0x80U})});
 
         result.append(el::text::Char::endOfData());
-        REQUIRE_EQUAL(result.length(), el::unit::ByteLength{10U});
+        REQUIRE_EQUAL(result.length(), el::unit::ByteCount{10U});
     }
 
     void testAppendUtf8ToU8String() {

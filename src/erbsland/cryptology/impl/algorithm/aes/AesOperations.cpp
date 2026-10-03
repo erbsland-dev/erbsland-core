@@ -6,7 +6,9 @@
 
 namespace erbsland::cryptology::impl::aes {
 
-auto multiply(const mem::Byte left, const mem::Byte right) noexcept -> mem::Byte {
+using namespace mem;
+
+auto multiply(const Byte left, const Byte right) noexcept -> Byte {
     auto result = uint8_t{};
     auto multiplicand = left.toUInt8();
     auto multiplier = right.toUInt8();
@@ -20,10 +22,10 @@ auto multiply(const mem::Byte left, const mem::Byte right) noexcept -> mem::Byte
         multiplicand = static_cast<uint8_t>(shifted ^ (0x1bU & static_cast<unsigned int>(highBitMask)));
         multiplier >>= 1U;
     }
-    return mem::Byte{result};
+    return Byte{result};
 }
 
-auto substitute(const mem::Byte value) noexcept -> mem::Byte {
+auto substitute(const Byte value) noexcept -> Byte {
     // FIPS 197, Section 5.1.1: x^254 gives the multiplicative inverse, including the defined zero mapping.
     const auto x2 = multiply(value, value);
     const auto x4 = multiply(x2, x2);
@@ -36,12 +38,12 @@ auto substitute(const mem::Byte value) noexcept -> mem::Byte {
 
     // FIPS 197, Equation 5.4: apply the affine transformation over GF(2).
     return inverse ^ inverse.rotatedLeft(1) ^ inverse.rotatedLeft(2) ^ inverse.rotatedLeft(3) ^ inverse.rotatedLeft(4) ^
-        mem::Byte{0x63U};
+        Byte { 0x63U };
 }
 
-auto inverseSubstitute(const mem::Byte value) noexcept -> mem::Byte {
+auto inverseSubstitute(const Byte value) noexcept -> Byte {
     // FIPS 197, Section 5.3.2: undo the affine transformation before taking the field inverse.
-    const auto transformed = value.rotatedLeft(1) ^ value.rotatedLeft(3) ^ value.rotatedLeft(6) ^ mem::Byte{0x05U};
+    const auto transformed = value.rotatedLeft(1) ^ value.rotatedLeft(3) ^ value.rotatedLeft(6) ^ Byte { 0x05U };
     const auto x2 = multiply(transformed, transformed);
     const auto x4 = multiply(x2, x2);
     const auto x8 = multiply(x4, x4);

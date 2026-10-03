@@ -34,13 +34,13 @@ public: // implement zip::ArchiveItem
     /// Implement `zip::ArchiveItem::crc32()`.
     [[nodiscard]] auto crc32() const noexcept -> uint32_t override;
     /// Implement `zip::ArchiveItem::compressedLength()`.
-    [[nodiscard]] auto compressedLength() const noexcept -> unit::ByteLength override;
+    [[nodiscard]] auto compressedLength() const noexcept -> unit::ByteCount override;
     /// Implement `zip::ArchiveItem::uncompressedLength()`.
-    [[nodiscard]] auto uncompressedLength() const noexcept -> unit::ByteLength override;
+    [[nodiscard]] auto uncompressedLength() const noexcept -> unit::ByteCount override;
     /// Implement `zip::ArchiveItem::comment()`.
     [[nodiscard]] auto comment() const noexcept -> const text::String & override;
     /// Implement `zip::ArchiveItem::extract()`.
-    [[nodiscard]] auto extract(unit::ByteLength maximumLength) const -> mem::ByteBlock override;
+    [[nodiscard]] auto extract(unit::ByteCount maximumLength) const -> mem::ByteBlock override;
     /// Implement `zip::ArchiveItem::extractToFile()`.
     void extractToFile(const path::Path &destination, ArchiveExtractionOptions options = {}) const override;
     /// Implement `zip::ArchiveItem::extractToDirectory()`.

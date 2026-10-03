@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HttpHeaders.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::network {
 
+using namespace err;
+using namespace unit;
 using namespace text;
 using namespace text::literals;
 
@@ -15,12 +17,12 @@ HttpHeaders::HttpHeaders(HttpFieldList fields, const HttpHeaderLimits limits) :
     validate(_fields);
 }
 
-auto HttpHeaders::serializedLength() const noexcept -> unit::ByteLength {
-    auto result = unit::ByteLength{};
+auto HttpHeaders::serializedLength() const noexcept -> ByteCount {
+    auto result = ByteCount{};
     for (const auto &fieldValue : _fields) {
         result += fieldValue.name().text().length();
         result += fieldValue.value().length();
-        result += unit::ByteLength{4U};
+        result += ByteCount{4U};
     }
     return result;
 }
@@ -89,7 +91,7 @@ auto HttpHeaders::addField(HttpField fieldValue) -> HttpHeaders & {
 
 auto HttpHeaders::addField(const HttpFieldType type, String value) -> HttpHeaders & {
     if (!type.isKnown()) {
-        throw err::ParameterError{"A recognized field type is required."_el, "type"_el};
+        throw ParameterFailure{"A recognized field type is required."_el, "type"_el};
     }
     return addField(HttpField{HttpFieldName{type}, std::move(value)});
 }
@@ -100,7 +102,7 @@ auto HttpHeaders::addField(String name, String value) -> HttpHeaders & {
 
 auto HttpHeaders::setField(HttpField fieldValue) -> HttpHeaders & {
     auto result = HttpFieldList{};
-    result.reserve(_fields.count() + unit::ItemCount::one());
+    result.reserve(_fields.count() + ItemCount::one());
     auto replaced = false;
     for (const auto &existing : _fields) {
         if (matches(existing, fieldValue.name())) {
@@ -122,7 +124,7 @@ auto HttpHeaders::setField(HttpField fieldValue) -> HttpHeaders & {
 
 auto HttpHeaders::setField(const HttpFieldType type, String value) -> HttpHeaders & {
     if (!type.isKnown()) {
-        throw err::ParameterError{"A recognized field type is required."_el, "type"_el};
+        throw ParameterFailure{"A recognized field type is required."_el, "type"_el};
     }
     return setField(HttpField{HttpFieldName{type}, std::move(value)});
 }
@@ -131,7 +133,7 @@ auto HttpHeaders::setField(String name, String value) -> HttpHeaders & {
     return setField(HttpField{std::move(name), std::move(value)});
 }
 
-auto HttpHeaders::removeAllFields(const HttpFieldName &name) -> unit::ItemCount {
+auto HttpHeaders::removeAllFields(const HttpFieldName &name) -> ItemCount {
     if (!name.isValid()) {
         return {};
     }
@@ -140,13 +142,13 @@ auto HttpHeaders::removeAllFields(const HttpFieldName &name) -> unit::ItemCount 
     return previous - _fields.count();
 }
 
-auto HttpHeaders::removeAllFields(const HttpFieldType type) -> unit::ItemCount {
-    return type.isKnown() ? removeAllFields(HttpFieldName{type}) : unit::ItemCount{};
+auto HttpHeaders::removeAllFields(const HttpFieldType type) -> ItemCount {
+    return type.isKnown() ? removeAllFields(HttpFieldName{type}) : ItemCount{};
 }
 
-auto HttpHeaders::removeAllFields(const String &name) -> unit::ItemCount {
+auto HttpHeaders::removeAllFields(const String &name) -> ItemCount {
     const auto parsed = HttpFieldName::fromString(name);
-    return parsed.isValid() ? removeAllFields(parsed) : unit::ItemCount{};
+    return parsed.isValid() ? removeAllFields(parsed) : ItemCount{};
 }
 
 auto HttpHeaders::contentType() const noexcept -> std::optional<HttpMediaType> {
@@ -160,7 +162,7 @@ auto HttpHeaders::contentType() const noexcept -> std::optional<HttpMediaType> {
 
 auto HttpHeaders::setContentType(const HttpMediaType &mediaType) -> HttpHeaders & {
     if (!mediaType.isValid()) {
-        throw err::ParameterError{"A valid media type is required."_el, "mediaType"_el};
+        throw ParameterFailure{"A valid media type is required."_el, "mediaType"_el};
     }
     return setField(HttpFieldType::ContentType, mediaType.toString());
 }
@@ -171,24 +173,24 @@ auto HttpHeaders::matches(const HttpField &fieldValue, const HttpFieldName &name
 
 void HttpHeaders::validate(const HttpFieldList &fields) const {
     if (fields.count() > _limits.maximumFieldCount()) {
-        throw err::ParameterError{"The HTTP header exceeds the configured field-count limit."_el, "fields"_el};
+        throw ParameterFailure{"The HTTP header exceeds the configured field-count limit."_el, "fields"_el};
     }
-    auto aggregate = unit::ByteLength{};
+    auto aggregate = ByteCount{};
     for (const auto &fieldValue : fields) {
         if (!fieldValue.isValid()) {
-            throw err::ParameterError{"The HTTP header contains an invalid field."_el, "fields"_el};
+            throw ParameterFailure{"The HTTP header contains an invalid field."_el, "fields"_el};
         }
         if (fieldValue.name().text().length() > _limits.maximumNameLength()) {
-            throw err::ParameterError{"An HTTP field name exceeds the configured length limit."_el, "fields"_el};
+            throw ParameterFailure{"An HTTP field name exceeds the configured length limit."_el, "fields"_el};
         }
         if (fieldValue.value().length() > _limits.maximumValueLength()) {
-            throw err::ParameterError{"An HTTP field value exceeds the configured length limit."_el, "fields"_el};
+            throw ParameterFailure{"An HTTP field value exceeds the configured length limit."_el, "fields"_el};
         }
         aggregate += fieldValue.name().text().length();
         aggregate += fieldValue.value().length();
-        aggregate += unit::ByteLength{4U};
+        aggregate += ByteCount{4U};
         if (aggregate > _limits.maximumAggregateLength()) {
-            throw err::ParameterError{"The HTTP header exceeds the configured aggregate length limit."_el, "fields"_el};
+            throw ParameterFailure{"The HTTP header exceeds the configured aggregate length limit."_el, "fields"_el};
         }
     }
 }

@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/cryptology/HashSelector.hpp>
+#include <erbsland/CryptographicSecurity.hpp>
+#include <erbsland/CryptographicStatus.hpp>
+#include <erbsland/HashRequirements.hpp>
+#include <erbsland/HashSelector.hpp>
+#include <erbsland/HashThroughput.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

@@ -18,4 +18,5 @@ document can retain its source locations without requiring the parser or source 
     :maxdepth: 1
 
     configuration_language
+    syntax_formatting
     validation_rules

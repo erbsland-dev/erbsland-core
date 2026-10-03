@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/AnyStringBuilder.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <array>
 
@@ -20,7 +27,7 @@ auto joinWithStringEditor() -> el::String {
         el::String{"79"_el},
     };
 
-    auto finalLength = el::ByteLength{};
+    auto finalLength = el::ByteCount{};
     for (const auto &fragment : fragments) {
         finalLength += fragment.length();
     }
@@ -30,13 +37,13 @@ auto joinWithStringEditor() -> el::String {
     for (const auto &fragment : fragments) {
         result.append(fragment);
     }
-    return el::String{result};
+    return result;
 }
 
-/// Join a fixed set of fragments with one final allocation. `fromJoined()`
+/// Join a fixed set of fragments with one final allocation. `el::join()`
 /// calculates the complete native size before it copies any character data.
-auto joinWithFromJoined() -> el::String {
-    return el::String::fromJoined({"元素: "_el, "金"_el, " ("_el, "Au"_el, "), 原子番号 "_el, "79"_el});
+auto joinFixedFragments() -> el::String {
+    return el::join("元素: "_el, "金"_el, " ("_el, "Au"_el, "), 原子番号 "_el, "79"_el);
 }
 
 /// Collect a dynamic number of lightweight shared strings, then join them.
@@ -82,7 +89,7 @@ auto joinWithAnyStringBuilder() -> el::String {
 /// time, already being edited, or requires width-independent formatted output.
 void joiningStrategies() {
     el::io::printLine("StringEditor ......: "_el, joinWithStringEditor());
-    el::io::printLine("String::fromJoined : "_el, joinWithFromJoined());
+    el::io::printLine("el::join ..........: "_el, joinFixedFragments());
     el::io::printLine("StringList::join ..: "_el, joinWithStringList());
     el::io::printLine("AnyStringBuilder ..: "_el, joinWithAnyStringBuilder());
 }

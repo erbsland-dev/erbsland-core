@@ -42,6 +42,10 @@ storage, reserved and growing capacity, front/middle/back edits, equal/growing/s
 unchanged and changed transformations, and hit/miss/repeated-prefix searches. Concurrent mutation of one editor is
 intentionally excluded because editors do not promise shared-mutation safety; each worker owns mutable fixtures.
 
+Comparison coverage includes decoded and binary ordering. The `binary-equal`, `binary-different-front`, and
+`binary-different-back` variants exercise `compareBinary()` for every width and both value types. Binary ordering
+compares stored bytes; it deliberately preserves malformed data and uses native byte order for UTF-16/32.
+
 ## Content and sizes
 
 Configured sizes are decoded code-point counts. The tool reports decoded code points, native data units, and native
@@ -76,3 +80,23 @@ encoding status, immutable baselines, COW isolation, and worker completion diges
 
 Compare runs only when executable, configuration MD5, seed, thread count, build type, and machine conditions match.
 Prefer medians from several complete runs; use p95/max and fairness to investigate jitter and contention.
+
+## Separator splitting comparisons
+
+`config/separator-split.elcl` compares native `splitAtFirst()` and `splitAtLast()` with manual public-API sequences.
+It covers all widths and value types, short ASCII and Unicode separators, misses, and long text separators.
+The `manual-` prefix is removed when deriving fixture seeds, so each native/manual pair receives identical input,
+separator placement, worker, and sample seeds. Result equality is checked before timing.
+
+The manual first-text baseline uses `find()` followed by two slices. The last-text baseline repeatedly calls
+`find()` while advancing one character to allow overlapping matches, since the public string API has no last-text
+search. Set baselines use `findFirstOf()` or `findLastOf()` and advance over one decoded character.
+These differences are part of the operations being compared; report timings per variant rather than assuming a
+uniform improvement. Fixture preparation and validation are outside the timed region.
+
+```shell
+cmake --build cmake-build-profile --target string-types-profile
+cmake-build-profile/profiling-apps/string-types-profile --config test/profiling/string/config/separator-split.elcl
+```
+
+`config/separator-split-smoke.elcl` runs all variants on empty, valid, and malformed inputs as a CTest check.

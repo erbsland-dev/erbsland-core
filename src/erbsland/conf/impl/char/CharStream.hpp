@@ -63,6 +63,9 @@ public:
     /// The source itself is not rewound because parser transactions cannot cross a line boundary.
     void restore(
         unit::ByteIndex nextReadIndex, unit::ByteIndex characterStartIndex, unit::CodeLocation position) noexcept;
+    /// Discard unread bytes in the current physical line for syntax recovery.
+    /// @return The uncaptured raw suffix, including its newline.
+    [[nodiscard]] auto recoverLine() noexcept -> text::String;
     /// Get the hash digest for the document.
     /// Call this function, *after* you received the end-of-document character. The digest is only available
     /// when the decoder detected a `\@signature` value in the first line of the document.

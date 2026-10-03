@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/network/source/ConnectionCloseContext.hpp>
-#include <erbsland/network/tcp/TcpAcceptOptions.hpp>
-#include <erbsland/network/tcp/TcpConnectionFilterResult.hpp>
-#include <erbsland/network/tcp/TcpConnectOptions.hpp>
-#include <erbsland/network/tcp/TcpListenerOptions.hpp>
-#include <erbsland/network/udp/UdpDatagram.hpp>
+#include <erbsland/ConnectionCloseContext.hpp>
+#include <erbsland/TcpAcceptOptions.hpp>
+#include <erbsland/TcpConnectionFilterResult.hpp>
+#include <erbsland/TcpConnectOptions.hpp>
+#include <erbsland/TcpListenerOptions.hpp>
+#include <erbsland/UdpDatagram.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::network;
@@ -18,15 +18,15 @@ public:
     void testTcpOptionDefaultsAndSetters() {
         auto connect = TcpConnectOptions{};
         REQUIRE_EQUAL(connect.timeout(), TcpConnectOptions::cDefaultTimeout);
-        REQUIRE_EQUAL(connect.bufferLimits().send(), el::unit::ByteLength{1024U * 1024U});
-        const auto limits = SocketBufferLimits{el::unit::ByteLength{4096U}, el::unit::ByteLength{8192U}};
+        REQUIRE_EQUAL(connect.bufferLimits().send(), el::unit::ByteCount{1024U * 1024U});
+        const auto limits = SocketBufferLimits{el::unit::ByteCount{4096U}, el::unit::ByteCount{8192U}};
         connect.setTimeout(el::time::TimeDelta::seconds(5)).setBufferLimits(limits);
         REQUIRE_EQUAL(connect.timeout(), el::time::TimeDelta::seconds(5));
-        REQUIRE_EQUAL(connect.bufferLimits().receive(), el::unit::ByteLength{8192U});
+        REQUIRE_EQUAL(connect.bufferLimits().receive(), el::unit::ByteCount{8192U});
 
         auto accept = TcpAcceptOptions{};
         accept.setBufferLimits(limits);
-        REQUIRE_EQUAL(accept.bufferLimits().send(), el::unit::ByteLength{4096U});
+        REQUIRE_EQUAL(accept.bufferLimits().send(), el::unit::ByteCount{4096U});
 
         auto listener = TcpListenerOptions{};
         REQUIRE_EQUAL(listener.backlog(), el::unit::ItemCount{128U});

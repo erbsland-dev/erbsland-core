@@ -44,7 +44,7 @@ configuration or contacting ``logs.example``.
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriters.cpp
     :exec: log/logging_topics --demo SyslogWriters
-    :source-sha256: 7e1b0c3f3484a03895aeb133c0886290924eae412a0718dc97d6f6e94cce8186
+    :sha256: 41e9aa5c10bb40be1d509b85d80e3bf838f4979226c1390ec5a5598d62cb74b1
 
 .. code-block:: cpp
 
@@ -62,25 +62,27 @@ configuration or contacting ``logs.example``.
             .setProcessId("314"_el)
             .setMessageId("route"_el)
             .setTlsConfigurationLabel("guild/syslog"_el)
-            .setMaximumPendingBytes(el::ByteLength{256U * 1024U});
+            .setMaximumPendingBytes(el::ByteCount{256U * 1024U});
 
         auto configuration = el::LogConfiguration{};
         configuration.addWriter(
             el::LogWriter::createForSyslog(options),
-            el::LogWriterFilter{el::LogLevels{el::LogLevel::Warning, el::LogLevel::Error}});
+            el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Warning, el::LogLevel::Error}));
 
         el::io::printLine("Syslog endpoint: "_el, options.endpoint().toString());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Syslog endpoint: logs.example:6514
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSyslog endpoint: logs.example:6514␛[0m
 
 .. erbsland-demo-end::
 
-Create and Pass the Options Object
-==================================
+Syslog Log Writer Options
+=========================
 
 :cpp:class:`SyslogLogWriterOptions <erbsland::log::SyslogLogWriterOptions>` is a complete value object.
 Its default constructor produces a valid local UDP setup for ``127.0.0.1:514``, facility 1, application name
@@ -123,10 +125,9 @@ It then shows the unframed UDP message beside the framed TCP and TLS forms.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriterOptions.cpp
-    :function-blocks: syslogTransport
-    :function-blocks-sha256: c9dc6a8c857af9f8d7eb8c9495bef75d2ed6f0f70d034f940e20c92c97654a46
+    :show: f:syslogTransport
     :exec: log/logging_topics --demo SyslogTransport
-    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
+    :sha256: 287632d965812879945e59bc4deb052c0589a1587775a238906acd93b0a9d115
 
 .. code-block:: cpp
 
@@ -153,12 +154,14 @@ It then shows the unframed UDP message beside the framed TCP and TLS forms.
         el::io::printLine("TLS endpoint: "_el, tlsOptions.endpoint().toString());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    UDP endpoint: 192.0.2.10:514
-    TCP endpoint: logs.example:601
-    TLS endpoint: logs.example:6514
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUDP endpoint: 192.0.2.10:514
+        TCP endpoint: logs.example:601
+        TLS endpoint: logs.example:6514␛[0m
 
 .. erbsland-demo-end::
 
@@ -184,10 +187,9 @@ The following example shows the C++ default and a typical remote TLS endpoint.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriterOptions.cpp
-    :function-blocks: syslogEndpoint
-    :function-blocks-sha256: fa4c719b5da35a3e6f2b6204cd8c845c8c574107b5b178fda73b1d5d67b4f670
+    :show: f:syslogEndpoint
     :exec: log/logging_topics --demo SyslogEndpoint
-    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
+    :sha256: cdaca695d8c6fb0d1879e0ddb73bd92fa51b92fb977958352c591a640bb65299
 
 .. code-block:: cpp
 
@@ -206,11 +208,13 @@ The following example shows the C++ default and a typical remote TLS endpoint.
         el::io::printLine("Remote endpoint : "_el, remoteOptions.endpoint().toString());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Default endpoint: 127.0.0.1:514
-    Remote endpoint : logs.example:6514
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDefault endpoint: 127.0.0.1:514
+        Remote endpoint : logs.example:6514␛[0m
 
 .. erbsland-demo-end::
 
@@ -233,10 +237,9 @@ The fixed warning in this demo produces priority 12 with facility 1 and priority
 
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriterOptions.cpp
-    :function-blocks: syslogFacility
-    :function-blocks-sha256: 91a93f1d717874201f80626ac62282c7e747f225e7a6b2efd34a5cabd10ccd69
+    :show: f:syslogFacility
     :exec: log/logging_topics --demo SyslogFacility
-    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
+    :sha256: cc376c75cdc82e464c70fbad63354c7c9aa1cc9c98763d817e3bc848b4b31063
 
 .. code-block:: cpp
 
@@ -250,16 +253,18 @@ The fixed warning in this demo produces priority 12 with facility 1 and priority
         el::io::printLine("Facility 16: "_el, localOptions.facility());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Facility 1 : 1
-    Facility 16: 16
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFacility 1 : 1
+        Facility 16: 16␛[0m
 
 .. erbsland-demo-end::
 
-Identify the Producing Host
-===========================
+Host Name: HOSTNAME
+===================
 
 :cpp:func:`setHostName() <erbsland::log::SyslogLogWriterOptions::setHostName>` fills the RFC 5424 ``HOSTNAME`` field.
 Its default is ``-``.
@@ -275,10 +280,9 @@ writer.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriterOptions.cpp
-    :function-blocks: syslogHostName
-    :function-blocks-sha256: 540810225e2721a10a11436cca8846eb07c912aefb4f64026e8d97dfc15259e0
+    :show: f:syslogHostName
     :exec: log/logging_topics --demo SyslogHostName
-    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
+    :sha256: c968cd00a162b8e06205c42f7802c72001cc06c5e2e644a893e7d0f28c695531
 
 .. code-block:: cpp
 
@@ -288,15 +292,17 @@ writer.
         el::io::printLine(options.hostName());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    guild-hall
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mguild-hall␛[0m
 
 .. erbsland-demo-end::
 
-Name the Application
-====================
+Application Name: APP-NAME
+==========================
 
 :cpp:func:`setApplicationName() <erbsland::log::SyslogLogWriterOptions::setApplicationName>` fills ``APP-NAME``.
 The default is ``erbsland-core``.
@@ -310,10 +316,9 @@ Use ``-`` when the application truly has no useful identity.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriterOptions.cpp
-    :function-blocks: syslogApplicationName
-    :function-blocks-sha256: 0fd3f848752e25168fcb7b0fd4460ed086de4d167a1944b86c3f2500ba66d58c
+    :show: f:syslogApplicationName
     :exec: log/logging_topics --demo SyslogApplicationName
-    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
+    :sha256: 072e730bae7cbc44d7b4769de5c0be611c22a9047b496e300173b03a847dc93e
 
 .. code-block:: cpp
 
@@ -323,15 +328,17 @@ Use ``-`` when the application truly has no useful identity.
         el::io::printLine(options.applicationName());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    explorer-guild
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mexplorer-guild␛[0m
 
 .. erbsland-demo-end::
 
-Identify the Process Instance
-=============================
+Process Identifier: PROCID
+==========================
 
 :cpp:func:`setProcessId() <erbsland::log::SyslogLogWriterOptions::setProcessId>` fills ``PROCID``.
 Its default is ``-``.
@@ -344,10 +351,9 @@ The process identifier may contain at most 128 characters and follows the same e
 
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriterOptions.cpp
-    :function-blocks: syslogProcessId
-    :function-blocks-sha256: ddf2ed727dce20de124809ccc5c5d9e3f839aa645c32e01889be518182c84fd4
+    :show: f:syslogProcessId
     :exec: log/logging_topics --demo SyslogProcessId
-    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
+    :sha256: 1a3596693fcf619a8d14e8170c7132cff53011782cf9752a018a7143c736f75a
 
 .. code-block:: cpp
 
@@ -357,15 +363,17 @@ The process identifier may contain at most 128 characters and follows the same e
         el::io::printLine(options.processId());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    314
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m314␛[0m
 
 .. erbsland-demo-end::
 
-Classify the Message Family
-===========================
+Message Identifier: MSGID
+=========================
 
 :cpp:func:`setMessageId() <erbsland::log::SyslogLogWriterOptions::setMessageId>` fills ``MSGID``.
 The default is ``-``.
@@ -378,10 +386,9 @@ double quote.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriterOptions.cpp
-    :function-blocks: syslogMessageId
-    :function-blocks-sha256: 9bd3a8a4688de4e4507b99ab00610d8e18ed9aba3276566a3f8dc617c8a28291
+    :show: f:syslogMessageId
     :exec: log/logging_topics --demo SyslogMessageId
-    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
+    :sha256: cc8cba4139659469310ad3679d023febd93ae2b08d60e6707cccf4c543245482
 
 .. code-block:: cpp
 
@@ -391,15 +398,17 @@ double quote.
         el::io::printLine(options.messageId());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    route
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mroute␛[0m
 
 .. erbsland-demo-end::
 
-Understand the Resulting RFC Header
-===================================
+RFC 5424 Header Format
+======================
 
 The four identity fields appear after the entry's UTC timestamp in this order: host name, application name, process
 identifier, and message identifier.
@@ -430,10 +439,9 @@ It does not open the connection because no log entry is delivered.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriterOptions.cpp
-    :function-blocks: syslogTlsLabel
-    :function-blocks-sha256: 122db55c171692302575aad7e6dddeca480702f88b5df2dfbf13b9e4dcd030c4
+    :show: f:syslogTlsLabel
     :exec: log/logging_topics --demo SyslogTlsLabel
-    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
+    :sha256: 6478a443f1872d4b5f1a0705b4bc079b751a4a809c893db173956757c74c948b
 
 .. code-block:: cpp
 
@@ -448,10 +456,12 @@ It does not open the connection because no log entry is delivered.
         el::io::printLine("TLS configuration label: "_el, options.tlsConfigurationLabel());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    TLS configuration label: operations/syslog
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTLS configuration label: operations/syslog␛[0m
 
 .. erbsland-demo-end::
 
@@ -481,25 +491,26 @@ The message is rejected before any network transport is created, and the writer'
 
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriterOptions.cpp
-    :function-blocks: syslogMaximumPendingBytes
-    :function-blocks-sha256: b8e9825434543e1148ed88eeb5d21a18e5119634349462171723ce6a3496849b
+    :show: f:syslogMaximumPendingBytes
     :exec: log/logging_topics --demo SyslogMaximumPendingBytes
-    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
+    :sha256: 298f506cc6b05b9169b8bc0996ce660889429c5d29d404fdbdd530c117323d20
 
 .. code-block:: cpp
 
     void syslogMaximumPendingBytes() {
         auto options = el::SyslogLogWriterOptions{};
-        options.setMaximumPendingBytes(el::ByteLength{32U});
+        options.setMaximumPendingBytes(el::ByteCount{32U});
         auto configuration = el::LogConfiguration{};
         configuration.addWriter(el::LogWriter::createForSyslog(options));
         el::io::printLine("Maximum pending bytes: "_el, options.maximumPendingBytes());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Maximum pending bytes: 32
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMaximum pending bytes: 32␛[0m
 
 .. erbsland-demo-end::
 

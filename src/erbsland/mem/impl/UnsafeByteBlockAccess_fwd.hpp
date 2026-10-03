@@ -3,5 +3,7 @@
 #pragma once
 
 namespace erbsland::mem::impl {
+
 class UnsafeByteBlockAccess;
+
 }

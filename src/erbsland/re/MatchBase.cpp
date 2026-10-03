@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "MatchBase.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <utility>
 
 namespace erbsland::re {
 
+using namespace err;
+using namespace text;
 using namespace text::literals;
 
 auto MatchBase::begin() const -> InputPosition {
@@ -17,12 +19,12 @@ auto MatchBase::begin() const -> InputPosition {
 
 auto MatchBase::begin(const CaptureGroupIndex groupIndex) const -> InputPosition {
     if (!hasGroupIndex(groupIndex)) {
-        throw err::ParameterError{"Group index is out of bounds."_el, "groupIndex"_el};
+        throw ParameterFailure{"Group index is out of bounds."_el, "groupIndex"_el};
     }
     return _groups[static_cast<std::size_t>(groupIndex)].begin();
 }
 
-auto MatchBase::begin(const text::String &groupName) const -> InputPosition {
+auto MatchBase::begin(const String &groupName) const -> InputPosition {
     return begin(getGroupIndex(groupName));
 }
 
@@ -32,12 +34,12 @@ auto MatchBase::end() const -> InputPosition {
 
 auto MatchBase::end(const CaptureGroupIndex groupIndex) const -> InputPosition {
     if (!hasGroupIndex(groupIndex)) {
-        throw err::ParameterError{"Group index is out of bounds."_el, "groupIndex"_el};
+        throw ParameterFailure{"Group index is out of bounds."_el, "groupIndex"_el};
     }
     return _groups[static_cast<std::size_t>(groupIndex)].end();
 }
 
-auto MatchBase::end(const text::String &groupName) const -> InputPosition {
+auto MatchBase::end(const String &groupName) const -> InputPosition {
     return end(getGroupIndex(groupName));
 }
 
@@ -47,12 +49,12 @@ auto MatchBase::range() const -> CaptureRange {
 
 auto MatchBase::range(const CaptureGroupIndex groupIndex) const -> CaptureRange {
     if (!hasGroupIndex(groupIndex)) {
-        throw err::ParameterError{"Group index is out of bounds."_el, "groupIndex"_el};
+        throw ParameterFailure{"Group index is out of bounds."_el, "groupIndex"_el};
     }
     return _groups[static_cast<std::size_t>(groupIndex)].range();
 }
 
-auto MatchBase::range(const text::String &groupName) const -> CaptureRange {
+auto MatchBase::range(const String &groupName) const -> CaptureRange {
     return range(getGroupIndex(groupName));
 }
 
@@ -62,12 +64,12 @@ auto MatchBase::group() const -> const CaptureGroup & {
 
 auto MatchBase::group(const CaptureGroupIndex groupIndex) const -> const CaptureGroup & {
     if (!hasGroupIndex(groupIndex)) {
-        throw err::ParameterError{"Group index is out of bounds."_el, "groupIndex"_el};
+        throw ParameterFailure{"Group index is out of bounds."_el, "groupIndex"_el};
     }
     return _groups[static_cast<std::size_t>(groupIndex)];
 }
 
-auto MatchBase::group(const text::String &groupName) const -> const CaptureGroup & {
+auto MatchBase::group(const String &groupName) const -> const CaptureGroup & {
     return group(getGroupIndex(groupName));
 }
 
@@ -79,23 +81,23 @@ auto MatchBase::hasGroupIndex(const CaptureGroupIndex groupIndex) const noexcept
     return static_cast<std::size_t>(groupIndex) < _groups.size();
 }
 
-auto MatchBase::hasGroupName(const text::String &groupName) const noexcept -> bool {
+auto MatchBase::hasGroupName(const String &groupName) const noexcept -> bool {
     buildGroupNameToGroupIndexMap();
     return _nameToGroupIndexMap->contains(groupName);
 }
 
-auto MatchBase::getGroupIndex(const text::String &groupName) const -> CaptureGroupIndex {
+auto MatchBase::getGroupIndex(const String &groupName) const -> CaptureGroupIndex {
     buildGroupNameToGroupIndexMap();
     const auto result = _nameToGroupIndexMap->get(groupName);
     if (!result.has_value()) {
-        throw err::ParameterError{"Unknown group name."_el, "groupName"_el};
+        throw ParameterFailure{"Unknown group name."_el, "groupName"_el};
     }
     return result.value();
 }
 
 void MatchBase::buildGroupNameToGroupIndexMap() const noexcept {
     std::call_once(_groupNameToGroupIndexMapInitFlag, [this]() -> void {
-        auto map = text::StringCIHashMap<CaptureGroupIndex>{};
+        auto map = StringCIHashMap<CaptureGroupIndex>{};
         for (std::size_t i = 0; i < _groups.size(); ++i) {
             const auto &name = _groups[i].name();
             if (!name.isEmpty()) {

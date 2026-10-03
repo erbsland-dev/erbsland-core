@@ -5,23 +5,23 @@
 
 #include "core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/tls/TlsConfiguration.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
-#include <erbsland/cryptology/x509/X509ServerCertificatePolicy.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/network/http_client/HttpClientRequest.hpp>
-#include <erbsland/network/http_client/HttpClientResponse.hpp>
-#include <erbsland/network/http_client/HttpClientSession.hpp>
-#include <erbsland/network/Network.hpp>
-#include <erbsland/network/source/NetworkErrorContext.hpp>
-#include <erbsland/network/url/Url.hpp>
-#include <erbsland/data/json/JsonValue.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/HttpClientRequest.hpp>
+#include <erbsland/HttpClientResponse.hpp>
+#include <erbsland/HttpClientSession.hpp>
+#include <erbsland/json/JsonValue.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/TlsConfiguration.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/Url.hpp>
+#include <erbsland/X509CertificateBundle.hpp>
+#include <erbsland/X509TlsCertificatePolicy.hpp>
 
 #include <chrono>
 #include <optional>
@@ -54,12 +54,12 @@ private:
         const auto ca = X509CertificateBundle::fromPemOrThrow(
             el::text::String{el::unittest::fh::readDataText("data/network/tls-interop/ca.pem")});
         el::core::application().cryptologyConfiguration().setTlsConfiguration(
-            "http/client"_el, TlsConfiguration{X509ServerCertificatePolicy{ca}});
+            "http"_el, TlsConfiguration{TlsClientConfiguration{TlsTrustConfiguration{ca}}});
     }
 
     auto runScenario(const bool secure) -> Result {
-        auto peer = InteropEnvironment::instance().startScenario(
-            secure ? "http_tls_server" : "http_plain_server", "", 0U);
+        auto peer =
+            InteropEnvironment::instance().startScenario(secure ? "http_tls_server" : "http_plain_server", "", 0U);
         const auto applicationScope = ApplicationTestScope<>{};
         installTlsConfiguration();
         const auto loop = EventLoop::create();
@@ -74,14 +74,12 @@ private:
                         result.jsonReceived = body.getOrThrow("ok"_el).getBoolOrThrow();
                         session->close();
                     })
-                .onInformationalResponse(
-                    [&](HttpClientRequestPtr, const HttpResponseHead &head) -> void {
-                        REQUIRE_EQUAL(head.status().code(), 103U);
-                        ++result.informationalCount;
-                    })
-                .onError([&](HttpClientRequestPtr, const NetworkErrorContext &context) -> void {
-                    result.error = context;
+                .onInformationalResponse([&](HttpClientRequestPtr, const HttpResponseHead &head) -> void {
+                    REQUIRE_EQUAL(head.status().code(), 103U);
+                    ++result.informationalCount;
                 })
+                .onError(
+                    [&](HttpClientRequestPtr, const NetworkErrorContext &context) -> void { result.error = context; })
                 .onFinal([&]() -> void { result.sessionFinal = true; });
             const auto endpoint = HostEndpoint{HostName::fromStringOrThrow("localhost"_el), Port{peer.port()}};
             const auto url = Url{secure ? UrlScheme::Https : UrlScheme::Http, endpoint, "/interop"_el, "x=1"_el};

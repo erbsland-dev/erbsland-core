@@ -54,7 +54,7 @@ public: // accessors
     /// @param title Group title used in generated help output.
     void setHelpTitle(text::String title) { _help.setTitle(std::move(title)); }
     /// Set the help description for this set.
-    /// @param description Description for renderers that expose set-level help text.
+    /// @param description Introduction displayed below the section heading.
     void setHelpDescription(text::String description) { _help.setDescription(std::move(description)); }
     /// Set the help epilog for this set.
     /// @param epilog Optional trailing text for renderers that expose set-level epilogs.

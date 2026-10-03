@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringSide.hpp>
 
 namespace demo {
 
@@ -41,10 +51,10 @@ void characterAccess() {
     el::io::printLine("End byte index: "_el, describeCharacter(text.charAt(text.indexAt(el::StringSide::Back))));
     el::io::printLine(
         "Outside byte range: "_el,
-        describeCharacter(text.charAt(text.indexAt(el::StringSide::Back) + el::ByteLength{8U})));
+        describeCharacter(text.charAt(text.indexAt(el::StringSide::Back) + el::ByteCount{8U})));
 
     // Move byte indexes by decoded code points instead of incrementing raw bytes.
-    text.advance(byteIndex, el::CpLength{4U});
+    text.advance(byteIndex, el::CpCount{4U});
     el::io::printLine(
         "After advancing four characters: byte "_el, byteIndex, " -> ", describeCharacter(text.charAt(byteIndex)));
     text.retreat(byteIndex);
@@ -64,7 +74,7 @@ void characterAccess() {
     el::io::printLine("Sliced back: "_el, describeCharacter(lastCharacter), " | rest: "_el, withoutLast);
 
     // Code-point lengths can be used directly with regular string slicing.
-    el::io::printLine("Code-point prefix: "_el, text.slice(el::StringSide::Front, el::CpLength{4U}));
+    el::io::printLine("Code-point prefix: "_el, text.slice(el::StringSide::Front, el::CpCount{4U}));
 }
 
 }

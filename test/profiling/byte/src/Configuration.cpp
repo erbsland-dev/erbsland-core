@@ -1,6 +1,5 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "Configuration.hpp"
 
 #include "DefaultConfiguration.hpp"
@@ -8,6 +7,14 @@
 #include "impl/ConfigurationTools.hpp"
 
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringBomMode.hpp>
+#include <erbsland/StringEncoding.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringSet.hpp>
 
 #include <set>
 
@@ -19,7 +26,7 @@ auto Configuration::load(const std::optional<el::Path> &path) -> Configuration {
     auto parser = el::conf::Parser{};
     auto run = RunSettings{};
     auto templates = std::vector<impl::ScenarioTemplate>{};
-    impl::parseDocument(parser.parseTextOrThrow(el::String{cDefaultConfigurationText}), run, templates, false);
+    impl::parseDocument(parser.parseTextOrThrow(cDefaultConfigurationText), run, templates, false);
     if (path) {
         impl::parseDocument(parser.parseFileOrThrow(*path), run, templates, true);
     }
@@ -34,9 +41,9 @@ auto Configuration::load(const std::optional<el::Path> &path) -> Configuration {
     if (result.scenarios.empty()) {
         impl::configError("The configuration expands to no scenarios."_el);
     }
-    auto ids = std::set<el::String>{};
+    auto ids = el::StringSet{};
     for (const auto &scenario : result.scenarios) {
-        if (!ids.emplace(scenario.id).second) {
+        if (!ids.tryInsert(scenario.id)) {
             impl::configError(el::StringFormat{"Duplicate expanded scenario ID '{}'."_el}.build(scenario.id));
         }
     }
@@ -46,7 +53,7 @@ auto Configuration::load(const std::optional<el::Path> &path) -> Configuration {
 void Configuration::writeTemplate(const el::Path &path) {
     auto options = el::PathWriteTextOptions{el::StringEncoding::Utf8};
     options.setCreateParents(true).setBomMode(el::StringBomMode::Reject);
-    path.content().writeTextOrThrow(el::String{cDefaultConfigurationText}, options);
+    path.content().writeTextOrThrow(cDefaultConfigurationText, options);
 }
 
 }

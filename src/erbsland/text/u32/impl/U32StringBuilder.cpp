@@ -23,7 +23,9 @@
 
 namespace erbsland::text::impl {
 
-U32StringBuilder::U32StringBuilder(const unit::CpLength capacity) {
+using namespace unit;
+
+U32StringBuilder::U32StringBuilder(const CpCount capacity) {
     _text.reserve(capacity);
 }
 
@@ -35,7 +37,7 @@ auto U32StringBuilder::kind() const noexcept -> StringKind {
     return StringKind::U32;
 }
 
-auto U32StringBuilder::length() const noexcept -> unit::CpLength {
+auto U32StringBuilder::length() const noexcept -> CpCount {
     return _text.length();
 }
 
@@ -47,35 +49,35 @@ void U32StringBuilder::clear() noexcept {
     _text.clear();
 }
 
-auto U32StringBuilder::append(const Char character) -> unit::CpLength {
+auto U32StringBuilder::append(const Char character) -> CpCount {
     return U32StringAppendTools{_text._storage}.append(character);
 }
 
-void U32StringBuilder::append(const Char character, unit::CpLength count) {
+void U32StringBuilder::append(const Char character, CpCount count) {
     U32StringAppendTools{_text._storage}.append(character, count);
 }
 
-auto U32StringBuilder::append(const U8String &text) -> unit::CpLength {
+auto U32StringBuilder::append(const U8String &text) -> CpCount {
     return U32StringAppendTools{_text._storage}.append(text);
 }
 
-void U32StringBuilder::append(const U8String &text, const unit::ItemCount count) {
+void U32StringBuilder::append(const U8String &text, const ItemCount count) {
     U32StringAppendTools{_text._storage}.append(UnsafeU8StringAccess{text}.dataView(), count);
 }
 
-auto U32StringBuilder::append(const U16String &text) -> unit::CpLength {
+auto U32StringBuilder::append(const U16String &text) -> CpCount {
     return U32StringAppendTools{_text._storage}.append(text);
 }
 
-void U32StringBuilder::append(const U16String &text, const unit::ItemCount count) {
+void U32StringBuilder::append(const U16String &text, const ItemCount count) {
     U32StringAppendTools{_text._storage}.append(UnsafeU16StringAccess{text}.dataView(), count);
 }
 
-auto U32StringBuilder::append(const U32String &text) -> unit::CpLength {
+auto U32StringBuilder::append(const U32String &text) -> CpCount {
     return U32StringAppendTools{_text._storage}.append(text);
 }
 
-void U32StringBuilder::append(const U32String &text, const unit::ItemCount count) {
+void U32StringBuilder::append(const U32String &text, const ItemCount count) {
     U32StringAppendTools{_text._storage}.append(UnsafeU32StringAccess{text}.dataView(), count);
 }
 

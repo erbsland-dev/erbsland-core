@@ -13,13 +13,16 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+using namespace unit;
+
 auto ArmGaloisMultiplier::multiply(const Block &left, const Block &right) const noexcept -> Block {
     auto reflectedLeft = galois::reflect(left);
     auto reflectedRight = galois::reflect(right);
-    const auto leftLow = reflectedLeft.getInteger<uint64_t>(unit::ByteIndex{8U}, mem::Endianness::Big);
-    const auto leftHigh = reflectedLeft.getInteger<uint64_t>(unit::ByteIndex{}, mem::Endianness::Big);
-    const auto rightLow = reflectedRight.getInteger<uint64_t>(unit::ByteIndex{8U}, mem::Endianness::Big);
-    const auto rightHigh = reflectedRight.getInteger<uint64_t>(unit::ByteIndex{}, mem::Endianness::Big);
+    const auto leftLow = reflectedLeft.getInteger<uint64_t>(ByteIndex{8U}, Endianness::Big);
+    const auto leftHigh = reflectedLeft.getInteger<uint64_t>(ByteIndex{}, Endianness::Big);
+    const auto rightLow = reflectedRight.getInteger<uint64_t>(ByteIndex{8U}, Endianness::Big);
+    const auto rightHigh = reflectedRight.getInteger<uint64_t>(ByteIndex{}, Endianness::Big);
 
     // PMULL computes the three 64x64 carry-less products; Karatsuba supplies the middle term.
 #if defined(ERBSLAND_COMPILER_MSVC)

@@ -4,7 +4,7 @@
 
 #include "Attribute.hpp"
 
-#include "../../../vr/RuleType.hpp"
+#include "../../RuleType.hpp"
 
 namespace erbsland::conf::vr::builder {
 

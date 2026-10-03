@@ -6,15 +6,17 @@
 #include "../OptionFlag.hpp"
 #include "../OptionSet.hpp"
 
+#include "../../i18n/DisplayText.hpp"
 #include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringFormat.hpp"
 
 namespace erbsland::options::impl {
 
+using namespace unit;
 using namespace text::literals;
 
-auto OptionParser::collectPositionalArgument(const text::String &value, const unit::ArgumentIndex index) -> bool {
+auto OptionParser::collectPositionalArgument(const text::String &value, const ArgumentIndex index) -> bool {
     _positionals.emplace_back(PositionalArgument{value, index});
     return true;
 }
@@ -28,9 +30,9 @@ auto OptionParser::assignPositionals() -> bool {
     if (options.empty()) {
         return makeError(
             OptionErrorReason::SyntaxError,
-            "Unexpected argument"_el,
-            text::StringFormat{"\"{}\" does not match any positional argument accepted by this command."}.build(
-                _positionals.front().value.toEscaped(text::EscapeFormat::Display)),
+            i18n::displayText("options.unexpected_argument_title"_el),
+            i18n::displayFormat("options.unexpected_positional_argument_description"_el)
+                .build(_positionals.front().value.toEscaped(text::EscapeFormat::Display)),
             _positionals.front().index);
     }
 
@@ -44,12 +46,12 @@ auto OptionParser::assignPositionals() -> bool {
             continue;
         }
 
-        const auto remainingValues = unit::ArgumentCount::fromSizeT(_positionals.size() - positionalIndex);
+        const auto remainingValues = ArgumentCount::fromSizeT(_positionals.size() - positionalIndex);
         const auto valueLimit = positionalValueLimit(option, options, optionIndex, remainingValues);
-        auto storedCount = unit::ArgumentCount::zero();
+        auto storedCount = ArgumentCount::zero();
         while (storedCount < valueLimit && positionalIndex < _positionals.size()) {
             const auto &positional = _positionals.at(positionalIndex);
-            if (!storeValue(option, positional.value, positional.index, unit::ByteIndex::zero())) {
+            if (!storeValue(option, positional.value, positional.index, ByteIndex::zero())) {
                 return false;
             }
             ++storedCount;
@@ -60,9 +62,9 @@ auto OptionParser::assignPositionals() -> bool {
     if (positionalIndex < _positionals.size()) {
         return makeError(
             OptionErrorReason::SyntaxError,
-            "Unexpected argument"_el,
-            text::StringFormat{"\"{}\" does not match any remaining positional argument."}.build(
-                _positionals.at(positionalIndex).value.toEscaped(text::EscapeFormat::Display)),
+            i18n::displayText("options.unexpected_argument_title"_el),
+            i18n::displayFormat("options.excess_positional_argument_description"_el)
+                .build(_positionals.at(positionalIndex).value.toEscaped(text::EscapeFormat::Display)),
             _positionals.at(positionalIndex).index);
     }
     return true;
@@ -81,8 +83,8 @@ auto OptionParser::positionalOptions() const -> std::vector<OptionPtr> {
 }
 
 auto OptionParser::requiredPositionalsAfter(const std::vector<OptionPtr> &options, const std::size_t optionIndex) const
-    -> unit::ArgumentCount {
-    auto result = unit::ArgumentCount::zero();
+    -> ArgumentCount {
+    auto result = ArgumentCount::zero();
     for (auto index = optionIndex + 1U; index < options.size(); ++index) {
         const auto &option = options.at(index);
         if (_storage.hasValue(option) || option->hasDefaultValue()) {
@@ -99,7 +101,7 @@ auto OptionParser::positionalValueLimit(
     const OptionPtr &option,
     const std::vector<OptionPtr> &options,
     const std::size_t optionIndex,
-    const unit::ArgumentCount remainingValues) const -> unit::ArgumentCount {
+    const ArgumentCount remainingValues) const -> ArgumentCount {
     auto limit = option->maximum();
     if (limit > remainingValues) {
         limit = remainingValues;
@@ -110,7 +112,7 @@ auto OptionParser::positionalValueLimit(
 
     const auto reservedValues = requiredPositionalsAfter(options, optionIndex);
     if (remainingValues <= reservedValues) {
-        return unit::ArgumentCount::zero();
+        return ArgumentCount::zero();
     }
     auto availableValues = remainingValues - reservedValues;
     if (availableValues > limit) {

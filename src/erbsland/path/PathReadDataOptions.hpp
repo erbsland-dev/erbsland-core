@@ -6,7 +6,7 @@
 
 #include "../stream/InputStreamSettings.hpp"
 #include "../time/TimeDelta.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 namespace erbsland::path {
 
@@ -17,7 +17,7 @@ public:
     /// The default timeout for whole-file path operations.
     inline static const auto cDefaultTimeout = time::TimeDelta::seconds(60);
     /// The default maximum byte length for whole-file read operations.
-    inline static const auto cDefaultMaximumByteLength = unit::ByteLength{10'000'000LL};
+    inline static const auto cDefaultMaximumByteLength = unit::ByteCount{10'000'000LL};
 
 public:
     /// Create path-read options with their default values.
@@ -25,9 +25,9 @@ public:
 
 public: // stream settings
     /// Get the maximum number of bytes to read.
-    [[nodiscard]] auto maximumByteLength() const noexcept -> unit::ByteLength { return _maximumByteLength; }
+    [[nodiscard]] auto maximumByteLength() const noexcept -> unit::ByteCount { return _maximumByteLength; }
     /// Set the maximum number of bytes to read.
-    auto setMaximumByteLength(const unit::ByteLength value) noexcept -> PathReadDataOptions & {
+    auto setMaximumByteLength(const unit::ByteCount value) noexcept -> PathReadDataOptions & {
         _maximumByteLength = value;
         return *this;
     }
@@ -57,7 +57,7 @@ public: // stream settings
     }
 
 private:
-    unit::ByteLength _maximumByteLength = cDefaultMaximumByteLength;
+    unit::ByteCount _maximumByteLength = cDefaultMaximumByteLength;
     SymlinkMode _symlinkMode{SymlinkMode::Follow};
     stream::InputStreamSettings _streamSettings{stream::InputStreamSettings{}.setTimeout(cDefaultTimeout)};
 };

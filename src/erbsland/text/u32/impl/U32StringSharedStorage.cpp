@@ -14,8 +14,8 @@
 
 namespace erbsland::text::impl {
 
-using unit::ByteLength;
-using unit::CpLength;
+using unit::ByteCount;
+using unit::CpCount;
 using unit::CpRange;
 
 U32StringSharedStorage::~U32StringSharedStorage() = default;
@@ -80,7 +80,7 @@ auto U32StringSharedStorage::storageId() const noexcept -> mem::StorageIdentifie
     if (data() == nullptr) {
         return {};
     }
-    const auto *begin = data() + _range.index().toSizeT();
+    const auto *begin = data() + _range.beginIndex().toSizeT();
     return mem::StorageIdentifier::fromMemoryRange(begin, begin + _range.length().toSizeT());
 }
 
@@ -106,25 +106,23 @@ auto U32StringSharedStorage::forSize(const std::size_t size) -> U32StringSharedS
 }
 
 void U32StringSharedStorage::validateSize(const std::size_t size) {
-    if (math::willCastOverflow<CpLength::Value>(size)) {
-        throwOverflow("String storage size exceeds bounds");
+    if (size > CpCount::cRawMaximum) {
+        throwOutOfRangeFailure("String storage size exceeds bounds");
     }
 }
 
-auto U32StringSharedStorage::checkedAddSize(
-    const std::size_t first, const std::size_t second, const std::string_view reason) -> std::size_t {
+auto U32StringSharedStorage::checkedAddSize(const std::size_t first, const std::size_t second) -> std::size_t {
     if (math::willAddOverflow(first, second)) {
-        throwOverflow(reason);
+        throwOutOfRangeFailure("String storage size exceeds bounds");
     }
     const auto result = math::saturatingAdd(first, second);
     validateSize(result);
     return result;
 }
 
-auto U32StringSharedStorage::checkedMultiplySize(
-    const std::size_t first, const std::size_t second, const std::string_view reason) -> std::size_t {
+auto U32StringSharedStorage::checkedMultiplySize(const std::size_t first, const std::size_t second) -> std::size_t {
     if (math::willMultiplyOverflow(first, second)) {
-        throwOverflow(reason);
+        throwOutOfRangeFailure("String storage size exceeds bounds");
     }
     const auto result = math::saturatingMultiply(first, second);
     validateSize(result);
@@ -143,12 +141,11 @@ void U32StringSharedStorage::clear() noexcept {
 
 void U32StringSharedStorage::ensureMutableCapacity(const std::size_t requiredCapacity) {
     const auto usedSize = _range.length().toSizeT();
-    const auto usedSizeWithTerminator = checkedAddSize(usedSize, 1U, "StringEditor storage size exceeds bounds");
-    const auto requiredCapacityWithTerminator =
-        checkedAddSize(requiredCapacity, 1U, "StringEditor storage capacity exceeds bounds");
+    const auto usedSizeWithTerminator = checkedAddSize(usedSize, 1U);
+    const auto requiredCapacityWithTerminator = checkedAddSize(requiredCapacity, 1U);
     const auto oldRange = _range;
     const auto forceReallocate =
-        _data.isNull() || _data.isShared() || !_range.index().isZero() || !isFullRange(_data.constGet()->size());
+        _data.isNull() || _data.isShared() || !_range.beginIndex().isZero() || !isFullRange(_data.constGet()->size());
     mem::impl::ensureSharedArrayCapacity(
         _data,
         usedSizeWithTerminator,
@@ -156,7 +153,8 @@ void U32StringSharedStorage::ensureMutableCapacity(const std::size_t requiredCap
         forceReallocate,
         [usedSize, oldRange](const auto *oldData, auto *newData) -> void {
             if (oldData != nullptr && usedSize > 0U) {
-                std::memcpy(newData->data(), oldData->data() + oldRange.index().toSizeT(), usedSize * sizeof(char32_t));
+                std::memcpy(
+                    newData->data(), oldData->data() + oldRange.beginIndex().toSizeT(), usedSize * sizeof(char32_t));
             }
             newData->data()[usedSize] = U'\0';
         });
@@ -180,7 +178,7 @@ void U32StringSharedStorage::resize(const std::size_t size) noexcept {
     _range = CpRange::fromSizeT(size);
 }
 
-void U32StringSharedStorage::reserve(const CpLength capacity) {
+void U32StringSharedStorage::reserve(const CpCount capacity) {
     const auto requestedCapacity = capacity.toSizeT();
     if (requestedCapacity <= this->capacity().toSizeT()) {
         return;
@@ -203,25 +201,25 @@ void U32StringSharedStorage::shrinkToFit() {
     rematerialize(usedSize);
 }
 
-auto U32StringSharedStorage::capacity() const noexcept -> CpLength {
+auto U32StringSharedStorage::capacity() const noexcept -> CpCount {
     if (_data.isNull()) {
-        return CpLength::zero();
+        return CpCount::zero();
     }
     const auto usableCapacity = static_cast<std::size_t>(_data.constGet()->capacity()) - 1U;
     if (_range.isEmpty()) {
-        return CpLength::fromSizeT(usableCapacity);
+        return CpCount::fromSizeT(usableCapacity);
     }
     if (isFullRange(_data.constGet()->size())) {
-        return CpLength::fromSizeT(usableCapacity);
+        return CpCount::fromSizeT(usableCapacity);
     }
     return _range.length();
 }
 
-auto U32StringSharedStorage::memoryUsage() const noexcept -> ByteLength {
+auto U32StringSharedStorage::memoryUsage() const noexcept -> ByteCount {
     if (_data.isNull()) {
-        return ByteLength::zero();
+        return ByteCount::zero();
     }
-    return ByteLength::fromSizeT(sizeof(U32StringData) + _data.constGet()->capacity() * sizeof(char32_t));
+    return ByteCount::fromSizeT(sizeof(U32StringData) + _data.constGet()->capacity() * sizeof(char32_t));
 }
 
 void U32StringSharedStorage::detach() {
@@ -257,14 +255,14 @@ auto U32StringSharedStorage::dataView(const CpRange range) const noexcept -> U32
 }
 
 auto U32StringSharedStorage::isFullRange(const std::size_t dataSize) const noexcept -> bool {
-    return dataSize > 0U && _range.index().isZero() && _range.length().toSizeT() == dataSize - 1U;
+    return dataSize > 0U && _range.beginIndex().isZero() && _range.length().toSizeT() == dataSize - 1U;
 }
 
 void U32StringSharedStorage::rematerialize(const std::size_t reservedCapacity) {
     const auto usedSize = _range.length().toSizeT();
     auto data = createU32StringData(usedSize, reservedCapacity);
     if (!_data.isNull() && usedSize > 0U) {
-        std::memcpy(data.get()->data(), this->data() + _range.index().toSizeT(), usedSize * sizeof(char32_t));
+        std::memcpy(data.get()->data(), this->data() + _range.beginIndex().toSizeT(), usedSize * sizeof(char32_t));
         data.get()->data()[usedSize] = U'\0';
     }
     _data = std::move(data);

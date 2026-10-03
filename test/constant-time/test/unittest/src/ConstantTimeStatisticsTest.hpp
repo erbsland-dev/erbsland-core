@@ -4,10 +4,10 @@
 
 #include "Statistics.hpp"
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/String.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/List.hpp>
 
 #include <cmath>
 #include <limits>
@@ -57,7 +57,7 @@ public:
     /// Cropping And Mean Leakage.
     void testCroppingAndMeanLeakage() {
         auto statistics = app::constant_time::Statistics{};
-        REQUIRE_THROWS_AS(el::ParameterError, statistics.initialize({}));
+        REQUIRE_THROWS_AS(el::ParameterFailure, statistics.initialize({}));
         auto pilot = el::List<double>{};
         for (auto index = 1; index <= 1000; ++index) {
             pilot.append(static_cast<double>(index));

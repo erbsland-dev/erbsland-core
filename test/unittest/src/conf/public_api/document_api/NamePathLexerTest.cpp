@@ -3,9 +3,9 @@
 
 #include <erbsland/conf/NamePath.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringList.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::conf;
@@ -102,9 +102,9 @@ public:
             "main.value__value"_el,
             "main.value _value"_el,
             "main.value_ value"_el,
-            el::text::StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{5000U}),
+            el::text::StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpCount{5000U}),
             el::text::StringEditor{"main.name"_el}
-                .append(el::text::Char{U'a'}, el::unit::CpLength{100U})
+                .append(el::text::Char{U'a'}, el::unit::CpCount{100U})
                 .append(".value"_el),
             "main.\"\""_el,
             "main.\"\".value"_el,

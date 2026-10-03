@@ -1,8 +1,11 @@
 // Copyright (c) 2025-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
+
 #include "CharacterClassState.hpp"
 
 namespace erbsland::re::impl::parser {
+
+using namespace text;
 
 auto CharClassHandlerState::hasFeature(const Feature feature) const noexcept -> bool {
     return _state.hasFeature(feature);
@@ -16,7 +19,7 @@ auto CharClassHandlerState::isAtEnd() const noexcept -> bool {
     return _state.isAtEnd();
 }
 
-auto CharClassHandlerState::currentChar() const noexcept -> text::Char {
+auto CharClassHandlerState::currentChar() const noexcept -> Char {
     return _state.currentChar();
 }
 
@@ -28,7 +31,7 @@ auto CharClassHandlerState::hasContent() const noexcept -> bool {
     return !_ranges.empty() || !_categories.empty();
 }
 
-void CharClassHandlerState::addCharacter(text::Char character) {
+void CharClassHandlerState::addCharacter(Char character) {
     _state.validatePatternCharacter(character);
     if (_state.currentFlags().isSet(GroupFlag::IgnoreCase)) {
         character = character.caseFolded();
@@ -36,7 +39,7 @@ void CharClassHandlerState::addCharacter(text::Char character) {
     _ranges.emplace_back(character, character);
 }
 
-void CharClassHandlerState::addRange(text::Char start, text::Char end) {
+void CharClassHandlerState::addRange(Char start, Char end) {
     _state.validatePatternCharacter(start);
     _state.validatePatternCharacter(end);
     // In ignore-case mode, use the folded (normalized to lower-case) endpoints only.
@@ -64,16 +67,16 @@ auto CharClassHandlerState::hasStartLiteral() const noexcept -> bool {
     return !_startLiteral.isNoCodePoint();
 }
 
-auto CharClassHandlerState::startLiteral() const noexcept -> text::Char {
+auto CharClassHandlerState::startLiteral() const noexcept -> Char {
     return _startLiteral;
 }
 
-void CharClassHandlerState::setStartLiteral(const text::Char literal) noexcept {
+void CharClassHandlerState::setStartLiteral(const Char literal) noexcept {
     _startLiteral = literal;
 }
 
 void CharClassHandlerState::clearStartLiteral() noexcept {
-    _startLiteral = text::Char::noCodePoint();
+    _startLiteral = Char::noCodePoint();
 }
 
 auto CharClassHandlerState::isRange() const noexcept -> bool {
@@ -159,7 +162,7 @@ void CharClassHandlerState::processStartLiteralBeforeRange() {
     }
 }
 
-void CharClassHandlerState::processNewLiteral(const text::Char character) {
+void CharClassHandlerState::processNewLiteral(const Char character) {
     _state.validatePatternCharacter(character);
     if (hasStartLiteral()) {
         // if we already have a start...
@@ -180,6 +183,7 @@ void CharClassHandlerState::processNewLiteral(const text::Char character) {
 
 void CharClassHandlerState::parse() {
     while (currentChar() != U']') {
+        expectMore();
         if (currentChar() == U'^') {
             handleNegation();
             continue;

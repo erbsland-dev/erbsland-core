@@ -2,17 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Block16Style.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::cterm {
 
+using namespace text;
 using namespace text::literals;
 
-Block16Style::Block16Style(const text::String &tiles) : _tiles(toTiles(BlockStringEditor{tiles})) {
+Block16Style::Block16Style(const String &tiles) : _tiles(toTiles(BlockStringEditor{tiles})) {
 }
 
-Block16Style::Block16Style(const text::U32String &tiles) : _tiles(toTiles(BlockStringEditor{tiles})) {
+Block16Style::Block16Style(const U32String &tiles) : _tiles(toTiles(BlockStringEditor{tiles})) {
 }
 
 auto Block16Style::block(const uint32_t bitMask) const noexcept -> Block {
@@ -87,11 +88,11 @@ auto Block16Style::noneFrame() -> Block16StylePtr {
     return style;
 }
 
-auto Block16Style::create(const text::String &tiles) -> Block16StylePtr {
+auto Block16Style::create(const String &tiles) -> Block16StylePtr {
     return std::make_shared<Block16Style>(tiles);
 }
 
-auto Block16Style::create(const text::U32String &tiles) -> Block16StylePtr {
+auto Block16Style::create(const U32String &tiles) -> Block16StylePtr {
     return std::make_shared<Block16Style>(tiles);
 }
 
@@ -133,7 +134,7 @@ auto Block16Style::forStyle(const FrameStyle frameStyle) -> Block16StylePtr {
 
 auto Block16Style::toTiles(const BlockString &tiles) -> std::array<Block, 16> {
     if (tiles.length() != BlockCount{16U}) {
-        throw err::ParameterError{"Block16Style requires exactly 16 terminal characters."_el, "tiles"_el};
+        throw err::ParameterFailure{"Block16Style requires exactly 16 terminal characters."_el, "tiles"_el};
     }
     auto result = std::array<Block, 16>{};
     for (std::size_t index = 0; index < result.size(); ++index) {

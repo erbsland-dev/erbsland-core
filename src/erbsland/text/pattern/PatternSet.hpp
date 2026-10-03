@@ -5,9 +5,10 @@
 #include "Limits.hpp"
 #include "Range.hpp"
 
-#include "impl/Require.hpp"
-
 #include "../CharSet.hpp"
+#include "../StringLiteral.hpp"
+
+#include "../../err/ParameterFailure.hpp"
 
 #include <array>
 #include <cstddef>
@@ -23,13 +24,23 @@ public:
     constexpr Set() noexcept = default;
     /// Create a set from a list of ranges.
     constexpr Set(std::initializer_list<Range> ranges) {
+        if (ranges.size() > cMaximumSetRanges) {
+            throw err::ParameterFailure{StringLiteral{"Set has too many ranges"}, StringLiteral{"ranges"}};
+        }
         for (const auto &range : ranges) {
-            add(range.charRange());
+            _ranges[_count] = range.charRange();
+            ++_count;
         }
     }
     /// Create a set from an existing character set.
     explicit Set(const CharSet &charSet) {
-        charSet.forEach([this](const CharRange range) -> void { add(range); });
+        charSet.forEach([this](const CharRange range) -> void {
+            if (_count >= cMaximumSetRanges) {
+                throw err::ParameterFailure{StringLiteral{"Set has too many ranges"}, StringLiteral{"charSet"}};
+            }
+            _ranges[_count] = range;
+            ++_count;
+        });
     }
 
 public: // accessors
@@ -37,17 +48,6 @@ public: // accessors
     [[nodiscard]] constexpr auto count() const noexcept -> std::size_t { return _count; }
     /// Access the range at the given index.
     [[nodiscard]] constexpr auto range(const std::size_t index) const noexcept -> CharRange { return _ranges[index]; }
-
-private:
-    /// Append a non-empty character range to this set.
-    constexpr void add(const CharRange range) {
-        if (range.isEmpty()) {
-            return;
-        }
-        impl::requirePattern(_count < cMaximumSetRanges, "StringEditor pattern set has too many ranges");
-        _ranges[_count] = range;
-        ++_count;
-    }
 
 private:
     std::array<CharRange, cMaximumSetRanges> _ranges{}; ///< The ranges in this set.

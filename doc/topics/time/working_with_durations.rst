@@ -79,7 +79,7 @@ the ``Duration``; truncation does not round upward for you.
 .. erbsland-demo::
     :source: time/Duration/Create.cpp
     :exec: time/duration --demo Create
-    :source-sha256: af7aca1b6441ab7f2e9681fed87d4aefddea80dae5204f699dd33fd27099e02a
+    :sha256: c9aabd3d96e9412294b5583f7b42a80bd5b213ca5811b0c8ef95c07adeb26d2c
 
 .. code-block:: cpp
 
@@ -115,16 +115,18 @@ the ``Duration``; truncation does not round upward for you.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    試作センサー: timeout 30 s; warmup 120 s; fixed interval 172800 s
-    Default is zero: true; zero factory matches: true
-    90 minutes and 5 seconds: 5405 s
-    2500 ms: typed 2 s; chrono 2 s
-    -2500 ms: typed -2 s; chrono -2 s
-    999 ms: typed 0 s; chrono 0 s
-    -999 ms: typed 0 s; chrono 0 s
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m試作センサー: timeout 30 s; warmup 120 s; fixed interval 172800 s
+        Default is zero: true; zero factory matches: true
+        90 minutes and 5 seconds: 5405 s
+        2500 ms: typed 2 s; chrono 2 s
+        -2500 ms: typed -2 s; chrono -2 s
+        999 ms: typed 0 s; chrono 0 s
+        -999 ms: typed 0 s; chrono 0 s␛[0m
 
 .. erbsland-demo-end::
 
@@ -155,7 +157,7 @@ operation, using the boundary checks documented for
 .. erbsland-demo::
     :source: time/Duration/Calculate.cpp
     :exec: time/duration --demo Calculate
-    :source-sha256: 1ced8526d72fbf5f911eb78a64b0dbda9d7f6917f627b569501c325812abccc6
+    :sha256: 855f51e2ff5b60866ba98fc250b351648a1acc1c19c3a469a95002e088f7fe05
 
 .. code-block:: cpp
 
@@ -193,15 +195,17 @@ operation, using the boundary checks documented for
         el::io::printLine(el::StringFormat{"Negated minimum: {}"_el}.build((-minimum).toSeconds().toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Required: 165 s; remaining: 15 s; within budget: true
-    Revised: 170 s; equals original: false; positive: true; negative: true; zero: true
-    Adding one to maximum would saturate: true
-    Maximum plus one: 9223372036854775807
-    Minimum minus one: -9223372036854775808
-    Negated minimum: 9223372036854775807
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRequired: 165 s; remaining: 15 s; within budget: true
+        Revised: 170 s; equals original: false; positive: true; negative: true; zero: true
+        Adding one to maximum would saturate: true
+        Maximum plus one: 9223372036854775807
+        Minimum minus one: -9223372036854775808
+        Negated minimum: 9223372036854775807␛[0m
 
 .. erbsland-demo-end::
 
@@ -261,7 +265,7 @@ The demo prints every largest-unit choice and rebuilds a negative duration from 
 .. erbsland-demo::
     :source: time/Duration/Parts.cpp
     :exec: time/duration --demo Parts
-    :source-sha256: fef97b89a75a4a0d5d01d3d1ac4ed63e7d61218daa07afb9e1450a1c2a6f2373
+    :sha256: c7447b7f814878518cb62f550ed64699e6d90bff23b3f5b21ae47214787b52ab
 
 .. code-block:: cpp
 
@@ -305,16 +309,18 @@ The demo prints every largest-unit choice and rebuilds a negative duration from 
                 el::Duration{parts} == negative));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Total: 788645 s; components: 9 d, 3 h, 4 m, 5 s
-    Seconds: 0 w, 0 d, 0 h, 0 m, 788645 s
-    Minutes: 0 w, 0 d, 0 h, 13144 m, 5 s
-    Hours: 0 w, 0 d, 219 h, 4 m, 5 s
-    Days: 0 w, 9 d, 3 h, 4 m, 5 s
-    Weeks: 1 w, 2 d, 3 h, 4 m, 5 s
-    Negative: -9 d, -3 h, -4 m, -5 s; rebuilt equal: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTotal: 788645 s; components: 9 d, 3 h, 4 m, 5 s
+        Seconds: 0 w, 0 d, 0 h, 0 m, 788645 s
+        Minutes: 0 w, 0 d, 0 h, 13144 m, 5 s
+        Hours: 0 w, 0 d, 219 h, 4 m, 5 s
+        Days: 0 w, 9 d, 3 h, 4 m, 5 s
+        Weeks: 1 w, 2 d, 3 h, 4 m, 5 s
+        Negative: -9 d, -3 h, -4 m, -5 s; rebuilt equal: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -349,7 +355,7 @@ exact round trip.
 .. erbsland-demo::
     :source: time/Duration/Convert.cpp
     :exec: time/duration --demo Convert
-    :source-sha256: 388a14506df5d61c489ff177c654044255d9a3bfdd8b21ffef2783ade9790287
+    :sha256: cce4331dd9ff68d1861755998dbba3afeea7fd771cb36a05adc407dd62b8f6e4
 
 .. code-block:: cpp
 
@@ -378,13 +384,15 @@ exact round trip.
                 maximum.days.toRawValue(), maximum.nanoseconds.toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Chrono seconds: 183605; round trip equal: true
-    183605 s: 2 d, 10805000000000 ns; approximate days: 2.1250578703703704
-    -183605 s: -2 d, -10805000000000 ns; approximate days: -2.1250578703703704
-    Maximum split: 106751991167300 d, 55807000000000 ns
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mChrono seconds: 183605; round trip equal: true
+        183605 s: 2 d, 10805000000000 ns; approximate days: 2.1250578703703704
+        -183605 s: -2 d, -10805000000000 ns; approximate days: -2.1250578703703704
+        Maximum split: 106751991167300 d, 55807000000000 ns␛[0m
 
 .. erbsland-demo-end::
 
@@ -413,7 +421,7 @@ be misleading.
 .. erbsland-demo::
     :source: time/Duration/Precise.cpp
     :exec: time/duration --demo Precise
-    :source-sha256: 93f0067cbcbaa9b4fb253a750809c9eb90df57c6d4700b87c7232c712f144bee
+    :sha256: ca2c6c75b59b5ad72c7fc1e924c5f5c8c1114bfcc0d344d670bfbbd1107282d9
 
 .. code-block:: cpp
 
@@ -446,18 +454,18 @@ be misleading.
         }
     }
 
-    }
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    30 seconds: 30000000000 ns; round trip equal: true
-    9223372036 s would saturate: false
-    9223372037 s would saturate: true
-    -9223372036 s would saturate: false
-    -9223372037 s would saturate: true
-    Conversion would saturate: true; saturated nanoseconds: 9223372036854775807
-    Checked conversion rejected the overflowing interval.
+        ␛[0m30 seconds: 30000000000 ns; round trip equal: true
+        9223372036 s would saturate: false
+        9223372037 s would saturate: true
+        -9223372036 s would saturate: false
+        -9223372037 s would saturate: true
+        Conversion would saturate: true; saturated nanoseconds: 9223372036854775807
+        Checked conversion rejected the overflowing interval.␛[0m
 
 .. erbsland-demo-end::
 

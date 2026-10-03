@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/math/SaturatingInteger.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/IntegerFormatFlag.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/SaturatingInteger.hpp>
 #include <erbsland/stream/impl/NativeOutputStream.hpp>
 #include <erbsland/stream/impl/StandardTextOutputStream.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/text/BooleanFormat.hpp>
-#include <erbsland/text/IntegerFormatFlag.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/StreamError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -127,7 +127,7 @@ public:
         integerFormat.setFlags(IntegerFormatFlag::BasePrefix);
         auto floatFormat = FloatFormat::fixed();
         floatFormat.setPrecision(ItemCount{2U});
-        auto booleanFormat = BooleanFormat::yesNo().setCapitalization(Capitalization::Titlecase);
+        auto booleanFormat = BooleanFormat::yesNo().setCapitalization(Capitalization::Capitalized);
 
         stream.printLine("value=", integerFormat, 255U, ", ok=", true, ", ratio=", floatFormat, 1.25);
         stream.printLine("styled=", booleanFormat, true, "|", false);

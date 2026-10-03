@@ -66,7 +66,7 @@ Repeated calls have no additional effect, but enabling it after ``run()`` has be
 
 .. erbsland-demo::
     :source: core/ServiceLifecycle/main.cpp
-    :source-sha256: 3415ac41f4bceef6333792be592bb19f7fc277eb85acb531a17433414156dad1
+    :sha256: ac34e2d39f4b131398e710be5b7cfb7263534ee903ca956605107d1aa3be6a7c
 
 .. code-block:: cpp
 
@@ -283,7 +283,7 @@ useful work.
 
 .. erbsland-demo::
     :source: core/ServiceLifecycle/CatalogMonitorApplication.cpp
-    :source-sha256: 11831bb8d989b985b8694d3f7919fa200711be7be6bef14fda568ee123e37398
+    :sha256: ae265a61e55e20a999e3db7ab70275e8dea7755709730cd24b9beb309a8eca49
 
 .. code-block:: cpp
 
@@ -408,8 +408,8 @@ notifications.
 This is intentional: systemd and launchd already own process creation and supervision, while the unit or property-list
 file provides a clear place for deployment policy.
 
-A Predictable Process Boundary
-==============================
+Service Startup and Shutdown Responsibilities
+=============================================
 
 Service support works best when it remains a thin boundary around an ordinary, well-structured application.
 Enable it before ``run()``, keep the process in the foreground, let application parts and event loops perform their

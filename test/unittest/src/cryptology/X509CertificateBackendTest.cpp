@@ -6,8 +6,8 @@
 #include <erbsland/cryptology/impl/PortableX509CertificateData.hpp>
 #include <erbsland/cryptology/impl/X509CertificateBackendAccess.hpp>
 #include <erbsland/cryptology/impl/X509CertificateData.hpp>
-#include <erbsland/cryptology/x509/X509Certificate.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/X509Certificate.hpp>
 
 #include <cstddef>
 

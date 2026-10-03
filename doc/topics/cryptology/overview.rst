@@ -102,11 +102,11 @@ See :doc:`creating_tls_certificates` for complete test and enterprise workflows.
 Configuring TLS Profiles
 ========================
 
-Applications can read labeled client and server TLS profiles from ELCL section lists.
-:cpp:class:`TlsConfigurationParser <erbsland::cryptology::TlsConfigurationParser>` validates one list entry, loads its
-certificate and key files, and returns an independent
-:cpp:class:`TlsConfigurationEntry <erbsland::cryptology::TlsConfigurationEntry>` for registration.
-See :doc:`configuring_tls` for client-only, server-only, combined, fallback, and included-file examples.
+TLS profiles keep each service's identity and trust decisions in the application configuration.
+You can load client and server profiles from ELCL, use system authorities or a private CA, and replace all profiles
+together when rotating certificates.
+See :doc:`configuring_tls` for setting up HTTPS, presenting client identities, requiring client certificates, and
+retrieving key passwords from secure storage.
 
 Supported Hash Algorithms
 =========================

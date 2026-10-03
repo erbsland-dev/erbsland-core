@@ -9,6 +9,7 @@
 #include "../PlatformErrorContext.hpp"
 
 #include "../../err/Exception.hpp"
+#include "../../err/RuntimeError.hpp"
 #include "../../path/Path.hpp"
 #include "../../path/PathContent.hpp"
 #include "../../path/PathError.hpp"
@@ -25,8 +26,8 @@
 #include "../../text/StringSide.hpp"
 #include "../../time/TimeEpoch.hpp"
 #include "../../time/Timestamp.hpp"
-#include "../../unit/ByteLength.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/ByteCount.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <sched.h>
 #include <sys/utsname.h>
@@ -41,6 +42,9 @@
 
 namespace erbsland::system::impl {
 
+using namespace path;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 auto LinuxSystemInfoBackend::currentProcessId() const noexcept -> ProcessId {
@@ -53,7 +57,7 @@ auto LinuxSystemInfoBackend::loadProcessInfo(const ProcessId processId) const ->
         data.processError = {"Process does not exist."_el, {}};
         return data;
     }
-    return loadNativeProcessInfo(ProcessIdAccess::toNative(processId));
+    return loadNativeProcessInfo(ProcessIdAccess{processId}.toNative());
 }
 
 auto LinuxSystemInfoBackend::operatingSystem() const noexcept -> OperatingSystem {
@@ -65,7 +69,7 @@ auto LinuxSystemInfoBackend::cpuArchitecture() const noexcept -> CpuArchitecture
     if (::uname(&info) != 0) {
         return CpuArchitecture::Unknown;
     }
-    const auto value = text::StringConverter{std::string_view{info.machine}}.toString();
+    const auto value = StringConverter{std::string_view{info.machine}}.toString();
     if (value == "x86_64"_el || value == "amd64"_el) {
         return CpuArchitecture::X86_64;
     }
@@ -103,33 +107,32 @@ auto LinuxSystemInfoBackend::logicalCpuCount() const noexcept -> std::uint32_t {
     return fallback > 0U ? fallback : 1U;
 }
 
-auto LinuxSystemInfoBackend::error(text::String reason, const int errorCode) -> ProcessInfoError {
+auto LinuxSystemInfoBackend::error(String reason, const int errorCode) -> ProcessInfoError {
     return {std::move(reason), PosixErrorContext::fromErrorCode(errorCode)};
 }
 
-auto LinuxSystemInfoBackend::processFilePath(const std::uint64_t processId, const text::String &name) -> path::Path {
-    return path::Path::fromPosix("/proc"_el) / text::String::fromInteger(processId) / name;
+auto LinuxSystemInfoBackend::processFilePath(const std::uint64_t processId, const String &name) -> Path {
+    return Path::fromPosix("/proc"_el) / String::fromInteger(processId) / name;
 }
 
-auto LinuxSystemInfoBackend::readText(const path::Path &path, ProcessInfoError &readError)
-    -> std::optional<text::String> {
+auto LinuxSystemInfoBackend::readText(const Path &path, ProcessInfoError &readError) -> std::optional<String> {
     try {
-        constexpr auto cMaximumLength = unit::ByteLength{4'000'000U};
-        return path.content().readTextOrThrow(path::PathReadTextOptions{cMaximumLength});
-    } catch (const path::PathError &exception) {
+        constexpr auto cMaximumLength = ByteCount{4'000'000U};
+        return path.content().readTextOrThrow(PathReadTextOptions{cMaximumLength});
+    } catch (const PathError &exception) {
         readError = {exception.reason(), exception.platformContext()};
-    } catch (const err::Exception &exception) {
+    } catch (const err::RuntimeError &exception) {
         readError = {exception.reason(), {}};
     }
     return std::nullopt;
 }
 
-auto LinuxSystemInfoBackend::resolvePath(const path::Path &path, ProcessInfoError &resolveError) -> path::Path {
+auto LinuxSystemInfoBackend::resolvePath(const Path &path, ProcessInfoError &resolveError) -> Path {
     try {
         return path.resolveOrThrow();
-    } catch (const path::PathError &exception) {
+    } catch (const PathError &exception) {
         resolveError = {exception.reason(), exception.platformContext()};
-    } catch (const err::Exception &exception) {
+    } catch (const err::RuntimeError &exception) {
         resolveError = {exception.reason(), {}};
     }
     return {};
@@ -139,89 +142,81 @@ auto LinuxSystemInfoBackend::isNotFound(const ProcessInfoError &operationError) 
     return operationError.context != nullptr && operationError.context->category() == PlatformErrorCategory::NotFound;
 }
 
-auto LinuxSystemInfoBackend::parseProcessStat(const text::String &value) -> std::optional<NativeProcessData> {
-    const auto close = value.findLastOf(text::CharSet{U')'});
-    if (close.isNoIndex() || value.charAt(close.advanced(unit::ByteLength::one())) != U' ') {
+auto LinuxSystemInfoBackend::parseProcessStat(const String &value) -> std::optional<NativeProcessData> {
+    const auto parts = value.splitAtLast(CharSet{U')'});
+    if (!parts || !parts->second.startsWith(" "_el)) {
         return std::nullopt;
     }
-    const auto fieldsStart = close.advanced(unit::ByteLength{2U});
-    if (!fieldsStart.isWithin(value.length())) {
+    const auto fields = parts->second.slice(StringSide::Back, ByteIndex{1U});
+    if (fields.isEmpty()) {
         return std::nullopt;
     }
-    auto reader = text::StringCharReader{value.slice(text::StringSide::Back, fieldsStart)};
+    auto reader = StringCharReader{fields};
     if (!reader.read().isAsciiLetter()) {
         return std::nullopt;
     }
 
-    auto integerOptions = text::IntegerParseOptions{};
-    integerOptions.setFixedBase(text::IntegerBase::Decimal)
-        .setMinimumDigits(unit::CpLength::one())
-        .setMaximumDigits(unit::CpLength{20U});
-    if (reader.advanceWhile(text::AsciiCategory::Whitespace).isZero()) {
+    auto integerOptions = IntegerParseOptions{};
+    integerOptions.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpCount::one()).setMaximumDigits(CpCount{20U});
+    if (reader.advanceWhile(AsciiCategory::Whitespace).isZero()) {
         return std::nullopt;
     }
     const auto parent = reader.parseInteger(integerOptions);
-    if (parent.status != text::ReadNumberStatus::Success) {
+    if (parent.status != ReadNumberStatus::Success) {
         return std::nullopt;
     }
     for (auto field = 0; field < 17; ++field) {
-        if (reader.advanceWhile(text::AsciiCategory::Whitespace).isZero() ||
-            reader.advanceUntil(text::AsciiCategory::Whitespace).isZero()) {
+        if (reader.advanceWhile(AsciiCategory::Whitespace).isZero() ||
+            reader.advanceUntil(AsciiCategory::Whitespace).isZero()) {
             return std::nullopt;
         }
     }
-    if (reader.advanceWhile(text::AsciiCategory::Whitespace).isZero()) {
+    if (reader.advanceWhile(AsciiCategory::Whitespace).isZero()) {
         return std::nullopt;
     }
     const auto startTicks = reader.parseInteger(integerOptions);
-    if (startTicks.status != text::ReadNumberStatus::Success) {
+    if (startTicks.status != ReadNumberStatus::Success) {
         return std::nullopt;
     }
     return NativeProcessData{parent.value, startTicks.value};
 }
 
-auto LinuxSystemInfoBackend::parseEffectiveUserId(const text::String &value) -> std::optional<std::uint64_t> {
-    const auto position = value.find("\nUid:"_el);
-    if (position.isNoIndex()) {
+auto LinuxSystemInfoBackend::parseEffectiveUserId(const String &value) -> std::optional<std::uint64_t> {
+    const auto parts = value.splitAtFirst("\nUid:"_el);
+    if (!parts) {
         return std::nullopt;
     }
-    auto reader = text::StringCharReader{value.slice(text::StringSide::Back, position.advanced(unit::ByteLength{5U}))};
-    auto integerOptions = text::IntegerParseOptions{};
-    integerOptions.setFixedBase(text::IntegerBase::Decimal)
-        .setMinimumDigits(unit::CpLength::one())
-        .setMaximumDigits(unit::CpLength{20U});
-    if (reader.advanceWhile(text::AsciiCategory::Blank).isZero()) {
+    auto reader = StringCharReader{parts->second};
+    auto integerOptions = IntegerParseOptions{};
+    integerOptions.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpCount::one()).setMaximumDigits(CpCount{20U});
+    if (reader.advanceWhile(AsciiCategory::Blank).isZero()) {
         return std::nullopt;
     }
     const auto realUserId = reader.parseInteger(integerOptions);
-    if (realUserId.status != text::ReadNumberStatus::Success ||
-        reader.advanceWhile(text::AsciiCategory::Blank).isZero()) {
+    if (realUserId.status != ReadNumberStatus::Success || reader.advanceWhile(AsciiCategory::Blank).isZero()) {
         return std::nullopt;
     }
     const auto effectiveUserId = reader.parseInteger(integerOptions);
-    return effectiveUserId.status == text::ReadNumberStatus::Success
-        ? std::optional<std::uint64_t>{effectiveUserId.value}
-        : std::nullopt;
+    return effectiveUserId.status == ReadNumberStatus::Success ? std::optional<std::uint64_t>{effectiveUserId.value}
+                                                               : std::nullopt;
 }
 
 auto LinuxSystemInfoBackend::bootTimeSeconds(ProcessInfoError &operationError) -> std::optional<std::uint64_t> {
-    const auto value = readText(path::Path::fromPosix("/proc/stat"_el), operationError);
+    const auto value = readText(Path::fromPosix("/proc/stat"_el), operationError);
     if (!value.has_value()) {
         operationError.reason = "System boot time is unavailable."_el;
         return std::nullopt;
     }
-    const auto position = value->find("\nbtime "_el);
-    if (position.isNoIndex()) {
+    const auto parts = value->splitAtFirst("\nbtime "_el);
+    if (!parts) {
         operationError = error("System boot time data is invalid."_el, EINVAL);
         return std::nullopt;
     }
-    auto reader = text::StringCharReader{value->slice(text::StringSide::Back, position.advanced(unit::ByteLength{7U}))};
-    auto integerOptions = text::IntegerParseOptions{};
-    integerOptions.setFixedBase(text::IntegerBase::Decimal)
-        .setMinimumDigits(unit::CpLength::one())
-        .setMaximumDigits(unit::CpLength{20U});
+    auto reader = StringCharReader{parts->second};
+    auto integerOptions = IntegerParseOptions{};
+    integerOptions.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpCount::one()).setMaximumDigits(CpCount{20U});
     const auto seconds = reader.parseInteger(integerOptions);
-    if (seconds.status != text::ReadNumberStatus::Success) {
+    if (seconds.status != ReadNumberStatus::Success) {
         operationError = error("System boot time data is invalid."_el, EINVAL);
         return std::nullopt;
     }
@@ -289,7 +284,7 @@ auto LinuxSystemInfoBackend::loadNativeProcessInfo(const std::uint64_t processId
         if (status.has_value()) {
             const auto userId = parseEffectiveUserId(*status);
             if (userId.has_value()) {
-                data.ownerId = UserId{text::String::fromInteger(*userId)};
+                data.ownerId = UserId{String::fromInteger(*userId)};
             } else {
                 data.ownerIdError = error("Process owner identifier is unavailable."_el, EINVAL);
             }

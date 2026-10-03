@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HttpCookieSessionManagerData.hpp"
 
-#include "../../../../core/Application.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../../../../core/impl/ApplicationDataAccess.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../random/Random.hpp"
 #include "../../../../text/AnyString.hpp"
@@ -112,7 +113,7 @@ void HttpCookieSessionManagerData::validate() const {
         !_options.idleTimeout().isPositive() || !_options.absoluteTimeout().isPositive() ||
         _options.maximumSessions().isZero() || _options.maximumSessions().isInfinite() ||
         (_options.sameSite() == HttpCookieSameSite::None && _options.securePolicy() == HttpCookieSecurePolicy::Never)) {
-        throw err::ParameterError{"The HTTP cookie session manager options are invalid."_el, "options"_el};
+        throw err::ParameterFailure{"The HTTP cookie session manager options are invalid."_el, "options"_el};
     }
 }
 
@@ -133,13 +134,13 @@ auto HttpCookieSessionManagerData::requestIdentifier(const HttpHeaders &headers)
             reader.advanceUntil(CharSet{U';'});
             auto value = reader.takeCapture().toString();
             while (!value.isEmpty() && value.charAt(StringSide::Back).isAsciiWhitespace()) {
-                value = value.slice(StringSide::Front, value.length() - unit::ByteLength::one());
+                value = value.slice(StringSide::Front, value.length() - unit::ByteCount::one());
             }
             reader.advanceIf(U';');
             if (name != _options.cookieName()) {
                 continue;
             }
-            if (found.has_value() || value.length() != unit::ByteLength{43U} ||
+            if (found.has_value() || value.length() != unit::ByteCount{43U} ||
                 !value.containsOnly(AsciiCategory::WordWithHyphen)) {
                 return std::nullopt;
             }
@@ -152,8 +153,8 @@ auto HttpCookieSessionManagerData::requestIdentifier(const HttpHeaders &headers)
 auto HttpCookieSessionManagerData::createIdentifier() -> String {
     auto format = base_n::BaseNFormat::base64Url();
     format.clearFlags(base_n::BaseNFormatFlag::EmitPadding | base_n::BaseNFormatFlag::RequirePadding);
-    return base_n::BaseNEncoder{
-        core::application().secureRandom().buildByteBlock(unit::ByteLength{32U}), std::move(format)}
+    const auto randomData = core::impl::applicationData()->random().get();
+    return base_n::BaseNEncoder{randomData->secureRandom().buildByteBlock(unit::ByteCount{32U}), std::move(format)}
         .toString();
 }
 
@@ -192,7 +193,7 @@ auto HttpCookieSessionManagerData::cookieValue(const String &identifier, const b
     if (secure) {
         result.append("; Secure"_el);
     }
-    return String{result};
+    return result;
 }
 
 void HttpCookieSessionManagerData::removeExpired(const time::TimePoint now) {
@@ -210,7 +211,7 @@ void HttpCookieSessionManagerData::captureOwner(const event::EventsPtr &owner) {
         return;
     }
     if (_ownerEvents != owner) {
-        throw err::ParameterError{
+        throw err::ParameterFailure{
             "An HTTP cookie session manager can only be used by one owner event loop."_el, "context"_el};
     }
 }

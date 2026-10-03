@@ -62,7 +62,7 @@ Days are counted from the Core epoch and must lie in ``0..3652424``; nanoseconds
 ``0..86399999999999``.
 An oversized nonnegative field returns ``std::nullopt``.
 :cpp:func:`fromDaysAndNanosecondsOrThrow() <erbsland::time::Timestamp::fromDaysAndNanosecondsOrThrow>` reports that failure
-with :cpp:class:`ParameterError <erbsland::err::ParameterError>`.
+with :cpp:class:`OutOfRangeError <erbsland::err::OutOfRangeError>`.
 Neither form carries an oversized time field into the next day.
 
 Negative input fields have a different meaning: they produce a successfully decoded, canonical invalid timestamp.
@@ -77,7 +77,7 @@ rejected because it no longer describes a reading within one day.
 .. erbsland-demo::
     :source: time/Timestamp/Create.cpp
     :exec: time/timestamp --demo Create
-    :source-sha256: 72b76d8ac964f25af216175bc71d19c7bedbb9591e0683b99cefeffd1a6c804e
+    :sha256: e4d8af0684230258b8c2251e3cbd200b71ac85ac1c2bc3f793cb950d80452f45
 
 .. code-block:: cpp
 
@@ -107,27 +107,29 @@ rejected because it no longer describes a reading within one day.
         try {
             const auto unexpected = el::Timestamp::fromDaysAndNanosecondsOrThrow(el::Days{3'652'425}, el::Nanoseconds{});
             el::io::printLine(el::StringFormat{"Unexpected successful result: {}"_el}.build(unexpected.toString()));
-        } catch (const el::err::ParameterError &) {
+        } catch (const el::err::OutOfRangeError &) {
             el::io::printLine("Checked construction rejects an out-of-range day count."_el);
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Event: Μάθημα αστρονομίας; start: 2026-07-01T12:30:00.000000000Z; restored: 2026-07-01T12:
-    30:00.000000000Z
-    Sentinel decoded: true; sentinel valid: false; oversized input decoded: false
-    Default valid: false; invalid sorts first: true; invalid values equal: true
-    Epoch: 0000-01-01T00:00:00.000000000Z; first: 0000-01-01T00:00:00.000000000Z; last: 9999-1
-    2-31T23:59:59.999999999Z
-    Current wall clock is valid: true
-    Checked construction rejects an out-of-range day count.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mEvent: Μάθημα αστρονομίας; start: 2026-07-01T12:30:00.000000000Z; restored: 2026-07-01T12:
+        30:00.000000000Z
+        Sentinel decoded: true; sentinel valid: false; oversized input decoded: false
+        Default valid: false; invalid sorts first: true; invalid values equal: true
+        Epoch: 0000-01-01T00:00:00.000000000Z; first: 0000-01-01T00:00:00.000000000Z; last: 9999-1
+        2-31T23:59:59.999999999Z
+        Current wall clock is valid: true
+        Checked construction rejects an out-of-range day count.␛[0m
 
 .. erbsland-demo-end::
 
-Exchanging Text
-===============
+Parsing and Formatting ISO Timestamp Text
+=========================================
 
 :cpp:func:`fromIsoString() <erbsland::time::Timestamp::fromIsoString>` accepts the library's ISO date/time subset with
 seconds and an explicit ``Z`` or numeric UTC offset.
@@ -152,7 +154,7 @@ The shared controls are introduced under :ref:`time-iso-output`; the canonical t
 .. erbsland-demo::
     :source: time/Timestamp/Text.cpp
     :exec: time/timestamp --demo Text
-    :source-sha256: aeb06bd297601da31114f0dd8364d9713b3ca797c38478035d7e019b6936da72
+    :sha256: b984d49a3f7667622f40050dc973e648cf111b1556efb14caec6c91948894ca1
 
 .. code-block:: cpp
 
@@ -178,13 +180,15 @@ The shared controls are introduced under :ref:`time-iso-output`; the canonical t
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Canonical UTC: 2026-07-01T12:30:00.123456789Z; ISO round trip: true
-    Missing offset accepted: false; invalid ISO available: false
-    Out-of-calendar UTC accepted: false
-    Checked parsing rejects an impossible date.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCanonical UTC: 2026-07-01T12:30:00.123456789Z; ISO round trip: true
+        Missing offset accepted: false; invalid ISO available: false
+        Out-of-calendar UTC accepted: false
+        Checked parsing rejects an impossible date.␛[0m
 
 .. erbsland-demo-end::
 
@@ -197,7 +201,7 @@ and an ``int64_t`` nanosecond count since midnight.
 It follows the same bounds and negative-field convention as
 :cpp:func:`fromDaysAndNanoseconds() <erbsland::time::Timestamp::fromDaysAndNanoseconds>`.
 The checked :cpp:func:`fromRawValueOrThrow() <erbsland::time::Timestamp::fromRawValueOrThrow>` rejects oversized
-nonnegative fields with ``ParameterError``; a negative field still successfully constructs the invalid sentinel.
+nonnegative fields with ``OutOfRangeError``; a negative field still successfully constructs the invalid sentinel.
 The invalid raw value is always ``(-1, 0)``.
 
 For a file or network message, :cpp:func:`toByteBlock() <erbsland::time::Timestamp::toByteBlock>` writes exactly twelve
@@ -207,14 +211,14 @@ The invalid value has the encoding ``ffffffff0000000000000000``.
 
 :cpp:func:`fromByteBlock() <erbsland::time::Timestamp::fromByteBlock>` checks the byte count and decoded fields.
 It returns no value for a malformed block, whereas
-:cpp:func:`fromByteBlockOrThrow() <erbsland::time::Timestamp::fromByteBlockOrThrow>` raises ``ParameterError``.
+:cpp:func:`fromByteBlockOrThrow() <erbsland::time::Timestamp::fromByteBlockOrThrow>` raises ``ParseError``.
 A block that decodes to negative fields yields the canonical invalid timestamp, so check validity after decoding when
 invalid values are not allowed in your format.
 
 .. erbsland-demo::
     :source: time/Timestamp/Storage.cpp
     :exec: time/timestamp --demo Storage
-    :source-sha256: d6c9c7167b0f2756c7eaceb3181cd86a357f4fdec93f6780c11a8d833fd1323e
+    :sha256: f39b5e83a68b0e7327ab67a7dc5c606a606a374d6f900dd1a11454be6ab207e6
 
 .. code-block:: cpp
 
@@ -241,24 +245,26 @@ invalid values are not allowed in your format.
         try {
             const auto unexpected = el::Timestamp::fromByteBlockOrThrow(el::ByteBlock{});
             el::io::printLine(el::StringFormat{"Unexpected successful result: {}"_el}.build(unexpected.toString()));
-        } catch (const el::err::ParameterError &) {
+        } catch (const el::err::ParseError &) {
             el::io::printLine("Checked decoding rejects the wrong byte count."_el);
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Raw days: 740163; nanoseconds: 45000123456789; restored: true
-    Separate fields restored: true; invalid fields canonicalized: true
-    Encoded: 000b4b43000028ed685f9d15; byte round trip: true
-    Invalid encoding: ffffffff0000000000000000; empty block accepted: false
-    Checked decoding rejects the wrong byte count.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRaw days: 740163; nanoseconds: 45000123456789; restored: true
+        Separate fields restored: true; invalid fields canonicalized: true
+        Encoded: 000b4b43000028ed685f9d15; byte round trip: true
+        Invalid encoding: ffffffff0000000000000000; empty block accepted: false
+        Checked decoding rejects the wrong byte count.␛[0m
 
 .. erbsland-demo-end::
 
-Choosing a Display Zone
-=======================
+Timestamp and DateTime Conversions and Display Zones
+====================================================
 
 :cpp:func:`fromDateTime() <erbsland::time::Timestamp::fromDateTime>` copies the stored UTC instant and discards the
 ``DateTime`` display properties.
@@ -275,7 +281,7 @@ This also avoids treating a zone's numeric offset on one date as its permanent o
 .. erbsland-demo::
     :source: time/Timestamp/DateTime.cpp
     :exec: time/timestamp --demo DateTime
-    :source-sha256: e1e7bfa6379c6a887c2c0444df32f36c618fda5c36166185f4573d026aeded15
+    :sha256: 40fcd4d9ca3bd3978c2e0a809e0551b9379b6c2df798f3eb31232fed692d3b74
 
 .. code-block:: cpp
 
@@ -302,15 +308,17 @@ This also avoids treating a zone's numeric offset on one date as its permanent o
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Local input: 2026-07-01 14:30:00.123456789+02:00; UTC conversion: 2026-07-01 12:30:00.1234
-    56789Z
-    Instant unchanged: true; DateTime equality: false; convertible: true
-    Chosen display: 2026-07-01 15:30:00.123456789+03:00
-    Invalid input converts: false; invalid timestamp converts: false
-    An invalid timestamp has no dated instant.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLocal input: 2026-07-01 14:30:00.123456789+02:00; UTC conversion: 2026-07-01 12:30:00.1234
+        56789Z
+        Instant unchanged: true; DateTime equality: false; convertible: true
+        Chosen display: 2026-07-01 15:30:00.123456789+03:00
+        Invalid input converts: false; invalid timestamp converts: false
+        An invalid timestamp has no dated instant.␛[0m
 
 .. erbsland-demo-end::
 
@@ -340,8 +348,8 @@ For the quarter-second before POSIX, this is ``(-1, 750000000)``, which adds bac
 The fraction is positive because it counts forward from the beginning of second minus one; it is not an independent
 negative remainder.
 The ``fromTicks(Seconds, Nanoseconds, epoch)`` overload consumes this representation.
-Its optional form rejects an invalid fraction or out-of-range result; its throwing form reports ``ParameterError`` for
-the fraction and ``OutOfRangeError`` for calendar overflow.
+Its optional form rejects an invalid fraction or out-of-range result; its throwing form reports ``OutOfRangeError`` for
+an invalid fraction or calendar overflow.
 
 For native C or operating-system APIs, :cpp:func:`toTimeT() <erbsland::time::Timestamp::toTimeT>` returns floor POSIX
 seconds and :cpp:func:`fromTimeT() <erbsland::time::Timestamp::fromTimeT>` reconstructs an instant at a whole second.
@@ -354,7 +362,7 @@ Keep validity and range information separately, or use the optional typed conver
 .. erbsland-demo::
     :source: time/Timestamp/Ticks.cpp
     :exec: time/timestamp --demo Ticks
-    :source-sha256: 1de64355439420ee4b1d32bd1e5835ba6df63ee09d13825fa5a6afe7fae6eec6
+    :sha256: 2e7adae447e537c537803219b79deb2e228824026b0b145ea145f18644512158
 
 .. code-block:: cpp
 
@@ -395,17 +403,17 @@ Keep validity and range information separately, or use the optional typed conver
                 posix.toTimeT(), el::Timestamp::fromTimeT(posix.toTimeT()) == posix, before.toTimeT()));
     }
 
-    }
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    Before POSIX epoch: 1969-12-31T23:59:59.750000000Z; scalar seconds: 0; milliseconds: -250
-    Floor seconds: -1; fraction: 750000000; split round trip: true
-    Microseconds: -250000; nanoseconds: -250000000; DateTime accepts signed ticks: false
-    Last instant fits Core nanoseconds: false; invalid fraction accepted: false
-    Checked tick conversion rejects overflow.
-    POSIX time_t: 0; native round trip: true; negative fraction floors to: -1
+        ␛[0mBefore POSIX epoch: 1969-12-31T23:59:59.750000000Z; scalar seconds: 0; milliseconds: -250
+        Floor seconds: -1; fraction: 750000000; split round trip: true
+        Microseconds: -250000; nanoseconds: -250000000; DateTime accepts signed ticks: false
+        Last instant fits Core nanoseconds: false; invalid fraction accepted: false
+        Checked tick conversion rejects overflow.
+        POSIX time_t: 0; native round trip: true; negative fraction floors to: -1␛[0m
 
 .. erbsland-demo-end::
 
@@ -436,7 +444,7 @@ An overflow check therefore does not replace a validity check.
 .. erbsland-demo::
     :source: time/Timestamp/Calculate.cpp
     :exec: time/timestamp --demo Calculate
-    :source-sha256: a3ac434a951e771481391bbc8ae79a7c9e6f50e702ec00f852d6bdb76c400dc2
+    :sha256: 16fba6025347e55908015514578b8134b05fc7d1a7ad626d9f9152b2ae7207e8
 
 .. code-block:: cpp
 
@@ -472,15 +480,17 @@ An overflow check therefore does not replace a validity check.
                 !el::Timestamp{}.addedOrThrow(el::Seconds{1}).isValid(), el::Timestamp{}.wouldAddSaturate(el::Seconds{1})));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Start: 2026-07-01T23:59:59.900000000Z; finish: 2026-07-02T00:00:00.150000000Z; restored in
-     place: true
-    Operators agree: true
-    Adding 1 ns saturates: true; subtracting at first saturates: true; clamped: true
-    Checked addition rejected; original unchanged: true
-    Invalid remains invalid: true; invalid overflow predicate: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mStart: 2026-07-01T23:59:59.900000000Z; finish: 2026-07-02T00:00:00.150000000Z; restored in
+         place: true
+        Operators agree: true
+        Adding 1 ns saturates: true; subtracting at first saturates: true; clamped: true
+        Checked addition rejected; original unchanged: true
+        Invalid remains invalid: true; invalid overflow predicate: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -509,7 +519,7 @@ Whole seconds, milliseconds, and microseconds can span the complete supported ca
 A signed 64-bit nanosecond interval reaches roughly 292 years in either direction, so it cannot express every distance
 between supported timestamps.
 
-Ordinary distances involving an invalid operand return zero, checked distances report ``ParameterError``, and overflow
+Ordinary distances involving an invalid operand return zero, checked distances report ``OutOfRangeError``, and overflow
 predicates return false.
 When zero has a meaningful interpretation in your application, validate the operands or use the checked form so that
 missing data cannot masquerade as simultaneous events.
@@ -517,7 +527,7 @@ missing data cannot masquerade as simultaneous events.
 .. erbsland-demo::
     :source: time/Timestamp/Distances.cpp
     :exec: time/timestamp --demo Distances
-    :source-sha256: 722605ba92d137d45ad041294222aeec14c9ee9b37f43af87e76e6ed912e9e9f
+    :sha256: 765ae80265b26058bd4ea9310490951473050e74a1acfc88a04c4cfd900df78e
 
 .. code-block:: cpp
 
@@ -553,20 +563,22 @@ missing data cannot masquerade as simultaneous events.
         try {
             const auto unexpected = el::Timestamp{}.secondsToOrThrow(start);
             el::io::printLine(el::StringFormat{"Unexpected successful result: {}"_el}.build(unexpected.toRawValue()));
-        } catch (const el::err::ParameterError &) {
+        } catch (const el::err::OutOfRangeError &) {
             el::io::printLine("Checked distance rejects an invalid operand."_el);
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Seconds: 0; milliseconds: 250; microseconds: 250000; nanoseconds: 250000000
-    Whole duration (seconds): 0; precise delta: 250 ms; reverse: -250 ms; subtraction: 250 ms
-    Full calendar span fits seconds: true; fits precise delta: false
-    Two valid instants can be too far apart for TimeDelta.
-    Tolerant invalid distance: 0
-    Checked distance rejects an invalid operand.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSeconds: 0; milliseconds: 250; microseconds: 250000; nanoseconds: 250000000
+        Whole duration (seconds): 0; precise delta: 250 ms; reverse: -250 ms; subtraction: 250 ms
+        Full calendar span fits seconds: true; fits precise delta: false
+        Two valid instants can be too far apart for TimeDelta.
+        Tolerant invalid distance: 0
+        Checked distance rejects an invalid operand.␛[0m
 
 .. erbsland-demo-end::
 

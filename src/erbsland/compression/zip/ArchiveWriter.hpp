@@ -14,7 +14,7 @@
 #include "../../stream/ByteInputStream_fwd.hpp"
 #include "../../stream/ByteOutputStream_fwd.hpp"
 #include "../../text/String.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::compression::zip {
 
@@ -66,7 +66,7 @@ public: // entries
         stream::ByteInputStreamPtr source,
         const path::Path &storagePath,
         ArchiveEntryOptions options = {},
-        unit::ByteLength length = unit::ByteLength::infinite()) = 0;
+        unit::ByteCount length = unit::ByteCount::infinite()) = 0;
     /// Traverse and add a directory according to the supplied filters.
     virtual void addDirectory(const path::Path &source, ArchiveDirectoryOptions options = {}) = 0;
     /// Copy one compressed payload and its opaque extra fields without decoding it.

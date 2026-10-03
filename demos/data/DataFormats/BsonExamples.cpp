@@ -4,8 +4,17 @@
 #include "DataFormatsDemos.hpp"
 
 #include <DemoCommon.hpp>
-#include <erbsland/data/bson/BsonValue.hpp>
-#include <erbsland/err/ParseError.hpp>
+#include <erbsland/bson/BsonBinary.hpp>
+#include <erbsland/bson/BsonParseOptions.hpp>
+#include <erbsland/bson/BsonType.hpp>
+#include <erbsland/bson/BsonValue.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <cstdint>
 #include <utility>
@@ -102,10 +111,10 @@ void inspectBsonDocument() {
 /// of each string or key. A rejected frame returns no value with `fromByteBlock()`.
 void limitBsonDocument() {
     const auto bytes = makePlantRecord().toByteBlock();
-    const auto input = BsonParseOptions{}.setMaximumInputLength(el::ByteLength{10U});
+    const auto input = BsonParseOptions{}.setMaximumInputLength(el::ByteCount{10U});
     const auto nesting = BsonParseOptions{}.setMaximumNesting(el::ItemCount{1U});
     const auto values = BsonParseOptions{}.setMaximumValueCount(el::ItemCount{2U});
-    const auto strings = BsonParseOptions{}.setMaximumStringLength(el::ByteLength{3U});
+    const auto strings = BsonParseOptions{}.setMaximumStringLength(el::ByteCount{3U});
     el::io::printLine("Input accepted: "_el, BsonValue::fromByteBlock(bytes, input).has_value());
     el::io::printLine("Nesting accepted: "_el, BsonValue::fromByteBlock(bytes, nesting).has_value());
     el::io::printLine("Values accepted: "_el, BsonValue::fromByteBlock(bytes, values).has_value());

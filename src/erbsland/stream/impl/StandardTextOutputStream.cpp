@@ -7,6 +7,7 @@
 
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
+#include "../../text/StringJoins.hpp"
 #include "../../time/TimePoint.hpp"
 
 #include <chrono>
@@ -168,7 +169,7 @@ auto StandardTextOutputStream::writeLine() -> StreamWriteStatus {
 }
 
 auto StandardTextOutputStream::writeLine(const String &text) -> StreamWriteStatus {
-    return write(String::fromJoined({text, "\n"_el}));
+    return write(text::join(text, "\n"_el));
 }
 
 }

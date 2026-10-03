@@ -18,8 +18,8 @@ public:
     /// Create an empty certificate bundle.
     X509CertificateBundle() = default;
     /// Create a bundle from ordered certificates.
-    /// @param certificates The certificates to store; empty certificate elements are rejected.
-    /// @throws err::ParameterError If an element is empty or the fixed count limit is exceeded.
+    /// @param certificates The ordered certificates. Elements must not be empty, and the count must fit the fixed
+    /// certificate-count limit.
     explicit X509CertificateBundle(util::List<X509Certificate> certificates);
 
 public: // tests and accessors
@@ -32,11 +32,11 @@ public: // conversion
     /// Encode every certificate as adjacent canonical PEM blocks.
     [[nodiscard]] auto toPem() const -> text::String;
     /// Return DER when the bundle contains exactly one certificate.
-    /// @throws err::LogicError If the bundle does not contain exactly one certificate.
     [[nodiscard]] auto toDer() const -> mem::ByteBlock;
     /// Write this bundle to a file.
-    /// @throws err::LogicError If DER is selected for a bundle not containing exactly one certificate.
-    /// @throws err::ParameterError If automatic output cannot select a format.
+    /// DER output requires a bundle containing exactly one certificate.
+    /// @param format The explicit format or `Automatic`. Automatic selection requires a recognized destination suffix.
+    /// @param path The destination file path.
     /// @throws path::PathError If writing fails.
     void writeToFile(const path::Path &path, PemDerFormat format = PemDerFormat::Automatic) const;
 

@@ -1,15 +1,17 @@
-// Copyright (c) 2024-2025 Tobias Erbsland - https://erbsland.dev
+// Copyright (c) 2024-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
 #include "Decoder.hpp"
 #include "TokenDecoder_fwd.hpp"
+#include "TokenDecoderMode.hpp"
 #include "Transaction.hpp"
 
 #include "../char/CharStream.hpp"
 #include "../lexer/LexerToken.hpp"
 
 #include "../../../text/placeholder/impl/Registry_fwd.hpp"
+#include "../../../util/List.hpp"
 
 #include <cassert>
 #include <memory>
@@ -20,17 +22,27 @@ namespace erbsland::conf::impl {
 /// - Adding transactions
 /// - Adding exception helpers.
 /// - Adding indentation states.
+/// @tested{TokenDecoderTest SyntaxParserTest}
 class TokenDecoder final : public Decoder {
 public:
     /// Create a token decoder for a character stream.
-    static auto create(CharStreamPtr decoder, text::placeholder::impl::RegistryPtr placeholderRegistry = {}) noexcept
-        -> TokenDecoderPtr;
+    /// @param decoder The character stream to decode.
+    /// @param placeholderRegistry The optional placeholder resolver.
+    /// @param mode Strict parsing or recovering syntax recognition.
+    /// @return The shared token decoder.
+    static auto create(
+        CharStreamPtr decoder,
+        text::placeholder::impl::RegistryPtr placeholderRegistry = {},
+        TokenDecoderMode mode = TokenDecoderMode::Parsing) noexcept -> TokenDecoderPtr;
 
     /// Create a token decoder around a character stream.
     /// @param decoder The character stream to decode.
     /// @param placeholderRegistry The optional placeholder resolver.
+    /// @param mode Strict parsing or recovering syntax recognition.
     explicit TokenDecoder(
-        CharStreamPtr decoder, text::placeholder::impl::RegistryPtr placeholderRegistry = {}) noexcept;
+        CharStreamPtr decoder,
+        text::placeholder::impl::RegistryPtr placeholderRegistry = {},
+        TokenDecoderMode mode = TokenDecoderMode::Parsing) noexcept;
 
     // defaults
     TokenDecoder() = default;
@@ -38,17 +50,13 @@ public:
 
 public: // implement Decoder
     void initialize() override;
-
     [[nodiscard]] auto character() const noexcept -> text::Char override { return _currentCharacter.character(); }
-
     [[nodiscard]] auto location() const -> Location override;
-
     [[nodiscard]] auto sourceIdentifier() const noexcept -> SourceIdentifierPtr override;
     [[nodiscard]] auto codeSnippet(unit::CodeLocation location) const noexcept
         -> std::optional<text::CodeSnippet> override {
         return _decoder->source()->codeSnippet(location);
     }
-
     void next() override;
 
     /// Check for an error and throw it.
@@ -128,6 +136,30 @@ public: // create tokens from captured content
     /// Create the end-of-data token.
     [[nodiscard]] auto createEndOfDataToken() -> LexerToken;
 
+public: // syntax recovery
+    /// Test whether this decoder retains source errors for syntax recognition.
+    [[nodiscard]] auto isSyntaxMode() const noexcept -> bool { return _mode == TokenDecoderMode::Syntax; }
+    /// Test whether the current character can start an unindented statement.
+    [[nodiscard]] auto isAtStatementStart() const noexcept -> bool;
+    /// Take the source diagnostics accumulated since the previous call.
+    /// @return The retained input diagnostics, leaving the decoder collection empty.
+    [[nodiscard]] auto takeDiagnostics() -> util::List<ConfErrorContext>;
+    /// Retain an input error and recover its failed physical line in syntax mode.
+    /// All speculative transactions must have unwound before this call.
+    /// @param error The failure from the lexical production.
+    /// @param initialLine The line where that production started.
+    /// @return An error token, possibly empty when a following statement must remain unconsumed.
+    /// @throws ConfError In parsing mode or for failures that cannot be recovered.
+    [[nodiscard]] auto recover(const ConfError &error, unit::LineIndex initialLine) -> LexerToken;
+    /// Capture the failed line suffix and advance to the next physical line.
+    /// All speculative transactions must have unwound before this call.
+    /// @return An error token retaining the exact failed source suffix.
+    [[nodiscard]] auto recoverLine() -> LexerToken;
+    /// Test whether a failure category describes recoverable source input.
+    /// @param category The error category.
+    /// @return Whether syntax recognition can retain this failure as a diagnostic.
+    [[nodiscard]] static auto isRecoverable(ConfErrorCategory category) noexcept -> bool;
+
 public: // indentation handling.
     /// Test if a reusable indentation pattern is configured.
     [[nodiscard]] auto hasIndentationPattern() const noexcept -> bool { return !_currentIndentationPattern.isEmpty(); }
@@ -149,6 +181,8 @@ private: // implement Decoder transactions
     [[nodiscard]] auto captureFromDecoderState(const DecoderState &state) const noexcept -> text::String override;
 
 private:
+    TokenDecoderMode _mode{TokenDecoderMode::Parsing};              ///< Recognition policy.
+    util::List<ConfErrorContext> _diagnostics;                      ///< Recovered source errors.
     CharStreamPtr _decoder;                                         ///< The wrapped decoder.
     text::placeholder::impl::RegistryPtr _placeholderRegistry;      ///< Optional placeholder resolver.
     DecodedChar _currentCharacter{text::Char::endOfData(), {}, {}}; ///< The current decoded character.

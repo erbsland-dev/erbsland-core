@@ -4,9 +4,9 @@
 
 #include "Result.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/unit/ItemCount.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/List.hpp>
 
 namespace app::constant_time {
 

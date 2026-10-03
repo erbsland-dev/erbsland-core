@@ -9,9 +9,20 @@
 #include "impl/BuiltInConfiguration.hpp"
 #include "impl/WorkloadRunner.hpp"
 
+#include <erbsland/ApplicationError.hpp>
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
 #include <erbsland/profiling/AxisDefinition.hpp>
 #include <erbsland/profiling/ProfilingApplication.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Version.hpp>
 
 #include <algorithm>
 #include <optional>
@@ -38,7 +49,7 @@ protected: // implement pf::ProfilingApplication
                 "Profiles deterministic regular-expression compilation, matching, search, collection, "
                 "replacement, string, and seekable-file workloads. With no options it runs the four-thread "
                 "snapshot benchmark."_el)
-            .setDefaultConfiguration(el::String{cDefaultConfigurationText});
+            .setDefaultConfiguration(cDefaultConfigurationText);
         auto useCaseAxis = pf::AxisDefinition{"use-case"_el, "use_cases"_el, "use-case"_el};
         auto inputAxis = pf::AxisDefinition{"input"_el, "inputs"_el, "input"_el};
         auto backendAxis = pf::AxisDefinition{"backend"_el, "backends"_el, "backend"_el};
@@ -89,11 +100,12 @@ protected: // implement pf::ProfilingApplication
             impl::WorkloadRunner::printCoverage();
             return flushOutput(el::ExitCode::success());
         }
+        auto runner = impl::WorkloadRunner{std::move(configuration)};
         if (values->getFlag("dry-run"_el)) {
-            impl::WorkloadRunner::printDryRun(configuration);
+            runner.printDryRun();
             return flushOutput(el::ExitCode::success());
         }
-        return flushOutput(impl::WorkloadRunner::run(configuration));
+        return flushOutput(runner.run());
     }
 
 private:

@@ -218,7 +218,7 @@ public:
 
     void prepareParserWithNestedGroups(const std::size_t opens, Settings settings = {}) {
         StringEditor s;
-        s.reserve(el::unit::ByteLength{(opens * 4U) + 1U});
+        s.reserve(el::unit::ByteCount::fromInteger((opens * 4U) + 1U));
         for (std::size_t i = 0; i < opens; ++i) {
             s.append("(?:"_el);
         }

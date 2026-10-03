@@ -1,9 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ConfigurationTools.hpp"
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/conf/ConfError.hpp>
+#include <erbsland/conf/ConfErrorCategory.hpp>
+#include <erbsland/conf/Integer.hpp>
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/FastRandom.hpp>
+#include <erbsland/profiling/ConfigurationKeys.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/StringLiteral.hpp>
 
 #include <algorithm>
 #include <array>
@@ -13,6 +22,8 @@
 namespace app::byte::impl {
 
 using namespace el::text::literals;
+
+namespace configuration_key = el::profiling::configuration_key;
 
 using ValuePtr = el::conf::ValuePtr;
 
@@ -85,15 +96,10 @@ constexpr auto cBoundarySizes = std::array<std::uint64_t, 31>{
 void requireKnownKeys(const ValuePtr &value, const std::span<const el::StringLiteral> known) {
     for (const auto &child : *value) {
         const auto childName = child->name().asText();
-        if (std::ranges::none_of(known, [&](const auto name) -> bool { return childName == el::String{name}; })) {
+        if (std::ranges::none_of(known, [&](const auto name) -> bool { return childName == name; })) {
             configError(el::StringFormat{"Unknown configuration key '{}'."_el}.build(childName), child);
         }
     }
-}
-
-[[nodiscard]] auto texts(const ValuePtr &value, const el::String &name, std::vector<el::String> defaults)
-    -> std::vector<el::String> {
-    return value->hasValue(name) ? value->valueOrThrow(name)->asListOrThrow<el::String>() : std::move(defaults);
 }
 
 [[nodiscard]] auto positiveInteger(
@@ -123,13 +129,13 @@ void requireKnownKeys(const ValuePtr &value, const std::span<const el::StringLit
 }
 
 template <typename T, typename Parser>
-[[nodiscard]] auto parseNames(
-    const std::vector<el::String> &values, const el::StringLiteral kind, Parser parser, bool &all) -> std::vector<T> {
+[[nodiscard]] auto parseNames(const el::StringList &values, const el::StringLiteral kind, Parser parser, bool &all)
+    -> std::vector<T> {
     auto result = std::vector<T>{};
     all = false;
     for (const auto &value : values) {
         if (value == "all"_el) {
-            if (values.size() != 1U) {
+            if (values.count() != el::ItemCount{1}) {
                 configError(el::StringFormat{"'all' cannot be combined with explicit {} names."_el}.build(kind));
             }
             all = true;
@@ -144,7 +150,7 @@ template <typename T, typename Parser>
     return result;
 }
 
-[[nodiscard]] auto parseSensitiveNames(const std::vector<el::String> &values) -> std::vector<SensitiveSelection> {
+[[nodiscard]] auto parseSensitiveNames(const el::StringList &values) -> std::vector<SensitiveSelection> {
     auto result = std::vector<SensitiveSelection>{};
     for (const auto &value : values) {
         const auto parsed = parseSensitiveSelection(value);
@@ -162,10 +168,10 @@ template <typename T, typename Parser>
 
 [[nodiscard]] auto parseScenario(const ValuePtr &value) -> ScenarioTemplate {
     constexpr auto known = std::array{
-        "name"_el,
+        configuration_key::cNameValue,
         "types"_el,
         "use_cases"_el,
-        "variants"_el,
+        configuration_key::cVariantsValue,
         "size_modes"_el,
         "size_min"_el,
         "size_max"_el,
@@ -176,25 +182,36 @@ template <typename T, typename Parser>
         "weight"_el};
     requireKnownKeys(value, known);
     auto result = ScenarioTemplate{};
-    result.name = value->getTextOrThrow("name"_el);
+    result.name = value->getTextOrThrow(configuration_key::cNameValue);
     if (result.name.isEmpty()) {
-        configError("Scenario names must not be empty."_el, value->valueOrThrow("name"_el));
+        configError("Scenario names must not be empty."_el, value->valueOrThrow(configuration_key::cNameValue));
     }
-    result.types =
-        parseNames<ByteType>(texts(value, "types"_el, {"all"_el}), "byte type"_el, parseByteType, result.allTypes);
-    result.useCases =
-        parseNames<UseCase>(texts(value, "use_cases"_el, {"all"_el}), "use case"_el, parseUseCase, result.allUseCases);
-    const auto variantNames = texts(value, "variants"_el, {"all"_el});
-    result.allVariants = variantNames.size() == 1U && variantNames.front() == "all"_el;
+    result.types = parseNames<ByteType>(
+        value->getStringListOrThrow("types"_el, el::StringList{"all"_el}),
+        "byte type"_el,
+        parseByteType,
+        result.allTypes);
+    result.useCases = parseNames<UseCase>(
+        value->getStringListOrThrow("use_cases"_el, el::StringList{"all"_el}),
+        "use case"_el,
+        parseUseCase,
+        result.allUseCases);
+    const auto variantNames = value->getStringListOrThrow(configuration_key::cVariantsValue, el::StringList{"all"_el});
+    result.allVariants = variantNames.count() == el::ItemCount{1} && variantNames.first() == "all"_el;
     if (!result.allVariants) {
-        if (std::ranges::find(variantNames, el::String{"all"_el}) != variantNames.end()) {
-            configError("'all' cannot be combined with explicit variant names."_el, value->valueOrThrow("variants"_el));
+        if (variantNames.contains("all"_el)) {
+            configError(
+                "'all' cannot be combined with explicit variant names."_el,
+                value->valueOrThrow(configuration_key::cVariantsValue));
         }
         result.variants = variantNames;
     }
     auto unusedAll = false;
-    result.sizeModes =
-        parseNames<SizeMode>(texts(value, "size_modes"_el, {"fixed"_el}), "size mode"_el, parseSizeMode, unusedAll);
+    result.sizeModes = parseNames<SizeMode>(
+        value->getStringListOrThrow("size_modes"_el, el::StringList{"fixed"_el}),
+        "size mode"_el,
+        parseSizeMode,
+        unusedAll);
     if (unusedAll) {
         result.sizeModes = {
             SizeMode::Fixed, SizeMode::Incrementing, SizeMode::Exponential, SizeMode::Random, SizeMode::Boundaries};
@@ -205,7 +222,7 @@ template <typename T, typename Parser>
     result.operandSizeMinimum = positiveInteger(value, "operand_size_min"_el, result.operandSizeMinimum, true);
     result.operandSizeMaximum = positiveInteger(value, "operand_size_max"_el, result.operandSizeMaximum, true);
     if (value->hasValue("sensitive_modes"_el)) {
-        result.sensitiveModes = parseSensitiveNames(texts(value, "sensitive_modes"_el, {}));
+        result.sensitiveModes = parseSensitiveNames(value->getStringListOrThrow("sensitive_modes"_el));
     }
     const auto weight = positiveInteger(value, "weight"_el, result.weight);
     if (weight > std::numeric_limits<std::uint32_t>::max()) {
@@ -324,8 +341,8 @@ void appendScenario(
             .variant = descriptor.variant,
             .sizeMode = sizeMode,
             .sensitiveMode = effectiveSensitive,
-            .size = size,
-            .operandSize = operandSize,
+            .size = el::ByteCount::fromInteger(size),
+            .operandSize = el::ByteCount::fromInteger(operandSize),
             .weight = weight,
             .workUnit = descriptor.workUnit});
 }
@@ -477,13 +494,13 @@ void parseRun(const ValuePtr &run, RunSettings &result) {
         "suite"_el,
         "duration"_el,
         "threads"_el,
-        "seed"_el,
+        configuration_key::cSeedValue,
         "warmup_samples"_el,
         "samples"_el,
         "minimum_sample_time"_el,
         "memory_limit"_el,
         "progress_interval"_el,
-        "sensitive_mode"_el};
+        configuration_key::cSensitiveModeValue};
     requireKnownKeys(run, keys);
     result.mode = parseMode(run->getText("mode"_el, toString(result.mode)));
     result.suite = run->getText("suite"_el, result.suite);
@@ -495,9 +512,9 @@ void parseRun(const ValuePtr &run, RunSettings &result) {
         configError("The workload thread count must be in the range 1-256."_el, run->valueOrThrow("threads"_el));
     }
     result.threadCount = static_cast<std::uint32_t>(threads);
-    const auto seed = run->getInteger("seed"_el, static_cast<el::conf::Integer>(result.seed));
+    const auto seed = run->getInteger(configuration_key::cSeedValue, static_cast<el::conf::Integer>(result.seed));
     if (seed < 0) {
-        configError("The global seed must not be negative."_el, run->valueOrThrow("seed"_el));
+        configError("The global seed must not be negative."_el, run->valueOrThrow(configuration_key::cSeedValue));
     }
     result.seed = static_cast<std::uint64_t>(seed);
     result.warmupSamples =
@@ -512,10 +529,10 @@ void parseRun(const ValuePtr &run, RunSettings &result) {
         result.progressInterval =
             run->getCalendarDeltaOrThrow("progress_interval"_el).toTimeDeltaOrThrow().toStdNanoseconds();
     }
-    const auto sensitive =
-        parseSensitiveSelection(run->getText("sensitive_mode"_el, toString(result.sensitiveSelection)));
+    const auto sensitive = parseSensitiveSelection(
+        run->getText(configuration_key::cSensitiveModeValue, toString(result.sensitiveSelection)));
     if (!sensitive) {
-        configError("Unsupported run sensitive mode."_el, run->valueOrThrow("sensitive_mode"_el));
+        configError("Unsupported run sensitive mode."_el, run->valueOrThrow(configuration_key::cSensitiveModeValue));
     }
     result.sensitiveSelection = *sensitive;
     if (result.duration <= std::chrono::nanoseconds::zero() ||

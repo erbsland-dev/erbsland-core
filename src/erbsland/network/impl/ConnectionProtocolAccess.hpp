@@ -12,26 +12,30 @@ namespace erbsland::network::impl {
 /// @tested{Http1TransactionTest}
 class ConnectionProtocolAccess final {
 public:
+    /// Bind access to the target instance, which must outlive this helper.
+    /// @param connection The accessed instance.
+    explicit ConnectionProtocolAccess(Connection &connection) noexcept : _connection{connection} {}
+
+public: // access
     /// Verify that the caller runs on the connection owner loop.
-    static void verifyOwner(Connection &connection) { connection.verifyCurrentOwnerEvents(); }
+    void verifyOwner() { _connection.verifyCurrentOwnerEvents(); }
     /// Claim the connection for one protocol engine.
-    [[nodiscard]] static auto claim(Connection &connection, std::shared_ptr<void> owner) -> bool {
-        if (connection._exclusiveProtocolOwner) {
-            return false;
-        }
-        connection._exclusiveProtocolOwner = std::move(owner);
-        return true;
-    }
+    /// @param owner The engine retained while it owns the connection.
+    /// @return Whether the connection was available and is now claimed.
+    [[nodiscard]] auto claim(std::shared_ptr<void> owner) -> bool;
     /// Release the current protocol engine.
-    static void release(Connection &connection) noexcept { connection._exclusiveProtocolOwner.reset(); }
+    void release() noexcept { _connection._exclusiveProtocolOwner.reset(); }
     /// Store bounded bytes for the next sequential protocol engine.
-    static void storeRetainedInput(Connection &connection, mem::ByteBlock data) {
-        connection._retainedProtocolInput = std::move(data);
-    }
+    /// @param data The input to retain.
+    void storeRetainedInput(mem::ByteBlock data) { _connection._retainedProtocolInput = std::move(data); }
     /// Detach bytes retained for the next sequential protocol engine.
-    [[nodiscard]] static auto takeRetainedInput(Connection &connection) -> mem::ByteBlock {
-        return std::exchange(connection._retainedProtocolInput, mem::ByteBlock{});
+    /// @return The previously retained input, or an empty block.
+    [[nodiscard]] auto takeRetainedInput() -> mem::ByteBlock {
+        return std::exchange(_connection._retainedProtocolInput, mem::ByteBlock{});
     }
+
+private:
+    Connection &_connection; ///< The accessed instance.
 };
 
 }

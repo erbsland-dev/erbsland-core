@@ -1,11 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/compression/CompressionError.hpp>
-#include <erbsland/compression/CompressionErrorContext.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/TextDocument.hpp>
+#include "../core/ApplicationTestScope.hpp"
+
+#include <erbsland/CompressionError.hpp>
+#include <erbsland/CompressionErrorContext.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/TextDocument.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
@@ -18,6 +20,7 @@ TAGS(Errors)
 class CompressionErrorTest final : public el::UnitTest {
 public:
     void testContextAndConvenienceAccessors() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto context = el::compression::CompressionErrorContext{
             el::compression::CompressionErrorReason::UnsupportedFeature,
             "Compressed data uses an unsupported feature"_el,
@@ -41,6 +44,7 @@ public:
     }
 
     void testDiagnosticContainsHumanReadableDetails() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto error = el::compression::CompressionError{el::compression::CompressionErrorContext{
             el::compression::CompressionErrorReason::LengthMismatch,
             "Compressed length is invalid"_el,
@@ -56,6 +60,7 @@ public:
     }
 
     void testLegacyConstructorCreatesContext() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto error = el::compression::CompressionError{
             el::compression::CompressionErrorReason::MalformedData, "Compressed payload is malformed."};
 

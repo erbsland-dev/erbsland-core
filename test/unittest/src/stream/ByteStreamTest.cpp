@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/stream/ByteInputStream.hpp>
-#include <erbsland/stream/ByteOutputStream.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/ByteOutputStream.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/StreamError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>
@@ -20,7 +20,7 @@ using el::stream::ByteInputStream;
 using el::stream::ByteOutputStream;
 using el::stream::StreamError;
 using el::stream::StreamReadStatus;
-using el::unit::ByteLength;
+using el::unit::ByteCount;
 using namespace el::text::literals;
 
 TESTED_TARGETS(ByteInputStream ByteOutputStream)
@@ -57,7 +57,7 @@ class ByteStreamTest final : public el::UnitTest {
 
     protected:
         [[nodiscard]] auto readFromSource(el::mem::ByteSpan destination, const ReadDeadline deadline)
-            -> el::stream::StreamReadResult<ByteLength> override {
+            -> el::stream::StreamReadResult<ByteCount> override {
             if (_state != el::stream::StreamState::Open) {
                 throw StreamError{el::stream::StreamErrorContext{
                     "Failed to read from the test stream."_el, "The test input stream is closed."_el}};
@@ -65,13 +65,13 @@ class ByteStreamTest final : public el::UnitTest {
             deadlines.push_back(deadline);
             _readCall += 1U;
             if (_timeoutCall == _readCall) {
-                return {StreamReadStatus::Timeout, ByteLength::zero()};
+                return {StreamReadStatus::Timeout, ByteCount::zero()};
             }
             const auto available = _bytes.size() - _position;
             const auto count = std::min(std::min(destination.size(), available), _maximumRead);
             std::copy_n(_bytes.data() + _position, count, destination.data());
             _position += count;
-            return {count == 0U ? StreamReadStatus::Finished : StreamReadStatus::Data, ByteLength::fromSizeT(count)};
+            return {count == 0U ? StreamReadStatus::Finished : StreamReadStatus::Data, ByteCount::fromSizeT(count)};
         }
 
     public:
@@ -149,11 +149,11 @@ public:
     void testInputExactReads() {
         auto stream = MemoryInputStream{{1U, 2U, 3U}};
 
-        const auto first = stream.readExact(ByteLength{2U});
+        const auto first = stream.readExact(ByteCount{2U});
         REQUIRE_EQUAL(first, StreamReadStatus::Data);
         REQUIRE_EQUAL(first.data().toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
 
-        const auto second = stream.readExact(ByteLength{2U});
+        const auto second = stream.readExact(ByteCount{2U});
         REQUIRE_EQUAL(second, StreamReadStatus::Finished);
         REQUIRE(second.data().isEmpty());
         REQUIRE_EQUAL(stream.readByte().data(), Byte{3U});
@@ -164,11 +164,11 @@ public:
     void testExactReadRetainsDataAcrossTimeout() {
         auto stream = MemoryInputStream{{1U, 2U}, 1U, 2U};
 
-        const auto timeout = stream.readExact(ByteLength{2U});
+        const auto timeout = stream.readExact(ByteCount{2U});
         REQUIRE(timeout.isTimeout());
         REQUIRE(timeout.data().isEmpty());
 
-        const auto completed = stream.readExact(ByteLength{2U});
+        const auto completed = stream.readExact(ByteCount{2U});
         REQUIRE(completed.hasData());
         REQUIRE_EQUAL(completed.data().toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
     }
@@ -176,7 +176,7 @@ public:
     void testExactReadUsesOneDeadlineForAllShortReads() {
         auto stream = MemoryInputStream{{1U, 2U, 3U}, 1U};
 
-        const auto exact = stream.readExact(ByteLength{3U});
+        const auto exact = stream.readExact(ByteCount{3U});
         REQUIRE(exact.hasData());
         REQUIRE_EQUAL(stream.deadlines.size(), std::size_t{3U});
         REQUIRE(std::all_of(stream.deadlines.begin(), stream.deadlines.end(), [&stream](const auto deadline) {
@@ -187,10 +187,10 @@ public:
     void testChangingReadReplaysRetainedData() {
         auto stream = MemoryInputStream{{1U, 2U}, 1U, 2U};
 
-        const auto timeout = stream.readExact(ByteLength{2U});
+        const auto timeout = stream.readExact(ByteCount{2U});
         REQUIRE(timeout.isTimeout());
-        const auto first = stream.read(ByteLength{1U});
-        const auto second = stream.read(ByteLength{1U});
+        const auto first = stream.read(ByteCount{1U});
+        const auto second = stream.read(ByteCount{1U});
         REQUIRE_EQUAL(first.data().toUInt8Vector(), std::vector<uint8_t>({1U}));
         REQUIRE_EQUAL(second.data().toUInt8Vector(), std::vector<uint8_t>({2U}));
     }
@@ -198,9 +198,9 @@ public:
     void testInputMaximumRead() {
         auto stream = MemoryInputStream{{1U, 2U, 3U}};
 
-        const auto first = stream.read(ByteLength{2U});
-        const auto second = stream.read(ByteLength{2U});
-        const auto end = stream.read(ByteLength{2U});
+        const auto first = stream.read(ByteCount{2U});
+        const auto second = stream.read(ByteCount{2U});
+        const auto end = stream.read(ByteCount{2U});
         REQUIRE_EQUAL(first.data().toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
         REQUIRE_EQUAL(second.data().toUInt8Vector(), std::vector<uint8_t>({3U}));
         REQUIRE_EQUAL(end, StreamReadStatus::Finished);
@@ -219,7 +219,7 @@ public:
     void testReadAll() {
         auto stream = MemoryInputStream{{1U, 2U, 3U}};
 
-        const auto first = stream.readAll(ByteLength{2U});
+        const auto first = stream.readAll(ByteCount{2U});
         REQUIRE_EQUAL(first, StreamReadStatus::Data);
         REQUIRE_EQUAL(first.data().toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
         const auto remaining = stream.readAll();
@@ -231,17 +231,17 @@ public:
     void testAllocatingReadsRejectInfiniteMaximum() {
         auto stream = MemoryInputStream{{1U}};
 
-        REQUIRE_THROWS_AS(el::err::ParameterError, stream.read(ByteLength::infinite()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, stream.readExact(ByteLength::infinite()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, stream.readAll(ByteLength::infinite()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, stream.read(ByteCount::infinite()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, stream.readExact(ByteCount::infinite()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, stream.readAll(ByteCount::infinite()));
     }
 
     void testOrdinaryOwnedReadsAndTimeoutContinuation() {
         auto stream = MemoryInputStream{{1U, 2U, 3U}, 1U, 2U};
 
-        const auto timeout = stream.readExact(ByteLength{2U});
+        const auto timeout = stream.readExact(ByteCount{2U});
         REQUIRE(timeout.isTimeout());
-        const auto exact = stream.readExact(ByteLength{2U});
+        const auto exact = stream.readExact(ByteCount{2U});
         REQUIRE(exact.hasData());
         REQUIRE_EQUAL(exact.data(), el::mem::ByteBlock({1U, 2U}));
         REQUIRE_FALSE(exact.data().isSensitive());
@@ -250,20 +250,20 @@ public:
         REQUIRE(all.hasData());
         REQUIRE_EQUAL(all.data(), el::mem::ByteBlock({3U}));
         REQUIRE_FALSE(all.data().isSensitive());
-        const auto empty = stream.read(ByteLength::zero());
+        const auto empty = stream.read(ByteCount::zero());
         REQUIRE_FALSE(empty.data().isSensitive());
     }
 
     void testSensitivePolicyMarksAllOwnedResultsAndOperationSwitches() {
         auto stream = MemoryInputStream{{1U, 2U, 3U, 4U}, 1U, 2U, true};
 
-        const auto timeout = stream.readExact(ByteLength{2U});
+        const auto timeout = stream.readExact(ByteCount{2U});
         REQUIRE(timeout.isTimeout());
         REQUIRE(stream.inputSettings().isSensitive());
-        const auto protectedPrefix = stream.read(ByteLength{1U});
+        const auto protectedPrefix = stream.read(ByteCount{1U});
         REQUIRE_EQUAL(protectedPrefix.data(), el::mem::ByteBlock({1U}));
         REQUIRE(protectedPrefix.data().isSensitive());
-        const auto middle = stream.read(ByteLength{2U});
+        const auto middle = stream.read(ByteCount{2U});
         REQUIRE_EQUAL(middle.data().toUInt8Vector(), std::vector<uint8_t>({2U}));
         REQUIRE(middle.data().isSensitive());
         const auto protectedSuffix = stream.readAll();

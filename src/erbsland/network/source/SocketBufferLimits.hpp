@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::network {
 
@@ -15,20 +15,20 @@ public:
     /// Create explicit send and receive queue limits.
     /// @param send The maximum queued output size.
     /// @param receive The maximum buffered input size.
-    constexpr SocketBufferLimits(unit::ByteLength send, unit::ByteLength receive) noexcept :
+    constexpr SocketBufferLimits(unit::ByteCount send, unit::ByteCount receive) noexcept :
         _send{send}, _receive{receive} {}
 
 public: // accessors
     /// Get the send queue limit.
     /// @return The maximum queued output size.
-    [[nodiscard]] constexpr auto send() const noexcept -> unit::ByteLength { return _send; }
+    [[nodiscard]] constexpr auto send() const noexcept -> unit::ByteCount { return _send; }
     /// Get the receive buffer limit.
     /// @return The maximum buffered input size.
-    [[nodiscard]] constexpr auto receive() const noexcept -> unit::ByteLength { return _receive; }
+    [[nodiscard]] constexpr auto receive() const noexcept -> unit::ByteCount { return _receive; }
 
 private:
-    unit::ByteLength _send{1024U * 1024U};    ///< The maximum queued output size.
-    unit::ByteLength _receive{1024U * 1024U}; ///< The maximum buffered input size.
+    unit::ByteCount _send{1024U * 1024U};    ///< The maximum queued output size.
+    unit::ByteCount _receive{1024U * 1024U}; ///< The maximum buffered input size.
 };
 
 }

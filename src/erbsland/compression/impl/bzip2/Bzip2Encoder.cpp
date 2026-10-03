@@ -6,7 +6,7 @@
 
 #include "../CodecBitOutput.hpp"
 
-#include "../../../err/OutOfRangeError.hpp"
+#include "../../../err/OutOfRangeFailure.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../text/Literals.hpp"
 
@@ -19,6 +19,7 @@
 
 namespace erbsland::compression::impl {
 
+using namespace mem;
 using namespace text::literals;
 
 Bzip2Encoder::Bzip2Encoder(const CompressionLevel level) : _blockLevel{blockLevel(level)} {
@@ -40,8 +41,8 @@ Bzip2Encoder::Bzip2Encoder(const CompressionLevel level) : _blockLevel{blockLeve
     return 6U;
 }
 
-[[nodiscard]] auto Bzip2Encoder::rle1(const mem::ConstByteSpan input) -> mem::ByteBlock {
-    auto result = mem::ByteBlockEditor{};
+[[nodiscard]] auto Bzip2Encoder::rle1(const ConstByteSpan input) -> ByteBlock {
+    auto result = ByteBlockEditor{};
     auto position = std::size_t{};
     while (position < input.size()) {
         auto run = std::size_t{1U};
@@ -49,19 +50,19 @@ Bzip2Encoder::Bzip2Encoder(const CompressionLevel level) : _blockLevel{blockLeve
             ++run;
         }
         const auto literalCount = std::min(run, cRleLiteralLimit);
-        result.append(input[position], unit::ByteLength::fromSizeT(literalCount));
+        result.append(input[position], unit::ByteCount::fromSizeT(literalCount));
         if (run >= cRleLiteralLimit) {
-            result.append(mem::Byte::fromCroppedUInt64(run - cRleLiteralLimit));
+            result.append(Byte::fromCroppedUInt64(run - cRleLiteralLimit));
         }
         position += run;
     }
     return result;
 }
 
-[[nodiscard]] auto Bzip2Encoder::bwt(const mem::ConstByteSpan input) -> Bzip2BwtResult {
+[[nodiscard]] auto Bzip2Encoder::bwt(const ConstByteSpan input) -> Bzip2BwtResult {
     const auto size = input.size();
     if (size > std::numeric_limits<uint32_t>::max()) {
-        throw err::OutOfRangeError{"Bzip2 transform exceeds the supported block size."_el};
+        throw err::OutOfRangeFailure{"Bzip2 transform exceeds the supported block size."_el};
     }
     auto &order = _order;
     order.resize(size);
@@ -124,7 +125,7 @@ Bzip2Encoder::Bzip2Encoder(const CompressionLevel level) : _blockLevel{blockLeve
         }
     }
     auto result = Bzip2BwtResult{};
-    auto lastColumn = mem::ByteBlockEditor{unit::ByteLength::fromSizeT(size)};
+    auto lastColumn = ByteBlockEditor{unit::ByteCount::fromSizeT(size)};
     for (auto index = std::size_t{}; index < size; ++index) {
         lastColumn.setOrThrow(unit::ByteIndex::fromSizeT(index), input[(order[index] + size - 1U) % size]);
         if (order[index] == 0U) {
@@ -135,7 +136,7 @@ Bzip2Encoder::Bzip2Encoder(const CompressionLevel level) : _blockLevel{blockLeve
     return result;
 }
 
-[[nodiscard]] auto Bzip2Encoder::mtfRle(const mem::ConstByteSpan input) -> Bzip2MtfResult {
+[[nodiscard]] auto Bzip2Encoder::mtfRle(const ConstByteSpan input) -> Bzip2MtfResult {
     auto used = std::array<bool, cAlphabetValueCount>{};
     for (const auto value : input) {
         used[value.toUInt8()] = true;
@@ -173,7 +174,7 @@ Bzip2Encoder::Bzip2Encoder(const CompressionLevel level) : _blockLevel{blockLeve
     return result;
 }
 
-void Bzip2Encoder::encodeBlock(const mem::ConstByteSpan input) {
+void Bzip2Encoder::encodeBlock(const ConstByteSpan input) {
     auto crc = Bzip2Crc{};
     for (const auto value : input) {
         crc.update(value.toUInt8());

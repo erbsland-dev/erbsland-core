@@ -5,8 +5,8 @@
 #include "TestHelper.hpp"
 
 #include <erbsland/block/StdFormat.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
 
 #include <format>
 #include <stdexcept>

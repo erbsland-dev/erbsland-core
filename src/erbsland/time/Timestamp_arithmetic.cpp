@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Timestamp.hpp"
 
+#include "../err/OutOfRangeError.hpp"
 #include "../err/OverflowError.hpp"
-#include "../err/ParameterError.hpp"
 #include "../text/Literals.hpp"
 
 #include <limits>
@@ -70,7 +70,7 @@ auto Timestamp::distanceTicks(Timestamp other, int64_t nanosecondsPerTick, bool 
 
 auto Timestamp::checkedDistanceTicks(Timestamp other, int64_t nanosecondsPerTick) const -> int64_t {
     if (!isValid() || !other.isValid()) {
-        throw err::ParameterError{"A timestamp distance requires two valid instants"_el, "other"_el};
+        throw err::OutOfRangeError{"A timestamp distance requires two valid instants"_el};
     }
     auto overflow = false;
     const auto result = distanceTicks(other, nanosecondsPerTick, overflow);

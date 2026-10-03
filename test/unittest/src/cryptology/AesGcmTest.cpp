@@ -5,12 +5,12 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/CryptologyError.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricDecryptor.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricEncryptor.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/CryptologyError.hpp>
+#include <erbsland/SymmetricDecryptor.hpp>
+#include <erbsland/SymmetricEncryptor.hpp>
 
 using namespace el::cryptology;
 using el::mem::ByteBlock;
@@ -101,12 +101,11 @@ public:
         const auto expectedTag = bytesFromHex("5bc94fbc3221a5db94fae95ae7121a47");
 
         auto encryptor = SymmetricEncryptor{SymmetricEncryptionType::Aes128Gcm, testKey, testNonce};
-        encryptor.addAuthenticatedData(aad.span(el::unit::ByteIndex{}, el::unit::ByteLength{3U}));
-        encryptor.addAuthenticatedData(aad.span(el::unit::ByteIndex{3U}, el::unit::ByteLength{17U}));
+        encryptor.addAuthenticatedData(aad.span(el::unit::ByteIndex{}, el::unit::ByteCount{3U}));
+        encryptor.addAuthenticatedData(aad.span(el::unit::ByteIndex{3U}, el::unit::ByteCount{17U}));
         auto ciphertext = ByteBlockEditor{};
-        for (auto index = std::size_t{}; index < plaintext.length().toSizeT(); ++index) {
-            ciphertext.append(
-                encryptor.encrypt(plaintext.span(el::unit::ByteIndex{index}, el::unit::ByteLength::one())));
+        for (auto index = el::unit::ByteIndex::zero(); index.isWithin(plaintext.length()); index.uncheckedIncrement()) {
+            ciphertext.append(encryptor.encrypt(plaintext.span(index, el::unit::ByteCount::one())));
         }
         ciphertext.append(encryptor.finalize());
         REQUIRE_EQUAL(ciphertext, expectedCiphertext);
@@ -115,9 +114,8 @@ public:
         auto decryptor = SymmetricDecryptor{SymmetricEncryptionType::Aes128Gcm, testKey, testNonce};
         decryptor.addAuthenticatedData(aad);
         auto recovered = ByteBlockEditor{};
-        recovered.append(decryptor.decrypt(expectedCiphertext.span(el::unit::ByteIndex{}, el::unit::ByteLength{7U})));
-        recovered.append(
-            decryptor.decrypt(expectedCiphertext.span(el::unit::ByteIndex{7U}, el::unit::ByteLength{53U})));
+        recovered.append(decryptor.decrypt(expectedCiphertext.span(el::unit::ByteIndex{}, el::unit::ByteCount{7U})));
+        recovered.append(decryptor.decrypt(expectedCiphertext.span(el::unit::ByteIndex{7U}, el::unit::ByteCount{53U})));
         recovered.append(decryptor.finalize(SymmetricTag{expectedTag}));
         REQUIRE_EQUAL(recovered, plaintext);
     }

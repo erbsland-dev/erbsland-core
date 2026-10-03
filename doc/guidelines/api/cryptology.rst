@@ -27,6 +27,7 @@ Primary Types
     ServerAuthenticationToken // copyable public challenge verifier
     PendingAuthenticationChallenge // one-use bounded challenge state
     ProtectedByteBlock // copyable authenticated ciphertext with scoped plaintext access
+    SecureStorage // namespace-bound synchronous current-user persistent secret storage
     KeyAgreementPrivateKey // move-only protected private material with a cached ordinary public key
     KeyAgreementSharedSecret // move-only protected agreement result for direct key derivation
     SymmetricEncryptionSelector // requirements and application-policy-aware construction selection
@@ -35,13 +36,19 @@ Primary Types
     PasswordHasher // password record creation and verification service
     X509Certificate // immutable certificate facade for portable and platform-backed data
     X509CertificateBundle // ordered one-or-more certificate representation
-    X509ServerCertificatePolicy // explicit-anchor TLS server-authentication policy
+    X509TlsCertificatePolicy // explicit-anchor or system TLS peer authentication for either role
     X509CertificateValidation // explicit accepted/rejected path-validation result without boolean conversion
     SigningPrivateKey // move-only generated or imported PKCS#8 signing key in protected storage
     X509CertificateBuilder // profile-driven certificate and certificate-request creation
     X509CertificateSigningRequest // immutable generated PKCS#10 request
     TlsRecordEncryptor, TlsRecordDecryptor // independent move-only TLS 1.3 traffic directions
-    TlsConfigurationParser // side-effect-free ELCL validation and TLS material loading
+    TlsConfigurationParser // ELCL validation and material loading without changing the application registry
+    TlsRole // Client or Server, explicit in every lookup
+    TlsClientAuthentication // Disabled, Optional or Required
+    TlsClientConfiguration, TlsServerConfiguration // independent optional profile parts
+    TlsTrustConfiguration, TlsSettings // profile trust and shared native settings
+    TlsIdentity // role-neutral certificate chain and opaque software or native signer
+    SystemIdentityStore // explicitly accessed current-user certificate identity store
 
 Secondary Types
 ===============
@@ -52,6 +59,8 @@ Secondary Types
     CryptographicStatus, CryptographicSecurity, HashThroughput // algorithm selection metadata
     CryptologyConfiguration // application-wide acceleration permission and downgrade-only status limits
     ProtectedDataMode // native preference, native requirement, or internal-only protected-data selection
+    SecureStorageCapabilities, SecureStorageInteraction // platform support and explicit authorization UI policy
+    SecureStorageError, SecureStorageErrorCategory // persistent secret failure without plaintext diagnostics
     KeyAgreementAlgorithm, KeyAgreementPublicKey // generic agreement metadata and ordinary public material
     SymmetricEncryptionType // complete symmetric encryption construction and selection metadata
     SymmetricCipher, SymmetricEncryptionRequirements // cipher family and selection requirements
@@ -72,14 +81,15 @@ Secondary Types
     SigningKeyProfile // ECDSA P-256/P-384 and RSA 2048/3072/4096 generation choices
     X509CertificateProfile // CA, TLS server, TLS client, and dual-use extension choices
     PemDerFormat // shared automatic, PEM, or DER file format choice
-    TlsConfigurationEntry // owned validated label and complete parsed TLS configuration
+    TlsConfigurationEntry, TlsConfigurationSet // grouped role profiles and shared settings
+    SystemIdentityInfo // public certificate metadata with an exact SHA-256 selector
 
 X.509 Identity Patterns
 =======================
 
 .. code-block:: text
 
-    o.validate(peer, network::HostName, time) -> X509CertificateValidation // compare the canonical IDNA2008 ASCII form
+    o.validateServer(peer, network::HostName, time) -> X509CertificateValidation // match canonical IDNA2008 ASCII
     o.dnsNames() -> text::StringList // expose presented IA5 ASCII names without Unicode conversion
     o.category() -> X509CertificateValidationFailureCategory // distinguish malformed SANs from ordinary mismatches
     T::generate([profile]) -> SigningPrivateKey // default to ECDSA P-256
@@ -98,7 +108,7 @@ Hash Selection Patterns
 
 .. code-block:: text
 
-    o.digestSize() -> unit::ByteLength // get the fixed digest size
+    o.digestSize() -> unit::ByteCount // get the fixed digest size
     o.security()/throughput() -> T // inspect intrinsic algorithm metadata
     T::all() -> span<HashAlgorithm> // enumerate the stable algorithm set
     o.status(algorithm)/isSafe(algorithm) -> T // inspect effective global policy
@@ -107,6 +117,7 @@ Hash Selection Patterns
     o.recommended() -> optional<HashAlgorithm> // select from one coherent policy snapshot
     o.toString() -> text::String // get the stable lowercase algorithm identifier
     T::fromString/fromStringOrThrow(text) -> T // parse an exact canonical identifier
+    T::isValidIdentifier(identifier) -> bool // validate a password-hash key rotation identifier before construction
 
 Hashing Patterns
 ================
@@ -147,7 +158,7 @@ Symmetric Encryption Patterns
 
 .. code-block:: text
 
-    o.maximumEncryptedLength(originalLength) -> unit::ByteLength // reserve for encrypted payload, excluding AEAD tag
+    o.maximumEncryptedLength(originalLength) -> unit::ByteCount // reserve for encrypted payload, excluding AEAD tag
     T(type, key, nonce/iv) // create AEAD or IV-based streaming state with exact-size parameters
     o.addAuthenticatedData(bytes) // add AEAD data before the first non-empty payload
     o.encrypt/decrypt(bytes) -> mem::ByteBlock // process the next payload bytes
@@ -169,14 +180,18 @@ Cryptology Configuration Patterns
     o.setProtectedDataMode(mode) // select native preference, native requirement, or internal-only protection
     o.validateProtectedDataSupport() // initialize, self-test, and lock provider selection at application startup
 
-TLS Configuration Parser Patterns
-=================================
+TLS Configuration and Parser Patterns
+=====================================
 
 .. code-block:: text
 
+    o.resolveTlsConfiguration(label, role) -> TlsConfigurationResolution // select a role and effective policy
+    o.replaceTlsConfigurations(set) // validate then atomically replace shared settings and named roles
+    o.hasTlsConfiguration(label, role) -> bool // exact presence, including reserved defaults
+    o.clearTlsConfiguration(label[, role]) // clear named parts, preserving built-in defaults
     T::validationRules() -> const RulesPtr& // expose the complete compiled ELCL schema
     T::version() -> Integer // expose the ELCL schema format version
-    o.parse(section) -> TlsConfigurationEntry // validate one section-list entry without globals
+    o.parse(section) -> TlsConfigurationSet // load complete optional TLS settings and role lists before publication
     o.label() -> const String& // inspect the validated registry label
     o.configuration() -> const TlsConfiguration& // inspect the parsed configuration
     o.takeConfiguration() -> TlsConfiguration // transfer the profile into the application registry
@@ -233,10 +248,14 @@ X.509 Certificate Patterns
     o.publicKey() -> PublicKey // access exact SubjectPublicKeyInfo and supported signature verification
     o.tbsCertificateDer()/signatureData() -> mem::ByteBlock // access exact certificate-signature validation inputs
     o.asn1() -> Asn1Node // inspect a read-only node owned by the parsed certificate document
-    T(anchors[, intermediates]) // create an explicit-anchor server-authentication policy
-    o.validate(peerCertificates, network::Host[, validationTime]) -> X509CertificateValidation // authenticate a server
+    T(anchors[, intermediates]) // create an explicit-anchor TLS peer-certificate policy
+    T::systemTrust([allowNetworkRetrieval[, bundlePath]]) // select native trust or a distribution Linux bundle
+    o.isSystemTrust()/allowsNetworkRetrieval() -> bool // inspect trust source and native retrieval policy
+    o.validateServer(peer, host[, time]) -> X509CertificateValidation // authenticate a server
+    o.validateClient(peer[, time]) -> X509CertificateValidation // authenticate a client without host matching
     o.isAccepted()/isRejected() -> bool // inspect an explicit validation outcome; no boolean conversion is provided
     o.validatedPath() -> List<X509Certificate> // get target-to-anchor order after acceptance
+    o.revocationStatus() -> X509RevocationStatus // distinguish unchecked, unavailable, and confirmed evidence
     o.failure() -> optional<X509CertificateValidationFailure> // get structured context after rejection
 
 Signature Verification Patterns
@@ -263,3 +282,16 @@ TLS 1.3 Record Protection Patterns
     o.isKeyUpdateRequired() -> bool // signal the proactive or sequence-exhaustion update threshold
     o.updateApplicationTrafficKeys() // derive traffic upd, replace key/IV, and reset the sequence
     o.secureErase() // erase traffic secret, record key, IV, and counters immediately
+
+TLS Identity Patterns
+=====================
+
+.. code-block:: text
+
+    T(chain, SigningPrivateKey) // create a role-neutral software TLS identity
+    o.selectSignatureScheme(peerSchemes) -> optional<TlsSignatureScheme> // select only discovered compatible schemes
+    o.signTlsCertificateVerify(scheme, content) -> mem::ByteBlock // sign and verify provider output
+    o.setServer(server)/setClient(client) // replace independent role parts
+    T([allowInteraction]) // create a current-user SystemIdentityStore with silent access by default
+    o.list() -> List<SystemIdentityInfo> // enumerate public certificate metadata without automatic connection selection
+    o.load(fingerprint) -> TlsIdentity // select the exact 32-byte SHA-256 certificate fingerprint

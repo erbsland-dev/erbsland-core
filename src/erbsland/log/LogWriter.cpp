@@ -10,7 +10,7 @@
 #include "impl/FileLogWriter.hpp"
 #include "impl/SyslogLogWriter.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <utility>
@@ -22,10 +22,10 @@ using namespace text::literals;
 LogWriter::BatchItem::BatchItem(LogEntryConstPtr entry, LogLineConstPtr line) :
     _entry{std::move(entry)}, _line{std::move(line)} {
     if (!_entry) {
-        throw err::ParameterError{"A log writer batch entry must not be empty."_el, "entry"_el};
+        throw err::ParameterFailure{"A log writer batch entry must not be empty."_el, "entry"_el};
     }
     if (!_line) {
-        throw err::ParameterError{"A log writer batch line must not be empty."_el, "line"_el};
+        throw err::ParameterFailure{"A log writer batch line must not be empty."_el, "line"_el};
     }
 }
 

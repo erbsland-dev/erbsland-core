@@ -46,8 +46,8 @@ All the amount types store a signed 64-bit integer count, from ``-9,223,372,036,
 ``9,223,372,036,854,775,807`` in their own unit.
 They use :cpp:class:`IntegerAmount <erbsland::unit::IntegerAmount>` for common arithmetic and conversion behavior.
 
-A Map of the Units
-==================
+Time Units and Conversion Groups
+================================
 
 The fixed units share a seconds-based dimension and differ only in scale.
 Months and years have separate dimensions because their effect belongs to calendar arithmetic.
@@ -118,7 +118,7 @@ a delay parameter may require zero or more.
 .. erbsland-demo::
     :source: time/TimeAmounts/Create.cpp
     :exec: time/time_amounts --demo Create
-    :source-sha256: 2ee083ace58233e1a62ae91a7da2a340c43304740788eed8df65b56f490eb04e
+    :sha256: 3034ba20b8c56913cbe50205dc78eb700af0e6255315bf0e86d8fc07adb63aac
 
 .. code-block:: cpp
 
@@ -171,14 +171,16 @@ a delay parameter may require zero or more.
                 whole.toSeconds().toRawValue(), precise.toString(), calendar.toString()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Fenice del bosco: delay 250 ms; default zero: true; positive: true; negative: true; litera
-    l equal: true
-    Native count: 250; saturating count: 250
-    Day field: 15; day count: 15; hour field: 9; hour count: 9; month field: 3; month count: 3
-    Whole interval: 120 s; precise interval: 250 ms; calendar change: 3 mo
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFenice del bosco: delay 250 ms; default zero: true; positive: true; negative: true; litera
+        l equal: true
+        Native count: 250; saturating count: 250
+        Day field: 15; day count: 15; hour field: 9; hour count: 9; month field: 3; month count: 3
+        Whole interval: 120 s; precise interval: 250 ms; calendar change: 3 mo␛[0m
 
 .. erbsland-demo-end::
 
@@ -217,7 +219,7 @@ Choose a common unit fine enough for your calculation before combining inputs.
 .. erbsland-demo::
     :source: time/TimeAmounts/Convert.cpp
     :exec: time/time_amounts --demo Convert
-    :source-sha256: 2b0c29ea529e54e16bf07140230943f2a436d5425ae5a4fc5fbec9c8447e136e
+    :sha256: 594d2855b23cd9aa11b152721b780e3171edbda4231ea6acec45d9bb5a1e81f0
 
 .. code-block:: cpp
 
@@ -252,16 +254,18 @@ Choose a common unit fine enough for your calculation before combining inputs.
         // Months and years cannot be converted to fixed units or to each other.
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    2 s: 2000 ms; one week: 7 days; one day: 86400 seconds
-    1500 ms: 1 whole seconds; would saturate: false
-    -1500 ms: -1 whole seconds; would saturate: false
-    999 ms: 0 whole seconds; would saturate: false
-    -999 ms: 0 whole seconds; would saturate: false
-    Maximum seconds to ns would saturate: true; clamped result: 9223372036854775807
-    Checked conversion rejected overflow.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m2 s: 2000 ms; one week: 7 days; one day: 86400 seconds
+        1500 ms: 1 whole seconds; would saturate: false
+        -1500 ms: -1 whole seconds; would saturate: false
+        999 ms: 0 whole seconds; would saturate: false
+        -999 ms: 0 whole seconds; would saturate: false
+        Maximum seconds to ns would saturate: true; clamped result: 9223372036854775807
+        Checked conversion rejected overflow.␛[0m
 
 .. erbsland-demo-end::
 
@@ -301,7 +305,7 @@ The in-place forms ``+=``, ``-=``, ``*=``, and ``/=`` update the original amount
 .. erbsland-demo::
     :source: time/TimeAmounts/Calculate.cpp
     :exec: time/time_amounts --demo Calculate
-    :source-sha256: 7dbfb3f665a7627432c7b4f42568ed0d86f0edf6a1e7a7aed1a6b89fba73fe92
+    :sha256: 9b5314284b1457f0a0a554f48860e077ea8394e526b804f09affc23faeec6004
 
 .. code-block:: cpp
 
@@ -332,12 +336,14 @@ The in-place forms ``+=``, ``-=``, ``*=``, and ``/=`` update the original amount
                 scaled.toRawValue(), scaled == sample + sample));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Required: 1800 ms; remaining: 200 ms; within budget: true; equal budget: false
-    Correction: -250 ms; share: 250 ms; negative share: -250 ms; cancelled: true
-    Scaled in place: 500 ms; same as two samples: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRequired: 1800 ms; remaining: 200 ms; within budget: true; equal budget: false
+        Correction: -250 ms; share: 250 ms; negative share: -250 ms; cancelled: true
+        Scaled in place: 500 ms; same as two samples: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -350,7 +356,7 @@ The ``minimum()`` and ``maximum()`` factories give you the bounds in the amount'
 .. erbsland-demo::
     :source: time/TimeAmounts/Boundaries.cpp
     :exec: time/time_amounts --demo Boundaries
-    :source-sha256: ed2f0e3bf5bf37c5db5674d73dfe63fad3875fdac7f4f876493de0efb85f1ebd
+    :sha256: 35c748b3b7473b42e74ab8c17899438218825ae93491b915dfb5e88fce430918
 
 .. code-block:: cpp
 
@@ -371,14 +377,16 @@ The ``minimum()`` and ``maximum()`` factories give you the bounds in the amount'
                 minimum.toRawValue(), (-minimum).toRawValue(), (-minimum).isMaximum()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Add would saturate: true; subtract would saturate: true; multiply would saturate: true
-    Maximum plus one: 9223372036854775807; minimum minus one: -9223372036854775808; maximum ti
-    mes two: 9223372036854775807
-    Minimum: -9223372036854775808; negated minimum: 9223372036854775807; saturated negation: t
-    rue
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAdd would saturate: true; subtract would saturate: true; multiply would saturate: true
+        Maximum plus one: 9223372036854775807; minimum minus one: -9223372036854775808; maximum ti
+        mes two: 9223372036854775807
+        Minimum: -9223372036854775808; negated minimum: 9223372036854775807; saturated negation: t
+        rue␛[0m
 
 .. erbsland-demo-end::
 
@@ -405,7 +413,7 @@ These are properties of the dated calculation, rather than a conversion of the `
 .. erbsland-demo::
     :source: time/TimeAmounts/Calendar.cpp
     :exec: time/time_amounts --demo Calendar
-    :source-sha256: 1bc17f15beae0f3d11d6cf9ae94394188c7befaad5401ec57ecf677d57976627
+    :sha256: 2db5678942843ac24bd543c5448d8c87ee6c92e99a5de430d8f03166f2670555
 
 .. code-block:: cpp
 
@@ -427,12 +435,14 @@ These are properties of the dated calculation, rather than a conversion of the `
                 change.toString(), instant.added(change).toString()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Start: 2026-01-31; plus one month: 2026-02-28; plus 30 days: 2026-03-02; leap day plus one
-     year: 2025-02-28
-    Combined change: 1 y 1 mo 2 d; applied: 2027-03-02 09:00:00Z
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mStart: 2026-01-31; plus one month: 2026-02-28; plus 30 days: 2026-03-02; leap day plus one
+         year: 2025-02-28
+        Combined change: 1 y 1 mo 2 d; applied: 2027-03-02 09:00:00Z␛[0m
 
 .. erbsland-demo-end::
 

@@ -32,9 +32,8 @@ private:
 
 public:
     /// Create a quota with a positive finite maximum.
-    /// @param maximum The maximum number of simultaneous leases.
+    /// @param maximum The maximum number of simultaneous leases. Must be positive and finite.
     /// @return The new shared quota.
-    /// @throws err::ParameterError If `maximum` is zero or infinite.
     [[nodiscard]] static auto create(unit::ItemCount maximum) -> ConnectionQuotaPtr;
 
 public: // defaults/deletions

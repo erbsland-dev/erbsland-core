@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ConstraintType.hpp"
 
+#include "../../unit/ByteCount.hpp"
+
 #include <cassert>
 
 namespace erbsland::conf::vr {
@@ -51,7 +53,7 @@ auto ConstraintType::toText() const noexcept -> const text::String & {
 }
 
 auto ConstraintType::fromText(const text::String &text) noexcept -> ConstraintType {
-    if (text.isEmpty() || text.length().toSizeT() > 20) {
+    if (text.isEmpty() || text.length() > unit::ByteCount{20}) {
         return Undefined;
     }
     for (const auto &[name, value] : _textToValueMap) {

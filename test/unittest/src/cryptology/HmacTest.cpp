@@ -3,15 +3,15 @@
 
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/Hmac.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/Hmac.hpp>
+#include <erbsland/LogicFailure.hpp>
 #include <erbsland/mem/impl/SecureErase.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/String.hpp>
 
 #include <array>
 #include <cstddef>
@@ -79,11 +79,11 @@ public:
         auto hmac = Hmac{};
         REQUIRE_FALSE(hmac.isValid());
         hmac.secureErase();
-        REQUIRE_THROWS_AS(el::err::LogicError, hmac.algorithm());
-        REQUIRE_THROWS_AS(el::err::LogicError, hmac.reset());
-        REQUIRE_THROWS_AS(el::err::LogicError, hmac.update(el::mem::ConstByteSpan{}));
-        REQUIRE_THROWS_AS(el::err::LogicError, hmac.finalize());
-        REQUIRE_THROWS_AS(el::err::LogicError, hmac.verify(el::mem::ConstByteSpan{}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hmac.algorithm());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hmac.reset());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hmac.update(el::mem::ConstByteSpan{}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hmac.finalize());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hmac.verify(el::mem::ConstByteSpan{}));
     }
 
     void testSupportedAlgorithms() {
@@ -95,7 +95,7 @@ public:
                 REQUIRE_EQUAL(hmac.algorithm(), algorithm);
                 REQUIRE_EQUAL(hmac.finalize().length(), algorithm.digestSize());
             } else {
-                REQUIRE_THROWS_AS(el::err::ParameterError, (Hmac{algorithm, empty.span()}));
+                REQUIRE_THROWS_AS(el::err::ParameterFailure, (Hmac{algorithm, empty.span()}));
             }
         }
     }
@@ -166,7 +166,7 @@ public:
                 "4d0676e31381b31069af89c49ec5c1bb"}};
 
         for (const auto &[algorithm, blockSize, expectedText] : vectors) {
-            auto key = el::mem::ByteBlockEditor{el::unit::ByteLength::fromSizeT(blockSize)};
+            auto key = el::mem::ByteBlockEditor{el::unit::ByteCount::fromSizeT(blockSize)};
             for (auto index = std::size_t{}; index < blockSize; ++index) {
                 key.set(el::unit::ByteIndex::fromSizeT(index), el::mem::Byte{static_cast<uint8_t>(index)});
             }
@@ -202,7 +202,7 @@ public:
         REQUIRE(hmac.verify(expected));
         REQUIRE_FALSE(hmac.verify(expected.span().first(16U)));
         REQUIRE_FALSE(hmac.verify(bytesFromHex("00bdc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843")));
-        REQUIRE_THROWS_AS(el::err::LogicError, hmac.update(message));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hmac.update(message));
 
         hmac.reset();
         hmac.update(message);
@@ -243,6 +243,6 @@ public:
             REQUIRE(EraseObserverGuard::allErased);
         }
         REQUIRE_FALSE(hmac.isValid());
-        REQUIRE_THROWS_AS(el::err::LogicError, hmac.finalize());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hmac.finalize());
     }
 };

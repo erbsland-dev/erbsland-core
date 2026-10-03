@@ -1,7 +1,27 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationInfo.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/CommandLineArguments.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/OptionResult.hpp>
+#include <erbsland/OptionResultStatus.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/Version.hpp>
 
 #include <initializer_list>
 
@@ -11,7 +31,7 @@ using namespace el::text::literals;
 
 [[nodiscard]] auto makeArgs(std::initializer_list<el::String> args) -> el::CommandLineArguments {
     auto result = el::CommandLineArguments{};
-    result.reserve(el::ItemCount{args.size()});
+    result.reserve(el::ItemCount::fromInteger(args.size()));
     for (const auto &arg : args) {
         result.append(arg.copy());
     }
@@ -31,15 +51,15 @@ auto createManualOptions() -> el::OptionsPtr {
     options->setApplicationInfo(info);
     options->setHelpTitle("Photometry Notebook"_el);
     options->setHelpDescription("Records a short note from a photometer measurement."_el);
-    options->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpDescription("Reduces progress output."_el);
+    options->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpTitle("Reduces progress output."_el);
     options->addOption({"-n"_el, "--note"_el, "note"_el})
         .setType(el::OptionType::Text)
         .setRequired()
-        .setHelpDescription("Text of the laboratory note."_el);
+        .setHelpTitle("Text of the laboratory note."_el);
     options->addOption({"-r"_el, "--repeat"_el, "repeat"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{1})
-        .setHelpDescription("Number of times to repeat the note in the report."_el);
+        .setHelpTitle("Number of times to repeat the note in the report."_el);
     return options;
 }
 
@@ -70,7 +90,7 @@ auto manualParsing() -> el::ExitCode {
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     app.setMainFn(demo::manualParsing);
     return app.run();
 }

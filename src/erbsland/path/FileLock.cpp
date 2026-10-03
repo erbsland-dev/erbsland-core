@@ -8,6 +8,7 @@
 #include "impl/FileLock.hpp"
 
 #include "../text/Literals.hpp"
+#include "../text/StringJoins.hpp"
 
 #include <utility>
 
@@ -21,7 +22,7 @@ auto FileLock::createLockPath(const Path &path) -> Path {
             PathErrorContext{"File lock could not be acquired"_el, "A lock requires a valid path."_el}.setSourcePath(
                 path.toString())};
     }
-    return Path{text::String::fromJoined({path.toString(), ".lock"_el})};
+    return Path{text::join(path.toString(), ".lock"_el)};
 }
 
 FileLock::FileLock(Path path) :

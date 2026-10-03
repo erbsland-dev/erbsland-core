@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CryptographicDataBlock.hpp>
 #include <erbsland/cryptology/impl/symmetric/UnsafeSymmetricKeyAccess.hpp>
-#include <erbsland/cryptology/symmetric/CryptographicDataBlock.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricIv.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricKey.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricNonce.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricTag.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/SymmetricIv.hpp>
+#include <erbsland/SymmetricKey.hpp>
+#include <erbsland/SymmetricNonce.hpp>
+#include <erbsland/SymmetricTag.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>
@@ -18,7 +18,7 @@
 using namespace el::cryptology;
 using namespace el::text::literals;
 using el::mem::ByteBlock;
-using el::unit::ByteLength;
+using el::unit::ByteCount;
 
 TESTED_TARGETS(CryptographicDataBlock SymmetricKey SymmetricTag SymmetricIv SymmetricNonce)
 class CryptographicDataBlockTest final : public el::UnitTest {
@@ -59,7 +59,7 @@ public:
         REQUIRE_FALSE(source.isSensitive());
         const auto key = SymmetricKey{source};
         REQUIRE(source.isSensitive());
-        REQUIRE_EQUAL(key.byteLength(), ByteLength{3U});
+        REQUIRE_EQUAL(key.byteLength(), ByteCount{3U});
         REQUIRE_EQUAL(key.bitLength(), 24U);
         REQUIRE(std::ranges::equal(el::cryptology::impl::UnsafeSymmetricKeyAccess{key}.span(), source.span()));
 

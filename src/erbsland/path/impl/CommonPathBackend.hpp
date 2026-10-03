@@ -44,8 +44,6 @@ protected:
     [[nodiscard]] static auto joinedLexicalPath(const Path &base, const Path &suffix) -> Path;
     /// Test if two absolute paths have the same root.
     [[nodiscard]] static auto haveSameRoot(const Path &left, const Path &right) noexcept -> bool;
-    /// Assemble a path from a root and normalized non-root elements.
-    [[nodiscard]] static auto assemblePath(const text::String &root, const text::StringList &elements) -> Path;
     /// Open a byte output stream and report if the opened target already has content.
     [[nodiscard]] virtual auto openByteOutputStreamWithExistingContentOrThrow(
         const Path &path, PathWriteDataOptions options) const -> PathByteOutputStreamOpenResult = 0;

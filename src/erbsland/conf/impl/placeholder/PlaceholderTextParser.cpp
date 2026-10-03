@@ -16,9 +16,10 @@
 
 namespace erbsland::conf::impl::placeholder {
 
+using namespace text;
 using namespace text::literals;
 
-PlaceholderTextParser::PlaceholderTextParser(TokenDecoder &decoder, text::StringEditor &target) noexcept :
+PlaceholderTextParser::PlaceholderTextParser(TokenDecoder &decoder, StringEditor &target) noexcept :
     _decoder{decoder}, _target{target} {
 }
 
@@ -63,8 +64,8 @@ auto PlaceholderTextParser::parsePart() -> Part {
     return result;
 }
 
-auto PlaceholderTextParser::parseContent(const bool isName) -> text::String {
-    auto result = text::StringEditor{};
+auto PlaceholderTextParser::parseContent(const bool isName) -> String {
+    auto result = StringEditor{};
     while (true) {
         if (_decoder.character().isEndOfData()) {
             _decoder.throwUnexpectedEndOfDataError("Unexpected end inside a placeholder."_el);
@@ -74,7 +75,7 @@ auto PlaceholderTextParser::parseContent(const bool isName) -> text::String {
         }
         if (_decoder.character() == nc::pipe || _decoder.character() == nc::closingCurlyBracket ||
             (isName && _decoder.character() == nc::colon)) {
-            return text::String{result};
+            return result;
         }
         if (_decoder.character() == nc::backslash) {
             _decoder.next();

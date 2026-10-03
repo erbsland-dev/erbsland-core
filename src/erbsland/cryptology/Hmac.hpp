@@ -29,12 +29,10 @@ public:
     /// HMAC accepts keys of any length, although weak keys are unsuitable for secure applications.
     /// @param algorithm SHA-256 or SHA-384.
     /// @param key The exact secret key bytes.
-    /// @throws err::ParameterError If the algorithm is unsupported.
     Hmac(HashAlgorithm algorithm, mem::ByteBlock key);
     /// Create keyed HMAC state by copying the key into sensitive storage.
     /// @param algorithm SHA-256 or SHA-384.
     /// @param key The exact secret key bytes.
-    /// @throws err::ParameterError If the algorithm is unsupported.
     Hmac(HashAlgorithm algorithm, mem::ConstByteSpan key);
 
     /// Securely erase keyed HMAC state.
@@ -51,40 +49,38 @@ public:
 
 public:
     /// Reset the message while retaining the same algorithm and key.
-    /// @throws err::LogicError If this is an invalid placeholder.
+    /// This HMAC state must be valid.
     void reset();
     /// Securely erase the key and message state, leaving an invalid placeholder.
     void secureErase() noexcept;
     /// Add exact message bytes.
     /// Empty spans are accepted.
-    /// @param data The next authenticated message bytes.
-    /// @throws err::LogicError If this state is invalid or finalized.
-    /// @throws err::ParameterError If the hash message-length limit would be exceeded.
+    /// This HMAC state must be valid and must not have been finalized.
+    /// @param data The next authenticated message bytes. Their addition must not exceed the hash message-length limit.
     void update(mem::ConstByteSpan data);
     /// Add a byte block.
-    /// @param data The next authenticated message bytes.
-    /// @throws err::LogicError If this state is invalid or finalized.
-    /// @throws err::ParameterError If the hash message-length limit would be exceeded.
+    /// This HMAC state must be valid and must not have been finalized.
+    /// @param data The next authenticated message bytes. Their addition must not exceed the hash message-length limit.
     void update(const mem::ByteBlock &data);
     /// Add the exact bytes in a UTF-8 string's internal buffer.
-    /// @param text The UTF-8 text whose stored bytes are authenticated.
-    /// @throws err::LogicError If this state is invalid or finalized.
-    /// @throws err::ParameterError If the hash message-length limit would be exceeded.
+    /// This HMAC state must be valid and must not have been finalized.
+    /// @param text The UTF-8 text whose stored bytes are authenticated. Their addition must not exceed the hash
+    /// message-length limit.
     void update(const text::String &text);
     /// Finalize the message or return the cached complete authenticator.
+    /// This HMAC state must be valid.
     /// @return The full hash-sized HMAC value in ordinary storage.
-    /// @throws err::LogicError If this is an invalid placeholder.
     [[nodiscard]] auto finalize() -> mem::ByteBlock;
     /// Verify a complete authenticator without content-dependent short-circuiting.
     /// A length mismatch returns immediately with `false`.
+    /// This HMAC state must be valid.
     /// @param expected The expected full hash-sized authenticator.
     /// @return `true` if the complete authenticator matches.
-    /// @throws err::LogicError If this is an invalid placeholder.
     [[nodiscard]] auto verify(mem::ConstByteSpan expected) -> bool;
     /// Verify a complete authenticator in an owning byte block.
+    /// This HMAC state must be valid.
     /// @param expected The expected full hash-sized authenticator.
     /// @return `true` if the complete authenticator matches.
-    /// @throws err::LogicError If this is an invalid placeholder.
     [[nodiscard]] auto verify(const mem::ByteBlock &expected) -> bool;
 
 public: // tests
@@ -93,7 +89,7 @@ public: // tests
 
 public: // accessors
     /// Get the underlying hash algorithm.
-    /// @throws err::LogicError If this is an invalid placeholder.
+    /// This HMAC state must be valid.
     [[nodiscard]] auto algorithm() const -> HashAlgorithm;
 
 private:

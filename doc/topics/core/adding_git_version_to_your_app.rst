@@ -269,3 +269,16 @@ Specify ``OUTPUT`` only when a target requires a specific filename or location f
 
 With this custom prefix, placeholders such as ``@MY_LIB_VERSION_MAJOR@`` and ``@MY_LIB_VERSION_TEXT@`` become available
 in the template.
+
+Git Reference Tracking
+======================
+
+By default, the helper watches a small set of Git metadata files, including ``HEAD``, its log, and existing packed refs.
+It does not recursively enumerate loose refs or add them all to the build dependencies.
+After creating a release tag without a commit, configure a fresh release build to ensure its version is regenerated.
+
+Add the optional ``TRACK_REFS`` flag to ``erbsland_core_add_git_version()`` to also track loose refs and their
+directories.
+This detects tag-only changes but can significantly increase dependency-checking time in repositories with many refs.
+The lower-level ``erbsland_core_collect_git_dependencies(output directory TRACK_REFS)`` helper accepts the same flag.
+Erbsland Core leaves this option disabled for its own library and installed package metadata.

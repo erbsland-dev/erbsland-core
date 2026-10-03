@@ -8,12 +8,17 @@ add_subdirectory(application_data)
 target_sources(erbsland-core PRIVATE
         ApplicationData.hpp
         ApplicationData_fwd.hpp
+        ApplicationDataAccess.cpp
+        ApplicationDataAccess.hpp
         ApplicationDataImpl.cpp
         ApplicationDataImpl.hpp
         ApplicationErrorDiagnostic.cpp
         ApplicationErrorDiagnostic.hpp
         ApplicationErrorDocumentBuilder.cpp
         ApplicationErrorDocumentBuilder.hpp
+        ApplicationExecutionContext.cpp
+        ApplicationExecutionContext.hpp
+        ApplicationExecutionContext_fwd.hpp
         ApplicationInstanceManager.cpp
         ApplicationInstanceManager.hpp
         ApplicationPartIdentifier.cpp
@@ -27,6 +32,7 @@ target_sources(erbsland-core PRIVATE
         ApplicationPartThread.cpp
         ApplicationPartThread.hpp
         LibraryVersion.hpp
+        MakeOneNamespace.hpp
 )
 
 if (WIN32)

@@ -1,7 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "DisplayAllAttributesApp.hpp"
+
+#include <erbsland/CpCount.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 
@@ -169,7 +171,7 @@ void DisplayAllAttributesApp::printPausePrompt() noexcept {
 }
 
 auto DisplayAllAttributesApp::padded(const el::String text, const std::size_t width) -> el::String {
-    return text.aligned(el::CpLength::fromSizeT(width), Alignment::Left, U' ');
+    return text.aligned(el::CpCount::fromSizeT(width), Alignment::Left, U' ');
 }
 
 auto DisplayAllAttributesApp::supportLabel(const bool supported) -> el::String {

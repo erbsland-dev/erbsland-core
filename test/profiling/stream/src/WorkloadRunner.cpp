@@ -5,6 +5,18 @@
 
 #include "impl/WorkloadTools.hpp"
 
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathCreateDirectoryOptions.hpp>
+#include <erbsland/PathCreateMode.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringSet.hpp>
+
 namespace app::stream {
 
 using namespace el::text::literals;
@@ -17,8 +29,8 @@ void WorkloadRunner::printDryRun() const {
     auto corpusBytes = std::uint64_t{};
     for (const auto &scenario : _configuration.scenarios) {
         const auto bufferSizes = el::stream::impl::streamBufferSizes(scenario.buffering);
-        const auto effectiveBackLimit =
-            scenario.backBufferLimit != 0U ? scenario.backBufferLimit : bufferSizes.outputBackLimit.toRawValue();
+        const auto effectiveBackLimit = !scenario.backBufferLimit.isZero() ? scenario.backBufferLimit.toRawValue()
+                                                                           : bufferSizes.outputBackLimit.toRawValue();
         const auto fileSize = selectedFileSize(_configuration, scenario);
         const auto slots = slotCount(_configuration, scenario, fileSize);
         const auto shared = scenario.direction == Direction::Read && scenario.locality == Locality::Hot;
@@ -93,7 +105,7 @@ void WorkloadRunner::printDryRun() const {
 
 auto WorkloadRunner::run() -> el::ExitCode {
     auto temporaryOptions = el::PathTempDirectoryOptions{};
-    temporaryOptions.setPrefix("stream-file-profile-"_el).setRandomLength(el::CpLength{12U});
+    temporaryOptions.setPrefix("stream-file-profile-"_el).setRandomLength(el::CpCount{12U});
     auto workspaceRoot = el::Path::systemTempDirectoryOrThrow();
     if (!_configuration.run.workspace.isEmpty()) {
         workspaceRoot = el::Path{_configuration.run.workspace};
@@ -131,7 +143,7 @@ auto WorkloadRunner::run() -> el::ExitCode {
     auto nextProgress = runStart + _configuration.run.progressInterval;
     auto totalBytes = std::uint64_t{};
     auto totalSamples = std::uint64_t{};
-    auto measuredScenarios = std::set<el::String>{};
+    auto measuredScenarios = el::StringSet{};
     for (const auto &scenario : _configuration.scenarios) {
         auto prepared = prepareScenario(_configuration, scenario, workspace);
         const auto validation = runSample(prepared, _configuration, 0U, true);
@@ -142,7 +154,7 @@ auto WorkloadRunner::run() -> el::ExitCode {
                 printSample(_configuration, scenario, sample);
                 totalBytes += sample.bytes;
                 ++totalSamples;
-                measuredScenarios.emplace(scenario.id);
+                measuredScenarios.insert(scenario.id);
                 if (scenario.direction == Direction::Write) {
                     for (auto worker = std::uint32_t{}; worker < _configuration.run.threadCount; ++worker) {
                         validateFixtureOutput(prepared, worker, 1U);
@@ -157,7 +169,7 @@ auto WorkloadRunner::run() -> el::ExitCode {
             totalBytes += samples.back().bytes;
             ++totalSamples;
         }
-        measuredScenarios.emplace(scenario.id);
+        measuredScenarios.insert(scenario.id);
         if (samples.size() < 5U) {
             workloadError(
                 "The benchmark deadline was reached before five samples were collected for every scenario; "
@@ -187,7 +199,7 @@ auto WorkloadRunner::run() -> el::ExitCode {
                     }
                     totalBytes += sample.bytes;
                     ++totalSamples;
-                    measuredScenarios.emplace(scenario.id);
+                    measuredScenarios.insert(scenario.id);
                 }
                 if (scenario.direction == Direction::Write && lastSampleIndex != 0U) {
                     for (auto worker = std::uint32_t{}; worker < _configuration.run.threadCount; ++worker) {
@@ -212,7 +224,7 @@ auto WorkloadRunner::run() -> el::ExitCode {
                 }
                 totalBytes += sample.bytes;
                 ++totalSamples;
-                measuredScenarios.emplace(scenario.id);
+                measuredScenarios.insert(scenario.id);
                 if (scenario.direction == Direction::Write) {
                     for (auto worker = std::uint32_t{}; worker < _configuration.run.threadCount; ++worker) {
                         validateFixtureOutput(prepared, worker, currentSampleIndex);
@@ -231,7 +243,7 @@ auto WorkloadRunner::run() -> el::ExitCode {
         " covered-scenarios="_el,
         _configuration.scenarios.size(),
         " measured-scenarios="_el,
-        measuredScenarios.size(),
+        measuredScenarios.count().toSizeT(),
         " bytes="_el,
         totalBytes,
         " elapsed-ns="_el,

@@ -15,8 +15,8 @@ This page introduces :cpp:class:`LogManagerOptions <erbsland::log::LogManagerOpt
 independently, so you can keep the defaults where they fit and change only the limits your application has reason to
 change.
 
-Install the Options With the Complete Configuration
-===================================================
+Installing LogManagerOptions with a Configuration
+=================================================
 
 :cpp:class:`LogManagerOptions <erbsland::log::LogManagerOptions>` is a value object containing the queue, producer-message,
 and shutdown limits for one manager configuration.
@@ -41,7 +41,7 @@ Tune them from observed traffic and destination latency rather than increasing e
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerOptions.cpp
     :exec: log/logging_topics --demo ManagerOptions
-    :source-sha256: 441b4d0429b3362d92419dc9025f89afea80aaca2e23671b547e99d2e5ec16c5
+    :sha256: 4a0ec4739b978026be90c448a494a905e331bb9d6cb84ecdd031955c9d808c38
 
 .. code-block:: cpp
 
@@ -64,15 +64,17 @@ Tune them from observed traffic and destination latency rather than increasing e
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Active queue-entry limit: 2048
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mActive queue-entry limit: 2048␛[0m
 
 .. erbsland-demo-end::
 
-Bound the Number of Waiting Entries
-===================================
+Queue Entry Count Limit
+=======================
 
 :cpp:func:`LogManagerOptions::setMaximumEntries <erbsland::log::LogManagerOptions::setMaximumEntries>` sets the total
 number of entries that may wait in the manager queue.
@@ -85,7 +87,8 @@ Entry count protects the manager from a burst of many small messages.
 When the applicable capacity is full, a producer is not made to wait for the worker; its new entry is dropped and
 ``droppedEntries`` increases.
 That non-blocking behavior keeps logging from turning a slow diagnostic destination into application-wide backpressure.
-The setter requires a positive value and raises :cpp:class:`ParameterError <erbsland::err::ParameterError>` for zero.
+The setter requires a positive value and raises :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` for
+zero.
 
 The demo holds one writer call open, fills all 260 queue slots with warnings, and then submits one more warning.
 Warnings are used so the example exercises the complete entry capacity rather than stopping at the ordinary-entry
@@ -94,7 +97,7 @@ boundary.
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerEntryCapacity.cpp
     :exec: log/logging_topics --demo ManagerEntryCapacity
-    :source-sha256: 9dbc61c41d67862480d84d807d84678d3fe545581ce60d60a1d5a93d083946c1
+    :sha256: 86bed8380e26026d6c8f5a77ec08b191c9366166b9ebba2cc10c1ed12502bb86
 
 .. code-block:: cpp
 
@@ -127,16 +130,18 @@ boundary.
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Queued entries: 260
-    Dropped entries: 1
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mQueued entries: 260
+        Dropped entries: 1␛[0m
 
 .. erbsland-demo-end::
 
-Bound the Storage Retained by the Queue
-=======================================
+Queue Byte Capacity Limit
+=========================
 
 An entry count alone cannot protect memory when messages vary greatly in size.
 :cpp:func:`LogManagerOptions::setMaximumBytes <erbsland::log::LogManagerOptions::setMaximumBytes>` therefore sets an
@@ -148,7 +153,7 @@ Treat this setting as a budget for the queued entries as a whole, not as the sum
 see in a test.
 The manager's statistics provide the authoritative current queue usage.
 As with the entry setter, the byte limit must be positive and zero raises
-:cpp:class:`ParameterError <erbsland::err::ParameterError>`.
+:cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>`.
 
 In the demo the queue still has thousands of unused entry slots, but four large warnings consume almost all of a 1 MiB
 byte budget.
@@ -157,7 +162,7 @@ The fifth is dropped because its retained data no longer fits.
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerByteCapacity.cpp
     :exec: log/logging_topics --demo ManagerByteCapacity
-    :source-sha256: a81004a21adbe81c7bc2a28c34b3975d9abdc608c536f81bfaaff2247530e0a3
+    :sha256: a0afae18969ba601eecbe2a0eee4ead9dc3fc0b93d951205d37140aad45dbc5d
 
 .. code-block:: cpp
 
@@ -167,7 +172,7 @@ The fifth is dropped because its retained data no longer fits.
     /// budget; another large warning is dropped while the producer continues immediately.
     void managerByteCapacity() {
         auto options = el::LogManagerOptions{};
-        options.setMaximumBytes(el::ByteLength{1024U * 1024U});
+        options.setMaximumBytes(el::ByteCount{1024U * 1024U});
         const auto writer = std::make_shared<BlockingLogWriter>();
         auto configuration = el::LogConfiguration{};
         configuration.setManagerOptions(options).addWriter(writer);
@@ -178,7 +183,7 @@ The fifth is dropped because its retained data no longer fits.
         log->warn("The journal destination is occupied."_el);
         writer->waitUntilWriting();
 
-        const auto largeReport = el::String::fromCharacter(el::Char{U'x'}, el::CpLength{250U * 1024U});
+        const auto largeReport = el::String::fromCharacter(el::Char{U'x'}, el::CpCount{250U * 1024U});
         for (auto index = 0U; index < 4U; ++index) {
             log->warn(largeReport);
         }
@@ -191,16 +196,18 @@ The fifth is dropped because its retained data no longer fits.
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Queued large entries: 4
-    Dropped entries: 1
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mQueued large entries: 4
+        Dropped entries: 1␛[0m
 
 .. erbsland-demo-end::
 
-Protect Entry Slots for Warnings and Errors
-===========================================
+Reserved Queue Entries for Warnings and Errors
+==============================================
 
 A flood of routine information should not crowd out the warning that explains why a service is struggling.
 :cpp:func:`LogManagerOptions::setReservedErrorEntries <erbsland::log::LogManagerOptions::setReservedErrorEntries>` keeps
@@ -214,7 +221,7 @@ For example, a total of four entries with two reserved entries gives trace and i
 while warning and error traffic can fill all four.
 A reservation of zero lets every level compete for the same capacity.
 :cpp:func:`LogConfiguration::setManagerOptions <erbsland::log::LogConfiguration::setManagerOptions>` validates the
-completed pair and raises :cpp:class:`ParameterError <erbsland::err::ParameterError>` if the reservation exceeds the
+completed pair and raises :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` if the reservation exceeds the
 total.
 
 The demo fills both ordinary slots, shows that another information entry is dropped, and then uses the two protected
@@ -224,7 +231,7 @@ Only after the complete four-entry queue is full is another error dropped.
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerErrorEntryReserve.cpp
     :exec: log/logging_topics --demo ManagerErrorEntryReserve
-    :source-sha256: 6fc3a90b539a486c07b81eb2211a7f02da711abe4aaf1c6bc8e82a6df0d8bdc3
+    :sha256: 7c41b15ec6d0a6250a4bf31acc1a33357a9c31eab40599762ac88b818f6ea463
 
 .. code-block:: cpp
 
@@ -259,16 +266,18 @@ Only after the complete four-entry queue is full is another error dropped.
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Queued entries: 4
-    Dropped entries: 2
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mQueued entries: 4
+        Dropped entries: 2␛[0m
 
 .. erbsland-demo-end::
 
-Protect Queue Storage for Warnings and Errors
-=============================================
+Reserved Queue Bytes for Warnings and Errors
+============================================
 
 The entry reservation is only half of the protection because a few large information messages could otherwise consume
 the byte budget first.
@@ -280,8 +289,8 @@ byte capacity.
 
 This reservation also remains part of, rather than additional to, the total.
 Set it to zero when no byte protection is wanted.
-The completed configuration is rejected with :cpp:class:`ParameterError <erbsland::err::ParameterError>` if the reserved
-byte count exceeds ``maximumBytes``.
+The completed configuration is rejected with :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` if the
+reserved byte count exceeds ``maximumBytes``.
 Entry and byte reservations are evaluated independently, so an entry must have both a slot and enough storage in the
 capacity available to its level.
 
@@ -292,7 +301,7 @@ the same size still fits by using the protected 512 bytes.
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerErrorByteReserve.cpp
     :exec: log/logging_topics --demo ManagerErrorByteReserve
-    :source-sha256: fa5aa9110299010a91587d9bc31f4712b15df7d76c196ee54b1df3b60e32829a
+    :sha256: b5f3687ecb1015f3ef9e8480084ce1cc2e10acb3906cf17c0afe45bd66ad878a
 
 .. code-block:: cpp
 
@@ -302,7 +311,7 @@ the same size still fits by using the protected 512 bytes.
     /// the ordinary budget, so another is dropped while a warning of the same size can use the reservation.
     void managerErrorByteReserve() {
         auto options = el::LogManagerOptions{};
-        options.setMaximumBytes(el::ByteLength{2048U}).setReservedErrorBytes(el::ByteLength{512U});
+        options.setMaximumBytes(el::ByteCount{2048U}).setReservedErrorBytes(el::ByteCount{512U});
         const auto writer = std::make_shared<BlockingLogWriter>();
         auto configuration = el::LogConfiguration{};
         configuration.setManagerOptions(options).addWriter(writer);
@@ -313,8 +322,8 @@ the same size still fits by using the protected 512 bytes.
         log->info("The journal destination is occupied."_el);
         writer->waitUntilWriting();
 
-        log->info(el::String::fromCharacter(el::Char{U'i'}, el::CpLength{1200U}));
-        const auto shortReport = el::String::fromCharacter(el::Char{U'w'}, el::CpLength{300U});
+        log->info(el::String::fromCharacter(el::Char{U'i'}, el::CpCount{1200U}));
+        const auto shortReport = el::String::fromCharacter(el::Char{U'w'}, el::CpCount{300U});
         log->info(shortReport);
         log->warn(shortReport);
         const auto full = manager->statistics();
@@ -325,16 +334,18 @@ the same size still fits by using the protected 512 bytes.
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Queued entries: 2
-    Dropped entries: 1
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mQueued entries: 2
+        Dropped entries: 1␛[0m
 
 .. erbsland-demo-end::
 
-Bound Each Message Before It Reaches the Queue
-==============================================
+Producer Message Byte Limit
+===========================
 
 Queue capacity controls the collection of waiting entries.
 :cpp:func:`LogManagerOptions::setMaximumMessageBytes <erbsland::log::LogManagerOptions::setMaximumMessageBytes>` controls
@@ -355,7 +366,7 @@ message a writer presents to its reader.
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerMessageSize.cpp
     :exec: log/logging_topics --demo ManagerMessageSize
-    :source-sha256: 8972e0da2dd499d38524cc1a6277be62030c5fbb9774c7b3b4fbac6c9a271be2
+    :sha256: 44c57cded6076746f654de5a6dc551dd89b08b87af6a43d430c25bcbc38fc4c4
 
 .. code-block:: cpp
 
@@ -365,7 +376,7 @@ message a writer presents to its reader.
     /// message is shortened. The immutable entry records that producer-side truncation occurred.
     void managerMessageSize() {
         auto options = el::LogManagerOptions{};
-        options.setMaximumMessageBytes(el::ByteLength{32U});
+        options.setMaximumMessageBytes(el::ByteCount{32U});
         const auto captured = std::make_shared<CapturingLogWriter>();
         auto configuration = el::LogConfiguration{};
         configuration.setManagerOptions(options).addWriter(captured);
@@ -380,16 +391,18 @@ message a writer presents to its reader.
         el::io::printLine("Marked as truncated: "_el, entry->isTruncated() ? "yes"_el : "no"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Retained message: Aurora observation continues …
-    Marked as truncated: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRetained message: Aurora observation continues …
+        Marked as truncated: yes␛[0m
 
 .. erbsland-demo-end::
 
-Give the Worker Time to Finish During Shutdown
-==============================================
+Log Worker Shutdown Timeout
+===========================
 
 Shutdown is the moment when bounded background work must become a bounded application delay.
 :cpp:func:`LogManagerOptions::setShutdownTimeout <erbsland::log::LogManagerOptions::setShutdownTimeout>` sets the positive
@@ -412,7 +425,7 @@ The demo uses such a standalone manager and a deliberately occupied writer to ma
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerShutdownTimeout.cpp
     :exec: log/logging_topics --demo ManagerShutdownTimeout
-    :source-sha256: 3a330f0ab2a391d90070a8b7714c280388f001569634434f44f48d5c2e9f523b
+    :sha256: 79a174fcb8702a642c3c0422e3ca0c75a9c185e070b206d6fea011a1c9557224
 
 .. code-block:: cpp
 
@@ -447,16 +460,18 @@ The demo uses such a standalone manager and a deliberately occupied writer to ma
         el::io::printLine("Dropped entries: "_el, finished.droppedEntries);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Written entries: 1
-    Dropped entries: 2
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWritten entries: 1
+        Dropped entries: 2␛[0m
 
 .. erbsland-demo-end::
 
-Read Statistics as a Point-in-Time Snapshot
-===========================================
+Log Manager Statistics and Queue Usage
+======================================
 
 Limits are useful only when you can see whether they fit the real workload.
 :cpp:func:`LogManager::statistics <erbsland::log::LogManager::statistics>` returns a
@@ -477,7 +492,7 @@ the instant at which the snapshot was taken.
     * - ``droppedEntries``
       - Entries rejected by a capacity boundary or discarded from the queue during shutdown.
     * - ``writerFailures``
-      - Writer operations whose exceptions were contained by the manager so other destinations could continue.
+      - Writer operations whose ``RuntimeError``-derived exceptions were contained so other destinations could continue.
     * - ``queuedEntries``
       - Entries currently waiting for the worker.
     * - ``queuedBytes``
@@ -496,7 +511,7 @@ Both entries are still written successfully, while the contained failure is visi
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerStatistics.cpp
     :exec: log/logging_topics --demo ManagerStatistics
-    :source-sha256: 72e910789da8c6e3877e6ff0ac34286a0e548cdb6354eaabc70eda34986f2687
+    :sha256: a3d305a61989e60a5eeaab25835af1b1ec05e8d4cc6acb2baaca571ec587aaeb
 
 .. code-block:: cpp
 
@@ -530,18 +545,20 @@ Both entries are still written successfully, while the contained failure is visi
         el::io::printLine("  Queued entries  : "_el, finished.queuedEntries);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    While paused:
-      Accepted entries: 2
-      Written entries : 0
-      Queued entries  : 2
-      Queue has bytes : yes
-    After shutdown:
-      Written entries : 2
-      Dropped entries : 0
-      Writer failures : 1
-      Queued entries  : 0
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWhile paused:
+          Accepted entries: 2
+          Written entries : 0
+          Queued entries  : 2
+          Queue has bytes : yes
+        After shutdown:
+          Written entries : 2
+          Dropped entries : 0
+          Writer failures : 1
+          Queued entries  : 0␛[0m
 
 .. erbsland-demo-end::

@@ -22,8 +22,6 @@ target_sources(erbsland-core PRIVATE
         EncodedTextOutputStream.hpp
         InputStreamFactory.cpp
         InputStreamFactory.hpp
-        IoService.cpp
-        IoService.hpp
         NativeByteStream.hpp
         NativeByteStream_fwd.hpp
         NativeOutputStream.cpp

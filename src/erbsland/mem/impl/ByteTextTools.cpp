@@ -4,13 +4,14 @@
 
 #include "../ByteTextOptions.hpp"
 
-#include "../../err/OutOfRangeError.hpp"
+#include "../../err/OverflowError.hpp"
 #include "../../math/SaturatingMath.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringEncoder.hpp"
 
 namespace erbsland::mem::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 auto ByteTextTools::unitSize() const noexcept -> std::size_t {
@@ -28,17 +29,17 @@ auto ByteTextTools::encodedEndMark() const -> ByteBlock {
         _options.encoding(), text::StringBomMode::Reject);
 }
 
-auto ByteTextTools::byteLengthFromCountOrThrow(const uint64_t count) const -> unit::ByteLength {
+auto ByteTextTools::byteLengthFromCountOrThrow(const uint64_t count) const -> ByteCount {
     const auto unitSizeValue = unitSize();
     const auto nativeUnitSize = static_cast<uint64_t>(unitSizeValue);
     if (math::willMultiplyOverflow(count, nativeUnitSize)) {
-        throw err::OutOfRangeError("Text count exceeds the available byte range"_el);
+        throw err::OverflowError("Text count exceeds the available byte range"_el);
     }
     const auto byteCount = count * nativeUnitSize;
-    if (byteCount > unit::ByteLength::cRawMaximum) {
-        throw err::OutOfRangeError("Text count exceeds the available byte range"_el);
+    if (byteCount > ByteCount::cRawMaximum) {
+        throw err::OverflowError("Text count exceeds the available byte range"_el);
     }
-    return unit::ByteLength{byteCount};
+    return ByteCount{byteCount, ByteCount::Unchecked{}};
 }
 
 }

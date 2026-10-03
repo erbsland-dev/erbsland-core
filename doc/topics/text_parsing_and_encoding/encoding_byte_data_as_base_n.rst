@@ -54,10 +54,9 @@ the recovered bytes match the original.
 
 .. erbsland-demo::
     :source: text/BaseN/BaseNDemos.cpp
-    :function-blocks: roundTripSoundTag
-    :function-blocks-sha256: 6da09d9325a19c80e9182c4de90c50a5d9813dc9542b222ee282845ea17127ca
+    :show: f:roundTripSoundTag
     :exec: text/base_n --demo RoundTripSoundTag
-    :source-sha256: 25ad05fcdf84c76b9b65f271db932811662bf5f38574ef658c1444b657225e11
+    :sha256: 39e373e1712ba5065cd7c20baf7faf6fd762130e974698eedcada064442034e6
 
 .. code-block:: cpp
 
@@ -73,11 +72,13 @@ the recovered bytes match the original.
         el::io::printLine("Bytes recovered: "_el, recovered == original);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Text field: a2Fpa3U=
-    Bytes recovered: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mText field: a2Fpa3U=
+        Bytes recovered: true␛[0m
 
 .. erbsland-demo-end::
 

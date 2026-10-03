@@ -3,6 +3,12 @@
 
 #include "ScalarConversionDemos.hpp"
 
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Capitalization.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+
 namespace demo {
 
 /// Convert complete Boolean literals and choose the words used for Boolean output.
@@ -18,16 +24,16 @@ void booleanValues() {
     try {
         const auto unexpectedValue = el::String{"misschien"_el}.toBooleanOrThrow();
         el::io::printLine("misschien .......: "_el, unexpectedValue);
-    } catch (const el::Exception &) {
+    } catch (const el::ParseError &) {
         el::io::printLine("misschien .......: parse error"_el);
     }
 
-    auto titleYesNo = el::BooleanFormat::yesNo();
-    titleYesNo.setCapitalization(el::Capitalization::Titlecase);
+    auto capitalizedYesNo = el::BooleanFormat::yesNo();
+    capitalizedYesNo.setCapitalization(el::Capitalization::Capitalized);
     auto upperEnabled = el::BooleanFormat::enabledDisabled();
     upperEnabled.setCapitalization(el::Capitalization::Uppercase);
-    const auto onlineOutput = el::String{el::StringEditor::fromBoolean(true, titleYesNo)};
-    const auto offlineOutput = el::String{el::StringEditor::fromBoolean(false, upperEnabled)};
+    const auto onlineOutput = el::String::fromBoolean(true, capitalizedYesNo);
+    const auto offlineOutput = el::String::fromBoolean(false, upperEnabled);
 
     el::io::printLine("Formatted status words:"_el);
     el::io::printLine("  "_el, onlineOutput);

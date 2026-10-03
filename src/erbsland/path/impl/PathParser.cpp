@@ -8,6 +8,7 @@
 #include "../../text/AnyString.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
+#include "../../text/StringJoins.hpp"
 
 #include <utility>
 
@@ -172,7 +173,7 @@ auto PathParser::parseDriveRoot() -> bool {
     if (!isPathSeparator(separator, SeparatorMode::SlashAndBackslash)) {
         throwParseError("Windows drive roots must use a separator after the colon"_el);
     }
-    _root = String::fromJoined({String::fromCharacter(drive.toAsciiLowercase()), cDriveRootSuffix});
+    _root = text::join(String::fromCharacter(drive.toAsciiLowercase()), cDriveRootSuffix);
     _format = PathFormat::Windows;
     return true;
 }
@@ -200,7 +201,7 @@ void PathParser::parseUncServerAndShare() {
     const auto hasTrailingSeparator = consumeSeparator(SeparatorMode::SlashAndBackslash);
     (void)hasTrailingSeparator;
 
-    _root = String::fromJoined({cDoubleSlash, server, cSlash, share, cSlash});
+    _root = text::join(cDoubleSlash, server, cSlash, share, cSlash);
     _format = PathFormat::Windows;
 }
 

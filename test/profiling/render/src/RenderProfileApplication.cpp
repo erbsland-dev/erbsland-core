@@ -6,7 +6,12 @@
 #include "DefaultConfiguration.hpp"
 #include "RenderScenarioWorkload.hpp"
 
-#include <erbsland/text/StringFormat.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Version.hpp>
 
 namespace app::render {
 
@@ -87,7 +92,7 @@ void RenderProfileApplication::configureProfiling(pf::ProfilingDefinition &defin
             el::Version{1, 0, 0},
             "Layout Tokenizer, Compiler and Renderer Profiler"_el,
             "Profiles deterministic layout graphs without loader, resource-provider or cache timing."_el)
-        .setDefaultConfiguration(el::String{cDefaultConfigurationText})
+        .setDefaultConfiguration(cDefaultConfigurationText)
         .addAxis(std::move(corpusAxis))
         .addMetric({.id = "layouts"_el, .unit = "layouts"_el, .reportRate = true})
         .addMetric({.id = "source-bytes"_el, .unit = "bytes"_el, .reportRate = true})

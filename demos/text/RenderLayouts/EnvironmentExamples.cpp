@@ -2,13 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/text/render/Environment.hpp>
-#include <erbsland/text/render/FileSystemLoader.hpp>
-#include <erbsland/text/render/RenderError.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/conf/ValueList.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/render/Context.hpp>
+#include <erbsland/render/Delimiters.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/render/EnvironmentOptions.hpp>
+#include <erbsland/render/FileSystemLoader.hpp>
+#include <erbsland/render/RenderError.hpp>
+#include <erbsland/render/RenderErrorCategory.hpp>
+#include <erbsland/render/RenderErrorContext.hpp>
+#include <erbsland/render/RenderLimits.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/TempDirectory.hpp>
 
 namespace demo {
+
+using namespace el::unit;
 
 /// Share stable values across renders through the environment's global context.
 ///
@@ -52,7 +68,8 @@ void localValues() {
 /// Add one application filter for a value transformation used by a layout.
 ///
 /// A filter receives the piped value at index zero and any positional arguments after it. Validate the
-/// arguments in the callback before reading their concrete types.
+/// arguments in the callback before reading their concrete types. Reject invalid template arguments with
+/// RenderError; the renderer supplies the filter's source location.
 /// @notest{Demo function verified by the documentation executable.}
 void customFilter() {
     const auto directory = el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow();
@@ -61,13 +78,14 @@ void customFilter() {
     const auto environment = el::render::Environment::create();
     environment->addLayoutLoader(el::render::FileSystemLoader::create(directory->path()));
     environment->addFilter("label"_el, [](const el::render::ValueList &values) -> el::render::Value {
-        if (values.count() != el::unit::ItemCount{2U} || !values.getRef(el::unit::ItemIndex{0U}).isText() ||
-            !values.getRef(el::unit::ItemIndex{1U}).isText()) {
-            throw el::err::ParameterError{"The label filter needs text and one text prefix."_el, "values"_el};
+        if (values.count() != ItemCount{2U} || !values.getRef(ItemIndex{0U}).isText() ||
+            !values.getRef(ItemIndex{1U}).isText()) {
+            throw el::render::RenderError{el::render::RenderErrorContext{
+                el::render::RenderErrorCategory::Runtime,
+                "Invalid label filter arguments"_el,
+                "The label filter needs text and one text prefix."_el}};
         }
-        return el::StringList{
-            values.getRef(el::unit::ItemIndex{1U}).asText(), values.getRef(el::unit::ItemIndex{0U}).asText()}
-            .join();
+        return el::StringList{values.getRef(ItemIndex{1U}).asText(), values.getRef(ItemIndex{0U}).asText()}.join();
     });
     el::io::print(environment->render("current.txt"_el, el::render::Context{}.set("current"_el, "Ligure"_el)));
 }

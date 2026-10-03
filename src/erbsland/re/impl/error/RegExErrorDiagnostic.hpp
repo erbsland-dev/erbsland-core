@@ -17,8 +17,7 @@ public:
 public: // implement Diagnostic
     [[nodiscard]] auto location() const noexcept -> unit::CodeLocation override;
     [[nodiscard]] auto toString() const noexcept -> text::String override;
-    [[nodiscard]] auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
-        -> text::TextDocument override;
+    [[nodiscard]] auto toTextDocument() const -> text::TextDocument override;
 
 private:
     RegExErrorContext _context;

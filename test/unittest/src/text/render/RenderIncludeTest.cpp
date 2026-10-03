@@ -3,11 +3,11 @@
 
 #include "MemoryLayoutLoader.hpp"
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Environment.hpp>
-#include <erbsland/text/render/RenderError.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/text/ToString.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/render/RenderError.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/ToString.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>
@@ -19,31 +19,41 @@ using namespace el::text::render;
 
 TESTED_TARGETS(CompiledInclude Compiler Engine Environment)
 class RenderIncludeTest final : public el::UnitTest {
+private:
+    static constexpr auto cChildLayout = "child"_el;
+    static constexpr auto cEnabledKey = "enabled"_el;
+    static constexpr auto cLeafLayout = "leaf"_el;
+    static constexpr auto cMiddleLayout = "middle"_el;
+    static constexpr auto cOptionalLayout = "optional"_el;
+    static constexpr auto cPageLayout = "page"_el;
+    static constexpr auto cSharedLayout = "shared"_el;
+    static constexpr auto cValueKey = "value"_el;
+
 public:
     void testBasicNestedAndIgnoredIncludes() {
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, "A{% include \"middle\" %}D"_el);
-        loader->set("middle"_el, "B{% include \"leaf\" with context %}C"_el);
-        loader->set("leaf"_el, "{{ value }}"_el);
+        loader->set(cPageLayout, "A{% include \"middle\" %}D"_el);
+        loader->set(cMiddleLayout, "B{% include \"leaf\" with context %}C"_el);
+        loader->set(cLeafLayout, "{{ value }}"_el);
         loader->set("conditional"_el, "A{% if enabled %}{% include \"leaf\" %}{% endif %}B"_el);
         loader->set(
-            "optional"_el,
+            cOptionalLayout,
             "A{% include \"missing\" ignore missing with context %}"
             "B{% include \"missing\" without context ignore missing %}C"_el);
         const auto environment = environmentFor(loader);
 
-        REQUIRE_EQUAL(environment->render("page"_el, Context{}.set("value"_el, "X"_el)), "ABXCD"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout, Context{}.set(cValueKey, "X"_el)), "ABXCD"_el);
         REQUIRE_EQUAL(
-            environment->render("conditional"_el, Context{}.set("enabled"_el, false).set("value"_el, "X"_el)), "AB"_el);
+            environment->render("conditional"_el, Context{}.set(cEnabledKey, false).set(cValueKey, "X"_el)), "AB"_el);
         REQUIRE_EQUAL(
-            environment->render("conditional"_el, Context{}.set("enabled"_el, true).set("value"_el, "X"_el)), "AXB"_el);
-        REQUIRE_EQUAL(environment->render("optional"_el), "ABC"_el);
+            environment->render("conditional"_el, Context{}.set(cEnabledKey, true).set(cValueKey, "X"_el)), "AXB"_el);
+        REQUIRE_EQUAL(environment->render(cOptionalLayout), "ABC"_el);
     }
 
     void testContextModesAndPrivateAssignments() {
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
         loader->set(
-            "page"_el,
+            cPageLayout,
             "{% set assigned = \"parent\" %}"
             "{% for item in items %}[{% include \"with\" %}][{% include \"without\" without context %}]"
             "{% endfor %}|{{ assigned }}"_el);
@@ -57,7 +67,7 @@ public:
         environment->setGlobalContext(Context{}.set("global"_el, "G"_el));
         const auto local = Context{}.set("local"_el, "L"_el).set("items"_el, ValueList{"one"_el});
 
-        REQUIRE_EQUAL(environment->render("page"_el, local), "[G/L/child/one/child][G///]|parent"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout, local), "[G/L/child/one/child][G///]|parent"_el);
     }
 
     void testStrictGrammarAndFailures() {
@@ -125,14 +135,14 @@ public:
     void testNestedDiagnosticFrames() {
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
         loader->set("root"_el, "before\n{% include \"middle\" %}"_el);
-        loader->set("middle"_el, "{% include \"leaf\" %}"_el);
-        loader->set("leaf"_el, "{{ value }}"_el);
+        loader->set(cMiddleLayout, "{% include \"leaf\" %}"_el);
+        loader->set(cLeafLayout, "{{ value }}"_el);
         const auto environment = environmentFor(loader);
         try {
-            static_cast<void>(environment->render("root"_el, Context{}.set("value"_el, ValueList{})));
+            static_cast<void>(environment->render("root"_el, Context{}.set(cValueKey, ValueList{})));
             REQUIRE(false);
         } catch (const RenderError &error) {
-            REQUIRE_EQUAL(error.context().layout(), "leaf"_el);
+            REQUIRE_EQUAL(error.context().layout(), cLeafLayout);
             REQUIRE_EQUAL(error.context().origin(), "memory:leaf"_el);
             REQUIRE_EQUAL(error.context().frames().count(), el::unit::ItemCount{2U});
             REQUIRE_EQUAL(error.context().frames().get(el::unit::ItemIndex{0U}), "root:2:4"_el);
@@ -142,70 +152,70 @@ public:
 
     void testTransitiveAndOptionalReload() {
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, "A{% include \"middle\" %}Z"_el);
-        loader->set("middle"_el, "B{% include \"leaf\" %}Y"_el);
-        loader->set("leaf"_el, "old"_el);
+        loader->set(cPageLayout, "A{% include \"middle\" %}Z"_el);
+        loader->set(cMiddleLayout, "B{% include \"leaf\" %}Y"_el);
+        loader->set(cLeafLayout, "old"_el);
         loader->set("optional-page"_el, "A{% include \"optional\" ignore missing %}B"_el);
         const auto environment = Environment::create();
         environment->addLayoutLoader(loader);
         environment->enableAutoReload();
 
-        REQUIRE_EQUAL(environment->render("page"_el), "ABoldYZ"_el);
-        loader->set("leaf"_el, "new"_el);
-        REQUIRE_EQUAL(environment->render("page"_el), "ABnewYZ"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "ABoldYZ"_el);
+        loader->set(cLeafLayout, "new"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "ABnewYZ"_el);
         REQUIRE_EQUAL(environment->render("optional-page"_el), "AB"_el);
-        loader->set("optional"_el, "X"_el);
+        loader->set(cOptionalLayout, "X"_el);
         REQUIRE_EQUAL(environment->render("optional-page"_el), "AXB"_el);
-        loader->remove("optional"_el);
+        loader->remove(cOptionalLayout);
         REQUIRE_EQUAL(environment->render("optional-page"_el), "AB"_el);
-        loader->remove("leaf"_el);
-        REQUIRE_THROWS_AS(RenderError, environment->render("page"_el));
+        loader->remove(cLeafLayout);
+        REQUIRE_THROWS_AS(RenderError, environment->render(cPageLayout));
     }
 
     void testFailedReloadRecoveryAndSharedDependency() {
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, "{% include \"left\" %}|{% include \"right\" %}"_el);
+        loader->set(cPageLayout, "{% include \"left\" %}|{% include \"right\" %}"_el);
         loader->set("left"_el, "L{% include \"shared\" %}"_el);
         loader->set("right"_el, "R{% include \"shared\" %}"_el);
-        loader->set("shared"_el, "old"_el);
+        loader->set(cSharedLayout, "old"_el);
         const auto environment = Environment::create();
         environment->addLayoutLoader(loader);
         environment->enableAutoReload();
 
-        REQUIRE_EQUAL(environment->render("page"_el), "Lold|Rold"_el);
-        loader->set("shared"_el, "{% if %}"_el);
-        REQUIRE_THROWS_AS(RenderError, environment->render("page"_el));
-        loader->set("shared"_el, "new"_el);
-        REQUIRE_EQUAL(environment->render("page"_el), "Lnew|Rnew"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "Lold|Rold"_el);
+        loader->set(cSharedLayout, "{% if %}"_el);
+        REQUIRE_THROWS_AS(RenderError, environment->render(cPageLayout));
+        loader->set(cSharedLayout, "new"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "Lnew|Rnew"_el);
     }
 
     void testConcurrentGenerationPublication() {
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, "A{% include \"child\" %}B"_el);
-        loader->set("child"_el, "old"_el);
+        loader->set(cPageLayout, "A{% include \"child\" %}B"_el);
+        loader->set(cChildLayout, "old"_el);
         const auto environment = Environment::create();
         environment->addLayoutLoader(loader);
         environment->enableAutoReload();
-        REQUIRE_EQUAL(environment->render("page"_el), "AoldB"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "AoldB"_el);
 
         auto failed = std::atomic_bool{false};
         auto workers = std::vector<std::thread>{};
         for (auto worker = 0; worker < 4; ++worker) {
             workers.emplace_back([&]() -> void {
                 for (auto iteration = 0; iteration < 25; ++iteration) {
-                    const auto result = environment->render("page"_el);
+                    const auto result = environment->render(cPageLayout);
                     if (result != "AoldB"_el && result != "AnewB"_el) {
                         failed = true;
                     }
                 }
             });
         }
-        loader->set("child"_el, "new"_el);
+        loader->set(cChildLayout, "new"_el);
         for (auto &worker : workers) {
             worker.join();
         }
         REQUIRE_FALSE(failed.load());
-        REQUIRE_EQUAL(environment->render("page"_el), "AnewB"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "AnewB"_el);
     }
 
 private:

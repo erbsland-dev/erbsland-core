@@ -48,6 +48,9 @@ public: // override ApplicationInstanceManager
     /// Create application data using the active scope builder.
     [[nodiscard]] auto createApplicationData() -> erbsland::core::impl::ApplicationDataPtr override;
 
+protected: // implement ApplicationInstanceManager
+    [[nodiscard]] auto retainGlobalData() -> erbsland::core::impl::ApplicationDataPtr override;
+
 private:
     std::atomic<bool> _isScopeOpen{};                                            ///< Whether a test scope is active.
     std::unique_ptr<ApplicationInstanceBuilderBase> _applicationInstanceBuilder; ///< Builder.

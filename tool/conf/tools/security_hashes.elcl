@@ -1,0 +1,25 @@
+# Portable hashes of infrastructure source code, configuration and generator templates.
+
+----[ Security Hashes ]-----------------------------------------------------------------------------------------------
+Output File                  : "security_hashes.txt"
+Directories                  :
+    * ".github/workflows"
+    * "cmake"
+    * "doc/_ext"
+    * "doc/_tools"
+    * "test/python"
+    * "tool"
+Files                        :
+    * "doc/requirements-doc.in"
+    * "doc/requirements-doc.txt"
+    * "doc/conf.py"
+    * "requirements-dev.in"
+    * "requirements-dev.txt"
+    * "setup.py"
+Included File Names          : "CMakeLists.txt"
+Included File Suffixes       : ".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".ipp", ".tpp", ".py", ".cmake", ".yml", ".yaml", ".elcl", ".tpl", ".in"
+# Exclude datasets, not the compiler's source templates in cmake/tools/*/data.
+Excluded Directory Paths     : "tool/data", "tool/bin", "tool/test/unittest/data"
+Excluded Directory Names     : "__pycache__", "_conf", "_logs", ".cache", "build", "_build"
+Excluded File Names          : ".DS_Store"
+Excluded File Suffixes       : ".pyc", ".pyo"

@@ -10,8 +10,8 @@
 #include "u32/U32String.hpp"
 #include "u32/U32StringEditor.hpp"
 
-#include "../unit/ByteLength.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/ByteCount.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <array>
 #include <cstddef>
@@ -77,14 +77,14 @@ public: // accessors
     /// Get the raw stored characters.
     [[nodiscard]] constexpr auto characters() const noexcept -> const Storage & { return _characters; }
     /// Get the number of stored code points.
-    [[nodiscard]] constexpr auto characterCount() const noexcept -> unit::CpLength {
-        return unit::CpLength::fromSizeT(countCodePoints(_characters));
+    [[nodiscard]] constexpr auto characterCount() const noexcept -> unit::CpCount {
+        return unit::CpCount::fromSizeT(countCodePoints(_characters));
     }
     /// Get the display width of the leading character.
     /// @usesunidb{Uses generated Unicode Character Database character metadata.}
     [[nodiscard]] auto displayWidth() const noexcept -> int { return first().displayWidth(); }
     /// Get the UTF-8 byte count for this sequence.
-    [[nodiscard]] auto byteCount() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto byteCount() const noexcept -> unit::ByteCount;
 
 public: // modifiers
     /// Create a copy with one additional combining code point.
@@ -98,7 +98,7 @@ public: // tests
     [[nodiscard]] constexpr auto isEmpty() const noexcept -> bool { return _characters[0] == 0; }
     /// Test if the character is spacing.
     [[nodiscard]] auto isSpacing() const noexcept -> bool {
-        if (characterCount() != unit::CpLength::one()) {
+        if (characterCount() != unit::CpCount::one()) {
             return false;
         }
         return _characters[0] == U' ' || _characters[0] == U'\t' || _characters[0] == U'\n' || _characters[0] == U'\r';
@@ -171,9 +171,6 @@ private:
     Storage _characters{}; ///< The stored base and combining code points.
 };
 
-/// Count populated code points in fixed character storage.
-/// @param codePoints The storage to inspect.
-/// @return The populated code-point count.
 constexpr auto CombinedChar::countCodePoints(const Storage &codePoints) noexcept -> std::size_t {
     for (std::size_t index = 0; index < codePoints.size(); ++index) {
         if (codePoints[index].isNull()) {
@@ -183,11 +180,6 @@ constexpr auto CombinedChar::countCodePoints(const Storage &codePoints) noexcept
     return codePoints.size();
 }
 
-/// Combine three code points into a stable hash value.
-/// @param first The first code point.
-/// @param second The second code point.
-/// @param third The third code point.
-/// @return The combined hash value.
 constexpr auto CombinedChar::hashCreate(const char32_t first, const char32_t second, const char32_t third) noexcept
     -> std::size_t {
     auto hash = std::size_t{0};

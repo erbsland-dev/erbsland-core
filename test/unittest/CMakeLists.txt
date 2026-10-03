@@ -54,4 +54,5 @@ add_test(
 )
 set_tests_properties(erbsland-core-unittest PROPERTIES
         ENVIRONMENT "ERBSLAND_CORE_CONF_TEST_SUITE=${PROJECT_SOURCE_DIR}/test/erbsland-lang-config-tests"
+        LABELS ci
 )

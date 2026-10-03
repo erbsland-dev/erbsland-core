@@ -1,0 +1,11 @@
+#
+# Configuration of the generate_display_texts tool.
+#
+----[ Generate Display Texts ]----------------------------------------------------------------------------------------
+# All paths are relative to the selected project root.
+
+Input File             : "src/erbsland/i18n/impl/DisplayTextCore.elcl"
+Output Header          : "src/erbsland/i18n/impl/DisplayTextCore.hpp"
+Output Source          : "src/erbsland/i18n/impl/DisplayTextCore.cpp"
+Class Name             : "DisplayTextCore"
+Namespace              : "erbsland::i18n::impl"

@@ -29,7 +29,7 @@ public:
     using ReadOnly = typename StringTypes<Element>::ReadOnly;
     using Count = unit::ItemCount;
     using NativeIndex = decltype(std::declval<ReadOnly>().findFirstOf(std::declval<const CharSet &>()));
-    using NativeLength = typename NativeIndex::Length;
+    using NativeLength = typename NativeIndex::Count;
 
 public:
     using Base::Base;

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "UdpSocket.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../err/RuntimeError.hpp"
 #include "../../../event/Events.hpp"
 #include "../../../text/Literals.hpp"
@@ -15,16 +15,17 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text::literals;
 
 UdpSocket::UdpSocket(
     event::EventsPtr ownerEvents, event::EventLoopDriverPtr driver, UdpSocketDeviceCreateFn createDevice) :
     network::UdpSocket{std::move(ownerEvents)}, _driver{std::move(driver)}, _createDevice{std::move(createDevice)} {
     if (_driver == nullptr) {
-        throw err::ParameterError{"The UDP socket requires an event-loop driver."_el, "driver"_el};
+        throw ParameterFailure{"The UDP socket requires an event-loop driver."_el, "driver"_el};
     }
     if (!_createDevice) {
-        throw err::ParameterError{"The UDP socket requires a native device factory."_el, "createDevice"_el};
+        throw ParameterFailure{"The UDP socket requires a native device factory."_el, "createDevice"_el};
     }
 }
 
@@ -45,15 +46,15 @@ auto UdpSocket::state() const noexcept -> NetworkSourceState {
 void UdpSocket::start(IpEndpoint localEndpoint, UdpSocketOptions options) {
     verifyCurrentOwnerEvents();
     if (_started.load()) {
-        throw err::LogicError{"A UDP socket can only be started once."_el};
+        throw LogicFailure{"A UDP socket can only be started once."_el};
     }
     validateStart(localEndpoint, options);
     if (_started.exchange(true)) {
-        throw err::LogicError{"A UDP socket can only be started once."_el};
+        throw LogicFailure{"A UDP socket can only be started once."_el};
     }
     auto expectedState = NetworkSourceState::Inactive;
     if (!_state.compare_exchange_strong(expectedState, NetworkSourceState::Starting)) {
-        throw err::LogicError{"A terminated UDP socket cannot be started."_el};
+        throw LogicFailure{"A terminated UDP socket cannot be started."_el};
     }
     _options = options;
     const auto generation = _generation.fetch_add(1U) + 1U;
@@ -74,7 +75,7 @@ void UdpSocket::start(IpEndpoint localEndpoint, UdpSocketOptions options) {
         postBound(generation);
     } catch (const NetworkError &error) {
         postError(generation, error.context());
-    } catch (const err::RuntimeError &error) {
+    } catch (const RuntimeError &error) {
         postError(
             generation,
             NetworkErrorContext{"UDP socket startup failed"_el, error.reason()}

@@ -2,11 +2,46 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
+#include <erbsland/all_network_source.hpp>
+#include <erbsland/all_network_tcp.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteReader.hpp>
+#include <erbsland/ByteTextOptions.hpp>
+#include <erbsland/ByteWriter.hpp>
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/cterm/BlockAttributes.hpp>
+#include <erbsland/cterm/ColorPart.hpp>
+#include <erbsland/cterm/Key.hpp>
 #include <erbsland/cterm/Terminal.hpp>
-#include <erbsland/network/source/all.hpp>
-#include <erbsland/network/tcp/all.hpp>
+#include <erbsland/Endianness.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/IpEndpoint.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Map.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkError.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/Port.hpp>
+#include <erbsland/SocketBufferLimits.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringMap.hpp>
+#include <erbsland/TcpAcceptOptions.hpp>
+#include <erbsland/TcpConnection.hpp>
+#include <erbsland/TcpConnectionFilterResult.hpp>
+#include <erbsland/TcpConnectionRequest.hpp>
+#include <erbsland/TcpListener.hpp>
+#include <erbsland/TcpListenerOptions.hpp>
 
 #include <functional>
 #include <memory>
@@ -47,7 +82,7 @@ public:
             .onError([](const el::NetworkErrorContext &error) -> void { throw el::NetworkError{error}; })
             .onFinal([this]() -> void { _done(this); });
         auto options = el::TcpAcceptOptions{};
-        options.setBufferLimits(el::SocketBufferLimits{el::ByteLength{8192U}, el::ByteLength{8192U}});
+        options.setBufferLimits(el::SocketBufferLimits{el::ByteCount{8192U}, el::ByteCount{8192U}});
         _connection->accept(std::move(_request), options);
     }
 
@@ -76,7 +111,7 @@ private:
     }
 
     [[nodiscard]] static auto textOptions() -> el::ByteTextOptions {
-        return el::ByteTextOptions{}.setLength(el::ByteLength{4096U});
+        return el::ByteTextOptions{}.setLength(el::ByteCount{4096U});
     }
 
 private:
@@ -100,29 +135,23 @@ protected: // implement Application
 
     void registerCommandLineOptions(const el::OptionsPtr &options) override {
         options->setHelpDescription("Serves text values from an ELCL map over TCP."_el);
-        options->addOption("map-file"_el)
-            .setRequired()
-            .setHelpDescription("ELCL document containing the map section."_el);
+        options->addOption("map-file"_el).setRequired().setHelpTitle("ELCL document containing the map section."_el);
         options->addOption({"-a"_el, "--address"_el, "address"_el})
             .setType(el::OptionType::Text)
             .setDefaultValue("127.0.0.1"_el)
-            .setHelpDescription("Local IP address to bind."_el)
+            .setHelpTitle("Local IP address to bind."_el)
             .setValidateTextValue<el::IpAddress>("The address is not a valid IP address"_el);
         options->addOption({"-p"_el, "--port"_el, "port"_el})
             .setType(el::OptionType::Text)
             .setDefaultValue("45870"_el)
-            .setHelpDescription("Local TCP port to bind."_el)
+            .setHelpTitle("Local TCP port to bind."_el)
             .setValidateTextValue<el::Port>("The port is not valid"_el);
     }
 
-    void parseCommandLine() override {
-        Application::parseCommandLine();
-        if (optionValues() == nullptr) {
-            return;
-        }
-        _address = el::IpAddress::fromStringOrThrow(optionValues()->getText("address"_el));
-        _port = el::Port::fromStringOrThrow(optionValues()->getText("port"_el));
-        _map = loadMap(el::Path::fromNativeOrThrow(optionValues()->getText("map-file"_el)));
+    void handleCommandLineOptions(const el::OptionValuesPtr &values) override {
+        _address = el::IpAddress::fromStringOrThrow(values->getText("address"_el));
+        _port = el::Port::fromStringOrThrow(values->getText("port"_el));
+        _map = loadMap(el::Path::fromNativeOrThrow(values->getText("map-file"_el)));
         events()->invoke([this]() -> void { startServer(); });
     }
 

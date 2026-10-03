@@ -9,6 +9,7 @@
 
 namespace erbsland::cryptology {
 
+using namespace unit;
 using namespace text::literals;
 
 auto SymmetricEncryptionType::isAead() const noexcept -> bool {
@@ -38,37 +39,36 @@ auto SymmetricEncryptionType::keyBitCount() const noexcept -> std::size_t {
     return keyLength().toSizeT() * 8U;
 }
 
-auto SymmetricEncryptionType::keyLength() const noexcept -> unit::ByteLength {
+auto SymmetricEncryptionType::keyLength() const noexcept -> ByteCount {
     switch (_value) {
     case Aes128Gcm:
-        return unit::ByteLength{16U};
+        return ByteCount{16U};
     case Aes256Gcm:
     case ChaCha20Poly1305:
     case Aes256CbcRandomFill:
     case Aes256CbcIso9797Method2:
-        return unit::ByteLength{32U};
+        return ByteCount{32U};
     case None:
-        return unit::ByteLength::zero();
+        return ByteCount::zero();
     }
-    return unit::ByteLength::zero();
+    return ByteCount::zero();
 }
 
-auto SymmetricEncryptionType::nonceLength() const noexcept -> unit::ByteLength {
-    return isAead() ? unit::ByteLength{12U} : unit::ByteLength::zero();
+auto SymmetricEncryptionType::nonceLength() const noexcept -> ByteCount {
+    return isAead() ? ByteCount{12U} : ByteCount::zero();
 }
 
-auto SymmetricEncryptionType::tagLength() const noexcept -> unit::ByteLength {
-    return isAead() ? unit::ByteLength{16U} : unit::ByteLength::zero();
+auto SymmetricEncryptionType::tagLength() const noexcept -> ByteCount {
+    return isAead() ? ByteCount{16U} : ByteCount::zero();
 }
 
-auto SymmetricEncryptionType::ivLength() const noexcept -> unit::ByteLength {
-    return requiresIv() ? unit::ByteLength{16U} : unit::ByteLength::zero();
+auto SymmetricEncryptionType::ivLength() const noexcept -> ByteCount {
+    return requiresIv() ? ByteCount{16U} : ByteCount::zero();
 }
 
-auto SymmetricEncryptionType::maximumEncryptedLength(const unit::ByteLength originalLength) const noexcept
-    -> unit::ByteLength {
+auto SymmetricEncryptionType::maximumEncryptedLength(const ByteCount originalLength) const noexcept -> ByteCount {
     if (!isValid()) {
-        return unit::ByteLength::zero();
+        return ByteCount::zero();
     }
     if (!requiresIv() || originalLength.isInfinite()) {
         return originalLength;
@@ -77,7 +77,7 @@ auto SymmetricEncryptionType::maximumEncryptedLength(const unit::ByteLength orig
     if (_value == Aes256CbcRandomFill && remainder.isZero()) {
         return originalLength;
     }
-    return originalLength + (unit::ByteLength{16U} - remainder);
+    return originalLength + (ByteCount{16U} - remainder);
 }
 
 auto SymmetricEncryptionType::security() const noexcept -> CryptographicSecurity {

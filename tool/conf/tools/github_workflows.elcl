@@ -1,0 +1,5 @@
+----[ Github Workflows ]----------------------------------------------------------------------------------------------
+Workflow Directory           : ".github/workflows"
+Git Executable               : "git"
+Zizmor Executable            : "zizmor"
+Safe Binary Directories      : "/bin", "/usr/bin", "/opt/local/bin"

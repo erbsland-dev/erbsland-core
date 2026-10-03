@@ -1,13 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/system/EnvironmentVariables.hpp>
-#include <erbsland/system/PlatformError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ByteRange.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/EnvironmentVariables.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/NotFoundError.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/PlatformError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -19,6 +21,10 @@ using namespace el::text::literals;
 
 TESTED_TARGETS(EnvironmentVariables EnvironmentVariableBackend)
 class EnvironmentVariablesTest final : public el::UnitTest {
+private:
+    static constexpr auto cInvalidNameVariable = "A=B"_el;
+    static constexpr auto cTestVariable = "TEST"_el;
+
     class TestBackend final : public el::system::impl::EnvironmentVariableBackend {
     public:
         [[nodiscard]] auto get(const el::text::String &) const -> std::optional<el::text::String> override {
@@ -79,21 +85,21 @@ public:
         auto *backendPtr = backend.get();
         auto environment = el::system::EnvironmentVariables{std::move(backend)};
 
-        REQUIRE_FALSE(environment.get("TEST"_el).has_value());
-        REQUIRE_EQUAL(environment.get("TEST"_el, "fallback"_el), "fallback"_el);
-        REQUIRE_THROWS_AS(el::system::PlatformError, environment.getOrThrow("TEST"_el));
+        REQUIRE_FALSE(environment.get(cTestVariable).has_value());
+        REQUIRE_EQUAL(environment.get(cTestVariable, "fallback"_el), "fallback"_el);
+        REQUIRE_THROWS_AS(el::err::NotFoundError, environment.getOrThrow(cTestVariable));
 
         backendPtr->value = el::text::String{};
-        const auto emptyValue = environment.get("TEST"_el);
+        const auto emptyValue = environment.get(cTestVariable);
         REQUIRE(emptyValue.has_value());
         REQUIRE(emptyValue->isEmpty());
-        REQUIRE(environment.get("TEST"_el, "fallback"_el).isEmpty());
-        REQUIRE(environment.getOrThrow("TEST"_el).isEmpty());
+        REQUIRE(environment.get(cTestVariable, "fallback"_el).isEmpty());
+        REQUIRE(environment.getOrThrow(cTestVariable).isEmpty());
 
         backendPtr->value = "stored"_el;
-        REQUIRE_EQUAL(*environment.get("TEST"_el), "stored"_el);
-        REQUIRE_EQUAL(environment.get("TEST"_el, "fallback"_el), "stored"_el);
-        REQUIRE_EQUAL(environment.getOrThrow("TEST"_el), "stored"_el);
+        REQUIRE_EQUAL(*environment.get(cTestVariable), "stored"_el);
+        REQUIRE_EQUAL(environment.get(cTestVariable, "fallback"_el), "stored"_el);
+        REQUIRE_EQUAL(environment.getOrThrow(cTestVariable), "stored"_el);
     }
 
     void testNonThrowingFailures() {
@@ -102,17 +108,17 @@ public:
         auto environment = el::system::EnvironmentVariables{std::move(backend)};
 
         backendPtr->failGet = true;
-        REQUIRE_FALSE(environment.get("TEST"_el).has_value());
-        REQUIRE_EQUAL(environment.get("TEST"_el, "fallback"_el), "fallback"_el);
-        REQUIRE_THROWS_AS(el::system::PlatformError, environment.getOrThrow("TEST"_el));
+        REQUIRE_FALSE(environment.get(cTestVariable).has_value());
+        REQUIRE_EQUAL(environment.get(cTestVariable, "fallback"_el), "fallback"_el);
+        REQUIRE_THROWS_AS(el::system::PlatformError, environment.getOrThrow(cTestVariable));
 
         backendPtr->failSet = true;
-        REQUIRE_FALSE(environment.set("TEST"_el, "value"_el));
-        REQUIRE_THROWS_AS(el::system::PlatformError, environment.setOrThrow("TEST"_el, "value"_el));
+        REQUIRE_FALSE(environment.set(cTestVariable, "value"_el));
+        REQUIRE_THROWS_AS(el::system::PlatformError, environment.setOrThrow(cTestVariable, "value"_el));
 
         backendPtr->failRemove = true;
-        REQUIRE_FALSE(environment.remove("TEST"_el));
-        REQUIRE_THROWS_AS(el::system::PlatformError, environment.removeOrThrow("TEST"_el));
+        REQUIRE_FALSE(environment.remove(cTestVariable));
+        REQUIRE_THROWS_AS(el::system::PlatformError, environment.removeOrThrow(cTestVariable));
     }
 
     void testSetAndRemove() {
@@ -120,13 +126,13 @@ public:
         auto *backendPtr = backend.get();
         auto environment = el::system::EnvironmentVariables{std::move(backend)};
 
-        REQUIRE(environment.set("TEST"_el, "first"_el));
+        REQUIRE(environment.set(cTestVariable, "first"_el));
         REQUIRE_EQUAL(*backendPtr->value, "first"_el);
-        environment.setOrThrow("TEST"_el, "second"_el);
+        environment.setOrThrow(cTestVariable, "second"_el);
         REQUIRE_EQUAL(*backendPtr->value, "second"_el);
-        REQUIRE(environment.remove("TEST"_el));
+        REQUIRE(environment.remove(cTestVariable));
         REQUIRE_FALSE(backendPtr->value.has_value());
-        environment.removeOrThrow("TEST"_el);
+        environment.removeOrThrow(cTestVariable);
         REQUIRE_FALSE(backendPtr->value.has_value());
     }
 
@@ -136,28 +142,28 @@ public:
         const auto nullValue = el::text::String{std::string_view{"A\0B", 3U}};
 
         REQUIRE_FALSE(environment.get({}).has_value());
-        REQUIRE_FALSE(environment.get("A=B"_el).has_value());
+        REQUIRE_FALSE(environment.get(cInvalidNameVariable).has_value());
         REQUIRE_FALSE(environment.get(nullName).has_value());
-        REQUIRE_THROWS_AS(el::err::ParameterError, environment.getOrThrow({}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, environment.getOrThrow("A=B"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, environment.getOrThrow(nullName));
+        REQUIRE_THROWS_AS(el::err::ParseError, environment.getOrThrow({}));
+        REQUIRE_THROWS_AS(el::err::ParseError, environment.getOrThrow(cInvalidNameVariable));
+        REQUIRE_THROWS_AS(el::err::ParseError, environment.getOrThrow(nullName));
 
         REQUIRE_FALSE(environment.set({}, "value"_el));
-        REQUIRE_FALSE(environment.set("A=B"_el, "value"_el));
+        REQUIRE_FALSE(environment.set(cInvalidNameVariable, "value"_el));
         REQUIRE_FALSE(environment.set(nullName, "value"_el));
-        REQUIRE_FALSE(environment.set("TEST"_el, nullValue));
-        REQUIRE_THROWS_AS(el::err::ParameterError, environment.setOrThrow({}, "value"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, environment.setOrThrow("A=B"_el, "value"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, environment.setOrThrow(nullName, "value"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, environment.setOrThrow("TEST"_el, nullValue));
+        REQUIRE_FALSE(environment.set(cTestVariable, nullValue));
+        REQUIRE_THROWS_AS(el::err::ParseError, environment.setOrThrow({}, "value"_el));
+        REQUIRE_THROWS_AS(el::err::ParseError, environment.setOrThrow(cInvalidNameVariable, "value"_el));
+        REQUIRE_THROWS_AS(el::err::ParseError, environment.setOrThrow(nullName, "value"_el));
+        REQUIRE_THROWS_AS(el::err::ParseError, environment.setOrThrow(cTestVariable, nullValue));
 
         REQUIRE_FALSE(environment.remove({}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, environment.removeOrThrow({}));
+        REQUIRE_THROWS_AS(el::err::ParseError, environment.removeOrThrow({}));
     }
 
     void testRejectsNullBackend() {
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             el::system::EnvironmentVariables{el::system::impl::EnvironmentVariableBackendPtr{}});
     }
 
@@ -189,9 +195,9 @@ public:
         const auto nameSource = el::text::String{"xERBSLAND_CORE_SLICED_ENVIRONMENT_VARIABLE_TEST-tail"_el};
         const auto valueSource = el::text::String{"xsliced-value-tail"_el};
         const auto name = nameSource.slice(
-            el::unit::ByteRange{el::unit::ByteIndex{1U}, el::unit::ByteLength::fromSizeT(nameText.size())});
+            el::unit::ByteRange{el::unit::ByteIndex{1U}, el::unit::ByteCount::fromSizeT(nameText.size())});
         const auto value = valueSource.slice(
-            el::unit::ByteRange{el::unit::ByteIndex{1U}, el::unit::ByteLength::fromSizeT(valueText.size())});
+            el::unit::ByteRange{el::unit::ByteIndex{1U}, el::unit::ByteCount::fromSizeT(valueText.size())});
         auto environment = el::system::EnvironmentVariables{};
         const auto canonicalName = el::text::String{nameText};
         const auto guard = VariableGuard{environment, canonicalName};

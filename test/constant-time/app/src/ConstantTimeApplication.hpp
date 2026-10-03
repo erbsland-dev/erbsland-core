@@ -5,19 +5,26 @@
 #include "Registry.hpp"
 #include "Runner.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ExitCode.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/String.hpp>
 
 #include <atomic>
 
 namespace app::constant_time {
 
+using namespace el::text::literals;
+
 /// On-demand constant-time leakage assessment application.
 /// @notest{Command-line integration validated by explicit smoke runs.}
 class ConstantTimeApplication final : public el::Application {
+    constexpr static auto cAllOption = "all"_el;
+    constexpr static auto cMaxSamplesOption = "max-samples"_el;
+    constexpr static auto cSeedOption = "seed"_el;
+    constexpr static auto cTestOption = "test"_el;
+
 public:
     using el::Application::Application;
 
@@ -36,4 +43,5 @@ private:
     [[nodiscard]] auto execute() -> el::ExitCode;
     std::atomic<bool> _interrupted{}; ///< Cooperative interrupt flag.
 };
+
 }

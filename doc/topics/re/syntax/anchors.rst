@@ -13,8 +13,8 @@ they check where something is allowed to match, but they never consume input the
 Anchors are essential when you want to control *where* a pattern may appear, for example at the
 start of the input, at line boundaries, or between word and non-word characters.
 
-:expression:`\\A`
-=================
+Start of Input: :expression:`\\A`
+=================================
 
 Matches only at the **start of the input**.
 
@@ -24,8 +24,8 @@ when multiline mode is enabled.
 
 Use this anchor when you need a strict guarantee that matching begins at the very start.
 
-:expression:`\\b`
-=================
+Word Boundary: :expression:`\\b`
+================================
 
 Matches a **word boundary**, that is, the position between a word character and a non-word character.
 
@@ -37,8 +37,8 @@ character.
 This anchor is commonly used to ensure that identifiers, keywords, or tokens are matched as whole
 words rather than as substrings.
 
-:expression:`\\B`
-=================
+Non-Word Boundary: :expression:`\\B`
+====================================
 
 Matches a **non-word boundary**, meaning a position between two word characters or between two
 non-word characters.
@@ -47,8 +47,8 @@ The same ASCII or Unicode rules apply as for :expression:`\\b`. This anchor is e
 logical opposite of :expression:`\\b` and is useful when you explicitly want to avoid word
 boundaries.
 
-:expression:`\\Z`
-=================
+End of Input: :expression:`\\Z`
+===============================
 
 Matches only at the **end of the input**.
 
@@ -57,8 +57,8 @@ input and is equivalent to :expression:`\\z` and :expression:`$` when multiline 
 
 Use this anchor when matching must stop exactly at the input boundary.
 
-:expression:`^`
-===============
+Start of Input or Line: :expression:`^`
+=======================================
 
 Matches the start of the input, or the start of a line when multiline mode is enabled.
 
@@ -69,8 +69,8 @@ start of the input.
 
 In single-line mode, :expression:`^` is equivalent to :expression:`\\A`.
 
-:expression:`$`
-===============
+End of Input or Line: :expression:`$`
+=====================================
 
 Matches the end of the input, or the end of a line when multiline mode is enabled.
 
@@ -84,8 +84,8 @@ In single-line mode, this anchor is equivalent to :expression:`\\Z`.
 Legacy and Compatibility Anchors
 ================================
 
-:expression:`\\z`
------------------
+End of Input (Compatibility): :expression:`\\z`
+-----------------------------------------------
 
 Matches only at the **end of the input** (same behavior as :expression:`\\Z`).
 

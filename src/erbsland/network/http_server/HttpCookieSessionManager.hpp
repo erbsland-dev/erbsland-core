@@ -17,7 +17,7 @@ namespace erbsland::network {
 class HttpCookieSessionManager final : public HttpServerSessionManager {
 public:
     /// Create a manager with validated cookie, lifetime, and capacity options.
-    /// @throws err::ParameterError If an option is invalid.
+    /// @param options The session options. Cookie attributes, lifetime, and capacity must be valid.
     [[nodiscard]] static auto create(HttpCookieSessionManagerOptions options = {}) -> HttpCookieSessionManagerPtr;
 
 public:

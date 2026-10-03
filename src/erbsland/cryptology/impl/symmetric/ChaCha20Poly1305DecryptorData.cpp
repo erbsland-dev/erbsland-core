@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ChaCha20Poly1305DecryptorData.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../CryptologyError.hpp"
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
 using namespace text::literals;
 
-ChaCha20Poly1305DecryptorData::ChaCha20Poly1305DecryptorData(
-    const mem::ConstByteSpan key, const mem::ConstByteSpan nonce) :
+ChaCha20Poly1305DecryptorData::ChaCha20Poly1305DecryptorData(const ConstByteSpan key, const ConstByteSpan nonce) :
     _state{key, nonce} {
 }
 
@@ -24,15 +24,15 @@ auto ChaCha20Poly1305DecryptorData::type() const noexcept -> SymmetricEncryption
     return SymmetricEncryptionType::ChaCha20Poly1305;
 }
 
-void ChaCha20Poly1305DecryptorData::addAuthenticatedData(const mem::ConstByteSpan data) {
+void ChaCha20Poly1305DecryptorData::addAuthenticatedData(const ConstByteSpan data) {
     _state.addAuthenticatedData(data);
 }
 
-auto ChaCha20Poly1305DecryptorData::decrypt(const mem::ConstByteSpan data) -> mem::ByteBlock {
+auto ChaCha20Poly1305DecryptorData::decrypt(const ConstByteSpan data) -> ByteBlock {
     return _state.transform(data, false);
 }
 
-auto ChaCha20Poly1305DecryptorData::finalize(const SymmetricTag &tag) -> mem::ByteBlock {
+auto ChaCha20Poly1305DecryptorData::finalize(const SymmetricTag &tag) -> ByteBlock {
     _actualTag = _state.finalizeTag();
     // RFC 8439, Section 2.8: report no detail beyond a generic authentication failure.
     if (!_actualTag.isEqualConstTime(tag.span())) {
@@ -41,8 +41,8 @@ auto ChaCha20Poly1305DecryptorData::finalize(const SymmetricTag &tag) -> mem::By
     return {};
 }
 
-auto ChaCha20Poly1305DecryptorData::finalize() -> mem::ByteBlock {
-    throw err::LogicError{"ChaCha20-Poly1305 decryption requires an authentication tag."_el};
+auto ChaCha20Poly1305DecryptorData::finalize() -> ByteBlock {
+    throw err::LogicFailure{"ChaCha20-Poly1305 decryption requires an authentication tag."_el};
 }
 
 void ChaCha20Poly1305DecryptorData::secureErase() noexcept {

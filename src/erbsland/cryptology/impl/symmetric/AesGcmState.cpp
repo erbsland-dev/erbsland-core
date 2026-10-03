@@ -13,13 +13,14 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
-AesGcmState::AesGcmState(const mem::ConstByteSpan key, const mem::ConstByteSpan nonce) :
-    _cipher{createAesBlockCipher(key)} {
+AesGcmState::AesGcmState(const ConstByteSpan key, const ConstByteSpan nonce) : _cipher{createAesBlockCipher(key)} {
     // SP 800-38D, Section 7.1: for a 96-bit IV, J0 is IV followed by 31 zero bits and one bit.
     _initialCounter.overwrite(nonce);
-    _initialCounter.setIntegerOrThrow(unit::ByteIndex{12U}, uint32_t{1U}, mem::Endianness::Big);
+    _initialCounter.setIntegerOrThrow(ByteIndex{12U}, uint32_t{1U}, Endianness::Big);
     _counter = _initialCounter;
 
     // SP 800-38D, Section 5.3: H is the AES encryption of the all-zero block.
@@ -32,7 +33,7 @@ AesGcmState::~AesGcmState() noexcept {
     secureErase();
 }
 
-void AesGcmState::addAuthenticatedData(const mem::ConstByteSpan data) {
+void AesGcmState::addAuthenticatedData(const ConstByteSpan data) {
     if (data.size() > maximumAuthenticatedDataLength - _authenticatedDataLength) {
         throw CryptologyError{"AES-GCM authenticated data exceeds the per-message limit."_el};
     }
@@ -40,19 +41,19 @@ void AesGcmState::addAuthenticatedData(const mem::ConstByteSpan data) {
     _authenticatedDataLength += static_cast<uint64_t>(data.size());
 }
 
-auto AesGcmState::transform(const mem::ConstByteSpan data, const bool encrypting) -> mem::ByteBlock {
+auto AesGcmState::transform(const ConstByteSpan data, const bool encrypting) -> ByteBlock {
     if (data.size() > maximumPayloadLength - _payloadLength) {
         throw CryptologyError{"AES-GCM payload exceeds the per-message limit."_el};
     }
 
     // SP 800-38D, Sections 6.5 and 7: GCTR XORs input with successive encrypted inc32 counter blocks.
-    auto result = mem::ByteBlockEditor{unit::ByteLength::fromSizeT(data.size())};
+    auto result = ByteBlockEditor{ByteCount::fromSizeT(data.size())};
     for (auto index = std::size_t{}; index < data.size(); ++index) {
-        if (_keyStreamOffset == 16U) {
+        if (_keyStreamOffset == ByteIndex{16U}) {
             generateKeyStreamBlock();
         }
-        result.set(unit::ByteIndex{index}, data[index] ^ _keyStream.get(unit::ByteIndex{_keyStreamOffset}));
-        ++_keyStreamOffset;
+        result.set(ByteIndex{index, ByteIndex::Unchecked{}}, data[index] ^ _keyStream.get(_keyStreamOffset));
+        _keyStreamOffset.uncheckedIncrement();
     }
 
     // SP 800-38D, Sections 7.1 and 7.2: GHASH always authenticates ciphertext, never plaintext.
@@ -82,20 +83,20 @@ void AesGcmState::secureErase() noexcept {
     _initialCounter.secureErase();
     _counter.secureErase();
     _keyStream.secureErase();
-    _keyStreamOffset = 16U;
+    _keyStreamOffset = ByteIndex{16U};
     _authenticatedDataLength = 0U;
     _payloadLength = 0U;
 }
 
 void AesGcmState::incrementCounter() noexcept {
-    const auto value = _counter.getInteger<uint32_t>(unit::ByteIndex{12U}, mem::Endianness::Big);
-    _counter.setIntegerOrThrow(unit::ByteIndex{12U}, value + 1U, mem::Endianness::Big);
+    const auto value = _counter.getInteger<uint32_t>(ByteIndex{12U}, Endianness::Big);
+    _counter.setIntegerOrThrow(ByteIndex{12U}, value + 1U, Endianness::Big);
 }
 
 void AesGcmState::generateKeyStreamBlock() noexcept {
     incrementCounter();
     _keyStream = _cipher->encrypt(_counter);
-    _keyStreamOffset = 0U;
+    _keyStreamOffset = ByteIndex{0U};
 }
 
 }

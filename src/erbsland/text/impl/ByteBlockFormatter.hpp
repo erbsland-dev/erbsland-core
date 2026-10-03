@@ -9,8 +9,8 @@
 #include "../String.hpp"
 
 #include "../../mem/ByteBlock.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 
 namespace erbsland::text::impl {
 
@@ -24,13 +24,13 @@ public:
 public:
     /// Render the configured byte block.
     /// @return The number of code points appended to the sink.
-    auto format() -> unit::CpLength;
+    auto format() -> unit::CpCount;
 
 private:
     /// Get the effective truncation mode for the configured format.
     [[nodiscard]] auto effectiveTruncateMode() const noexcept -> TruncateMode;
     /// Append a formatted range of source bytes.
-    void appendByteRange(unit::ByteIndex begin, unit::ByteIndex end, unit::ByteLength itemCount);
+    void appendByteRange(unit::ByteIndex begin, unit::ByteIndex end, unit::ByteCount itemCount);
     /// Append one text-formatted byte item.
     void appendTextItem(const String &text, unit::ByteIndex sourceIndex, bool lastItem);
     /// Append formatted text to the sink.
@@ -46,11 +46,11 @@ private:
     const ByteFormat &_format;
     IntegerFormat _byteFormat;
     IntegerFormat _offsetFormat;
-    unit::ByteLength _currentColumn;
-    unit::ByteLength _currentGroupByte;
+    unit::ByteCount _currentColumn;
+    unit::ByteCount _currentGroupByte;
     unit::ItemCount _currentLine;
     unit::ByteIndex _itemIndex;
-    unit::CpLength _appendedLength;
+    unit::CpCount _appendedLength;
 };
 
 /// Emit a formatted byte block as decoded characters.
@@ -59,6 +59,6 @@ private:
 /// @param format The byte format to apply.
 /// @return The number of code points appended to the sink.
 /// @tested{ByteFormatTest AnyStringBuilderStreamTest}
-auto formatByteBlock(StringAppendTools &sink, const mem::ByteBlock &bytes, const ByteFormat &format) -> unit::CpLength;
+auto formatByteBlock(StringAppendTools &sink, const mem::ByteBlock &bytes, const ByteFormat &format) -> unit::CpCount;
 
 }

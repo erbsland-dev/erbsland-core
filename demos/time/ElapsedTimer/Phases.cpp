@@ -3,7 +3,9 @@
 
 #include "ElapsedTimerDemos.hpp"
 
-#include <erbsland/time/ElapsedTimer.hpp>
+#include <erbsland/ElapsedTimer.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <array>
 

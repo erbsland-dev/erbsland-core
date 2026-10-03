@@ -1,6 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TextInputStream.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -25,7 +32,7 @@ void chooseStreamFamily() {
 /// Accept a byte input stream when a component must work with the exact file representation.
 /// This function can read any byte source; it neither knows nor cares that the caller opened a file.
 void printFileAsHex(const el::ByteInputStreamPtr &input) {
-    const auto result = input->readAll(el::ByteLength{1024U});
+    const auto result = input->readAll(el::ByteCount{1024U});
     if (result.hasData()) {
         // The UTF-8 encoding of “Ö” is visible as the final two bytes.
         el::io::printLine("Bytes: "_el, el::ByteFormat::separated(), result.data());
@@ -35,7 +42,7 @@ void printFileAsHex(const el::ByteInputStreamPtr &input) {
 /// Accept a text input stream when a component needs decoded Unicode characters.
 /// The same function also works with temporary, standard, redirected, or custom text input streams.
 void printFileAsText(const el::TextInputStreamPtr &input) {
-    const auto result = input->readAll(el::CpLength{1024U});
+    const auto result = input->readAll(el::CpCount{1024U});
     if (result.hasData()) {
         // The stream decoder turns the file encoding into an Erbsland Core string.
         el::io::printLine("Text: "_el, result.data());

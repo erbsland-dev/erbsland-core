@@ -8,7 +8,8 @@
 
 #include "../StreamError.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
+#include "../../err/RuntimeError.hpp"
 #include "../../text/impl/UnsafeDecodeBufferAccess.hpp"
 #include "../../text/Literals.hpp"
 
@@ -17,7 +18,9 @@
 
 namespace erbsland::stream::impl {
 
+using namespace err;
 using namespace text;
+using text::impl::UnsafeDecodeBufferAccess;
 using namespace text::literals;
 using namespace unit;
 
@@ -116,9 +119,9 @@ auto EncodedTextInputStream::readChar() -> StreamReadResult<Char> {
     return {StreamReadStatus::Finished, {}};
 }
 
-auto EncodedTextInputStream::read(const CpLength maximum) -> StreamReadResult<String> {
+auto EncodedTextInputStream::read(const CpCount maximum) -> StreamReadResult<String> {
     if (maximum.isInfinite()) {
-        throw err::ParameterError{"The maximum text read length must be finite."_el, "maximum"_el};
+        throw ParameterFailure{"The maximum text read length must be finite."_el, "maximum"_el};
     }
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -127,9 +130,9 @@ auto EncodedTextInputStream::read(const CpLength maximum) -> StreamReadResult<St
     return takeResult(prepareChunk(maximum, deadlineFromNow()), maximum, false);
 }
 
-auto EncodedTextInputStream::readLine(const CpLength maximum) -> StreamReadResult<String> {
+auto EncodedTextInputStream::readLine(const CpCount maximum) -> StreamReadResult<String> {
     if (maximum.isInfinite()) {
-        throw err::ParameterError{"The maximum line length must be finite."_el, "maximum"_el};
+        throw ParameterFailure{"The maximum line length must be finite."_el, "maximum"_el};
     }
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -138,9 +141,9 @@ auto EncodedTextInputStream::readLine(const CpLength maximum) -> StreamReadResul
     return takeResult(prepareLine(maximum, deadlineFromNow()), maximum, true);
 }
 
-auto EncodedTextInputStream::readAll(const CpLength maximum) -> StreamReadResult<String> {
+auto EncodedTextInputStream::readAll(const CpCount maximum) -> StreamReadResult<String> {
     if (maximum.isInfinite()) {
-        throw err::ParameterError{"The maximum aggregate text length must be finite."_el, "maximum"_el};
+        throw ParameterFailure{"The maximum aggregate text length must be finite."_el, "maximum"_el};
     }
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -245,7 +248,7 @@ void EncodedTextInputStream::setSensitive(const bool sensitive) noexcept {
         _retainedText->setSensitive(sensitive);
         _decoder.emplace(std::move(decoder));
         _byteInputFinished = false;
-    } catch (...) {
+    } catch (const RuntimeError &) {
         _byteInputStream->abort();
     }
 }
@@ -254,7 +257,7 @@ auto EncodedTextInputStream::deadlineFromNow() const -> ReadDeadline {
     return time::TimePoint::inFuture(inputSettings().timeout());
 }
 
-auto EncodedTextInputStream::prepareChunk(const CpLength maximum, const ReadDeadline deadline) -> StreamReadStatus {
+auto EncodedTextInputStream::prepareChunk(const CpCount maximum, const ReadDeadline deadline) -> StreamReadStatus {
     if (maximum.isZero()) {
         return _byteInputFinished && decoderIsEmpty() && _retainedText->isEmpty() ? StreamReadStatus::Finished
                                                                                   : StreamReadStatus::Data;
@@ -274,7 +277,7 @@ auto EncodedTextInputStream::prepareChunk(const CpLength maximum, const ReadDead
     return StreamReadStatus::Finished;
 }
 
-auto EncodedTextInputStream::prepareLine(const CpLength maximum, const ReadDeadline deadline) -> StreamReadStatus {
+auto EncodedTextInputStream::prepareLine(const CpCount maximum, const ReadDeadline deadline) -> StreamReadStatus {
     if (maximum.isZero()) {
         return StreamReadStatus::Data;
     }
@@ -294,7 +297,7 @@ auto EncodedTextInputStream::prepareLine(const CpLength maximum, const ReadDeadl
     return StreamReadStatus::Data;
 }
 
-auto EncodedTextInputStream::prepareAll(const CpLength maximum, const ReadDeadline deadline) -> StreamReadStatus {
+auto EncodedTextInputStream::prepareAll(const CpCount maximum, const ReadDeadline deadline) -> StreamReadStatus {
     if (maximum.isZero()) {
         return StreamReadStatus::Data;
     }
@@ -314,12 +317,11 @@ auto EncodedTextInputStream::prepareAll(const CpLength maximum, const ReadDeadli
     return StreamReadStatus::Data;
 }
 
-auto EncodedTextInputStream::appendDecoded(const CpLength maximum, const bool stopAtLineEnd) -> bool {
+auto EncodedTextInputStream::appendDecoded(const CpCount maximum, const bool stopAtLineEnd) -> bool {
     if (maximum.isZero()) {
         return false;
     }
-    auto [text, textLength] =
-        text::impl::UnsafeDecodeBufferAccess{*_decoder}.takeStringWithLength(maximum, stopAtLineEnd);
+    auto [text, textLength] = UnsafeDecodeBufferAccess{*_decoder}.takeStringWithLength(maximum, stopAtLineEnd);
     if (text.isEmpty()) {
         return false;
     }
@@ -328,7 +330,7 @@ auto EncodedTextInputStream::appendDecoded(const CpLength maximum, const bool st
 }
 
 auto EncodedTextInputStream::fillDecodeBuffer(const ReadDeadline deadline) -> StreamReadStatus {
-    auto access = text::impl::UnsafeDecodeBufferAccess{*_decoder};
+    auto access = UnsafeDecodeBufferAccess{*_decoder};
     const auto destination = access.writableSpan();
     if (destination.empty()) {
         throwError(
@@ -353,7 +355,7 @@ auto EncodedTextInputStream::decoderIsEmpty() const noexcept -> bool {
 }
 
 auto EncodedTextInputStream::decoderHasCharacter() const noexcept -> bool {
-    return const_cast<StringDecodeBuffer &>(*_decoder).decodableCharacters(CpLength::one()) > CpLength{};
+    return const_cast<StringDecodeBuffer &>(*_decoder).decodableCharacters(CpCount::one()) > CpCount{};
 }
 
 void EncodedTextInputStream::finishDecoder() {
@@ -364,13 +366,12 @@ void EncodedTextInputStream::resetDecoder(const std::optional<StringEncoding> co
     _decoder.emplace(streamBufferSizes(inputSettings().buffering()).decoder, _encoding, _bomMode, _mode);
     _decoder->setSensitive(_retainedText->isSensitive());
     if (continuationEncoding) {
-        text::impl::UnsafeDecodeBufferAccess{*_decoder}.resetForContinuation(*continuationEncoding);
+        UnsafeDecodeBufferAccess{*_decoder}.resetForContinuation(*continuationEncoding);
     }
 }
 
 auto EncodedTextInputStream::positionLocked() const -> ByteIndex {
-    const auto consumed =
-        text::impl::UnsafeDecodeBufferAccess{const_cast<StringDecodeBuffer &>(*_decoder)}.consumedByteLength();
+    const auto consumed = UnsafeDecodeBufferAccess{const_cast<StringDecodeBuffer &>(*_decoder)}.consumedByteLength();
     return _positionBase.advancedOrThrow(consumed);
 }
 
@@ -378,7 +379,7 @@ auto EncodedTextInputStream::canContinueAtNonzeroPosition() const noexcept -> bo
     if (_encoding != StringEncoding::Utf16 && _encoding != StringEncoding::Utf32) {
         return true;
     }
-    return text::impl::UnsafeDecodeBufferAccess{const_cast<StringDecodeBuffer &>(*_decoder)}.isBomResolved();
+    return UnsafeDecodeBufferAccess{const_cast<StringDecodeBuffer &>(*_decoder)}.isBomResolved();
 }
 
 void EncodedTextInputStream::resetAfterPositioning(const ByteIndex position, const StringEncoding effectiveEncoding) {
@@ -388,7 +389,7 @@ void EncodedTextInputStream::resetAfterPositioning(const ByteIndex position, con
     resetDecoder(position.isZero() ? std::nullopt : std::optional<StringEncoding>{effectiveEncoding});
 }
 
-auto EncodedTextInputStream::takeResult(const StreamReadStatus status, const CpLength maximum, const bool line)
+auto EncodedTextInputStream::takeResult(const StreamReadStatus status, const CpCount maximum, const bool line)
     -> StreamReadResult<String> {
     if (status != StreamReadStatus::Data) {
         return {status, {}};

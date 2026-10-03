@@ -8,6 +8,12 @@
 
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/Signer.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TempDirectory.hpp>
 
 namespace demo {
 

@@ -15,15 +15,15 @@ severity, and stream name on every entry.
 This page shows how to describe both styles with :cpp:class:`LogLineFormat <erbsland::log::LogLineFormat>`, and how to
 keep long names and messages readable without confusing presentation limits with the manager's memory limits.
 
-Place the Line Format in the Logging Configuration
-==================================================
+Setting the Default Log Line Format
+===================================
 
 A line format is a small value object that belongs to a complete
 :cpp:class:`LogConfiguration <erbsland::log::LogConfiguration>`.
 Construct it locally, change the settings that matter to your application, and pass it to
 :cpp:func:`LogConfiguration::setLineFormat <erbsland::log::LogConfiguration::setLineFormat>`.
-When the manager receives the finished configuration, every writer route in that snapshot uses the same format.
-This gives console and file output a common vocabulary even when filters send them different entries.
+This selects the default for routes without a custom format.
+Writers use this format unless you give a destination its own layout, as described later on this page.
 
 The following demo uses a standalone manager so the complete sequence is visible.
 The console writer is not part of line formatting; it is added because a manager needs a destination before the result
@@ -34,14 +34,14 @@ application-owned manager.
 .. erbsland-demo::
     :source: log/LoggingTopics/LineFormats.cpp
     :exec: log/logging_topics --demo LineFormats
-    :source-sha256: b7d7cf78216eee5664a6d17c0403811bf7fbbac6a4bc2a2fed10bd4fe0a83cf9
+    :sha256: dfdd477ef757e0bb8cac945a50575886ed4e22a07ce5cc1d3e3b55fe78563229
 
 .. code-block:: cpp
 
     /// Install one line format as part of a complete logging configuration.
     ///
     /// Create `LogLineFormat` as a value, customize it, and move it into `LogConfiguration`. The manager takes another
-    /// complete configuration value and applies that same line format to every writer route in the snapshot.
+    /// complete configuration value and uses this default for routes without their own line-format override.
     void lineFormats() {
         auto lineFormat = el::LogLineFormat{};
         lineFormat.setPattern("{level} [{name}] {message}"_el);
@@ -57,15 +57,18 @@ application-owned manager.
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mguild/routes␛[97m] The route catalog is ready.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mINF [␛[95;49mguild/routes␛[97;49m] The route catalog is ready.␛[0m
 
 .. erbsland-demo-end::
 
-Arrange Fields With a Pattern
-=============================
+
+Line Patterns and Field Placeholders
+====================================
 
 The pattern determines which pieces of an entry appear and how they are arranged.
 A new :cpp:class:`LogLineFormat <erbsland::log::LogLineFormat>` starts with ``{time} {level} - {message}``.
@@ -90,7 +93,7 @@ The pattern is not a general-purpose formatting language; it deliberately has fo
 Literal text may surround the placeholders, and a placeholder may be omitted or repeated.
 Write ``{{`` or ``}}`` when the result needs a literal opening or closing brace.
 The setter validates the pattern immediately; an empty pattern, an unknown placeholder, or an unmatched brace raises
-:cpp:class:`ParameterError <erbsland::err::ParameterError>` while the configuration is being assembled.
+:cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` while the configuration is being assembled.
 
 The demo compares three patterns: message-only output for a compact command, level and stream context for a larger
 application, and a labelled format containing literal braces.
@@ -98,7 +101,7 @@ application, and a labelled format containing literal braces.
 .. erbsland-demo::
     :source: log/LoggingTopics/LinePatterns.cpp
     :exec: log/logging_topics --demo LinePatterns
-    :source-sha256: 720162900d04786cfcb30f1d09729d09e85b9b0ae119a4b2e845384cdcf261b6
+    :sha256: f91e060b3b63a1aee39630e456ad12568d27138e8176b4e6e26b252809192b70
 
 .. code-block:: cpp
 
@@ -126,20 +129,22 @@ application, and a labelled format containing literal braces.
         showPattern("Literal braces"_el, "{{guild}} {level}: {message}"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Message only:
-    ␛[97mSelected the ridge route.
-    ␛[39mLevel and name:
-    ␛[97mINF [␛[95mguild/routes␛[97m] Selected the ridge route.
-    ␛[39mLiteral braces:
-    ␛[97m{guild} INF: Selected the ridge route.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMessage only:
+        ␛[97;49mSelected the ridge route.
+        ␛[39;49mLevel and name:
+        ␛[97;49mINF [␛[95;49mguild/routes␛[97;49m] Selected the ridge route.
+        ␛[39;49mLiteral braces:
+        ␛[97;49m{guild} INF: Selected the ridge route.␛[0m
 
 .. erbsland-demo-end::
 
-Choose UTC or Local Timestamps
-==============================
+UTC and Local Timestamp Formats
+===============================
 
 Log entries retain their timestamp in UTC, which makes entries from different machines and time zones straightforward to
 compare.
@@ -156,7 +161,7 @@ On a machine configured for UTC, both choices naturally display the same clock t
 .. erbsland-demo::
     :source: log/LoggingTopics/LineTimestampZones.cpp
     :exec: log/logging_topics --demo LineTimestampZones
-    :source-sha256: 497baf08b2bfdbb93cab66efc877fffe15a626a5d42a9b1cbbcec972758d9f41
+    :sha256: 4f3e9b2d01cf47e54a539543845848a2cb2ebff7eb43b7a125f8055128c205b5
 
 .. code-block:: cpp
 
@@ -183,18 +188,20 @@ On a machine configured for UTC, both choices naturally display the same clock t
         showZone("Local rendering"_el, el::LogTimestampZone::Local);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    UTC rendering:
-    ␛[96m2026-09-04 18:40:07Z␛[97m - Expedition clock synchronized.
-    ␛[39mLocal rendering:
-    ␛[96m2026-09-04 20:40:07+02:00␛[97m - Expedition clock synchronized.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUTC rendering:
+        ␛[96;49m2026-11-06 10:32:15Z␛[97;49m - Expedition clock synchronized.
+        ␛[39;49mLocal rendering:
+        ␛[96;49m2026-11-06 11:32:15+01:00␛[97;49m - Expedition clock synchronized.␛[0m
 
 .. erbsland-demo-end::
 
-Choose Compact or Descriptive Level Names
-=========================================
+Severity Name Formats
+=====================
 
 A severity can be terse in a dense terminal view or deliberately conspicuous in a report.
 :cpp:func:`LogLineFormat::setLevelFormat <erbsland::log::LogLineFormat::setLevelFormat>` controls the spelling inserted
@@ -209,7 +216,7 @@ This makes it safe to choose a format for readability without changing which ent
 .. erbsland-demo::
     :source: log/LoggingTopics/LineLevelFormats.cpp
     :exec: log/logging_topics --demo LineLevelFormats
-    :source-sha256: 10d1ded59ffb524925da45d184305da48b45e18b2f150e9490281468d07af250
+    :sha256: 1f2f932acce28d40de8a8a9f1e10470512ad4cfa012807c2d3fc4544b7b8b1ba
 
 .. code-block:: cpp
 
@@ -238,22 +245,24 @@ This makes it safe to choose a format for readability without changing which ent
         showLevel("Full uppercase name"_el, el::LogLevelFormat::FullUpper);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Three uppercase letters:
-    ␛[93mWRN: One route marker needs repainting.
-    ␛[39mThree lowercase letters:
-    ␛[93mwrn: One route marker needs repainting.
-    ␛[39mFull lowercase name:
-    ␛[93mwarning: One route marker needs repainting.
-    ␛[39mFull uppercase name:
-    ␛[93mWARNING: One route marker needs repainting.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mThree uppercase letters:
+        ␛[93;49mWRN: One route marker needs repainting.
+        ␛[39;49mThree lowercase letters:
+        ␛[93;49mwrn: One route marker needs repainting.
+        ␛[39;49mFull lowercase name:
+        ␛[93;49mwarning: One route marker needs repainting.
+        ␛[39;49mFull uppercase name:
+        ␛[93;49mWARNING: One route marker needs repainting.␛[0m
 
 .. erbsland-demo-end::
 
-Show the Useful Part of a Stream Name
-=====================================
+Stream Name Formats
+===================
 
 Hierarchical stream paths are most valuable when they reveal where an entry originated, but the most useful portion
 depends on the surrounding output.
@@ -273,7 +282,7 @@ compare.
 .. erbsland-demo::
     :source: log/LoggingTopics/LineNameFormats.cpp
     :exec: log/logging_topics --demo LineNameFormats
-    :source-sha256: e13ba2f43b9c9747ef7f8f86a1fb9340989dc71b6252d4145bee9a292e9e89f2
+    :sha256: 919bacfbe2b2ab0d677bfe087597f77cac06697a670f9c3c14603025c53e9ac7
 
 .. code-block:: cpp
 
@@ -302,21 +311,23 @@ compare.
         showName("Left-truncated path"_el, el::LogNameFormat::LeftTruncated);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Full path:
-    ␛[95mguild/exploration/finland/lapland/northern-lights␛[97m: Survey opened.
-    ␛[39mLeaf segment:
-    ␛[95mnorthern-lights␛[97m: Survey opened.
-    ␛[39mFirst and final segments:
-    ␛[95mguild/…/northern-lights␛[97m: Survey opened.
-    ␛[39mLeft-truncated path:
-    ␛[95m…oration/finland/lapland/northern-lights␛[97m: Survey opened.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFull path:
+        ␛[95;49mguild/exploration/finland/lapland/northern-lights␛[97;49m: Survey opened.
+        ␛[39;49mLeaf segment:
+        ␛[95;49mnorthern-lights␛[97;49m: Survey opened.
+        ␛[39;49mFirst and final segments:
+        ␛[95;49mguild/…/northern-lights␛[97;49m: Survey opened.
+        ␛[39;49mLeft-truncated path:
+        ␛[95;49m…oration/finland/lapland/northern-lights␛[97;49m: Survey opened.␛[0m
 
 .. erbsland-demo-end::
 
-Bound Left-Truncated Stream Names
+Left-Truncated Stream Name Limits
 =================================
 
 The ``LeftTruncated`` representation becomes especially useful when stream hierarchies can grow with plugins, jobs, or
@@ -334,7 +345,7 @@ A limit of zero disables shortening and therefore shows the complete path even i
 .. erbsland-demo::
     :source: log/LoggingTopics/LineNameLimits.cpp
     :exec: log/logging_topics --demo LineNameLimits
-    :source-sha256: 71f578fdcf592f787f30e67342bff9152296c31ffa1d94c67438f0f6786a49aa
+    :sha256: bc18f0aa429e7c707c1cf527754a7743ee0a8ca0c49efef501e1c076671f1ed5
 
 .. code-block:: cpp
 
@@ -343,7 +354,7 @@ A limit of zero disables shortening and therefore shows the complete path even i
     /// `setNameLimit()` is consulted only for `LogNameFormat::LeftTruncated`. Keeping the right side preserves the most
     /// specific path segments; a zero limit disables name shortening even when that format is selected.
     void lineNameLimits() {
-        const auto showLimit = [](const el::String &label, const el::CpLength limit) -> void {
+        const auto showLimit = [](const el::String &label, const el::CpCount limit) -> void {
             el::io::printLine(label, ":"_el);
             auto lineFormat = el::LogLineFormat{};
             lineFormat.setPattern("{name}: {message}"_el)
@@ -359,25 +370,27 @@ A limit of zero disables shortening and therefore shows the complete path even i
             manager->shutdown();
         };
 
-        showLimit("32 characters"_el, el::CpLength{32U});
-        showLimit("18 characters"_el, el::CpLength{18U});
-        showLimit("Unlimited"_el, el::CpLength::zero());
+        showLimit("32 characters"_el, el::CpCount{32U});
+        showLimit("18 characters"_el, el::CpCount{18U});
+        showLimit("Unlimited"_el, el::CpCount::zero());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    32 characters:
-    ␛[95m…finland/lapland/northern-lights␛[97m: Survey opened.
-    ␛[39m18 characters:
-    ␛[95m…d/northern-lights␛[97m: Survey opened.
-    ␛[39mUnlimited:
-    ␛[95mguild/exploration/finland/lapland/northern-lights␛[97m: Survey opened.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m32 characters:
+        ␛[95;49m…finland/lapland/northern-lights␛[97;49m: Survey opened.
+        ␛[39;49m18 characters:
+        ␛[95;49m…d/northern-lights␛[97;49m: Survey opened.
+        ␛[39;49mUnlimited:
+        ␛[95;49mguild/exploration/finland/lapland/northern-lights␛[97;49m: Survey opened.␛[0m
 
 .. erbsland-demo-end::
 
-Keep Multiline Messages or Only Their First Line
-================================================
+Multiline Messages and First-Line Truncation
+============================================
 
 Multiline messages are useful for structured explanations and diagnostics, yet they can be awkward in destinations where
 one physical line is expected to represent one event.
@@ -392,7 +405,7 @@ This mode does not consult the numeric message limit: its boundary is the first 
 .. erbsland-demo::
     :source: log/LoggingTopics/LineFirstLineTruncation.cpp
     :exec: log/logging_topics --demo LineFirstLineTruncation
-    :source-sha256: 56492a81d4af60095635a1b2633f0f313ef8490ec4bfe0560f92982570c80156
+    :sha256: b64bc882606877d434603879c5aa3eabffda26e419a5ebcfcbbe0bd86e1b854c
 
 .. code-block:: cpp
 
@@ -419,19 +432,21 @@ This mode does not consult the numeric message limit: its boundary is the first 
         showMessage("First line only"_el, el::LogMessageTruncation::FirstLine);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Complete message:
-    ␛[97mINF: Cloud cover is increasing.
-    The ridge team will wait below the summit.
-    ␛[39mFirst line only:
-    ␛[97mINF: Cloud cover is increasing.…␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mComplete message:
+        ␛[97;49mINF: Cloud cover is increasing.
+        The ridge team will wait below the summit.
+        ␛[39;49mFirst line only:
+        ␛[97;49mINF: Cloud cover is increasing.…␛[0m
 
 .. erbsland-demo-end::
 
-Limit the Message by Character Count
-====================================
+Message Character Limits
+========================
 
 When the message itself must fit into a predictable space, select ``LogMessageTruncation::CharacterCount`` and set the
 budget with :cpp:func:`LogLineFormat::setMessageLimit <erbsland::log::LogLineFormat::setMessageLimit>`.
@@ -445,7 +460,7 @@ This makes it convenient to expose ``0`` as an application setting meaning “un
 .. erbsland-demo::
     :source: log/LoggingTopics/LineMessageLimits.cpp
     :exec: log/logging_topics --demo LineMessageLimits
-    :source-sha256: 2482d52b1f986eb75075e733829f98b06a605878014433564d986892b2a20adc
+    :sha256: 9bd09be7f0fde19e2276c25e1913c6c3fdf8c08ecaf3fc13b1bc48c66b3bbebe
 
 .. code-block:: cpp
 
@@ -454,7 +469,7 @@ This makes it convenient to expose ``0`` as an application setting meaning “un
     /// Select `CharacterCount` with `setMessageTruncation()`, then pass the code-point budget to `setMessageLimit()`. A
     /// zero message limit disables this shortening rule.
     void lineMessageLimits() {
-        const auto showLimit = [](const el::String &label, const el::CpLength limit) -> void {
+        const auto showLimit = [](const el::String &label, const el::CpCount limit) -> void {
             el::io::printLine(label, ":"_el);
             auto lineFormat = el::LogLineFormat{};
             lineFormat.setPattern("{level} [{name}] {message}"_el)
@@ -471,25 +486,27 @@ This makes it convenient to expose ``0`` as an application setting meaning “un
             manager->shutdown();
         };
 
-        showLimit("48 message characters"_el, el::CpLength{48U});
-        showLimit("24 message characters"_el, el::CpLength{24U});
-        showLimit("Unlimited message"_el, el::CpLength::zero());
+        showLimit("48 message characters"_el, el::CpCount{48U});
+        showLimit("24 message characters"_el, el::CpCount{24U});
+        showLimit("Unlimited message"_el, el::CpCount::zero());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    48 message characters:
-    ␛[93mWRN [␛[95mguild/weather␛[93m] A snow front will reach the northern platform b…
-    ␛[39m24 message characters:
-    ␛[93mWRN [␛[95mguild/weather␛[93m] A snow front will reach…
-    ␛[39mUnlimited message:
-    ␛[93mWRN [␛[95mguild/weather␛[93m] A snow front will reach the northern platform before dusk.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m48 message characters:
+        ␛[93;49mWRN [␛[95;49mguild/weather␛[93;49m] A snow front will reach the northern platform b…
+        ␛[39;49m24 message characters:
+        ␛[93;49mWRN [␛[95;49mguild/weather␛[93;49m] A snow front will reach…
+        ␛[39;49mUnlimited message:
+        ␛[93;49mWRN [␛[95;49mguild/weather␛[93;49m] A snow front will reach the northern platform before dusk.␛[0m
 
 .. erbsland-demo-end::
 
-Limit the Complete Rendered Line
-================================
+Total Rendered Line Limits
+==========================
 
 Sometimes the destination, rather than the message, imposes the useful boundary.
 ``LogMessageTruncation::TotalLineLength`` treats
@@ -507,7 +524,7 @@ As with character-count mode, a zero limit disables the rule.
 .. erbsland-demo::
     :source: log/LoggingTopics/LineTotalLimits.cpp
     :exec: log/logging_topics --demo LineTotalLimits
-    :source-sha256: 91393a5fec4dee7e40f2325db3e7423dda1d5819385768294a5e9a92a385dda0
+    :sha256: 75eb38068337b60348cbeff7f28f597cc133ec0a4681191d36750564a9fbc25a
 
 .. code-block:: cpp
 
@@ -521,7 +538,7 @@ As with character-count mode, a zero limit disables the rule.
             auto lineFormat = el::LogLineFormat{};
             lineFormat.setPattern(std::move(pattern))
                 .setMessageTruncation(el::LogMessageTruncation::TotalLineLength)
-                .setMessageLimit(el::CpLength{56U});
+                .setMessageLimit(el::CpCount{56U});
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
                 .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
@@ -537,18 +554,20 @@ As with character-count mode, a zero limit disables the rule.
         showPattern("Level-and-name pattern"_el, "{level} [{name}] {message}"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Message-only pattern:
-    ␛[93mA snow front will reach the northern platform before du…
-    ␛[39mLevel-and-name pattern:
-    ␛[93mWRN [␛[95mguild/weather␛[93m] A snow front will reach the norther…␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMessage-only pattern:
+        ␛[93;49mA snow front will reach the northern platform before du…
+        ␛[39;49mLevel-and-name pattern:
+        ␛[93;49mWRN [␛[95;49mguild/weather␛[93;49m] A snow front will reach the norther…␛[0m
 
 .. erbsland-demo-end::
 
-Choose a Clear Truncation Mark
-==============================
+Truncation Marks
+================
 
 A shortened value should look shortened.
 The default mark is the single ellipsis character ``…``, a compact choice that works well in ordinary console and file
@@ -564,7 +583,7 @@ An empty marker saves that space, but it also removes the reader's visible clue 
 .. erbsland-demo::
     :source: log/LoggingTopics/LineTruncationMarks.cpp
     :exec: log/logging_topics --demo LineTruncationMarks
-    :source-sha256: 427ae1660db7207b4eaa2944cb08ebfba010d568e5951ee6f474a5a18724ca58
+    :sha256: 3e142dd1a67b9e76022748b36762f8564fc4f89bfbf78efacefdbacb3b28fe0a
 
 .. code-block:: cpp
 
@@ -578,7 +597,7 @@ An empty marker saves that space, but it also removes the reader's visible clue 
             auto lineFormat = el::LogLineFormat{};
             lineFormat.setPattern("{message}"_el)
                 .setMessageTruncation(el::LogMessageTruncation::CharacterCount)
-                .setMessageLimit(el::CpLength{36U})
+                .setMessageLimit(el::CpCount{36U})
                 .setTruncationMark(std::move(mark));
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
@@ -595,20 +614,53 @@ An empty marker saves that space, but it also removes the reader's visible clue 
         showMark("No marker"_el, ""_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Ellipsis:
-    ␛[97mThe northern observation platform i…
-    ␛[39mText marker:
-    ␛[97mThe northern observation plat [more]
-    ␛[39mNo marker:
-    ␛[97mThe northern observation platform is␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mEllipsis:
+        ␛[97;49mThe northern observation platform i…
+        ␛[39;49mText marker:
+        ␛[97;49mThe northern observation plat [more]
+        ␛[39;49mNo marker:
+        ␛[97;49mThe northern observation platform is␛[0m
 
 .. erbsland-demo-end::
 
-Keep Producer Byte Limits Separate
-==================================
+Per-Writer Line Formats
+=======================
+
+A terminal and a log file often serve different readers.
+The terminal can show a compact progress message, while a file keeps timestamps and stream names for later
+investigation.
+Each writer route can have its own :cpp:class:`LogLineFormat <erbsland::log::LogLineFormat>`, so the same entry can
+appear differently at each destination.
+
+The first example on this page sets a default format for the configuration.
+To give its console route a message-only layout, replace the console ``addWriter()`` call with this small variation:
+
+.. code-block:: cpp
+
+    auto consoleFormat = el::LogLineFormat{};
+    consoleFormat.setPattern("{message}"_el);
+    configuration.addWriter(
+        el::LogWriter::createForConsole(el::application().terminal()), {}, std::move(consoleFormat));
+
+The second argument, ``{}``, keeps the filter that accepts all levels and paths.
+The third argument supplies the console format.
+Any other writer added without that third argument continues to use the configuration's default format.
+:doc:`elcl_configuration` shows a complete, parser-exercised configuration with different console and file layouts.
+
+A route's custom format supplies all of its presentation settings, including truncation and timestamp choices.
+It does not inherit settings from the configuration default.
+When you want to change only one setting, copy the shared format and adjust that copy before passing it to
+:cpp:func:`LogConfiguration::addWriter <erbsland::log::LogConfiguration::addWriter>`.
+Formatting leaves the original entry intact: shortening a message for the console does not shorten the file writer's
+copy.
+
+Producer Message Limits versus Rendered Line Limits
+===================================================
 
 All limits on :cpp:class:`LogLineFormat <erbsland::log::LogLineFormat>` are presentation choices applied when a writer
 renders an entry.

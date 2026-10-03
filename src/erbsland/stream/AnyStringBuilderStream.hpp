@@ -49,7 +49,7 @@ public: // AnyStringBuilder methods
     /// Get the target string kind.
     [[nodiscard]] auto kind() const noexcept -> text::StringKind;
     /// Get the current decoded code-point length.
-    [[nodiscard]] auto length() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto length() const noexcept -> unit::CpCount;
     /// Test if this builder is empty.
     [[nodiscard]] auto isEmpty() const noexcept -> bool;
     /// Clear all built text while keeping the target kind.

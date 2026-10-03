@@ -5,12 +5,12 @@
 #include "HmacAlgorithm.hpp"
 #include "Sha2.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../mem/ByteSpan.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 #include "../../../unit/ByteRange.hpp"
 
 #include <algorithm>
@@ -63,24 +63,23 @@ using namespace text::literals;
 /// @param password The pseudorandom-function key.
 /// @param salt The public salt.
 /// @param iterations The positive PBKDF2 iteration count.
-/// @param outputLength The requested derived-key length.
+/// @param outputLength The requested derived-key length. Must require at most `2^32 - 1` SHA-256 blocks.
 /// @return The derived bytes in marked storage.
-/// @throws err::ParameterError If the iteration count is zero or the output requires more than 2^32-1 blocks.
 /// @tested{PasswordPrimitiveTest}
 [[nodiscard]] inline auto pbkdf2HmacSha256(
     const ConstByteSpan password, const ConstByteSpan salt, const uint32_t iterations, const std::size_t outputLength)
     -> ByteBlockEditor {
     if (iterations == 0U) {
-        throw err::ParameterError{"PBKDF2 iteration count must be positive."_el, "iterations"_el};
+        throw err::ParameterFailure{"PBKDF2 iteration count must be positive."_el, "iterations"_el};
     }
     const auto blockCount = (outputLength + 31U) / 32U;
     if (blockCount > std::numeric_limits<uint32_t>::max()) {
-        throw err::ParameterError{"PBKDF2 output length is too large."_el, "outputLength"_el};
+        throw err::ParameterFailure{"PBKDF2 output length is too large."_el, "outputLength"_el};
     }
-    auto result = ByteBlockEditor{ByteLength::fromSizeT(outputLength)};
+    auto result = ByteBlockEditor{ByteCount::fromSizeT(outputLength)};
     result.markAsSensitive();
     auto saltAndIndex = ByteBlockEditor::fromSpan(salt);
-    saltAndIndex.resize(ByteLength::fromSizeT(salt.size() + 4U));
+    saltAndIndex.resize(ByteCount::fromSizeT(salt.size() + 4U));
 
     // RFC 8018 section 5.2 numbers output blocks from one and encodes INT(i) as four big-endian bytes.
     for (auto block = uint32_t{1U}; block <= static_cast<uint32_t>(blockCount); ++block) {
@@ -97,7 +96,7 @@ using namespace text::literals;
         // Concatenate T1, T2, ... and truncate only the final block to the requested derived-key length.
         const auto offset = static_cast<std::size_t>(block - 1U) * 32U;
         const auto count = std::min(std::size_t{32U}, outputLength - offset);
-        result.overwrite(ByteRange{ByteIndex::fromSizeT(offset), ByteLength::fromSizeT(count)}, accumulated.span());
+        result.overwrite(ByteRange{ByteIndex::fromSizeT(offset), ByteCount::fromSizeT(count)}, accumulated.span());
     }
     return result;
 }

@@ -28,8 +28,8 @@ decoded character boundary.
 This page shows how to carry such positions from searching into slicing, repeated matching, and range extraction without
 converting coordinates unnecessarily.
 
-Begin with the Shape of the Match
-=================================
+Text Search Operations and Match Types
+======================================
 
 Use a character-set search when the boundary is any one of several characters.
 Use text search when the boundary or marker is a complete string.
@@ -62,8 +62,8 @@ match.
 Check this state with :cpp:func:`isNoIndex() <erbsland::unit::IntegerUnitIndex::isNoIndex>` before slicing or reading
 the character at the result.
 
-Keep Search Results in Native Coordinates
-=========================================
+Native Search Indexes and Character Boundaries
+==============================================
 
 Search functions on UTF-8 strings return :cpp:type:`ByteIndex <erbsland::unit::ByteIndex>`.
 This is deliberate.
@@ -80,8 +80,8 @@ itself.
 Use :cpp:func:`advance() <erbsland::text::U8String::advance>` and
 :cpp:func:`retreat() <erbsland::text::U8String::retreat>` to move by decoded characters.
 
-Search for a Class of Characters
-================================
+Searching with Character Sets
+=============================
 
 :cpp:class:`CharSet <erbsland::text::CharSet>` lets one search operation cover a complete group of characters.
 For example, a delimiter set can contain several punctuation marks, and a padding set can contain all ASCII whitespace.
@@ -93,7 +93,7 @@ This makes it easy to ask for the last delimiter before a known marker.
 .. erbsland-demo::
     :source: text/String/FindingCharacterSets.cpp
     :exec: text/string --demo FindingCharacterSets
-    :source-sha256: eea4b53bf18c7b6fe767d6f493c528d7cd81222248dbe50654f2fc9093aec161
+    :sha256: 56b4a711d1e022d8ebdb4e3e2c89a2910417f58a326663d2db5166a20f09b423
 
 .. code-block:: cpp
 
@@ -131,20 +131,22 @@ This makes it easy to ask for the last delimiter before a known marker.
             "')"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Log line: '  Dyklogg: mål=Kosterhavet; djup=240m; status=redo  '
-    First content byte ........: 2
-    Last content byte .........: 50
-    First separator ...........: 9 (':')
-    Last separator ............: 46 ('=')
-    Separator before status ...: 38 (';')
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLog line: '  Dyklogg: mål=Kosterhavet; djup=240m; status=redo  '
+        First content byte ........: 2
+        Last content byte .........: 50
+        First separator ...........: 9 (':')
+        Last separator ............: 46 ('=')
+        Separator before status ...: 38 (';')␛[0m
 
 .. erbsland-demo-end::
 
-Follow a Match Across a Character Run
-=====================================
+Finding the Start and End of a Character Run
+============================================
 
 A common parser pattern is to define the characters that belong to a token and treat everything else as separation.
 Use :cpp:func:`findFirstOf() <erbsland::text::U8String::findFirstOf>` to find the next token start, then
@@ -156,7 +158,7 @@ In that case, use :cpp:func:`indexAt(StringSide::Back) <erbsland::text::U8String
 .. erbsland-demo::
     :source: text/String/TokenRuns.cpp
     :exec: text/string --demo TokenRuns
-    :source-sha256: 0cc69bb4c2d51981d55d4c33d5100cbb7aacd863d5f2a9188b7ed0a87424fad7
+    :sha256: a438d5cfde845efb7dfa731a8e6d835948cbcd82ac887cb04566836caa0788d4
 
 .. code-block:: cpp
 
@@ -189,27 +191,29 @@ In that case, use :cpp:func:`indexAt(StringSide::Back) <erbsland::text::U8String
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Route note: Rutt: Havsörn-7 går mot djupzon Ålvik; prov=A12; temp=4°C
-    Tokens:
-      [0, 4): Rutt
-      [6, 16): Havsörn-7
-      [17, 21): går
-      [22, 25): mot
-      [26, 33): djupzon
-      [34, 40): Ålvik
-      [42, 46): prov
-      [47, 50): A12
-      [52, 56): temp
-      [57, 58): 4
-      [60, 61): C
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRoute note: Rutt: Havsörn-7 går mot djupzon Ålvik; prov=A12; temp=4°C
+        Tokens:
+          [0, 4): Rutt
+          [6, 16): Havsörn-7
+          [17, 21): går
+          [22, 25): mot
+          [26, 33): djupzon
+          [34, 40): Ålvik
+          [42, 46): prov
+          [47, 50): A12
+          [52, 56): temp
+          [57, 58): 4
+          [60, 61): C␛[0m
 
 .. erbsland-demo-end::
 
-Continue Searching Without Starting Over
-========================================
+Repeated Text Searches and Overlapping Matches
+==============================================
 
 :cpp:func:`find() <erbsland::text::U8String::find>` searches for a complete string.
 Use the overload with a start position to continue after a previous result.
@@ -230,7 +234,7 @@ case folding while the original text stays unchanged.
 .. erbsland-demo::
     :source: text/String/FindingAllOccurrences.cpp
     :exec: text/string --demo FindingAllOccurrences
-    :source-sha256: 07356ce83e6e56a9cdb1b7bd6a8e1a888067c42417e9a40cf92ce3eb0436940d
+    :sha256: 40136fe2f602fda3391ff5fa870b763f430c3d252bb6c94140751492241eeed7
 
 .. code-block:: cpp
 
@@ -263,20 +267,22 @@ case folding while the original text stays unchanged.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Mission log: ROV Freja såg ljus; rov freja markerade ljus; ROV Freja sparade karta
-    Needle: rov freja
-    Case-folded matches:
-      byte 0: ROV Freja
-      byte 21: rov freja
-      byte 47: ROV Freja
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMission log: ROV Freja såg ljus; rov freja markerade ljus; ROV Freja sparade karta
+        Needle: rov freja
+        Case-folded matches:
+          byte 0: ROV Freja
+          byte 21: rov freja
+          byte 47: ROV Freja␛[0m
 
 .. erbsland-demo-end::
 
-Turn Positions into Useful Slices
-=================================
+Slicing Text between Search Results
+===================================
 
 Found positions compose naturally with slicing.
 The common pattern is:
@@ -290,6 +296,6 @@ The common pattern is:
 When a boundary is optional, handle the no-index state before constructing the range.
 When the end boundary is optional and the slice should continue to the end of the text, use
 :cpp:func:`indexAt(StringSide::Back) <erbsland::text::U8String::indexAt>` or an infinite
-:cpp:type:`ByteLength <erbsland::unit::ByteLength>`.
+:cpp:type:`ByteCount <erbsland::unit::ByteCount>`.
 
 This approach avoids conversions to character indexes and keeps parsing code close to the data the string stores.

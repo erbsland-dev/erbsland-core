@@ -1,6 +1,6 @@
-***************************
-Assembler, Usage and Syntax
-***************************
+****************************
+Regular-Expression Assembler
+****************************
 
 For diagnostics, advanced usage or for learning this regular expression library comes with an assembler that allows you to write code for the regular expression engine from ground up.
 

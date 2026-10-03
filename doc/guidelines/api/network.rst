@@ -58,7 +58,7 @@ Secondary Types
     SocketBufferLimits // finite TCP send and receive queue limits
     NetworkError, NetworkErrorContext, NetworkErrorReason // throwable, structured, and machine-readable failures
     TlsClientConnectOptions // labeled setup, deadlines, and limits
-    TlsServerAcceptOptions, TlsServerIdentityMapping // accepted TLS policy, default identity, and exact SNI entries
+    TlsServerAcceptOptions, TlsConfigurationMapping // accepted TLS policy and coherent default/SNI server profiles
     TlsAlertDescription, NetworkErrorPhase // public TLS alert and failure phase metadata
     Url, UrlScheme // canonical absolute URL value and supported scheme classification
     UrlParseOptions, UrlFormatOptions // URL input limits and canonical output controls
@@ -155,7 +155,7 @@ Static Content Patterns
     o.addStaticContentHandler(handler) // register an original polymorphic handler pointer while inactive
     o.hasPath(relative-path) -> bool // probe exact case-sensitive availability on a worker
     o.getContent(relative-path) -> HttpStaticContentPtr // create authoritative content after a positive probe
-    o.length()/retainedMemoryLength() -> ByteLength // report exact output and retained-memory quota lengths
+    o.length()/retainedMemoryLength() -> ByteCount // report exact output and retained-memory quota lengths
     o.open() -> ByteInputStreamPtr // one-shot open at byte zero; never return null
     o.urlPrefix()/setUrlPrefix(value) -> T // configure a complete-segment decoded prefix while unused
     o.setPriority(value) -> T& // select higher-first ordering with stable registration-order ties
@@ -216,8 +216,9 @@ TLS Client Patterns
 .. code-block:: text
 
     o.connect(endpoint[, options]) // synchronously resolve labeled configuration, then start TCP
-    o.configurationLabel() // options default to the reserved "tls/client" framework label
+    o.configurationLabel() // options default to the "tls" client label
     o.setAlpnProtocols(strings) // configure protocol identifiers as text::String values
+    o.setSupportedGroups(groups) // ordered key-agreement preference; first initial client share
     o.onTransportConnected(callback) -> T& // TCP exists but TLS is not authenticated
     o.onPeerHello(callback) -> T& // inspect selected parameters without claiming peer identity
     o.onPeerAuthenticated(callback) -> T& // inspect the validated certificate path
@@ -231,10 +232,12 @@ TLS Server Patterns
 
 .. code-block:: text
 
-    o.accept(request, options) // resolve every immutable identity, acquire handshake capacity, then consume TCP
-    o.configurationLabel() // options default to the reserved "tls/server" identity label
-    o.setIdentityMappings(entries) // select at most 64 exact canonical SNI names; unmatched names use the default
+    o.accept(request, options) // resolve server profiles, acquire handshake capacity, then consume TCP
+    o.peerCertificatePath()/isPeerAuthenticated() -> T // verified client identity after the complete handshake
+    o.configurationLabel() // options default to the "tls" server label
+    o.setConfigurationMappings(entries) // select at most 64 exact canonical SNI names; unmatched names use the default
     o.setAlpnProtocols(strings) // configure server-preference identifiers as text::String values
+    o.setSupportedGroups(groups) // ordered preference, accepting supplied shares before retry
     o.onTransportConnected(callback) -> T& // TCP adoption completed, but the peer is unauthenticated
     o.onClientHello(callback) -> T& // inspect bounded SNI, ALPN, cipher, signature, and selected labels
     o.onHandshakeCompleted(callback) -> T& // client Finished is verified and application data becomes available
@@ -249,7 +252,7 @@ HTTP Server Patterns
 .. code-block:: text
 
     o.setOptions/setListenerOptions/setTcpAcceptOptions(...) // configure only while inactive
-    o.enableTls([HttpServerTlsOptions]) // enable HTTPS with the http/server identity and forced HTTP/1.1 ALPN
+    o.enableTls([HttpServerTlsOptions]) // enable HTTPS with the http server profile and forced HTTP/1.1 ALPN
     o.setSessionManager(manager) // replace anonymous per-connection selection with synchronous logical sessions
     o.start(local-endpoint) // bind after configuration and route registration
     o.events().onRequest(method, "/users/{id}", callback[, options]) // aggregate a bounded byte body

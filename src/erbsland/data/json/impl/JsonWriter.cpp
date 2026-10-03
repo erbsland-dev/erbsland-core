@@ -7,14 +7,16 @@
 
 namespace erbsland::data::json::impl {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-auto JsonWriter::write() -> text::String {
-    writeValue(_value, unit::ItemCount{});
+auto JsonWriter::write() -> String {
+    writeValue(_value, ItemCount{});
     return _result;
 }
 
-void JsonWriter::writeValue(const JsonValue &value, const unit::ItemCount depth) {
+void JsonWriter::writeValue(const JsonValue &value, const ItemCount depth) {
     switch (value.type()) {
     case JsonType::Null:
         _result.append("null"_el);
@@ -25,9 +27,9 @@ void JsonWriter::writeValue(const JsonValue &value, const unit::ItemCount depth)
     case JsonType::Number: {
         const auto integer = value.get<int64_t>();
         if (integer.has_value()) {
-            _result.append(text::String::fromInteger(*integer));
+            _result.append(String::fromInteger(*integer));
         } else {
-            _result.append(text::String::fromFloat(value.getNumberOrThrow()));
+            _result.append(String::fromFloat(value.getNumberOrThrow()));
         }
         break;
     }
@@ -43,13 +45,13 @@ void JsonWriter::writeValue(const JsonValue &value, const unit::ItemCount depth)
     }
 }
 
-void JsonWriter::writeArray(const JsonArray &array, const unit::ItemCount depth) {
+void JsonWriter::writeArray(const JsonArray &array, const ItemCount depth) {
     _result.append(U'[');
     if (array.isEmpty()) {
         _result.append(U']');
         return;
     }
-    const auto childDepth = depth + unit::ItemCount::one();
+    const auto childDepth = depth + ItemCount::one();
     auto isFirst = true;
     for (const auto &entry : array) {
         if (!isFirst) {
@@ -69,13 +71,13 @@ void JsonWriter::writeArray(const JsonArray &array, const unit::ItemCount depth)
     _result.append(U']');
 }
 
-void JsonWriter::writeObject(const JsonObject &object, const unit::ItemCount depth) {
+void JsonWriter::writeObject(const JsonObject &object, const ItemCount depth) {
     _result.append(U'{');
     if (object.count().isZero()) {
         _result.append(U'}');
         return;
     }
-    const auto childDepth = depth + unit::ItemCount::one();
+    const auto childDepth = depth + ItemCount::one();
     auto isFirst = true;
     for (const auto &[key, entry] : object) {
         if (!isFirst) {
@@ -97,14 +99,14 @@ void JsonWriter::writeObject(const JsonObject &object, const unit::ItemCount dep
     _result.append(U'}');
 }
 
-void JsonWriter::writeString(const text::String &value) {
+void JsonWriter::writeString(const String &value) {
     _result.append(U'"');
-    _result.append(value.toEscaped(text::EscapeFormat::Json, _options.escapeAmount()));
+    _result.append(value.toEscaped(EscapeFormat::Json, _options.escapeAmount()));
     _result.append(U'"');
 }
 
-void JsonWriter::writeIndent(const unit::ItemCount depth) {
-    for (auto level = unit::ItemCount{}; level < depth; ++level) {
+void JsonWriter::writeIndent(const ItemCount depth) {
+    for (auto level = ItemCount{}; level < depth; ++level) {
         _result.append(U' ', _options.indentation());
     }
 }

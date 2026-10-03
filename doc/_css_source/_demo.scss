@@ -1,0 +1,105 @@
+/*
+ * Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+:root {
+    --erbsland-demo-frame-color: #454141;
+    --erbsland-demo-frame-text-color: #e0e0e0;
+}
+
+.erbsland-demo-hidden {
+    display: none !important;
+}
+
+.erbsland-demo {
+    margin: 1.5em 0;
+    border-left: 3px solid var(--erbsland-demo-frame-color);
+    border-top-left-radius: 0.5em;
+    overflow: hidden;
+
+    .demo-source-header {
+        background-color: var(--erbsland-demo-frame-color);
+        color: var(--erbsland-demo-frame-text-color);
+        font-size: .75em;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: .5em;
+        padding: .1em .85em;
+    }
+
+    .demo-source-toggle {
+        padding: .1em .6em;
+        cursor: pointer;
+    }
+
+    .demo-excerpt > div {
+        margin-bottom: 0;
+        border: none;
+
+        .highlight {
+          background: transparent;
+        }
+    }
+
+    .demo-full-source {
+    }
+}
+
+.erbsland-demo-run {
+    border-top: 1px solid var(--erbsland-demo-frame-color);
+    margin: 0;
+
+    div.demo-command {
+        padding: 0;
+    }
+
+    .demo-command {
+        background: transparent;
+        margin: 0;
+        padding: .4em .85em;
+
+        .highlight {
+            background: transparent;
+            margin: 0;
+            border: none;
+        }
+
+        pre {
+            background: transparent;
+            border: none;
+            margin: 0;
+            white-space: pre-wrap;
+        }
+    }
+
+    .erbsland-ansi-block {
+        border-top: 1px solid var(--erbsland-demo-frame-color);
+
+        pre {
+            border: none;
+            margin: 0;
+        }
+    }
+
+    > div {
+        margin: 0 !important;
+    }
+
+    pre {
+        margin: 0 !important;
+        border: 0;
+    }
+
+    > p:not(.demo-command) {
+        padding: .6em .85em;
+        margin: 0;
+    }
+}
+
+.demo-source-appendix[hidden] {
+    display: none;
+}

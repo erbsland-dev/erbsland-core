@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/Byte.hpp>
+#include <erbsland/Byte.hpp>
 #include <erbsland/mem/impl/BestGrowth.hpp>
 #include <erbsland/mem/impl/SharedArrayCapacity.hpp>
-#include <erbsland/mem/SharedArrayData.hpp>
-#include <erbsland/mem/SharedDataPointer.hpp>
+#include <erbsland/SharedArrayData.hpp>
+#include <erbsland/SharedDataPointer.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>
@@ -14,7 +14,7 @@
 #include <limits>
 
 using el::mem::Byte;
-using el::unit::ByteLength;
+using el::unit::ByteCount;
 
 TESTED_TARGETS(BestGrowth SharedArrayCapacity SharedArrayData)
 class SharedArrayCapacityTest final : public el::UnitTest {
@@ -23,7 +23,7 @@ class SharedArrayCapacityTest final : public el::UnitTest {
 
 public:
     void testBestGrowthNoGrowth() {
-        REQUIRE_EQUAL((el::mem::impl::BestGrowth{ByteLength{64U}, ByteLength{32U}}.bestGrowth()), ByteLength{64U});
+        REQUIRE_EQUAL((el::mem::impl::BestGrowth{ByteCount{64U}, ByteCount{32U}}.bestGrowth()), ByteCount{64U});
         REQUIRE_EQUAL((el::mem::impl::BestGrowth{64U, 32U}.bestGrowth<ByteData>()), 64U);
     }
 
@@ -60,27 +60,21 @@ public:
 
     void testBestGeometricGrowthUsesPortablePages() {
         using el::mem::impl::BestGrowthStrategy;
-        const auto page = el::mem::impl::BestGrowth::cAllocationPageSize.toSizeT();
+        const auto page = el::mem::impl::BestGrowth::cAllocationPageSize;
 
         REQUIRE_EQUAL(
-            (el::mem::impl::BestGrowth{ByteLength{}, ByteLength{1U}}.bestGrowth(BestGrowthStrategy::Geometric)),
-            ByteLength{page});
+            (el::mem::impl::BestGrowth{ByteCount{}, ByteCount{1U}}.bestGrowth(BestGrowthStrategy::Geometric)), page);
         REQUIRE_EQUAL(
-            (el::mem::impl::BestGrowth{ByteLength{page}, ByteLength{page + 1U}}.bestGrowth(
-                BestGrowthStrategy::Geometric)),
-            ByteLength{page * 2U});
+            (el::mem::impl::BestGrowth{page, page + ByteCount::one()}.bestGrowth(BestGrowthStrategy::Geometric)),
+            page * 2U);
         REQUIRE_EQUAL(
-            (el::mem::impl::BestGrowth{ByteLength{page + 1U}, ByteLength{page * 3U}}.bestGrowth(
-                BestGrowthStrategy::Geometric)),
-            ByteLength{page * 4U});
+            (el::mem::impl::BestGrowth{page + ByteCount::one(), page * 3U}.bestGrowth(BestGrowthStrategy::Geometric)),
+            page * 4U);
         REQUIRE_EQUAL(
-            (el::mem::impl::BestGrowth{ByteLength{page}, ByteLength{page * 100U}}.bestGrowth(
-                BestGrowthStrategy::Geometric)),
-            ByteLength{page * 128U});
+            (el::mem::impl::BestGrowth{page, page * 100U}.bestGrowth(BestGrowthStrategy::Geometric)), page * 128U);
         REQUIRE_EQUAL(
-            (el::mem::impl::BestGrowth{ByteLength{page}, ByteLength::maximum()}.bestGrowth(
-                BestGrowthStrategy::Geometric)),
-            ByteLength::maximum());
+            (el::mem::impl::BestGrowth{page, ByteCount::maximum()}.bestGrowth(BestGrowthStrategy::Geometric)),
+            ByteCount::maximum());
     }
 
     void testBestGeometricCapacityIncludesOverheadAndIsPageAligned() {
@@ -96,7 +90,7 @@ public:
             el::mem::impl::BestGrowth{0U, 5000U}.bestGrowth<WideData>(BestGrowthStrategy::Geometric);
         const auto wideAllocationSize = WideData::allocationSizeForCapacity(wideCapacity);
         const auto wideTarget =
-            el::mem::impl::BestGrowth{ByteLength{}, ByteLength::fromSizeT(WideData::allocationSizeForCapacity(5000U))}
+            el::mem::impl::BestGrowth{ByteCount{}, ByteCount::fromSizeT(WideData::allocationSizeForCapacity(5000U))}
                 .bestGrowth(BestGrowthStrategy::Geometric);
         REQUIRE_GREATER_EQUAL(wideCapacity, 5000U);
         REQUIRE_EQUAL(wideTarget.toSizeT() % el::mem::impl::BestGrowth::cAllocationPageSize.toSizeT(), 0U);

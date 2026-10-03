@@ -3,5 +3,4 @@
 #pragma once
 
 #include "StringKeyTraits.hpp"
-
 // String-key helper traits are defined in the dedicated traits header.

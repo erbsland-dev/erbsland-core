@@ -3,8 +3,8 @@
 
 #include "PathTestHelper.hpp"
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/ItemIndex.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using el::path::Path;
@@ -67,5 +67,35 @@ public:
         REQUIRE_LESS(caseSensitiveComparison, 0);
         REQUIRE_EQUAL(
             Path{"A/B"_el}.compare(Path{"a/b"_el}, el::text::Char::compareCaseFolded), std::strong_ordering::equal);
+    }
+
+    void testComponentOrdering() {
+        WITH_CONTEXT(requireOrdered(Path{}, Path{"a"_el}));
+        WITH_CONTEXT(requireOrdered(Path{"z"_el}, Path{"/a"_el}));
+        WITH_CONTEXT(requireOrdered(Path{"/"_el}, Path{"/a"_el}));
+        WITH_CONTEXT(requireOrdered(Path{"a"_el}, Path{"a/b"_el}));
+        WITH_CONTEXT(requireOrdered(Path{"a/b"_el}, Path{"a-b"_el}));
+        WITH_CONTEXT(requireOrdered(Path{"a/./b"_el}, Path{"a/b"_el}));
+        WITH_CONTEXT(requireOrdered(Path{"a/../b"_el}, Path{"a/b"_el}));
+        WITH_CONTEXT(requireOrdered(Path{"/a/ä"_el}, Path{"/a/β"_el}));
+        WITH_CONTEXT(requireOrdered(Path{"c:/a"_el}, Path{"d:/a"_el}));
+        WITH_CONTEXT(requireOrdered(Path{"//server/one/a"_el}, Path{"//server/two/a"_el}));
+        REQUIRE_EQUAL(Path{}.compare(Path{}), std::strong_ordering::equal);
+        REQUIRE_EQUAL(Path{"a/b"_el}.compare(Path{"a/b"_el}), std::strong_ordering::equal);
+        REQUIRE_EQUAL(Path{"C:/a"_el}.compare(Path{"c:/a"_el}), std::strong_ordering::equal);
+        const auto path = Path{"//server/share/Ä/B"_el};
+        const auto shared = path;
+        REQUIRE_EQUAL(path.compare(shared), std::strong_ordering::equal);
+        REQUIRE_EQUAL(
+            path.compare(Path{"//server/share/ä/b"_el}, el::Char::compareCaseFolded), std::strong_ordering::equal);
+        REQUIRE_EQUAL(Path::fromPosix("a/b"_el).compare(Path::fromWindows("a\\b"_el)), std::strong_ordering::equal);
+    }
+
+private:
+    void requireOrdered(const Path &left, const Path &right) {
+        REQUIRE_LESS(left.compare(right), 0);
+        REQUIRE_GREATER(right.compare(left), 0);
+        REQUIRE(left < right);
+        REQUIRE(left != right);
     }
 };

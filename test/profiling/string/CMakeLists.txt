@@ -48,6 +48,11 @@ add_test(
                 ${PROJECT_SOURCE_DIR}/test/profiling/string/config/coverage.elcl
 )
 add_test(
+        NAME string-types-profile-separator-split
+        COMMAND $<TARGET_FILE:string-types-profile> --config
+                ${PROJECT_SOURCE_DIR}/test/profiling/string/config/separator-split-smoke.elcl
+)
+add_test(
         NAME string-types-profile-custom-configuration
         COMMAND $<TARGET_FILE:string-types-profile> --config
                 ${PROJECT_SOURCE_DIR}/test/profiling/string/config/custom.elcl --dry-run
@@ -108,6 +113,7 @@ set_tests_properties(
         string-types-profile-smoke-four-threads
         string-types-profile-coverage-map
         string-types-profile-all-paths
+        string-types-profile-separator-split
         string-types-profile-custom-configuration
         string-types-profile-invalid-configuration
         string-types-profile-unknown-key

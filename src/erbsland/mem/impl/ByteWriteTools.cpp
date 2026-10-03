@@ -8,24 +8,26 @@
 
 namespace erbsland::mem::impl {
 
-auto ByteWriteTools::span(const unit::ByteRange range) const noexcept -> ByteSpan {
+using namespace unit;
+
+auto ByteWriteTools::span(const ByteRange range) const noexcept -> ByteSpan {
     if (!range.isValid() || _data.empty()) {
         return {};
     }
-    const auto clamped = range.clampedTo(unit::ByteLength::fromSizeT(_data.size()));
+    const auto clamped = range.clampedTo(ByteCount::fromSizeT(_data.size()));
     if (clamped.isEmpty()) {
         return {};
     }
-    return _data.subspan(clamped.index().toSizeT(), clamped.length().toSizeT());
+    return _data.subspan(clamped.beginIndex().toSizeT(), clamped.length().toSizeT());
 }
 
-void ByteWriteTools::fill(const unit::ByteRange range, const Byte value) noexcept {
+void ByteWriteTools::fill(const ByteRange range, const Byte value) noexcept {
     for (auto &byte : span(range)) {
         byte = value;
     }
 }
 
-void ByteWriteTools::overwrite(const unit::ByteRange range, const ByteDataView source) noexcept {
+void ByteWriteTools::overwrite(const ByteRange range, const ByteDataView source) noexcept {
     auto destination = span(range);
     const auto bytes = source.dataSpan();
     const auto copyLength = std::min(destination.size(), bytes.size());
@@ -35,7 +37,7 @@ void ByteWriteTools::overwrite(const unit::ByteRange range, const ByteDataView s
     std::memmove(destination.data(), bytes.data(), copyLength * sizeof(Byte));
 }
 
-void ByteWriteTools::xorWith(const unit::ByteRange range, const ByteDataView source) noexcept {
+void ByteWriteTools::xorWith(const ByteRange range, const ByteDataView source) noexcept {
     auto destination = span(range);
     auto bytes = source.dataSpan();
     const auto operationLength = std::min(destination.size(), bytes.size());

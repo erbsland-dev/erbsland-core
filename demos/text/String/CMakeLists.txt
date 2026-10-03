@@ -17,15 +17,16 @@ target_sources(string PRIVATE
         CharacterSetPatterns.cpp
         CharacterSetReusable.cpp
         CharacterSetText.cpp
+        CodePointRangeSlicing.cpp
         CombineCharacterSets.cpp
         Comparison.cpp
         ComparisonFunctions.cpp
         ConstructionAndStorage.cpp
-        CodePointRangeSlicing.cpp
+        CustomCharacterMapping.cpp
         EfficientLiteralUsage.cpp
-        FirstAndLastCharacter.cpp
         FindingAllOccurrences.cpp
         FindingCharacterSets.cpp
+        FirstAndLastCharacter.cpp
         FrontBackSlicing.cpp
         Hashing.cpp
         IdealFunctionParameter.cpp
@@ -33,20 +34,19 @@ target_sources(string PRIVATE
         IteratingCharacters.cpp
         JoiningText.cpp
         LengthAttributes.cpp
-        main.cpp
         NormalizationForms.cpp
         NormalizeJoinedText.cpp
         PartialStringComparison.cpp
         RemoveCharacters.cpp
+        SequentialCharacterReading.cpp
         SharedTools.hpp
         SliceAndKept.cpp
         SliceBoundaries.cpp
-        SequentialCharacterReading.cpp
-        StorageIdentifier.cpp
         SplittingText.cpp
         StdVsCoreCaseFold.cpp
         StdVsCoreEscape.cpp
         StdVsCoreSplitAndJoin.cpp
+        StorageIdentifier.cpp
         StringDemos.hpp
         TestForCharacters.cpp
         TestStartsEndsAndContains.cpp
@@ -54,4 +54,6 @@ target_sources(string PRIVATE
         TrimCharacterSet.cpp
         ValidateCharacterPolicy.cpp
         WholeStringComparison.cpp
+        WordTransformations.cpp
+        main.cpp
 )

@@ -31,10 +31,6 @@ auto HtmlParser::parse() noexcept -> TextDocument {
         auto document = TextDocument{};
         document.addError(error.toString());
         return document;
-    } catch (...) {
-        auto document = TextDocument{};
-        document.addError("HTML parser failed."_el);
-        return document;
     }
 }
 

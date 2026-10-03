@@ -3,19 +3,20 @@
 #include "TlsServerProtocol.hpp"
 
 #include "../TlsAlpnProtocol.hpp"
+#include "../TlsKeyShare.hpp"
 #include "../TlsProtocolError.hpp"
 #include "../TlsWireWriter.hpp"
 
 #include "../../../../cryptology/CryptologyError.hpp"
 #include "../../../../cryptology/keys/KeyAgreementAlgorithm.hpp"
-#include "../../../../cryptology/tls/TlsServerIdentity.hpp"
+#include "../../../../cryptology/tls/TlsIdentity.hpp"
 #include "../../../../cryptology/tls_record/TlsRecordContentType.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../mem/Byte.hpp"
 #include "../../../../mem/ByteArray.hpp"
 #include "../../../../mem/ByteBlockEditor.hpp"
 #include "../../../../text/Literals.hpp"
-#include "../../../../unit/ByteLength.hpp"
+#include "../../../../unit/ByteCount.hpp"
 
 #include <algorithm>
 #include <array>
@@ -24,25 +25,27 @@
 
 namespace erbsland::network::impl {
 
+using namespace mem;
 using namespace text::literals;
 
-void TlsServerProtocol::buildServerFlight(mem::ByteBlock random, cryptology::KeyAgreementPrivateKey privateKey) {
-    if (random.length() != unit::ByteLength{32U}) {
-        throw err::ParameterError{"TLS ServerHello random must contain exactly 32 bytes."_el, "random"_el};
+void TlsServerProtocol::buildServerFlight(ByteBlock random, cryptology::KeyAgreementPrivateKey privateKey) {
+    if (random.length() != unit::ByteCount{32U}) {
+        throw err::ParameterFailure{"TLS ServerHello random must contain exactly 32 bytes."_el, "random"_el};
     }
-    if (privateKey.isEmpty() || privateKey.algorithm() != cryptology::KeyAgreementAlgorithm::X25519) {
-        throw err::ParameterError{"TLS server flight requires an X25519 private key."_el, "privateKey"_el};
+    if (privateKey.isEmpty() || privateKey.algorithm() != _clientKey.algorithm()) {
+        throw err::ParameterFailure{
+            "TLS server flight requires a private key for the selected group."_el, "privateKey"_el};
     }
     auto flight = OutputFlight{};
     const auto serverPublicKey = privateKey.publicKey();
 
     // RFC 8446 Sections 4.1.3, 4.2.1, and 4.2.8: encode ServerHello in specification field order with only the
-    // selected TLS 1.3 version and the server's fresh X25519 KeyShareEntry.
+    // selected TLS 1.3 version and the server's fresh selected-group KeyShareEntry.
     auto serverHelloExtensions = TlsWireWriter{};
     serverHelloExtensions.writeU16(43U);
-    serverHelloExtensions.writeVector16(mem::ByteArray<2U>{mem::Byte{0x03U}, mem::Byte{0x04U}}.span());
+    serverHelloExtensions.writeVector16(ByteArray<2U>{Byte{0x03U}, Byte{0x04U}}.span());
     auto serverKeyShare = TlsWireWriter{};
-    serverKeyShare.writeU16(0x001dU);
+    serverKeyShare.writeU16(tls_key_share::group(privateKey.algorithm()));
     serverKeyShare.writeVector16(serverPublicKey.span());
     const auto serverKeyShareBytes = serverKeyShare.finish();
     serverHelloExtensions.writeU16(51U);
@@ -71,12 +74,14 @@ void TlsServerProtocol::buildServerFlight(mem::ByteBlock random, cryptology::Key
     appendFlight(flight, serverHelloRecord.finish());
 
     // RFC 8446 Sections 4.4.1 and 7.1: transcript = ClientHello || ServerHello under the selected suite hash.
-    _transcript = std::make_unique<cryptology::impl::Tls13Transcript>(_cipherSuite->hashAlgorithm());
+    if (!_retryGroup.has_value()) {
+        _transcript = std::make_unique<cryptology::impl::Tls13Transcript>(_cipherSuite->hashAlgorithm());
+    }
     _transcript->update(_clientHello.span());
     _transcript->update(serverHello.span());
 
     // RFC 8446 Sections 4.2.8 and 7.1: transfer the ephemeral private key into visible protocol ownership, derive
-    // (EC)DHE = X25519(server_private, client_public), erase the private key, then let the schedule consume and erase
+    // (EC)DHE = agree(server_private, client_public), erase the private key, then let the schedule consume and erase
     // the protected shared secret while deriving client/server handshake traffic secrets.
     _privateKey = std::move(privateKey);
     auto sharedSecret = cryptology::KeyAgreementSharedSecret{};
@@ -115,7 +120,7 @@ void TlsServerProtocol::buildServerFlight(mem::ByteBlock random, cryptology::Key
     }
     if (!_negotiatedAlpn.isEmpty()) {
         auto selectedProtocols = TlsWireWriter{};
-        selectedProtocols.writeVector8(TlsAlpnProtocol::bytes(_negotiatedAlpn));
+        selectedProtocols.writeVector8(tls_alpn_protocol::bytes(_negotiatedAlpn));
         const auto selectedProtocolBytes = selectedProtocols.finish();
         auto alpnBody = TlsWireWriter{};
         alpnBody.writeVector16(selectedProtocolBytes.span());
@@ -134,6 +139,8 @@ void TlsServerProtocol::buildServerFlight(mem::ByteBlock random, cryptology::Key
     const auto encryptedExtensions = encryptedExtensionsWriter.finish();
     _transcript->update(encryptedExtensions.span());
     appendProtectedHandshake(flight, encryptedExtensions.span());
+
+    appendCertificateRequest(flight);
 
     // RFC 8446 Section 4.4.2: Certificate has an empty request context and the exact configured leaf-first X.509
     // chain. CertificateEntry extensions are empty because OCSP/SCT negotiation is outside this initial profile.
@@ -161,14 +168,18 @@ void TlsServerProtocol::buildServerFlight(mem::ByteBlock random, cryptology::Key
     // private signing material never leaves the protected immutable identity.
     // anti-pattern: allow regular_string_literal -- Required ASCII data as bytes
     static constexpr auto cContext = std::string_view{"TLS 1.3, server CertificateVerify"};
-    auto signedContent = mem::ByteBlockEditor{unit::ByteLength{64U}, mem::Byte{' '}};
-    signedContent.append(mem::toConstByteSpan(cContext));
-    signedContent.append(mem::Byte{0U});
+    auto signedContent = ByteBlockEditor{unit::ByteCount{64U}, Byte{' '}};
+    signedContent.append(toConstByteSpan(cContext));
+    signedContent.append(Byte{0U});
     const auto certificateTranscriptHash = _transcript->hash();
     signedContent.append(certificateTranscriptHash);
-    const auto signature =
-        _selectedIdentity->signingKey().signTlsCertificateVerify(*_signatureScheme, signedContent.span());
+    _pendingSignature = TlsSignatureRequest{_selectedIdentity, *_signatureScheme, ByteBlock{signedContent}};
+    _pendingFlight = std::move(flight);
+    _checkpoint = TlsServerProtocolCheckpoint::Signature;
+}
 
+void TlsServerProtocol::finishSignedFlight(const ByteBlock &signature) {
+    auto flight = std::move(_pendingFlight);
     auto certificateVerifyBody = TlsWireWriter{};
     certificateVerifyBody.writeU16(_signatureScheme->toRawValue());
     certificateVerifyBody.writeVector16(signature.span());
@@ -211,9 +222,12 @@ void TlsServerProtocol::buildServerFlight(mem::ByteBlock random, cryptology::Key
     _legacySessionId = {};
     _clientKey = {};
     _handshakeStep = HandshakeStep::ClientFinished;
+    if (_selectedConfiguration.clientAuthentication != cryptology::TlsClientAuthentication::Disabled) {
+        _handshakeStep = HandshakeStep::ClientCertificate;
+    }
 }
 
-void TlsServerProtocol::appendFlight(OutputFlight &flight, mem::ByteBlock record) const {
+void TlsServerProtocol::appendFlight(OutputFlight &flight, ByteBlock record) const {
     const auto limit = _options.bufferLimits().send().toSizeT();
     const auto length = record.length().toSizeT();
     if (length > limit || _transportOutputBytes > limit - length ||
@@ -225,7 +239,7 @@ void TlsServerProtocol::appendFlight(OutputFlight &flight, mem::ByteBlock record
     flight.records.push_back(std::move(record));
 }
 
-void TlsServerProtocol::appendProtectedHandshake(OutputFlight &flight, const mem::ConstByteSpan message) {
+void TlsServerProtocol::appendProtectedHandshake(OutputFlight &flight, const ConstByteSpan message) {
     // RFC 8446 Sections 4 and 5.1: preserve one complete transcript message while fragmenting only its record-layer
     // representation into authenticated fragments of at most 2^14 content bytes.
     auto offset = std::size_t{0U};

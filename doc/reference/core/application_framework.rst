@@ -18,6 +18,19 @@ Application Lifecycle
 See :doc:`/topics/core/choosing_an_application_design` for the function-based, event-driven, procedural, command-style,
 and application-part designs supported by this lifecycle.
 
+``run()`` initializes the application, registers options, and parses the command line.
+After successful parsing it calls ``handleCommandLineOptions(values)``, forwards the values to prepared application
+parts, and calls ``main()``.
+The hook receives non-null parsed values and does nothing by default.
+Help, version output, module overview, and parsing errors skip both the hook and ``main()``.
+
+Override ``handleCommandLineOptions()`` to validate paths, apply configuration, or queue work that depends on parsed
+values while retaining the default main dispatch.
+That dispatch selects an option-module main function, then a function installed through ``setMainFn()``, and otherwise
+starts registered parts and enters the main event loop.
+Override ``parseCommandLine()`` only to replace the parsing behavior itself.
+Exceptions from the hook use the same reporting and cleanup boundary as other lifecycle methods.
+
 :cpp:class:`Application <erbsland::core::Application>` retains non-owning access to the original narrow or wide
 ``argv`` vector supplied to its constructor.
 After option parsing, every suffix reported as sensitive text is overwritten in place with one star per existing byte or
@@ -30,6 +43,41 @@ Masking occurs for successful parsing and parser or validator errors.
 The native pointers must remain valid for the application lifetime.
 This cleanup only reduces secrets retained in process memory; it cannot retract command-line values already exposed
 through process listings, the shell, operating-system facilities, logs, or earlier application code.
+
+Final application destruction flushes both standard output streams after log and terminal cleanup, even when no terminal
+was enabled.
+This drains writes queued on I/O workers before process teardown can discard them.
+Each stream is flushed independently using its configured timeout; a flush failure does not prevent cleanup of the other
+stream or escape the application destructor.
+
+Terminal Output
+===============
+
+``enableTerminal(flags)`` creates and initializes an application-owned terminal with an initial size of 80×25.
+``enableTerminal(size, flags)`` supplies an explicit size.
+Native backends detect the available screen; ``TerminalFlag::VirtualTty`` preserves the supplied dimensions and emits
+ANSI through stdout even when redirected.
+Repeated calls leave the enabled terminal and its settings unchanged.
+
+Interactive and virtual terminals route Core's standard output through the terminal with default colors and standard
+error in bright red.
+The application restores the screen and standard-stream routing during cleanup.
+Customize construction through ``createAndInitializeTerminal(size, flags)`` while preserving the requested settings.
+See :doc:`/reference/cterm/terminal` for virtual input and screen dimensions.
+
+Service Ownership
+=================
+
+The public ``application()`` function provides access to the current application and creates a temporary application
+when called before explicit construction.
+Construct your application before configuring its services so their setup follows a clear lifecycle.
+
+Accepted background operations retain the services they need until their native work finishes, including after the
+application object is destroyed.
+This keeps protected-memory access and secure randomness associated with the originating application.
+It does not extend the lifetime of references to the public application object.
+Resource loaders and HTTP resource handlers retain their resource provider independently; see
+:doc:`/reference/text/documents_and_rendering` and :doc:`/reference/network/http_server`.
 
 Service Lifecycle
 =================
@@ -117,8 +165,12 @@ The application default routes information, warning, and error entries to its te
 By default, final cleanup displays its nonempty snapshot only after a nonzero application exit code.
 Select :cpp:enumerator:`LastErrorDumpMode::Always <erbsland::core::LastErrorDumpMode::Always>` to display it after a
 successful run as well.
-The heading uses the application's ``log.LastErrorDumpTitle`` display-text entry.
+The heading uses the application's ``log.last_error_dump_title`` display-text entry.
 See :doc:`/topics/log/using_logging` for routing, trace sections, and standalone managers.
+
+Application-part shutdown timeout expiry is reported to the manager as ``ApplicationError`` and follows the configured
+part-error policy.
+The original error remains available through the manager's error queue.
 
 Interface
 =========

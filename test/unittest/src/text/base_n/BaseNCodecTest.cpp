@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/base_n/BaseNDecoder.hpp>
-#include <erbsland/text/base_n/BaseNEncoder.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/base_n/BaseNDecoder.hpp>
+#include <erbsland/base_n/BaseNEncoder.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -129,8 +129,8 @@ public:
         };
         for (const auto &format : formats) {
             WITH_CONTEXT(requireRoundTrip(data, format));
-            for (std::size_t length = 0; length <= 20U; ++length) {
-                WITH_CONTEXT(requireRoundTrip(data.slice(el::unit::ByteIndex{}, el::unit::ByteLength{length}), format));
+            for (auto length = el::unit::ByteCount{}; length <= el::unit::ByteCount{20U}; ++length) {
+                WITH_CONTEXT(requireRoundTrip(data.slice(el::unit::ByteIndex{}, length), format));
             }
         }
     }
@@ -184,12 +184,12 @@ public:
     }
 
     void testPemWrapping() {
-        const auto data48 = el::mem::ByteBlock{el::unit::ByteLength{48U}, el::mem::Byte{0U}};
+        const auto data48 = el::mem::ByteBlock{el::unit::ByteCount{48U}, el::mem::Byte{0U}};
         const auto text48 = BaseNEncoder{data48, BaseNFormat::base64Pem()}.toString();
-        REQUIRE_EQUAL(text48.characterLength(), el::unit::CpLength{64U});
+        REQUIRE_EQUAL(text48.characterLength(), el::unit::CpCount{64U});
         REQUIRE_FALSE(text48.endsWith("\n"_el));
 
-        const auto data49 = el::mem::ByteBlock{el::unit::ByteLength{49U}, el::mem::Byte{0U}};
+        const auto data49 = el::mem::ByteBlock{el::unit::ByteCount{49U}, el::mem::Byte{0U}};
         const auto text49 = BaseNEncoder{data49, BaseNFormat::base64Pem()}.toString();
         REQUIRE(text49.contains("\n"_el));
         REQUIRE_FALSE(text49.endsWith("\n"_el));
@@ -215,9 +215,9 @@ public:
     }
 
     void testMaximum() {
-        REQUIRE_FALSE((BaseNDecoder{"Zm9v"_el}.toData(el::unit::ByteLength{2U}).has_value()));
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, BaseNDecoder{"Zm9v"_el}.toDataOrThrow(el::unit::ByteLength{2U}));
-        REQUIRE_EQUAL((BaseNDecoder{"Zm9v"_el}.toDataOrThrow(el::unit::ByteLength{3U})), block("foo"));
+        REQUIRE_FALSE((BaseNDecoder{"Zm9v"_el}.toData(el::unit::ByteCount{2U}).has_value()));
+        REQUIRE_THROWS_AS(el::err::ParseError, BaseNDecoder{"Zm9v"_el}.toDataOrThrow(el::unit::ByteCount{2U}));
+        REQUIRE_EQUAL((BaseNDecoder{"Zm9v"_el}.toDataOrThrow(el::unit::ByteCount{3U})), block("foo"));
     }
 
 private:

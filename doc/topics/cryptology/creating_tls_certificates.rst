@@ -76,8 +76,8 @@ The common name is descriptive but does not replace a SAN during service-identit
 Use ``tlsServerAndClient()`` only when the same identity really serves both roles.
 It requires a SAN like the server profile and includes both TLS purposes.
 
-Writing the Setup Safely
-========================
+Writing Certificate and Private-Key Files
+=========================================
 
 File output infers PEM or DER from an artifact-specific suffix.
 Private-key files are created with user-only access, and no write operation replaces an existing file.

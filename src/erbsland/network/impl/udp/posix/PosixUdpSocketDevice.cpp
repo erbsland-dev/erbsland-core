@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PosixUdpSocketDevice.hpp"
 
-#include "../../../../err/RuntimeError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../event/impl/EventLoopDriverRegistration.hpp"
 #include "../../../source/NetworkError.hpp"
 #include "../../platform/SocketAddress.hpp"
@@ -28,6 +28,8 @@
 
 namespace erbsland::network::impl {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 PosixUdpSocketDevice::PosixUdpSocketDevice(event::EventLoopDriverPtr driver, UdpSocketDeviceCallbacks callbacks) :
@@ -38,7 +40,7 @@ PosixUdpSocketDevice::~PosixUdpSocketDevice() {
     close();
 }
 
-auto PosixUdpSocketDevice::bind(IpEndpoint localEndpoint, const unit::ByteLength maximumDatagramSize) -> IpEndpoint {
+auto PosixUdpSocketDevice::bind(IpEndpoint localEndpoint, const ByteCount maximumDatagramSize) -> IpEndpoint {
     const auto family = localEndpoint.address().isV4() ? AF_INET : AF_INET6;
     const auto descriptor = ::socket(family, SOCK_DGRAM, IPPROTO_UDP);
     if (descriptor < 0) {
@@ -150,7 +152,8 @@ auto PosixUdpSocketDevice::createRegisterFn(event::EventLoopDriverPtr driver) ->
     const auto nativeDriver = std::dynamic_pointer_cast<event::impl::EpollEventLoopDriver>(std::move(driver));
 #endif
     if (nativeDriver == nullptr) {
-        throw err::RuntimeError{"The UDP socket requires the platform's default native event-loop driver."_el};
+        throw err::ParameterFailure{
+            "The UDP socket requires the platform's default native event-loop driver."_el, "driver"_el};
     }
     return [nativeDriver](const int descriptor, const bool read, const bool write, auto callback) {
         return nativeDriver->registerDescriptor(descriptor, read, write, std::move(callback));
@@ -236,8 +239,8 @@ void PosixUdpSocketDevice::receiveOne() {
     if ((message.msg_flags & MSG_TRUNC) != 0 || static_cast<std::size_t>(result) > bytes.size()) {
         if (_callbacks.datagramDropped) {
             const auto actualSize = static_cast<std::size_t>(result) > bytes.size()
-                ? std::optional<unit::ByteLength>{unit::ByteLength::fromSizeT(static_cast<std::size_t>(result))}
-                : std::optional<unit::ByteLength>{};
+                ? std::optional<ByteCount>{ByteCount::fromSizeT(static_cast<std::size_t>(result))}
+                : std::optional<ByteCount>{};
             _callbacks.datagramDropped(
                 UdpDatagramDropContext{
                     UdpDatagramDropReason::TooLarge, _maximumDatagramSize, *remoteEndpoint, actualSize});
@@ -246,15 +249,15 @@ void PosixUdpSocketDevice::receiveOne() {
     }
     if (_callbacks.datagram) {
         _callbacks.datagram(
-            UdpDatagram{*remoteEndpoint, buffer.take(unit::ByteLength::fromSizeT(static_cast<std::size_t>(result)))});
+            UdpDatagram{*remoteEndpoint, buffer.take(ByteCount::fromSizeT(static_cast<std::size_t>(result)))});
     }
 }
 
-auto PosixUdpSocketDevice::createError(text::String title, text::String description) const -> NetworkError {
+auto PosixUdpSocketDevice::createError(String title, String description) const -> NetworkError {
     return NetworkError{createContext(errno, std::move(title), std::move(description))};
 }
 
-auto PosixUdpSocketDevice::createContext(const int errorCode, text::String title, text::String description) const
+auto PosixUdpSocketDevice::createContext(const int errorCode, String title, String description) const
     -> NetworkErrorContext {
     auto context = NetworkErrorContext{std::move(title), std::move(description)};
     context.setReason(errorReason(errorCode))

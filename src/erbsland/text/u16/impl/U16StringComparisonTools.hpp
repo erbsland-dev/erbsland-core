@@ -5,10 +5,12 @@
 #include "U16StringDataView.hpp"
 
 #include "../../../unit/ItemCount.hpp"
-#include "../../../unit/U16DataIndex.hpp"
+#include "../../../unit/U16Index.hpp"
+#include "../../../unit/U16Range.hpp"
 #include "../../AsciiCategory.hpp"
 #include "../../CharCompareFn.hpp"
 #include "../../CharSet.hpp"
+#include "../../StringSide.hpp"
 
 #include <compare>
 #include <span>
@@ -16,7 +18,7 @@
 namespace erbsland::text::impl {
 
 /// Comparison and containment algorithms on UTF-16 string data.
-/// @tested{U16StringTest}
+/// @tested{U16StringTest StringSeparatorSplitTest}
 class U16StringComparisonTools final {
 public:
     /// A set of Unicode code-points for decoded character lookups.
@@ -34,11 +36,35 @@ public: // comparison
 public: // find
     /// Find the first decoded character sequence.
     [[nodiscard]] auto find(const U16StringDataView &text, CharCompareFn compareFn = {}) const noexcept
-        -> unit::U16DataIndex;
+        -> unit::U16Index;
     /// Find the first decoded character sequence at or after the given UTF-16 data index.
     [[nodiscard]] auto find(
-        const U16StringDataView &text, unit::U16DataIndex start, CharCompareFn compareFn = {}) const noexcept
-        -> unit::U16DataIndex;
+        const U16StringDataView &text, unit::U16Index start, CharCompareFn compareFn = {}) const noexcept
+        -> unit::U16Index;
+
+    /// Find the first non-empty separator and retain its native boundaries.
+    /// @param text The separator data.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return The relative match range, or no-range for an absent or empty separator.
+    [[nodiscard]] auto findFirstRange(const U16StringDataView &text, CharCompareFn compareFn = {}) const noexcept
+        -> unit::U16Range;
+    /// Find the rightmost non-empty separator, including overlapping matches.
+    /// @param text The separator data.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return The relative match range, or no-range for an absent or empty separator.
+    [[nodiscard]] auto findLastRange(const U16StringDataView &text, CharCompareFn compareFn = {}) const noexcept
+        -> unit::U16Range;
+    /// Match a decoded separator at one candidate position.
+    /// @param data The source data span.
+    /// @param start The candidate's native start index.
+    /// @param text The separator span.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return The actual source end of the match, or no-index on mismatch.
+    [[nodiscard]] static auto endOfTextMatch(
+        std::span<const char16_t> data,
+        unit::U16Index start,
+        std::span<const char16_t> text,
+        CharCompareFn compareFn) noexcept -> unit::U16Index;
 
 public: // tests
     /// Test if the view starts with the given decoded text.
@@ -71,6 +97,11 @@ public: // character traversal
         std::span<const char16_t> data, const CharacterSet &characters) -> bool;
 
 private:
+    /// Search in the selected direction and retain the match boundaries.
+    [[nodiscard]] auto findTextRange(
+        const U16StringDataView &text, StringSide side, CharCompareFn compareFn) const noexcept -> unit::U16Range;
+
+private:
     /// Compare two decoded UTF-16 spans with an optional character comparator.
     [[nodiscard]] static auto compareDecodedSpans(
         std::span<const char16_t> left, std::span<const char16_t> right, CharCompareFn compareFn) noexcept
@@ -78,7 +109,7 @@ private:
     /// Test if the haystack at the candidate start matches the decoded needle.
     [[nodiscard]] static auto matchesDecodedSpan(
         std::span<const char16_t> haystack,
-        unit::U16DataIndex candidateStart,
+        unit::U16Index candidateStart,
         std::span<const char16_t> needle,
         CharCompareFn compareFn) noexcept -> bool;
     /// Test if the haystack starts with the decoded needle.
@@ -89,8 +120,8 @@ private:
         std::span<const char16_t> haystack, std::span<const char16_t> needle, CharCompareFn compareFn) noexcept -> bool;
     /// Return the haystack position after a matching decoded needle.
     [[nodiscard]] static auto endOfMatch(
-        std::span<const char16_t> haystack, unit::U16DataIndex start, std::span<const char16_t> needle) noexcept
-        -> unit::U16DataIndex;
+        std::span<const char16_t> haystack, unit::U16Index start, std::span<const char16_t> needle) noexcept
+        -> unit::U16Index;
     /// Test if two decoded characters are equal according to the optional comparison function.
     [[nodiscard]] static auto charactersEqual(Char left, Char right, CharCompareFn compareFn) noexcept -> bool;
 

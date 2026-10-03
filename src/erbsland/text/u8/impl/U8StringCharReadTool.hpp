@@ -6,8 +6,8 @@
 
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/ByteRange.hpp"
+#include "../../../unit/CpCount.hpp"
 #include "../../../unit/CpIndex.hpp"
-#include "../../../unit/CpLength.hpp"
 #include "../../../unit/CpRange.hpp"
 #include "../../Char.hpp"
 #include "../../CharSet.hpp"
@@ -30,7 +30,7 @@ public:
 
 public: // read
     /// Get the character length of the view.
-    [[nodiscard]] auto charLength() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto charLength() const noexcept -> unit::CpCount;
     /// Access the character at the given character position.
     [[nodiscard]] auto charAt(unit::CpIndex index) const noexcept -> Char;
     /// Get the start byte index for the given character index.

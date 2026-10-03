@@ -3,6 +3,15 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/all_cterm.hpp>
+#include <erbsland/CodeSnippet.hpp>
+#include <erbsland/CodeSnippetMarker.hpp>
+#include <erbsland/ColumnCount.hpp>
+#include <erbsland/ColumnIndex.hpp>
+#include <erbsland/cterm/TerminalDocumentRenderer.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/LineIndex.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/TextDocument.hpp>
 
 namespace demo {
 

@@ -3,6 +3,7 @@
 #include "Lz4Codec.hpp"
 
 #include "../../../err/OutOfRangeError.hpp"
+#include "../../../err/OutOfRangeFailure.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../CompressionError.hpp"
@@ -13,6 +14,9 @@
 
 namespace erbsland::compression::impl {
 
+using namespace err;
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
 void Lz4Codec::compressPayload(
@@ -21,23 +25,23 @@ void Lz4Codec::compressPayload(
     const CompressionTransferOptions &transfer,
     const CompressionOptions &options) const {
     const auto workspace = uint64_t{2U * 65536U * sizeof(std::size_t)};
-    if (unit::ByteLength{workspace} > availableWorkspace(transfer, options.maximumWorkspaceLength())) {
-        throw err::OutOfRangeError{"Codec workspace limit exceeded."_el};
+    if (ByteCount{workspace} > availableWorkspace(transfer, options.maximumWorkspaceLength())) {
+        throw OutOfRangeError{"Codec workspace limit exceeded."_el};
     }
-    auto buffered = mem::ByteBlockEditor{};
+    auto buffered = ByteBlockEditor{};
     while (!input.atEnd()) {
         auto block = input.block(transfer.bufferLength().toSizeTOrThrow());
         if (buffered.length().addedOrThrow(block.length()) > transfer.maximumBufferedLength()) {
-            throw err::OutOfRangeError{"Fallback input limit exceeded."_el};
+            throw OutOfRangeError{"Fallback input limit exceeded."_el};
         }
         buffered.append(block.span());
     }
     if (maximumPayloadLength(buffered.length()) > transfer.maximumBufferedLength()) {
-        throw err::OutOfRangeError{"Fallback output bound exceeds the buffer limit."_el};
+        throw OutOfRangeError{"Fallback output bound exceeds the buffer limit."_el};
     }
     const auto result = compressBlock(buffered);
     if (result.length() > transfer.maximumBufferedLength()) {
-        throw err::OutOfRangeError{"Fallback output limit exceeded."_el};
+        throw OutOfRangeError{"Fallback output limit exceeded."_el};
     }
     output(result.span());
 }
@@ -48,11 +52,11 @@ void Lz4Codec::decompressPayload(
     const CompressionTransferOptions &transfer,
     const DecompressionOptions &options) const {
     [[maybe_unused]] const auto workspace = availableWorkspace(transfer, options.maximumWorkspaceLength());
-    auto buffered = mem::ByteBlockEditor{};
+    auto buffered = ByteBlockEditor{};
     while (!input.atEnd()) {
         auto block = input.block(transfer.bufferLength().toSizeTOrThrow());
         if (buffered.length().addedOrThrow(block.length()) > transfer.maximumBufferedLength()) {
-            throw err::OutOfRangeError{"Fallback input limit exceeded."_el};
+            throw OutOfRangeError{"Fallback input limit exceeded."_el};
         }
         buffered.append(block.span());
     }
@@ -61,16 +65,16 @@ void Lz4Codec::decompressPayload(
         std::min(boundedOptions.maximumOutputLength(), transfer.maximumBufferedLength()));
     if (boundedOptions.expectedOutputLength() &&
         *boundedOptions.expectedOutputLength() > boundedOptions.maximumOutputLength()) {
-        throw err::OutOfRangeError{"Fallback output limit exceeded."_el};
+        throw OutOfRangeError{"Fallback output limit exceeded."_el};
     }
     const auto result = decompressBlock(buffered, boundedOptions);
     if (result.length() > transfer.maximumBufferedLength()) {
-        throw err::OutOfRangeError{"Fallback output limit exceeded."_el};
+        throw OutOfRangeError{"Fallback output limit exceeded."_el};
     }
     output(result.span());
 }
 
-auto Lz4Codec::readUInt32(const mem::ConstByteSpan data, const std::size_t index) noexcept -> uint32_t {
+auto Lz4Codec::readUInt32(const ConstByteSpan data, const std::size_t index) noexcept -> uint32_t {
     return data[index].toUInt32() | (data[index + 1U].toUInt32() << 8U) | (data[index + 2U].toUInt32() << 16U) |
         (data[index + 3U].toUInt32() << 24U);
 }
@@ -79,30 +83,29 @@ auto Lz4Codec::hashSequence(const uint32_t value) noexcept -> std::size_t {
     return static_cast<std::size_t>((value * cHashMultiplier) >> 16U);
 }
 
-void Lz4Codec::appendExtendedLength(mem::ByteBlockEditor &output, std::size_t length) {
+void Lz4Codec::appendExtendedLength(ByteBlockEditor &output, std::size_t length) {
     while (length >= cLengthExtensionMaximum) {
-        output.append(mem::Byte{cLengthExtensionMaximum});
+        output.append(Byte{cLengthExtensionMaximum});
         length -= cLengthExtensionMaximum;
     }
-    output.append(mem::Byte::fromCroppedUInt64(length));
+    output.append(Byte::fromCroppedUInt64(length));
 }
 
 void Lz4Codec::appendSequence(
-    mem::ByteBlockEditor &output,
-    const mem::ConstByteSpan input,
+    ByteBlockEditor &output,
+    const ConstByteSpan input,
     const std::size_t literalBegin,
     const std::size_t literalLength,
     const std::size_t matchOffset,
     const std::size_t matchLength,
     const bool hasMatch) {
-    const auto tokenIndex = unit::ByteIndex::end(output.length());
-    output.append(mem::Byte{});
+    const auto tokenIndex = ByteIndex::end(output.length());
+    output.append(Byte{});
     const auto literalToken = static_cast<uint8_t>(std::min(literalLength, std::size_t{cLengthNibbleMaximum}));
     const auto matchToken = hasMatch
         ? static_cast<uint8_t>(std::min(matchLength - cMinimumMatchLength, std::size_t{cLengthNibbleMaximum}))
         : uint8_t{};
-    output.setOrThrow(
-        tokenIndex, mem::Byte::fromCroppedUInt16(static_cast<uint16_t>((literalToken << 4U) | matchToken)));
+    output.setOrThrow(tokenIndex, Byte::fromCroppedUInt16(static_cast<uint16_t>((literalToken << 4U) | matchToken)));
     if (literalLength >= cLengthNibbleMaximum) {
         appendExtendedLength(output, literalLength - cLengthNibbleMaximum);
     }
@@ -112,19 +115,19 @@ void Lz4Codec::appendSequence(
     if (!hasMatch) {
         return;
     }
-    output.append(mem::Byte::fromCroppedUInt64(matchOffset));
-    output.append(mem::Byte::fromCroppedUInt64(matchOffset >> 8U));
+    output.append(Byte::fromCroppedUInt64(matchOffset));
+    output.append(Byte::fromCroppedUInt64(matchOffset >> 8U));
     if (matchLength - cMinimumMatchLength >= cLengthNibbleMaximum) {
         appendExtendedLength(output, matchLength - cMinimumMatchLength - cLengthNibbleMaximum);
     }
 }
 
-auto Lz4Codec::compressBlock(const mem::ByteBlock &data) const -> mem::ByteBlock {
+auto Lz4Codec::compressBlock(const ByteBlock &data) const -> ByteBlock {
     const auto input = data.span();
-    auto output = mem::ByteBlockEditor{};
-    const auto inputLength = unit::ByteLength::fromSizeT(input.size());
+    auto output = ByteBlockEditor{};
+    const auto inputLength = ByteCount::fromSizeT(input.size());
     output.reserve(
-        inputLength.addedOrThrow(unit::ByteLength::fromSizeT(input.size() / cLengthExtensionMaximum + cSizeOverhead)));
+        inputLength.addedOrThrow(ByteCount::fromSizeT(input.size() / cLengthExtensionMaximum + cSizeOverhead)));
     auto table = std::vector<std::size_t>(cHashTableSize, cNoPosition);
     auto previous = std::vector<std::size_t>(std::min(input.size(), cMaximumOffset + 1U), cNoPosition);
     const auto depth = cSearchDepths[static_cast<std::size_t>(level())];
@@ -157,7 +160,7 @@ auto Lz4Codec::compressBlock(const mem::ByteBlock &data) const -> mem::ByteBlock
 }
 
 auto Lz4Codec::findMatch(
-    const mem::ConstByteSpan input,
+    const ConstByteSpan input,
     const std::size_t position,
     std::size_t candidate,
     const std::span<const std::size_t> previous,
@@ -191,8 +194,7 @@ void Lz4Codec::throwMalformed(const text::String &message) {
     throw CompressionError{CompressionErrorReason::MalformedData, message};
 }
 
-auto Lz4Codec::readExtendedLength(const mem::ConstByteSpan input, std::size_t &position, std::size_t length)
-    -> std::size_t {
+auto Lz4Codec::readExtendedLength(const ConstByteSpan input, std::size_t &position, std::size_t length) -> std::size_t {
     while (true) {
         if (position >= input.size()) {
             throwMalformed("LZ4 length extension is truncated."_el);
@@ -208,8 +210,7 @@ auto Lz4Codec::readExtendedLength(const mem::ConstByteSpan input, std::size_t &p
     }
 }
 
-auto Lz4Codec::decompressBlock(const mem::ByteBlock &data, const DecompressionOptions &options) const
-    -> mem::ByteBlock {
+auto Lz4Codec::decompressBlock(const ByteBlock &data, const DecompressionOptions &options) const -> ByteBlock {
     const auto input = data.span();
     if (!options.expectedOutputLength().has_value() || !options.expectedOutputLength()->isFinite()) {
         throw CompressionError{CompressionErrorReason::LengthMismatch, "Original length must be finite."_el};
@@ -218,7 +219,7 @@ auto Lz4Codec::decompressBlock(const mem::ByteBlock &data, const DecompressionOp
     if (input.empty()) {
         throwMalformed("LZ4 block is empty."_el);
     }
-    auto output = mem::ByteBlockEditor{};
+    auto output = ByteBlockEditor{};
     output.reserve(originalLength);
     auto inputPosition = std::size_t{};
     auto outputPosition = std::size_t{};
@@ -260,8 +261,8 @@ auto Lz4Codec::decompressBlock(const mem::ByteBlock &data, const DecompressionOp
             throwMalformed("LZ4 match exceeds the expected output length."_el);
         }
         output.appendRepeated(
-            unit::ByteRange{unit::ByteIndex::fromSizeT(outputPosition - offset), unit::ByteLength::fromSizeT(offset)},
-            unit::ByteLength::fromSizeT(matchLength));
+            ByteRange{ByteIndex::fromSizeT(outputPosition - offset), ByteCount::fromSizeT(offset)},
+            ByteCount::fromSizeT(matchLength));
         outputPosition += matchLength;
     }
     if (outputPosition != outputSize) {
@@ -271,12 +272,11 @@ auto Lz4Codec::decompressBlock(const mem::ByteBlock &data, const DecompressionOp
     return output;
 }
 
-auto Lz4Codec::maximumPayloadLength(const unit::ByteLength length) const -> unit::ByteLength {
+auto Lz4Codec::maximumPayloadLength(const ByteCount length) const -> ByteCount {
     if (!length.isFinite()) {
-        throw err::OutOfRangeError{"Compression length must be finite."_el};
+        throw OutOfRangeFailure{"Compression length must be finite."_el};
     }
-    return length.addedOrThrow(
-        unit::ByteLength::fromSizeT(length.toSizeTOrThrow() / cLengthExtensionMaximum + cSizeOverhead));
+    return length.addedOrThrow(ByteCount::fromSizeT(length.toSizeTOrThrow() / cLengthExtensionMaximum + cSizeOverhead));
 }
 
 }

@@ -5,6 +5,7 @@
 #include "PathWalkerWorkerWorkload_fwd.hpp"
 #include "PathWalkMethod.hpp"
 
+#include <erbsland/Path.hpp>
 #include <erbsland/profiling/WorkerWorkload.hpp>
 
 namespace app::path {

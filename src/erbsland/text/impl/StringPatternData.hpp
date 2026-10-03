@@ -7,6 +7,7 @@
 
 #include "../Char.hpp"
 #include "../CharRange.hpp"
+#include "../StringPatternKind.hpp"
 #include "../StringSide.hpp"
 #include "../u16/U16String.hpp"
 #include "../u16/U16StringEditor.hpp"
@@ -15,15 +16,15 @@
 #include "../u8/U8String.hpp"
 #include "../u8/U8StringEditor.hpp"
 
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteRange.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/CpIndex.hpp"
-#include "../../unit/CpLength.hpp"
 #include "../../unit/CpRange.hpp"
-#include "../../unit/U16DataIndex.hpp"
-#include "../../unit/U16DataLength.hpp"
-#include "../../unit/U16DataRange.hpp"
+#include "../../unit/U16Count.hpp"
+#include "../../unit/U16Index.hpp"
+#include "../../unit/U16Range.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -45,9 +46,10 @@ struct StringPatternElement final {
 
 /// Provide non-owning access to compiled string-pattern data.
 struct StringPatternView final {
-    std::span<const StringPatternElement> elements{}; ///< Compiled matching elements.
-    std::span<const CharRange> ranges{};              ///< Character ranges used by set elements.
-    std::size_t divider{cNoStringPatternDivider};     ///< Position of the split divider, if any.
+    std::span<const StringPatternElement> elements{};   ///< Compiled matching elements.
+    std::span<const CharRange> ranges{};                ///< Character ranges used by set elements.
+    std::size_t divider{cNoStringPatternDivider};       ///< Position of the split divider, if any.
+    StringPatternKind kind{StringPatternKind::Divider}; ///< Matching and extraction semantics.
 };
 
 /// Match, trim, and split text using compiled string-pattern data.
@@ -82,12 +84,6 @@ public:
     [[nodiscard]] auto matches(const U16String &text) const noexcept -> bool;
     /// Test if a UTF-32 string matches this pattern.
     [[nodiscard]] auto matches(const U32String &text) const noexcept -> bool;
-    /// Trim matching text from a UTF-8 string.
-    auto trim(U8String &text) const noexcept -> bool;
-    /// Trim matching text from a UTF-16 string.
-    auto trim(U16String &text) const noexcept -> bool;
-    /// Trim matching text from a UTF-32 string.
-    auto trim(U32String &text) const noexcept -> bool;
     /// Trim matching text from a UTF-8 string editor.
     auto trim(U8StringEditor &text) const -> bool;
     /// Trim matching text from a UTF-16 string editor.
@@ -107,15 +103,15 @@ public:
     /// Split a UTF-32 string at this pattern's divider.
     [[nodiscard]] auto split(const U32String &text) const noexcept -> std::pair<U32String, U32String>;
     /// Get the matched length in a UTF-8 string.
-    [[nodiscard]] auto length(const U8String &text) const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto length(const U8String &text) const noexcept -> unit::ByteCount;
     /// Get the matched length in a UTF-16 string.
-    [[nodiscard]] auto length(const U16String &text) const noexcept -> unit::U16DataLength;
+    [[nodiscard]] auto length(const U16String &text) const noexcept -> unit::U16Count;
     /// Get the matched length in a UTF-32 string.
-    [[nodiscard]] auto length(const U32String &text) const noexcept -> unit::CpLength;
+    [[nodiscard]] auto length(const U32String &text) const noexcept -> unit::CpCount;
     /// Get the first matched index in a UTF-8 string.
     [[nodiscard]] auto index(const U8String &text) const noexcept -> unit::ByteIndex;
     /// Get the first matched index in a UTF-16 string.
-    [[nodiscard]] auto index(const U16String &text) const noexcept -> unit::U16DataIndex;
+    [[nodiscard]] auto index(const U16String &text) const noexcept -> unit::U16Index;
     /// Get the first matched index in a UTF-32 string.
     [[nodiscard]] auto index(const U32String &text) const noexcept -> unit::CpIndex;
 
@@ -129,6 +125,10 @@ private:
     /// Match a pattern against a string and retain its boundaries.
     template <typename tString>
     [[nodiscard]] auto match(const StringPatternView &patternView, const tString &text) const noexcept
+        -> MatchResult<tString>;
+    /// Match a compiled full-string glob without allocating or recursively backtracking.
+    template <typename tString>
+    [[nodiscard]] auto matchGlob(const StringPatternView &patternView, const tString &text) const noexcept
         -> MatchResult<tString>;
     /// Match the prefix of a pattern against a string.
     template <typename tString, typename tIndex>

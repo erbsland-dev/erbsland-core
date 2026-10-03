@@ -29,26 +29,29 @@
 #include <span>
 
 namespace erbsland::text::impl {
+
+using namespace mem;
+
 auto StringConversionTools::decodeU8String(
-    const mem::ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode)
+    const ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode)
     -> U8StringEditor {
     return U8StringEncodingTools::decode(data, encoding, bomMode, mode);
 }
 
 auto StringConversionTools::decodeU16String(
-    const mem::ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode)
+    const ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode)
     -> U16StringEditor {
     return U16StringEncodingTools::decode(data, encoding, bomMode, mode);
 }
 
 auto StringConversionTools::decodeU32String(
-    const mem::ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode)
+    const ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode)
     -> U32StringEditor {
     return U32StringEncodingTools::decode(data, encoding, bomMode, mode);
 }
 
 void StringConversionTools::validateEncodedData(
-    const mem::ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode) {
+    const ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode) {
     U8StringEncodingTools::validate(data, encoding, bomMode);
 }
 

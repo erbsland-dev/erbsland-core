@@ -182,10 +182,9 @@ level to the decoder.
 
 .. erbsland-demo::
     :source: compression/ByteCompression/CompareCompressionLevels.cpp
-    :function-blocks: compareCompressionLevels compareDeflateLevels
-    :function-blocks-sha256: 694ca68c5401242137af68d8a0c822e7e331ac497102851887fbb802da351c3f
+    :show: f:compareCompressionLevels, f:compareDeflateLevels
     :exec: compression/byte_compression --demo CompareDeflateLevels
-    :source-sha256: b3c7307dcd75e59cb0081271e8b3969dddac878977706dc3b308f7400b5dfcb7
+    :sha256: 08a78213d8ffb8cc99358ee2249658fde3f2cbeb3538733d61af58a142026dda
 
 .. code-block:: cpp
 
@@ -196,8 +195,8 @@ level to the decoder.
         const auto readings = createObservatoryReadings();
         const auto options = el::DecompressionOptions{}
                                  .setExpectedOutputLength(readings.length())
-                                 .setMaximumOutputLength(el::ByteLength{16U * 1024U})
-                                 .setMaximumWorkspaceLength(el::ByteLength{64U * 1024U * 1024U});
+                                 .setMaximumOutputLength(el::ByteCount{16U * 1024U})
+                                 .setMaximumWorkspaceLength(el::ByteCount{64U * 1024U * 1024U});
 
         el::io::printLine("Instrument        : radiotelescópio"_el);
         el::io::printLine("Algorithm         : "_el, algorithmName);
@@ -223,16 +222,18 @@ level to the decoder.
         compareCompressionLevels(el::CompressionAlgorithm::Deflate, el::CompressionFormat::Raw, "deflate"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Instrument        : radiotelescópio
-    Algorithm         : deflate
-    Original bytes    : 3584
-    Fastest bytes: 3589, restored: yes
-    Fast bytes: 136, restored: yes
-    Default bytes: 137, restored: yes
-    High bytes: 50, restored: yes
-    Highest bytes: 46, restored: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInstrument        : radiotelescópio
+        Algorithm         : deflate
+        Original bytes    : 3584
+        Fastest bytes: 3589, restored: yes
+        Fast bytes: 136, restored: yes
+        Default bytes: 137, restored: yes
+        High bytes: 50, restored: yes
+        Highest bytes: 46, restored: yes␛[0m
 
 .. erbsland-demo-end::

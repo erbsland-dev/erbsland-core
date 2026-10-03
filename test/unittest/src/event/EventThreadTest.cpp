@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/event/CurrentEvents.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/Events.hpp>
-#include <erbsland/event/UnmanagedEventThread.hpp>
+#include <erbsland/CurrentEvents.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/LogicFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/UnmanagedEventThread.hpp>
 
 #include <atomic>
 #include <exception>
@@ -17,7 +17,7 @@ using namespace el::event;
 TESTED_TARGETS(EventThread UnmanagedEventThread EventLoop Events)
 class EventThreadTest final : public el::UnitTest {
 public:
-    void testCurrentEventsOutsideLoopThrows() { REQUIRE_THROWS_AS(el::err::LogicError, currentEvents()); }
+    void testCurrentEventsOutsideLoopThrows() { REQUIRE_THROWS_AS(el::err::LogicFailure, currentEvents()); }
 
     void testStartInvokeAndJoin() {
         const auto thread = UnmanagedEventThread::create();
@@ -58,7 +58,7 @@ public:
         thread->quit();
         thread->join();
 
-        REQUIRE_THROWS_AS(el::err::LogicError, thread->start());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, thread->start());
     }
 
     void testJoinBeforeStartAndAfterJoinIsNoOperation() {
@@ -96,7 +96,7 @@ public:
         thread->join();
 
         REQUIRE(exception != nullptr);
-        REQUIRE_THROWS_AS(el::err::LogicError, std::rethrow_exception(exception));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, std::rethrow_exception(exception));
     }
 
     void testQuitBeforeStart() {

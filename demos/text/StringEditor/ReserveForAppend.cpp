@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringEditor.hpp>
 
 #include <array>
 
@@ -26,7 +29,7 @@ void reserveForAppend() {
     }
 
     auto planned = el::StringEditor{};
-    planned.reserve(el::ByteLength::fromSizeT(requiredBytes));
+    planned.reserve(el::ByteCount::fromSizeT(requiredBytes));
 
     el::io::printLine("Planned reservation"_el);
     el::io::printLine("  required bytes : "_el, requiredBytes);
@@ -45,7 +48,7 @@ void reserveForAppend() {
     el::io::printLine("Repeated exact reservations"_el);
     for (const auto &fragment : fragments) {
         const auto nextLength = repeated.length().toSizeT() + fragment.length().toSizeT() + 1U;
-        repeated.reserve(el::ByteLength::fromSizeT(nextLength));
+        repeated.reserve(el::ByteCount::fromSizeT(nextLength));
         repeated.append(fragment).append(U'\n');
         el::io::printLine("  after step: length "_el, repeated.length(), ", capacity "_el, repeated.capacity());
     }

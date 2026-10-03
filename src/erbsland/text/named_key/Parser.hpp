@@ -28,7 +28,8 @@ class Parser final {
 
 public:
     /// Create a parser at the first entry.
-    /// @throws err::LogicError if the format is invalid.
+    /// @param format The named-key format. Must be valid and unambiguous.
+    /// @param reader The input reader, positioned at the first entry.
     Parser(StringCharReader &reader, const Format &format);
 
 public:

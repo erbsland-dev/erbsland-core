@@ -30,71 +30,92 @@ void BitReader::refill(ByteBlock data) {
 auto BitReader::bitOrder() const noexcept -> BitOrder {
     return _impl->bitOrder();
 }
+
 auto BitReader::bitCount() const noexcept -> std::size_t {
     return _impl->bitCount();
 }
+
 auto BitReader::bitPosition() const noexcept -> std::size_t {
     return _impl->bitPosition();
 }
+
 void BitReader::setBitPosition(const std::size_t bitPosition) noexcept {
     _impl->setBitPosition(bitPosition);
 }
+
 auto BitReader::byteCount() const noexcept -> std::size_t {
     return _impl->byteCount();
 }
+
 auto BitReader::bytePosition() const noexcept -> std::size_t {
     return _impl->bytePosition();
 }
+
 void BitReader::setBytePosition(const std::size_t bytePosition) noexcept {
     _impl->setBytePosition(bytePosition);
 }
+
 auto BitReader::consumedByteCount() const noexcept -> std::size_t {
     return _impl->consumedByteCount();
 }
+
 auto BitReader::remainingBitCount() const noexcept -> std::size_t {
     return _impl->remainingBitCount();
 }
+
 auto BitReader::isAtEnd() const noexcept -> bool {
     return _impl->isAtEnd();
 }
+
 auto BitReader::isByteAligned() const noexcept -> bool {
     return _impl->isByteAligned();
 }
+
 auto BitReader::canRead(const std::size_t bitCountValue) const noexcept -> bool {
     return _impl->canRead(bitCountValue);
 }
+
 auto BitReader::canReadBytes(const std::size_t byteCountValue) const noexcept -> bool {
     return _impl->canReadBytes(byteCountValue);
 }
+
 void BitReader::advance(const std::size_t bitCountValue) noexcept {
     _impl->advance(bitCountValue);
 }
+
 void BitReader::advanceBytes(const std::size_t byteCountValue) noexcept {
     _impl->advanceBytes(byteCountValue);
 }
+
 void BitReader::alignToByte() noexcept {
     _impl->alignToByte();
 }
+
 auto BitReader::readBits(const std::size_t bitCountValue, const uint64_t defaultOnError) noexcept -> uint64_t {
     return _impl->readBits(bitCountValue, defaultOnError);
 }
+
 auto BitReader::readBitsOrThrow(const std::size_t bitCountValue) -> uint64_t {
     return _impl->readBitsOrThrow(bitCountValue);
 }
+
 auto BitReader::readBool() noexcept -> bool {
     return readBits(1U) != 0U;
 }
+
 auto BitReader::readBoolOrThrow() -> bool {
     return readBitsOrThrow(1U) != 0U;
 }
+
 auto BitReader::readByte(const Byte defaultOnError) noexcept -> Byte {
     return Byte{static_cast<uint8_t>(readBits(8U, defaultOnError.toUInt64()))};
 }
+
 auto BitReader::readByteOrThrow() -> Byte {
     return Byte{static_cast<uint8_t>(readBitsOrThrow(8U))};
 }
 
-auto BitReader::readBytesOrThrow(const unit::ByteLength length) -> ByteBlock {
+auto BitReader::readBytesOrThrow(const unit::ByteCount length) -> ByteBlock {
     return _impl->readBytesOrThrow(length);
 }
 

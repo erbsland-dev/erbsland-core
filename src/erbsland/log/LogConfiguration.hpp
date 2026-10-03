@@ -8,18 +8,21 @@
 #include "LogWriter_fwd.hpp"
 #include "LogWriterFilter.hpp"
 
+#include "impl/ActiveLogConfiguration_fwd.hpp"
 #include "impl/LogManagerData_fwd.hpp"
 #include "impl/LogWriterBinding.hpp"
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 namespace erbsland::log {
 
-/// A complete immutable-by-snapshot manager configuration.
+/// Fluent user-facing settings for configuring a log manager.
 /// @tested{LogCoreTest LogWriterTest}
 class LogConfiguration final {
     friend class impl::LogManagerData;
+    friend class impl::ActiveLogConfiguration;
 
 public:
     /// Create a configuration without writer routes.
@@ -29,7 +32,7 @@ public:
     /// Access the line-format settings.
     [[nodiscard]] auto lineFormat() const noexcept -> const LogLineFormat & { return _lineFormat; }
     /// Replace the line-format settings.
-    /// @param value The shared formatting settings used by every writer route.
+    /// @param value The default formatting settings used by routes without an override.
     /// @return This configuration for chained option construction.
     auto setLineFormat(LogLineFormat value) noexcept -> LogConfiguration &;
     /// Access the manager resource limits.
@@ -39,28 +42,26 @@ public:
     /// @return This configuration for chained option construction.
     auto setManagerOptions(LogManagerOptions value) -> LogConfiguration &;
     /// Get the number of configured writer routes.
-    /// @return The number of writer and filter pairs in this configuration.
+    /// @return The number of writer routes in this configuration.
     [[nodiscard]] auto writerCount() const noexcept -> std::size_t { return _writers.size(); }
     /// Add a writer route.
-    /// @param writer The writer instance receiving accepted entries.
+    /// @param writer The writer instance receiving accepted entries. Must not be null.
     /// @param filter The level and path filter evaluated before delivery.
+    /// @param lineFormat The complete route format, or empty to use the configuration default.
     /// @return This configuration for chained route construction.
-    auto addWriter(LogWriterPtr writer, LogWriterFilter filter = {}) -> LogConfiguration &;
+    auto addWriter(
+        LogWriterPtr writer, LogWriterFilter filter = {}, std::optional<LogLineFormat> lineFormat = std::nullopt)
+        -> LogConfiguration &;
     /// Access explicitly enabled trace sections.
     [[nodiscard]] auto traceSections() const noexcept -> const std::vector<LogTraceSection> & { return _traceSections; }
     /// Enable a trace section.
-    /// @param section The case-sensitive trace section to enable.
+    /// @param section The trace section to enable.
     /// @return This configuration for chained option construction.
     auto enableTraceSection(LogTraceSection section) -> LogConfiguration &;
     /// Test whether the given trace section is enabled.
     /// @param section The trace section to look up.
     /// @return `true` if the section is present in the enabled-section list.
     [[nodiscard]] auto isTraceSectionEnabled(const LogTraceSection &section) const noexcept -> bool;
-    /// Test whether a trace entry would be accepted by any route.
-    /// @param path The path of the stream being evaluated.
-    /// @param section The optional trace section of the stream.
-    /// @return `true` if the section is enabled when named and at least one route accepts trace for `path`.
-    [[nodiscard]] auto acceptsTrace(const LogPath &path, const LogTraceSection &section) const noexcept -> bool;
 
 private:
     /// Access implementation-only writer routes.
@@ -70,7 +71,7 @@ private:
     }
 
 private:
-    LogLineFormat _lineFormat;                    ///< Shared line-format settings.
+    LogLineFormat _lineFormat;                    ///< Default line-format settings.
     LogManagerOptions _managerOptions;            ///< Manager queue and shutdown limits.
     std::vector<impl::LogWriterBinding> _writers; ///< Ordered implementation-only writer routes.
     std::vector<LogTraceSection> _traceSections;  ///< Case-sensitive enabled trace sections.

@@ -1,7 +1,28 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationInfo.hpp>
+#include <erbsland/ArgumentCount.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/CommandLineArguments.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValue.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Version.hpp>
 
 #include <initializer_list>
 
@@ -11,7 +32,7 @@ using namespace el::text::literals;
 
 [[nodiscard]] auto makeArgs(std::initializer_list<el::String> args) -> el::CommandLineArguments {
     auto result = el::CommandLineArguments{};
-    result.reserve(el::ItemCount{args.size()});
+    result.reserve(el::ItemCount::fromInteger(args.size()));
     for (const auto &arg : args) {
         result.append(arg.copy());
     }
@@ -29,16 +50,16 @@ auto optionValues() -> el::ExitCode {
     info.setApplicationName("Laboratory Values"_el);
     info.setApplicationVersion(el::Version{0, 8, 0});
     options->setApplicationInfo(info);
-    options->addOption({"-v"_el, "--verbose"_el, "verbose"_el}).setHelpDescription("Increases the detail level."_el);
+    options->addOption({"-v"_el, "--verbose"_el, "verbose"_el}).setHelpTitle("Increases the detail level."_el);
     options->addOption({"-p"_el, "--point"_el, "point"_el})
         .setType(el::OptionType::Text)
         .setMaximum(el::ArgumentCount{4U})
-        .setHelpDescription("Measurement point. Can appear up to four times."_el);
+        .setHelpTitle("Measurement point. Can appear up to four times."_el);
     options->addOption({"--level"_el, "level"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{2})
-        .setHelpDescription("Default observation level."_el);
-    options->addOption("instrument"_el).setRequired().setHelpDescription("Primary instrument."_el);
+        .setHelpTitle("Default observation level."_el);
+    options->addOption("instrument"_el).setRequired().setHelpTitle("Primary instrument."_el);
 
     auto manager = el::OptionManager{options};
     auto arguments =
@@ -65,7 +86,7 @@ auto optionValues() -> el::ExitCode {
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     app.setMainFn(demo::optionValues);
     return app.run();
 }

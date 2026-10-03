@@ -8,6 +8,8 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+
 /// Multiply five pairs of 26-bit limbs with NEON and return their 64-bit sum.
 /// Both lanes hold independent RFC 8439 limb products from the same convolution row.
 /// @tested{ChaCha20BackendFullTest}
@@ -30,7 +32,7 @@ auto ArmPoly1305::multiplyFive(const std::array<uint64_t, 5> &left, const std::a
     return sum;
 }
 
-void ArmPoly1305::processFullBlocks(const mem::ConstByteSpan blocks, const std::size_t blockCount) noexcept {
+void ArmPoly1305::processFullBlocks(const ConstByteSpan blocks, const std::size_t blockCount) noexcept {
     auto index = std::size_t{};
     for (; index + 4U <= blockCount; index += 4U) {
         // RFC 8439, Section 2.5: preserve message order across each four-block backend batch.
@@ -45,7 +47,7 @@ void ArmPoly1305::processFullBlocks(const mem::ConstByteSpan blocks, const std::
     }
 }
 
-void ArmPoly1305::processBlock(const mem::ConstByteSpan block, const bool complete) noexcept {
+void ArmPoly1305::processBlock(const ConstByteSpan block, const bool complete) noexcept {
     addBlockToAccumulator(block, complete);
 
     // RFC 8439, Section 2.5: each row is one coefficient of h*r modulo 2^130-5.

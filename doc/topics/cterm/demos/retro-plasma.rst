@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-************
-Retro Plasma
-************
+*****************************************
+Retro Plasma: Animated Terminal Rendering
+*****************************************
 
 ``retro-plasma`` is a full-screen animation demo that renders a classic plasma effect directly in the terminal.
 It is both a visual showcase and a practical example of continuous buffer updates, palette switching, keyboard controls,

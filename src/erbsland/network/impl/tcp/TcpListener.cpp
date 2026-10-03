@@ -4,8 +4,8 @@
 
 #include "TcpConnectionRequest.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../err/RuntimeError.hpp"
 #include "../../../event/Events.hpp"
 #include "../../../text/Literals.hpp"
@@ -16,13 +16,14 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text::literals;
 
 TcpListener::TcpListener(
     event::EventsPtr ownerEvents, event::EventLoopDriverPtr driver, TcpListenerDeviceCreateFn createDevice) :
     network::TcpListener{std::move(ownerEvents)}, _driver{std::move(driver)}, _createDevice{std::move(createDevice)} {
     if (_driver == nullptr || !_createDevice) {
-        throw err::LogicError{"A TCP listener requires a driver and device factory."_el};
+        throw LogicFailure{"A TCP listener requires a driver and device factory."_el};
     }
 }
 
@@ -44,11 +45,11 @@ void TcpListener::start(IpEndpoint localEndpoint, TcpListenerOptions options) {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
     verifyCurrentOwnerEvents();
     if (_started.load()) {
-        throw err::LogicError{"A TCP listener can only be started once."_el};
+        throw LogicFailure{"A TCP listener can only be started once."_el};
     }
     validateStart(localEndpoint, options);
     if (_started.exchange(true)) {
-        throw err::LogicError{"A TCP listener can only be started once."_el};
+        throw LogicFailure{"A TCP listener can only be started once."_el};
     }
     _state.store(NetworkSourceState::Starting);
     if (!options._hasExplicitConnectionQuota) {
@@ -73,7 +74,7 @@ void TcpListener::start(IpEndpoint localEndpoint, TcpListenerOptions options) {
         postListening(generation);
     } catch (const NetworkError &error) {
         postError(generation, error.context());
-    } catch (const err::RuntimeError &error) {
+    } catch (const RuntimeError &error) {
         postError(
             generation,
             NetworkErrorContext{"TCP listener startup failed"_el, error.reason()}
@@ -123,14 +124,12 @@ void TcpListener::abort() noexcept {
     }
     const auto generation = _generation.fetch_add(1U) + 1U;
     cleanupDevice(true);
-    try {
-        const auto weakSelf = std::weak_ptr<TcpListener>{std::static_pointer_cast<TcpListener>(shared_from_this())};
-        ownerEvents()->invoke([weakSelf, generation]() -> void {
-            if (const auto self = weakSelf.lock(); self != nullptr) {
-                self->postFinal(generation);
-            }
-        });
-    } catch (...) {}
+    const auto weakSelf = std::weak_ptr<TcpListener>{std::static_pointer_cast<TcpListener>(shared_from_this())};
+    ownerEvents()->invoke([weakSelf, generation]() -> void {
+        if (const auto self = weakSelf.lock(); self != nullptr) {
+            self->postFinal(generation);
+        }
+    });
 }
 
 auto TcpListener::events() -> network::TcpListenerEventEditor & {
@@ -249,14 +248,12 @@ void TcpListener::releasePendingRequest() {
 
 void TcpListener::handleQuotaCapacity() {
     const auto weakSelf = std::weak_ptr<TcpListener>{std::static_pointer_cast<TcpListener>(shared_from_this())};
-    try {
-        ownerEvents()->invoke([weakSelf]() -> void {
-            if (const auto self = weakSelf.lock(); self != nullptr) {
-                const auto lifecycleLock = std::scoped_lock{self->_lifecycleMutex};
-                self->updateAccepting();
-            }
-        });
-    } catch (...) {}
+    ownerEvents()->invoke([weakSelf]() -> void {
+        if (const auto self = weakSelf.lock(); self != nullptr) {
+            const auto lifecycleLock = std::scoped_lock{self->_lifecycleMutex};
+            self->updateAccepting();
+        }
+    });
 }
 
 void TcpListener::updateAccepting() {
@@ -294,7 +291,7 @@ void TcpListener::postClosedAndFinal(const std::uint64_t generation) {
             if (callback) {
                 callback();
             }
-        } catch (...) {
+        } catch (const RuntimeError &) {
             if (firstException == nullptr) {
                 throw;
             }
@@ -326,7 +323,7 @@ void TcpListener::postErrorAndFinal(std::uint64_t generation, NetworkErrorContex
             if (callback) {
                 callback();
             }
-        } catch (...) {
+        } catch (const RuntimeError &) {
             if (firstException == nullptr) {
                 throw;
             }
@@ -364,17 +361,17 @@ void TcpListener::cleanupDevice(const bool abortDevice) noexcept {
 
 void TcpListener::validateStart(const IpEndpoint &localEndpoint, const TcpListenerOptions &options) const {
     if (localEndpoint.address().isV4() && localEndpoint.scopeId().isSpecified()) {
-        throw err::ParameterError{"An IPv4 listener endpoint cannot contain an IPv6 scope."_el, "localEndpoint"_el};
+        throw ParameterFailure{"An IPv4 listener endpoint cannot contain an IPv6 scope."_el, "localEndpoint"_el};
     }
     if (!options.backlog().isFinite() || options.backlog().isZero()) {
-        throw err::ParameterError{"The TCP listener backlog must be positive and finite."_el, "options.backlog"_el};
+        throw ParameterFailure{"The TCP listener backlog must be positive and finite."_el, "options.backlog"_el};
     }
     if (!options.maximumPendingRequests().isFinite() || options.maximumPendingRequests().isZero()) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The TCP pending-request limit must be positive and finite."_el, "options.maximumPendingRequests"_el};
     }
     if (options.connectionQuota() == nullptr) {
-        throw err::ParameterError{"The TCP listener connection quota must not be empty."_el, "options"_el};
+        throw ParameterFailure{"The TCP listener connection quota must not be empty."_el, "options"_el};
     }
 }
 

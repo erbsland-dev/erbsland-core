@@ -2,20 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteFormat.hpp>
 #include <erbsland/conf/Source.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/re/RegEx.hpp>
-#include <erbsland/text/ByteFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringCharReader.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/time/Date.hpp>
-#include <erbsland/time/DateTime.hpp>
-#include <erbsland/time/Time.hpp>
-#include <erbsland/time/TimeWithZone.hpp>
+#include <erbsland/Date.hpp>
+#include <erbsland/DateTime.hpp>
+#include <erbsland/RegEx.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringCharReader.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/Time.hpp>
+#include <erbsland/TimeWithZone.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>

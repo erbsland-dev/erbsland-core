@@ -53,7 +53,7 @@ private:
     -> SensitiveInputToken;
 
 /// Stop one native standard-input sensitivity request.
-/// @throws err::LogicError If the token is invalid or was already stopped.
+/// @param token The sensitivity token to stop. Must be valid and must not have been stopped already.
 /// @tested{StandardStreamsTest}
 void stopSensitiveInput(SensitiveInputToken token);
 

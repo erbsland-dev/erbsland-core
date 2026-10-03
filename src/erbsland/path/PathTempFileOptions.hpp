@@ -7,7 +7,7 @@
 #include "../stream/OutputStreamSettings.hpp"
 #include "../text/String.hpp"
 #include "../text/StringEditor.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 #include "../unit/ItemCount.hpp"
 
 namespace erbsland::path {
@@ -32,20 +32,20 @@ public:
     [[nodiscard]] auto prefix() const noexcept -> const text::String & { return _prefix; }
     /// Set the prefix to add in front of the random name part.
     auto setPrefix(const text::String &value) -> PathTempFileOptions & {
-        _prefix = text::String{value};
+        _prefix = value;
         return *this;
     }
     /// The suffix to add after the random name part.
     [[nodiscard]] auto suffix() const noexcept -> const text::String & { return _suffix; }
     /// Set the suffix to add after the random name part.
     auto setSuffix(const text::String &value) -> PathTempFileOptions & {
-        _suffix = text::String{value};
+        _suffix = value;
         return *this;
     }
     /// The number of random characters to place between prefix and suffix.
-    [[nodiscard]] auto randomLength() const noexcept -> unit::CpLength { return _randomLength; }
+    [[nodiscard]] auto randomLength() const noexcept -> unit::CpCount { return _randomLength; }
     /// Set the number of random characters to place between prefix and suffix.
-    auto setRandomLength(const unit::CpLength value) noexcept -> PathTempFileOptions & {
+    auto setRandomLength(const unit::CpCount value) noexcept -> PathTempFileOptions & {
         _randomLength = value;
         return *this;
     }
@@ -76,7 +76,7 @@ private:
 
     text::String _prefix;
     text::String _suffix;
-    unit::CpLength _randomLength{24U};
+    unit::CpCount _randomLength{24U};
     unit::ItemCount _maximumAttempts{128U};
     bool _removeOnClose{true};
     PathAccessProfile _accessProfile{PathAccessProfile::Default};

@@ -34,7 +34,7 @@ template <typename T>
 auto JsonValue::getOrThrow() const -> T {
     const auto value = get<T>();
     if (!value.has_value()) {
-        throwTypeError();
+        throwTypeFailure();
     }
     return *value;
 }

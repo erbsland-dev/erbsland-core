@@ -3,6 +3,9 @@
 
 #include "SkillTreeStreams.hpp"
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+
 namespace demo {
 
 /// Test custom streams through their public contract.
@@ -10,7 +13,7 @@ namespace demo {
 /// ownership requirement for coroutine methods.
 void verifyCustomContracts() {
     auto input = SkillTreeInputStream{{1U, 2U, 3U, 4U, 5U}};
-    const auto exact = input.readExact(el::ByteLength{5U});
+    const auto exact = input.readExact(el::ByteCount{5U});
     const auto finished = input.readByte();
     auto output = SkillTreeOutputStream{};
     const auto write = output.writeUInt32(0x01020304U);

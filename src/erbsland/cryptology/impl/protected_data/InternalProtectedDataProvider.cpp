@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "InternalProtectedDataProvider.hpp"
 
-#include "../../../core/Application.hpp"
+#include "../../../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../../../core/impl/ApplicationDataAccess.hpp"
 #include "../../../mem/ByteArray.hpp"
 #include "../../../mem/ByteBuffer.hpp"
 #include "../../../mem/Endianness.hpp"
@@ -20,10 +21,12 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
 InternalProtectedDataProvider::InternalProtectedDataProvider() :
-    _key{core::application().secureRandom().buildByteBlock(unit::ByteLength{32U})} {
+    _key{core::impl::applicationData()->random().get()->secureRandom().buildByteBlock(ByteCount{32U})} {
     // NIST SP 800-38D section 8: this uniformly random AES-256 key belongs to exactly one application-lifetime
     // invocation-counter domain. SymmetricKey retains it in sensitive storage.
 }
@@ -33,8 +36,8 @@ InternalProtectedDataProvider::~InternalProtectedDataProvider() {
     _key = {};
 }
 
-auto InternalProtectedDataProvider::protect(const mem::ConstByteSpan plaintext, const unit::ByteLength plaintextLength)
-    -> mem::ByteBlock {
+auto InternalProtectedDataProvider::protect(const ConstByteSpan plaintext, const ByteCount plaintextLength)
+    -> ByteBlock {
     // NIST SP 800-38D sections 5.2.1 and 8.2.1: serialize all uses of the key so each invocation gets a unique IV.
     const auto lock = std::scoped_lock{_mutex};
     const auto nonce = nextNonce();
@@ -48,20 +51,19 @@ auto InternalProtectedDataProvider::protect(const mem::ConstByteSpan plaintext, 
 
     // Provider envelope format: 96-bit IV || 128-bit authentication tag || GCM ciphertext. This format is private and
     // has no persistence or cross-provider compatibility contract.
-    auto envelope = mem::ByteBuffer{};
-    envelope.reserve(
-        unit::ByteLength{cNonceSize + cTagSize + encrypted.length().toSizeT() + finalData.length().toSizeT()});
+    auto envelope = ByteBuffer{};
+    envelope.reserve(ByteCount{cNonceSize} + ByteCount{cTagSize} + encrypted.length() + finalData.length());
     envelope.append(nonce.span());
     envelope.append(tag.span());
     envelope.append(encrypted.span());
     envelope.append(finalData.span());
-    auto result = mem::ByteBlock::fromSpan(envelope.span());
+    auto result = ByteBlock::fromSpan(envelope.span());
     result.markAsSensitive();
     return result;
 }
 
-auto InternalProtectedDataProvider::unprotect(const mem::ConstByteSpan envelope, const unit::ByteLength plaintextLength)
-    -> mem::ByteBlock {
+auto InternalProtectedDataProvider::unprotect(const ConstByteSpan envelope, const ByteCount plaintextLength)
+    -> ByteBlock {
     // Validate the private envelope framing before creating any cryptographic state or slicing caller-controlled data.
     const auto expectedLength = cNonceSize + cTagSize + plaintextLength.toSizeT();
     if (envelope.size() != expectedLength) {
@@ -80,10 +82,10 @@ auto InternalProtectedDataProvider::unprotect(const mem::ConstByteSpan envelope,
     auto finalData = decryptor.finalize(tag);
     if (!finalData.isEmpty()) {
         // The combined temporary remains sensitive, so replacement and every exceptional exit erase its allocation.
-        auto combined = mem::ByteBuffer{plaintext.span()};
+        auto combined = ByteBuffer{plaintext.span()};
         combined.setSensitive(true);
         combined.append(finalData.span());
-        plaintext = mem::ByteBlock::fromSpan(combined.span());
+        plaintext = ByteBlock::fromSpan(combined.span());
     }
     plaintext.markAsSensitive();
 
@@ -95,12 +97,12 @@ auto InternalProtectedDataProvider::unprotect(const mem::ConstByteSpan envelope,
     return plaintext;
 }
 
-auto InternalProtectedDataProvider::lengthData(const unit::ByteLength plaintextLength) -> mem::ByteBlock {
+auto InternalProtectedDataProvider::lengthData(const ByteCount plaintextLength) -> ByteBlock {
     // Provider metadata encoding: a fixed-width big-endian integer avoids ambiguous AAD encodings of the same length.
-    auto data = mem::ByteArray<8U>{};
+    auto data = ByteArray<8U>{};
     data.setIntegerOrThrow<uint64_t>(
-        unit::ByteIndex::zero(), static_cast<uint64_t>(plaintextLength.toSizeT()), mem::Endianness::Big);
-    return mem::ByteBlock{data};
+        ByteIndex::zero(), static_cast<uint64_t>(plaintextLength.toSizeT()), Endianness::Big);
+    return ByteBlock{data};
 }
 
 auto InternalProtectedDataProvider::nextNonce() -> SymmetricNonce {
@@ -113,8 +115,8 @@ auto InternalProtectedDataProvider::nextNonce() -> SymmetricNonce {
 
     // The 96-bit IV is a 32-bit zero fixed field followed by the 64-bit big-endian invocation field. This provider is
     // the sole invoker for its fresh application key, so key-scoped uniqueness comes entirely from the counter.
-    auto nonce = mem::ByteArray<cNonceSize>{};
-    nonce.setIntegerOrThrow<uint64_t>(unit::ByteIndex{4U}, _nonceCounter, mem::Endianness::Big);
+    auto nonce = ByteArray<cNonceSize>{};
+    nonce.setIntegerOrThrow<uint64_t>(ByteIndex{4U}, _nonceCounter, Endianness::Big);
     return SymmetricNonce{nonce.span()};
 }
 

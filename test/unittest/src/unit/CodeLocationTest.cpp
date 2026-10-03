@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/unit/CodeLocation.hpp>
-#include <erbsland/unit/StdFormat.hpp>
+#include <erbsland/CodeLocation.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;

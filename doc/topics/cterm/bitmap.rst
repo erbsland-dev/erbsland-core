@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-******
-Bitmap
-******
+**************************
+Rendering Terminal Bitmaps
+**************************
 
 ``Bitmap`` is the low-level pixel container used throughout the library whenever a boolean mask needs to be rendered,
 copied, or transformed.
@@ -16,11 +16,9 @@ You will mostly encounter this class indirectly during glyph rendering and other
 That said, it is also a great tool when you want to build your own rendering helpers—such as icons, line maps, or small
 procedural effects.
 
-Usage
-=====
 
 Preparing a Small Pixel Mask
-----------------------------
+============================
 
 A ``Bitmap`` represents a two-dimensional grid of pixels.
 You can set or query each pixel individually and copy regions between bitmaps.
@@ -48,7 +46,7 @@ This is especially useful when translating bitmap data into terminal cell repres
 with half-block characters).
 
 Building Bitmaps from BlockText Patterns
-----------------------------------------
+========================================
 
 For small icons or handcrafted masks, ``Bitmap::fromPattern()`` is usually the fastest and most readable way to define
 pixels.
@@ -77,7 +75,7 @@ Rows may have different lengths.
 the right.
 
 Rendering a Bitmap to a Buffer
-------------------------------
+==============================
 
 Once your bitmap is prepared, you can render it using ``Buffer::drawBitmap()``.
 
@@ -107,7 +105,7 @@ When using the rectangle overload, the *rendered* bitmap is aligned inside the t
 If it exceeds the available space, it is cropped according to the selected alignment.
 
 Choosing the Scale Mode
------------------------
+=======================
 
 ``BitmapScaleMode`` determines how bitmap pixels are mapped to terminal cells:
 
@@ -130,7 +128,7 @@ on the pixel’s east, south, west, and north neighbors.
 This is particularly useful for rendering circuit diagrams, line art, or bitmap-derived frame structures.
 
 Color and Animation Rules
--------------------------
+=========================
 
 The base color is defined by ``BitmapDrawOptions::color()``.
 

@@ -45,8 +45,8 @@ public: // factory methods
 
 public: // registration and preparation
     /// Defer registration of an application-part class.
+    /// Must be called before preparation starts.
     /// @tparam T The concrete application-part class.
-    /// @throws err::LogicError If preparation already started.
     template <ApplicationPartClass T>
     void registerPart() {
         registerPart(

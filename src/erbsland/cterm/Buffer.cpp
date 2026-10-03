@@ -5,7 +5,8 @@
 #include "Block16Style.hpp"
 #include "Tile9Style.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/OutOfRangeError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <algorithm>
@@ -15,6 +16,7 @@
 
 namespace erbsland::cterm {
 
+using namespace err;
 using namespace text::literals;
 using namespace block;
 using namespace geometry;
@@ -136,7 +138,7 @@ void Buffer::setAndResizeFrom(const ReadableBuffer &other) {
 
 auto Buffer::fromLinesInString(const BlockString &text) -> Buffer {
     if (text.isEmpty()) {
-        throw err::ParameterError{"Text must not be empty."_el, "text"_el};
+        throw OutOfRangeError{"Text must not be empty."_el};
     }
     auto lines = BlockStringLines{};
     for (const auto &line : text.splitLines()) {
@@ -147,7 +149,7 @@ auto Buffer::fromLinesInString(const BlockString &text) -> Buffer {
 
 auto Buffer::fromLines(const BlockStringLines &lines) -> Buffer {
     if (lines.empty()) {
-        throw err::ParameterError{"Lines must not be empty."_el, "lines"_el};
+        throw OutOfRangeError{"Lines must not be empty."_el};
     }
     Size size{Coordinate{1}, Coordinate{lines.size()}};
     for (const auto &line : lines) {
@@ -166,10 +168,10 @@ auto Buffer::fromLines(const BlockStringLines &lines) -> Buffer {
 
 auto Buffer::validatedBufferSize(const Size size) -> Size {
     if (size.width() < 1 || size.height() < 1) {
-        throw err::ParameterError{"Buffer size must be at least 1x1."_el, "size"_el};
+        throw ParameterFailure{"Buffer size must be at least 1x1."_el, "size"_el};
     }
     if (!size.fitsInto(cMaximumSize)) {
-        throw err::ParameterError{"Buffer size must not exceed 10'000x10'000."_el, "size"_el};
+        throw ParameterFailure{"Buffer size must not exceed 10'000x10'000."_el, "size"_el};
     }
     return size;
 }

@@ -10,7 +10,7 @@
 #include "impl/FramePainter.hpp"
 
 #include "../block/AlignedSource.hpp"
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 
 namespace erbsland::cterm {
 
@@ -364,7 +364,7 @@ void WritableBuffer::drawBuffer(const ReadableBuffer &buffer, const Rectangle ta
 
 void WritableBuffer::drawBuffer(const ReadableBuffer &buffer, const BufferDrawOptions &options) {
     if (static_cast<const ReadableBuffer *>(this) == &buffer) {
-        throw err::ParameterError{
+        throw err::ParameterFailure{
             "WritableBuffer::drawBuffer() does not support drawing a buffer onto itself."_el, "buffer"_el};
     }
     const auto *source = &buffer;

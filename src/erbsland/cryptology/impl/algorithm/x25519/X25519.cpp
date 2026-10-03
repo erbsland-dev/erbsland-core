@@ -9,30 +9,29 @@
 
 namespace erbsland::cryptology::impl::x25519 {
 
-auto publicKey(const mem::ConstByteSpan privateKey) -> mem::ByteArray<32U> {
+using namespace mem;
+using namespace unit;
+
+auto publicKey(const ConstByteSpan privateKey) -> ByteArray<32U> {
     // RFC 7748 sections 4.1 and 6.1: Curve25519's base-point u-coordinate is 9.
-    auto basePoint = mem::ByteArray<32U>{};
-    basePoint.set(unit::ByteIndex::zero(), mem::Byte{9U});
+    auto basePoint = ByteArray<32U>{};
+    basePoint.set(ByteIndex::zero(), Byte{9U});
     return scalarMultiply(privateKey, basePoint.span());
 }
 
-auto agree(const mem::ConstByteSpan privateKey, const mem::ConstByteSpan peerPublicKey) -> mem::ByteArray<32U> {
+auto agree(const ConstByteSpan privateKey, const ConstByteSpan peerPublicKey) -> ByteArray<32U> {
     return scalarMultiply(privateKey, peerPublicKey);
 }
 
-auto scalarMultiply(const mem::ConstByteSpan scalarBytes, const mem::ConstByteSpan coordinateBytes)
-    -> mem::ByteArray<32U> {
+auto scalarMultiply(const ConstByteSpan scalarBytes, const ConstByteSpan coordinateBytes) -> ByteArray<32U> {
     // RFC 7748 section 5, decodeScalar25519: copy the secret scalar so clamping never modifies caller-owned bytes.
     // The guard erases the clamped scalar on success and on every exceptional exit.
-    auto scalar = mem::ByteArray<32U>::fromSpanOrThrow(scalarBytes);
+    auto scalar = ByteArray<32U>::fromSpanOrThrow(scalarBytes);
     const auto scalarEraseGuard = SecureEraseGuard{scalar};
 
     // RFC 7748 section 5: clear k[0]'s low three bits and k[31]'s high bit, then set k[31]'s second-highest bit.
-    scalar.set(
-        unit::ByteIndex::zero(), mem::Byte{static_cast<uint8_t>(scalar.get(unit::ByteIndex::zero()).toUInt8() & 248U)});
-    scalar.set(
-        unit::ByteIndex{31U},
-        mem::Byte{static_cast<uint8_t>((scalar.get(unit::ByteIndex{31U}).toUInt8() & 127U) | 64U)});
+    scalar.set(ByteIndex::zero(), Byte{static_cast<uint8_t>(scalar.get(ByteIndex::zero()).toUInt8() & 248U)});
+    scalar.set(ByteIndex{31U}, Byte{static_cast<uint8_t>((scalar.get(ByteIndex{31U}).toUInt8() & 127U) | 64U)});
 
     // RFC 7748 section 5: decode u as x_1, then initialize (x_2, z_2) = (1, 0), (x_3, z_3) = (u, 1), swap = 0.
     // FieldElement destructors erase every scalar-derived ladder coordinate when this operation returns.
@@ -45,7 +44,7 @@ auto scalarMultiply(const mem::ConstByteSpan scalarBytes, const mem::ConstByteSp
 
     // RFC 7748 sections 5 and 5.1: execute exactly 255 ladder iterations, from scalar bit 254 down to bit zero.
     for (auto position = 255U; position-- > 0U;) {
-        const auto scalarByte = scalar.get(unit::ByteIndex::fromSizeT(position / 8U)).toUInt64();
+        const auto scalarByte = scalar.get(ByteIndex::fromSizeT(position / 8U)).toUInt64();
         const auto bit = (scalarByte >> (position & 7U)) & 1U;
 
         // RFC 7748 section 5: swap ^= k_t; cswap(swap, x_2, x_3); cswap(swap, z_2, z_3); swap = k_t.
@@ -80,7 +79,7 @@ auto scalarMultiply(const mem::ConstByteSpan scalarBytes, const mem::ConstByteSp
     auto result = FieldElement::multiply(x2, FieldElement::invert(z2)).toBytes();
     // The encoded coordinate is a shared secret for agreement calls. Return a copy, then erase this stack instance.
     const auto resultEraseGuard = SecureEraseGuard{result};
-    return mem::ByteArray<32U>{result};
+    return ByteArray<32U>{result};
 }
 
 }

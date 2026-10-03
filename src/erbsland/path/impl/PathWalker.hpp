@@ -52,6 +52,7 @@ private:
     /// Visit a path and, when applicable, its child paths.
     [[nodiscard]] auto visit(
         const Path &path,
+        const Path &relativePath,
         const WalkFn &walkFn,
         const PathWalkOptions &options,
         text::StringSet &visitedDirectories,

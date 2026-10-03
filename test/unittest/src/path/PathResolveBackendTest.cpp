@@ -4,16 +4,17 @@
 #include "PathBackendTestBase.hpp"
 #include "PathTestHelper.hpp"
 
+#include <erbsland/ByteOutputStream.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/path/impl/BackendFactory.hpp>
 #include <erbsland/path/impl/CommonPathBackend.hpp>
 #include <erbsland/path/impl/PathInfoData.hpp>
-#include <erbsland/path/PathCreateMode.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathResolveMode.hpp>
-#include <erbsland/path/PathWriteTextOptions.hpp>
-#include <erbsland/stream/ByteOutputStream.hpp>
-#include <erbsland/stream/TextOutputStream.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/PathCreateMode.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathResolveMode.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/TextOutputStream.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -91,6 +92,7 @@ class PathResolveBackendTest final : public el::UnitTest {
 
         [[nodiscard]] auto loadInfoOrThrow(const Path &path, el::path::PathInfoParts parts) const
             -> el::path::impl::PathInfoData override {
+            ++infoLoads;
             auto result = el::path::impl::PathInfoData{};
             result.resolvedPath = resolveOrThrow(path, PathResolveOptions{});
             result.exists = true;
@@ -117,6 +119,7 @@ class PathResolveBackendTest final : public el::UnitTest {
         mutable Path lastOutputPath;
         mutable el::path::PathWriteDataOptions lastWriteOptions;
         mutable std::shared_ptr<MemoryOutputStream> lastOutputStream;
+        mutable std::size_t infoLoads{};
         bool outputHasExistingContent{false};
         bool failCurrentDirectory = false;
         bool failUserHomeDirectory = false;
@@ -173,6 +176,18 @@ public:
         REQUIRE_THROWS_AS(el::path::PathError, Path{"relative/path"_el}.toRelativeOrThrow(Path{}));
     }
 
+    void testRelativePathsPreserveComponents() {
+        auto scope = BackendScope{std::make_unique<TestBackend>()};
+        const auto base = Path{"/work/root"_el};
+        const auto path = Path::fromPosix(R"(/work/root/a\b/c\d.txt)"_el);
+        const auto relative = path.toRelativeOrThrow(base);
+        REQUIRE_EQUAL(relative.elementCount(), el::unit::ItemCount{2U});
+        REQUIRE_EQUAL(relative.element(el::unit::ItemIndex::zero()), R"(a\b)"_el);
+        REQUIRE_EQUAL(relative.name(), R"(c\d.txt)"_el);
+        REQUIRE_EQUAL(relative.toAbsoluteOrThrow(base), path);
+        REQUIRE_EQUAL(path.commonAncestor(path.withName("other.txt"_el)), path.parent());
+    }
+
     void testIsRelativeToAndCommonAncestor() {
         auto scope = BackendScope{std::make_unique<TestBackend>()};
 
@@ -183,6 +198,33 @@ public:
             toStdString(Path{"/work/root/data/file.txt"_el}.commonAncestor(Path{"/work/root/docs/readme.txt"_el})),
             "/work/root");
         REQUIRE_EQUAL(toStdString(Path{"/work/root/data/file.txt"_el}.commonAncestor(Path{"/other/root"_el})), "/");
+    }
+
+    void testLexicalResolutionPreservesUnchangedPathMetadata() {
+        auto scope = BackendScope{std::make_unique<TestBackend>()};
+        const auto path = Path{"/work/root/file.txt"_el};
+        REQUIRE(path.info().exists());
+        REQUIRE_EQUAL(scope.backendPtr->infoLoads, std::size_t{1});
+        const auto normalized = path.resolveOrThrow(PathResolveMode::Lexical);
+        REQUIRE(normalized.info().exists());
+        REQUIRE_EQUAL(scope.backendPtr->infoLoads, std::size_t{1});
+        normalized.info().reload();
+        REQUIRE_EQUAL(scope.backendPtr->infoLoads, std::size_t{2});
+    }
+
+    void testExplicitBaseDoesNotAccessCurrentDirectory() {
+        auto scope = BackendScope{std::make_unique<TestBackend>()};
+        scope.backendPtr->failCurrentDirectory = true;
+        const auto base = Path{"/work/root"_el};
+        const auto file = Path{"/work/root/data/file.txt"_el};
+        REQUIRE_EQUAL(toStdString(Path{"data/file.txt"_el}.toAbsoluteOrThrow(base)), "/work/root/data/file.txt");
+        REQUIRE_EQUAL(toStdString(file.toRelativeOrThrow(base)), "data/file.txt");
+        REQUIRE(file.isRelativeTo(base));
+        REQUIRE_EQUAL(toStdString(file.commonAncestor(base)), "/work/root");
+        REQUIRE_THROWS_AS(el::path::PathError, Path{"data"_el}.toAbsoluteOrThrow());
+        REQUIRE_THROWS_AS(el::path::PathError, file.toRelativeOrThrow());
+        REQUIRE_FALSE(file.isRelativeTo());
+        REQUIRE(file.commonAncestor().isEmpty());
     }
 
     void testCurrentDirectoryReportsBackendFailureAsEmptyPath() {

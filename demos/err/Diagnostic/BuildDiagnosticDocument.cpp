@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/DiagnosticHelper.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TextDocument.hpp>
 
 #include <stdexcept>
 
@@ -13,10 +17,10 @@ void buildDiagnosticDocument() {
     try {
         try {
             throw std::runtime_error{"MIDI input stopped responding"};
-        } catch (...) {
+        } catch (const std::runtime_error &) {
             throw el::RuntimeError{"The digital-piano input could not be read."_el, std::current_exception()};
         }
-    } catch (const el::Exception &error) {
+    } catch (const el::RuntimeError &error) {
         auto document = el::DiagnosticHelper{error}.toDocument();
         el::io::printLine(document.toString());
     }

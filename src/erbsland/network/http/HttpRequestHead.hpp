@@ -22,10 +22,9 @@ public:
     HttpRequestHead() noexcept = default;
     /// Create a validated request head.
     /// @param method The valid request method.
-    /// @param target The exact nonempty ASCII request-target.
+    /// @param target The exact non-empty ASCII request-target. Must not contain whitespace, controls, or DEL.
     /// @param version The supported HTTP version.
     /// @param headers The ordered request header fields.
-    /// @throws err::ParameterError If a control value is invalid.
     HttpRequestHead(HttpMethod method, text::String target, HttpVersion version, HttpHeaders headers = {});
 
     // defaults

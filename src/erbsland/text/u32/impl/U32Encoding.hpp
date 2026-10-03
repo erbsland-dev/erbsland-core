@@ -4,8 +4,8 @@
 
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteReader.hpp"
+#include "../../../unit/CpCount.hpp"
 #include "../../../unit/CpIndex.hpp"
-#include "../../../unit/CpLength.hpp"
 #include "../../impl/ThrowHelper.hpp"
 #include "../../StringEncoding.hpp"
 #include "../../u8/impl/U8Encoding.hpp"
@@ -25,8 +25,8 @@ namespace erbsland::text::impl::utf32 {
 }
 
 /// Get the encoded length of one valid UTF-32 character.
-[[nodiscard]] constexpr auto encodedLength(const Char character) noexcept -> unit::CpLength {
-    return character.isValidUnicode() ? unit::CpLength::one() : unit::CpLength::zero();
+[[nodiscard]] constexpr auto encodedLength(const Char character) noexcept -> unit::CpCount {
+    return character.isValidUnicode() ? unit::CpCount::one() : unit::CpCount::zero();
 }
 
 /// Test if all code points in the span are valid Unicode scalar values.
@@ -46,18 +46,19 @@ namespace erbsland::text::impl::utf32 {
         return Char::replacement();
     }
     const auto character = Char{text[position.toSizeT()]};
-    ++position;
+    position.uncheckedIncrement();
     return character.isValidUnicode() ? character : Char::replacement();
 }
 
 /// Decode one UTF-32 character and throw for invalid code points.
+/// The read position must be inside the input.
 [[nodiscard]] inline auto decodeCharOrThrow(const std::span<const char32_t> text, unit::CpIndex &position) -> Char {
     if (position.isNoIndex() || position.toSizeT() >= text.size()) {
-        throwOutOfRange("Read position out of range");
+        throwOutOfRangeFailure("Read position out of range");
     }
     const auto start = position;
     const auto character = Char{text[position.toSizeT()]};
-    ++position;
+    position.uncheckedIncrement();
     if (!character.isValidUnicode()) {
         throwU32EncodingError("Invalid Unicode code point", start.toSizeT());
     }
@@ -68,7 +69,7 @@ namespace erbsland::text::impl::utf32 {
 /// @tested{U32EncodingTest}
 inline void fastAdvanceChar(const std::span<const char32_t> text, unit::CpIndex &position) noexcept {
     if (!position.isNoIndex() && position.toSizeT() < text.size()) {
-        ++position;
+        position.uncheckedIncrement();
     }
 }
 
@@ -76,7 +77,7 @@ inline void fastAdvanceChar(const std::span<const char32_t> text, unit::CpIndex 
 /// @tested{U32EncodingTest}
 inline void fastRetreatChar(const std::span<const char32_t> /*text*/, unit::CpIndex &position) noexcept {
     if (!position.isNoIndex() && !position.isZero()) {
-        --position;
+        position.uncheckedDecrement();
     }
 }
 

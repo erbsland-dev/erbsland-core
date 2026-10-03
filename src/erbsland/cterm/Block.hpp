@@ -13,8 +13,8 @@
 #include "../text/StringEditor.hpp"
 #include "../text/u32/U32String.hpp"
 #include "../text/u32/U32StringEditor.hpp"
-#include "../unit/ByteLength.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/ByteCount.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <cstddef>
 #include <functional>
@@ -158,7 +158,7 @@ public: // accessors
         return _character.characters();
     }
     /// Get the number of stored Unicode code points.
-    [[nodiscard]] constexpr auto characterCount() const noexcept -> unit::CpLength {
+    [[nodiscard]] constexpr auto characterCount() const noexcept -> unit::CpCount {
         return _character.characterCount();
     }
     /// Get the character color.
@@ -170,7 +170,7 @@ public: // accessors
     /// Get the display width on a terminal in cells.
     [[nodiscard]] auto displayWidth() const noexcept -> int { return _character.displayWidth(); }
     /// Get the number of UTF-8 bytes needed to encode this character.
-    [[nodiscard]] auto byteCount() const noexcept -> unit::ByteLength { return _character.byteCount(); }
+    [[nodiscard]] auto byteCount() const noexcept -> unit::ByteCount { return _character.byteCount(); }
 
 public: // modifiers
     /// Replace the full style of this character.

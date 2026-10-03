@@ -3,6 +3,9 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(worker_executor)
+add_subdirectory(worker_pool)
+
 target_sources(erbsland-core PRIVATE
         CoAsyncGeneratorNextOperation.hpp
         CoAsyncGeneratorPromise.hpp
@@ -22,12 +25,14 @@ target_sources(erbsland-core PRIVATE
         CoTaskState.hpp
         CoTaskStateBase.hpp
         CoWorkAwaiter.hpp
-        CoWorkerService.cpp
-        CoWorkerService.hpp
         CoWorkState.hpp
         EnumFlagsTraits.hpp
         LoopControl.hpp
+        OrderedCache.hpp
         ResultValue.hpp
         Throw.cpp
         Throw.hpp
+        UtilitiesBackend.cpp
+        UtilitiesBackend.hpp
+        UtilitiesBackend_fwd.hpp
 )

@@ -5,12 +5,12 @@
 #include "CompressionWorkerWorkload_fwd.hpp"
 #include "ProfileTypes.hpp"
 
-#include <erbsland/compression/ByteCompressor.hpp>
-#include <erbsland/compression/ByteDecompressor.hpp>
-#include <erbsland/compression/CompressionAlgorithm.hpp>
-#include <erbsland/compression/CompressionFormat.hpp>
-#include <erbsland/compression/CompressionLevel.hpp>
-#include <erbsland/compression/DecompressionOptions.hpp>
+#include <erbsland/ByteCompressor.hpp>
+#include <erbsland/ByteDecompressor.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/CompressionFormat.hpp>
+#include <erbsland/CompressionLevel.hpp>
+#include <erbsland/DecompressionOptions.hpp>
 #include <erbsland/profiling/WorkerWorkload.hpp>
 
 #include <memory>

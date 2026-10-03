@@ -8,6 +8,7 @@
 #include "../../../mem/ByteWriter.hpp"
 
 namespace erbsland::data::bson::impl {
+
 /// Internal BSON document parser and writer.
 /// @tested{BsonValueTest}
 class BsonCodec final {
@@ -33,6 +34,16 @@ private: // construction
     explicit BsonCodec([[maybe_unused]] BsonFormatOptions options);
 
 private: // parsing
+    /// Decode a fixed-width wire integer, reporting truncated input as a parse failure.
+    template <mem::impl::NativeByteInteger T>
+    [[nodiscard]] auto readInteger() -> T {
+        auto value = T{};
+        if (!_reader.readIntegerInto(value)) {
+            fail();
+        }
+        return value;
+    }
+
     /// Read the root document and require the end of input.
     /// @return The decoded, encoded, or checked result.
     [[nodiscard]] auto parse() -> BsonValue;
@@ -46,6 +57,8 @@ private: // parsing
     /// @param depth The current container nesting depth.
     /// @return The decoded, encoded, or checked result.
     [[nodiscard]] auto readValue(uint8_t typeCode, unit::ItemCount depth) -> BsonValue;
+    /// Read payload bytes, reporting truncated input as a parse failure.
+    [[nodiscard]] auto readPayloadBytes(unit::ByteCount length) -> mem::ByteBlock;
     /// Read a NUL-terminated BSON key.
     /// @return The decoded, encoded, or checked result.
     [[nodiscard]] auto readCString() -> text::String;
@@ -55,10 +68,6 @@ private: // parsing
     /// Read UTC milliseconds into a Core date/time.
     /// @return The decoded, encoded, or checked result.
     [[nodiscard]] auto readDateTime() -> time::Timestamp;
-    /// Wrap wire bytes as a tolerant Core string.
-    /// @param bytes The complete input bytes or byte sequence.
-    /// @return The decoded, encoded, or checked result.
-    [[nodiscard]] static auto bytesToText(const mem::ByteBlock &bytes) -> text::String;
 
 private: // serialization
     /// Write a BSON document or indexed array.
@@ -92,4 +101,5 @@ private:                            // data
     BsonParseOptions _parseOptions; ///< Parse limits.
     unit::ItemCount _valueCount;    ///< Parsed values.
 };
+
 }

@@ -4,7 +4,6 @@
 
 #include "../ApplicationErrorContext.hpp"
 
-#include "../../i18n/DisplayTextMap_fwd.hpp"
 #include "../../text/TextDocument.hpp"
 
 namespace erbsland::core::impl {
@@ -15,10 +14,7 @@ class ApplicationErrorDocumentBuilder {
 public:
     /// Create a new builder for the given application error context.
     /// @param context The context to build the document for.
-    /// @param displayText The display text map to use, or nullptr for the default.
-    explicit ApplicationErrorDocumentBuilder(
-        const ApplicationErrorContext &context, const i18n::DisplayTextMapConstPtr &displayText = {}) noexcept :
-        _context{context}, _displayText{displayText} {}
+    explicit ApplicationErrorDocumentBuilder(const ApplicationErrorContext &context) noexcept : _context{context} {}
 
     // defaults
     ~ApplicationErrorDocumentBuilder() = default;
@@ -33,7 +29,6 @@ public:
 
 private:
     const ApplicationErrorContext &_context;
-    i18n::DisplayTextMapConstPtr _displayText;
 };
 
 }

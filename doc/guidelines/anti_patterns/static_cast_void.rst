@@ -14,7 +14,7 @@ Scope and Exceptions
 ====================
 
 * This form of silencing is allowed in unit tests. This exception is configured centrally in
-  ``utilities/conf/anti_patterns.elcl``.
+  ``tool/conf/tools/anti_patterns.elcl``.
 * It may be accepted for very narrow cases in templates only if there is no alternative and every error case is safely
   covered before the call. The reasoning must be documented with an inline anti-pattern acceptance comment.
 

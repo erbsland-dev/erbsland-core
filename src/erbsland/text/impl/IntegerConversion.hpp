@@ -7,6 +7,9 @@
 #include "../IntegerParseOptions.hpp"
 #include "../StringCharReader.hpp"
 
+#include "../../math/SaturatingMath.hpp"
+#include "../../math/SignedMagnitude.hpp"
+
 namespace erbsland::text::impl {
 
 /// Parse an integer from a decoded string reader.
@@ -23,10 +26,23 @@ template <math::AnyIntegerType T>
 template <math::AnyIntegerType T>
 [[nodiscard]] auto parseIntegerOrDefault(
     StringCharReader reader, T defaultValue, const IntegerParseOptions &options) noexcept -> T {
-    try {
-        return parseInteger<T>(reader, options);
-    } catch (...) {
+    const auto result = reader.parseInteger(options);
+    if (result.status != ReadNumberStatus::Success ||
+        (!options.hasFlag(IntegerParseFlag::IgnoreTrailingChars) && !reader.isAtEnd())) {
         return defaultValue;
+    }
+    if constexpr (std::is_signed_v<T>) {
+        const auto magnitude = math::SignedMagnitude<int64_t>{result.isNegative, result.value};
+        if (magnitude.wouldSaturate(std::numeric_limits<T>::min(), std::numeric_limits<T>::max())) {
+            return defaultValue;
+        }
+        return static_cast<T>(
+            magnitude.toSaturatingValue(std::numeric_limits<T>::min(), std::numeric_limits<T>::max()));
+    } else {
+        if (result.isNegative || math::willCastOverflow<T>(result.value)) {
+            return defaultValue;
+        }
+        return math::saturatingCast<T>(result.value);
     }
 }
 

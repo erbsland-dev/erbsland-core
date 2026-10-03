@@ -2,14 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StringReaderBase.hpp"
 
+#include "../../err/LogicFailure.hpp"
+
 namespace erbsland::text::impl {
 
+using namespace unit;
 using util::LoopResult;
 using util::LoopStatus;
 
-auto StringReaderBase::readWhile(const ReadFn &readFn, const CharSet &expected, unit::CpLength maximum) noexcept
+auto StringReaderBase::u8Position() const -> ByteIndex {
+    throw err::LogicFailure{"u8Position requires a UTF-8 string reader."};
+}
+
+auto StringReaderBase::u16Position() const -> U16Index {
+    throw err::LogicFailure{"u16Position requires a UTF-16 string reader."};
+}
+
+auto StringReaderBase::u32Position() const -> CpIndex {
+    throw err::LogicFailure{"u32Position requires a UTF-32 string reader."};
+}
+
+auto StringReaderBase::readWhile(const ReadFn &readFn, const CharSet &expected, CpCount maximum) noexcept
     -> LoopResult {
-    auto count = unit::CpLength::zero();
+    auto count = CpCount::zero();
     while (true) {
         const auto state = save();
         const auto character = read();
@@ -33,9 +48,8 @@ auto StringReaderBase::readWhile(const ReadFn &readFn, const CharSet &expected, 
     }
 }
 
-auto StringReaderBase::readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
-    -> LoopResult {
-    auto count = unit::CpLength::zero();
+auto StringReaderBase::readUntil(const ReadFn &readFn, const CharSet &stopSet, CpCount maximum) noexcept -> LoopResult {
+    auto count = CpCount::zero();
     while (true) {
         const auto state = save();
         const auto character = read();

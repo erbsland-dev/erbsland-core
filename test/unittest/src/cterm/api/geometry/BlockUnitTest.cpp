@@ -22,18 +22,18 @@ public:
         const auto shortened = BlockRange{BlockIndex{2U}, BlockCount{99U}}.clampedTo(BlockCount{6U});
         const auto emptyTail = BlockRange{BlockIndex{9U}, BlockCount{1U}}.clampedTo(BlockCount{4U});
 
-        REQUIRE_EQUAL(unchanged.index(), BlockIndex{2U});
+        REQUIRE_EQUAL(unchanged.beginIndex(), BlockIndex{2U});
         REQUIRE_EQUAL(unchanged.length(), BlockCount{3U});
         REQUIRE_EQUAL(unchanged.endIndex(), BlockIndex{5U});
         REQUIRE_EQUAL(shortened.length(), BlockCount{4U});
-        REQUIRE_EQUAL(emptyTail.index(), BlockIndex{4U});
+        REQUIRE_EQUAL(emptyTail.beginIndex(), BlockIndex{4U});
         REQUIRE_EQUAL(emptyTail.length(), BlockCount{0U});
     }
 
     void testAllRangeClampsToTheAvailableBlockCount() {
         const auto clamped = BlockRange::all().clampedTo(BlockCount{7U});
 
-        REQUIRE_EQUAL(clamped.index(), BlockIndex{0U});
+        REQUIRE_EQUAL(clamped.beginIndex(), BlockIndex{0U});
         REQUIRE_EQUAL(clamped.length(), BlockCount{7U});
     }
 };

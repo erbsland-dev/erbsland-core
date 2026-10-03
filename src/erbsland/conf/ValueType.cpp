@@ -10,6 +10,7 @@
 
 namespace erbsland::conf {
 
+using namespace text;
 using namespace text::literals;
 
 ValueType::ValueToTextMap ValueType::_valueToTextMap = {
@@ -32,15 +33,15 @@ ValueType::ValueToTextMap ValueType::_valueToTextMap = {
     std::make_tuple(Document, "Document"_el),
 };
 
-auto ValueType::toText() const noexcept -> text::String {
+auto ValueType::toText() const noexcept -> String {
     auto it = std::ranges::find_if(
         _valueToTextMap, [this](const ValueToTextEntry &entry) -> bool { return std::get<0>(entry) == _value; });
     assert(it != _valueToTextMap.end());
     return std::get<1>(*it);
 }
 
-auto ValueType::toValueDescription(const bool withArticle) const -> text::String {
-    text::String result;
+auto ValueType::toValueDescription(const bool withArticle) const -> String {
+    String result;
     switch (_value) {
     case Integer:
         result = "integer value"_el;
@@ -95,9 +96,9 @@ auto ValueType::toValueDescription(const bool withArticle) const -> text::String
     }
     if (withArticle && !result.isEmpty()) {
         if (result.startsWith("i"_el)) {
-            result = text::StringEditor::fromJoined({"an "_el, result});
+            result = StringEditor::fromJoined({"an "_el, result});
         } else {
-            result = text::StringEditor::fromJoined({"a "_el, result});
+            result = StringEditor::fromJoined({"a "_el, result});
         }
     }
     return result;

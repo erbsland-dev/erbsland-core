@@ -39,6 +39,5 @@ target_sources(erbsland-core PRIVATE
         InitializeFn.hpp
         LastErrorDumpMode.hpp
         MainFn.hpp
-        MakeOneNamespace.hpp
         Namespaces.hpp
 )

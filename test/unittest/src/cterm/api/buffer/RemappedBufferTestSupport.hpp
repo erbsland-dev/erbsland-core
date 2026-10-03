@@ -7,7 +7,7 @@
 #include "../../support/BufferTestHelper.hpp"
 
 #include <erbsland/block/StdFormat.hpp>
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/StdFormat.hpp>
 
 #include <algorithm>
 #include <array>

@@ -1,12 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/CoTask.hpp>
+#include <erbsland/StandardStreams.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
 
 [[nodiscard]] auto readRiverGauge(const std::shared_ptr<ScriptedByteInputStream> &input) -> el::CoTask<uint8_t> {
-    const auto result = co_await input->coRead(el::ByteLength{1U});
+    const auto result = co_await input->coRead(el::ByteCount{1U});
     co_return result.data().get(el::ByteIndex{0U}).toUInt8();
 }
 

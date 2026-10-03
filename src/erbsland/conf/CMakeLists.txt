@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(impl)
+add_subdirectory(syntax)
 add_subdirectory(vr)
 
 target_sources(erbsland-core PRIVATE

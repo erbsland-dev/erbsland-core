@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/network/impl/tls/TlsAlertDescription.hpp>
 #include <erbsland/network/impl/tls/TlsHandshakeStream.hpp>
 #include <erbsland/network/impl/tls/TlsProtocolError.hpp>
 #include <erbsland/network/impl/tls/TlsRecordStream.hpp>
 #include <erbsland/network/impl/tls/TlsWireReader.hpp>
-#include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using el::mem::ByteBlock;
@@ -18,7 +18,7 @@ using el::network::impl::TlsHandshakeStream;
 using el::network::impl::TlsProtocolError;
 using el::network::impl::TlsRecordStream;
 using el::network::impl::TlsWireReader;
-using el::unit::ByteLength;
+using el::unit::ByteCount;
 
 TESTED_TARGETS(TlsAlertDescription TlsProtocolError TlsWireReader TlsRecordStream TlsHandshakeStream)
 class TlsWireCodecTest final : public el::UnitTest {
@@ -58,7 +58,7 @@ public:
         const auto second = ByteBlock({0x17U, 0x03U, 0x03U, 0x00U, 0x01U, 0xffU});
         auto combined = ByteBlockEditor{};
         combined.append(first).append(second);
-        auto stream = TlsRecordStream{ByteLength{64U}};
+        auto stream = TlsRecordStream{ByteCount{64U}};
         stream.append(combined.span().first(2U));
         REQUIRE_FALSE(stream.next().has_value());
         stream.append(combined.span().subspan(2U));
@@ -66,12 +66,12 @@ public:
         REQUIRE_EQUAL(*stream.next(), second);
         REQUIRE_FALSE(stream.next().has_value());
 
-        auto oversized = TlsRecordStream{ByteLength{64U}};
+        auto oversized = TlsRecordStream{ByteCount{64U}};
         oversized.append(ByteBlock({0x17U, 0x03U, 0x03U, 0x41U, 0x01U}).span());
         requireAlert(TlsAlertDescription::RecordOverflow, [&] { static_cast<void>(oversized.next()); });
         requireAlert(TlsAlertDescription::RecordOverflow, [&] {
-            auto bounded = TlsRecordStream{ByteLength{5U}};
-            bounded.append(ByteBlock(ByteLength{6U}).span());
+            auto bounded = TlsRecordStream{ByteCount{5U}};
+            bounded.append(ByteBlock(ByteCount{6U}).span());
         });
     }
 

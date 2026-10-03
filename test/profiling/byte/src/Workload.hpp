@@ -4,6 +4,8 @@
 
 #include "Configuration.hpp"
 
+#include <erbsland/ExitCode.hpp>
+
 namespace app::byte {
 
 /// Execute expanded byte-type profiling scenarios.

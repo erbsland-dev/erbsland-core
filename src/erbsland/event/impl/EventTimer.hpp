@@ -67,6 +67,8 @@ public:
     [[nodiscard]] auto prepareCallback(time::TimePoint now) noexcept -> std::optional<CallbackExecution>;
     /// Test if a prepared callback is still pending.
     [[nodiscard]] auto isCallbackPending(const CallbackExecution &execution) const noexcept -> bool;
+    /// Cancel a rejected callback without affecting a newer scheduling generation.
+    void discardCallback(const CallbackExecution &execution) noexcept;
     /// Finish a callback and reschedule if required.
     void finishCallback(const CallbackExecution &execution, time::TimePoint now) noexcept;
 

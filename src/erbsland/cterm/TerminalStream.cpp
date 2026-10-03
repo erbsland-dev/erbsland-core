@@ -16,6 +16,7 @@ namespace erbsland::cterm {
 
 using namespace text::literals;
 using namespace stream;
+using stream::impl::streamBufferSizes;
 using text::Char;
 using text::String;
 using text::StringEncoding;
@@ -57,15 +58,15 @@ auto TerminalStream::state() const noexcept -> StreamState {
 
 auto TerminalStream::isReady() const noexcept -> bool {
     const auto lock = std::scoped_lock{_data->mutex};
-    return _data->pendingBytes <= stream::impl::streamBufferSizes(_data->settings.buffering()).ioRing.toSizeT() &&
+    return _data->pendingBytes <= streamBufferSizes(_data->settings.buffering()).ioRing.toSizeT() &&
         state() == StreamState::Open;
 }
 
 auto TerminalStream::waitForReady() -> StreamWaitStatus {
     auto lock = std::unique_lock{_data->mutex};
     const auto ready = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this]() -> bool {
-        return _data->pendingBytes <= stream::impl::streamBufferSizes(_data->settings.buffering()).ioRing.toSizeT() ||
-            _data->error || state() != StreamState::Open;
+        return _data->pendingBytes <= streamBufferSizes(_data->settings.buffering()).ioRing.toSizeT() || _data->error ||
+            state() != StreamState::Open;
     });
     if (_data->error) {
         std::rethrow_exception(_data->error);
@@ -134,7 +135,7 @@ auto TerminalStream::write(const String &text) -> StreamWriteStatus {
     auto lock = std::unique_lock{_data->mutex};
     command.style = _data->style;
     const auto byteLength = impl::TerminalStreamData::commandLength(command);
-    const auto capacity = stream::impl::streamBufferSizes(_data->settings.buffering()).ioRing.toSizeTOrThrow() +
+    const auto capacity = streamBufferSizes(_data->settings.buffering()).ioRing.toSizeTOrThrow() +
         _data->settings.backBufferLimit().toSizeTOrThrow();
     if (byteLength > capacity) {
         throwError(
@@ -168,7 +169,7 @@ auto TerminalStream::writeLine(const String &text) -> StreamWriteStatus {
     auto lock = std::unique_lock{_data->mutex};
     command.style = _data->style;
     const auto byteLength = impl::TerminalStreamData::commandLength(command);
-    const auto capacity = stream::impl::streamBufferSizes(_data->settings.buffering()).ioRing.toSizeTOrThrow() +
+    const auto capacity = streamBufferSizes(_data->settings.buffering()).ioRing.toSizeTOrThrow() +
         _data->settings.backBufferLimit().toSizeTOrThrow();
     if (byteLength > capacity) {
         throwError(

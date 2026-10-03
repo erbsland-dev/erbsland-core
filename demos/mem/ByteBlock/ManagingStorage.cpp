@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -14,14 +22,14 @@ void managingStorage() {
     auto path = el::ByteBlockEditor{el::Byte{1U}, el::Byte{2U}, el::Byte{3U}};
 
     // Reserve working room and grow the visible block with zero-filled bytes.
-    path.reserve(el::ByteLength{32U});
+    path.reserve(el::ByteCount{32U});
     const auto reservedCapacity = path.capacity();
-    path.resize(el::ByteLength{6U});
+    path.resize(el::ByteCount{6U});
 
     // Preserve a read-only snapshot and detach before a sequence of edits.
     const auto snapshot = el::ByteBlock{path};
     path.detach();
-    path.fill(el::ByteRange{el::ByteIndex{3U}, el::ByteLength{3U}}, el::Byte{9U});
+    path.fill(el::ByteRange{el::ByteIndex{3U}, el::ByteCount{3U}}, el::Byte{9U});
     path.shrinkToFit();
 
     el::io::printLine("Skill path         : Discipline astrale"_el);

@@ -16,7 +16,7 @@
 
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/String.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ItemCount.hpp"
 #include "../../unit/ItemIndex.hpp"
 #include "../../util/List.hpp"
@@ -88,7 +88,7 @@ private:
     /// Create an ASN.1 node from its encoded representation.
     Asn1Node(
         mem::ByteBlock encodedData,
-        unit::ByteLength headerLength,
+        unit::ByteCount headerLength,
         uint32_t tagNumber,
         util::List<Asn1Node> children) noexcept :
         _encodedData{std::move(encodedData)},
@@ -102,7 +102,7 @@ private:
 
 private:
     mem::ByteBlock _encodedData;    ///< Complete canonical DER encoding.
-    unit::ByteLength _headerLength; ///< Length of identifier and length octets.
+    unit::ByteCount _headerLength;  ///< Length of identifier and length octets.
     uint32_t _tagNumber{};          ///< Decoded numeric tag.
     util::List<Asn1Node> _children; ///< Direct child nodes.
 };

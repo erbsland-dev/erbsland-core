@@ -1,6 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/OutputStreamSettings.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamBuffering.hpp>
+#include <erbsland/TextOutputStream.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -9,7 +17,7 @@ namespace demo {
 
 void applyBackPressure() {
     auto settings = el::OutputStreamSettings{};
-    settings.setBuffering(el::StreamBuffering::Interactive).setBackBufferLimit(el::ByteLength{512U});
+    settings.setBuffering(el::StreamBuffering::Interactive).setBackBufferLimit(el::ByteCount{512U});
     auto options = el::PathWriteTextOptions{};
     options.setStreamSettings(settings);
 

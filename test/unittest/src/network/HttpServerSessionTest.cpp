@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/network/http_server/HttpServerSession.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/HttpServerSession.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/http/server/HttpRequestTarget.hpp>
 #include <erbsland/network/impl/http/server/HttpServerSession.hpp>
-#include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>

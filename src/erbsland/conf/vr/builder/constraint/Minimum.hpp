@@ -8,6 +8,7 @@
 #include "../../../Float.hpp"
 #include "../../../Integer.hpp"
 
+#include <concepts>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -22,20 +23,20 @@ public:
     using Value = std::variant<Integer, Float, time::Date, time::DateTime, std::pair<Integer, Integer>>;
 
     /// Creates an integer minimum constraint.
-    /// @tparam TValue An integer type.
+    /// @tparam tValue An integer type.
     /// @param value The minimum value.
     /// @param options Additional constraint options.
-    template <typename TValue>
-        requires(std::is_integral_v<TValue> && !std::is_same_v<TValue, bool>)
-    explicit Minimum(const TValue value, ConstraintOptions options = {}) :
+    template <std::integral tValue>
+        requires(std::is_integral_v<tValue> && !std::is_same_v<tValue, bool>)
+    explicit Minimum(const tValue value, ConstraintOptions options = {}) :
         _value{static_cast<Integer>(value)}, _options{std::move(options)} {}
     /// Creates a floating-point minimum constraint.
-    /// @tparam TValue A floating-point type.
+    /// @tparam tValue A floating-point type.
     /// @param value The minimum value.
     /// @param options Additional constraint options.
-    template <typename TValue>
-        requires std::is_floating_point_v<TValue>
-    explicit Minimum(const TValue value, ConstraintOptions options = {}) :
+    template <std::floating_point tValue>
+        requires std::is_floating_point_v<tValue>
+    explicit Minimum(const tValue value, ConstraintOptions options = {}) :
         _value{static_cast<Float>(value)}, _options{std::move(options)} {}
     /// Creates a date minimum constraint.
     /// @param value The minimum date.

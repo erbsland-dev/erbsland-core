@@ -4,7 +4,7 @@
 
 #include "impl/CurrentEventsScope.hpp"
 
-#include "../err/LogicError.hpp"
+#include "../err/LogicFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::event {
@@ -14,7 +14,7 @@ using namespace text::literals;
 auto currentEvents() -> EventsPtr {
     const auto result = impl::currentEventsWeakPtr().lock();
     if (result == nullptr) {
-        throw err::LogicError{"The current thread is not running an event loop."_el};
+        throw err::LogicFailure{"The current thread is not running an event loop."_el};
     }
     return result;
 }

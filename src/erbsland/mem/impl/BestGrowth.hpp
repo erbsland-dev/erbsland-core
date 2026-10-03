@@ -4,7 +4,7 @@
 
 #include "BestGrowthStrategy.hpp"
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <cstddef>
 
@@ -14,15 +14,15 @@ namespace erbsland::mem::impl {
 /// @tested{SharedArrayCapacityTest}
 class BestGrowth final {
 public:
-    constexpr static auto cMinimumGrowthBlock = unit::ByteLength{16U};      ///< Smallest compact allocation block.
-    constexpr static auto cMaximumGrowthBlock = unit::ByteLength{0x10000U}; ///< Largest compact growth block.
-    constexpr static auto cAllocationPageSize = unit::ByteLength{0x1000U};  ///< Page quantum for large allocations.
+    constexpr static auto cMinimumGrowthBlock = unit::ByteCount{16U};      ///< Smallest compact allocation block.
+    constexpr static auto cMaximumGrowthBlock = unit::ByteCount{0x10000U}; ///< Largest compact growth block.
+    constexpr static auto cAllocationPageSize = unit::ByteCount{0x1000U};  ///< Page quantum for large allocations.
 
     /// Create a calculation for element capacities.
     constexpr BestGrowth(const std::size_t currentCapacity, const std::size_t requestedCapacity) noexcept :
         _current{currentCapacity}, _requested{requestedCapacity} {}
     /// Create a calculation for byte lengths.
-    constexpr BestGrowth(const unit::ByteLength currentCapacity, const unit::ByteLength requestedCapacity) noexcept :
+    constexpr BestGrowth(const unit::ByteCount currentCapacity, const unit::ByteCount requestedCapacity) noexcept :
         _current{currentCapacity.toSizeT()}, _requested{requestedCapacity.toSizeT()} {}
 
     // defaults
@@ -35,7 +35,7 @@ public:
 public:
     /// Calculate the allocation target for byte lengths.
     [[nodiscard]] auto bestGrowth(BestGrowthStrategy strategy = BestGrowthStrategy::Compact) const noexcept
-        -> unit::ByteLength;
+        -> unit::ByteCount;
     /// Calculate an element capacity while accounting for the shared-data allocation overhead.
     template <typename tSharedArrayData>
     [[nodiscard]] auto bestGrowth(BestGrowthStrategy strategy = BestGrowthStrategy::Compact) const noexcept
@@ -45,17 +45,16 @@ private:
     /// Align a byte count upwards without overflowing.
     [[nodiscard]] static auto alignUp(std::size_t value, std::size_t alignment) noexcept -> std::size_t;
     /// Calculate a compact allocation target.
-    [[nodiscard]] static auto compactGrowth(unit::ByteLength requestedAllocationSize) noexcept -> unit::ByteLength;
+    [[nodiscard]] static auto compactGrowth(unit::ByteCount requestedAllocationSize) noexcept -> unit::ByteCount;
     /// Calculate a geometric allocation target.
     [[nodiscard]] static auto geometricGrowth(
-        unit::ByteLength currentAllocationSize, unit::ByteLength requestedAllocationSize) noexcept -> unit::ByteLength;
+        unit::ByteCount currentAllocationSize, unit::ByteCount requestedAllocationSize) noexcept -> unit::ByteCount;
 
 private:
     std::size_t _current;   ///< Current byte length or element capacity.
     std::size_t _requested; ///< Requested byte length or element capacity.
 };
 
-/// Calculate an element capacity while accounting for the shared-data allocation overhead.
 template <typename tSharedArrayData>
 auto BestGrowth::bestGrowth(const BestGrowthStrategy strategy) const noexcept -> std::size_t {
     using Data = tSharedArrayData;
@@ -66,8 +65,8 @@ auto BestGrowth::bestGrowth(const BestGrowthStrategy strategy) const noexcept ->
         return _requested;
     }
 
-    const auto currentAllocationSize = unit::ByteLength::fromSizeT(Data::allocationSizeForCapacity(_current));
-    const auto requestedAllocationSize = unit::ByteLength::fromSizeT(Data::allocationSizeForCapacity(_requested));
+    const auto currentAllocationSize = unit::ByteCount::fromSizeT(Data::allocationSizeForCapacity(_current));
+    const auto requestedAllocationSize = unit::ByteCount::fromSizeT(Data::allocationSizeForCapacity(_requested));
     const auto targetAllocationSize = BestGrowth{currentAllocationSize, requestedAllocationSize}.bestGrowth(strategy);
     const auto overhead = Data::allocationOverhead();
     if (targetAllocationSize.toSizeT() <= overhead) {

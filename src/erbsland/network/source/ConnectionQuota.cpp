@@ -2,21 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ConnectionQuota.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::network {
 
+using namespace unit;
 using namespace text::literals;
 
-auto ConnectionQuota::create(const unit::ItemCount maximum) -> ConnectionQuotaPtr {
+auto ConnectionQuota::create(const ItemCount maximum) -> ConnectionQuotaPtr {
     if (!maximum.isFinite() || maximum.isZero()) {
-        throw err::ParameterError{"A connection quota maximum must be positive and finite."_el, "maximum"_el};
+        throw err::ParameterFailure{"A connection quota maximum must be positive and finite."_el, "maximum"_el};
     }
     return ConnectionQuotaPtr{new ConnectionQuota{maximum}};
 }
 
-ConnectionQuota::ConnectionQuota(const unit::ItemCount maximum) noexcept : _maximum{maximum} {
+ConnectionQuota::ConnectionQuota(const ItemCount maximum) noexcept : _maximum{maximum} {
 }
 
 auto ConnectionQuota::tryAcquire(std::optional<IpEndpoint> remoteEndpoint) -> std::optional<ConnectionQuotaLease> {
@@ -37,14 +38,14 @@ auto ConnectionQuota::tryAcquire(std::optional<IpEndpoint> remoteEndpoint) -> st
     return ConnectionQuotaLease{shared_from_this(), std::move(remoteEndpoint)};
 }
 
-auto ConnectionQuota::current() const noexcept -> unit::ItemCount {
+auto ConnectionQuota::current() const noexcept -> ItemCount {
     const auto lock = std::scoped_lock{_mutex};
-    return unit::ItemCount::fromSizeT(_current);
+    return ItemCount::fromSizeT(_current);
 }
 
-auto ConnectionQuota::available() const noexcept -> unit::ItemCount {
+auto ConnectionQuota::available() const noexcept -> ItemCount {
     const auto lock = std::scoped_lock{_mutex};
-    return unit::ItemCount::fromSizeT(_maximum.toSizeT() - _current);
+    return ItemCount::fromSizeT(_maximum.toSizeT() - _current);
 }
 
 void ConnectionQuota::release() noexcept {

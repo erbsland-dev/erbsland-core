@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-*****************
-Paragraph Options
-*****************
+*************************************
+Configuring Terminal Paragraph Layout
+*************************************
 
 ``ParagraphOptions`` collects the low-level layout rules for wrapped terminal paragraphs.
 The same object model is used by ``Terminal::printParagraph()``, ``BlockTextOptions``, and ``BlockText``, so one
@@ -16,11 +16,9 @@ paragraph configuration can be reused for direct terminal output and buffer-base
     :file:`doc/tools/paragraph-options-reference.cpp` at a fixed width of 78 terminal columns. Each example
     starts with the same ruler line so it is easy to see exactly where the available width ends.
 
-Usage
-=====
 
 Building and Reusing Paragraph Presets
---------------------------------------
+======================================
 
 Keep one configured ``ParagraphOptions`` instance and reuse it for every paragraph with the same layout rules.
 
@@ -41,7 +39,7 @@ When the same content is rendered through ``BlockText``, the same settings are a
 on ``BlockText`` and ``BlockTextOptions``.
 
 Defaults at a Glance
---------------------
+====================
 
 .. list-table::
     :header-rows: 1
@@ -85,7 +83,7 @@ Defaults at a Glance
         - Fall back to plain terminal output if the layout cannot be built.
 
 Alignment
----------
+=========
 
 The ``alignment()`` setting controls the horizontal placement of each physical line.
 For ``BlockText``, the vertical component of the alignment is also used when the text is rendered inside a rectangle.
@@ -144,7 +142,7 @@ Alignment is the first setting most users reach for, so it is worth seeing the t
                                                                         ␛[37msame line.␛[39m
 
 Indentation
------------
+===========
 
 Indentation is only applied for left-aligned paragraphs.
 The three related settings work as a small inheritance chain:
@@ -210,7 +208,7 @@ The three related settings work as a small inheritance chain:
                   ␛[37mwrapped-line indent.␛[39m                                            
 
 Wrap Marks
-----------
+==========
 
 ``lineBreakStartMark()`` and ``lineBreakEndMark()`` decorate automatic wraps.
 
@@ -271,7 +269,7 @@ space.
             ⤥␛[37mof the paragraph matters as much as the words.␛[39m                       
 
 Paragraph Spacing
------------------
+=================
 
 ``ParagraphSpacing`` controls the vertical gap between explicit paragraphs.
 
@@ -314,7 +312,7 @@ For ``Terminal::printParagraph()``, paragraph spacing is applied after the call 
     ␛[37mseparate steps instead of one continuous argument.␛[39m                            
 
 Word Separators
----------------
+===============
 
 ``wordSeparators()`` defines which characters split a source line into words.
 Consecutive separators collapse into one rendered space.
@@ -351,7 +349,7 @@ Consecutive separators collapse into one rendered space.
                                                                                   
 
 Word Break Mark
----------------
+===============
 
 If a single word still does not fit, the layout engine splits it at display-cell boundaries and appends
 ``wordBreakMark()`` to each wrapped chunk except the last one.
@@ -388,7 +386,7 @@ If a single word still does not fit, the layout engine splits it at display-cell
                                                                                   
 
 Maximum Wraps and Ellipsis
---------------------------
+==========================
 
 ``maximumLineWraps()`` limits how many automatic wraps a single source line may produce.
 Once the limit is reached, the paragraph stops and appends ``paragraphEllipsisMark()``.
@@ -426,7 +424,7 @@ Once the limit is reached, the paragraph stops and appends ``paragraphEllipsisMa
     ␛[37mfor release notes, narrow side panels, or compact popovers, a short␛[39m (more)    
 
 Tab Stops and Overflow Behavior
--------------------------------
+===============================
 
 Tabs receive special handling only in left-aligned paragraphs.
 In centered or right-aligned paragraphs, tabs are handled through ``wordSeparators()``.
@@ -490,7 +488,7 @@ In centered or right-aligned paragraphs, tabs are handled through ``wordSeparato
                    ␛[37mclipped␛[39m                                                        
 
 Background Fill Modes
----------------------
+=====================
 
 ``ParagraphBackgroundMode`` controls whether the background color of the last visible character is extended into cells
 that do not contain visible text.
@@ -619,7 +617,7 @@ When printed through ``CursorWriter::printParagraph()``, it uses the current wri
     ␛[97;44m          ␛[37mthe dim grey hall beyond it.␛[97m                                        ␛[39;49m
 
 Reusable Indents and Separator Sets
------------------------------------
+===================================
 
 ``ParagraphIndents`` and ``FastCharSet`` are useful when you want to reuse the same low-level paragraph mechanics across
 several rendering presets.
@@ -642,7 +640,7 @@ The shared factories ``FastCharSet::onlySpace()`` and ``FastCharSet::spaceAndTab
 directly.
 
 Error Handling
---------------
+==============
 
 Some combinations of width and paragraph settings are impossible to render.
 Typical causes are:

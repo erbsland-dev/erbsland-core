@@ -3,6 +3,7 @@
 
 #include "../../support/BufferTestHelper.hpp"
 
+#include <erbsland/OutOfRangeError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -43,9 +44,9 @@ public:
             REQUIRE_EQUAL(filled.get(pos).color(), Color(fg::Yellow, bg::Blue));
         });
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer(block::Size{0, 1}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer(block::Size{1, 0}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer(block::Size{10'001, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Buffer(block::Size{0, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Buffer(block::Size{1, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Buffer(block::Size{10'001, 1}));
     }
 
     void testResizeWithPreserveContentKeepsContentAndFillsExpandedCells() {
@@ -105,9 +106,9 @@ public:
     void testResizeRejectsInvalidSizes() {
         auto buffer = Buffer{block::Size{2, 2}};
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.resize(block::Size{0, 2}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.resize(block::Size{2, 0}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.resize(block::Size{10'001, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.resize(block::Size{0, 2}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.resize(block::Size{2, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.resize(block::Size{10'001, 1}));
     }
 
     void testSetAndGet() {
@@ -203,8 +204,8 @@ public:
     }
 
     void testFromLinesFactoriesRejectEmptyInput() {
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer::fromLines(BlockStringLines{}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer::fromLinesInString(BlockString{}));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, Buffer::fromLines(BlockStringLines{}));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, Buffer::fromLinesInString(BlockString{}));
     }
 
     void testCloneCreatesAnIndependentWritableCopy() {

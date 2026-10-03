@@ -13,7 +13,7 @@
 #include "../StringCharReader.hpp"
 #include "../StringMap.hpp"
 
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -67,17 +67,17 @@ public: // providers
 
 public: // operations
     /// Test expressions and provider parameters without producing replacement text.
-    /// @throws err::LogicError If no source is registered.
+    /// At least one placeholder source must be registered.
     [[nodiscard]] auto validate(const String &input) const -> bool;
     /// Validate expressions and report the first error with a code-point offset.
-    /// @throws err::LogicError If no source is registered.
+    /// At least one placeholder source must be registered.
     /// @throws ReplacerError For malformed syntax or rejected provider parameters.
     void validateOrThrow(const String &input) const;
     /// Replace valid expressions; keep invalid expressions unchanged and continue.
-    /// @throws err::LogicError If no source is registered.
+    /// At least one placeholder source must be registered.
     [[nodiscard]] auto replace(const String &input) const -> String;
     /// Replace expressions or report the first error with a code-point offset.
-    /// @throws err::LogicError If no source is registered.
+    /// At least one placeholder source must be registered.
     /// @throws ReplacerError For malformed syntax or provider failures.
     [[nodiscard]] auto replaceOrThrow(const String &input) const -> String;
 
@@ -102,16 +102,16 @@ private:
     void recover(StringCharReader &reader) const;
 
 private:
-    ReplacerOptions _options;     ///< Immutable expression syntax.
-    impl::Registry _registry;     ///< Registered source and filter providers.
-    Char _beginFirst;             ///< First opening-frame code point.
-    Char _endFirst;               ///< First closing-frame code point.
-    Char _filterFirst;            ///< First filter-separator code point, or a signal.
-    Char _nameFirst;              ///< First name-separator code point, or a signal.
-    unit::CpLength _endLength;    ///< Closing-frame length.
-    unit::CpLength _filterLength; ///< Filter-separator length.
-    unit::CpLength _nameLength;   ///< Name-separator length.
-    CharSet _stopSet;             ///< Characters that can start an expression or escape.
+    ReplacerOptions _options;    ///< Immutable expression syntax.
+    impl::Registry _registry;    ///< Registered source and filter providers.
+    Char _beginFirst;            ///< First opening-frame code point.
+    Char _endFirst;              ///< First closing-frame code point.
+    Char _filterFirst;           ///< First filter-separator code point, or a signal.
+    Char _nameFirst;             ///< First name-separator code point, or a signal.
+    unit::CpCount _endLength;    ///< Closing-frame length.
+    unit::CpCount _filterLength; ///< Filter-separator length.
+    unit::CpCount _nameLength;   ///< Name-separator length.
+    CharSet _stopSet;            ///< Characters that can start an expression or escape.
 };
 
 }

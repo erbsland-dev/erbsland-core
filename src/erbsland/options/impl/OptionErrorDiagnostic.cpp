@@ -4,7 +4,8 @@
 
 #include "OptionDocumentBuilder.hpp"
 
-#include "../../i18n/DisplayTextMap.hpp"
+#include "../../err/RuntimeError.hpp"
+#include "../../i18n/DisplayText.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/PlainTextRenderer.hpp"
 
@@ -12,17 +13,17 @@
 
 namespace erbsland::options::impl {
 
+using namespace text;
 using namespace text::literals;
 
 OptionErrorDiagnostic::OptionErrorDiagnostic(OptionErrorContext context) : _context{std::move(context)} {
 }
 
-auto OptionErrorDiagnostic::sourceName() const noexcept -> text::String {
+auto OptionErrorDiagnostic::sourceName() const noexcept -> String {
     try {
-        return _context.arguments().isEmpty() || _context.displayText() == nullptr
-            ? text::String{}
-            : _context.displayText()->text("options.CommandLineArgumentsHeading"_el);
-    } catch (...) {
+        return _context.arguments().isEmpty() ? String{}
+                                              : i18n::displayText("options.command_line_arguments_heading"_el);
+    } catch (const err::RuntimeError &) {
         return {};
     }
 }
@@ -35,19 +36,18 @@ auto OptionErrorDiagnostic::location() const noexcept -> unit::CodeLocation {
     return result;
 }
 
-auto OptionErrorDiagnostic::toString() const noexcept -> text::String {
+auto OptionErrorDiagnostic::toString() const noexcept -> String {
     try {
         auto document = toTextDocument();
-        return text::PlainTextRenderer{document}.build();
-    } catch (...) {
+        return PlainTextRenderer{document}.build();
+    } catch (const err::RuntimeError &) {
         return {};
     }
 }
 
-auto OptionErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
-    -> text::TextDocument {
-    const auto resolvedDisplayText = displayText != nullptr ? displayText : _context.displayText();
-    return OptionDocumentBuilder{_context.options(), resolvedDisplayText}.errorDocument(_context);
+auto OptionErrorDiagnostic::toTextDocument() const -> TextDocument {
+
+    return OptionDocumentBuilder{_context.options()}.errorDocument(_context);
 }
 
 }

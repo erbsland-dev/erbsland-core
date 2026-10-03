@@ -5,8 +5,8 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
-
 // Roughly detect the platform and compiler for API access.
+
 #if _WIN32 || _WIN64
 #define ERBSLAND_OS_WINDOWS
 #undef ERBSLAND_OS_MACOS
@@ -52,6 +52,9 @@
 #define ERBSLAND_COMPILER_GCC
 #elif defined(_MSC_VER)
 #define ERBSLAND_COMPILER_MSVC
+#if _MSC_VER < 1950
+#error "Erbsland Core requires Visual Studio 2026 or later (MSVC 19.50 or later)."
+#endif
 #endif
 
 // Basic checks about the environment.
@@ -86,9 +89,9 @@ static_assert(sizeof(wchar_t) == 4);
 // Forward declaration of all namespaces.
 #include "Namespaces.hpp"
 
-// For development, do not flatten the namespaces.
-#ifndef ERBSLAND_CORE_DO_NOT_FLATTEN_NS
-#include "MakeOneNamespace.hpp"
+// Flatten namespaces for consumers unless their target opts out. Library compilation always uses explicit namespaces.
+#if !defined(ERBSLAND_CORE_BUILDING_LIBRARY) && !defined(ERBSLAND_CORE_DO_NOT_FLATTEN_NS)
+#include "impl/MakeOneNamespace.hpp"
 #endif
 
 // Allow disabling the short namespace if it causes conflicts.

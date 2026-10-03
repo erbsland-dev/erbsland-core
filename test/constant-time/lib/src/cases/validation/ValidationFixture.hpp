@@ -6,12 +6,11 @@
 
 #include "../../Fixture.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricTag.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/SymmetricTag.hpp>
 
 namespace app::constant_time {
 

@@ -7,8 +7,8 @@
 
 #include "../codec/Http1Transaction.hpp"
 
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringBomMode.hpp"
 #include "../../../../text/StringEncoder.hpp"
@@ -19,6 +19,8 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
+using namespace mem;
 using namespace text;
 using namespace text::literals;
 
@@ -50,9 +52,11 @@ HttpServerRequest::~HttpServerRequest() = default;
 auto HttpServerRequest::head() const noexcept -> const HttpRequestHead & {
     return _head;
 }
+
 auto HttpServerRequest::path() const noexcept -> const String & {
     return _target.path();
 }
+
 auto HttpServerRequest::query() const noexcept -> const String & {
     return _target.query();
 }
@@ -69,6 +73,7 @@ auto HttpServerRequest::parameter(const String &name) const -> std::optional<Str
 auto HttpServerRequest::connectionInfo() const noexcept -> const HttpConnectionInfo & {
     return _connectionInfo;
 }
+
 auto HttpServerRequest::session() const -> HttpServerSessionPtr {
     return _session;
 }
@@ -76,16 +81,16 @@ auto HttpServerRequest::session() const -> HttpServerSessionPtr {
 void HttpServerRequest::streamBody() {
     verifyCurrentOwnerEvents();
     if (_final || _bodyPolicySelected || !_hasBody) {
-        throw err::LogicError{"The request body policy cannot be changed in this state."_el};
+        throw LogicFailure{"The request body policy cannot be changed in this state."_el};
     }
     _bodyPolicySelected = true;
     _transaction->streamBody();
 }
 
-void HttpServerRequest::aggregateBody(const unit::ByteLength maximumLength) {
+void HttpServerRequest::aggregateBody(const unit::ByteCount maximumLength) {
     verifyCurrentOwnerEvents();
     if (_final || _bodyPolicySelected || !_hasBody) {
-        throw err::LogicError{"The request body policy cannot be changed in this state."_el};
+        throw LogicFailure{"The request body policy cannot be changed in this state."_el};
     }
     _bodyPolicySelected = true;
     _transaction->aggregateBody(maximumLength);
@@ -114,16 +119,16 @@ void HttpServerRequest::resumeBody() {
     }
 }
 
-void HttpServerRequest::sendResponse(HttpResponseHead response, mem::ByteBlock body) {
+void HttpServerRequest::sendResponse(HttpResponseHead response, ByteBlock body) {
     verifyCurrentOwnerEvents();
     if (_final) {
         return;
     }
     if (_responseStarted) {
-        throw err::LogicError{"An HTTP request response can only be committed once."_el};
+        throw LogicFailure{"An HTTP request response can only be committed once."_el};
     }
     if (body.length() > _options.maximumFixedResponseLength()) {
-        throw err::ParameterError{"The fixed HTTP response exceeds the configured limit."_el, "body"_el};
+        throw ParameterFailure{"The fixed HTTP response exceeds the configured limit."_el, "body"_el};
     }
     response = prepareResponse(std::move(response), body.length());
     if (_hasBody && !_bodyPolicySelected) {
@@ -142,7 +147,7 @@ void HttpServerRequest::sendResponse(HttpResponseHead response, mem::ByteBlock b
             return;
         }
         if (bodyStatus.isClosed()) {
-            throw err::LogicError{"The HTTP response body cannot be submitted in this state."_el};
+            throw LogicFailure{"The HTTP response body cannot be submitted in this state."_el};
         }
     }
     _finishRequested = true;
@@ -207,7 +212,7 @@ void HttpServerRequest::startResponse(HttpResponseHead response) {
         return;
     }
     if (_responseStarted) {
-        throw err::LogicError{"An HTTP request response can only be committed once."_el};
+        throw LogicFailure{"An HTTP request response can only be committed once."_el};
     }
     auto headers = response.headers();
     verifyReservedCookie(headers);
@@ -225,13 +230,13 @@ void HttpServerRequest::startResponse(HttpResponseHead response) {
     }
 }
 
-auto HttpServerRequest::sendBody(const mem::ByteBlock &data) -> NetworkSendStatus {
+auto HttpServerRequest::sendBody(const ByteBlock &data) -> NetworkSendStatus {
     verifyCurrentOwnerEvents();
     if (_final) {
         return NetworkSendStatus::Closed;
     }
     if (!_responseStarted || !_streamingResponse || _finishRequested) {
-        throw err::LogicError{"A streamed HTTP body cannot be sent in this response state."_el};
+        throw LogicFailure{"A streamed HTTP body cannot be sent in this response state."_el};
     }
     if (_suppressBody) {
         return NetworkSendStatus::Accepted;
@@ -245,7 +250,7 @@ void HttpServerRequest::finishBody(HttpHeaders trailers) {
         return;
     }
     if (!_responseStarted || !_streamingResponse || _finishRequested) {
-        throw err::LogicError{"A streamed HTTP response can only be finished once after it starts."_el};
+        throw LogicFailure{"A streamed HTTP response can only be finished once after it starts."_el};
     }
     _finishRequested = true;
     queueFinish(std::move(trailers));
@@ -254,6 +259,7 @@ void HttpServerRequest::finishBody(HttpHeaders trailers) {
 auto HttpServerRequest::isResponseStarted() const noexcept -> bool {
     return _responseStarted;
 }
+
 auto HttpServerRequest::isFinal() const noexcept -> bool {
     return _final;
 }
@@ -282,26 +288,30 @@ void HttpServerRequest::setSelection(
     _parameters = std::move(parameters);
 }
 
-void HttpServerRequest::deliverBody(mem::ByteBlock data) {
+void HttpServerRequest::deliverBody(ByteBlock data) {
     if (_onBodyData) {
         _onBodyData(std::move(data));
     }
 }
-void HttpServerRequest::deliverAggregatedBody(mem::ByteBlock data) {
+
+void HttpServerRequest::deliverAggregatedBody(ByteBlock data) {
     if (_onBody) {
         _onBody(std::move(data));
     }
 }
+
 void HttpServerRequest::deliverTrailers(const HttpHeaders &trailers) {
     if (_onTrailers) {
         _onTrailers(trailers);
     }
 }
+
 void HttpServerRequest::deliverBodyCompleted() {
     if (_onBodyCompleted) {
         _onBodyCompleted();
     }
 }
+
 void HttpServerRequest::handleWritable() {
     if (_pendingFixedBody.has_value()) {
         const auto status = _transaction->sendBody(*_pendingFixedBody);
@@ -345,7 +355,7 @@ void HttpServerRequest::finalize() {
     }
 }
 
-auto HttpServerRequest::prepareResponse(HttpResponseHead response, const unit::ByteLength bodyLength)
+auto HttpServerRequest::prepareResponse(HttpResponseHead response, const unit::ByteCount bodyLength)
     -> HttpResponseHead {
     auto headers = response.headers();
     verifyReservedCookie(headers);
@@ -356,7 +366,7 @@ auto HttpServerRequest::prepareResponse(HttpResponseHead response, const unit::B
 }
 
 void HttpServerRequest::fixedResponse(
-    const HttpStatus status, HttpHeaders headers, mem::ByteBlock body, String contentType) {
+    const HttpStatus status, HttpHeaders headers, ByteBlock body, String contentType) {
     headers.setField(HttpFieldType::ContentType, std::move(contentType));
     sendResponse(
         HttpResponseHead{_head.version(), status, status.defaultReasonPhrase(), std::move(headers)}, std::move(body));
@@ -369,7 +379,7 @@ void HttpServerRequest::queueFinish(HttpHeaders trailers) {
         return;
     }
     if (status.isClosed()) {
-        throw err::LogicError{"The HTTP response cannot be finished in this state."_el};
+        throw LogicFailure{"The HTTP response cannot be finished in this state."_el};
     }
 }
 
@@ -400,7 +410,7 @@ void HttpServerRequest::verifyReservedCookie(const HttpHeaders &headers) const {
     const auto prefix = String{prefixEditor};
     for (const auto &value : headers.getAll(HttpFieldType::SetCookie)) {
         if (value.startsWith(prefix)) {
-            throw err::ParameterError{
+            throw ParameterFailure{
                 "The response attempts to set the session manager's reserved cookie."_el, "response"_el};
         }
     }

@@ -7,16 +7,23 @@
 #include "RenderWorkerWorkload.hpp"
 #include "ValidationDigest.hpp"
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/conf/ValueList.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/render/Value.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 #include <erbsland/text/render/impl/CompiledLayout.hpp>
 #include <erbsland/text/render/impl/Engine.hpp>
 #include <erbsland/text/render/impl/Tokenizer.hpp>
 #include <erbsland/text/render/impl/TokenKind.hpp>
-#include <erbsland/text/render/Value.hpp>
-#include <erbsland/text/StringFormat.hpp>
 
 #include <variant>
 
 namespace app::render {
+
+using namespace el::unit;
 
 namespace el = erbsland;
 namespace pf = erbsland::profiling;
@@ -34,7 +41,7 @@ void RenderScenarioWorkload::prepare([[maybe_unused]] const pf::RunConfiguration
     _layouts = corpus::load(corpusSelection(scenario));
     _filters.clear();
     const auto identity = [](const el::text::render::ValueList &values) -> el::text::render::Value {
-        return values.getRefOrThrow(el::unit::ItemIndex::zero());
+        return values.getRefOrThrow(ItemIndex::zero());
     };
     _filters.set("upper"_el, identity)
         .set("legacy"_el, identity)
@@ -70,30 +77,30 @@ void RenderScenarioWorkload::validate(const pf::SampleMeasurement &measurement) 
         throw el::ApplicationError{"The render profiling workload produced an invalid measurement."_el};
     }
     const auto operations = measurement.operations;
-    if (measurement.metrics.get(el::unit::ItemIndex{0U}, 0U) != operations * _layoutCount ||
-        measurement.metrics.get(el::unit::ItemIndex{1U}, 0U) != operations * _sourceBytes ||
-        measurement.metrics.get(el::unit::ItemIndex{2U}, 0U) != operations * _tokens ||
-        measurement.metrics.get(el::unit::ItemIndex{3U}, 0U) !=
+    if (measurement.metrics.get(ItemIndex{0U}, 0U) != operations * _layoutCount ||
+        measurement.metrics.get(ItemIndex{1U}, 0U) != operations * _sourceBytes ||
+        measurement.metrics.get(ItemIndex{2U}, 0U) != operations * _tokens ||
+        measurement.metrics.get(ItemIndex{3U}, 0U) !=
             operations * (_stage == ProfileStage::Tokenize ? 0U : _bytecodeBytes) ||
-        measurement.metrics.get(el::unit::ItemIndex{4U}, 0U) !=
+        measurement.metrics.get(ItemIndex{4U}, 0U) !=
             operations * (_stage == ProfileStage::Render ? _outputBytes : 0U) ||
-        measurement.metrics.get(el::unit::ItemIndex{5U}, 0U) !=
+        measurement.metrics.get(ItemIndex{5U}, 0U) !=
             operations * (_stage == ProfileStage::Render ? _renderCounters.includeExecutions : 0U) ||
-        measurement.metrics.get(el::unit::ItemIndex{6U}, 0U) !=
+        measurement.metrics.get(ItemIndex{6U}, 0U) !=
             operations * (_stage == ProfileStage::Tokenize ? 0U : _inheritanceEdges) ||
-        measurement.metrics.get(el::unit::ItemIndex{7U}, 0U) !=
+        measurement.metrics.get(ItemIndex{7U}, 0U) !=
             operations * (_stage == ProfileStage::Tokenize ? 0U : _blockPrograms) ||
-        measurement.metrics.get(el::unit::ItemIndex{8U}, 0U) !=
+        measurement.metrics.get(ItemIndex{8U}, 0U) !=
             operations * (_stage == ProfileStage::Render ? _renderCounters.blockExecutions : 0U) ||
-        measurement.metrics.get(el::unit::ItemIndex{9U}, 0U) !=
+        measurement.metrics.get(ItemIndex{9U}, 0U) !=
             operations * (_stage == ProfileStage::Render ? _renderCounters.superExecutions : 0U) ||
-        measurement.metrics.get(el::unit::ItemIndex{10U}, 0U) !=
+        measurement.metrics.get(ItemIndex{10U}, 0U) !=
             operations * (_stage == ProfileStage::Render ? _renderCounters.capturedSuperExecutions : 0U)) {
         throw el::ApplicationError{"The render profiling workload counters failed validation."_el};
     }
-    const auto allocations = measurement.metrics.get(el::unit::ItemIndex{11U}, 0U);
-    const auto allocatedBytes = measurement.metrics.get(el::unit::ItemIndex{12U}, 0U);
-    const auto deallocations = measurement.metrics.get(el::unit::ItemIndex{13U}, 0U);
+    const auto allocations = measurement.metrics.get(ItemIndex{11U}, 0U);
+    const auto allocatedBytes = measurement.metrics.get(ItemIndex{12U}, 0U);
+    const auto deallocations = measurement.metrics.get(ItemIndex{13U}, 0U);
     if ((_trackAllocations && (allocations == 0U || allocatedBytes == 0U || deallocations == 0U)) ||
         (!_trackAllocations && (allocations != 0U || allocatedBytes != 0U || deallocations != 0U))) {
         throw el::ApplicationError{"The render allocation counters failed validation."_el};
@@ -129,7 +136,7 @@ void RenderScenarioWorkload::prepareExpectedTotals() {
             do {
                 tokenizer.advance();
                 ++tokens;
-                tokenizeDigest = ValidationDigest::token(tokenizeDigest, tokenizer.current());
+                tokenizeDigest = validation_digest::token(tokenizeDigest, tokenizer.current());
             } while (tokenizer.current().kind != ri::TokenKind::End);
         }
         const auto compiled = LayoutGraphCompiler::compile(layout, _filters);
@@ -137,7 +144,7 @@ void RenderScenarioWorkload::prepareExpectedTotals() {
         auto renderCounters = ri::RenderCounters{};
         const auto output = ri::Engine{compiled, layout.context, layout.context, renderCounters}.render();
         const auto outputBytes = output.length().toRawValue();
-        const auto renderDigest = ValidationDigest::rendered(0U, output);
+        const auto renderDigest = validation_digest::rendered(0U, output);
         const auto &expected = layout.validation;
         if (sourceBytes != expected.sourceBytes || tokens != expected.tokens ||
             graph.bytecodeBytes != expected.bytecodeBytes || tokenizeDigest != expected.tokenizeDigest ||

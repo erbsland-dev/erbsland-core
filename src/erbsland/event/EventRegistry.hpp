@@ -98,6 +98,10 @@ public:
     constexpr static auto noBackend() noexcept -> EventBackendId { return EventBackendId{}; }
     /// Get the scheduler backend identifier.
     constexpr static auto schedulerBackend() noexcept -> EventBackendId { return EventBackendId{1U}; }
+    /// Get the system backend identifier.
+    constexpr static auto systemBackend() noexcept -> EventBackendId { return EventBackendId{3U}; }
+    /// Get the utilities backend identifier.
+    constexpr static auto utilitiesBackend() noexcept -> EventBackendId { return EventBackendId{4U}; }
     /// Get the network backend identifier.
     constexpr static auto networkBackend() noexcept -> EventBackendId { return EventBackendId{2U}; }
 
@@ -129,6 +133,8 @@ constexpr static auto TimerEvent = EventRegistry::timer();
 constexpr static auto NoBackend = EventRegistry::noBackend();
 constexpr static auto SchedulerBackend = EventRegistry::schedulerBackend();
 constexpr static auto NetworkBackend = EventRegistry::networkBackend();
+constexpr static auto SystemBackend = EventRegistry::systemBackend();
+constexpr static auto UtilitiesBackend = EventRegistry::utilitiesBackend();
 
 }
 

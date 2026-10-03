@@ -3,8 +3,8 @@
 
 #include "ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/unit/ExitCode.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ExitCode.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 TESTED_TARGETS(Application)

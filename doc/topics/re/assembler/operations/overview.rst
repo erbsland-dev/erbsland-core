@@ -1,7 +1,7 @@
 
-********
-Overview
-********
+***********************************************
+Regular-Expression Assembler Operation Overview
+***********************************************
 
 Flow and Character Operations
 =============================
@@ -38,8 +38,8 @@ Operations are split into two different groups: Flow operations and character op
     *   -   :doc:`Minimum<minimum>`
         -
 
-Modifier
-========
+Operation Modifiers
+===================
 
 Modifiers change the behaviour of an operation.
 

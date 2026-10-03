@@ -25,6 +25,7 @@
 
 namespace erbsland::cterm::impl {
 
+using namespace unit;
 using namespace text::literals;
 using block::Coordinate;
 using block::Position;
@@ -93,7 +94,7 @@ auto ReadLineBase::createLayout() const -> ReadLineLayout {
     result.editWidth = std::max(1, contentWidth - result.promptWidth);
 
     const auto &textValue = displayText();
-    const auto textEnd = unit::CpIndex::end(textValue.length());
+    const auto textEnd = CpIndex::end(textValue.length());
     result.cursorPositions.resize(textValue.length().toSizeT() + 1U);
     result.rows.emplace_back();
     result.rows.back().boundaries.push_back(ReadLineBoundary{0, {}});
@@ -101,12 +102,12 @@ auto ReadLineBase::createLayout() const -> ReadLineLayout {
 
     auto rowIndex = std::size_t{0U};
     auto column = 0;
-    auto index = unit::CpIndex{};
-    const auto addBoundary = [&](const unit::CpIndex boundaryIndex, const int boundaryColumn) -> void {
+    auto index = CpIndex{};
+    const auto addBoundary = [&](const CpIndex boundaryIndex, const int boundaryColumn) -> void {
         result.rows[rowIndex].boundaries.push_back(ReadLineBoundary{boundaryColumn, boundaryIndex});
         result.cursorPositions[boundaryIndex.toSizeT()] = ReadLineLayout::CursorPosition{rowIndex, boundaryColumn};
     };
-    const auto startRow = [&](const unit::CpIndex boundaryIndex) -> void {
+    const auto startRow = [&](const CpIndex boundaryIndex) -> void {
         result.rows.emplace_back();
         rowIndex += 1U;
         column = 0;
@@ -123,7 +124,7 @@ auto ReadLineBase::createLayout() const -> ReadLineLayout {
         }
 
         const auto endIndex = nextUnitEnd(index);
-        auto block = Block{text::U32String{textValue.slice(unit::CpRange{index, index.absoluteDistanceTo(endIndex)})}};
+        auto block = Block{text::U32String{textValue.slice(CpRange{index, index.absoluteDistanceTo(endIndex)})}};
         block = block.withBase(_options.textStyle().withBase(_options.backgroundStyle()));
         auto width = std::max(1, block.displayWidth());
         if (width > result.editWidth) {
@@ -145,7 +146,7 @@ auto ReadLineBase::createLayout() const -> ReadLineLayout {
     return result;
 }
 
-auto ReadLineBase::closestBoundary(const ReadLineLayoutRow &row, const int column) noexcept -> unit::CpIndex {
+auto ReadLineBase::closestBoundary(const ReadLineLayoutRow &row, const int column) noexcept -> CpIndex {
     auto result = row.boundaries.front().index;
     auto bestDistance = std::numeric_limits<int>::max();
     for (const auto &boundary : row.boundaries) {
@@ -379,22 +380,18 @@ void ReadLineBase::writeRenderedBuffer(const ReadableBuffer &buffer, const int a
 }
 
 void ReadLineBase::renderFinal() noexcept {
-    try {
-        render(false);
-        _terminal->moveDown(Coordinate{_renderedHeight});
-        _terminal->flush();
-    } catch (...) {}
+    render(false);
+    _terminal->moveDown(Coordinate{_renderedHeight});
+    _terminal->flush();
 }
 
 void ReadLineBase::clearRenderedArea() noexcept {
     if (_renderedHeight <= 0) {
         return;
     }
-    try {
-        const auto width = std::max(1, _terminal->size().width().toRawValue());
-        auto clearBuffer = Buffer{Size{width, _renderedHeight}, Block{U' ', BlockStyle::reset()}};
-        writeRenderedBuffer(clearBuffer, 0);
-    } catch (...) {}
+    const auto width = std::max(1, _terminal->size().width().toRawValue());
+    auto clearBuffer = Buffer{Size{width, _renderedHeight}, Block{U' ', BlockStyle::reset()}};
+    writeRenderedBuffer(clearBuffer, 0);
 }
 
 }

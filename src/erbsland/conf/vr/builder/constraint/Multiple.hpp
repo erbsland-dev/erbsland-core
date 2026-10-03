@@ -8,6 +8,7 @@
 #include "../../../Float.hpp"
 #include "../../../Integer.hpp"
 
+#include <concepts>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -22,20 +23,20 @@ public:
     using Value = std::variant<Integer, Float, std::pair<Integer, Integer>>;
 
     /// Creates an integer multiple-of constraint.
-    /// @tparam TValue An integer type.
+    /// @tparam tValue An integer type.
     /// @param value The required divisor.
     /// @param options Additional constraint options.
-    template <typename TValue>
-        requires(std::is_integral_v<TValue> && !std::is_same_v<TValue, bool>)
-    explicit Multiple(const TValue value, ConstraintOptions options = {}) :
+    template <std::integral tValue>
+        requires(std::is_integral_v<tValue> && !std::is_same_v<tValue, bool>)
+    explicit Multiple(const tValue value, ConstraintOptions options = {}) :
         _value{static_cast<Integer>(value)}, _options{std::move(options)} {}
     /// Creates a floating-point multiple-of constraint.
-    /// @tparam TValue A floating-point type.
+    /// @tparam tValue A floating-point type.
     /// @param value The required divisor.
     /// @param options Additional constraint options.
-    template <typename TValue>
-        requires std::is_floating_point_v<TValue>
-    explicit Multiple(const TValue value, ConstraintOptions options = {}) :
+    template <std::floating_point tValue>
+        requires std::is_floating_point_v<tValue>
+    explicit Multiple(const tValue value, ConstraintOptions options = {}) :
         _value{static_cast<Float>(value)}, _options{std::move(options)} {}
     /// Creates a matrix-dimension multiple-of constraint.
     /// @param value The required row and column divisors.

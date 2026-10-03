@@ -11,17 +11,20 @@
 
 namespace erbsland::text::fuzzy {
 
-auto Matcher::setPattern(text::String pattern) noexcept -> Matcher & {
+using namespace text;
+using namespace unit;
+
+auto Matcher::setPattern(String pattern) noexcept -> Matcher & {
     _pattern = std::move(pattern);
     return *this;
 }
 
-auto Matcher::setMaximumDistance(const unit::CpLength maximumDistance) noexcept -> Matcher & {
+auto Matcher::setMaximumDistance(const CpCount maximumDistance) noexcept -> Matcher & {
     _maximumDistance = maximumDistance;
     return *this;
 }
 
-auto Matcher::setMaximumResults(const unit::ItemCount maximumResults) noexcept -> Matcher & {
+auto Matcher::setMaximumResults(const ItemCount maximumResults) noexcept -> Matcher & {
     _maximumResults = maximumResults;
     return *this;
 }
@@ -31,7 +34,7 @@ auto Matcher::setComparisonFn(const CharCompareFn comparisonFn) noexcept -> Matc
     return *this;
 }
 
-auto Matcher::findMatches(const text::StringList &candidates) const -> MatchList {
+auto Matcher::findMatches(const StringList &candidates) const -> MatchList {
     auto rankedMatches = std::vector<RankedMatch>{};
     rankedMatches.reserve(candidates.count().toSizeT());
     auto order = std::size_t{0};
@@ -40,7 +43,7 @@ auto Matcher::findMatches(const text::StringList &candidates) const -> MatchList
             ++order;
             continue;
         }
-        const auto matchDistance = distance(text::StringConverter{candidate}.toU32String());
+        const auto matchDistance = distance(StringConverter{candidate}.toU32String());
         if (matchDistance <= _maximumDistance) {
             rankedMatches.emplace_back(RankedMatch{Match{candidate, matchDistance}, order});
         }
@@ -56,22 +59,22 @@ auto Matcher::findMatches(const text::StringList &candidates) const -> MatchList
     auto result = MatchList{};
     const auto resultLimit =
         _maximumResults.isInfinite() ? rankedMatches.size() : std::min(rankedMatches.size(), _maximumResults.toSizeT());
-    result.reserve(unit::ItemCount::fromSizeT(resultLimit));
+    result.reserve(ItemCount::fromSizeT(resultLimit));
     for (auto index = std::size_t{0}; index < resultLimit; ++index) {
         result.append(rankedMatches[index].match);
     }
     return result;
 }
 
-auto Matcher::distance(const text::U32String &candidate) const -> unit::CpLength {
-    const auto pattern = text::StringConverter{_pattern}.toU32String();
+auto Matcher::distance(const U32String &candidate) const -> CpCount {
+    const auto pattern = StringConverter{_pattern}.toU32String();
     const auto patternLength = pattern.characterLength().toSizeT();
     const auto candidateLength = candidate.characterLength().toSizeT();
     if (patternLength == 0U) {
-        return unit::CpLength::fromSizeT(candidateLength);
+        return CpCount::fromSizeT(candidateLength);
     }
     if (candidateLength == 0U) {
-        return unit::CpLength::fromSizeT(patternLength);
+        return CpCount::fromSizeT(patternLength);
     }
 
     auto previousPrevious = std::vector<std::size_t>(candidateLength + 1U);
@@ -82,9 +85,9 @@ auto Matcher::distance(const text::U32String &candidate) const -> unit::CpLength
     }
     for (auto row = std::size_t{1U}; row <= patternLength; ++row) {
         current[0] = row;
-        const auto patternCharacter = pattern.charAt(unit::CpIndex::fromSizeT(row - 1U));
+        const auto patternCharacter = pattern.charAt(CpIndex::fromSizeT(row - 1U));
         for (auto column = std::size_t{1U}; column <= candidateLength; ++column) {
-            const auto candidateCharacter = candidate.charAt(unit::CpIndex::fromSizeT(column - 1U));
+            const auto candidateCharacter = candidate.charAt(CpIndex::fromSizeT(column - 1U));
             const auto substitutionCost = charactersEqual(patternCharacter, candidateCharacter) ? 0U : 1U;
             current[column] = std::min({
                 previous[column] + 1U,
@@ -92,25 +95,25 @@ auto Matcher::distance(const text::U32String &candidate) const -> unit::CpLength
                 previous[column - 1U] + substitutionCost,
             });
             if (row > 1U && column > 1U &&
-                charactersEqual(patternCharacter, candidate.charAt(unit::CpIndex::fromSizeT(column - 2U))) &&
-                charactersEqual(pattern.charAt(unit::CpIndex::fromSizeT(row - 2U)), candidateCharacter)) {
+                charactersEqual(patternCharacter, candidate.charAt(CpIndex::fromSizeT(column - 2U))) &&
+                charactersEqual(pattern.charAt(CpIndex::fromSizeT(row - 2U)), candidateCharacter)) {
                 current[column] = std::min(current[column], previousPrevious[column - 2U] + 1U);
             }
         }
         previousPrevious.swap(previous);
         previous.swap(current);
     }
-    return unit::CpLength::fromSizeT(previous[candidateLength]);
+    return CpCount::fromSizeT(previous[candidateLength]);
 }
 
-auto Matcher::charactersEqual(const text::Char left, const text::Char right) const noexcept -> bool {
+auto Matcher::charactersEqual(const Char left, const Char right) const noexcept -> bool {
     if (_comparisonFn == nullptr) {
         return left == right;
     }
     return _comparisonFn(left, right) == std::strong_ordering::equal;
 }
 
-auto Matcher::containsEquivalent(const std::vector<RankedMatch> &matches, const text::String &candidate) const -> bool {
+auto Matcher::containsEquivalent(const std::vector<RankedMatch> &matches, const String &candidate) const -> bool {
     return std::ranges::any_of(matches, [this, &candidate](const RankedMatch &entry) -> bool {
         return entry.match.text().compare(candidate, _comparisonFn) == std::strong_ordering::equal;
     });

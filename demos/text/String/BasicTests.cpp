@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 
@@ -41,11 +43,11 @@ void basicTests() {
     el::io::printLine("  empty.isEmpty()       : "_el, empty.isEmpty());
     el::io::printLine("  invalidUtf8.isEmpty() : "_el, invalidUtf8.isEmpty());
 
-    // `isValidUtf8()` checks whether all bytes form valid UTF-8 sequences.
+    // `isEncodingValid()` checks whether all bytes form valid UTF-8 sequences.
     el::io::printLine("\nUTF-8 validity checks:"_el);
-    el::io::printLine("  station.isValidUtf8()     : "_el, station.isValidUtf8());
-    el::io::printLine("  empty.isValidUtf8()       : "_el, empty.isValidUtf8());
-    el::io::printLine("  invalidUtf8.isValidUtf8() : "_el, invalidUtf8.isValidUtf8());
+    el::io::printLine("  station.isEncodingValid()     : "_el, station.isEncodingValid());
+    el::io::printLine("  empty.isEncodingValid()       : "_el, empty.isEncodingValid());
+    el::io::printLine("  invalidUtf8.isEncodingValid() : "_el, invalidUtf8.isEncodingValid());
 }
 
 }

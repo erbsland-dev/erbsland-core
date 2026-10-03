@@ -1,7 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "LogViewerApp.hpp"
+
+#include <erbsland/CharSet.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <algorithm>
 #include <array>

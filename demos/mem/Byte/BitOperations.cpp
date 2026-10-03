@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/IntegerFormat.hpp>
+#include <erbsland/IntegerFormatFlag.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -16,7 +22,7 @@ void bitOperations() {
         el::IntegerFormat::binary()
             .setFlags(
                 el::IntegerFormatFlag::BasePrefix | el::IntegerFormatFlag::ZeroFill | el::IntegerFormatFlag::Separator)
-            .setFieldWidth(el::CpLength{8U});
+            .setFieldWidth(el::CpCount{8U});
     const auto silkRouteMarker = el::Byte{0b10110110U};
     const auto transportMask = el::Byte{0b11000000U};
     const auto verifiedFlag = el::Byte{0b00100000U};

@@ -18,7 +18,7 @@
 #include "../system/UserId.hpp"
 #include "../system/UserName.hpp"
 #include "../time/Timestamp.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 namespace erbsland::path {
 
@@ -115,7 +115,7 @@ public: // attributes
     [[nodiscard]] auto type() const noexcept -> PathType;
     /// The size of the file in bytes.
     /// @return The size of the file in bytes, or zero if the file does not exist or the path is no file.
-    [[nodiscard]] auto fileSize() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto fileSize() const noexcept -> unit::ByteCount;
     /// Get the stable identity of the current filesystem object.
     /// @return An invalid identity if the path does not exist or identity lookup failed.
     [[nodiscard]] auto fileIdentity() const noexcept -> system::FileIdentity;

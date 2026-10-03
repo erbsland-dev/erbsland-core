@@ -3,6 +3,7 @@
 #include "U16StringModifyTools.hpp"
 
 #include "U16StringCharReadTool.hpp"
+#include "U16StringComparisonTools.hpp"
 #include "U16Writer.hpp"
 
 #include <algorithm>
@@ -43,8 +44,7 @@ auto U16StringModifyTools::spansOverlap(const std::span<const T> first, const st
     return firstBegin < secondEnd && secondBegin < firstEnd;
 }
 
-auto U16StringModifyTools::remove(U16StringSharedStorage &storage, const U16DataRange range)
-    -> U16StringSharedStorage & {
+auto U16StringModifyTools::remove(U16StringSharedStorage &storage, const U16Range range) -> U16StringSharedStorage & {
     return replace(storage, range, {});
 }
 
@@ -52,7 +52,7 @@ auto U16StringModifyTools::remove(U16StringSharedStorage &storage, const CpRange
     return remove(storage, dataRangeForCharacterRange(storage.dataView(), range));
 }
 
-auto U16StringModifyTools::keep(U16StringSharedStorage &storage, const U16DataRange range) -> U16StringSharedStorage & {
+auto U16StringModifyTools::keep(U16StringSharedStorage &storage, const U16Range range) -> U16StringSharedStorage & {
     const auto dataView = storage.dataView();
     const auto data = dataView.dataSpan();
     if (data.empty()) {
@@ -62,15 +62,15 @@ auto U16StringModifyTools::keep(U16StringSharedStorage &storage, const U16DataRa
         storage.clear();
         return storage;
     }
-    const auto keepRange = range.clampedTo(U16DataLength::fromSizeT(data.size()));
+    const auto keepRange = range.clampedTo(U16Count::fromSizeT(data.size()));
     if (keepRange.isEmpty()) {
         storage.clear();
         return storage;
     }
-    if (keepRange.index().isZero() && keepRange.length().toSizeT() == data.size()) {
+    if (keepRange.beginIndex().isZero() && keepRange.length().toSizeT() == data.size()) {
         return storage;
     }
-    const auto start = keepRange.index().toSizeT();
+    const auto start = keepRange.beginIndex().toSizeT();
     const auto count = keepRange.length().toSizeT();
     storage.ensureMutableCapacity(count);
     if (start > 0U) {
@@ -84,14 +84,13 @@ auto U16StringModifyTools::keep(U16StringSharedStorage &storage, const CpRange r
     return keep(storage, dataRangeForCharacterRange(storage.dataView(), range));
 }
 
-auto U16StringModifyTools::insert(
-    U16StringSharedStorage &storage, const U16DataIndex index, const U16StringDataView &text)
+auto U16StringModifyTools::insert(U16StringSharedStorage &storage, const U16Index index, const U16StringDataView &text)
     -> U16StringSharedStorage & {
     if (index.isNoIndex()) {
         return storage;
     }
-    const auto insertIndex = U16DataIndex::fromSizeT(std::min(index.toSizeT(), storage.dataView().dataSpan().size()));
-    return replace(storage, U16DataRange::emptyAt(insertIndex), text);
+    const auto insertIndex = U16Index::fromSizeT(std::min(index.toSizeT(), storage.dataView().dataSpan().size()));
+    return replace(storage, U16Range::emptyAt(insertIndex), text);
 }
 
 auto U16StringModifyTools::insert(U16StringSharedStorage &storage, const CpIndex index, const U16StringDataView &text)
@@ -101,13 +100,12 @@ auto U16StringModifyTools::insert(U16StringSharedStorage &storage, const CpIndex
     }
     auto dataIndex = dataIndexForCharacterIndex(storage.dataView(), index);
     if (dataIndex.isNoIndex()) {
-        dataIndex = U16DataIndex::end(U16DataLength::fromSizeT(storage.dataView().dataSpan().size()));
+        dataIndex = U16Index::end(U16Count::fromSizeT(storage.dataView().dataSpan().size()));
     }
     return insert(storage, dataIndex, text);
 }
 
-auto U16StringModifyTools::replace(
-    U16StringSharedStorage &storage, const U16DataRange range, const U16StringDataView &text)
+auto U16StringModifyTools::replace(U16StringSharedStorage &storage, const U16Range range, const U16StringDataView &text)
     -> U16StringSharedStorage & {
     if (!range.isValid()) {
         return storage;
@@ -116,7 +114,7 @@ auto U16StringModifyTools::replace(
     const auto dataView = storage.dataView();
     const auto data = dataView.dataSpan();
     const auto replacement = text.dataSpan();
-    const auto replaceRange = range.clampedTo(U16DataLength::fromSizeT(data.size()));
+    const auto replaceRange = range.clampedTo(U16Count::fromSizeT(data.size()));
     if (replaceRange.isEmpty() && replacement.empty()) {
         return storage;
     }
@@ -129,15 +127,14 @@ auto U16StringModifyTools::replace(
     }
 
     const auto oldSize = data.size();
-    const auto start = replaceRange.index().toSizeT();
+    const auto start = replaceRange.beginIndex().toSizeT();
     const auto removeLength = replaceRange.length().toSizeT();
     const auto replacementLength = replacementData.size();
-    const auto newSize = U16StringSharedStorage::checkedAddSize(
-        oldSize - removeLength, replacementLength, "Modified string exceeds size bounds");
+    const auto newSize = U16StringSharedStorage::checkedAddSize(oldSize - removeLength, replacementLength);
     storage.ensureMutableCapacity(newSize);
 
     auto *writeData = storage.dataForWrite();
-    const auto tailStart = U16StringSharedStorage::checkedAddSize(start, removeLength, "Replace range exceeds bounds");
+    const auto tailStart = U16StringSharedStorage::checkedAddSize(start, removeLength);
     const auto tailLength = oldSize - tailStart;
     if (replacementLength != removeLength && tailLength > 0U) {
         std::memmove(writeData + start + replacementLength, writeData + tailStart, tailLength * sizeof(char16_t));
@@ -180,7 +177,7 @@ auto U16StringModifyTools::replaceFirst(
     const U16StringDataView &text,
     const U16StringDataView &replacement,
     const CharCompareFn compareFn) -> U16StringSharedStorage & {
-    const auto range = findFirstTextRange(storage.dataView(), text, compareFn);
+    const auto range = U16StringComparisonTools{storage.dataView()}.findFirstRange(text, compareFn);
     if (!range.isValid()) {
         return storage;
     }

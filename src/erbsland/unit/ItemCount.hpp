@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "IntegerUnitAmount.hpp"
+#include "IntegerUnitCount.hpp"
 #include "ItemCount_fwd.hpp"
-
 // The public alias is declared in the canonical forward header.

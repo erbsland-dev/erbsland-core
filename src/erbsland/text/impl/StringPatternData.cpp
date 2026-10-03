@@ -18,33 +18,6 @@ auto StringPatternData::matches(const U32String &text) const noexcept -> bool {
     return match(view(), text).matched;
 }
 
-auto StringPatternData::trim(U8String &text) const noexcept -> bool {
-    const auto trimmedView = trimmed(text);
-    if (trimmedView == text) {
-        return false;
-    }
-    text = trimmedView;
-    return true;
-}
-
-auto StringPatternData::trim(U16String &text) const noexcept -> bool {
-    const auto trimmedView = trimmed(text);
-    if (trimmedView == text) {
-        return false;
-    }
-    text = trimmedView;
-    return true;
-}
-
-auto StringPatternData::trim(U32String &text) const noexcept -> bool {
-    const auto trimmedView = trimmed(text);
-    if (trimmedView == text) {
-        return false;
-    }
-    text = trimmedView;
-    return true;
-}
-
 auto StringPatternData::trim(U8StringEditor &text) const -> bool {
     const auto textView = U8String{text};
     const auto trimmedView = trimmed(textView);
@@ -102,7 +75,7 @@ auto StringPatternData::trimmed(const U16String &text) const noexcept -> U16Stri
     if (patternView.divider == 0U) {
         return text.slice(StringSide::Front, result.suffixStart);
     }
-    return text.slice(U16DataRange{result.frontEnd, result.suffixStart});
+    return text.slice(U16Range{result.frontEnd, result.suffixStart});
 }
 
 auto StringPatternData::trimmed(const U32String &text) const noexcept -> U32String {
@@ -147,7 +120,7 @@ auto StringPatternData::split(const U16String &text) const noexcept -> std::pair
     }
     auto [prefix, rest] = text.splitAt(result.frontEnd);
     if (patternView.divider != cNoStringPatternDivider && patternView.divider < patternView.elements.size()) {
-        rest = text.slice(U16DataRange{result.frontEnd, result.suffixStart});
+        rest = text.slice(U16Range{result.frontEnd, result.suffixStart});
     }
     return {prefix, rest};
 }
@@ -168,40 +141,40 @@ auto StringPatternData::split(const U32String &text) const noexcept -> std::pair
     return {prefix, rest};
 }
 
-auto StringPatternData::length(const U8String &text) const noexcept -> ByteLength {
+auto StringPatternData::length(const U8String &text) const noexcept -> ByteCount {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return ByteLength::zero();
+        return ByteCount::zero();
     }
     if (patternView.divider == 0U) {
         return lengthToEnd(text.length(), result.suffixStart);
     }
-    return lengthFromStart<ByteLength>(result.frontEnd);
+    return lengthFromStart<ByteCount>(result.frontEnd);
 }
 
-auto StringPatternData::length(const U16String &text) const noexcept -> U16DataLength {
+auto StringPatternData::length(const U16String &text) const noexcept -> U16Count {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return U16DataLength::zero();
+        return U16Count::zero();
     }
     if (patternView.divider == 0U) {
         return lengthToEnd(text.length(), result.suffixStart);
     }
-    return lengthFromStart<U16DataLength>(result.frontEnd);
+    return lengthFromStart<U16Count>(result.frontEnd);
 }
 
-auto StringPatternData::length(const U32String &text) const noexcept -> CpLength {
+auto StringPatternData::length(const U32String &text) const noexcept -> CpCount {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return CpLength::zero();
+        return CpCount::zero();
     }
     if (patternView.divider == 0U) {
         return lengthToEnd(text.length(), result.suffixStart);
     }
-    return lengthFromStart<CpLength>(result.frontEnd);
+    return lengthFromStart<CpCount>(result.frontEnd);
 }
 
 auto StringPatternData::index(const U8String &text) const noexcept -> ByteIndex {
@@ -213,11 +186,11 @@ auto StringPatternData::index(const U8String &text) const noexcept -> ByteIndex 
     return patternView.divider == 0U ? result.suffixStart : result.frontEnd;
 }
 
-auto StringPatternData::index(const U16String &text) const noexcept -> U16DataIndex {
+auto StringPatternData::index(const U16String &text) const noexcept -> U16Index {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return U16DataIndex::noIndex();
+        return U16Index::noIndex();
     }
     return patternView.divider == 0U ? result.suffixStart : result.frontEnd;
 }
@@ -241,14 +214,19 @@ auto StringPatternData::matchesElement(
         return character == element.character;
     case StringPatternElementKind::OneChar:
         return true;
+    case StringPatternElementKind::RecursiveStar:
+        return false; // Recursive path components are handled by PathGlobData.
+    case StringPatternElementKind::AnyText:
+        return true;
+    case StringPatternElementKind::NegatedSet:
     case StringPatternElementKind::Set: {
         const auto ranges = patternView.ranges.subspan(element.rangeOffset, element.rangeCount);
         for (const auto &range : ranges) {
             if (range.contains(character)) {
-                return true;
+                return element.kind == StringPatternElementKind::Set;
             }
         }
-        return false;
+        return element.kind == StringPatternElementKind::NegatedSet;
     }
     }
     return false;

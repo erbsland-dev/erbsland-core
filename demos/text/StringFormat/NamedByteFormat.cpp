@@ -3,6 +3,10 @@
 
 #include "StringFormatDemos.hpp"
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+
 #include <cstdint>
 #include <vector>
 

@@ -263,7 +263,7 @@ Duplicate characters and invalid code points are ignored.
 Creating Sets
 ^^^^^^^^^^^^^
 
-Create a set from individual characters, ranges, UTF-8 text, or standard-library containers.
+Create a set from individual characters, ranges, UTF-8 text, or Erbsland Core character lists and sets.
 UTF-8 input is decoded tolerantly, matching the rest of the string API: invalid byte sequences contribute the
 replacement character.
 
@@ -277,6 +277,19 @@ replacement character.
     auto hexLetters = CharSet::fromRange(Char{U'A'}, Char{U'F'}) | CharSet::fromRange(Char{U'a'}, Char{U'f'});
     auto separators = CharSet{u8",;"_el};
 
+Brace construction with one character, such as ``CharSet{U'x'}``, selects the single-character constructor and
+initializes inline storage directly.
+Two or more individual characters select a constrained variadic constructor.
+The first two characters are normalized directly into inline storage; any remaining characters are added to that set.
+Characters can be mixed as ``Char`` values and Unicode character literals.
+These forms avoid initializer-list constructor dispatch, but do not make ``CharSet`` usable as a ``constexpr`` variable.
+
+Use :cpp:func:`CharSet::fromCharacters() <erbsland::text::CharSet::fromCharacters>` to pass an explicit initializer
+list, for example ``CharSet::fromCharacters({U'x', U'y'})``.
+This factory replaces the initializer-list constructor, including the former nested-brace form.
+Use one brace level for individual characters: ``CharSet{{U'x', U'z'}}`` can initialize a single inclusive
+``CharRange``, while ``CharSet{U'x', U'z'}`` contains only the two supplied characters.
+
 Use :cpp:func:`CharSet::fromRange() <erbsland::text::CharSet::fromRange>` when two characters describe an inclusive
 range.
 The expression ``CharSet{Char{U'0'}, Char{U'9'}}`` creates a set containing only the two characters ``0`` and ``9``.
@@ -288,6 +301,9 @@ Use :cpp:func:`CharSet::from(UnicodeCategory) <erbsland::text::CharSet::from>` f
 category.
 Use :cpp:func:`CharSet::fromPattern() <erbsland::text::CharSet::fromPattern>` for compact literal/range patterns where
 ``-`` between two characters defines an inclusive range and a leading or trailing ``-`` is a literal hyphen.
+A leading ``^`` inverts the parsed set; later carets are literal.
+Thus ``^0-9`` selects all non-digits, ``^^`` excludes caret, and ``^`` alone selects every Unicode scalar value.
+A literal caret set can be constructed directly as ``CharSet{Char{U'^'}}``.
 
 .. code-block:: cpp
 
@@ -306,6 +322,20 @@ Use named methods when clarity matters, or operators when the expression reads n
     if (identifierStart <= identifierContinue) {
         // Every start character is also allowed as a continuation character.
     }
+
+Inversion
+^^^^^^^^^
+
+``inverted()`` and ``~set`` return the complement over U+0000 through U+10FFFF, excluding surrogate code points and
+invalid character signals.
+The result uses normalized ranges and leaves the original set unchanged.
+Inverting an empty set gives the full scalar universe; inverting that universe gives an empty set.
+
+.. code-block:: cpp
+
+    const auto allowed = el::CharSet::fromPattern("-_a-z0-9"_el);
+    const auto cleaned = el::String{"orbite! 07"_el}.removedAll(~allowed);
+    // cleaned is "orbite07".
 
 Case Helpers
 ^^^^^^^^^^^^

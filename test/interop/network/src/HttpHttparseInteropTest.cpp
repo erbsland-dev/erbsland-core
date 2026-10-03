@@ -3,10 +3,10 @@
 
 #include "InteropEnvironment.hpp"
 
-#include <erbsland/network/http/HttpRequestHead.hpp>
+#include <erbsland/HttpRequestHead.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/http/codec/Http1RequestDecoder.hpp>
 #include <erbsland/network/impl/http/codec/Http1ResponseDecoder.hpp>
-#include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <span>

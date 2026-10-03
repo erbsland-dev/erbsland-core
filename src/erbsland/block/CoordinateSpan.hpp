@@ -4,7 +4,7 @@
 
 #include "Coordinate.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../geometry/Axis.hpp"
 #include "../geometry/Dimensionality.hpp"
 #include "../geometry/SignedAxis.hpp"
@@ -71,18 +71,16 @@ public: // attributes
     /// Get this one-dimensional component.
     /// @param axis The requested axis, which must be X.
     /// @return This span.
-    /// @throws err::ParameterError if `axis` is not X.
     [[nodiscard]] constexpr auto component(const geometry::Axis axis) const -> CoordinateSpan {
         using namespace text::literals;
         if (axis != geometry::Axis::X) {
-            throw err::ParameterError{"The axis is outside the coordinate span dimensionality."_el, "axis"_el};
+            throw err::ParameterFailure{"The axis is outside the coordinate span dimensionality."_el, "axis"_el};
         }
         return *this;
     }
     /// Get this one-dimensional component with an optional reversal.
     /// @param axis The signed axis, which must select X.
     /// @return This span, reversed when requested.
-    /// @throws err::ParameterError if `axis` does not select X.
     [[nodiscard]] auto component(const geometry::SignedAxis axis) const -> CoordinateSpan {
         const auto result = component(axis.axis());
         return axis.isReversed() ? result.reversed() : result;

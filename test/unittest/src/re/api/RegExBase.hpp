@@ -7,8 +7,9 @@
 
 #include <erbsland/re/diagnostics/Disassembler.hpp>
 #include <erbsland/re/Match.hpp>
-#include <erbsland/re/RegEx.hpp>
 #include <erbsland/re/StdFormat.hpp>
+#include <erbsland/RegEx.hpp>
+#include <erbsland/StringList.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <optional>
@@ -16,6 +17,7 @@
 #include <vector>
 
 using namespace el::re;
+using el::StringList;
 
 /// Provides common state and assertions for regular-expression API tests.
 /// @notest{Provides shared test infrastructure.}
@@ -58,7 +60,7 @@ public:
                     lastMatch->begin(groupIndex),
                     lastMatch->end(groupIndex),
                     match->content(groupIndex)
-                        .toSafeString(el::unit::CpLength{200U}, el::text::SafeStringFlag::OnlyAscii)));
+                        .toSafeString(el::unit::CpCount{200U}, el::text::SafeStringFlag::OnlyAscii)));
         }
         return result;
     }
@@ -66,7 +68,7 @@ public:
     auto additionalErrorMessages() -> std::string override {
         try {
             std::string message;
-            message += std::format("pattern: \"{}\"\n", pattern.toSafeString(el::unit::CpLength{200U}));
+            message += std::format("pattern: \"{}\"\n", pattern.toSafeString(el::unit::CpCount{200U}));
             message += std::format("flags: {}\n", flags);
             message += std::format("settings: {}\n", settings);
             if (regex == nullptr) {
@@ -76,7 +78,7 @@ public:
                     message += std::format("{}\n", line);
                 }
             }
-            message += std::format("text: \"{}\"\n", text.toSafeString(el::unit::CpLength{200U}));
+            message += std::format("text: \"{}\"\n", text.toSafeString(el::unit::CpCount{200U}));
             if (lastMatch == nullptr) {
                 message += "lastMatch: <null>\n";
             } else {
@@ -92,7 +94,7 @@ public:
                 }
             }
             message += std::format(
-                "textWithReplacements: \"{}\"\n", textWithReplacements.toSafeString(el::unit::CpLength{200U}));
+                "textWithReplacements: \"{}\"\n", textWithReplacements.toSafeString(el::unit::CpCount{200U}));
             return message;
         } catch (...) {
             return "Unexpected exception while formatting diagnostics.";
@@ -134,7 +136,7 @@ public:
     }
 
     /// Require that the pattern does not match any subject.
-    void requireNoMatch(const std::vector<String> &testCases) {
+    void requireNoMatch(const el::StringList &testCases) {
         for (const auto &testCase : testCases) {
             WITH_CONTEXT(requireNoMatch(testCase));
         }
@@ -159,7 +161,7 @@ public:
             "00: {:04}-{:04} '{}'",
             begin,
             begin + expected.length().toSizeT(),
-            expected.toSafeString(el::unit::CpLength{200U}, el::text::SafeStringFlag::OnlyAscii));
+            expected.toSafeString(el::unit::CpCount{200U}, el::text::SafeStringFlag::OnlyAscii));
         WITH_CONTEXT(requireMatch(subject));
         WITH_CONTEXT(requireGroups({expectedLine}));
     }
@@ -188,7 +190,7 @@ public:
     }
 
     /// Require that the pattern does not fully match any subject.
-    void requireNoFullMatch(const std::vector<String> &testCases) {
+    void requireNoFullMatch(const el::StringList &testCases) {
         for (const auto &testCase : testCases) {
             WITH_CONTEXT(requireNoFullMatch(testCase));
         }
@@ -200,13 +202,13 @@ public:
             "00: {:04}-{:04} '{}'",
             0,
             subject.length().toSizeT(),
-            subject.toSafeString(el::unit::CpLength{200U}, el::text::SafeStringFlag::OnlyAscii));
+            subject.toSafeString(el::unit::CpCount{200U}, el::text::SafeStringFlag::OnlyAscii));
         WITH_CONTEXT(requireFullMatch(subject));
         WITH_CONTEXT(requireGroups({expectedLine}));
     }
 
     /// Require an implicit full-match capture group for every test case.
-    void requireFullMatchWithNoCaptures(const std::vector<String> &testCases) {
+    void requireFullMatchWithNoCaptures(const el::StringList &testCases) {
         for (const auto &testCase : testCases) {
             WITH_CONTEXT(requireFullMatchWithNoCaptures(testCase));
         }
@@ -226,7 +228,7 @@ public:
     }
 
     /// Require that the pattern finds no first match in any subject.
-    void requireNoFindFirst(const std::vector<String> &testCases) {
+    void requireNoFindFirst(const el::StringList &testCases) {
         for (const auto &testCase : testCases) {
             WITH_CONTEXT(requireNoFindFirst(testCase));
         }
@@ -242,7 +244,7 @@ public:
             "00: {:04}-{:04} '{}'",
             begin,
             begin + expected.length().toSizeT(),
-            expected.toSafeString(el::unit::CpLength{200U}, el::text::SafeStringFlag::OnlyAscii));
+            expected.toSafeString(el::unit::CpCount{200U}, el::text::SafeStringFlag::OnlyAscii));
         WITH_CONTEXT(requireFindFirst(subject));
         WITH_CONTEXT(requireGroups({expectedLine}));
     }
@@ -284,7 +286,7 @@ public:
     }
 
     /// Require that the pattern finds no matches in any subject.
-    void requireNoFindAll(const std::vector<String> &testCases) {
+    void requireNoFindAll(const el::StringList &testCases) {
         for (const auto &testCase : testCases) {
             WITH_CONTEXT(requireNoFindAll(testCase));
         }

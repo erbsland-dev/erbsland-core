@@ -4,6 +4,18 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        PathGlobCompiler.cpp
+        PathGlobCompiler.hpp
+        PathGlobCompiler_fwd.hpp
+        PathGlobData.cpp
+        PathGlobData.hpp
+        PathGlobData_fwd.hpp
+        PathGlobMatcher.cpp
+        PathGlobMatcher.hpp
+        PathLexical.cpp
+        PathLexical.hpp
+        FileCommit.cpp
+        FileCommit.hpp
         BackendFactory.cpp
         BackendFactory.hpp
         CharactersSets.cpp

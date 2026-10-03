@@ -22,6 +22,7 @@ namespace erbsland::event::impl {
 class EpollEventLoopDriver final : public EventLoopDriver {
 public:
     /// Create an epoll-based event-loop driver.
+    /// @throws system::PlatformError If native event-loop initialization fails.
     EpollEventLoopDriver();
     ~EpollEventLoopDriver() override;
 
@@ -39,6 +40,7 @@ public: // native source interface
     using RegistrationPtr = std::unique_ptr<EventLoopDriverRegistration>;
 
     /// Register descriptor readiness with this driver.
+    /// @throws system::PlatformError If native event registration fails.
     [[nodiscard]] auto registerDescriptor(int descriptor, bool read, bool write, NativeEventCallback callback)
         -> RegistrationPtr;
 

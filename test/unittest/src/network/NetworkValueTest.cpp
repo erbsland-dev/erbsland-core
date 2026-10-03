@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/network/Host.hpp>
-#include <erbsland/network/HostEndpoint.hpp>
-#include <erbsland/network/HostNameFormat.hpp>
-#include <erbsland/network/IpAddress.hpp>
-#include <erbsland/network/IpEndpoint.hpp>
-#include <erbsland/network/IpNetwork.hpp>
-#include <erbsland/network/Port.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Host.hpp>
+#include <erbsland/HostEndpoint.hpp>
+#include <erbsland/HostNameFormat.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/IpEndpoint.hpp>
+#include <erbsland/IpNetwork.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/Port.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>

@@ -8,6 +8,8 @@
 
 namespace erbsland::re::impl {
 
+using namespace text;
+
 auto CharSequence::operator==(const CharSequence &other) const noexcept -> bool {
     if (_hash == other._hash) {
         if (_extendedSequence != nullptr && _extendedSequence == other._extendedSequence) {
@@ -26,7 +28,7 @@ auto CharSequence::size() const noexcept -> std::size_t {
     return _extendedSequence != nullptr ? _extendedSequence->size() : _inlineSize;
 }
 
-auto CharSequence::sequence() const noexcept -> std::span<const text::Char> {
+auto CharSequence::sequence() const noexcept -> std::span<const Char> {
     if (_extendedSequence != nullptr) {
         return *_extendedSequence;
     }
@@ -45,7 +47,7 @@ auto CharSequence::end() const noexcept -> ConstIterator {
     return sequence().data() + size();
 }
 
-void CharSequence::append(const text::Char character) {
+void CharSequence::append(const Char character) {
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(character.isValidUnicode(), "Cannot append an invalid Unicode character"_el);
     if (_extendedSequence != nullptr) {
         conditionalDetach();
@@ -53,7 +55,7 @@ void CharSequence::append(const text::Char character) {
     } else if (_inlineSize < cInlineCapacity) {
         _inlineSequence[_inlineSize++] = character;
     } else {
-        _extendedSequence = std::make_shared<std::vector<text::Char>>();
+        _extendedSequence = std::make_shared<std::vector<Char>>();
         _extendedSequence->reserve(cInlineCapacity * 2U);
         _extendedSequence->insert(_extendedSequence->end(), _inlineSequence.begin(), _inlineSequence.end());
         _extendedSequence->push_back(character);
@@ -63,7 +65,7 @@ void CharSequence::append(const text::Char character) {
 
 void CharSequence::conditionalDetach() {
     if (_extendedSequence.use_count() > 1) {
-        _extendedSequence = std::make_shared<std::vector<text::Char>>(*_extendedSequence);
+        _extendedSequence = std::make_shared<std::vector<Char>>(*_extendedSequence);
     }
 }
 

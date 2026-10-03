@@ -5,7 +5,14 @@
 #include "DefaultConfiguration.hpp"
 #include "HashScenarioWorkload.hpp"
 
-#include <erbsland/cryptology/HashAlgorithm.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Version.hpp>
 
 #include <memory>
 
@@ -22,7 +29,7 @@ void CryptologyHashProfileApplication::configureProfiling(pf::ProfilingDefinitio
             el::Version{1, 0, 0},
             "Cryptology Hash Profiler and Benchmark"_el,
             "Profiles fixed-output hash algorithms using deterministic in-memory input."_el)
-        .setDefaultConfiguration(el::String{cDefaultConfigurationText})
+        .setDefaultConfiguration(cDefaultConfigurationText)
         .addMetric({.id = "bytes"_el, .unit = "bytes"_el, .reportRate = true})
         .addFunctionality(
             {.id = "hash"_el,
@@ -34,8 +41,8 @@ void CryptologyHashProfileApplication::configureProfiling(pf::ProfilingDefinitio
         .addParameter(
             {.id = "input-size"_el,
                 .configurationName = "input_size"_el,
-                .type = pf::ParameterType::ByteLength,
-                .defaultValue = el::ByteLength{128U * 1024U * 1024U}})
+                .type = pf::ParameterType::ByteCount,
+                .defaultValue = el::ByteCount{128U * 1024U * 1024U}})
         .addParameter(
             {.id = "fail-worker"_el,
                 .configurationName = "fail_worker"_el,
@@ -58,11 +65,11 @@ void CryptologyHashProfileApplication::configureProfiling(pf::ProfilingDefinitio
                 .functionality = "hash"_el,
                 .axes = el::List<pf::AxisSelection>{{.axis = "algorithm"_el, .value = algorithmId}},
                 .parameters = el::List<pf::ParameterSelection>{
-                    {.parameter = "input-size"_el, .value = el::ByteLength{128U * 1024U * 1024U}}}});
+                    {.parameter = "input-size"_el, .value = el::ByteCount{128U * 1024U * 1024U}}}});
     }
     auto smokeScenario = pf::Scenario{.id = "smoke:hash:md5"_el, .group = "smoke"_el, .functionality = "hash"_el};
     smokeScenario.axes.append({.axis = "algorithm"_el, .value = "md5"_el});
-    smokeScenario.parameters.append({.parameter = "input-size"_el, .value = el::ByteLength{64U * 1024U}});
+    smokeScenario.parameters.append({.parameter = "input-size"_el, .value = el::ByteCount{64U * 1024U}});
     definition.addSuite({.id = "snapshot"_el, .scenarios = std::move(snapshotScenarios)})
         .addSuite({.id = "smoke"_el, .scenarios = el::List<pf::Scenario>{std::move(smokeScenario)}});
 }

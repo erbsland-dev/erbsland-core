@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/event/EventSubscription.hpp>
 #include <erbsland/event/impl/EventCallbackList.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/EventSubscription.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/RuntimeError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>

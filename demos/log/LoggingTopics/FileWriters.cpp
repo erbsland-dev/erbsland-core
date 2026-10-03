@@ -2,7 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/FileLogWriterOptions.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogFileMode.hpp>
+#include <erbsland/LogFileRotation.hpp>
+#include <erbsland/LogLineFormat.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TempDirectory.hpp>
 
 #include <memory>
 
@@ -14,7 +30,7 @@ namespace demo {
 /// daily, and weekly rotation derive archive names from entry timestamps.
 void fileWriters() {
     auto temporaryOptions = el::PathTempDirectoryOptions{};
-    temporaryOptions.setPrefix("retkikunta-"_el).setRandomLength(el::CpLength{8U});
+    temporaryOptions.setPrefix("retkikunta-"_el).setRandomLength(el::CpCount{8U});
     const auto temporary =
         el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
     const auto path = temporary->path() / "guild.log"_el;
@@ -22,7 +38,7 @@ void fileWriters() {
     auto writerOptions = el::FileLogWriterOptions{path};
     writerOptions.setMode(el::LogFileMode::Overwrite)
         .setRotation(el::LogFileRotation::Size)
-        .setMaximumSize(el::ByteLength{150U})
+        .setMaximumSize(el::ByteCount{150U})
         .setRetention(2U);
 
     auto format = el::LogLineFormat{};

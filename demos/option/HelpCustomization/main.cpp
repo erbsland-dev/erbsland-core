@@ -1,8 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
-#include <erbsland/i18n/DisplayTextMap.hpp>
+#include <DemoTerminal.hpp>
+#include <DisplayTextDemo.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationInfo.hpp>
+#include <erbsland/cterm/TerminalDocumentStyle.hpp>
+#include <erbsland/DisplayText.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionHelpVisibility.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TextDocument.hpp>
+#include <erbsland/Version.hpp>
 
 #include <string_view>
 
@@ -16,12 +30,12 @@ void addSharedOptions(const el::OptionsPtr &options) {
     options->addOption({"-g"_el, "--area"_el, "area"_el})
         .setType(el::OptionType::Text)
         .setValueName("area"_el)
-        .setHelpDescription("Area for which to view help."_el);
+        .setHelpTitle("Area for which to view help."_el);
     options->addOption({"-f"_el, "--format"_el, "format"_el})
         .addChoice("short"_el)
         .addChoice("full"_el)
         .setDefaultValue("short"_el)
-        .setHelpDescription("Output detail level."_el);
+        .setHelpTitle("Output detail level."_el);
 }
 
 /// `Application::enableTerminal()` switches generated help from plain text to styled terminal output.
@@ -38,7 +52,7 @@ protected:
         info().setApplicationVersion(el::Version{0, 8, 0});
         for (const auto &arg : commandLineArguments()) {
             if (arg == "--terminal"_el) {
-                enableTerminal();
+                DemoTerminal::enable(*this);
                 setSystemOutputStyle(el::cterm::TerminalDocumentStyle::defaultStyled());
                 break;
             }
@@ -47,16 +61,17 @@ protected:
     void registerCommandLineOptions(const el::OptionsPtr &options) override {
         addSharedOptions(options);
         options->addOption({"--terminal"_el, "terminal"_el})
-            .setHelpDescription("Renders help with terminal colors."_el)
+            .setHelpTitle("Renders help with terminal colors."_el)
             .setHelpVisibility(el::OptionHelpVisibility::Hidden);
     }
 };
 
-/// `OptionManager` exposes neutral help documents and `DisplayTextMap` for manual rendering and wording changes.
+/// `OptionManager` exposes neutral help documents and compiled display-text layers for manual rendering and wording
+/// changes.
 ///
 /// The manager can build a `TextDocument` without owning the application lifecycle.
-/// Change `DisplayTextMap` when generated labels such as `Usage`, `Options`, placeholders, or built-in option
-/// descriptions need application-specific wording.
+/// Change compiled display-text layers when generated labels such as `Usage`, `Options`, placeholders, or built-in
+/// option descriptions need application-specific wording.
 auto manualHelpRendering() -> el::ExitCode {
     auto options = el::Options::create();
     auto info = el::ApplicationInfo{};
@@ -66,15 +81,9 @@ auto manualHelpRendering() -> el::ExitCode {
     options->setExecutablePath("manual-help"_el);
     addSharedOptions(options);
 
-    auto displayText = el::DisplayTextMap::defaultMap()->clone();
-    displayText->set("options.UsageLabel"_el, "Usage"_el)
-        .set("options.OptionsHeading"_el, "Settings"_el)
-        .set("options.OptionsPlaceholder"_el, "options"_el)
-        .set("options.ChoicePlaceholder"_el, "choice"_el)
-        .set("options.ChoicesLabel"_el, "Choices"_el);
+    el::application().displayText()->addData(DisplayTextDemo::create());
 
     auto manager = el::OptionManager{options};
-    manager.setDisplayTextMap(displayText);
     el::io::printLine(manager.helpDocument({}).toString());
     return el::ExitCode::success();
 }

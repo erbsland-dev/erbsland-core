@@ -80,7 +80,7 @@ public:
     void testDrawBufferRejectsDrawingOntoTheSameBuffer() {
         auto buffer = createBuffer({"ABC "});
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.drawBuffer(buffer, block::Position{1, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.drawBuffer(buffer, block::Position{1, 0}));
     }
 
     void testDrawTextStringReplacesInvalidUtf8() {

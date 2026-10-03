@@ -4,7 +4,7 @@
 #include <erbsland/conf/impl/constants/Defaults.hpp>
 #include <erbsland/conf/impl/constants/Limits.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/cryptology/HashAlgorithm.hpp>
+#include <erbsland/HashAlgorithm.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::conf;

@@ -1,7 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ScriptedByteInputStream.hpp"
+
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/StreamCloseStatus.hpp>
+#include <erbsland/StreamReadResult.hpp>
+#include <erbsland/StreamReadStatus.hpp>
+#include <erbsland/StreamState.hpp>
+#include <erbsland/StreamWaitStatus.hpp>
 
 #include <algorithm>
 #include <thread>
@@ -47,7 +54,7 @@ void ScriptedByteInputStream::abort() noexcept {
 
 auto ScriptedByteInputStream::readFromSource(
     const std::span<el::Byte> destination, [[maybe_unused]] ReadDeadline deadline)
-    -> el::StreamReadResult<el::ByteLength> {
+    -> el::StreamReadResult<el::ByteCount> {
     ++_readCount;
     if (_failure) {
         _state = el::StreamState::Failed;
@@ -61,17 +68,17 @@ auto ScriptedByteInputStream::readFromSource(
     }
     if (_timeoutCount > 0U) {
         --_timeoutCount;
-        return {el::StreamReadStatus::Timeout, el::ByteLength::zero()};
+        return {el::StreamReadStatus::Timeout, el::ByteCount::zero()};
     }
     if (_position == _bytes.size()) {
-        return {el::StreamReadStatus::Finished, el::ByteLength::zero()};
+        return {el::StreamReadStatus::Finished, el::ByteCount::zero()};
     }
     const auto count = std::min({_maximumChunk, destination.size(), _bytes.size() - _position});
     for (auto index = std::size_t{0U}; index < count; ++index) {
         destination[index] = el::Byte{_bytes[_position + index]};
     }
     _position += count;
-    return {el::StreamReadStatus::Data, el::ByteLength::fromSizeT(count)};
+    return {el::StreamReadStatus::Data, el::ByteCount::fromSizeT(count)};
 }
 
 }

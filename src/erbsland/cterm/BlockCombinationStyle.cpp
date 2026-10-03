@@ -7,7 +7,7 @@
 
 #include "impl/CommonBoxFrameBlockCombinationStyle.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../unit/CpIndex.hpp"
 
 #include <algorithm>

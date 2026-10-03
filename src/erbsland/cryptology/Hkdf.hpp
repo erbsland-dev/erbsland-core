@@ -9,7 +9,7 @@
 
 #include "../mem/ByteBlock_fwd.hpp"
 #include "../mem/ByteSpan.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 namespace erbsland::cryptology {
 
@@ -23,8 +23,7 @@ namespace erbsland::cryptology {
 class Hkdf final {
 public:
     /// Create HKDF for SHA-256 or SHA-384.
-    /// @param algorithm The underlying HMAC hash algorithm.
-    /// @throws err::ParameterError If the algorithm is unsupported.
+    /// @param algorithm The underlying HMAC hash algorithm. Must be SHA-256 or SHA-384.
     explicit Hkdf(HashAlgorithm algorithm);
 
     // defaults
@@ -43,10 +42,9 @@ public:
     [[nodiscard]] auto extract(mem::ConstByteSpan inputKeyMaterial, mem::ConstByteSpan salt = {}) const
         -> mem::ByteBlock;
     /// Extract a pseudorandom key from a protected key-agreement shared secret.
-    /// @param sharedSecret The protected source keying material.
+    /// @param sharedSecret The protected source keying material. Must not be empty.
     /// @param salt The optional salt bytes.
     /// @return A digest-sized pseudorandom key in sensitive storage.
-    /// @throws err::LogicError If `sharedSecret` is empty.
     [[nodiscard]] auto extract(const KeyAgreementSharedSecret &sharedSecret, mem::ConstByteSpan salt = {}) const
         -> mem::ByteBlock;
     /// Expand a pseudorandom key into output keying material.
@@ -54,9 +52,8 @@ public:
     /// @param info Optional application and context information.
     /// @param outputLength The requested output length, at most 255 times the digest size.
     /// @return Output keying material in sensitive storage when non-empty.
-    /// @throws err::ParameterError If the key is too short or the output length exceeds the RFC limit.
     [[nodiscard]] auto expand(
-        mem::ConstByteSpan pseudoRandomKey, mem::ConstByteSpan info, unit::ByteLength outputLength) const
+        mem::ConstByteSpan pseudoRandomKey, mem::ConstByteSpan info, unit::ByteCount outputLength) const
         -> mem::ByteBlock;
 
 public: // accessors

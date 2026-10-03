@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ApplicationLifecycleData.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 #include <utility>
 
 namespace erbsland::core::impl {
 
+using namespace err;
 using namespace text::literals;
 
 void ApplicationLifecycleData::enableService(const bool applicationRunStarted, ServiceLifecycleFactory factory) {
@@ -18,7 +19,7 @@ void ApplicationLifecycleData::enableService(const bool applicationRunStarted, S
         return;
     }
     if (applicationRunStarted) {
-        throw err::LogicError{"Service lifecycle support must be enabled before running the application."_el};
+        throw LogicFailure{"Service lifecycle support must be enabled before running the application."_el};
     }
 #ifdef ERBSLAND_CORE_DEVELOPER_BUILD
     if (_configuredServiceLifecycle != nullptr) {
@@ -33,6 +34,7 @@ void ApplicationLifecycleData::enableService(const bool applicationRunStarted, S
 void ApplicationLifecycleData::setServiceLifecycle(system::impl::ServiceLifecyclePtr serviceLifecycle) {
     _configuredServiceLifecycle = std::move(serviceLifecycle);
 }
+
 #endif
 
 auto ApplicationLifecycleData::run(system::impl::ServiceLifecycle::RunFn runFn) -> int {
@@ -49,15 +51,14 @@ auto ApplicationLifecycleData::run(system::impl::ServiceLifecycle::RunFn runFn) 
 
 void ApplicationLifecycleData::reportStartupPending(const time::TimeDelta expectedRemainingTime) {
     if (!expectedRemainingTime.isPositive()) {
-        throw err::ParameterError{
-            "The expected remaining startup time must be positive."_el, "expectedRemainingTime"_el};
+        throw ParameterFailure{"The expected remaining startup time must be positive."_el, "expectedRemainingTime"_el};
     }
     const auto lock = std::scoped_lock{_mutex};
     if (_serviceLifecycle == nullptr) {
-        throw err::LogicError{"Service lifecycle support must be enabled before reporting startup state."_el};
+        throw LogicFailure{"Service lifecycle support must be enabled before reporting startup state."_el};
     }
     if (_startupComplete) {
-        throw err::LogicError{"Application startup was already reported as complete."_el};
+        throw LogicFailure{"Application startup was already reported as complete."_el};
     }
     _startupExplicitlyPending = true;
     _serviceLifecycle->reportStartupPending(expectedRemainingTime);
@@ -66,13 +67,13 @@ void ApplicationLifecycleData::reportStartupPending(const time::TimeDelta expect
 void ApplicationLifecycleData::reportStartupComplete() {
     const auto lock = std::scoped_lock{_mutex};
     if (_serviceLifecycle == nullptr) {
-        throw err::LogicError{"Service lifecycle support must be enabled before reporting startup state."_el};
+        throw LogicFailure{"Service lifecycle support must be enabled before reporting startup state."_el};
     }
     if (_startupComplete) {
         return;
     }
     if (isShutdownRequested()) {
-        throw err::LogicError{"Application shutdown started before startup completed."_el};
+        throw LogicFailure{"Application shutdown started before startup completed."_el};
     }
     _startupComplete = true;
     _serviceLifecycle->reportStartupComplete();
@@ -96,13 +97,11 @@ void ApplicationLifecycleData::reportAutomaticStartupComplete() {
 }
 
 void ApplicationLifecycleData::reportServiceStopping() noexcept {
-    try {
-        const auto lock = std::scoped_lock{_mutex};
-        if (_serviceLifecycle != nullptr && !_serviceStoppingReported) {
-            _serviceStoppingReported = true;
-            _serviceLifecycle->reportStopping();
-        }
-    } catch (...) {}
+    const auto lock = std::scoped_lock{_mutex};
+    if (_serviceLifecycle != nullptr && !_serviceStoppingReported) {
+        _serviceStoppingReported = true;
+        _serviceLifecycle->reportStopping();
+    }
 }
 
 void ApplicationLifecycleData::requestShutdown() noexcept {

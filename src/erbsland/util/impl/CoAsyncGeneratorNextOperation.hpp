@@ -4,7 +4,7 @@
 
 #include "CoAsyncGeneratorPromise.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 
 #include <coroutine>
 #include <exception>
@@ -46,7 +46,7 @@ public:
     [[nodiscard]] auto await_suspend(const std::coroutine_handle<> continuation) -> Handle {
         const auto lock = std::scoped_lock{_handle.promise()._mutex};
         if (_handle.promise()._nextPending) {
-            throw err::LogicError{"A CoAsyncGenerator can only process one next operation at a time."};
+            throw err::LogicFailure{"A CoAsyncGenerator can only process one next operation at a time."};
         }
         _handle.promise()._nextPending = true;
         _handle.promise()._continuation = continuation;

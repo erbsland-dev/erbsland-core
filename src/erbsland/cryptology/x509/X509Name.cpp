@@ -8,10 +8,11 @@
 
 namespace erbsland::cryptology {
 
+using namespace text;
 using namespace text::literals;
 
-auto X509Name::values(const Asn1ObjectIdentifier &oid) const -> text::StringList {
-    auto result = text::StringList{};
+auto X509Name::values(const Asn1ObjectIdentifier &oid) const -> StringList {
+    auto result = StringList{};
     for (const auto &rdn : _rdns) {
         for (const auto &attribute : rdn.attributes()) {
             if (attribute.oid() == oid && !attribute.value().isEmpty()) {
@@ -22,32 +23,32 @@ auto X509Name::values(const Asn1ObjectIdentifier &oid) const -> text::StringList
     return result;
 }
 
-auto X509Name::commonNames() const -> text::StringList {
+auto X509Name::commonNames() const -> StringList {
     return values(Asn1ObjectIdentifier::fromStringOrThrow("2.5.4.3"_el));
 }
 
-auto X509Name::organizations() const -> text::StringList {
+auto X509Name::organizations() const -> StringList {
     return values(Asn1ObjectIdentifier::fromStringOrThrow("2.5.4.10"_el));
 }
 
-auto X509Name::organizationalUnits() const -> text::StringList {
+auto X509Name::organizationalUnits() const -> StringList {
     return values(Asn1ObjectIdentifier::fromStringOrThrow("2.5.4.11"_el));
 }
 
-auto X509Name::localities() const -> text::StringList {
+auto X509Name::localities() const -> StringList {
     return values(Asn1ObjectIdentifier::fromStringOrThrow("2.5.4.7"_el));
 }
 
-auto X509Name::states() const -> text::StringList {
+auto X509Name::states() const -> StringList {
     return values(Asn1ObjectIdentifier::fromStringOrThrow("2.5.4.8"_el));
 }
 
-auto X509Name::countries() const -> text::StringList {
+auto X509Name::countries() const -> StringList {
     return values(Asn1ObjectIdentifier::fromStringOrThrow("2.5.4.6"_el));
 }
 
-auto X509Name::toString() const -> text::String {
-    auto result = text::StringEditor{};
+auto X509Name::toString() const -> String {
+    auto result = StringEditor{};
     auto firstRdn = true;
     const auto &rdns = _rdns.toRawValue();
     for (auto reverseIndex = rdns.size(); reverseIndex > 0U; --reverseIndex) {
@@ -66,10 +67,10 @@ auto X509Name::toString() const -> text::String {
             result.append(escapedValue(attribute.value()));
         }
     }
-    return text::String{result};
+    return result;
 }
 
-auto X509Name::attributeName(const Asn1ObjectIdentifier &oid) -> text::String {
+auto X509Name::attributeName(const Asn1ObjectIdentifier &oid) -> String {
     const auto &value = oid.toString();
     if (value == "2.5.4.3"_el) {
         return "CN"_el;
@@ -95,9 +96,9 @@ auto X509Name::attributeName(const Asn1ObjectIdentifier &oid) -> text::String {
     return value;
 }
 
-auto X509Name::escapedValue(const text::String &value) -> text::String {
-    auto reader = text::StringCharReader{value};
-    auto result = text::StringEditor{};
+auto X509Name::escapedValue(const String &value) -> String {
+    auto reader = StringCharReader{value};
+    auto result = StringEditor{};
     auto index = std::size_t{};
     const auto count = value.characterLength().toSizeT();
     while (!reader.isAtEnd()) {
@@ -112,7 +113,7 @@ auto X509Name::escapedValue(const text::String &value) -> text::String {
         result.append(character);
         ++index;
     }
-    return text::String{result};
+    return result;
 }
 
 }

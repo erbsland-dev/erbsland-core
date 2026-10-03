@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../math/IntegerBitOperations.hpp"
 #include "../../../mem/ByteArray.hpp"
 #include "../../../mem/ByteSpan.hpp"
@@ -65,18 +65,18 @@ public:
     /// Therefore, a message of any size can be hashed as a stream, and the result never depends on how the data is
     /// split across calls.
     ///
+    /// Must not be called after the digest has been calculated.
     /// @param data A block of data.
-    /// @throws err::LogicError if data is added after the digest was calculated.
     void update(const ConstByteSpan data) {
         if (_hasDigest) {
-            throw err::LogicError{"Adding data after finalizing a hash is not allowed."};
+            throw err::LogicFailure{"Adding data after finalizing a hash is not allowed."};
         }
         auto dataPosition = std::size_t{};
         while (dataPosition < data.size()) {
             const auto copyLength =
                 std::min(_buffer.length().toSizeT() - _bufferPosition.toSizeT(), data.size() - dataPosition);
             _buffer.overwrite(_bufferPosition, data.subspan(dataPosition, copyLength));
-            _bufferPosition.uncheckedAdvance(ByteLength::fromSizeT(copyLength));
+            _bufferPosition.uncheckedAdvance(ByteCount::fromSizeT(copyLength));
             dataPosition += copyLength;
             _bitLength += static_cast<uint64_t>(copyLength) * 8U;
             if (_bufferPosition == _buffer.endIndex()) {
@@ -108,14 +108,14 @@ public:
             _bufferPosition = ByteIndex::zero();
         }
         // Zero the gap up to the length field, write the bit length, and compress the final block.
-        _buffer.fill(ByteRange{_bufferPosition, ByteLength{56U} - _bufferPosition.distanceFromZero()}, Byte{});
+        _buffer.fill(ByteRange{_bufferPosition, ByteCount{56U} - _bufferPosition.distanceFromZero()}, Byte{});
         _buffer.setIntegerOrThrow(ByteIndex{56U}, _bitLength);
         processBlock(_buffer);
         // The digest is the final state A, B, C, D, with each word written as four little-endian bytes.
         auto digestIndex = ByteIndex::zero();
         for (const auto word : _state) {
             _digest.setIntegerOrThrow(digestIndex, word);
-            digestIndex.uncheckedAdvance(ByteLength{sizeof(uint32_t)});
+            digestIndex.uncheckedAdvance(ByteCount{sizeof(uint32_t)});
         }
         _hasDigest = true;
         return _digest;
@@ -171,7 +171,7 @@ private:
         auto blockIndex = ByteIndex::zero();
         for (auto &word : words) {
             word = block.getInteger<uint32_t>(blockIndex);
-            blockIndex.uncheckedAdvance(ByteLength{sizeof(uint32_t)});
+            blockIndex.uncheckedAdvance(ByteCount{sizeof(uint32_t)});
         }
         // The working copy of the chaining state, which is merged back after the last operation.
         auto a = _state[0];

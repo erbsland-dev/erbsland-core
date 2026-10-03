@@ -21,8 +21,8 @@ Unacceptable Solutions
 
 * Only removing the anonymous namespace is no solution, because the helper or constant still exists, is still hidden in
   the implementation, and is still untestable.
-* Converting the anonymous namespace into a real namespace with a unique name is no solution, because this is only an
-  anonymous namespace in disguise.
+* Renaming an anonymous namespace while leaving its helpers hidden in a ``cpp`` file does not provide an accessible
+  header interface for unit tests.
 
 Correct Solutions for Common Problems
 =====================================
@@ -43,16 +43,18 @@ Before writing a helper function, ask yourself:
   * Platform-specific code.
   * Circular dependencies.
 
-Otherwise, create a new compilation unit in an ``impl`` subdirectory with a separate ``hpp`` and optional ``cpp`` file.
-Place the free functions in the ``erbsland::<domain>::impl`` namespace.
+Otherwise, create a new logical unit below an ``impl`` directory with a separate ``hpp`` and optional ``cpp`` file.
+Place the free functions in ``erbsland::<domain>::impl`` or a named helper namespace beneath it.
+The helper namespace may share its parent's directory when it owns one logical unit; follow :doc:`../cpp_files` for
+directory layout.
 
 This is often preferable even to private helper methods because the functions remain independently unit-testable.
 
 **Implementation-only types (classes, enums, enum classes):**
 
 Never place implementation-only types in anonymous namespaces.
-Instead, create a dedicated compilation unit in an ``impl`` subdirectory with a ``hpp`` and optional ``cpp`` file,
-define the type there, and include it where needed.
+Instead, create a dedicated logical unit below an ``impl`` directory with a ``hpp`` and optional ``cpp`` file, define
+the type there, and include it where needed.
 
 Mechanical Detection
 ====================

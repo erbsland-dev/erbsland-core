@@ -61,7 +61,7 @@ It cannot retroactively erase earlier copies made elsewhere.
 .. erbsland-demo::
     :source: mem/SecureErase/EraseSharedBlocks.cpp
     :exec: mem/secure_erase --demo EraseSharedBlocks
-    :source-sha256: b399118a471cd072a0a29457f9786c14d300239678fba8f2ae03ae76c487de19
+    :sha256: db06b31e6b91cb7caf8fe803e6d9e3c07b8eec07e43f9a3f96f05b8a1ec2401f
 
 .. code-block:: cpp
 
@@ -71,7 +71,7 @@ It cannot retroactively erase earlier copies made elsewhere.
     /// final cleanup. An explicit erase zeros the invoking value immediately, but a
     /// shared alias remains readable until it is erased or released.
     void eraseSharedBlocks() {
-        auto workingKey = el::ByteBlockEditor{el::ByteLength{6U}};
+        auto workingKey = el::ByteBlockEditor{el::ByteCount{6U}};
         workingKey.markAsSensitive();
 
         // Mark allocated storage before writing the sensitive value.
@@ -98,13 +98,15 @@ It cannot retroactively erase earlier copies made elsewhere.
         el::io::printLine("Alias erased       : "_el, el::BooleanFormat::yesNo(), retainedCopyIsZero);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Nøgle              : Asteroide-session
-    Editor erased      : yes
-    Alias retained data: yes
-    Alias erased       : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mNøgle              : Asteroide-session
+        Editor erased      : yes
+        Alias retained data: yes
+        Alias erased       : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -142,7 +144,7 @@ mathematical state.
 .. erbsland-demo::
     :source: mem/SecureErase/EraseFixedStorage.cpp
     :exec: mem/secure_erase --demo EraseFixedStorage
-    :source-sha256: 8b0c6f3e7438923062ea3f243dc25854dc98b3c22c73199c3c28f123594860a2
+    :sha256: e583ec709998a8c9e532ba034a1ec13746f6b8f02ff8cc98a47ac9c74f8e8e80
 
 .. code-block:: cpp
 
@@ -182,12 +184,14 @@ mathematical state.
         el::io::printLine("Scratch erased     : "_el, el::BooleanFormat::yesNo(), scratchIsZero);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Observation        : Apofis-spektrum
-    Tag erased         : yes
-    Scratch erased     : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mObservation        : Apofis-spektrum
+        Tag erased         : yes
+        Scratch erased     : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -209,7 +213,7 @@ and retains the capacity.
 .. erbsland-demo::
     :source: mem/SecureErase/EraseDynamicBuffer.cpp
     :exec: mem/secure_erase --demo EraseDynamicBuffer
-    :source-sha256: 9fb752b0e8331d9f04d76b4a594a43bf4b00952a4ef26bada865d4f0577c3026
+    :sha256: 7638dad5f6e1725b7f6c2e849821aa50a2d74a4af594488a9ebf252651312faa
 
 .. code-block:: cpp
 
@@ -219,7 +223,7 @@ and retains the capacity.
     /// the buffer's lifetime. `secureErase()` immediately overwrites its complete
     /// capacity while preserving length, capacity, and sensitive mode.
     void eraseDynamicBuffer() {
-        auto sessionMaterial = el::ByteBuffer{el::ByteLength{6U}};
+        auto sessionMaterial = el::ByteBuffer{el::ByteCount{6U}};
         sessionMaterial.setSensitive(true);
         sessionMaterial.set(el::ByteIndex{0U}, el::Byte{0x4eU});
         sessionMaterial.set(el::ByteIndex{1U}, el::Byte{0x45U});
@@ -227,7 +231,7 @@ and retains the capacity.
         sessionMaterial.set(el::ByteIndex{3U}, el::Byte{0x2dU});
         sessionMaterial.set(el::ByteIndex{4U}, el::Byte{0x31U});
         sessionMaterial.set(el::ByteIndex{5U}, el::Byte{0x37U});
-        sessionMaterial.reserve(el::ByteLength{32U});
+        sessionMaterial.reserve(el::ByteCount{32U});
         const auto lengthBeforeErase = sessionMaterial.length();
         const auto capacityBeforeErase = sessionMaterial.capacity();
 
@@ -245,19 +249,21 @@ and retains the capacity.
         el::io::printLine("Sensitive mode     : "_el, el::BooleanFormat::yesNo(), sessionMaterial.isSensitive());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Session            : NEO-17
-    Buffer erased      : yes
-    Length preserved   : yes
-    Capacity preserved : yes
-    Sensitive mode     : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSession            : NEO-17
+        Buffer erased      : yes
+        Length preserved   : yes
+        Capacity preserved : yes
+        Sensitive mode     : yes␛[0m
 
 .. erbsland-demo-end::
 
-Queues That Discard Data Over Time
-==================================
+Sensitive Byte Ring Buffers and Consumed-Data Erasure
+=====================================================
 
 :cpp:class:`RingBuffer <erbsland::mem::RingBuffer>` and its integer-aware subclass
 :cpp:class:`ByteRingBuffer <erbsland::mem::ByteRingBuffer>` reuse storage as bytes are read and overwritten.
@@ -274,7 +280,7 @@ Ordinary safe reads and writes need no special coordination.
 .. erbsland-demo::
     :source: mem/SecureErase/EraseRingBuffer.cpp
     :exec: mem/secure_erase --demo EraseRingBuffer
-    :source-sha256: 54799b809d6f005ce5722979bc6c31d882cda1d55b249571ebfab39a7ef22bcb
+    :sha256: 5f58290eeac000548a125b7f28eb0ab693f768580c0db76683978d0552543c81
 
 .. code-block:: cpp
 
@@ -284,7 +290,7 @@ Ordinary safe reads and writes need no special coordination.
     /// `secureErase()` overwrites the complete ring allocation immediately and
     /// leaves the buffer empty without changing its capacity.
     void eraseRingBuffer() {
-        auto records = el::ByteRingBuffer{el::ByteLength{8U}};
+        auto records = el::ByteRingBuffer{el::ByteCount{8U}};
         records.setSensitive(true);
         const auto writeResult = records.writeInteger<uint32_t>(0x4e454f31U);
         const auto capacityBeforeErase = records.capacity();
@@ -301,20 +307,22 @@ Ordinary safe reads and writes need no special coordination.
         el::io::printLine("Sensitive mode    : "_el, el::BooleanFormat::yesNo(), records.isSensitive());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Kø               : Asteroide-poster
-    Record accepted   : yes
-    Bytes before erase: 4
-    Queue empty       : yes
-    Capacity preserved: yes
-    Sensitive mode    : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mKø               : Asteroide-poster
+        Record accepted   : yes
+        Bytes before erase: 4
+        Queue empty       : yes
+        Capacity preserved: yes
+        Sensitive mode    : yes␛[0m
 
 .. erbsland-demo-end::
 
-Choosing the Boundary
-=====================
+Sensitive Storage versus Explicit Memory Erasure
+================================================
 
 The most reliable design starts with the owner of the sensitive bytes.
 Use an owning container with sensitive lifecycle behavior for values that grow, move, or remain alive across several

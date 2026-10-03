@@ -121,7 +121,6 @@ private:
     std::optional<Version> _maximum; ///< The optional inclusive maximum bound.
 };
 
-/// Test whether this version is contained in a range at the given precision.
 constexpr auto Version::inRange(const VersionRange &range, VersionPart precision) const noexcept -> bool {
     return range.contains(*this, precision);
 }
@@ -129,10 +128,12 @@ constexpr auto Version::inRange(const VersionRange &range, VersionPart precision
 }
 
 namespace std {
+
 template <>
 struct hash<erbsland::unit::VersionRange> {
     auto operator()(const erbsland::unit::VersionRange &value) const noexcept -> std::size_t {
         return erbsland::util::createHash(value.hasMinimum(), value.minimum(), value.hasMaximum(), value.maximum());
     }
 };
+
 }

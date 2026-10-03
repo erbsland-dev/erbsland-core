@@ -7,7 +7,7 @@
 #include "../mem/Byte.hpp"
 #include "../mem/ByteSpan.hpp"
 #include "../mem/Endianness.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <cstdint>
@@ -92,7 +92,7 @@ public: // encoding information
         return mode == StringBomMode::Require || !isUtf8();
     }
     /// Get the byte length of the byte order mark written in the given mode.
-    [[nodiscard]] auto bomLength(StringBomMode mode) const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto bomLength(StringBomMode mode) const noexcept -> unit::ByteCount;
     /// Get the byte order mark written in the given mode.
     /// The returned span is empty if this encoding does not write a byte order mark in the selected mode.
     [[nodiscard]] auto bomBytes(StringBomMode mode) const noexcept -> mem::ConstByteSpan;

@@ -10,14 +10,13 @@
 
 namespace erbsland::text::impl {
 
-using unit::U16DataLength;
-using unit::U16DataRange;
+using unit::U16Count;
+using unit::U16Range;
 
 UnsafeU16StringBuffer::UnsafeU16StringBuffer(std::size_t dataSize) : _data{createDataForDataSize(dataSize)} {
 }
 
-UnsafeU16StringBuffer::UnsafeU16StringBuffer(U16DataLength capacity) :
-    UnsafeU16StringBuffer{dataSizeForCapacity(capacity)} {
+UnsafeU16StringBuffer::UnsafeU16StringBuffer(U16Count capacity) : UnsafeU16StringBuffer{dataSizeForCapacity(capacity)} {
 }
 
 auto UnsafeU16StringBuffer::data() noexcept -> char16_t * {
@@ -48,6 +47,7 @@ auto UnsafeU16StringBuffer::dataAsWide() const noexcept -> const wchar_t * {
     }
     return reinterpret_cast<const wchar_t *>(_data.constGet()->data());
 }
+
 #endif
 
 auto UnsafeU16StringBuffer::dataSize() const noexcept -> std::size_t {
@@ -57,15 +57,15 @@ auto UnsafeU16StringBuffer::dataSize() const noexcept -> std::size_t {
     return _data.constGet()->capacity();
 }
 
-auto UnsafeU16StringBuffer::capacity() const noexcept -> U16DataLength {
+auto UnsafeU16StringBuffer::capacity() const noexcept -> U16Count {
     const auto size = dataSize();
     if (size == 0U) {
-        return U16DataLength::zero();
+        return U16Count::zero();
     }
-    return U16DataLength::fromSizeT(size - 1U);
+    return U16Count::fromSizeT(size - 1U);
 }
 
-auto UnsafeU16StringBuffer::take(const U16DataLength length) -> U16StringEditor {
+auto UnsafeU16StringBuffer::take(const U16Count length) -> U16StringEditor {
     const auto finalLength = checkedFinalLength(length);
     if (finalLength.isZero()) {
         _data.reset();
@@ -75,21 +75,21 @@ auto UnsafeU16StringBuffer::take(const U16DataLength length) -> U16StringEditor 
     const auto size = finalLength.toSizeT();
     data.get()->setSize(static_cast<U16StringData::SizeType>(size + 1U));
     data.get()->data()[size] = u'\0';
-    return U16StringEditor{U16StringSharedStorage{std::move(data), U16DataRange::fromSizeT(size)}};
+    return U16StringEditor{U16StringSharedStorage{std::move(data), U16Range::fromSizeT(size)}};
 }
 
 auto UnsafeU16StringBuffer::take(const std::size_t length) -> U16StringEditor {
-    const auto finalLength = U16DataLength::fromSizeT(length);
+    const auto finalLength = U16Count::fromSizeT(length);
     return take(finalLength);
 }
 
-auto UnsafeU16StringBuffer::takeAsUtf8(const U16DataLength length) -> U8StringEditor {
+auto UnsafeU16StringBuffer::takeAsUtf8(const U16Count length) -> U8StringEditor {
     const auto u16String = take(length);
     return U8StringEditor{StringConverter{u16String}.toU8String()};
 }
 
 auto UnsafeU16StringBuffer::takeAsUtf8(std::size_t length) -> U8StringEditor {
-    return takeAsUtf8(U16DataLength::fromSizeT(length));
+    return takeAsUtf8(U16Count::fromSizeT(length));
 }
 
 auto UnsafeU16StringBuffer::createDataForDataSize(std::size_t dataSize) -> U16StringDataPtr {
@@ -105,7 +105,7 @@ auto UnsafeU16StringBuffer::createDataForDataSize(std::size_t dataSize) -> U16St
     return U16StringDataPtr{data};
 }
 
-auto UnsafeU16StringBuffer::dataSizeForCapacity(U16DataLength capacity) -> std::size_t {
+auto UnsafeU16StringBuffer::dataSizeForCapacity(U16Count capacity) -> std::size_t {
     if (capacity.isInfinite()) {
         std::terminate();
     }
@@ -116,7 +116,7 @@ auto UnsafeU16StringBuffer::dataSizeForCapacity(U16DataLength capacity) -> std::
     return size + 1U;
 }
 
-auto UnsafeU16StringBuffer::checkedFinalLength(U16DataLength length) const -> U16DataLength {
+auto UnsafeU16StringBuffer::checkedFinalLength(U16Count length) const -> U16Count {
     if (length.isInfinite()) {
         return capacity();
     }

@@ -1,11 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/EventTimer.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimeUnitTags.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventTimer.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeUnitTags.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>
@@ -126,8 +127,8 @@ public:
         const auto loop = EventLoop::create();
         const auto timer = loop->createTimer([]() -> void {});
 
-        REQUIRE_THROWS_AS(el::err::ParameterError, timer->startFixedDelay(TimeDelta::zero()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, timer->startFixedRate(TimeDelta{Milliseconds{-1}}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, timer->startFixedDelay(TimeDelta::zero()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, timer->startFixedRate(TimeDelta{Milliseconds{-1}}));
     }
 
     void testTimerExceptionIsCapturedAndTimerRepeats() {
@@ -137,7 +138,7 @@ public:
         timer = loop->createTimer([&count, &timer]() -> void {
             count += 1;
             if (count == 1) {
-                throw std::runtime_error{"timer"};
+                throw el::err::RuntimeError{"timer"};
             }
             timer->stop();
         });

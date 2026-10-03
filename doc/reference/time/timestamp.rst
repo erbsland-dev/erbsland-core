@@ -30,6 +30,11 @@ Scalar epoch ticks support signed seconds, milliseconds, microseconds, and nanos
 Split seconds/fractions use floor seconds and a nonnegative nanosecond fraction.
 Every valid timestamp converts exactly to UTC ``DateTime``; converting back discards display metadata.
 
+Throwing timestamp factories report invalid numeric fields with ``OutOfRangeError`` and malformed binary representations
+with ``ParseError``.
+Checked distances report invalid operands with ``OutOfRangeError``.
+Optional and fallback variants retain their existing results.
+
 Interface
 =========
 

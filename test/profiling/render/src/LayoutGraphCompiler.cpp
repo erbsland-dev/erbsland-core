@@ -4,8 +4,11 @@
 
 #include "ValidationDigest.hpp"
 
-#include <erbsland/core/ApplicationError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringMap.hpp>
 #include <erbsland/text/render/impl/CompiledBlock.hpp>
 #include <erbsland/text/render/impl/CompiledExtends.hpp>
 #include <erbsland/text/render/impl/CompiledInclude.hpp>
@@ -46,20 +49,20 @@ auto LayoutGraphCompiler::compile(const el::String &name, const bool ignoreMissi
         }
         throw el::ApplicationError{"The profiling layout graph contains a missing required dependency."_el};
     }
-    if (_stack.size() > 32U || std::ranges::find(_stack, name) != _stack.end()) {
+    if (_stack.count() > el::ItemCount{32U} || std::ranges::find(_stack, name) != _stack.end()) {
         throw el::ApplicationError{"The profiling layout graph contains a cycle or excessive depth."_el};
     }
-    _stack.emplace_back(name);
+    _stack.append(name);
     const auto resolver = [&](const el::String &dependency, const bool ignore) -> ri::ConstCompiledLayoutPtr {
         return compile(dependency, ignore);
     };
     try {
         const auto compiled = ri::Compiler{name, **source, _layout.options, _filters, resolver}.compile();
         _memo.set(name, compiled);
-        _stack.pop_back();
+        _stack.removeLast();
         return compiled;
     } catch (...) {
-        _stack.pop_back();
+        _stack.removeLast();
         throw;
     }
 }
@@ -81,7 +84,7 @@ void LayoutGraphCompiler::validate(
     if (layout->extendsDependency() != nullptr) {
         ++result.inheritanceEdges;
     }
-    result.digest = ValidationDigest::compiled(result.digest, *layout);
+    result.digest = validation_digest::compiled(result.digest, *layout);
     if (layout->extendsDependency() != nullptr) {
         validate(layout->extendsDependency()->layout(), seen, result);
     }

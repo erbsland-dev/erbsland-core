@@ -5,7 +5,7 @@
 #include "../SignedByteBlock.hpp"
 
 #include "../../text/Literals.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::cryptology {
 
@@ -28,7 +28,7 @@ auto PendingAuthenticationChallenge::verifyAt(const mem::ConstByteSpan response,
     if (now > _deadline) {
         return false;
     }
-    const auto signedResponse = SignedByteBlock::fromByteBlock(response, unit::ByteLength{102U});
+    const auto signedResponse = SignedByteBlock::fromByteBlock(response, unit::ByteCount{102U});
     if (signedResponse.isEmpty() || signedResponse.untrustedKeyIdHint() != _id) {
         return false;
     }

@@ -185,6 +185,7 @@ auto parseDoubleWithStrtod(std::string_view text, const FloatParseOptions &optio
     }
     return result;
 }
+
 #endif
 
 auto parseDoubleText(std::string_view text, const FloatParseOptions &options) -> FloatParserResult {
@@ -236,15 +237,11 @@ auto parseDoubleCore(StringCharReader reader, const FloatParseOptions &options) 
 
 auto parseDoubleOrDefault(StringCharReader reader, const double defaultValue, const FloatParseOptions &options) noexcept
     -> double {
-    try {
-        const auto result = parseDoubleCore(std::move(reader), options);
-        if (result.status != FloatParseStatus::Success) {
-            return defaultValue;
-        }
-        return result.value;
-    } catch (...) {
+    const auto result = parseDoubleCore(std::move(reader), options);
+    if (result.status != FloatParseStatus::Success) {
         return defaultValue;
     }
+    return result.value;
 }
 
 auto parseDoubleOrThrow(StringCharReader reader, const FloatParseOptions &options) -> double {
@@ -271,15 +268,11 @@ auto parseDoubleOrThrow(StringCharReader reader, const FloatParseOptions &option
 
 auto parseFloatOrDefault(StringCharReader reader, const float defaultValue, const FloatParseOptions &options) noexcept
     -> float {
-    try {
-        const auto value = parseDoubleOrThrow(std::move(reader), options);
-        if (!isFloatRepresentable(value)) {
-            return defaultValue;
-        }
-        return static_cast<float>(value);
-    } catch (...) {
+    const auto result = parseDoubleCore(std::move(reader), options);
+    if (result.status != FloatParseStatus::Success || !isFloatRepresentable(result.value)) {
         return defaultValue;
     }
+    return static_cast<float>(result.value);
 }
 
 auto parseFloatOrThrow(StringCharReader reader, const FloatParseOptions &options) -> float {

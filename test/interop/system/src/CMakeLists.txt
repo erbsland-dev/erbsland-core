@@ -4,6 +4,8 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core-system-interop PRIVATE
+        EnvironmentSubprocessInteropTest.cpp
         main.cpp
+        SubprocessEventTest.cpp
         SubprocessInteropTest.cpp
 )

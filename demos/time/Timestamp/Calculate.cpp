@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Duration.hpp>
+#include <erbsland/OverflowError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/Timestamp.hpp>
 
 namespace demo {
 

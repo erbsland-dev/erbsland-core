@@ -5,7 +5,7 @@
 #include "U8Encoding.hpp"
 #include "U8Writer.hpp"
 
-#include "../../../unit/U16DataLength.hpp"
+#include "../../../unit/U16Count.hpp"
 #include "../../u16/impl/U16Encoding.hpp"
 #include "../../u16/impl/U16Writer.hpp"
 #include "../../u32/impl/U32Writer.hpp"
@@ -18,13 +18,17 @@
 
 namespace erbsland::text::impl {
 
+using unit::ByteCount;
 using unit::ByteIndex;
-using unit::ByteLength;
 using unit::ByteRange;
-using unit::CpLength;
+using unit::CpCount;
 
-auto U8StringReadTools::isValidUtf8() const noexcept -> bool {
+auto U8StringReadTools::isEncodingValid() const noexcept -> bool {
     return utf8::isValid(_data.dataSpan());
+}
+
+void U8StringReadTools::encodingValidOrThrow() const {
+    utf8::forEachDecodedCharacter<EncodingMode::Strict>(_data.dataSpan(), [](const Char) -> void {});
 }
 
 auto U8StringReadTools::findFirstOf(const CharSet &characters) const noexcept -> ByteIndex {
@@ -32,7 +36,7 @@ auto U8StringReadTools::findFirstOf(const CharSet &characters) const noexcept ->
 }
 
 auto U8StringReadTools::findFirstOf(const CharSet &characters, const ByteIndex start) const noexcept -> ByteIndex {
-    return findFirstOfCharacterSet(characters, start, true);
+    return findFirstOfCharacterSet(characters, start, true).beginIndex();
 }
 
 auto U8StringReadTools::findFirstNotOf(const CharSet &characters) const noexcept -> ByteIndex {
@@ -40,7 +44,7 @@ auto U8StringReadTools::findFirstNotOf(const CharSet &characters) const noexcept
 }
 
 auto U8StringReadTools::findFirstNotOf(const CharSet &characters, const ByteIndex start) const noexcept -> ByteIndex {
-    return findFirstOfCharacterSet(characters, start, false);
+    return findFirstOfCharacterSet(characters, start, false).beginIndex();
 }
 
 auto U8StringReadTools::findLastOf(const CharSet &characters) const noexcept -> ByteIndex {
@@ -48,7 +52,7 @@ auto U8StringReadTools::findLastOf(const CharSet &characters) const noexcept -> 
 }
 
 auto U8StringReadTools::findLastOf(const CharSet &characters, const ByteIndex end) const noexcept -> ByteIndex {
-    return findLastOfCharacterSet(characters, end, true);
+    return findLastOfCharacterSet(characters, end, true).beginIndex();
 }
 
 auto U8StringReadTools::findLastNotOf(const CharSet &characters) const noexcept -> ByteIndex {
@@ -56,11 +60,11 @@ auto U8StringReadTools::findLastNotOf(const CharSet &characters) const noexcept 
 }
 
 auto U8StringReadTools::findLastNotOf(const CharSet &characters, const ByteIndex end) const noexcept -> ByteIndex {
-    return findLastOfCharacterSet(characters, end, false);
+    return findLastOfCharacterSet(characters, end, false).beginIndex();
 }
 
-auto U8StringReadTools::byteLength() const noexcept -> ByteLength {
-    return ByteLength::fromSizeT(_data.dataSpan().size());
+auto U8StringReadTools::byteLength() const noexcept -> ByteCount {
+    return ByteCount::fromSizeT(_data.dataSpan().size());
 }
 
 auto U8StringReadTools::displayWidth() const noexcept -> int {
@@ -121,7 +125,7 @@ auto U8StringReadTools::readAndRetreat(ByteIndex &index) const noexcept -> Char 
     return result;
 }
 
-auto U8StringReadTools::advance(ByteIndex &index, CpLength count) const noexcept -> bool {
+auto U8StringReadTools::advance(ByteIndex &index, CpCount count) const noexcept -> bool {
     if (index.isNoIndex() || count.isZero()) {
         return false;
     }
@@ -137,12 +141,12 @@ auto U8StringReadTools::advance(ByteIndex &index, CpLength count) const noexcept
     }
     while (!count.isZero() && index < endIndex) {
         utf8::fastAdvanceChar(data, index);
-        --count;
+        count.uncheckedDecrement();
     }
     return true;
 }
 
-auto U8StringReadTools::retreat(ByteIndex &index, CpLength count) const noexcept -> bool {
+auto U8StringReadTools::retreat(ByteIndex &index, CpCount count) const noexcept -> bool {
     if (index.isNoIndex() || count.isZero() || index.isZero()) {
         return false;
     }
@@ -157,7 +161,7 @@ auto U8StringReadTools::retreat(ByteIndex &index, CpLength count) const noexcept
     }
     while (!count.isZero() && !index.isZero()) {
         utf8::fastRetreatChar(data, index);
-        --count;
+        count.uncheckedDecrement();
     }
     return true;
 }
@@ -166,7 +170,7 @@ auto U8StringReadTools::sliceRange(const ByteRange range) const noexcept -> Byte
     if (!_data.range().isValid()) {
         return ByteRange::empty();
     }
-    return range.clampedTo(byteLength()).withOrigin(_data.range().index());
+    return range.clampedTo(byteLength()).toAbsolute(_data.range().beginIndex());
 }
 
 auto U8StringReadTools::toStdString() const noexcept -> std::string {
@@ -194,16 +198,91 @@ auto U8StringReadTools::toStdWString() const noexcept -> std::wstring {
 }
 
 auto U8StringReadTools::findFirstOfCharacterSet(
-    const CharacterSet &characters, const ByteIndex start, const bool isMatching) const noexcept -> ByteIndex {
+    const CharacterSet &characters, const ByteIndex start, const bool isMatching) const noexcept -> ByteRange {
     if (start.isNoIndex()) {
-        return ByteIndex::noIndex();
+        return ByteRange::noRange();
     }
 
     const auto data = _data.dataSpan();
     if (start.toSizeT() >= data.size()) {
-        return ByteIndex::noIndex();
+        return ByteRange::noRange();
     }
 
+    if (isMatching) {
+        if (const auto separator = singleAsciiCharacter(characters)) {
+            const auto match =
+                std::find(data.begin() + static_cast<std::ptrdiff_t>(start.toSizeT()), data.end(), *separator);
+            if (match == data.end()) {
+                return ByteRange::noRange();
+            }
+            const auto index = ByteIndex::fromSizeT(static_cast<std::size_t>(std::distance(data.begin(), match)));
+            return ByteRange{index, index.incremented()};
+        }
+    }
+
+    auto position = start;
+    while (position.toSizeT() < data.size()) {
+        const auto characterStart = position;
+        const auto character = utf8::decodeCharOrReplace(data, position);
+        if (characters.contains(character) == isMatching) {
+            return ByteRange{characterStart, position};
+        }
+    }
+    return ByteRange::noRange();
+}
+
+auto U8StringReadTools::findLastOfCharacterSet(
+    const CharacterSet &characters, const ByteIndex end, const bool isMatching) const noexcept -> ByteRange {
+    if (end.isNoIndex() || end.isZero()) {
+        return ByteRange::noRange();
+    }
+
+    const auto data = _data.dataSpan();
+    if (data.empty() || end.toSizeT() > data.size()) {
+        return ByteRange::noRange();
+    }
+
+    if (isMatching) {
+        if (const auto separator = singleAsciiCharacter(characters)) {
+            auto offset = end.toSizeT();
+            while (offset > 0U) {
+                --offset;
+                if (data[offset] == *separator) {
+                    const auto index = ByteIndex::fromSizeT(offset);
+                    return ByteRange{index, index.incremented()};
+                }
+            }
+            return ByteRange::noRange();
+        }
+    }
+
+    auto position = end;
+    while (!position.isZero()) {
+        utf8::fastRetreatChar(data, position);
+        auto readPosition = position;
+        const auto character = utf8::decodeCharOrReplace(data, readPosition);
+        if (characters.contains(character) == isMatching) {
+            return ByteRange{position, readPosition};
+        }
+    }
+    return ByteRange::noRange();
+}
+
+auto U8StringReadTools::findFirstRange(const CharSet &characters) const noexcept -> ByteRange {
+    if (characters.isEmpty()) {
+        return ByteRange::noRange();
+    }
+    return findFirstOfCharacterSet(characters, ByteIndex::zero(), true);
+}
+
+auto U8StringReadTools::findLastRange(const CharSet &characters) const noexcept -> ByteRange {
+    if (characters.isEmpty()) {
+        return ByteRange::noRange();
+    }
+    return findLastOfCharacterSet(characters, ByteIndex::fromSizeT(_data.dataSpan().size()), true);
+}
+
+auto U8StringReadTools::singleAsciiCharacter(const CharSet &characters) noexcept -> std::optional<char> {
     auto firstRange = std::optional<CharRange>{};
     auto hasMultipleRanges = false;
     characters.forEach([&](const CharRange range) noexcept -> util::LoopStatus {
@@ -214,49 +293,11 @@ auto U8StringReadTools::findFirstOfCharacterSet(
         firstRange = range;
         return util::LoopStatus::Continue;
     });
-    if (isMatching && !hasMultipleRanges && firstRange.has_value() && firstRange->isSingleChar() &&
+    if (!hasMultipleRanges && firstRange.has_value() && firstRange->isSingleChar() &&
         firstRange->from().toRawValue() <= 0x7FU) {
-        const auto separator = static_cast<char>(firstRange->from().toRawValue());
-        const auto match =
-            std::find(data.begin() + static_cast<std::ptrdiff_t>(start.toSizeT()), data.end(), separator);
-        if (match == data.end()) {
-            return ByteIndex::noIndex();
-        }
-        return ByteIndex::fromSizeT(static_cast<std::size_t>(std::distance(data.begin(), match)));
+        return static_cast<char>(firstRange->from().toRawValue());
     }
-
-    auto position = start;
-    while (position.toSizeT() < data.size()) {
-        const auto characterStart = position;
-        const auto character = utf8::decodeCharOrReplace(data, position);
-        if (characters.contains(character) == isMatching) {
-            return characterStart;
-        }
-    }
-    return ByteIndex::noIndex();
-}
-
-auto U8StringReadTools::findLastOfCharacterSet(
-    const CharacterSet &characters, const ByteIndex end, const bool isMatching) const noexcept -> ByteIndex {
-    if (end.isNoIndex() || end.isZero()) {
-        return ByteIndex::noIndex();
-    }
-
-    const auto data = _data.dataSpan();
-    if (data.empty() || end.toSizeT() > data.size()) {
-        return ByteIndex::noIndex();
-    }
-
-    auto position = end;
-    while (!position.isZero()) {
-        utf8::fastRetreatChar(data, position);
-        auto readPosition = position;
-        const auto character = utf8::decodeCharOrReplace(data, readPosition);
-        if (characters.contains(character) == isMatching) {
-            return position;
-        }
-    }
-    return ByteIndex::noIndex();
+    return std::nullopt;
 }
 
 }

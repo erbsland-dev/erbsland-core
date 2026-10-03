@@ -1,20 +1,20 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/data/bson/BsonValue.hpp>
-#include <erbsland/data/cbor/CborValue.hpp>
-#include <erbsland/data/xml/XmlDocument.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/TempDirectory.hpp>
-#include <erbsland/system/Subprocess.hpp>
-#include <erbsland/system/SubprocessOptions.hpp>
-#include <erbsland/system/SubprocessOutputMode.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/bson/BsonValue.hpp>
+#include <erbsland/cbor/CborValue.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Subprocess.hpp>
+#include <erbsland/SubprocessOptions.hpp>
+#include <erbsland/SubprocessOutputMode.hpp>
+#include <erbsland/TempDirectory.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/xml/XmlDocument.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -47,9 +47,10 @@ private:
         options.setInheritStandardInput(false)
             .setStandardOutputMode(el::system::SubprocessOutputMode::Discard)
             .setStandardErrorMode(el::system::SubprocessOutputMode::Capture);
-        auto process = el::system::Subprocess::start(
+        auto process = el::system::Subprocess::create(
             counterpartPath(), el::text::StringList{"verify"_el, nativePathText(directory)}, options);
-        REQUIRE(process.wait().isSuccess());
+        process->start();
+        REQUIRE(process->wait().isSuccess());
     }
 
 public:
@@ -58,7 +59,8 @@ public:
             vectorPath("vectors/rust-bson.bin").content().readDataOrThrow());
         REQUIRE_EQUAL(bson.getOrThrow("ritim"_el).getText().value(), "aksak"_el);
         REQUIRE_EQUAL(bson.getOrThrow("bpm"_el).getInteger().value(), int64_t{96});
-        REQUIRE_EQUAL(bson.getOrThrow("vurgu"_el).getBinary()->bytes,
+        REQUIRE_EQUAL(
+            bson.getOrThrow("vurgu"_el).getBinary()->bytes,
             el::mem::ByteBlock::fromVector(std::vector<uint8_t>{0, 2, 4}));
 
         const auto cbor = el::data::cbor::CborValue::fromByteBlockOrThrow(
@@ -66,8 +68,8 @@ public:
         REQUIRE_EQUAL(cbor.getOrThrow("ritim"_el).getText().value(), "aksak"_el);
         REQUIRE_EQUAL(cbor.getOrThrow("bpm"_el).getSigned().value(), int64_t{96});
 
-        const auto xmlText = el::text::StringConverter{
-            vectorPath("vectors/rust-xml.xml").content().readTextOrThrow()}.toString();
+        const auto xmlText =
+            el::text::StringConverter{vectorPath("vectors/rust-xml.xml").content().readTextOrThrow()}.toString();
         const auto xml = el::data::xml::XmlDocument::fromStringOrThrow(xmlText);
         REQUIRE_EQUAL(xml.root()->name(), "ritimler"_el);
         REQUIRE_EQUAL(xml.root()->children().get(el::unit::ItemIndex{})->getAttribute("bpm"_el).value(), "96"_el);
@@ -79,18 +81,20 @@ public:
         bsonMap.set("ritim"_el, el::data::bson::BsonValue{"aksak"_el});
         bsonMap.set("bpm"_el, el::data::bson::BsonValue{int32_t{96}});
         bsonMap.set("etkin"_el, el::data::bson::BsonValue{true});
-        bsonMap.set("vurgu"_el, el::data::bson::BsonValue{
-            el::mem::ByteBlock::fromVector(std::vector<uint8_t>{0, 2, 4})});
-        (directory->path() / "core-bson.bin"_el).content().writeDataOrThrow(
-            el::data::bson::BsonValue{std::move(bsonMap)}.toByteBlock());
+        bsonMap.set(
+            "vurgu"_el, el::data::bson::BsonValue{el::mem::ByteBlock::fromVector(std::vector<uint8_t>{0, 2, 4})});
+        (directory->path() / "core-bson.bin"_el)
+            .content()
+            .writeDataOrThrow(el::data::bson::BsonValue{std::move(bsonMap)}.toByteBlock());
 
         auto cborMap = el::data::cbor::CborMap{};
         cborMap.set("ritim"_el, el::data::cbor::CborValue{"aksak"_el});
         cborMap.set("bpm"_el, el::data::cbor::CborValue{int64_t{96}});
-        cborMap.set("vurgu"_el, el::data::cbor::CborValue{
-            el::mem::ByteBlock::fromVector(std::vector<uint8_t>{0, 2, 4})});
-        (directory->path() / "core-cbor.bin"_el).content().writeDataOrThrow(
-            el::data::cbor::CborValue{std::move(cborMap)}.toByteBlock());
+        cborMap.set(
+            "vurgu"_el, el::data::cbor::CborValue{el::mem::ByteBlock::fromVector(std::vector<uint8_t>{0, 2, 4})});
+        (directory->path() / "core-cbor.bin"_el)
+            .content()
+            .writeDataOrThrow(el::data::cbor::CborValue{std::move(cborMap)}.toByteBlock());
 
         auto xml = el::data::xml::XmlDocument{};
         auto root = xml.addRoot("ritimler"_el);

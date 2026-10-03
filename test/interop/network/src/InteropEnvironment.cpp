@@ -1,12 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "InteropEnvironment.hpp"
 
-#include <erbsland/path/Path.hpp>
-#include <erbsland/system/SubprocessOptions.hpp>
-#include <erbsland/system/SubprocessOutputMode.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/SubprocessOptions.hpp>
+#include <erbsland/SubprocessOutputMode.hpp>
 
 #include <chrono>
 #include <random>
@@ -75,26 +74,26 @@ InteropEnvironment::InteropEnvironment(const std::filesystem::path &testExecutab
     options.setInheritStandardInput(false)
         .setStandardOutputMode(erbsland::system::SubprocessOutputMode::Discard)
         .setStandardErrorMode(erbsland::system::SubprocessOutputMode::Capture);
-    _counterpart.emplace(
-        erbsland::system::Subprocess::start(
-            erbsland::path::Path{counterpartPath},
-            erbsland::text::StringList{
-                toString("--control-port"),
-                toString(std::to_string(_control.port())),
-                toString("--token"),
-                toString(authenticationToken),
-                toString("--certificate"),
-                toString((dataDirectory / "server.pem").string()),
-                toString("--private-key"),
-                toString((dataDirectory / "server-key.pem").string()),
-                toString("--trust-certificate"),
-                toString((dataDirectory / "ca.pem").string()),
-                toString("--trust-certificate"),
-                toString((dataDirectory / "server-ecdsa.pem").string()),
-                toString("--trust-certificate"),
-                toString((dataDirectory / "server-ed25519.pem").string()),
-            },
-            options));
+    _counterpart = erbsland::system::Subprocess::create(
+        erbsland::path::Path{counterpartPath},
+        erbsland::text::StringList{
+            toString("--control-port"),
+            toString(std::to_string(_control.port())),
+            toString("--token"),
+            toString(authenticationToken),
+            toString("--certificate"),
+            toString((dataDirectory / "server.pem").string()),
+            toString("--private-key"),
+            toString((dataDirectory / "server-key.pem").string()),
+            toString("--trust-certificate"),
+            toString((dataDirectory / "ca.pem").string()),
+            toString("--trust-certificate"),
+            toString((dataDirectory / "server-ecdsa.pem").string()),
+            toString("--trust-certificate"),
+            toString((dataDirectory / "server-ed25519.pem").string()),
+        },
+        options);
+    _counterpart->start();
     try {
         _control.acceptCounterpart(authenticationToken);
     } catch (...) {
@@ -107,7 +106,7 @@ InteropEnvironment::InteropEnvironment(const std::filesystem::path &testExecutab
 }
 
 InteropEnvironment::~InteropEnvironment() {
-    if (_counterpart.has_value()) {
+    if (_counterpart != nullptr) {
         try {
             const auto id = nextId();
             static_cast<void>(

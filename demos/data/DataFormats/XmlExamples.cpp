@@ -4,9 +4,16 @@
 #include "DataFormatsDemos.hpp"
 
 #include <DemoCommon.hpp>
-#include <erbsland/data/xml/XmlDocument.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParseError.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/NotFoundError.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/xml/XmlDocument.hpp>
+#include <erbsland/xml/XmlNode.hpp>
+#include <erbsland/xml/XmlNodeType.hpp>
+#include <erbsland/xml/XmlParseOptions.hpp>
 
 namespace demo {
 
@@ -121,8 +128,9 @@ void inspectXmlMarkup() {
     el::io::printLine("Attribute available: "_el, group->getAttribute("leder"_el).has_value());
     el::io::printLine("All text available: "_el, group->textContent().has_value());
     try {
-        (void)group->textContentOrThrow();
-    } catch (const el::err::LogicError &) {
+        auto text = group->textContentOrThrow();
+        el::io::printLine("Group text: ", text);
+    } catch (const el::err::NotFoundError &) {
         el::io::printLine("Unresolved entity reference"_el);
     }
     el::io::printLine("DOCTYPE retained: "_el, document.toString().contains("<!DOCTYPE"_el));
@@ -135,10 +143,10 @@ void inspectXmlMarkup() {
 void limitXmlInput() {
     // Each limit rejects the same source for an independent reason.
     const auto source = "<orkester><gruppe navn=\"strygere\"><instrument>violin</instrument></gruppe></orkester>"_el;
-    const auto input = XmlParseOptions{}.setMaximumInputLength(el::ByteLength{10U});
+    const auto input = XmlParseOptions{}.setMaximumInputLength(el::ByteCount{10U});
     const auto nesting = XmlParseOptions{}.setMaximumNesting(el::ItemCount{2U});
     const auto nodes = XmlParseOptions{}.setMaximumNodeCount(el::ItemCount{2U});
-    const auto strings = XmlParseOptions{}.setMaximumStringLength(el::ByteLength{4U});
+    const auto strings = XmlParseOptions{}.setMaximumStringLength(el::ByteCount{4U});
     el::io::printLine("Input accepted: "_el, XmlDocument::fromString(source, input).has_value());
     el::io::printLine("Nesting accepted: "_el, XmlDocument::fromString(source, nesting).has_value());
     el::io::printLine("Nodes accepted: "_el, XmlDocument::fromString(source, nodes).has_value());

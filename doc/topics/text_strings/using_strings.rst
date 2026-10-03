@@ -22,8 +22,8 @@ This page develops that everyday model from the caller's perspective.
 It explains how to accept text without needless overloads, how copies and returned values remain efficient, and when a
 shared slice should be turned into independent storage.
 
-One Parameter for Ordinary Read-only Text
-=========================================
+Read-Only String Parameters
+===========================
 
 A function that only reads UTF-8 text does not need to know whether the caller has a literal, a stored value, or a local
 editor.
@@ -34,7 +34,7 @@ One signature is therefore enough without introducing a borrowed view lifetime o
 .. erbsland-demo::
     :source: text/String/IdealFunctionParameter.cpp
     :exec: text/string --demo IdealFunctionParameter
-    :source-sha256: 138caa39930fd6d48799410e9cb358a1bf15a86e7ee8a635a7cb58bd6d58b2b3
+    :sha256: 3ff8f245fa2220547af8623f2ba4162879306592ebe8c48f3f3b06535b419869
 
 .. code-block:: cpp
 
@@ -78,22 +78,24 @@ One signature is therefore enough without introducing a borrowed view lifetime o
         el::io::printLine();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Text ..........: "🌲🌲 Waldkonzert mit Fuchs 🦊 und Eule 🦉"
-    Emoji symbols .: 4
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    Text ..........: "Pluie douce sur les fleurs 🌧️🌷🌼"
-    Emoji symbols .: 3
+        ␛[0mText ..........: "🌲🌲 Waldkonzert mit Fuchs 🦊 und Eule 🦉"
+        Emoji symbols .: 4
 
-    Text ..........: "Bosque nocturno: luna 🌙 y grillos 🦗"
-    Emoji symbols .: 2
+        Text ..........: "Pluie douce sur les fleurs 🌧️🌷🌼"
+        Emoji symbols .: 3
+
+        Text ..........: "Bosque nocturno: luna 🌙 y grillos 🦗"
+        Emoji symbols .: 2␛[0m
 
 .. erbsland-demo-end::
 
-Values That Are Safe to Store and Return
-========================================
+Storing and Returning String Values
+===================================
 
 Stored text is usually read far more often than it is changed, which makes ``String`` the honest member type.
 Copying it normally copies a small handle and shares the backing store, while returning it by value benefits from normal
@@ -107,7 +109,7 @@ for long-lived storage.
 .. erbsland-demo::
     :source: text/String/ConstructionAndStorage.cpp
     :exec: text/string --demo ConstructionAndStorage
-    :source-sha256: 915fe8b4889e128bf0588309a976e52260b515fd99b1f6893a31d2a52b5cc59b
+    :sha256: 30adeca74d8a764fe5ce612b5432cbdfef748693f65854c79f0ecae888ccffa2
 
 .. code-block:: cpp
 
@@ -161,44 +163,46 @@ for long-lived storage.
         printMemoryAndRangeInfo(word);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    A string from a string literal: 🌲 Schwarzwald: kühle Morgenluft
-            U8String:
-                storageKind: literal
-                backingStorageId: 0x26235705d65e892d:0x1a0ad4772ab0e6a9
-                selectedRange: index: 0 - 35 (length: 35)
-    A simply constructed string: 🌴 Bali: hangatnya angin fajar
-            U8String:
-                storageKind: shared
-                backingStorageId: 0x26235705d43aa4ce:0x1a0ad47728d4cb8e
-                selectedRange: index: 0 - 32 (length: 32)
-    String from editor  : 🌴 Bali: hangatnya angin fajar
-            U8String:
-                storageKind: shared
-                backingStorageId: 0x26235705d43aa4ce:0x1a0ad47728d4cb8e
-                selectedRange: index: 0 - 32 (length: 32)
-    String from literal : 🌳 Forêt humide après la pluie
-            U8String:
-                storageKind: literal
-                backingStorageId: 0x26235705d65e89a6:0x1a0ad4772ab0e725
-                selectedRange: index: 0 - 34 (length: 34)
-    First word #1 : Bali
-            U8String:
-                storageKind: shared
-                backingStorageId: 0x26235705d43aa4ce:0x1a0ad47728d4cb8e
-                selectedRange: index: 5 - 9 (length: 4)
-    First word #2 : Forêt
-            U8String:
-                storageKind: literal
-                backingStorageId: 0x26235705d65e89a6:0x1a0ad4772ab0e725
-                selectedRange: index: 5 - 11 (length: 6)
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mA string from a string literal: 🌲 Schwarzwald: kühle Morgenluft
+                U8String:
+                    storageKind: literal
+                    backingStorageId: 0x26235705d4a4d098:0x1a0ad477284abfd6
+                    selectedRange: index: 0 - 35 (length: 35)
+        A simply constructed string: 🌴 Bali: hangatnya angin fajar
+                U8String:
+                    storageKind: shared
+                    backingStorageId: 0x26235778b0fc595e:0x1a0ad40a4c12361e
+                    selectedRange: index: 0 - 32 (length: 32)
+        String from editor  : 🌴 Bali: hangatnya angin fajar
+                U8String:
+                    storageKind: shared
+                    backingStorageId: 0x26235778b0fc595e:0x1a0ad40a4c12361e
+                    selectedRange: index: 0 - 32 (length: 32)
+        String from literal : 🌳 Forêt humide après la pluie
+                U8String:
+                    storageKind: literal
+                    backingStorageId: 0x26235705d4a4d315:0x1a0ad477284abc52
+                    selectedRange: index: 0 - 34 (length: 34)
+        First word #1 : Bali
+                U8String:
+                    storageKind: shared
+                    backingStorageId: 0x26235778b0fc595e:0x1a0ad40a4c12361e
+                    selectedRange: index: 5 - 9 (length: 4)
+        First word #2 : Forêt
+                U8String:
+                    storageKind: literal
+                    backingStorageId: 0x26235705d4a4d315:0x1a0ad477284abc52
+                    selectedRange: index: 5 - 11 (length: 6)␛[0m
 
 .. erbsland-demo-end::
 
-Let Literals Stay Literal
-=========================
+String Literals and StringLiteral
+=================================
 
 The ``_el`` suffix creates an Erbsland Core string literal with static lifetime.
 Passing it directly avoids allocating and copying character data.
@@ -208,7 +212,7 @@ Construct a ``String`` from the literal when the value must be stored in a unifo
 .. erbsland-demo::
     :source: text/String/EfficientLiteralUsage.cpp
     :exec: text/string --demo EfficientLiteralUsage
-    :source-sha256: d859bd83d940f2312be3dcf2dc128efc1ae99f6015d86620c48d491e4a00e69f
+    :sha256: 57b05f0d2214eabb2be3dcdd6ef2d1d916b6fabf843786386e9fa74ce61791d4
 
 .. code-block:: cpp
 
@@ -228,7 +232,7 @@ Construct a ``String`` from the literal when the value must be stored in a unifo
         const auto text = el::String{cStory};
 
         // Prepare a list of words and their character/code point lengths.
-        using WordAndLength = std::pair<el::String, el::CpLength>;
+        using WordAndLength = std::pair<el::String, el::CpCount>;
         auto wordList = std::vector<WordAndLength>{};
 
         // Scan through the text, extracting words and skipping separators.
@@ -254,8 +258,8 @@ Construct a ``String`` from the literal when the value must be stored in a unifo
 
         // Print the sorted list of words.
         el::io::printLine("Sorted word list:"_el);
-        const auto integerFormat = el::IntegerFormat::decimal().setFieldWidth(el::CpLength{4});
-        auto lastLength = el::CpLength::infinite();
+        const auto integerFormat = el::IntegerFormat::decimal().setFieldWidth(el::CpCount{4});
+        auto lastLength = el::CpCount::infinite();
         for (const auto &[word, length] : wordList) {
             if (length != lastLength) {
                 lastLength = length;
@@ -285,52 +289,54 @@ Construct a ``String`` from the literal when the value must be stored in a unifo
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Sorted word list:
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-       1: 🌲, 🍄
-       2: Im, La, an, in
-       3: Die, Léa, Sie, Und, Wei, auf, auf, auf, das, dem, den, den, den, den, den, des, die,
-     die, die, ein, und, und, und, von, zum, 🌧️🌲
-       4: Dann, Doch, Wald, Wald, doch, fiel, noch, noch, rief, Äste, Über
-       5: Ayumi, Neben, Pilze, Sofia, Stein, Vögel, alten, alten, blieb, durch, einem, einer,
-    einer, hohen, legte, leise, sagte, zogen, Ästen
-       6: Binnen, Bodens, Bächen, Farnen, Gläser, Gruppe, Himmel, Javier, Mehmet, Steine, arri
-    ve, hinter, kleine, liefen, offene, rannte, sangen, stehen, voller, vorbei, warmer, weiter
-    , weiter, zeigte
-       7: Blätter, Camille, Fichten, Tropfen, Wurzeln, bientôt, deutete, dunklen, einfach, kle
-    inen, lachend, niemand, schwere, stillen, tempête, weniger, während, während, 观察风向变化
-    ！
-       8: Sekunden, hindurch, notierte, rauschte, sammelte, zwischen, zwischen
-       9: Notizbuch, Plötzlich, einzelner, tanzenden
-      10: Temperatur, leuchtende, reparierte
-      11: Baumwipfeln, Regenwolken, Sommerregen, glitzernder, nummerierte
-      13: Observatorium, moosbedeckten
-      26: Windgeschwindigkeitsmesser
-    The output below shows the memory view of the original text and three selected words.
-    Compare the field "backingStorageId" - all strings share the original literal data.
+        ␛[0mSorted word list:
 
-    Original text:
-    U8String:
-        backingStorageId: 0x26235705d5255f35:0x1a0ad47729cb3c34
-    View of three random words:
+           1: 🌲, 🍄
+           2: Im, La, an, in
+           3: Die, Léa, Sie, Und, Wei, auf, auf, auf, das, dem, den, den, den, den, den, des, die,
+         die, die, ein, und, und, und, von, zum, 🌧️🌲
+           4: Dann, Doch, Wald, Wald, doch, fiel, noch, noch, rief, Äste, Über
+           5: Ayumi, Neben, Pilze, Sofia, Stein, Vögel, alten, alten, blieb, durch, einem, einer,
+        einer, hohen, legte, leise, sagte, zogen, Ästen
+           6: Binnen, Bodens, Bächen, Farnen, Gläser, Gruppe, Himmel, Javier, Mehmet, Steine, arri
+        ve, hinter, kleine, liefen, offene, rannte, sangen, stehen, voller, vorbei, warmer, weiter
+        , weiter, zeigte
+           7: Blätter, Camille, Fichten, Tropfen, Wurzeln, bientôt, deutete, dunklen, einfach, kle
+        inen, lachend, niemand, schwere, stillen, tempête, weniger, während, während, 观察风向变化
+        ！
+           8: Sekunden, hindurch, notierte, rauschte, sammelte, zwischen, zwischen
+           9: Notizbuch, Plötzlich, einzelner, tanzenden
+          10: Temperatur, leuchtende, reparierte
+          11: Baumwipfeln, Regenwolken, Sommerregen, glitzernder, nummerierte
+          13: Observatorium, moosbedeckten
+          26: Windgeschwindigkeitsmesser
+        The output below shows the memory view of the original text and three selected words.
+        Compare the field "backingStorageId" - all strings share the original literal data.
 
-    Word 123: "nummerierte", (length: 11)
-    U8String:
-        backingStorageId: 0x26235705d5255f35:0x1a0ad47729cb3c34
-    Word 1: "🍄", (length: 1)
-    U8String:
-        backingStorageId: 0x26235705d5255f35:0x1a0ad47729cb3c34
-    Word 0: "🌲", (length: 1)
-    U8String:
-        backingStorageId: 0x26235705d5255f35:0x1a0ad47729cb3c34
+        Original text:
+        U8String:
+            backingStorageId: 0x26235705d622490d:0x1a0ad4772acc25cc
+        View of three random words:
+
+        Word 123: "nummerierte", (length: 11)
+        U8String:
+            backingStorageId: 0x26235705d622490d:0x1a0ad4772acc25cc
+        Word 1: "🍄", (length: 1)
+        U8String:
+            backingStorageId: 0x26235705d622490d:0x1a0ad4772acc25cc
+        Word 0: "🌲", (length: 1)
+        U8String:
+            backingStorageId: 0x26235705d622490d:0x1a0ad4772acc25cc␛[0m
 
 .. erbsland-demo-end::
 
-Cheap Copies and Long-lived Slices
-==================================
+Shared String Copies and Slice Lifetime
+=======================================
 
 Copies and slices retain shared ownership of their backing storage.
 A slice therefore remains valid after the source object goes out of scope, without copying the selected character data.
@@ -345,7 +351,7 @@ See :doc:`/topics/text_strings/slicing_and_splitting_strings` for coordinate cho
 .. erbsland-demo::
     :source: text/String/StorageIdentifier.cpp
     :exec: text/string --demo StorageIdentifier
-    :source-sha256: 695337134bbed5a2b4d9d9b178282dd1db2a876ac7e100e1146cb65f1af683ca
+    :sha256: 165a43fe83e58ca8d0ca592f429fccdd4770726c777b8e46b0b5a0e42aab5abd
 
 .. code-block:: cpp
 
@@ -359,7 +365,7 @@ See :doc:`/topics/text_strings/slicing_and_splitting_strings` for coordinate cho
         struct CachedRange final {
             el::StorageIdentifier storageId;
             el::ByteIndex index;
-            el::ByteLength length;
+            el::ByteCount length;
         };
 
         const auto report = el::String{"温度計A: 21℃; 気圧計B: 1012hPa; 湿度計C: 45%"_el};
@@ -381,7 +387,7 @@ See :doc:`/topics/text_strings/slicing_and_splitting_strings` for coordinate cho
         };
 
         const auto copiedReport = report.copy();
-        const auto tail = report.slice(el::ByteRange{report.find(token), el::ByteLength::infinite()});
+        const auto tail = report.slice(el::ByteRange{report.find(token), el::ByteCount::infinite()});
 
         el::io::printLine("Report: "_el, report);
         el::io::printLine("Cached token: "_el, token);
@@ -393,21 +399,23 @@ See :doc:`/topics/text_strings/slicing_and_splitting_strings` for coordinate cho
         tryUseCachedRange("Tail slice"_el, tail);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Report: 温度計A: 21℃; 気圧計B: 1012hPa; 湿度計C: 45%
-    Cached token: 気圧計
-    Cached byte index: 19
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    Original string:
-      same visible storage range: yes
-      cached range reads ........: 気圧計
-    Copied text:
-      same visible storage range: no
-      cached range reads ........: <not used>
-    Tail slice:
-      same visible storage range: no
-      cached range reads ........: <not used>
+        ␛[0mReport: 温度計A: 21℃; 気圧計B: 1012hPa; 湿度計C: 45%
+        Cached token: 気圧計
+        Cached byte index: 19
+
+        Original string:
+          same visible storage range: yes
+          cached range reads ........: 気圧計
+        Copied text:
+          same visible storage range: no
+          cached range reads ........: <not used>
+        Tail slice:
+          same visible storage range: no
+          cached range reads ........: <not used>␛[0m
 
 .. erbsland-demo-end::

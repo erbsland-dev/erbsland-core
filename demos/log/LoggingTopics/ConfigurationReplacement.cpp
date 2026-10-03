@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogLineFormat.hpp>
+#include <erbsland/LogTraceSection.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <memory>
 #include <utility>
@@ -12,7 +18,7 @@ namespace demo {
 /// Replace the active logging policy with one complete configuration snapshot.
 ///
 /// Existing streams remain valid. `setConfiguration()` returns only after their cached trace flags reflect the new
-/// trace sections and routes, so guarded diagnostic preparation can use the new policy immediately.
+/// enabled trace sections, so guarded diagnostic preparation can use the new policy immediately.
 void configurationReplacement() {
     auto &manager = el::application().log();
     const auto log = manager.createStream("guild/routes"_el, el::LogTraceSection{"route-search"_el});

@@ -25,7 +25,7 @@ Secondary Types
 .. code-block:: text
 
     ThreadSafeFastRandom // synchronized FastRandom wrapper for shared generator instances
-    RandomError // failure to obtain secure system entropy
+    RandomFailure // failure to obtain secure system entropy
 
 Source Patterns
 ===============
@@ -76,7 +76,7 @@ Construction Patterns
     T() // create an automatically seeded pseudo-random generator
     T(seed) // create a reproducible pseudo-random sequence
     o.isSecure() -> bool // report security suitability and sensitive owning-result construction
-    o.❮draw❯(...) // report unavailable system entropy with RandomError
+    o.❮draw❯(...) // report unavailable system entropy with RandomFailure
 
 Application Patterns
 ====================

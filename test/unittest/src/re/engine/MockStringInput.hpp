@@ -34,9 +34,9 @@ public:
         return {readCharacter(readPosition), position.toSizeT()};
     }
 
-    void skip(const unit::CpLength characterCount) override {
+    void skip(const unit::CpCount characterCount) override {
         callLog.emplace_back(std::format("skip({})", characterCount.toSizeT()));
-        for (auto count = unit::CpLength{}; count < characterCount; ++count) {
+        for (auto count = unit::CpCount{}; count < characterCount; ++count) {
             if (readCharacter(position).isEndOfData()) {
                 break;
             }

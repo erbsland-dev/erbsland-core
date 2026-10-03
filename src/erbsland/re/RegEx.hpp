@@ -35,7 +35,7 @@ namespace erbsland::re {
 /// compilation.
 /// All Core-string overloads decode malformed units as replacement characters. Exceptions from custom inputs propagate
 /// unchanged.
-/// @tested{RegExAlternativePrioritiesTest RegExCaptureGroupTest RegExLazyCompileTest RegExUtf16Utf32Test}
+/// @tested{RegExCaptureGroupTest RegExLazyCompileTest RegExReplaceAllTest RegExUtf16Utf32Test}
 class RegEx final {
     friend class diagnostics::Disassembler;
     friend class diagnostics::Assembler;
@@ -85,6 +85,9 @@ public: // compilation
     /// Return the source pattern used to compile this regular expression.
     /// @return The preserved source pattern.
     [[nodiscard]] auto pattern() const noexcept -> const text::AnyString & { return _pattern; }
+    /// Get the initial construction flags without compiling the expression.
+    /// These exclude inline flag changes contained in the pattern.
+    [[nodiscard]] auto flags() const noexcept -> Flags { return _flags; }
     /// Test if the engine was successfully compiled.
     /// Eager expressions always return `true`. This method does not trigger lazy compilation.
     [[nodiscard]] auto isCompiled() const noexcept -> bool;
@@ -102,7 +105,7 @@ public: // match
     /// Try to match this expression at the start of a custom UTF-8 input.
     [[nodiscard]] auto match(const InputPtr &input) const -> MatchPtr;
     /// Try to match this expression at the current position of a seekable text stream.
-    /// @throws err::ParameterError if the stream is null or does not support positioning.
+    /// @param input The text input stream. Must not be null and must support positioning.
     /// @throws stream::StreamError if the stream times out or fails.
     [[nodiscard]] auto match(const stream::TextInputStreamPtr &input) const -> MatchPtr;
     /// Try to match this expression at the start of a custom UTF-16 input.
@@ -120,7 +123,7 @@ public: // full match
     /// Try to match this expression against the complete custom UTF-8 input.
     [[nodiscard]] auto fullMatch(const InputPtr &input) const -> MatchPtr;
     /// Try to match this expression against all remaining text in a seekable text stream.
-    /// @throws err::ParameterError if the stream is null or does not support positioning.
+    /// @param input The text input stream. Must not be null and must support positioning.
     /// @throws stream::StreamError if the stream times out or fails.
     [[nodiscard]] auto fullMatch(const stream::TextInputStreamPtr &input) const -> MatchPtr;
     /// Try to match this expression against the complete custom UTF-16 input.
@@ -138,7 +141,7 @@ public: // find first
     /// Find the first match in a custom UTF-8 input.
     [[nodiscard]] auto findFirst(const InputPtr &input) const -> MatchPtr;
     /// Find the first match in a seekable text stream.
-    /// @throws err::ParameterError if the stream is null or does not support positioning.
+    /// @param input The text input stream. Must not be null and must support positioning.
     /// @throws stream::StreamError if the stream times out or fails.
     [[nodiscard]] auto findFirst(const stream::TextInputStreamPtr &input) const -> MatchPtr;
     /// Find the first match in a custom UTF-16 input.
@@ -156,7 +159,7 @@ public: // find all
     /// Lazily find all matches in a custom UTF-8 input.
     [[nodiscard]] auto findAll(InputPtr input) const -> MatchGenerator;
     /// Lazily find all matches in a seekable text stream.
-    /// @throws err::ParameterError if the stream is null or does not support positioning.
+    /// @param input The text input stream. Must not be null and must support positioning.
     /// @throws stream::StreamError if the stream times out or fails.
     [[nodiscard]] auto findAll(stream::TextInputStreamPtr input) const -> MatchGenerator;
     /// Lazily find all matches in a custom UTF-16 input.
@@ -174,7 +177,7 @@ public: // collect all
     /// Collect all matches in a custom UTF-8 input.
     [[nodiscard]] auto collectAll(const InputPtr &input) const -> MatchList;
     /// Collect all matches in a seekable text stream.
-    /// @throws err::ParameterError if the stream is null or does not support positioning.
+    /// @param input The text input stream. Must not be null and must support positioning.
     /// @throws stream::StreamError if the stream times out or fails.
     [[nodiscard]] auto collectAll(const stream::TextInputStreamPtr &input) const -> MatchList;
     /// Collect all matches in a custom UTF-16 input.
@@ -183,10 +186,28 @@ public: // collect all
     [[nodiscard]] auto collectAll(const Input32Ptr &input) const -> Match32List;
 
 public: // replacement
+    /// Validate replacement syntax and capture references against this regular expression.
+    /// Compiles a lazy pattern if necessary without matching any subject text.
+    /// Does not construct replacement text or output fragments.
+    /// @param replacementExpression The replacement expression to validate.
+    /// @throws RegExError If the pattern, replacement syntax, or capture references are invalid.
+    void validateReplacement(const text::String &replacementExpression) const;
     /// Replace all matches in UTF-8 text using a replacement expression.
+    /// @seedoc{/reference/re/regular_expressions}
+    /// @param text The UTF-8 subject text, which is not modified.
+    /// @param replacementExpression Replacement text: `{0}` or `{}` inserts the full match, `{1}` or `{name}` a
+    /// capture; `{{` and `}}` insert literal braces. For example, `"[{name}]"_el` wraps a named capture.
+    /// @return The subject with all matches replaced; unmatched text is retained.
+    /// @throws RegExError If compilation, matching, replacement syntax, or a capture reference is invalid.
     [[nodiscard]] auto replaceAll(const text::String &text, const text::String &replacementExpression) const
         -> text::String;
     /// Replace all matches in UTF-8 text using a callback.
+    /// @seedoc{/reference/re/regular_expressions}
+    /// @param text The UTF-8 subject text, which is not modified.
+    /// @param replaceFn A `String(MatchPtr)` callback invoked for each match, for example
+    /// `[](MatchPtr match) -> String { return match->content(); }`. Results are inserted literally.
+    /// @return The subject with each match replaced by its callback result; unmatched text is retained.
+    /// @throws RegExError If compilation or matching fails. Callback exceptions propagate unchanged.
     [[nodiscard]] auto replaceAll(const text::String &text, const ReplaceFn &replaceFn) const -> text::String;
 
 private: // internal API
@@ -203,7 +224,8 @@ public:
     /// @internal Create an instance from a compiled engine.
     /// @param engine The pattern engine.
     /// @param pattern The source pattern.
-    explicit RegEx(impl::ConstEnginePtr engine, text::AnyString pattern, PrivateTag) noexcept;
+    /// @param flags The initial construction flags, or none for an assembled engine.
+    explicit RegEx(impl::ConstEnginePtr engine, text::AnyString pattern, PrivateTag, Flags flags = {}) noexcept;
     /// @internal Create a lazy instance from a pattern and compiler options.
     /// @param pattern The source pattern.
     /// @param flags The initial pattern flags.
@@ -211,9 +233,12 @@ public:
     explicit RegEx(text::AnyString pattern, Flags flags, Settings settings, PrivateTag);
 
 private:
+    Flags _flags;                          ///< The initial construction flags, independent of compilation state.
     impl::ConstEnginePtr _engine;          ///< The eagerly compiled regular expression engine.
     text::AnyString _pattern;              ///< The source pattern.
     std::shared_ptr<LazyState> _lazyState; ///< Shared state for a lazily compiled engine.
 };
 
 }
+
+#include "RegExCached.hpp"

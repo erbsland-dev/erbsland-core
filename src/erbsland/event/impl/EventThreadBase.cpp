@@ -4,14 +4,18 @@
 
 #include "../EventLoop.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../text/Literals.hpp"
+
+#include <memory>
+#include <utility>
 
 namespace erbsland::event::impl {
 
 using namespace text::literals;
 
-EventThreadBase::EventThreadBase() : _eventLoop{event::EventLoop::create()} {
+EventThreadBase::EventThreadBase(const EventLoopOptions &options, EventLoop::FailureHandler failureHandler) :
+    _eventLoop{std::make_shared<EventLoop>(options, std::move(failureHandler))} {
 }
 
 EventThreadBase::~EventThreadBase() noexcept {
@@ -21,7 +25,7 @@ EventThreadBase::~EventThreadBase() noexcept {
 void EventThreadBase::start() {
     std::scoped_lock lock{_mutex};
     if (_started) {
-        throw err::LogicError{"The event thread was already started."_el};
+        throw err::LogicFailure{"The event thread was already started."_el};
     }
     auto thread = std::thread{[this]() -> void { runEventLoop(); }};
     _thread = std::move(thread);
@@ -38,7 +42,7 @@ void EventThreadBase::join() {
         return;
     }
     if (_thread.get_id() == std::this_thread::get_id()) {
-        throw err::LogicError{"Can not join an event thread from itself."_el};
+        throw err::LogicFailure{"Can not join an event thread from itself."_el};
     }
     _thread.join();
 }

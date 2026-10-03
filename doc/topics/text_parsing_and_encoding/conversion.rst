@@ -33,8 +33,8 @@ This page separates those concerns before introducing the corresponding tools.
 You will learn how to convert between the library and standard string types, how strict and tolerant decoding differ,
 how byte-order marks affect encoded output, and how to keep an API independent of a concrete string width.
 
-Start by Identifying the Boundary
-=================================
+String Representations and Encoded Byte Data
+============================================
 
 The source and destination tell you which abstraction belongs in the middle.
 Use the table as a map, then follow the relevant section for its error and allocation behavior.
@@ -79,8 +79,8 @@ forcing an eager conversion.
     of the supported UTF encodings at the system boundary and use Unicode
     throughout the rest of the application.
 
-Move Between String Representations
-===================================
+Converting String Representations with StringConverter
+======================================================
 
 :cpp:class:`StringConverter <erbsland::text::StringConverter>` is the primary tool for converting between
 string encodings.
@@ -88,9 +88,24 @@ string encodings.
 It supports all library string and editor types and the corresponding standard-library string types.
 All conversion methods accept an :cpp:enum:`EncodingMode <erbsland::text::EncodingMode>` argument and default to
 ``Tolerant``.
-Use ``Strict`` when the source encoding must be validated as part of the conversion.
 In tolerant mode, compatible representations may be copied unchanged without validation; transcoding replaces malformed
 sequences with the Unicode replacement character.
+
+.. important::
+
+    ``Strict`` conversion can be **much slower** than ``Tolerant`` conversion, even when the input is valid.
+    The difference is especially large when tolerant conversion can reuse compatible string storage while strict
+    conversion must examine the entire source.
+    Keep the tolerant default unless encoding validity **must be enforced at this conversion boundary**.
+
+A security-sensitive operation or a protocol receiving untrusted network text may require malformed encoding to be
+rejected before that text is interpreted.
+That is a reason to choose ``Strict`` and accept the additional decoding time: the validity requirement takes priority
+over throughput at that boundary.
+If text has already been validated and has not been modified, ordinary internal conversions should remain tolerant
+instead of repeating strict validation.
+The same choice applies when decoding byte blocks with :cpp:class:`StringDecoder <erbsland::text::StringDecoder>` or
+reading text; see :doc:`/topics/stream/text_input_and_output`.
 
 To perform a conversion, construct a temporary converter from the source string and call one of the available ``to...``
 methods:
@@ -112,7 +127,7 @@ If you want to use literals with Erbsland Core string APIs, use the ``"_el"`` li
 .. erbsland-demo::
     :source: text/StringConverter/CrossConvertStrings.cpp
     :exec: text/string_converter --demo CrossConvertStrings
-    :source-sha256: da846d6f4e7afea89052506f06849d5cd93880885b64d9b7e287dd8e7472053b
+    :sha256: 662d02f7a69d6503108a1d89b156b87026215bf1ffbbbd9c9dcd77769f4e0fc8
 
 .. code-block:: cpp
 
@@ -157,22 +172,24 @@ If you want to use literals with Erbsland Core string APIs, use the ``"_el"`` li
         el::io::printLine("Converted 'stdString': ", u8String);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    After conversion: Bonjour, forêt 🌲
-    Converted stdString: Bonjour, forêt 🌲
-    Converted 'stdStringView': Hello, river
-    Converted 'stdU8StringView': Bonjour, forêt 🌲
-    Converted 'stdU16StringView': Hola, río
-    Converted 'stdU32StringView': Ciao, sole ☀
-    Converted 'stdWStringView': Hej, skog
-    Converted 'stdString': Hello, wind
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAfter conversion: Bonjour, forêt 🌲
+        Converted stdString: Bonjour, forêt 🌲
+        Converted 'stdStringView': Hello, river
+        Converted 'stdU8StringView': Bonjour, forêt 🌲
+        Converted 'stdU16StringView': Hola, río
+        Converted 'stdU32StringView': Ciao, sole ☀
+        Converted 'stdWStringView': Hej, skog
+        Converted 'stdString': Hello, wind␛[0m
 
 .. erbsland-demo-end::
 
-Turn Text into an Encoded Byte Sequence
-=======================================
+Encoding Strings as UTF Byte Sequences
+======================================
 
 In some cases, you want to encode strings into byte sequences.
 For this use case, the :cpp:class:`StringEncoder <erbsland::text::StringEncoder>` class exists.
@@ -187,7 +204,7 @@ written as a replacement character.
 .. erbsland-demo::
     :source: text/StringEncoder/EncodeStrings.cpp
     :exec: text/string_encoder --demo EncodeStrings
-    :source-sha256: 27db27323ea3fbf92a25a79d2eef00fefac4c9fa15d5d3f6074cb99a2f42b82c
+    :sha256: a5df7e0b209cc2525b0fa2bdcb0045d6a519e3ef4ada9f21d209cb359da0e339
 
 .. code-block:: cpp
 
@@ -205,26 +222,28 @@ written as a replacement character.
         el::io::printLine(el::ByteFormat::memoryDump(), encodedObservation);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Observation: "Sternbild: Orion ✨"
-    Encoded as UTF-32 little-endian with BOM:
-    00000000 | fffe0000 53000000 74000000 65000000 72000000 6e000000 62000000 69000000
-    00000020 | 6c000000 64000000 3a000000 20000000 4f000000 72000000 69000000 6f000000
-    00000040 | 6e000000 20000000 28270000
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mObservation: "Sternbild: Orion ✨"
+        Encoded as UTF-32 little-endian with BOM:
+        00000000 | fffe0000 53000000 74000000 65000000 72000000 6e000000 62000000 69000000
+        00000020 | 6c000000 64000000 3a000000 20000000 4f000000 72000000 69000000 6f000000
+        00000040 | 6e000000 20000000 28270000␛[0m
 
 .. erbsland-demo-end::
 
-Choose the Target Encoding
---------------------------
+Target Encoding and Byte Order
+------------------------------
 
 When encoding strings, ``Utf16`` and ``Utf32`` select the most common little-endian byte order.
 
 .. erbsland-demo::
     :source: text/StringEncoder/ByteOrder.cpp
     :exec: text/string_encoder --demo ByteOrder
-    :source-sha256: a20a6b24777ead49dcdb33c68519fb37f3f9172ff141f35fb9059c8310b18f38
+    :sha256: e260961a974cbc1d554bbe0f55da5140008758a20ee3928c8e1abe6a03a9b158
 
 .. code-block:: cpp
 
@@ -248,23 +267,25 @@ When encoding strings, ``Utf16`` and ``Utf32`` select the most common little-end
         el::io::printLine("Encoded as UTF-16 big-endian:\n", el::ByteFormat::memoryDump(), bytes);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Marine text: "🐋 Meerjungfrau 🌊"
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    Encoded as UTF-16 little-endian:
-    00000000 | 3dd80bdc 20004d00 65006500 72006a00 75006e00 67006600 72006100 75002000
-    00000020 | 3cd80adf
+        ␛[0mMarine text: "🐋 Meerjungfrau 🌊"
 
-    Encoded as UTF-16 big-endian:
-    00000000 | d83ddc0b 0020004d 00650065 0072006a 0075006e 00670066 00720061 00750020
-    00000020 | d83cdf0a
+        Encoded as UTF-16 little-endian:
+        00000000 | 3dd80bdc 20004d00 65006500 72006a00 75006e00 67006600 72006100 75002000
+        00000020 | 3cd80adf
+
+        Encoded as UTF-16 big-endian:
+        00000000 | d83ddc0b 0020004d 00650065 0072006a 0075006e 00670066 00720061 00750020
+        00000020 | d83cdf0a␛[0m
 
 .. erbsland-demo-end::
 
-Decide Whether the Output Needs a Byte-order Mark
--------------------------------------------------
+Byte-Order Mark Policies
+------------------------
 
 The enum values in :cpp:enum:`StringBomMode <erbsland::text::StringBomMode>` are not that straightforward to understand
 when encoding strings.
@@ -278,7 +299,7 @@ When encoding an Erbsland Core string, a raw ``U+FEFF`` is copied unchanged for 
 .. erbsland-demo::
     :source: text/StringEncoder/BomHandling.cpp
     :exec: text/string_encoder --demo BomHandling
-    :source-sha256: 7270dd2ab65ce12337055ea60772c570153339c3dc759f7d9587e5ddb6d1d867
+    :sha256: e4d0267119b2adcfa9990a38b8c44824e151e409fc7e47118ccdf8abba8370ff
 
 .. code-block:: cpp
 
@@ -313,41 +334,43 @@ When encoding an Erbsland Core string, a raw ``U+FEFF`` is copied unchanged for 
         el::io::printLine("UTF-32 without BOM:\n"_el, el::ByteFormat::memoryDump(), bytes);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Beobachtung: "🌲 Waldlichtung im Morgennebel 🌫️"
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    UTF-8 (automatic, no BOM):
-    00000000 | f09f8cb2 2057616c 646c6963 6874756e 6720696d 204d6f72 67656e6e 6562656c
-    00000020 | 20f09f8c abefb88f
+        ␛[0mBeobachtung: "🌲 Waldlichtung im Morgennebel 🌫️"
 
-    UTF-16 LE (automatic, with BOM):
-    00000000 | fffe3cd8 32df2000 57006100 6c006400 6c006900 63006800 74007500 6e006700
-    00000020 | 20006900 6d002000 4d006f00 72006700 65006e00 6e006500 62006500 6c002000
-    00000040 | 3cd82bdf 0ffe
+        UTF-8 (automatic, no BOM):
+        00000000 | f09f8cb2 2057616c 646c6963 6874756e 6720696d 204d6f72 67656e6e 6562656c
+        00000020 | 20f09f8c abefb88f
 
-    UTF-32 (automatic, with BOM):
-    00000000 | fffe0000 32f30100 20000000 57000000 61000000 6c000000 64000000 6c000000
-    00000020 | 69000000 63000000 68000000 74000000 75000000 6e000000 67000000 20000000
-    00000040 | 69000000 6d000000 20000000 4d000000 6f000000 72000000 67000000 65000000
-    00000060 | 6e000000 6e000000 65000000 62000000 65000000 6c000000 20000000 2bf30100
-    00000080 | 0ffe0000
+        UTF-16 LE (automatic, with BOM):
+        00000000 | fffe3cd8 32df2000 57006100 6c006400 6c006900 63006800 74007500 6e006700
+        00000020 | 20006900 6d002000 4d006f00 72006700 65006e00 6e006500 62006500 6c002000
+        00000040 | 3cd82bdf 0ffe
 
-    UTF-8 with forced BOM:
-    00000000 | efbbbff0 9f8cb220 57616c64 6c696368 74756e67 20696d20 4d6f7267 656e6e65
-    00000020 | 62656c20 f09f8cab efb88f
+        UTF-32 (automatic, with BOM):
+        00000000 | fffe0000 32f30100 20000000 57000000 61000000 6c000000 64000000 6c000000
+        00000020 | 69000000 63000000 68000000 74000000 75000000 6e000000 67000000 20000000
+        00000040 | 69000000 6d000000 20000000 4d000000 6f000000 72000000 67000000 65000000
+        00000060 | 6e000000 6e000000 65000000 62000000 65000000 6c000000 20000000 2bf30100
+        00000080 | 0ffe0000
 
-    UTF-32 without BOM:
-    00000000 | 32f30100 20000000 57000000 61000000 6c000000 64000000 6c000000 69000000
-    00000020 | 63000000 68000000 74000000 75000000 6e000000 67000000 20000000 69000000
-    00000040 | 6d000000 20000000 4d000000 6f000000 72000000 67000000 65000000 6e000000
-    00000060 | 6e000000 65000000 62000000 65000000 6c000000 20000000 2bf30100 0ffe0000
+        UTF-8 with forced BOM:
+        00000000 | efbbbff0 9f8cb220 57616c64 6c696368 74756e67 20696d20 4d6f7267 656e6e65
+        00000020 | 62656c20 f09f8cab efb88f
+
+        UTF-32 without BOM:
+        00000000 | 32f30100 20000000 57000000 61000000 6c000000 64000000 6c000000 69000000
+        00000020 | 63000000 68000000 74000000 75000000 6e000000 67000000 20000000 69000000
+        00000040 | 6d000000 20000000 4d000000 6f000000 72000000 67000000 65000000 6e000000
+        00000060 | 6e000000 65000000 62000000 65000000 6c000000 20000000 2bf30100 0ffe0000␛[0m
 
 .. erbsland-demo-end::
 
-Carry Read-only Text Without Choosing Its Width
-===============================================
+Width-Independent Text with AnyString and AnyStringEditor
+=========================================================
 
 Sometimes an API should accept text without forcing callers to convert it to a specific string type first.
 
@@ -365,7 +388,7 @@ and stores text in any supported encoding while converting lazily when a specifi
 .. erbsland-demo::
     :source: text/AnyStringEditor/AcceptAny.cpp
     :exec: text/any_string_editor --demo AcceptAny
-    :source-sha256: a59728f10118fab857c4f713d2188ba7cb7ff6545a591d915a663f90f69e91e1
+    :sha256: 1f64026e9d2ad86c99c0ee37318d75696dc8728c58bf35b64420f907aa7495d6
 
 .. code-block:: cpp
 
@@ -404,32 +427,34 @@ and stores text in any supported encoding while converting lazily when a specifi
         el::io::printLine();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Signal analysis:
-      Type: (empty)
-      Character length: 0
-      Is empty: true
-      Result:
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    Signal analysis:
-      Type: U8
-      Character length: 18
-      Is empty: false
-      Result: Vlnová frekvence 🌊
+        ␛[0mSignal analysis:
+          Type: (empty)
+          Character length: 0
+          Is empty: true
+          Result:
 
-    Signal analysis:
-      Type: U16
-      Character length: 21
-      Is empty: false
-      Result: Hmotnostní spektrum 🎵
+        Signal analysis:
+          Type: U8
+          Character length: 18
+          Is empty: false
+          Result: Vlnová frekvence 🌊
 
-    Signal analysis:
-      Type: U32
-      Character length: 18
-      Is empty: false
-      Result: Amplituda vlny 🎶
+        Signal analysis:
+          Type: U16
+          Character length: 21
+          Is empty: false
+          Result: Hmotnostní spektrum 🎵
+
+        Signal analysis:
+          Type: U32
+          Character length: 18
+          Is empty: false
+          Result: Amplituda vlny 🎶␛[0m
 
 .. erbsland-demo-end::
 
@@ -440,8 +465,8 @@ and stores text in any supported encoding while converting lazily when a specifi
     The caller selects the target width, and the function writes directly into that representation instead of building
     through :cpp:class:`AnyStringEditor <erbsland::text::AnyStringEditor>` and converting afterward.
 
-Keep Conversion at the Boundary
-===============================
+Choosing String Conversion, Byte Encoding, or Text Streams
+==========================================================
 
 Keep each conversion close to the boundary that makes it necessary.
 ``StringConverter`` is the direct choice when both sides are string values.

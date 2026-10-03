@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RemappedBuffer.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <algorithm>
@@ -11,9 +11,10 @@
 
 namespace erbsland::cterm {
 
+using namespace text;
 using namespace block;
 using namespace geometry;
-using err::ParameterError;
+using err::ParameterFailure;
 using namespace text::literals;
 
 RemappedBuffer::RemappedBuffer() : RemappedBuffer{Size{1, 1}, Orientation::Vertical, Block{U' '}} {
@@ -96,6 +97,7 @@ void RemappedBuffer::shift(const Direction direction, const Block fillChar, cons
     if (count == 0 || direction == Direction::None) {
         return;
     }
+    onScroll(direction, count);
     if (direction.contains(Direction::North)) {
         eraseRows(Coordinate{0}, fillChar, count);
     }
@@ -193,10 +195,10 @@ void RemappedBuffer::fill(const Block &fillBlock) noexcept {
 
 auto RemappedBuffer::validatedBufferSize(const Size size) -> Size {
     if (size.width() < 1 || size.height() < 1) {
-        throw ParameterError{"Buffer size must be at least 1x1."_el, "size"_el};
+        throw ParameterFailure{"Buffer size must be at least 1x1."_el, "size"_el};
     }
     if (!size.fitsInto(cMaximumSize)) {
-        throw ParameterError{"Buffer size must not exceed 10'000x10'000."_el, "size"_el};
+        throw ParameterFailure{"Buffer size must not exceed 10'000x10'000."_el, "size"_el};
     }
     return size;
 }
@@ -210,12 +212,12 @@ auto RemappedBuffer::linearIndex(std::size_t size) -> CoordinateMap {
     return result;
 }
 
-void RemappedBuffer::validateCount(const int count, const int maximum, const text::StringLiteral &parameterName) {
+void RemappedBuffer::validateCount(const int count, const int maximum, const StringLiteral &parameterName) {
     if (count < 0) {
-        throw ParameterError{"The count must not be negative."_el, parameterName};
+        throw ParameterFailure{"The count must not be negative."_el, parameterName};
     }
     if (count > maximum) {
-        throw ParameterError{"The count must not exceed the buffer dimension."_el, parameterName};
+        throw ParameterFailure{"The count must not exceed the buffer dimension."_el, parameterName};
     }
 }
 
@@ -223,20 +225,20 @@ void RemappedBuffer::validateExistingSpan(
     const Coordinate start,
     const int count,
     const int limit,
-    const text::StringLiteral &startName,
-    const text::StringLiteral &countName) {
+    const StringLiteral &startName,
+    const StringLiteral &countName) {
     validateCount(count, limit, countName);
     if (count == 0) {
         if (start < 0 || start > limit) {
-            throw ParameterError{"The start coordinate is out of bounds."_el, startName};
+            throw ParameterFailure{"The start coordinate is out of bounds."_el, startName};
         }
         return;
     }
     if (start < 0 || start >= limit) {
-        throw ParameterError{"The start coordinate is out of bounds."_el, startName};
+        throw ParameterFailure{"The start coordinate is out of bounds."_el, startName};
     }
     if (start + count > limit) {
-        throw ParameterError{"The count exceeds the remaining buffer dimension."_el, countName};
+        throw ParameterFailure{"The count exceeds the remaining buffer dimension."_el, countName};
     }
 }
 
@@ -244,26 +246,26 @@ void RemappedBuffer::validateInsertArguments(
     const Coordinate start,
     const int count,
     const int limit,
-    const text::StringLiteral &startName,
-    const text::StringLiteral &countName) {
+    const StringLiteral &startName,
+    const StringLiteral &countName) {
     validateCount(count, limit, countName);
     if (count == 0) {
         if (start < 0 || start > limit) {
-            throw ParameterError{"The start coordinate is out of bounds."_el, startName};
+            throw ParameterFailure{"The start coordinate is out of bounds."_el, startName};
         }
         return;
     }
     if (start < 0 || start >= limit) {
-        throw ParameterError{"The start coordinate is out of bounds."_el, startName};
+        throw ParameterFailure{"The start coordinate is out of bounds."_el, startName};
     }
     if (start + count > limit) {
-        throw ParameterError{"The count exceeds the remaining buffer dimension."_el, countName};
+        throw ParameterFailure{"The count exceeds the remaining buffer dimension."_el, countName};
     }
 }
 
 void RemappedBuffer::validateDirectionalCount(const Direction direction, const int count) const {
     if (count < 0) {
-        throw ParameterError{"The count must not be negative."_el, "count"_el};
+        throw ParameterFailure{"The count must not be negative."_el, "count"_el};
     }
     if (direction.contains(Direction::North) || direction.contains(Direction::South)) {
         validateCount(count, _size.height().toRawValue(), "count"_el);

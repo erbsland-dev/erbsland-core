@@ -30,7 +30,7 @@ auto HttpClientConnectionManager::lease(const Url &url, const std::uint64_t gene
     const auto now = time::TimePoint::now();
     for (auto iterator = _idle.begin(); iterator != _idle.end();) {
         if (iterator->connection->state() != ConnectionState::Active || iterator->deadline <= now ||
-            !ConnectionProtocolAccess::takeRetainedInput(*iterator->connection).isEmpty()) {
+            !ConnectionProtocolAccess{*iterator->connection}.takeRetainedInput().isEmpty()) {
             iterator->connection->abort();
             iterator = _idle.erase(iterator);
         } else {
@@ -124,7 +124,7 @@ void HttpClientConnectionManager::invalidate() noexcept {
 auto HttpClientConnectionManager::originKey(const Url &url) -> text::String {
     auto result = StringEditor{};
     result.append(url.schemeText()).append("://"_el).append(url.endpoint().toString());
-    return String{result};
+    return result;
 }
 
 void HttpClientConnectionManager::evict(const text::String &origin, const std::uint64_t identity) noexcept {

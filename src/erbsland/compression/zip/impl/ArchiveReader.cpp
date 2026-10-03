@@ -5,9 +5,9 @@
 #include "ArchiveItem.hpp"
 #include "ZipTools.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/OutOfRangeError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/OverflowError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../mem/ByteReader.hpp"
 #include "../../../stream/StreamError.hpp"
 #include "../../../stream/StreamPositionOrigin.hpp"
@@ -25,9 +25,14 @@
 
 namespace erbsland::compression::zip::impl {
 
+using namespace err;
+using namespace mem;
+using namespace stream;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-ArchiveReader::ArchiveReader(stream::ByteInputStreamPtr source, path::Path sourcePath, ArchiveReaderOptions options) :
+ArchiveReader::ArchiveReader(ByteInputStreamPtr source, path::Path sourcePath, ArchiveReaderOptions options) :
     _source{std::move(source)}, _sourcePath{std::move(sourcePath)}, _options{std::move(options)} {
 }
 
@@ -37,7 +42,7 @@ ArchiveReader::~ArchiveReader() {
 
 void ArchiveReader::open() {
     if (_source == nullptr) {
-        throw err::ParameterError{"The ZIP input stream must not be null."_el, "source"_el};
+        throw ParameterFailure{"The ZIP input stream must not be null."_el, "source"_el};
     }
     try {
         indexArchive();
@@ -45,18 +50,18 @@ void ArchiveReader::open() {
     } catch (const ZipError &) {
         close();
         throw;
-    } catch (const err::OutOfRangeError &) {
+    } catch (const OverflowError &) {
         const auto cause = std::current_exception();
         close();
         throw ZipError{
             ZipErrorContext{
                 ZipErrorReason::MalformedArchive,
                 ZipOperationPhase::Directory,
-                "ZIP directory record is truncated"_el,
-                "A required field extends beyond its bounded ZIP record."_el}
+                "ZIP archive contains an unrepresentable range"_el,
+                "An archive size or position exceeds the finite unit domain."_el}
                 .setSourcePath(_sourcePath),
             cause};
-    } catch (const stream::StreamError &) {
+    } catch (const StreamError &) {
         const auto cause = std::current_exception();
         close();
         throw ZipError{
@@ -67,14 +72,17 @@ void ArchiveReader::open() {
                 "The archive stream failed while a bounded record range was read."_el}
                 .setSourcePath(_sourcePath),
             cause};
+    } catch (...) {
+        close();
+        throw;
     }
 }
 
-auto ArchiveReader::itemCount() const noexcept -> unit::ItemCount {
-    return unit::ItemCount::fromSizeT(_items.size());
+auto ArchiveReader::itemCount() const noexcept -> ItemCount {
+    return ItemCount::fromSizeT(_items.size());
 }
 
-auto ArchiveReader::item(const unit::ItemIndex index) const noexcept -> ArchiveItemPtr {
+auto ArchiveReader::item(const ItemIndex index) const noexcept -> ArchiveItemPtr {
     if (index.isNoIndex() || index.toRawValue() >= _items.size()) {
         return {};
     }
@@ -89,7 +97,7 @@ auto ArchiveReader::items() const -> ArchiveItemList {
     return result;
 }
 
-auto ArchiveReader::comment() const noexcept -> const text::String & {
+auto ArchiveReader::comment() const noexcept -> const String & {
     return _comment;
 }
 
@@ -108,7 +116,7 @@ void ArchiveReader::close() noexcept {
             if (!_source->close().isClosed()) {
                 _source->abort();
             }
-        } catch (const stream::StreamError &) {
+        } catch (const StreamError &) {
             _source->abort();
         }
         _source.reset();
@@ -119,18 +127,18 @@ auto ArchiveReader::isOpen() const noexcept -> bool {
     return _isOpen;
 }
 
-auto ArchiveReader::extract(const ZipEntryRecord &record, unit::ByteLength maximumLength) const -> mem::ByteBlock {
+auto ArchiveReader::extract(const ZipEntryRecord &record, ByteCount maximumLength) const -> ByteBlock {
     if (maximumLength > _options.maximumBufferedItemLength()) {
         maximumLength = _options.maximumBufferedItemLength();
     }
-    auto output = mem::ByteBlockEditor{};
-    extractTo(record, maximumLength, [&](mem::ConstByteSpan bytes) { output.append(bytes); });
+    auto output = ByteBlockEditor{};
+    extractTo(record, maximumLength, [&](ConstByteSpan bytes) { output.append(bytes); });
     return output;
 }
 
 auto ArchiveReader::entryData(const ZipEntryRecord &record, bool readPayload) const -> ZipEntryData {
     if (!_isOpen) {
-        throw err::LogicError{"The ZIP archive reader is closed."_el};
+        throw LogicFailure{"The ZIP archive reader is closed."_el};
     }
     if (readPayload && record.compressedLength > _options.maximumBufferedItemLength()) {
         throwArchiveError(
@@ -141,21 +149,23 @@ auto ArchiveReader::entryData(const ZipEntryRecord &record, bool readPayload) co
     }
     const auto lock = std::lock_guard{_sourceMutex};
     if (!_isOpen || _source == nullptr) {
-        throw err::LogicError{"The ZIP archive reader is closed."_el};
+        throw LogicFailure{"The ZIP archive reader is closed."_el};
     }
     try {
         return readEntryData(record, readPayload);
     } catch (const ZipError &) {
         throw;
-    } catch (const err::OutOfRangeError &) {
-        throw ZipError{ZipErrorContext{
-            ZipErrorReason::MalformedArchive,
-            ZipOperationPhase::LocalHeader,
-            "ZIP local record is truncated"_el,
-            "A required field extends beyond the selected local record."_el}
+    } catch (const OverflowError &) {
+        throw ZipError{
+            ZipErrorContext{
+                ZipErrorReason::MalformedArchive,
+                ZipOperationPhase::Payload,
+                "ZIP item contains an unrepresentable range"_el,
+                "An item size or position exceeds the finite unit domain."_el}
                 .setSourcePath(_sourcePath)
-                .setItemPath(record.path)};
-    } catch (const stream::StreamError &) {
+                .setItemPath(record.path),
+            std::current_exception()};
+    } catch (const StreamError &) {
         throw ZipError{
             ZipErrorContext{
                 ZipErrorReason::StreamFailure,
@@ -170,10 +180,9 @@ auto ArchiveReader::entryData(const ZipEntryRecord &record, bool readPayload) co
 
 void ArchiveReader::indexArchive() {
     if (!_source->supportsPositioning()) {
-        throw err::ParameterError{"A ZIP input stream must support positioning."_el, "source"_el};
+        throw ParameterFailure{"A ZIP input stream must support positioning."_el, "source"_el};
     }
-    if (_source->movePosition(stream::StreamPositionOrigin::End, unit::ByteOffset{}) !=
-        stream::StreamPositionStatus::Success) {
+    if (_source->movePosition(StreamPositionOrigin::End, ByteOffset{}) != StreamPositionStatus::Success) {
         throwArchiveError(
             ZipErrorReason::StreamFailure,
             ZipOperationPhase::Open,
@@ -192,8 +201,8 @@ void ArchiveReader::indexArchive() {
 }
 
 void ArchiveReader::parseDirectory() {
-    constexpr auto cEndLength = unit::ByteLength{22U};
-    constexpr auto cMaximumTailLength = unit::ByteLength{65557U};
+    constexpr auto cEndLength = ByteCount{22U};
+    constexpr auto cMaximumTailLength = ByteCount{65557U};
     if (_archiveLength < cEndLength) {
         throwArchiveError(
             ZipErrorReason::MalformedArchive,
@@ -204,9 +213,9 @@ void ArchiveReader::parseDirectory() {
 
     // APPNOTE 4.3.16: inspect one bounded tail containing the EOCD and its maximum comment.
     const auto tailLength = std::min(_archiveLength, cMaximumTailLength);
-    const auto tailOffset = unit::ByteIndex::end(_archiveLength - tailLength);
-    const auto tail = readBlock(unit::ByteRange{tailOffset, tailLength}, ZipOperationPhase::Directory);
-    auto tailReader = mem::ByteReader{tail};
+    const auto tailOffset = ByteIndex::end(_archiveLength - tailLength);
+    const auto tail = readBlock(ByteRange{tailOffset, tailLength}, ZipOperationPhase::Directory);
+    auto tailReader = ByteReader{tail};
     const auto endOffsetInTail = findEndRecord(tail);
 
     tailReader.setPosition(endOffsetInTail);
@@ -215,11 +224,11 @@ void ArchiveReader::parseDirectory() {
     const auto directoryDisk = tailReader.readUInt16OrThrow();
     const auto diskEntryCount = tailReader.readUInt16OrThrow();
     auto entryCount = static_cast<uint64_t>(tailReader.readUInt16OrThrow());
-    auto directoryLength = unit::ByteLength{tailReader.readUInt32OrThrow()};
-    auto directoryOffset = unit::ByteIndex{tailReader.readUInt32OrThrow()};
+    auto directoryLength = ByteCount{tailReader.readUInt32OrThrow(), ByteCount::Unchecked{}};
+    auto directoryOffset = ByteIndex{tailReader.readUInt32OrThrow(), ByteIndex::Unchecked{}};
     const auto commentLength = tailReader.readUInt16OrThrow();
-    _comment = text::StringDecoder{tailReader.readBytesOrThrow(unit::ByteLength{commentLength})}.decode(
-        text::StringEncoding::Utf8);
+    _comment = StringDecoder{tailReader.readBytesOrThrow(ByteCount{commentLength, ByteCount::Unchecked{}})}.decode(
+        StringEncoding::Utf8);
     if (diskNumber != 0U || directoryDisk != 0U) {
         throwArchiveError(
             ZipErrorReason::UnsupportedFeature,
@@ -229,8 +238,8 @@ void ArchiveReader::parseDirectory() {
     }
 
     const auto endOffset = tailOffset.advancedOrThrow(endOffsetInTail.distanceFromZero());
-    const auto hasSentinel = entryCount == 0xffffU || directoryLength == unit::ByteLength{0xffffffffU} ||
-        directoryOffset == unit::ByteIndex{0xffffffffU} || diskEntryCount == 0xffffU;
+    const auto hasSentinel = entryCount == 0xffffU || directoryLength == ByteCount{0xffffffffU} ||
+        directoryOffset == ByteIndex{0xffffffffU} || diskEntryCount == 0xffffU;
     auto endRecordsOffset = endOffset;
     if (hasSentinel) {
         endRecordsOffset =
@@ -257,7 +266,7 @@ void ArchiveReader::parseDirectory() {
             "ZIP central-directory limit exceeded"_el,
             "The central directory exceeds the configured byte limit."_el);
     }
-    const auto directoryRange = unit::ByteRange{directoryOffset, directoryLength};
+    const auto directoryRange = ByteRange{directoryOffset, directoryLength};
     if (!directoryRange.isWithin(_archiveLength) || directoryRange.endIndex() != endRecordsOffset) {
         throwArchiveError(
             ZipErrorReason::MalformedArchive,
@@ -268,7 +277,7 @@ void ArchiveReader::parseDirectory() {
 
     _centralDirectoryOffset = directoryOffset;
     const auto directory = readBlock(directoryRange, ZipOperationPhase::Directory);
-    auto directoryReader = mem::ByteReader{directory};
+    auto directoryReader = ByteReader{directory};
     for (auto index = uint64_t{}; index < entryCount; ++index) {
         auto record = parseCentralEntry(directoryReader);
         _items.emplace_back(std::make_shared<ArchiveItem>(weak_from_this(), std::move(record)));
@@ -283,13 +292,13 @@ void ArchiveReader::parseDirectory() {
     validateDirectoryEntries();
 }
 
-auto ArchiveReader::findEndRecord(const mem::ByteBlock &tail) const -> unit::ByteIndex {
-    auto reader = mem::ByteReader{tail};
-    for (auto candidate = tail.endIndex().retreatedOrThrow(unit::ByteLength{22U});; --candidate) {
+auto ArchiveReader::findEndRecord(const ByteBlock &tail) const -> ByteIndex {
+    auto reader = ByteReader{tail};
+    for (auto candidate = tail.endIndex().retreatedOrThrow(ByteCount{22U});; --candidate) {
         reader.setPosition(candidate);
         const auto signature = reader.readUInt32OrThrow();
         reader.advance(16U);
-        const auto commentLength = unit::ByteLength{reader.readUInt16OrThrow()};
+        const auto commentLength = ByteCount{reader.readUInt16OrThrow(), ByteCount::Unchecked{}};
         if (signature == zipTools::cEndSignature && reader.position().advanced(commentLength) == tail.endIndex()) {
             return candidate;
         }
@@ -305,22 +314,22 @@ auto ArchiveReader::findEndRecord(const mem::ByteBlock &tail) const -> unit::Byt
 }
 
 auto ArchiveReader::parseZip64Directory(
-    mem::ByteReader &tailReader,
-    const unit::ByteIndex endOffsetInTail,
-    const unit::ByteIndex endOffset,
+    ByteReader &tailReader,
+    const ByteIndex endOffsetInTail,
+    const ByteIndex endOffset,
     uint64_t &entryCount,
-    unit::ByteLength &directoryLength,
-    unit::ByteIndex &directoryOffset) -> unit::ByteIndex {
+    ByteCount &directoryLength,
+    ByteIndex &directoryOffset) -> ByteIndex {
     // APPNOTE 4.3.15: the adjacent ZIP64 locator is already present in the bounded tail.
-    if (endOffsetInTail < unit::ByteIndex{20U}) {
+    if (endOffsetInTail < ByteIndex{20U}) {
         throwArchiveError(
             ZipErrorReason::MalformedArchive,
             ZipOperationPhase::Directory,
             "ZIP64 locator is missing"_el,
             "Classic sentinel fields require an adjacent ZIP64 locator."_el);
     }
-    const auto locatorOffset = endOffset.retreatedOrThrow(unit::ByteLength{20U});
-    tailReader.setPosition(endOffsetInTail.retreatedOrThrow(unit::ByteLength{20U}));
+    const auto locatorOffset = endOffset.retreatedOrThrow(ByteCount{20U});
+    tailReader.setPosition(endOffsetInTail.retreatedOrThrow(ByteCount{20U}));
     if (tailReader.readUInt32OrThrow() != zipTools::cZip64LocatorSignature || tailReader.readUInt32OrThrow() != 0U) {
         throwArchiveError(
             ZipErrorReason::MalformedArchive,
@@ -328,9 +337,9 @@ auto ArchiveReader::parseZip64Directory(
             "ZIP64 locator is invalid"_el,
             "The locator must identify the ZIP64 end record on disk zero."_el);
     }
-    const auto zip64Offset = unit::ByteIndex{tailReader.readUInt64OrThrow()};
+    const auto zip64Offset = ByteIndex::fromIntegerOrThrow(tailReader.readUInt64OrThrow());
     if (tailReader.readUInt32OrThrow() != 1U ||
-        !unit::ByteRange{zip64Offset, unit::ByteLength{56U}}.isWithin(locatorOffset.distanceFromZero())) {
+        !ByteRange{zip64Offset, ByteCount{56U}}.isWithin(locatorOffset.distanceFromZero())) {
         throwArchiveError(
             ZipErrorReason::UnsupportedFeature,
             ZipOperationPhase::Directory,
@@ -339,8 +348,7 @@ auto ArchiveReader::parseZip64Directory(
     }
 
     // APPNOTE 4.3.14: only the fixed ZIP64 fields are required; the declared size bounds extensions.
-    auto zip64Reader =
-        mem::ByteReader{readBlock(unit::ByteRange{zip64Offset, unit::ByteLength{56U}}, ZipOperationPhase::Directory)};
+    auto zip64Reader = ByteReader{readBlock(ByteRange{zip64Offset, ByteCount{56U}}, ZipOperationPhase::Directory)};
     if (zip64Reader.readUInt32OrThrow() != zipTools::cZip64EndSignature) {
         throwArchiveError(
             ZipErrorReason::MalformedArchive,
@@ -348,10 +356,9 @@ auto ArchiveReader::parseZip64Directory(
             "ZIP64 end record is invalid"_el,
             "The locator does not point to a ZIP64 End of Central Directory record."_el);
     }
-    const auto zip64Size = unit::ByteLength{zip64Reader.readUInt64OrThrow()};
-    const auto zip64Body = unit::ByteRange{zip64Offset.advancedOrThrow(unit::ByteLength{12U}), zip64Size};
-    if (zip64Size < unit::ByteLength{44U} || !zip64Body.isWithin(_archiveLength) ||
-        zip64Body.endIndex() != locatorOffset) {
+    const auto zip64Size = ByteCount::fromIntegerOrThrow(zip64Reader.readUInt64OrThrow());
+    const auto zip64Body = ByteRange{zip64Offset.advancedOrThrow(ByteCount{12U}), zip64Size};
+    if (zip64Size < ByteCount{44U} || !zip64Body.isWithin(_archiveLength) || zip64Body.endIndex() != locatorOffset) {
         throwArchiveError(
             ZipErrorReason::MalformedArchive,
             ZipOperationPhase::Directory,
@@ -364,8 +371,8 @@ auto ArchiveReader::parseZip64Directory(
     const auto zip64DirectoryDisk = zip64Reader.readUInt32OrThrow();
     const auto diskEntries64 = zip64Reader.readUInt64OrThrow();
     entryCount = zip64Reader.readUInt64OrThrow();
-    directoryLength = unit::ByteLength{zip64Reader.readUInt64OrThrow()};
-    directoryOffset = unit::ByteIndex{zip64Reader.readUInt64OrThrow()};
+    directoryLength = ByteCount::fromIntegerOrThrow(zip64Reader.readUInt64OrThrow());
+    directoryOffset = ByteIndex::fromIntegerOrThrow(zip64Reader.readUInt64OrThrow());
     if (zip64Disk != 0U || zip64DirectoryDisk != 0U || diskEntries64 != entryCount) {
         throwArchiveError(
             ZipErrorReason::UnsupportedFeature,
@@ -384,15 +391,15 @@ auto ArchiveReader::parseZip64Directory(
     return zip64Offset;
 }
 
-auto ArchiveReader::readBlock(const unit::ByteRange range, const ZipOperationPhase phase) const -> mem::ByteBlock {
+auto ArchiveReader::readBlock(const ByteRange range, const ZipOperationPhase phase) const -> ByteBlock {
     if (!range.isWithin(_archiveLength)) {
         zipTools::throwMalformed("A ZIP record range exceeds the archive boundary."_el);
     }
     const auto lock = std::lock_guard{_sourceMutex};
     if (!_isOpen || _source == nullptr) {
-        throw err::LogicError{"The ZIP archive reader is closed."_el};
+        throw LogicFailure{"The ZIP archive reader is closed."_el};
     }
-    if (_source->setPosition(range.index()) != stream::StreamPositionStatus::Success) {
+    if (_source->setPosition(range.beginIndex()) != StreamPositionStatus::Success) {
         throwArchiveError(
             ZipErrorReason::StreamFailure,
             phase,
@@ -400,7 +407,7 @@ auto ArchiveReader::readBlock(const unit::ByteRange range, const ZipOperationPha
             "The input could not reach a validated record range."_el);
     }
     const auto result = _source->readExact(range.length());
-    if (result != stream::StreamReadStatus::Data) {
+    if (result != StreamReadStatus::Data) {
         throwArchiveError(
             ZipErrorReason::StreamFailure,
             phase,
@@ -411,7 +418,7 @@ auto ArchiveReader::readBlock(const unit::ByteRange range, const ZipOperationPha
 }
 
 void ArchiveReader::throwArchiveError(
-    const ZipErrorReason reason, const ZipOperationPhase phase, text::String title, text::String description) const {
+    const ZipErrorReason reason, const ZipOperationPhase phase, String title, String description) const {
     throw ZipError{ZipErrorContext{reason, phase, std::move(title), std::move(description)}.setSourcePath(_sourcePath)};
 }
 

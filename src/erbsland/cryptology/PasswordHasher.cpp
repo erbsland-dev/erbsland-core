@@ -6,8 +6,9 @@
 #include "impl/algorithm/Scrypt.hpp"
 #include "impl/PasswordHashData.hpp"
 
-#include "../core/Application.hpp"
-#include "../err/ParameterError.hpp"
+#include "../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../core/impl/ApplicationDataAccess.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../random/Random.hpp"
 #include "../text/impl/UnsafeU8StringAccess.hpp"
 #include "../text/Literals.hpp"
@@ -20,13 +21,16 @@
 
 namespace erbsland::cryptology {
 
+using namespace err;
+using namespace mem;
+using namespace text;
 using namespace text::literals;
 
 PasswordHasher::PasswordHasher(PasswordHashKey key, PasswordHashPolicy policy) :
     PasswordHasher{std::optional<PasswordHashKey>{std::move(key)}, {}, std::move(policy)} {
 }
 
-PasswordHasher::PasswordHasher(unsafe::UnsafeNoPasswordHashKey, PasswordHashPolicy policy) :
+PasswordHasher::PasswordHasher(UnsafeNoPasswordHashKey, PasswordHashPolicy policy) :
     PasswordHasher{std::nullopt, {}, std::move(policy)} {
 }
 
@@ -40,24 +44,24 @@ PasswordHasher::PasswordHasher(
 auto PasswordHasher::withKeyRotation(
     PasswordHashKey activeKey, util::List<PasswordHashKey> fallbackKeys, PasswordHashPolicy policy) -> PasswordHasher {
     if (!activeKey.isIdentified()) {
-        throw err::ParameterError{"The active rotation key must have an identifier"_el, "activeKey"_el};
+        throw ParameterFailure{"The active rotation key must have an identifier"_el, "activeKey"_el};
     }
     auto resultKeys = std::vector<PasswordHashKey>{};
     auto hasUnnamed = false;
     for (const auto &key : fallbackKeys) {
         if (!key.isIdentified()) {
             if (hasUnnamed) {
-                throw err::ParameterError{"Only one unnamed legacy key is allowed"_el, "fallbackKeys"_el};
+                throw ParameterFailure{"Only one unnamed legacy key is allowed"_el, "fallbackKeys"_el};
             }
             hasUnnamed = true;
         } else {
             if (key.identifier() == activeKey.identifier()) {
-                throw err::ParameterError{
+                throw ParameterFailure{
                     "Fallback key identifiers must differ from the active key"_el, "fallbackKeys"_el};
             }
             for (const auto &existing : resultKeys) {
                 if (existing.identifier().has_value() && existing.identifier() == key.identifier()) {
-                    throw err::ParameterError{"Fallback key identifiers must be unique"_el, "fallbackKeys"_el};
+                    throw ParameterFailure{"Fallback key identifiers must be unique"_el, "fallbackKeys"_el};
                 }
             }
         }
@@ -67,28 +71,28 @@ auto PasswordHasher::withKeyRotation(
         std::optional<PasswordHashKey>{std::move(activeKey)}, std::move(resultKeys), std::move(policy)};
 }
 
-auto PasswordHasher::hash(const text::String &password) const -> PasswordHash {
+auto PasswordHasher::hash(const String &password) const -> PasswordHash {
     if (password.length().toSizeT() > cMaximumPasswordBytes) {
-        throw err::ParameterError{"Passwords cannot exceed 1 MiB of UTF-8 data"_el, "password"_el};
+        throw ParameterFailure{"Passwords cannot exceed 1 MiB of UTF-8 data"_el, "password"_el};
     }
-    const auto salt = core::application().secureRandom().buildByteBlock(_policy.saltLength());
+    const auto randomData = core::impl::applicationData()->random().get();
+    const auto salt = randomData->secureRandom().buildByteBlock(_policy.saltLength());
     return hashWithSalt(password, salt.span());
 }
 
-auto PasswordHasher::hashWithSalt(const text::String &password, const mem::ConstByteSpan salt) const -> PasswordHash {
-    const auto raw = mem::ByteBlock{derive(password, salt, _policy)};
+auto PasswordHasher::hashWithSalt(const String &password, const ConstByteSpan salt) const -> PasswordHash {
+    const auto raw = ByteBlock{derive(password, salt, _policy)};
     const auto *key = _activeKey.has_value() ? &*_activeKey : nullptr;
     return PasswordHash{impl::PasswordHashData::create(_policy, key, salt, raw.span())};
 }
 
-auto PasswordHasher::derive(
-    const text::String &password, const mem::ConstByteSpan salt, const PasswordHashPolicy &policy)
-    -> mem::ByteBlockEditor {
+auto PasswordHasher::derive(const String &password, const ConstByteSpan salt, const PasswordHashPolicy &policy)
+    -> ByteBlockEditor {
     const auto sourceBytes = text::impl::UnsafeU8StringAccess{password}.dataSpan();
-    auto passwordEditor = mem::ByteBlockEditor{unit::ByteLength::fromSizeT(sourceBytes.size())};
+    auto passwordEditor = ByteBlockEditor{unit::ByteCount::fromSizeT(sourceBytes.size())};
     passwordEditor.markAsSensitive();
-    passwordEditor.overwrite(mem::toConstByteSpan(sourceBytes));
-    const auto passwordBytes = mem::ByteBlock{passwordEditor};
+    passwordEditor.overwrite(toConstByteSpan(sourceBytes));
+    const auto passwordBytes = ByteBlock{passwordEditor};
     const auto passwordData = passwordBytes.span();
     if (policy.algorithm() == PasswordHashAlgorithm::Argon2id) {
         const auto argon2id = impl::Argon2id{{
@@ -126,19 +130,18 @@ auto PasswordHasher::keyFor(const impl::PasswordHashData &data) const noexcept -
     return nullptr;
 }
 
-void PasswordHasher::performDummyVerification(const text::String &password) const {
-    auto salt = mem::ByteBlockEditor{_policy.saltLength()};
+void PasswordHasher::performDummyVerification(const String &password) const {
+    auto salt = ByteBlockEditor{_policy.saltLength()};
     salt.markAsSensitive();
     const auto saltBytes = salt.span();
-    const auto raw = mem::ByteBlock{derive(password, saltBytes, _policy)};
+    const auto raw = ByteBlock{derive(password, saltBytes, _policy)};
     const auto *key = _activeKey.has_value() ? &*_activeKey : nullptr;
     impl::PasswordHashData::performDummyVerification(_policy, key, saltBytes, raw.span());
 }
 
-auto PasswordHasher::verify(const text::String &password, const PasswordHash &storedHash) const
-    -> PasswordVerification {
+auto PasswordHasher::verify(const String &password, const PasswordHash &storedHash) const -> PasswordVerification {
     if (password.length().toSizeT() > cMaximumPasswordBytes) {
-        const auto empty = text::String{};
+        const auto empty = String{};
         performDummyVerification(empty);
         return PasswordVerification{false};
     }
@@ -152,7 +155,7 @@ auto PasswordHasher::verify(const text::String &password, const PasswordHash &st
         performDummyVerification(password);
         return PasswordVerification{false};
     }
-    const auto raw = mem::ByteBlock{derive(password, data.salt().span(), data.policy())};
+    const auto raw = ByteBlock{derive(password, data.salt().span(), data.policy())};
     if (!data.matchesVerifier(raw.span(), key)) {
         return PasswordVerification{false};
     }

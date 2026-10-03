@@ -68,7 +68,7 @@ Both strings become one continuous byte message; update boundaries do not become
 .. erbsland-demo::
     :source: cryptology/HashAlgorithms/FixedSha3.cpp
     :exec: cryptology/hash_algorithms --demo FixedSha3
-    :source-sha256: 61d38fda046a23a215cc5e5a0687ddaf10b7c45a3ee8e10490361dc8d390cd00
+    :sha256: 9cf539b126b97c6b64225ba2527f35c988b46561fcd4a45bda02e55a8415e3a7
 
 .. code-block:: cpp
 
@@ -89,11 +89,13 @@ Both strings become one continuous byte message; update boundaries do not become
         el::io::printLine("Digest: "_el, digest);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Algorithm: sha3-256
-    Digest: 6315745f4e5640e1df729e2954720f88a9dfedb52dd7123b8eed79f2fb732136
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAlgorithm: sha3-256
+        Digest: 6315745f4e5640e1df729e2954720f88a9dfedb52dd7123b8eed79f2fb732136␛[0m
 
 .. erbsland-demo-end::
 
@@ -142,7 +144,7 @@ The following demo requests high security with at least medium relative throughp
 .. erbsland-demo::
     :source: cryptology/HashAlgorithms/SelectAlgorithm.cpp
     :exec: cryptology/hash_algorithms --demo SelectAlgorithm
-    :source-sha256: 50005629b33a816dcd9422a1b481f0cc047908651c4b12ac734b1714f20c31ae
+    :sha256: 8375a7e72c3b4464b4cc31fbbbf3492085509776915e7eddf953748d18767673
 
 .. code-block:: cpp
 
@@ -167,11 +169,13 @@ The following demo requests high security with at least medium relative throughp
         el::io::printLine("Digest bytes: "_el, algorithm->digestSize().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Selected algorithm: sha3-384
-    Digest bytes: 48
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSelected algorithm: sha3-384
+        Digest bytes: 48␛[0m
 
 .. erbsland-demo-end::
 
@@ -214,7 +218,7 @@ limit.
 .. erbsland-demo::
     :source: cryptology/HashAlgorithms/StoreDigest.cpp
     :exec: cryptology/hash_algorithms --demo StoreDigest
-    :source-sha256: d5df7533208343d9835ac570e86b91666b462d347d96c0352c1ebb5680908245
+    :sha256: 8eaf29d4beec995ebb616bcf1909f8e4329d3e6e44337d0582c022d5dbafe7e7
 
 .. code-block:: cpp
 
@@ -237,18 +241,20 @@ limit.
         const auto sidecarPath = directory->path() / "observation.sha3-256"_el;
         sidecarPath.content().writeTextOrThrow(encoded);
 
-        const auto storedText = sidecarPath.content().readTextOrThrow(el::PathReadTextOptions{el::ByteLength{128U}});
+        const auto storedText = sidecarPath.content().readTextOrThrow(el::PathReadTextOptions{el::ByteCount{128U}});
         const auto decoded = el::base_n::BaseNDecoder{storedText, format}.toDataOrThrow(hasher.algorithm().digestSize());
 
         el::io::printLine("Stored characters: "_el, storedText.characterLength().toSizeT());
         el::io::printLine("Round trip matches: "_el, el::BooleanFormat::yesNo(), decoded == digest);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Stored characters: 64
-    Round trip matches: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mStored characters: 64
+        Round trip matches: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -278,7 +284,7 @@ Reject unknown identifiers instead of silently substituting a default.
 .. erbsland-demo::
     :source: cryptology/HashAlgorithms/PersistAlgorithm.cpp
     :exec: cryptology/hash_algorithms --demo PersistAlgorithm
-    :source-sha256: de66d8067a4e683b04a673bc1f922caf9c91bbaabab13363a18326e3acdae063
+    :sha256: 6f058a015f5f2761e3863bdef159bc7bdeadc65efe39cde31500db8aac390d27
 
 .. code-block:: cpp
 
@@ -298,13 +304,13 @@ Reject unknown identifiers instead of silently substituting a default.
                                        .build(algorithm.toString(), digest);
         const auto document = el::conf::Parser{}.parseTextOrThrow(configuration);
 
-        const auto algorithmText = document->getTextOrThrow(el::String{"canopy_record.algorithm"_el});
+        const auto algorithmText = document->getTextOrThrow("canopy_record.algorithm"_el);
         const auto storedAlgorithm = el::HashAlgorithm::fromString(algorithmText);
         if (!storedAlgorithm.has_value() || !el::HashSelector{}.isSafe(storedAlgorithm.value())) {
             throw el::RuntimeError{"The stored hash algorithm is unknown or no longer acceptable."_el};
         }
 
-        const auto storedDigest = document->getBytesOrThrow(el::String{"canopy_record.digest"_el});
+        const auto storedDigest = document->getBytesOrThrow("canopy_record.digest"_el);
         if (storedDigest.length() != storedAlgorithm->digestSize()) {
             throw el::RuntimeError{"The digest size does not match the stored hash algorithm."_el};
         }
@@ -313,11 +319,13 @@ Reject unknown identifiers instead of silently substituting a default.
         el::io::printLine("Digest size valid: "_el, el::BooleanFormat::yesNo(), storedDigest == digest);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Algorithm accepted: sha3-256
-    Digest size valid: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAlgorithm accepted: sha3-256
+        Digest size valid: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -348,7 +356,7 @@ algorithm that passes the current safety policy.
 .. erbsland-demo::
     :source: cryptology/HashAlgorithms/HashBoundedInput.cpp
     :exec: cryptology/hash_algorithms --demo HashBoundedInput
-    :source-sha256: 27230cc2d6b85b79dfc328cf9b40420194250b0273b0ce5b2f67b0d0d81e6d3a
+    :sha256: 3faef01b723d91a437644e537167c7aa554c9a58c1f1b2d9e6e6a6e98222e9e2
 
 .. code-block:: cpp
 
@@ -405,10 +413,12 @@ algorithm that passes the current safety policy.
         return hasher.finalize();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Digest bytes: 32
-    MD5 rejected: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDigest bytes: 32
+        MD5 rejected: yes␛[0m
 
 .. erbsland-demo-end::

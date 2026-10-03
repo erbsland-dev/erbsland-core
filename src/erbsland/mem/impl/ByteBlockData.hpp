@@ -4,4 +4,3 @@
 
 #include "ByteBlockData_fwd.hpp"
 #include "SharedByteDataWithFlag.hpp"
-

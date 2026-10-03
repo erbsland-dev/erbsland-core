@@ -6,6 +6,9 @@
 
 #include "../ProfileTypes.hpp"
 
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
+
 namespace app::byte::impl {
 
 /// Unexpanded byte-profiler scenario configuration.
@@ -14,7 +17,7 @@ struct ScenarioTemplate {
     el::String name;
     std::vector<ByteType> types;
     std::vector<UseCase> useCases;
-    std::vector<el::String> variants;
+    el::StringList variants;
     std::vector<SizeMode> sizeModes{SizeMode::Fixed};
     std::uint64_t sizeMinimum{4096U};
     std::uint64_t sizeMaximum{4096U};

@@ -8,6 +8,8 @@
 
 namespace erbsland::options {
 
+using namespace text;
+
 OptionChoiceEditor::OptionChoiceEditor(OptionChoicePtr choice) noexcept : _choice{std::move(choice)} {
 }
 
@@ -15,9 +17,20 @@ auto OptionChoiceEditor::isValid() const noexcept -> bool {
     return _choice != nullptr;
 }
 
-auto OptionChoiceEditor::setHelp(text::String description) -> OptionChoiceEditor & {
+auto OptionChoiceEditor::setHelp(String title) -> OptionChoiceEditor & {
     if (_choice != nullptr) {
-        _choice->setHelp(OptionHelp{std::move(description)});
+        _choice->setHelp(OptionHelp{std::move(title)});
+    }
+    return *this;
+}
+
+auto OptionChoiceEditor::setHelpNames(std::initializer_list<String> names) -> OptionChoiceEditor & {
+    return setHelpNames(StringList{names});
+}
+
+auto OptionChoiceEditor::setHelpNames(const StringList &names) -> OptionChoiceEditor & {
+    if (_choice != nullptr) {
+        _choice->setHelpNames(names);
     }
     return *this;
 }
@@ -29,28 +42,28 @@ auto OptionChoiceEditor::setHelp(OptionHelp help) -> OptionChoiceEditor & {
     return *this;
 }
 
-auto OptionChoiceEditor::setHelpTitle(text::String title) -> OptionChoiceEditor & {
+auto OptionChoiceEditor::setHelpTitle(String title) -> OptionChoiceEditor & {
     if (_choice != nullptr) {
         _choice->setHelpTitle(std::move(title));
     }
     return *this;
 }
 
-auto OptionChoiceEditor::setHelpDescription(text::String description) -> OptionChoiceEditor & {
+auto OptionChoiceEditor::setHelpDescription(String description) -> OptionChoiceEditor & {
     if (_choice != nullptr) {
         _choice->setHelpDescription(std::move(description));
     }
     return *this;
 }
 
-auto OptionChoiceEditor::setHelpEpilog(text::String epilog) -> OptionChoiceEditor & {
+auto OptionChoiceEditor::setHelpEpilog(String epilog) -> OptionChoiceEditor & {
     if (_choice != nullptr) {
         _choice->setHelpEpilog(std::move(epilog));
     }
     return *this;
 }
 
-auto OptionChoiceEditor::setHelpExample(text::String example) -> OptionChoiceEditor & {
+auto OptionChoiceEditor::setHelpExample(String example) -> OptionChoiceEditor & {
     if (_choice != nullptr) {
         _choice->setHelpExample(std::move(example));
     }

@@ -1,8 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/conf/impl/lexer/TokenType.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>

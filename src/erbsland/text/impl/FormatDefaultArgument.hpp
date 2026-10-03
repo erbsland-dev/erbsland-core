@@ -18,9 +18,10 @@
 
 #include "../../mem/ByteBlock.hpp"
 #include "../../unit/ExitCode.hpp"
-#include "../../unit/IntegerUnitAmount.hpp"
+#include "../../unit/IntegerUnitCount.hpp"
 #include "../../unit/IntegerUnitIndex.hpp"
 #include "../../unit/IntegerUnitOffset.hpp"
+#include "../../unit/VersionComponent.hpp"
 
 #include <concepts>
 #include <cstddef>
@@ -35,6 +36,13 @@ namespace erbsland::text::impl {
 template <typename>
 inline constexpr auto cCannotMakeDefaultFormatArgument = false;
 
+/// Convert a version component to an unsigned formatting value.
+/// @tested{VersionTest}
+template <unit::VersionPart tPart>
+[[nodiscard]] auto makeDefaultFormatArgument(unit::VersionComponent<tPart> value) -> FormatArgument {
+    return FormatArgument{static_cast<uint64_t>(value.toRawValue())};
+}
+
 /// Convert an integer unit index to an unsigned runtime format argument.
 /// @tested{FormatAsTest}
 template <unit::impl::ValidIntegerUnit tIntegerUnit>
@@ -45,7 +53,7 @@ template <unit::impl::ValidIntegerUnit tIntegerUnit>
 /// Convert an integer unit amount to an unsigned runtime format argument.
 /// @tested{FormatAsTest}
 template <unit::impl::ValidIntegerUnit tIntegerUnit>
-[[nodiscard]] auto makeDefaultFormatArgument(const unit::IntegerUnitAmount<tIntegerUnit> value) -> FormatArgument {
+[[nodiscard]] auto makeDefaultFormatArgument(const unit::IntegerUnitCount<tIntegerUnit> value) -> FormatArgument {
     return FormatArgument{static_cast<uint64_t>(value.toRawValue())};
 }
 

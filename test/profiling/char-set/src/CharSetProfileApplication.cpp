@@ -6,6 +6,12 @@
 #include "DefaultConfiguration.hpp"
 #include "OperationDescriptor.hpp"
 
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/Version.hpp>
+
 #include <memory>
 
 namespace app::charset {
@@ -21,7 +27,7 @@ void CharSetProfileApplication::configureProfiling(pf::ProfilingDefinition &defi
             el::Version{1, 0, 0},
             "Character Set Profiler and Benchmark"_el,
             "Profiles every public CharSet API path with representative normalized range shapes."_el)
-        .setDefaultConfiguration(el::String{cDefaultConfigurationText})
+        .setDefaultConfiguration(cDefaultConfigurationText)
         .addMetric({.id = "tracked-operations"_el, .unit = "operations"_el, .reportRate = true})
         .addMetric({.id = "characters"_el, .unit = "characters"_el, .reportRate = true})
         .addMetric({.id = "allocations"_el, .unit = "allocations"_el, .reportRate = true})

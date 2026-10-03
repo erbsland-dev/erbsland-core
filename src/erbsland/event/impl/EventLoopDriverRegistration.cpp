@@ -17,9 +17,7 @@ void EventLoopDriverRegistration::reset() noexcept {
         return;
     }
     auto unregister = std::move(_unregister);
-    try {
-        unregister();
-    } catch (...) {}
+    unregister();
 }
 
 auto EventLoopDriverRegistration::isRegistered() const noexcept -> bool {

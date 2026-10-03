@@ -3,26 +3,30 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/cryptology/keys/KeyAgreementAlgorithm.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementPrivateKey.hpp>
-#include <erbsland/cryptology/tls_record/TlsRecordContentType.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
-#include <erbsland/cryptology/x509/X509ServerCertificatePolicy.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteArray.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/network/Host.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/Host.hpp>
+#include <erbsland/KeyAgreementAlgorithm.hpp>
+#include <erbsland/KeyAgreementPrivateKey.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/tls/client/TlsClientProtocol.hpp>
 #include <erbsland/network/impl/tls/client/TlsClientProtocolTestAccess.hpp>
+#include <erbsland/network/impl/tls/TlsExtensionRules.hpp>
+#include <erbsland/network/impl/tls/TlsKeyShare.hpp>
+#include <erbsland/network/impl/tls/TlsProtocolError.hpp>
+#include <erbsland/network/impl/tls/TlsWireReader.hpp>
 #include <erbsland/network/impl/tls/TlsWireWriter.hpp>
-#include <erbsland/network/source/NetworkSendStatus.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/time/Timestamp.hpp>
+#include <erbsland/NetworkSendStatus.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/Timestamp.hpp>
+#include <erbsland/TlsRecordContentType.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/X509CertificateBundle.hpp>
+#include <erbsland/X509TlsCertificatePolicy.hpp>
 
 #include <cstdint>
 #include <utility>
@@ -34,8 +38,8 @@ using namespace el::text::literals;
 using el::mem::Byte;
 using el::mem::ByteBlock;
 using el::mem::ByteBlockEditor;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 
 TESTED_TARGETS(TlsClientHelloBuilder TlsClientProtocolOptions TlsClientProtocolState TlsClientProtocol)
 class TlsClientProtocolTest final : public el::UnitTest {
@@ -48,17 +52,62 @@ class TlsClientProtocolTest final : public el::UnitTest {
     using TlsWireWriter = el::network::impl::TlsWireWriter;
 
 private:
-    [[nodiscard]] static auto options(std::vector<el::text::String> alpn = {}) -> TlsClientProtocolOptions {
+    [[nodiscard]] static auto retryHello(
+        const ByteBlock &sessionId, const ByteBlock &cookie, const std::optional<uint16_t> group = {}) -> ByteBlock {
+        auto extensions = TlsWireWriter{};
+        extensions.writeU16(43U);
+        extensions.writeVector16(ByteBlock({3U, 4U}).span());
+        if (!cookie.isEmpty()) {
+            auto cookieBody = TlsWireWriter{};
+            cookieBody.writeVector16(cookie.span());
+            extensions.writeU16(44U);
+            extensions.writeVector16(cookieBody.finish().span());
+        }
+        if (group.has_value()) {
+            auto groupBody = TlsWireWriter{};
+            groupBody.writeU16(*group);
+            extensions.writeU16(51U);
+            extensions.writeVector16(groupBody.finish().span());
+        }
+        auto body = TlsWireWriter{};
+        body.writeU16(0x0303U);
+        body.writeBytes(el::network::impl::tls_key_share::helloRetryRequestRandom().span());
+        body.writeVector8(sessionId.span());
+        body.writeU16(0x1301U);
+        body.writeU8(0U);
+        body.writeVector16(extensions.finish().span());
+        return handshake(2U, body.finish());
+    }
+
+    [[nodiscard]] static auto clientHelloExtension(const ByteBlock &message, const uint16_t type) -> ByteBlock {
+        auto reader = el::network::impl::TlsWireReader{message.span().subspan(4U)};
+        static_cast<void>(reader.readBytes(34U));
+        static_cast<void>(reader.readVector8());
+        static_cast<void>(reader.readVector16());
+        static_cast<void>(reader.readVector8());
+        auto extensions = el::network::impl::TlsWireReader{reader.readVector16()};
+        reader.requireEnd();
+        while (!extensions.isAtEnd()) {
+            const auto extensionType = extensions.readU16();
+            const auto body = extensions.readVector16();
+            if (extensionType == type) {
+                return ByteBlock::fromSpan(body);
+            }
+        }
+        return {};
+    }
+
+    [[nodiscard]] static auto options(el::StringList alpn = {}) -> TlsClientProtocolOptions {
         return TlsClientProtocolOptions{
             Host::fromStringOrThrow("server.example"_el),
-            X509ServerCertificatePolicy{X509CertificateBundle{}},
+            X509TlsCertificatePolicy{X509CertificateBundle{}},
             el::time::Timestamp::now(),
             std::move(alpn)};
     }
 
     [[nodiscard]] static auto privateKey(const uint8_t value) -> KeyAgreementPrivateKey {
         return KeyAgreementPrivateKey::fromBytes(
-            KeyAgreementAlgorithm::X25519, ByteBlock{ByteLength{32U}, value}.span());
+            KeyAgreementAlgorithm::X25519, ByteBlock{ByteCount{32U}, value}.span());
     }
 
     [[nodiscard]] static auto handshake(const uint8_t type, const ByteBlock &body) -> ByteBlock {
@@ -111,7 +160,7 @@ private:
 
         auto body = TlsWireWriter{};
         body.writeU16(0x0303U);
-        body.writeBytes(ByteBlock{ByteLength{32U}, 0x33U}.span());
+        body.writeBytes(ByteBlock{ByteCount{32U}, 0x33U}.span());
         body.writeVector8(sessionId.span());
         body.writeU16(suite);
         body.writeU8(0U);
@@ -126,12 +175,72 @@ private:
     }
 
 public:
+    void testCookieOnlyRetryPreservesShareAndFragmentsHello() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        auto protocol = TlsClientProtocol{options()};
+        const auto sessionId = ByteBlock{ByteCount{32U}, 0x22U};
+        TlsClientProtocolTestAccess{protocol}.start(ByteBlock{ByteCount{32U}, 0x11U}, sessionId, privateKey(0x44U));
+        const auto firstRecord = protocol.takeTransportOutput();
+        REQUIRE(firstRecord.has_value());
+        const auto firstHello = ByteBlock::fromSpan(firstRecord->span().subspan(5U));
+        const auto cookie = ByteBlock{ByteCount{60U * 1024U}, 0x55U};
+        const auto retry = retryHello(sessionId, cookie);
+        auto remaining = retry.span();
+        while (!remaining.empty()) {
+            const auto length = std::min(remaining.size(), std::size_t{16384U});
+            protocol.feedTransport(plaintextRecord(22U, ByteBlock::fromSpan(remaining.first(length))).span());
+            remaining = remaining.subspan(length);
+        }
+        REQUIRE_EQUAL(protocol.state(), TlsClientProtocolState::Handshaking);
+        const auto ccs = protocol.takeTransportOutput();
+        REQUIRE(ccs.has_value());
+        REQUIRE_EQUAL(ccs->get(ByteIndex{0U}), Byte{20U});
+        auto secondHello = ByteBlockEditor{};
+        auto fragments = 0U;
+        while (const auto record = protocol.takeTransportOutput()) {
+            REQUIRE(record->length() <= ByteCount{16389U});
+            REQUIRE_EQUAL(record->get(ByteIndex{0U}), Byte{22U});
+            secondHello.append(record->span().subspan(5U));
+            ++fragments;
+        }
+        REQUIRE(fragments > 1U);
+        REQUIRE_EQUAL(clientHelloExtension(ByteBlock{secondHello}, 51U), clientHelloExtension(firstHello, 51U));
+        const auto echoedCookie = clientHelloExtension(ByteBlock{secondHello}, 44U);
+        auto cookieReader = el::network::impl::TlsWireReader{echoedCookie.span()};
+        REQUIRE_EQUAL(ByteBlock::fromSpan(cookieReader.readVector16()), cookie);
+        cookieReader.requireEnd();
+        protocol.feedTransport(plaintextRecord(22U, retryHello(sessionId, ByteBlock({1U}))).span());
+        REQUIRE_EQUAL(protocol.state(), TlsClientProtocolState::Failed);
+        REQUIRE_EQUAL(*protocol.failureAlert(), TlsAlertDescription::UnexpectedMessage);
+    }
+
+    void testRetryRejectsAlreadyOfferedAndUnknownGroups() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        for (const auto group : {uint16_t{0x001dU}, uint16_t{0xffffU}}) {
+            auto protocol = TlsClientProtocol{options()};
+            const auto sessionId = ByteBlock{ByteCount{32U}, 0x22U};
+            TlsClientProtocolTestAccess{protocol}.start(ByteBlock{ByteCount{32U}, 0x11U}, sessionId, privateKey(0x44U));
+            static_cast<void>(protocol.takeTransportOutput());
+            protocol.feedTransport(plaintextRecord(22U, retryHello(sessionId, {}, group)).span());
+            REQUIRE_EQUAL(protocol.state(), TlsClientProtocolState::Failed);
+            REQUIRE_EQUAL(*protocol.failureAlert(), TlsAlertDescription::IllegalParameter);
+        }
+    }
+
+    void testUnknownExtensionContexts() {
+        using Error = el::network::impl::TlsProtocolError;
+        el::network::impl::tls_extension_rules::requireIgnorableCertificateRequest(0xffffU);
+        el::network::impl::tls_extension_rules::requireIgnorableSessionTicket(0xffffU);
+        REQUIRE_THROWS_AS(Error, el::network::impl::tls_extension_rules::requireIgnorableCertificateRequest(51U));
+        REQUIRE_THROWS_AS(Error, el::network::impl::tls_extension_rules::requireIgnorableSessionTicket(13U));
+    }
+
     void testAuthenticatedCoreApplicationKeyUpdateAndClose() {
         const auto applicationScope = ApplicationTestScope<>{};
-        auto protocol = TlsClientProtocol{options({"h2"_el})};
+        auto protocol = TlsClientProtocol{options(el::StringList{"h2"_el})};
         auto access = TlsClientProtocolTestAccess{protocol};
-        const auto clientRandom = ByteBlock{ByteLength{32U}, 0x11U};
-        const auto sessionId = ByteBlock{ByteLength{32U}, 0x22U};
+        const auto clientRandom = ByteBlock{ByteCount{32U}, 0x11U};
+        const auto sessionId = ByteBlock{ByteCount{32U}, 0x22U};
         access.start(clientRandom, sessionId, privateKey(0x44U));
         REQUIRE_EQUAL(protocol.state(), TlsClientProtocolState::Handshaking);
 
@@ -193,6 +302,17 @@ public:
         REQUIRE_EQUAL(clientApplicationReceiver.unprotect(protectedClientData->span()).content(), clientPayload);
 
         auto serverApplicationSender = access.serverApplicationEncryptor();
+        auto ticketExtensions = TlsWireWriter{};
+        ticketExtensions.writeU16(0xffffU);
+        ticketExtensions.writeVector16(ByteBlock({1U, 2U, 3U}).span());
+        auto ticketBody = TlsWireWriter{};
+        ticketBody.writeBytes(ByteBlock({0U, 0U, 0U, 60U, 0U, 0U, 0U, 1U}).span());
+        ticketBody.writeVector8({});
+        ticketBody.writeVector16(ByteBlock({1U}).span());
+        ticketBody.writeVector16(ticketExtensions.finish().span());
+        const auto ticket = handshake(4U, ticketBody.finish());
+        protocol.feedTransport(serverApplicationSender.protect(TlsRecordContentType::Handshake, ticket.span()).span());
+        REQUIRE_EQUAL(protocol.state(), TlsClientProtocolState::Established);
         const auto serverPayload = ByteBlock({'p', 'o', 'n', 'g'});
         protocol.feedTransport(
             serverApplicationSender.protect(TlsRecordContentType::ApplicationData, serverPayload.span()).span());
@@ -237,13 +357,13 @@ public:
 
     void testMalformedServerHelloTimeoutAndTruncation() {
         const auto applicationScope = ApplicationTestScope<>{};
-        const auto sessionId = ByteBlock{ByteLength{32U}, 0x22U};
+        const auto sessionId = ByteBlock{ByteCount{32U}, 0x22U};
         auto protocol = TlsClientProtocol{options()};
         auto access = TlsClientProtocolTestAccess{protocol};
-        access.start(ByteBlock{ByteLength{32U}, 0x11U}, sessionId, privateKey(0x44U));
+        access.start(ByteBlock{ByteCount{32U}, 0x11U}, sessionId, privateKey(0x44U));
         [[maybe_unused]] const auto initialOutput = protocol.takeTransportOutput();
 
-        auto wrongSession = ByteBlock{ByteLength{32U}, 0x23U};
+        auto wrongSession = ByteBlock{ByteCount{32U}, 0x23U};
         auto serverPrivate = privateKey(0x55U);
         protocol.feedTransport(plaintextRecord(22U, serverHello(wrongSession, serverPrivate)).span());
         REQUIRE_EQUAL(protocol.state(), TlsClientProtocolState::Failed);
@@ -251,7 +371,7 @@ public:
 
         auto crossedBoundary = TlsClientProtocol{options()};
         auto crossedBoundaryAccess = TlsClientProtocolTestAccess{crossedBoundary};
-        crossedBoundaryAccess.start(ByteBlock{ByteLength{32U}, 0x11U}, sessionId, privateKey(0x44U));
+        crossedBoundaryAccess.start(ByteBlock{ByteCount{32U}, 0x11U}, sessionId, privateKey(0x44U));
         [[maybe_unused]] const auto crossedBoundaryOutput = crossedBoundary.takeTransportOutput();
         auto coalesced = ByteBlockEditor{};
         coalesced.append(serverHello(sessionId, serverPrivate));
@@ -289,11 +409,11 @@ public:
         const auto target = certificates[2U];
         auto protocol = TlsClientProtocol{TlsClientProtocolOptions{
             Host::fromStringOrThrow("server.example.test"_el),
-            X509ServerCertificatePolicy{X509CertificateBundle{el::util::List<X509Certificate>{root}}},
+            X509TlsCertificatePolicy{X509CertificateBundle{el::util::List<X509Certificate>{root}}},
             el::time::Timestamp::now()}};
         auto access = TlsClientProtocolTestAccess{protocol};
-        const auto sessionId = ByteBlock{ByteLength{32U}, 0x22U};
-        access.start(ByteBlock{ByteLength{32U}, 0x11U}, sessionId, privateKey(0x44U));
+        const auto sessionId = ByteBlock{ByteCount{32U}, 0x22U};
+        access.start(ByteBlock{ByteCount{32U}, 0x11U}, sessionId, privateKey(0x44U));
         [[maybe_unused]] const auto clientHelloOutput = protocol.takeTransportOutput();
 
         auto serverPrivate = privateKey(0x55U);
@@ -312,6 +432,11 @@ public:
         REQUIRE_EQUAL(protocol.checkpoint(), TlsClientProtocolCheckpoint::PeerHello);
         REQUIRE(protocol.validatedPath().isEmpty());
         protocol.resume();
+        REQUIRE_EQUAL(protocol.checkpoint(), TlsClientProtocolCheckpoint::CertificateValidation);
+        protocol.resume();
+        REQUIRE(protocol.validatedPath().isEmpty());
+        REQUIRE(protocol.pendingCertificateValidation().has_value());
+        protocol.completeCertificateValidation(protocol.pendingCertificateValidation()->execute());
         REQUIRE_EQUAL(protocol.validatedPath().count(), el::unit::ItemCount{3U});
         REQUIRE_EQUAL(protocol.validatedPath().toRawValue()[0U].toDer(), target.toDer());
 
@@ -332,8 +457,8 @@ public:
         const auto applicationScope = ApplicationTestScope<>{};
         auto protocol = TlsClientProtocol{options()};
         auto access = TlsClientProtocolTestAccess{protocol};
-        const auto sessionId = ByteBlock{ByteLength{32U}, 0x22U};
-        access.start(ByteBlock{ByteLength{32U}, 0x11U}, sessionId, privateKey(0x44U));
+        const auto sessionId = ByteBlock{ByteCount{32U}, 0x22U};
+        access.start(ByteBlock{ByteCount{32U}, 0x11U}, sessionId, privateKey(0x44U));
         [[maybe_unused]] const auto clientHello = protocol.takeTransportOutput();
         auto serverPrivate = privateKey(0x55U);
         protocol.feedTransport(plaintextRecord(22U, serverHello(sessionId, serverPrivate)).span());

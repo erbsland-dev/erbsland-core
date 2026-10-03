@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../math/IntegerBitOperations.hpp"
 #include "../../../mem/ByteArray.hpp"
 #include "../../../mem/ByteSpan.hpp"
@@ -65,18 +65,18 @@ public:
     /// Therefore, a message of any size can be hashed as a stream, and the result never depends on how the data is
     /// split across calls.
     ///
+    /// Must not be called after the digest has been calculated.
     /// @param data A block of data.
-    /// @throws err::LogicError if data is added after the digest was calculated.
     void update(const ConstByteSpan data) {
         if (_hasDigest) {
-            throw err::LogicError{"Adding data after finalizing a hash is not allowed."};
+            throw err::LogicFailure{"Adding data after finalizing a hash is not allowed."};
         }
         auto dataPosition = std::size_t{};
         while (dataPosition < data.size()) {
             const auto copyLength =
                 std::min(_buffer.length().toSizeT() - _bufferPosition.toSizeT(), data.size() - dataPosition);
             _buffer.overwrite(_bufferPosition, data.subspan(dataPosition, copyLength));
-            _bufferPosition.uncheckedAdvance(ByteLength::fromSizeT(copyLength));
+            _bufferPosition.uncheckedAdvance(ByteCount::fromSizeT(copyLength));
             dataPosition += copyLength;
             _bitLength += static_cast<uint64_t>(copyLength) * 8U;
             if (_bufferPosition == _buffer.endIndex()) {
@@ -108,14 +108,14 @@ public:
             _bufferPosition = ByteIndex::zero();
         }
         // Zero the gap up to the length field, write the bit length, and compress the final block.
-        _buffer.fill(ByteRange{_bufferPosition, ByteLength{56U} - _bufferPosition.distanceFromZero()}, Byte{});
+        _buffer.fill(ByteRange{_bufferPosition, ByteCount{56U} - _bufferPosition.distanceFromZero()}, Byte{});
         _buffer.setIntegerOrThrow(ByteIndex{56U}, _bitLength, Endianness::Big);
         processBlock(_buffer);
         // The digest is the final state H0 to H7, with each word written as four big-endian bytes.
         auto digestIndex = ByteIndex::zero();
         for (const auto word : _state) {
             _digest.setIntegerOrThrow(digestIndex, word, Endianness::Big);
-            digestIndex.uncheckedAdvance(ByteLength{sizeof(uint32_t)});
+            digestIndex.uncheckedAdvance(ByteCount{sizeof(uint32_t)});
         }
         _hasDigest = true;
         return _digest;
@@ -170,7 +170,7 @@ private:
         auto blockIndex = ByteIndex::zero();
         for (auto &word : std::span{words}.first<16U>()) {
             word = block.getInteger<uint32_t>(blockIndex, Endianness::Big);
-            blockIndex.uncheckedAdvance(ByteLength{sizeof(uint32_t)});
+            blockIndex.uncheckedAdvance(ByteCount{sizeof(uint32_t)});
         }
         // Expand the sixteen input words into the sixty-four-word message schedule. `s0` and `s1` are the lower-case
         // sigma functions of FIPS 180-4: two rotations and one shift each. The shift makes them non-invertible,
@@ -292,18 +292,18 @@ public:
     /// Therefore, a message of any size can be hashed as a stream, and the result never depends on how the data is
     /// split across calls.
     ///
+    /// Must not be called after the digest has been calculated.
     /// @param data A block of data.
-    /// @throws err::LogicError if data is added after the digest was calculated.
     void update(const ConstByteSpan data) {
         if (_hasDigest) {
-            throw err::LogicError{"Adding data after finalizing a hash is not allowed."};
+            throw err::LogicFailure{"Adding data after finalizing a hash is not allowed."};
         }
         auto dataPosition = std::size_t{};
         while (dataPosition < data.size()) {
             const auto copyLength =
                 std::min(_buffer.length().toSizeT() - _bufferPosition.toSizeT(), data.size() - dataPosition);
             _buffer.overwrite(_bufferPosition, data.subspan(dataPosition, copyLength));
-            _bufferPosition.uncheckedAdvance(ByteLength::fromSizeT(copyLength));
+            _bufferPosition.uncheckedAdvance(ByteCount::fromSizeT(copyLength));
             dataPosition += copyLength;
             // Add eight bits to the 128-bit counter. If the low word wrapped around, carry into the high word.
             const auto previous = _bitLengthLow;
@@ -340,7 +340,7 @@ public:
             _bufferPosition = ByteIndex::zero();
         }
         // Zero the gap, then write the paired high/low bit length in big-endian order and compress the final block.
-        _buffer.fill(ByteRange{_bufferPosition, ByteLength{112U} - _bufferPosition.distanceFromZero()}, Byte{});
+        _buffer.fill(ByteRange{_bufferPosition, ByteCount{112U} - _bufferPosition.distanceFromZero()}, Byte{});
         _buffer.setIntegerOrThrow(ByteIndex{112U}, _bitLengthHigh, Endianness::Big);
         _buffer.setIntegerOrThrow(ByteIndex{120U}, _bitLengthLow, Endianness::Big);
         processBlock(_buffer);
@@ -349,7 +349,7 @@ public:
         auto digestIndex = ByteIndex::zero();
         for (const auto word : std::span{_state}.first(tDigestBytes / sizeof(uint64_t))) {
             _digest.setIntegerOrThrow(digestIndex, word, Endianness::Big);
-            digestIndex.uncheckedAdvance(ByteLength{sizeof(uint64_t)});
+            digestIndex.uncheckedAdvance(ByteCount{sizeof(uint64_t)});
         }
         _hasDigest = true;
         return _digest;
@@ -416,7 +416,7 @@ private:
         auto blockIndex = ByteIndex::zero();
         for (auto &word : std::span{words}.first<16U>()) {
             word = block.getInteger<uint64_t>(blockIndex, Endianness::Big);
-            blockIndex.uncheckedAdvance(ByteLength{sizeof(uint64_t)});
+            blockIndex.uncheckedAdvance(ByteCount{sizeof(uint64_t)});
         }
         // Expand the sixteen input words into the eighty-word message schedule. `s0` and `s1` are the lower-case
         // sigma functions; they use the same shape as SHA-256, with the rotation amounts of the 64-bit variants.

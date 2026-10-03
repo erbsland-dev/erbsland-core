@@ -6,6 +6,8 @@
 
 namespace erbsland::network::impl {
 
+using namespace text;
+
 HttpServerSessionEventEditor::HttpServerSessionEventEditor(
     event::EventSourcePtr source, event::EventsPtr target, HttpServerSession &session) :
     network::HttpServerSessionEventEditor{std::move(source), std::move(target)}, _session{session} {
@@ -18,14 +20,13 @@ auto HttpServerSessionEventEditor::onRequestReceived(HttpServerRequestEventFn ca
 }
 
 auto HttpServerSessionEventEditor::onRequest(
-    text::String pattern, HttpServerRequestFn callback, HttpServerRouteOptions options)
-    -> HttpServerSessionEventEditor & {
+    String pattern, HttpServerRequestFn callback, HttpServerRouteOptions options) -> HttpServerSessionEventEditor & {
     _session.routes().add(std::move(pattern), HttpRouteHandler{std::move(callback), std::move(options)});
     return *this;
 }
 
 auto HttpServerSessionEventEditor::onRequest(
-    HttpMethod method, text::String pattern, HttpServerRequestFn callback, HttpServerRouteOptions options)
+    HttpMethod method, String pattern, HttpServerRequestFn callback, HttpServerRouteOptions options)
     -> HttpServerSessionEventEditor & {
     _session.routes().add(
         std::move(method), std::move(pattern), HttpRouteHandler{std::move(callback), std::move(options)});
@@ -33,21 +34,21 @@ auto HttpServerSessionEventEditor::onRequest(
 }
 
 auto HttpServerSessionEventEditor::onRequest(
-    const HttpMethodTypes methods, text::String pattern, HttpServerRequestFn callback, HttpServerRouteOptions options)
+    const HttpMethodTypes methods, String pattern, HttpServerRequestFn callback, HttpServerRouteOptions options)
     -> HttpServerSessionEventEditor & {
     _session.routes().add(methods, std::move(pattern), HttpRouteHandler{std::move(callback), std::move(options)});
     return *this;
 }
 
 auto HttpServerSessionEventEditor::onTextRequest(
-    text::String pattern, HttpServerTextRequestFn callback, HttpServerRouteOptions options)
+    String pattern, HttpServerTextRequestFn callback, HttpServerRouteOptions options)
     -> HttpServerSessionEventEditor & {
     _session.routes().add(std::move(pattern), HttpRouteHandler{std::move(callback), std::move(options)});
     return *this;
 }
 
 auto HttpServerSessionEventEditor::onTextRequest(
-    HttpMethod method, text::String pattern, HttpServerTextRequestFn callback, HttpServerRouteOptions options)
+    HttpMethod method, String pattern, HttpServerTextRequestFn callback, HttpServerRouteOptions options)
     -> HttpServerSessionEventEditor & {
     _session.routes().add(
         std::move(method), std::move(pattern), HttpRouteHandler{std::move(callback), std::move(options)});
@@ -55,23 +56,21 @@ auto HttpServerSessionEventEditor::onTextRequest(
 }
 
 auto HttpServerSessionEventEditor::onTextRequest(
-    const HttpMethodTypes methods,
-    text::String pattern,
-    HttpServerTextRequestFn callback,
-    HttpServerRouteOptions options) -> HttpServerSessionEventEditor & {
+    const HttpMethodTypes methods, String pattern, HttpServerTextRequestFn callback, HttpServerRouteOptions options)
+    -> HttpServerSessionEventEditor & {
     _session.routes().add(methods, std::move(pattern), HttpRouteHandler{std::move(callback), std::move(options)});
     return *this;
 }
 
 auto HttpServerSessionEventEditor::onJsonRequest(
-    text::String pattern, HttpServerJsonRequestFn callback, HttpServerRouteOptions options)
+    String pattern, HttpServerJsonRequestFn callback, HttpServerRouteOptions options)
     -> HttpServerSessionEventEditor & {
     _session.routes().add(std::move(pattern), HttpRouteHandler{std::move(callback), std::move(options)});
     return *this;
 }
 
 auto HttpServerSessionEventEditor::onJsonRequest(
-    HttpMethod method, text::String pattern, HttpServerJsonRequestFn callback, HttpServerRouteOptions options)
+    HttpMethod method, String pattern, HttpServerJsonRequestFn callback, HttpServerRouteOptions options)
     -> HttpServerSessionEventEditor & {
     _session.routes().add(
         std::move(method), std::move(pattern), HttpRouteHandler{std::move(callback), std::move(options)});
@@ -79,29 +78,26 @@ auto HttpServerSessionEventEditor::onJsonRequest(
 }
 
 auto HttpServerSessionEventEditor::onJsonRequest(
-    const HttpMethodTypes methods,
-    text::String pattern,
-    HttpServerJsonRequestFn callback,
-    HttpServerRouteOptions options) -> HttpServerSessionEventEditor & {
+    const HttpMethodTypes methods, String pattern, HttpServerJsonRequestFn callback, HttpServerRouteOptions options)
+    -> HttpServerSessionEventEditor & {
     _session.routes().add(methods, std::move(pattern), HttpRouteHandler{std::move(callback), std::move(options)});
     return *this;
 }
 
-auto HttpServerSessionEventEditor::onRequestHead(text::String pattern, HttpServerRequestHeadFn callback)
+auto HttpServerSessionEventEditor::onRequestHead(String pattern, HttpServerRequestHeadFn callback)
     -> HttpServerSessionEventEditor & {
     _session.routes().add(std::move(pattern), HttpRouteHandler{std::move(callback)});
     return *this;
 }
 
-auto HttpServerSessionEventEditor::onRequestHead(
-    HttpMethod method, text::String pattern, HttpServerRequestHeadFn callback) -> HttpServerSessionEventEditor & {
+auto HttpServerSessionEventEditor::onRequestHead(HttpMethod method, String pattern, HttpServerRequestHeadFn callback)
+    -> HttpServerSessionEventEditor & {
     _session.routes().add(std::move(method), std::move(pattern), HttpRouteHandler{std::move(callback)});
     return *this;
 }
 
 auto HttpServerSessionEventEditor::onRequestHead(
-    const HttpMethodTypes methods, text::String pattern, HttpServerRequestHeadFn callback)
-    -> HttpServerSessionEventEditor & {
+    const HttpMethodTypes methods, String pattern, HttpServerRequestHeadFn callback) -> HttpServerSessionEventEditor & {
     _session.routes().add(methods, std::move(pattern), HttpRouteHandler{std::move(callback)});
     return *this;
 }

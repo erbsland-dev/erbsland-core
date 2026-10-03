@@ -6,17 +6,20 @@ namespace erbsland::text::impl {
 
 template <typename tLength, typename tIndex>
 auto StringPatternData::lengthFromStart(const tIndex index) noexcept -> tLength {
-    return tLength{static_cast<typename tLength::Value>(index.toRawValue())};
+    return index.distanceFromZero();
 }
 
 template <typename tLength, typename tIndex>
 auto StringPatternData::lengthToEnd(const tLength length, const tIndex index) noexcept -> tLength {
-    return tLength{static_cast<typename tLength::Value>(length.toRawValue() - index.toRawValue())};
+    return length - index.distanceFromZero();
 }
 
 template <typename tString>
 auto StringPatternData::match(const StringPatternView &patternView, const tString &text) const noexcept
     -> MatchResult<tString> {
+    if (patternView.kind != StringPatternKind::Divider) {
+        return matchGlob(patternView, text);
+    }
     auto result = MatchResult<tString>{};
     result.frontEnd = text.indexAt(StringSide::Front);
     result.suffixStart = text.indexAt(StringSide::Back);
@@ -78,6 +81,43 @@ auto StringPatternData::matchBack(
         }
     }
     return true;
+}
+
+template <typename tString>
+auto StringPatternData::matchGlob(const StringPatternView &patternView, const tString &text) const noexcept
+    -> MatchResult<tString> {
+    auto position = text.indexAt(StringSide::Front);
+    const auto end = text.indexAt(StringSide::Back);
+    auto retry = position;
+    auto element = std::size_t{};
+    auto star = cNoStringPatternDivider;
+    const auto elements = patternView.elements;
+    while (position < end) {
+        if (element < elements.size() && elements[element].kind == StringPatternElementKind::AnyText) {
+            star = ++element;
+            retry = position;
+            continue;
+        }
+        auto next = position;
+        if (element < elements.size() &&
+            matchesElement(patternView, elements[element], text.readCharAndAdvance(next))) {
+            position = next;
+            ++element;
+            continue;
+        }
+        if (star == cNoStringPatternDivider) {
+            return {};
+        }
+        element = star;
+        if (text.readCharAndAdvance(retry).isSignal()) {
+            return {};
+        }
+        position = retry;
+    }
+    while (element < elements.size() && elements[element].kind == StringPatternElementKind::AnyText) {
+        ++element;
+    }
+    return {.matched = element == elements.size(), .frontEnd = end, .suffixStart = end};
 }
 
 }

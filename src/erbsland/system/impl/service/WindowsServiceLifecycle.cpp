@@ -5,6 +5,7 @@
 #include "../signal/ProcessSignalDispatcher.hpp"
 #include "../WindowsErrorContext.hpp"
 
+#include "../../../err/RuntimeError.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../PlatformError.hpp"
 
@@ -125,12 +126,12 @@ void WindowsServiceLifecycle::runService(const DWORD argumentCount, LPWSTR *argu
             failed ? ERROR_SERVICE_SPECIFIC_ERROR : NO_ERROR,
             failed ? static_cast<DWORD>(_result) : 0U,
             true);
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         _exception = std::current_exception();
         stopWorker();
         try {
             publishStatus(SERVICE_STOPPED, 0U, ERROR_EXCEPTION_IN_SERVICE, 0U, false);
-        } catch (...) {}
+        } catch (const PlatformError &) {}
     }
 }
 
@@ -157,7 +158,7 @@ void WindowsServiceLifecycle::reportStopping() noexcept {
     }
     try {
         publishStatus(SERVICE_STOP_PENDING, cDefaultWaitHintMilliseconds, NO_ERROR, 0U, false);
-    } catch (...) {}
+    } catch (const PlatformError &) {}
 }
 
 void WindowsServiceLifecycle::requestStop() noexcept {

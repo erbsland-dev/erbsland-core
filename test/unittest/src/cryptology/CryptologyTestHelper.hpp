@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/text/IntegerBase.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/IntegerBase.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -24,7 +23,7 @@ public:
         using namespace el::text::literals;
 
         auto result = el::ByteBlockEditor{};
-        result.reserve(el::ByteLength{hex.length().toSizeT() / 2U});
+        result.reserve(hex.length() / 2U);
         auto index = el::ByteIndex::zero();
         while (index.toSizeT() < hex.length().toSizeT()) {
             const auto high = hex.readCharAndAdvance(index).digitValue(el::IntegerBase::Hexadecimal);

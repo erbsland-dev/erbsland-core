@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../IntegerUnitIndex.hpp"
+#include "../VersionComponent.hpp"
 #include "../VersionPart.hpp"
-#include "../VersionUnit.hpp"
 
 #include <concepts>
 #include <type_traits>
@@ -17,12 +16,11 @@ struct VersionComponentTraits {
     static constexpr auto cIsVersionComponent = false; ///< Whether the type is a version component.
 };
 
-/// Version-component traits for integer unit indexes.
-template <ValidIntegerUnit tIntegerUnit>
-    requires(std::derived_from<tIntegerUnit, VersionUnit> && requires { tIntegerUnit::cPart; })
-struct VersionComponentTraits<IntegerUnitIndex<tIntegerUnit>> {
-    static constexpr auto cIsVersionComponent = true;  ///< Whether the type is a version component.
-    static constexpr auto cPart = tIntegerUnit::cPart; ///< The version part represented by the component.
+/// Traits identifying an independent version component.
+template <VersionPart tPart>
+struct VersionComponentTraits<VersionComponent<tPart>> {
+    static constexpr auto cIsVersionComponent = true; ///< Identifies a version component.
+    static constexpr auto cPart = tPart;              ///< The represented field.
 };
 
 template <typename T>

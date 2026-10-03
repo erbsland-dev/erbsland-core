@@ -107,10 +107,16 @@ endfunction()
 # Parameters:
 #   out_variable - Name of the variable that receives the dependency list in the caller's scope.
 #   source_directory - Working-tree directory to inspect.
+#   TRACK_REFS - Optional flag to watch loose refs and their directories; disabled by default.
 #
 # The result covers regular repositories and linked worktrees and contains only existing, unique paths. It can be empty
-# when the directory is not a Git working tree or no relevant metadata exists.
+# when the directory is not a Git working tree or no relevant metadata exists. TRACK_REFS detects tag-only changes,
+# but enumerating and checking every loose ref can be expensive in repositories with many refs.
 function(erbsland_core_collect_git_dependencies out_variable source_directory)
+    cmake_parse_arguments(PARSE_ARGV 2 ARGS "TRACK_REFS" "" "")
+    if (ARGS_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unexpected arguments for erbsland_core_collect_git_dependencies: ${ARGS_UNPARSED_ARGUMENTS}")
+    endif ()
     set(dependencies)
     set(git_entry "${source_directory}/.git")
     if (EXISTS "${git_entry}" AND NOT IS_DIRECTORY "${git_entry}")
@@ -130,6 +136,14 @@ function(erbsland_core_collect_git_dependencies out_variable source_directory)
     erbsland_core_add_existing_dependency(dependencies "${common_git_directory}/packed-refs")
     erbsland_core_add_existing_dependency(dependencies "${common_git_directory}/logs/HEAD")
 
+    if (ARGS_TRACK_REFS)
+        # Directory timestamps detect newly created or deleted loose refs; individual files detect ref updates.
+        erbsland_core_add_existing_dependency(dependencies "${common_git_directory}")
+        erbsland_core_add_existing_dependency(dependencies "${common_git_directory}/refs")
+        file(GLOB_RECURSE reference_paths LIST_DIRECTORIES TRUE "${common_git_directory}/refs/*")
+        list(APPEND dependencies ${reference_paths})
+    endif ()
+
     if (dependencies)
         list(REMOVE_DUPLICATES dependencies)
     endif ()
@@ -137,23 +151,15 @@ function(erbsland_core_collect_git_dependencies out_variable source_directory)
     set(${out_variable} ${dependencies} PARENT_SCOPE)
 endfunction()
 
-# Generate a version source from Git metadata in CMake script mode.
+# Read the library version from Git using the same rules for runtime and installed package metadata.
 #
-# Inputs:
-#   ERBSLAND_CORE_SOURCE_DIR - Source tree from which the Git description is read.
-#   ERBSLAND_CORE_TEMPLATE - configure_file() input template.
-#   ERBSLAND_CORE_OUTPUT - Destination path for the configured source.
-#   ERBSLAND_GIT_VERSION_VARIABLE_PREFIX - Optional prefix for template variables; defaults to ERBSLAND_GIT_VERSION.
+# Parameters:
+#   source_directory - Source tree whose nearest reachable tag supplies the version.
+#   variable_prefix - Prefix for _MAJOR, _MINOR, _REVISION, _BUILD, and _TEXT in the caller's scope.
 #
-# The template receives <prefix>_MAJOR, _MINOR, _REVISION, _BUILD, and _TEXT. A matching Git description has the form
-# v<major>.<minor>.<revision>-<build>-g<hash>, with each numeric part limited to uint16. Missing or unsuitable metadata
-# produces the deterministic fallback version 0.0.0.0.
-function(erbsland_core_generate_version_source)
-    set(variable_prefix "${ERBSLAND_GIT_VERSION_VARIABLE_PREFIX}")
-    if (variable_prefix STREQUAL "")
-        set(variable_prefix "ERBSLAND_GIT_VERSION")
-    endif ()
-
+# Tags have the form v<major>.<minor>.<revision> (the v is optional). Numeric parts, including the distance
+# from the tag, must fit uint16. Missing or unsuitable metadata produces the deterministic fallback 0.0.0.0.
+function(erbsland_core_read_git_version source_directory variable_prefix)
     set("${variable_prefix}_MAJOR" "0")
     set("${variable_prefix}_MINOR" "0")
     set("${variable_prefix}_REVISION" "0")
@@ -161,10 +167,10 @@ function(erbsland_core_generate_version_source)
     set("${variable_prefix}_TEXT" "0.0.0.0")
 
     find_package(Git QUIET)
-    if (GIT_FOUND AND EXISTS "${ERBSLAND_CORE_SOURCE_DIR}/.git")
+    if (GIT_FOUND AND EXISTS "${source_directory}/.git")
         execute_process(
                 COMMAND "${GIT_EXECUTABLE}" describe --tags --long --always
-                WORKING_DIRECTORY "${ERBSLAND_CORE_SOURCE_DIR}"
+                WORKING_DIRECTORY "${source_directory}"
                 RESULT_VARIABLE git_result
                 OUTPUT_VARIABLE git_describe
                 ERROR_QUIET
@@ -198,6 +204,25 @@ function(erbsland_core_generate_version_source)
         endif ()
     endif ()
 
+    foreach(component IN ITEMS MAJOR MINOR REVISION BUILD TEXT)
+        set("${variable_prefix}_${component}" "${${variable_prefix}_${component}}" PARENT_SCOPE)
+    endforeach()
+endfunction()
+
+# Generate a version source from Git metadata in CMake script mode.
+#
+# Inputs:
+#   ERBSLAND_CORE_SOURCE_DIR - Source tree from which the Git description is read.
+#   ERBSLAND_CORE_TEMPLATE - configure_file() input template.
+#   ERBSLAND_CORE_OUTPUT - Destination path for the configured source.
+#   ERBSLAND_GIT_VERSION_VARIABLE_PREFIX - Optional template-variable prefix, defaulting to ERBSLAND_GIT_VERSION.
+function(erbsland_core_generate_version_source)
+    set(variable_prefix "${ERBSLAND_GIT_VERSION_VARIABLE_PREFIX}")
+    if (variable_prefix STREQUAL "")
+        set(variable_prefix "ERBSLAND_GIT_VERSION")
+    endif ()
+    erbsland_core_read_git_version("${ERBSLAND_CORE_SOURCE_DIR}" "${variable_prefix}")
+
     get_filename_component(output_directory "${ERBSLAND_CORE_OUTPUT}" DIRECTORY)
     file(MAKE_DIRECTORY "${output_directory}")
     configure_file("${ERBSLAND_CORE_TEMPLATE}" "${ERBSLAND_CORE_OUTPUT}" @ONLY)
@@ -212,6 +237,7 @@ endfunction()
 #       TEMPLATE <file>
 #       [OUTPUT <file>]
 #       [VARIABLE_PREFIX <prefix>]
+#       [TRACK_REFS]
 #   )
 #
 # Arguments:
@@ -222,11 +248,12 @@ endfunction()
 #                   directory and the template name without its .in component are used.
 #   VARIABLE_PREFIX <prefix> - Optional CMake identifier prefix for version variables. The default is
 #                              ERBSLAND_GIT_VERSION.
+#   TRACK_REFS - Optional loose-ref tracking, disabled by default to avoid expensive dependency scans.
 #
 # The generated source is refreshed when the template, this module, or relevant Git metadata changes. Generation runs
 # through this module in CMake script mode and is added as a source and dependency of the target.
 function(erbsland_core_add_git_version)
-    set(options)
+    set(options TRACK_REFS)
     set(one_value_args TARGET PROJECT_ROOT TEMPLATE OUTPUT VARIABLE_PREFIX)
     set(multi_value_args)
     cmake_parse_arguments(ARGS "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
@@ -273,7 +300,11 @@ function(erbsland_core_add_git_version)
         erbsland_core_resolve_path(output_path "${output_path}" "${CMAKE_CURRENT_BINARY_DIR}")
     endif ()
 
-    erbsland_core_collect_git_dependencies(git_dependencies "${project_root}")
+    set(git_dependency_options)
+    if (ARGS_TRACK_REFS)
+        list(APPEND git_dependency_options TRACK_REFS)
+    endif ()
+    erbsland_core_collect_git_dependencies(git_dependencies "${project_root}" ${git_dependency_options})
     add_custom_command(
             OUTPUT "${output_path}"
             COMMAND "${CMAKE_COMMAND}"
@@ -294,6 +325,6 @@ function(erbsland_core_add_git_version)
     target_sources(${ARGS_TARGET} PRIVATE "${output_path}")
 endfunction()
 
-if (CMAKE_SCRIPT_MODE_FILE)
+if (CMAKE_SCRIPT_MODE_FILE STREQUAL CMAKE_CURRENT_LIST_FILE)
     erbsland_core_generate_version_source()
 endif ()

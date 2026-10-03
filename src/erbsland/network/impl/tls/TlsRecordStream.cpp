@@ -12,9 +12,11 @@
 
 namespace erbsland::network::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
-void TlsRecordStream::append(const mem::ConstByteSpan data) {
+void TlsRecordStream::append(const ConstByteSpan data) {
     // Enforce the configured aggregate bound before extending storage with attacker-controlled stream bytes.
     if (data.size() > _bufferLimit.toSizeT() || _buffer.length().toSizeT() > _bufferLimit.toSizeT() - data.size()) {
         throw TlsProtocolError{TlsAlertDescription::RecordOverflow, "The TLS receive buffer limit was exceeded."_el};
@@ -22,13 +24,13 @@ void TlsRecordStream::append(const mem::ConstByteSpan data) {
     _buffer.append(data);
 }
 
-auto TlsRecordStream::next() -> std::optional<mem::ByteBlock> {
+auto TlsRecordStream::next() -> std::optional<ByteBlock> {
     if (_buffer.length().toSizeT() < cHeaderLength) {
         return {};
     }
 
     // RFC 8446 sections 5.1 and 5.2: fragment length is the network-order uint16 in the exact five-byte header.
-    const auto fragmentLength = _buffer.getIntegerOrThrow<uint16_t>(unit::ByteIndex{3U}, mem::Endianness::Big);
+    const auto fragmentLength = _buffer.getIntegerOrThrow<uint16_t>(ByteIndex{3U}, Endianness::Big);
     if (fragmentLength > cMaximumFragmentLength) {
         throw TlsProtocolError{TlsAlertDescription::RecordOverflow, "The TLS record fragment exceeds 2^14 + 256."_el};
     }
@@ -38,8 +40,8 @@ auto TlsRecordStream::next() -> std::optional<mem::ByteBlock> {
     }
 
     // Copy the complete record before removing its storage from the incremental buffer.
-    auto result = mem::ByteBlock::fromSpan(_buffer.span().first(recordLength));
-    _buffer.remove(unit::ByteRange{unit::ByteIndex::zero(), unit::ByteLength{recordLength}});
+    auto result = ByteBlock::fromSpan(_buffer.span().first(recordLength));
+    _buffer.remove(ByteRange{ByteIndex::zero(), ByteCount{recordLength, ByteCount::Unchecked{}}});
     return result;
 }
 

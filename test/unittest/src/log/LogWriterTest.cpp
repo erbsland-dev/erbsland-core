@@ -3,19 +3,19 @@
 
 #include "../path/PathTestFixture.hpp"
 
+#include <erbsland/Date.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/log/impl/FileLogWriter.hpp>
 #include <erbsland/log/impl/LastErrorsLogWriter.hpp>
-#include <erbsland/log/line/LogLine.hpp>
-#include <erbsland/log/LogConfiguration.hpp>
-#include <erbsland/log/LogManager.hpp>
-#include <erbsland/log/LogStream.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/Date.hpp>
-#include <erbsland/time/Time.hpp>
-#include <erbsland/time/Timestamp.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogLine.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogStream.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/Time.hpp>
+#include <erbsland/Timestamp.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -44,7 +44,7 @@ public:
         const auto manager = el::log::LogManager::create();
         const auto errors = std::make_shared<el::log::impl::LastErrorsLogWriter>(2U);
         auto configuration = el::log::LogConfiguration{};
-        configuration.addWriter(errors, el::log::LogWriterFilter{el::log::LogLevel::Error});
+        configuration.addWriter(errors, el::log::LogWriterFilter{}.setAcceptedLevels(el::log::LogLevel::Error));
         manager->setConfiguration(std::move(configuration));
 
         manager->rootStream()->error("one"_el);
@@ -180,7 +180,7 @@ public:
         auto writer = el::log::impl::FileLogWriter{el::log::FileLogWriterOptions{path}
                 .setMode(el::log::LogFileMode::Overwrite)
                 .setRotation(el::log::LogFileRotation::Size)
-                .setMaximumSize(el::unit::ByteLength{5U})
+                .setMaximumSize(el::unit::ByteCount{5U})
                 .setRetention(2U)};
         const auto line = makeLine("abc"_el);
         writer.write(makeEntry(30U, "one"_el), line);

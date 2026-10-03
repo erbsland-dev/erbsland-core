@@ -9,13 +9,11 @@ namespace erbsland::text {
 
 using namespace unit;
 
-StringPattern::StringPattern(const U8String &pattern) : _data{impl::createStringPatternData(pattern)} {
-}
-
-StringPattern::StringPattern(const U16String &pattern) : _data{impl::createStringPatternData(pattern)} {
-}
-
-StringPattern::StringPattern(const U32String &pattern) : _data{impl::createStringPatternData(pattern)} {
+auto StringPattern::kind() const noexcept -> StringPatternKind {
+    if (_data == nullptr) {
+        return StringPatternKind::Divider;
+    }
+    return _data->view().kind;
 }
 
 auto StringPattern::matches(const U8String &text) const noexcept -> bool {
@@ -28,18 +26,6 @@ auto StringPattern::matches(const U16String &text) const noexcept -> bool {
 
 auto StringPattern::matches(const U32String &text) const noexcept -> bool {
     return _data != nullptr && _data->matches(text);
-}
-
-auto StringPattern::trim(U8String &text) const noexcept -> bool {
-    return _data != nullptr && _data->trim(text);
-}
-
-auto StringPattern::trim(U16String &text) const noexcept -> bool {
-    return _data != nullptr && _data->trim(text);
-}
-
-auto StringPattern::trim(U32String &text) const noexcept -> bool {
-    return _data != nullptr && _data->trim(text);
 }
 
 auto StringPattern::trim(U8StringEditor &text) const -> bool {
@@ -78,28 +64,46 @@ auto StringPattern::split(const U32String &text) const noexcept -> std::pair<U32
     return _data != nullptr ? _data->split(text) : std::pair<U32String, U32String>{U32String{}, text};
 }
 
-auto StringPattern::length(const U8String &text) const noexcept -> ByteLength {
-    return _data != nullptr ? _data->length(text) : ByteLength::zero();
+auto StringPattern::length(const U8String &text) const noexcept -> ByteCount {
+    return _data != nullptr ? _data->length(text) : ByteCount::zero();
 }
 
-auto StringPattern::length(const U16String &text) const noexcept -> U16DataLength {
-    return _data != nullptr ? _data->length(text) : U16DataLength::zero();
+auto StringPattern::length(const U16String &text) const noexcept -> U16Count {
+    return _data != nullptr ? _data->length(text) : U16Count::zero();
 }
 
-auto StringPattern::length(const U32String &text) const noexcept -> CpLength {
-    return _data != nullptr ? _data->length(text) : CpLength::zero();
+auto StringPattern::length(const U32String &text) const noexcept -> CpCount {
+    return _data != nullptr ? _data->length(text) : CpCount::zero();
 }
 
 auto StringPattern::index(const U8String &text) const noexcept -> ByteIndex {
     return _data != nullptr ? _data->index(text) : ByteIndex::noIndex();
 }
 
-auto StringPattern::index(const U16String &text) const noexcept -> U16DataIndex {
-    return _data != nullptr ? _data->index(text) : U16DataIndex::noIndex();
+auto StringPattern::index(const U16String &text) const noexcept -> U16Index {
+    return _data != nullptr ? _data->index(text) : U16Index::noIndex();
 }
 
 auto StringPattern::index(const U32String &text) const noexcept -> CpIndex {
     return _data != nullptr ? _data->index(text) : CpIndex::noIndex();
+}
+
+auto StringPattern::fromDivider(const AnyString &pattern) -> StringPattern {
+    auto result = StringPattern{};
+    result._data = impl::createStringPatternData(pattern, StringPatternKind::Divider);
+    return result;
+}
+
+auto StringPattern::fromGlob(const AnyString &pattern) -> StringPattern {
+    auto result = StringPattern{};
+    result._data = impl::createStringPatternData(pattern, StringPatternKind::Glob);
+    return result;
+}
+
+auto StringPattern::fromPosixGlob(const AnyString &pattern) -> StringPattern {
+    auto result = StringPattern{};
+    result._data = impl::createStringPatternData(pattern, StringPatternKind::PosixGlob);
+    return result;
 }
 
 }

@@ -3,7 +3,7 @@
 #include "ByteBlockInputStream.hpp"
 
 #include "../err/OverflowError.hpp"
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../mem/impl/UnsafeByteBlockAccess.hpp"
 #include "../text/Literals.hpp"
 
@@ -12,6 +12,7 @@
 
 namespace erbsland::stream {
 
+using namespace unit;
 using namespace text::literals;
 
 ByteBlockInputStream::ByteBlockInputStream(mem::ByteBlock data, InputStreamSettings settings) :
@@ -50,14 +51,13 @@ void ByteBlockInputStream::abort() noexcept {
 }
 
 auto ByteBlockInputStream::readFromSource(const mem::ByteSpan destination, [[maybe_unused]] const ReadDeadline deadline)
-    -> StreamReadResult<unit::ByteLength> {
+    -> StreamReadResult<ByteCount> {
     const auto lock = std::scoped_lock{_mutex};
     verifyOpen();
-    const auto remaining =
-        _position < _data.endIndex() ? _data.length() - unit::ByteLength{_position.toRawValue()} : unit::ByteLength{};
-    const auto length = std::min(unit::ByteLength::fromSizeT(destination.size()), remaining);
+    const auto remaining = _data.length().remainingFrom(_position);
+    const auto length = std::min(ByteCount::fromSizeT(destination.size()), remaining);
     if (length.isZero()) {
-        return {StreamReadStatus::Finished, unit::ByteLength{}};
+        return {StreamReadStatus::Finished, ByteCount{}};
     }
     const auto source = mem::impl::UnsafeByteBlockAccess{_data}.dataView().dataSpan();
     std::copy_n(source.data() + _position.toSizeT(), length.toSizeT(), destination.data());
@@ -69,15 +69,15 @@ auto ByteBlockInputStream::sourceSupportsPositioning() const noexcept -> bool {
     return true;
 }
 
-auto ByteBlockInputStream::sourcePosition() const -> unit::ByteIndex {
+auto ByteBlockInputStream::sourcePosition() const -> ByteIndex {
     const auto lock = std::scoped_lock{_mutex};
     verifyOpen();
     return _position;
 }
 
-auto ByteBlockInputStream::setSourcePosition(const unit::ByteIndex position) -> StreamPositionStatus {
+auto ByteBlockInputStream::setSourcePosition(const ByteIndex position) -> StreamPositionStatus {
     if (!position.isValid()) {
-        throw err::ParameterError{"A byte-block stream position must be valid."_el, "position"_el};
+        throw err::ParameterFailure{"A byte-block stream position must be valid."_el, "position"_el};
     }
     const auto lock = std::scoped_lock{_mutex};
     verifyOpen();
@@ -85,17 +85,17 @@ auto ByteBlockInputStream::setSourcePosition(const unit::ByteIndex position) -> 
     return StreamPositionStatus::Success;
 }
 
-auto ByteBlockInputStream::moveSourcePosition(const StreamPositionOrigin origin, const unit::ByteOffset offset)
+auto ByteBlockInputStream::moveSourcePosition(const StreamPositionOrigin origin, const ByteOffset offset)
     -> StreamPositionStatus {
     const auto lock = std::scoped_lock{_mutex};
     verifyOpen();
     const auto base = origin == StreamPositionOrigin::Start
-        ? unit::ByteIndex{}
+        ? ByteIndex{}
         : (origin == StreamPositionOrigin::Current ? _position : _data.endIndex());
     try {
         _position = base.movedOrThrow(offset);
     } catch (const err::OverflowError &) {
-        throw err::ParameterError{"A byte-block stream position must remain within index bounds."_el, "offset"_el};
+        throw err::ParameterFailure{"A byte-block stream position must remain within index bounds."_el, "offset"_el};
     }
     return StreamPositionStatus::Success;
 }

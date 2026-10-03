@@ -14,8 +14,8 @@ explicit character classes. Like character classes, they always match **exactly 
 Use character type escapes for readability and intent, especially when working with Unicode
 text or when the exact set of characters is secondary to their semantic meaning.
 
-:expression:`.`
-===============
+Any Character: :expression:`.`
+==============================
 
 Matches any single character.
 
@@ -27,8 +27,8 @@ matches line feed characters.
 
 You can enable :cpp:any:`DotAll <erbsland::re::Flag::DotAll>` mode either programmatically or inline using :expression:`(?s)`.
 
-:esc_code:`d`
-=============
+Digit: :esc_code:`d`
+====================
 
 Matches a digit character.
 
@@ -42,15 +42,15 @@ The exact set depends on the active ASCII or Unicode mode:
 Enable ASCII mode programmatically via
 :cpp:any:`Flag::Ascii <erbsland::re::Flag::Ascii>` or inline using :expression:`(?a)`.
 
-:esc_code:`D`
-=============
+Non-Digit: :esc_code:`D`
+========================
 
 Matches any character that is **not** a digit as defined by :esc_code:`d`.
 
 This is the negated form of :esc_code:`d`.
 
-:esc_code:`s`
-=============
+Whitespace: :esc_code:`s`
+=========================
 
 Matches a whitespace character.
 
@@ -64,15 +64,15 @@ You can enable :cpp:any:`DotAll <erbsland::re::Flag::DotAll>` mode programmatica
 ASCII mode can be enabled via :expression:`(?a)` or
 :cpp:any:`Flag::Ascii <erbsland::re::Flag::Ascii>`.
 
-:esc_code:`S`
-=============
+Non-Whitespace: :esc_code:`S`
+=============================
 
 Matches any character that is **not** whitespace as defined by :esc_code:`s`.
 
 This is the negated form of :esc_code:`s`.
 
-:esc_code:`w`
-=============
+Word Character: :esc_code:`w`
+=============================
 
 Matches a *word* character.
 
@@ -86,15 +86,15 @@ This definition is consistent with word-boundary handling via :expression:`\\b`.
 Enable ASCII mode programmatically using
 :cpp:any:`Flag::Ascii <erbsland::re::Flag::Ascii>` or inline with :expression:`(?a)`.
 
-:esc_code:`W`
-=============
+Non-Word Character: :esc_code:`W`
+=================================
 
 Matches any character that is **not** a word character as defined by :esc_code:`w`.
 
 This is the negated form of :esc_code:`w`.
 
-:esc_code:`p{<category>}`
-=========================
+Unicode General Category: :esc_code:`p{<category>}`
+===================================================
 
 Matches a character belonging to the given Unicode *general category*.
 
@@ -119,8 +119,8 @@ Unicode category matching is **not affected** by the following flags:
 For example, even in case-insensitive mode,
 :expression:`\\p{UppercaseLetter}` still matches **only uppercase letters**.
 
-:esc_code:`P{<category>}`
-=========================
+Negated Unicode General Category: :esc_code:`P{<category>}`
+===========================================================
 
 Matches any character that is **not** in the given Unicode general category.
 
@@ -222,15 +222,15 @@ compatibility is required.
 Prefer using :esc_code:`s` / :esc_code:`S` and explicit Unicode categories via
 :esc_code:`p{<category>}` instead.
 
-:esc_code:`h` / :esc_code:`H`
------------------------------
+Horizontal Whitespace and Its Negation: :esc_code:`h` / :esc_code:`H`
+---------------------------------------------------------------------
 
 Matches horizontal whitespace (or its negation).
 
 This escape sequence exists for compatibility and may be disabled via the feature set.
 
-:esc_code:`v` / :esc_code:`V`
------------------------------
+Vertical Whitespace and Its Negation: :esc_code:`v` / :esc_code:`V`
+-------------------------------------------------------------------
 
 Matches vertical whitespace (or its negation).
 

@@ -1,0 +1,22 @@
+# Demonstration keys are public: use your own identity for any deployed service.
+[Main]
+Address: "127.0.0.1"
+Port: 8465
+TLS Profile: "tls/mail"
+# Log File: "received-mail.log"
+
+*[Main.SNI]
+Name: "localhost"
+Profile: "tls/mail/identified"
+
+*[TLS.Server]
+Label: "tls/mail"
+Certificate Chain File: "server-certificates/server.pem"
+Signing Key File: "server-certificates/server-key.pem"
+
+*[TLS.Server]
+Label: "tls/mail/identified"
+Certificate Chain File: "server-certificates/server.pem"
+Signing Key File: "server-certificates/server-key.pem"
+Client Authentication: "required"
+Trust Anchors File: "server-certificates/ca.pem"

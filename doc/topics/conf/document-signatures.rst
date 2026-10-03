@@ -37,8 +37,8 @@ A signature does not encrypt the document or hide its values.
 It also does not decide whether a signer was *allowed* to approve this particular configuration.
 Cryptography establishes that a key signed a digest; your trust policy gives that fact its application meaning.
 
-The Trust Anchor Is the Hard Part
-=================================
+Trust Anchors and Signing-Key Trust
+===================================
 
 Creating and verifying a digital signature is a well-defined operation.
 The difficult question is where your application gets the independent knowledge needed to trust the signing key.
@@ -66,8 +66,8 @@ If the goal is to detect unnoticed edits and record who approved the file, accep
 from the chosen certificate authorities may provide the intended assurance.
 The readable name or email address in the signature can then help operators understand who signed the configuration.
 
-Identity Is Not Authorization
------------------------------
+Signer Identity and Configuration Authorization
+-----------------------------------------------
 
 A valid certificate can identify its holder without granting that person permission to alter your application's
 configuration.
@@ -101,8 +101,8 @@ allowed to sign its configuration.
 An operating-system certificate store can establish certificate validity, but a separate application rule is still
 needed when only a subset of otherwise valid certificate holders is authorized.
 
-Keep Strict Enforcement for Deployment
---------------------------------------
+Signature Enforcement in Deployment and Development
+---------------------------------------------------
 
 Signing every small edit slows down development and diagnosis, especially when a private key lives on an external device
 or signing service.
@@ -142,8 +142,8 @@ Every other byte matters, including comments, spacing, and line endings.
 Editing the document therefore invalidates its signature even when the parsed value tree would remain the same.
 Remove the signature line while editing and generate a new signature after the final version has been checked.
 
-How Erbsland Core Divides the Work
-==================================
+Parser Responsibilities and Application Trust Policy
+====================================================
 
 Erbsland Core handles document reading, digest calculation, and the placement of the ELCL signature line.
 Your application handles keys, certificates, signature algorithms, and the trust policy.

@@ -2,16 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HttpCookieJar.hpp"
 
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/CurrentEvents.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/CharSet.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringCharReader.hpp"
 #include "../../../../text/StringEditor.hpp"
+#include "../../../../text/StringList.hpp"
+#include "../../../../text/StringTransformations.hpp"
 #include "../../../../time/Date.hpp"
 #include "../../../../time/Time.hpp"
+#include "../../../../unit/ItemCount.hpp"
 #include "../../../HostName.hpp"
 #include "../../../HostNameFormat.hpp"
 #include "../../../http/HttpFieldType.hpp"
@@ -21,22 +25,23 @@
 #include <ranges>
 
 namespace erbsland::network::impl {
+
+using namespace unit;
 using namespace text;
 using namespace text::literals;
 
-auto HttpCookieJar::parsePeerCookie(const Url &url, const text::String &field) const
-    -> std::optional<HttpCookieJarEntry> {
-    auto parts = split(field, Char{';'});
-    if (parts.empty()) {
+auto HttpCookieJar::parsePeerCookie(const Url &url, const String &field) const -> std::optional<HttpCookieJarEntry> {
+    auto parts = StringList::fromSplit(field, CharSet{Char{';'}}, ItemCount::infinite(), true);
+    if (parts.isEmpty()) {
         return {};
     }
-    const auto equals = parts.front().findFirstOf(CharSet{Char{'='}});
-    if (equals.isNoIndex()) {
+    const auto fields = parts.first().splitAtFirst(CharSet{U'='});
+    if (!fields) {
         return {};
     }
     auto entry = HttpCookieJarEntry{};
-    entry.name = parts.front().slice({}, unit::ByteLength{equals.toRawValue()}).trimmed();
-    entry.value = parts.front().slice(StringSide::Back, equals.incremented()).trimmed();
+    entry.name = fields->first.trimmed();
+    entry.value = fields->second.trimmed();
     entry.domain = hostText(url);
     entry.path = defaultPath(url);
     entry.hostOnly = true;
@@ -45,21 +50,22 @@ auto HttpCookieJar::parsePeerCookie(const Url &url, const text::String &field) c
     if (!isCookieToken(entry.name) || !isCookieValue(entry.value)) {
         return {};
     }
-    for (auto index = std::size_t{1U}; index < parts.size(); ++index) {
-        const auto part = parts[index].trimmed();
-        const auto attributeEquals = part.findFirstOf(CharSet{Char{'='}});
-        auto name = lowerAscii(
-            attributeEquals.isNoIndex() ? part : part.slice({}, unit::ByteLength{attributeEquals.toRawValue()}));
-        auto value = attributeEquals.isNoIndex()
-            ? String{}
-            : part.slice(StringSide::Back, attributeEquals.incremented()).trimmed();
+    for (auto index = ItemIndex{1U}; index.isWithin(parts.count()); index.uncheckedIncrement()) {
+        const auto part = parts.getRef(index).trimmed();
+        auto name = part;
+        auto value = String{};
+        if (const auto attribute = part.splitAtFirst(CharSet{U'='})) {
+            name = attribute->first;
+            value = attribute->second.trimmed();
+        }
+        name = text::toAsciiLowercase(name);
         if (name == "domain"_el) {
             if (url.endpoint().host().isAddress()) {
                 return {};
             }
             auto domain = value;
             if (domain.startsWith("."_el)) {
-                domain = domain.slice(StringSide::Back, unit::ByteIndex{1U});
+                domain = domain.slice(StringSide::Back, ByteIndex{1U});
             }
             const auto domainName = HostName::fromString(domain);
             if (!domainName) {
@@ -78,7 +84,7 @@ auto HttpCookieJar::parsePeerCookie(const Url &url, const text::String &field) c
         } else if (name == "httponly"_el) {
             entry.httpOnly = true;
         } else if (name == "samesite"_el) {
-            const auto sameSite = lowerAscii(value);
+            const auto sameSite = text::toAsciiLowercase(value);
             if (sameSite == "strict"_el) {
                 entry.sameSite = HttpCookieSameSite::Strict;
             } else if (sameSite == "lax"_el) {
@@ -92,7 +98,7 @@ auto HttpCookieJar::parsePeerCookie(const Url &url, const text::String &field) c
                 entry.expires = seconds <= 0 ? time::Timestamp::fromTimeT(0)
                                              : time::Timestamp::now() + time::Duration{time::Seconds{seconds}};
                 maxAgeSeen = true;
-            } catch (...) {
+            } catch (const err::RuntimeError &) {
                 // Invalid Max-Age attributes are ignored; a valid Expires may still apply.
             }
         } else if (name == "expires"_el) {
@@ -108,7 +114,7 @@ auto HttpCookieJar::parsePeerCookie(const Url &url, const text::String &field) c
     return entry;
 }
 
-auto HttpCookieJar::hostText(const Url &url) -> text::String {
+auto HttpCookieJar::hostText(const Url &url) -> String {
     const auto endpoint = url.endpoint();
     const auto &host = endpoint.host();
     if (const auto name = host.name()) {
@@ -117,39 +123,39 @@ auto HttpCookieJar::hostText(const Url &url) -> text::String {
     return host.toString();
 }
 
-auto HttpCookieJar::defaultPath(const Url &url) -> text::String {
+auto HttpCookieJar::defaultPath(const Url &url) -> String {
     const auto path = url.path();
     if (path.isEmpty() || !path.startsWith("/"_el)) {
         return "/"_el;
     }
-    const auto slash = path.findLastOf(CharSet{Char{'/'}});
-    if (slash.isNoIndex() || slash.toRawValue() == 0U) {
+    const auto parts = path.splitAtLast(CharSet{U'/'});
+    if (!parts || parts->first.isEmpty()) {
         return "/"_el;
     }
-    return path.slice({}, unit::ByteLength{slash.toRawValue()});
+    return parts->first;
 }
 
-auto HttpCookieJar::domainMatches(const text::String &host, const text::String &domain) noexcept -> bool {
+auto HttpCookieJar::domainMatches(const String &host, const String &domain) noexcept -> bool {
     if (host == domain) {
         return true;
     }
     auto suffix = StringEditor{};
     suffix.append(U'.').append(domain);
-    return host.endsWith(String{suffix});
+    return host.endsWith(suffix);
 }
 
-auto HttpCookieJar::pathMatches(const text::String &requestPath, const text::String &cookiePath) noexcept -> bool {
+auto HttpCookieJar::pathMatches(const String &requestPath, const String &cookiePath) noexcept -> bool {
     if (requestPath == cookiePath) {
         return true;
     }
     if (!requestPath.startsWith(cookiePath)) {
         return false;
     }
-    return cookiePath.endsWith("/"_el) ||
-        requestPath.charAt(unit::ByteIndex{cookiePath.length().toRawValue()}) == Char{'/'};
+    return cookiePath.endsWith("/"_el) || requestPath.charAt(ByteIndex::end(cookiePath.length())) == Char{'/'};
 }
 
-auto HttpCookieJar::isCookieToken(const text::String &value) noexcept -> bool {
+auto HttpCookieJar::isCookieToken(const String &value) noexcept -> bool {
+    static const auto cSeparators = CharSet{"()<>@,;:\\\"/[]?={}"_el};
     if (value.isEmpty()) {
         return false;
     }
@@ -157,14 +163,14 @@ auto HttpCookieJar::isCookieToken(const text::String &value) noexcept -> bool {
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
         if (!character.isAscii() || character.toRawValue() <= 0x20 || character.toRawValue() >= 0x7f ||
-            CharSet{String{"()<>@,;:\\\"/[]?={}"}}.contains(character)) {
+            cSeparators.contains(character)) {
             return false;
         }
     }
     return true;
 }
 
-auto HttpCookieJar::isCookieValue(const text::String &value) noexcept -> bool {
+auto HttpCookieJar::isCookieValue(const String &value) noexcept -> bool {
     auto reader = StringCharReader{value};
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
@@ -177,38 +183,9 @@ auto HttpCookieJar::isCookieValue(const text::String &value) noexcept -> bool {
     return true;
 }
 
-auto HttpCookieJar::lowerAscii(const text::String &value) -> text::String {
-    auto result = StringEditor{};
-    auto reader = StringCharReader{value};
-    while (!reader.isAtEnd()) {
-        result.append(reader.read().toAsciiLowercase());
-    }
-    return String{result};
-}
-
-auto HttpCookieJar::split(const text::String &value, const text::Char separator) -> std::vector<text::String> {
-    auto result = std::vector<text::String>{};
-    auto separatorText = StringEditor{};
-    separatorText.append(separator);
-    const auto needle = String{separatorText};
-    auto start = unit::ByteIndex{};
-    while (start.isWithin(value.length())) {
-        const auto found = value.find(needle, start);
-        if (found.isNoIndex()) {
-            result.emplace_back(value.slice(unit::ByteRange{start, unit::ByteLength::infinite()}));
-            return result;
-        }
-        result.emplace_back(
-            value.slice(unit::ByteRange{start, unit::ByteLength{found.toRawValue() - start.toRawValue()}}));
-        start = found.incremented();
-    }
-    result.emplace_back();
-    return result;
-}
-
-auto HttpCookieJar::parseCookieDate(const text::String &value) noexcept -> std::optional<time::Timestamp> {
+auto HttpCookieJar::parseCookieDate(const String &value) noexcept -> std::optional<time::Timestamp> {
     try {
-        auto tokens = std::vector<String>{};
+        auto tokens = StringList{};
         auto reader = StringCharReader{value};
         auto token = StringEditor{};
         while (!reader.isAtEnd()) {
@@ -219,7 +196,7 @@ auto HttpCookieJar::parseCookieDate(const text::String &value) noexcept -> std::
                 (code >= 0x7bU && code <= 0x7eU);
             if (delimiter) {
                 if (!token.isEmpty()) {
-                    tokens.emplace_back(token);
+                    tokens.append(token);
                     token.clear();
                 }
             } else {
@@ -227,7 +204,7 @@ auto HttpCookieJar::parseCookieDate(const text::String &value) noexcept -> std::
             }
         }
         if (!token.isEmpty()) {
-            tokens.emplace_back(token);
+            tokens.append(token);
         }
         auto day = -1;
         auto month = -1;
@@ -237,17 +214,17 @@ auto HttpCookieJar::parseCookieDate(const text::String &value) noexcept -> std::
         auto second = -1;
         for (const auto &item : tokens) {
             if (hour < 0 && item.contains(":"_el)) {
-                const auto timeParts = split(item, Char{':'});
-                if (timeParts.size() == 3U) {
-                    hour = timeParts[0].toInteger<int>(-1);
-                    minute = timeParts[1].toInteger<int>(-1);
-                    second = timeParts[2].toInteger<int>(-1);
+                const auto timeParts = StringList::fromSplit(item, CharSet{Char{':'}});
+                if (timeParts.count() == ItemCount{3U}) {
+                    hour = timeParts.getRef(ItemIndex{0}).toInteger<int>(-1);
+                    minute = timeParts.getRef(ItemIndex{1}).toInteger<int>(-1);
+                    second = timeParts.getRef(ItemIndex{2}).toInteger<int>(-1);
                 }
                 continue;
             }
-            const auto lower = lowerAscii(item);
+            const auto lower = text::toAsciiLowercase(item);
             if (month < 0) {
-                constexpr auto cMonths = std::array<text::StringLiteral, 12U>{
+                constexpr auto cMonths = std::array<StringLiteral, 12U>{
                     "jan"_el,
                     "feb"_el,
                     "mar"_el,
@@ -261,7 +238,7 @@ auto HttpCookieJar::parseCookieDate(const text::String &value) noexcept -> std::
                     "nov"_el,
                     "dec"_el};
                 for (auto index = std::size_t{}; index < cMonths.size(); ++index) {
-                    if (text::String{cMonths[index]} == lower) {
+                    if (String{cMonths[index]} == lower) {
                         month = static_cast<int>(index) + 1;
                         break;
                     }
@@ -274,9 +251,9 @@ auto HttpCookieJar::parseCookieDate(const text::String &value) noexcept -> std::
             if (number < 0) {
                 continue;
             }
-            if (day < 0 && item.length() <= unit::ByteLength{2U} && number >= 1 && number <= 31) {
+            if (day < 0 && item.length() <= ByteCount{2U} && number >= 1 && number <= 31) {
                 day = number;
-            } else if (year < 0 && item.length() >= unit::ByteLength{2U} && item.length() <= unit::ByteLength{4U}) {
+            } else if (year < 0 && item.length() >= ByteCount{2U} && item.length() <= ByteCount{4U}) {
                 year = number;
             }
         }
@@ -294,7 +271,7 @@ auto HttpCookieJar::parseCookieDate(const text::String &value) noexcept -> std::
             return {};
         }
         return time::Timestamp{date, time::Time{time::Hour{hour}, time::Minute{minute}, time::Second{second}}};
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         return {};
     }
 }

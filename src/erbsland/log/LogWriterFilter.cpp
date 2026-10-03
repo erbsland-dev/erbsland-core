@@ -6,24 +6,29 @@
 
 namespace erbsland::log {
 
-auto LogWriterFilter::setLevels(const LogLevels value) noexcept -> LogWriterFilter & {
-    _levels = value;
+auto LogWriterFilter::setAcceptedLevels(const LogLevels value) noexcept -> LogWriterFilter & {
+    _acceptedLevels = value;
     return *this;
 }
 
-auto LogWriterFilter::addPath(LogPath value) -> LogWriterFilter & {
-    _paths.emplace_back(std::move(value));
+auto LogWriterFilter::setRejectedLevels(const LogLevels value) noexcept -> LogWriterFilter & {
+    _acceptedLevels = ~value;
+    return *this;
+}
+
+auto LogWriterFilter::addAcceptedPath(LogPath value) -> LogWriterFilter & {
+    _acceptedPaths.emplace_back(std::move(value));
     return *this;
 }
 
 auto LogWriterFilter::accepts(const LogLevel level, const LogPath &path) const noexcept -> bool {
-    if (!_levels.isSet(level.toRawValue())) {
+    if (!_acceptedLevels.isSet(level.toRawValue())) {
         return false;
     }
-    if (_paths.empty()) {
+    if (_acceptedPaths.empty()) {
         return true;
     }
-    for (const auto &root : _paths) {
+    for (const auto &root : _acceptedPaths) {
         if (root.contains(path)) {
             return true;
         }

@@ -46,11 +46,11 @@
 #include "../../math/IntegerTraits.hpp"
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/StorageIdentifier.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteRange.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/CpIndex.hpp"
-#include "../../unit/CpLength.hpp"
 #include "../../unit/CpRange.hpp"
 #include "../../unit/ItemCount.hpp"
 #include "../../util/impl/ComparisonHelper.hpp"
@@ -68,14 +68,16 @@
 
 namespace erbsland::text {
 
+// clang-format off
 /// An owning UTF-8 string editor with copy-on-write semantics for sequential code-point access.
 /// Use it as a local mutable working value for UTF-8 construction and multi-step editing.
 /// Use the `StringEditor` alias in user code and only `U8StringEditor` if UTF-8 encoding matters.
 /// Use `String`/`U8String` for storage, read-only access and copy-based transformations.
 /// Always creates a copy of the data when constructed from a read-only string.
 /// @seedoc{/reference/text/strings}
-/// @tested{U8StringEditorTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest}
+/// @tested{U8StringEditorTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest StringReplacementTest StringBinaryComparisonTest StringSeparatorSplitTest StringEncodingValidationTest}
 class U8StringEditor {
+    // clang-format on
     friend class debug::impl::StringDebugAccess<U8StringEditor>;
     friend class U8String;
     friend class impl::U8StringEncodingTools;
@@ -122,9 +124,20 @@ public: // operators
     [[nodiscard]] auto operator[](unit::CpIndex index) const noexcept -> Char;
 
 public: // comparison
-    /// Compare two strings by decoded code point, replacing malformed UTF-8 with `Char::replacement()`.
+    /// Compare decoded code points, replacing malformed UTF-8 with `Char::replacement()`.
+    /// No normalization or locale collation is performed.
+    /// @param other The string to compare.
+    /// @param compareFn Optional character comparator; numeric code-point order is the default.
+    /// @return Lexicographic decoded-character order, with a shorter equal prefix first.
+    /// @seedoc{/topics/text_strings/comparing_strings}
     [[nodiscard]] auto compare(const U8String &other, CharCompareFn compareFn = {}) const noexcept
         -> std::strong_ordering;
+    /// Compare the visible unsigned storage bytes without decoding or allocation.
+    /// Native byte order is used; binary equality can differ from decoded equality.
+    /// @param other The same-width string to compare.
+    /// @return Lexicographic byte order, with a shorter equal byte prefix first.
+    /// @seedoc{/topics/text_strings/comparing_strings}
+    [[nodiscard]] auto compareBinary(const U8String &other) const noexcept -> std::strong_ordering;
     /// Create a hash value from the decoded code points.
     [[nodiscard]] auto toHash() const noexcept -> std::size_t;
     /// Create a hash value from the decoded code points after Unicode simple case folding.
@@ -137,8 +150,10 @@ public: // tests
     [[nodiscard]] auto isSensitive() const noexcept -> bool;
     /// @copydoc erbsland::text::U8String::markAsSensitive()
     void markAsSensitive() noexcept;
-    /// @copydoc erbsland::text::U8String::isValidUtf8() const
-    [[nodiscard]] auto isValidUtf8() const noexcept -> bool;
+    /// @copydoc erbsland::text::U8String::isEncodingValid() const
+    [[nodiscard]] auto isEncodingValid() const noexcept -> bool;
+    /// @copydoc erbsland::text::U8String::encodingValidOrThrow() const
+    void encodingValidOrThrow() const;
     /// @copydoc erbsland::text::U8String::startsWith(const U8String &, CharCompareFn) const
     [[nodiscard]] auto startsWith(const U8String &other, CharCompareFn compareFn = {}) const noexcept -> bool;
     /// @copydoc erbsland::text::U8String::endsWith(const U8String &, CharCompareFn) const
@@ -156,9 +171,9 @@ public: // tests
 
 public: // read
     /// @copydoc erbsland::text::U8String::length() const
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto length() const noexcept -> unit::ByteCount;
     /// @copydoc erbsland::text::U8String::characterLength() const
-    [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto characterLength() const noexcept -> unit::CpCount;
     /// @copydoc erbsland::text::U8String::displayWidth() const
     [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// @copydoc erbsland::text::U8String::indexAt(StringSide) const
@@ -173,10 +188,10 @@ public: // read
     [[nodiscard]] auto readCharAndRetreat(unit::ByteIndex &index) const noexcept -> Char;
     /// @copydoc erbsland::text::U8String::charAt(unit::CpIndex) const
     [[nodiscard]] auto charAt(unit::CpIndex index) const noexcept -> Char;
-    /// @copydoc erbsland::text::U8String::advance(unit::ByteIndex &, unit::CpLength) const
-    auto advance(unit::ByteIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
-    /// @copydoc erbsland::text::U8String::retreat(unit::ByteIndex &, unit::CpLength) const
-    auto retreat(unit::ByteIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
+    /// @copydoc erbsland::text::U8String::advance(unit::ByteIndex &, unit::CpCount) const
+    auto advance(unit::ByteIndex &index, unit::CpCount count = unit::CpCount::one()) const noexcept -> bool;
+    /// @copydoc erbsland::text::U8String::retreat(unit::ByteIndex &, unit::CpCount) const
+    auto retreat(unit::ByteIndex &index, unit::CpCount count = unit::CpCount::one()) const noexcept -> bool;
 
 public: // byte/char index conversion.
     /// @copydoc erbsland::text::U8String::indexAt(unit::CpIndex) const
@@ -189,12 +204,12 @@ public: // slice
     [[nodiscard]] auto slice(unit::ByteRange range) const noexcept -> U8StringEditor;
     /// @copydoc erbsland::text::U8String::slice(unit::CpRange) const
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U8StringEditor;
-    /// @copydoc erbsland::text::U8String::slice(StringSide, unit::ByteLength) const
-    [[nodiscard]] auto slice(StringSide side, unit::ByteLength length) const noexcept -> U8StringEditor;
+    /// @copydoc erbsland::text::U8String::slice(StringSide, unit::ByteCount) const
+    [[nodiscard]] auto slice(StringSide side, unit::ByteCount length) const noexcept -> U8StringEditor;
     /// @copydoc erbsland::text::U8String::slice(StringSide, unit::ByteIndex) const
     [[nodiscard]] auto slice(StringSide side, unit::ByteIndex index) const noexcept -> U8StringEditor;
-    /// @copydoc erbsland::text::U8String::slice(StringSide, unit::CpLength) const
-    [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U8StringEditor;
+    /// @copydoc erbsland::text::U8String::slice(StringSide, unit::CpCount) const
+    [[nodiscard]] auto slice(StringSide side, unit::CpCount length) const noexcept -> U8StringEditor;
     /// @copydoc erbsland::text::U8String::slice(StringSide, unit::CpIndex) const
     [[nodiscard]] auto slice(StringSide side, unit::CpIndex index) const noexcept -> U8StringEditor;
     /// @copydoc erbsland::text::U8String::slice(StringSide) const
@@ -203,11 +218,46 @@ public: // slice
     [[nodiscard]] auto splitAt(unit::ByteIndex index) const noexcept -> std::pair<U8StringEditor, U8StringEditor>;
     /// @copydoc erbsland::text::U8String::splitAt(unit::CpIndex) const
     [[nodiscard]] auto splitAt(unit::CpIndex index) const noexcept -> std::pair<U8StringEditor, U8StringEditor>;
+    /// Split around the first matching decoded separator.
+    /// @seedoc{/reference/text/strings}
+    /// @param separator The string separator to exclude from the results.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtFirst(const U8String &separator, CharCompareFn compareFn = {}) const noexcept
+        -> std::optional<std::pair<U8StringEditor, U8StringEditor>>;
+    /// Split around the first decoded character contained in the set.
+    /// @seedoc{/reference/text/strings}
+    /// @param separators The set of single-character separators.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtFirst(const CharSet &separators) const noexcept
+        -> std::optional<std::pair<U8StringEditor, U8StringEditor>>;
+    /// Split around the last matching decoded separator.
+    /// @seedoc{/reference/text/strings}
+    /// @param separator The string separator to exclude from the results.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtLast(const U8String &separator, CharCompareFn compareFn = {}) const noexcept
+        -> std::optional<std::pair<U8StringEditor, U8StringEditor>>;
+    /// Split around the last decoded character contained in the set.
+    /// @seedoc{/reference/text/strings}
+    /// @param separators The set of single-character separators.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtLast(const CharSet &separators) const noexcept
+        -> std::optional<std::pair<U8StringEditor, U8StringEditor>>;
 
 public: // trim
     /// Remove leading and trailing ASCII whitespace or selected characters.
+    /// @param characters The characters to remove. If omitted uses `Char::isAsciiWhitespace()` that removes
+    /// space, tab, line feed, vertical tab, form feed, and carriage return (`[ \\t\\n\\v\\f]`).
+    /// @param side Trim only `StringSide::Front` or `StringSide::Back`; if omitted trim both sides.
+    /// @return A reference to this editor after trimming.
     auto trim(const std::optional<CharSet> &characters = {}, std::optional<StringSide> side = {}) -> U8StringEditor &;
-    /// Return a copy without leading and trailing ASCII whitespace or selected characters.
+    /// Return a string without leading and trailing ASCII whitespace or selected characters.
+    /// Trimming does not copy the original storage and returns a slice of the original string.
+    /// @param characters The characters to remove. If omitted uses `Char::isAsciiWhitespace()` that removes
+    /// space, tab, line feed, vertical tab, form feed, and carriage return (`[ \\t\\n\\v\\f]`).
+    /// @param side Trim only `StringSide::Front` or `StringSide::Back`; if omitted trim both sides.
+    /// @return A trimmed string, leaving this string unchanged.
     [[nodiscard]] auto trimmed(const std::optional<CharSet> &characters = {}, std::optional<StringSide> side = {}) const
         -> U8StringEditor;
 
@@ -252,7 +302,7 @@ public: // modifiers
     /// Append a UTF-8 read-only string one or more times.
     auto append(const U8String &text, unit::ItemCount count = unit::ItemCount::one()) -> U8StringEditor &;
     /// Append one Unicode code point one or more times.
-    auto append(Char character, unit::CpLength count = unit::CpLength::one()) -> U8StringEditor &;
+    auto append(Char character, unit::CpCount count = unit::CpCount::one()) -> U8StringEditor &;
     /// Remove a byte-based range.
     auto remove(unit::ByteRange range) -> U8StringEditor &;
     /// Remove a character-based range.
@@ -286,39 +336,64 @@ public: // modifiers
     auto replaceAll(const U8String &text, const U8String &replacement, CharCompareFn compareFn = {})
         -> U8StringEditor &;
     /// Truncate this string to a maximum decoded code-point width.
-    auto truncate(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) -> U8StringEditor &;
+    auto truncate(unit::CpCount maximumWidth, TruncateMode mode = TruncateMode::End) -> U8StringEditor &;
     /// Truncate this string to a maximum decoded code-point width, inserting an optional ellipsis.
-    auto truncate(unit::CpLength maximumWidth, TruncateMode mode, const U8String &ellipsis) -> U8StringEditor &;
+    auto truncate(unit::CpCount maximumWidth, TruncateMode mode, const U8String &ellipsis) -> U8StringEditor &;
     /// Return a copy with a byte-based range removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removed(unit::ByteRange range) const -> U8StringEditor;
     /// Return a copy with a character-based range removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removed(unit::CpRange range) const -> U8StringEditor;
     /// Return a copy with all characters from the set removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removedAll(const CharSet &characters) const -> U8StringEditor;
     /// Return a copy with all occurrences of decoded UTF-8 text removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removedAll(const U8String &text, CharCompareFn compareFn = {}) const -> U8StringEditor;
     /// Return a copy with the first occurrence of decoded UTF-8 text removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removedFirst(const U8String &text, CharCompareFn compareFn = {}) const -> U8StringEditor;
     /// Return a copy keeping only a byte-based range.
+    /// Non-empty results copy the selected range into separate pruned storage.
     [[nodiscard]] auto kept(unit::ByteRange range) const -> U8StringEditor;
     /// Return a copy keeping only a character-based range.
+    /// Non-empty results copy the selected range into separate pruned storage.
     [[nodiscard]] auto kept(unit::CpRange range) const -> U8StringEditor;
     /// Return a copy with text inserted at a byte index.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto inserted(unit::ByteIndex index, const U8String &text) const -> U8StringEditor;
     /// Return a copy with text inserted at a character index.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto inserted(unit::CpIndex index, const U8String &text) const -> U8StringEditor;
     /// Return a copy with a byte-based range replaced by text.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto replaced(unit::ByteRange range, const U8String &text) const -> U8StringEditor;
     /// Return a copy with a character-based range replaced by text.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto replaced(unit::CpRange range, const U8String &text) const -> U8StringEditor;
     /// Return a copy with the first occurrence of decoded UTF-8 text replaced.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto replacedFirst(
         const U8String &text, const U8String &replacement, CharCompareFn compareFn = {}) const -> U8StringEditor;
     /// Return a copy with all characters from the set replaced by one character.
+    /// Unchanged results retain the original storage.
+    /// @param characters The characters to replace.
+    /// @param replacement The replacement character or text.
+    /// @return The replaced value, sharing the original storage when unchanged.
     [[nodiscard]] auto replacedAll(const CharSet &characters, Char replacement) const -> U8StringEditor;
     /// Return a copy with all characters from the set replaced by text.
+    /// Unchanged results retain the original storage.
+    /// @param characters The characters to replace.
+    /// @param replacement The replacement character or text.
+    /// @return The replaced value, sharing the original storage when unchanged.
     [[nodiscard]] auto replacedAll(const CharSet &characters, const U8String &replacement) const -> U8StringEditor;
     /// Return a copy with all occurrences of decoded UTF-8 text replaced.
+    /// Unchanged results retain the original storage.
+    /// @param text The decoded text to replace.
+    /// @param replacement The replacement character or text.
+    /// @param compareFn The optional character comparison function.
+    /// @return The replaced value, sharing the original storage when unchanged.
     [[nodiscard]] auto replacedAll(
         const U8String &text, const U8String &replacement, CharCompareFn compareFn = {}) const -> U8StringEditor;
 
@@ -350,17 +425,20 @@ public: // transform
     /// @seedoc{/topics/text_strings/normalizing_strings}
     [[nodiscard]] auto normalized(NormalizationForm form) const -> U8StringEditor;
     /// Return a string truncated to a maximum decoded code-point width.
-    [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto truncated(unit::CpCount maximumWidth, TruncateMode mode = TruncateMode::End) const
         -> U8StringEditor;
     /// Return a string truncated to a maximum decoded code-point width, inserting an optional ellipsis.
-    [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode, const U8String &ellipsis) const
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto truncated(unit::CpCount maximumWidth, TruncateMode mode, const U8String &ellipsis) const
         -> U8StringEditor;
     /// Return a string padded to the requested decoded code-point length.
-    [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill = U' ') const
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto aligned(unit::CpCount length, geometry::Alignment alignment, Char fill = U' ') const
         -> U8StringEditor;
     /// Return a bounded representation that is safe for logs and debug output.
     /// @seedoc{/reference/text/formatting_and_parsing}
-    [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
+    [[nodiscard]] auto toSafeString(unit::CpCount maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
         -> U8StringEditor;
 
 public: // conversion
@@ -388,14 +466,16 @@ public: // conversion
     [[nodiscard]] auto toFloatOrThrow(FloatParseOptions options = FloatParseOptions::defaultOptions()) const -> T;
     /// Get the size of the escaped string.
     [[nodiscard]] auto escapedSize(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const noexcept
-        -> unit::ByteLength;
+        -> unit::ByteCount;
     /// Escape this string according to the given format and amount.
+    /// Unchanged results retain the original storage.
+    /// The result preserves the sensitivity of this string.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
     [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const
         -> U8StringEditor;
     /// Create a string from one Unicode code point repeated one or more times.
-    [[nodiscard]] static auto fromCharacter(Char character, unit::CpLength count = unit::CpLength::one())
+    [[nodiscard]] static auto fromCharacter(Char character, unit::CpCount count = unit::CpCount::one())
         -> U8StringEditor;
     /// Create a string by joining all parts without a separator.
     /// @param parts The UTF-8 read-only strings to join.
@@ -421,20 +501,20 @@ public: // low-level management
     [[nodiscard]] auto storageId() const noexcept -> mem::StorageIdentifier;
     /// Reserve capacity for this string.
     /// @seeref{u8-string-storage-management}
-    void reserve(unit::ByteLength capacity);
+    void reserve(unit::ByteCount capacity);
     /// Try to free memory by shrinking the memory to the actual used size.
     /// @seeref{u8-string-storage-management}
     void shrinkToFit();
     /// Get the current memory capacity in bytes.
     /// This function returns the reserved capacity available for the string data.
     /// @return The reserved capacity in bytes.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteCount;
     /// Get the current memory usage in bytes.
     /// This function returns an estimation of the actual memory usage, including required management data and
     /// alignment. Use this function if you need to monitor memory usage (e.g. for caching). Be aware that
     /// through fragmentation and other factors, the actual memory usage may be higher than reported.
     /// @return The estimated memory usage in bytes.
-    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteCount;
     /// Detach the string data.
     /// After a call of this method, you have exclusive access to the string data.
     /// Detach is managed automatically, only use this method if you need manual control.
@@ -455,6 +535,9 @@ public: // minimal std-library compatibility
 private:
     /// Create a string with the same storage and a different storage range.
     [[nodiscard]] auto withRange(unit::ByteRange range) const noexcept -> U8StringEditor;
+    /// Create shared results around a relative native match range.
+    [[nodiscard]] auto splitAroundRange(unit::ByteRange match) const noexcept
+        -> std::optional<std::pair<U8StringEditor, U8StringEditor>>;
     /// Get the view to the string data.
     [[nodiscard]] auto dataView() const noexcept -> impl::U8StringDataView;
     /// Create a new string with the given storage.

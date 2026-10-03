@@ -41,7 +41,7 @@ auto Random::buildIntegerList(const unit::ItemCount count, const T minimum, cons
 }
 
 template <typename T>
-auto Random::selectElement(const std::span<const T> choices, const T &valueIfEmpty) -> T {
+auto Random::selectElement(const std::span<const T> choices, const std::type_identity_t<T> &valueIfEmpty) -> T {
     if (choices.empty()) {
         return valueIfEmpty;
     }
@@ -50,17 +50,17 @@ auto Random::selectElement(const std::span<const T> choices, const T &valueIfEmp
 }
 
 template <typename T>
-auto Random::selectElement(const std::vector<T> &choices, const T &valueIfEmpty) -> T {
+auto Random::selectElement(const std::vector<T> &choices, const std::type_identity_t<T> &valueIfEmpty) -> T {
     return selectElement(std::span<const T>{choices}, valueIfEmpty);
 }
 
 template <typename T>
-auto Random::selectElement(const std::initializer_list<T> choices, const T &valueIfEmpty) -> T {
+auto Random::selectElement(const std::initializer_list<T> choices, const std::type_identity_t<T> &valueIfEmpty) -> T {
     return selectElement(std::span<const T>{choices.begin(), choices.size()}, valueIfEmpty);
 }
 
 template <typename T, typename Self>
-auto Random::selectElement(const util::List<T, Self> &choices, const T &valueIfEmpty) -> T {
+auto Random::selectElement(const util::List<T, Self> &choices, const std::type_identity_t<T> &valueIfEmpty) -> T {
     if (choices.count().isZero()) {
         return valueIfEmpty;
     }
@@ -69,12 +69,14 @@ auto Random::selectElement(const util::List<T, Self> &choices, const T &valueIfE
 }
 
 template <typename T, typename Compare, typename Self>
-auto Random::selectElement(const util::Set<T, Compare, Self> &choices, const T &valueIfEmpty) -> T {
+auto Random::selectElement(const util::Set<T, Compare, Self> &choices, const std::type_identity_t<T> &valueIfEmpty)
+    -> T {
     return selectElement(choices.toList(), valueIfEmpty);
 }
 
 template <typename T, typename Hash, typename Equal, typename Self>
-auto Random::selectElement(const util::HashSet<T, Hash, Equal, Self> &choices, const T &valueIfEmpty) -> T {
+auto Random::selectElement(
+    const util::HashSet<T, Hash, Equal, Self> &choices, const std::type_identity_t<T> &valueIfEmpty) -> T {
     return selectElement(choices.toList(), valueIfEmpty);
 }
 

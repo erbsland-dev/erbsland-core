@@ -10,7 +10,7 @@ namespace erbsland::compression::impl {
 /// @tested{CompressionCodecTest ByteCompressionTest}
 class Bzip2Codec final : public CompressionCodec {
 private:
-    static constexpr auto cMaximumPayloadOverhead = unit::ByteLength{2048U}; ///< Fixed worst-case payload allowance.
+    static constexpr auto cMaximumPayloadOverhead = unit::ByteCount{2048U}; ///< Fixed worst-case payload allowance.
 
 public:
     /// Create a bzip2 codec.
@@ -32,7 +32,7 @@ protected: // implement CompressionCodec
         const CodecOutput::Write &output,
         const CompressionTransferOptions &transfer,
         const DecompressionOptions &options) const override;
-    [[nodiscard]] auto maximumPayloadLength(unit::ByteLength length) const -> unit::ByteLength override;
+    [[nodiscard]] auto maximumPayloadLength(unit::ByteCount length) const -> unit::ByteCount override;
 };
 
 }

@@ -13,8 +13,8 @@
 #include "ValueTest.hpp"
 
 #include "../../../math/SaturatingMath.hpp"
-#include "../../../text/Literals.hpp"
-#include "../../../text/StringFormat.hpp"
+#include "../../Literals.hpp"
+#include "../../StringFormat.hpp"
 
 #include <algorithm>
 #include <bit>

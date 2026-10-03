@@ -46,9 +46,9 @@
 #include "../../math/IntegerTraits.hpp"
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/StorageIdentifier.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/CpIndex.hpp"
-#include "../../unit/CpLength.hpp"
 #include "../../unit/CpRange.hpp"
 #include "../../unit/ItemCount.hpp"
 #include "../../util/impl/ComparisonHelper.hpp"
@@ -65,14 +65,16 @@
 
 namespace erbsland::text {
 
+// clang-format off
 /// An owning UTF-32 string editor with copy-on-write semantics for random code-point access.
 /// Use it as a local mutable working value for UTF-32 construction and multi-step editing.
 /// Use `U32String` for storage, read-only access and copy-based transformations.
 /// Always creates a copy of the data when constructed from a read-only string.
 /// Use `U32StringEditor` only when the mutable workflow requires UTF-32 encoding.
 /// @seedoc{/reference/text/strings}
-/// @tested{U32StringTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest}
+/// @tested{U32StringTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest StringReplacementTest StringBinaryComparisonTest StringSeparatorSplitTest StringEncodingValidationTest}
 class U32StringEditor {
+    // clang-format on
     friend class debug::impl::StringDebugAccess<U32StringEditor>;
     friend class U32String;
     friend class impl::U32StringBuilder;
@@ -109,9 +111,20 @@ public: // operators
     [[nodiscard]] auto operator[](unit::CpIndex index) const noexcept -> Char;
 
 public: // comparison
-    /// Compare two strings by decoded code point, replacing malformed UTF-32 with `Char::replacement()`.
+    /// Compare decoded code points, replacing malformed UTF-32 with `Char::replacement()`.
+    /// No normalization or locale collation is performed.
+    /// @param other The string to compare.
+    /// @param compareFn Optional character comparator; numeric code-point order is the default.
+    /// @return Lexicographic decoded-character order, with a shorter equal prefix first.
+    /// @seedoc{/topics/text_strings/comparing_strings}
     [[nodiscard]] auto compare(const U32String &other, CharCompareFn compareFn = {}) const noexcept
         -> std::strong_ordering;
+    /// Compare the visible unsigned storage bytes without decoding or allocation.
+    /// Native byte order is used; binary equality can differ from decoded equality.
+    /// @param other The same-width string to compare.
+    /// @return Lexicographic byte order, with a shorter equal byte prefix first.
+    /// @seedoc{/topics/text_strings/comparing_strings}
+    [[nodiscard]] auto compareBinary(const U32String &other) const noexcept -> std::strong_ordering;
     /// Create a hash value from the decoded code points.
     [[nodiscard]] auto toHash() const noexcept -> std::size_t;
     /// Create a hash value from the decoded code points after Unicode simple case folding.
@@ -120,8 +133,10 @@ public: // comparison
 public: // tests
     /// @copydoc erbsland::text::U32String::isEmpty() const
     [[nodiscard]] auto isEmpty() const noexcept -> bool;
-    /// @copydoc erbsland::text::U32String::isValidUtf32() const
-    [[nodiscard]] auto isValidUtf32() const noexcept -> bool;
+    /// @copydoc erbsland::text::U32String::isEncodingValid() const
+    [[nodiscard]] auto isEncodingValid() const noexcept -> bool;
+    /// @copydoc erbsland::text::U32String::encodingValidOrThrow() const
+    void encodingValidOrThrow() const;
     /// @copydoc erbsland::text::U32String::startsWith(const U32String &, CharCompareFn) const
     [[nodiscard]] auto startsWith(const U32String &other, CharCompareFn compareFn = {}) const noexcept -> bool;
     /// @copydoc erbsland::text::U32String::endsWith(const U32String &, CharCompareFn) const
@@ -139,9 +154,9 @@ public: // tests
 
 public: // read
     /// @copydoc erbsland::text::U32String::length() const
-    [[nodiscard]] auto length() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto length() const noexcept -> unit::CpCount;
     /// @copydoc erbsland::text::U32String::characterLength() const
-    [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto characterLength() const noexcept -> unit::CpCount;
     /// @copydoc erbsland::text::U32String::displayWidth() const
     [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// @copydoc erbsland::text::U32String::indexAt(StringSide) const
@@ -154,10 +169,10 @@ public: // read
     [[nodiscard]] auto readCharAndAdvance(unit::CpIndex &index) const noexcept -> Char;
     /// @copydoc erbsland::text::U32String::readCharAndRetreat(unit::CpIndex &) const
     [[nodiscard]] auto readCharAndRetreat(unit::CpIndex &index) const noexcept -> Char;
-    /// @copydoc erbsland::text::U32String::advance(unit::CpIndex &, unit::CpLength) const
-    auto advance(unit::CpIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
-    /// @copydoc erbsland::text::U32String::retreat(unit::CpIndex &, unit::CpLength) const
-    auto retreat(unit::CpIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
+    /// @copydoc erbsland::text::U32String::advance(unit::CpIndex &, unit::CpCount) const
+    auto advance(unit::CpIndex &index, unit::CpCount count = unit::CpCount::one()) const noexcept -> bool;
+    /// @copydoc erbsland::text::U32String::retreat(unit::CpIndex &, unit::CpCount) const
+    auto retreat(unit::CpIndex &index, unit::CpCount count = unit::CpCount::one()) const noexcept -> bool;
 
 public: // byte/char index conversion.
     /// @copydoc erbsland::text::U32String::indexAt(unit::CpIndex) const
@@ -168,19 +183,54 @@ public: // byte/char index conversion.
 public: // slice
     /// @copydoc erbsland::text::U32String::slice(unit::CpRange) const
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U32StringEditor;
-    /// @copydoc erbsland::text::U32String::slice(StringSide, unit::CpLength) const
-    [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U32StringEditor;
+    /// @copydoc erbsland::text::U32String::slice(StringSide, unit::CpCount) const
+    [[nodiscard]] auto slice(StringSide side, unit::CpCount length) const noexcept -> U32StringEditor;
     /// @copydoc erbsland::text::U32String::slice(StringSide, unit::CpIndex) const
     [[nodiscard]] auto slice(StringSide side, unit::CpIndex index) const noexcept -> U32StringEditor;
     /// @copydoc erbsland::text::U32String::slice(StringSide) const
     [[nodiscard]] auto slice(StringSide side) const noexcept -> std::tuple<Char, U32StringEditor>;
     /// @copydoc erbsland::text::U32String::splitAt(unit::CpIndex) const
     [[nodiscard]] auto splitAt(unit::CpIndex index) const noexcept -> std::pair<U32StringEditor, U32StringEditor>;
+    /// Split around the first matching decoded separator.
+    /// @seedoc{/reference/text/strings}
+    /// @param separator The string separator to exclude from the results.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtFirst(const U32String &separator, CharCompareFn compareFn = {}) const noexcept
+        -> std::optional<std::pair<U32StringEditor, U32StringEditor>>;
+    /// Split around the first decoded character contained in the set.
+    /// @seedoc{/reference/text/strings}
+    /// @param separators The set of single-character separators.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtFirst(const CharSet &separators) const noexcept
+        -> std::optional<std::pair<U32StringEditor, U32StringEditor>>;
+    /// Split around the last matching decoded separator.
+    /// @seedoc{/reference/text/strings}
+    /// @param separator The string separator to exclude from the results.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtLast(const U32String &separator, CharCompareFn compareFn = {}) const noexcept
+        -> std::optional<std::pair<U32StringEditor, U32StringEditor>>;
+    /// Split around the last decoded character contained in the set.
+    /// @seedoc{/reference/text/strings}
+    /// @param separators The set of single-character separators.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtLast(const CharSet &separators) const noexcept
+        -> std::optional<std::pair<U32StringEditor, U32StringEditor>>;
 
 public: // trim
     /// Remove leading and trailing ASCII whitespace or selected characters.
+    /// @param characters The characters to remove. If omitted uses `Char::isAsciiWhitespace()` that removes
+    /// space, tab, line feed, vertical tab, form feed, and carriage return (`[ \\t\\n\\v\\f]`).
+    /// @param side Trim only `StringSide::Front` or `StringSide::Back`; if omitted trim both sides.
+    /// @return A reference to this editor after trimming.
     auto trim(const std::optional<CharSet> &characters = {}, std::optional<StringSide> side = {}) -> U32StringEditor &;
-    /// Return a copy without leading and trailing ASCII whitespace or selected characters.
+    /// Return a string without leading and trailing ASCII whitespace or selected characters.
+    /// Trimming does not copy the original storage and returns a slice of the original string.
+    /// @param characters The characters to remove. If omitted uses `Char::isAsciiWhitespace()` that removes
+    /// space, tab, line feed, vertical tab, form feed, and carriage return (`[ \\t\\n\\v\\f]`).
+    /// @param side Trim only `StringSide::Front` or `StringSide::Back`; if omitted trim both sides.
+    /// @return A trimmed string, leaving this string unchanged.
     [[nodiscard]] auto trimmed(const std::optional<CharSet> &characters = {}, std::optional<StringSide> side = {}) const
         -> U32StringEditor;
 
@@ -224,7 +274,7 @@ public: // modifiers
     /// Append a UTF-32 read-only string one or more times.
     auto append(const U32String &text, unit::ItemCount count = unit::ItemCount::one()) -> U32StringEditor &;
     /// Append one Unicode code point one or more times.
-    auto append(Char character, unit::CpLength count = unit::CpLength::one()) -> U32StringEditor &;
+    auto append(Char character, unit::CpCount count = unit::CpCount::one()) -> U32StringEditor &;
     /// Remove a character-based range.
     auto remove(unit::CpRange range) -> U32StringEditor &;
     /// Remove all characters contained in the set.
@@ -250,31 +300,52 @@ public: // modifiers
     auto replaceAll(const U32String &text, const U32String &replacement, CharCompareFn compareFn = {})
         -> U32StringEditor &;
     /// Truncate this string to a maximum decoded code-point width.
-    auto truncate(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) -> U32StringEditor &;
+    auto truncate(unit::CpCount maximumWidth, TruncateMode mode = TruncateMode::End) -> U32StringEditor &;
     /// Truncate this string to a maximum decoded code-point width, inserting an optional ellipsis.
-    auto truncate(unit::CpLength maximumWidth, TruncateMode mode, const U32String &ellipsis) -> U32StringEditor &;
+    auto truncate(unit::CpCount maximumWidth, TruncateMode mode, const U32String &ellipsis) -> U32StringEditor &;
     /// Return a copy with a character-based range removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removed(unit::CpRange range) const -> U32StringEditor;
     /// Return a copy with all characters from the set removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removedAll(const CharSet &characters) const -> U32StringEditor;
     /// Return a copy with all occurrences of decoded UTF-32 text removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removedAll(const U32String &text, CharCompareFn compareFn = {}) const -> U32StringEditor;
     /// Return a copy with the first occurrence of decoded UTF-32 text removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removedFirst(const U32String &text, CharCompareFn compareFn = {}) const -> U32StringEditor;
     /// Return a copy keeping only a character-based range.
+    /// Non-empty results copy the selected range into separate pruned storage.
     [[nodiscard]] auto kept(unit::CpRange range) const -> U32StringEditor;
     /// Return a copy with text inserted at a character index.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto inserted(unit::CpIndex index, const U32String &text) const -> U32StringEditor;
     /// Return a copy with a character-based range replaced by text.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto replaced(unit::CpRange range, const U32String &text) const -> U32StringEditor;
     /// Return a copy with the first occurrence of decoded UTF-32 text replaced.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto replacedFirst(
         const U32String &text, const U32String &replacement, CharCompareFn compareFn = {}) const -> U32StringEditor;
     /// Return a copy with all characters from the set replaced by one character.
+    /// Unchanged results retain the original storage.
+    /// @param characters The characters to replace.
+    /// @param replacement The replacement character or text.
+    /// @return The replaced value, sharing the original storage when unchanged.
     [[nodiscard]] auto replacedAll(const CharSet &characters, Char replacement) const -> U32StringEditor;
     /// Return a copy with all characters from the set replaced by text.
+    /// Unchanged results retain the original storage.
+    /// @param characters The characters to replace.
+    /// @param replacement The replacement character or text.
+    /// @return The replaced value, sharing the original storage when unchanged.
     [[nodiscard]] auto replacedAll(const CharSet &characters, const U32String &replacement) const -> U32StringEditor;
     /// Return a copy with all occurrences of decoded UTF-32 text replaced.
+    /// Unchanged results retain the original storage.
+    /// @param text The decoded text to replace.
+    /// @param replacement The replacement character or text.
+    /// @param compareFn The optional character comparison function.
+    /// @return The replaced value, sharing the original storage when unchanged.
     [[nodiscard]] auto replacedAll(
         const U32String &text, const U32String &replacement, CharCompareFn compareFn = {}) const -> U32StringEditor;
 
@@ -288,17 +359,20 @@ public: // transform
     /// @copydoc erbsland::text::U8StringEditor::normalized(NormalizationForm) const
     [[nodiscard]] auto normalized(NormalizationForm form) const -> U32StringEditor;
     /// Return a string truncated to a maximum decoded code-point width.
-    [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto truncated(unit::CpCount maximumWidth, TruncateMode mode = TruncateMode::End) const
         -> U32StringEditor;
     /// Return a string truncated to a maximum decoded code-point width, inserting an optional ellipsis.
-    [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode, const U32String &ellipsis) const
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto truncated(unit::CpCount maximumWidth, TruncateMode mode, const U32String &ellipsis) const
         -> U32StringEditor;
     /// Return a string padded to the requested decoded code-point length.
-    [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill = U' ') const
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto aligned(unit::CpCount length, geometry::Alignment alignment, Char fill = U' ') const
         -> U32StringEditor;
     /// Return a bounded representation that is safe for logs and debug output.
     /// @seedoc{/reference/text/formatting_and_parsing}
-    [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
+    [[nodiscard]] auto toSafeString(unit::CpCount maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
         -> U32StringEditor;
 
 public: // conversion
@@ -326,14 +400,15 @@ public: // conversion
     [[nodiscard]] auto toFloatOrThrow(FloatParseOptions options = FloatParseOptions::defaultOptions()) const -> T;
     /// Get the size of the escaped string.
     [[nodiscard]] auto escapedSize(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const noexcept
-        -> unit::CpLength;
+        -> unit::CpCount;
     /// Escape this string according to the given format and amount.
+    /// Unchanged results retain the original storage.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
     [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const
         -> U32StringEditor;
     /// Create a string from one Unicode code point repeated one or more times.
-    [[nodiscard]] static auto fromCharacter(Char character, unit::CpLength count = unit::CpLength::one())
+    [[nodiscard]] static auto fromCharacter(Char character, unit::CpCount count = unit::CpCount::one())
         -> U32StringEditor;
     /// Create a string by joining all parts without a separator.
     /// @param parts The UTF-32 read-only strings to join.
@@ -359,20 +434,20 @@ public: // low-level management
     [[nodiscard]] auto storageId() const noexcept -> mem::StorageIdentifier;
     /// Reserve capacity for this string.
     /// @seeref{u32-string-storage-management}
-    void reserve(unit::CpLength capacity);
+    void reserve(unit::CpCount capacity);
     /// Try to free memory by shrinking the memory to the actual used size.
     /// @seeref{u32-string-storage-management}
     void shrinkToFit();
     /// Get the current storage capacity in UTF-32 code units.
     /// This function returns the reserved capacity available for the string data.
     /// @return The reserved capacity in UTF-32 code units.
-    [[nodiscard]] auto capacity() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto capacity() const noexcept -> unit::CpCount;
     /// Get the current memory usage in bytes.
     /// This function returns an estimation of the actual memory usage, including required management data and
     /// alignment. Use this function if you need to monitor memory usage (e.g. for caching). Be aware that
     /// through fragmentation and other factors, the actual memory usage may be higher than reported.
     /// @return The estimated memory usage in bytes.
-    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteCount;
     /// Detach the string data.
     /// After a call of this method, you have exclusive access to the string data.
     /// Detach is managed automatically, only use this method if you need manual control.
@@ -393,6 +468,9 @@ public: // minimal std-library compatibility
 private:
     /// Create a string with the same storage and a different storage range.
     [[nodiscard]] auto withRange(unit::CpRange range) const noexcept -> U32StringEditor;
+    /// Create shared results around a relative native match range.
+    [[nodiscard]] auto splitAroundRange(unit::CpRange match) const noexcept
+        -> std::optional<std::pair<U32StringEditor, U32StringEditor>>;
     /// Get the view to the string data.
     [[nodiscard]] auto dataView() const noexcept -> impl::U32StringDataView;
     /// Create a new string with the given storage.

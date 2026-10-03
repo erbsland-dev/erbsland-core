@@ -9,7 +9,7 @@
 
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteReader.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -23,7 +23,7 @@ class DerParser final {
 
 public:
     /// Maximum supported DER document length.
-    static constexpr auto cMaximumLength = unit::ByteLength{1U * 1024U * 1024U};
+    static constexpr auto cMaximumLength = unit::ByteCount{1U * 1024U * 1024U};
     /// Maximum supported nesting depth.
     static constexpr auto cMaximumDepth = std::size_t{32U};
     /// Maximum number of ASN.1 nodes.
@@ -33,9 +33,9 @@ public:
     /// Create a new DER parser instance.
     explicit DerParser(mem::ByteBlock der) noexcept;
     /// Parse one complete canonical DER value.
+    /// The input must stay within `cMaximumLength`, `cMaximumDepth`, and `cMaximumNodes`.
     /// @return The root of the immutable parsed tree.
     /// @throws err::ParseError If the input is malformed, noncanonical, or has trailing data.
-    /// @throws err::OutOfRangeError If a fixed parser resource limit is exceeded.
     [[nodiscard]] auto parseDocument() -> Asn1Node;
 
 private:
@@ -44,7 +44,7 @@ private:
     /// Decode the low-tag-number field or following high-tag-number integer.
     [[nodiscard]] auto readTagNumber(uint8_t identifier) -> uint32_t;
     /// Decode one canonical definite DER length.
-    [[nodiscard]] auto readLength() -> unit::ByteLength;
+    [[nodiscard]] auto readLength() -> unit::ByteCount;
     /// Read one byte or report a positioned truncation error.
     [[nodiscard]] auto readByte() -> uint8_t;
     /// Validate the primitive/constructed form required for a universal tag.
@@ -52,7 +52,7 @@ private:
         Asn1TagClass tagClass, uint32_t tagNumber, bool constructed, unit::ByteIndex encodedOffset) const;
     /// Validate a supported primitive value.
     void validatePrimitive(
-        Asn1TagClass tagClass, uint32_t tagNumber, unit::ByteIndex contentOffset, unit::ByteLength contentLength) const;
+        Asn1TagClass tagClass, uint32_t tagNumber, unit::ByteIndex contentOffset, unit::ByteCount contentLength) const;
     /// Validate canonical DER INTEGER content.
     void validateInteger(mem::ConstByteSpan content, unit::ByteIndex contentOffset) const;
     /// Validate canonical DER BIT STRING content.

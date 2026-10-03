@@ -46,14 +46,14 @@
 #include "../../math/IntegerTraits.hpp"
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/StorageIdentifier.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/CpIndex.hpp"
-#include "../../unit/CpLength.hpp"
 #include "../../unit/CpRange.hpp"
 #include "../../unit/ItemCount.hpp"
-#include "../../unit/U16DataIndex.hpp"
-#include "../../unit/U16DataLength.hpp"
-#include "../../unit/U16DataRange.hpp"
+#include "../../unit/U16Count.hpp"
+#include "../../unit/U16Index.hpp"
+#include "../../unit/U16Range.hpp"
 #include "../../util/impl/ComparisonHelper.hpp"
 #include "../../util/LoopResult.hpp"
 
@@ -68,14 +68,16 @@
 
 namespace erbsland::text {
 
+// clang-format off
 /// An owning UTF-16 string editor with copy-on-write semantics for sequential code-point access.
 /// Use it as a local mutable working value for UTF-16 construction and multi-step editing.
 /// Use `U16String` for storage, read-only access and copy-based transformations.
 /// Always creates a copy of the data when constructed from a read-only string.
 /// Use `U16StringEditor` only when the mutable workflow requires UTF-16 encoding.
 /// @seedoc{/reference/text/strings}
-/// @tested{U16StringTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest}
+/// @tested{U16StringTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest StringReplacementTest StringBinaryComparisonTest StringSeparatorSplitTest StringEncodingValidationTest}
 class U16StringEditor {
+    // clang-format on
     friend class debug::impl::StringDebugAccess<U16StringEditor>;
     friend class U16String;
     friend class impl::U16StringBuilder;
@@ -110,15 +112,26 @@ public: // operators
     /// Compare two strings by decoded code point.
     [[nodiscard]] auto operator<=>(const U16String &other) const noexcept -> std::strong_ordering;
     ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const U16String &other, other);
-    /// @copydoc erbsland::text::U16String::operator[](unit::U16DataIndex) const
-    [[nodiscard]] auto operator[](unit::U16DataIndex index) const noexcept -> Char;
+    /// @copydoc erbsland::text::U16String::operator[](unit::U16Index) const
+    [[nodiscard]] auto operator[](unit::U16Index index) const noexcept -> Char;
     /// @copydoc erbsland::text::U16String::operator[](unit::CpIndex) const
     [[nodiscard]] auto operator[](unit::CpIndex index) const noexcept -> Char;
 
 public: // comparison
-    /// Compare two strings by decoded code point, replacing malformed UTF-16 with `Char::replacement()`.
+    /// Compare decoded code points, replacing malformed UTF-16 with `Char::replacement()`.
+    /// No normalization or locale collation is performed.
+    /// @param other The string to compare.
+    /// @param compareFn Optional character comparator; numeric code-point order is the default.
+    /// @return Lexicographic decoded-character order, with a shorter equal prefix first.
+    /// @seedoc{/topics/text_strings/comparing_strings}
     [[nodiscard]] auto compare(const U16String &other, CharCompareFn compareFn = {}) const noexcept
         -> std::strong_ordering;
+    /// Compare the visible unsigned storage bytes without decoding or allocation.
+    /// Native byte order is used; binary equality can differ from decoded equality.
+    /// @param other The same-width string to compare.
+    /// @return Lexicographic byte order, with a shorter equal byte prefix first.
+    /// @seedoc{/topics/text_strings/comparing_strings}
+    [[nodiscard]] auto compareBinary(const U16String &other) const noexcept -> std::strong_ordering;
     /// Create a hash value from the decoded code points.
     [[nodiscard]] auto toHash() const noexcept -> std::size_t;
     /// Create a hash value from the decoded code points after Unicode simple case folding.
@@ -127,8 +140,10 @@ public: // comparison
 public: // tests
     /// @copydoc erbsland::text::U16String::isEmpty() const
     [[nodiscard]] auto isEmpty() const noexcept -> bool;
-    /// @copydoc erbsland::text::U16String::isValidUtf16() const
-    [[nodiscard]] auto isValidUtf16() const noexcept -> bool;
+    /// @copydoc erbsland::text::U16String::isEncodingValid() const
+    [[nodiscard]] auto isEncodingValid() const noexcept -> bool;
+    /// @copydoc erbsland::text::U16String::encodingValidOrThrow() const
+    void encodingValidOrThrow() const;
     /// @copydoc erbsland::text::U16String::startsWith(const U16String &, CharCompareFn) const
     [[nodiscard]] auto startsWith(const U16String &other, CharCompareFn compareFn = {}) const noexcept -> bool;
     /// @copydoc erbsland::text::U16String::endsWith(const U16String &, CharCompareFn) const
@@ -146,96 +161,126 @@ public: // tests
 
 public: // read
     /// @copydoc erbsland::text::U16String::length() const
-    [[nodiscard]] auto length() const noexcept -> unit::U16DataLength;
+    [[nodiscard]] auto length() const noexcept -> unit::U16Count;
     /// @copydoc erbsland::text::U16String::characterLength() const
-    [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto characterLength() const noexcept -> unit::CpCount;
     /// @copydoc erbsland::text::U16String::displayWidth() const
     [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// @copydoc erbsland::text::U16String::indexAt(StringSide) const
-    [[nodiscard]] auto indexAt(StringSide side) const noexcept -> unit::U16DataIndex;
+    [[nodiscard]] auto indexAt(StringSide side) const noexcept -> unit::U16Index;
     /// @copydoc erbsland::text::U16String::charAt(StringSide) const
     [[nodiscard]] auto charAt(StringSide side) const noexcept -> Char;
-    /// @copydoc erbsland::text::U16String::charAt(unit::U16DataIndex) const
-    [[nodiscard]] auto charAt(unit::U16DataIndex startIndex) const noexcept -> Char;
-    /// @copydoc erbsland::text::U16String::readCharAndAdvance(unit::U16DataIndex &) const
-    [[nodiscard]] auto readCharAndAdvance(unit::U16DataIndex &index) const noexcept -> Char;
-    /// @copydoc erbsland::text::U16String::readCharAndRetreat(unit::U16DataIndex &) const
-    [[nodiscard]] auto readCharAndRetreat(unit::U16DataIndex &index) const noexcept -> Char;
+    /// @copydoc erbsland::text::U16String::charAt(unit::U16Index) const
+    [[nodiscard]] auto charAt(unit::U16Index startIndex) const noexcept -> Char;
+    /// @copydoc erbsland::text::U16String::readCharAndAdvance(unit::U16Index &) const
+    [[nodiscard]] auto readCharAndAdvance(unit::U16Index &index) const noexcept -> Char;
+    /// @copydoc erbsland::text::U16String::readCharAndRetreat(unit::U16Index &) const
+    [[nodiscard]] auto readCharAndRetreat(unit::U16Index &index) const noexcept -> Char;
     /// @copydoc erbsland::text::U16String::charAt(unit::CpIndex) const
     [[nodiscard]] auto charAt(unit::CpIndex index) const noexcept -> Char;
-    /// @copydoc erbsland::text::U16String::advance(unit::U16DataIndex &, unit::CpLength) const
-    auto advance(unit::U16DataIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
-    /// @copydoc erbsland::text::U16String::retreat(unit::U16DataIndex &, unit::CpLength) const
-    auto retreat(unit::U16DataIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
+    /// @copydoc erbsland::text::U16String::advance(unit::U16Index &, unit::CpCount) const
+    auto advance(unit::U16Index &index, unit::CpCount count = unit::CpCount::one()) const noexcept -> bool;
+    /// @copydoc erbsland::text::U16String::retreat(unit::U16Index &, unit::CpCount) const
+    auto retreat(unit::U16Index &index, unit::CpCount count = unit::CpCount::one()) const noexcept -> bool;
 
 public: // byte/char index conversion.
     /// @copydoc erbsland::text::U16String::indexAt(unit::CpIndex) const
-    [[nodiscard]] auto indexAt(unit::CpIndex index) const noexcept -> unit::U16DataIndex;
-    /// @copydoc erbsland::text::U16String::toCharIndex(unit::U16DataIndex) const
-    [[nodiscard]] auto toCharIndex(unit::U16DataIndex index) const noexcept -> unit::CpIndex;
+    [[nodiscard]] auto indexAt(unit::CpIndex index) const noexcept -> unit::U16Index;
+    /// @copydoc erbsland::text::U16String::toCharIndex(unit::U16Index) const
+    [[nodiscard]] auto toCharIndex(unit::U16Index index) const noexcept -> unit::CpIndex;
 
 public: // slice
-    /// @copydoc erbsland::text::U16String::slice(unit::U16DataRange) const
-    [[nodiscard]] auto slice(unit::U16DataRange range) const noexcept -> U16StringEditor;
+    /// @copydoc erbsland::text::U16String::slice(unit::U16Range) const
+    [[nodiscard]] auto slice(unit::U16Range range) const noexcept -> U16StringEditor;
     /// @copydoc erbsland::text::U16String::slice(unit::CpRange) const
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U16StringEditor;
-    /// @copydoc erbsland::text::U16String::slice(StringSide, unit::U16DataLength) const
-    [[nodiscard]] auto slice(StringSide side, unit::U16DataLength length) const noexcept -> U16StringEditor;
-    /// @copydoc erbsland::text::U16String::slice(StringSide, unit::U16DataIndex) const
-    [[nodiscard]] auto slice(StringSide side, unit::U16DataIndex index) const noexcept -> U16StringEditor;
-    /// @copydoc erbsland::text::U16String::slice(StringSide, unit::CpLength) const
-    [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U16StringEditor;
+    /// @copydoc erbsland::text::U16String::slice(StringSide, unit::U16Count) const
+    [[nodiscard]] auto slice(StringSide side, unit::U16Count length) const noexcept -> U16StringEditor;
+    /// @copydoc erbsland::text::U16String::slice(StringSide, unit::U16Index) const
+    [[nodiscard]] auto slice(StringSide side, unit::U16Index index) const noexcept -> U16StringEditor;
+    /// @copydoc erbsland::text::U16String::slice(StringSide, unit::CpCount) const
+    [[nodiscard]] auto slice(StringSide side, unit::CpCount length) const noexcept -> U16StringEditor;
     /// @copydoc erbsland::text::U16String::slice(StringSide, unit::CpIndex) const
     [[nodiscard]] auto slice(StringSide side, unit::CpIndex index) const noexcept -> U16StringEditor;
     /// @copydoc erbsland::text::U16String::slice(StringSide) const
     [[nodiscard]] auto slice(StringSide side) const noexcept -> std::tuple<Char, U16StringEditor>;
-    /// @copydoc erbsland::text::U16String::splitAt(unit::U16DataIndex) const
-    [[nodiscard]] auto splitAt(unit::U16DataIndex index) const noexcept -> std::pair<U16StringEditor, U16StringEditor>;
+    /// @copydoc erbsland::text::U16String::splitAt(unit::U16Index) const
+    [[nodiscard]] auto splitAt(unit::U16Index index) const noexcept -> std::pair<U16StringEditor, U16StringEditor>;
     /// @copydoc erbsland::text::U16String::splitAt(unit::CpIndex) const
     [[nodiscard]] auto splitAt(unit::CpIndex index) const noexcept -> std::pair<U16StringEditor, U16StringEditor>;
+    /// Split around the first matching decoded separator.
+    /// @seedoc{/reference/text/strings}
+    /// @param separator The string separator to exclude from the results.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtFirst(const U16String &separator, CharCompareFn compareFn = {}) const noexcept
+        -> std::optional<std::pair<U16StringEditor, U16StringEditor>>;
+    /// Split around the first decoded character contained in the set.
+    /// @seedoc{/reference/text/strings}
+    /// @param separators The set of single-character separators.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtFirst(const CharSet &separators) const noexcept
+        -> std::optional<std::pair<U16StringEditor, U16StringEditor>>;
+    /// Split around the last matching decoded separator.
+    /// @seedoc{/reference/text/strings}
+    /// @param separator The string separator to exclude from the results.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtLast(const U16String &separator, CharCompareFn compareFn = {}) const noexcept
+        -> std::optional<std::pair<U16StringEditor, U16StringEditor>>;
+    /// Split around the last decoded character contained in the set.
+    /// @seedoc{/reference/text/strings}
+    /// @param separators The set of single-character separators.
+    /// @return Shared slices before and after the match, or no value for an absent or empty separator.
+    [[nodiscard]] auto splitAtLast(const CharSet &separators) const noexcept
+        -> std::optional<std::pair<U16StringEditor, U16StringEditor>>;
 
 public: // trim
     /// Remove leading and trailing ASCII whitespace or selected characters.
+    /// @param characters The characters to remove. If omitted uses `Char::isAsciiWhitespace()` that removes
+    /// space, tab, line feed, vertical tab, form feed, and carriage return (`[ \\t\\n\\v\\f]`).
+    /// @param side Trim only `StringSide::Front` or `StringSide::Back`; if omitted trim both sides.
+    /// @return A reference to this editor after trimming.
     auto trim(const std::optional<CharSet> &characters = {}, std::optional<StringSide> side = {}) -> U16StringEditor &;
-    /// Return a copy without leading and trailing ASCII whitespace or selected characters.
+    /// Return a string without leading and trailing ASCII whitespace or selected characters.
+    /// Trimming does not copy the original storage and returns a slice of the original string.
+    /// @param characters The characters to remove. If omitted uses `Char::isAsciiWhitespace()` that removes
+    /// space, tab, line feed, vertical tab, form feed, and carriage return (`[ \\t\\n\\v\\f]`).
+    /// @param side Trim only `StringSide::Front` or `StringSide::Back`; if omitted trim both sides.
+    /// @return A trimmed string, leaving this string unchanged.
     [[nodiscard]] auto trimmed(const std::optional<CharSet> &characters = {}, std::optional<StringSide> side = {}) const
         -> U16StringEditor;
 
 public: // find
     /// @copydoc erbsland::text::U16String::findFirstOf(const CharSet &) const
-    [[nodiscard]] auto findFirstOf(const CharSet &characters) const noexcept -> unit::U16DataIndex;
-    /// @copydoc erbsland::text::U16String::findFirstOf(const CharSet &, unit::U16DataIndex) const
-    [[nodiscard]] auto findFirstOf(const CharSet &characters, unit::U16DataIndex start) const noexcept
-        -> unit::U16DataIndex;
+    [[nodiscard]] auto findFirstOf(const CharSet &characters) const noexcept -> unit::U16Index;
+    /// @copydoc erbsland::text::U16String::findFirstOf(const CharSet &, unit::U16Index) const
+    [[nodiscard]] auto findFirstOf(const CharSet &characters, unit::U16Index start) const noexcept -> unit::U16Index;
     /// @copydoc erbsland::text::U16String::findFirstNotOf(const CharSet &) const
-    [[nodiscard]] auto findFirstNotOf(const CharSet &characters) const noexcept -> unit::U16DataIndex;
-    /// @copydoc erbsland::text::U16String::findFirstNotOf(const CharSet &, unit::U16DataIndex) const
-    [[nodiscard]] auto findFirstNotOf(const CharSet &characters, unit::U16DataIndex start) const noexcept
-        -> unit::U16DataIndex;
+    [[nodiscard]] auto findFirstNotOf(const CharSet &characters) const noexcept -> unit::U16Index;
+    /// @copydoc erbsland::text::U16String::findFirstNotOf(const CharSet &, unit::U16Index) const
+    [[nodiscard]] auto findFirstNotOf(const CharSet &characters, unit::U16Index start) const noexcept -> unit::U16Index;
     /// @copydoc erbsland::text::U16String::findLastOf(const CharSet &) const
-    [[nodiscard]] auto findLastOf(const CharSet &characters) const noexcept -> unit::U16DataIndex;
-    /// @copydoc erbsland::text::U16String::findLastOf(const CharSet &, unit::U16DataIndex) const
-    [[nodiscard]] auto findLastOf(const CharSet &characters, unit::U16DataIndex end) const noexcept
-        -> unit::U16DataIndex;
+    [[nodiscard]] auto findLastOf(const CharSet &characters) const noexcept -> unit::U16Index;
+    /// @copydoc erbsland::text::U16String::findLastOf(const CharSet &, unit::U16Index) const
+    [[nodiscard]] auto findLastOf(const CharSet &characters, unit::U16Index end) const noexcept -> unit::U16Index;
     /// @copydoc erbsland::text::U16String::findLastNotOf(const CharSet &) const
-    [[nodiscard]] auto findLastNotOf(const CharSet &characters) const noexcept -> unit::U16DataIndex;
-    /// @copydoc erbsland::text::U16String::findLastNotOf(const CharSet &, unit::U16DataIndex) const
-    [[nodiscard]] auto findLastNotOf(const CharSet &characters, unit::U16DataIndex end) const noexcept
-        -> unit::U16DataIndex;
+    [[nodiscard]] auto findLastNotOf(const CharSet &characters) const noexcept -> unit::U16Index;
+    /// @copydoc erbsland::text::U16String::findLastNotOf(const CharSet &, unit::U16Index) const
+    [[nodiscard]] auto findLastNotOf(const CharSet &characters, unit::U16Index end) const noexcept -> unit::U16Index;
     /// Find text in this string.
     /// @param text The text to find.
     /// @param compareFn Optional character comparison function.
-    /// @return The UTF-16 data index of the first match, or `U16DataIndex::noIndex()` if there is no match.
-    [[nodiscard]] auto find(const U16String &text, CharCompareFn compareFn = {}) const noexcept -> unit::U16DataIndex;
+    /// @return The UTF-16 data index of the first match, or `U16Index::noIndex()` if there is no match.
+    [[nodiscard]] auto find(const U16String &text, CharCompareFn compareFn = {}) const noexcept -> unit::U16Index;
     /// Find text in this string starting at a UTF-16 data index.
     /// @param text The text to find.
     /// @param start The UTF-16 data index where the search starts.
     ///     If `start` is no-index, this function returns no-index immediately.
     /// @param compareFn Optional character comparison function.
-    /// @return The UTF-16 data index of the first match, or `U16DataIndex::noIndex()` if there is no match.
-    [[nodiscard]] auto find(
-        const U16String &text, unit::U16DataIndex start, CharCompareFn compareFn = {}) const noexcept
-        -> unit::U16DataIndex;
+    /// @return The UTF-16 data index of the first match, or `U16Index::noIndex()` if there is no match.
+    [[nodiscard]] auto find(const U16String &text, unit::U16Index start, CharCompareFn compareFn = {}) const noexcept
+        -> unit::U16Index;
 
 public: // modifiers
     /// Remove all characters from the string.
@@ -246,9 +291,9 @@ public: // modifiers
     /// Append a UTF-16 read-only string one or more times.
     auto append(const U16String &text, unit::ItemCount count = unit::ItemCount::one()) -> U16StringEditor &;
     /// Append one Unicode code point one or more times.
-    auto append(Char character, unit::CpLength count = unit::CpLength::one()) -> U16StringEditor &;
+    auto append(Char character, unit::CpCount count = unit::CpCount::one()) -> U16StringEditor &;
     /// Remove a UTF-16 data range.
-    auto remove(unit::U16DataRange range) -> U16StringEditor &;
+    auto remove(unit::U16Range range) -> U16StringEditor &;
     /// Remove a character-based range.
     auto remove(unit::CpRange range) -> U16StringEditor &;
     /// Remove all characters contained in the set.
@@ -258,15 +303,15 @@ public: // modifiers
     /// Remove the first occurrence of the given decoded UTF-16 text.
     auto removeFirst(const U16String &text, CharCompareFn compareFn = {}) -> U16StringEditor &;
     /// Keep only a UTF-16 data range.
-    auto keep(unit::U16DataRange range) -> U16StringEditor &;
+    auto keep(unit::U16Range range) -> U16StringEditor &;
     /// Keep only a character-based range.
     auto keep(unit::CpRange range) -> U16StringEditor &;
     /// Insert text at a UTF-16 data index.
-    auto insert(unit::U16DataIndex index, const U16String &text) -> U16StringEditor &;
+    auto insert(unit::U16Index index, const U16String &text) -> U16StringEditor &;
     /// Insert text at a character index.
     auto insert(unit::CpIndex index, const U16String &text) -> U16StringEditor &;
     /// Replace a UTF-16 data range with text.
-    auto replace(unit::U16DataRange range, const U16String &text) -> U16StringEditor &;
+    auto replace(unit::U16Range range, const U16String &text) -> U16StringEditor &;
     /// Replace a character-based range with text.
     auto replace(unit::CpRange range, const U16String &text) -> U16StringEditor &;
     /// Replace the first occurrence of decoded UTF-16 text.
@@ -280,39 +325,64 @@ public: // modifiers
     auto replaceAll(const U16String &text, const U16String &replacement, CharCompareFn compareFn = {})
         -> U16StringEditor &;
     /// Truncate this string to a maximum decoded code-point width.
-    auto truncate(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) -> U16StringEditor &;
+    auto truncate(unit::CpCount maximumWidth, TruncateMode mode = TruncateMode::End) -> U16StringEditor &;
     /// Truncate this string to a maximum decoded code-point width, inserting an optional ellipsis.
-    auto truncate(unit::CpLength maximumWidth, TruncateMode mode, const U16String &ellipsis) -> U16StringEditor &;
+    auto truncate(unit::CpCount maximumWidth, TruncateMode mode, const U16String &ellipsis) -> U16StringEditor &;
     /// Return a copy with a UTF-16 data range removed.
-    [[nodiscard]] auto removed(unit::U16DataRange range) const -> U16StringEditor;
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto removed(unit::U16Range range) const -> U16StringEditor;
     /// Return a copy with a character-based range removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removed(unit::CpRange range) const -> U16StringEditor;
     /// Return a copy with all characters from the set removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removedAll(const CharSet &characters) const -> U16StringEditor;
     /// Return a copy with all occurrences of decoded UTF-16 text removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removedAll(const U16String &text, CharCompareFn compareFn = {}) const -> U16StringEditor;
     /// Return a copy with the first occurrence of decoded UTF-16 text removed.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto removedFirst(const U16String &text, CharCompareFn compareFn = {}) const -> U16StringEditor;
     /// Return a copy keeping only a UTF-16 data range.
-    [[nodiscard]] auto kept(unit::U16DataRange range) const -> U16StringEditor;
+    /// Non-empty results copy the selected range into separate pruned storage.
+    [[nodiscard]] auto kept(unit::U16Range range) const -> U16StringEditor;
     /// Return a copy keeping only a character-based range.
+    /// Non-empty results copy the selected range into separate pruned storage.
     [[nodiscard]] auto kept(unit::CpRange range) const -> U16StringEditor;
     /// Return a copy with text inserted at a UTF-16 data index.
-    [[nodiscard]] auto inserted(unit::U16DataIndex index, const U16String &text) const -> U16StringEditor;
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto inserted(unit::U16Index index, const U16String &text) const -> U16StringEditor;
     /// Return a copy with text inserted at a character index.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto inserted(unit::CpIndex index, const U16String &text) const -> U16StringEditor;
     /// Return a copy with a UTF-16 data range replaced by text.
-    [[nodiscard]] auto replaced(unit::U16DataRange range, const U16String &text) const -> U16StringEditor;
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto replaced(unit::U16Range range, const U16String &text) const -> U16StringEditor;
     /// Return a copy with a character-based range replaced by text.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto replaced(unit::CpRange range, const U16String &text) const -> U16StringEditor;
     /// Return a copy with the first occurrence of decoded UTF-16 text replaced.
+    /// Unchanged results retain the original storage.
     [[nodiscard]] auto replacedFirst(
         const U16String &text, const U16String &replacement, CharCompareFn compareFn = {}) const -> U16StringEditor;
     /// Return a copy with all characters from the set replaced by one character.
+    /// Unchanged results retain the original storage.
+    /// @param characters The characters to replace.
+    /// @param replacement The replacement character or text.
+    /// @return The replaced value, sharing the original storage when unchanged.
     [[nodiscard]] auto replacedAll(const CharSet &characters, Char replacement) const -> U16StringEditor;
     /// Return a copy with all characters from the set replaced by text.
+    /// Unchanged results retain the original storage.
+    /// @param characters The characters to replace.
+    /// @param replacement The replacement character or text.
+    /// @return The replaced value, sharing the original storage when unchanged.
     [[nodiscard]] auto replacedAll(const CharSet &characters, const U16String &replacement) const -> U16StringEditor;
     /// Return a copy with all occurrences of decoded UTF-16 text replaced.
+    /// Unchanged results retain the original storage.
+    /// @param text The decoded text to replace.
+    /// @param replacement The replacement character or text.
+    /// @param compareFn The optional character comparison function.
+    /// @return The replaced value, sharing the original storage when unchanged.
     [[nodiscard]] auto replacedAll(
         const U16String &text, const U16String &replacement, CharCompareFn compareFn = {}) const -> U16StringEditor;
 
@@ -326,17 +396,20 @@ public: // transform
     /// @copydoc erbsland::text::U8StringEditor::normalized(NormalizationForm) const
     [[nodiscard]] auto normalized(NormalizationForm form) const -> U16StringEditor;
     /// Return a string truncated to a maximum decoded code-point width.
-    [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto truncated(unit::CpCount maximumWidth, TruncateMode mode = TruncateMode::End) const
         -> U16StringEditor;
     /// Return a string truncated to a maximum decoded code-point width, inserting an optional ellipsis.
-    [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode, const U16String &ellipsis) const
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto truncated(unit::CpCount maximumWidth, TruncateMode mode, const U16String &ellipsis) const
         -> U16StringEditor;
     /// Return a string padded to the requested decoded code-point length.
-    [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill = U' ') const
+    /// Unchanged results retain the original storage.
+    [[nodiscard]] auto aligned(unit::CpCount length, geometry::Alignment alignment, Char fill = U' ') const
         -> U16StringEditor;
     /// Return a bounded representation that is safe for logs and debug output.
     /// @seedoc{/reference/text/formatting_and_parsing}
-    [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
+    [[nodiscard]] auto toSafeString(unit::CpCount maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
         -> U16StringEditor;
 
 public: // conversion
@@ -364,14 +437,15 @@ public: // conversion
     [[nodiscard]] auto toFloatOrThrow(FloatParseOptions options = FloatParseOptions::defaultOptions()) const -> T;
     /// Get the size of the escaped string.
     [[nodiscard]] auto escapedSize(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const noexcept
-        -> unit::U16DataLength;
+        -> unit::U16Count;
     /// Escape this string according to the given format and amount.
+    /// Unchanged results retain the original storage.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
     [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const
         -> U16StringEditor;
     /// Create a string from one Unicode code point repeated one or more times.
-    [[nodiscard]] static auto fromCharacter(Char character, unit::CpLength count = unit::CpLength::one())
+    [[nodiscard]] static auto fromCharacter(Char character, unit::CpCount count = unit::CpCount::one())
         -> U16StringEditor;
     /// Create a string by joining all parts without a separator.
     /// @param parts The UTF-16 read-only strings to join.
@@ -397,20 +471,20 @@ public: // low-level management
     [[nodiscard]] auto storageId() const noexcept -> mem::StorageIdentifier;
     /// Reserve capacity for this string.
     /// @seeref{u16-string-storage-management}
-    void reserve(unit::U16DataLength capacity);
+    void reserve(unit::U16Count capacity);
     /// Try to free memory by shrinking the memory to the actual used size.
     /// @seeref{u16-string-storage-management}
     void shrinkToFit();
     /// Get the current storage capacity in UTF-16 code units.
     /// This function returns the reserved capacity available for the string data.
     /// @return The reserved capacity in UTF-16 code units.
-    [[nodiscard]] auto capacity() const noexcept -> unit::U16DataLength;
+    [[nodiscard]] auto capacity() const noexcept -> unit::U16Count;
     /// Get the current memory usage in bytes.
     /// This function returns an estimation of the actual memory usage, including required management data and
     /// alignment. Use this function if you need to monitor memory usage (e.g. for caching). Be aware that
     /// through fragmentation and other factors, the actual memory usage may be higher than reported.
     /// @return The estimated memory usage in bytes.
-    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteCount;
     /// Detach the string data.
     /// After a call of this method, you have exclusive access to the string data.
     /// Detach is managed automatically, only use this method if you need manual control.
@@ -430,7 +504,10 @@ public: // minimal std-library compatibility
 
 private:
     /// Create a string with the same storage and a different storage range.
-    [[nodiscard]] auto withRange(unit::U16DataRange range) const noexcept -> U16StringEditor;
+    [[nodiscard]] auto withRange(unit::U16Range range) const noexcept -> U16StringEditor;
+    /// Create shared results around a relative native match range.
+    [[nodiscard]] auto splitAroundRange(unit::U16Range match) const noexcept
+        -> std::optional<std::pair<U16StringEditor, U16StringEditor>>;
     /// Get the view to the string data.
     [[nodiscard]] auto dataView() const noexcept -> impl::U16StringDataView;
     /// Create a new string with the given storage.

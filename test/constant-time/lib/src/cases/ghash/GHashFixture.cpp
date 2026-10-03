@@ -1,12 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "GHashFixture.hpp"
 
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Random.hpp>
 
 namespace app::constant_time {
 
@@ -15,10 +14,10 @@ using namespace el::text::literals;
 GHashFixture::GHashFixture(el::Random &random, const bool population, bool accumulate, bool automatic) :
     _accumulate{accumulate}, _automatic{automatic} {
 
-    const auto bytes = input(random, population, 16);
+    const auto bytes = input(random, population, el::ByteCount{16});
     const auto subkey = ci::GaloisMultiplier::Block::fromSpanOrThrow(bytes.span());
     const auto value =
-        ci::GaloisMultiplier::Block::fromSpanOrThrow(el::ByteBuffer{el::ByteLength{16}, el::Byte{0x55U}}.span());
+        ci::GaloisMultiplier::Block::fromSpanOrThrow(el::ByteBuffer{el::ByteCount{16}, el::Byte{0x55U}}.span());
     auto multiplier = automatic ? ci::createGaloisMultiplier() : ci::createPortableGaloisMultiplier();
     require(multiplier->multiply(value, subkey) == ci::createPortableGaloisMultiplier()->multiply(value, subkey));
     if (accumulate) {

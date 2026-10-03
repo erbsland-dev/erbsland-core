@@ -33,7 +33,7 @@ auto WindowsSystemInfoBackend::currentProcessId() const noexcept -> ProcessId {
 }
 
 auto WindowsSystemInfoBackend::loadProcessInfo(const ProcessId processId) const -> ProcessInfoData {
-    const auto rawProcessId = ProcessIdAccess::toNative(processId);
+    const auto rawProcessId = ProcessIdAccess{processId}.toNative();
     if (!processId.isValid() || rawProcessId > std::numeric_limits<DWORD>::max()) {
         auto data = ProcessInfoData{};
         data.processError = {"Process does not exist."_el, {}};

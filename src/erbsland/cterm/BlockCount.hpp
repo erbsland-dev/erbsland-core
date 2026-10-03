@@ -4,11 +4,11 @@
 
 #include "BlockUnit.hpp"
 
-#include "../unit/IntegerUnitAmount.hpp"
+#include "../unit/IntegerUnitCount.hpp"
 
 namespace erbsland::cterm {
 
 /// A block-string count or length.
-using BlockCount = unit::IntegerUnitAmount<BlockUnit>;
+using BlockCount = unit::IntegerUnitCount<BlockUnit>;
 
 }

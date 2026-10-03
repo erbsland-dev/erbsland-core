@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "UserLookup.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <utility>
 
 namespace erbsland::system {
 
+using namespace err;
 using namespace text::literals;
 
 UserLookup::UserLookup() : UserLookup{impl::createUserLookupBackend()} {
@@ -16,34 +17,34 @@ UserLookup::UserLookup() : UserLookup{impl::createUserLookupBackend()} {
 
 UserLookup::UserLookup(impl::UserLookupBackendPtr backend) : _backend{std::move(backend)} {
     if (_backend == nullptr) {
-        throw err::ParameterError{"The user lookup backend is missing."_el, "backend"_el};
+        throw ParameterFailure{"The user lookup backend is missing."_el, "backend"_el};
     }
 }
 
 auto UserLookup::userNameForId(const UserId &id) -> UserName {
     if (id.isEmpty()) {
-        throw err::ParameterError{"Cannot resolve an empty user identifier."_el, "id"_el};
+        throw ParameterFailure{"Cannot resolve an empty user identifier."_el, "id"_el};
     }
     return cachedUserNameForId(id);
 }
 
 auto UserLookup::groupNameForId(const GroupId &id) -> GroupName {
     if (id.isEmpty()) {
-        throw err::ParameterError{"Cannot resolve an empty group identifier."_el, "id"_el};
+        throw ParameterFailure{"Cannot resolve an empty group identifier."_el, "id"_el};
     }
     return cachedGroupNameForId(id);
 }
 
 auto UserLookup::userIdForName(const UserName &name) -> UserId {
     if (name.isEmpty()) {
-        throw err::ParameterError{"Cannot resolve an empty user name."_el, "name"_el};
+        throw ParameterFailure{"Cannot resolve an empty user name."_el, "name"_el};
     }
     return cachedUserIdForName(name);
 }
 
 auto UserLookup::groupIdForName(const GroupName &name) -> GroupId {
     if (name.isEmpty()) {
-        throw err::ParameterError{"Cannot resolve an empty group name."_el, "name"_el};
+        throw ParameterFailure{"Cannot resolve an empty group name."_el, "name"_el};
     }
     return cachedGroupIdForName(name);
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Literals.hpp"
 #include "StringLiteral_fwd.hpp"
 
 #include "u8/U8StringLiteral.hpp"

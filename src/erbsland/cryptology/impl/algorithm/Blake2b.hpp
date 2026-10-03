@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../math/IntegerBitOperations.hpp"
 #include "../../../mem/ByteArray.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../mem/ByteSpan.hpp"
 #include "../../../mem/impl/SecureErase.hpp"
 #include "../../../text/Literals.hpp"
+#include "../../../unit/ByteCount.hpp"
 #include "../../../unit/ByteIndex.hpp"
-#include "../../../unit/ByteLength.hpp"
 
 #include <algorithm>
 #include <array>
@@ -38,10 +38,9 @@ class Blake2b final {
 public:
     /// Create an unkeyed BLAKE2b instance with a selected digest length.
     /// @param digestLength The digest length from 1 through 64 bytes.
-    /// @throws err::ParameterError If `digestLength` is outside the supported range.
-    explicit Blake2b(const ByteLength digestLength) : _digestLength{digestLength} {
-        if (digestLength.isZero() || digestLength > ByteLength{64U}) {
-            throw err::ParameterError{"BLAKE2b digest length must be between 1 and 64 bytes"_el, "digestLength"_el};
+    explicit Blake2b(const ByteCount digestLength) : _digestLength{digestLength} {
+        if (digestLength.isZero() || digestLength > ByteCount{64U}) {
+            throw err::ParameterFailure{"BLAKE2b digest length must be between 1 and 64 bytes"_el, "digestLength"_el};
         }
         _state = cInitializationVector;
         // RFC 7693 section 2.5 packs digest length into bits 0-7, key length into 8-15, fanout into 16-23, and
@@ -66,7 +65,7 @@ public:
         _buffer.secureErase();
         _counterLow = 0;
         _counterHigh = 0;
-        _bufferLength = ByteLength::zero();
+        _bufferLength = ByteCount::zero();
         _finalized = false;
         _state = cInitializationVector;
         _state[0] ^= 0x01010000U ^ static_cast<uint64_t>(_digestLength.toRawValue());
@@ -81,26 +80,26 @@ public:
         return digest();
     }
     /// Add exact message bytes.
+    /// Must not be called after the digest has been finalized.
     /// @param input The next message bytes.
-    /// @throws err::LogicError If the digest was already finalized.
     void update(const ConstByteSpan input) {
         if (_finalized) {
-            throw err::LogicError{"BLAKE2b input cannot be added after finalization"};
+            throw err::LogicFailure{"BLAKE2b input cannot be added after finalization"};
         }
         // Retain one full block until more input arrives. RFC 7693 section 3.3 marks the actual final block during
         // compression, so a message ending exactly at a block boundary must not compress that block early.
         auto position = ByteIndex::zero();
-        while (position.isWithin(ByteLength::fromSizeT(input.size()))) {
+        while (position.isWithin(ByteCount::fromSizeT(input.size()))) {
             if (_bufferLength == _buffer.length()) {
                 // The buffered block is no longer final. Count its 128 message bytes, compress it without f0, then
                 // reuse the buffer for the following input.
                 addCounter(_buffer.length());
                 compress(false);
-                _bufferLength = ByteLength::zero();
+                _bufferLength = ByteCount::zero();
             }
             // Copy only enough input to complete the retained block; later iterations continue with the remainder.
             const auto count = std::min(
-                _buffer.length() - _bufferLength, ByteLength::fromSizeT(input.size()) - position.distanceFromZero());
+                _buffer.length() - _bufferLength, ByteCount::fromSizeT(input.size()) - position.distanceFromZero());
             _buffer.overwrite(ByteIndex::end(_bufferLength), input.subspan(position.toSizeT(), count.toSizeT()));
             _bufferLength += count;
             position += count;
@@ -108,11 +107,11 @@ public:
     }
 
     /// Finalize and return the selected number of digest bytes in marked storage.
+    /// Must not be called after the digest has been finalized.
     /// @return The configured 1-64 digest bytes.
-    /// @throws err::LogicError If this instance was already finalized.
     [[nodiscard]] auto digest() -> ByteBlockEditor {
         if (_finalized) {
-            throw err::LogicError{"BLAKE2b digest was already finalized"};
+            throw err::LogicFailure{"BLAKE2b digest was already finalized"};
         }
         // RFC 7693's counter is the number of message bytes through this final block, excluding zero padding.
         addCounter(_bufferLength);
@@ -123,9 +122,9 @@ public:
         auto result = ByteBlockEditor{_digestLength};
         result.markAsSensitive();
         auto position = ByteIndex::zero();
-        while ((position + ByteLength{sizeof(uint64_t)}).isWithin(_digestLength)) {
+        while ((position + ByteCount{sizeof(uint64_t)}).isWithin(_digestLength)) {
             result.setIntegerOrThrow(position, _state[position.toSizeT() / sizeof(uint64_t)]);
-            position += ByteLength{sizeof(uint64_t)};
+            position += ByteCount{sizeof(uint64_t)};
         }
         while (position.isWithin(_digestLength)) {
             result.set(
@@ -153,7 +152,7 @@ private:
     }
 
     /// Add processed bytes to BLAKE2b's portable 128-bit counter.
-    void addCounter(const ByteLength bytes) noexcept {
+    void addCounter(const ByteCount bytes) noexcept {
         const auto previous = _counterLow;
         _counterLow += bytes.toRawValue();
         if (_counterLow < previous) {
@@ -229,10 +228,10 @@ private:
 
     std::array<uint64_t, 8> _state{}; ///< The chaining value h[0..7].
     ByteArray<128> _buffer{};         ///< The retained 128-byte message block.
-    ByteLength _bufferLength{};       ///< The number of message bytes in `_buffer`.
+    ByteCount _bufferLength{};        ///< The number of message bytes in `_buffer`.
     uint64_t _counterLow{};           ///< The low half of the processed-byte counter t.
     uint64_t _counterHigh{};          ///< The high half of the processed-byte counter t.
-    ByteLength _digestLength{};       ///< The configured digest length in bytes.
+    ByteCount _digestLength{};        ///< The configured digest length in bytes.
     bool _finalized{};                ///< Whether the final block was compressed.
 };
 

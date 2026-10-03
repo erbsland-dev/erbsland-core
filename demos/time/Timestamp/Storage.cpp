@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/Timestamp.hpp>
 
 namespace demo {
 
@@ -28,7 +34,7 @@ void storage() {
     try {
         const auto unexpected = el::Timestamp::fromByteBlockOrThrow(el::ByteBlock{});
         el::io::printLine(el::StringFormat{"Unexpected successful result: {}"_el}.build(unexpected.toString()));
-    } catch (const el::err::ParameterError &) {
+    } catch (const el::err::ParseError &) {
         el::io::printLine("Checked decoding rejects the wrong byte count."_el);
     }
 }

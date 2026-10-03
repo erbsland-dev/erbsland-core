@@ -12,6 +12,7 @@
 #include "../codec/Http1Transaction_fwd.hpp"
 #include "../codec/Http1TransactionFailure_fwd.hpp"
 
+#include "../../../../text/StringList.hpp"
 #include "../../../../unit/ByteIndex.hpp"
 #include "../../../http_client/HttpClientRequest.hpp"
 #include "../../../http_client/HttpClientSessionOptions.hpp"
@@ -175,8 +176,8 @@ private:
     std::uint64_t _configurationGeneration{};                         ///< Captured reuse compatibility generation.
     unit::ItemCount _completedTransactions;                           ///< Transactions on the leased connection.
     unit::ItemCount _redirectCount;                                   ///< Followed redirect count.
-    unit::ByteLength _retainedBodyLength;                             ///< Session quota reserved by this request.
-    std::vector<text::String> _redirectHistory;                       ///< Canonical loop-detection URLs.
+    unit::ByteCount _retainedBodyLength;                              ///< Session quota reserved by this request.
+    text::StringList _redirectHistory;                                ///< Canonical loop-detection URLs.
     bool _submitted{};                                                ///< Submission guard.
     bool _uploadWritablePending{};                                    ///< Initial or renewed writable owed.
     bool _uploadFinished{};                                           ///< Request body finish accepted.

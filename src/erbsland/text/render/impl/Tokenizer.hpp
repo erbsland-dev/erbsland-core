@@ -6,7 +6,7 @@
 
 #include "../EnvironmentOptions.hpp"
 
-#include "../../../text/StringCharReader.hpp"
+#include "../../StringCharReader.hpp"
 
 #include <optional>
 
@@ -27,6 +27,7 @@ class Tokenizer final {
         Mode mode;                    ///< The mode after the opening delimiter.
         TokenKind tokenKind;          ///< The token emitted for the opening delimiter.
         const Delimiters *delimiters; ///< The matching delimiter configuration.
+        bool isLine{false};           ///< Whether the tag ends with its physical source line.
         bool isComment{false};        ///< Whether the complete tag must be discarded.
     };
 
@@ -53,7 +54,7 @@ private: // modes
     /// Read the next token inside an expression or statement tag.
     [[nodiscard]] auto readTagToken() -> Token;
     /// Skip one complete comment tag.
-    void skipComment(const Opening &opening, unit::CodeLocation tagLocation);
+    void skipComment(unit::CodeLocation tagLocation);
 
 private: // lexical tokens
     /// Read an identifier or reserved keyword token.
@@ -78,6 +79,8 @@ private: // delimiter handling
     [[nodiscard]] auto matches(const String &expected) -> bool;
     /// Consume text that was already verified to match and update the source location.
     void consume(const String &expected);
+    /// Consume a tag closing delimiter or a line tag newline.
+    void consumeClosingDelimiter();
 
 private: // reader tools
     /// Read one character and update the source location.
@@ -85,7 +88,7 @@ private: // reader tools
     /// Read one expected character unless it begins the active closing delimiter.
     [[nodiscard]] auto readIf(Char expected) -> bool;
     /// Read matching ASCII characters without crossing an active closing delimiter.
-    auto readWhile(AsciiCategory category) -> unit::CpLength;
+    auto readWhile(AsciiCategory category) -> unit::CpCount;
     /// Test whether the character after the current one is an ASCII digit and not a delimiter.
     [[nodiscard]] auto nextIsAsciiDigit() -> bool;
     /// Advance the source location for one consumed character.
@@ -98,18 +101,20 @@ private: // reader tools
     [[noreturn]] void throwSyntax(String title, String description, unit::CodeLocation location) const;
 
 private:
-    String _layout;                               ///< Logical layout name for diagnostics.
-    String _origin;                               ///< Source origin for diagnostics.
-    String _source;                               ///< Shared complete source text.
-    EnvironmentOptions _options;                  ///< Validated syntax options.
-    Char _expressionOpeningCharacter;             ///< First expression-opening delimiter character.
-    Char _statementOpeningCharacter;              ///< First statement-opening delimiter character.
-    Char _commentOpeningCharacter;                ///< First comment-opening delimiter character.
-    CharSet _openingCharacters;                   ///< Candidate characters for raw-text delimiter scanning.
-    StringCharReader _reader;                     ///< The single primary source reader.
-    unit::CodeLocation _location;                 ///< Location of the next unread character.
-    Token _token;                                 ///< Current one-token lookahead.
-    Mode _mode{Mode::Text};                       ///< Current lexical mode.
+    String _layout;                   ///< Logical layout name for diagnostics.
+    String _origin;                   ///< Source origin for diagnostics.
+    String _source;                   ///< Shared complete source text.
+    EnvironmentOptions _options;      ///< Validated syntax options.
+    Char _expressionOpeningCharacter; ///< First expression-opening delimiter character.
+    Char _statementOpeningCharacter;  ///< First statement-opening delimiter character.
+    Char _commentOpeningCharacter;    ///< First comment-opening delimiter character.
+    CharSet _openingCharacters;       ///< Candidate characters for raw-text delimiter scanning.
+    StringCharReader _reader;         ///< The single primary source reader.
+    unit::CodeLocation _location;     ///< Location of the next unread character.
+    Token _token;                     ///< Current one-token lookahead.
+    bool _lineOnlyIndent{true};       ///< Whether the current source line contains only spaces and tabs so far.
+    bool _isLineTag{false};           ///< Whether the active tag ends at a newline or end of source.
+    Mode _mode{Mode::Text};           ///< Current lexical mode.
     const Delimiters *_activeDelimiters{nullptr}; ///< Delimiters for the active tag.
     Char _activeClosingCharacter;                 ///< First active closing delimiter character.
     unit::CodeLocation _tagLocation;              ///< Location of the active tag opener.

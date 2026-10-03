@@ -20,7 +20,7 @@
 namespace erbsland::compression::zip::impl {
 
 /// Strict APPNOTE 6.3.10 ZIP/ZIP64 reader implementation.
-/// @tested{ZipArchiveTest}
+/// @tested{ZipArchiveTest ZipArchiveIoTest ZipArchiveMalformedTest}
 class ArchiveReader final : public zip::ArchiveReader, public std::enable_shared_from_this<ArchiveReader> {
 public:
     /// Create an unopened reader that owns its source.
@@ -53,13 +53,13 @@ public: // implement zip::ArchiveReader
 
 public: // item backend
     /// Decode and verify one already validated item.
-    [[nodiscard]] auto extract(const ZipEntryRecord &record, unit::ByteLength maximumLength) const -> mem::ByteBlock;
+    [[nodiscard]] auto extract(const ZipEntryRecord &record, unit::ByteCount maximumLength) const -> mem::ByteBlock;
     /// Read and validate one local record and its compressed payload.
     [[nodiscard]] auto entryData(const ZipEntryRecord &record, bool readPayload = true) const -> ZipEntryData;
     /// Stream decoded bytes while validating exact length and CRC.
     void extractTo(
         const ZipEntryRecord &record,
-        unit::ByteLength maximum,
+        unit::ByteCount maximum,
         const compression::impl::CodecOutput::Write &output,
         ZipProgressFn progress = {}) const;
     /// Copy validated compressed bytes without decoding.
@@ -68,8 +68,8 @@ public: // item backend
 private:
     /// Conditional values decoded from an APPNOTE 4.5.3 ZIP64 extra field.
     struct Zip64Values final {
-        unit::ByteLength uncompressedLength;
-        unit::ByteLength compressedLength;
+        unit::ByteCount uncompressedLength;
+        unit::ByteCount compressedLength;
         unit::ByteIndex localHeaderOffset;
         uint32_t diskStart{};
     };
@@ -87,7 +87,7 @@ private:
         unit::ByteIndex endOffsetInTail,
         unit::ByteIndex endOffset,
         uint64_t &entryCount,
-        unit::ByteLength &directoryLength,
+        unit::ByteCount &directoryLength,
         unit::ByteIndex &directoryOffset) -> unit::ByteIndex;
     /// Validate a signed or unsigned descriptor at the current payload-end position.
     void validateDataDescriptor(const ZipEntryRecord &record, unit::ByteIndex payloadEnd, bool zip64Descriptor) const;
@@ -96,8 +96,8 @@ private:
         const ZipEntryRecord &record,
         const mem::ByteBlock &extra,
         uint32_t crc,
-        unit::ByteLength compressed,
-        unit::ByteLength uncompressed) const;
+        unit::ByteCount compressed,
+        unit::ByteCount uncompressed) const;
     /// Parse one bounded APPNOTE central-file-header record.
     [[nodiscard]] auto parseCentralEntry(mem::ByteReader &reader) -> ZipEntryRecord;
     /// Read and validate the selected local record while the source lock is held.
@@ -124,7 +124,7 @@ private:
     stream::ByteInputStreamPtr _source;
     path::Path _sourcePath;
     ArchiveReaderOptions _options;
-    unit::ByteLength _archiveLength;
+    unit::ByteCount _archiveLength;
     std::vector<std::shared_ptr<ArchiveItem>> _items;
     text::String _comment;
     unit::ByteIndex _centralDirectoryOffset;

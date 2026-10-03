@@ -5,6 +5,7 @@
 #include "ParserWorkerWorkload_fwd.hpp"
 
 #include <erbsland/profiling/WorkerWorkload.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace app::conf {
 
@@ -13,7 +14,7 @@ namespace app::conf {
 class ParserWorkerWorkload final : public erbsland::profiling::WorkerWorkload {
 public:
     /// Create a parser workload for the supplied documents.
-    ParserWorkerWorkload(erbsland::StringList documents, std::uint64_t corpusBytes, bool failWorker);
+    ParserWorkerWorkload(el::StringList documents, std::uint64_t corpusBytes, bool failWorker);
 
 public: // implement WorkerWorkload
     [[nodiscard]] auto execute(const erbsland::profiling::WorkerExecutionContext &context)

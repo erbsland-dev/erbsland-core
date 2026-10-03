@@ -1,12 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "RsaCase.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
@@ -21,7 +20,7 @@ RsaCase::RsaCase(RsaOperation operation) : _operation{operation} {
             "Pinned RSA-2048 secret arithmetic and PSS signing"_el,
             operation >= RsaOperation::SignSha256 ? "fixed-vs-random-message-and-salt"_el
                                                   : "fixed-vs-random-fixed-width-operands"_el},
-        el::ByteLength{65536});
+        el::ByteCount{65536});
 }
 
 auto RsaCase::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {
@@ -50,7 +49,7 @@ auto RsaCase::identifier() const -> el::String {
     case RsaOperation::SignSha384:
         return "rsa/pss-sha384-sign"_el;
     }
-    throw el::LogicError{"Unknown scenario operation."_el};
+    throw el::LogicFailure{"Unknown scenario operation."_el};
 }
 
 }

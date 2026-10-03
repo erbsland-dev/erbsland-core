@@ -42,7 +42,7 @@ conversion.
 .. erbsland-demo::
     :source: conf/IndividualValues/ScalarConversions.cpp
     :exec: conf/individual_values --demo ScalarConversions
-    :source-sha256: 6606015640cd2e40d78b2a0868d0b9082e192399066350225a80741f82571a0b
+    :sha256: d6113f942218794e133c37c316f0f6f904ad28769cb88ca18f77acdfdecb2253
 
 .. code-block:: cpp
 
@@ -73,11 +73,13 @@ conversion.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Mata Atlântica: up to 18 observers
-    An integer cannot be accessed as text.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMata Atlântica: up to 18 observers
+        An integer cannot be accessed as text.␛[0m
 
 .. erbsland-demo-end::
 
@@ -117,7 +119,7 @@ The non-throwing forms return an empty collection after any mismatch, while ``as
 .. erbsland-demo::
     :source: conf/IndividualValues/ValueLists.cpp
     :exec: conf/individual_values --demo ValueLists
-    :source-sha256: 6f6288fc08833f97ac1f772ddfb04167aca943815b69e325afc3fe983eb9339a
+    :sha256: 7533d66fdefadcdbfc19806f77d1adc4208b49ce9b4abd85a83a7afff4293697
 
 .. code-block:: cpp
 
@@ -153,14 +155,16 @@ The non-throwing forms return an empty collection after any mismatch, while ``as
             " columns"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    First species: lobo-guará
-    Last species: capivara
-    Species entries: 3
-    Lead-observer entries: 1
-    Observation matrix: 2 rows, 3 columns
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFirst species: lobo-guará
+        Last species: capivara
+        Species entries: 3
+        Lead-observer entries: 1
+        Observation matrix: 2 rows, 3 columns␛[0m
 
 .. erbsland-demo-end::
 
@@ -190,7 +194,7 @@ native numeric width.
 .. erbsland-demo::
     :source: conf/IndividualValues/TypedGetters.cpp
     :exec: conf/individual_values --demo TypedGetters
-    :source-sha256: 8832afcaeb5124fdc00b57c61426bddacb81bfa0053e722c4a5810feada5cfb4
+    :sha256: 0d1248dae860facd5d8c69458a75d16ec7409b8a09936f7d15f77853e677032b
 
 .. code-block:: cpp
 
@@ -221,11 +225,13 @@ native numeric width.
         el::io::printLine("First species: "_el, firstSpecies, "; season: "_el, season);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Floresta da Tijuca: 7 observers
-    First species: mico-leão-dourado; season: seca
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFloresta da Tijuca: 7 observers
+        First species: mico-leão-dourado; season: seca␛[0m
 
 .. erbsland-demo-end::
 
@@ -242,19 +248,26 @@ When the application needs native values rather than tree nodes, use
 :cpp:func:`getList() <erbsland::conf::Value::getList>` or
 :cpp:func:`getListOrThrow() <erbsland::conf::Value::getListOrThrow>`.
 These methods resolve the path and require every list entry to have the requested ELCL type.
-They also accept one scalar of that type and return a one-element vector, which lets a setting support both concise and
-expanded input without special-case code.
+They also accept one scalar of that type and return a one-element ``el::List<T>``, which lets a setting support both
+concise and expanded input without special-case code.
 
 The corresponding :cpp:func:`getMatrix() <erbsland::conf::Value::getMatrix>` and
 :cpp:func:`getMatrixOrThrow() <erbsland::conf::Value::getMatrixOrThrow>` methods accept scalar, flat-list, and
 nested-list shapes and return a type-checked :cpp:class:`Matrix <erbsland::conf::Matrix>`.
 On any path, shape, or element-type problem, a non-throwing getter returns an empty collection; the ``OrThrow`` form
 identifies the failing value.
+``getList<T>(path, defaultValue)`` can return a supplied default instead.
+For text settings, ``getStringList(path, defaultValue)`` and ``getStringListOrThrow(path)`` return ``el::StringList``
+directly.
+When a setting is optional but must have the correct type when present, pass a default to
+``getListOrThrow<T>(path, defaultValue)`` or ``getStringListOrThrow(path, defaultValue)``.
+These overloads use the default only for a missing path and still report invalid paths or incompatible values.
+Use ``asStringList()`` or ``asStringListOrThrow()`` for a text value you have already selected.
 
 .. erbsland-demo::
     :source: conf/IndividualValues/TypedCollections.cpp
     :exec: conf/individual_values --demo TypedCollections
-    :source-sha256: da7257835d7533b85a9eed7f7589e4883eca655bcc47b2371653a649be485762
+    :sha256: 2a267675b5599150b1733351ba524ac452e31423aa9355f5c175d42bcf9e6031
 
 .. code-block:: cpp
 
@@ -272,21 +285,23 @@ identifies the failing value.
         const auto document = el::conf::Parser{}.parseTextOrThrow(configuration);
 
         // Typed getters return native collections after checking every element.
-        const auto species = document->getListOrThrow<el::String>("survey.species"_el);
+        const auto species = document->getStringListOrThrow("survey.species"_el);
         const auto sampleCounts = document->getListOrThrow<int>("survey.sample_count"_el);
         const auto observations = document->getMatrixOrThrow<int>("survey.observations"_el);
 
-        el::io::printLine("Species: "_el, species.size());
-        el::io::printLine("Sample-count entries: "_el, sampleCounts.size());
+        el::io::printLine("Species: "_el, species.count());
+        el::io::printLine("Sample-count entries: "_el, sampleCounts.count());
         el::io::printLine("First observation: "_el, observations.valueOrThrow({}, {}));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Species: 2
-    Sample-count entries: 1
-    First observation: 4
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSpecies: 2
+        Sample-count entries: 1
+        First observation: 4␛[0m
 
 .. erbsland-demo-end::
 
@@ -310,7 +325,7 @@ the appropriate ``as...OrThrow()`` call.
 .. erbsland-demo::
     :source: conf/IndividualValues/TypeTests.cpp
     :exec: conf/individual_values --demo TypeTests
-    :source-sha256: 041def5890b6a1ce757924c5268197c67ac6ceb49142f0a1417f96f09cb17647
+    :sha256: 8eebbc2e4310ad3401437071e0b7d3e2046d890b93c0caa4e3f94cad6e6224b8
 
 .. code-block:: cpp
 
@@ -336,12 +351,14 @@ the appropriate ``as...OrThrow()`` call.
         el::io::printLine("Document is a map: "_el, el::BooleanFormat::yesNo(), document->isMap());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Numeric station: 42
-    Reference is text: yes
-    Document is a map: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mNumeric station: 42
+        Reference is text: yes
+        Document is a map: yes␛[0m
 
 .. erbsland-demo-end::
 

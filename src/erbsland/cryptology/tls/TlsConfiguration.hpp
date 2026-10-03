@@ -2,70 +2,78 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "TlsClientConfiguration.hpp"
 #include "TlsConfiguration_fwd.hpp"
-#include "TlsServerIdentity.hpp"
+#include "TlsServerConfiguration.hpp"
 
-#include "../x509/X509ServerCertificatePolicy.hpp"
-
-#include <optional>
-#include <utility>
+#include "../../err/ParameterFailure.hpp"
 
 namespace erbsland::cryptology {
 
-/// Application-owned material and policies used to establish TLS connections.
-/// Registered configurations are copied into immutable snapshots. A server identity is retained through immutable
-/// shared ownership so copies remain cheap and cannot copy its move-only private key.
-/// @tested{CryptologyConfigurationTest TlsServerIdentityTest}
+/// Independent client and server parts sharing one application profile label.
+/// @tested{CryptologyConfigurationTest TlsConfigurationParserTest}
 class TlsConfiguration final {
 public:
-    /// Create an empty TLS configuration.
+    /// Create a profile without either role.
     TlsConfiguration() = default;
-    /// Create a TLS configuration with a server-certificate authentication policy.
-    /// @param serverCertificatePolicy The policy copied into this configuration.
-    explicit TlsConfiguration(X509ServerCertificatePolicy serverCertificatePolicy) noexcept :
-        _serverCertificatePolicy{std::move(serverCertificatePolicy)} {}
+    /// Create a client-only profile.
+    /// @param client Complete client configuration.
+    explicit TlsConfiguration(TlsClientConfiguration client) : _client{std::move(client)} {}
+    /// Create a server-only profile.
+    /// @param server Complete server configuration.
+    explicit TlsConfiguration(TlsServerConfiguration server) : _server{std::move(server)} {}
 
-    // defaults
-    ~TlsConfiguration() = default;
-    TlsConfiguration(const TlsConfiguration &) = default;
-    TlsConfiguration(TlsConfiguration &&) noexcept = default;
-    auto operator=(const TlsConfiguration &) -> TlsConfiguration & = default;
-    auto operator=(TlsConfiguration &&) noexcept -> TlsConfiguration & = default;
-
-public:
-    /// Test whether this configuration can authenticate TLS server certificates.
-    [[nodiscard]] auto hasServerCertificatePolicy() const noexcept -> bool {
-        return _serverCertificatePolicy.has_value();
+public: // accessors
+    /// Get the optional client part.
+    [[nodiscard]] auto client() const noexcept -> const std::optional<TlsClientConfiguration> & { return _client; }
+    /// Replace the client part without modifying the server part.
+    void setClient(TlsClientConfiguration value) { _client = std::move(value); }
+    /// Get the optional server part.
+    [[nodiscard]] auto server() const noexcept -> const std::optional<TlsServerConfiguration> & { return _server; }
+    /// Replace the server part without modifying the client part.
+    void setServer(TlsServerConfiguration value) { _server = std::move(value); }
+    /// Test whether this profile contains the requested local role.
+    /// @param role A valid local TLS role.
+    /// @return Whether that role is present.
+    [[nodiscard]] auto hasRole(TlsRole role) const -> bool {
+        validateRole(role);
+        if (role == TlsRole::Client) {
+            return _client.has_value();
+        }
+        return _server.has_value();
     }
-    /// Get the server-certificate authentication policy.
-    /// @return The policy, or no value if it was not configured.
-    [[nodiscard]] auto serverCertificatePolicy() const noexcept -> const std::optional<X509ServerCertificatePolicy> & {
-        return _serverCertificatePolicy;
+    /// Remove one role without modifying the other.
+    /// @param role A valid local TLS role.
+    void clearRole(TlsRole role) {
+        validateRole(role);
+        if (role == TlsRole::Client) {
+            _client.reset();
+        } else {
+            _server.reset();
+        }
     }
-    /// Set the server-certificate authentication policy.
-    /// @param policy The replacement policy.
-    void setServerCertificatePolicy(X509ServerCertificatePolicy policy) noexcept {
-        _serverCertificatePolicy = std::move(policy);
+    /// Replace only the role parts supplied by another profile.
+    /// @param value The supplied replacement parts.
+    void merge(const TlsConfiguration &value) {
+        if (value._client) {
+            _client = value._client;
+        }
+        if (value._server) {
+            _server = value._server;
+        }
     }
-    /// Clear the server-certificate authentication policy.
-    void clearServerCertificatePolicy() noexcept { _serverCertificatePolicy.reset(); }
-
-public: // server identity
-    /// Test whether this configuration contains a TLS server identity.
-    [[nodiscard]] auto hasServerIdentity() const noexcept -> bool { return _serverIdentity != nullptr; }
-    /// Get the immutable shared TLS server identity, or a null pointer when absent.
-    [[nodiscard]] auto serverIdentity() const noexcept -> const TlsServerIdentityConstPtr & { return _serverIdentity; }
-    /// Replace the TLS server identity and transfer ownership of its move-only key.
-    /// @param identity A completely validated server identity.
-    void setServerIdentity(TlsServerIdentity identity) {
-        _serverIdentity = std::make_shared<const TlsServerIdentity>(std::move(identity));
+    /// Validate a local role.
+    /// @param role The role to check.
+    static void validateRole(TlsRole role) {
+        using namespace text::literals;
+        if (role != TlsRole::Client && role != TlsRole::Server) {
+            throw err::ParameterFailure{"A valid TLS role is required."_el, "role"_el};
+        }
     }
-    /// Clear the TLS server identity from this configuration snapshot source.
-    void clearServerIdentity() noexcept { _serverIdentity.reset(); }
 
 private:
-    std::optional<X509ServerCertificatePolicy> _serverCertificatePolicy; ///< TLS server authentication policy.
-    TlsServerIdentityConstPtr _serverIdentity;                           ///< Optional immutable shared server identity.
+    std::optional<TlsClientConfiguration> _client; ///< Optional independent client part.
+    std::optional<TlsServerConfiguration> _server; ///< Optional independent server part.
 };
 
 }

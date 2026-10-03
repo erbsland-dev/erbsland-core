@@ -1,0 +1,5 @@
+#
+# Configuration for the generate_unicode_data tool
+#
+----[ Generate Unicode Data ]-----------------------------------------------------------------------------------------
+Output Directory            : "src/erbsland/text/impl"

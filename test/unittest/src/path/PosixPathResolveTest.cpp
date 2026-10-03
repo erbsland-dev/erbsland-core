@@ -3,11 +3,11 @@
 
 #include "PathTestHelper.hpp"
 
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathResolveMode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathResolveMode.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/system/impl/PosixErrorContext.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <pwd.h>
 #include <unistd.h>

@@ -4,8 +4,8 @@
 
 #include "U32StringDataView_fwd.hpp"
 
+#include "../../../unit/CpCount.hpp"
 #include "../../../unit/CpIndex.hpp"
-#include "../../../unit/CpLength.hpp"
 #include "../../../unit/CpRange.hpp"
 
 #include <algorithm>
@@ -33,7 +33,7 @@ public: // accessors
         if (_data.empty() || !_range.isValid() || _range.isEmpty()) {
             return {};
         }
-        const auto start = _range.index().toSizeT();
+        const auto start = _range.beginIndex().toSizeT();
         if (start >= _data.size()) {
             return {};
         }
@@ -47,13 +47,13 @@ public: // accessors
         if (span.empty() || !range.isValid()) {
             return unit::CpRange::empty();
         }
-        const auto origin = _range.index().toSizeT();
-        if (range.index().toSizeT() < origin) {
+        const auto origin = _range.beginIndex().toSizeT();
+        if (range.beginIndex().toSizeT() < origin) {
             return unit::CpRange::empty();
         }
-        const auto relativeStart = range.index().toSizeT() - origin;
+        const auto relativeStart = range.beginIndex().toSizeT() - origin;
         return unit::CpRange{unit::CpIndex::fromSizeT(relativeStart), range.length()}.clampedTo(
-            unit::CpLength::fromSizeT(span.size()));
+            unit::CpCount::fromSizeT(span.size()));
     }
 
 private:

@@ -48,6 +48,12 @@ target_sources(erbsland-core PRIVATE
         PasswordVerification.cpp
         PasswordVerification.hpp
         PemDerFormat.hpp
+        SecureStorage.cpp
+        SecureStorage.hpp
+        SecureStorageCapabilities.hpp
+        SecureStorageError.hpp
+        SecureStorageErrorCategory.hpp
+        SecureStorageInteraction.hpp
         SignedByteBlock.cpp
         SignedByteBlock.hpp
         SignedByteBlock_fwd.hpp

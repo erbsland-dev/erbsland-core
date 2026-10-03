@@ -1,17 +1,23 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
-#include "StorageFile.hpp"
 #include "UserDatabase.hpp"
 
+#include "StorageFile.hpp"
+
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ApplicationErrorContext.hpp>
+#include <erbsland/conf/ConfError.hpp>
+#include <erbsland/conf/Document.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/Value.hpp>
 #include <erbsland/conf/ValueType.hpp>
-#include <erbsland/core/ApplicationError.hpp>
-#include <erbsland/core/ApplicationErrorContext.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEditor.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathCollisionMode.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
 
 namespace demo {
 
@@ -29,7 +35,7 @@ auto UserDatabase::load(const el::Path &path) -> UserDatabase {
     el::conf::DocumentPtr document;
     try {
         document = el::conf::Parser{}.parseTextOrThrow(path.content().readTextOrThrow());
-    } catch (const el::Exception &) {
+    } catch (const el::RuntimeError &) {
         throwInvalidDatabase(path, "The file is not a valid ELCL document."_el);
     }
 
@@ -54,7 +60,7 @@ auto UserDatabase::load(const el::Path &path) -> UserDatabase {
         try {
             username = entry->getTextOrThrow("Username"_el);
             passwordHash = entry->getTextOrThrow("Password Hash"_el);
-        } catch (const el::Exception &) {
+        } catch (const el::conf::ConfError &) {
             throwInvalidDatabase(path, "Username and Password Hash must both be text values."_el);
         }
         if (username.isEmpty()) {
@@ -98,7 +104,7 @@ void UserDatabase::save(const el::Path &path, const el::PathCollisionMode collis
         appendElclText(output, "Username"_el, username);
         appendElclText(output, "Password Hash"_el, passwordHash);
     }
-    writeStorageFile(path, el::String{output}, collisionMode);
+    writeStorageFile(path, output, collisionMode);
 }
 
 }

@@ -49,6 +49,8 @@ target_sources(erbsland-core PRIVATE
         RegEx_fwd.hpp
         RegEx_match.cpp
         RegEx_replaceAll.cpp
+        RegExCached.cpp
+        RegExCached.hpp
         RegExError.cpp
         RegExError.hpp
         RegExErrorContext.hpp

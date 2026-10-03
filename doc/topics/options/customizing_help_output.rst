@@ -4,7 +4,7 @@
 
 .. index::
     single: Options; Help Output
-    single: DisplayTextMap
+    single: DisplayText
     single: Terminal Help
     single: TextDocument; Option Help
 
@@ -46,7 +46,7 @@ This is predictable for redirected output, build logs, tests, and simple command
     :exec: option/option_help_customization --help
     :exec-2: option/option_help_customization --terminal --help
     :exec-3: option/option_help_customization manual
-    :source-sha256: 725671237bf9d1646469cc3bf248575257c12c8420cbe65bd3f7cada3d609975
+    :sha256: 3f1eac6a0a1711ed9a02ec9e783f8cb584a03a8b3bf3b4c1f777d897db033ae0
 
 .. code-block:: cpp
 
@@ -73,16 +73,17 @@ This is predictable for redirected output, build logs, tests, and simple command
         void registerCommandLineOptions(const el::OptionsPtr &options) override {
             addSharedOptions(options);
             options->addOption({"--terminal"_el, "terminal"_el})
-                .setHelpDescription("Renders help with terminal colors."_el)
+                .setHelpTitle("Renders help with terminal colors."_el)
                 .setHelpVisibility(el::OptionHelpVisibility::Hidden);
         }
     };
 
-    /// `OptionManager` exposes neutral help documents and `DisplayTextMap` for manual rendering and wording changes.
+    /// `OptionManager` exposes neutral help documents and compiled display-text layers for manual rendering and wording
+    /// changes.
     ///
     /// The manager can build a `TextDocument` without owning the application lifecycle.
-    /// Change `DisplayTextMap` when generated labels such as `Usage`, `Options`, placeholders, or built-in option
-    /// descriptions need application-specific wording.
+    /// Change compiled display-text layers when generated labels such as `Usage`, `Options`, placeholders, or built-in
+    /// option descriptions need application-specific wording.
     auto manualHelpRendering() -> el::ExitCode {
         auto options = el::Options::create();
         auto info = el::ApplicationInfo{};
@@ -92,68 +93,74 @@ This is predictable for redirected output, build logs, tests, and simple command
         options->setExecutablePath("manual-help"_el);
         addSharedOptions(options);
 
-        auto displayText = el::DisplayTextMap::defaultMap()->clone();
-        displayText->set("options.UsageLabel"_el, "Usage"_el)
-            .set("options.OptionsHeading"_el, "Settings"_el)
-            .set("options.OptionsPlaceholder"_el, "options"_el)
-            .set("options.ChoicePlaceholder"_el, "choice"_el)
-            .set("options.ChoicesLabel"_el, "Choices"_el);
+        el::application().displayText()->addData(DisplayTextDemo::create());
 
         auto manager = el::OptionManager{options};
-        manager.setDisplayTextMap(displayText);
         el::io::printLine(manager.helpDocument({}).toString());
         return el::ExitCode::success();
     }
 
-.. rubric:: ``$ option/option_help_customization --help``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    Shows how option help can be rendered as a document.
-    Usage:
-    option_help_customization [options]
-    Options:
-    -g, --area <area>      Area for which to view help.
-    -f, --format <choice>  Output detail level. Choices: short, full.
-    -h, --help             Display this help.
-        --version          Display version information.
+        $ option/option_help_customization --help
 
-.. rubric:: ``$ option/option_help_customization --terminal --help``
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[0mShows how option help can be rendered as a document.
+        Usage:
+        option_help_customization [options]
+        Options:
+        -g, --area <area>       Area for which to view help.
+        -f, --format <choice>   Output detail level. Choices: short, full.
+        -h, --help[=<keyword>]  Display this help.
+            --version           Display version information.␛[0m
+
+.. erbsland-demo-run::
+
+    .. code-block:: console
+
+        $ option/option_help_customization --terminal --help
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m
+
+              ␛[37;40mShows how option help can be rendered as a document.
 
 
+           ␛[36;40m␛[1m-◆ ␛[96;40mUsage␛[36;40m ◆-␛[90;40m──────────────────────────────────────────────────────────────────────────
 
-          ␛[37;40mShows how option help can be rendered as a document.
-
-
-       ␛[1;36m-◆ ␛[96mUsage␛[36m ◆-␛[90m──────────────────────────────────────────────────────────────────────────
-
-    ␛[22;37moption_help_customization options
+        ␛[37;40m␛[22moption_help_customization options
 
 
-       ␛[1;36m-◆ ␛[96mOptions␛[36m ◆-␛[90m────────────────────────────────────────────────────────────────────────
+           ␛[36;40m␛[1m-◆ ␛[96;40mOptions␛[36;40m ◆-␛[90;40m────────────────────────────────────────────────────────────────────────
 
-    ␛[22;37m-g, --area area␛[39;49m      ␛[37;40mArea for which to view help.
-    -f, --format choice␛[39;49m  ␛[37;40mOutput detail level. Choices: short, full.
-    -h, --help␛[39;49m           ␛[37;40mDisplay this help.
-    ␛[39;49m    ␛[37;40m--version␛[39;49m        ␛[37;40mDisplay version information.␛[0m
+        ␛[37;40m␛[22m-g, --area area␛[39;49m       ␛[37;40mArea for which to view help.
+        -f, --format choice␛[39;49m   ␛[37;40mOutput detail level. Choices: short, full.
+        -h, --help[=keyword]␛[39;49m  ␛[37;40mDisplay this help.
+        ␛[39;49m    ␛[37;40m--version␛[39;49m         ␛[37;40mDisplay version information.␛[0m
 
-.. rubric:: ``$ option/option_help_customization manual``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    Shows how option help can be rendered as a document.
-    Usage:
-    manual-help [options]
-    Settings:
-    -g, --area <area>      Area for which to view help.
-    -f, --format <choice>  Output detail level. Choices: short, full.
-    -h, --help             Display this help.
-        --version          Display version information.
+        $ option/option_help_customization manual
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mShows how option help can be rendered as a document.
+        Usage:
+        manual-help [options]
+        Settings:
+        -g, --area <area>       Area for which to view help.
+        -f, --format <choice>   Output detail level. Choices: short, full.
+        -h, --help[=<keyword>]  Display this help.
+            --version           Display version information.␛[0m
 
 .. erbsland-demo-end::
 
@@ -190,14 +197,16 @@ diagnostics before printing them.
 Customize Display Text
 ======================
 
-``DisplayTextMap`` controls generated words such as labels, headings, placeholders, built-in option descriptions, and
+``DisplayText`` controls generated words such as labels, headings, placeholders, built-in option descriptions, and
 diagnostic labels.
 It does not change parser behavior.
 
-Start from ``DisplayTextMap::defaultMap()``, clone it, adjust the keys you need, and pass it to
-``OptionManager::setDisplayTextMap()``.
+Define the labels you want to replace in an ELCL catalog, compile it with ``erbsland_core_display_text()``, and register
+its generated data with ``application().displayText()->addData(...)``.
+The application registry supplies wording to existing managers and diagnostic renderers.
+See :doc:`/reference/i18n/internationalization` for catalog generation, layer precedence, and translator integration.
 
 This is the right tool for localization, house style, or embedding option help into an application that already has its
 own vocabulary.
 Use option and set help metadata for user-facing descriptions of your own options.
-Use ``DisplayTextMap`` for generated framework wording.
+Use ``DisplayText`` for generated framework wording.

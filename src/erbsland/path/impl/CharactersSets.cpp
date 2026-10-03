@@ -6,23 +6,25 @@
 
 namespace erbsland::path::impl {
 
-[[nodiscard]] auto dotCharacters() -> const text::CharSet & {
-    static const auto characters = text::CharSet{U'.'};
+using namespace text;
+
+[[nodiscard]] auto dotCharacters() -> const CharSet & {
+    static const auto characters = CharSet{U'.'};
     return characters;
 }
 
-[[nodiscard]] auto slashCharacters() -> const text::CharSet & {
-    static const auto characters = text::CharSet{U'/'};
+[[nodiscard]] auto slashCharacters() -> const CharSet & {
+    static const auto characters = CharSet{U'/'};
     return characters;
 }
 
-[[nodiscard]] auto pathSeparators() -> const text::CharSet & {
-    static const auto characters = text::CharSet{U'/', U'\\'};
+[[nodiscard]] auto pathSeparators() -> const CharSet & {
+    static const auto characters = CharSet{U'/', U'\\'};
     return characters;
 }
 
-[[nodiscard]] auto invalidPathCharacters() -> const text::CharSet & {
-    static const auto characters = text::CharSet{{text::Char::null(), text::Char::replacement()}};
+[[nodiscard]] auto invalidPathCharacters() -> const CharSet & {
+    static const auto characters = CharSet{Char::null(), Char::replacement()};
     return characters;
 }
 

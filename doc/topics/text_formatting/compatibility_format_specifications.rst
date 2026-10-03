@@ -20,8 +20,8 @@ syntax.
 Use :doc:`/topics/text_formatting/format_specifications` for new application-owned patterns, especially when a field
 should enforce its value type; use this page when maintaining or translating compact specifications.
 
-Read the Compact Grammar from Left to Right
-===========================================
+Compact Format Grammar
+======================
 
 The supported grammar is:
 
@@ -36,8 +36,8 @@ The sign is ``+``, ``-``, or space; ``#`` requests an alternate integer form; an
 requests numeric zero filling.
 Width and text precision count decoded code points rather than encoded bytes.
 
-Format Integers with Familiar Presentation Letters
-==================================================
+Integer Presentation Letters and Padding
+========================================
 
 Integer presentation letters are ``d`` for decimal, ``x`` /``X`` for hexadecimal, ``b`` /``B`` for binary, and ``o``
 /``O`` for octal.
@@ -47,7 +47,7 @@ Integer precision is the minimum digit count, while width applies to the complet
 .. erbsland-demo::
     :source: text/StringFormat/IntegerFormats.cpp
     :exec: text/string_format --demo IntegerFormats
-    :source-sha256: 468661b78094fcb9b102f14fb220abf032ca234c8bb6ce7546f51b495fa28b50
+    :sha256: 03e7a4a126625d7e235b9b1cd993e13d76dad37a2c6814d6c9a2d30e91e405e5
 
 .. code-block:: cpp
 
@@ -57,15 +57,17 @@ Integer precision is the minimum digit count, while width applies to the complet
         el::io::printLine(pattern.build(42, 42, 42, 42));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    +42 0x2a 0042     0042
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m+42 0x2a 0042     0042␛[0m
 
 .. erbsland-demo-end::
 
-Limit and Align Text
-====================
+Text Precision and Alignment
+============================
 
 Text may use ``s`` explicitly or omit the presentation type.
 Precision limits the source by decoded code points before alignment, which keeps a multibyte UTF-8 character intact.
@@ -74,7 +76,7 @@ Text defaults to left alignment; numeric values default to right alignment.
 .. erbsland-demo::
     :source: text/StringFormat/TextFormats.cpp
     :exec: text/string_format --demo TextFormats
-    :source-sha256: 2653d5fb04acae64dfc88051a6561f4b8106ab765ccb3dd2226f19f9526d5cf4
+    :sha256: 2694cf5c58d007c352019cea812efa3d45a6c8b2d9972fe50aa46b291450e382
 
 .. code-block:: cpp
 
@@ -84,15 +86,17 @@ Text defaults to left alignment; numeric values default to right alignment.
         el::io::printLine(textPattern.build("cat"_el, "cat"_el, "cat"_el, "abcdef"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    cat     |     cat|  cat   |abc
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mcat     |     cat|  cat   |abc␛[0m
 
 .. erbsland-demo-end::
 
-Select Floating-Point Notation
-==============================
+Floating-Point Notation and Precision
+=====================================
 
 Floating-point presentation letters are ``f`` /``F`` for fixed, ``e`` /``E`` for scientific, ``g`` /``G`` for general,
 and ``a`` /``A`` for hexadecimal notation.
@@ -101,7 +105,7 @@ Precision is forwarded to ``FloatFormat`` and therefore follows the selected not
 .. erbsland-demo::
     :source: text/StringFormat/FloatFormats.cpp
     :exec: text/string_format --demo FloatFormats
-    :source-sha256: a52b959ce58e4b99d7d57d9e14d27cb3b83f870f91ef218e107374fce96b0969
+    :sha256: 16453a2d765de3621d16a68614b92c0e356959bc5a7e8074a1fb656f443da728
 
 .. code-block:: cpp
 
@@ -111,15 +115,17 @@ Precision is forwarded to ``FloatFormat`` and therefore follows the selected not
         el::io::printLine(floatPattern.build(12.345, 1.25));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    12.35     +1.2
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m12.35     +1.2␛[0m
 
 .. erbsland-demo-end::
 
-Recognize the Compact Escaping Extension
-========================================
+Compact Text Escaping Extensions
+================================
 
 The slash presentations are Erbsland Core extensions to the compatibility grammar.
 ``/html``, ``/json``, ``/xml``, ``/cpp``, and ``/pcre`` escape text for the selected destination.
@@ -133,7 +139,7 @@ The compact forms remain useful when preserving an existing pattern.
 .. erbsland-demo::
     :source: text/StringFormat/EscapeFormat.cpp
     :exec: text/string_format --demo EscapeFormat
-    :source-sha256: 8a246a1d36f1e4041bcd66f724414d04d2880c44c649fa10278c02fbfd3eca35
+    :sha256: bd83ad0b49341d0d8c79fa281545c346526ad43bfcf497aea63ea7fa4426136b
 
 .. code-block:: cpp
 
@@ -143,18 +149,20 @@ The compact forms remain useful when preserving an existing pattern.
         el::io::printLine(pattern.build("<script>alert(\"xss\")</script>"_el, "<p>"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    <p>&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;</p>
-       &lt;p&gt;
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m<p>&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;</p>
+           &lt;p&gt;␛[0m
 
 .. erbsland-demo-end::
 
 .. erbsland-demo::
     :source: text/StringFormat/EscapeAmount.cpp
     :exec: text/string_format --demo EscapeAmount
-    :source-sha256: c9373595f66a1a2942ce9ca2184a95e61f20981affe79030c8833aaa7d720e96
+    :sha256: 4538a2d65b2f6141525de856aa5b1ac60fdc8196debe3e4d3b43085e6c30eae4
 
 .. code-block:: cpp
 
@@ -164,17 +172,19 @@ The compact forms remain useful when preserving an existing pattern.
         el::io::printLine(pattern.build("café\n"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    /json   : café\n
-    /json+  : caf\u00E9\n
-    /json*  : \u0063\u0061\u0066\u00E9\n
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m/json   : café\n
+        /json+  : caf\u00E9\n
+        /json*  : \u0063\u0061\u0066\u00E9\n␛[0m
 
 .. erbsland-demo-end::
 
-Know Where Compatibility Stops
-==============================
+Unsupported Compatibility Format Features
+=========================================
 
 Dynamic width and precision, nested replacement fields, locale-specific formatting, chrono formatting, range formatting,
 and arbitrary fill characters are not part of this layer.

@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Diagnostic.hpp>
+#include <erbsland/DiagnosticHelper.hpp>
+#include <erbsland/ErrorDocumentBuilder.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TextDocument.hpp>
 
 namespace demo {
 
@@ -14,9 +22,8 @@ public:
 
 public: // implement Diagnostic
     [[nodiscard]] auto sourcePath() const noexcept -> el::String override { return _sourcePath; }
-    [[nodiscard]] auto toTextDocument(const el::DisplayTextMapConstPtr &displayText) const
-        -> el::TextDocument override {
-        auto builder = el::ErrorDocumentBuilder{_problem, {}, displayText};
+    [[nodiscard]] auto toTextDocument() const -> el::TextDocument override {
+        auto builder = el::ErrorDocumentBuilder{_problem, {}};
         builder.addSource({}, _sourcePath, {});
         builder.addSection("Instrument"_el);
         auto paragraph = builder.root()->addParagraph();

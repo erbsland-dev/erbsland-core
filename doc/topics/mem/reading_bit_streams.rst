@@ -3,9 +3,9 @@
     single: Binary data; Bit-packed fields
     single: BitReader
 
-************************
-Reading a Stream of Bits
-************************
+*******************************
+Reading and Writing Bit Streams
+*******************************
 
 Some binary formats use individual bits instead of whole bytes for flags, small numbers, and tightly packed records.
 :cpp:class:`BitReader <erbsland::mem::BitReader>` gives these formats a small sequential cursor, so the parser can
@@ -62,7 +62,7 @@ payload boundary.
 .. erbsland-demo::
     :source: mem/BitReader/ReadClassification.cpp
     :exec: mem/bit_reader --demo ReadClassification
-    :source-sha256: 905e9c7d8d2d8df9411b595e73ecdadbe97d899366779eed34781690f5b3bcc3
+    :sha256: 587ba0508e4c50a0fb8afe6f3c744b21366c3b042f778712221a4d84050ea861
 
 .. code-block:: cpp
 
@@ -112,15 +112,17 @@ payload boundary.
             "Remaining / at end : "_el, reader.remainingBitCount(), " / "_el, el::BooleanFormat::yesNo(), reader.isAtEnd());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Klassifikation     : Jordnær asteroide
-    Bits / header ready: 16 / yes
-    Hazard / confirmed : yes / no
-    Class              : 6
-    Reviewed / confidence: no / yes
-    Remaining / at end : 0 / yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mKlassifikation     : Jordnær asteroide
+        Bits / header ready: 16 / yes
+        Hazard / confirmed : yes / no
+        Class              : 6
+        Reviewed / confidence: no / yes
+        Remaining / at end : 0 / yes␛[0m
 
 .. erbsland-demo-end::
 

@@ -1,6 +1,9 @@
 #  Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 #  SPDX-License-Identifier: Apache-2.0
 
+import os
+import re
+import subprocess
 import sys
 from pathlib import Path
 from datetime import date
@@ -13,7 +16,15 @@ sys.path.insert(0, str(_doc_dir / "_ext"))
 project = "Erbsland Core"
 copyright = f"{date.today().year}, Tobias Erbsland - Erbsland DEV"
 author = "Tobias Erbsland - Erbsland DEV"
-release = "1.0"
+# Only published documentation needs a release version. GitHub checks out the complete tag history.
+version = release = "development"
+if os.environ.get("GITHUB_ACTIONS") == "true":
+    _tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"], cwd=_doc_dir.parent, text=True).strip()
+    _tag_version = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", _tag)
+    if _tag_version is None:
+        raise RuntimeError(f"The documentation release tag is not a version tag: {_tag!r}")
+    version = ".".join(_tag_version.groups()[:2])
+    release = ".".join(_tag_version.groups())
 
 # -- General configuration ---------------------------------------------------
 extensions = [
@@ -24,6 +35,8 @@ extensions = [
     "sphinx_design",
     "sphinx_copybutton",
     "breathe",
+    "erbsland_breathe",
+    "erbsland_doxygen",
     "erbsland.sphinx.ansi",
     "erbsland_draft",
     "erbsland_demo",
@@ -48,7 +61,8 @@ _project_dir = Path(__file__).parent.parent
 _processed_src_dir = _project_dir / "_doxygen_input"
 breathe_projects = {"erbsland-core": _project_dir / "_build/breathe/doxygen/erbsland-core/xml"}
 breathe_default_project = "erbsland-core"
-breathe_projects_source = {"erbsland-core": (_processed_src_dir, ["erbsland"])}
+# erbsland_doxygen caches XML generation. Breathe's automatic source processing
+# reruns Doxygen on every build and invalidates unchanged reference pages.
 breathe_doxygen_config_options = {
     "STRIP_FROM_PATH": _processed_src_dir,
     "STRIP_FROM_INC_PATH": _processed_src_dir,
@@ -67,4 +81,6 @@ breathe_doxygen_config_options = {
     "ENABLE_PREPROCESSING": "yes",
     "MACRO_EXPANSION": "no",
     "RECURSIVE": "yes",
+    # Reference directives render declarations and comments, not source listings.
+    "XML_PROGRAMLISTING": "no",
 }

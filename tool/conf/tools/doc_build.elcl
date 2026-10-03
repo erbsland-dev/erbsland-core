@@ -1,0 +1,21 @@
+#
+# The configuration for the doc_build tool
+#
+----[ Doc Build ]-----------------------------------------------------------------------------------------------------
+# Add only narrow, source-specific Doxygen warning exceptions here. Each
+# exception requires a reason and remains visible with doc-build --show-suppressed.
+
+--------------------------------------*[ Doc Build . Ignored Doxygen Warnings ]*--------------------------------------
+Source Glob                  : "erbsland/cterm/impl/paragraph/LayoutPreparedSourceLine.hpp"
+Message Contains             : "The following parameter"
+Reason                       : "The layout-only pending-separator helper is intentionally not part of the reference API."
+
+--------------------------------------*[ Doc Build . Ignored Doxygen Warnings ]*--------------------------------------
+Source Glob                  : "erbsland/stream/impl/EncodedTextOutputStream.hpp"
+Message Contains             : "The following parameter"
+Reason                       : "This implementation adapter is documented through its public stream interface."
+
+--------------------------------------*[ Doc Build . Ignored Doxygen Warnings ]*--------------------------------------
+Source Glob                  : "erbsland/stream/impl/WindowsNativeStream.hpp"
+Message Contains             : "The following parameter"
+Reason                       : "The Windows implementation constructor is documented through the portable stream API."

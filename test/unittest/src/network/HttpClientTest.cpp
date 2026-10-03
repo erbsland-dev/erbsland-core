@@ -4,40 +4,46 @@
 #include "../core/ApplicationTestScope.hpp"
 #include "../path/PathTestFixture.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/keys/SigningPrivateKey.hpp>
-#include <erbsland/cryptology/tls/TlsConfiguration.hpp>
-#include <erbsland/cryptology/tls/TlsServerIdentity.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
-#include <erbsland/cryptology/x509/X509ServerCertificatePolicy.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/network/http/HttpFieldType.hpp>
-#include <erbsland/network/http_client/HttpClientRequest.hpp>
-#include <erbsland/network/http_client/HttpClientResponse.hpp>
-#include <erbsland/network/http_client/HttpClientSession.hpp>
-#include <erbsland/network/http_client/HttpClientSessionOptions.hpp>
-#include <erbsland/network/http_server/HttpServer.hpp>
-#include <erbsland/network/http_server/HttpServerRequest.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/Connection.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/DiagnosticHelper.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/HttpClientRequest.hpp>
+#include <erbsland/HttpClientResponse.hpp>
+#include <erbsland/HttpClientSession.hpp>
+#include <erbsland/HttpClientSessionOptions.hpp>
+#include <erbsland/HttpFieldType.hpp>
+#include <erbsland/HttpServer.hpp>
+#include <erbsland/HttpServerRequest.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Network.hpp>
 #include <erbsland/network/impl/host/HostResolver.hpp>
 #include <erbsland/network/impl/http/server/HttpServerRequest.hpp>
 #include <erbsland/network/impl/NetworkBackend.hpp>
-#include <erbsland/network/Network.hpp>
-#include <erbsland/network/source/Connection.hpp>
-#include <erbsland/network/source/NetworkErrorContext.hpp>
-#include <erbsland/network/url/Url.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimeUnitTags.hpp>
+#include <erbsland/NetworkError.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/SigningPrivateKey.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/TextDocument.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeUnitTags.hpp>
+#include <erbsland/TlsConfiguration.hpp>
+#include <erbsland/TlsIdentity.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/Url.hpp>
+#include <erbsland/X509CertificateBundle.hpp>
+#include <erbsland/X509TlsCertificatePolicy.hpp>
 
 #include <array>
 #include <chrono>
+#include <exception>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -104,17 +110,18 @@ private:
 
     static void registerTlsConfigurations() {
         auto serverConfiguration = el::cryptology::TlsConfiguration{};
-        serverConfiguration.setServerIdentity(
-            el::cryptology::TlsServerIdentity{
+        serverConfiguration.setServer(
+            el::cryptology::TlsServerConfiguration{el::cryptology::TlsIdentity{
                 el::cryptology::X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/server.pem")),
                 el::cryptology::SigningPrivateKey::fromPemOrThrow(
-                    readText("data/network/tls-interop/server-key.pem"))});
+                    readText("data/network/tls-interop/server-key.pem"))}});
         el::core::application().cryptologyConfiguration().setTlsConfiguration(
-            "http/server"_el, std::move(serverConfiguration));
-        auto clientConfiguration = el::cryptology::TlsConfiguration{el::cryptology::X509ServerCertificatePolicy{
-            el::cryptology::X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/ca.pem"))}};
+            "http"_el, std::move(serverConfiguration));
+        auto clientConfiguration = el::cryptology::TlsConfiguration{
+            el::cryptology::TlsClientConfiguration{el::cryptology::TlsTrustConfiguration{
+                el::cryptology::X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/ca.pem"))}}};
         el::core::application().cryptologyConfiguration().setTlsConfiguration(
-            "http/client"_el, std::move(clientConfiguration));
+            "http"_el, std::move(clientConfiguration));
     }
 
     template <typename Predicate>
@@ -128,6 +135,7 @@ private:
 
 public:
     void testPreparedRequestValidationAndAsynchronousQueueLimit() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = EventLoop::create();
         auto session = HttpClientSessionPtr{};
         auto rejectedError = std::optional<NetworkErrorContext>{};
@@ -172,6 +180,7 @@ public:
     }
 
     void testPlaintextAutomaticTextPostAndGracefulDrain() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = EventLoop::create();
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
@@ -240,6 +249,7 @@ public:
     }
 
     void testStreamedUploadDefaultPrecedenceAndLowLevelTextResponse() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = EventLoop::create();
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
@@ -298,7 +308,7 @@ public:
                                     session->close();
                                 })
                                 .onFinal([&]() -> void { ++responseFinalCount; });
-                            response->aggregateText(el::unit::ByteLength{1024U});
+                            response->aggregateText(el::unit::ByteCount{1024U});
                         })
                         .onWritable([&]() -> void {
                             if (!uploadSent) {
@@ -329,6 +339,7 @@ public:
     }
 
     void testAutomaticContentTypeFailureTerminatesRequest() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = EventLoop::create();
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
@@ -384,6 +395,7 @@ public:
     }
 
     void testRedirectCookiesAndSequentialConnectionReuse() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = EventLoop::create();
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
@@ -475,6 +487,7 @@ public:
     }
 
     void testRedirectStatusAndMethodRewriteMatrix() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = EventLoop::create();
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
@@ -502,7 +515,7 @@ public:
                         } else if (name.startsWith("308-"_el)) {
                             status = HttpStatus::PermanentRedirect;
                         }
-                        request->sendRedirect(el::text::String::fromJoined({"/target/"_el, name}), status);
+                        request->sendRedirect(el::join("/target/"_el, name), status);
                     })
                 .onRequest(
                     "/target/{case}"_el,
@@ -557,8 +570,7 @@ public:
                         std::pair{HttpMethodType::Post, "308-post"_el}};
                     for (const auto &[method, name] : scenarios) {
                         auto request = session->createRequest(
-                            HttpMethod{method},
-                            Url{UrlScheme::Http, host, el::text::String::fromJoined({"/redirect/"_el, name})});
+                            HttpMethod{method}, Url{UrlScheme::Http, host, el::join("/redirect/"_el, name)});
                         auto headers = HttpHeaders{};
                         headers.setField(HttpFieldType::ContentType, "text/plain"_el);
                         request->setHeaders(std::move(headers));
@@ -580,6 +592,7 @@ public:
     }
 
     void testRedirectActionsGuardsAndStreamReplayability() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = EventLoop::create();
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
@@ -760,6 +773,7 @@ public:
     }
 
     void testCrossOriginRedirectStripsSensitiveFieldsAndEnforcesHostPolicies() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = EventLoop::create(
             std::make_unique<el::network::impl::NetworkBackend>(std::make_shared<LoopbackResolver>()));
         auto server = HttpServerPtr{};
@@ -858,9 +872,10 @@ public:
         REQUIRE_EQUAL(finalCalls, 3U);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testSequentialReuseOptionsAndConfigurationGeneration() {
-        SKIP_BY_DEFAULT()
-        TAGS(FullRun)
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = EventLoop::create();
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
@@ -938,6 +953,7 @@ public:
     }
 
     void testStaleReusedConnectionRetriesOnlySafeRequests() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = EventLoop::create();
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
@@ -1040,7 +1056,7 @@ public:
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
         auto error = std::optional<NetworkErrorContext>{};
-        auto progress = std::vector<el::unit::ByteLength>{};
+        auto progress = std::vector<el::unit::ByteCount>{};
         auto sessionFinal = false;
         auto serverFinal = false;
 
@@ -1086,18 +1102,80 @@ public:
                 if (!error.has_value()) {
                     return {};
                 }
-                return el::text::StringConverter{
-                    el::text::String::fromJoined({error->title(), ": "_el, error->description()})}
-                    .toStdString();
+                return el::text::StringConverter{el::join(error->title(), ": "_el, error->description())}.toStdString();
             });
         const auto downloaded = destination.content().readTextOrThrow();
-        REQUIRE_EQUAL(downloaded.length(), el::unit::ByteLength{24000U});
+        REQUIRE_EQUAL(downloaded.length(), el::unit::ByteCount{24000U});
         REQUIRE(downloaded.startsWith("rrrrrrrr"_el));
         REQUIRE_FALSE(progress.empty());
-        REQUIRE_EQUAL(progress.back(), el::unit::ByteLength{24000U});
+        REQUIRE_EQUAL(progress.back(), el::unit::ByteCount{24000U});
         for (auto index = std::size_t{1U}; index < progress.size(); ++index) {
             REQUIRE(progress[index] >= progress[index - 1U]);
         }
+    }
+
+    void testPathDownloadFailureRetainsNativeCause() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        const auto fixture = el::test::pathtest::PathTestFixture{"http-client-download"};
+        const auto destination = fixture.child("missing/result.txt");
+        const auto loop = EventLoop::create();
+        auto server = HttpServerPtr{};
+        auto session = HttpClientSessionPtr{};
+        auto error = std::optional<NetworkErrorContext>{};
+        auto progress = std::vector<el::unit::ByteCount>{};
+        auto sessionFinal = false;
+        auto serverFinal = false;
+
+        loop->invoke([&]() -> void {
+            server = loop->get<Network>().createHttpServer();
+            server->events()
+                .onRequest(
+                    HttpMethod{HttpMethodType::Get},
+                    "/download"_el,
+                    [&](HttpServerSessionPtr, HttpServerRequestPtr request, el::mem::ByteBlock) -> void {
+                        sendStreamedResponse(request, bytes(std::string(8000U, 'r')), 3U);
+                    })
+                .onError([&](const NetworkErrorContext &context) -> void { error = context; })
+                .onFinal([&]() -> void { serverFinal = true; })
+                .onListening([&]() -> void {
+                    const auto endpoint = *server->localEndpoint();
+                    session = loop->get<Network>().createHttpClientSession();
+                    session->events()
+                        .onResponseHead([&](HttpClientRequestPtr request, HttpClientResponsePtr response) -> void {
+                            response->events().onBodyProgress([&](const HttpClientBodyProgress &value) -> void {
+                                progress.emplace_back(value.committedLength());
+                            });
+                            response->writeBodyTo(destination);
+                            request->events().onFinal([&]() -> void { session->close(); });
+                        })
+                        .onError(
+                            [&](HttpClientRequestPtr, const NetworkErrorContext &context) -> void { error = context; })
+                        .onClosed([&]() -> void { server->close(); })
+                        .onFinal([&]() -> void { sessionFinal = true; });
+                    static_cast<void>(session->sendGet(
+                        Url{UrlScheme::Http,
+                            HostEndpoint{endpoint.address(), endpoint.port(), endpoint.scopeId()},
+                            "/download"_el}));
+                });
+            server->start(IpEndpoint{IpAddress::loopbackV4(), Port{}});
+        });
+
+        runUntil(loop, [&]() -> bool { return (sessionFinal && serverFinal) || error.has_value(); });
+        REQUIRE(error.has_value());
+        REQUIRE_EQUAL(error->reason(), NetworkErrorReason::ContentSinkFailed);
+        REQUIRE(error->cause() != nullptr);
+        try {
+            std::rethrow_exception(error->cause());
+        } catch (const el::path::PathError &cause) {
+            REQUIRE(cause.platformContext() != nullptr);
+            REQUIRE(!cause.title().contains("HTTP response"_el));
+        }
+
+        const auto failure = el::network::NetworkError{*error};
+        const auto rendered = el::err::DiagnosticHelper{failure}.toDocument().toString();
+        REQUIRE(rendered.contains("HTTP response"_el));
+        REQUIRE(rendered.contains("Platform Error"_el));
+        REQUIRE(rendered.contains("result.txt"_el));
     }
 
     void testCancelledPathDownloadPreservesDestinationAndCleansTemporaryFile() {
@@ -1160,9 +1238,7 @@ public:
                     return {};
                 }
                 return std::string{"progress="} + std::to_string(progressCalls) + " | " +
-                    el::text::StringConverter{
-                        el::text::String::fromJoined({error->title(), ": "_el, error->description()})}
-                        .toStdString();
+                    el::text::StringConverter{el::join(error->title(), ": "_el, error->description())}.toStdString();
             });
         REQUIRE_EQUAL(progressCalls, 1U);
         REQUIRE_EQUAL(destination.content().readTextOrThrow(), "previous"_el);
@@ -1179,9 +1255,9 @@ public:
             1);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testHttpsWithHttpClientConfigurationAndForcedAlpn() {
-        SKIP_BY_DEFAULT()
-        TAGS(FullRun)
         const auto applicationScope = ApplicationTestScope<>{};
         registerTlsConfigurations();
         const auto loop = EventLoop::create(

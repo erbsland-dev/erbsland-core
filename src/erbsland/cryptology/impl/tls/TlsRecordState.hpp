@@ -6,7 +6,7 @@
 
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteSpan.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 #include "../../symmetric/SymmetricKey.hpp"
 #include "../../symmetric/SymmetricNonce.hpp"
 #include "../../tls/TlsCipherSuite.hpp"

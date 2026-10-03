@@ -8,12 +8,14 @@
 #include "lzma/LzmaCodec.hpp"
 #include "zstandard/ZstandardCodec.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::compression::impl {
 
+using namespace err;
+using namespace unit;
 using namespace text::literals;
 
 auto CompressionCodec::create(
@@ -21,16 +23,16 @@ auto CompressionCodec::create(
     -> CompressionCodecPtr {
     if (algorithm.toRawValue() < CompressionAlgorithm::Lz4Block ||
         algorithm.toRawValue() > CompressionAlgorithm::Zstandard) {
-        throw err::ParameterError{"Compression algorithm is invalid."_el, "algorithm"_el};
+        throw ParameterFailure{"Compression algorithm is invalid."_el, "algorithm"_el};
     }
     if (format > CompressionFormat::Core) {
-        throw err::ParameterError{"Compression format is invalid."_el, "format"_el};
+        throw ParameterFailure{"Compression format is invalid."_el, "format"_el};
     }
     if (level > CompressionLevel::Highest) {
-        throw err::ParameterError{"Compression level is invalid."_el, "level"_el};
+        throw ParameterFailure{"Compression level is invalid."_el, "level"_el};
     }
     if (format == CompressionFormat::Zip && algorithm == CompressionAlgorithm::Lz4Block) {
-        throw err::ParameterError{"LZ4 has no ZIP compression-method representation."_el, "format"_el};
+        throw ParameterFailure{"LZ4 has no ZIP compression-method representation."_el, "format"_el};
     }
     switch (algorithm.toRawValue()) {
     case CompressionAlgorithm::Lz4Block:
@@ -44,14 +46,17 @@ auto CompressionCodec::create(
     case CompressionAlgorithm::Zstandard:
         return std::make_shared<ZstandardCodec>(format, level);
     }
-    throw err::ParameterError{"Compression algorithm is invalid."_el, "algorithm"_el};
+    throw ParameterFailure{"Compression algorithm is invalid."_el, "algorithm"_el};
 }
 
-auto CompressionCodec::maximumCompressedLength(const unit::ByteLength length) const -> unit::ByteLength {
+auto CompressionCodec::maximumCompressedLength(const ByteCount length) const -> ByteCount {
     auto result = maximumPayloadLength(length);
     if (_format == CompressionFormat::Core) {
-        const auto chunks = result.toRawValue() / 65536U + (result.toRawValue() % 65536U != 0U ? 1U : 0U);
-        result = result.addedOrThrow(unit::ByteLength{chunks * 4U}).addedOrThrow(unit::ByteLength{32U});
+        auto chunks = result / 65536U;
+        if (!(result % 65536U).isZero()) {
+            chunks = chunks.addedOrThrow(ByteCount::one());
+        }
+        result = result.addedOrThrow(chunks * 4U).addedOrThrow(ByteCount{32U});
     }
     return result;
 }

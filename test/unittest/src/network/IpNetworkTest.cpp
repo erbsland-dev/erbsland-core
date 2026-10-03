@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/network/IpNetwork.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/IpNetwork.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ParseError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::network;
@@ -40,7 +40,7 @@ public:
         REQUIRE_FALSE(IpNetwork::fromString("192.0.2.1/+24"_el).has_value());
         REQUIRE_FALSE(IpNetwork::fromString("192.0.2.1/24 "_el).has_value());
         REQUIRE_FALSE(IpNetwork::fromString("192.0.2.1/24/7"_el).has_value());
-        REQUIRE_THROWS_AS(el::err::ParameterError, IpNetwork(IpAddress::anyV4(), 33U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, IpNetwork(IpAddress::anyV4(), 33U));
         REQUIRE_THROWS_AS(el::err::ParseError, IpNetwork::fromStringOrThrow("not-a-network"_el));
     }
 };

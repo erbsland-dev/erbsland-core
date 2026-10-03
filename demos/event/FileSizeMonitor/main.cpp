@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <DemoTerminal.hpp>
 #include <erbsland/all_core.hpp>
 #include <erbsland/all_err.hpp>
 #include <erbsland/all_event.hpp>
@@ -9,6 +10,17 @@
 #include <erbsland/all_stream.hpp>
 #include <erbsland/all_text.hpp>
 #include <erbsland/all_time.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/EventTimer.hpp>
+#include <erbsland/OptionSet.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathResolveMode.hpp>
 
 namespace demo {
 
@@ -19,16 +31,6 @@ struct AppData {
     el::PathInfo pathInfo;
 } appData;
 
-void poll();
-
-/// In an event-based application, you initialize your event handlers and let the event loop run.
-void initialize() {
-    el::stdOut()->printLine("Monitoring size of file: "_el, appData.pathInfo.resolvedPath());
-    poll();
-    appData.pollTimer = el::application().events()->createTimer(poll);
-    appData.pollTimer->startFixedDelay(el::Seconds{1});
-}
-
 /// This method is called in configured intervals to display the file size.
 void poll() {
     appData.pathInfo.reload();
@@ -37,6 +39,14 @@ void poll() {
     } else {
         el::stdOut()->printLine("Size: "_el, appData.pathInfo.fileSize(), " bytes"_el);
     }
+}
+
+/// In an event-based application, you initialize your event handlers and let the event loop run.
+void initialize() {
+    el::stdOut()->printLine("Monitoring size of file: "_el, appData.pathInfo.resolvedPath());
+    poll();
+    appData.pollTimer = el::application().events()->createTimer(poll);
+    appData.pollTimer->startFixedDelay(el::Seconds{1});
 }
 
 /// This method is automatically called after the options are parsed.
@@ -76,7 +86,7 @@ auto createOptions() -> el::OptionSetPtr {
 /// This simple main method is the entry point of the application.
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     app.info().setApplicationName("File Size Monitor"_el);
     app.options()->addSet(createOptions());
     return app.run();

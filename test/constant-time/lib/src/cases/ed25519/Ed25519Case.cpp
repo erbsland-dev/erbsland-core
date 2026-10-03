@@ -1,12 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "Ed25519Case.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
@@ -15,7 +14,7 @@ using namespace el::text::literals;
 Ed25519Case::Ed25519Case(Ed25519Operation operation) : _operation{operation} {
     const auto id = identifier();
 
-    configure(TestMetadata{id, "Ed25519 secret arithmetic and signing"_el}, el::ByteLength{4096});
+    configure(TestMetadata{id, "Ed25519 secret arithmetic and signing"_el}, el::ByteCount{4096});
 }
 
 auto Ed25519Case::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {
@@ -45,7 +44,7 @@ auto Ed25519Case::identifier() const -> el::String {
     case Ed25519Operation::FieldInvert:
         return "ed25519/field-invert"_el;
     }
-    throw el::LogicError{"Unknown scenario operation."_el};
+    throw el::LogicFailure{"Unknown scenario operation."_el};
 }
 
 }

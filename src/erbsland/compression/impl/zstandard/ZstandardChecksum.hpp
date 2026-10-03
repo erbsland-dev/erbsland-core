@@ -39,4 +39,5 @@ private:
     std::size_t _used{};                                                               ///< Tail length.
     uint64_t _length{};                                                                ///< Total input length.
 };
+
 }

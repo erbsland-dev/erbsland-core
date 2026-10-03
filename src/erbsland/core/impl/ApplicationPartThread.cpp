@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ApplicationPartThread.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/RuntimeError.hpp"
 #include "../../event/EventLoop.hpp"
 #include "../../event/EventLoopErrorAction.hpp"
 #include "../../text/Literals.hpp"
@@ -37,12 +38,12 @@ ApplicationPartThread::~ApplicationPartThread() noexcept {
 void ApplicationPartThread::start() {
     auto lock = std::scoped_lock{_mutex};
     if (_started) {
-        throw err::LogicError{"The application-part thread was already started."_el};
+        throw err::LogicFailure{"The application-part thread was already started."_el};
     }
     _thread = std::thread{[this]() -> void {
         try {
             _eventLoop->run();
-        } catch (...) {
+        } catch (const err::RuntimeError &) {
             if (_errorFn) {
                 _errorFn(std::current_exception());
             }
@@ -66,7 +67,7 @@ void ApplicationPartThread::join() {
         return;
     }
     if (_thread.get_id() == std::this_thread::get_id()) {
-        throw err::LogicError{"Can not join an application-part thread from itself."_el};
+        throw err::LogicFailure{"Can not join an application-part thread from itself."_el};
     }
     _thread.join();
 }

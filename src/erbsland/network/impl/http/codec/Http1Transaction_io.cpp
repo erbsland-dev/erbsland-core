@@ -4,17 +4,20 @@
 
 #include "Http1ProtocolError.hpp"
 
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../source/NetworkErrorReason.hpp"
 
 namespace erbsland::network::impl {
 
+using namespace err;
+using namespace mem;
 using namespace text::literals;
 
 void Http1Transaction::bindConnection() {
     const auto weakSelf = Http1TransactionWeakPtr{shared_from_this()};
     _connection->events()
-        .onData([weakSelf](mem::ByteBlock data) -> void {
+        .onData([weakSelf](ByteBlock data) -> void {
             if (const auto self = weakSelf.lock()) {
                 self->handleData(std::move(data));
             }
@@ -45,7 +48,7 @@ void Http1Transaction::unbindConnection() {
     _connection->events().onData({}).onWritable({}).onClosed({}).onError({}).onFinal({});
 }
 
-void Http1Transaction::handleData(mem::ByteBlock data) {
+void Http1Transaction::handleData(ByteBlock data) {
     if (_finalized || _state == State::Closing || _state == State::Cancelled || _failureEmitted) {
         return;
     }
@@ -74,7 +77,7 @@ void Http1Transaction::handleWritable() {
         if (_callbacks.writable) {
             try {
                 _callbacks.writable();
-            } catch (...) {
+            } catch (const RuntimeError &) {
                 fail(
                     Http1TransactionFailure{
                         Http1TransactionFailure::Kind::Callback,
@@ -116,8 +119,7 @@ void Http1Transaction::handleClosed() {
 }
 
 void Http1Transaction::handleError(const NetworkErrorContext &context) {
-    // Browsers can discard an idle keep-alive connection without an orderly TLS or TCP shutdown. Once request data
-    // arrived, the same errors remain failures until the complete request has been decoded.
+    // Idle keep-alive peers may disconnect abruptly; incomplete requests still fail on these transport errors.
     const auto noIncompleteRequest = (_state == State::ReceivingHeaders && !_incomingStarted) || _incomingComplete;
     const auto normalPeerDisconnect = _role == Role::Server && noIncompleteRequest &&
         (context.reason() == NetworkErrorReason::TlsTruncation ||
@@ -225,7 +227,7 @@ void Http1Transaction::handleDecodeEvent(Http1DecodeEvent event) {
             if (_callbacks.informationalHead) {
                 try {
                     _callbacks.informationalHead(event);
-                } catch (...) {
+                } catch (const RuntimeError &) {
                     fail(
                         Http1TransactionFailure{
                             Http1TransactionFailure::Kind::Callback,
@@ -260,7 +262,7 @@ void Http1Transaction::handleDecodeEvent(Http1DecodeEvent event) {
         if (_bodyMode == BodyMode::Streaming && _callbacks.bodyData) {
             try {
                 _callbacks.bodyData(event.data());
-            } catch (...) {
+            } catch (const RuntimeError &) {
                 fail(
                     Http1TransactionFailure{
                         Http1TransactionFailure::Kind::Callback,
@@ -282,7 +284,7 @@ void Http1Transaction::handleDecodeEvent(Http1DecodeEvent event) {
         if (_callbacks.trailers) {
             try {
                 _callbacks.trailers(event.trailerFields());
-            } catch (...) {
+            } catch (const RuntimeError &) {
                 fail(
                     Http1TransactionFailure{
                         Http1TransactionFailure::Kind::Callback,
@@ -305,8 +307,8 @@ void Http1Transaction::handleDecodeEvent(Http1DecodeEvent event) {
             _role == Role::Client ? _responseDecoder->takeRetainedInput() : _requestDecoder->takeRetainedInput();
         if (_aggregate && _callbacks.aggregatedBody) {
             try {
-                _callbacks.aggregatedBody(_aggregate->read(unit::ByteLength::infinite()));
-            } catch (...) {
+                _callbacks.aggregatedBody(_aggregate->read(unit::ByteCount::infinite()));
+            } catch (const RuntimeError &) {
                 fail(
                     Http1TransactionFailure{
                         Http1TransactionFailure::Kind::Callback,
@@ -319,7 +321,7 @@ void Http1Transaction::handleDecodeEvent(Http1DecodeEvent event) {
         if (_callbacks.inputComplete) {
             try {
                 _callbacks.inputComplete();
-            } catch (...) {
+            } catch (const RuntimeError &) {
                 fail(
                     Http1TransactionFailure{
                         Http1TransactionFailure::Kind::Callback,
@@ -348,7 +350,7 @@ void Http1Transaction::handleFinalHead(const Http1DecodeEvent &event) {
             } else if (_role == Role::Client && _callbacks.responseHead) {
                 _callbacks.responseHead(event);
             }
-        } catch (...) {
+        } catch (const RuntimeError &) {
             fail(
                 Http1TransactionFailure{
                     Http1TransactionFailure::Kind::Callback,
@@ -366,7 +368,7 @@ void Http1Transaction::handleFinalHead(const Http1DecodeEvent &event) {
         } else if (_role == Role::Client && _callbacks.responseHead) {
             _callbacks.responseHead(event);
         }
-    } catch (...) {
+    } catch (const RuntimeError &) {
         fail(
             Http1TransactionFailure{
                 Http1TransactionFailure::Kind::Callback,
@@ -387,7 +389,7 @@ auto Http1Transaction::nextDecodeEvent() -> std::optional<Http1DecodeEvent> {
     return _role == Role::Client ? _responseDecoder->next() : _requestDecoder->next();
 }
 
-auto Http1Transaction::feedDecoder(const mem::ConstByteSpan data) -> NetworkSendStatus {
+auto Http1Transaction::feedDecoder(const ConstByteSpan data) -> NetworkSendStatus {
     _incomingStarted = _incomingStarted || !data.empty();
     return _role == Role::Client ? _responseDecoder->feed(data) : _requestDecoder->feed(data);
 }
@@ -405,7 +407,7 @@ void Http1Transaction::resetResponseDecoder() {
     _responseDecoder->setRequestMethod(_requestMethod);
 }
 
-auto Http1Transaction::finalEncoderQueuedLength() const noexcept -> unit::ByteLength {
+auto Http1Transaction::finalEncoderQueuedLength() const noexcept -> unit::ByteCount {
     if (_role == Role::Client && _requestEncoder) {
         return _requestEncoder->queuedOutputLength();
     }
@@ -428,7 +430,7 @@ auto Http1Transaction::isFinalEncoderComplete() const noexcept -> bool {
     return false;
 }
 
-auto Http1Transaction::takeEncoderOutput() -> mem::ByteBlock {
+auto Http1Transaction::takeEncoderOutput() -> ByteBlock {
     if (_informationalEncoder) {
         auto result = _informationalEncoder->takeOutput();
         if (result.isEmpty() && _informationalEncoder->isComplete()) {

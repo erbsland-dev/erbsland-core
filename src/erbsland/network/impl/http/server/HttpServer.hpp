@@ -103,13 +103,13 @@ private:
     /// Release one pending blocking operation.
     void releaseStaticOperation() noexcept;
     /// Reserve completed bytes awaiting output.
-    [[nodiscard]] auto reserveStaticQueue(unit::ByteLength length) noexcept -> bool;
+    [[nodiscard]] auto reserveStaticQueue(unit::ByteCount length) noexcept -> bool;
     /// Release completed bytes awaiting output.
-    void releaseStaticQueue(unit::ByteLength length) noexcept;
+    void releaseStaticQueue(unit::ByteCount length) noexcept;
     /// Reserve retained static-content memory.
-    [[nodiscard]] auto reserveStaticMemory(unit::ByteLength length) noexcept -> bool;
+    [[nodiscard]] auto reserveStaticMemory(unit::ByteCount length) noexcept -> bool;
     /// Release retained static-content memory.
-    void releaseStaticMemory(unit::ByteLength length) noexcept;
+    void releaseStaticMemory(unit::ByteCount length) noexcept;
 
 private:
     std::unique_ptr<HttpServerEventEditor> _eventEditor;             ///< Stable server editor.

@@ -22,6 +22,7 @@ namespace erbsland::event::impl {
 class KqueueEventLoopDriver final : public EventLoopDriver {
 public:
     /// Create a kqueue-based event-loop driver.
+    /// @throws system::PlatformError If native event-loop initialization fails.
     KqueueEventLoopDriver();
 
     /// Release the native kqueue descriptor and its registrations.
@@ -41,6 +42,7 @@ public: // native source interface
     using RegistrationPtr = std::unique_ptr<EventLoopDriverRegistration>;
 
     /// Register descriptor readiness with this driver.
+    /// @throws system::PlatformError If native event registration fails.
     [[nodiscard]] auto registerDescriptor(int descriptor, bool read, bool write, NativeEventCallback callback)
         -> RegistrationPtr;
 

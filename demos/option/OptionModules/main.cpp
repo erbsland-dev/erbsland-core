@@ -1,7 +1,21 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionHelpVisibility.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -17,7 +31,7 @@ public:
 
 protected:
     void initialize() override {
-        enableTerminal();
+        DemoTerminal::enable(*this);
         info().setApplicationName("Instrument Archive"_el);
         info().setApplicationVersion(el::Version{0, 8, 0});
         info().setLicenseText("Apache-2.0"_el);
@@ -26,7 +40,7 @@ protected:
         options->setHelpTitle("Instrument Archive"_el);
         options->setHelpDescription("Manages small records for scientific instruments."_el);
         options->addOption({"-v"_el, "--verbose"_el, "verbose"_el})
-            .setHelpDescription("Prints additional progress details."_el)
+            .setHelpTitle("Prints additional progress details."_el)
             .setHelpVisibility(el::OptionHelpVisibility::Overview);
 
         auto scan = el::OptionModule::create("scan"_el);
@@ -35,8 +49,8 @@ protected:
         scan->addOption({"-r"_el, "--range"_el, "range"_el})
             .setType(el::OptionType::Integer)
             .setDefaultValue(el::OptionInteger{5})
-            .setHelpDescription("Reading range around the starting point."_el);
-        scan->addOption("instrument"_el).setRequired().setHelpDescription("Instrument to scan."_el);
+            .setHelpTitle("Reading range around the starting point."_el);
+        scan->addOption("instrument"_el).setRequired().setHelpTitle("Instrument to scan."_el);
         scan->setMainFn([](const el::OptionValuesPtr &values) -> el::ExitCode {
             el::io::printLine("module: "_el, values->moduleName());
             el::io::printLine("instrument: "_el, values->getText("instrument"_el));
@@ -54,8 +68,8 @@ protected:
             .addChoice("chart"_el)
             .addChoice("data"_el)
             .setDefaultValue("text"_el)
-            .setHelpDescription("Output format for the record."_el);
-        render->addOption("instrument"_el).setRequired().setHelpDescription("Instrument to render."_el);
+            .setHelpTitle("Output format for the record."_el);
+        render->addOption("instrument"_el).setRequired().setHelpTitle("Instrument to render."_el);
         render->setMainFn([](const el::OptionValuesPtr &values) -> el::ExitCode {
             el::io::printLine("module: "_el, values->moduleName());
             el::io::printLine("instrument: "_el, values->getText("instrument"_el));

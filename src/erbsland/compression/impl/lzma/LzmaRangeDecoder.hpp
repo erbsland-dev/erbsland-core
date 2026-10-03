@@ -28,10 +28,12 @@ public:
     /// Decode one adaptive probability bit.
     [[nodiscard]] auto decodeBit(uint16_t &probability) -> uint32_t;
     /// Decode a most-significant-bit-first probability tree.
-    /// @throws err::LogicError If the probability span is too small for `bitCount`.
+    /// @param probabilities The probability tree storage. Must contain at least `2^bitCount` entries.
+    /// @param bitCount The number of bits in the tree. Must be less than 32.
     [[nodiscard]] auto decodeTree(std::span<uint16_t> probabilities, unsigned bitCount) -> uint32_t;
     /// Decode a least-significant-bit-first probability tree.
-    /// @throws err::LogicError If the probability span is too small for `bitCount`.
+    /// @param probabilities The probability tree storage. Must contain at least `2^bitCount` entries.
+    /// @param bitCount The number of bits in the tree. Must be less than 32.
     [[nodiscard]] auto decodeReverseTree(std::span<uint16_t> probabilities, unsigned bitCount) -> uint32_t;
     /// Decode bits without an adaptive probability model.
     [[nodiscard]] auto decodeDirect(unsigned bitCount) -> uint32_t;
@@ -40,7 +42,8 @@ public:
 
 private:
     /// Validate that a probability span contains the complete requested tree.
-    /// @throws err::LogicError If the probability span is too small for `bitCount`.
+    /// @param probabilities The probability tree storage. Must contain at least `2^bitCount` entries.
+    /// @param bitCount The number of bits in the tree. Must be less than 32.
     static void requireTreeSize(std::span<uint16_t> probabilities, unsigned bitCount);
     /// Read one encoded byte or reject truncated input.
     [[nodiscard]] auto readByte() -> uint32_t;

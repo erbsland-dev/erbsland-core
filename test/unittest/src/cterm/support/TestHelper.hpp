@@ -4,11 +4,11 @@
 
 #include "ColorTermIncludes.hpp"
 
-#include <erbsland/cterm/all.hpp>
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/all_cterm.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OutOfRangeFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

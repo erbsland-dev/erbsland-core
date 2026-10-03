@@ -5,6 +5,7 @@
 #include "CryptologyOids.hpp"
 #include "DerEncoder.hpp"
 #include "DerParser.hpp"
+#include "EcPrivateScalarPolicy.hpp"
 #include "PemCodec.hpp"
 #include "SecureEraseGuard.hpp"
 #include "SigningKeyEncoding.hpp"
@@ -23,6 +24,8 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+using namespace text;
 using namespace text::literals;
 using namespace unit;
 
@@ -74,15 +77,14 @@ auto PrivateKeyParser::parse() const -> SigningPrivateKey {
     throwParseError("PKCS#8 contains an unsupported private-key algorithm."_el);
 }
 
-auto PrivateKeyParser::decodePem(const text::String &pem) -> mem::ByteBlock {
+auto PrivateKeyParser::decodePem(const String &pem) -> ByteBlock {
     auto blocks = PemCodec{pem, PemLabel::PrivateKey}.decode();
     auto result = blocks.first();
     result.markAsSensitive();
     return result;
 }
 
-auto PrivateKeyParser::parseEd25519(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
-    -> SigningPrivateKey {
+auto PrivateKeyParser::parseEd25519(const Asn1Node &algorithm, const ByteBlock &privateKey) const -> SigningPrivateKey {
     // RFC 8410 sections 3 and 7: id-Ed25519 parameters are absent and CurvePrivateKey is an inner OCTET STRING.
     if (algorithm.childCount() != ItemCount{1U}) {
         throwParseError("Ed25519 PKCS#8 algorithm parameters must be absent."_el);
@@ -97,7 +99,7 @@ auto PrivateKeyParser::parseEd25519(const Asn1Node &algorithm, const mem::ByteBl
     auto seed = inner.contentData();
     seed.markAsSensitive();
     const auto seedEraseGuard = SecureEraseGuard{seed};
-    if (seed.length() != ByteLength{32U}) {
+    if (seed.length() != ByteCount{32U}) {
         throwParseError("Ed25519 CurvePrivateKey must contain exactly 32 octets."_el);
     }
 
@@ -108,8 +110,7 @@ auto PrivateKeyParser::parseEd25519(const Asn1Node &algorithm, const mem::ByteBl
     return SigningPrivateKey{SigningKeyAlgorithm::Ed25519, seed.span(), PublicKey::fromDerOrThrow(encoder.encoded())};
 }
 
-auto PrivateKeyParser::parseEcdsa(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
-    -> SigningPrivateKey {
+auto PrivateKeyParser::parseEcdsa(const Asn1Node &algorithm, const ByteBlock &privateKey) const -> SigningPrivateKey {
     // RFC 5480 section 2.1.1: id-ecPublicKey parameters contain one supported named-curve OID.
     if (algorithm.childCount() != ItemCount{2U}) {
         throwParseError("An EC PKCS#8 algorithm must contain named-curve parameters."_el);
@@ -146,6 +147,9 @@ auto PrivateKeyParser::parseEcdsa(const Asn1Node &algorithm, const mem::ByteBloc
     auto scalar = scalarNode.contentData();
     scalar.markAsSensitive();
     const auto scalarEraseGuard = SecureEraseGuard{scalar};
+    if (!ec_private_scalar_policy::isAcceptable(scalar.span(), curveName)) {
+        throwParseError("EC private scalar has an invalid width or is outside the accepted signing-key interval."_el);
+    }
     const auto publicPoint = ecdsa_signer::publicKey(scalar.span(), curveName);
 
     if (root.childCount() == ItemCount{3U}) {
@@ -162,7 +166,7 @@ auto PrivateKeyParser::parseEcdsa(const Asn1Node &algorithm, const mem::ByteBloc
             false,
             "EC public key"_el);
         const auto content = bitString.contentData();
-        if (content.length() != ByteLength{2U * curve.byteLength() + 2U} || content.span().front().toUInt8() != 0U ||
+        if (content.length() != curve.byteLength() * 2U + ByteCount{2U} || content.span().front().toUInt8() != 0U ||
             !publicPoint.isEqualConstTime(content.span().subspan(1U))) {
             throwParseError("ECPrivateKey embedded public key does not match its private scalar."_el);
         }
@@ -174,8 +178,7 @@ auto PrivateKeyParser::parseEcdsa(const Asn1Node &algorithm, const mem::ByteBloc
     return SigningPrivateKey{keyAlgorithm, scalar.span(), PublicKey::fromDerOrThrow(encoder.encoded())};
 }
 
-auto PrivateKeyParser::parseRsa(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
-    -> SigningPrivateKey {
+auto PrivateKeyParser::parseRsa(const Asn1Node &algorithm, const ByteBlock &privateKey) const -> SigningPrivateKey {
     // RFC 5208 section 6 and RFC 8017 appendix A.1.2: the privateKey OCTET STRING contains one version-0
     // two-prime RSAPrivateKey. The exact algorithm encoding retains RSAE or RSASSA-PSS restrictions.
     auto encoder = DerEncoder{};
@@ -188,17 +191,17 @@ void PrivateKeyParser::requireNode(
     const Asn1TagClass tagClass,
     const uint32_t tagNumber,
     const bool constructed,
-    [[maybe_unused]] const text::String &name) {
+    [[maybe_unused]] const String &name) {
     if (node.isEmpty() || node.tagClass() != tagClass || node.tagNumber() != tagNumber ||
         node.isConstructed() != constructed) {
         throwParseError("PKCS#8 contains an ASN.1 value with an unexpected type or form."_el);
     }
 }
 
-auto PrivateKeyParser::decodeSmallInteger(const Asn1Node &node, [[maybe_unused]] const text::String &name) -> uint32_t {
+auto PrivateKeyParser::decodeSmallInteger(const Asn1Node &node, [[maybe_unused]] const String &name) -> uint32_t {
     requireNode(node, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Integer), false, name);
     const auto content = node.contentData();
-    if (content.isEmpty() || content.length() > ByteLength{4U} || (content.span().front().toUInt8() & 0x80U) != 0U) {
+    if (content.isEmpty() || content.length() > ByteCount{4U} || (content.span().front().toUInt8() & 0x80U) != 0U) {
         throwParseError("PKCS#8 contains an invalid small nonnegative INTEGER."_el);
     }
     auto result = uint32_t{};
@@ -208,7 +211,7 @@ auto PrivateKeyParser::decodeSmallInteger(const Asn1Node &node, [[maybe_unused]]
     return result;
 }
 
-void PrivateKeyParser::throwParseError(const text::String &reason) {
+void PrivateKeyParser::throwParseError(const String &reason) {
     throw err::ParseError{reason};
 }
 

@@ -12,7 +12,10 @@
 
 #include "../../cryptology/tls/TlsCipherSuite.hpp"
 #include "../../cryptology/tls/TlsSignatureScheme.hpp"
+#include "../../cryptology/x509/X509Certificate.hpp"
 #include "../../text/String.hpp"
+#include "../../text/StringList.hpp"
+#include "../../util/List.hpp"
 
 #include <optional>
 #include <utility>
@@ -27,6 +30,10 @@ public: // defaults
     ~TlsServerConnection() override = default;
 
 public: // metadata
+    /// Get the authenticated client path, empty until certificate authentication and Finished succeed.
+    [[nodiscard]] virtual auto peerCertificatePath() const -> util::List<cryptology::X509Certificate> = 0;
+    /// Test whether the completed handshake authenticated a client certificate.
+    [[nodiscard]] virtual auto isPeerAuthenticated() const -> bool = 0;
     /// Get the selected requested application TLS configuration label.
     [[nodiscard]] virtual auto requestedConfigurationLabel() const -> std::optional<text::String> = 0;
     /// Get the selected exact registry label after fallback.
@@ -34,7 +41,7 @@ public: // metadata
     /// Get the canonical SNI name, if offered.
     [[nodiscard]] virtual auto serverName() const -> std::optional<HostName> = 0;
     /// Get the bounded client ALPN offer in wire order.
-    [[nodiscard]] virtual auto offeredAlpn() const -> std::vector<text::String> = 0;
+    [[nodiscard]] virtual auto offeredAlpn() const -> text::StringList = 0;
     /// Get the selected ALPN identifier, or an empty block.
     [[nodiscard]] virtual auto negotiatedAlpn() const -> text::String = 0;
     /// Get the negotiated cipher suite.
@@ -44,10 +51,11 @@ public: // metadata
 
 public: // operations
     /// Resolve immutable identity configurations and consume one pending TCP request.
-    /// @param request The transferable pending TCP request.
-    /// @param options The complete accepted TLS policy and required handshake quota.
-    /// @throws err::ParameterError If the options, mappings, quota, or request are invalid.
-    /// @throws err::RuntimeError If a required immutable TLS identity cannot be resolved.
+    /// @param request The transferable pending TCP request. Must not be null.
+    /// @param options The complete accepted TLS policy. Must include a non-null handshake quota, valid identity
+    /// mappings, and buffer limits and deadlines within `TlsServerAcceptOptions` bounds.
+    /// @throws cryptology::CryptologyError If a default or named TLS configuration cannot be resolved or has no server
+    /// identity.
     virtual void accept(TcpConnectionRequestPtr request, TlsServerAcceptOptions options) = 0;
 
 public: // implement Connection

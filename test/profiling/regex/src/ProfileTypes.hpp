@@ -2,9 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
+#include <erbsland/all_re.hpp>
+#include <erbsland/cterm/Backend.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
 #include <erbsland/profiling/Definitions.hpp>
-#include <erbsland/re/all.hpp>
+#include <erbsland/re/Flag.hpp>
+#include <erbsland/re/Flags.hpp>
+#include <erbsland/re/Settings.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEncoding.hpp>
 
 #include <chrono>
 #include <cstdint>

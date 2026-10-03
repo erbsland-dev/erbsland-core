@@ -5,8 +5,8 @@
 #include "../impl/symmetric/SymmetricDataFactory.hpp"
 #include "../impl/symmetric/SymmetricEncryptorData.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/Literals.hpp"
@@ -15,6 +15,8 @@
 
 namespace erbsland::cryptology {
 
+using namespace err;
+using namespace mem;
 using namespace text::literals;
 
 SymmetricEncryptor::SymmetricEncryptor(
@@ -62,30 +64,30 @@ void SymmetricEncryptor::secureErase() noexcept {
     _state = State::Empty;
 }
 
-void SymmetricEncryptor::addAuthenticatedData(const mem::ConstByteSpan data) {
+void SymmetricEncryptor::addAuthenticatedData(const ConstByteSpan data) {
     requireUsable();
     if (!type().isAead()) {
-        throw err::LogicError{"Authenticated data requires an AEAD encryption type."_el};
+        throw LogicFailure{"Authenticated data requires an AEAD encryption type."_el};
     }
     if (_state != State::Active) {
-        throw err::LogicError{"Authenticated data must be added before payload encryption."_el};
+        throw LogicFailure{"Authenticated data must be added before payload encryption."_el};
     }
     try {
         _data->addAuthenticatedData(data);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         _state = State::Failed;
         throw;
     }
 }
 
-void SymmetricEncryptor::addAuthenticatedData(const mem::ByteBlock &data) {
+void SymmetricEncryptor::addAuthenticatedData(const ByteBlock &data) {
     addAuthenticatedData(data.span());
 }
 
-auto SymmetricEncryptor::encrypt(const mem::ConstByteSpan data) -> mem::ByteBlock {
+auto SymmetricEncryptor::encrypt(const ConstByteSpan data) -> ByteBlock {
     requireUsable();
     if (_state == State::Finalized) {
-        throw err::LogicError{"Cannot encrypt data after finalization."_el};
+        throw LogicFailure{"Cannot encrypt data after finalization."_el};
     }
     try {
         auto result = _data->encrypt(data);
@@ -93,26 +95,26 @@ auto SymmetricEncryptor::encrypt(const mem::ConstByteSpan data) -> mem::ByteBloc
             _state = State::Payload;
         }
         return result;
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         _state = State::Failed;
         throw;
     }
 }
 
-auto SymmetricEncryptor::encrypt(const mem::ByteBlock &data) -> mem::ByteBlock {
+auto SymmetricEncryptor::encrypt(const ByteBlock &data) -> ByteBlock {
     return encrypt(data.span());
 }
 
-auto SymmetricEncryptor::finalize() -> mem::ByteBlock {
+auto SymmetricEncryptor::finalize() -> ByteBlock {
     requireUsable();
     if (_state == State::Finalized) {
-        throw err::LogicError{"Cannot finalize encryption more than once."_el};
+        throw LogicFailure{"Cannot finalize encryption more than once."_el};
     }
     try {
         auto result = _data->finalize();
         _state = State::Finalized;
         return result;
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         _state = State::Failed;
         throw;
     }
@@ -121,54 +123,54 @@ auto SymmetricEncryptor::finalize() -> mem::ByteBlock {
 auto SymmetricEncryptor::tag() const -> SymmetricTag {
     requireUsable();
     if (!type().isAead()) {
-        throw err::LogicError{"An authentication tag is available only for AEAD encryption."_el};
+        throw LogicFailure{"An authentication tag is available only for AEAD encryption."_el};
     }
     if (_state != State::Finalized) {
-        throw err::LogicError{"The authentication tag is available only after finalization."_el};
+        throw LogicFailure{"The authentication tag is available only after finalization."_el};
     }
     return _data->tag();
 }
 
 auto SymmetricEncryptor::type() const -> SymmetricEncryptionType {
     if (isEmpty()) {
-        throw err::LogicError{"Cannot access an empty symmetric encryptor."_el};
+        throw LogicFailure{"Cannot access an empty symmetric encryptor."_el};
     }
     return _data->type();
 }
 
 void SymmetricEncryptor::validateCommon(const SymmetricEncryptionType type, const SymmetricKey &key) {
     if (!type.isValid()) {
-        throw err::ParameterError{"A valid symmetric encryption type is required."_el, "type"_el};
+        throw ParameterFailure{"A valid symmetric encryption type is required."_el, "type"_el};
     }
     if (key.byteLength() != type.keyLength()) {
-        throw err::ParameterError{"The symmetric key has the wrong length."_el, "key"_el};
+        throw ParameterFailure{"The symmetric key has the wrong length."_el, "key"_el};
     }
 }
 
 void SymmetricEncryptor::validateNonce(const SymmetricEncryptionType type, const SymmetricNonce &nonce) {
     if (!type.isAead()) {
-        throw err::ParameterError{"This encryption type requires an initialization vector."_el, "type"_el};
+        throw ParameterFailure{"This encryption type requires an initialization vector."_el, "type"_el};
     }
     if (nonce.byteLength() != type.nonceLength()) {
-        throw err::ParameterError{"The symmetric nonce has the wrong length."_el, "nonce"_el};
+        throw ParameterFailure{"The symmetric nonce has the wrong length."_el, "nonce"_el};
     }
 }
 
 void SymmetricEncryptor::validateIv(const SymmetricEncryptionType type, const SymmetricIv &iv) {
     if (!type.requiresIv()) {
-        throw err::ParameterError{"This encryption type requires a nonce."_el, "type"_el};
+        throw ParameterFailure{"This encryption type requires a nonce."_el, "type"_el};
     }
     if (iv.byteLength() != type.ivLength()) {
-        throw err::ParameterError{"The symmetric initialization vector has the wrong length."_el, "iv"_el};
+        throw ParameterFailure{"The symmetric initialization vector has the wrong length."_el, "iv"_el};
     }
 }
 
 void SymmetricEncryptor::requireUsable() const {
     if (isEmpty()) {
-        throw err::LogicError{"Cannot use an empty symmetric encryptor."_el};
+        throw LogicFailure{"Cannot use an empty symmetric encryptor."_el};
     }
     if (_state == State::Failed) {
-        throw err::LogicError{"Cannot reuse a symmetric encryptor after a backend failure."_el};
+        throw LogicFailure{"Cannot reuse a symmetric encryptor after a backend failure."_el};
     }
 }
 

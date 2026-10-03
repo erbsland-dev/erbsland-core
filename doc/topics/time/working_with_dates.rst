@@ -67,7 +67,7 @@ Thus month 13 becomes December before construction, while February 31 produces a
 .. erbsland-demo::
     :source: time/Date/CreateTyped.cpp
     :exec: time/date --demo CreateTyped
-    :source-sha256: 38277d5900fb1b0273bb3bfdb62c1a24eab67c84adc36c88287fe574d48ca4aa
+    :sha256: 20d6897ddd209fd0e54ba5c16546c8828df9c7c6ea4d60fff51e94cce0a35a0c
 
 .. code-block:: cpp
 
@@ -99,13 +99,15 @@ Thus month 13 becomes December before construction, while February 31 produces a
             el::StringFormat{"Clamped month: {}; February 31 valid: {}"_el}.build(clampedMonth, impossible.isValid()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Observation de la Lune: 2028-02-29
-    Constructor orders agree: true
-    Year start: 2028-01-01; month start: 2028-02-01; checked: 2028-02-29
-    Clamped month: 2028-12-01; February 31 valid: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mObservation de la Lune: 2028-02-29
+        Constructor orders agree: true
+        Year start: 2028-01-01; month start: 2028-02-01; checked: 2028-02-29
+        Clamped month: 2028-12-01; February 31 valid: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -139,7 +141,7 @@ These are valid dates, distinct from a default-constructed invalid value.
 .. erbsland-demo::
     :source: time/Date/CreateChecked.cpp
     :exec: time/date --demo CreateChecked
-    :source-sha256: 7ab427b4760b37ff9580d98fe7c8e2344bc3b2455c674c91524ca197f28a3f03
+    :sha256: 97b6105141ea7a8082eda63bfaa361a89180cc68ceeaf837082da225ac4d0959
 
 .. code-block:: cpp
 
@@ -179,16 +181,18 @@ These are valid dates, distinct from a default-constructed invalid value.
                 el::Date::firstDay(year, month), el::Date::lastDay(year, month)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Supplied date: 2028-02-29; month 13 valid: false
-    Rejected February 29 in a common year.
-    Rejected February 31 from typed parts.
-    Restored: 2028-02-29; negative day count valid: false
-    Epoch: 0000-01-01; first: 0000-01-01; last: 9999-12-31
-    Year boundaries: 2028-01-01 to 2028-12-31
-    Month boundaries: 2028-02-01 to 2028-02-29
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSupplied date: 2028-02-29; month 13 valid: false
+        Rejected February 29 in a common year.
+        Rejected February 31 from typed parts.
+        Restored: 2028-02-29; negative day count valid: false
+        Epoch: 0000-01-01; first: 0000-01-01; last: 9999-12-31
+        Year boundaries: 2028-01-01 to 2028-12-31
+        Month boundaries: 2028-02-01 to 2028-02-29␛[0m
 
 .. erbsland-demo-end::
 
@@ -232,7 +236,7 @@ constructor.
 .. erbsland-demo::
     :source: time/Date/Inspect.cpp
     :exec: time/date --demo Inspect
-    :source-sha256: 099ffd0374106bcf7129f2b6e81e3371dba6bb50240a984e916623c21a688743
+    :sha256: e129edb0f8c0d6b0d4472f3ca78f7899bb0c7713116faace184498067fdf571d
 
 .. code-block:: cpp
 
@@ -271,17 +275,19 @@ constructor.
                 date.dayOfYear().toValue(), date.dayOfWeek().toString(), date.dayOfWeek().toValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Valid: true; invalid sorts first: true; invalid dates equal: true
-    Next observation is later: true
-    At first boundary: true; at last boundary: true
-    Date exists: true
-    Invalid fallback: 0-1-1; still invalid: true
-    Year: 2028; month: 2; day: 29
-    Individual fields: 2028 / 2 / 29
-    Day of year: 60; weekday: Tuesday (index 1)
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mValid: true; invalid sorts first: true; invalid dates equal: true
+        Next observation is later: true
+        At first boundary: true; at last boundary: true
+        Date exists: true
+        Invalid fallback: 0-1-1; still invalid: true
+        Year: 2028; month: 2; day: 29
+        Individual fields: 2028 / 2 / 29
+        Day of year: 60; weekday: Tuesday (index 1)␛[0m
 
 .. erbsland-demo-end::
 
@@ -314,7 +320,7 @@ See :ref:`time-iso-output` for the formatting types and the shared ISO output co
 .. erbsland-demo::
     :source: time/Date/Convert.cpp
     :exec: time/date --demo Convert
-    :source-sha256: 077e56c900a599b4060b1cb0960cbb10a6ca379c1f2727245aca10ebddb465fc
+    :sha256: 7727deb63864fda174ac9eca5982b0677b2b8db4e9df12493059b8889d44422a
 
 .. code-block:: cpp
 
@@ -334,14 +340,16 @@ See :ref:`time-iso-output` for the formatting types and the shared ISO output co
                 invalid.toString(), invalid.toDaysSinceEpoch().toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Display: 2028-02-29; default ISO: 2028-02-29
-    Days since Core epoch: 740771
-    Compact ISO: 20280229
-    Month precision: 2028-02
-    Invalid display: ''; invalid day count: -1
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDisplay: 2028-02-29; default ISO: 2028-02-29
+        Days since Core epoch: 740771
+        Compact ISO: 20280229
+        Month precision: 2028-02
+        Invalid display: ''; invalid day count: -1␛[0m
 
 .. erbsland-demo-end::
 
@@ -381,7 +389,7 @@ This is a date distance; measuring elapsed time between zoned instants is a sepa
 .. erbsland-demo::
     :source: time/Date/Calculate.cpp
     :exec: time/date --demo Calculate
-    :source-sha256: 03eaad91db64d1fac3f9532aeb89b6f53c6adc55161242ab648cfa09739fbc97
+    :sha256: ffaed126afb37cefefb1d407ae835472a8a1e6c3a44fa56323bf66059edfd363
 
 .. code-block:: cpp
 
@@ -411,21 +419,23 @@ This is a date distance; measuring elapsed time between zoned instants is a sepa
                 observation.daysTo(nextMonth).toRawValue(), nextMonth.daysTo(observation).toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    One month later: 2028-02-29; one month back: 2028-01-29
-    Next year from leap day: 2029-02-28
-    Seven days later: 2028-02-07
-    Revised date: 2029-03-02
-    Previous day: 2028-01-30; next day: 2028-02-01
-    Next Friday: 2028-02-04; previous Friday: 2028-01-28
-    Days forward: 29; days backward: -29
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOne month later: 2028-02-29; one month back: 2028-01-29
+        Next year from leap day: 2029-02-28
+        Seven days later: 2028-02-07
+        Revised date: 2029-03-02
+        Previous day: 2028-01-30; next day: 2028-02-01
+        Next Friday: 2028-02-04; previous Friday: 2028-01-28
+        Days forward: 29; days backward: -29␛[0m
 
 .. erbsland-demo-end::
 
 
-Choosing What Happens at the Boundaries
+Date Arithmetic Saturation and Overflow
 ---------------------------------------
 
 Ordinary ``added()`` and ``add()`` operations **saturate**: a result before ``0000-01-01`` becomes the first date, and a
@@ -450,7 +460,7 @@ whose weekday is not the requested one.
 .. erbsland-demo::
     :source: time/Date/Boundaries.cpp
     :exec: time/date --demo Boundaries
-    :source-sha256: e0691d9d036ceec8a296b6bbac94645bfcc862fd9026ef301d90dd821fd46fcb
+    :sha256: fe80e0aebf59d347ee154d494351efa2f64affd802efe3e2516f39c91a49c5bf
 
 .. code-block:: cpp
 
@@ -479,15 +489,17 @@ whose weekday is not the requested one.
                 invalid.daysTo(end).toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Adding a day would saturate: true
-    Saturated result: 9999-12-31
-    Rejected a month beyond the supported range; date remains 9999-12-31.
-    First minus one year: 0000-01-01
-    Next beyond last valid: false; previous before first valid: false
-    Invalid remains invalid: false; invalid saturation query: false; invalid distance: 0
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAdding a day would saturate: true
+        Saturated result: 9999-12-31
+        Rejected a month beyond the supported range; date remains 9999-12-31.
+        First minus one year: 0000-01-01
+        Next beyond last valid: false; previous before first valid: false
+        Invalid remains invalid: false; invalid saturation query: false; invalid distance: 0␛[0m
 
 .. erbsland-demo-end::
 
@@ -496,8 +508,8 @@ Invalid dates remain invalid through arithmetic and navigation, including the th
 ``wouldAddSaturate()`` returns false for an invalid date, and ``daysTo()`` returns zero if either date is invalid.
 A zero distance therefore needs a validity check before you interpret it as “the same day.”
 
-Building a Larger Time Model
-============================
+Related Clock, Interval, and Instant Types
+==========================================
 
 :doc:`working_with_times` adds a clock reading and shows how to carry crossed days back into a date.
 The :doc:`overview` helps you choose the remaining types: ``Duration`` and ``TimeDelta`` for fixed intervals,

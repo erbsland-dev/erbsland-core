@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TextAnchor.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/NotFoundError.hpp"
 #include "../../../text/Literals.hpp"
 
 namespace erbsland::re::impl {
@@ -26,7 +26,7 @@ auto TextAnchor::fromString(const text::String &str) -> TextAnchor {
             return value;
         }
     }
-    throw err::ParameterError{"Invalid text anchor name."_el, "str"_el};
+    throw err::NotFoundError{"Invalid text anchor name."_el};
 }
 
 auto TextAnchor::valueToNameList() noexcept -> const ValueToNameList & {

@@ -14,6 +14,7 @@ target_sources(erbsland-core PRIVATE
         TokenDecoder.cpp
         TokenDecoder.hpp
         TokenDecoder_fwd.hpp
+        TokenDecoderMode.hpp
         Transaction.cpp
         Transaction.hpp
         Transaction_fwd.hpp

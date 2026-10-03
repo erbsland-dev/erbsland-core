@@ -55,7 +55,7 @@ draws, floating-point values, booleans, byte blocks, and random strings.
 .. erbsland-demo::
     :source: random/RandomTopics/RandomValues.cpp
     :exec: random/random_topics --demo RandomValues
-    :source-sha256: 957b5f6ee719e232c170afc4d673a542620a0de864322e05b3ff1647e4299d52
+    :sha256: 471b9071d27a2646143aecd63071524526c53d9f8e07ab8ec1be5d12888fefce
 
 .. code-block:: cpp
 
@@ -88,23 +88,25 @@ draws, floating-point values, booleans, byte blocks, and random strings.
         el::io::printLine("Guardian awake     : "_el, el::BooleanFormat::yesNo(), isAwake);
 
         // Build byte and string values when the caller needs generated data.
-        const auto bytes = random.buildByteBlock(el::ByteLength{4U});
+        const auto bytes = random.buildByteBlock(el::ByteCount{4U});
         const auto alphabet = el::CharSet::fromPattern("A-Z0-9"_el);
-        const auto label = random.buildString(el::CpLength{10U}, alphabet);
+        const auto label = random.buildString(el::CpCount{10U}, alphabet);
         el::io::printLine("First byte         : "_el, static_cast<unsigned>(bytes.get(el::ByteIndex{0U}).toUInt8()));
         el::io::printLine("Generated label    : "_el, label);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Artifact chamber   : 4
-    Runic charge       : 13
-    Pulses             : 5 draws, first=1
-    Resonance          : 0.54
-    Guardian awake     : no
-    First byte         : 153
-    Generated label    : OIAUKOO2C5
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mArtifact chamber   : 4
+        Runic charge       : 13
+        Pulses             : 5 draws, first=1
+        Resonance          : 0.54
+        Guardian awake     : no
+        First byte         : 153
+        Generated label    : OIAUKOO2C5␛[0m
 
 .. erbsland-demo-end::
 

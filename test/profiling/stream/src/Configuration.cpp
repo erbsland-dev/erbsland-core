@@ -1,6 +1,5 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "Configuration.hpp"
 
 #include "DefaultConfiguration.hpp"
@@ -8,12 +7,18 @@
 #include "impl/ConfigurationTools.hpp"
 
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringBomMode.hpp>
+#include <erbsland/StringEncoding.hpp>
 
 namespace app::stream {
 
 auto Configuration::load(const std::optional<el::Path> &path) -> Configuration {
     auto parser = el::conf::Parser{};
-    const auto defaultText = el::String{cDefaultConfigurationText};
+    const auto defaultText = cDefaultConfigurationText;
     const auto defaultDocument = parser.parseTextOrThrow(defaultText);
     const auto defaults = impl::parseConfigurationDocument(defaultDocument);
     if (!path) {
@@ -26,7 +31,7 @@ auto Configuration::load(const std::optional<el::Path> &path) -> Configuration {
 void Configuration::writeTemplate(const el::Path &path) {
     auto options = el::PathWriteTextOptions{el::StringEncoding::Utf8};
     options.setCreateParents(true).setBomMode(el::StringBomMode::Reject);
-    path.content().writeTextOrThrow(el::String{cDefaultConfigurationText}, options);
+    path.content().writeTextOrThrow(cDefaultConfigurationText, options);
 }
 
 }

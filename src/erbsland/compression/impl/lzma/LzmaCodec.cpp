@@ -6,6 +6,7 @@
 #include "LzmaEncoder.hpp"
 
 #include "../../../err/OutOfRangeError.hpp"
+#include "../../../err/OutOfRangeFailure.hpp"
 #include "../../../mem/ByteWriter.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../CompressionError.hpp"
@@ -16,6 +17,8 @@
 
 namespace erbsland::compression::impl {
 
+using namespace err;
+using namespace unit;
 using namespace text::literals;
 
 void LzmaCodec::compressPayload(
@@ -23,23 +26,25 @@ void LzmaCodec::compressPayload(
     const CodecOutput::Write &output,
     const CompressionTransferOptions &transfer,
     const CompressionOptions &options) const {
-    constexpr auto dictionaries = std::array<uint32_t, 5U>{262144U, 2097152U, 8388608U, 16777216U, 33554432U};
+    constexpr auto dictionaries = std::array<ByteCount, 5U>{
+        ByteCount{262144U}, ByteCount{2097152U}, ByteCount{8388608U}, ByteCount{16777216U}, ByteCount{33554432U}};
     constexpr auto depths = std::array<std::size_t, 5U>{4U, 16U, 64U, 128U, 256U};
     const auto levelIndex = static_cast<std::size_t>(level());
-    const auto workspace = uint64_t{dictionaries[levelIndex]} * 7U + 2U * 1024U * 1024U;
-    if (unit::ByteLength{workspace} > availableWorkspace(transfer, options.maximumWorkspaceLength())) {
-        throw err::OutOfRangeError{"Codec workspace limit exceeded."_el};
+    const auto workspace = dictionaries[levelIndex] * 7U + ByteCount{2U * 1024U * 1024U};
+    if (workspace > availableWorkspace(transfer, options.maximumWorkspaceLength())) {
+        throw OutOfRangeError{"Codec workspace limit exceeded."_el};
     }
     auto header = mem::ByteWriter{};
     if (payloadFormat() == CompressionFormat::Zip) {
         header.writeUInt8(9U).writeUInt8(4U).writeUInt16(5U);
     }
-    header.writeUInt8(0x5dU).writeUInt32(dictionaries[levelIndex]);
+    header.writeUInt8(0x5dU).writeUInt32(static_cast<uint32_t>(dictionaries[levelIndex].toRawValue()));
     if (payloadFormat() == CompressionFormat::Raw) {
         header.writeUInt64(~uint64_t{});
     }
     output(header.toByteBlock().span());
-    LzmaEncoder{dictionaries[levelIndex], depths[levelIndex]}.encodeStream(input, output);
+    LzmaEncoder{static_cast<uint32_t>(dictionaries[levelIndex].toRawValue()), depths[levelIndex]}.encodeStream(
+        input, output);
 }
 
 void LzmaCodec::decompressPayload(
@@ -48,9 +53,9 @@ void LzmaCodec::decompressPayload(
     const CompressionTransferOptions &transfer,
     const DecompressionOptions &options) const {
     const auto workspace = availableWorkspace(transfer, options.maximumWorkspaceLength());
-    constexpr auto minimumWorkspace = unit::ByteLength{2U * 1024U * 1024U};
+    constexpr auto minimumWorkspace = ByteCount{2U * 1024U * 1024U};
     if (minimumWorkspace > workspace) {
-        throw err::OutOfRangeError{"Codec workspace limit exceeded."_el};
+        throw OutOfRangeError{"Codec workspace limit exceeded."_el};
     }
     if (payloadFormat() == CompressionFormat::Zip) {
         if (input.little(1U) != 9U || input.little(1U) != 4U || input.little(2U) != 5U) {
@@ -61,9 +66,9 @@ void LzmaCodec::decompressPayload(
     if (properties >= 225U) {
         throw CompressionError{CompressionErrorReason::MalformedData, "Invalid LZMA properties."_el};
     }
-    const auto dictionary = std::max(uint32_t{1U}, static_cast<uint32_t>(input.little(4U)));
-    if (unit::ByteLength{uint64_t{dictionary} + 2U * 1024U * 1024U} > workspace) {
-        throw err::OutOfRangeError{"LZMA dictionary limit exceeded."_el};
+    const auto dictionary = std::max(ByteCount::one(), ByteCount{input.little(4U), ByteCount::Unchecked{}});
+    if (dictionary + minimumWorkspace > workspace) {
+        throw OutOfRangeError{"LZMA dictionary limit exceeded."_el};
     }
     auto expected = options.expectedOutputLength();
     if (payloadFormat() == CompressionFormat::Raw) {
@@ -72,15 +77,15 @@ void LzmaCodec::decompressPayload(
             if (expected && expected->toRawValue() != size) {
                 throw CompressionError{CompressionErrorReason::LengthMismatch, "LZMA length mismatch."_el};
             }
-            expected = unit::ByteLength{size};
+            expected = ByteCount::fromInteger(size);
         }
     }
     if (expected && *expected > options.maximumOutputLength()) {
-        throw err::OutOfRangeError{"LZMA output limit exceeded."_el};
+        throw OutOfRangeError{"LZMA output limit exceeded."_el};
     }
     LzmaDecoder{
         input,
-        dictionary,
+        static_cast<uint32_t>(dictionary.toRawValue()),
         static_cast<uint8_t>(properties % 9U),
         static_cast<uint8_t>((properties / 9U) % 5U),
         static_cast<uint8_t>((properties / 9U) / 5U),
@@ -90,9 +95,9 @@ void LzmaCodec::decompressPayload(
         .decode();
 }
 
-auto LzmaCodec::maximumPayloadLength(const unit::ByteLength length) const -> unit::ByteLength {
+auto LzmaCodec::maximumPayloadLength(const ByteCount length) const -> ByteCount {
     if (!length.isFinite()) {
-        throw err::OutOfRangeError{"Compression length must be finite."_el};
+        throw OutOfRangeFailure{"Compression length must be finite."_el};
     }
     return length.addedOrThrow(length).addedOrThrow(
         payloadFormat() == CompressionFormat::Zip ? cZipPayloadOverhead : cRawPayloadOverhead);

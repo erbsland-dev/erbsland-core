@@ -1,9 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "BuiltInCatalog.hpp"
 
 #include "CorpusDirectory.hpp"
+
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
 
 namespace app::regex::impl::built_in_catalog {
 
@@ -14,10 +20,10 @@ auto generatedCorpus(const el::String &name) -> std::optional<el::String> {
         return el::String{};
     }
     if (name == "micro-match"_el) {
-        return el::String{"alpha beta aaaaab"_el};
+        return "alpha beta aaaaab"_el;
     }
     if (name == "micro-miss"_el) {
-        return el::String{"alpha beta aaaaac"_el};
+        return "alpha beta aaaaac"_el;
     }
     if (name == "dense-4k"_el) {
         return repeatCharacter(U'a', 4096U);
@@ -29,27 +35,27 @@ auto generatedCorpus(const el::String &name) -> std::optional<el::String> {
         auto result = el::StringEditor{repeatCharacter(U'a', 32768U)};
         result.append("b"_el);
         result.append(repeatCharacter(U'a', 32767U));
-        return el::String{result};
+        return result;
     }
     if (name == "sparse-1m"_el) {
         auto result = el::StringEditor{};
-        result.reserve(el::ByteLength{1024U * 1024U});
+        result.reserve(el::ByteCount{1024U * 1024U});
         const auto block = repeatCharacter(U'a', 1023U);
         for (auto index = 0U; index < 1024U; ++index) {
             result.append(block);
             result.append("b"_el);
         }
-        return el::String{result};
+        return result;
     }
     if (name == "adversarial-64k"_el) {
         auto result = el::StringEditor{repeatCharacter(U'a', 65535U)};
         result.append("c"_el);
-        return el::String{result};
+        return result;
     }
     if (name == "late-64k"_el) {
         auto result = el::StringEditor{repeatCharacter(U'a', 65535U)};
         result.append("b"_el);
-        return el::String{result};
+        return result;
     }
     if (name == "overlap-success"_el) {
         return "aaaaab"_el;
@@ -60,21 +66,21 @@ auto generatedCorpus(const el::String &name) -> std::optional<el::String> {
     if (name == "ambiguous-miss"_el) {
         auto result = el::StringEditor{repeatCharacter(U'a', 256U)};
         result.append("c"_el);
-        return el::String{result};
+        return result;
     }
     if (name == "unicode-4k"_el) {
         auto result = el::StringEditor{};
         for (auto index = 0U; index < 256U; ++index) {
             result.append("Grüezi Καλημέρα 東京 😀 123\n"_el);
         }
-        return el::String{result};
+        return result;
     }
     if (name == "crlf-4k"_el) {
         auto result = el::StringEditor{};
         for (auto index = 0U; index < 256U; ++index) {
             result.append("alpha beta\r\ngamma delta\r\n"_el);
         }
-        return el::String{result};
+        return result;
     }
     return {};
 }
@@ -130,7 +136,7 @@ auto pattern(const el::String &name) -> std::optional<el::String> {
 }
 
 auto repeatCharacter(const el::Char character, const std::size_t count) -> el::String {
-    return el::String::fromCharacter(character, el::CpLength::fromSizeTOrThrow(count));
+    return el::String::fromCharacter(character, el::CpCount::fromSizeTOrThrow(count));
 }
 
 }

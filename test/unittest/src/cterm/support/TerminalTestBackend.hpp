@@ -4,7 +4,7 @@
 
 #include "TerminalTestCursorMove.hpp"
 
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/StringConverter.hpp>
 
 #include <chrono>
 #include <memory>

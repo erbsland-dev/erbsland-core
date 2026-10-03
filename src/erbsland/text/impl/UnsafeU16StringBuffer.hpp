@@ -7,7 +7,7 @@
 #include "../u16/impl/U16StringData.hpp"
 #include "../u16/U16StringEditor.hpp"
 
-#include "../../unit/U16DataLength.hpp"
+#include "../../unit/U16Count.hpp"
 
 #include <cstddef>
 #include <exception>
@@ -24,7 +24,7 @@ public:
     /// Create a buffer with the given full data size, including the null code unit.
     explicit UnsafeU16StringBuffer(std::size_t dataSize);
     /// Create a buffer with the given usable capacity, excluding the null code unit.
-    explicit UnsafeU16StringBuffer(unit::U16DataLength capacity);
+    explicit UnsafeU16StringBuffer(unit::U16Count capacity);
 
     // defaults
     ~UnsafeU16StringBuffer() = default;
@@ -47,18 +47,18 @@ public:
     /// Access the full buffer size, including the null code unit.
     [[nodiscard]] auto dataSize() const noexcept -> std::size_t;
     /// Access the usable buffer capacity, excluding the null code unit.
-    [[nodiscard]] auto capacity() const noexcept -> unit::U16DataLength;
+    [[nodiscard]] auto capacity() const noexcept -> unit::U16Count;
     /// Create a UTF-16 string from the buffer and release the buffer.
     /// @param length The length of the string to create, excluding the null code unit.
     /// @return The created UTF-16 string.
-    [[nodiscard]] auto take(unit::U16DataLength length = unit::U16DataLength::infinite()) -> U16StringEditor;
+    [[nodiscard]] auto take(unit::U16Count length = unit::U16Count::infinite()) -> U16StringEditor;
     /// @overload
     [[nodiscard]] auto take(std::size_t length) -> U16StringEditor;
     /// Create a UTF-8 string from the buffer and release the buffer.
     /// This is a convenience overload of the take() function that converts the buffer from UTF-16 to UTF-8.
     /// @param length The length of the string to create, excluding the null code unit.
     /// @return The created UTF-16 string.
-    [[nodiscard]] auto takeAsUtf8(unit::U16DataLength length = unit::U16DataLength::infinite()) -> U8StringEditor;
+    [[nodiscard]] auto takeAsUtf8(unit::U16Count length = unit::U16Count::infinite()) -> U8StringEditor;
     /// @overload
     [[nodiscard]] auto takeAsUtf8(std::size_t length) -> U8StringEditor;
 
@@ -66,9 +66,9 @@ private:
     /// Create exact buffer storage for a full data size, including the null code unit.
     [[nodiscard]] static auto createDataForDataSize(std::size_t dataSize) -> U16StringDataPtr;
     /// Convert usable capacity to full buffer size.
-    [[nodiscard]] static auto dataSizeForCapacity(unit::U16DataLength capacity) -> std::size_t;
+    [[nodiscard]] static auto dataSizeForCapacity(unit::U16Count capacity) -> std::size_t;
     /// Validate the final string length for take().
-    [[nodiscard]] auto checkedFinalLength(unit::U16DataLength length) const -> unit::U16DataLength;
+    [[nodiscard]] auto checkedFinalLength(unit::U16Count length) const -> unit::U16Count;
 
 private:
     U16StringDataPtr _data; ///< The uncommitted string data.

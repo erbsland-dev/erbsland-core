@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringMap.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringMap.hpp>
 
 #include <cstddef>
 #include <initializer_list>
@@ -81,7 +80,9 @@ public:
 
     /// Read all records from the fixture.
     /// @return All strictly parsed records.
-    /// @throws el::RuntimeError If any non-comment input line is malformed.
+    /// @throws el::RuntimeError If an assignment is malformed or a record contains duplicate value names.
+    /// @throws el::PathError If the fixture cannot be read.
+    /// @throws el::EncodingError If the fixture cannot be decoded with the default text-read options.
     [[nodiscard]] auto read() const -> std::vector<Record>;
 
 private:

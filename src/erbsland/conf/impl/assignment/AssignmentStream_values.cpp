@@ -11,6 +11,8 @@
 
 namespace erbsland::conf::impl {
 
+using namespace mem;
+using namespace text;
 using namespace text::literals;
 
 auto AssignmentStream::handleMultiLineValueList() -> std::vector<ValuePtr> {
@@ -37,14 +39,14 @@ auto AssignmentStream::handleMultiLineValueList() -> std::vector<ValuePtr> {
     return valueList;
 }
 
-auto AssignmentStream::handleMultiLineText() -> text::String {
+auto AssignmentStream::handleMultiLineText() -> String {
     expectNext(TokenType::LineBreak, TokenType::MultiLineCodeLanguage); // Consume the open sequence.
     if (token().type() == TokenType::MultiLineCodeLanguage) {
         expectNext(TokenType::LineBreak);                               // Consume the code language token.
     }
     expectNext(TokenType::Indentation, TokenType::LineBreak);
     bool isSecondLine = false;
-    text::StringEditor text;
+    StringEditor text;
     while (token().type() == TokenType::Indentation || token().type() == TokenType::LineBreak) {
         // If the line is just a line-break, it is an empty line.
         if (token().type() != TokenType::LineBreak) {
@@ -64,7 +66,7 @@ auto AssignmentStream::handleMultiLineText() -> text::String {
                 text.append("\n"_el);
             }
             if (token().type() != TokenType::LineBreak) {
-                text.append(std::get<text::String>(token().content())); // append the text
+                text.append(std::get<String>(token().content())); // append the text
                 expectNext(TokenType::LineBreak);
             }
         } else {
@@ -79,12 +81,12 @@ auto AssignmentStream::handleMultiLineText() -> text::String {
     return text;
 }
 
-auto AssignmentStream::handleMultiLineRegEx() -> text::String {
+auto AssignmentStream::handleMultiLineRegEx() -> String {
     // Consume the open sequence and expect an indentation or an empty line.
     expectNext(TokenType::LineBreak);
     expectNext(TokenType::Indentation, TokenType::LineBreak);
     bool isSecondLine = false;
-    text::StringEditor text;
+    StringEditor text;
     while (token().type() == TokenType::Indentation || token().type() == TokenType::LineBreak) {
         if (token().type() != TokenType::LineBreak) {
             expectNext(TokenType::MultiLineRegex, TokenType::MultiLineRegexClose, TokenType::LineBreak);
@@ -97,7 +99,7 @@ auto AssignmentStream::handleMultiLineRegEx() -> text::String {
                 text.append("\n"_el);
             }
             if (token().type() != TokenType::LineBreak) {
-                text.append(std::get<text::String>(token().content())); // append the text
+                text.append(std::get<String>(token().content())); // append the text
                 expectNext(TokenType::LineBreak);
             }
         } else {
@@ -112,7 +114,7 @@ auto AssignmentStream::handleMultiLineRegEx() -> text::String {
     return text;
 }
 
-auto AssignmentStream::createRegEx(const text::String &pattern, const bool isVerbose) const -> re::RegExPtr {
+auto AssignmentStream::createRegEx(const String &pattern, const bool isVerbose) const -> re::RegExPtr {
     auto flags = re::Flags{};
     if (isVerbose) {
         flags |= re::Flag::Verbose;
@@ -125,14 +127,14 @@ auto AssignmentStream::createRegEx(const text::String &pattern, const bool isVer
     return re::RegEx::lazyCompile(pattern, flags, settings);
 }
 
-auto AssignmentStream::handleMultiLineBytes() -> mem::ByteBlock {
+auto AssignmentStream::handleMultiLineBytes() -> ByteBlock {
     // Consume the open sequence and expect, skip the format and expect an empty line or indentation.
     expectNext(TokenType::LineBreak, TokenType::MultiLineBytesFormat);
     if (token().type() == TokenType::MultiLineBytesFormat) {
         expectNext(TokenType::LineBreak); // Consume the format (ignored, as only hex is supported).
     }
     expectNext(TokenType::Indentation, TokenType::LineBreak);
-    mem::ByteBlockEditor result;
+    ByteBlockEditor result;
     while (token().type() == TokenType::Indentation || token().type() == TokenType::LineBreak) {
         if (token().type() != TokenType::LineBreak) {
             expectNext(TokenType::MultiLineBytes, TokenType::MultiLineBytesClose, TokenType::LineBreak);
@@ -142,13 +144,13 @@ auto AssignmentStream::handleMultiLineBytes() -> mem::ByteBlock {
                 break;
             }
             if (token().type() != TokenType::LineBreak) {
-                result.append(std::get<mem::ByteBlock>(token().content())); // append the text
+                result.append(std::get<ByteBlock>(token().content())); // append the text
                 expectNext(TokenType::LineBreak);
             }
         }
         expectNext(TokenType::Indentation, TokenType::LineBreak);
     }
-    return mem::ByteBlock{result};
+    return ByteBlock{result};
 }
 
 auto AssignmentStream::handleSection() -> Assignment {
@@ -167,9 +169,9 @@ auto AssignmentStream::handleSection() -> Assignment {
             throwLimitExceededError("A name path must not exceed 10 name components."_el);
         }
         if (token().type() == TokenType::RegularName) {
-            namePath.append(Name::createRegular(std::get<text::String>(token().content())));
+            namePath.append(Name::createRegular(std::get<String>(token().content())));
         } else {
-            namePath.append(Name::createText(std::get<text::String>(token().content())));
+            namePath.append(Name::createText(std::get<String>(token().content())));
         }
         expectNext(TokenType::NamePathSeparator, TokenType::SectionListClose, TokenType::SectionMapClose);
         if (token().type() != TokenType::NamePathSeparator) {
@@ -202,8 +204,8 @@ auto AssignmentStream::handleSection() -> Assignment {
     };
 }
 
-void AssignmentStream::verifyFeatures(const text::String &featureText) const {
-    static const auto supportedFeatures = std::array<text::String, 19>{
+void AssignmentStream::verifyFeatures(const String &featureText) const {
+    static const auto supportedFeatures = std::array<String, 19>{
         "core"_el,
         "minimum"_el,
         "standard"_el,
@@ -224,8 +226,8 @@ void AssignmentStream::verifyFeatures(const text::String &featureText) const {
         "validation"_el,
         "signature"_el,
     };
-    text::StringList requestedFeatures;
-    text::StringEditor currentFeature;
+    StringList requestedFeatures;
+    StringEditor currentFeature;
     std::size_t currentCharacterIndex = 0;
     auto featureIndex = unit::ByteIndex{};
     while (featureIndex.isWithin(featureText.length())) {
@@ -233,7 +235,7 @@ void AssignmentStream::verifyFeatures(const text::String &featureText) const {
         if (character == CharClass::Spacing) {
             // Add the current read feature and clear the string.
             if (!currentFeature.isEmpty()) {
-                requestedFeatures.append(text::String{currentFeature});
+                requestedFeatures.append(currentFeature);
                 currentFeature.clear();
             }
         } else if (character == CharClass::Letter || character == nc::minus) {
@@ -241,21 +243,20 @@ void AssignmentStream::verifyFeatures(const text::String &featureText) const {
         } else {
             throw ConfError{
                 ConfErrorCategory::Syntax,
-                text::StringFormat{"Unsupported character in @features text at index {}."_el}.build(
-                    currentCharacterIndex),
+                StringFormat{"Unsupported character in @features text at index {}."_el}.build(currentCharacterIndex),
                 currentLocation(),
                 NamePath{Name::createRegular("@features"_el)}};
         }
         ++currentCharacterIndex;
     }
     if (!currentFeature.isEmpty()) {
-        requestedFeatures.append(text::String{currentFeature});
+        requestedFeatures.append(currentFeature);
     }
     for (const auto &feature : requestedFeatures) {
         if (std::ranges::find(supportedFeatures, feature) == supportedFeatures.end()) {
             throw ConfError{
                 ConfErrorCategory::Unsupported,
-                text::StringFormat{"This parser does not support the feature '{}'."_el}.build(feature),
+                StringFormat{"This parser does not support the feature '{}'."_el}.build(feature),
                 currentLocation()};
         }
     }

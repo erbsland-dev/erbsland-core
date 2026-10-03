@@ -1,7 +1,26 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ReadLineApp.hpp"
+
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ApplicationErrorContext.hpp>
+#include <erbsland/block/Coordinate.hpp>
+#include <erbsland/conf/Document.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/cterm/BlockStyle.hpp>
+#include <erbsland/cterm/Color.hpp>
+#include <erbsland/cterm/FrameBorder.hpp>
+#include <erbsland/cterm/ReadLineOptions.hpp>
+#include <erbsland/LineCount.hpp>
+#include <erbsland/OptionChoices.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionSet.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <algorithm>
 #include <array>
@@ -34,83 +53,83 @@ void ReadLineApp::registerCommandLineOptions(const el::OptionsPtr &options) {
     configurationOptions->addOption({"-c"_el, "--config"_el, "config"_el})
         .setType(el::OptionType::Text)
         .setValueName("file"_el)
-        .setHelpDescription("Load ReadLine settings from an ELCL configuration file."_el);
+        .setHelpTitle("Load ReadLine settings from an ELCL configuration file."_el);
     configurationOptions->addOption({"--dump-config"_el, "dump-config"_el})
-        .setHelpDescription("Print the complete resolved ELCL configuration and exit."_el);
+        .setHelpTitle("Print the complete resolved ELCL configuration and exit."_el);
 
     auto contentOptions = el::OptionSet::create();
     contentOptions->setHelpTitle("Content and Editing"_el);
     contentOptions->addOption({"--title"_el, "title"_el})
         .setType(el::OptionType::Text)
-        .setHelpDescription("Text displayed as the input title."_el);
+        .setHelpTitle("Text displayed as the input title."_el);
     contentOptions->addOption({"--prompt"_el, "prompt"_el})
         .setType(el::OptionType::Text)
-        .setHelpDescription("Text displayed before the editable input."_el);
+        .setHelpTitle("Text displayed before the editable input."_el);
     contentOptions->addOption({"--placeholder"_el, "placeholder"_el})
         .setType(el::OptionType::Text)
-        .setHelpDescription("Text displayed while the input is empty."_el);
+        .setHelpTitle("Text displayed while the input is empty."_el);
     contentOptions->addOption({"--current-text"_el, "current-text"_el})
         .setType(el::OptionType::Text)
-        .setHelpDescription("Initial editable text."_el);
+        .setHelpTitle("Initial editable text."_el);
     contentOptions->addOption({"--history"_el, "history"_el})
         .setType(el::OptionType::Text)
         .setMaximum(el::ArgumentCount::infinite())
-        .setHelpDescription("History entry; repeat this option to add multiple entries."_el);
+        .setHelpTitle("History entry; repeat this option to add multiple entries."_el);
     contentOptions->addOption({"--maximum-length"_el, "maximum-length"_el})
         .setType(el::OptionType::Integer)
-        .setHelpDescription("Maximum number of entered Unicode code points."_el);
+        .setHelpTitle("Maximum number of entered Unicode code points."_el);
     contentOptions->addOption({"--maximum-lines"_el, "maximum-lines"_el})
         .setType(el::OptionType::Integer)
-        .setHelpDescription("Maximum number of logical input lines."_el);
+        .setHelpTitle("Maximum number of logical input lines."_el);
     contentOptions->addOption({"--maximum-display-lines"_el, "maximum-display-lines"_el})
         .setType(el::OptionType::Integer)
-        .setHelpDescription("Maximum number of visible editor rows."_el);
+        .setHelpTitle("Maximum number of visible editor rows."_el);
     contentOptions->addOption({"--commit-key"_el, "commit-key"_el})
         .setType(el::OptionType::Text)
         .setValueName("key"_el)
-        .setHelpDescription("Key binding that commits the input."_el);
+        .setHelpTitle("Key binding that commits the input."_el);
     contentOptions->addOption({"--new-line-key"_el, "new-line-key"_el})
         .setType(el::OptionType::Text)
         .setValueName("key"_el)
-        .setHelpDescription("Key binding that inserts a logical line break."_el);
+        .setHelpTitle("Key binding that inserts a logical line break."_el);
     contentOptions->addOption({"--cancel-key"_el, "cancel-key"_el})
         .setType(el::OptionType::Text)
         .setValueName("key"_el)
-        .setHelpDescription("Key binding that cancels the input."_el);
+        .setHelpTitle("Key binding that cancels the input."_el);
 
     auto timingOptions = el::OptionSet::create();
     timingOptions->setHelpTitle("Timing and Lifecycle"_el);
     timingOptions->addOption({"--timeout"_el, "timeout"_el})
         .setType(el::OptionType::Integer)
         .setValueName("seconds"_el)
-        .setHelpDescription("Inactivity timeout in seconds; zero disables it."_el);
+        .setHelpTitle("Inactivity timeout in seconds; zero disables it."_el);
     timingOptions->addOption({"--timeout-display-threshold"_el, "timeout-display-threshold"_el})
         .setType(el::OptionType::Integer)
         .setValueName("seconds"_el)
-        .setHelpDescription("Remaining seconds at which the countdown appears; zero hides it."_el);
+        .setHelpTitle("Remaining seconds at which the countdown appears; zero hides it."_el);
     timingOptions->addOption({"--blink-interval"_el, "blink-interval"_el})
         .setType(el::OptionType::Integer)
         .setValueName("milliseconds"_el)
-        .setHelpDescription("Positive cursor blink interval in milliseconds."_el);
+        .setHelpTitle("Positive cursor blink interval in milliseconds."_el);
     timingOptions->addOption({"--cleanup"_el, "cleanup"_el})
         .setType(el::OptionType::Flag)
-        .setHelpDescription("Remove or retain the rendered input area when reading stops."_el);
+        .setHelpTitle("Remove or retain the rendered input area when reading stops."_el);
 
     auto appearanceOptions = el::OptionSet::create();
     appearanceOptions->setHelpTitle("Appearance"_el);
     appearanceOptions->addOption({"--display-style"_el, "display-style"_el})
         .setChoices(el::OptionChoices::create({"compact"_el, "horizontal-space"_el, "horizontal-frame"_el, "frame"_el}))
-        .setHelpDescription("Input-area layout."_el);
+        .setHelpTitle("Input-area layout."_el);
     appearanceOptions->addOption({"--padding-left"_el, "padding-left"_el})
         .setType(el::OptionType::Integer)
-        .setHelpDescription("Left input padding in terminal cells."_el);
+        .setHelpTitle("Left input padding in terminal cells."_el);
     appearanceOptions->addOption({"--padding-right"_el, "padding-right"_el})
         .setType(el::OptionType::Integer)
-        .setHelpDescription("Right input padding in terminal cells."_el);
+        .setHelpTitle("Right input padding in terminal cells."_el);
     appearanceOptions->addOption({"--cursor-block"_el, "cursor-block"_el})
         .setType(el::OptionType::Text)
         .setValueName("character"_el)
-        .setHelpDescription("One-cell block displayed as the cursor over empty space."_el);
+        .setHelpTitle("One-cell block displayed as the cursor over empty space."_el);
     constexpr auto cStyleNames = std::array{
         "background-style"_el,
         "title-style"_el,
@@ -120,10 +139,10 @@ void ReadLineApp::registerCommandLineOptions(const el::OptionsPtr &options) {
         "cursor-style"_el,
     };
     for (const auto &name : cStyleNames) {
-        appearanceOptions->addOption({el::String::fromJoined({"--"_el, name}), name})
+        appearanceOptions->addOption({el::join("--"_el, name), name})
             .setType(el::OptionType::Text)
             .setValueName("style"_el)
-            .setHelpDescription("Block style in FG[:BG[:ATTRIBUTE,...]] form."_el);
+            .setHelpTitle("Block style in FG[:BG[:ATTRIBUTE,...]] form."_el);
     }
 
     auto frameOptions = el::OptionSet::create();
@@ -142,11 +161,11 @@ void ReadLineApp::registerCommandLineOptions(const el::OptionsPtr &options) {
                     "heavy-quadruple-dash"_el,
                     "double"_el,
                     "rounded"_el}))
-        .setHelpDescription("Uniform frame line style."_el);
+        .setHelpTitle("Uniform frame line style."_el);
     frameOptions->addOption({"--frame-color"_el, "frame-color"_el})
         .setType(el::OptionType::Text)
         .setValueName("color"_el)
-        .setHelpDescription("Uniform frame color."_el);
+        .setHelpTitle("Uniform frame color."_el);
     constexpr auto cFrameOptionNames = std::array{
         "frame-top"_el,
         "frame-bottom"_el,
@@ -156,10 +175,10 @@ void ReadLineApp::registerCommandLineOptions(const el::OptionsPtr &options) {
         "frame-v-line"_el,
     };
     for (const auto &name : cFrameOptionNames) {
-        frameOptions->addOption({el::String::fromJoined({"--"_el, name}), name})
+        frameOptions->addOption({el::join("--"_el, name), name})
             .setType(el::OptionType::Text)
             .setValueName("style;color"_el)
-            .setHelpDescription("Override one frame element using STYLE[;COLOR]."_el);
+            .setHelpTitle("Override one frame element using STYLE[;COLOR]."_el);
     }
 
     options->addSet(configurationOptions);
@@ -196,7 +215,7 @@ void ReadLineApp::applyCommandLine(el::cterm::ReadLineOptions &settings) {
         if (value < 0) {
             throw el::ApplicationError{"Maximum length must not be negative."_el};
         }
-        settings.setMaximumLength(el::CpLength::fromSizeT(static_cast<std::size_t>(value)));
+        settings.setMaximumLength(el::CpCount::fromSizeT(static_cast<std::size_t>(value)));
     }
     if (hasCommandLineValue("maximum-lines"_el)) {
         const auto value = values->getInteger("maximum-lines"_el);

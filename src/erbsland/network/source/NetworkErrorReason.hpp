@@ -32,6 +32,8 @@ enum class NetworkErrorReason : std::uint8_t {
     TlsPeerAlert,                  ///< The peer sent a fatal TLS alert.
     TlsTruncation,                 ///< The transport ended without authenticated TLS close notification.
     TlsInternalFailure,            ///< A local TLS implementation operation failed.
+    TlsTrustUnavailable,           ///< The configured platform trust source is unavailable.
+    TlsNativeFailure,              ///< A native security service failed independently of peer validity.
     ContentSourceFailed,           ///< A static file or resource provider failed unexpectedly.
     ContentSinkFailed,             ///< A response output sink failed unexpectedly.
     HttpProtocolFailure,           ///< The peer violated HTTP syntax or framing.

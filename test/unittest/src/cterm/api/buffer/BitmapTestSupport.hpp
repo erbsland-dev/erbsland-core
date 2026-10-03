@@ -6,7 +6,7 @@
 
 #include "../../support/TestHelper.hpp"
 
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/StringConverter.hpp>
 
 #include <vector>
 

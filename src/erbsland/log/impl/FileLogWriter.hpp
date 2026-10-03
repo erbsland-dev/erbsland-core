@@ -15,6 +15,8 @@
 namespace erbsland::log::impl {
 
 /// Resilient path-stream based file log writer.
+/// @throws stream::StreamError If output times out or the file is awaiting a recovery attempt.
+/// @throws path::PathError If a file operation fails.
 /// @tested{LogWriterTest}
 class FileLogWriter final : public LogWriter {
 public:
@@ -38,7 +40,7 @@ private:
     /// @param entry The entry about to be written.
     /// @param writeSize The encoded byte count of the complete line and line break.
     /// @return `true` if time or size rotation must run before the write.
-    [[nodiscard]] auto shouldRotate(const LogEntry &entry, unit::ByteLength writeSize) const -> bool;
+    [[nodiscard]] auto shouldRotate(const LogEntry &entry, unit::ByteCount writeSize) const -> bool;
     /// Rotate according to the configured mode.
     /// @param entry The entry whose timestamp selects a time-rotation archive.
     void rotate(const LogEntry &entry);
@@ -63,7 +65,7 @@ private:
     FileLogWriterOptions _options;       ///< Target path, rotation, and retention settings.
     stream::TextOutputStreamPtr _stream; ///< Currently opened encoded file stream.
     system::FileIdentity _identity;      ///< Identity captured from the opened file.
-    unit::ByteLength _currentSize;       ///< Initial file size plus bytes accepted by the stream.
+    unit::ByteCount _currentSize;        ///< Initial file size plus bytes accepted by the stream.
     text::String _rotationKey;           ///< Active time-rotation period key.
     std::deque<path::Path> _archives;    ///< Archives created by this writer in age order.
     time::TimePoint _nextIdentityCheck;  ///< Earliest time for the next periodic identity comparison.

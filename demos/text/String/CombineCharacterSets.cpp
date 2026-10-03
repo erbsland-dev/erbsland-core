@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringSide.hpp>
+#include <erbsland/UnicodeCategory.hpp>
+#include <erbsland/UnicodeCategoryGroup.hpp>
 
 namespace demo {
 
@@ -18,6 +25,9 @@ void combineCharacterSets() {
     const auto identifier = el::String{"orbite-7"_el};
     const auto firstCharacterOk = identifierStart.contains(identifier.charAt(el::StringSide::Front));
     const auto fullIdentifierOk = identifier.containsOnly(identifierContinue);
+
+    const auto invalidContinue = identifierContinue.inverted();
+    el::io::printLine("Filtered identifier .......: "_el, el::String{"orbite !7"_el}.removedAll(invalidContinue));
 
     const auto yesNo = el::BooleanFormat::yesNo();
     el::io::printLine("Start policy is subset ....: "_el, yesNo, identifierStart.isSubsetOf(identifierContinue));

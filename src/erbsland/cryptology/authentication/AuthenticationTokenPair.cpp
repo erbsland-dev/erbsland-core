@@ -4,7 +4,7 @@
 
 #include "../impl/AuthenticationCodec.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::cryptology {
@@ -18,7 +18,7 @@ AuthenticationTokenPair::AuthenticationTokenPair(
 
 auto AuthenticationTokenPair::generate(const text::String &id) -> AuthenticationTokenPair {
     if (!impl::authentication_codec::isValidIdentifier(id)) {
-        throw err::ParameterError{"Authentication-token identifier must match [_a-z0-9]{1,64}."_el, "id"_el};
+        throw err::ParameterFailure{"Authentication-token identifier must match [_a-z0-9]{1,64}."_el, "id"_el};
     }
     auto key = SigningPrivateKey::generate(SigningKeyProfile::Ed25519);
     auto verifier = key.publicKey();

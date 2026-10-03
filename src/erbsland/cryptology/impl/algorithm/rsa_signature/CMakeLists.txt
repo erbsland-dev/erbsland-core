@@ -8,6 +8,8 @@ target_sources(erbsland-core PRIVATE
         Number.hpp
         Number_arithmetic.cpp
         PrivateKeyData.cpp
+        RsaDecoding.cpp
+        RsaDecoding.hpp
         RsaKeyGenerator.cpp
         RsaKeyGenerator.hpp
         RsaMontgomeryScratch.hpp
@@ -19,4 +21,6 @@ target_sources(erbsland-core PRIVATE
         RsaSigner.cpp
         RsaSigner.hpp
         RsaSigner_decode.cpp
+        RsaSigning.cpp
+        RsaSigning.hpp
 )

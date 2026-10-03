@@ -51,7 +51,7 @@ private:
     /// @param count The number of digits to read.
     /// @param value The parsed value is written here.
     /// @return `true` if all digits were read.
-    [[nodiscard]] auto readNDigits(unit::CpLength count, int &value) noexcept -> bool;
+    [[nodiscard]] auto readNDigits(unit::CpCount count, int &value) noexcept -> bool;
 
 private:
     text::StringCharReader _reader;

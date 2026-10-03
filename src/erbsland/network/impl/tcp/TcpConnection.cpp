@@ -6,10 +6,11 @@
 
 #include "../host/HostLookup.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../err/RuntimeError.hpp"
 #include "../../../event/Events.hpp"
+#include "../../../event/impl/EventContinuation.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../unit/ItemIndex.hpp"
 #include "../../source/NetworkError.hpp"
@@ -20,6 +21,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text::literals;
 
 TcpConnection::TcpConnection(
@@ -32,8 +34,9 @@ TcpConnection::TcpConnection(
     _resolver{std::move(resolver)},
     _createDevice{std::move(createDevice)} {
     if (_driver == nullptr || _resolver == nullptr || !_createDevice) {
-        throw err::LogicError{"A TCP connection requires a driver, resolver, and device factory."_el};
+        throw LogicFailure{"A TCP connection requires a driver, resolver, and device factory."_el};
     }
+    _abortContinuation = event::impl::EventContinuation::create(this->ownerEvents());
 }
 
 TcpConnection::~TcpConnection() {
@@ -65,21 +68,21 @@ void TcpConnection::connect(HostEndpoint remoteEndpoint, TcpConnectOptions optio
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
     verifyCurrentOwnerEvents();
     if (_started.load()) {
-        throw err::LogicError{"A TCP connection can only be started once."_el};
+        throw LogicFailure{"A TCP connection can only be started once."_el};
     }
     validateLimits(options.bufferLimits());
     if (!options.timeout().isPositive()) {
-        throw err::ParameterError{"The TCP connection timeout must be positive."_el, "options.timeout"_el};
+        throw ParameterFailure{"The TCP connection timeout must be positive."_el, "options.timeout"_el};
     }
     if (remoteEndpoint.port().isAutomatic()) {
-        throw err::ParameterError{"A TCP destination port must not be automatic."_el, "remoteEndpoint"_el};
+        throw ParameterFailure{"A TCP destination port must not be automatic."_el, "remoteEndpoint"_el};
     }
     if (remoteEndpoint.host().isAddress() && remoteEndpoint.host().address()->isV4() &&
         remoteEndpoint.scopeId().isSpecified()) {
-        throw err::ParameterError{"An IPv4 TCP destination cannot contain an IPv6 scope."_el, "remoteEndpoint"_el};
+        throw ParameterFailure{"An IPv4 TCP destination cannot contain an IPv6 scope."_el, "remoteEndpoint"_el};
     }
     if (_started.exchange(true)) {
-        throw err::LogicError{"A TCP connection can only be started once."_el};
+        throw LogicFailure{"A TCP connection can only be started once."_el};
     }
     _state.store(ConnectionState::Connecting);
     _requestedEndpoint = std::move(remoteEndpoint);
@@ -100,28 +103,28 @@ void TcpConnection::accept(network::TcpConnectionRequestPtr request, TcpAcceptOp
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
     verifyCurrentOwnerEvents();
     if (_started.load()) {
-        throw err::LogicError{"A TCP connection can only be started once."_el};
+        throw LogicFailure{"A TCP connection can only be started once."_el};
     }
     validateLimits(options.bufferLimits());
     if (request == nullptr) {
-        throw err::ParameterError{"The TCP connection request must not be empty."_el, "request"_el};
+        throw ParameterFailure{"The TCP connection request must not be empty."_el, "request"_el};
     }
     const auto builtInRequest = std::dynamic_pointer_cast<impl::TcpConnectionRequest>(request);
     if (builtInRequest == nullptr) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The TCP connection and request belong to incompatible network backends."_el, "request"_el};
     }
     auto device = _createDevice(_driver, options.bufferLimits().receive(), createCallbacks(_generation.load() + 1U));
     if (!builtInRequest->isCompatibleWith(*device)) {
         if (builtInRequest->state() != TcpConnectionRequestState::Pending) {
-            throw err::LogicError{"The TCP connection request was already accepted or rejected."_el};
+            throw LogicFailure{"The TCP connection request was already accepted or rejected."_el};
         }
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The TCP connection and request use incompatible native socket backends."_el, "request"_el};
     }
     auto claim = builtInRequest->claim();
     if (!claim.has_value()) {
-        throw err::LogicError{"The TCP connection request was accepted or rejected concurrently."_el};
+        throw LogicFailure{"The TCP connection request was accepted or rejected concurrently."_el};
     }
     _started.store(true);
     _state.store(ConnectionState::Accepting);
@@ -137,7 +140,7 @@ void TcpConnection::accept(network::TcpConnectionRequestPtr request, TcpAcceptOp
         _device->accept(std::move(claim->socket));
     } catch (const NetworkError &error) {
         postError(generation, error.context());
-    } catch (const err::RuntimeError &error) {
+    } catch (const RuntimeError &error) {
         postError(
             generation,
             NetworkErrorContext{"TCP accept failed"_el, error.reason()}.setReason(
@@ -285,7 +288,7 @@ void TcpConnection::startNextEndpoint(const std::uint64_t generation) {
     } catch (const NetworkError &error) {
         _lastConnectError = error.context();
         startNextEndpoint(generation);
-    } catch (const err::RuntimeError &error) {
+    } catch (const RuntimeError &error) {
         _lastConnectError =
             NetworkErrorContext{"TCP connection failed"_el, error.reason()}
                 .setReason(NetworkErrorReason::SocketOperationFailed)
@@ -347,10 +350,10 @@ void TcpConnection::deliverTimeout(const std::uint64_t generation) {
 
 void TcpConnection::validateLimits(const SocketBufferLimits &limits) const {
     if (!limits.send().isFinite() || limits.send().isZero()) {
-        throw err::ParameterError{"The TCP send queue limit must be positive and finite."_el, "bufferLimits.send"_el};
+        throw ParameterFailure{"The TCP send queue limit must be positive and finite."_el, "bufferLimits.send"_el};
     }
     if (!limits.receive().isFinite() || limits.receive().isZero()) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The TCP receive queue limit must be positive and finite."_el, "bufferLimits.receive"_el};
     }
 }

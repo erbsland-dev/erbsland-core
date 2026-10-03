@@ -62,8 +62,12 @@ void U8StringEditor::markAsSensitive() noexcept {
     _storage.markAsSensitive();
 }
 
-auto U8StringEditor::isValidUtf8() const noexcept -> bool {
-    return U8StringReadTools{dataView()}.isValidUtf8();
+auto U8StringEditor::isEncodingValid() const noexcept -> bool {
+    return U8StringReadTools{dataView()}.isEncodingValid();
+}
+
+void U8StringEditor::encodingValidOrThrow() const {
+    U8StringReadTools{dataView()}.encodingValidOrThrow();
 }
 
 auto U8StringEditor::findFirstOf(const CharSet &characters) const noexcept -> ByteIndex {
@@ -107,11 +111,11 @@ auto U8StringEditor::find(const U8String &text, const ByteIndex start, const Cha
     return U8StringComparisonTools{dataView()}.find(text.dataView(), start, compareFn);
 }
 
-auto U8StringEditor::length() const noexcept -> ByteLength {
+auto U8StringEditor::length() const noexcept -> ByteCount {
     return U8StringReadTools{dataView()}.byteLength();
 }
 
-auto U8StringEditor::characterLength() const noexcept -> CpLength {
+auto U8StringEditor::characterLength() const noexcept -> CpCount {
     return U8StringCharReadTool{dataView()}.charLength();
 }
 
@@ -161,11 +165,11 @@ auto U8StringEditor::operator[](const CpIndex index) const noexcept -> Char {
     return charAt(index);
 }
 
-auto U8StringEditor::advance(ByteIndex &index, const CpLength count) const noexcept -> bool {
+auto U8StringEditor::advance(ByteIndex &index, const CpCount count) const noexcept -> bool {
     return U8StringReadTools{dataView()}.advance(index, count);
 }
 
-auto U8StringEditor::retreat(ByteIndex &index, const CpLength count) const noexcept -> bool {
+auto U8StringEditor::retreat(ByteIndex &index, const CpCount count) const noexcept -> bool {
     return U8StringReadTools{dataView()}.retreat(index, count);
 }
 
@@ -185,7 +189,7 @@ auto U8StringEditor::slice(const CpRange range) const noexcept -> U8StringEditor
     return withRange(U8StringCharReadTool{dataView()}.sliceRange(range));
 }
 
-auto U8StringEditor::slice(const StringSide side, const ByteLength length) const noexcept -> U8StringEditor {
+auto U8StringEditor::slice(const StringSide side, const ByteCount length) const noexcept -> U8StringEditor {
     if (side == StringSide::Front) {
         return slice(ByteRange(ByteIndex::zero(), length));
     }
@@ -208,7 +212,7 @@ auto U8StringEditor::slice(const StringSide side, const ByteIndex index) const n
     return slice(ByteRange{index, end});
 }
 
-auto U8StringEditor::slice(const StringSide side, const CpLength length) const noexcept -> U8StringEditor {
+auto U8StringEditor::slice(const StringSide side, const CpCount length) const noexcept -> U8StringEditor {
     if (side == StringSide::Front) {
         return slice(CpRange{CpIndex::zero(), length});
     }

@@ -1,7 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ProfileTypes.hpp"
+
+#include <erbsland/StreamBuffering.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEncoding.hpp>
 
 namespace app::stream {
 
@@ -10,6 +13,7 @@ using namespace el::text::literals;
 auto toString(const RunMode value) -> el::String {
     return value == RunMode::Profile ? "profile"_el : "benchmark"_el;
 }
+
 auto toString(const Direction value) -> el::String {
     return value == Direction::Read ? "read"_el : "write"_el;
 }
@@ -113,6 +117,7 @@ auto encodingFor(const FileType value) -> el::StringEncoding {
 auto isTextFile(const FileType value) noexcept -> bool {
     return value != FileType::Binary;
 }
+
 auto isTextMethod(const Method value) noexcept -> bool {
     return value >= Method::ReadChar;
 }

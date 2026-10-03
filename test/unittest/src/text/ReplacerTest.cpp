@@ -1,15 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/placeholder/Filter.hpp>
-#include <erbsland/text/placeholder/Replacer.hpp>
-#include <erbsland/text/placeholder/ReplacerError.hpp>
-#include <erbsland/text/placeholder/Source.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringMap.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/placeholder/Filter.hpp>
+#include <erbsland/placeholder/Replacer.hpp>
+#include <erbsland/placeholder/ReplacerError.hpp>
+#include <erbsland/placeholder/Source.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/StringMap.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;
@@ -38,7 +39,7 @@ class ReplacerTest final : public el::UnitTest {
         [[nodiscard]] auto apply(
             const el::text::String &, const el::text::String &parameter, const el::text::String &value)
             -> el::text::String override {
-            return el::text::String::fromJoined({"["_el, parameter, value, "]"_el});
+            return el::join("["_el, parameter, value, "]"_el);
         }
     };
     class SyntaxSource final : public ph::Source {
@@ -78,10 +79,10 @@ class ReplacerTest final : public el::UnitTest {
 public:
     void testDefaultsAndRegistry() {
         auto replacer = ph::Replacer{};
-        REQUIRE_THROWS_AS(el::err::LogicError, replacer.validate("plain"_el));
-        REQUIRE_THROWS_AS(el::err::LogicError, replacer.validateOrThrow("plain"_el));
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(replacer.replace("plain"_el)));
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(replacer.replaceOrThrow("plain"_el)));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, replacer.validate("plain"_el));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, replacer.validateOrThrow("plain"_el));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, static_cast<void>(replacer.replace("plain"_el)));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, static_cast<void>(replacer.replaceOrThrow("plain"_el)));
         const auto source = std::make_shared<EchoSource>();
         const auto filter = std::make_shared<BracketFilter>();
         replacer.addSource(source);
@@ -109,13 +110,13 @@ public:
         doubled.addSource(std::make_shared<EchoSource>());
         REQUIRE_EQUAL(doubled.replaceOrThrow("$${echo:x} ${echo:a||b}"_el), "${echo:x} a|b"_el);
         REQUIRE_EQUAL(doubled.replaceOrThrow("${echo:a}}b}"_el), "a}b"_el);
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(ph::Replacer{options.setFrame("${"_el, ">>"_el)}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, static_cast<void>(ph::Replacer{options.setFrame("${"_el, ">>"_el)}));
     }
 
     void testSyntaxAndLimits() {
         auto options = ph::ReplacerOptions{};
-        REQUIRE_THROWS_AS(el::err::ParameterError, options.setFrame({}, "}"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, options.setFilterSeparator("12345678901234567"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, options.setFrame({}, "}"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, options.setFilterSeparator("12345678901234567"_el));
         options.setFrame("[["_el, "]]"_el).setFilterSeparator("/"_el).setNameSeparator("="_el);
         auto replacer = ph::Replacer{options};
         replacer.addSource(std::make_shared<EchoSource>());
@@ -138,7 +139,7 @@ public:
         replacer.addFilter(std::make_shared<BracketFilter>());
         REQUIRE_EQUAL(replacer.replaceOrThrow("before «echo→x¦bracket→!» after"_el), "before [!x] after"_el);
         options.setEscapeMode(ph::EscapeMode::Double).setFrame("««"_el, "»"_el);
-        REQUIRE_THROWS_AS(el::err::LogicError, ph::Replacer{options});
+        REQUIRE_THROWS_AS(el::err::LogicFailure, ph::Replacer{options});
     }
 
     void testValidationAndTolerance() {

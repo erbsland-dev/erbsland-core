@@ -1,7 +1,19 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ReadLineApp.hpp"
+
+#include <erbsland/cterm/BlockString.hpp>
+#include <erbsland/cterm/FrameBorder.hpp>
+#include <erbsland/cterm/FrameStyle.hpp>
+#include <erbsland/cterm/ReadLineDisplayStyle.hpp>
+#include <erbsland/cterm/ReadLineOptions.hpp>
+#include <erbsland/EscapeAmount.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringJoins.hpp>
 
 #include <array>
 
@@ -10,8 +22,7 @@ namespace demo {
 using namespace el::text::literals;
 
 auto ReadLineApp::quoted(const el::String &value) -> el::String {
-    return el::String::fromJoined(
-        {"\""_el, value.toEscaped(el::EscapeFormat::Config, el::EscapeAmount::Required), "\""_el});
+    return el::join("\""_el, value.toEscaped(el::EscapeFormat::Config, el::EscapeAmount::Required), "\""_el);
 }
 
 auto ReadLineApp::plainText(const el::cterm::BlockString &value) -> el::String {
@@ -19,7 +30,7 @@ auto ReadLineApp::plainText(const el::cterm::BlockString &value) -> el::String {
     for (const auto &block : value) {
         result.append(block.toString());
     }
-    return el::String{result};
+    return result;
 }
 
 auto ReadLineApp::displayStyleText(const el::cterm::ReadLineDisplayStyle style) -> el::String {
@@ -150,7 +161,7 @@ void ReadLineApp::dumpConfiguration(const el::cterm::ReadLineOptions &settings) 
         appendTextAssignment(result, "color"_el, settings.frameBorder().color(elements[index]).toString());
     }
 
-    el::io::print(el::String{result});
+    el::io::print(result);
 }
 
 }

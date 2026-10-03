@@ -1,20 +1,20 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/named_key/Entry.hpp>
-#include <erbsland/text/named_key/Format.hpp>
-#include <erbsland/text/named_key/Parser.hpp>
-#include <erbsland/text/StringCharReader.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/unit/CpIndex.hpp>
-#include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/ItemCount.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/named_key/Entry.hpp>
+#include <erbsland/named_key/Format.hpp>
+#include <erbsland/named_key/Parser.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/Set.hpp>
+#include <erbsland/StringCharReader.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U32String.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/Set.hpp>
 
 using namespace el::text;
 using namespace el::text::literals;
@@ -70,22 +70,23 @@ public:
         REQUIRE_EQUAL(format.keyIndex("alpha key"_el).value(), Alpha);
         REQUIRE_FALSE(format.keyIndex("unknown"_el).has_value());
         REQUIRE_EQUAL(format.keyName(Alpha), "alpha_key"_el);
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(format.keyName(Beta)));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, static_cast<void>(format.keyName(Beta)));
         REQUIRE_THROWS_AS(
-            el::err::LogicError, static_cast<void>(named_key::Format{}.setKeys({{"Alpha Key"_el, Alpha}})));
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(named_key::Format{}.addKey("ALPHA"_el, Alpha)));
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(named_key::Format{}.addKey("alpha"_el, -1)));
+            el::err::LogicFailure, static_cast<void>(named_key::Format{}.setKeys({{"Alpha Key"_el, Alpha}})));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, static_cast<void>(named_key::Format{}.addKey("ALPHA"_el, Alpha)));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, static_cast<void>(named_key::Format{}.addKey("alpha"_el, -1)));
         REQUIRE_THROWS_AS(
-            el::err::LogicError,
+            el::err::LogicFailure,
             static_cast<void>(named_key::Format{}.setKeys({{"same"_el, Alpha}, {"same"_el, Beta}})));
 
         REQUIRE_THROWS_AS(
-            el::err::LogicError, static_cast<void>(format.setKeys({{"duplicate"_el, Alpha}, {"duplicate"_el, Beta}})));
+            el::err::LogicFailure,
+            static_cast<void>(format.setKeys({{"duplicate"_el, Alpha}, {"duplicate"_el, Beta}})));
         REQUIRE_EQUAL(format.keyName(Alpha), "alpha_key"_el);
 
         auto incremental = named_key::Format{};
         incremental.addKey("alpha"_el, Alpha);
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(incremental.addKey("alpha"_el, Beta)));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, static_cast<void>(incremental.addKey("alpha"_el, Beta)));
     }
 
     void testKeyFormsPrefixesAndRepeatedEnd() {
@@ -205,7 +206,7 @@ public:
     void testValueLimitsAndAllowedCharacters() {
         auto format = standardFormat()
                           .setMaximumValues(el::unit::ItemCount{2U})
-                          .setMaximumValueLength(el::unit::CpLength{3U})
+                          .setMaximumValueLength(el::unit::CpCount{3U})
                           .setAllowedValueChars(CharSet::fromPattern("a-z0-9="_el));
         auto validReader = StringCharReader{String{"foo,bar"_el}};
         auto validParser = named_key::Parser{validReader, format};
@@ -250,9 +251,9 @@ public:
     void testInvalidFormatConfiguration() {
         auto sameSeparators = standardFormat().setValueSeparator(U',');
         auto reader = StringCharReader{String{"alpha"_el}};
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(named_key::Parser{reader, sameSeparators}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, static_cast<void>(named_key::Parser{reader, sameSeparators}));
 
         auto conflictingCompact = standardFormat().setValueWithoutKeySeparatorChars(CharSet{U'a'});
-        REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(named_key::Parser{reader, conflictingCompact}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, static_cast<void>(named_key::Parser{reader, conflictingCompact}));
     }
 };

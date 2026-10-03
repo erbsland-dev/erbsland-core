@@ -94,6 +94,7 @@ Byte Sequence Read Patterns
 
     o.isEmpty() -> bool // test for no visible bytes
     o.length()/endIndex() -> T // inspect visible sequence bounds
+    o.lastIndex() -> unit::ByteIndex // final visible byte index; noIndex for an empty sequence
     o.get(index[, fallback]) -> Byte // tolerant indexed access
     o.getOrThrow(index) -> Byte // strict indexed access
     o.span([range]) -> ConstByteSpan // borrow complete or clamped visible bytes
@@ -200,8 +201,8 @@ Ring Buffer Patterns
 .. code-block:: text
 
     T(capacity[, maximumCapacity]) // create a fixed or growable bounded ring
-    o.length()/available()/capacity()/maximumCapacity() -> unit::ByteLength // inspect ring bounds
-    o.write(bytes)/read(destination) -> unit::ByteLength // transfer as many bytes as possible
+    o.length()/available()/capacity()/maximumCapacity() -> unit::ByteCount // inspect ring bounds
+    o.write(bytes)/read(destination) -> unit::ByteCount // transfer as many bytes as possible
     o.writeExact(bytes) -> util::Result // atomically write all bytes or leave the ring unchanged
     o.read(maximum) -> ByteBlock // remove up to the requested byte count
     o.readInteger() -> T // atomically read one endian-aware integer

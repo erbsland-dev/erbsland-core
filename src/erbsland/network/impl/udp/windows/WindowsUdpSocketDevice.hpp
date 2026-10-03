@@ -19,7 +19,7 @@ public:
     ~WindowsUdpSocketDevice() override;
 
 public: // implement UdpSocketDevice
-    [[nodiscard]] auto bind(IpEndpoint localEndpoint, unit::ByteLength maximumDatagramSize) -> IpEndpoint override;
+    [[nodiscard]] auto bind(IpEndpoint localEndpoint, unit::ByteCount maximumDatagramSize) -> IpEndpoint override;
     [[nodiscard]] auto send(const UdpDatagram &datagram) -> UdpSocketDeviceSendStatus override;
     void setReceiving(bool enabled) override;
     void close() noexcept override;

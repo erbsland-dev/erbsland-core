@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-*****
-Color
-*****
+*************************************
+Terminal Colors and Animated Palettes
+*************************************
 
 The color classes provide access to the standard 16 terminal colors and their combinations.
 You use them throughout the library to style terminal output, buffer cells, and text elements.
@@ -42,11 +42,9 @@ The following table shows the available foreground and background colors, as wel
     ␛[30;106m 224 ␛[31m 225 ␛[32m 226 ␛[33m 227 ␛[34m 228 ␛[35m 229 ␛[36m 230 ␛[37m 231 ␛[90m 232 ␛[91m 233 ␛[92m 234 ␛[93m 235 ␛[94m 236 ␛[95m 237 ␛[96m 238 ␛[97m 239 |
     ␛[30;107m 240 ␛[31m 241 ␛[32m 242 ␛[33m 243 ␛[34m 244 ␛[35m 245 ␛[36m 246 ␛[37m 247 ␛[90m 248 ␛[91m 249 ␛[92m 250 ␛[93m 251 ␛[94m 252 ␛[95m 253 ␛[96m 254 ␛[97m 255 |
 
-Usage
-=====
 
 Applying Colors Directly
-------------------------
+========================
 
 Use ``Foreground``, ``Background``, and ``Color`` to apply explicit styling to terminal output or buffer cells.
 
@@ -67,7 +65,7 @@ Use ``Inherited`` when a layer should keep the color from what is already render
 buffer cells or applying partial styling.
 
 Serializing Palette Values
---------------------------
+==========================
 
 For configuration files or theme definitions, foreground colors, background colors, complete colors, block attributes,
 and block styles have the same conversion API.
@@ -119,7 +117,7 @@ or end of a field is invalid.
 This keeps serialized values unambiguous and directly usable in ELCL configuration.
 
 Building Animated Palettes
---------------------------
+==========================
 
 ``ColorSequence`` represents an ordered list of colors.
 You can use it to build gradients, rotating palettes, or animated visual effects.

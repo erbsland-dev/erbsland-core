@@ -2,7 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogEntry.hpp>
+#include <erbsland/LogLevel.hpp>
+#include <erbsland/LogLine.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogPath.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/LogWriterFilter.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <atomic>
 #include <memory>
@@ -27,11 +36,10 @@ void writerRouting() {
     const auto operations = std::make_shared<RouteCountingLogWriter>();
     const auto archive = std::make_shared<RouteCountingLogWriter>();
 
-    auto operationsFilter = el::LogWriterFilter{el::LogLevels{el::LogLevel::Warning, el::LogLevel::Error}};
-    operationsFilter.addPath(el::LogPath{"guild"_el});
-    auto archiveFilter =
-        el::LogWriterFilter{el::LogLevels{el::LogLevel::Information, el::LogLevel::Warning, el::LogLevel::Error}};
-    archiveFilter.addPath(el::LogPath{"guild/archive"_el});
+    auto operationsFilter = el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Warning, el::LogLevel::Error});
+    operationsFilter.addAcceptedPath(el::LogPath{"guild"_el});
+    auto archiveFilter = el::LogWriterFilter{}.setRejectedLevels(el::LogLevel::Trace);
+    archiveFilter.addAcceptedPath(el::LogPath{"guild/archive"_el});
 
     auto configuration = el::LogConfiguration{};
     configuration.addWriter(operations, std::move(operationsFilter)).addWriter(archive, std::move(archiveFilter));

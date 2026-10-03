@@ -4,6 +4,10 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        ActiveLogConfiguration.cpp
+        ActiveLogConfiguration.hpp
+        ActiveLogConfiguration_fwd.hpp
+        ActiveLogWriter.hpp
         ConsoleLogWriter.cpp
         ConsoleLogWriter.hpp
         ConsoleLogWriter_fwd.hpp
@@ -16,10 +20,12 @@ target_sources(erbsland-core PRIVATE
         LogConfigurationRules.hpp
         LogLineFormatter.cpp
         LogLineFormatter.hpp
+        LogLineFormatter_fwd.hpp
         LogManagerData.cpp
         LogManagerData.hpp
         LogManagerData_fwd.hpp
         LogWriterBinding.hpp
         SyslogLogWriter.cpp
         SyslogLogWriter.hpp
+        ValidateTraceSection.hpp
 )

@@ -1,0 +1,6 @@
+#
+# The configuration for the generate_public_suffix_data tool
+#
+----[ Generate Public Suffix Data ]-----------------------------------------------------------------------------------
+
+Output File            : "src/erbsland/network/impl/http/cookie/PublicSuffixData.cpp"

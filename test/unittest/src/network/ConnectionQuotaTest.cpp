@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/network/IpAddress.hpp>
-#include <erbsland/network/IpEndpoint.hpp>
-#include <erbsland/network/Port.hpp>
-#include <erbsland/network/source/ConnectionQuota.hpp>
+#include <erbsland/ConnectionQuota.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/IpEndpoint.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/Port.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <optional>
@@ -19,8 +19,8 @@ TESTED_TARGETS(ConnectionQuota ConnectionQuotaLease)
 class ConnectionQuotaTest final : public el::UnitTest {
 public:
     void testValidationAcquisitionMoveAndRelease() {
-        REQUIRE_THROWS_AS(el::err::ParameterError, ConnectionQuota::create(unit::ItemCount{}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, ConnectionQuota::create(unit::ItemCount::infinite()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ConnectionQuota::create(unit::ItemCount{}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ConnectionQuota::create(unit::ItemCount::infinite()));
         const auto quota = ConnectionQuota::create(unit::ItemCount{2U});
         const auto endpoint = IpEndpoint{IpAddress::loopbackV4(), Port{443U}};
         auto first = quota->tryAcquire(endpoint);

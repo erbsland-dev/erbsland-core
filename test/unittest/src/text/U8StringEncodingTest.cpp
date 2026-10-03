@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteReader.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringDecoder.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringEncoder.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteReader.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringDecoder.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringEncoder.hpp>
 #include <erbsland/text/u16/impl/U16Encoding.hpp>
 #include <erbsland/text/u32/impl/U32Encoding.hpp>
 #include <erbsland/text/u8/impl/U8Encoding.hpp>
@@ -182,8 +182,8 @@ public:
 
     void testEncodeEntryPointsAndSlices() {
         const auto source = String{"xxA¢€😀yy"_el};
-        const auto view = String{source}.slice(ByteRange{ByteIndex{2U}, ByteLength{10U}});
-        const auto charView = source.slice(CpRange{CpIndex{2U}, CpLength{4U}});
+        const auto view = String{source}.slice({ByteIndex{2U}, ByteCount{10U}});
+        const auto charView = source.slice(CpRange{CpIndex{2U}, CpCount{4U}});
 
         REQUIRE_EQUAL(
             StringEncoder{source}.encode(StringEncoding::Utf8, StringBomMode::Reject).toUInt8Vector(), withAffixes());

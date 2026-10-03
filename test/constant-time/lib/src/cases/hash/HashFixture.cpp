@@ -1,18 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "HashFixture.hpp"
 
-#include <erbsland/cryptology/HashAlgorithm.hpp>
-#include <erbsland/cryptology/Hasher.hpp>
-#include <erbsland/random/Random.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/Random.hpp>
 
 namespace app::constant_time {
 
 using namespace el::text::literals;
 
 HashFixture::HashFixture(el::Random &random, const bool population, el::HashAlgorithm algorithm) {
-    auto data = input(random, population, 256);
+    auto data = input(random, population, el::ByteCount{256});
     auto hasher = el::Hasher{algorithm};
     hasher.update(data.span());
     const auto expected = hasher.finalize();

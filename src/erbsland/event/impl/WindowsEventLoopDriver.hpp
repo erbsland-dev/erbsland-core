@@ -24,6 +24,7 @@ namespace erbsland::event::impl {
 class WindowsEventLoopDriver final : public EventLoopDriver {
 public:
     /// Create a Windows event-loop driver.
+    /// @throws system::PlatformError If native event-loop initialization fails.
     WindowsEventLoopDriver();
 
     /// Release the native completion port and its registrations.
@@ -43,6 +44,7 @@ public: // native source interface
     using RegistrationPtr = std::unique_ptr<EventLoopDriverRegistration>;
 
     /// Associate a native handle and its completions with this driver.
+    /// @throws system::PlatformError If native event registration fails.
     [[nodiscard]] auto registerHandle(HANDLE handle, NativeCompletionCallback callback) -> RegistrationPtr;
 
 private:

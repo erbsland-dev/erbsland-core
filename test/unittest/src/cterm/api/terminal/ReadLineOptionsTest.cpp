@@ -20,7 +20,7 @@ public:
         REQUIRE(options.placeholder().isEmpty());
         REQUIRE_EQUAL(options.timeout(), erbsland::time::Seconds{0});
         REQUIRE_EQUAL(options.timeoutDisplayThreshold(), erbsland::time::Seconds{20});
-        REQUIRE_EQUAL(options.maximumLength(), erbsland::unit::CpLength{4096U});
+        REQUIRE_EQUAL(options.maximumLength(), erbsland::unit::CpCount{4096U});
         REQUIRE_EQUAL(options.maximumLines(), erbsland::unit::LineCount{1U});
         REQUIRE_EQUAL(options.maximumDisplayLines(), erbsland::unit::LineCount{5U});
         REQUIRE_EQUAL(options.blinkInterval(), erbsland::time::Milliseconds{800});
@@ -48,7 +48,7 @@ public:
                            .setTitle("Title"_el)
                            .setPrompt(BlockString{"# "_el})
                            .setPlaceholder("Value"_el)
-                           .setMaximumLength(erbsland::unit::CpLength{27U})
+                           .setMaximumLength(erbsland::unit::CpCount{27U})
                            .setMaximumLines(erbsland::unit::LineCount{3U})
                            .setMaximumDisplayLines(erbsland::unit::LineCount{2U})
                            .setHistory(erbsland::text::StringList{"one"_el, "two"_el})
@@ -68,7 +68,7 @@ public:
         REQUIRE_EQUAL(render(options.title()), std::string{"Title"});
         REQUIRE_EQUAL(render(options.prompt()), std::string{"# "});
         REQUIRE_EQUAL(render(options.placeholder()), std::string{"Value"});
-        REQUIRE_EQUAL(options.maximumLength(), erbsland::unit::CpLength{27U});
+        REQUIRE_EQUAL(options.maximumLength(), erbsland::unit::CpCount{27U});
         REQUIRE_EQUAL(options.maximumLines(), erbsland::unit::LineCount{3U});
         REQUIRE_EQUAL(options.maximumDisplayLines(), erbsland::unit::LineCount{2U});
         const auto historyCount = options.history().count().toSizeT();
@@ -87,13 +87,14 @@ public:
     void testValidation() {
         auto options = ReadLineOptions{};
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setMaximumLines(erbsland::unit::LineCount{0U}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setMaximumDisplayLines(erbsland::unit::LineCount{0U}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setTimeout(erbsland::time::Seconds{-1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setMaximumLines(erbsland::unit::LineCount{0U}));
         REQUIRE_THROWS_AS(
-            erbsland::err::ParameterError, options.setTimeoutDisplayThreshold(erbsland::time::Seconds{-1}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setBlinkInterval(erbsland::time::Milliseconds{0}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setCursorBlock(Block{U'界'}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setCursorBlock(Block{U'\n'}));
+            erbsland::err::ParameterFailure, options.setMaximumDisplayLines(erbsland::unit::LineCount{0U}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setTimeout(erbsland::time::Seconds{-1}));
+        REQUIRE_THROWS_AS(
+            erbsland::err::ParameterFailure, options.setTimeoutDisplayThreshold(erbsland::time::Seconds{-1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setBlinkInterval(erbsland::time::Milliseconds{0}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setCursorBlock(Block{U'界'}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setCursorBlock(Block{U'\n'}));
     }
 };

@@ -13,6 +13,7 @@ target_sources(erbsland-core PRIVATE
         CoTask.hpp
         CoTask_fwd.hpp
         EnumFlags.hpp
+        FifoCache.hpp
         HashHelper.hpp
         HashMap.hpp
         HashMap_algorithm.tpp
@@ -49,6 +50,7 @@ target_sources(erbsland-core PRIVATE
         List_tests.tpp
         LoopResult.hpp
         LoopStatus.hpp
+        LruCache.hpp
         Map.hpp
         Map_algorithm.tpp
         Map_change.tpp
@@ -71,4 +73,20 @@ target_sources(erbsland-core PRIVATE
         Set_remove.tpp
         Set_sets.tpp
         Set_tests.tpp
+        StopSource.cpp
+        StopSource.hpp
+        StopSource_fwd.hpp
+        StopToken.cpp
+        StopToken.hpp
+        Utilities.hpp
+        WorkerCancelledError.hpp
+        WorkerPool.cpp
+        WorkerPool.hpp
+        WorkerPool_fwd.hpp
+        WorkerPool_work.tpp
+        WorkerPoolClosedError.hpp
+        WorkerPoolEventEditor.cpp
+        WorkerPoolEventEditor.hpp
+        WorkerPoolFullError.hpp
+        WorkerPoolOptions.hpp
 )

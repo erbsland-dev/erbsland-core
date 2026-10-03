@@ -4,33 +4,34 @@
 
 #include "../EventSource.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 #include <utility>
 
 namespace erbsland::event::impl {
 
+using namespace err;
 using namespace text::literals;
 
 CommonEventEditor::CommonEventEditor(EventSourcePtr source, EventsPtr target) :
     _source{source}, _target{std::move(target)} {
     if (source == nullptr) {
-        throw err::ParameterError{"The event source must not be null."_el, "source"_el};
+        throw ParameterFailure{"The event source must not be null."_el, "source"_el};
     }
     if (_target == nullptr) {
-        throw err::ParameterError{"The event target must not be null."_el, "target"_el};
+        throw ParameterFailure{"The event target must not be null."_el, "target"_el};
     }
     if (source->ownerEvents() != _target) {
-        throw err::LogicError{"The event editor target does not own its source."_el};
+        throw LogicFailure{"The event editor target does not own its source."_el};
     }
 }
 
 auto CommonEventEditor::source() const -> EventSourcePtr {
     auto result = _source.lock();
     if (result == nullptr) {
-        throw err::LogicError{"The event editor source no longer exists."_el};
+        throw LogicFailure{"The event editor source no longer exists."_el};
     }
     return result;
 }

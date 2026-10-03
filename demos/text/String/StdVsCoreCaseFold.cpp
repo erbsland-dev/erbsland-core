@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringTransformations.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -19,7 +23,7 @@ void stdVsCoreCaseFold() {
 
     // Erbsland Core: Case folding works on Unicode characters.
     constexpr auto elForestText = "Straße İSTANBUL CamelCaseText"_el;
-    const auto coreCaseFolded = el::String{elForestText}.transformed(el::Char::caseFolded);
+    const auto coreCaseFolded = el::toCaseFolded(el::String{elForestText});
     el::io::printLine("Core: "_el, coreCaseFolded);
 
     // Standard library: std::tolower works on bytes/chars, not Unicode text.

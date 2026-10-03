@@ -43,12 +43,12 @@ protected:
     void reduceProduct(std::array<uint64_t, 5> &product) noexcept;
 
 protected:
-    std::array<uint64_t, 5> _r{};  ///< Clamped multiplier limbs.
-    std::array<uint64_t, 5> _r5{}; ///< Multiplier limbs one through four multiplied by five.
-    std::array<uint64_t, 5> _h{};  ///< Accumulator limbs.
-    mem::ByteArray<16> _pad;       ///< Additive `s` half of the one-time key.
-    mem::ByteArray<16> _partial;   ///< Retained incomplete input block.
-    std::size_t _partialLength{};  ///< Number of bytes retained in `_partial`.
+    std::array<uint64_t, 5> _r{};     ///< Clamped multiplier limbs.
+    std::array<uint64_t, 5> _r5{};    ///< Multiplier limbs one through four multiplied by five.
+    std::array<uint64_t, 5> _h{};     ///< Accumulator limbs.
+    mem::ByteArray<16> _pad;          ///< Additive `s` half of the one-time key.
+    mem::ByteArray<16> _partial;      ///< Retained incomplete input block.
+    unit::ByteCount _partialLength{}; ///< Number of bytes retained in `_partial`.
 };
 
 }

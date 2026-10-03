@@ -20,8 +20,8 @@
 
 #include "../EncodingMode.hpp"
 #include "../impl/ByteBlockFormatter.hpp"
+#include "../impl/escape/StringSafeTransformTools.hpp"
 #include "../impl/FloatConversion.hpp"
-#include "../impl/StringSafeTransformTools.hpp"
 #include "../StringConverter.hpp"
 #include "../u32/U32StringEditor.hpp"
 #include "../u8/U8StringEditor.hpp"
@@ -30,6 +30,7 @@
 #include "../../util/HashHelper.hpp"
 
 #include <cstring>
+#include <utility>
 
 namespace erbsland::text {
 
@@ -54,8 +55,12 @@ auto U16String::isEmpty() const noexcept -> bool {
     return U16StringReadTools{dataView()}.isEmpty();
 }
 
-auto U16String::isValidUtf16() const noexcept -> bool {
-    return U16StringReadTools{dataView()}.isValidUtf16();
+auto U16String::isEncodingValid() const noexcept -> bool {
+    return U16StringReadTools{dataView()}.isEncodingValid();
+}
+
+void U16String::encodingValidOrThrow() const {
+    U16StringReadTools{dataView()}.encodingValidOrThrow();
 }
 
 auto U16String::toHash() const noexcept -> std::size_t {
@@ -78,52 +83,52 @@ auto U16String::toHashCI() const noexcept -> std::size_t {
     return result;
 }
 
-auto U16String::findFirstOf(const CharSet &characters) const noexcept -> U16DataIndex {
+auto U16String::findFirstOf(const CharSet &characters) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findFirstOf(characters);
 }
 
-auto U16String::findFirstOf(const CharSet &characters, const U16DataIndex start) const noexcept -> U16DataIndex {
+auto U16String::findFirstOf(const CharSet &characters, const U16Index start) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findFirstOf(characters, start);
 }
 
-auto U16String::findFirstNotOf(const CharSet &characters) const noexcept -> U16DataIndex {
+auto U16String::findFirstNotOf(const CharSet &characters) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findFirstNotOf(characters);
 }
 
-auto U16String::findFirstNotOf(const CharSet &characters, const U16DataIndex start) const noexcept -> U16DataIndex {
+auto U16String::findFirstNotOf(const CharSet &characters, const U16Index start) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findFirstNotOf(characters, start);
 }
 
-auto U16String::findLastOf(const CharSet &characters) const noexcept -> U16DataIndex {
+auto U16String::findLastOf(const CharSet &characters) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findLastOf(characters);
 }
 
-auto U16String::findLastOf(const CharSet &characters, const U16DataIndex end) const noexcept -> U16DataIndex {
+auto U16String::findLastOf(const CharSet &characters, const U16Index end) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findLastOf(characters, end);
 }
 
-auto U16String::findLastNotOf(const CharSet &characters) const noexcept -> U16DataIndex {
+auto U16String::findLastNotOf(const CharSet &characters) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findLastNotOf(characters);
 }
 
-auto U16String::findLastNotOf(const CharSet &characters, const U16DataIndex end) const noexcept -> U16DataIndex {
+auto U16String::findLastNotOf(const CharSet &characters, const U16Index end) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findLastNotOf(characters, end);
 }
 
-auto U16String::find(const U16String &text, const CharCompareFn compareFn) const noexcept -> U16DataIndex {
+auto U16String::find(const U16String &text, const CharCompareFn compareFn) const noexcept -> U16Index {
     return U16StringComparisonTools{dataView()}.find(text.dataView(), compareFn);
 }
 
-auto U16String::find(const U16String &text, const U16DataIndex start, const CharCompareFn compareFn) const noexcept
-    -> U16DataIndex {
+auto U16String::find(const U16String &text, const U16Index start, const CharCompareFn compareFn) const noexcept
+    -> U16Index {
     return U16StringComparisonTools{dataView()}.find(text.dataView(), start, compareFn);
 }
 
-auto U16String::length() const noexcept -> U16DataLength {
+auto U16String::length() const noexcept -> U16Count {
     return U16StringReadTools{dataView()}.byteLength();
 }
 
-auto U16String::characterLength() const noexcept -> CpLength {
+auto U16String::characterLength() const noexcept -> CpCount {
     return U16StringCharReadTool{dataView()}.charLength();
 }
 
@@ -131,8 +136,8 @@ auto U16String::displayWidth() const noexcept -> int {
     return U16StringReadTools{dataView()}.displayWidth();
 }
 
-auto U16String::indexAt(const StringSide side) const noexcept -> U16DataIndex {
-    return side == StringSide::Front ? U16DataIndex::zero() : U16DataIndex::end(length());
+auto U16String::indexAt(const StringSide side) const noexcept -> U16Index {
+    return side == StringSide::Front ? U16Index::zero() : U16Index::end(length());
 }
 
 auto U16String::charAt(const StringSide side) const noexcept -> Char {
@@ -140,7 +145,7 @@ auto U16String::charAt(const StringSide side) const noexcept -> Char {
         return Char::null();
     }
     if (side == StringSide::Front) {
-        return charAt(U16DataIndex::zero());
+        return charAt(U16Index::zero());
     }
     auto index = indexAt(StringSide::Back);
     if (!retreat(index)) {
@@ -149,15 +154,15 @@ auto U16String::charAt(const StringSide side) const noexcept -> Char {
     return charAt(index);
 }
 
-auto U16String::charAt(const U16DataIndex startIndex) const noexcept -> Char {
+auto U16String::charAt(const U16Index startIndex) const noexcept -> Char {
     return U16StringReadTools{dataView()}.charAt(startIndex);
 }
 
-auto U16String::readCharAndAdvance(U16DataIndex &index) const noexcept -> Char {
+auto U16String::readCharAndAdvance(U16Index &index) const noexcept -> Char {
     return U16StringReadTools{dataView()}.read(index);
 }
 
-auto U16String::readCharAndRetreat(U16DataIndex &index) const noexcept -> Char {
+auto U16String::readCharAndRetreat(U16Index &index) const noexcept -> Char {
     return U16StringReadTools{dataView()}.readAndRetreat(index);
 }
 
@@ -165,7 +170,7 @@ auto U16String::charAt(const CpIndex index) const noexcept -> Char {
     return U16StringCharReadTool{dataView()}.charAt(index);
 }
 
-auto U16String::operator[](const U16DataIndex index) const noexcept -> Char {
+auto U16String::operator[](const U16Index index) const noexcept -> Char {
     return charAt(index);
 }
 
@@ -173,23 +178,23 @@ auto U16String::operator[](const CpIndex index) const noexcept -> Char {
     return charAt(index);
 }
 
-auto U16String::advance(U16DataIndex &index, const CpLength count) const noexcept -> bool {
+auto U16String::advance(U16Index &index, const CpCount count) const noexcept -> bool {
     return U16StringReadTools{dataView()}.advance(index, count);
 }
 
-auto U16String::retreat(U16DataIndex &index, const CpLength count) const noexcept -> bool {
+auto U16String::retreat(U16Index &index, const CpCount count) const noexcept -> bool {
     return U16StringReadTools{dataView()}.retreat(index, count);
 }
 
-auto U16String::indexAt(const CpIndex index) const noexcept -> U16DataIndex {
+auto U16String::indexAt(const CpIndex index) const noexcept -> U16Index {
     return U16StringCharReadTool{dataView()}.byteIndexAt(index);
 }
 
-auto U16String::toCharIndex(const U16DataIndex index) const noexcept -> CpIndex {
+auto U16String::toCharIndex(const U16Index index) const noexcept -> CpIndex {
     return U16StringCharReadTool{dataView()}.charIndexAt(index);
 }
 
-auto U16String::slice(const U16DataRange range) const noexcept -> U16String {
+auto U16String::slice(const U16Range range) const noexcept -> U16String {
     return withRange(U16StringReadTools{dataView()}.sliceRange(range));
 }
 
@@ -197,36 +202,36 @@ auto U16String::slice(const CpRange range) const noexcept -> U16String {
     return withRange(U16StringCharReadTool{dataView()}.sliceRange(range));
 }
 
-auto U16String::slice(const StringSide side, const U16DataLength length) const noexcept -> U16String {
+auto U16String::slice(const StringSide side, const U16Count length) const noexcept -> U16String {
     if (side == StringSide::Front) {
-        return slice(U16DataRange(U16DataIndex::zero(), length));
+        return slice(U16Range(U16Index::zero(), length));
     }
     const auto fullLength = this->length();
     if (length.isInfinite() || length >= fullLength) {
-        return slice(U16DataRange::fromLength(fullLength));
+        return slice(U16Range::fromLength(fullLength));
     }
-    const auto start = U16DataIndex::end(fullLength - length);
-    return slice(U16DataRange{start, length});
+    const auto start = U16Index::end(fullLength - length);
+    return slice(U16Range{start, length});
 }
 
-auto U16String::slice(const StringSide side, const U16DataIndex index) const noexcept -> U16String {
+auto U16String::slice(const StringSide side, const U16Index index) const noexcept -> U16String {
     const auto end = indexAt(StringSide::Back);
     if (index.isNoIndex() || index >= end) {
-        return side == StringSide::Front ? slice(U16DataRange{U16DataIndex::zero(), end}) : U16String{};
+        return side == StringSide::Front ? slice(U16Range{U16Index::zero(), end}) : U16String{};
     }
     if (side == StringSide::Front) {
-        return slice(U16DataRange{U16DataIndex::zero(), index});
+        return slice(U16Range{U16Index::zero(), index});
     }
-    return slice(U16DataRange{index, end});
+    return slice(U16Range{index, end});
 }
 
-auto U16String::slice(const StringSide side, const CpLength length) const noexcept -> U16String {
+auto U16String::slice(const StringSide side, const CpCount length) const noexcept -> U16String {
     if (side == StringSide::Front) {
         return slice(CpRange{CpIndex::zero(), length});
     }
     auto start = indexAt(StringSide::Back);
     retreat(start, length);
-    return slice(U16DataRange{start, indexAt(StringSide::Back)});
+    return slice(U16Range{start, indexAt(StringSide::Back)});
 }
 
 auto U16String::slice(const StringSide side, const CpIndex index) const noexcept -> U16String {
@@ -238,17 +243,17 @@ auto U16String::slice(const StringSide side) const noexcept -> std::tuple<Char, 
         return {Char::endOfData(), {}};
     }
     if (side == StringSide::Front) {
-        auto end = U16DataIndex::zero();
+        auto end = U16Index::zero();
         const auto character = charAt(end);
         advance(end);
-        return {character, slice(U16DataRange{end, indexAt(StringSide::Back)})};
+        return {character, slice(U16Range{end, indexAt(StringSide::Back)})};
     }
     auto start = indexAt(StringSide::Back);
     retreat(start);
-    return {charAt(start), slice(U16DataRange{indexAt(StringSide::Front), start})};
+    return {charAt(start), slice(U16Range{indexAt(StringSide::Front), start})};
 }
 
-auto U16String::splitAt(const U16DataIndex index) const noexcept -> std::pair<U16String, U16String> {
+auto U16String::splitAt(const U16Index index) const noexcept -> std::pair<U16String, U16String> {
     return {slice(StringSide::Front, index), slice(StringSide::Back, index)};
 }
 
@@ -256,84 +261,26 @@ auto U16String::splitAt(const CpIndex index) const noexcept -> std::pair<U16Stri
     return splitAt(indexAt(index));
 }
 
-auto U16String::removed(const U16DataRange range) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.removed(range)};
-}
-
-auto U16String::removed(const CpRange range) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.removed(range)};
-}
-
-auto U16String::removedAll(const CharSet &characters) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.removedAll(characters)};
-}
-
-auto U16String::removedAll(const U16String &text, const CharCompareFn compareFn) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.removed(text.dataView(), compareFn)};
-}
-
-auto U16String::removedFirst(const U16String &text, const CharCompareFn compareFn) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.removedFirst(text.dataView(), compareFn)};
-}
-
-auto U16String::kept(const U16DataRange range) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.kept(range)};
-}
-
-auto U16String::kept(const CpRange range) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.kept(range)};
-}
-
-auto U16String::inserted(const U16DataIndex index, const U16String &text) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.inserted(index, text.dataView())};
-}
-
-auto U16String::inserted(const CpIndex index, const U16String &text) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.inserted(index, text.dataView())};
-}
-
-auto U16String::replaced(const U16DataRange range, const U16String &text) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.replaced(range, text.dataView())};
-}
-
-auto U16String::replaced(const CpRange range, const U16String &text) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.replaced(range, text.dataView())};
-}
-
-auto U16String::replacedAll(const CharSet &characters, const Char replacement) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.replacedAll(characters, replacement)};
-}
-
-auto U16String::replacedAll(const CharSet &characters, const U16String &replacement) const -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.replacedAll(characters, replacement.dataView())};
-}
-
-auto U16String::replacedAll(const U16String &text, const U16String &replacement, const CharCompareFn compareFn) const
-    -> U16String {
-    return U16String{U16StringModifyTools{dataView()}.replacedAll(text.dataView(), replacement.dataView(), compareFn)};
-}
-
-auto U16String::replacedFirst(const U16String &text, const U16String &replacement, const CharCompareFn compareFn) const
-    -> U16String {
-    return U16String{
-        U16StringModifyTools{dataView()}.replacedFirst(text.dataView(), replacement.dataView(), compareFn)};
-}
-
-auto U16String::truncated(const CpLength maximumWidth, const TruncateMode mode) const -> U16String {
+auto U16String::truncated(const CpCount maximumWidth, const TruncateMode mode) const -> U16String {
     return truncated(maximumWidth, mode, U16String{});
 }
 
-auto U16String::truncated(const CpLength maximumWidth, const TruncateMode mode, const U16String &ellipsis) const
+auto U16String::truncated(const CpCount maximumWidth, const TruncateMode mode, const U16String &ellipsis) const
     -> U16String {
-    return U16String{U16StringTransformTools{dataView()}.truncated(maximumWidth, mode, ellipsis.dataView())};
+    if (auto result = U16StringTransformTools{dataView()}.truncatedIfChanged(maximumWidth, mode, ellipsis.dataView())) {
+        return U16String{std::move(result.value())};
+    }
+    return *this;
 }
 
-auto U16String::aligned(const CpLength length, const geometry::Alignment alignment, const Char fill) const
-    -> U16String {
-    return U16String{U16StringTransformTools{dataView()}.aligned(length, alignment, fill)};
+auto U16String::aligned(const CpCount length, const geometry::Alignment alignment, const Char fill) const -> U16String {
+    if (auto result = U16StringTransformTools{dataView()}.alignedIfChanged(length, alignment, fill)) {
+        return U16String{std::move(result.value())};
+    }
+    return *this;
 }
 
-auto U16String::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const -> U16String {
+auto U16String::toSafeString(const CpCount maximumWidth, const SafeStringFlags flags) const -> U16String {
     if (auto result =
             StringSafeTransformTools{*this, dataView().dataSpan(), maximumWidth, flags}.toSafeStringIfChanged()) {
         return U16String{result.value()};
@@ -341,15 +288,18 @@ auto U16String::toSafeString(const CpLength maximumWidth, const SafeStringFlags 
     return *this;
 }
 
-auto U16String::escapedSize(const EscapeFormat format, const EscapeAmount amount) const noexcept -> U16DataLength {
+auto U16String::escapedSize(const EscapeFormat format, const EscapeAmount amount) const noexcept -> U16Count {
     return U16StringTransformTools{dataView()}.escapedSize(format, amount);
 }
 
 auto U16String::toEscaped(const EscapeFormat format, const EscapeAmount amount) const -> U16String {
-    return U16StringTransformTools{dataView()}.toEscaped(format, amount);
+    if (auto result = U16StringTransformTools{dataView()}.toEscapedIfChanged(*this, format, amount)) {
+        return U16String{std::move(result.value())};
+    }
+    return *this;
 }
 
-auto U16String::fromCharacter(const Char character, const CpLength count) -> U16String {
+auto U16String::fromCharacter(const Char character, const CpCount count) -> U16String {
     auto storage = U16StringSharedStorage{};
     U16StringAppendTools{storage}.append(character, count);
     return U16String{std::move(storage)};
@@ -358,8 +308,7 @@ auto U16String::fromCharacter(const Char character, const CpLength count) -> U16
 auto U16String::fromJoined(const std::initializer_list<U16String> parts) -> U16String {
     auto finalSize = std::size_t{0};
     for (const auto &part : parts) {
-        finalSize = U16StringSharedStorage::checkedAddSize(
-            finalSize, part.length().toSizeT(), "Joined string exceeds size bounds");
+        finalSize = U16StringSharedStorage::checkedAddSize(finalSize, part.length().toSizeT());
     }
     if (finalSize == 0U) {
         return {};
@@ -373,8 +322,7 @@ auto U16String::fromJoined(const std::initializer_list<U16String> parts) -> U16S
             continue;
         }
         std::memcpy(storage.dataForWrite() + writePosition, data.data(), data.size() * sizeof(char16_t));
-        writePosition = U16StringSharedStorage::checkedAddSize(
-            writePosition, data.size(), "Joined string write exceeds size bounds");
+        writePosition = U16StringSharedStorage::checkedAddSize(writePosition, data.size());
     }
     return U16String{std::move(storage)};
 }
@@ -428,7 +376,7 @@ auto U16String::storageId() const noexcept -> mem::StorageIdentifier {
     return {};
 }
 
-auto U16String::withRange(const U16DataRange range) const noexcept -> U16String {
+auto U16String::withRange(const U16Range range) const noexcept -> U16String {
     if (range.isEmpty()) {
         return {};
     }

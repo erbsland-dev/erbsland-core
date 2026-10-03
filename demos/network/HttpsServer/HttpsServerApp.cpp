@@ -1,14 +1,35 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "HttpsServerApp.hpp"
 
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/keys/SigningPrivateKey.hpp>
-#include <erbsland/cryptology/tls/TlsConfiguration.hpp>
-#include <erbsland/cryptology/tls/TlsServerIdentity.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
-#include <erbsland/network/source/NetworkError.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/HttpMethod.hpp>
+#include <erbsland/HttpMethodType.hpp>
+#include <erbsland/HttpServerRequest.hpp>
+#include <erbsland/HttpServerSession.hpp>
+#include <erbsland/HttpStaticFileHandler.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/IpEndpoint.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkError.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/Port.hpp>
+#include <erbsland/SigningPrivateKey.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/TlsConfiguration.hpp>
+#include <erbsland/TlsIdentity.hpp>
+#include <erbsland/TlsServerConfiguration.hpp>
+#include <erbsland/X509CertificateBundle.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -28,33 +49,33 @@ void HttpsServerApp::registerCommandLineOptions(const el::OptionsPtr &options) {
         .setType(el::OptionType::Text)
         .setDefaultValue("127.0.0.1"_el)
         .setValidateTextValue<el::IpAddress>("The address is not a valid IP address"_el)
-        .setHelpDescription("Local IP address to bind."_el);
+        .setHelpTitle("Local IP address to bind."_el);
     options->addOption({"-p"_el, "--port"_el, "port"_el})
         .setType(el::OptionType::Text)
         .setDefaultValue("8443"_el)
         .setValidateTextValue<el::Port>("The port is not valid"_el)
-        .setHelpDescription("Local HTTPS port to bind; zero selects an ephemeral port."_el);
+        .setHelpTitle("Local HTTPS port to bind; zero selects an ephemeral port."_el);
     options->addOption({"--certificate"_el, "certificate"_el})
         .setType(el::OptionType::Text)
         .setRequired()
         .setValueName("file"_el)
-        .setHelpDescription("PEM certificate chain presented by the server."_el);
+        .setHelpTitle("PEM certificate chain presented by the server."_el);
     options->addOption({"--private-key"_el, "private-key"_el})
         .setType(el::OptionType::Text)
         .setRequired()
         .setValueName("file"_el)
-        .setHelpDescription("Unencrypted PKCS#8 PEM private key matching the leaf certificate."_el);
+        .setHelpTitle("Unencrypted PKCS#8 PEM private key matching the leaf certificate."_el);
     options->addOption({"--static-root"_el, "static-root"_el})
         .setType(el::OptionType::Text)
         .setRequired()
         .setMaximum(el::ArgumentCount{16U})
         .setValueName("directory"_el)
-        .setHelpDescription("Directory mounted at /assets; repeat it in highest-to-lowest overlay priority."_el);
+        .setHelpTitle("Directory mounted at /assets; repeat it in highest-to-lowest overlay priority."_el);
     options->addOption({"--run-for"_el, "run-for"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{0})
         .setValueName("seconds"_el)
-        .setHelpDescription("Initiate graceful shutdown after this many seconds; zero runs indefinitely."_el);
+        .setHelpTitle("Initiate graceful shutdown after this many seconds; zero runs indefinitely."_el);
 }
 
 void HttpsServerApp::parseCommandLine() {
@@ -81,11 +102,11 @@ void HttpsServerApp::parseCommandLine() {
 /// Register the certificate and matching private key under the HTTP server's standard TLS configuration label.
 void HttpsServerApp::configureTls() {
     auto configuration = el::cryptology::TlsConfiguration{};
-    configuration.setServerIdentity(
-        el::cryptology::TlsServerIdentity{
+    configuration.setServer(
+        el::cryptology::TlsServerConfiguration{el::cryptology::TlsIdentity{
             el::cryptology::X509CertificateBundle::fromFileOrThrow(_certificatePath),
-            el::cryptology::SigningPrivateKey::fromPemOrThrow(_privateKeyPath.content().readTextOrThrow())});
-    cryptologyConfiguration().setTlsConfiguration("http/server"_el, std::move(configuration));
+            el::cryptology::SigningPrivateKey::fromPemOrThrow(_privateKeyPath.content().readTextOrThrow())}});
+    cryptologyConfiguration().setTlsConfiguration("http"_el, std::move(configuration));
 }
 
 /// Mount repeated static roots at one URL prefix, preserving command-line order as overlay priority.

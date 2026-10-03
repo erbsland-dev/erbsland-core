@@ -20,10 +20,9 @@ public:
 
 public:
     /// Create the default native UDP device for the current platform.
-    /// @param driver The native event-loop driver.
+    /// @param driver The platform's default native event-loop driver; custom drivers are not supported.
     /// @param callbacks The source callbacks.
     /// @return The platform-native UDP device.
-    /// @throws err::RuntimeError If the driver is incompatible with the platform implementation.
     [[nodiscard]] static auto createUdpSocketDevice(
         event::EventLoopDriverPtr driver, UdpSocketDeviceCallbacks callbacks) -> UdpSocketDevicePtr;
     /// Bind the native socket.
@@ -31,7 +30,7 @@ public:
     /// @param maximumDatagramSize The receive buffer and payload limit.
     /// @return The actual bound endpoint.
     /// @throws NetworkError If native socket creation or binding fails.
-    [[nodiscard]] virtual auto bind(IpEndpoint localEndpoint, unit::ByteLength maximumDatagramSize) -> IpEndpoint = 0;
+    [[nodiscard]] virtual auto bind(IpEndpoint localEndpoint, unit::ByteCount maximumDatagramSize) -> IpEndpoint = 0;
     /// Submit one datagram to the native device.
     /// @param datagram The datagram retained by the owning source until completion.
     /// @return Whether the native operation completed, is pending, or would block.

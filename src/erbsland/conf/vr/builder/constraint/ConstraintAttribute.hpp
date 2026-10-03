@@ -4,7 +4,7 @@
 
 #include "../attribute/Attribute.hpp"
 
-#include "../../../vr/RuleType.hpp"
+#include "../../RuleType.hpp"
 
 #include <initializer_list>
 

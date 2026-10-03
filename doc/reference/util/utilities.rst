@@ -122,6 +122,11 @@ out through ``takeResult()``, or await and consume the task as an rvalue.
 
 ``CoTask::run()`` moves bounded work onto the process-wide coroutine worker service.
 This service is separate from stream native-I/O workers, and continuations resume without caller-thread affinity.
+The coroutine service admits at most 1,024 operations and uses at most 128 workers, retiring idle workers after 30
+seconds.
+Overload is rejected instead of running the callable on the submitting thread.
+Cancellation does not interrupt an already-running native call; accepted work retains its execution state until it
+finishes and releases its resources.
 Exceptions are stored and rethrown by result retrieval or ``co_await``.
 Destroying an incomplete task requests cancellation; an already running callable finishes normally, but a cancelled
 Erbsland Core coroutine does not continue past its next awaited completion.
@@ -149,6 +154,13 @@ and ``takeData()``.
 Convenience Collections
 =======================
 
+List Indexes
+------------
+
+``List::lastIndex()`` returns the ``ItemIndex`` of the final element, or ``ItemIndex::noIndex()`` for an empty list.
+It can be passed directly to indexed operations, for example ``values.set(values.lastIndex(), replacement)``.
+Derived list types inherit the same helper.
+
 Shared Empty Storage
 --------------------
 
@@ -163,6 +175,25 @@ A policy is considered stateless when ``std::is_empty_v`` is true.
 Collections with stateful policies keep independently constructed empty storage so each policy instance retains its own
 state.
 
+Bounded Caches
+==============
+
+``FifoCache<Key, Value>`` and ``LruCache<Key, Value>`` retain at most a finite ``ItemCount`` of entries.
+Both own independent storage, copy keys and values when copied, and support moving.
+Moved-from caches are empty and reusable with their previous capacity.
+Shared access requires external synchronization.
+
+FIFO evicts the oldest insertion; reading or replacing an existing key preserves its position.
+LRU evicts the least recently used entry; successful ``get`` and ``set`` operations refresh recency.
+``peek`` and ``contains`` never change ordering.
+Both lookup methods return an optional value copy, so eviction cannot invalidate a returned value.
+
+``setCapacity`` immediately evicts excess entries in policy order.
+A zero capacity clears retained entries and disables insertion until the limit is increased.
+``remove`` ignores absent keys, and ``clear`` preserves the capacity.
+Lookups and ordering changes take average constant time, excluding key/value work and hash-table growth.
+Insertion failures do not publish incomplete entries or evict an existing value.
+
 Interface
 =========
 
@@ -173,6 +204,8 @@ Interface
 .. doxygenclass:: erbsland::util::CoTask
     :members:
 .. doxygenclass:: erbsland::util::EnumFlags
+    :members:
+.. doxygenclass:: erbsland::util::FifoCache
     :members:
 .. doxygenfunction:: erbsland::util::combineHash(const std::size_t hash1, const std::size_t hash2) noexcept -> std::size_t
 
@@ -187,6 +220,8 @@ Interface
     :members:
 .. doxygenenum:: erbsland::util::LoopResult
 .. doxygenenum:: erbsland::util::LoopStatus
+.. doxygenclass:: erbsland::util::LruCache
+    :members:
 .. doxygenclass:: erbsland::util::Map
     :members:
 .. doxygenclass:: erbsland::util::Result

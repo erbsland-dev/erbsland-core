@@ -10,6 +10,7 @@
 namespace erbsland::conf::impl {
 
 /// Concrete mutable implementation of a configuration document.
+/// @tested{DocumentBuilderTest ValueDigestTest}
 class Document final : public conf::Document, public Container {
 public:
     // defaults
@@ -18,6 +19,7 @@ public:
 
 public: // implement Value
     [[nodiscard]] auto name() const noexcept -> Name override;
+    [[nodiscard]] auto digest(cryptology::HashAlgorithm algorithm) const -> mem::ByteBlock override;
     [[nodiscard]] auto namePath() const noexcept -> NamePath override;
     [[nodiscard]] auto hasParent() const noexcept -> bool override;
     [[nodiscard]] auto parent() const noexcept -> conf::ValuePtr override;

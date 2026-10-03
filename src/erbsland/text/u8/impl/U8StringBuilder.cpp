@@ -18,8 +18,10 @@
 
 namespace erbsland::text::impl {
 
-U8StringBuilder::U8StringBuilder(const unit::ByteLength capacity, const bool sensitive) : _sensitive{sensitive} {
-    _text.reserve(sensitive && capacity.isZero() ? unit::ByteLength{1U} : capacity);
+using namespace unit;
+
+U8StringBuilder::U8StringBuilder(const ByteCount capacity, const bool sensitive) : _sensitive{sensitive} {
+    _text.reserve(sensitive && capacity.isZero() ? ByteCount::one() : capacity);
     if (sensitive) {
         _text.markAsSensitive();
     }
@@ -33,7 +35,7 @@ auto U8StringBuilder::kind() const noexcept -> StringKind {
     return StringKind::U8;
 }
 
-auto U8StringBuilder::length() const noexcept -> unit::CpLength {
+auto U8StringBuilder::length() const noexcept -> CpCount {
     return _length;
 }
 
@@ -43,46 +45,52 @@ auto U8StringBuilder::isEmpty() const noexcept -> bool {
 
 void U8StringBuilder::clear() noexcept {
     _text.clear();
-    _length = unit::CpLength::zero();
+    _length = CpCount::zero();
 }
 
-auto U8StringBuilder::append(const Char character) -> unit::CpLength {
+auto U8StringBuilder::append(const Char character) -> CpCount {
     const auto appendedLength = U8StringAppendTools{_text._storage}.append(character);
     _length += appendedLength;
     return appendedLength;
 }
 
-void U8StringBuilder::append(const Char character, unit::CpLength count) {
+void U8StringBuilder::append(const Char character, CpCount count) {
     _length += U8StringAppendTools{_text._storage}.append(character, count);
 }
 
-auto U8StringBuilder::append(const U8String &text) -> unit::CpLength {
+auto U8StringBuilder::append(const U8String &text) -> CpCount {
+    if (text.isSensitive()) {
+        _text._storage.markAsSensitive();
+    }
     const auto appendedLength = U8StringAppendTools{_text._storage}.append(text.dataView());
     _length += appendedLength;
     return appendedLength;
 }
 
-void U8StringBuilder::append(const U8String &text, const unit::ItemCount count) {
+void U8StringBuilder::append(const U8String &text, const ItemCount count) {
+    if (text.isSensitive()) {
+        _text._storage.markAsSensitive();
+    }
     _length += U8StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
-auto U8StringBuilder::append(const U16String &text) -> unit::CpLength {
+auto U8StringBuilder::append(const U16String &text) -> CpCount {
     const auto appendedLength = U8StringAppendTools{_text._storage}.append(text.dataView());
     _length += appendedLength;
     return appendedLength;
 }
 
-void U8StringBuilder::append(const U16String &text, const unit::ItemCount count) {
+void U8StringBuilder::append(const U16String &text, const ItemCount count) {
     _length += U8StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
-auto U8StringBuilder::append(const U32String &text) -> unit::CpLength {
+auto U8StringBuilder::append(const U32String &text) -> CpCount {
     const auto appendedLength = U8StringAppendTools{_text._storage}.append(text.dataView());
     _length += appendedLength;
     return appendedLength;
 }
 
-void U8StringBuilder::append(const U32String &text, const unit::ItemCount count) {
+void U8StringBuilder::append(const U32String &text, const ItemCount count) {
     _length += U8StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
@@ -133,10 +141,10 @@ auto U8StringBuilder::takeAnyStringEditor() -> AnyStringEditor {
 void U8StringBuilder::resetAfterTake() {
     _text = U8StringEditor{};
     if (_sensitive) {
-        _text.reserve(unit::ByteLength{1U});
+        _text.reserve(ByteCount{1U});
         _text.markAsSensitive();
     }
-    _length = unit::CpLength::zero();
+    _length = CpCount::zero();
 }
 
 }

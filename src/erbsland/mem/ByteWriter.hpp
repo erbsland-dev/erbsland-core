@@ -13,8 +13,8 @@
 #include "impl/ByteIntegerTypes.hpp"
 
 #include "../text/String_fwd.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 
 #include <cstdint>
 #include <span>
@@ -39,7 +39,7 @@ public:
 
 public: // accessors
     /// Get the current byte length.
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength { return _block.length(); }
+    [[nodiscard]] auto length() const noexcept -> unit::ByteCount { return _block.length(); }
     /// Get the current write position.
     [[nodiscard]] auto position() const noexcept -> unit::ByteIndex { return _position; }
     /// Set the write position, clamped to `length()`.
@@ -61,7 +61,7 @@ public: // write
     /// Reserve capacity for at least `capacity` bytes.
     /// @param capacity The minimum byte capacity to reserve.
     /// @return A reference to this writer.
-    auto reserve(unit::ByteLength capacity) -> ByteWriter &;
+    auto reserve(unit::ByteCount capacity) -> ByteWriter &;
     /// Write a byte at the current position and advance.
     /// @param value The byte value.
     /// @return A reference to this writer.
@@ -81,23 +81,23 @@ public: // write
     auto writeInteger(T value) -> ByteWriter &;
     /// Write an integer using an explicit wire format.
     /// @tparam T One of the fixed-width native integer types from `int8_t` through `uint64_t`.
-    /// @param value The integer value.
+    /// @param value The integer value. Must be representable by `format`.
     /// @param format The integer wire format.
     /// @return A reference to this writer.
-    /// @throws err::OutOfRangeError If the value cannot be represented by `format`.
+    /// @throws err::OutOfRangeError If the value cannot be represented by the selected wire format.
     template <impl::NativeByteInteger T>
     auto writeIntegerOrThrow(T value, ByteIntegerFormat format) -> ByteWriter &;
     /// Write text, truncating it at character boundaries when necessary.
     /// @param text The text to write.
-    /// @param options The encoding and framing options.
+    /// @param options The encoding and framing options. Must allow at least an empty text frame.
     /// @return A reference to this writer.
-    /// @throws err::OutOfRangeError If even an empty text frame cannot fit.
+    /// @throws err::OutOfRangeError If the encoded text or framing exceeds the configured field limit.
     auto writeText(const text::String &text, const ByteTextOptions &options = {}) -> ByteWriter &;
     /// Write text using exactly the framing specified by `options`.
-    /// @param text The text to write.
+    /// @param text The text to write. Must fit the framing specified by `options`.
     /// @param options The encoding and framing options.
     /// @return A reference to this writer.
-    /// @throws err::OutOfRangeError If the text cannot fit in the specified framing.
+    /// @throws err::OutOfRangeError If the encoded text or framing exceeds the configured field limit.
     auto writeTextOrThrow(const text::String &text, const ByteTextOptions &options = {}) -> ByteWriter &;
 
 public: // integer wrappers

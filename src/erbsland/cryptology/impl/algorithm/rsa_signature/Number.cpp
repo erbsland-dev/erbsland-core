@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Number.hpp"
 
-#include "../../../../core/Application.hpp"
 #include "../../../../err/ParseError.hpp"
 #include "../../../../mem/Byte.hpp"
 #include "../../../../mem/ByteBlockEditor.hpp"
 #include "../../../../mem/SecureErase.hpp"
 #include "../../../../random/Random.hpp"
 #include "../../../../text/Literals.hpp"
+#include "../../../../unit/ByteCount.hpp"
 #include "../../../../unit/ByteIndex.hpp"
-#include "../../../../unit/ByteLength.hpp"
 #include "../../../CryptologyError.hpp"
 #include "../../SecureEraseGuard.hpp"
 
@@ -105,23 +104,22 @@ auto Number::fromBigEndian(const ConstByteSpan bytes, const std::size_t wordCoun
     return result;
 }
 
-auto Number::generatePrime(const std::size_t bits) -> Number {
-    const auto byteLength = bits / 8U;
+auto Number::generatePrime(const std::size_t bits, random::Random &random) -> Number {
+    const auto byteLength = ByteCount::fromSizeT(bits / 8U);
     const auto wordCount = bits / cWordBits;
     for (auto attempt = std::size_t{}; attempt < cMaximumPrimeAttempts; ++attempt) {
-        auto bytes = core::application().secureRandom().buildByteBlock(ByteLength{byteLength});
+        auto bytes = random.buildByteBlock(byteLength);
         bytes.markAsSensitive();
         const auto bytesEraseGuard = SecureEraseGuard{bytes};
         auto editor = ByteBlockEditor{bytes};
         editor.markAsSensitive();
         const auto editorEraseGuard = SecureEraseGuard{editor};
         editor.set(ByteIndex::zero(), Byte{static_cast<uint8_t>(editor.get(ByteIndex::zero()).toUInt8() | 0xc0U)});
-        editor.set(
-            ByteIndex{byteLength - 1U},
-            Byte{static_cast<uint8_t>(editor.get(ByteIndex{byteLength - 1U}).toUInt8() | 1U)});
+        const auto lastIndex = ByteIndex::last(byteLength);
+        editor.set(lastIndex, Byte{static_cast<uint8_t>(editor.get(lastIndex).toUInt8() | 1U)});
         auto candidate = fromBigEndian(editor.span(), wordCount);
         auto candidateEraseGuard = SecureEraseGuard{candidate};
-        if (candidate.modulo(cPublicExponent) != 1U && candidate.isProbablePrime()) {
+        if (candidate.modulo(cPublicExponent) != 1U && candidate.isProbablePrime(random)) {
             candidateEraseGuard.release();
             return candidate;
         }
@@ -184,12 +182,13 @@ auto Number::isEqual(const Number &other, const std::size_t wordCount) const noe
 }
 
 auto Number::toBigEndian(const std::size_t length) const -> ByteBlock {
-    auto result = ByteBlockEditor{ByteLength::fromSizeT(length)};
-    for (auto destination = std::size_t{}; destination < length; ++destination) {
-        const auto sourceOffset = length - destination - 1U;
+    auto result = ByteBlockEditor{ByteCount::fromSizeT(length)};
+    for (
+        auto destination = ByteIndex::zero(); destination.isWithin(result.length()); destination.uncheckedIncrement()) {
+        const auto sourceOffset = length - destination.toSizeT() - 1U;
         const auto wordIndex = sourceOffset / 4U;
         const auto shift = static_cast<unsigned int>((sourceOffset % 4U) * 8U);
-        result.set(ByteIndex{destination}, Byte{static_cast<uint8_t>((word(wordIndex) >> shift) & 0xffU)});
+        result.set(destination, Byte{static_cast<uint8_t>((word(wordIndex) >> shift) & 0xffU)});
     }
     return ByteBlock{result};
 }
@@ -338,11 +337,11 @@ auto Number::multipliedModulo(const Number &other, const Number &modulus) const 
     return result;
 }
 
-auto Number::randomMillerRabinBase() const -> Number {
-    const auto byteLength = _wordCount * sizeof(uint32_t);
+auto Number::randomMillerRabinBase(random::Random &random) const -> Number {
+    const auto byteLength = ByteCount::fromSizeT(_wordCount * sizeof(uint32_t));
     const auto one = fromValue(1U, _wordCount);
     for (auto attempt = std::size_t{}; attempt < cMaximumBaseAttempts; ++attempt) {
-        auto bytes = core::application().secureRandom().buildByteBlock(ByteLength{byteLength});
+        auto bytes = random.buildByteBlock(byteLength);
         bytes.markAsSensitive();
         const auto bytesEraseGuard = SecureEraseGuard{bytes};
         auto result = fromBigEndian(bytes.span(), _wordCount);
@@ -355,7 +354,7 @@ auto Number::randomMillerRabinBase() const -> Number {
     throw CryptologyError{"RSA primality testing could not sample a bounded Miller-Rabin base."_el};
 }
 
-auto Number::isProbablePrime() const -> bool {
+auto Number::isProbablePrime(random::Random &random) const -> bool {
     for (const auto prime : cTrialPrimes) {
         if (modulo(prime) == 0U) {
             return false;
@@ -372,7 +371,7 @@ auto Number::isProbablePrime() const -> bool {
     }
     const auto one = fromValue(1U, _wordCount);
     for (auto round = std::size_t{}; round < cMillerRabinRounds; ++round) {
-        auto base = candidateMinusOne.randomMillerRabinBase();
+        auto base = candidateMinusOne.randomMillerRabinBase(random);
         const auto baseEraseGuard = SecureEraseGuard{base};
         auto witness = base.poweredModuloSecret(oddPart, *this);
         const auto witnessEraseGuard = SecureEraseGuard{witness};

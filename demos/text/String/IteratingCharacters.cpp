@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/LoopStatus.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/U8StringConstIterator.hpp>
 
 namespace demo {
 
@@ -14,8 +21,8 @@ namespace demo {
 void iteratingCharacters() {
     const auto plan = el::String{"matematik:45;fen:30;müzik:20"_el};
 
-    auto lettersBeforeBreak = el::CpLength::zero();
-    auto digitsBeforeBreak = el::CpLength::zero();
+    auto lettersBeforeBreak = el::CpCount::zero();
+    auto digitsBeforeBreak = el::CpCount::zero();
 
     // Stop as soon as the first lesson entry ends.
     plan.forEach([&](const el::Char character) -> el::LoopStatus {
@@ -37,7 +44,7 @@ void iteratingCharacters() {
     auto uppercased = el::StringEditor{};
 
     // Range-based iteration is compact when every decoded character is needed.
-    // Note: Use `String::transformed` to uppercase/lowercase transformations in production code.
+    // For case conversion alone, use `el::toUppercase()` or `el::toLowercase()`.
     for (const auto character : el::String{"ödev: çizim"_el}) {
         uppercased.append(character.toUppercase());
     }

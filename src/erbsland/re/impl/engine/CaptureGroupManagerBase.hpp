@@ -44,7 +44,7 @@ public:
     [[nodiscard]] auto createCaptureGroupList(
         const CaptureGroupSetReference reference, const CaptureGroupNames &names) const -> CaptureGroupList override {
 
-        const std::size_t actualGroupCount = names.size() + 1;
+        const std::size_t actualGroupCount = names.count().toSizeT() + 1;
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(
             actualGroupCount <= tGroupCount, "createCaptureGroupList: actualGroupCount exceeds manager capacity"_el);
 
@@ -59,7 +59,10 @@ public:
             if (i == 0) {
                 captureGroups.emplace_back(index, set.ranges()[i], text::String{});
             } else {
-                captureGroups.emplace_back(index, set.ranges()[i], names[i - 1]);
+                captureGroups.emplace_back(
+                    index,
+                    set.ranges()[i],
+                    names.getRef(CaptureGroupNames::Index{i - 1, CaptureGroupNames::Index::Unchecked{}}));
             }
         }
         return captureGroups;

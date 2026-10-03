@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CommonPathBackend.hpp"
 
+#include "PathLexical.hpp"
+
 #include "../Path.hpp"
 #include "../PathCreateMode.hpp"
 #include "../PathError.hpp"
@@ -9,11 +11,12 @@
 #include "../../stream/impl/EncodedTextOutputStream.hpp"
 #include "../../stream/impl/InputStreamFactory.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/StringEditor.hpp"
+#include "../../text/StringList.hpp"
 #include "../../unit/ItemIndex.hpp"
 
 namespace erbsland::path::impl {
 
+using namespace stream;
 using namespace text::literals;
 
 auto CommonPathBackend::toAbsoluteOrThrow(const Path &path, std::optional<Path> base) const -> Path {
@@ -31,7 +34,10 @@ auto CommonPathBackend::toAbsoluteOrThrow(const Path &path, std::optional<Path> 
     if (path.isAbsolute()) {
         return path;
     }
-    const auto effectiveBase = base.value_or(currentDirectoryOrThrow());
+    if (!base) {
+        base = currentDirectoryOrThrow();
+    }
+    const auto &effectiveBase = *base;
     return joinedLexicalPath(effectiveBase, path);
 }
 
@@ -51,7 +57,10 @@ auto CommonPathBackend::toRelativeOrThrow(const Path &path, std::optional<Path> 
     }
 
     const auto absolutePath = lexicalPath(path);
-    const auto absoluteBase = lexicalPath(base.value_or(currentDirectoryOrThrow()));
+    if (!base) {
+        base = currentDirectoryOrThrow();
+    }
+    const auto absoluteBase = lexicalPath(*base);
     if (!haveSameRoot(absolutePath, absoluteBase)) {
         throw PathError{PathErrorContext{
             "Path could not be made relative"_el, "The path and base path do not share a common root."_el}
@@ -79,7 +88,7 @@ auto CommonPathBackend::toRelativeOrThrow(const Path &path, std::optional<Path> 
     if (relativeElements.isEmpty()) {
         return Path{"."_el};
     }
-    return assemblePath({}, relativeElements);
+    return Path::fromElements(relativeElements);
 }
 
 auto CommonPathBackend::isRelativeTo(const Path &path, std::optional<Path> base) const noexcept -> bool {
@@ -91,7 +100,10 @@ auto CommonPathBackend::isRelativeTo(const Path &path, std::optional<Path> base)
             return false;
         }
         const auto absolutePath = lexicalPath(path);
-        const auto absoluteBase = lexicalPath(base.value_or(currentDirectoryOrThrow()));
+        if (!base) {
+            base = currentDirectoryOrThrow();
+        }
+        const auto absoluteBase = lexicalPath(*base);
         if (!haveSameRoot(absolutePath, absoluteBase)) {
             return false;
         }
@@ -118,7 +130,10 @@ auto CommonPathBackend::commonAncestor(const Path &path, std::optional<Path> bas
             return {};
         }
         const auto absolutePath = lexicalPath(path.isAbsolute() ? path : toAbsoluteOrThrow(path, std::nullopt));
-        const auto absoluteBase = lexicalPath(base.value_or(currentDirectoryOrThrow()));
+        if (!base) {
+            base = currentDirectoryOrThrow();
+        }
+        const auto absoluteBase = lexicalPath(*base);
         if (!haveSameRoot(absolutePath, absoluteBase)) {
             return {};
         }
@@ -135,16 +150,14 @@ auto CommonPathBackend::commonAncestor(const Path &path, std::optional<Path> bas
             commonElements.append(pathElements.get(index));
             ++index;
         }
-        auto ancestorElements = commonElements;
-        ancestorElements.removeFirst();
-        return assemblePath(commonElements.first(), ancestorElements);
+        return Path::fromElements(commonElements);
     } catch (const PathError &) {
         return {};
     }
 }
 
 auto CommonPathBackend::openTextInputStreamOrThrow(const Path &path, const PathReadTextOptions options) const
-    -> stream::TextInputStreamPtr {
+    -> TextInputStreamPtr {
     return stream::impl::createEncodedTextInputStream(
         openByteInputStreamOrThrow(
             path,
@@ -155,14 +168,14 @@ auto CommonPathBackend::openTextInputStreamOrThrow(const Path &path, const PathR
 }
 
 auto CommonPathBackend::openByteOutputStreamOrThrow(const Path &path, const PathWriteDataOptions options) const
-    -> stream::ByteOutputStreamPtr {
+    -> ByteOutputStreamPtr {
     auto result = openByteOutputStreamWithExistingContentOrThrow(path, options).stream;
     invalidateInfo(path);
     return result;
 }
 
 auto CommonPathBackend::openTextOutputStreamOrThrow(const Path &path, const PathWriteTextOptions options) const
-    -> stream::TextOutputStreamPtr {
+    -> TextOutputStreamPtr {
     auto dataOptions = PathWriteDataOptions{};
     dataOptions.setCreateParents(options.createParents());
     dataOptions.setCreationMode(options.creationMode());
@@ -181,34 +194,7 @@ auto CommonPathBackend::absoluteLexicalPathOrThrow(const Path &path) const -> Pa
 }
 
 auto CommonPathBackend::lexicalPath(const Path &path) -> Path {
-    if (path.isEmpty()) {
-        return {};
-    }
-
-    const auto isAbsolute = path.isAbsolute();
-    auto normalizedElements = text::StringList{};
-    for (const auto &element : path.elements()) {
-        if (isAbsolute && element == path.root()) {
-            continue;
-        }
-        if (element == "."_el) {
-            continue;
-        }
-        if (element == ".."_el) {
-            if (!normalizedElements.isEmpty() && normalizedElements.last() != ".."_el) {
-                normalizedElements.removeLast();
-            } else if (!isAbsolute) {
-                normalizedElements.append(element);
-            }
-            continue;
-        }
-        normalizedElements.append(element);
-    }
-
-    if (!isAbsolute && normalizedElements.isEmpty()) {
-        return Path{"."_el};
-    }
-    return assemblePath(path.root(), normalizedElements);
+    return impl::lexicalPath(path);
 }
 
 auto CommonPathBackend::joinedLexicalPath(const Path &base, const Path &suffix) -> Path {
@@ -217,25 +203,6 @@ auto CommonPathBackend::joinedLexicalPath(const Path &base, const Path &suffix) 
 
 auto CommonPathBackend::haveSameRoot(const Path &left, const Path &right) noexcept -> bool {
     return left.isAbsolute() && right.isAbsolute() && left.root() == right.root();
-}
-
-auto CommonPathBackend::assemblePath(const text::String &root, const text::StringList &elements) -> Path {
-    auto result = text::StringEditor{};
-    if (!root.isEmpty()) {
-        result.append(root);
-    }
-    auto needsSeparator = !root.isEmpty() && !root.endsWith("/"_el);
-    for (const auto &element : elements) {
-        if (needsSeparator) {
-            result.append("/"_el);
-        }
-        result.append(element);
-        needsSeparator = true;
-    }
-    if (result.isEmpty()) {
-        result.append("."_el);
-    }
-    return Path{result};
 }
 
 }

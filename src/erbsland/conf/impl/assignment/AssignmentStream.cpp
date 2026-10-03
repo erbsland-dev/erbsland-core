@@ -11,6 +11,7 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 auto AssignmentStream::create(LexerPtr lexer) -> AssignmentStreamPtr {
@@ -92,7 +93,7 @@ void AssignmentStream::expectNext() {
     }
 }
 
-void AssignmentStream::nextAndVerify(const TokenType expectedTokenType, text::String errorMessage) {
+void AssignmentStream::nextAndVerify(const TokenType expectedTokenType, String errorMessage) {
     next();
     if (token().type() == TokenType::EndOfData) {
         throwUnexpectedEndError("Unexpected end of the document."_el);
@@ -120,23 +121,23 @@ auto AssignmentStream::token() const -> const LexerToken & {
     return _token;
 }
 
-void AssignmentStream::throwSyntaxError(text::String message) const {
+void AssignmentStream::throwSyntaxError(String message) const {
     throw ConfError(ConfErrorCategory::Syntax, std::move(message), currentLocation());
 }
 
-void AssignmentStream::throwSyntaxError(text::String message, const NamePath &namePath) const {
+void AssignmentStream::throwSyntaxError(String message, const NamePath &namePath) const {
     throw ConfError(ConfErrorCategory::Syntax, std::move(message), currentLocation(), namePath);
 }
 
-void AssignmentStream::throwUnsupportedError(text::String message) const {
+void AssignmentStream::throwUnsupportedError(String message) const {
     throw ConfError(ConfErrorCategory::Unsupported, std::move(message), currentLocation());
 }
 
-void AssignmentStream::throwUnexpectedEndError(text::String message) const {
+void AssignmentStream::throwUnexpectedEndError(String message) const {
     throw ConfError(ConfErrorCategory::UnexpectedEnd, std::move(message), currentLocation());
 }
 
-void AssignmentStream::throwLimitExceededError(text::String message) const {
+void AssignmentStream::throwLimitExceededError(String message) const {
     throw ConfError(ConfErrorCategory::LimitExceeded, std::move(message), currentLocation());
 }
 
@@ -145,7 +146,7 @@ auto AssignmentStream::currentLocation() const noexcept -> Location {
 }
 
 auto AssignmentStream::handleMetaValue() -> Assignment {
-    auto name = Name::createRegular(std::get<text::String>(token().content()));
+    auto name = Name::createRegular(std::get<String>(token().content()));
     const auto nameLocation = currentLocation();
     if (std::ranges::find(Name::allMetaNames(), name) == Name::allMetaNames().end()) {
         throwSyntaxError("Unknown meta value name."_el, name);
@@ -158,7 +159,7 @@ auto AssignmentStream::handleMetaValue() -> Assignment {
     }
     expectNext(TokenType::NameValueSeparator);
     nextAndVerify(TokenType::Text, "Only single-line text is supported for a meta value or command."_el);
-    auto valueText = std::get<text::String>(token().content());
+    auto valueText = std::get<String>(token().content());
     next();
     if (token().type() == TokenType::ValueListSeparator) {
         throwSyntaxError("Only single text value is supported for a meta value or command."_el);
@@ -168,7 +169,7 @@ auto AssignmentStream::handleMetaValue() -> Assignment {
         if (_readMetaVersion) {
             throwSyntaxError("The '@version' meta-value must be defined only once."_el);
         }
-        if (valueText != text::String{defaults::languageVersion}) {
+        if (valueText != String{defaults::languageVersion}) {
             throwUnsupportedError("This parser only supports version 1.0 of the configuration language."_el);
         }
         _readMetaVersion = true;
@@ -189,8 +190,8 @@ auto AssignmentStream::handleMetaValue() -> Assignment {
 
 auto AssignmentStream::handleValue() -> Assignment {
     const bool isTextName = token().type() == TokenType::TextName;
-    auto name = isTextName ? Name::createText(std::get<text::String>(token().content()))
-                           : Name::createRegular(std::get<text::String>(token().content()));
+    auto name = isTextName ? Name::createText(std::get<String>(token().content()))
+                           : Name::createRegular(std::get<String>(token().content()));
     const auto nameLocation = currentLocation();
     auto valueNamePath = _currentSectionPath;
     valueNamePath.append(name);
@@ -276,10 +277,10 @@ auto AssignmentStream::handleValueOrValueList() -> std::vector<ValuePtr> {
             break;
         case TokenType::Text:
         case TokenType::Code:
-            value = Value::createText(std::get<text::String>(token().content()));
+            value = Value::createText(std::get<String>(token().content()));
             break;
         case TokenType::RegEx:
-            value = Value::createRegEx(createRegEx(std::get<text::String>(token().content()), false));
+            value = Value::createRegEx(createRegEx(std::get<String>(token().content()), false));
             break;
         case TokenType::Date:
             value = Value::createDate(std::get<time::Date>(token().content()));

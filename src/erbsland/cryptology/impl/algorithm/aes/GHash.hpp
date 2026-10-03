@@ -54,7 +54,7 @@ private:
     GaloisMultiplier::Block _accumulator;          ///< Current GHASH output block.
     GaloisMultiplier::Block _partial;              ///< Incomplete AAD or ciphertext block.
     std::unique_ptr<GaloisMultiplier> _multiplier; ///< Selected polynomial multiplier.
-    std::size_t _partialLength{};                  ///< Bytes currently stored in `_partial`.
+    unit::ByteCount _partialLength{};              ///< Bytes currently stored in `_partial`.
     uint64_t _authenticatedDataLength{};           ///< Total associated-data length in bytes.
     uint64_t _ciphertextLength{};                  ///< Total ciphertext length in bytes.
     bool _ciphertextStarted{};                     ///< Whether AAD input has been closed.

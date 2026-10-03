@@ -53,12 +53,12 @@ auto Layout::splitIntoSourceLines() const -> std::vector<BlockRange> {
     auto result = std::vector<BlockRange>{};
     auto lineStartIndex = BlockIndex{};
     const auto textEndIndex = BlockIndex::end(text.length());
-    for (auto index = BlockIndex{}; index < textEndIndex; index += BlockCount::one()) {
+    text.length().forEach([&](const BlockIndex index) -> void {
         if (text[index] == text::Char{U'\n'}) {
             result.push_back(BlockRange{lineStartIndex, lineStartIndex.absoluteDistanceTo(index)});
-            lineStartIndex = index + BlockCount::one();
+            lineStartIndex = index.uncheckedIncremented();
         }
-    }
+    });
     if (lineStartIndex < textEndIndex) {
         result.push_back(BlockRange{lineStartIndex, lineStartIndex.absoluteDistanceTo(textEndIndex)});
     }
@@ -100,7 +100,8 @@ auto Layout::prepareSourceLine(const BlockRange sourceLine) const -> LayoutPrepa
         currentWordLength = BlockCount{};
         currentWordWidth = 0;
     };
-    for (auto index = sourceLine.index(); index < sourceLine.endIndex(); index += BlockCount::one()) {
+    const auto sourceEnd = sourceLine.endIndex();
+    for (auto index = sourceLine.beginIndex(); index < sourceEnd; index.uncheckedIncrement()) {
         if (_semantics != nullptr && _semantics->hasSoftBreak(index)) {
             finishCurrentWord();
         }
@@ -108,12 +109,10 @@ auto Layout::prepareSourceLine(const BlockRange sourceLine) const -> LayoutPrepa
             if (const auto range = _semantics->indivisibleRangeAt(index); range.has_value()) {
                 finishCurrentWord();
                 auto displayWidth = 0;
-                for (
-                    auto rangeIndex = range->index(); rangeIndex < range->endIndex(); rangeIndex += BlockCount::one()) {
-                    displayWidth += text[rangeIndex].displayWidth();
-                }
-                result.appendIndivisibleWord(range->index(), range->length(), displayWidth);
-                index = range->endIndex() - BlockCount::one();
+                range.value().forEach(
+                    [&](const BlockIndex rangeIndex) -> void { displayWidth += text[rangeIndex].displayWidth(); });
+                result.appendIndivisibleWord(range->beginIndex(), range->length(), displayWidth);
+                index = range->lastIndex();
                 continue;
             }
         }
@@ -132,7 +131,7 @@ auto Layout::prepareSourceLine(const BlockRange sourceLine) const -> LayoutPrepa
         if (currentWordLength.isZero()) {
             currentWordStartIndex = index;
         }
-        currentWordLength += BlockCount::one();
+        currentWordLength.uncheckedIncrement();
         currentWordWidth += character.displayWidth();
     }
     finishCurrentWord();

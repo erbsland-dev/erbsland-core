@@ -9,10 +9,9 @@
 #include "Options_fwd.hpp"
 #include "OptionSet_fwd.hpp"
 
-#include "../i18n/DisplayTextMap_fwd.hpp"
 #include "../text/String.hpp"
 #include "../text/StringList.hpp"
-#include "../unit/ArgumentUnit.hpp"
+#include "../unit/ArgumentIndex.hpp"
 
 #include <utility>
 
@@ -125,15 +124,6 @@ public:
         _suggestions = std::move(suggestions);
         return *this;
     }
-    /// Get the display wording captured for this error.
-    [[nodiscard]] auto displayText() const noexcept -> const i18n::DisplayTextMapConstPtr & { return _displayText; }
-    /// Set the display wording captured for this error.
-    /// @param displayText The wording configuration.
-    /// @return A reference to this context.
-    auto setDisplayText(i18n::DisplayTextMapConstPtr displayText) -> OptionErrorContext & {
-        _displayText = std::move(displayText);
-        return *this;
-    }
 
 private:
     text::String _title;                                ///< The short error title.
@@ -147,7 +137,6 @@ private:
     OptionSetPtr _optionSet;                            ///< The option set where the error occurred.
     text::StringList _arguments;                        ///< The command-line arguments, if available.
     text::StringList _suggestions;                      ///< Suggested replacement names.
-    i18n::DisplayTextMapConstPtr _displayText;          ///< The wording captured for diagnostic rendering.
 };
 
 }

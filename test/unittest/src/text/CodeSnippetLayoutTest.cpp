@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ColumnCount.hpp>
+#include <erbsland/ColumnIndex.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/text/impl/CodeSnippetLayout.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/unit/ColumnCount.hpp>
-#include <erbsland/unit/ColumnIndex.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

@@ -23,8 +23,8 @@ rules explicit at every position in the pattern.
 Standard Flags
 ==============
 
-:expression:`(?i)`
-------------------
+Case-Insensitive Matching: :expression:`(?i)`
+---------------------------------------------
 
 Enables **case-insensitive** matching.
 
@@ -42,8 +42,8 @@ This form is accepted **only at the start** of the pattern.
 Use the grouped form :expression:`(?i:...)` to limit case-insensitive matching to a
 specific part of the pattern.
 
-:expression:`(?m)`
-------------------
+Multiline Mode: :expression:`(?m)`
+----------------------------------
 
 Enables **multi-line** mode.
 
@@ -61,8 +61,8 @@ This form is accepted **only at the start** of the pattern.
 
 Use :expression:`(?m:...)` for a local override.
 
-:expression:`(?s)`
-------------------
+DotAll Mode: :expression:`(?s)`
+-------------------------------
 
 Enables **dot-all** mode.
 
@@ -79,8 +79,8 @@ This form is accepted **only at the start** of the pattern.
 
 Use :expression:`(?s:...)` for a local override.
 
-:expression:`(?x)`
-------------------
+Verbose Mode: :expression:`(?x)`
+--------------------------------
 
 Enables **verbose** mode.
 
@@ -107,8 +107,8 @@ To match literal whitespace in verbose mode, place it inside a character class
 Inline Flag Sets
 ================
 
-:expression:`(?<flags>)`
-------------------------
+Global Inline Flag Set: :expression:`(?<flags>)`
+------------------------------------------------
 
 Enables multiple flags at once (**global only**).
 
@@ -125,8 +125,8 @@ Enables multiple flags at once (**global only**).
 Local Flag Overrides
 ====================
 
-:expression:`(?<flags>:...)`
-----------------------------
+Scoped Flag Overrides: :expression:`(?<flags>:...)`
+---------------------------------------------------
 
 Applies or removes flags **only within the group**.
 

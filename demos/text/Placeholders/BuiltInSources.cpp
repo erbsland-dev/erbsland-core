@@ -3,8 +3,9 @@
 
 #include "PlaceholderDemos.hpp"
 
-#include <erbsland/system/EnvironmentVariables.hpp>
-#include <erbsland/text/placeholder/Replacer.hpp>
+#include <erbsland/EnvironmentVariables.hpp>
+#include <erbsland/placeholder/Replacer.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

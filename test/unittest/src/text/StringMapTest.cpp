@@ -3,27 +3,27 @@
 
 #include "../util/MoveAwareTestValue.hpp"
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringCIHashMap.hpp>
-#include <erbsland/text/StringCIMap.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringHashMap.hpp>
-#include <erbsland/text/StringMap.hpp>
-#include <erbsland/text/u16/U16StringCIHashMap.hpp>
-#include <erbsland/text/u16/U16StringCIMap.hpp>
-#include <erbsland/text/u16/U16StringHashMap.hpp>
-#include <erbsland/text/u16/U16StringMap.hpp>
-#include <erbsland/text/u32/U32StringCIHashMap.hpp>
-#include <erbsland/text/u32/U32StringCIMap.hpp>
-#include <erbsland/text/u32/U32StringHashMap.hpp>
-#include <erbsland/text/u32/U32StringMap.hpp>
-#include <erbsland/text/u8/U8StringCIHashMap.hpp>
-#include <erbsland/text/u8/U8StringCIMap.hpp>
-#include <erbsland/text/u8/U8StringHashMap.hpp>
-#include <erbsland/text/u8/U8StringMap.hpp>
-#include <erbsland/unit/ByteRange.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringCIHashMap.hpp>
+#include <erbsland/StringCIMap.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringHashMap.hpp>
+#include <erbsland/StringMap.hpp>
+#include <erbsland/U16StringCIHashMap.hpp>
+#include <erbsland/U16StringCIMap.hpp>
+#include <erbsland/U16StringHashMap.hpp>
+#include <erbsland/U16StringMap.hpp>
+#include <erbsland/U32StringCIHashMap.hpp>
+#include <erbsland/U32StringCIMap.hpp>
+#include <erbsland/U32StringHashMap.hpp>
+#include <erbsland/U32StringMap.hpp>
+#include <erbsland/U8StringCIHashMap.hpp>
+#include <erbsland/U8StringCIMap.hpp>
+#include <erbsland/U8StringHashMap.hpp>
+#include <erbsland/U8StringMap.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>
@@ -32,7 +32,6 @@
 #include <utility>
 
 using namespace el::text::literals;
-
 using namespace el::text;
 
 static_assert(std::is_same_v<StringMap<int>::Key, String>);
@@ -45,16 +44,23 @@ TESTED_TARGETS(
         U16StringMap U16StringCIMap U16StringHashMap U16StringCIHashMap U32StringMap U32StringCIMap U32StringHashMap
             U32StringCIHashMap)
 class StringMapTest final : public el::UnitTest {
+private:
+    static constexpr auto cAKey = "a"_el;
+    static constexpr auto cAlphaKey = "alpha"_el;
+    static constexpr auto cDeltaKey = "delta"_el;
+    static constexpr auto cGammaKey = "gamma"_el;
+    static constexpr auto cMissingKey = "missing"_el;
+
 public:
     using MoveValue = erbsland::test::MoveAwareTestValue;
 
 public:
     void testSlicedKeysAreStoredCompactly() {
 
-        auto backing = StringEditor::fromCharacter(U'x', el::unit::CpLength{1024U});
-        backing.replace(el::unit::ByteRange{el::unit::ByteIndex{500U}, el::unit::ByteLength{3U}}, "key"_el);
+        auto backing = StringEditor::fromCharacter(U'x', el::unit::CpCount{1024U});
+        backing.replace(el::unit::ByteRange{el::unit::ByteIndex{500U}, el::unit::ByteCount{3U}}, "key"_el);
         const auto source = String{backing};
-        const auto key = source.slice(el::unit::ByteRange{el::unit::ByteIndex{500U}, el::unit::ByteLength{3U}});
+        const auto key = source.slice({el::unit::ByteIndex{500U}, el::unit::ByteCount{3U}});
 
         auto ordered = StringMap<int>{};
         ordered.set(key, 1);
@@ -72,25 +78,25 @@ public:
 
     void testAliasesAndKeyStringLists() {
 
-        const auto common = StringMap<int>{{{"beta"_el, 2}, {"alpha"_el, 1}}};
+        const auto common = StringMap<int>{{{"beta"_el, 2}, {cAlphaKey, 1}}};
         REQUIRE_EQUAL(StringConverter{common.first().first}.toStdString(), std::string{"alpha"});
         REQUIRE_EQUAL(StringConverter{common.toKeyStringList().join("|"_el)}.toStdString(), std::string{"alpha|beta"});
         REQUIRE_EQUAL(
             StringConverter{common.toKeyStringSet().toStringList().join("|"_el)}.toStdString(),
             std::string{"alpha|beta"});
-        REQUIRE(common.toKeyStringHashSet().contains("alpha"_el));
+        REQUIRE(common.toKeyStringHashSet().contains(cAlphaKey));
 
-        const auto u8 = U8StringMap<int>{{{"a"_el, 1}}};
+        const auto u8 = U8StringMap<int>{{{cAKey, 1}}};
         const auto u16 = U16StringMap<int>{{{u"a"_el, 1}}};
         const auto u32 = U32StringMap<int>{{{U"a"_el, 1}}};
-        const auto hash = StringHashMap<int>{{{"a"_el, 1}}};
+        const auto hash = StringHashMap<int>{{{cAKey, 1}}};
         const auto u16Hash = U16StringHashMap<int>{{{u"a"_el, 1}}};
         const auto u32Hash = U32StringHashMap<int>{{{U"a"_el, 1}}};
 
-        REQUIRE_EQUAL(u8.get("a"_el, 0), 1);
+        REQUIRE_EQUAL(u8.get(cAKey, 0), 1);
         REQUIRE_EQUAL(u16.get(u"a"_el, 0), 1);
         REQUIRE_EQUAL(u32.get(U"a"_el, 0), 1);
-        REQUIRE_EQUAL(hash.get("a"_el, 0), 1);
+        REQUIRE_EQUAL(hash.get(cAKey, 0), 1);
         REQUIRE_EQUAL(u16Hash.get(u"a"_el, 0), 1);
         REQUIRE_EQUAL(u32Hash.get(U"a"_el, 0), 1);
     }
@@ -132,23 +138,23 @@ public:
         const auto u8 = U8StringCIHashMap<int>{{{"A"_el, 1}}};
         const auto u16 = U16StringCIHashMap<int>{{{u"A"_el, 1}}};
         const auto u32 = U32StringCIHashMap<int>{{{U"A"_el, 1}}};
-        REQUIRE_EQUAL(u8.get("a"_el, 0), 1);
+        REQUIRE_EQUAL(u8.get(cAKey, 0), 1);
         REQUIRE_EQUAL(u16.get(u"a"_el, 0), 1);
         REQUIRE_EQUAL(u32.get(U"a"_el, 0), 1);
     }
 
     void testOrderedMapViewKeyOperations() {
 
-        auto map = StringMap<int>{{{"alpha"_el, 1}, {"beta"_el, 2}}};
+        auto map = StringMap<int>{{{cAlphaKey, 1}, {"beta"_el, 2}}};
 
-        REQUIRE(map.contains("alpha"_el));
+        REQUIRE(map.contains(cAlphaKey));
         REQUIRE(map.contains("beta"_el));
-        REQUIRE(map.get("alpha"_el).has_value());
-        REQUIRE_EQUAL(map.get("alpha"_el).value(), 1);
-        REQUIRE_EQUAL(map.get("missing"_el, 9), 9);
+        REQUIRE(map.get(cAlphaKey).has_value());
+        REQUIRE_EQUAL(map.get(cAlphaKey).value(), 1);
+        REQUIRE_EQUAL(map.get(cMissingKey, 9), 9);
 
-        map.remove("alpha"_el);
-        REQUIRE_FALSE(map.contains("alpha"_el));
+        map.remove(cAlphaKey);
+        REQUIRE_FALSE(map.contains(cAlphaKey));
         REQUIRE(map.contains("beta"_el));
 
         const auto removed = map.removed("beta"_el);
@@ -157,15 +163,15 @@ public:
         REQUIRE_EQUAL(map.take("beta"_el), 2);
         REQUIRE(map.count().isZero());
 
-        REQUIRE(map.tryInsert("gamma"_el, 3));
-        REQUIRE_FALSE(map.tryInsert("gamma"_el, 4));
-        REQUIRE_EQUAL(map.get("gamma"_el, 0), 3);
-        REQUIRE(map.tryReplace("gamma"_el, 5));
-        REQUIRE_EQUAL(map.get("gamma"_el, 0), 5);
-        REQUIRE_FALSE(map.tryReplace("missing"_el, 6));
+        REQUIRE(map.tryInsert(cGammaKey, 3));
+        REQUIRE_FALSE(map.tryInsert(cGammaKey, 4));
+        REQUIRE_EQUAL(map.get(cGammaKey, 0), 3);
+        REQUIRE(map.tryReplace(cGammaKey, 5));
+        REQUIRE_EQUAL(map.get(cGammaKey, 0), 5);
+        REQUIRE_FALSE(map.tryReplace(cMissingKey, 6));
 
-        map.set("delta"_el, 7);
-        REQUIRE_EQUAL(map.get("delta"_el, 0), 7);
+        map.set(cDeltaKey, 7);
+        REQUIRE_EQUAL(map.get(cDeltaKey, 0), 7);
 
         const auto u16 = U16StringMap<int>{{{u"alpha"_el, 1}}};
         const auto u32 = U32StringMap<int>{{{U"alpha"_el, 1}}};
@@ -177,16 +183,16 @@ public:
 
     void testHashMapViewKeyOperations() {
 
-        auto map = StringHashMap<int>{{{"alpha"_el, 1}, {"beta"_el, 2}}};
+        auto map = StringHashMap<int>{{{cAlphaKey, 1}, {"beta"_el, 2}}};
 
-        REQUIRE(map.contains("alpha"_el));
+        REQUIRE(map.contains(cAlphaKey));
         REQUIRE(map.contains("beta"_el));
-        REQUIRE(map.get("alpha"_el).has_value());
-        REQUIRE_EQUAL(map.get("alpha"_el).value(), 1);
-        REQUIRE_EQUAL(map.get("missing"_el, 9), 9);
+        REQUIRE(map.get(cAlphaKey).has_value());
+        REQUIRE_EQUAL(map.get(cAlphaKey).value(), 1);
+        REQUIRE_EQUAL(map.get(cMissingKey, 9), 9);
 
-        map.remove("alpha"_el);
-        REQUIRE_FALSE(map.contains("alpha"_el));
+        map.remove(cAlphaKey);
+        REQUIRE_FALSE(map.contains(cAlphaKey));
         REQUIRE(map.contains("beta"_el));
 
         const auto removed = map.removed("beta"_el);
@@ -195,15 +201,15 @@ public:
         REQUIRE_EQUAL(map.take("beta"_el), 2);
         REQUIRE(map.count().isZero());
 
-        REQUIRE(map.tryInsert("gamma"_el, 3));
-        REQUIRE_FALSE(map.tryInsert("gamma"_el, 4));
-        REQUIRE_EQUAL(map.get("gamma"_el, 0), 3);
-        REQUIRE(map.tryReplace("gamma"_el, 5));
-        REQUIRE_EQUAL(map.get("gamma"_el, 0), 5);
-        REQUIRE_FALSE(map.tryReplace("missing"_el, 6));
+        REQUIRE(map.tryInsert(cGammaKey, 3));
+        REQUIRE_FALSE(map.tryInsert(cGammaKey, 4));
+        REQUIRE_EQUAL(map.get(cGammaKey, 0), 3);
+        REQUIRE(map.tryReplace(cGammaKey, 5));
+        REQUIRE_EQUAL(map.get(cGammaKey, 0), 5);
+        REQUIRE_FALSE(map.tryReplace(cMissingKey, 6));
 
-        map.set("delta"_el, 7);
-        REQUIRE_EQUAL(map.get("delta"_el, 0), 7);
+        map.set(cDeltaKey, 7);
+        REQUIRE_EQUAL(map.get(cDeltaKey, 0), 7);
 
         const auto u16 = U16StringHashMap<int>{{{u"alpha"_el, 1}}};
         const auto u32 = U32StringHashMap<int>{{{U"alpha"_el, 1}}};
@@ -218,13 +224,13 @@ public:
         auto ordered = StringMap<MoveValue>{};
         auto orderedSetValue = MoveValue{1};
         const auto orderedSetCounts = orderedSetValue.counts();
-        ordered.set("alpha"_el, std::move(orderedSetValue));
+        ordered.set(cAlphaKey, std::move(orderedSetValue));
         REQUIRE_EQUAL(orderedSetCounts->copies, 0);
-        REQUIRE(ordered.contains("alpha"_el));
+        REQUIRE(ordered.contains(cAlphaKey));
 
         auto orderedReplaceValue = MoveValue{2};
         const auto orderedReplaceCounts = orderedReplaceValue.counts();
-        REQUIRE(ordered.tryReplace("alpha"_el, std::move(orderedReplaceValue)));
+        REQUIRE(ordered.tryReplace(cAlphaKey, std::move(orderedReplaceValue)));
         REQUIRE_EQUAL(orderedReplaceCounts->copies, 0);
 
         auto orderedInsertValue = MoveValue{3};
@@ -235,13 +241,13 @@ public:
         auto hash = StringHashMap<MoveValue>{};
         auto hashSetValue = MoveValue{1};
         const auto hashSetCounts = hashSetValue.counts();
-        hash.set("alpha"_el, std::move(hashSetValue));
+        hash.set(cAlphaKey, std::move(hashSetValue));
         REQUIRE_EQUAL(hashSetCounts->copies, 0);
-        REQUIRE(hash.contains("alpha"_el));
+        REQUIRE(hash.contains(cAlphaKey));
 
         auto hashReplaceValue = MoveValue{2};
         const auto hashReplaceCounts = hashReplaceValue.counts();
-        REQUIRE(hash.tryReplace("alpha"_el, std::move(hashReplaceValue)));
+        REQUIRE(hash.tryReplace(cAlphaKey, std::move(hashReplaceValue)));
         REQUIRE_EQUAL(hashReplaceCounts->copies, 0);
 
         auto hashInsertValue = MoveValue{3};

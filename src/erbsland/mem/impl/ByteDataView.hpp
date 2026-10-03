@@ -6,7 +6,7 @@
 
 #include "../ByteSpan.hpp"
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteRange.hpp"
 
 #include <algorithm>
@@ -32,15 +32,15 @@ public: // accessors
     /// Access the selected range in the backing span.
     [[nodiscard]] constexpr auto range() const noexcept -> unit::ByteRange { return _range; }
     /// Get the bounded selected byte length.
-    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteLength {
-        return unit::ByteLength::fromSizeT(dataSpan().size());
+    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteCount {
+        return unit::ByteCount::fromSizeT(dataSpan().size());
     }
     /// Create a bounded span for the selected range.
     [[nodiscard]] constexpr auto dataSpan() const noexcept -> ConstByteSpan {
         if (_data.empty() || !_range.isValid() || _range.isEmpty()) {
             return {};
         }
-        const auto start = _range.index().toSizeT();
+        const auto start = _range.beginIndex().toSizeT();
         if (start >= _data.size()) {
             return {};
         }
@@ -57,7 +57,7 @@ public: // accessors
         if (clamped.isEmpty()) {
             return unit::ByteRange::empty();
         }
-        return clamped.withOrigin(_range.index());
+        return clamped.toAbsolute(_range.beginIndex());
     }
 
 private:

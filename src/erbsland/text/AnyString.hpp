@@ -16,7 +16,7 @@
 #include "u8/U8String.hpp"
 #include "u8/U8StringEditor.hpp"
 
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <compare>
@@ -27,7 +27,7 @@
 namespace erbsland::text {
 
 /// A wrapper that stores a read-only string of any supported width.
-/// @tested{AnyStringTest}
+/// @tested{AnyStringTest StringBinaryComparisonTest StringEncodingValidationTest}
 class AnyString final {
     using Value = std::variant<std::monostate, U8String, U16String, U32String>;
 
@@ -106,12 +106,18 @@ public: // operators
 
 public: // comparison
     /// Compare two strings by decoded code point, replacing malformed encoding with `Char::replacement()`.
-    /// The original string widths are preserved and no converted strings are created.
+    /// Widths are preserved without conversion, normalization, or locale collation.
     /// @param other The string to compare with.
-    /// @param compareFn The optional character comparison function.
+    /// @param compareFn Optional character comparator; numeric code-point order is the default.
     /// @return A three-way comparison result.
     [[nodiscard]] auto compare(const AnyString &other, CharCompareFn compareFn = {}) const noexcept
         -> std::strong_ordering;
+    /// Compare empty contents first, then encoding (U8, U16, U32), then unsigned storage bytes.
+    /// No conversion, decoding, or allocation is performed; wider strings use native byte order.
+    /// @param other The string to compare, potentially using a different encoding.
+    /// @return A representation ordering; equal text in different encodings is not binary-equal.
+    /// @seedoc{/topics/text_strings/comparing_strings}
+    [[nodiscard]] auto compareBinary(const AnyString &other) const noexcept -> std::strong_ordering;
 
 public: // accessors
     /// Test if this read-only string is empty.
@@ -147,16 +153,16 @@ public: // accessors
         }
     }
     /// Count the number of valid and replacement code points in the read-only string.
-    [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength {
+    [[nodiscard]] auto characterLength() const noexcept -> unit::CpCount {
         return std::visit(
-            []<typename T>(const T &value) noexcept -> unit::CpLength {
+            []<typename T>(const T &value) noexcept -> unit::CpCount {
                 using ValueType = std::remove_cvref_t<T>;
                 if constexpr (std::is_same_v<ValueType, U8String> || std::is_same_v<ValueType, U16String>) {
                     return value.characterLength();
                 } else if constexpr (std::is_same_v<ValueType, U32String>) {
                     return value.length();
                 } else {
-                    return unit::CpLength::zero();
+                    return unit::CpCount::zero();
                 }
             },
             _value);
@@ -166,14 +172,22 @@ public: // accessors
         return std::visit(
             []<typename T>(const T &value) noexcept -> bool {
                 using ValueType = std::remove_cvref_t<T>;
-                if constexpr (std::is_same_v<ValueType, U8String>) {
-                    return value.isValidUtf8();
-                } else if constexpr (std::is_same_v<ValueType, U16String>) {
-                    return value.isValidUtf16();
-                } else if constexpr (std::is_same_v<ValueType, U32String>) {
-                    return value.isValidUtf32();
+                if constexpr (impl::AnyStringType<ValueType>) {
+                    return value.isEncodingValid();
                 } else {
                     return true;
+                }
+            },
+            _value);
+    }
+
+    /// Validate the underlying string without modifying its contents.
+    /// @throws EncodingError If malformed encoding is detected, with the width-specific error type and index.
+    void encodingValidOrThrow() const {
+        std::visit(
+            []<typename T>(const T &value) -> void {
+                if constexpr (impl::AnyStringType<std::remove_cvref_t<T>>) {
+                    value.encodingValidOrThrow();
                 }
             },
             _value);

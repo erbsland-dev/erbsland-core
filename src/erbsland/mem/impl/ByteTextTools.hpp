@@ -5,7 +5,7 @@
 #include "../ByteBlock.hpp"
 #include "../ByteTextOptions_fwd.hpp"
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -25,8 +25,9 @@ public:
     /// Encode the configured optional end mark in the selected encoding.
     [[nodiscard]] auto encodedEndMark() const -> ByteBlock;
     /// Convert a code-unit count into a byte length.
-    /// @throws err::OutOfRangeError If the byte length cannot be represented.
-    [[nodiscard]] auto byteLengthFromCountOrThrow(uint64_t count) const -> unit::ByteLength;
+    /// @param count The code-unit count from the encoded frame.
+    /// @throws err::OverflowError If the encoded count cannot be represented as a byte length.
+    [[nodiscard]] auto byteLengthFromCountOrThrow(uint64_t count) const -> unit::ByteCount;
 
 private:
     const ByteTextOptions &_options; ///< The borrowed text framing options.

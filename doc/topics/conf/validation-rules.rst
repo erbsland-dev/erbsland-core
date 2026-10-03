@@ -89,7 +89,7 @@ A malformed definition therefore fails during application setup, before it is ap
 .. erbsland-demo::
     :source: conf/ValidationRules/EmbeddedRules.cpp
     :exec: conf/validation_rules --demo EmbeddedRules
-    :source-sha256: a2c9b3f5106dfbcc6437fff4683405c03cbedd289943898a818930aac3333f06
+    :sha256: 3b4f4bf7e97cba0d902e1acf3413f69583a7c5e8f8d3a23bb3fc1b2baff52f62
 
 .. code-block:: cpp
 
@@ -115,11 +115,13 @@ A malformed definition therefore fails during application setup, before it is ap
         el::io::printLine("Region: "_el, document->getTextOrThrow("survey.region"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Forest: Parque Nacional da Tijuca
-    Region: Mata Atlântica
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mForest: Parque Nacional da Tijuca
+        Region: Mata Atlântica␛[0m
 
 .. erbsland-demo-end::
 
@@ -153,7 +155,7 @@ Constraint attributes such as :cpp:class:`Minimum <erbsland::conf::vr::builder::
 .. erbsland-demo::
     :source: conf/ValidationRules/BuiltRules.cpp
     :exec: conf/validation_rules --demo BuiltRules
-    :source-sha256: 8ef2de13f36755de9ebf18ab55dddc07f89fe5c11da09127de4808fb5e72a1a1
+    :sha256: 6648398d87c78c08df54b08e4a3960ec58c993529c2794c02357ec4436959770
 
 .. code-block:: cpp
 
@@ -175,11 +177,11 @@ Constraint attributes such as :cpp:class:`Minimum <erbsland::conf::vr::builder::
         auto builder = el::conf::vr::RulesBuilder{};
         builder.configureRoot(Title{"Levantamento florestal"_el});
         builder.addRule("survey"_el, RuleType::Section, Title{"Levantamento da floresta"_el});
-        builder.addRule(
-            "survey.forest"_el, RuleType::Text, Description{"Nome da floresta observada"_el}, Minimum{3}, Maximum{80});
-        builder.addRule("survey.observers"_el, RuleType::Integer, Minimum{1}, Maximum{12});
-        builder.addRule("survey.region"_el, RuleType::Text, Default{"Mata Atlântica"_el});
-        builder.addRule("survey.api_token"_el, RuleType::Text, IsOptional{}, IsSecret{});
+        auto survey = builder.createBranch("survey"_el);
+        survey.addRule("forest"_el, RuleType::Text, Description{"Nome da floresta observada"_el}, Minimum{3}, Maximum{80});
+        survey.addRule("observers"_el, RuleType::Integer, Minimum{1}, Maximum{12});
+        survey.addRule("region"_el, RuleType::Text, Default{"Mata Atlântica"_el});
+        survey.addRule("api_token"_el, RuleType::Text, IsOptional{}, IsSecret{});
         const auto rules = builder.takeRules();
 
         const auto configuration = "[survey]\n"
@@ -192,15 +194,21 @@ Constraint attributes such as :cpp:class:`Minimum <erbsland::conf::vr::builder::
         el::io::printLine("Default region: "_el, document->getTextOrThrow("survey.region"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Validated observers: 6
-    Default region: Mata Atlântica
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mValidated observers: 6
+        Default region: Mata Atlântica␛[0m
 
 .. erbsland-demo-end::
 
 The document root has an implicit rule.
+Use ``createBranch()`` to pass a subtree to a helper or add multiple children without repeating their parent path.
+Branches can be nested and passed as ``RulesBuilder&``.
+They share the builder backend; declare parent rules explicitly and finalize the schema through the main builder.
+
 Use :cpp:func:`configureRoot() <erbsland::conf::vr::RulesBuilder::configureRoot>` when the root itself needs a title,
 description, dependency, version range, or another compatible attribute.
 Use :cpp:func:`addAlternative() <erbsland::conf::vr::RulesBuilder::addAlternative>` when one path deliberately accepts

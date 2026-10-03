@@ -13,6 +13,7 @@
 #include "../../text/StringBomMode.hpp"
 #include "../../text/StringEncoding.hpp"
 #include "../../time/TimePoint.hpp"
+#include "../../util/impl/worker_executor/WorkerServices.hpp"
 #include "../../util/Result.hpp"
 
 #include <memory>
@@ -27,7 +28,11 @@ public:
     /// Create a buffered output stream around a synchronous native stream.
     /// @param nativeStream The native stream used for target operations.
     /// @param settings The timeout and buffer settings.
-    explicit BufferedByteOutputStream(NativeByteStreamPtr nativeStream, OutputStreamSettings settings = {});
+    /// @param admission Reserved before native acquisition, or acquired for a directly supplied native stream.
+    explicit BufferedByteOutputStream(
+        NativeByteStreamPtr nativeStream,
+        OutputStreamSettings settings = {},
+        util::impl::WorkerReservation admission = util::impl::worker_services::io().reserve());
     /// Abort pending work without waiting for native I/O.
     ~BufferedByteOutputStream() override;
 
@@ -93,4 +98,5 @@ private:
 };
 
 }
+
 #include "../../mem/ByteSpan.hpp"

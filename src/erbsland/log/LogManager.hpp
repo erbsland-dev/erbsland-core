@@ -64,8 +64,8 @@ public:
     [[nodiscard]] auto createStream(const text::String &path, LogTraceSection traceSection = {}) -> LogStreamPtr;
     /// Synchronously replace the active configuration.
     /// Entries already inside a writer complete with the old configuration. Queued entries use the replacement.
-    /// @param configuration The complete replacement configuration.
-    /// @throws err::LogicError If shutdown started or a writer is active in another manager.
+    /// Must be called before shutdown starts.
+    /// @param configuration The complete replacement configuration. Writers must not be active in another manager.
     void setConfiguration(LogConfiguration configuration);
     /// Copy the active configuration snapshot.
     /// @return A copy of the configuration currently used by the worker.
@@ -82,9 +82,9 @@ public:
 
 private:
     /// Install a writer that survives ordinary configuration replacement.
-    /// @param writer The writer to install persistently.
+    /// Must be called before shutdown starts.
+    /// @param writer The writer to install persistently. Must not be null or belong to another manager.
     /// @param filter The route filter for the persistent writer.
-    /// @throws err::LogicError If shutdown started, the writer is empty, or it belongs to another manager.
     void addPersistentWriter(LogWriterPtr writer, LogWriterFilter filter);
 
 private:

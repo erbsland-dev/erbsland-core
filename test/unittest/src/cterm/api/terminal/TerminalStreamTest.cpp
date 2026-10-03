@@ -5,8 +5,8 @@
 
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/cterm/TerminalStream.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StreamError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>

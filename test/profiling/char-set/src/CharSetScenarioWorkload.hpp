@@ -7,6 +7,8 @@
 #include "Operation.hpp"
 
 #include <erbsland/profiling/ScenarioWorkload.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/U8String.hpp>
 
 namespace app::charset {
 

@@ -8,7 +8,7 @@
 
 #include "../utilities/TypeTraits.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../time/CalendarDelta.hpp"
 #include "../../../time/Date.hpp"
 #include "../../../time/DateTime.hpp"
@@ -144,7 +144,7 @@ template <>
 inline void DocumentBuilder::addValueT<re::RegExPtr>(const NamePathLike &namePath, const re::RegExPtr &value) {
     if (value == nullptr) {
         using namespace text::literals;
-        throw err::ParameterError{"The regular expression cannot be null."_el, "value"_el};
+        throw err::ParameterFailure{"The regular expression cannot be null."_el, "value"_el};
     }
     addValue(namePath, Value::createRegEx(value));
 }

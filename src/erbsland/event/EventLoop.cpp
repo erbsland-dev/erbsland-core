@@ -6,18 +6,18 @@
 
 namespace erbsland::event {
 
-auto EventLoop::create() -> EventLoopPtr {
-    return std::make_shared<impl::EventLoop>();
+auto EventLoop::create(const EventLoopOptions &options) -> EventLoopPtr {
+    return std::make_shared<impl::EventLoop>(options);
 }
 
-auto EventLoop::create(EventBackendPtr backend) -> EventLoopPtr {
-    auto result = std::make_shared<impl::EventLoop>();
+auto EventLoop::create(EventBackendPtr backend, const EventLoopOptions &options) -> EventLoopPtr {
+    auto result = std::make_shared<impl::EventLoop>(options);
     result->registerBackend(std::move(backend));
     return result;
 }
 
-auto EventLoop::create(EventLoopDriverPtr driver) -> EventLoopPtr {
-    return std::make_shared<impl::EventLoop>(std::move(driver));
+auto EventLoop::create(EventLoopDriverPtr driver, const EventLoopOptions &options) -> EventLoopPtr {
+    return std::make_shared<impl::EventLoop>(std::move(driver), options);
 }
 
 }

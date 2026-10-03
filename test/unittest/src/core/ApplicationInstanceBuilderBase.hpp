@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/core/impl/ApplicationDataImpl.hpp>
 
 #include <memory>

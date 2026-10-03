@@ -4,7 +4,7 @@
 
 #include "impl/host/CommonHostTests.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../err/ParseError.hpp"
 #include "../text/CharSet.hpp"
 #include "../text/IntegerBase.hpp"
@@ -13,13 +13,14 @@
 #include "../text/StringEditor.hpp"
 #include "../text/StringList.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 #include "../unit/ItemCount.hpp"
 #include "../unit/ItemIndex.hpp"
 #include "../util/HashHelper.hpp"
 
 namespace erbsland::network {
 
+using namespace err;
 using namespace unit;
 using namespace text;
 using namespace text::literals;
@@ -50,7 +51,7 @@ auto IpNetwork::normalizedAddress(const IpAddress &address, const uint8_t prefix
 IpNetwork::IpNetwork(IpAddress address, const uint8_t prefixLength) :
     _address{normalizedAddress(address, prefixLength)}, _prefixLength{prefixLength} {
     if (prefixLength > maximumPrefix(address.version())) {
-        throw err::ParameterError{"The prefix length is invalid for this IP version."_el, "prefixLength"_el};
+        throw ParameterFailure{"The prefix length is invalid for this IP version."_el, "prefixLength"_el};
     }
 }
 
@@ -97,7 +98,7 @@ auto IpNetwork::toHash() const noexcept -> std::size_t {
 auto IpNetwork::fromString(const String &text) noexcept -> std::optional<IpNetwork> {
     try {
         return fromStringOrThrow(text);
-    } catch (const err::ParseError &) {
+    } catch (const ParseError &) {
         return std::nullopt;
     }
 }
@@ -106,14 +107,14 @@ auto IpNetwork::fromStringOrThrow(const String &text) -> IpNetwork {
     impl::testCommonHostText(text, "IP-network"_el);
     const auto parts = StringList::fromSplit(text, CharSet{U'/'}, ItemCount::infinite(), true);
     if (parts.count() != ItemCount{2U}) {
-        throw err::ParseError{"An IP network must use address/prefix-length syntax."_el};
+        throw ParseError{"An IP network must use address/prefix-length syntax."_el};
     }
     const auto address = IpAddress::fromStringOrThrow(parts.get(ItemIndex::zero()));
     auto options = IntegerParseOptions{};
-    options.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpLength::one());
+    options.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpCount::one());
     const auto prefix = parts.get(ItemIndex{1U}).toIntegerOrThrow<unsigned>(options);
     if (prefix > maximumPrefix(address.version())) {
-        throw err::ParseError{"The CIDR prefix length exceeds the address-family limit."_el};
+        throw ParseError{"The CIDR prefix length exceeds the address-family limit."_el};
     }
     return IpNetwork{address, static_cast<uint8_t>(prefix)};
 }

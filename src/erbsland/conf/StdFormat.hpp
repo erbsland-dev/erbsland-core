@@ -11,8 +11,8 @@
 #include "Value.hpp"
 #include "ValueType.hpp"
 
-#include "impl/lexer/TokenType.hpp"
 #include "impl/vr/ConfKey.hpp"
+#include "syntax/TokenKind.hpp"
 #include "vr/ConstraintType.hpp"
 #include "vr/DependencyMode.hpp"
 
@@ -102,11 +102,11 @@ struct std::formatter<erbsland::conf::vr::ConstraintType> : std::formatter<erbsl
 };
 
 template <>
-struct std::formatter<erbsland::conf::impl::TokenType> : std::formatter<erbsland::text::String> {
+struct std::formatter<erbsland::conf::syntax::TokenKind> : std::formatter<erbsland::text::String> {
     using Base = std::formatter<erbsland::text::String>;
 
-    auto format(const erbsland::conf::impl::TokenType value, std::format_context &ctx) const {
-        return Base::format(erbsland::conf::impl::toString(value), ctx);
+    auto format(const erbsland::conf::syntax::TokenKind value, std::format_context &ctx) const {
+        return Base::format(value.toText(), ctx);
     }
 };
 

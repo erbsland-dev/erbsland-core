@@ -90,7 +90,7 @@ private:
     /// Validate a datagram before it enters the output queue.
     void validateDatagram(const UdpDatagram &datagram) const;
     /// Calculate the output-queue charge of a datagram.
-    [[nodiscard]] static auto queueCharge(const UdpDatagram &datagram) noexcept -> unit::ByteLength;
+    [[nodiscard]] static auto queueCharge(const UdpDatagram &datagram) noexcept -> unit::ByteCount;
     /// Test whether a native callback belongs to the current generation.
     [[nodiscard]] auto isCurrent(std::uint64_t generation) const noexcept -> bool;
 
@@ -103,8 +103,8 @@ private:
     std::optional<IpEndpoint> _localEndpoint;           ///< Actual bound endpoint.
     UdpSocketOptions _options;                          ///< Captured socket options.
     std::deque<UdpDatagram> _sendQueue;                 ///< Accepted datagrams awaiting completion.
-    unit::ByteLength _sendQueueSize;                    ///< Current queued output charge.
-    unit::ByteLength _blockedCharge;                    ///< Largest rejected charge awaiting writable capacity.
+    unit::ByteCount _sendQueueSize;                     ///< Current queued output charge.
+    unit::ByteCount _blockedCharge;                     ///< Largest rejected charge awaiting writable capacity.
     std::atomic<NetworkSourceState> _state{NetworkSourceState::Inactive}; ///< Public lifecycle state.
     std::atomic<std::uint64_t> _generation{0U};                           ///< Current native operation generation.
     std::atomic<bool> _started{false};                                    ///< Whether this lifetime was consumed.

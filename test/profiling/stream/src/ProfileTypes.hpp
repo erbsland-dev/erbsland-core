@@ -2,8 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
+#include <erbsland/block/Direction.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/cterm/ReadLine.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/profiling/Definitions.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/re/Settings.hpp>
+#include <erbsland/StreamBuffering.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEncoding.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -71,7 +79,7 @@ struct Scenario {
     std::uint64_t chunkSizeMinimum{64ULL * 1024ULL};              ///< Minimum transfer chunk.
     std::uint64_t chunkSizeMaximum{64ULL * 1024ULL};              ///< Maximum transfer chunk.
     el::StreamBuffering buffering{el::StreamBuffering::Balanced}; ///< Stream buffering intention.
-    std::uint64_t backBufferLimit{}; ///< Explicit output back-buffer limit, or zero for the preset default.
+    el::ByteCount backBufferLimit{}; ///< Explicit output back-buffer limit, or zero for the preset default.
     std::uint32_t weight{1U};        ///< Relative profile repetition weight.
 };
 

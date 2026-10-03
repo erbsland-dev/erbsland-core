@@ -28,8 +28,8 @@ The ``toBoolean()``, ``toInteger()``, and ``toFloat()`` families read a complete
 This page shows how to choose failure handling and how the parse and output options change the accepted or generated
 representation.
 
-Choose What Invalid Input Means
-===============================
+Conversion Failure and Exception Policies
+=========================================
 
 Each text-to-value family has a fallback-returning and a throwing form.
 The fallback form is convenient when invalid or missing text has an ordinary default, such as an optional setting.
@@ -41,21 +41,24 @@ It does not trim whitespace, and integer or floating-point overflow is an error 
 Trim explicitly before conversion when surrounding whitespace belongs to the input format; enable trailing input only
 when the grammar deliberately places another field after the value.
 
-Read and Write Boolean Values
-=============================
+Parsing and Formatting Boolean Values
+=====================================
 
 Boolean input recognizes ``true``, ``on``, ``yes``, ``enabled``, ``false``, ``off``, ``no``, and ``disabled`` without
 regard to ASCII letter case.
 The match must cover the complete text, so padding and partial words remain invalid.
+There is no need to lowercase the input before parsing; the conversion already handles ASCII case differences.
 
 :cpp:class:`BooleanFormat <erbsland::text::BooleanFormat>` controls the reverse conversion.
-Its four styles produce ``true`` /``false``, ``yes`` /``no``, ``on`` /``off``, or ``enabled`` /``disabled``.
-:cpp:enum:`Capitalization <erbsland::text::Capitalization>` then selects lowercase, uppercase, or titlecase words.
+Its four styles produce ``true`` and ``false``, ``yes`` and ``no``, ``on`` and ``off``, or ``enabled`` and ``disabled``.
+:cpp:enum:`Capitalization <erbsland::text::Capitalization>` then selects lowercase, uppercase, or capitalized words.
+``Capitalized`` means an initial capital followed by lowercase letters, such as ``Yes`` or ``Disabled``.
+Selecting that spelling in the format avoids a separate string transformation after conversion.
 
 .. erbsland-demo::
     :source: text/ScalarConversion/BooleanValues.cpp
     :exec: text/scalar_conversion --demo BooleanValues
-    :source-sha256: 9a847fa56d69bba237e99db2de26fc42c39b2df30d4737bc125d84d8ac9d00c9
+    :sha256: d536e4a478aeb7983501c3e31b722214b3ddfe9c7e5a3575f754ea8cde171c2f
 
 .. code-block:: cpp
 
@@ -72,37 +75,39 @@ Its four styles produce ``true`` /``false``, ``yes`` /``no``, ``on`` /``off``, o
         try {
             const auto unexpectedValue = el::String{"misschien"_el}.toBooleanOrThrow();
             el::io::printLine("misschien .......: "_el, unexpectedValue);
-        } catch (const el::Exception &) {
+        } catch (const el::ParseError &) {
             el::io::printLine("misschien .......: parse error"_el);
         }
 
-        auto titleYesNo = el::BooleanFormat::yesNo();
-        titleYesNo.setCapitalization(el::Capitalization::Titlecase);
+        auto capitalizedYesNo = el::BooleanFormat::yesNo();
+        capitalizedYesNo.setCapitalization(el::Capitalization::Capitalized);
         auto upperEnabled = el::BooleanFormat::enabledDisabled();
         upperEnabled.setCapitalization(el::Capitalization::Uppercase);
-        const auto onlineOutput = el::String{el::StringEditor::fromBoolean(true, titleYesNo)};
-        const auto offlineOutput = el::String{el::StringEditor::fromBoolean(false, upperEnabled)};
+        const auto onlineOutput = el::String::fromBoolean(true, capitalizedYesNo);
+        const auto offlineOutput = el::String::fromBoolean(false, upperEnabled);
 
         el::io::printLine("Formatted status words:"_el);
         el::io::printLine("  "_el, onlineOutput);
         el::io::printLine("  "_el, offlineOutput);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    YES .............: true
-    disabled ........: false
-    padded fallback .: true
-    misschien .......: parse error
-    Formatted status words:
-      Yes
-      DISABLED
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mYES .............: true
+        disabled ........: false
+        padded fallback .: true
+        misschien .......: parse error
+        Formatted status words:
+          Yes
+          DISABLED␛[0m
 
 .. erbsland-demo-end::
 
-Read Integer Syntax Deliberately
-================================
+Choosing the Accepted Integer Syntax
+====================================
 
 ``toInteger<T>()`` and ``toIntegerOrThrow<T>()`` convert directly to the requested signed, unsigned, or saturated
 integer type and check its range.
@@ -125,8 +130,8 @@ The parse flags answer less common grammar questions:
 The ordinary string conversion default already accepts ``-`` and ``+`` signs and requires complete input.
 ``parserDefault()`` is intentionally stricter because it is designed for a parser that controls the surrounding grammar.
 
-Format Integers for Their Destination
-=====================================
+Formatting Integers for Their Destination
+=========================================
 
 :cpp:class:`IntegerFormat <erbsland::text::IntegerFormat>` starts with ordinary decimal output.
 The decimal, hexadecimal, binary, and octal factories make another base visible at the call site.
@@ -143,7 +148,7 @@ independently of the source spelling.
 .. erbsland-demo::
     :source: text/ScalarConversion/IntegerValues.cpp
     :exec: text/scalar_conversion --demo IntegerValues
-    :source-sha256: f37e1f86da597bebcbf0cf2206a2897ef33f5f1489ff056b07601239a6094b4f
+    :sha256: e64843a7133e111788e75f5cedf8a42ece6de7ee6ec5a6b43bab9c1256e49eb5
 
 .. code-block:: cpp
 
@@ -163,14 +168,14 @@ independently of the source spelling.
         try {
             const auto unexpectedValue = el::String{"12x"_el}.toIntegerOrThrow<int>();
             el::io::printLine("12x ...............: "_el, unexpectedValue);
-        } catch (const el::Exception &) {
+        } catch (const el::ParseError &) {
             el::io::printLine("12x ...............: parse error"_el);
         }
 
         auto hexadecimal = el::IntegerFormat::hexadecimal();
         hexadecimal.addFlags(el::IntegerFormatFlag::BasePrefix | el::IntegerFormatFlag::ZeroFill)
             .setLetterCase(el::LetterCase::Uppercase)
-            .setFieldWidth(el::CpLength{6U});
+            .setFieldWidth(el::CpCount{6U});
 
         auto groupedDecimal = el::IntegerFormat::decimal();
         groupedDecimal.addFlags(el::IntegerFormatFlag::Separator).setSignMode(el::IntegerSignMode::Always);
@@ -179,20 +184,22 @@ independently of the source spelling.
         el::io::printLine("Grouped ...........: "_el, el::String::fromInteger(sampleCount, groupedDecimal));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Node id ...........: 42
-    Measurements ......: 12500
-    Invalid port ......: 9000 (fallback)
-    12x ...............: parse error
-    Hexadecimal .......: 0X00002A
-    Grouped ...........: +12'500
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mNode id ...........: 42
+        Measurements ......: 12500
+        Invalid port ......: 9000 (fallback)
+        12x ...............: parse error
+        Hexadecimal .......: 0X00002A
+        Grouped ...........: +12'500␛[0m
 
 .. erbsland-demo-end::
 
-Read and Write Floating-Point Values
-====================================
+Parsing and Formatting Floating-Point Values
+============================================
 
 Floating-point conversion follows the same fallback-versus-exception model.
 :cpp:class:`FloatParseOptions <erbsland::text::FloatParseOptions>` accepts general, fixed, scientific, or hexadecimal
@@ -210,7 +217,7 @@ hexadecimal exponent marker.
 .. erbsland-demo::
     :source: text/ScalarConversion/FloatingPointValues.cpp
     :exec: text/scalar_conversion --demo FloatingPointValues
-    :source-sha256: 18d337a0b8ff75f53d261468929d43c6d8cb3badd865ec2c7470de211646b1a4
+    :sha256: d014abc11ea82aeadd867eeef42ad2a0de744de7bb7c9f708c51fa20f7b8e9ae
 
 .. code-block:: cpp
 
@@ -235,7 +242,7 @@ hexadecimal exponent marker.
         try {
             const auto unexpectedValue = el::String{"21,5"_el}.toFloatOrThrow<double>();
             el::io::printLine("21,5 ..............: "_el, unexpectedValue);
-        } catch (const el::Exception &) {
+        } catch (const el::ParseError &) {
             el::io::printLine("21,5 ..............: parse error"_el);
         }
 
@@ -248,21 +255,23 @@ hexadecimal exponent marker.
         el::io::printLine("Scientific ........: "_el, el::String::fromFloat(pressure, scientific));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Humidity ..........: 48.75
-    Pressure ..........: 1013
-    Temperature .......: 21.5
-    Missing ...........: -1 (fallback)
-    21,5 ..............: parse error
-    Fixed format ......: 48.75
-    Scientific ........: 1.013E+03
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mHumidity ..........: 48.75
+        Pressure ..........: 1013
+        Temperature .......: 21.5
+        Missing ...........: -1 (fallback)
+        21,5 ..............: parse error
+        Fixed format ......: 48.75
+        Scientific ........: 1.013E+03␛[0m
 
 .. erbsland-demo-end::
 
-The Same Model at Every String Width
-====================================
+Scalar Conversions for UTF-8, UTF-16, and UTF-32
+================================================
 
 The UTF-8 ``String`` examples represent the usual application boundary, but ``U8String``, ``U16String``, ``U32String``,
 and their editor counterparts provide the same conversions.

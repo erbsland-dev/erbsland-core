@@ -40,10 +40,14 @@ public: // metadata
 
 public: // operations
     /// Resolve configuration and connect using default options.
+    /// @param endpoint The TLS destination.
+    /// @throws cryptology::CryptologyError If the selected TLS configuration is unusable.
     void connect(HostEndpoint endpoint);
     /// Resolve configuration synchronously and start the one-shot connection.
-    /// @throws err::ParameterError If options or the endpoint are invalid.
-    /// @throws err::RuntimeError If no complete client TLS configuration resolves.
+    /// @param endpoint The TLS destination. Must have a non-automatic port and a scope compatible with its IP version.
+    /// @param options The connection options. Buffer limits and timeouts must satisfy `TlsClientConnectOptions` bounds.
+    /// @throws cryptology::CryptologyError If no TLS configuration resolves or the selected configuration has no server
+    /// certificate policy.
     virtual void connect(HostEndpoint endpoint, TlsClientConnectOptions options) = 0;
 
 public: // implement Connection

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "EventContinuation_fwd.hpp"
 #include "EventTimer_fwd.hpp"
 #include "SchedulerBackend_fwd.hpp"
 
@@ -20,8 +21,9 @@ namespace erbsland::event::impl {
 class SchedulerBackend final : public EventBackend, public EventScheduler {
     /// Stores a callback scheduled for a future time.
     struct DelayedInvocation {
-        time::TimePoint dueTime; ///< Time when this callback shall be queued.
-        EventCallback callback;  ///< Callback to execute on the target event loop.
+        time::TimePoint dueTime;             ///< Time when this callback shall be queued.
+        EventCallback callback;              ///< Callback to execute on the target event loop.
+        EventContinuationPtr continuation{}; ///< Optional pre-admitted completion queue capacity.
     };
 
     /// Stores scheduler state shared with timer objects.
@@ -49,6 +51,10 @@ public: // implement EventBackend
     [[nodiscard]] auto nextWakeTime() const -> std::optional<time::TimePoint> override;
 
 public: // implement EventScheduler
+    /// Schedule a callback using capacity admitted before its external operation starts.
+    void invokeAfterReserved(time::TimeDelta delay, EventContinuationPtr continuation, EventCallback callback);
+    /// Remove a cancelled reserved timer without retaining its admission until the former deadline.
+    void cancelReserved(const EventContinuation *continuation) noexcept;
     void invokeAfter(time::TimeDelta delay, EventCallback callback) override;
     [[nodiscard]] auto createTimer(EventCallback callback) -> event::EventTimerPtr override;
 

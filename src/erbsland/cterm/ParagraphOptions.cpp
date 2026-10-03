@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ParagraphOptions.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 #include "../text/u32/U32StringConstIterator.hpp"
 
 namespace erbsland::cterm {
 
+using namespace text;
 using namespace text::literals;
 
 auto ParagraphOptions::alignment() const noexcept -> geometry::Alignment {
@@ -72,10 +73,10 @@ auto ParagraphOptions::lineBreakEndMark() const noexcept -> const BlockString & 
 
 void ParagraphOptions::setLineBreakEndMark(BlockString mark) {
     if (mark.length() > BlockCount{2U}) {
-        throw err::ParameterError{"Line break end mark must not exceed two characters."_el, "mark"_el};
+        throw err::ParameterFailure{"Line break end mark must not exceed two characters."_el, "mark"_el};
     }
     if (mark.containsControlCharacters()) {
-        throw err::ParameterError{"Line break end mark must not contain control characters."_el, "mark"_el};
+        throw err::ParameterFailure{"Line break end mark must not contain control characters."_el, "mark"_el};
     }
     _lineBreakEndMark = std::move(mark);
 }
@@ -86,7 +87,7 @@ auto ParagraphOptions::lineBreakStartMark() const noexcept -> const BlockString 
 
 void ParagraphOptions::setLineBreakStartMark(BlockString mark) {
     if (mark.containsControlCharacters()) {
-        throw err::ParameterError{"Line break start mark must not contain control characters."_el, "mark"_el};
+        throw err::ParameterFailure{"Line break start mark must not contain control characters."_el, "mark"_el};
     }
     _lineBreakStartMark = std::move(mark);
 }
@@ -99,16 +100,16 @@ void ParagraphOptions::setParagraphSpacing(const ParagraphSpacing spacing) noexc
     _paragraphSpacing = spacing;
 }
 
-auto ParagraphOptions::wordSeparators() const -> text::U32String {
+auto ParagraphOptions::wordSeparators() const -> U32String {
     return _wordSeparators.toU32String();
 }
 
-auto ParagraphOptions::wordSeparatorSet() const noexcept -> const text::CharSet & {
+auto ParagraphOptions::wordSeparatorSet() const noexcept -> const CharSet & {
     return _wordSeparators;
 }
 
-void ParagraphOptions::setWordSeparators(const text::U32String &separators) {
-    auto characters = text::CharSet{};
+void ParagraphOptions::setWordSeparators(const U32String &separators) {
+    auto characters = CharSet{};
     for (const auto character : separators) {
         characters.add(character);
     }

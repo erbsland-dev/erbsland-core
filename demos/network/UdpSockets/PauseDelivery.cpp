@@ -2,8 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/network/source/all.hpp>
-#include <erbsland/network/udp/all.hpp>
+#include <erbsland/all_network_source.hpp>
+#include <erbsland/all_network_udp.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/EventTimer.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/UdpDatagram.hpp>
+#include <erbsland/UdpDatagramDropContext.hpp>
+#include <erbsland/UdpDatagramDropReason.hpp>
+#include <erbsland/UdpSocket.hpp>
+#include <erbsland/UdpSocketOptions.hpp>
 
 #include <utility>
 
@@ -37,7 +52,7 @@ private:
             .onError([this](const el::NetworkErrorContext &error) -> void { fail(error); });
 
         auto options = el::UdpSocketOptions{};
-        options.setMaximumDatagramSize(el::ByteLength{1U});
+        options.setMaximumDatagramSize(el::ByteCount{1U});
         _service->start(el::IpAddress::loopbackV4(), options);
     }
 
@@ -49,8 +64,8 @@ private:
 
     void sendUpdatesDuringReload() {
         const auto destination = _service->localEndpoint().value();
-        const auto oversized = el::ByteBlock{el::ByteLength{4U}, el::Byte{1U}};
-        const auto valid = el::ByteBlock{el::ByteLength{1U}, el::Byte{2U}};
+        const auto oversized = el::ByteBlock{el::ByteCount{4U}, el::Byte{1U}};
+        const auto valid = el::ByteBlock{el::ByteCount{1U}, el::Byte{2U}};
         if (!_client->send(destination, oversized).isAccepted() || !_client->send(destination, valid).isAccepted()) {
             el::stdErr()->printLine("The client could not queue both skill updates."_el);
             fail();

@@ -5,7 +5,7 @@
 #include "CharAndPosition_fwd.hpp"
 #include "InputBase_fwd.hpp"
 
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <memory>
 
@@ -41,7 +41,7 @@ public:
     /// Skip a number of characters.
     /// Skipping beyond the available input must leave the input exhausted.
     /// Implementations may throw encoding errors or other runtime errors; matching operations propagate them unchanged.
-    virtual void skip(unit::CpLength characterCount) = 0;
+    virtual void skip(unit::CpCount characterCount) = 0;
 };
 
 }

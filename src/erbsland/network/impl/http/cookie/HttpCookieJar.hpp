@@ -6,6 +6,7 @@
 #include "PublicSuffixList.hpp"
 
 #include "../../../../event/Events_fwd.hpp"
+#include "../../../../text/StringList.hpp"
 #include "../../../http/HttpHeaders.hpp"
 #include "../../../http_client/HttpCookieJar.hpp"
 
@@ -69,10 +70,6 @@ private:
     [[nodiscard]] static auto isCookieToken(const text::String &value) noexcept -> bool;
     /// Test whether text is a valid cookie value.
     [[nodiscard]] static auto isCookieValue(const text::String &value) noexcept -> bool;
-    /// Create an ASCII-lowercase copy.
-    [[nodiscard]] static auto lowerAscii(const text::String &value) -> text::String;
-    /// Split text at one separator.
-    [[nodiscard]] static auto split(const text::String &value, text::Char separator) -> std::vector<text::String>;
     /// Parse one supported HTTP cookie date.
     [[nodiscard]] static auto parseCookieDate(const text::String &value) noexcept -> std::optional<time::Timestamp>;
     /// Validate __Secure- and __Host- cookie prefix constraints.

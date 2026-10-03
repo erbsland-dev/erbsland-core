@@ -21,10 +21,8 @@ public: // implement EventEditor
 
 protected:
     /// Create common storage for a source-owned editor.
-    /// @param source The source that owns the editor.
-    /// @param target The source owner and callback target.
-    /// @throws err::ParameterError If either pointer is empty.
-    /// @throws err::LogicError If the target does not own the source.
+    /// @param source The source that owns the editor. Must not be null.
+    /// @param target The source owner and callback target. Must not be null and must own `source`.
     CommonEventEditor(EventSourcePtr source, EventsPtr target);
 
 private:

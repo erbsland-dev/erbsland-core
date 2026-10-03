@@ -11,9 +11,9 @@
 
 namespace erbsland::text::impl {
 
+using unit::CpCount;
 using unit::CpIndex;
-using unit::CpLength;
-using unit::U16DataIndex;
+using unit::U16Index;
 using util::LoopResult;
 using util::LoopStatus;
 
@@ -28,17 +28,21 @@ auto U16StringReader::position() const noexcept -> CpIndex {
     return _cpPosition;
 }
 
+auto U16StringReader::u16Position() const noexcept -> U16Index {
+    return _position;
+}
+
 auto U16StringReader::save() const noexcept -> StringCharReaderState {
     return makeState(_position.toSizeT(), _cpPosition);
 }
 
 void U16StringReader::restore(const StringCharReaderState state) noexcept {
-    _position = U16DataIndex::fromSizeT(rawPosition(state));
+    _position = U16Index::fromSizeT(rawPosition(state));
     _cpPosition = cpPosition(state);
 }
 
 void U16StringReader::reset() noexcept {
-    _position = U16DataIndex::zero();
+    _position = U16Index::zero();
     _cpPosition = CpIndex::zero();
 }
 
@@ -80,7 +84,7 @@ auto U16StringReader::isAtEnd() const noexcept -> bool {
     return peek().isEndOfData();
 }
 
-auto U16StringReader::canRead(CpLength count) const noexcept -> bool {
+auto U16StringReader::canRead(CpCount count) const noexcept -> bool {
     if (count.isZero()) {
         return true;
     }
@@ -99,7 +103,7 @@ auto U16StringReader::canRead(CpLength count) const noexcept -> bool {
     return true;
 }
 
-auto U16StringReader::advance(CpLength count) noexcept -> bool {
+auto U16StringReader::advance(CpCount count) noexcept -> bool {
     if (count.isZero()) {
         return false;
     }
@@ -126,38 +130,37 @@ auto U16StringReader::advanceIf(const CharSet &expected) noexcept -> bool {
     return readIf(expected).has_value();
 }
 
-auto U16StringReader::readWhile(const ReadFn &readFn, const CharSet &expected, CpLength maximum) noexcept
+auto U16StringReader::readWhile(const ReadFn &readFn, const CharSet &expected, CpCount maximum) noexcept -> LoopResult {
+    return readLoop(readFn, expected, maximum, false).first;
+}
+
+auto U16StringReader::readWhile(const ReadFn &readFn, const AsciiCategory expected, CpCount maximum) noexcept
     -> LoopResult {
     return readLoop(readFn, expected, maximum, false).first;
 }
 
-auto U16StringReader::readWhile(const ReadFn &readFn, const AsciiCategory expected, CpLength maximum) noexcept
-    -> LoopResult {
-    return readLoop(readFn, expected, maximum, false).first;
-}
-
-auto U16StringReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, CpLength maximum) noexcept -> LoopResult {
+auto U16StringReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, CpCount maximum) noexcept -> LoopResult {
     return readLoop(readFn, stopSet, maximum, true).first;
 }
 
-auto U16StringReader::readUntil(const ReadFn &readFn, const AsciiCategory stopCategory, CpLength maximum) noexcept
+auto U16StringReader::readUntil(const ReadFn &readFn, const AsciiCategory stopCategory, CpCount maximum) noexcept
     -> LoopResult {
     return readLoop(readFn, stopCategory, maximum, true).first;
 }
 
-auto U16StringReader::advanceWhile(const CharSet &expected, const CpLength maximum) noexcept -> CpLength {
+auto U16StringReader::advanceWhile(const CharSet &expected, const CpCount maximum) noexcept -> CpCount {
     return readLoop({}, expected, maximum, false).second;
 }
 
-auto U16StringReader::advanceWhile(const AsciiCategory expected, const CpLength maximum) noexcept -> CpLength {
+auto U16StringReader::advanceWhile(const AsciiCategory expected, const CpCount maximum) noexcept -> CpCount {
     return readLoop({}, expected, maximum, false).second;
 }
 
-auto U16StringReader::advanceUntil(const CharSet &stopSet, const CpLength maximum) noexcept -> CpLength {
+auto U16StringReader::advanceUntil(const CharSet &stopSet, const CpCount maximum) noexcept -> CpCount {
     return readLoop({}, stopSet, maximum, true).second;
 }
 
-auto U16StringReader::advanceUntil(const AsciiCategory stopCategory, const CpLength maximum) noexcept -> CpLength {
+auto U16StringReader::advanceUntil(const AsciiCategory stopCategory, const CpCount maximum) noexcept -> CpCount {
     return readLoop({}, stopCategory, maximum, true).second;
 }
 
@@ -178,13 +181,13 @@ auto U16StringReader::takeCapture() noexcept -> AnyString {
 
 void U16StringReader::clearBuffer() noexcept {
     _buffer.clear();
-    _bufferLength = CpLength::zero();
+    _bufferLength = CpCount::zero();
 }
 
 auto U16StringReader::takeBuffer() -> AnyString {
     auto result = AnyStringEditor{std::move(_buffer)};
     _buffer = U16StringEditor{};
-    _bufferLength = CpLength::zero();
+    _bufferLength = CpCount::zero();
     return result;
 }
 
@@ -192,7 +195,7 @@ auto U16StringReader::bufferView() const noexcept -> AnyString {
     return AnyString{_buffer};
 }
 
-auto U16StringReader::bufferCharacterLength() const noexcept -> CpLength {
+auto U16StringReader::bufferCharacterLength() const noexcept -> CpCount {
     return _bufferLength;
 }
 
@@ -231,7 +234,7 @@ auto U16StringReader::readToBuffer() -> Char {
         return character;
     }
     appendToBuffer(character);
-    if (!advance(CpLength::one())) {
+    if (!advance(CpCount::one())) {
         std::terminate();
     }
     return character;
@@ -243,7 +246,7 @@ auto U16StringReader::readToBufferIf(const Char expected) -> bool {
         return false;
     }
     appendToBuffer(character);
-    if (!advance(CpLength::one())) {
+    if (!advance(CpCount::one())) {
         std::terminate();
     }
     return true;
@@ -255,31 +258,31 @@ auto U16StringReader::readToBufferIf(const CharSet &expected) -> std::optional<C
         return {};
     }
     appendToBuffer(character);
-    if (!advance(CpLength::one())) {
+    if (!advance(CpCount::one())) {
         std::terminate();
     }
     return character;
 }
 
-auto U16StringReader::readToBufferWhile(const CharSet &expected, const CpLength maximum) -> LoopResult {
+auto U16StringReader::readToBufferWhile(const CharSet &expected, const CpCount maximum) -> LoopResult {
     return readToBufferLoop(expected, maximum, false);
 }
 
-auto U16StringReader::readToBufferWhile(const AsciiCategory expected, const CpLength maximum) -> LoopResult {
+auto U16StringReader::readToBufferWhile(const AsciiCategory expected, const CpCount maximum) -> LoopResult {
     return readToBufferLoop(expected, maximum, false);
 }
 
-auto U16StringReader::readToBufferUntil(const CharSet &stopSet, const CpLength maximum) -> LoopResult {
+auto U16StringReader::readToBufferUntil(const CharSet &stopSet, const CpCount maximum) -> LoopResult {
     return readToBufferLoop(stopSet, maximum, true);
 }
 
-auto U16StringReader::readToBufferUntil(const AsciiCategory stopCategory, const CpLength maximum) -> LoopResult {
+auto U16StringReader::readToBufferUntil(const AsciiCategory stopCategory, const CpCount maximum) -> LoopResult {
     return readToBufferLoop(stopCategory, maximum, true);
 }
 
-auto U16StringReader::readLoop(
-    const ReadFn &readFn, const CharSet &charSet, CpLength maximum, bool stopOnMatch) noexcept -> ReadLoopOutcome {
-    auto count = CpLength::zero();
+auto U16StringReader::readLoop(const ReadFn &readFn, const CharSet &charSet, CpCount maximum, bool stopOnMatch) noexcept
+    -> ReadLoopOutcome {
+    auto count = CpCount::zero();
     while (true) {
         const auto lastPosition = _position;
         const auto lastCpPosition = _cpPosition;
@@ -308,9 +311,9 @@ auto U16StringReader::readLoop(
 }
 
 auto U16StringReader::readLoop(
-    const ReadFn &readFn, const AsciiCategory category, CpLength maximum, const bool stopOnMatch) noexcept
+    const ReadFn &readFn, const AsciiCategory category, CpCount maximum, const bool stopOnMatch) noexcept
     -> ReadLoopOutcome {
-    auto count = CpLength::zero();
+    auto count = CpCount::zero();
     while (true) {
         const auto lastPosition = _position;
         const auto lastCpPosition = _cpPosition;
@@ -338,8 +341,8 @@ auto U16StringReader::readLoop(
     }
 }
 
-auto U16StringReader::readToBufferLoop(const CharSet &charSet, CpLength maximum, bool stopOnMatch) -> LoopResult {
-    auto count = CpLength::zero();
+auto U16StringReader::readToBufferLoop(const CharSet &charSet, CpCount maximum, bool stopOnMatch) -> LoopResult {
+    auto count = CpCount::zero();
     while (true) {
         const auto character = peek();
         if (character.isEndOfData()) {
@@ -352,16 +355,16 @@ auto U16StringReader::readToBufferLoop(const CharSet &charSet, CpLength maximum,
             return LoopResult::LimitReached;
         }
         appendToBuffer(character);
-        if (!advance(CpLength::one())) {
+        if (!advance(CpCount::one())) {
             std::terminate();
         }
         ++count;
     }
 }
 
-auto U16StringReader::readToBufferLoop(const AsciiCategory category, CpLength maximum, const bool stopOnMatch)
+auto U16StringReader::readToBufferLoop(const AsciiCategory category, CpCount maximum, const bool stopOnMatch)
     -> LoopResult {
-    auto count = CpLength::zero();
+    auto count = CpCount::zero();
     while (true) {
         const auto lastPosition = _position;
         const auto lastCpPosition = _cpPosition;

@@ -1,33 +1,34 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
+#include <erbsland/IsoTimeFormat.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/log/impl/LastErrorsLogWriter.hpp>
-#include <erbsland/log/line/LogLine.hpp>
-#include <erbsland/log/LogConfiguration.hpp>
-#include <erbsland/log/LogFileMode.hpp>
-#include <erbsland/log/LogFileRotation.hpp>
-#include <erbsland/log/LogLevel.hpp>
-#include <erbsland/log/LogLevelFormat.hpp>
-#include <erbsland/log/LogManager.hpp>
-#include <erbsland/log/LogMessageTruncation.hpp>
-#include <erbsland/log/LogNameFormat.hpp>
-#include <erbsland/log/LogPath.hpp>
-#include <erbsland/log/LogStream.hpp>
-#include <erbsland/log/LogTimestampZone.hpp>
-#include <erbsland/log/LogWriter.hpp>
-#include <erbsland/log/SyslogTransport.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/time/IsoTimeFormat.hpp>
-#include <erbsland/time/TimeZone.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogFileMode.hpp>
+#include <erbsland/LogFileRotation.hpp>
+#include <erbsland/LogLevel.hpp>
+#include <erbsland/LogLevelFormat.hpp>
+#include <erbsland/LogLine.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogMessageTruncation.hpp>
+#include <erbsland/LogNameFormat.hpp>
+#include <erbsland/LogPath.hpp>
+#include <erbsland/LogStream.hpp>
+#include <erbsland/LogTimestampZone.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/StreamErrorContext.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/SyslogTransport.hpp>
+#include <erbsland/TimeZone.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
-#include <stdexcept>
 #include <thread>
 #include <vector>
 
@@ -40,7 +41,7 @@ public:
     void write(const el::log::LogEntryConstPtr &entry, const el::log::LogLineConstPtr &line) override {
         const auto lock = std::scoped_lock{mutex};
         entries.push_back(entry);
-        lines.push_back(line->text());
+        lines.append(line->text());
         condition.notify_all();
     }
 
@@ -53,13 +54,13 @@ public:
     std::mutex mutex;
     std::condition_variable condition;
     std::vector<el::log::LogEntryConstPtr> entries;
-    std::vector<el::text::String> lines;
+    el::StringList lines;
 };
 
 class FailingWriter final : public el::log::LogWriter {
 public:
     void write(const el::log::LogEntryConstPtr &, const el::log::LogLineConstPtr &) override {
-        throw std::runtime_error{"failure"};
+        throw el::StreamError{el::StreamErrorContext{"Log output failed"_el, "Simulated log destination failure."_el}};
     }
 };
 
@@ -85,12 +86,13 @@ public:
 
 class BlockingWriter final : public el::log::LogWriter {
 public:
-    void write(const el::log::LogEntryConstPtr &, const el::log::LogLineConstPtr &) override {
+    void write(const el::log::LogEntryConstPtr &, const el::log::LogLineConstPtr &line) override {
         auto lock = std::unique_lock{mutex};
         entered = true;
         condition.notify_all();
         condition.wait(lock, [this]() -> bool { return released; });
         ++written;
+        writtenLine = line->text();
     }
 
     void waitUntilEntered() {
@@ -109,6 +111,7 @@ public:
     bool entered{false};
     bool released{false};
     std::size_t written{0U};
+    el::text::String writtenLine;
 };
 
 }
@@ -168,17 +171,17 @@ public:
     void testManagerOptionsUseChainableAccessors() {
         auto options = el::log::LogManagerOptions{};
         const auto &result = options.setMaximumEntries(32U)
-                                 .setMaximumBytes(el::unit::ByteLength{8192U})
+                                 .setMaximumBytes(el::unit::ByteCount{8192U})
                                  .setReservedErrorEntries(4U)
-                                 .setReservedErrorBytes(el::unit::ByteLength{1024U})
-                                 .setMaximumMessageBytes(el::unit::ByteLength{512U})
+                                 .setReservedErrorBytes(el::unit::ByteCount{1024U})
+                                 .setMaximumMessageBytes(el::unit::ByteCount{512U})
                                  .setShutdownTimeout(el::time::TimeDelta::milliseconds(50));
         REQUIRE(&result == &options);
         REQUIRE_EQUAL(options.maximumEntries(), std::size_t{32U});
-        REQUIRE_EQUAL(options.maximumBytes(), el::unit::ByteLength{8192U});
+        REQUIRE_EQUAL(options.maximumBytes(), el::unit::ByteCount{8192U});
         REQUIRE_EQUAL(options.reservedErrorEntries(), std::size_t{4U});
-        REQUIRE_EQUAL(options.reservedErrorBytes(), el::unit::ByteLength{1024U});
-        REQUIRE_EQUAL(options.maximumMessageBytes(), el::unit::ByteLength{512U});
+        REQUIRE_EQUAL(options.reservedErrorBytes(), el::unit::ByteCount{1024U});
+        REQUIRE_EQUAL(options.maximumMessageBytes(), el::unit::ByteCount{512U});
         REQUIRE_EQUAL(options.shutdownTimeout(), el::time::TimeDelta::milliseconds(50));
     }
 
@@ -190,10 +193,10 @@ public:
         REQUIRE(root.contains(connection));
         REQUIRE(app.contains(connection));
         REQUIRE_FALSE(connection.contains(app));
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::log::LogPath{"App"_el});
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::log::LogPath{"app//network"_el});
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::log::LogPath{"app/-network"_el});
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::log::LogPath{"app/network-"_el});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::log::LogPath{"App"_el});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::log::LogPath{"app//network"_el});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::log::LogPath{"app/-network"_el});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::log::LogPath{"app/network-"_el});
 
         auto segments = el::text::StringEditor{};
         for (auto index = 0; index < 16; ++index) {
@@ -204,7 +207,7 @@ public:
         }
         REQUIRE_NOTHROW(el::log::LogPath{segments});
         segments.append("/a"_el);
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::log::LogPath{segments});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::log::LogPath{segments});
 
         auto maximumLength = el::text::StringEditor{};
         for (auto index = 0; index < 255; ++index) {
@@ -212,12 +215,12 @@ public:
         }
         REQUIRE_NOTHROW(el::log::LogPath{maximumLength});
         maximumLength.append(U'a');
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::log::LogPath{maximumLength});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::log::LogPath{maximumLength});
     }
 
     void testTraceFlagRequiresRouteAndSection() {
         const auto manager = el::log::LogManager::create();
-        const auto stream = manager->createStream("app/network"_el, el::log::LogTraceSection{"NetworkDetails"_el});
+        const auto stream = manager->createStream("app/network"_el, el::log::LogTraceSection{"Network-Details"_el});
         REQUIRE_FALSE(stream->traceEnabled());
 
         const auto errors = std::make_shared<el::log::impl::LastErrorsLogWriter>();
@@ -226,9 +229,11 @@ public:
         manager->setConfiguration(configuration);
         REQUIRE_FALSE(stream->traceEnabled());
 
-        configuration.enableTraceSection(el::log::LogTraceSection{"NetworkDetails"_el});
+        configuration.enableTraceSection(el::log::LogTraceSection{"network_details"_el});
         manager->setConfiguration(configuration);
         REQUIRE(stream->traceEnabled());
+        manager->setConfiguration(el::log::LogConfiguration{});
+        REQUIRE_FALSE(stream->traceEnabled());
         manager->shutdown();
     }
 
@@ -236,7 +241,7 @@ public:
         const auto manager = el::log::LogManager::create();
         const auto errors = std::make_shared<el::log::impl::LastErrorsLogWriter>();
         auto configuration = el::log::LogConfiguration{};
-        configuration.addWriter(errors, el::log::LogWriterFilter{el::log::LogLevel::Error});
+        configuration.addWriter(errors, el::log::LogWriterFilter{}.setAcceptedLevels(el::log::LogLevel::Error));
         manager->setConfiguration(std::move(configuration));
 
         auto message = el::text::StringEditor{"first\nsecond"_el};
@@ -282,21 +287,28 @@ public:
         const auto manager = el::log::LogManager::create();
         const auto oldWriter = std::make_shared<BlockingWriter>();
         const auto newWriter = std::make_shared<CaptureWriter>();
-        manager->setConfiguration(el::log::LogConfiguration{}.addWriter(oldWriter));
+        auto oldFormat = el::log::LogLineFormat{};
+        oldFormat.setPattern("old: {message}"_el);
+        manager->setConfiguration(el::log::LogConfiguration{}.addWriter(oldWriter, {}, oldFormat));
         manager->rootStream()->info("current"_el);
         oldWriter->waitUntilEntered();
         manager->rootStream()->info("queued"_el);
 
-        auto reconfigureThread =
-            std::thread{[&]() -> void { manager->setConfiguration(el::log::LogConfiguration{}.addWriter(newWriter)); }};
+        auto newFormat = el::log::LogLineFormat{};
+        newFormat.setPattern("new: {message}"_el);
+        auto reconfigureThread = std::thread{[&]() -> void {
+            manager->setConfiguration(el::log::LogConfiguration{}.addWriter(newWriter, {}, newFormat));
+        }};
         std::this_thread::sleep_for(std::chrono::milliseconds{10});
         oldWriter->release();
         reconfigureThread.join();
         manager->shutdown();
 
         REQUIRE_EQUAL(oldWriter->written, std::size_t{1U});
+        REQUIRE_EQUAL(oldWriter->writtenLine, "old: current"_el);
         REQUIRE_EQUAL(newWriter->entries.size(), std::size_t{1U});
         REQUIRE_EQUAL(newWriter->entries.front()->message(), "queued"_el);
+        REQUIRE_EQUAL(newWriter->lines.first(), "new: queued"_el);
     }
 
     void testShutdownDeadlineDropsEntriesWaitingBehindCurrentWrite() {
@@ -329,8 +341,8 @@ public:
     void testRouteMatchingUsesCompleteSegments() {
         const auto manager = el::log::LogManager::create();
         const auto writer = std::make_shared<CaptureWriter>();
-        auto filter = el::log::LogWriterFilter{el::log::LogLevel::Information};
-        filter.addPath(el::log::LogPath{"app"_el});
+        auto filter = el::log::LogWriterFilter{}.setAcceptedLevels(el::log::LogLevel::Information);
+        filter.addAcceptedPath(el::log::LogPath{"app"_el});
         manager->setConfiguration(el::log::LogConfiguration{}.addWriter(writer, filter));
         manager->createStream("app/worker"_el)->info("accepted"_el);
         manager->createStream("apple"_el)->info("rejected"_el);
@@ -345,7 +357,7 @@ public:
         auto options = el::log::LogManagerOptions{};
         options.setMaximumEntries(3U)
             .setReservedErrorEntries(1U)
-            .setMaximumBytes(el::unit::ByteLength{1024U * 1024U})
+            .setMaximumBytes(el::unit::ByteCount{1024U * 1024U})
             .setReservedErrorBytes({});
         const auto manager = el::log::LogManager::create(options);
         const auto writer = std::make_shared<BlockingWriter>();
@@ -404,7 +416,7 @@ public:
 
     void testMessageByteLimitMarksTruncation() {
         auto options = el::log::LogManagerOptions{};
-        options.setMaximumMessageBytes(el::unit::ByteLength{8U});
+        options.setMaximumMessageBytes(el::unit::ByteCount{8U});
         const auto manager = el::log::LogManager::create(options);
         const auto writer = std::make_shared<CaptureWriter>();
         auto configuration = el::log::LogConfiguration{};
@@ -415,12 +427,12 @@ public:
 
         REQUIRE_EQUAL(writer->entries.size(), std::size_t{1U});
         REQUIRE(writer->entries.front()->isTruncated());
-        REQUIRE_LESS_EQUAL(writer->entries.front()->message().length(), el::unit::ByteLength{8U});
+        REQUIRE_LESS_EQUAL(writer->entries.front()->message().length(), el::unit::ByteCount{8U});
     }
 
     void testMessageByteLimitPreservesUtf8Boundary() {
         auto options = el::log::LogManagerOptions{};
-        options.setMaximumMessageBytes(el::unit::ByteLength{5U});
+        options.setMaximumMessageBytes(el::unit::ByteCount{5U});
         const auto manager = el::log::LogManager::create(options);
         const auto writer = std::make_shared<CaptureWriter>();
         auto configuration = el::log::LogConfiguration{};
@@ -437,11 +449,25 @@ public:
     void testWriterFailuresAreContainedAndCounted() {
         const auto manager = el::log::LogManager::create();
         const auto writer = std::make_shared<FailingWriter>();
-        manager->setConfiguration(el::log::LogConfiguration{}.addWriter(writer));
-        manager->rootStream()->error("failure"_el);
+        const auto capture = std::make_shared<CaptureWriter>();
+        manager->setConfiguration(el::log::LogConfiguration{}.addWriter(writer).addWriter(capture));
+        manager->pause();
+        manager->rootStream()->error("first entry"_el);
+        manager->rootStream()->error("second entry"_el);
+        REQUIRE_EQUAL(manager->statistics().queuedEntries, std::size_t{2U});
+        manager->resume();
         manager->shutdown();
 
-        REQUIRE_EQUAL(manager->statistics().writerFailures, uint64_t{1U});
+        const auto statistics = manager->statistics();
+        REQUIRE_EQUAL(statistics.acceptedEntries, uint64_t{2U});
+        REQUIRE_EQUAL(statistics.writtenEntries, uint64_t{2U});
+        REQUIRE_EQUAL(statistics.writerFailures, uint64_t{1U});
+        REQUIRE_EQUAL(statistics.droppedEntries, uint64_t{0U});
+        REQUIRE_EQUAL(statistics.queuedEntries, std::size_t{0U});
+        REQUIRE(statistics.queuedBytes.isZero());
+        REQUIRE_EQUAL(capture->entries.size(), std::size_t{2U});
+        REQUIRE_EQUAL(capture->entries[0]->message(), "first entry"_el);
+        REQUIRE_EQUAL(capture->entries[1]->message(), "second entry"_el);
     }
 
     void testWriterCannotBeActiveInTwoManagers() {
@@ -456,11 +482,11 @@ public:
 
     void testInvalidManagerOptionsFailSynchronously() {
         auto options = el::log::LogManagerOptions{};
-        REQUIRE_THROWS_AS(el::err::ParameterError, options.setMaximumEntries(0U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, options.setMaximumEntries(0U));
 
         options = {};
-        options.setReservedErrorBytes(options.maximumBytes() + el::unit::ByteLength::one());
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::log::LogConfiguration{}.setManagerOptions(options));
+        options.setReservedErrorBytes(options.maximumBytes() + el::unit::ByteCount::one());
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::log::LogConfiguration{}.setManagerOptions(options));
     }
 
     void testLineFormattingOptionsAndEscapedBraces() {
@@ -478,9 +504,9 @@ public:
         manager->createStream("app/database/query"_el)->warn("first\nsecond"_el);
         manager->shutdown();
 
-        REQUIRE_EQUAL(writer->lines.size(), std::size_t{1U});
-        REQUIRE_EQUAL(writer->lines.front(), "{WARNING} app/…/query: first[...]"_el);
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::log::LogLineFormat{}.setPattern("{unknown}"_el));
+        REQUIRE_EQUAL(writer->lines.count().toSizeT(), std::size_t{1U});
+        REQUIRE_EQUAL(writer->lines.first(), "{WARNING} app/…/query: first[...]"_el);
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::log::LogLineFormat{}.setPattern("{unknown}"_el));
     }
 
     void testLocalTimestampRenderingKeepsEntryTimestampUtc() {
@@ -502,6 +528,6 @@ public:
                                   .toIsoString(
                                       el::time::IsoTimeFormatFlags{
                                           el::time::IsoTimeFormat::Extended, el::time::IsoTimeFormat::TimeShift});
-        REQUIRE_EQUAL(writer->lines.front(), expected);
+        REQUIRE_EQUAL(writer->lines.first(), expected);
     }
 };

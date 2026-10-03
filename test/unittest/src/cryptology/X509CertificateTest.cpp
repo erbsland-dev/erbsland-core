@@ -3,17 +3,19 @@
 
 #include "X509TestData.hpp"
 
-#include <erbsland/cryptology/keys/PublicKey.hpp>
-#include <erbsland/cryptology/x509/X509Certificate.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/cryptology/impl/DerEncoder.hpp>
+#include <erbsland/cryptology/impl/PemCodec.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/PublicKey.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/X509Certificate.hpp>
+#include <erbsland/X509CertificateBundle.hpp>
 
 #include <array>
 #include <cstddef>
@@ -166,6 +168,48 @@ public:
         REQUIRE_EQUAL(compatible.signatureAlgorithmId(), "1.2.840.113549.1.1.12"_el);
     }
 
+    void testCompatibleGeneralizedTimeBefore2050() {
+        const auto certificate = X509Certificate::fromPemOrThrow(certificatePem());
+        const auto root = certificate.asn1();
+        const auto tbs = root.child(el::unit::ItemIndex{0U});
+        const auto validity = tbs.child(el::unit::ItemIndex{4U});
+        auto timeBytes = validity.child(el::unit::ItemIndex{0U}).contentData().toUInt8Vector();
+        timeBytes.insert(timeBytes.begin(), {0x18U, 15U, '2', '0'});
+        const auto encode = [&](const std::vector<uint8_t> &time) -> el::mem::ByteBlock {
+            auto encoder = el::cryptology::impl::DerEncoder{};
+            const auto outerScope = encoder.beginSequence();
+            const auto tbsScope = encoder.beginSequence();
+            for (auto index = std::size_t{}; index < tbs.childCount().toSizeT(); ++index) {
+                if (index == 4U) {
+                    const auto validityScope = encoder.beginSequence();
+                    encoder.appendEncoded(el::mem::ByteBlock::fromVector(time).span());
+                    encoder.appendEncoded(validity.child(el::unit::ItemIndex{1U}).encodedData().span());
+                    encoder.end(validityScope);
+                } else {
+                    encoder.appendEncoded(tbs.child(el::unit::ItemIndex::fromSizeT(index)).encodedData().span());
+                }
+            }
+            encoder.end(tbsScope);
+            encoder.appendEncoded(root.child(el::unit::ItemIndex{1U}).encodedData().span());
+            encoder.appendEncoded(root.child(el::unit::ItemIndex{2U}).encodedData().span());
+            encoder.end(outerScope);
+            return encoder.encoded();
+        };
+        const auto der = encode(timeBytes);
+        REQUIRE_THROWS_AS(el::err::ParseError, X509Certificate::fromDerOrThrow(der));
+        const auto compatible = X509Certificate::fromDerOrThrow(der, X509CertificateProfileMode::Compatible);
+        REQUIRE_EQUAL(compatible.validFrom(), certificate.validFrom());
+        REQUIRE_EQUAL(compatible.validTo(), certificate.validTo());
+        REQUIRE_EQUAL(compatible.toDer(), der);
+        REQUIRE_EQUAL(compatible.profileIssues().count(), el::unit::ItemCount{1U});
+        REQUIRE(compatible.profileIssues().first().category() == X509CertificateProfileIssueCategory::ValidityEncoding);
+        timeBytes[6U] = '1';
+        timeBytes[7U] = '3';
+        REQUIRE_THROWS_AS(
+            el::err::ParseError,
+            X509Certificate::fromDerOrThrow(encode(timeBytes), X509CertificateProfileMode::Compatible));
+    }
+
     void testKnownExtensionProfileIssue() {
         const auto certificate = X509Certificate::fromPemOrThrow(certificatePem());
         auto bytes = certificate.toDer().toUInt8Vector();
@@ -191,6 +235,16 @@ public:
         REQUIRE_FALSE(compatible.keyUsage().has_value());
         REQUIRE_EQUAL(compatible.profileIssues().count(), el::unit::ItemCount{1U});
         REQUIRE(compatible.profileIssues().first().category() == X509CertificateProfileIssueCategory::ExtensionValue);
+    }
+
+    void testPemCertificateCountLimit() {
+        auto text = el::text::StringEditor{};
+        for (auto index = std::size_t{}; index <= el::cryptology::impl::PemCodec::cMaximumCertificates; ++index) {
+            text.append("-----BEGIN CERTIFICATE-----\nAQ==\n-----END CERTIFICATE-----\n"_el);
+        }
+        const auto input = el::text::String{text};
+        REQUIRE_THROWS_AS(el::err::ParseError, X509CertificateBundle::fromPemOrThrow(input));
+        REQUIRE(X509CertificateBundle::fromPem(input).isEmpty());
     }
 
     void testMalformedInput() {
@@ -246,7 +300,7 @@ public:
     void testDerParseErrorsUseSliceRelativeByteIndex() {
         const auto storage = el::mem::ByteBlock::fromVector(
             std::vector<uint8_t>{0xAAU, 0xBBU, 0x30U, 0x06U, 0x05U, 0x00U, 0x05U, 0x00U, 0x05U, 0x00U, 0xCCU});
-        const auto der = storage.slice(el::unit::ByteIndex{2U}, el::unit::ByteLength{8U});
+        const auto der = storage.slice(el::unit::ByteIndex{2U}, el::unit::ByteCount{8U});
         try {
             static_cast<void>(X509Certificate::fromDerOrThrow(der));
             REQUIRE(false);

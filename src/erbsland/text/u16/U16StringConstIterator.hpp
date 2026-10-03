@@ -8,7 +8,7 @@
 
 #include "../Char.hpp"
 
-#include "../../unit/U16DataIndex.hpp"
+#include "../../unit/U16Index.hpp"
 
 #include <cstddef>
 
@@ -64,12 +64,12 @@ public:
 
 private:
     /// Create an iterator pointing to the given position in the given view.
-    U16StringConstIterator(const U16String &view, unit::U16DataIndex index);
+    U16StringConstIterator(const U16String &view, unit::U16Index index);
 
 private:
-    U16String _string;                                        ///< The string accessed by this iterator.
-    unit::U16DataIndex _index{unit::U16DataIndex::noIndex()}; ///< The current UTF-16 unit index within the storage.
-    mutable Char _currentChar;                                ///< Current character cache for pointer semantics.
+    U16String _string;                                ///< The string accessed by this iterator.
+    unit::U16Index _index{unit::U16Index::noIndex()}; ///< The current UTF-16 unit index within the storage.
+    mutable Char _currentChar;                        ///< Current character cache for pointer semantics.
 };
 
 }

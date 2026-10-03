@@ -3,16 +3,16 @@
 
 #include "../../path/PathTestFixture.hpp"
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathCreateMode.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/PathWriteDataOptions.hpp>
-#include <erbsland/path/PathWriteTextOptions.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Environment.hpp>
-#include <erbsland/text/render/FileSystemLoader.hpp>
-#include <erbsland/text/render/RenderError.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathCreateMode.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathWriteDataOptions.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/render/FileSystemLoader.hpp>
+#include <erbsland/render/RenderError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <vector>

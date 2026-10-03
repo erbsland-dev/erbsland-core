@@ -5,8 +5,8 @@
 
 #include <erbsland/block/StdFormat.hpp>
 #include <erbsland/cterm/impl/KeyDecoder.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>

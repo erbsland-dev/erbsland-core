@@ -23,7 +23,7 @@ auto List<tElement, tSelf>::remove(const Range range) -> Self & {
     if (!boundedRange.isValid() || boundedRange.isEmpty()) {
         return self();
     }
-    const auto begin = boundedRange.index().toSizeT();
+    const auto begin = boundedRange.beginIndex().toSizeT();
     const auto end = boundedRange.endIndex().toSizeT();
     data.erase(
         data.begin() + static_cast<typename Raw::difference_type>(begin),
@@ -71,7 +71,7 @@ auto List<tElement, tSelf>::removeFirst() -> Self & {
 template <typename tElement, typename tSelf>
 auto List<tElement, tSelf>::removeLast() -> Self & {
     if (!raw().empty()) {
-        remove(Index::fromSizeT(raw().size() - 1U));
+        remove(lastIndex());
     }
     return self();
 }

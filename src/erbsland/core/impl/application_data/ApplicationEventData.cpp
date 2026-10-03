@@ -29,8 +29,13 @@ auto ApplicationEventData::eventRegistry() noexcept -> event::EventRegistry & {
     return _eventRegistry;
 }
 
-auto ApplicationEventData::createEventThread() -> event::ManagedEventThreadPtr {
-    auto result = std::make_shared<event::impl::ManagedEventThread>();
+auto ApplicationEventData::createEventThread(const event::EventLoopOptions &options) -> event::ManagedEventThreadPtr {
+    auto result = std::make_shared<event::impl::ManagedEventThread>(
+        options, [owner = weak_from_this()](std::exception_ptr error) -> void {
+            if (const auto state = owner.lock()) {
+                state->recordFailure(std::move(error));
+            }
+        });
     const auto lock = std::scoped_lock{_mutex};
     std::erase_if(_threads, [](const event::ManagedEventThreadWeakPtr &thread) -> bool { return thread.expired(); });
     _threads.emplace_back(result);
@@ -54,16 +59,16 @@ auto ApplicationEventData::isQuitRequested() const noexcept -> bool {
 }
 
 auto ApplicationEventData::finishRun() -> unit::ExitCode {
+    finishThreads();
+    const auto lock = std::scoped_lock{_mutex};
+    return _quitExitCodeSet ? _quitExitCode : unit::ExitCode::success();
+}
+
+void ApplicationEventData::finishThreads() {
     _eventLoop->setErrorHandler({});
-    auto exitCode = unit::ExitCode::success();
-    auto loopError = std::exception_ptr{};
     auto threads = std::vector<event::ManagedEventThreadPtr>{};
     {
         const auto lock = std::scoped_lock{_mutex};
-        if (_quitExitCodeSet) {
-            exitCode = _quitExitCode;
-        }
-        loopError = _loopError;
         threads = managedThreads();
     }
     for (const auto &thread : threads) {
@@ -72,34 +77,49 @@ auto ApplicationEventData::finishRun() -> unit::ExitCode {
     for (const auto &thread : threads) {
         thread->join();
     }
+    auto loopError = std::exception_ptr{};
+    {
+        const auto lock = std::scoped_lock{_mutex};
+        loopError = _loopError;
+    }
     if (loopError != nullptr) {
         std::rethrow_exception(loopError);
     }
-    return exitCode;
+}
+
+void ApplicationEventData::recordFailure(std::exception_ptr error) noexcept {
+    auto threads = std::vector<event::ManagedEventThreadPtr>{};
+    {
+        const auto lock = std::scoped_lock{_mutex};
+        if (_loopError == nullptr) {
+            _loopError = std::move(error);
+            static_cast<event::impl::EventLoop &>(*_eventLoop).stopForFailure();
+        }
+        threads = managedThreads();
+    }
+    for (const auto &thread : threads) {
+        thread->quit();
+    }
 }
 
 void ApplicationEventData::recordExitCode(const unit::ExitCode exitCode) noexcept {
-    try {
-        const auto lock = std::scoped_lock{_mutex};
-        if (!_quitExitCodeSet) {
-            _quitExitCode = exitCode;
-            _quitExitCodeSet = true;
-        }
-    } catch (...) {}
+    const auto lock = std::scoped_lock{_mutex};
+    if (!_quitExitCodeSet) {
+        _quitExitCode = exitCode;
+        _quitExitCodeSet = true;
+    }
 }
 
 void ApplicationEventData::quit() noexcept {
-    try {
-        auto threads = std::vector<event::ManagedEventThreadPtr>{};
-        {
-            const auto lock = std::scoped_lock{_mutex};
-            threads = managedThreads();
-        }
-        _eventLoop->quit();
-        for (const auto &thread : threads) {
-            thread->quit();
-        }
-    } catch (...) {}
+    auto threads = std::vector<event::ManagedEventThreadPtr>{};
+    {
+        const auto lock = std::scoped_lock{_mutex};
+        threads = managedThreads();
+    }
+    _eventLoop->quit();
+    for (const auto &thread : threads) {
+        thread->quit();
+    }
 }
 
 auto ApplicationEventData::managedThreads() -> std::vector<event::ManagedEventThreadPtr> {

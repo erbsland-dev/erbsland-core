@@ -59,14 +59,14 @@ public:
         REQUIRE_EQUAL(view[BlockIndex{0U}], U'2');
         REQUIRE_EQUAL(view[BlockIndex{2U}], U'4');
         REQUIRE(view[BlockIndex{3U}].isEmpty());
-        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, view.at(BlockIndex{3U}));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeFailure, view.at(BlockIndex{3U}));
     }
 
     void testAtReportsThePublicTypeName() {
         try {
             static_cast<void>(BlockString{}.at(BlockIndex{0U}));
             REQUIRE(false);
-        } catch (const erbsland::err::OutOfRangeError &error) {
+        } catch (const erbsland::err::OutOfRangeFailure &error) {
             REQUIRE_EQUAL(error.toString(), "BlockString index out of range."_el);
         }
     }

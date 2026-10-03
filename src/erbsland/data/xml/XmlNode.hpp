@@ -15,6 +15,7 @@
 #include <optional>
 
 namespace erbsland::data::xml {
+
 /// A mutable XML DOM node with ordered children.
 /// @seedoc{/reference/data/xml}
 /// @tested{XmlDocumentTest}
@@ -45,7 +46,7 @@ public: // accessors
     /// Get all descendant character data, or no value if an entity is unresolved.
     [[nodiscard]] auto textContent() const -> std::optional<text::String>;
     /// Get all descendant character data.
-    /// @throws err::LogicError If an entity is unresolved.
+    /// @throws err::NotFoundError If an entity reference has no resolved text value.
     [[nodiscard]] auto textContentOrThrow() const -> text::String;
 
 public: // mutation
@@ -97,4 +98,5 @@ private:                                  // data
     util::List<XmlAttribute> _attributes; ///< Ordered attributes.
     util::List<XmlNodePtr> _children;     ///< Ordered descendants.
 };
+
 }

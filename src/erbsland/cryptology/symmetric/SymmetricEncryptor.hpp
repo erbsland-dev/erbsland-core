@@ -39,17 +39,17 @@ public:
     /// Create an empty placeholder.
     SymmetricEncryptor() noexcept = default;
     /// Create an AEAD encryptor.
-    /// @param type The authenticated encryption construction.
+    /// @param type The authenticated encryption construction. Must be a valid AEAD type matching the key and nonce
+    /// lengths.
     /// @param key The exact-size secret key.
     /// @param nonce The exact-size nonce.
-    /// @throws err::ParameterError If the type or data lengths do not match.
     /// @throws CryptologyError If no backend is available or backend initialization fails.
     SymmetricEncryptor(SymmetricEncryptionType type, const SymmetricKey &key, const SymmetricNonce &nonce);
     /// Create an IV-based encryptor.
-    /// @param type The unauthenticated encryption construction.
+    /// @param type The unauthenticated encryption construction. Must be a valid IV-based type matching the key and IV
+    /// lengths.
     /// @param key The exact-size secret key.
     /// @param iv The exact-size initialization vector.
-    /// @throws err::ParameterError If the type or data lengths do not match.
     /// @throws CryptologyError If no backend is available or backend initialization fails.
     SymmetricEncryptor(SymmetricEncryptionType type, const SymmetricKey &key, const SymmetricIv &iv);
 
@@ -70,34 +70,34 @@ public:
     void secureErase() noexcept;
     /// Add authenticated associated data.
     /// Empty spans are accepted and do not begin payload processing.
+    /// This encryptor must use AEAD and must not be empty, failed, finalized, or already processing payload.
     /// @param data The next associated-data bytes.
-    /// @throws err::LogicError If this encryptor is empty, unauthenticated, failed, finalized, or processing payload.
     void addAuthenticatedData(mem::ConstByteSpan data);
     /// Add authenticated associated data from an owning byte block.
+    /// This encryptor must use AEAD and must not be empty, failed, finalized, or already processing payload.
     /// @param data The next associated-data bytes.
-    /// @throws err::LogicError If this encryptor is empty, unauthenticated, failed, finalized, or processing payload.
     void addAuthenticatedData(const mem::ByteBlock &data);
     /// Encrypt payload bytes.
     /// Empty spans are accepted. CBC workers buffer partial blocks according to their selected padding mode.
+    /// This encryptor must not be empty, failed, or finalized.
     /// @param data The next plaintext bytes.
     /// @return The encrypted output currently available.
-    /// @throws err::LogicError If this encryptor is empty, failed, or finalized.
     /// @throws CryptologyError If the backend fails.
     [[nodiscard]] auto encrypt(mem::ConstByteSpan data) -> mem::ByteBlock;
     /// Encrypt payload bytes from an owning byte block.
+    /// This encryptor must not be empty, failed, or finalized.
     /// @param data The next plaintext bytes.
     /// @return The encrypted output currently available.
-    /// @throws err::LogicError If this encryptor is empty, failed, or finalized.
     /// @throws CryptologyError If the backend fails.
     [[nodiscard]] auto encrypt(const mem::ByteBlock &data) -> mem::ByteBlock;
     /// Finalize encryption.
+    /// This encryptor must not be empty, failed, or finalized.
     /// @return Any final encrypted output, including selected CBC padding.
-    /// @throws err::LogicError If this encryptor is empty, failed, or already finalized.
     /// @throws CryptologyError If the backend fails.
     [[nodiscard]] auto finalize() -> mem::ByteBlock;
     /// Get the AEAD authentication tag after finalization.
+    /// This encryptor must use AEAD and must have finalized successfully.
     /// @return The cached authentication tag.
-    /// @throws err::LogicError If this encryptor is not AEAD or has not finalized successfully.
     [[nodiscard]] auto tag() const -> SymmetricTag;
 
 public: // tests
@@ -106,7 +106,7 @@ public: // tests
 
 public: // accessors
     /// Get the configured encryption type.
-    /// @throws err::LogicError If this encryptor is empty.
+    /// This encryptor must not be empty.
     [[nodiscard]] auto type() const -> SymmetricEncryptionType;
 
 private:

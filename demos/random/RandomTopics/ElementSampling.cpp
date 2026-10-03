@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace demo {
 
@@ -21,7 +26,7 @@ void elementSampling() {
 
     // Select one element directly or provide a fallback for empty input.
     const auto accent = random.selectElement(palette);
-    const auto fallback = random.selectElement(el::StringList{}, el::String{"biel"_el});
+    const auto fallback = random.selectElement(el::StringList{}, "biel"_el);
     el::io::printLine("Accent color : "_el, accent);
     el::io::printLine("Fallback     : "_el, fallback);
 

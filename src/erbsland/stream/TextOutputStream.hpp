@@ -61,20 +61,20 @@ public: // core interface
 
 public: // coroutine interface
     /// Asynchronously write owned text.
+    /// This stream must have shared ownership.
     /// @param text The text retained by the operation until it completes.
     /// @return A task with the same result as `write(String)`.
-    /// @throws err::LogicError If this stream is not shared-owned.
     /// @throws stream::StreamError When the task result is observed if the stream or backing target fails.
     [[nodiscard]] auto coWrite(text::String text) -> util::CoTask<StreamWriteStatus>;
     /// Asynchronously write one line-feed character.
+    /// This stream must have shared ownership.
     /// @return A task with the same result as `writeLine()`.
-    /// @throws err::LogicError If this stream is not shared-owned.
     /// @throws stream::StreamError When the task result is observed if the stream or backing target fails.
     [[nodiscard]] auto coWriteLine() -> util::CoTask<StreamWriteStatus>;
     /// Asynchronously write owned text followed by a line-feed character.
+    /// This stream must have shared ownership.
     /// @param text The text retained by the operation until it completes.
     /// @return A task with the same result as `writeLine(String)`.
-    /// @throws err::LogicError If this stream is not shared-owned.
     /// @throws stream::StreamError When the task result is observed if the stream or backing target fails.
     [[nodiscard]] auto coWriteLine(text::String text) -> util::CoTask<StreamWriteStatus>;
 

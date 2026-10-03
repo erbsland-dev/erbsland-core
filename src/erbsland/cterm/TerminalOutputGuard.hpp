@@ -4,6 +4,8 @@
 
 #include "TerminalOutputGuard_fwd.hpp"
 
+#include "../core/Definitions.hpp"
+
 #include <memory>
 #include <mutex>
 

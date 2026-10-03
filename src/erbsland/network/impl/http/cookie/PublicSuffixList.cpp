@@ -7,13 +7,14 @@
 #include "../../../../text/CharSet.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringSide.hpp"
-#include "../../../../unit/ByteLength.hpp"
+#include "../../../../unit/ByteCount.hpp"
 
 namespace erbsland::network::impl::public_suffix {
 
+using namespace text;
 using namespace text::literals;
 
-auto isPublicSuffix(const text::String &host) -> bool {
+auto isPublicSuffix(const String &host) -> bool {
     if (host.isEmpty()) {
         return false;
     }
@@ -21,13 +22,13 @@ auto isPublicSuffix(const text::String &host) -> bool {
     return PublicSuffixLookup{}.publicSuffixLabelCount(host) == labelCount;
 }
 
-auto registrableDomain(const text::String &host) -> text::String {
+auto registrableDomain(const String &host) -> String {
     const auto suffixLabels = PublicSuffixLookup{}.publicSuffixLabelCount(host);
     if (suffixLabels == 0U) {
         return {};
     }
-    const auto labelSeparator = text::CharSet{U'.'};
-    auto split = host.indexAt(text::StringSide::Back);
+    const auto labelSeparator = CharSet{U'.'};
+    auto split = host.indexAt(StringSide::Back);
     for (auto label = std::size_t{}; label < suffixLabels; ++label) {
         split = host.findLastOf(labelSeparator, split);
         if (split.isNoIndex()) {
@@ -38,7 +39,7 @@ auto registrableDomain(const text::String &host) -> text::String {
     if (split.isNoIndex()) {
         return host;
     }
-    return host.slice(text::StringSide::Back, split + unit::ByteLength::one());
+    return host.slice(StringSide::Back, split + unit::ByteCount::one());
 }
 
 }

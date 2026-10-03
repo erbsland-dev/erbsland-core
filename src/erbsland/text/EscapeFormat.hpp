@@ -13,6 +13,7 @@
 namespace erbsland::text {
 
 /// The target syntax for escaped text.
+/// @seedoc{/reference/text/formatting_and_parsing}
 /// @tested{StringEscapingTest}
 class EscapeFormat final {
 public:
@@ -29,6 +30,10 @@ public:
         Config,      ///< Escape for Erbsland Configuration Language text literals.
         ConfigTest,  ///< Escape for Erbsland Configuration Language test strings.
         Markdown,    ///< Escape normal CommonMark text using backslash and numeric references.
+        Url,         ///< RFC 3986 percent-encoding of data, preserving only unreserved ASCII characters.
+        UrlPath,     ///< RFC 3986 path encoding, preserving path delimiters and slashes.
+        UrlQuery,    ///< RFC 3986 query or fragment encoding, preserving their delimiters.
+        UrlUserInfo, ///< RFC 3986 credential-field encoding, escaping colon and at-sign separators.
 
         _valueCount, ///< Number of escape formats.
     };

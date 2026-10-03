@@ -5,7 +5,7 @@
 #include "impl/authentication/HmacWorker.hpp"
 #include "impl/authentication/HmacWorkerFactory.hpp"
 
-#include "../err/LogicError.hpp"
+#include "../err/LogicFailure.hpp"
 #include "../mem/ByteBlock.hpp"
 #include "../text/impl/UnsafeU8StringAccess.hpp"
 #include "../text/Literals.hpp"
@@ -14,19 +14,19 @@
 
 namespace erbsland::cryptology {
 
+using namespace mem;
 using namespace text::literals;
 
 Hmac::Hmac() noexcept = default;
 
-Hmac::Hmac(const HashAlgorithm algorithm, mem::ByteBlock key) {
+Hmac::Hmac(const HashAlgorithm algorithm, ByteBlock key) {
     // The facade transfers the caller's shared key allocation into the library's sensitive-memory lifecycle.
     // createHmacWorker() synchronously normalizes the key according to RFC 2104 section 2 before this copy is released.
     key.markAsSensitive();
     _worker = impl::createHmacWorker(algorithm, key.span());
 }
 
-Hmac::Hmac(const HashAlgorithm algorithm, const mem::ConstByteSpan key) :
-    Hmac{algorithm, mem::ByteBlock::fromSpan(key)} {
+Hmac::Hmac(const HashAlgorithm algorithm, const ConstByteSpan key) : Hmac{algorithm, ByteBlock::fromSpan(key)} {
 }
 
 Hmac::~Hmac() {
@@ -57,26 +57,26 @@ void Hmac::secureErase() noexcept {
     }
 }
 
-void Hmac::update(const mem::ConstByteSpan data) {
+void Hmac::update(const ConstByteSpan data) {
     requireValid();
     _worker->update(data);
 }
 
-void Hmac::update(const mem::ByteBlock &data) {
+void Hmac::update(const ByteBlock &data) {
     update(data.span());
 }
 
 void Hmac::update(const text::String &text) {
     const auto bytes = text::impl::UnsafeU8StringAccess{text}.dataSpan();
-    update(mem::toConstByteSpan(bytes));
+    update(toConstByteSpan(bytes));
 }
 
-auto Hmac::finalize() -> mem::ByteBlock {
+auto Hmac::finalize() -> ByteBlock {
     requireValid();
     return _worker->finalize();
 }
 
-auto Hmac::verify(const mem::ConstByteSpan expected) -> bool {
+auto Hmac::verify(const ConstByteSpan expected) -> bool {
     requireValid();
     // This API does not implement RFC 2104 tag truncation. Reject a non-HashLen tag before finalizing the stream.
     if (expected.size() != _worker->algorithm().digestSize().toSizeT()) {
@@ -86,7 +86,7 @@ auto Hmac::verify(const mem::ConstByteSpan expected) -> bool {
     return finalize().isEqualConstTime(expected);
 }
 
-auto Hmac::verify(const mem::ByteBlock &expected) -> bool {
+auto Hmac::verify(const ByteBlock &expected) -> bool {
     return verify(expected.span());
 }
 
@@ -97,7 +97,7 @@ auto Hmac::algorithm() const -> HashAlgorithm {
 
 void Hmac::requireValid() const {
     if (!isValid()) {
-        throw err::LogicError{"Cannot use an invalid HMAC state."_el};
+        throw err::LogicFailure{"Cannot use an invalid HMAC state."_el};
     }
 }
 

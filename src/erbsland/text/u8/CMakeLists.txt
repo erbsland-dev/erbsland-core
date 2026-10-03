@@ -16,7 +16,9 @@ target_sources(erbsland-core PRIVATE
         U8String_float.cpp
         U8String_fwd.hpp
         U8String_integer.tpp
+        U8String_modify.cpp
         U8String_normalization.cpp
+        U8String_split.cpp
         U8String_trim.cpp
         U8StringCIHashMap.hpp
         U8StringCIHashMap_fwd.hpp
@@ -38,6 +40,7 @@ target_sources(erbsland-core PRIVATE
         U8StringEditor_integer.tpp
         U8StringEditor_modify.cpp
         U8StringEditor_normalization.cpp
+        U8StringEditor_split.cpp
         U8StringEditor_trim.cpp
         U8StringEditorList.hpp
         U8StringEditorList_fwd.hpp

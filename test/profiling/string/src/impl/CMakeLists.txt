@@ -9,6 +9,7 @@ target_sources(string-types-profile PRIVATE
         ProfileTypeTools.hpp
         ScenarioTemplate.hpp
         ScenarioTemplate_fwd.hpp
+        SeparatorSplitWorkload.hpp
         Statistics.hpp
         Statistics_fwd.hpp
         WidthTraits.hpp

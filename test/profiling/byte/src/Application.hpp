@@ -7,8 +7,18 @@
 #include "DefaultConfiguration.hpp"
 #include "Workload.hpp"
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
 #include <erbsland/profiling/AxisDefinition.hpp>
 #include <erbsland/profiling/ProfilingApplication.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/Version.hpp>
 
 #include <algorithm>
 #include <optional>
@@ -34,7 +44,7 @@ protected: // implement pf::ProfilingApplication
                 "Byte Types Profiler and Benchmark"_el,
                 "Profiles deterministic ByteArray, ByteBlock, ByteBlockEditor, ByteBuffer, and ByteRingBuffer "
                 "workloads. With no options, it runs the four-thread snapshot benchmark."_el)
-            .setDefaultConfiguration(el::String{cDefaultConfigurationText});
+            .setDefaultConfiguration(cDefaultConfigurationText);
         auto typeAxis = pf::AxisDefinition{"type"_el, "types"_el, "type"_el};
         for (
             const auto type :

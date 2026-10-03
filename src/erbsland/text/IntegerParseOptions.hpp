@@ -6,7 +6,7 @@
 #include "IntegerBase.hpp"
 #include "IntegerParseFlag.hpp"
 
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <optional>
 
@@ -61,16 +61,16 @@ public: // accessors
     /// Test if the given parse flag is set.
     [[nodiscard]] constexpr auto hasFlag(IntegerParseFlag flag) const noexcept -> bool { return _flags.isSet(flag); }
     /// Get the minimum number of digits to parse.
-    [[nodiscard]] constexpr auto minimumDigits() const noexcept -> unit::CpLength { return _minimumDigits; }
+    [[nodiscard]] constexpr auto minimumDigits() const noexcept -> unit::CpCount { return _minimumDigits; }
     /// Set the minimum number of digits to parse.
-    constexpr auto setMinimumDigits(unit::CpLength minimumDigits) noexcept -> IntegerParseOptions & {
+    constexpr auto setMinimumDigits(unit::CpCount minimumDigits) noexcept -> IntegerParseOptions & {
         _minimumDigits = minimumDigits;
         return *this;
     }
     /// Get the maximum number of digits to parse.
-    [[nodiscard]] constexpr auto maximumDigits() const noexcept -> unit::CpLength { return _maximumDigits; }
+    [[nodiscard]] constexpr auto maximumDigits() const noexcept -> unit::CpCount { return _maximumDigits; }
     /// Set the maximum number of digits to parse.
-    constexpr auto setMaximumDigits(unit::CpLength maximumDigits) noexcept -> IntegerParseOptions & {
+    constexpr auto setMaximumDigits(unit::CpCount maximumDigits) noexcept -> IntegerParseOptions & {
         _maximumDigits = maximumDigits;
         return *this;
     }
@@ -94,7 +94,7 @@ public: // factories
     /// Create the default parse options.
     [[nodiscard]] constexpr static auto defaultOptions() noexcept -> IntegerParseOptions { return parserDefault(); }
     /// Create options to parse exactly the given number of decimal digits.
-    [[nodiscard]] constexpr static auto fixedDecimal(unit::CpLength count) noexcept -> IntegerParseOptions {
+    [[nodiscard]] constexpr static auto fixedDecimal(unit::CpCount count) noexcept -> IntegerParseOptions {
         auto result = IntegerParseOptions{};
         result.setFixedBase(IntegerBase::Decimal)
             .setMinimumDigits(count)
@@ -103,7 +103,7 @@ public: // factories
         return result;
     }
     /// Create options to parse exactly the given number of hexadecimal digits.
-    [[nodiscard]] constexpr static auto fixedHex(unit::CpLength count) noexcept -> IntegerParseOptions {
+    [[nodiscard]] constexpr static auto fixedHex(unit::CpCount count) noexcept -> IntegerParseOptions {
         auto result = IntegerParseOptions{};
         result.setFixedBase(IntegerBase::Hexadecimal)
             .setMinimumDigits(count)
@@ -113,11 +113,11 @@ public: // factories
     }
 
 private:
-    std::optional<IntegerBase> _fixedBase{};                   ///< The fixed base, or empty to detect prefixes.
-    IntegerParseFlags _flags{};                                ///< The active parse flags.
-    unit::CpLength _minimumDigits{unit::CpLength::zero()};     ///< The minimum digit count.
-    unit::CpLength _maximumDigits{unit::CpLength::infinite()}; ///< The maximum digit count.
-    Char _separator{U'\''};                                    ///< The digit separator character.
+    std::optional<IntegerBase> _fixedBase{};                 ///< The fixed base, or empty to detect prefixes.
+    IntegerParseFlags _flags{};                              ///< The active parse flags.
+    unit::CpCount _minimumDigits{unit::CpCount::zero()};     ///< The minimum digit count.
+    unit::CpCount _maximumDigits{unit::CpCount::infinite()}; ///< The maximum digit count.
+    Char _separator{U'\''};                                  ///< The digit separator character.
 };
 
 }

@@ -3,6 +3,7 @@
 #pragma once
 
 #include <DemoCommon.hpp>
+#include <erbsland/EventTimer.hpp>
 
 namespace demo {
 
@@ -15,5 +16,14 @@ struct UsingTimersDemoData {
 
 /// Start two timers that demonstrate one-shot and fixed-delay scheduling.
 void usingTimers();
+
+/// Defer work and ignore an obsolete delayed recipient.
+void queuedWork();
+/// Restart, stop, and release a retained timer.
+void timerLifetime();
+/// Compare repeating timer modes with a slow callback.
+void repeatingTimers();
+/// Process the latest input after a quiet period.
+void debouncing();
 
 }

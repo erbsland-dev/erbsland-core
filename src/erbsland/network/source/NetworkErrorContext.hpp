@@ -14,12 +14,13 @@
 #include "../../system/PlatformErrorContext_fwd.hpp"
 #include "../../text/String.hpp"
 
+#include <exception>
 #include <optional>
 
 namespace erbsland::network {
 
 /// Structured and machine-readable context for an asynchronous network failure.
-/// @tested{HostLookupTest NetworkFacadeTest TlsClientConnectionTest}
+/// @tested{HostLookupTest NetworkFacadeTest TlsClientConnectionTest HttpClientTest}
 class NetworkErrorContext final {
 public:
     /// Create a network error context.
@@ -56,6 +57,13 @@ public: // accessors
     /// @return The platform context, or a null pointer if it is unavailable.
     [[nodiscard]] auto platformContext() const noexcept -> const system::PlatformErrorContextConstPtr & {
         return _platformContext;
+    }
+    /// Get the captured lower-level failure, including its nested causes.
+    [[nodiscard]] auto cause() const noexcept -> std::exception_ptr { return _cause; }
+    /// Set the captured lower-level failure for asynchronous diagnostic delivery.
+    auto setCause(std::exception_ptr value) noexcept -> NetworkErrorContext & {
+        _cause = std::move(value);
+        return *this;
     }
     /// Set the local endpoint.
     /// @param endpoint The local endpoint involved in the operation.
@@ -108,6 +116,7 @@ public: // accessors
     }
 
 private:
+    std::exception_ptr _cause;                               ///< Captured lower-level failure.
     text::String _title;                                     ///< The short error title.
     text::String _description;                               ///< The user-facing description.
     NetworkErrorReason _reason{NetworkErrorReason::Unknown}; ///< The machine-readable reason.

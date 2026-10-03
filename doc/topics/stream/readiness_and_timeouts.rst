@@ -29,8 +29,8 @@ stream was opened, then returns control to the caller.
 This page explains how to use readiness as a hint, how to wait without giving up control indefinitely, and how to build
 complete input and output loops around timeout results.
 
-Overview: Keep Every Wait Under Application Control
-===================================================
+Stream Readiness, Waits, and Deadlines
+======================================
 
 :cpp:class:`InputStream <erbsland::stream::InputStream>` and
 :cpp:class:`OutputStream <erbsland::stream::OutputStream>` define the readiness contract shared by byte and text
@@ -174,7 +174,7 @@ When the sensor reports readiness, it performs one short byte read and handles e
 .. erbsland-demo::
     :source: stream/ReadinessAndTimeouts/CheckReadiness.cpp
     :exec: stream/readiness_and_timeouts --demo CheckReadiness
-    :source-sha256: 2bbf901888cf92ab286d6774b9f2d772bdc431d238ce372352cf162957c5c842
+    :sha256: 1e3ae7562d2187312e2c0f61e7400f13f0da55f186013f5717498542722bcae9
 
 .. code-block:: cpp
 
@@ -201,10 +201,12 @@ When the sensor reports readiness, it performs one short byte read and handles e
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    The sensor is not ready yet; continuing with other work.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mThe sensor is not ready yet; continuing with other work.␛[0m
 
 .. erbsland-demo-end::
 
@@ -254,7 +256,7 @@ Each wait is bounded by the stream timeout, while the attempt limit keeps the co
 .. erbsland-demo::
     :source: stream/ReadinessAndTimeouts/WaitForInput.cpp
     :exec: stream/readiness_and_timeouts --demo WaitForInput
-    :source-sha256: d482978e290fd2df8126bd58a57635c4ea8b464a37d2f88c4fa29ab081000144
+    :sha256: f3a22eda4a31a6f1075ea8767dd121ab7c34df429d21ed56707a18286740f4aa
 
 .. code-block:: cpp
 
@@ -278,11 +280,13 @@ Each wait is bounded by the stream timeout, while the attempt limit keeps the co
         throw el::RuntimeError{"The sensor did not become ready within the observation limit."_el};
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Wait timed out; checking whether the work is still needed.
-    Sensor ready after 2 waits.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWait timed out; checking whether the work is still needed.
+        Sensor ready after 2 waits.␛[0m
 
 .. erbsland-demo-end::
 
@@ -334,7 +338,7 @@ consecutive timeouts.
 .. erbsland-demo::
     :source: stream/ReadinessAndTimeouts/RetryTimedOutRead.cpp
     :exec: stream/readiness_and_timeouts --demo RetryTimedOutRead
-    :source-sha256: 7adbb184bad0c20ce584ba6eb3b53d144698f30125a1ef1927c42c8a7fdf4d97
+    :sha256: 8e28edba2a3844e26678aa9662011be11b6fb82e9be0a536ee1ad13b06717694
 
 .. code-block:: cpp
 
@@ -368,11 +372,13 @@ consecutive timeouts.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Timeout: 1
-    Forest measurements: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTimeout: 1
+        Forest measurements: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -404,7 +410,7 @@ It then enters a separate flush loop, so a flush timeout can never duplicate the
 .. erbsland-demo::
     :source: stream/ReadinessAndTimeouts/RetryAtomicWrite.cpp
     :exec: stream/readiness_and_timeouts --demo RetryAtomicWrite
-    :source-sha256: 1347bb625a15f8b369ce3f1c22158b54f7cdbe93d180298ba6a3d482c934500b
+    :sha256: 2b0c32ff46b277714ea27a9ee4cb6c19bd68973f24c4e206e32cb7723cc40dda
 
 .. code-block:: cpp
 
@@ -432,10 +438,13 @@ It then enters a separate flush loop, so a flush timeout can never duplicate the
         throw el::RuntimeError{"The recorder did not accept the record within the expected time."_el};
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Attempts: 2
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAttempts: 2
+        Record accepted once: true␛[0m
 
 .. erbsland-demo-end::
 

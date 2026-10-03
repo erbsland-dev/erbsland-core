@@ -29,7 +29,7 @@ public:
         // Construct a name longer than limits::maximumGroupNameLength
         constexpr auto maxLen = el::re::impl::limits::maximumGroupNameLength;
         auto patternU8 = StringEditor{"(?<"_el};
-        patternU8.append(el::text::Char{U'a'}, el::unit::CpLength{maxLen + 2U});
+        patternU8.append(el::text::Char{U'a'}, el::unit::CpCount{maxLen + 2U});
         patternU8.append(">x)"_el);
         Parser p{String{patternU8}};
         REQUIRE_THROWS(node = p.parse());

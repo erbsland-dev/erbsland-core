@@ -1,7 +1,20 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ReadLineApp.hpp"
+
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/CaseSensitivity.hpp>
+#include <erbsland/cterm/Block.hpp>
+#include <erbsland/cterm/BlockStyle.hpp>
+#include <erbsland/cterm/Color.hpp>
+#include <erbsland/cterm/FrameBorder.hpp>
+#include <erbsland/cterm/FrameStyle.hpp>
+#include <erbsland/cterm/Key.hpp>
+#include <erbsland/cterm/ReadLineDisplayStyle.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <array>
 #include <compare>
@@ -78,11 +91,15 @@ auto ReadLineApp::parseKey(const el::String &text) -> el::cterm::Key {
 
 void ReadLineApp::applyFrameStyle(
     el::cterm::FrameBorder &border, const el::cterm::FrameBorder::Element element, const el::String &text) {
-    const auto separator = text.find(";"_el);
-    const auto style = parseFrameStyle(text.slice({el::ByteIndex::zero(), separator}).trimmed());
+    const auto parts = text.splitAtFirst(";"_el);
+    auto styleText = text;
+    if (parts) {
+        styleText = parts->first;
+    }
+    const auto style = parseFrameStyle(styleText.trimmed());
     auto color = border.color(element);
-    if (!separator.isNoIndex()) {
-        const auto colorText = text.slice({separator.incremented(), el::ByteLength::infinite()}).trimmed();
+    if (parts) {
+        const auto colorText = parts->second.trimmed();
         if (colorText.isEmpty() || colorText.contains(";"_el)) {
             throw el::ApplicationError{"Frame element syntax is STYLE[;COLOR]."_el};
         }

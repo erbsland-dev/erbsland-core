@@ -8,8 +8,6 @@
 #include "PasswordHashPolicy.hpp"
 #include "PasswordVerification.hpp"
 
-#include "unsafe/UnsafeNoPasswordHashKey.hpp"
-
 #include "../mem/ByteSpan.hpp"
 #include "../text/String.hpp"
 #include "../util/List_fwd.hpp"
@@ -25,6 +23,11 @@ namespace erbsland::cryptology {
 /// @tested{PasswordHasherTest}
 class PasswordHasher final {
 public:
+    /// Explicitly acknowledge that password hashes will be stored without an application pepper.
+    /// @seedoc{/reference/cryptology/password_hashing}
+    struct UnsafeNoPasswordHashKey {};
+
+public:
     /// Create a keyed password hasher.
     /// @param key The active application key.
     /// @param policy The password-hashing policy.
@@ -33,7 +36,7 @@ public:
     /// @param acknowledgement The explicit acknowledgement of reduced protection.
     /// @param policy The password-hashing policy.
     explicit PasswordHasher(
-        unsafe::UnsafeNoPasswordHashKey acknowledgement, PasswordHashPolicy policy = PasswordHashPolicy::recommended());
+        UnsafeNoPasswordHashKey acknowledgement, PasswordHashPolicy policy = PasswordHashPolicy::recommended());
 
     // defaults/deletions
     PasswordHasher() = delete;
@@ -47,7 +50,6 @@ public:
     /// Empty passwords are accepted. Inputs larger than 1 MiB are rejected.
     /// @param password The UTF-8 password. Sensitive marking is recommended but not required.
     /// @return The canonical password-hash record.
-    /// @throws err::ParameterError If the password exceeds 1 MiB of UTF-8 data.
     [[nodiscard]] auto hash(const text::String &password) const -> PasswordHash;
     /// Verify a password and report an optional replacement hash.
     /// Malformed/invalid records and unavailable keys run a dummy current-policy derivation before rejection.
@@ -68,7 +70,6 @@ public: // factories
     /// @param fallbackKeys The legacy keys accepted during verification.
     /// @param policy The password-hashing policy.
     /// @return The configured password hasher.
-    /// @throws err::ParameterError If the rotation set is ambiguous.
     [[nodiscard]] static auto withKeyRotation(
         PasswordHashKey activeKey,
         util::List<PasswordHashKey> fallbackKeys,

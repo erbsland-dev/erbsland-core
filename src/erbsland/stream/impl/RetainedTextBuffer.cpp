@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RetainedTextBuffer.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../text/impl/UnsafeU8StringAccess.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../text/Literals.hpp"
@@ -15,6 +15,8 @@
 namespace erbsland::stream::impl {
 
 using namespace text;
+using text::impl::UnsafeU8StringAccess;
+using text::impl::UnsafeU8StringBuffer;
 using namespace text::literals;
 using namespace unit;
 
@@ -30,19 +32,19 @@ void RetainedTextBuffer::clear() noexcept {
     _firstLineLength.reset();
 }
 
-void RetainedTextBuffer::append(String text, const CpLength textLength, const bool lineScanned) {
+void RetainedTextBuffer::append(String text, const CpCount textLength, const bool lineScanned) {
     if (text.isEmpty() != textLength.isZero()) {
-        throw err::LogicError{"Decoded text and its character length do not match"_el};
+        throw err::LogicFailure{"Decoded text and its character length do not match"_el};
     }
     if (text.isEmpty()) {
         return;
     }
     if (text.isSensitive() != _sensitive) {
-        throw err::LogicError{"Decoded text sensitivity does not match the retained stream policy"_el};
+        throw err::LogicFailure{"Decoded text sensitivity does not match the retained stream policy"_el};
     }
     if (lineScanned && _lineScanLength == _length) {
         _lineScanLength += textLength;
-        const auto bytes = text::impl::UnsafeU8StringAccess{text}.dataSpan();
+        const auto bytes = UnsafeU8StringAccess{text}.dataSpan();
         if (!bytes.empty() && bytes.back() == '\n') {
             _firstLineLength = _lineScanLength;
         }
@@ -51,12 +53,12 @@ void RetainedTextBuffer::append(String text, const CpLength textLength, const bo
     _chunks.emplace_back(std::move(text), textLength);
 }
 
-auto RetainedTextBuffer::lineIsComplete(const CpLength maximum) noexcept -> bool {
+auto RetainedTextBuffer::lineIsComplete(const CpCount maximum) noexcept -> bool {
     scanForLineEnd(maximum);
     return _length >= maximum || (_firstLineLength && *_firstLineLength <= maximum);
 }
 
-auto RetainedTextBuffer::takeLength(const CpLength maximum, const bool line) noexcept -> CpLength {
+auto RetainedTextBuffer::takeLength(const CpCount maximum, const bool line) noexcept -> CpCount {
     if (line) {
         scanForLineEnd(maximum);
     }
@@ -67,20 +69,20 @@ auto RetainedTextBuffer::takeLength(const CpLength maximum, const bool line) noe
     return result;
 }
 
-void RetainedTextBuffer::scanForLineEnd(const CpLength maximum) noexcept {
+void RetainedTextBuffer::scanForLineEnd(const CpCount maximum) noexcept {
     if (_firstLineLength || _lineScanLength >= maximum || _lineScanLength >= _length) {
         return;
     }
     const auto target = std::min(maximum, _length);
-    auto chunkOffset = CpLength{};
+    auto chunkOffset = CpCount{};
     for (const auto &chunk : _chunks) {
         if (chunkOffset + chunk.length <= _lineScanLength) {
             chunkOffset += chunk.length;
             continue;
         }
-        const auto skip = _lineScanLength > chunkOffset ? _lineScanLength - chunkOffset : CpLength{};
-        auto localLength = CpLength{};
-        const auto bytes = text::impl::UnsafeU8StringAccess{chunk.text}.dataSpan();
+        const auto skip = _lineScanLength > chunkOffset ? _lineScanLength - chunkOffset : CpCount{};
+        auto localLength = CpCount{};
+        const auto bytes = UnsafeU8StringAccess{chunk.text}.dataSpan();
         for (const auto byte : bytes) {
             const auto value = static_cast<std::uint8_t>(byte);
             if ((value & 0xc0U) == 0x80U) {
@@ -102,7 +104,7 @@ void RetainedTextBuffer::scanForLineEnd(const CpLength maximum) noexcept {
     }
 }
 
-void RetainedTextBuffer::didConsume(const CpLength length) noexcept {
+void RetainedTextBuffer::didConsume(const CpCount length) noexcept {
     _length -= length;
     if (_firstLineLength && length < *_firstLineLength) {
         *_firstLineLength -= length;
@@ -114,10 +116,10 @@ void RetainedTextBuffer::didConsume(const CpLength length) noexcept {
         _lineScanLength = {};
         return;
     }
-    _lineScanLength = length < _lineScanLength ? _lineScanLength - length : CpLength{};
+    _lineScanLength = length < _lineScanLength ? _lineScanLength - length : CpCount{};
 }
 
-void RetainedTextBuffer::consumePrefix(const CpLength characterLength) {
+void RetainedTextBuffer::consumePrefix(const CpCount characterLength) {
     auto remaining = characterLength;
     while (!remaining.isZero()) {
         auto &chunk = _chunks.front();
@@ -125,7 +127,7 @@ void RetainedTextBuffer::consumePrefix(const CpLength characterLength) {
         if (count == chunk.length) {
             _chunks.pop_front();
         } else {
-            chunk.text = chunk.text.slice(CpRange{CpIndex{count.toRawValue()}, CpLength::infinite()});
+            chunk.text = chunk.text.slice(CpRange{CpIndex::end(count), CpCount::infinite()});
             chunk.length -= count;
         }
         remaining -= count;
@@ -138,11 +140,11 @@ auto RetainedTextBuffer::takeChar() -> Char {
         return {};
     }
     const auto result = _chunks.front().text.charAt(CpIndex{});
-    consumePrefix(CpLength::one());
+    consumePrefix(CpCount::one());
     return result;
 }
 
-auto RetainedTextBuffer::take(const CpLength maximum, const bool line) -> String {
+auto RetainedTextBuffer::take(const CpCount maximum, const bool line) -> String {
     const auto count = takeLength(maximum, line);
     if (count.isZero()) {
         return {};
@@ -154,21 +156,21 @@ auto RetainedTextBuffer::take(const CpLength maximum, const bool line) -> String
         return result;
     }
     if (count < _chunks.front().length) {
-        auto [result, suffix] = _chunks.front().text.splitAt(CpIndex{count.toRawValue()});
+        auto [result, suffix] = _chunks.front().text.splitAt(CpIndex::end(count));
         _chunks.front().text = std::move(suffix);
         _chunks.front().length -= count;
         didConsume(count);
         return result;
     }
     const auto resultByteLength = byteLength(count);
-    auto buffer = text::impl::UnsafeU8StringBuffer{resultByteLength, _sensitive};
+    auto buffer = UnsafeU8StringBuffer{resultByteLength, _sensitive};
     copyAndConsume(count, std::span<char>{buffer.data(), resultByteLength.toSizeT()});
     return String{buffer.take(resultByteLength)};
 }
 
-auto RetainedTextBuffer::byteLength(const CpLength characterLength) const -> ByteLength {
+auto RetainedTextBuffer::byteLength(const CpCount characterLength) const -> ByteCount {
     auto remaining = characterLength;
-    auto result = ByteLength{};
+    auto result = ByteCount{};
     for (const auto &chunk : _chunks) {
         const auto count = std::min(remaining, chunk.length);
         result += chunk.text.slice(CpRange{CpIndex{}, count}).length();
@@ -180,21 +182,21 @@ auto RetainedTextBuffer::byteLength(const CpLength characterLength) const -> Byt
     return result;
 }
 
-void RetainedTextBuffer::copyAndConsume(const CpLength characterLength, const std::span<char> destination) {
+void RetainedTextBuffer::copyAndConsume(const CpCount characterLength, const std::span<char> destination) {
     auto remaining = characterLength;
     auto offset = std::size_t{};
     while (!remaining.isZero()) {
         auto &chunk = _chunks.front();
         const auto count = std::min(remaining, chunk.length);
         const auto prefix = chunk.text.slice(CpRange{CpIndex{}, count});
-        const auto source = text::impl::UnsafeU8StringAccess{prefix}.dataSpan();
+        const auto source = UnsafeU8StringAccess{prefix}.dataSpan();
         std::memcpy(destination.data() + offset, source.data(), source.size());
         offset += source.size();
         remaining -= count;
         if (count == chunk.length) {
             _chunks.pop_front();
         } else {
-            chunk.text = chunk.text.slice(CpRange{CpIndex{count.toRawValue()}, CpLength::infinite()});
+            chunk.text = chunk.text.slice(CpRange{CpIndex::end(count), CpCount::infinite()});
             chunk.length -= count;
         }
     }

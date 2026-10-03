@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PosixFileDescriptor.hpp"
 
-#include "../RandomError.hpp"
+#include "../RandomFailure.hpp"
 
 #include "../../system/impl/PosixErrorContext.hpp"
 #include "../../system/PlatformError.hpp"
@@ -26,7 +26,7 @@ PosixFileDescriptor::PosixFileDescriptor(const std::string &path) {
         auto cause = std::make_exception_ptr(
             system::PlatformError{
                 "Cannot open system entropy source"_el, system::impl::PosixErrorContext::fromErrorCode(errorCode)});
-        throw random::RandomError{"Cannot open system entropy source"_el, std::move(cause)};
+        throw random::RandomFailure{"Cannot open system entropy source"_el, std::move(cause)};
     }
 }
 

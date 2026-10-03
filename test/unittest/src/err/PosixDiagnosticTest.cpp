@@ -1,11 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "../core/ApplicationTestScope.hpp"
+
+#include <erbsland/Literals.hpp>
+#include <erbsland/PlatformError.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/system/impl/PosixErrorContext.hpp>
-#include <erbsland/system/PlatformError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/TextDocument.hpp>
+#include <erbsland/TextDocument.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cerrno>
@@ -16,6 +18,7 @@ TESTED_TARGETS(PosixErrorContext PlatformError PlatformErrorCategory)
 class PosixDiagnosticTest final : public el::UnitTest {
 public:
     void testCategoryMappingAndPlatformError() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto previousErrno = errno;
         errno = ENOENT;
         const auto capturedErrno = el::system::impl::PosixErrorContext::fromErrno();
@@ -31,6 +34,11 @@ public:
         REQUIRE_EQUAL(
             el::system::impl::PosixErrorContext{EEXIST}.category(), el::system::PlatformErrorCategory::AlreadyExists);
         REQUIRE_EQUAL(el::system::impl::PosixErrorContext{-1}.category(), el::system::PlatformErrorCategory::Unknown);
+        REQUIRE_EQUAL(
+            el::system::impl::PosixErrorContext{EAGAIN}.category(), el::system::PlatformErrorCategory::ResourceBusy);
+        REQUIRE_EQUAL(
+            el::system::impl::PosixErrorContext{EWOULDBLOCK}.category(),
+            el::system::PlatformErrorCategory::ResourceBusy);
         const auto error = el::system::PlatformError{"Native lookup failed"_el, context};
         REQUIRE_EQUAL(error.context(), context);
         const auto text = el::text::StringConverter{error.diagnostic()->toTextDocument().toString()}.toStdString();

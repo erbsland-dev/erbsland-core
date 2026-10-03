@@ -1,20 +1,20 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/CharSet.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LoopResult.hpp>
+#include <erbsland/LoopStatus.hpp>
+#include <erbsland/Set.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/List.hpp>
-#include <erbsland/util/LoopResult.hpp>
-#include <erbsland/util/LoopStatus.hpp>
-#include <erbsland/util/Set.hpp>
 
 #include <algorithm>
 #include <array>
@@ -25,7 +25,6 @@
 #include <vector>
 
 using namespace el::text::literals;
-
 using el::text::AsciiCategory;
 using el::text::CharSet;
 using el::text::String;
@@ -44,7 +43,7 @@ public:
         using CharSet = el::text::CharSet;
 
         const auto empty = CharSet{};
-        const auto single = CharSet{Char{U'A'}};
+        const auto single = CharSet{U'A'};
         const auto range = CharSet::fromRange(Char{U'A'}, Char{U'C'});
         const auto fromView = CharSet{u8"A¢€A"_el};
         const auto fromSet = CharSet{el::util::Set<Char>{Char{U'A'}, Char{U'A'}, Char{0x110000U}, Char{U'B'}}};
@@ -142,7 +141,7 @@ public:
         REQUIRE_EQUAL((left & right).toList().toStdVector(), std::vector<Char>({Char{U'B'}, Char{U'C'}}));
         REQUIRE_EQUAL((left - right).toList().toStdVector(), std::vector<Char>({Char{U'A'}}));
         REQUIRE_EQUAL((left ^ right).toList().toStdVector(), std::vector<Char>({Char{U'A'}, Char{U'D'}}));
-        const auto singleB = CharSet{Char{U'B'}};
+        const auto singleB = CharSet{U'B'};
         REQUIRE_LESS_EQUAL(singleB, left);
         REQUIRE_GREATER_EQUAL(left, singleB);
         REQUIRE_NOT_EQUAL(left, singleB);
@@ -150,13 +149,59 @@ public:
         auto mutated = left;
         mutated &= right;
         REQUIRE_EQUAL(mutated.toList().toStdVector(), std::vector<Char>({Char{U'B'}, Char{U'C'}}));
-        mutated |= CharSet{Char{U'X'}};
+        mutated |= CharSet{U'X'};
         REQUIRE(mutated.contains(Char{U'X'}));
-        mutated -= CharSet{Char{U'B'}};
+        mutated -= CharSet{U'B'};
         REQUIRE_FALSE(mutated.contains(Char{U'B'}));
         mutated ^= CharSet{Char{U'C'}, Char{U'D'}};
         REQUIRE_FALSE(mutated.contains(Char{U'C'}));
         REQUIRE(mutated.contains(Char{U'D'}));
+    }
+
+    void testInversionBoundariesAndIdentities() {
+        const auto universe = ~CharSet{};
+        REQUIRE((~universe).isEmpty());
+        for (const auto character : {Char{0U}, Char{0xD7FFU}, Char{0xE000U}, Char{0x10FFFFU}}) {
+            REQUIRE(universe.contains(character));
+        }
+        for (const auto character : {Char{0xD800U}, Char{0xDFFFU}, Char{0x110000U}, Char{0xFFFFFFFFU}}) {
+            REQUIRE_FALSE(universe.contains(character));
+        }
+        const auto sets = std::vector<CharSet>{
+            CharSet{},
+            universe,
+            CharSet{U'a'},
+            CharSet{U'a', U'c', U'e'},
+            CharSet{Char{0U}, Char{0xD7FFU}, Char{0xE000U}, Char{0x10FFFFU}},
+            CharSet::fromRange(Char{0xD7FFU}, Char{0xE000U})};
+        for (const auto &value : sets) {
+            const auto original = value;
+            const auto inverted = value.inverted();
+            REQUIRE_EQUAL(inverted, ~value);
+            REQUIRE_EQUAL(~~value, value);
+            REQUIRE((value & inverted).isEmpty());
+            REQUIRE_EQUAL(value | inverted, universe);
+            REQUIRE_EQUAL(value, original);
+        }
+    }
+
+    void testNegatedPatternsAndFiltering() {
+        const auto digits = CharSet::fromPattern("0-9"_el);
+        REQUIRE_EQUAL(CharSet::fromPattern("^0-9"_el), ~digits);
+        REQUIRE_EQUAL(CharSet::fromPattern(u"^0-9"_el), ~digits);
+        REQUIRE_EQUAL(CharSet::fromPattern(U"^0-9"_el), ~digits);
+        REQUIRE_EQUAL(CharSet::fromPattern("^"_el), ~CharSet{});
+        REQUIRE_EQUAL(CharSet::fromPattern("^^"_el), ~CharSet{U'^'});
+        REQUIRE(CharSet::fromPattern("a^"_el).contains(Char{U'^'}));
+        REQUIRE_FALSE(CharSet::fromPattern("^-a-z"_el).contains(Char{U'-'}));
+        REQUIRE_FALSE(CharSet::fromPattern("^a-z-"_el).contains(Char{U'-'}));
+        REQUIRE_THROWS(CharSet::fromPattern("^z-a"_el));
+        const auto allowed = CharSet::fromPattern("-_a-z0-9"_el);
+        REQUIRE_EQUAL(el::String{"a!b \u00e4-7_"_el}.removedAll(~allowed), "ab-7_"_el);
+        REQUIRE_EQUAL(el::U16String{u"a!b \u00e4-7_"_el}.removedAll(~allowed), u"ab-7_"_el);
+        REQUIRE_EQUAL(el::U32String{U"a!b \u00e4-7_"_el}.removedAll(~allowed), U"ab-7_"_el);
+        const auto emoji = CharSet::fromPattern(U"\U0001F600-\U0001F603"_el);
+        REQUIRE_EQUAL(CharSet::fromPattern(U"^\U0001F600-\U0001F603"_el), ~emoji);
     }
 
     void testCaseConversionAndCaseInsensitiveComparison() {
@@ -181,9 +226,9 @@ public:
         REQUIRE_EQUAL(digits.caseFolded(), digits);
         REQUIRE_EQUAL(digits.toLowercase(), digits);
         REQUIRE_EQUAL(digits.toUppercase(), digits);
-        REQUIRE(CharSet{Char{U'A'}}.isEqualToCI(CharSet{Char{U'a'}}));
-        REQUIRE(CharSet{Char{0x212AU}}.isEqualToCI(CharSet{Char{U'k'}}));
-        REQUIRE(CharSet{Char{U'A'}}.isSubsetOfCI(CharSet{Char{U'a'}, Char{U'B'}}));
+        REQUIRE(CharSet{U'A'}.isEqualToCI(CharSet{U'a'}));
+        REQUIRE(CharSet{Char{0x212AU}}.isEqualToCI(CharSet{U'k'}));
+        REQUIRE(CharSet{U'A'}.isSubsetOfCI(CharSet{Char{U'a'}, Char{U'B'}}));
     }
 
     void testFactoryMethods() {

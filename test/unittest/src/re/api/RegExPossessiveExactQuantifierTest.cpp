@@ -3,6 +3,8 @@
 
 #include "RegExBase.hpp"
 
+#include <erbsland/StringList.hpp>
+
 using namespace el::re;
 
 TESTED_TARGETS(RegEx)
@@ -40,7 +42,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "a"_el,
                 "aa"_el,
@@ -63,7 +65,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "aa"_el,
                 "baa"_el,
@@ -77,12 +79,12 @@ public:
     void testFullMatch() {
         WITH_CONTEXT(compileAmbiguousGroupExact());
         {
-            const auto matchCases = std::vector<String>{
+            const auto matchCases = StringList{
                 "aaaaa"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "aaa"_el,
                 "aaaa"_el,
@@ -102,7 +104,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(testCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "aaa"_el,
             "zzzaaa"_el,

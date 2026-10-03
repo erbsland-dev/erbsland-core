@@ -16,11 +16,11 @@ jobs:
   build:
     name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ matrix.os == 'windows-latest' && 60 || 40 }}
+    timeout-minutes: ${{ matrix.os == 'windows-2025-vs2026' && 60 || 40 }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: [ ubuntu-latest, macos-latest, windows-2025-vs2026 ]
     env:
       BUILD_DIR: cmake-build
 
@@ -44,7 +44,7 @@ jobs:
             brew install ninja
           fi
 
-      - name: Setup MSVC (Windows)
+      - name: Setup MSVC 2026 (Windows)
         if: runner.os == 'Windows'
         # ilammy/msvc-dev-cmd@v1.13.0
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
@@ -58,9 +58,14 @@ jobs:
         run: cmake -S . -B cmake-build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DERBSLAND_CORE_ENABLE_TESTS=ON -DERBSLAND_CORE_ENABLE_DEMOS=OFF -DCMAKE_UNITY_BUILD=ON
 
       - name: Build
-        run: cmake --build cmake-build --parallel
+        run: >-
+          cmake --build cmake-build --parallel --target
+          erbsland-core-unittest erbsland-core-tool-unittest erbsland-core-heap-unittest
+          erbsland-profiling-unittest path-profile-unittest
+          erbsland-core-resource-compiler erbsland-core-display-text-compiler erbsland-core-tool
 
       - name: Run tests
         shell: bash
         working-directory: cmake-build
-        run: ctest --output-on-failure
+        # Integration and profiling scenarios are run manually when their code changes.
+        run: ctest --output-on-failure -L ci

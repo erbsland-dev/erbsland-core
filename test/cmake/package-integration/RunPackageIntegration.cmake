@@ -88,7 +88,8 @@ if(WIN32)
     set(extra_targets package-signing-tool)
 endif()
 package_run("${CMAKE_COMMAND}" --build "${source_build}"
-        --target package_server erbsland-core-resource-compiler ${extra_targets} --config Release)
+        --target package_server erbsland-core-resource-compiler erbsland-core-display-text-compiler
+        ${extra_targets} --config Release)
 package_run("${CMAKE_COMMAND}" --install "${source_build}" --config Release --prefix "${core_install}")
 package_assert_count("${source_output}" 3)
 

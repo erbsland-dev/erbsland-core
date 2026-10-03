@@ -5,10 +5,13 @@
 #include "KeyDecoder.hpp"
 #include "StandardInput.hpp"
 
+#include "../../err/ParameterFailure.hpp"
 #include "../../mem/impl/SecureErase.hpp"
 #include "../../system/impl/signal/ProcessSignalDispatcher.hpp"
-#include "../../text/StringConverter.hpp"
+#include "../../text/impl/UnsafeU8StringAccess.hpp"
+#include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
+#include "../../unit/ByteIndex.hpp"
 
 #include <sys/ioctl.h>
 #include <sys/select.h>
@@ -16,28 +19,31 @@
 
 #include <algorithm>
 #include <cstring>
-#include <iostream>
 #include <thread>
 
-namespace erbsland::cterm {
-
-auto Backend::createPlatformDefault(const TerminalFlags terminalFlags) -> BackendPtr {
-    return impl::PosixBackend::getOrCreate(terminalFlags);
-}
-
-}
-
 namespace erbsland::cterm::impl {
+
+using namespace mem;
+using mem::impl::secureErase;
+using namespace text;
+using namespace text::literals;
 
 std::mutex PosixBackend::_instanceMutex;
 PosixBackend *PosixBackend::_instance = nullptr;
 
-PosixBackend::PosixBackend(const TerminalFlags terminalFlags) : _terminalFlags{terminalFlags} {
+PosixBackend::PosixBackend(const TerminalFlags terminalFlags) : PosixBackend{STDIN_FILENO} {
+    _terminalFlags = terminalFlags;
     // called once per application.
     _instance = this;
     if (!_terminalFlags.has(TerminalFlag::NoSignalHandling)) {
         _signalSubscription = system::impl::ProcessSignalDispatcher::instance().addSignal(
             [](system::impl::ProcessSignal, bool &) -> void { restoreGlobalPlatform(); });
+    }
+}
+
+PosixBackend::PosixBackend(const int inputFd) : _terminalFlags{TerminalFlag::NoSignalHandling}, _inputFd{inputFd} {
+    if (inputFd < 0 || inputFd >= FD_SETSIZE) {
+        throw err::ParameterFailure{"Invalid POSIX key-input descriptor.", "inputFd"};
     }
     _pendingKeyInput.reserve(cMaximumPendingKeyInputSize + cMaximumInputReadSize);
 }
@@ -46,8 +52,8 @@ PosixBackend::~PosixBackend() {
     purgePendingInput();
     _signalSubscription.cancel();
     std::scoped_lock lock{_instanceMutex};
-    if (_instance != nullptr) {
-        _instance->restorePlatform();
+    restorePlatform();
+    if (_instance == this) {
         _instance = nullptr;
     }
 }
@@ -61,7 +67,7 @@ void PosixBackend::initializePlatform() {
 
 void PosixBackend::restorePlatform() {
     if (_keyInputSessionActive) {
-        tcsetattr(STDIN_FILENO, TCSANOW, &_originalState);
+        tcsetattr(_inputFd, TCSANOW, &_originalState);
         _keyInputSessionActive = false;
     }
     if (!_isInitialized) {
@@ -71,12 +77,12 @@ void PosixBackend::restorePlatform() {
     if (!_hasNoTerminalAttached) {
         // make the cursor visible and disable the alternative screen buffer.
         if (_isAlternateScreenActive) {
-            std::cout << "\x1b[?1049l"; // disable alternative screen buffer
+            emitText("\x1b[?1049l"_el); // disable alternative screen buffer
         }
-        std::cout << "\x1b[0m";         // restore to default color
-        std::cout << "\x1b[?25h";       // make the cursor visible.
-        std::cout << "\n";              // add a newline for compatibility.
-        std::cout.flush();
+        emitText("\x1b[0m"_el);         // restore to default color
+        emitText("\x1b[?25h"_el);       // make the cursor visible.
+        emitText("\n"_el);              // add a newline for compatibility.
+        emitFlush();
     }
 }
 
@@ -130,13 +136,12 @@ auto PosixBackend::detectScreenSize() -> std::optional<block::Size> {
     return std::nullopt;
 }
 
-void PosixBackend::emitText(const text::String &str) {
-    const auto text = text::StringConverter{str}.toStdString();
-    std::cout.write(text.data(), static_cast<std::streamsize>(text.size()));
+void PosixBackend::emitText(const String &str) {
+    _output->writeBytes(text::impl::UnsafeU8StringAccess{str}.dataView().dataSpan());
 }
 
 void PosixBackend::emitFlush() {
-    std::cout.flush();
+    _output->flush();
 }
 
 void PosixBackend::setAlternateScreenBuffer(bool enabled) {
@@ -195,7 +200,7 @@ auto PosixBackend::readDecodedKey(const InputTimeout &timeout) -> Key {
             markPendingEscapeSequence();
             appendInputChunks(escapeSequenceWaitTimeout(timeout.remaining()));
         }
-        const auto parseResult = KeyDecoder{text::String{_pendingKeyInput}, true}.parseConsoleInputPrefix();
+        const auto parseResult = KeyDecoder{String{_pendingKeyInput}, true}.parseConsoleInputPrefix();
         if (parseResult.status() == KeyParseStatus::Parsed) {
             erasePendingKeyInput(parseResult.consumedByteCount().toSizeT());
             return parseResult.key();
@@ -210,12 +215,13 @@ auto PosixBackend::readDecodedKey(const InputTimeout &timeout) -> Key {
                 return {};
             }
             appendInputChunks(escapeSequenceWaitTimeout(timeout.remaining()));
-            const auto retriedResult = KeyDecoder{text::String{_pendingKeyInput}, true}.parseConsoleInputPrefix();
+            const auto retriedResult = KeyDecoder{String{_pendingKeyInput}, true}.parseConsoleInputPrefix();
             if (retriedResult.status() == KeyParseStatus::Parsed) {
                 erasePendingKeyInput(retriedResult.consumedByteCount().toSizeT());
                 return retriedResult.key();
             }
-            if (retriedResult.status() == KeyParseStatus::Invalid && retriedResult.consumedByteCount().toSizeT() > 0) {
+            if (retriedResult.status() == KeyParseStatus::Invalid &&
+                retriedResult.consumedByteCount() > unit::ByteIndex{0}) {
                 erasePendingKeyInput(retriedResult.consumedByteCount().toSizeT());
                 continue;
             }
@@ -228,7 +234,7 @@ auto PosixBackend::readDecodedKey(const InputTimeout &timeout) -> Key {
             }
             return {};
         }
-        if (parseResult.consumedByteCount().toSizeT() == 0) {
+        if (parseResult.consumedByteCount() == unit::ByteIndex{0}) {
             purgePendingInput();
             return {};
         }
@@ -267,7 +273,7 @@ void PosixBackend::erasePendingKeyInput(const std::size_t byteCount) {
     const auto count = std::min(byteCount, _pendingKeyInput.size());
     const auto remaining = _pendingKeyInput.size() - count;
     std::memmove(_pendingKeyInput.data(), _pendingKeyInput.data() + count, remaining);
-    mem::impl::secureErase(std::as_writable_bytes(std::span{_pendingKeyInput.data() + remaining, count}));
+    secureErase(std::as_writable_bytes(std::span{_pendingKeyInput.data() + remaining, count}));
     _pendingKeyInput.resize(remaining);
     if (_pendingKeyInput.empty() || _pendingKeyInput[0] != '\x1b') {
         _pendingEscapeStarted.reset();
@@ -276,12 +282,12 @@ void PosixBackend::erasePendingKeyInput(const std::size_t byteCount) {
     }
 }
 
-auto PosixBackend::readLine() -> text::String {
+auto PosixBackend::readLine() -> String {
     return readStandardInputLine();
 }
 
 void PosixBackend::purgePendingInput() noexcept {
-    mem::impl::secureErase(std::as_writable_bytes(std::span{_pendingKeyInput.data(), _pendingKeyInput.size()}));
+    secureErase(std::as_writable_bytes(std::span{_pendingKeyInput.data(), _pendingKeyInput.size()}));
     _pendingKeyInput.clear();
     _pendingEscapeStarted.reset();
 }
@@ -329,29 +335,29 @@ auto PosixBackend::getScreenSizeForFd(const int fd) -> std::pair<SizeDetectionRe
 }
 
 void PosixBackend::initializeKeyInputSession() {
-    if (tcgetattr(STDIN_FILENO, &_originalState) != 0) {
+    if (tcgetattr(_inputFd, &_originalState) != 0) {
         return;
     }
     auto rawState = _originalState;
     rawState.c_lflag &= static_cast<tcflag_t>(~(ICANON | ECHO));
     rawState.c_cc[VMIN] = 0;
     rawState.c_cc[VTIME] = 0;
-    if (tcsetattr(STDIN_FILENO, TCSANOW, &rawState) != 0) {
+    if (tcsetattr(_inputFd, TCSANOW, &rawState) != 0) {
         return;
     }
     _keyInputSessionActive = true;
 }
 
 void PosixBackend::restoreKeyInputSession() {
-    tcsetattr(STDIN_FILENO, TCSANOW, &_originalState);
+    tcsetattr(_inputFd, TCSANOW, &_originalState);
     _keyInputSessionActive = false;
     purgePendingInput();
 }
 
-auto PosixBackend::waitForInput(const OptionalTimeout timeout) -> bool {
+auto PosixBackend::waitForInput(const OptionalTimeout timeout) const -> bool {
     fd_set set;
     FD_ZERO(&set);
-    FD_SET(STDIN_FILENO, &set);
+    FD_SET(_inputFd, &set);
     auto tv = timeval{};
     auto *ptv = static_cast<timeval *>(nullptr);
     if (timeout.has_value()) {
@@ -365,15 +371,15 @@ auto PosixBackend::waitForInput(const OptionalTimeout timeout) -> bool {
         tv.tv_usec = static_cast<decltype(tv.tv_usec)>(microseconds);
         ptv = &tv;
     }
-    return select(STDIN_FILENO + 1, &set, nullptr, nullptr, ptv) > 0;
+    return select(_inputFd + 1, &set, nullptr, nullptr, ptv) > 0;
 }
 
-auto PosixBackend::pollForInput() -> bool {
+auto PosixBackend::pollForInput() const -> bool {
     fd_set set;
     FD_ZERO(&set);
-    FD_SET(STDIN_FILENO, &set);
+    FD_SET(_inputFd, &set);
     auto tv = timeval{};
-    return select(STDIN_FILENO + 1, &set, nullptr, nullptr, &tv) > 0;
+    return select(_inputFd + 1, &set, nullptr, nullptr, &tv) > 0;
 }
 
 void PosixBackend::appendInputChunks(const OptionalTimeout timeout) {
@@ -382,13 +388,13 @@ void PosixBackend::appendInputChunks(const OptionalTimeout timeout) {
     }
     while (_pendingKeyInput.size() < cMaximumPendingKeyInputSize) {
         char buffer[cMaximumInputReadSize];
-        const auto length = ::read(STDIN_FILENO, buffer, sizeof(buffer));
+        const auto length = ::read(_inputFd, buffer, sizeof(buffer));
         if (length <= 0) {
-            mem::impl::secureErase(std::as_writable_bytes(std::span{buffer}));
+            secureErase(std::as_writable_bytes(std::span{buffer}));
             return;
         }
         _pendingKeyInput.append(buffer, static_cast<std::size_t>(length));
-        mem::impl::secureErase(std::as_writable_bytes(std::span{buffer}));
+        secureErase(std::as_writable_bytes(std::span{buffer}));
         if (!pollForInput()) {
             return;
         }

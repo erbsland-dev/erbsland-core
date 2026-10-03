@@ -110,7 +110,8 @@ public: // conversion
         return tDerived{amount.toValue().added(tMinimum)};
     }
     /// Create a time part from a zero-based amount or throw if it is outside the supported range.
-    /// @throws err::OutOfRangeError if the amount is outside the supported range.
+    /// @param amount The zero-based amount. Must be inside the supported range of this time part.
+    /// @throws err::OutOfRangeError If the amount is outside the supported range.
     [[nodiscard]] static auto fromAmountOrThrow(Amount amount) -> tDerived {
         if (amount < Amount{} || amount > maximumAmount()) {
             throw err::OutOfRangeError{"Time part amount is outside the supported range"};

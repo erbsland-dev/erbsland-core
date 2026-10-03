@@ -6,22 +6,28 @@
 
 #include "impl/engine/Engine.hpp"
 #include "impl/text/Replacement.hpp"
+#include "impl/text/ReplacementParser.hpp"
 
 #include "../text/StringEditor.hpp"
 #include "../unit/ByteRange.hpp"
 
 namespace erbsland::re {
 
+using namespace text;
 using unit::ByteIndex;
 using unit::ByteRange;
 
-auto RegEx::replaceAll(const text::String &subject, const text::String &replacementExpression) const -> text::String {
+void RegEx::validateReplacement(const String &replacementExpression) const {
+    impl::ReplacementParser{replacementExpression, engine()->captureGroupNames()}.validate();
+}
+
+auto RegEx::replaceAll(const String &subject, const String &replacementExpression) const -> String {
     if (subject.isEmpty() && replacementExpression.isEmpty()) {
         return {};
     }
     const auto &engine = this->engine();
     const auto replacement = impl::Replacement::create(replacementExpression, engine->captureGroupNames());
-    text::StringEditor result;
+    StringEditor result;
     auto lastEnd = ByteIndex::zero();
     for (const auto &match : findAll(subject)) {
         const auto matchBegin = ByteIndex::fromSizeT(match->begin());
@@ -39,8 +45,8 @@ auto RegEx::replaceAll(const text::String &subject, const text::String &replacem
     return result;
 }
 
-auto RegEx::replaceAll(const text::String &subject, const ReplaceFn &replaceFn) const -> text::String {
-    text::StringEditor result;
+auto RegEx::replaceAll(const String &subject, const ReplaceFn &replaceFn) const -> String {
+    StringEditor result;
     auto lastEnd = ByteIndex::zero();
     for (const auto &match : findAll(subject)) {
         const auto matchBegin = ByteIndex::fromSizeT(match->begin());

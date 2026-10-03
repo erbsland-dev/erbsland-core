@@ -22,8 +22,10 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
+#include <utility>
 
 namespace erbsland::data::cbor {
+
 /// A copy-on-write CBOR value tree.
 /// @seedoc{/reference/data/cbor}
 /// @tested{CborValueTest}
@@ -48,6 +50,11 @@ public: // value constructors
     /// Create a CBOR text string value.
     /// @param value The text string to store.
     CborValue(text::String value); // NOLINT(*-explicit-constructor)
+    /// Create a text value from an implicitly convertible string, editor, or literal.
+    /// @param value The text to store.
+    template <typename tText>
+        requires(!std::same_as<std::remove_cvref_t<tText>, text::String> && std::convertible_to<tText, text::String>)
+    CborValue(tText &&value) : CborValue{text::String{std::forward<tText>(value)}} {} // NOLINT(*-explicit-constructor)
     /// Create a CBOR binary byte string value.
     /// @param value The binary byte string to store.
     CborValue(mem::ByteBlock value); // NOLINT(*-explicit-constructor)
@@ -91,8 +98,10 @@ public: // accessors
     /// Get a child, or null when absent.
     [[nodiscard]] auto get(const text::String &key) const -> CborValue;
     /// Get a child or throw for an invalid index or type.
+    /// @throws err::OutOfRangeError If the index does not identify an array element.
     [[nodiscard]] auto getOrThrow(unit::ItemIndex index) const -> CborValue;
     /// Get a child or throw for a missing key or invalid type.
+    /// @throws err::NotFoundError If the requested key is absent.
     [[nodiscard]] auto getOrThrow(const text::String &key) const -> CborValue;
     /// Get a Boolean value.
     [[nodiscard]] auto getBool() const noexcept -> std::optional<bool>;
@@ -141,4 +150,5 @@ private: // mutation
 private:                                        // data
     std::shared_ptr<impl::CborValueData> _data; ///< Shared value data; null denotes CBOR null.
 };
+
 }

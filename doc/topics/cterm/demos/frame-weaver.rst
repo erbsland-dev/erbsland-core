@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-************
-Frame Weaver
-************
+********************************************
+Frame Weaver: Frame Intersections and Styles
+********************************************
 
 ``frame-weaver`` demonstrates how the frame drawing system resolves intersections while multiple frames with varying
 sizes, colors, and styles are added over time.

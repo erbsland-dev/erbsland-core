@@ -6,7 +6,10 @@
 
 #include "../../cryptology/tls/TlsCipherSuite.hpp"
 #include "../../cryptology/tls/TlsSignatureScheme.hpp"
+#include "../../cryptology/x509/X509Certificate.hpp"
 #include "../../text/String.hpp"
+#include "../../text/StringList.hpp"
+#include "../../util/List.hpp"
 
 #include <optional>
 #include <utility>
@@ -23,17 +26,19 @@ public:
         std::optional<text::String> requestedConfigurationLabel,
         std::optional<text::String> matchedConfigurationLabel,
         std::optional<HostName> serverName,
-        std::vector<text::String> offeredAlpn,
+        text::StringList offeredAlpn,
         text::String negotiatedAlpn,
         std::optional<cryptology::TlsCipherSuite> cipherSuite,
-        std::optional<cryptology::TlsSignatureScheme> signatureScheme) :
+        std::optional<cryptology::TlsSignatureScheme> signatureScheme,
+        util::List<cryptology::X509Certificate> peerCertificatePath = {}) :
         _requestedConfigurationLabel{std::move(requestedConfigurationLabel)},
         _matchedConfigurationLabel{std::move(matchedConfigurationLabel)},
         _serverName{std::move(serverName)},
         _offeredAlpn{std::move(offeredAlpn)},
         _negotiatedAlpn{std::move(negotiatedAlpn)},
         _cipherSuite{std::move(cipherSuite)},
-        _signatureScheme{std::move(signatureScheme)} {}
+        _signatureScheme{std::move(signatureScheme)},
+        _peerCertificatePath{std::move(peerCertificatePath)} {}
 
 public:
     /// Get the requested application TLS configuration label.
@@ -47,7 +52,7 @@ public:
     /// Get the canonical SNI server name, if offered.
     [[nodiscard]] auto serverName() const noexcept -> const std::optional<HostName> & { return _serverName; }
     /// Get the bounded ALPN offer in wire order.
-    [[nodiscard]] auto offeredAlpn() const noexcept -> const std::vector<text::String> & { return _offeredAlpn; }
+    [[nodiscard]] auto offeredAlpn() const noexcept -> const text::StringList & { return _offeredAlpn; }
     /// Get the negotiated ALPN identifier, or an empty string.
     [[nodiscard]] auto negotiatedAlpn() const noexcept -> const text::String & { return _negotiatedAlpn; }
     /// Get the negotiated TLS cipher suite.
@@ -59,14 +64,23 @@ public:
         return _signatureScheme;
     }
 
+    /// Get the authenticated client certificate path.
+    [[nodiscard]] auto peerCertificatePath() const noexcept -> const util::List<cryptology::X509Certificate> & {
+        return _peerCertificatePath;
+    }
+    /// Test whether this HTTP connection authenticated a client certificate.
+    [[nodiscard]] auto isPeerAuthenticated() const noexcept -> bool { return !_peerCertificatePath.isEmpty(); }
+
 private:
     std::optional<text::String> _requestedConfigurationLabel;       ///< Requested application label.
     std::optional<text::String> _matchedConfigurationLabel;         ///< Matched registry label.
     std::optional<HostName> _serverName;                            ///< Canonical SNI server name.
-    std::vector<text::String> _offeredAlpn;                         ///< Client ALPN offer.
+    text::StringList _offeredAlpn;                                  ///< Client ALPN offer.
     text::String _negotiatedAlpn;                                   ///< Negotiated ALPN identifier.
     std::optional<cryptology::TlsCipherSuite> _cipherSuite;         ///< Negotiated cipher suite.
     std::optional<cryptology::TlsSignatureScheme> _signatureScheme; ///< Certificate signature scheme.
+    util::List<cryptology::X509Certificate>
+        _peerCertificatePath; ///< Authenticated client path, empty for anonymous TLS.
 };
 
 }

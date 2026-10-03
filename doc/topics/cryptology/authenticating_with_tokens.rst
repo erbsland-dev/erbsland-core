@@ -23,8 +23,8 @@ You can run the programs together, capture their wire traffic, and inspect every
 The example also makes the trust boundary visible: a successful challenge response identifies the holder of the client
 key for this attempt, but it does not protect the rest of the connection.
 
-What the Proof Establishes
-==========================
+Authentication Guarantees, Replay Protection, and Channel Limitations
+=====================================================================
 
 The server chooses a fresh random nonce and remembers it in a
 :cpp:class:`PendingAuthenticationChallenge <erbsland::cryptology::PendingAuthenticationChallenge>`.
@@ -93,19 +93,20 @@ The server file needs only the public verifier; a server compromise alone cannot
 
 .. erbsland-demo::
     :source: cryptology/TokenAuthentication/main.cpp
-    :function-blocks: parseCommandLine
-    :function-blocks-sha256: 41e0dc9697f0c351f0cd195af3abece50cf1dff387c47b48f78df47c398b90f1
-    :source-sha256: 4edd7b069930049167be869d119859805c096e09db50cd62ad8060babda7c76f
+    :show: f:registerCommandLineOptions, f:handleCommandLineOptions
+    :sha256: b466ebfa8a35654ff92c558d0a04627c83a1f3208b930622ce54535f0eb7ec24
 
 .. code-block:: cpp
 
-    void parseCommandLine() override {
-        Application::parseCommandLine();
-        if (optionValues() == nullptr) {
-            return;
-        }
-        const auto mode = optionValues()->getText("mode"_el);
-        const auto value = optionValues()->getText("value"_el);
+    void registerCommandLineOptions(const el::OptionsPtr &options) override {
+        options->setHelpDescription("Generate a token pair or authenticate over JSONL/TCP."_el);
+        options->addOption("mode"_el).setRequired().setHelpTitle("generate, server, or client"_el);
+        options->addOption("value"_el).setRequired().setHelpTitle("identifier or ELCL configuration path"_el);
+    }
+
+    void handleCommandLineOptions(const el::OptionValuesPtr &values) override {
+        const auto mode = values->getText("mode"_el);
+        const auto value = values->getText("value"_el);
         if (mode == "generate"_el) {
             auto pair = el::cryptology::AuthenticationTokenPair::generate(value);
             el::io::printLine("Server token: "_el, pair.server().toString());
@@ -136,8 +137,8 @@ The server file needs only the public verifier; a server compromise alone cannot
 
 .. erbsland-demo-end::
 
-The Exchange on the Wire
-========================
+Challenge-Response Protocol over JSON Lines
+===========================================
 
 The client sends a ``hello`` record containing only its public identifier.
 The server uses that identifier to select a verifier, creates a fresh challenge, and sends the challenge bytes as
@@ -162,9 +163,8 @@ The JSON wrapper is only transport framing; it is not part of the signed data.
 
 .. erbsland-demo::
     :source: cryptology/TokenAuthentication/JsonLine.hpp
-    :function-blocks: receive
-    :function-blocks-sha256: 95100519be0342216c9c23348de6ab31630e6bd1c5c0b5b95e03f15c6b52a00b
-    :source-sha256: 071dc566acd0a762a038e5bf6fe221129ecf5880f94adba8d00a6daca9c5aa27
+    :show: f:receive
+    :sha256: d95fc3cace70c0de57c02480b9605ee209ee7741b024979c0269605a0906c603
 
 .. code-block:: cpp
 
@@ -178,14 +178,14 @@ The JSON wrapper is only transport framing; it is not part of the signed data.
                     el::StringEncoding::Utf8, el::StringBomMode::Reject, el::EncodingMode::Strict);
                 _buffer.clear();
                 auto limits = el::json::JsonParseOptions{};
-                limits.setMaximumInputLength(el::ByteLength{4096U});
+                limits.setMaximumInputLength(el::ByteCount{4096U});
                 const auto value = el::json::JsonValue::fromStringOrThrow(source, limits);
                 if (!value.is(el::json::JsonType::Object)) {
                     throw el::ApplicationError{"Authentication record must be a JSON object."_el};
                 }
                 onLine(value);
             } else {
-                if (_buffer.length() >= el::ByteLength{4096U} || byte == el::Byte{'\r'}) {
+                if (_buffer.length() >= el::ByteCount{4096U} || byte == el::Byte{'\r'}) {
                     throw el::ApplicationError{"Authentication record is too long or contains CR."_el};
                 }
                 _buffer.append(byte);
@@ -213,9 +213,8 @@ need separate protection.
 
 .. erbsland-demo::
     :source: cryptology/TokenAuthentication/Server.hpp
-    :function-blocks: onRecord
-    :function-blocks-sha256: 3e16673af4f7bbc7cfc02cd761e2c10c166b6628992228b3338b35c2428355fa
-    :source-sha256: e3b0f4966ed6c75c889399e87b8ac1179233a9e185c24df51349e14a75cba43d
+    :show: f:onRecord
+    :sha256: 710e894128d234d15cdf62072fbd49b86bd7d792aace2075f62bd011123395c4
 
 .. code-block:: cpp
 
@@ -228,7 +227,7 @@ need separate protection.
             // Keep the one-use pending state with this TCP session.
             _pending = _token.createChallenge(el::time::Seconds{30});
             auto answer = el::json::JsonValue{el::json::JsonObject{}};
-            answer.set("type"_el, el::String{"challenge"_el});
+            answer.set("type"_el, "challenge"_el);
             answer.set("data"_el, JsonLine::base64(_pending->challengeBytes()));
             send(answer);
             _state = State::Proof;
@@ -237,12 +236,12 @@ need separate protection.
         if (_state != State::Proof || record.getOrThrow("type"_el).getTextOrThrow() != "response"_el) {
             throw el::ApplicationError{"Unexpected authentication record."_el};
         }
-        const auto response = JsonLine::unbase64(record.getOrThrow("data"_el).getTextOrThrow(), el::ByteLength{497U});
+        const auto response = JsonLine::unbase64(record.getOrThrow("data"_el).getTextOrThrow(), el::ByteCount{497U});
         const auto accepted = _pending->verify(response.span());
         _pending.reset();
         _state = State::Finished;
         auto answer = el::json::JsonValue{el::json::JsonObject{}};
-        answer.set("type"_el, el::String{"result"_el});
+        answer.set("type"_el, "result"_el);
         answer.set("accepted"_el, accepted);
         send(answer);
         // The demo grants no application access beyond this result.
@@ -267,15 +266,14 @@ channel; an unauthenticated TCP peer can forge ``accepted`` or close the stream.
 
 .. erbsland-demo::
     :source: cryptology/TokenAuthentication/Client.hpp
-    :function-blocks: sendHello onRecord
-    :function-blocks-sha256: 44b24a937c108a03ba4404957483d3ffd9871fc7cc66122106127254cb0925a0
-    :source-sha256: a3414373895a16ebc8e08dece9d71ee2a855339e653b3c3c0230d44e70b38e05
+    :show: f:sendHello, f:onRecord
+    :sha256: 6e93701fd21fec9d14094e60e5732ce4f1bce0ae41786e8df89928c4af3040c3
 
 .. code-block:: cpp
 
     void sendHello() {
         auto hello = el::json::JsonValue{el::json::JsonObject{}};
-        hello.set("type"_el, el::String{"hello"_el});
+        hello.set("type"_el, "hello"_el);
         hello.set("id"_el, _token.id());
         send(hello);
     }
@@ -286,11 +284,11 @@ channel; an unauthenticated TCP peer can forge ``accepted`` or close the stream.
                 throw el::ApplicationError{"Expected an authentication challenge."_el};
             }
             const auto challenge =
-                JsonLine::unbase64(record.getOrThrow("data"_el).getTextOrThrow(), el::ByteLength{102U});
+                JsonLine::unbase64(record.getOrThrow("data"_el).getTextOrThrow(), el::ByteCount{102U});
             // createResponse checks that the challenge addresses this token's identifier.
             const auto response = _token.createResponse(challenge.span()).toByteBlock();
             auto answer = el::json::JsonValue{el::json::JsonObject{}};
-            answer.set("type"_el, el::String{"response"_el});
+            answer.set("type"_el, "response"_el);
             answer.set("data"_el, JsonLine::base64(response));
             send(answer);
             _state = State::Result;

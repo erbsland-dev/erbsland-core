@@ -1,7 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/compression/CompressionError.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
 #include <erbsland/compression/impl/zstandard/ZstandardDecoder.hpp>
 #include <erbsland/compression/impl/zstandard/ZstandardEncoder.hpp>
 #include <erbsland/compression/impl/zstandard/ZstandardForwardBitReader.hpp>
@@ -12,10 +13,9 @@
 #include <erbsland/compression/impl/zstandard/ZstandardReverseBitWriter.hpp>
 #include <erbsland/compression/impl/zstandard/ZstandardSequenceCode.hpp>
 #include <erbsland/compression/impl/zstandard/ZstandardSequenceTable.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/CompressionError.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/OutOfRangeError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -117,17 +117,17 @@ public:
 
     void testBlockAndOutputBounds() {
         auto encoder = ZstandardEncoder{{}, el::compression::CompressionLevel::Fastest, 1024U};
-        REQUIRE_THROWS_AS(el::err::LogicError, encoder.encodeBlock(1U, 0U));
-        REQUIRE_THROWS_AS(el::err::LogicError, encoder.encodeBlock(0U, std::numeric_limits<std::size_t>::max()));
-        REQUIRE_THROWS_AS(el::err::LogicError, encoder.setInput({}, 1U));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encoder.encodeBlock(1U, 0U));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encoder.encodeBlock(0U, std::numeric_limits<std::size_t>::max()));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encoder.setInput({}, 1U));
         const auto history = el::mem::ByteBlock{1U, 2U};
         encoder.setInput(history.span(), 0U);
-        REQUIRE_THROWS_AS(el::err::LogicError, encoder.setInput({}, 0U));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encoder.setInput({}, 0U));
         auto output = el::mem::ByteBlockEditor{history};
         auto decoder = ZstandardDecoder{output, 1024U, 1U};
         const auto literals = el::mem::ByteBlock{8U, 'x', 0U};
         REQUIRE_THROWS_AS(el::err::OutOfRangeError, decoder.decodeBlock(literals.span()));
-        REQUIRE_EQUAL(output.length(), el::unit::ByteLength{2U});
+        REQUIRE_EQUAL(output.length(), el::unit::ByteCount{2U});
     }
 
 private:

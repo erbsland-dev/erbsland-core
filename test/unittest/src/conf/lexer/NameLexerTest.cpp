@@ -5,8 +5,8 @@
 #include <erbsland/conf/impl/constants/Limits.hpp>
 #include <erbsland/conf/impl/lexer/NameLexer.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>
@@ -92,7 +92,7 @@ public:
 
     void testTooLong() {
         NameLexer lexer{el::text::StringEditor::fromCharacter(
-            el::text::Char{U'a'}, el::unit::CpLength{el::conf::impl::limits::maxLineLength + 100})};
+            el::text::Char{U'a'}, el::unit::CpCount{el::conf::impl::limits::maxLineLength + 100})};
         REQUIRE_THROWS_AS(ConfError, lexer.initialize());
     }
 

@@ -4,10 +4,11 @@
 
 #include "TlsClientProtocolOptions.hpp"
 
-#include "../../../../core/Application.hpp"
+#include "../../../../core/impl/application_data/ApplicationCryptologyData.hpp"
+#include "../../../../core/impl/ApplicationDataAccess.hpp"
 #include "../../../../cryptology/configuration/CryptologyConfiguration.hpp"
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/Literals.hpp"
@@ -17,6 +18,8 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
+using namespace text;
 using namespace text::literals;
 
 TlsClientConnection::TlsClientConnection(
@@ -25,21 +28,24 @@ TlsClientConnection::TlsClientConnection(
     _tcpConnection{std::move(tcpConnection)},
     _startProtocol{std::move(startProtocol)} {
     if (_tcpConnection == nullptr || _tcpConnection->ownerEvents() != this->ownerEvents()) {
-        throw err::LogicError{"A TLS client connection requires a TCP connection from the same owner loop."_el};
+        throw LogicFailure{"A TLS client connection requires a TCP connection from the same owner loop."_el};
     }
     if (!_startProtocol) {
         _startProtocol = [](TlsClientProtocol &protocol) -> void { protocol.start(); };
     }
+    _finalContinuation = event::impl::EventContinuation::create(this->ownerEvents());
 }
 
-TlsClientConnection::~TlsClientConnection() = default;
+TlsClientConnection::~TlsClientConnection() {
+    cancelHandshakeTimer();
+}
 
-auto TlsClientConnection::requestedConfigurationLabel() const -> text::String {
+auto TlsClientConnection::requestedConfigurationLabel() const -> String {
     const auto lock = std::scoped_lock{_mutex};
     return _requestedConfigurationLabel;
 }
 
-auto TlsClientConnection::matchedConfigurationLabel() const -> text::String {
+auto TlsClientConnection::matchedConfigurationLabel() const -> String {
     const auto lock = std::scoped_lock{_mutex};
     return _matchedConfigurationLabel;
 }
@@ -62,9 +68,9 @@ auto TlsClientConnection::cipherSuite() const -> std::optional<cryptology::TlsCi
     return _protocol == nullptr ? std::nullopt : _protocol->cipherSuite();
 }
 
-auto TlsClientConnection::negotiatedAlpn() const -> text::String {
+auto TlsClientConnection::negotiatedAlpn() const -> String {
     const auto lock = std::scoped_lock{_mutex};
-    return _protocol == nullptr ? text::String{} : _protocol->negotiatedAlpn();
+    return _protocol == nullptr ? String{} : _protocol->negotiatedAlpn();
 }
 
 auto TlsClientConnection::peerCertificatePath() const -> util::List<cryptology::X509Certificate> {
@@ -85,23 +91,22 @@ void TlsClientConnection::connect(HostEndpoint endpoint, TlsClientConnectOptions
     const auto lock = std::scoped_lock{_mutex};
     verifyCurrentOwnerEvents();
     if (_started.load()) {
-        throw err::LogicError{"A TLS client connection can only be started once."_el};
+        throw LogicFailure{"A TLS client connection can only be started once."_el};
     }
     validateOptions(endpoint, options);
 
     // Resolve and validate the complete selected entry before consuming either one-shot source.
-    const auto resolution =
-        core::application().cryptologyConfiguration().resolveTlsConfiguration(options.configurationLabel());
-    if (!resolution.configuration()->hasServerCertificatePolicy()) {
-        throw err::RuntimeError{text::String::fromJoined(
-            {"TLS configuration \""_el, resolution.matchedLabel(), "\" cannot authenticate a server certificate."_el})};
-    }
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    const auto resolution = cryptologyData->configuration().resolveTlsConfiguration(
+        options.configurationLabel(), cryptology::TlsRole::Client);
     auto protocol = std::make_unique<TlsClientProtocol>(TlsClientProtocolOptions{
         endpoint.host(),
-        *resolution.configuration()->serverCertificatePolicy(),
+        *resolution.certificatePolicy(),
         time::Timestamp::now(),
         options.alpnProtocols(),
-        options.bufferLimits()});
+        options.bufferLimits(),
+        options.supportedGroups(),
+        resolution.configuration()->client()->identity()});
 
     configureTcpEvents();
     _requestedEndpoint = endpoint;
@@ -122,7 +127,7 @@ auto TlsClientConnection::send(const mem::ByteBlock &data) -> NetworkSendStatus 
         return NetworkSendStatus::Closed;
     }
     if (data.length() > TlsClientConnectOptions::cMaximumApplicationSendLength) {
-        throw err::ParameterError{"One TLS application send cannot exceed 16 KiB."_el, "data"_el};
+        throw ParameterFailure{"One TLS application send cannot exceed 16 KiB."_el, "data"_el};
     }
     const auto status = _protocol->sendApplication(data.span());
     if (status == NetworkSendStatus::WouldBlock) {
@@ -186,12 +191,13 @@ void TlsClientConnection::abort() noexcept {
     }
     _started.store(true);
     _abortRequested.store(true);
+    _backgroundOperation.cancel();
+    cancelHandshakeTimer();
+    ++_backgroundGeneration;
     ++_handshakeTimerGeneration;
     ++_idleTimerGeneration;
     ++_closeTimerGeneration;
-    try {
-        _tcpConnection->abort();
-    } catch (...) {}
+    _tcpConnection->abort();
     if (previous == ConnectionState::Inactive) {
         postAbortFinal();
     }
@@ -210,31 +216,31 @@ void TlsClientConnection::validateOptions(const HostEndpoint &endpoint, const Tl
     const auto tlsLimits = options.bufferLimits();
     if (!tlsLimits.send().isFinite() || tlsLimits.send().isZero() ||
         tlsLimits.send() > TlsClientConnectOptions::cMaximumBufferLength) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The TLS send queue limit must be positive, finite, and at most 16 MiB."_el, "options.bufferLimits"_el};
     }
     if (!tlsLimits.receive().isFinite() || tlsLimits.receive().isZero() ||
         tlsLimits.receive() > TlsClientConnectOptions::cMaximumBufferLength) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The TLS receive limit must be positive, finite, and at most 16 MiB."_el, "options.bufferLimits"_el};
     }
     if (!options.handshakeTimeout().isPositive() || !options.idleTimeout().isPositive() ||
         !options.closeTimeout().isPositive()) {
-        throw err::ParameterError{"Every TLS deadline must be positive."_el, "options"_el};
+        throw ParameterFailure{"Every TLS deadline must be positive."_el, "options"_el};
     }
     if (!options.tcpOptions().timeout().isPositive()) {
-        throw err::ParameterError{"The TCP connection timeout must be positive."_el, "options.tcpOptions"_el};
+        throw ParameterFailure{"The TCP connection timeout must be positive."_el, "options.tcpOptions"_el};
     }
     const auto tcpLimits = options.tcpOptions().bufferLimits();
     if (!tcpLimits.send().isFinite() || tcpLimits.send().isZero() || !tcpLimits.receive().isFinite() ||
         tcpLimits.receive().isZero()) {
-        throw err::ParameterError{"The TCP queue limits must be positive and finite."_el, "options.tcpOptions"_el};
+        throw ParameterFailure{"The TCP queue limits must be positive and finite."_el, "options.tcpOptions"_el};
     }
     if (endpoint.port().isAutomatic()) {
-        throw err::ParameterError{"A TLS destination port must not be automatic."_el, "endpoint"_el};
+        throw ParameterFailure{"A TLS destination port must not be automatic."_el, "endpoint"_el};
     }
     if (endpoint.host().isAddress() && endpoint.host().address()->isV4() && endpoint.scopeId().isSpecified()) {
-        throw err::ParameterError{"An IPv4 TLS destination cannot contain an IPv6 scope."_el, "endpoint"_el};
+        throw ParameterFailure{"An IPv4 TLS destination cannot contain an IPv6 scope."_el, "endpoint"_el};
     }
 }
 

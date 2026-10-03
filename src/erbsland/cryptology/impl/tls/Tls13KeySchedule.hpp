@@ -6,7 +6,7 @@
 
 #include "../../../mem/ByteBlock_fwd.hpp"
 #include "../../../mem/ByteSpan.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 #include "../../HashAlgorithm.hpp"
 #include "../../keys/KeyAgreementSharedSecret.hpp"
 #include "../../protected_data/ProtectedByteBlock.hpp"
@@ -49,19 +49,19 @@ public:
 public:
     /// Consume an X25519 shared secret and derive handshake traffic and master secrets.
     /// The shared secret is erased on success and on every failure path.
+    /// This schedule must be in the early phase.
     /// @param sharedSecret The protected X25519 shared secret.
     /// @param helloTranscriptHash Transcript-Hash(ClientHello...ServerHello).
-    /// @throws err::LogicError If this schedule is not in the early phase.
     void initializeHandshake(KeyAgreementSharedSecret &&sharedSecret, mem::ConstByteSpan helloTranscriptHash);
     /// Derive and retain application traffic and exporter master secrets.
+    /// This schedule must be in the handshake phase.
     /// @param serverFinishedTranscriptHash Transcript-Hash through the server Finished message.
-    /// @throws err::LogicError If this schedule is not in the handshake phase.
     void initializeApplication(mem::ConstByteSpan serverFinishedTranscriptHash);
     /// Calculate one Finished verify_data value.
+    /// Handshake traffic secrets must be available.
     /// @param forClient `true` for client Finished, `false` for server Finished.
     /// @param transcriptHash Transcript-Hash excluding the Finished message being calculated.
     /// @return Sensitive digest-sized verify_data.
-    /// @throws err::LogicError If handshake traffic secrets are unavailable.
     [[nodiscard]] auto finishedVerifyData(bool forClient, mem::ConstByteSpan transcriptHash) const -> mem::ByteBlock;
     /// Verify one complete Finished value without content-dependent comparison.
     /// @param forClient `true` for client Finished, `false` for server Finished.
@@ -79,17 +79,17 @@ public:
     /// @return A separately protected traffic secret.
     [[nodiscard]] auto applicationTrafficSecret(bool forClient) const -> TlsTrafficSecret;
     /// Export keying material following RFC 8446 Section 7.5.
+    /// The exporter master secret must be available.
     /// @param label The application label without the mandatory TLS prefix.
     /// @param context The application context whose hash is bound to the export.
     /// @param outputLength The requested output length.
     /// @return Sensitive exported keying material.
-    /// @throws err::LogicError If the exporter master secret is unavailable.
     [[nodiscard]] auto exportKey(
-        mem::ConstByteSpan label, mem::ConstByteSpan context, unit::ByteLength outputLength) const -> mem::ByteBlock;
+        mem::ConstByteSpan label, mem::ConstByteSpan context, unit::ByteCount outputLength) const -> mem::ByteBlock;
     /// Derive and immediately erase the unused resumption master secret.
     /// Session tickets and PSK resumption are deliberately deferred.
+    /// Application secrets must have been initialized.
     /// @param clientFinishedTranscriptHash Transcript-Hash through the client Finished message.
-    /// @throws err::LogicError If application secrets have not been initialized.
     void discardResumptionMaster(mem::ConstByteSpan clientFinishedTranscriptHash);
     /// Securely erase all retained schedule state.
     void secureErase() noexcept;

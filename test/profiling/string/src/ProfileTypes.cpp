@@ -1,9 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ProfileTypes.hpp"
 
 #include "impl/ProfileTypeTools.hpp"
+
+#include <erbsland/String.hpp>
 
 #include <array>
 
@@ -90,7 +91,8 @@ auto toString(const UseCase value) -> el::String {
         "join"_el,
         "cow-stress"_el,
         "edit-stress"_el,
-        "sensitive-storage"_el};
+        "sensitive-storage"_el,
+        "separator-split"_el};
     return names[static_cast<std::size_t>(value)];
 }
 
@@ -126,7 +128,7 @@ auto parseStringType(const el::String &value) -> std::optional<StringType> {
 
 auto parseUseCase(const el::String &value) -> std::optional<UseCase> {
     return impl::parseEnum(
-        value, UseCase::Create, UseCase::SensitiveStorage, [](const auto item) { return toString(item); });
+        value, UseCase::Create, UseCase::SeparatorSplit, [](const auto item) { return toString(item); });
 }
 
 auto parseContentProfile(const el::String &value) -> std::optional<ContentProfile> {

@@ -4,14 +4,13 @@
 #include "../../core/ApplicationTestScope.hpp"
 
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/path/PathWalker.hpp>
+#include <erbsland/EnvironmentVariables.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathWalker.hpp>
 #include <erbsland/StdFormat.hpp>
 #include <erbsland/String.hpp>
-#include <erbsland/system/EnvironmentVariables.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/List.hpp>
 
 #include <atomic>
 #include <exception>

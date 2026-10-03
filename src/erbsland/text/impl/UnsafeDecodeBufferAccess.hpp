@@ -23,9 +23,9 @@ public:
     /// Access the first contiguous writable span.
     [[nodiscard]] auto writableSpan() noexcept -> mem::ByteSpan { return _buffer.writableSpan(); }
     /// Commit bytes written through `writableSpan()`.
-    void commitWritten(unit::ByteLength length) { _buffer.commitWritten(length); }
+    void commitWritten(unit::ByteCount length) { _buffer.commitWritten(length); }
     /// Get bytes consumed since the last reset.
-    [[nodiscard]] auto consumedByteLength() const noexcept -> unit::ByteLength { return _buffer.consumedByteLength(); }
+    [[nodiscard]] auto consumedByteLength() const noexcept -> unit::ByteCount { return _buffer.consumedByteLength(); }
     /// Test if initial BOM handling has completed.
     [[nodiscard]] auto isBomResolved() const noexcept -> bool { return _buffer.isBomResolved(); }
     /// Reset decoding at a nonzero continuation position.
@@ -36,8 +36,8 @@ public:
     /// @param maximum The maximum number of characters to decode.
     /// @param stopAtLineEnd Whether decoding stops after a line ending.
     /// @return The decoded text and its character count.
-    [[nodiscard]] auto takeStringWithLength(unit::CpLength maximum, bool stopAtLineEnd)
-        -> std::pair<String, unit::CpLength> {
+    [[nodiscard]] auto takeStringWithLength(unit::CpCount maximum, bool stopAtLineEnd)
+        -> std::pair<String, unit::CpCount> {
         return _buffer.takeStringWithLength(maximum, stopAtLineEnd);
     }
 
@@ -46,4 +46,5 @@ private:
 };
 
 }
+
 #include "../../mem/ByteSpan.hpp"

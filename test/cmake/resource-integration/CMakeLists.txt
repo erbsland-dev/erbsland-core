@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-add_executable(erbsland-core-resource-integration main.cpp)
+add_executable(erbsland-core-resource-integration)
 add_library(erbsland-core-resource-static-library STATIC)
 erbsland_core_add_resources(
         TARGET erbsland-core-resource-static-library
@@ -11,7 +11,7 @@ erbsland_core_add_resources(
         IDENTIFIER "static-fixture"
         SUFFIXES ".txt"
 )
-add_executable(erbsland-core-resource-static-link empty.cpp)
+add_executable(erbsland-core-resource-static-link)
 target_link_libraries(erbsland-core-resource-static-link PRIVATE erbsland-core-resource-static-library)
 erbsland_core_add_resources(
         TARGET erbsland-core-resource-integration
@@ -37,3 +37,5 @@ add_test(
         NAME erbsland-core-resource-static-link
         COMMAND $<TARGET_FILE:erbsland-core-resource-static-link>
 )
+
+add_subdirectory(src)

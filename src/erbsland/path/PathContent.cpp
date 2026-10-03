@@ -4,8 +4,6 @@
 
 #include "Path.hpp"
 #include "PathError.hpp"
-#include "PathInfo.hpp"
-#include "PathInfoParts.hpp"
 
 #include "impl/BackendFactory.hpp"
 #include "impl/PathBackend.hpp"
@@ -13,6 +11,7 @@
 
 #include "../err/Exception.hpp"
 #include "../err/OutOfRangeError.hpp"
+#include "../err/RuntimeError.hpp"
 #include "../mem/ByteArray.hpp"
 #include "../mem/ByteBlock.hpp"
 #include "../mem/impl/UnsafeByteBlockBuffer.hpp"
@@ -21,7 +20,7 @@
 #include "../stream/TextOutputStream.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringDecoder.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 #include <algorithm>
 #include <array>
@@ -30,6 +29,8 @@
 
 namespace erbsland::path {
 
+using namespace err;
+using namespace mem;
 using namespace text::literals;
 using namespace stream;
 using namespace text;
@@ -60,7 +61,7 @@ auto PathContent::path() const -> const Path & {
 auto PathContent::readText(const PathReadTextOptions options) const noexcept -> std::optional<String> {
     try {
         return readTextOrThrow(options);
-    } catch (const err::Exception &) {
+    } catch (const RuntimeError &) {
         return std::nullopt;
     }
 }
@@ -78,43 +79,41 @@ auto PathContent::readTextOrThrow(const PathReadTextOptions options) const -> St
     return result;
 }
 
-auto PathContent::readData(const PathReadDataOptions options) const noexcept -> std::optional<mem::ByteBlock> {
+auto PathContent::readData(const PathReadDataOptions options) const noexcept -> std::optional<ByteBlock> {
     try {
         return readDataOrThrow(options);
-    } catch (const err::Exception &) {
+    } catch (const RuntimeError &) {
         return std::nullopt;
     }
 }
 
-auto PathContent::readDataOrThrow(const PathReadDataOptions options) const -> mem::ByteBlock {
-    constexpr auto cBufferSize = ByteLength{16U * 1024U};
+auto PathContent::readDataOrThrow(const PathReadDataOptions options) const -> ByteBlock {
+    constexpr auto cBufferSize = ByteCount{16U * 1024U};
     if (isEmpty()) {
         throwPathEmptyError();
     }
     const auto maximumLength = options.maximumByteLength();
     if (maximumLength.isZero()) {
-        return mem::ByteBlock{};
+        return ByteBlock{};
     }
-    const auto info = path().info(PathInfoParts{PathInfoPart::Type, PathInfoPart::Size});
+    auto stream = openByteInputStream(options);
     auto initialCapacity = cBufferSize;
-    auto knownFileSize = ByteLength::infinite();
-    if (info.isRegularFile()) {
+    const auto knownFileSize = stream->initialFileSize();
+    if (knownFileSize.isFinite()) {
         // Add one byte as probe if the file size has changed after our probe.
         // This last byte is important! It is an "automatic" probe to detect if there is more data
         // after the reported file size.
-        knownFileSize = info.fileSize();
-        initialCapacity = knownFileSize + ByteLength::one();
+        initialCapacity = knownFileSize + ByteCount::one();
     }
     if (maximumLength.isFinite()) {
         if (knownFileSize.isFinite() && knownFileSize > maximumLength) {
             throwError("Failed to read file data."_el, "The reported file size exceeds the maximum byte length."_el);
         }
         // Reserve one byte more than the maximum length to probe if we exceed it.
-        initialCapacity = std::min(initialCapacity, maximumLength + ByteLength::one());
+        initialCapacity = std::min(initialCapacity, maximumLength + ByteCount::one());
     }
-    auto stream = openByteInputStream(options);
     auto buffer = mem::impl::UnsafeByteBlockBuffer{initialCapacity};
-    auto totalLength = ByteLength::zero();
+    auto totalLength = ByteCount::zero();
     while (true) {
         auto readSpan = buffer.remainingData(totalLength);
         assert(!readSpan.empty());
@@ -140,7 +139,7 @@ auto PathContent::readDataOrThrow(const PathReadDataOptions options) const -> me
             auto requestedCapacity = totalLength + cBufferSize;
             if (maximumLength.isFinite()) {
                 // if we have a maximum length, only request one byte more to probe if we exceed it.
-                requestedCapacity = std::min(requestedCapacity, maximumLength + ByteLength::one());
+                requestedCapacity = std::min(requestedCapacity, maximumLength + ByteCount::one());
             }
             assert(requestedCapacity > buffer.capacity());
             buffer.grow(requestedCapacity, totalLength);
@@ -153,7 +152,7 @@ auto PathContent::writeText(const String &text, const PathWriteTextOptions optio
     try {
         writeTextOrThrow(text, options);
         return util::Result::Success;
-    } catch (const err::Exception &) {
+    } catch (const RuntimeError &) {
         return util::Result::Failure;
     }
 }
@@ -167,17 +166,16 @@ void PathContent::writeTextOrThrow(const String &text, const PathWriteTextOption
     }
 }
 
-auto PathContent::writeData(const mem::ByteBlock &data, const PathWriteDataOptions options) const noexcept
-    -> util::Result {
+auto PathContent::writeData(const ByteBlock &data, const PathWriteDataOptions options) const noexcept -> util::Result {
     try {
         writeDataOrThrow(data, options);
         return util::Result::Success;
-    } catch (const err::Exception &) {
+    } catch (const RuntimeError &) {
         return util::Result::Failure;
     }
 }
 
-void PathContent::writeDataOrThrow(const mem::ByteBlock &data, const PathWriteDataOptions options) const {
+void PathContent::writeDataOrThrow(const ByteBlock &data, const PathWriteDataOptions options) const {
     auto stream = openByteOutputStream(options);
     if (stream->write(data) == StreamWriteStatus::Timeout || stream->flush() == StreamWriteStatus::Timeout ||
         stream->close() == StreamCloseStatus::Timeout) {

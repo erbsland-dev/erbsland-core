@@ -5,7 +5,7 @@
 #include "../../support/TestHelper.hpp"
 
 #include <erbsland/cterm/impl/StandardInput.hpp>
-#include <erbsland/stream/StandardStreams.hpp>
+#include <erbsland/StandardStreams.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -42,10 +42,10 @@ class BackendTest final : public UNITTEST_SUBCLASS(TerminalTestHelper) {
         [[nodiscard]] auto readChar() -> el::stream::StreamReadResult<el::text::Char> override {
             return {el::stream::StreamReadStatus::Finished, el::text::Char{}};
         }
-        [[nodiscard]] auto read(el::unit::CpLength) -> el::stream::StreamReadResult<el::text::String> override {
+        [[nodiscard]] auto read(el::unit::CpCount) -> el::stream::StreamReadResult<el::text::String> override {
             return {el::stream::StreamReadStatus::Finished, el::text::String{}};
         }
-        [[nodiscard]] auto readLine(el::unit::CpLength) -> el::stream::StreamReadResult<el::text::String> override {
+        [[nodiscard]] auto readLine(el::unit::CpCount) -> el::stream::StreamReadResult<el::text::String> override {
             if (_wasRead) {
                 return {el::stream::StreamReadStatus::Finished, el::text::String{}};
             }
@@ -55,7 +55,7 @@ class BackendTest final : public UNITTEST_SUBCLASS(TerminalTestHelper) {
             }
             return {el::stream::StreamReadStatus::Data, _line};
         }
-        [[nodiscard]] auto readAll(el::unit::CpLength) -> el::stream::StreamReadResult<el::text::String> override {
+        [[nodiscard]] auto readAll(el::unit::CpCount) -> el::stream::StreamReadResult<el::text::String> override {
             return {el::stream::StreamReadStatus::Finished, el::text::String{}};
         }
 

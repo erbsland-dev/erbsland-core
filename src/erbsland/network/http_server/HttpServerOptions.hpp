@@ -5,7 +5,7 @@
 #include "../http/HttpHeaderLimits.hpp"
 
 #include "../../time/TimeDelta.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 namespace erbsland::network {
@@ -23,13 +23,13 @@ public:
     /// Default graceful connection-close deadline.
     inline static const auto cDefaultCloseTimeout = time::TimeDelta::seconds(10);
     /// Default maximum request-line length.
-    static constexpr auto cDefaultMaximumStartLineLength = unit::ByteLength{8U * 1024U};
+    static constexpr auto cDefaultMaximumStartLineLength = unit::ByteCount{8U * 1024U};
     /// Default decoded request-body maximum.
-    static constexpr auto cDefaultMaximumBodyLength = unit::ByteLength{16U * 1024U * 1024U};
+    static constexpr auto cDefaultMaximumBodyLength = unit::ByteCount{16U * 1024U * 1024U};
     /// Default transaction input and output queue maximum.
-    static constexpr auto cDefaultMaximumQueueLength = unit::ByteLength{1024U * 1024U};
+    static constexpr auto cDefaultMaximumQueueLength = unit::ByteCount{1024U * 1024U};
     /// Default fixed-response body maximum.
-    static constexpr auto cDefaultMaximumFixedResponseLength = unit::ByteLength{256U * 1024U};
+    static constexpr auto cDefaultMaximumFixedResponseLength = unit::ByteCount{256U * 1024U};
     /// Default finite keep-alive transaction count.
     static constexpr auto cDefaultMaximumRequestsPerConnection = unit::ItemCount{1000U};
     /// Default maximum number of active static-content responses and open files.
@@ -37,11 +37,11 @@ public:
     /// Default maximum number of queued blocking content operations.
     static constexpr auto cDefaultMaximumStaticContentOperations = unit::ItemCount{256U};
     /// Default maximum bytes retained between content workers and HTTP output.
-    static constexpr auto cDefaultMaximumStaticContentQueueLength = unit::ByteLength{2U * 1024U * 1024U};
+    static constexpr auto cDefaultMaximumStaticContentQueueLength = unit::ByteCount{2U * 1024U * 1024U};
     /// Default maximum aggregate static-content memory retained by active responses.
-    static constexpr auto cDefaultMaximumRetainedStaticContentMemoryLength = unit::ByteLength{16U * 1024U * 1024U};
+    static constexpr auto cDefaultMaximumRetainedStaticContentMemoryLength = unit::ByteCount{16U * 1024U * 1024U};
     /// Default and hard maximum for one static-content output block.
-    static constexpr auto cDefaultStaticContentChunkLength = unit::ByteLength{16U * 1024U};
+    static constexpr auto cDefaultStaticContentChunkLength = unit::ByteCount{16U * 1024U};
 
 public: // accessors
     /// Get the request and response header limits.
@@ -52,32 +52,32 @@ public: // accessors
         return *this;
     }
     /// Get the maximum request-line length.
-    [[nodiscard]] auto maximumStartLineLength() const noexcept -> unit::ByteLength { return _maximumStartLineLength; }
+    [[nodiscard]] auto maximumStartLineLength() const noexcept -> unit::ByteCount { return _maximumStartLineLength; }
     /// Set the maximum request-line length.
-    auto setMaximumStartLineLength(unit::ByteLength value) noexcept -> HttpServerOptions & {
+    auto setMaximumStartLineLength(unit::ByteCount value) noexcept -> HttpServerOptions & {
         _maximumStartLineLength = value;
         return *this;
     }
     /// Get the decoded request-body hard maximum.
-    [[nodiscard]] auto maximumBodyLength() const noexcept -> unit::ByteLength { return _maximumBodyLength; }
+    [[nodiscard]] auto maximumBodyLength() const noexcept -> unit::ByteCount { return _maximumBodyLength; }
     /// Set the decoded request-body hard maximum.
-    auto setMaximumBodyLength(unit::ByteLength value) noexcept -> HttpServerOptions & {
+    auto setMaximumBodyLength(unit::ByteCount value) noexcept -> HttpServerOptions & {
         _maximumBodyLength = value;
         return *this;
     }
     /// Get the transaction queue maximum.
-    [[nodiscard]] auto maximumQueueLength() const noexcept -> unit::ByteLength { return _maximumQueueLength; }
+    [[nodiscard]] auto maximumQueueLength() const noexcept -> unit::ByteCount { return _maximumQueueLength; }
     /// Set the transaction queue maximum.
-    auto setMaximumQueueLength(unit::ByteLength value) noexcept -> HttpServerOptions & {
+    auto setMaximumQueueLength(unit::ByteCount value) noexcept -> HttpServerOptions & {
         _maximumQueueLength = value;
         return *this;
     }
     /// Get the request-bound fixed-response body maximum.
-    [[nodiscard]] auto maximumFixedResponseLength() const noexcept -> unit::ByteLength {
+    [[nodiscard]] auto maximumFixedResponseLength() const noexcept -> unit::ByteCount {
         return _maximumFixedResponseLength;
     }
     /// Set the request-bound fixed-response body maximum.
-    auto setMaximumFixedResponseLength(unit::ByteLength value) noexcept -> HttpServerOptions & {
+    auto setMaximumFixedResponseLength(unit::ByteCount value) noexcept -> HttpServerOptions & {
         _maximumFixedResponseLength = value;
         return *this;
     }
@@ -109,29 +109,29 @@ public: // accessors
         return *this;
     }
     /// Get the maximum completed static-content bytes awaiting HTTP output.
-    [[nodiscard]] auto maximumStaticContentQueueLength() const noexcept -> unit::ByteLength {
+    [[nodiscard]] auto maximumStaticContentQueueLength() const noexcept -> unit::ByteCount {
         return _maximumStaticContentQueueLength;
     }
     /// Set the maximum completed static-content bytes awaiting HTTP output.
-    auto setMaximumStaticContentQueueLength(unit::ByteLength value) noexcept -> HttpServerOptions & {
+    auto setMaximumStaticContentQueueLength(unit::ByteCount value) noexcept -> HttpServerOptions & {
         _maximumStaticContentQueueLength = value;
         return *this;
     }
     /// Get the maximum aggregate static-content memory retained by active responses.
-    [[nodiscard]] auto maximumRetainedStaticContentMemoryLength() const noexcept -> unit::ByteLength {
+    [[nodiscard]] auto maximumRetainedStaticContentMemoryLength() const noexcept -> unit::ByteCount {
         return _maximumRetainedStaticContentMemoryLength;
     }
     /// Set the maximum aggregate static-content memory retained by active responses.
-    auto setMaximumRetainedStaticContentMemoryLength(unit::ByteLength value) noexcept -> HttpServerOptions & {
+    auto setMaximumRetainedStaticContentMemoryLength(unit::ByteCount value) noexcept -> HttpServerOptions & {
         _maximumRetainedStaticContentMemoryLength = value;
         return *this;
     }
     /// Get the static-content output chunk length.
-    [[nodiscard]] auto staticContentChunkLength() const noexcept -> unit::ByteLength {
+    [[nodiscard]] auto staticContentChunkLength() const noexcept -> unit::ByteCount {
         return _staticContentChunkLength;
     }
     /// Set the positive static-content output chunk length up to 16 KiB.
-    auto setStaticContentChunkLength(unit::ByteLength value) noexcept -> HttpServerOptions & {
+    auto setStaticContentChunkLength(unit::ByteCount value) noexcept -> HttpServerOptions & {
         _staticContentChunkLength = value;
         return *this;
     }
@@ -165,22 +165,22 @@ public: // accessors
     }
 
 private:
-    HttpHeaderLimits _headerLimits;                                           ///< Request and response header limits.
-    unit::ByteLength _maximumStartLineLength{cDefaultMaximumStartLineLength}; ///< Start-line bound.
-    unit::ByteLength _maximumBodyLength{cDefaultMaximumBodyLength};           ///< Decoded body hard bound.
-    unit::ByteLength _maximumQueueLength{cDefaultMaximumQueueLength};         ///< Codec queue bound.
-    unit::ByteLength _maximumFixedResponseLength{cDefaultMaximumFixedResponseLength};        ///< Fixed response bound.
+    HttpHeaderLimits _headerLimits;                                          ///< Request and response header limits.
+    unit::ByteCount _maximumStartLineLength{cDefaultMaximumStartLineLength}; ///< Start-line bound.
+    unit::ByteCount _maximumBodyLength{cDefaultMaximumBodyLength};           ///< Decoded body hard bound.
+    unit::ByteCount _maximumQueueLength{cDefaultMaximumQueueLength};         ///< Codec queue bound.
+    unit::ByteCount _maximumFixedResponseLength{cDefaultMaximumFixedResponseLength};         ///< Fixed response bound.
     unit::ItemCount _maximumRequestsPerConnection{cDefaultMaximumRequestsPerConnection};     ///< Reuse bound.
     unit::ItemCount _maximumStaticContentResponses{cDefaultMaximumStaticContentResponses};   ///< Content responses.
     unit::ItemCount _maximumStaticContentOperations{cDefaultMaximumStaticContentOperations}; ///< Worker operations.
-    unit::ByteLength _maximumStaticContentQueueLength{cDefaultMaximumStaticContentQueueLength}; ///< Queued chunks.
-    unit::ByteLength _maximumRetainedStaticContentMemoryLength{
-        cDefaultMaximumRetainedStaticContentMemoryLength};                        ///< Retained static-content memory.
-    unit::ByteLength _staticContentChunkLength{cDefaultStaticContentChunkLength}; ///< Output chunk length.
-    time::TimeDelta _headerTimeout{cDefaultHeaderTimeout};                        ///< Header deadline.
-    time::TimeDelta _bodyIdleTimeout{cDefaultBodyIdleTimeout};                    ///< Body idle deadline.
-    time::TimeDelta _totalTimeout{cDefaultTotalTimeout};                          ///< Absolute request deadline.
-    time::TimeDelta _closeTimeout{cDefaultCloseTimeout};                          ///< Graceful close deadline.
+    unit::ByteCount _maximumStaticContentQueueLength{cDefaultMaximumStaticContentQueueLength}; ///< Queued chunks.
+    unit::ByteCount _maximumRetainedStaticContentMemoryLength{
+        cDefaultMaximumRetainedStaticContentMemoryLength};                       ///< Retained static-content memory.
+    unit::ByteCount _staticContentChunkLength{cDefaultStaticContentChunkLength}; ///< Output chunk length.
+    time::TimeDelta _headerTimeout{cDefaultHeaderTimeout};                       ///< Header deadline.
+    time::TimeDelta _bodyIdleTimeout{cDefaultBodyIdleTimeout};                   ///< Body idle deadline.
+    time::TimeDelta _totalTimeout{cDefaultTotalTimeout};                         ///< Absolute request deadline.
+    time::TimeDelta _closeTimeout{cDefaultCloseTimeout};                         ///< Graceful close deadline.
 };
 
 }

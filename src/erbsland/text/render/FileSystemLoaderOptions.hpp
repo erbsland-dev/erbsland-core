@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../../core/Definitions.hpp"
+
 namespace erbsland::text::render {
 
 /// Options for the file system layout loader.

@@ -11,7 +11,7 @@
 #include "Rectangle_fwd.hpp"
 #include "Size.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../geometry/Alignment.hpp"
 #include "../geometry/Anchor.hpp"
 #include "../geometry/Axis.hpp"
@@ -127,9 +127,8 @@ public: // accessors
                                                                 : CoordinateSpan{y1(), height()};
     }
     /// Get the coordinate span for a physical axis.
-    /// @param axis The physical axis to select.
+    /// @param axis The physical axis to select. Must be X or Y.
     /// @return The selected coordinate span.
-    /// @throws err::ParameterError if `axis` is Z.
     [[nodiscard]] constexpr auto component(const geometry::Axis axis) const -> CoordinateSpan {
         using namespace text::literals;
         switch (axis) {
@@ -138,13 +137,12 @@ public: // accessors
         case geometry::Axis::Y:
             return {y1(), height()};
         default:
-            throw err::ParameterError{"The axis is outside the rectangle dimensionality."_el, "axis"_el};
+            throw err::ParameterFailure{"The axis is outside the rectangle dimensionality."_el, "axis"_el};
         }
     }
     /// Get the coordinate span for a signed physical axis.
-    /// @param axis The signed physical axis to select.
+    /// @param axis The signed physical axis to select. Must select X or Y.
     /// @return The selected span, reversed when requested.
-    /// @throws err::ParameterError if `axis` selects Z.
     [[nodiscard]] constexpr auto component(const geometry::SignedAxis axis) const -> CoordinateSpan {
         const auto result = component(axis.axis());
         return axis.isReversed() ? result.reversed() : result;
@@ -223,13 +221,12 @@ public: // tools
     /// frame.
     [[nodiscard]] auto frameDirection(Position testedPosition) const noexcept -> Direction;
     /// Divide this rectangle into equally spaced grid cells.
-    /// Each cell must be at least 1x1 in size, if this isn't possible, `err::ParameterError` is thrown.
+    /// The requested division and spacing must allow every cell to be at least 1x1 in size.
     /// @param rows The number of rows. Minimum 1.
-    /// @param columns The number of columns. Minimum 1
+    /// @param columns The number of columns. Minimum 1.
     /// @param horizontalSpacing The spacing between cells horizontally.
     /// @param verticalSpacing The spacing between cells vertically.
     /// @return A vector of rectangles representing the grid cells from left to right, top to bottom.
-    /// @throws err::ParameterError if rows or columns are less than 1 or the chosen division is impossible.
     [[nodiscard]] auto gridCells(
         int rows,
         int columns,

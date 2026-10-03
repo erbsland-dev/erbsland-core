@@ -45,8 +45,9 @@ wire value.
 Accepted TLS
 ------------
 
-``TlsServerAcceptOptions`` resolves a required default ``tls/server`` identity and up to 64 exact canonical SNI mappings
-before it consumes a TCP request.
+:cpp:class:`TlsServerAcceptOptions <erbsland::network::TlsServerAcceptOptions>` selects the default server profile label, initially ``tls``, and up to 64 exact canonical SNI
+mappings through :cpp:class:`TlsConfigurationMapping <erbsland::network::TlsConfigurationMapping>`.
+:cpp:func:`TlsServerConnection::accept() <erbsland::network::TlsServerConnection::accept>` resolves all of these profiles before consuming a TCP request.
 A required shared handshake quota independently bounds unauthenticated work and releases its lease when client Finished
 is verified.
 ALPN protocols are configured and reported as ``text::String`` values.
@@ -75,11 +76,20 @@ The built-in :cpp:class:`HostLookup <erbsland::network::HostLookup>` implementat
 :doc:`/topics/network/resolving-hosts-asynchronously`.
 One-shot transport sources cannot be restarted after reaching ``Closed`` or ``Failed``.
 
-Common Connection Interface
----------------------------
+Common Connection Nested Failure Causes
+=======================================
+
+``NetworkErrorContext::cause()`` retains a lower-level exception across asynchronous error callbacks.
+Constructing ``NetworkError`` from this context uses its captured cause unless an explicit cause is supplied.
+For example, a failed HTTP download to a file preserves the replacement stage, temporary and destination paths, and
+native operating-system failure.
+Render the resulting exception with ``err::DiagnosticHelper`` to display the full cause chain.
+
+Interface
+---------
 
 ``Connection`` is the common application byte-stream interface implemented by ``TcpConnection``,
-``TlsClientConnection``, and ``TlsServerConnection``.
+:cpp:class:`TlsClientConnection <erbsland::network::TlsClientConnection>`, and :cpp:class:`TlsServerConnection <erbsland::network::TlsServerConnection>`.
 Protocol-specific connection and handshake checkpoints remain on the concrete interfaces.
 Once ``ConnectionState::Active`` is reached, generic consumers use the same endpoints, buffer limits, atomic send,
 receive flow control, graceful close, abort, and common event handlers.
@@ -91,10 +101,18 @@ Bare TCP EOF below TLS remains a truncation failure.
 TLS Client Sources
 ------------------
 
-``TlsClientConnection`` composes one ``TcpConnection`` and becomes ``Active`` only after server authentication and the
+:cpp:class:`TlsClientConnection <erbsland::network::TlsClientConnection>` composes one ``TcpConnection`` and becomes ``Active`` only after server authentication and the
 TLS 1.3 Finished exchange.
-Its default configuration label is ``tls/client``.
+Its default configuration label is ``tls``.
 The application configuration is resolved synchronously before TCP startup and retained as an immutable snapshot.
+Resolution searches client parts only, including ancestors and the built-in empty-label default.
+Every unresolved client label reaches the default, whose system-trust selection is subject to shared settings.
+Invalid selected profiles fail before TCP startup; disabling system trust never disables verification.
+
+Trust-source unavailability and native trust service failures have distinct ``TlsTrustUnavailable`` and
+``TlsNativeFailure`` network reasons; invalid certificates remain authentication failures.
+See :doc:`/topics/cryptology/configuring_tls` for profile setup and
+:doc:`/topics/network/using-tls-client-connections` for connection handling.
 
 The ordered checkpoints are host resolution, transport connection, peer hello, peer authentication, and handshake
 completion.
@@ -105,12 +123,23 @@ Calling ``abort()`` in a checkpoint prevents the next protocol transition or tra
 TLS Server Sources
 ------------------
 
-``TlsServerConnection`` composes one accepted ``TcpConnection`` and remains in ``Accepting`` or ``Handshaking`` until
+:cpp:class:`TlsServerConnection <erbsland::network::TlsServerConnection>` composes one accepted ``TcpConnection`` and remains in ``Accepting`` or ``Handshaking`` until
 the client Finished authenticator is verified.
 Before consuming the request, ``accept()`` validates all options, resolves the default and exact-SNI configuration
-labels into immutable snapshots, and acquires a separate shared handshake-quota lease.
+labels from one coherent registry state into immutable snapshots, and acquires a separate shared handshake-quota lease.
 The ClientHello checkpoint exposes the bounded SNI and ALPN offer plus the selected cipher, signature scheme, and
 configuration labels before secrets or the server flight are created.
+
+SNI selects the complete server profile, including its
+:cpp:enum:`TlsClientAuthentication <erbsland::cryptology::TlsClientAuthentication>` mode and client trust policy.
+See :doc:`/reference/cryptology/tls` for authentication modes and certificate requirements.
+:cpp:func:`TlsServerConnection::peerCertificatePath() <erbsland::network::TlsServerConnection::peerCertificatePath>` returns the validated client-to-anchor path only after certificate
+validation, CertificateVerify, and Finished succeed.
+:cpp:func:`TlsServerConnection::isPeerAuthenticated() <erbsland::network::TlsServerConnection::isPeerAuthenticated>` then reports true.
+Anonymous connections retain an empty path and report false.
+Both values remain available after normal closure.
+The handshake callback can inspect this information before application data proceeds; account mapping and authorization
+remain application responsibilities.
 
 Application flow, back-pressure, receive pause propagation, deadlines, truncation handling, ``close_notify``, and
 terminal ordering match the client source.
@@ -126,6 +155,33 @@ Orderly closure requires authenticated ``close_notify`` in both directions.
 Bare TCP EOF is reported as TLS truncation.
 Successful closure emits ``onClosed()`` followed by ``onFinal()``; failures emit ``onError()`` followed by
 ``onFinal()``.
+
+TLS Handshake Work and Limits
+-----------------------------
+
+Both TLS roles perform certificate validation and private-key signing on bounded background workers.
+Their completion callbacks run on the owning event loop.
+The handshake deadline includes time waiting for a worker and time spent in the operation.
+Cancellation or timeout prevents a late result from changing connection state, even when the operating-system call
+cannot be interrupted immediately.
+Accepted work retains the application services it needs until it finishes.
+
+Worker saturation reports ``ResourceLimitExceeded``.
+Connection construction can also fail when the event loop cannot reserve capacity for finalization.
+Completion and deadline delivery use reserved capacity, so a full ordinary event queue does not prevent them.
+The configured receive limit still applies while certificate validation or signing is pending.
+
+TLS Key-Exchange Groups
+-----------------------
+
+:cpp:class:`TlsClientConnectOptions <erbsland::network::TlsClientConnectOptions>` and :cpp:class:`TlsServerAcceptOptions <erbsland::network::TlsServerAcceptOptions>` accept an ordered ``setSupportedGroups()`` list of X25519 and
+P-256 without duplicates.
+The default order is X25519 followed by P-256; clients initially send only the first group's key share.
+Servers prefer an acceptable supplied share before requesting a different group through HelloRetryRequest.
+One retry is supported, including client handling of cookie-only retries.
+Repeated retries and inconsistent second ClientHello messages fail the handshake.
+Echoed cookies are limited to 60 KiB, and the configured aggregate input/output limits still apply.
+Servers do not generate stateless retry cookies.
 
 TCP Sources
 -----------
@@ -246,13 +302,13 @@ Interface
     :members:
 .. doxygenclass:: erbsland::network::TlsClientConnectOptions
     :members:
+.. doxygenclass:: erbsland::network::TlsConfigurationMapping
+    :members:
 .. doxygenclass:: erbsland::network::TlsServerAcceptOptions
     :members:
 .. doxygenclass:: erbsland::network::TlsServerConnection
     :members:
 .. doxygenclass:: erbsland::network::TlsServerConnectionEventEditor
-    :members:
-.. doxygenclass:: erbsland::network::TlsServerIdentityMapping
     :members:
 .. doxygenclass:: erbsland::network::UdpDatagram
     :members:

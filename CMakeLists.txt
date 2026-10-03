@@ -24,12 +24,14 @@ option(ERBSLAND_CORE_ENABLE_CONSTANT_TIME "Enable on-demand constant-time analys
 # Optional Clang fuzzing targets.
 option(ERBSLAND_CORE_ENABLE_FUZZING "Enable Clang libFuzzer targets" OFF)
 
+# Repository development tools.
+option(ERBSLAND_CORE_ENABLE_TOOLS "Enable erbsland-core-tool development tools" ${PROJECT_IS_TOP_LEVEL})
+
 # Public API examples.
 option(ERBSLAND_CORE_ENABLE_DEMOS "Enable demos" ${PROJECT_IS_TOP_LEVEL})
 
-# Developer compile-time optimizations and explicit namespace views.
+# Developer compile-time optimizations and build settings.
 option(ERBSLAND_CORE_ENABLE_PRECOMPILED_HEADERS "Enable precompiled headers" ${PROJECT_IS_TOP_LEVEL})
-option(ERBSLAND_CORE_DO_NOT_FLATTEN_NS "Do not flatten namespaces" ${PROJECT_IS_TOP_LEVEL})
 option(ERBSLAND_CORE_DEVELOPER_BUILD "Enables developer build." ${PROJECT_IS_TOP_LEVEL})
 
 # Unity builds substantially reduce clean build times for this library. Enable them for top-level developer builds,
@@ -48,6 +50,8 @@ include(cmake/git-version.cmake)
 # Core library target and its public integration alias.
 add_library(erbsland-core STATIC)
 add_library(erbsland::core ALIAS erbsland-core)
+# Keep library implementation namespaces strict without changing the consumer header view.
+target_compile_definitions(erbsland-core PRIVATE ERBSLAND_CORE_BUILDING_LIBRARY=1)
 erbsland_set_required_compiler_options(erbsland-core)
 erbsland_enable_debug_warnings(erbsland-core)
 erbsland_enable_precompiled_headers(erbsland-core
@@ -55,12 +59,12 @@ erbsland_enable_precompiled_headers(erbsland-core
 )
 
 add_subdirectory(src/erbsland)
-add_subdirectory(cmake/tools/resource-compiler)
 
 # Export generated public wrappers to consumers; library compilation uses source headers.
 target_include_directories(erbsland-core
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/erbsland
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
         INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
@@ -72,17 +76,24 @@ set(_erbsland_core_install_targets erbsland-core erbsland-core-resource-compiler
 include(cmake/application.cmake)
 include(cmake/resources.cmake)
 include(cmake/package.cmake)
+include(cmake/display-text.cmake)
+add_subdirectory(cmake/tools/resource-compiler)
+# Display-text generation is a host tool. Cross consumers supply a native executable explicitly.
+if(NOT CMAKE_CROSSCOMPILING)
+    add_subdirectory(cmake/tools/display-text-compiler)
+    list(APPEND _erbsland_core_install_targets erbsland-core-display-text-compiler)
+endif()
 include(cmake/install.cmake)
 include(cmake/tests.cmake)
+
+# Enable discovery before demos, which can provide independent application tests.
+if(ERBSLAND_CORE_ENABLE_TESTS)
+    enable_testing()
+endif()
 
 # Optional consumer-facing examples.
 if(ERBSLAND_CORE_ENABLE_DEMOS)
     add_subdirectory(demos)
-endif()
-
-# Only ordinary unit tests enable CTest discovery.
-if(ERBSLAND_CORE_ENABLE_TESTS)
-    enable_testing()
 endif()
 
 # Test infrastructure also hosts independently enabled tools with their own build policy.
@@ -91,4 +102,9 @@ if(ERBSLAND_CORE_ENABLE_TESTS
         OR ERBSLAND_CORE_ENABLE_FUZZING
         OR ERBSLAND_CORE_ENABLE_CONSTANT_TIME)
     add_subdirectory(test)
+endif()
+
+# The unit-test framework is available after adding the test infrastructure.
+if(ERBSLAND_CORE_ENABLE_TOOLS)
+    add_subdirectory(tool)
 endif()

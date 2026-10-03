@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/cterm/impl/AnsiSequence.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 TESTED_TARGETS(ansi_sequence)

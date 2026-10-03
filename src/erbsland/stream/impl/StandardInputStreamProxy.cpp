@@ -6,12 +6,14 @@
 
 namespace erbsland::stream::impl {
 
-auto StandardInputStreamProxy::encoding() const noexcept -> text::StringEncoding {
-    return text::StringEncoding::Utf8;
+using namespace text;
+
+auto StandardInputStreamProxy::encoding() const noexcept -> StringEncoding {
+    return StringEncoding::Utf8;
 }
 
-auto StandardInputStreamProxy::effectiveEncoding() const noexcept -> text::StringEncoding {
-    return text::StringEncoding::Utf8;
+auto StandardInputStreamProxy::effectiveEncoding() const noexcept -> StringEncoding {
+    return StringEncoding::Utf8;
 }
 
 auto StandardInputStreamProxy::inputSettings() const noexcept -> const InputStreamSettings & {
@@ -37,19 +39,19 @@ auto StandardInputStreamProxy::close() -> StreamCloseStatus {
 void StandardInputStreamProxy::abort() noexcept {
 }
 
-auto StandardInputStreamProxy::readChar() -> StreamReadResult<text::Char> {
+auto StandardInputStreamProxy::readChar() -> StreamReadResult<Char> {
     return target()->readChar();
 }
 
-auto StandardInputStreamProxy::read(const unit::CpLength maximum) -> StreamReadResult<text::String> {
+auto StandardInputStreamProxy::read(const unit::CpCount maximum) -> StreamReadResult<String> {
     return target()->read(maximum);
 }
 
-auto StandardInputStreamProxy::readLine(const unit::CpLength maximum) -> StreamReadResult<text::String> {
+auto StandardInputStreamProxy::readLine(const unit::CpCount maximum) -> StreamReadResult<String> {
     return target()->readLine(maximum);
 }
 
-auto StandardInputStreamProxy::readAll(const unit::CpLength maximum) -> StreamReadResult<text::String> {
+auto StandardInputStreamProxy::readAll(const unit::CpCount maximum) -> StreamReadResult<String> {
     return target()->readAll(maximum);
 }
 

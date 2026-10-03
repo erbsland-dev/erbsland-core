@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/compression/zip/ArchiveWriter.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/TempDirectory.hpp>
-#include <erbsland/text/StringEncoder.hpp>
+#include <erbsland/CompressionLevel.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEncoder.hpp>
+#include <erbsland/StringEncoding.hpp>
+#include <erbsland/TempDirectory.hpp>
+#include <erbsland/zip/ArchiveWriter.hpp>
+#include <erbsland/zip/CompressionMethod.hpp>
 
 namespace demo {
 

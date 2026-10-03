@@ -6,19 +6,23 @@
 #include "../impl/protected_data/ProtectedDataProvider.hpp"
 #include "../impl/TlsConfigurationLabel.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/CharSet.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
+#include "../../text/StringList.hpp"
 #include "../../text/StringSide.hpp"
 
 #include <exception>
 
 namespace erbsland::cryptology {
 
+using namespace err;
+using namespace mem;
+using namespace text;
 using namespace text::literals;
 
 CryptologyConfiguration::CryptologyConfiguration() {
@@ -91,7 +95,7 @@ void CryptologyConfiguration::setProtectedDataMode(const ProtectedDataMode mode)
     validateProtectedDataMode(mode);
     const auto lock = std::scoped_lock{_mutex};
     if (_protectedDataModeLocked && mode != _protectedDataMode) {
-        throw err::LogicError{"Protected-data mode cannot change after provider initialization."_el};
+        throw LogicFailure{"Protected-data mode cannot change after provider initialization."_el};
     }
     _protectedDataMode = mode;
 }
@@ -102,20 +106,109 @@ void CryptologyConfiguration::validateProtectedDataSupport() {
     ensureProtectedDataProvider();
 }
 
-void CryptologyConfiguration::setTlsConfiguration(const text::String &label, TlsConfiguration configuration) {
+void CryptologyConfiguration::validateTlsLabel(const String &label) {
     impl::tls_configuration_label::validate(label);
-    const auto entry = std::make_shared<const TlsConfiguration>(std::move(configuration));
-    const auto lock = std::scoped_lock{_mutex};
-    if (!_tlsConfigurations.contains(label) && _tlsConfigurations.count().toSizeT() >= cMaximumTlsConfigurations) {
-        throw err::RuntimeError{"The application TLS configuration registry is full."_el};
+    if (label.isEmpty()) {
+        throw ParameterFailure{"The empty TLS label is reserved for built-in defaults."_el, "label"_el};
     }
-    _tlsConfigurations.set(label, entry);
 }
 
-void CryptologyConfiguration::clearTlsConfiguration(const text::String &label) {
-    impl::tls_configuration_label::validate(label);
+auto CryptologyConfiguration::resolveTlsPolicy(
+    const TlsConfiguration &configuration, const TlsRole role, const TlsSettings &settings)
+    -> std::optional<X509TlsCertificatePolicy> {
+    if (role == TlsRole::Client) {
+        return configuration.client()->trust().resolve(settings, role);
+    }
+    const auto &server = *configuration.server();
+    if (server.identity() == nullptr) {
+        throw CryptologyError{"A TLS server profile requires a server certificate identity."_el};
+    }
+    const auto authentication = server.clientAuthentication();
+    if (authentication != TlsClientAuthentication::Disabled && authentication != TlsClientAuthentication::Optional &&
+        authentication != TlsClientAuthentication::Required) {
+        throw ParameterFailure{"A valid TLS client authentication mode is required."_el, "clientAuthentication"_el};
+    }
+    return server.trust().resolve(settings, role, authentication != TlsClientAuthentication::Disabled);
+}
+
+void CryptologyConfiguration::setTlsConfiguration(const String &label, TlsConfiguration configuration) {
+    validateTlsLabel(label);
+    const auto lock = std::scoped_lock{_mutex};
+    if (!configuration.client() && !configuration.server()) {
+        throw ParameterFailure{"A TLS profile must contain at least one role."_el, "configuration"_el};
+    }
+    for (const auto role : {TlsRole::Client, TlsRole::Server}) {
+        if (configuration.hasRole(role)) {
+            [[maybe_unused]] const auto policy = resolveTlsPolicy(configuration, role, _tlsSettings);
+        }
+    }
+    if (const auto existing = _tlsConfigurations.get(label); existing) {
+        auto combined = **existing;
+        combined.merge(configuration);
+        configuration = std::move(combined);
+    } else if (_tlsConfigurations.count().toSizeT() >= cMaximumTlsConfigurations) {
+        throw CryptologyError{"The application TLS configuration registry is full."_el};
+    }
+    _tlsConfigurations.set(label, std::make_shared<const TlsConfiguration>(std::move(configuration)));
+}
+
+void CryptologyConfiguration::replaceTlsConfigurations(const TlsConfigurationSet &configurations) {
+    auto replacement = StringHashMap<TlsConfigurationConstPtr>{};
+    for (const auto &entry : configurations.entries()) {
+        validateTlsLabel(entry.label());
+        const auto &supplied = entry.configuration();
+        if (!supplied.client() && !supplied.server()) {
+            throw CryptologyError{"A named TLS profile must contain at least one role."_el};
+        }
+        auto combined = TlsConfiguration{};
+        if (const auto existing = replacement.get(entry.label()); existing) {
+            combined = **existing;
+        }
+        for (const auto role : {TlsRole::Client, TlsRole::Server}) {
+            if (!supplied.hasRole(role)) {
+                continue;
+            }
+            if (combined.hasRole(role)) {
+                throw CryptologyError{"Duplicate TLS profile role at one label."_el};
+            }
+            [[maybe_unused]] const auto policy = resolveTlsPolicy(supplied, role, configurations.settings());
+        }
+        combined.merge(supplied);
+        replacement.set(entry.label(), std::make_shared<const TlsConfiguration>(std::move(combined)));
+        if (replacement.count().toSizeT() > cMaximumTlsConfigurations) {
+            throw CryptologyError{"The application TLS configuration registry is full."_el};
+        }
+    }
+    auto settings = configurations.settings();
+    const auto lock = std::scoped_lock{_mutex};
+    _tlsSettings = std::move(settings);
+    _tlsConfigurations = std::move(replacement);
+}
+
+auto CryptologyConfiguration::tlsSettings() const -> TlsSettings {
+    const auto lock = std::scoped_lock{_mutex};
+    return _tlsSettings;
+}
+
+void CryptologyConfiguration::clearTlsConfiguration(const String &label) {
+    validateTlsLabel(label);
     const auto lock = std::scoped_lock{_mutex};
     _tlsConfigurations.remove(label);
+}
+
+void CryptologyConfiguration::clearTlsConfiguration(const String &label, const TlsRole role) {
+    validateTlsLabel(label);
+    TlsConfiguration::validateRole(role);
+    const auto lock = std::scoped_lock{_mutex};
+    if (const auto existing = _tlsConfigurations.get(label); existing) {
+        auto configuration = **existing;
+        configuration.clearRole(role);
+        if (!configuration.client() && !configuration.server()) {
+            _tlsConfigurations.remove(label);
+        } else {
+            _tlsConfigurations.set(label, std::make_shared<const TlsConfiguration>(std::move(configuration)));
+        }
+    }
 }
 
 void CryptologyConfiguration::clearTlsConfigurations() {
@@ -123,27 +216,57 @@ void CryptologyConfiguration::clearTlsConfigurations() {
     _tlsConfigurations.clear();
 }
 
-auto CryptologyConfiguration::hasTlsConfiguration(const text::String &label) const -> bool {
+auto CryptologyConfiguration::hasTlsConfiguration(const String &label, const TlsRole role) const -> bool {
     impl::tls_configuration_label::validate(label);
+    TlsConfiguration::validateRole(role);
     const auto lock = std::scoped_lock{_mutex};
-    return _tlsConfigurations.contains(label);
+    if (label.isEmpty()) {
+        return true;
+    }
+    const auto entry = _tlsConfigurations.get(label);
+    return entry && (*entry)->hasRole(role);
 }
 
-auto CryptologyConfiguration::resolveTlsConfiguration(const text::String &label) const -> TlsConfigurationResolution {
+auto CryptologyConfiguration::resolveTlsConfiguration(const String &label, const TlsRole role) const
+    -> TlsConfigurationResolution {
     impl::tls_configuration_label::validate(label);
+    TlsConfiguration::validateRole(role);
     const auto lock = std::scoped_lock{_mutex};
     auto candidate = label;
-    while (true) {
-        if (const auto configuration = _tlsConfigurations.get(candidate); configuration.has_value()) {
-            return TlsConfigurationResolution{label, candidate, configuration.value()};
-        }
-        if (candidate.isEmpty()) {
+    auto selected = TlsConfigurationConstPtr{};
+    while (!candidate.isEmpty()) {
+        if (const auto entry = _tlsConfigurations.get(candidate); entry && (*entry)->hasRole(role)) {
+            selected = *entry;
             break;
         }
-        const auto separator = candidate.findLastOf(text::CharSet{"/"_el});
-        candidate = separator.isNoIndex() ? text::String{} : candidate.slice(text::StringSide::Front, separator);
+        if (const auto parts = candidate.splitAtLast(CharSet{U'/'})) {
+            candidate = parts->first;
+        } else {
+            candidate = {};
+        }
     }
-    throw err::RuntimeError{tlsConfigurationResolutionError(label)};
+    if (selected == nullptr) {
+        static const auto cClientDefault = std::make_shared<const TlsConfiguration>(TlsClientConfiguration{});
+        static const auto cServerDefault = std::make_shared<const TlsConfiguration>(TlsServerConfiguration{});
+        if (role == TlsRole::Client) {
+            selected = cClientDefault;
+        } else {
+            selected = cServerDefault;
+        }
+    }
+    auto policy = resolveTlsPolicy(*selected, role, _tlsSettings);
+    return TlsConfigurationResolution{label, candidate, std::move(selected), role, std::move(policy)};
+}
+
+auto CryptologyConfiguration::resolveTlsConfigurations(const StringList &labels, const TlsRole role) const
+    -> std::vector<TlsConfigurationResolution> {
+    const auto lock = std::scoped_lock{_mutex};
+    auto result = std::vector<TlsConfigurationResolution>{};
+    result.reserve(labels.count().toSizeT());
+    for (const auto &label : labels) {
+        result.push_back(resolveTlsConfiguration(label, role));
+    }
+    return result;
 }
 
 auto CryptologyConfiguration::snapshot() const -> impl::CryptologyConfigurationSnapshot {
@@ -160,12 +283,13 @@ void CryptologyConfiguration::reset() {
         _protectedDataMode = ProtectedDataMode::Automatic;
     }
     _tlsConfigurations.clear();
+    _tlsSettings = TlsSettings{};
 }
 
 auto CryptologyConfiguration::hashIndex(const HashAlgorithm algorithm) -> std::size_t {
     const auto index = static_cast<std::size_t>(algorithm.toRawValue());
     if (index >= impl::CryptologyConfigurationSnapshot::cHashAlgorithmCount) {
-        throw err::ParameterError{"A valid hash algorithm is required."_el, "algorithm"_el};
+        throw ParameterFailure{"A valid hash algorithm is required."_el, "algorithm"_el};
     }
     return index;
 }
@@ -173,7 +297,7 @@ auto CryptologyConfiguration::hashIndex(const HashAlgorithm algorithm) -> std::s
 auto CryptologyConfiguration::symmetricIndex(const SymmetricEncryptionType type) -> std::size_t {
     const auto index = static_cast<std::size_t>(type.toRawValue());
     if (index == 0U || index >= impl::CryptologyConfigurationSnapshot::cSymmetricTypeStorageCount) {
-        throw err::ParameterError{"A valid symmetric encryption type is required."_el, "type"_el};
+        throw ParameterFailure{"A valid symmetric encryption type is required."_el, "type"_el};
     }
     return index;
 }
@@ -185,7 +309,7 @@ void CryptologyConfiguration::validateStatus(const CryptographicStatus status) {
     case CryptographicStatus::Acceptable:
         return;
     }
-    throw err::ParameterError{"A valid cryptographic status is required."_el, "status"_el};
+    throw ParameterFailure{"A valid cryptographic status is required."_el, "status"_el};
 }
 
 void CryptologyConfiguration::ensureProtectedDataProvider() {
@@ -204,7 +328,7 @@ void CryptologyConfiguration::ensureProtectedDataProvider() {
             if (_protectedDataMode == ProtectedDataMode::PlatformOnly) {
                 throw;
             }
-        } catch (const err::RuntimeError &) {
+        } catch (const RuntimeError &) {
             if (_protectedDataMode == ProtectedDataMode::PlatformOnly) {
                 throw CryptologyError{
                     "Native protected-data provider initialization failed."_el, std::current_exception()};
@@ -220,15 +344,8 @@ void CryptologyConfiguration::ensureProtectedDataProvider() {
 }
 
 void CryptologyConfiguration::selfTestProtectedDataProvider(impl::ProtectedDataProvider &provider) {
-    const auto expected = mem::ByteBlock{
-        mem::Byte{0x45U},
-        mem::Byte{0x72U},
-        mem::Byte{0x62U},
-        mem::Byte{0x73U},
-        mem::Byte{0x6cU},
-        mem::Byte{0x61U},
-        mem::Byte{0x6eU},
-        mem::Byte{0x64U}};
+    const auto expected = ByteBlock{
+        Byte{0x45U}, Byte{0x72U}, Byte{0x62U}, Byte{0x73U}, Byte{0x6cU}, Byte{0x61U}, Byte{0x6eU}, Byte{0x64U}};
     const auto envelope = provider.protect(expected.span(), expected.length());
     auto actual = provider.unprotect(envelope.span(), expected.length());
     if (!actual.isEqualConstTime(expected)) {
@@ -238,16 +355,16 @@ void CryptologyConfiguration::selfTestProtectedDataProvider(impl::ProtectedDataP
     actual.secureErase();
 }
 
-auto CryptologyConfiguration::protectData(const mem::ConstByteSpan plaintext, const unit::ByteLength plaintextLength)
-    -> mem::ByteBlock {
+auto CryptologyConfiguration::protectData(const ConstByteSpan plaintext, const unit::ByteCount plaintextLength)
+    -> ByteBlock {
     const auto lock = std::scoped_lock{_mutex};
     _protectedDataModeLocked = true;
     ensureProtectedDataProvider();
     return _protectedDataProvider->protect(plaintext, plaintextLength);
 }
 
-auto CryptologyConfiguration::unprotectData(const mem::ConstByteSpan envelope, const unit::ByteLength plaintextLength)
-    -> mem::ByteBlock {
+auto CryptologyConfiguration::unprotectData(const ConstByteSpan envelope, const unit::ByteCount plaintextLength)
+    -> ByteBlock {
     const auto lock = std::scoped_lock{_mutex};
     _protectedDataModeLocked = true;
     ensureProtectedDataProvider();
@@ -261,26 +378,7 @@ void CryptologyConfiguration::validateProtectedDataMode(const ProtectedDataMode 
     case ProtectedDataMode::InternalOnly:
         return;
     }
-    throw err::ParameterError{"A valid protected-data mode is required."_el, "mode"_el};
-}
-
-auto CryptologyConfiguration::tlsConfigurationResolutionError(const text::String &label) -> text::String {
-    auto result = text::StringEditor{"No TLS configuration matched the fallback chain: "_el};
-    auto candidate = label;
-    auto first = true;
-    while (true) {
-        if (!first) {
-            result.append(" -> "_el);
-        }
-        result.append(candidate.isEmpty() ? "\"\""_el : candidate);
-        if (candidate.isEmpty()) {
-            break;
-        }
-        const auto separator = candidate.findLastOf(text::CharSet{"/"_el});
-        candidate = separator.isNoIndex() ? text::String{} : candidate.slice(text::StringSide::Front, separator);
-        first = false;
-    }
-    return result;
+    throw ParameterFailure{"A valid protected-data mode is required."_el, "mode"_el};
 }
 
 }

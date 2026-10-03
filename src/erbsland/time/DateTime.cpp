@@ -6,22 +6,22 @@
 
 #include "../err/OutOfRangeError.hpp"
 #include "../err/OverflowError.hpp"
-#include "../err/ParameterError.hpp"
 #include "../err/ParseError.hpp"
 #include "../text/IntegerFormat.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringEditor.hpp"
-#include "../unit/CpLength.hpp"
+#include "../text/StringJoins.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <chrono>
 
 namespace erbsland::time {
 
+using namespace err;
 using text::IntegerFormat;
 using text::IntegerFormatFlag;
 using text::String;
 using text::StringEditor;
-
 using namespace text::literals;
 
 DateTime::DateTime(const Date localDate, const Time localTime, const Seconds offset) noexcept :
@@ -116,14 +116,14 @@ auto DateTime::added(const Duration duration) const noexcept -> DateTime {
 
 auto DateTime::addedOrThrow(const Duration duration) const -> DateTime {
     if (wouldAddSaturate(duration)) {
-        throw err::OverflowError{"DateTime addition would exceed supported date/time range"};
+        throw OverflowError{"DateTime addition would exceed supported date/time range"};
     }
     return added(duration);
 }
 
 auto DateTime::subtractedOrThrow(const Duration duration) const -> DateTime {
     if (wouldSubtractSaturate(duration)) {
-        throw err::OverflowError{"DateTime subtraction would exceed supported date/time range"};
+        throw OverflowError{"DateTime subtraction would exceed supported date/time range"};
     }
     return subtracted(duration);
 }
@@ -144,15 +144,14 @@ auto DateTime::toString() const -> String {
     if (!isValid()) {
         return {};
     }
-    return String::fromJoined(
-        {date().toString(),
-            " "_el,
-            time().toString(),
-            _offset.isLocalTime()
-                ? String{}
-                : isoTimeShiftString(
-                      _offset.offset(),
-                      IsoTimeFormatFlags{IsoTimeFormat::Extended, IsoTimeFormat::TimeShiftUpToSeconds})});
+    return text::join(
+        date().toString(),
+        " "_el,
+        time().toString(),
+        _offset.isLocalTime()
+            ? String{}
+            : isoTimeShiftString(
+                  _offset.offset(), IsoTimeFormatFlags{IsoTimeFormat::Extended, IsoTimeFormat::TimeShiftUpToSeconds}));
 }
 
 auto DateTime::toTimeZone(TimeZone timeZone) const noexcept -> DateTime {
@@ -178,7 +177,7 @@ auto DateTime::toSecondsAndFractions(const TimeEpoch epoch) const noexcept
 auto DateTime::toSecondsAndFractionsOrThrow(const TimeEpoch epoch) const -> std::pair<Seconds, Nanoseconds> {
     const auto result = toSecondsAndFractions(epoch);
     if (!result.has_value()) {
-        throw err::OutOfRangeError{"This date/time cannot be represented as ticks from this epoch"};
+        throw OutOfRangeError{"This date/time cannot be represented as ticks from this epoch"};
     }
     return *result;
 }
@@ -206,11 +205,11 @@ auto DateTime::toIsoString(IsoTimeFormatFlags flags, DateTimePrecision precision
     }
     auto timeFlags = flags;
     timeFlags.clear(IsoTimeFormat::TimePrefix);
-    return String::fromJoined(
-        {dateText,
-            flags.isSet(IsoTimeFormat::TimePrefix) ? String{"T"_el} : String{" "_el},
-            time().toIsoString(timeFlags, precision),
-            flags.isSet(IsoTimeFormat::TimeShift) ? isoTimeShiftString(_offset.offset(), flags) : String{}});
+    return text::join(
+        dateText,
+        flags.isSet(IsoTimeFormat::TimePrefix) ? String{"T"_el} : String{" "_el},
+        time().toIsoString(timeFlags, precision),
+        flags.isSet(IsoTimeFormat::TimeShift) ? isoTimeShiftString(_offset.offset(), flags) : String{});
 }
 
 auto DateTime::now() noexcept -> DateTime {
@@ -223,35 +222,39 @@ auto DateTime::now() noexcept -> DateTime {
 
 auto DateTime::fromTicks(const Seconds seconds, const Nanoseconds fractions, const TimeEpoch epoch) noexcept
     -> std::optional<DateTime> {
-    try {
-        return fromTicksOrThrow(seconds, fractions, epoch);
-    } catch (const err::Exception &) {
-        return std::nullopt;
-    }
-}
-
-auto DateTime::fromTicksOrThrow(const Seconds seconds, const Nanoseconds fractions, const TimeEpoch epoch) -> DateTime {
     constexpr auto cNanosecondsPerSecond = Nanoseconds{1'000'000'000};
-    if (seconds.isNegative()) {
-        throw err::ParameterError("Negative values are now allowed"_el, "seconds"_el);
-    }
-    if (fractions.isNegative()) {
-        throw err::ParameterError("Negative values are now allowed"_el, "fractions"_el);
-    }
-    if (fractions >= cNanosecondsPerSecond) {
-        throw err::ParameterError("Fractions must be less than a second"_el, "fractions"_el);
+    if (seconds.isNegative() || fractions.isNegative() || fractions >= cNanosecondsPerSecond) {
+        return std::nullopt;
     }
     const auto epochSeconds = impl::secondsSinceCoreEpoch(epoch);
     if (epochSeconds.wouldAddSaturate(seconds)) {
-        throwDateTimeNotTickConvertible();
+        return std::nullopt;
     }
     auto secondOfDay = epochSeconds + seconds;
     const auto days = secondOfDay.extract<Days>();
     const auto date = Date::fromDaysSinceEpoch(days);
     if (!date.isValid()) {
-        throwDateTimeNotTickConvertible();
+        return std::nullopt;
     }
     return DateTime{date, Time::fromDurationSinceMidnight(TimeDelta{secondOfDay} + TimeDelta{fractions})};
+}
+
+auto DateTime::fromTicksOrThrow(const Seconds seconds, const Nanoseconds fractions, const TimeEpoch epoch) -> DateTime {
+    constexpr auto cNanosecondsPerSecond = Nanoseconds{1'000'000'000};
+    if (seconds.isNegative()) {
+        throw OutOfRangeError("Negative values are not allowed"_el);
+    }
+    if (fractions.isNegative()) {
+        throw OutOfRangeError("Negative values are not allowed"_el);
+    }
+    if (fractions >= cNanosecondsPerSecond) {
+        throw OutOfRangeError("Fractions must be less than a second"_el);
+    }
+    const auto result = fromTicks(seconds, fractions, epoch);
+    if (!result.has_value()) {
+        throwDateTimeNotTickConvertible();
+    }
+    return *result;
 }
 
 auto DateTime::fromTimeT(const std::time_t posixTime) noexcept -> DateTime {
@@ -280,7 +283,7 @@ auto DateTime::fromIsoString(const String &text, DateTimePrecision requiredPreci
 auto DateTime::fromIsoStringOrThrow(const String &text, DateTimePrecision requiredPrecision) -> DateTime {
     auto result = fromIsoString(text, requiredPrecision);
     if (!result.isValid()) {
-        throw err::ParseError{"Invalid ISO date/time string"};
+        throw ParseError{"Invalid ISO date/time string"};
     }
     return result;
 }
@@ -301,7 +304,7 @@ auto DateTime::fromIsoStringOrThrow(const String &text, TimeZone timeZone, DateT
     -> DateTime {
     auto result = fromIsoString(text, timeZone, requiredPrecision);
     if (!result.isValid()) {
-        throw err::ParseError{"Invalid ISO local date/time string"};
+        throw ParseError{"Invalid ISO local date/time string"};
     }
     return result;
 }
@@ -312,7 +315,7 @@ auto DateTime::isoTimeShiftString(Seconds offset, IsoTimeFormatFlags flags) -> S
     }
 
     auto digitFormat = IntegerFormat::decimal();
-    digitFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{2U});
+    digitFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpCount{2U});
 
     const auto sign = offset.isNegative() ? U'-' : U'+';
     auto remainingOffset = offset.isNegative() ? -offset : offset;
@@ -324,21 +327,21 @@ auto DateTime::isoTimeShiftString(Seconds offset, IsoTimeFormatFlags flags) -> S
         (!seconds.isZero() || flags.isSet(IsoTimeFormat::TimeShiftAlwaysComplete));
 
     const auto separator = extended ? String{":"_el} : String{};
-    return String::fromJoined(
-        {String::fromCharacter(sign),
-            String::fromInteger(hours.toValue(), digitFormat),
-            separator,
-            String::fromInteger(minutes.toValue(), digitFormat),
-            includeSeconds ? separator : String{},
-            includeSeconds ? String::fromInteger(seconds.toValue(), digitFormat) : String{}});
+    return text::join(
+        String::fromCharacter(sign),
+        String::fromInteger(hours.toValue(), digitFormat),
+        separator,
+        String::fromInteger(minutes.toValue(), digitFormat),
+        includeSeconds ? separator : String{},
+        includeSeconds ? String::fromInteger(seconds.toValue(), digitFormat) : String{});
 }
 
 void DateTime::throwDateTimeNotTickConvertible() {
-    throw err::OutOfRangeError{"Ticks are out of the representable date/time range"_el};
+    throw OutOfRangeError{"Ticks are out of the representable date/time range"_el};
 }
 
 void DateTime::throwTicksMustNotBeNegative() {
-    throw err::ParameterError("Negative values are now allowed"_el, "ticks"_el);
+    throw OutOfRangeError("Negative values are not allowed"_el);
 }
 
 auto DateTime::epoch(const TimeEpoch epoch) noexcept -> DateTime {

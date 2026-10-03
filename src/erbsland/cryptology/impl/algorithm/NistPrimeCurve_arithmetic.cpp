@@ -13,12 +13,14 @@
 
 namespace erbsland::cryptology::impl {
 
-auto NistPrimeCurve::pointToUncompressed(const Point &point) const noexcept -> mem::ByteBlock {
-    auto result = mem::ByteBlockEditor{};
-    result.append(mem::Byte{0x04U});
+using namespace mem;
+
+auto NistPrimeCurve::pointToUncompressed(const Point &point) const noexcept -> ByteBlock {
+    auto result = ByteBlockEditor{};
+    result.append(Byte{0x04U});
     result.append(numberToBigEndian(point.x));
     result.append(numberToBigEndian(point.y));
-    return mem::ByteBlock{result};
+    return ByteBlock{result};
 }
 
 auto NistPrimeCurve::isZeroSecret(const Number &value) const noexcept -> bool {
@@ -26,7 +28,7 @@ auto NistPrimeCurve::isZeroSecret(const Number &value) const noexcept -> bool {
 }
 
 void NistPrimeCurve::secureErase(Number &value) noexcept {
-    mem::secureErase(std::span{value.words});
+    value.secureErase();
 }
 
 void NistPrimeCurve::secureErase(Point &point) noexcept {
@@ -40,9 +42,9 @@ auto NistPrimeCurve::addModulo(const Number &left, const Number &right, const Nu
     // Compute left + right with a fixed limb schedule, retaining the carry for masked modular reduction.
     auto sum = Number{};
     auto carry = uint64_t{};
-    for (auto index = std::size_t{}; index < byteLength() / 4U; ++index) {
-        const auto wordSum = uint64_t{left.words[index]} + right.words[index] + carry;
-        sum.words[index] = static_cast<uint32_t>(wordSum);
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U; ++index) {
+        const auto wordSum = uint64_t{left.words()[index]} + right.words()[index] + carry;
+        sum.words()[index] = static_cast<uint32_t>(wordSum);
         carry = wordSum >> 32U;
     }
     return reduceOnceSecret(sum, modulus, static_cast<uint32_t>(carry));
@@ -52,10 +54,10 @@ auto NistPrimeCurve::subtractModulo(const Number &left, const Number &right, con
     -> Number {
     auto difference = Number{};
     auto borrow = uint64_t{};
-    for (auto index = std::size_t{}; index < byteLength() / 4U; ++index) {
-        const auto subtrahend = uint64_t{right.words[index]} + borrow;
-        const auto minuend = uint64_t{left.words[index]};
-        difference.words[index] = static_cast<uint32_t>(minuend - subtrahend);
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U; ++index) {
+        const auto subtrahend = uint64_t{right.words()[index]} + borrow;
+        const auto minuend = uint64_t{left.words()[index]};
+        difference.words()[index] = static_cast<uint32_t>(minuend - subtrahend);
         borrow = minuend < subtrahend ? 1U : 0U;
     }
     const auto corrected = add(difference, modulus);
@@ -76,7 +78,7 @@ auto NistPrimeCurve::multiplyModulo(const Number &left, const Number &right, con
 
 auto NistPrimeCurve::montgomeryMultiply(
     const Number &left, const Number &right, const Number &modulus, const uint32_t factor) const noexcept -> Number {
-    const auto wordCount = byteLength() / 4U;
+    const auto wordCount = byteLength().toSizeT() / 4U;
     auto temporary = std::array<uint32_t, 14U>{};
 
     // HAC section 14.3.2, algorithm 14.36: interleave one product limb with one Montgomery reduction limb.
@@ -84,7 +86,7 @@ auto NistPrimeCurve::montgomeryMultiply(
         auto carry = uint64_t{};
         for (auto leftIndex = std::size_t{}; leftIndex < wordCount; ++leftIndex) {
             const auto product =
-                uint64_t{left.words[leftIndex]} * right.words[rightIndex] + temporary[leftIndex] + carry;
+                uint64_t{left.words()[leftIndex]} * right.words()[rightIndex] + temporary[leftIndex] + carry;
             temporary[leftIndex] = static_cast<uint32_t>(product);
             carry = product >> 32U;
         }
@@ -95,7 +97,7 @@ auto NistPrimeCurve::montgomeryMultiply(
         const auto reduction = static_cast<uint32_t>(uint64_t{temporary[0U]} * factor);
         carry = 0U;
         for (auto index = std::size_t{}; index < wordCount; ++index) {
-            const auto product = uint64_t{reduction} * modulus.words[index] + temporary[index] + carry;
+            const auto product = uint64_t{reduction} * modulus.words()[index] + temporary[index] + carry;
             if (index != 0U) {
                 temporary[index - 1U] = static_cast<uint32_t>(product);
             }
@@ -108,11 +110,13 @@ auto NistPrimeCurve::montgomeryMultiply(
     }
 
     auto result = Number{};
-    std::copy_n(temporary.begin(), wordCount, result.words.begin());
-    return reduceOnceSecret(result, modulus, temporary[wordCount]);
+    std::copy_n(temporary.begin(), wordCount, result.words().begin());
+    auto reduced = reduceOnceSecret(result, modulus, temporary[wordCount]);
+    mem::secureErase(std::span{temporary});
+    return reduced;
 }
 
-auto NistPrimeCurve::montgomeryR2(const Number &modulus) const noexcept -> const Number & {
+auto NistPrimeCurve::montgomeryR2(const Number &modulus) const noexcept -> Number {
     if (compare(modulus, fieldModulus()) == 0) {
         return _name == Name::P256 ? cP256FieldR2 : cP384FieldR2;
     }
@@ -132,11 +136,11 @@ auto NistPrimeCurve::powerModulo(const Number &value, const Number &exponent, co
     const auto &r2 = montgomeryR2(modulus);
     auto result = montgomeryMultiply(cOne, r2, modulus, montgomeryFactorValue);
     auto factor = montgomeryMultiply(value, r2, modulus, montgomeryFactorValue);
-    for (auto index = std::size_t{}; index < byteLength() * 8U; ++index) {
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() * 8U; ++index) {
         if (bit(exponent, index)) {
             result = montgomeryMultiply(result, factor, modulus, montgomeryFactorValue);
         }
-        if (index + 1U < byteLength() * 8U) {
+        if (index + 1U < byteLength().toSizeT() * 8U) {
             factor = montgomeryMultiply(factor, factor, modulus, montgomeryFactorValue);
         }
     }
@@ -145,9 +149,9 @@ auto NistPrimeCurve::powerModulo(const Number &value, const Number &exponent, co
 
 auto NistPrimeCurve::subtractSmall(Number value, const uint32_t amount) const noexcept -> Number {
     auto borrow = uint64_t{amount};
-    for (auto index = std::size_t{}; index < byteLength() / 4U && borrow != 0U; ++index) {
-        const auto current = uint64_t{value.words[index]};
-        value.words[index] = static_cast<uint32_t>(current - borrow);
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U && borrow != 0U; ++index) {
+        const auto current = uint64_t{value.words()[index]};
+        value.words()[index] = static_cast<uint32_t>(current - borrow);
         borrow = current < borrow ? 1U : 0U;
     }
     return value;
@@ -155,9 +159,9 @@ auto NistPrimeCurve::subtractSmall(Number value, const uint32_t amount) const no
 
 auto NistPrimeCurve::addSmall(Number value, const uint32_t amount) const noexcept -> Number {
     auto carry = uint64_t{amount};
-    for (auto index = std::size_t{}; index < byteLength() / 4U && carry != 0U; ++index) {
-        const auto sum = uint64_t{value.words[index]} + carry;
-        value.words[index] = static_cast<uint32_t>(sum);
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U && carry != 0U; ++index) {
+        const auto sum = uint64_t{value.words()[index]} + carry;
+        value.words()[index] = static_cast<uint32_t>(sum);
         carry = sum >> 32U;
     }
     return value;
@@ -165,9 +169,9 @@ auto NistPrimeCurve::addSmall(Number value, const uint32_t amount) const noexcep
 
 auto NistPrimeCurve::shiftRight(Number value) const noexcept -> Number {
     auto carry = uint32_t{};
-    for (auto index = byteLength() / 4U; index-- > 0U;) {
-        const auto nextCarry = static_cast<uint32_t>(value.words[index] << 31U);
-        value.words[index] = (value.words[index] >> 1U) | carry;
+    for (auto index = byteLength().toSizeT() / 4U; index-- > 0U;) {
+        const auto nextCarry = static_cast<uint32_t>(value.words()[index] << 31U);
+        value.words()[index] = (value.words()[index] >> 1U) | carry;
         carry = nextCarry;
     }
     return value;
@@ -176,10 +180,10 @@ auto NistPrimeCurve::shiftRight(Number value) const noexcept -> Number {
 auto NistPrimeCurve::subtract(const Number &left, const Number &right) const noexcept -> Number {
     auto result = Number{};
     auto borrow = uint64_t{};
-    for (auto index = std::size_t{}; index < byteLength() / 4U; ++index) {
-        const auto subtrahend = uint64_t{right.words[index]} + borrow;
-        const auto minuend = uint64_t{left.words[index]};
-        result.words[index] = static_cast<uint32_t>(minuend - subtrahend);
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U; ++index) {
+        const auto subtrahend = uint64_t{right.words()[index]} + borrow;
+        const auto minuend = uint64_t{left.words()[index]};
+        result.words()[index] = static_cast<uint32_t>(minuend - subtrahend);
         borrow = minuend < subtrahend ? 1U : 0U;
     }
     return result;
@@ -188,9 +192,9 @@ auto NistPrimeCurve::subtract(const Number &left, const Number &right) const noe
 auto NistPrimeCurve::add(const Number &left, const Number &right) const noexcept -> Number {
     auto result = Number{};
     auto carry = uint64_t{};
-    for (auto index = std::size_t{}; index < byteLength() / 4U; ++index) {
-        const auto sum = uint64_t{left.words[index]} + right.words[index] + carry;
-        result.words[index] = static_cast<uint32_t>(sum);
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U; ++index) {
+        const auto sum = uint64_t{left.words()[index]} + right.words()[index] + carry;
+        result.words()[index] = static_cast<uint32_t>(sum);
         carry = sum >> 32U;
     }
     return result;
@@ -199,16 +203,16 @@ auto NistPrimeCurve::add(const Number &left, const Number &right) const noexcept
 auto NistPrimeCurve::selectNumber(const Number &first, const Number &second, const uint32_t secondMask) const noexcept
     -> Number {
     auto result = Number{};
-    for (auto index = std::size_t{}; index < byteLength() / 4U; ++index) {
-        result.words[index] = (first.words[index] & ~secondMask) | (second.words[index] & secondMask);
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U; ++index) {
+        result.words()[index] = (first.words()[index] & ~secondMask) | (second.words()[index] & secondMask);
     }
     return result;
 }
 
 auto NistPrimeCurve::equalMask(const Number &left, const Number &right) const noexcept -> uint32_t {
     auto difference = uint32_t{};
-    for (auto index = std::size_t{}; index < byteLength() / 4U; ++index) {
-        difference |= left.words[index] ^ right.words[index];
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U; ++index) {
+        difference |= left.words()[index] ^ right.words()[index];
     }
     const auto nonzero = (difference | (uint32_t{0U} - difference)) >> 31U;
     return uint32_t{0U} - (nonzero ^ 1U);
@@ -222,9 +226,9 @@ auto NistPrimeCurve::reduceOnceSecret(const Number &value, const Number &modulus
     -> Number {
     const auto difference = subtract(value, modulus);
     auto borrow = uint64_t{};
-    for (auto index = std::size_t{}; index < byteLength() / 4U; ++index) {
-        const auto subtrahend = uint64_t{modulus.words[index]} + borrow;
-        borrow = uint64_t{value.words[index]} < subtrahend ? 1U : 0U;
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U; ++index) {
+        const auto subtrahend = uint64_t{modulus.words()[index]} + borrow;
+        borrow = uint64_t{value.words()[index]} < subtrahend ? 1U : 0U;
     }
     const auto useDifference = (carry | static_cast<uint32_t>(borrow ^ 1U)) & 1U;
     return selectNumber(value, difference, uint32_t{0U} - useDifference);
@@ -351,7 +355,7 @@ auto NistPrimeCurve::doubleSecret(const Point &point) const noexcept -> Point {
 
 auto NistPrimeCurve::addMixedSecret(const Point &left, const Point &rightAffine) const noexcept -> Point {
     // FIPS 186-5 section 6.4.1 step 3: evaluate mixed Jacobian addition and all exceptional alternatives, then select
-    // by masks. The right input is the fixed affine base point during signing.
+    // by masks. The right input is a validated affine peer point or the standard base point.
     const auto z1z1 = fieldSquare(left.z);
     const auto u2 = fieldMultiply(rightAffine.x, z1z1);
     const auto s2 = fieldMultiply(rightAffine.y, fieldMultiply(left.z, z1z1));

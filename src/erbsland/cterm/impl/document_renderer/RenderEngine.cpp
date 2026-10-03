@@ -27,6 +27,9 @@ namespace erbsland::cterm::impl::document_renderer {
 
 using namespace text::literals;
 using namespace text;
+using text::impl::CodeLineMarkerData;
+using text::impl::CodeSnippetLayout;
+using text::impl::CodeSnippetLayoutMarker;
 
 RenderEngine::RenderEngine(const TerminalDocumentStyle &style, const int width) noexcept :
     _style{style}, _width{std::max(width, 1)} {
@@ -102,6 +105,7 @@ void RenderEngine::appendNode(const TextNode &node, const RenderContext &context
     case TextNodeType::OptionName:
     case TextNodeType::OptionShort:
     case TextNodeType::OptionLong:
+    case TextNodeType::OptionValue:
     case TextNodeType::OptionMeta:
     case TextNodeType::OptionOptional:
     case TextNodeType::OptionDetails:
@@ -160,17 +164,17 @@ void RenderEngine::appendCodeSnippetLine(const TextNode &line, const RenderConte
     auto number = String{};
     auto source = String{};
     auto markerNodes = std::vector<TextNodePtr>{};
-    auto markers = std::vector<text::impl::CodeSnippetLayoutMarker>{};
+    auto markers = std::vector<CodeSnippetLayoutMarker>{};
     for (const auto &child : line.children()) {
         if (child->type() == TextNodeType::CodeLineNumber) {
             number = nodeText(*child);
         } else if (child->type() == TextNodeType::CodeLineText) {
             source = nodeText(*child);
         } else if (child->type() == TextNodeType::CodeLineMarker && child->data() != nullptr) {
-            if (const auto markerData = std::dynamic_pointer_cast<const text::impl::CodeLineMarkerData>(child->data());
+            if (const auto markerData = std::dynamic_pointer_cast<const CodeLineMarkerData>(child->data());
                 markerData != nullptr) {
                 markerNodes.push_back(child);
-                markers.push_back(text::impl::CodeSnippetLayoutMarker{markerData->range(), nodeText(*child)});
+                markers.push_back(CodeSnippetLayoutMarker{markerData->range(), nodeText(*child)});
             }
         }
     }
@@ -184,7 +188,7 @@ void RenderEngine::appendCodeSnippetLine(const TextNode &line, const RenderConte
     const auto margins = lineIndents.margins().horizontal();
     const auto availableWidth =
         std::max(_width - frameWidth() - margins.extent().toRawValue() - gutter.displayWidth(), 1);
-    const auto layout = text::impl::CodeSnippetLayout{source, markers, availableWidth};
+    const auto layout = CodeSnippetLayout{source, markers, availableWidth};
     const auto &rows = layout.rows();
     for (auto rowIndex = std::size_t{0}; rowIndex < rows.size(); ++rowIndex) {
         _blockBuilder.clear();
@@ -240,7 +244,7 @@ auto RenderEngine::makeCodeSnippetGutter(const String &number, const bool hasNum
     const auto numberStyle = context.resolvedTextStyle(_style.baseTextStyle(), numberRule);
     auto numberBuilder = StringEditor{};
     const auto padding = std::max(cCodeLineNumberWidth - static_cast<int>(number.characterLength().toSizeT()), 0);
-    numberBuilder.append(Char{U' '}, unit::CpLength::fromSizeT(static_cast<std::size_t>(padding)));
+    numberBuilder.append(Char{U' '}, unit::CpCount::fromSizeT(static_cast<std::size_t>(padding)));
     numberBuilder.append(number);
     _blockBuilder.clear();
     _blockBuilder.appendStyled(numberBuilder, numberStyle);

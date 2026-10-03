@@ -4,19 +4,23 @@
 
 #include "TlsServerProtocolOptions.hpp"
 
-#include "../../../../core/Application.hpp"
+#include "../../../../core/impl/application_data/ApplicationCryptologyData.hpp"
+#include "../../../../core/impl/ApplicationDataAccess.hpp"
 #include "../../../../cryptology/configuration/CryptologyConfiguration.hpp"
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/Literals.hpp"
+#include "../../../../text/StringList.hpp"
 #include "../../../tcp/TcpConnectionRequest.hpp"
 
 #include <utility>
 
 namespace erbsland::network::impl {
 
+using namespace err;
+using namespace text;
 using namespace text::literals;
 
 TlsServerConnection::TlsServerConnection(
@@ -25,29 +29,32 @@ TlsServerConnection::TlsServerConnection(
     _tcpConnection{std::move(tcpConnection)},
     _startProtocol{std::move(startProtocol)} {
     if (_tcpConnection == nullptr || _tcpConnection->ownerEvents() != this->ownerEvents()) {
-        throw err::LogicError{"A TLS server connection requires a TCP connection from the same owner loop."_el};
+        throw LogicFailure{"A TLS server connection requires a TCP connection from the same owner loop."_el};
     }
     if (!_startProtocol) {
         _startProtocol = [](TlsServerProtocol &protocol) -> void { protocol.start(); };
     }
+    _finalContinuation = event::impl::EventContinuation::create(this->ownerEvents());
 }
 
-TlsServerConnection::~TlsServerConnection() = default;
-
-auto TlsServerConnection::requestedConfigurationLabel() const -> std::optional<text::String> {
-    const auto lock = std::scoped_lock{_mutex};
-    if (_protocol == nullptr || !_protocol->selectedIdentityIndex().has_value()) {
-        return std::nullopt;
-    }
-    return _identities[*_protocol->selectedIdentityIndex()].requestedLabel;
+TlsServerConnection::~TlsServerConnection() {
+    cancelHandshakeTimer();
 }
 
-auto TlsServerConnection::matchedConfigurationLabel() const -> std::optional<text::String> {
+auto TlsServerConnection::requestedConfigurationLabel() const -> std::optional<String> {
     const auto lock = std::scoped_lock{_mutex};
-    if (_protocol == nullptr || !_protocol->selectedIdentityIndex().has_value()) {
+    if (_protocol == nullptr || !_protocol->selectedConfigurationIndex().has_value()) {
         return std::nullopt;
     }
-    return _identities[*_protocol->selectedIdentityIndex()].matchedLabel;
+    return _configurations[*_protocol->selectedConfigurationIndex()].requestedLabel;
+}
+
+auto TlsServerConnection::matchedConfigurationLabel() const -> std::optional<String> {
+    const auto lock = std::scoped_lock{_mutex};
+    if (_protocol == nullptr || !_protocol->selectedConfigurationIndex().has_value()) {
+        return std::nullopt;
+    }
+    return _configurations[*_protocol->selectedConfigurationIndex()].matchedLabel;
 }
 
 auto TlsServerConnection::localEndpoint() const -> std::optional<IpEndpoint> {
@@ -58,19 +65,32 @@ auto TlsServerConnection::remoteEndpoint() const -> std::optional<IpEndpoint> {
     return _tcpConnection->remoteEndpoint();
 }
 
+auto TlsServerConnection::peerCertificatePath() const -> util::List<cryptology::X509Certificate> {
+    const auto lock = std::scoped_lock{_mutex};
+    if (_protocol == nullptr) {
+        return {};
+    }
+    return _protocol->peerCertificatePath();
+}
+
+auto TlsServerConnection::isPeerAuthenticated() const -> bool {
+    const auto lock = std::scoped_lock{_mutex};
+    return _protocol != nullptr && _protocol->isPeerAuthenticated();
+}
+
 auto TlsServerConnection::serverName() const -> std::optional<HostName> {
     const auto lock = std::scoped_lock{_mutex};
     return _protocol == nullptr ? std::nullopt : _protocol->serverName();
 }
 
-auto TlsServerConnection::offeredAlpn() const -> std::vector<text::String> {
+auto TlsServerConnection::offeredAlpn() const -> StringList {
     const auto lock = std::scoped_lock{_mutex};
-    return _protocol == nullptr ? std::vector<text::String>{} : _protocol->offeredAlpn();
+    return _protocol == nullptr ? StringList{} : _protocol->offeredAlpn();
 }
 
-auto TlsServerConnection::negotiatedAlpn() const -> text::String {
+auto TlsServerConnection::negotiatedAlpn() const -> String {
     const auto lock = std::scoped_lock{_mutex};
-    return _protocol == nullptr ? text::String{} : _protocol->negotiatedAlpn();
+    return _protocol == nullptr ? String{} : _protocol->negotiatedAlpn();
 }
 
 auto TlsServerConnection::cipherSuite() const -> std::optional<cryptology::TlsCipherSuite> {
@@ -96,28 +116,35 @@ void TlsServerConnection::accept(network::TcpConnectionRequestPtr request, TlsSe
     const auto lock = std::scoped_lock{_mutex};
     verifyCurrentOwnerEvents();
     if (_started.load()) {
-        throw err::LogicError{"A TLS server connection can only be started once."_el};
+        throw LogicFailure{"A TLS server connection can only be started once."_el};
     }
     validateOptions(options);
     if (request == nullptr) {
-        throw err::ParameterError{"The TCP connection request must not be empty."_el, "request"_el};
+        throw ParameterFailure{"The TCP connection request must not be empty."_el, "request"_el};
     }
 
-    auto identities = resolveIdentities(options);
-    auto namedIdentities = std::vector<TlsServerProtocolOptions::NamedIdentity>{};
-    namedIdentities.reserve(options.identityMappings().size());
-    for (auto index = std::size_t{}; index < options.identityMappings().size(); ++index) {
-        namedIdentities.push_back(
-            TlsServerProtocolOptions::NamedIdentity{
-                options.identityMappings()[index].serverName(),
-                identities[index + 1U].configuration->serverIdentity()});
+    auto configurations = resolveConfigurations(options);
+    auto namedConfigurations = std::vector<TlsServerProtocolOptions::NamedConfiguration>{};
+    namedConfigurations.reserve(options.configurationMappings().size());
+    for (auto index = std::size_t{}; index < options.configurationMappings().size(); ++index) {
+        namedConfigurations.push_back(
+            TlsServerProtocolOptions::NamedConfiguration{
+                options.configurationMappings()[index].serverName(),
+                TlsServerProtocolConfiguration{
+                    configurations[index + 1U].configuration->server()->identity(),
+                    configurations[index + 1U].configuration->server()->clientAuthentication(),
+                    configurations[index + 1U].certificatePolicy}});
     }
-    auto protocol = std::make_unique<TlsServerProtocol>(TlsServerProtocolOptions::withNamedIdentities(
-        identities.front().configuration->serverIdentity(),
-        std::move(namedIdentities),
+    auto protocol = std::make_unique<TlsServerProtocol>(TlsServerProtocolOptions::withNamedConfigurations(
+        TlsServerProtocolConfiguration{
+            configurations.front().configuration->server()->identity(),
+            configurations.front().configuration->server()->clientAuthentication(),
+            configurations.front().certificatePolicy},
+        std::move(namedConfigurations),
         options.alpnProtocols(),
         options.cipherSuites(),
-        options.bufferLimits()));
+        options.bufferLimits(),
+        options.supportedGroups()));
 
     auto handshakeLease = options.handshakeQuota()->tryAcquire(request->remoteEndpoint());
     if (!handshakeLease.has_value()) {
@@ -134,7 +161,7 @@ void TlsServerConnection::accept(network::TcpConnectionRequestPtr request, TlsSe
     }
 
     configureTcpEvents();
-    _identities = std::move(identities);
+    _configurations = std::move(configurations);
     _options = std::move(options);
     _protocol = std::move(protocol);
     _handshakeLease = std::move(*handshakeLease);
@@ -147,7 +174,7 @@ void TlsServerConnection::accept(network::TcpConnectionRequestPtr request, TlsSe
         _started.store(false);
         _handshakeLease.release();
         _protocol.reset();
-        _identities.clear();
+        _configurations.clear();
         throw;
     }
 }
@@ -159,7 +186,7 @@ auto TlsServerConnection::send(const mem::ByteBlock &data) -> NetworkSendStatus 
         return NetworkSendStatus::Closed;
     }
     if (data.length() > TlsServerAcceptOptions::cMaximumApplicationSendLength) {
-        throw err::ParameterError{"One TLS application send cannot exceed 16 KiB."_el, "data"_el};
+        throw ParameterFailure{"One TLS application send cannot exceed 16 KiB."_el, "data"_el};
     }
     const auto status = _protocol->sendApplication(data.span());
     if (status == NetworkSendStatus::WouldBlock) {
@@ -224,13 +251,14 @@ void TlsServerConnection::abort() noexcept {
     }
     _started.store(true);
     _abortRequested.store(true);
+    _backgroundOperation.cancel();
+    cancelHandshakeTimer();
+    ++_backgroundGeneration;
     ++_handshakeTimerGeneration;
     ++_idleTimerGeneration;
     ++_closeTimerGeneration;
     _handshakeLease.release();
-    try {
-        _tcpConnection->abort();
-    } catch (...) {}
+    _tcpConnection->abort();
     if (previous == ConnectionState::Inactive) {
         postAbortFinal();
     }
@@ -247,43 +275,46 @@ auto TlsServerConnection::events() -> network::TlsServerConnectionEventEditor & 
 
 void TlsServerConnection::validateOptions(const TlsServerAcceptOptions &options) {
     if (options.handshakeQuota() == nullptr) {
-        throw err::ParameterError{"The TLS handshake quota must not be empty."_el, "options"_el};
+        throw ParameterFailure{"The TLS handshake quota must not be empty."_el, "options"_el};
     }
-    if (options.identityMappings().size() > TlsServerAcceptOptions::cMaximumIdentityMappings.toSizeT()) {
-        throw err::ParameterError{"TLS server options exceed 64 exact identity mappings."_el, "options"_el};
+    if (options.configurationMappings().size() > TlsServerAcceptOptions::cMaximumConfigurationMappings.toSizeT()) {
+        throw ParameterFailure{"TLS server options exceed 64 exact configuration mappings."_el, "options"_el};
     }
     const auto limits = options.bufferLimits();
     if (!limits.send().isFinite() || limits.send().isZero() ||
         limits.send() > TlsServerAcceptOptions::cMaximumBufferLength || !limits.receive().isFinite() ||
         limits.receive().isZero() || limits.receive() > TlsServerAcceptOptions::cMaximumBufferLength) {
-        throw err::ParameterError{"TLS queue limits must be positive, finite, and at most 16 MiB."_el, "options"_el};
+        throw ParameterFailure{"TLS queue limits must be positive, finite, and at most 16 MiB."_el, "options"_el};
     }
     const auto tcpLimits = options.tcpOptions().bufferLimits();
     if (!tcpLimits.send().isFinite() || tcpLimits.send().isZero() || !tcpLimits.receive().isFinite() ||
         tcpLimits.receive().isZero()) {
-        throw err::ParameterError{"TCP queue limits must be positive and finite."_el, "options"_el};
+        throw ParameterFailure{"TCP queue limits must be positive and finite."_el, "options"_el};
     }
     if (!options.handshakeTimeout().isPositive() || !options.idleTimeout().isPositive() ||
         !options.closeTimeout().isPositive()) {
-        throw err::ParameterError{"Every TLS deadline must be positive."_el, "options"_el};
+        throw ParameterFailure{"Every TLS deadline must be positive."_el, "options"_el};
     }
 }
 
-auto TlsServerConnection::resolveIdentities(const TlsServerAcceptOptions &options) -> std::vector<ResolvedIdentity> {
-    auto result = std::vector<ResolvedIdentity>{};
-    result.reserve(options.identityMappings().size() + 1U);
-    const auto resolve = [&result](const text::String &label) -> void {
-        const auto resolution = core::application().cryptologyConfiguration().resolveTlsConfiguration(label);
-        if (!resolution.configuration()->hasServerIdentity()) {
-            throw err::RuntimeError{text::String::fromJoined(
-                {"TLS configuration \""_el, resolution.matchedLabel(), "\" has no server identity."_el})};
-        }
+auto TlsServerConnection::resolveConfigurations(const TlsServerAcceptOptions &options)
+    -> std::vector<ResolvedConfiguration> {
+    auto result = std::vector<ResolvedConfiguration>{};
+    result.reserve(options.configurationMappings().size() + 1U);
+    auto labels = StringList{options.configurationLabel()};
+    for (const auto &mapping : options.configurationMappings()) {
+        labels.append(mapping.configurationLabel());
+    }
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    for (
+        const auto &resolution :
+        cryptologyData->configuration().resolveTlsConfigurations(labels, cryptology::TlsRole::Server)) {
         result.push_back(
-            ResolvedIdentity{resolution.requestedLabel(), resolution.matchedLabel(), resolution.configuration()});
-    };
-    resolve(options.configurationLabel());
-    for (const auto &mapping : options.identityMappings()) {
-        resolve(mapping.configurationLabel());
+            ResolvedConfiguration{
+                resolution.requestedLabel(),
+                resolution.matchedLabel(),
+                resolution.configuration(),
+                resolution.certificatePolicy()});
     }
     return result;
 }

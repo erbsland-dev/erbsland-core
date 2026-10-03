@@ -5,18 +5,18 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/CryptologyError.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
 #include <erbsland/cryptology/impl/protected_data/InternalProtectedDataProvider.hpp>
 #include <erbsland/cryptology/impl/protected_data/ProtectedDataAccess.hpp>
 #include <erbsland/cryptology/impl/protected_data/ProtectedDataProvider.hpp>
-#include <erbsland/cryptology/protected_data/ProtectedByteBlock.hpp>
-#include <erbsland/cryptology/protected_data/ProtectedDataMode.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/CryptologyError.hpp>
+#include <erbsland/LogicFailure.hpp>
 #include <erbsland/mem/impl/SecureErase.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ProtectedByteBlock.hpp>
+#include <erbsland/ProtectedDataMode.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -32,30 +32,44 @@ namespace erbsland::cryptology::impl {
 
 class ProtectedDataTestAccess final {
 public:
-    [[nodiscard]] static auto envelope(const ProtectedByteBlock &block) -> const mem::ByteBlock & {
-        return block._envelope;
-    }
+    /// Bind access to the target instance, which must outlive this helper.
+    /// @param block The accessed instance.
+    explicit ProtectedDataTestAccess(ProtectedByteBlock &block) noexcept : _block{block} {}
 
-    static void corruptEnvelope(ProtectedByteBlock &block) {
-        auto editor = mem::ByteBlockEditor{block._envelope};
+public: // access
+    [[nodiscard]] auto envelope() -> const mem::ByteBlock & { return _block._envelope; }
+
+    void corruptEnvelope() {
+        auto editor = mem::ByteBlockEditor{_block._envelope};
         editor.set(unit::ByteIndex::zero(), editor.getOrThrow(unit::ByteIndex::zero()) ^ mem::Byte{0x01U});
-        block._envelope = editor;
+        _block._envelope = editor;
     }
 
-    static void exhaustNonce(InternalProtectedDataProvider &provider) {
-        provider._nonceCounter = std::numeric_limits<uint64_t>::max();
-    }
+private:
+    ProtectedByteBlock &_block; ///< The accessed instance.
+};
+
+/// Access the nonce state of a provider under test.
+class ProtectedDataProviderTestAccess final {
+public:
+    explicit ProtectedDataProviderTestAccess(InternalProtectedDataProvider &provider) noexcept : _provider{provider} {}
+
+public: // test state
+    void exhaustNonce() { _provider._nonceCounter = std::numeric_limits<uint64_t>::max(); }
+
+private:
+    InternalProtectedDataProvider &_provider;
 };
 
 }
 
 class ThrowingProtectedDataAccess final : public el::cryptology::impl::ProtectedDataAccess {
 public:
-    [[nodiscard]] auto protect(el::ConstByteSpan, el::ByteLength) -> el::ByteBlock override {
+    [[nodiscard]] auto protect(el::ConstByteSpan, el::ByteCount) -> el::ByteBlock override {
         throw CryptologyError{"Unexpected protected-data access."};
     }
 
-    [[nodiscard]] auto unprotect(el::ConstByteSpan, el::ByteLength) -> el::ByteBlock override {
+    [[nodiscard]] auto unprotect(el::ConstByteSpan, el::ByteCount) -> el::ByteBlock override {
         throw CryptologyError{"Unexpected protected-data access."};
     }
 };
@@ -72,11 +86,11 @@ public:
         return std::make_unique<ThrowingProtectedDataProvider>();
     }
 
-    [[nodiscard]] auto protect(el::ConstByteSpan, el::ByteLength) -> el::ByteBlock override {
+    [[nodiscard]] auto protect(el::ConstByteSpan, el::ByteCount) -> el::ByteBlock override {
         throw CryptologyError{"Forced provider self-test failure."};
     }
 
-    [[nodiscard]] auto unprotect(el::ConstByteSpan, el::ByteLength) -> el::ByteBlock override {
+    [[nodiscard]] auto unprotect(el::ConstByteSpan, el::ByteCount) -> el::ByteBlock override {
         throw CryptologyError{"Forced provider self-test failure."};
     }
 
@@ -133,7 +147,7 @@ public:
             REQUIRE(data.empty());
         });
         REQUIRE(callbackCalled);
-        REQUIRE_THROWS_AS(el::err::ParameterError, first.withUnprotectedData({}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, first.withUnprotectedData({}));
     }
 
     void testInternalRoundTripCopyMoveAndErase() {
@@ -174,7 +188,7 @@ public:
             }));
             REQUIRE(_fourByteEraseCount.load() >= 1U);
         }
-        REQUIRE_THROWS_AS(el::err::LogicError, configuration.setProtectedDataMode(ProtectedDataMode::Automatic));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, configuration.setProtectedDataMode(ProtectedDataMode::Automatic));
         REQUIRE_NOTHROW(configuration.setProtectedDataMode(ProtectedDataMode::InternalOnly));
         REQUIRE_NOTHROW(configuration.reset());
         REQUIRE_EQUAL(configuration.protectedDataMode(), ProtectedDataMode::InternalOnly);
@@ -214,7 +228,8 @@ public:
             auto &configuration = el::core::application().cryptologyConfiguration();
             configuration.setProtectedDataMode(ProtectedDataMode::PlatformOnly);
             REQUIRE_THROWS_AS(CryptologyError, configuration.validateProtectedDataSupport());
-            REQUIRE_THROWS_AS(el::err::LogicError, configuration.setProtectedDataMode(ProtectedDataMode::InternalOnly));
+            REQUIRE_THROWS_AS(
+                el::err::LogicFailure, configuration.setProtectedDataMode(ProtectedDataMode::InternalOnly));
         }
 #else
         auto nativeAvailable = false;
@@ -249,7 +264,7 @@ public:
         auto protectedData = ProtectedByteBlock{plaintext};
 
         auto corrupted = protectedData;
-        el::cryptology::impl::ProtectedDataTestAccess::corruptEnvelope(corrupted);
+        el::cryptology::impl::ProtectedDataTestAccess{corrupted}.corruptEnvelope();
         REQUIRE_THROWS_AS(CryptologyError, corrupted.unprotect());
 
         auto throwingAccess = ThrowingProtectedDataAccess{};
@@ -279,9 +294,9 @@ public:
         threads.reserve(threadCount);
         for (auto index = std::size_t{}; index < threadCount; ++index) {
             threads.emplace_back([&]() -> void {
-                const auto block = ProtectedByteBlock{bytesFromHex("0102030405060708")};
+                auto block = ProtectedByteBlock{bytesFromHex("0102030405060708")};
                 const auto lock = std::scoped_lock{envelopesMutex};
-                envelopes.emplace_back(el::cryptology::impl::ProtectedDataTestAccess::envelope(block));
+                envelopes.emplace_back(el::cryptology::impl::ProtectedDataTestAccess{block}.envelope());
             });
         }
         for (auto &thread : threads) {
@@ -336,7 +351,7 @@ public:
     void testNonceOverflowFailsClosed() {
         const auto applicationScope = ApplicationTestScope<>{};
         auto provider = el::cryptology::impl::InternalProtectedDataProvider{};
-        el::cryptology::impl::ProtectedDataTestAccess::exhaustNonce(provider);
+        el::cryptology::impl::ProtectedDataProviderTestAccess{provider}.exhaustNonce();
         const auto plaintext = bytesFromHex("0102");
         REQUIRE_THROWS_AS(CryptologyError, provider.protect(plaintext.span(), plaintext.length()));
     }

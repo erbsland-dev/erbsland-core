@@ -3,6 +3,8 @@
 
 #include "RegExBase.hpp"
 
+#include <erbsland/StringList.hpp>
+
 using namespace el::re;
 
 TESTED_TARGETS(RegEx)
@@ -42,7 +44,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "y"_el,
                 "ax"_el,
@@ -61,7 +63,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "x"_el,
                 "y"_el,
@@ -79,7 +81,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "x"_el,
                 "y"_el,
@@ -99,7 +101,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "x"_el,
                 "y"_el,
@@ -113,14 +115,14 @@ public:
     void testFullMatch() {
         WITH_CONTEXT(compileSingleCharLazyZeroOrMore());
         {
-            const auto matchCases = std::vector<String>{
+            const auto matchCases = StringList{
                 ""_el,
                 "a"_el,
                 "aa"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 "b"_el,
                 "ab"_el,
                 "😀"_el,
@@ -131,14 +133,14 @@ public:
 
         WITH_CONTEXT(compilePrefixSingleCharLazyZeroOrMorePostfix());
         {
-            const auto matchCases = std::vector<String>{
+            const auto matchCases = StringList{
                 "xa"_el,
                 "xaa"_el,
                 "xaaaa"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 "x"_el,
                 "xaaaab"_el,
                 ""_el,
@@ -160,7 +162,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(testCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "x"_el,
             "y"_el,
@@ -186,7 +188,7 @@ public:
         WITH_CONTEXT(requireFindAll("xaaa xa xaa"_el));
         WITH_CONTEXT(requireLines(matchLines, expectedLines));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "x"_el,
             "y"_el,

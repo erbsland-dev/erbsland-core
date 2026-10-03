@@ -6,7 +6,7 @@
 
 #include "../SecureEraseGuard.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../math/IntegerBitOperations.hpp"
 #include "../../../mem/ByteArray.hpp"
 #include "../../../mem/ByteBlock.hpp"
@@ -16,7 +16,7 @@
 #include "../../../mem/ByteSpan.hpp"
 #include "../../../mem/impl/SecureErase.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 
 #include <algorithm>
 #include <array>
@@ -46,8 +46,8 @@ struct Argon2idParameters final {
 class Argon2id final {
 public:
     /// Create an Argon2id primitive with validated parameters.
-    /// @param parameters The validated memory, pass, lane, and output dimensions.
-    /// @throws err::ParameterError If a parameter is invalid or exceeds the implementation's safety limits.
+    /// @param parameters The dimensions: 1-16 lanes, 1-10 passes, memory from `8 * lanes` through 1,048,576 KiB, and
+    /// output length from 4 through `UINT32_MAX` bytes.
     explicit Argon2id(const Argon2idParameters parameters) : _parameters{parameters} {
         validateParameters();
         // RFC 9106 section 3.1 fixes the synchronization-point count SL at four. Round m down to a multiple of 4*p so
@@ -71,7 +71,6 @@ public:
     /// @param secret The optional secret value K.
     /// @param associatedData The optional associated data X.
     /// @return The Argon2id tag in marked storage.
-    /// @throws err::ParameterError If a parameter is invalid or exceeds the implementation's safety limits.
     /// Covered by PasswordPrimitiveTest.
     [[nodiscard]] auto derive(
         const ConstByteSpan password,
@@ -91,14 +90,13 @@ private:
     /// Outputs up to 64 bytes directly with BLAKE2b. Longer outputs form a chain of 64-byte BLAKE2b values, taking
     /// 32 bytes from each intermediate value and a variable-sized final value.
     /// @param input The input A.
-    /// @param outputLength The requested output length T.
+    /// @param outputLength The requested output length T. Must be between 1 and `UINT32_MAX` bytes.
     /// @return H'^T(A) in marked storage.
-    /// @throws err::ParameterError If the output length cannot be encoded as Argon2's 32-bit T.
     /// Covered by PasswordPrimitiveTest.
     [[nodiscard]] static auto variableHash(const ConstByteSpan input, const std::size_t outputLength)
         -> ByteBlockEditor {
         if (outputLength == 0U || outputLength > std::numeric_limits<uint32_t>::max()) {
-            throw err::ParameterError{"Invalid Argon2 output length"_el, "outputLength"_el};
+            throw err::ParameterFailure{"Invalid Argon2 output length"_el, "outputLength"_el};
         }
         // RFC 9106 section 3.3 prefixes every H' input with LE32(T).
         auto prefixed = ByteBlockEditor{};
@@ -107,26 +105,26 @@ private:
         prefixed.append(input);
         if (outputLength <= 64U) {
             // For T <= 64, H'^T(A) is one BLAKE2b invocation configured for T output bytes.
-            return Blake2b{ByteLength::fromSizeT(outputLength)}.digest(prefixed.span());
+            return Blake2b{ByteCount::fromSizeT(outputLength)}.digest(prefixed.span());
         }
-        auto result = ByteBlockEditor{ByteLength::fromSizeT(outputLength)};
+        auto result = ByteBlockEditor{ByteCount::fromSizeT(outputLength)};
         result.markAsSensitive();
-        auto value = Blake2b{ByteLength{64U}}.digest(prefixed.span());
+        auto value = Blake2b{ByteCount{64U}}.digest(prefixed.span());
         // For longer output, r = ceil(T/32)-2. Each V1..Vr contributes its first 32 bytes.
         const auto rounds = (outputLength + 31U) / 32U - 2U;
         auto position = std::size_t{0};
         for (auto round = std::size_t{0}; round < rounds; ++round) {
             result.overwrite(
-                {ByteIndex::fromSizeT(position), ByteLength{32U}}, value.slice(ByteIndex::zero(), ByteLength{32U}));
+                {ByteIndex::fromSizeT(position), ByteCount{32U}}, value.slice(ByteIndex::zero(), ByteCount{32U}));
             position += 32U;
             if (round + 1U < rounds) {
                 // RFC 9106 defines Vi = BLAKE2b-512(Vi-1) for intermediate chain values.
-                value = Blake2b{ByteLength{64U}}.digest(value.span());
+                value = Blake2b{ByteCount{64U}}.digest(value.span());
             }
         }
         // Vr+1 uses exactly T-32r output bytes, completing H' without truncating a longer final digest.
-        value = Blake2b{ByteLength::fromSizeT(outputLength - position)}.digest(value.span());
-        result.overwrite({ByteIndex::fromSizeT(position), ByteLength::fromSizeT(outputLength - position)}, value);
+        value = Blake2b{ByteCount::fromSizeT(outputLength - position)}.digest(value.span());
+        result.overwrite({ByteIndex::fromSizeT(position), ByteCount::fromSizeT(outputLength - position)}, value);
         return result;
     }
 
@@ -213,7 +211,7 @@ private:
         // The compression output is Z XOR R. Starting with pass one, Argon2 v1.3 additionally XORs the old destination.
         for (auto i = std::size_t{0}; i < 128U; ++i) {
             auto value = words[i] ^ original[i];
-            const auto offset = outputOffset + ByteLength::fromSizeT(i * sizeof(uint64_t));
+            const auto offset = outputOffset + ByteCount::fromSizeT(i * sizeof(uint64_t));
             if (withXor) {
                 value ^= output.getInteger<uint64_t>(offset);
             }
@@ -278,13 +276,14 @@ private:
     }
 
     /// Validate the configured Argon2id dimensions.
-    /// @throws err::ParameterError If a parameter is invalid or exceeds the implementation's safety limits.
+    /// Requires 1-16 lanes, 1-10 passes, memory from `8 * lanes` through 1,048,576 KiB, and output length from 4
+    /// through `UINT32_MAX` bytes.
     void validateParameters() const {
         if (_parameters.lanes == 0U || _parameters.lanes > 16U || _parameters.passes == 0U ||
             _parameters.passes > 10U || _parameters.memoryKiB < 8U * _parameters.lanes ||
             _parameters.memoryKiB > 1024U * 1024U || _parameters.outputLength < 4U ||
             _parameters.outputLength > std::numeric_limits<uint32_t>::max()) {
-            throw err::ParameterError{"Invalid or unsafe Argon2id parameters"_el, "parameters"_el};
+            throw err::ParameterFailure{"Invalid or unsafe Argon2id parameters"_el, "parameters"_el};
         }
     }
 
@@ -316,7 +315,7 @@ private:
         appendField(secret);
         appendField(associatedData);
         // H0 is a 64-byte BLAKE2b digest of the encoded input.
-        return Blake2b{ByteLength{64U}}.digest(initialInput.span());
+        return Blake2b{ByteCount{64U}}.digest(initialInput.span());
     }
 
     /// Allocate and initialize the Argon2id memory.
@@ -324,7 +323,7 @@ private:
     /// @return The initialized memory blocks.
     [[nodiscard]] auto initializeMemory(const ByteBlockEditor &initialHash) const -> ByteBuffer {
         // Step 2: allocate m' blocks. Argon2 fixes each block at 1024 bytes.
-        auto memory = ByteBuffer{ByteLength::fromSizeT(static_cast<std::size_t>(_memoryBlocks) * 1024U)};
+        auto memory = ByteBuffer{ByteCount::fromSizeT(static_cast<std::size_t>(_memoryBlocks) * 1024U)};
         auto memoryErase = SecureEraseGuard{memory};
         auto blockInput = ByteBlockEditor{ByteBlock{initialHash}};
         // Steps 3 and 4 append LE32(block index) and LE32(lane) to the 64-byte H0, hence the 72-byte input.
@@ -335,7 +334,7 @@ private:
                 blockInput.setIntegerOrThrow(ByteIndex{68U}, lane);
                 auto generated = variableHash(blockInput.span(), 1024U);
                 const auto offset = (static_cast<std::size_t>(lane) * _laneLength + block) * 1024U;
-                memory.overwrite({ByteIndex::fromSizeT(offset), ByteLength{1024U}}, generated.span());
+                memory.overwrite({ByteIndex::fromSizeT(offset), ByteCount{1024U}}, generated.span());
             }
         }
         memoryErase.release();
@@ -372,9 +371,9 @@ private:
         // RFC 9106 section 3.4.1.3: Argon2id is data-independent for slices 0 and 1 of pass zero, and
         // data-dependent everywhere else.
         const auto independent = pass == 0U && slice < 2U;
-        auto inputBlock = ByteBuffer{ByteLength{1024U}};
+        auto inputBlock = ByteBuffer{ByteCount{1024U}};
         [[maybe_unused]] const auto inputBlockErase = SecureEraseGuard{inputBlock};
-        auto addressBlock = ByteBuffer{ByteLength{1024U}};
+        auto addressBlock = ByteBuffer{ByteCount{1024U}};
         [[maybe_unused]] const auto addressBlockErase = SecureEraseGuard{addressBlock};
         inputBlock.setIntegerOrThrow(ByteIndex{0U}, static_cast<uint64_t>(pass));
         inputBlock.setIntegerOrThrow(ByteIndex{8U}, static_cast<uint64_t>(lane));
@@ -399,7 +398,7 @@ private:
                 static_cast<std::size_t>(lane) * _laneLength + static_cast<std::size_t>(slice) * _segmentLength + index;
             const auto laneStart = static_cast<std::size_t>(lane) * _laneLength;
             const auto previous = current == laneStart ? laneStart + _laneLength - 1U : current - 1U;
-            auto pseudo = blockWord(memory.span(ByteIndex::fromSizeT(previous * 1024U), ByteLength{1024U}), 0U);
+            auto pseudo = blockWord(memory.span(ByteIndex::fromSizeT(previous * 1024U), ByteCount{1024U}), 0U);
             if (independent) {
                 // One 1024-byte address block supplies 128 little-endian 64-bit pseudo-random values.
                 if (index % 128U == 0U) {
@@ -417,8 +416,8 @@ private:
             // RFC 9106 Figures 5 and 6: combine the previous and selected reference blocks; later passes
             // also XOR the old block at the current position.
             fillBlock(
-                memory.span(ByteIndex::fromSizeT(previous * 1024U), ByteLength{1024U}),
-                memory.span(ByteIndex::fromSizeT(reference * 1024U), ByteLength{1024U}),
+                memory.span(ByteIndex::fromSizeT(previous * 1024U), ByteCount{1024U}),
+                memory.span(ByteIndex::fromSizeT(reference * 1024U), ByteCount{1024U}),
                 memory,
                 ByteIndex::fromSizeT(current * 1024U),
                 pass != 0U);
@@ -430,11 +429,11 @@ private:
     /// @return The Argon2id tag in marked storage.
     [[nodiscard]] auto finalize(const ByteBuffer &memory) const -> ByteBlockEditor {
         // Step 7 XORs the final block from every lane into C.
-        auto finalBlock = ByteBuffer{memory.span(ByteIndex::fromSizeT((_laneLength - 1U) * 1024U), ByteLength{1024U})};
+        auto finalBlock = ByteBuffer{memory.span(ByteIndex::fromSizeT((_laneLength - 1U) * 1024U), ByteCount{1024U})};
         [[maybe_unused]] const auto finalBlockErase = SecureEraseGuard{finalBlock};
         for (auto lane = uint32_t{1U}; lane < _parameters.lanes; ++lane) {
             const auto offset = (static_cast<std::size_t>(lane) * _laneLength + _laneLength - 1U) * 1024U;
-            finalBlock.xorWithOrThrow(memory.span(ByteIndex::fromSizeT(offset), ByteLength{1024U}));
+            finalBlock.xorWithOrThrow(memory.span(ByteIndex::fromSizeT(offset), ByteCount{1024U}));
         }
         // Step 8 applies H'^T(C) to produce the requested tag.
         return variableHash(finalBlock.span(), _parameters.outputLength);

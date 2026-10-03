@@ -13,6 +13,7 @@
 #include "../../../../text/CharSet.hpp"
 #include "../../../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../../../text/Literals.hpp"
+#include "../../../../unit/ByteCount.hpp"
 #include "../../../../unit/ByteIndex.hpp"
 #include "../../../../unit/ByteRange.hpp"
 
@@ -21,6 +22,8 @@
 
 namespace erbsland::network::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text;
 using namespace text::literals;
 
@@ -32,7 +35,7 @@ Http1Decoder::Http1Decoder(const Role role, const Http1CodecLimits limits) :
         Http1CodecLimits::queueStorageLimit(limits.maximumInputLength())} {
 }
 
-auto Http1Decoder::feed(const mem::ConstByteSpan bytes) -> NetworkSendStatus {
+auto Http1Decoder::feed(const ConstByteSpan bytes) -> NetworkSendStatus {
     if (_state == State::Failed || _endOfInput || _state == State::Opaque) {
         return NetworkSendStatus::Closed;
     }
@@ -129,18 +132,18 @@ void Http1Decoder::setRequestMethod(HttpMethod method) {
     _requestMethod = std::move(method);
 }
 
-auto Http1Decoder::takeOpaqueRemainder() -> mem::ByteBlock {
+auto Http1Decoder::takeOpaqueRemainder() -> ByteBlock {
     if (_state != State::Opaque) {
         fail(Http1FailureReason::InvalidState, "Opaque data is only available after protocol switching."_el);
     }
-    return _input.read(unit::ByteLength::infinite());
+    return _input.read(ByteCount::infinite());
 }
 
-auto Http1Decoder::takeRetainedInput() -> mem::ByteBlock {
+auto Http1Decoder::takeRetainedInput() -> ByteBlock {
     if (_state != State::Complete) {
         fail(Http1FailureReason::InvalidState, "Retained input is only available after message completion."_el);
     }
-    return _input.read(unit::ByteLength::infinite());
+    return _input.read(ByteCount::infinite());
 }
 
 auto Http1Decoder::isComplete() const noexcept -> bool {
@@ -202,8 +205,7 @@ auto Http1Decoder::readFixedBody() -> std::optional<Http1DecodeEvent> {
         }
         return {};
     }
-    const auto length = unit::ByteLength{std::min(
-        {_input.length().toSizeT(), _bodyRemaining.toSizeT(), Http1CodecLimits::cMaximumBodyChunkLength.toSizeT()})};
+    const auto length = std::min({_input.length(), _bodyRemaining, Http1CodecLimits::cMaximumBodyChunkLength});
     accountBody(length);
     _bodyRemaining -= length;
     return Http1DecodeEvent::body(takeInput(length));
@@ -219,11 +221,10 @@ auto Http1Decoder::readChunkLine() -> std::optional<Http1DecodeEvent> {
     }
     try {
         const auto value = Http1FramingParser::chunkSize(*line);
-        if (value > _limits.maximumBodyLength().toSizeT() -
-                std::min(_bodyDecoded.toSizeT(), _limits.maximumBodyLength().toSizeT())) {
+        if (value > _limits.maximumBodyLength() - std::min(_bodyDecoded, _limits.maximumBodyLength())) {
             fail(Http1FailureReason::BodyLimitExceeded, "Chunked data exceeds the configured body limit."_el);
         }
-        _bodyRemaining = unit::ByteLength{value};
+        _bodyRemaining = value;
     } catch (const err::ParseError &) {
         fail(Http1FailureReason::MalformedChunk, "The chunk-size metadata is malformed."_el);
     }
@@ -248,15 +249,14 @@ auto Http1Decoder::readChunkData() -> std::optional<Http1DecodeEvent> {
         }
         return {};
     }
-    const auto length = unit::ByteLength{std::min(
-        {_input.length().toSizeT(), _bodyRemaining.toSizeT(), Http1CodecLimits::cMaximumBodyChunkLength.toSizeT()})};
+    const auto length = std::min({_input.length(), _bodyRemaining, Http1CodecLimits::cMaximumBodyChunkLength});
     accountBody(length);
     _bodyRemaining -= length;
     return Http1DecodeEvent::body(takeInput(length));
 }
 
 auto Http1Decoder::readChunkDataEnd() -> std::optional<Http1DecodeEvent> {
-    if (_input.length().toSizeT() < 2U) {
+    if (_input.length() < ByteCount{2U}) {
         if (_endOfInput) {
             fail(Http1FailureReason::PrematureEndOfStream, "EOF after chunk data."_el);
         }
@@ -269,7 +269,7 @@ auto Http1Decoder::readChunkDataEnd() -> std::optional<Http1DecodeEvent> {
     if (first != '\r' || second != '\n') {
         fail(Http1FailureReason::MalformedChunk, "Chunk data is not followed by CRLF."_el);
     }
-    access.consumeRead(unit::ByteLength{2U});
+    access.consumeRead(ByteCount{2U});
     _state = State::ChunkLine;
     return {};
 }
@@ -294,8 +294,7 @@ auto Http1Decoder::readTrailers() -> std::optional<Http1DecodeEvent> {
 
 auto Http1Decoder::readCloseBody() -> std::optional<Http1DecodeEvent> {
     if (!_input.isEmpty()) {
-        const auto length =
-            unit::ByteLength{std::min(_input.length().toSizeT(), Http1CodecLimits::cMaximumBodyChunkLength.toSizeT())};
+        const auto length = std::min(_input.length(), Http1CodecLimits::cMaximumBodyChunkLength);
         accountBody(length);
         return Http1DecodeEvent::body(takeInput(length));
     }

@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteSpan.hpp>
+#include <erbsland/Endianness.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

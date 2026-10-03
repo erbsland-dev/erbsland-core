@@ -3,7 +3,9 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(namespace-integration)
 add_subdirectory(resource-integration)
+add_subdirectory(unit-construction)
 
 if(APPLE OR WIN32)
     # Keep the nested package-tool object paths below the Windows path limit.
@@ -34,7 +36,7 @@ add_test(
                 -DERBSLAND_CORE_FIXTURE_DIRECTORY=${PROJECT_SOURCE_DIR}/test/cmake/resource-installed-package
                 -DERBSLAND_CORE_GENERATOR=${CMAKE_GENERATOR}
                 -DERBSLAND_CORE_CONFIGURATION=$<CONFIG>
-                -DERBSLAND_CORE_HOST_COMPILER_NAME=$<TARGET_FILE_NAME:erbsland-core-resource-compiler>
+                -DERBSLAND_CORE_HOST_COMPILER_NAME=$<TARGET_FILE_NAME:erbsland::core-resource-compiler>
                 -P ${PROJECT_SOURCE_DIR}/test/cmake/resource-installed-package/RunInstalledPackage.cmake
 )
 foreach(resource_error_case IN ITEMS
@@ -56,3 +58,24 @@ foreach(resource_error_case IN ITEMS
     )
     set_tests_properties(erbsland-core-resource-error-${resource_error_case} PROPERTIES WILL_FAIL TRUE)
 endforeach()
+
+add_test(
+        NAME erbsland-core-display-text-integration
+        COMMAND ${CMAKE_COMMAND}
+                -DBUILD_DIRECTORY=${CMAKE_BINARY_DIR}
+                -DFIXTURE_DIRECTORY=${CMAKE_CURRENT_SOURCE_DIR}/display-text-integration
+                -DGENERATOR=${CMAKE_GENERATOR}
+                -DCONFIGURATION=$<CONFIG>
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/display-text-integration/RunIntegration.cmake
+)
+set_tests_properties(erbsland-core-display-text-integration PROPERTIES RUN_SERIAL TRUE)
+
+add_test(
+        NAME erbsland-core-display-text-core-only
+        COMMAND ${CMAKE_COMMAND}
+                -DSOURCE_DIRECTORY=${PROJECT_SOURCE_DIR}
+                -DBUILD_DIRECTORY=${CMAKE_BINARY_DIR}
+                -DGENERATOR=${CMAKE_GENERATOR}
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/display-text-integration/RunCoreOnly.cmake
+)
+set_tests_properties(erbsland-core-display-text-core-only PROPERTIES RUN_SERIAL TRUE TIMEOUT 600)

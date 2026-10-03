@@ -4,9 +4,13 @@
 #include "DataFormatsDemos.hpp"
 
 #include <DemoCommon.hpp>
-#include <erbsland/data/bson/BsonValue.hpp>
-#include <erbsland/data/cbor/CborValue.hpp>
-#include <erbsland/data/xml/XmlDocument.hpp>
+#include <erbsland/bson/BsonValue.hpp>
+#include <erbsland/cbor/CborFormatOptions.hpp>
+#include <erbsland/cbor/CborParseOptions.hpp>
+#include <erbsland/cbor/CborValue.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/xml/XmlDocument.hpp>
 
 namespace demo {
 

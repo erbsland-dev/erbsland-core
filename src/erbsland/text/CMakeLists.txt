@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(base_n)
+add_subdirectory(cpp)
 add_subdirectory(fuzzy)
 add_subdirectory(html)
 add_subdirectory(impl)
@@ -133,6 +134,7 @@ target_sources(erbsland-core PRIVATE
         StringHashMap_fwd.hpp
         StringHashSet.hpp
         StringHashSet_fwd.hpp
+        StringJoins.hpp
         StringKind.cpp
         StringKind.hpp
         StringList.hpp
@@ -145,12 +147,14 @@ target_sources(erbsland-core PRIVATE
         StringPattern.hpp
         StringPattern.tpp
         StringPattern_fwd.hpp
+        StringPatternKind.hpp
         StringSet.hpp
         StringSet_fwd.hpp
         StringSide.hpp
         StringSplitMode.hpp
         StringSplitter.hpp
         StringSplitter_fwd.hpp
+        StringTransformations.hpp
         StringTree.cpp
         StringTree.hpp
         StringTree.tpp

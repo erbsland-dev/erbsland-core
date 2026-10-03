@@ -65,7 +65,7 @@ Any precision finer than a nanosecond is discarded toward zero.
 .. erbsland-demo::
     :source: time/TimeDelta/Create.cpp
     :exec: time/time_delta --demo Create
-    :source-sha256: 1d751b4df2bafa88854343ba3b00e85f593bda79dd6d1991aa60eab0965d1259
+    :sha256: 4809430376e9f9b827324e3b912cec78b987e24048ece4e0d48366316f1da9a9
 
 .. code-block:: cpp
 
@@ -86,11 +86,13 @@ Any precision finer than a nanosecond is discarded toward zero.
                 el::TimeDelta{}.isZero(), el::TimeDelta::zero().isZero()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    reloj de arena: typed 1 s 250 ms; literal 1 s 250 ms; chrono 1 s 250 ms 1 us
-    Default is zero: true; zero factory: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mreloj de arena: typed 1 s 250 ms; literal 1 s 250 ms; chrono 1 s 250 ms 1 us
+        Default is zero: true; zero factory: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -120,7 +122,7 @@ report that a supplied interval cannot be represented.
 .. erbsland-demo::
     :source: time/TimeDelta/Factories.cpp
     :exec: time/time_delta --demo Factories
-    :source-sha256: 15365ba4d7a82d987eee89089d2194b564617f013a850138e59fb15fb646d216
+    :sha256: ff8f6f06e59f3e0f9ab2eee68286229dba893c6e10934275f1b578bfc8a7a0d4
 
 .. code-block:: cpp
 
@@ -166,20 +168,22 @@ report that a supplied interval cannot be represented.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    1 ns
-    1 us
-    1 ms
-    1 s
-    1 min
-    1 h
-    1 d
-    1 w
-    Checked week: 1 w
-    Would saturate: true; stored ns: 9223372036854775807
-    Checked factory rejected overflow.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m1 ns
+        1 us
+        1 ms
+        1 s
+        1 min
+        1 h
+        1 d
+        1 w
+        Checked week: 1 w
+        Would saturate: true; stored ns: 9223372036854775807
+        Checked factory rejected overflow.␛[0m
 
 .. erbsland-demo-end::
 
@@ -220,7 +224,7 @@ A delay already above the floor is returned unchanged, so the same expression ha
 .. erbsland-demo::
     :source: time/TimeDelta/Calculate.cpp
     :exec: time/time_delta --demo Calculate
-    :source-sha256: bd6910f2bf99a1bc5a8817b89d825a50c73d3c937b19fa2a7e3c8fa01fd05393
+    :sha256: a7773a9a249a7e48faac60a37cea2397dc245988643257600862f2a69ac822d2
 
 .. code-block:: cpp
 
@@ -255,13 +259,15 @@ A delay already above the floor is returned unchanged, so the same expression ha
                 (el::TimeDelta::nanoseconds(-5) / el::TimeDelta::IntegerValue{2}).toNanoseconds().toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Budget: 4 s 500 ms; remaining: 2 s 333 ms 333 us 333 ns; setup fits: true
-    Per player: 2 s 250 ms; complete turns: 3
-    Negative: true; positive: true; zero difference: true; absolute: 250 ms
-    Minimum delay: 1 s; negative integer division: -2 ns
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBudget: 4 s 500 ms; remaining: 2 s 333 ms 333 us 333 ns; setup fits: true
+        Per player: 2 s 250 ms; complete turns: 3
+        Negative: true; positive: true; zero difference: true; absolute: 250 ms
+        Minimum delay: 1 s; negative integer division: -2 ns␛[0m
 
 .. erbsland-demo-end::
 
@@ -290,7 +296,7 @@ The demo deliberately guards that condition instead of executing the invalid div
 .. erbsland-demo::
     :source: time/TimeDelta/Boundaries.cpp
     :exec: time/time_delta --demo Boundaries
-    :source-sha256: 7468fb699729e7df5364784ff4f870411e018ee7e1d988d83ab42cfb2b6105b8
+    :sha256: 39022d30c2edbd8a0bb24d60fa666ea74cac8ca5f42a1bd818e6de355afc12d6
 
 .. code-block:: cpp
 
@@ -319,15 +325,17 @@ The demo deliberately guards that condition instead of executing the invalid div
         el::io::printLine(el::StringFormat{"Extreme ratio: {}"_el}.build((low / -tick).toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    High + tick: 9223372036854775807; low - tick: -9223372036854775808; high * 2: 922337203685
-    4775807
-    Negated low: 9223372036854775807; absolute low: 9223372036854775807; low / -1: 92233720368
-    54775807
-    Reject a zero divisor before calculating a ratio.
-    Extreme ratio: 9223372036854775807
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mHigh + tick: 9223372036854775807; low - tick: -9223372036854775808; high * 2: 922337203685
+        4775807
+        Negated low: 9223372036854775807; absolute low: 9223372036854775807; low / -1: 92233720368
+        54775807
+        Reject a zero divisor before calculating a ratio.
+        Extreme ratio: 9223372036854775807␛[0m
 
 .. erbsland-demo-end::
 
@@ -356,7 +364,7 @@ The demo shows both total integer conversions and the approximate fractional val
 .. erbsland-demo::
     :source: time/TimeDelta/Convert.cpp
     :exec: time/time_delta --demo Convert
-    :source-sha256: 1c11229001a2611971f3bcb6ecbbf93ecffc285e52779b51744a6366cb6dbb78
+    :sha256: 984a9757a56fbca3f18d7ce0df1edcb7f3fcc8d4b78b0a6de5e2492a7bf73f68
 
 .. code-block:: cpp
 
@@ -383,16 +391,18 @@ The demo shows both total integer conversions and the approximate fractional val
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Totals: 1234567890 ns; 1234 ms; 1 s
-    Approximate seconds: 1.23456789; approximate days: 1.4288980208333334e-05
-    Chrono ns: 1234567890
-    -1500 ms: -1 seconds; Duration -1 seconds
-    -999 ms: 0 seconds; Duration 0 seconds
-    999 ms: 0 seconds; Duration 0 seconds
-    1500 ms: 1 seconds; Duration 1 seconds
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTotals: 1234567890 ns; 1234 ms; 1 s
+        Approximate seconds: 1.23456789; approximate days: 1.4288980208333334e-05
+        Chrono ns: 1234567890
+        -1500 ms: -1 seconds; Duration -1 seconds
+        -999 ms: 0 seconds; Duration 0 seconds
+        999 ms: 0 seconds; Duration 0 seconds
+        1500 ms: 1 seconds; Duration 1 seconds␛[0m
 
 .. erbsland-demo-end::
 
@@ -413,7 +423,7 @@ The discarded text precision remains present in the interval.
 .. erbsland-demo::
     :source: time/TimeDelta/Display.cpp
     :exec: time/time_delta --demo Display
-    :source-sha256: ea1434c9b2c7411a73c4f4c07e5bb8f0e20a418492d603f8e5239f091caef4d6
+    :sha256: 5141ad26977a6e56a2c350ee0d6af9fa0f26a2bc3f41d80b70bc5ac16d907e07
 
 .. code-block:: cpp
 
@@ -431,10 +441,12 @@ The discarded text precision remains present in the interval.
                 interval.toString(), interval.toString(format), interval.toNanoseconds().toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Default: 1 s 234 ms 567 us 890 ns; customized: 1.234 s; unchanged ns: 1234567890
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDefault: 1 s 234 ms 567 us 890 ns; customized: 1.234 s; unchanged ns: 1234567890␛[0m
 
 .. erbsland-demo-end::
 

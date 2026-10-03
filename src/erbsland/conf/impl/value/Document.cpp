@@ -4,6 +4,7 @@
 
 #include "Section.hpp"
 #include "Value.hpp"
+#include "ValueDigest.hpp"
 
 #include "../vr/Rule.hpp"
 
@@ -14,6 +15,10 @@
 namespace erbsland::conf::impl {
 
 using namespace text::literals;
+
+auto Document::digest(const cryptology::HashAlgorithm algorithm) const -> mem::ByteBlock {
+    return ValueDigest{algorithm}.calculate(*this, _children.valueList());
+}
 
 auto Document::name() const noexcept -> Name {
     return {};
@@ -212,7 +217,7 @@ auto Document::toFlatValueMap() const noexcept -> FlatValueMap {
 }
 
 void Document::setParent(const conf::ValuePtr &) {
-    throw err::LogicError("The document must not have a parent."_el);
+    throw err::LogicFailure("The document must not have a parent."_el);
 }
 
 void Document::addValue(const ValuePtr &childValue) {

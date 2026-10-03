@@ -6,7 +6,7 @@
 #include "LogFileRotation.hpp"
 
 #include "../path/Path.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 #include <cstddef>
 #include <utility>
@@ -36,11 +36,11 @@ public:
     /// @return These options for chained configuration.
     auto setRotation(LogFileRotation value) noexcept -> FileLogWriterOptions &;
     /// Get the file-size rotation threshold.
-    [[nodiscard]] auto maximumSize() const noexcept -> unit::ByteLength { return _maximumSize; }
+    [[nodiscard]] auto maximumSize() const noexcept -> unit::ByteCount { return _maximumSize; }
     /// Set the file-size rotation threshold.
     /// @param value The maximum active-file size before rotation.
     /// @return These options for chained configuration.
-    auto setMaximumSize(unit::ByteLength value) noexcept -> FileLogWriterOptions &;
+    auto setMaximumSize(unit::ByteCount value) noexcept -> FileLogWriterOptions &;
     /// Get the maximum number of retained archives.
     [[nodiscard]] auto retention() const noexcept -> std::size_t { return _retention; }
     /// Set the maximum number of retained archives.
@@ -49,11 +49,11 @@ public:
     auto setRetention(std::size_t value) noexcept -> FileLogWriterOptions &;
 
 private:
-    path::Path _path;                                   ///< Active file and archive-name base path.
-    LogFileMode _mode{LogFileMode::Append};             ///< Mode used for the first successful open.
-    LogFileRotation _rotation{LogFileRotation::None};   ///< Rotation schedule or size rule.
-    unit::ByteLength _maximumSize{10U * 1024U * 1024U}; ///< Size threshold for size rotation.
-    std::size_t _retention{7U};                         ///< Maximum retained archive count.
+    path::Path _path;                                  ///< Active file and archive-name base path.
+    LogFileMode _mode{LogFileMode::Append};            ///< Mode used for the first successful open.
+    LogFileRotation _rotation{LogFileRotation::None};  ///< Rotation schedule or size rule.
+    unit::ByteCount _maximumSize{10U * 1024U * 1024U}; ///< Size threshold for size rotation.
+    std::size_t _retention{7U};                        ///< Maximum retained archive count.
 };
 
 }

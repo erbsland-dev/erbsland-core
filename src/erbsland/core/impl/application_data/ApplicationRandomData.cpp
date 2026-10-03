@@ -30,6 +30,7 @@ void ApplicationRandomData::setRandom(random::RandomPtr random) {
 void ApplicationRandomData::setSecureRandom(random::RandomPtr secureRandom) {
     _secureRandom = secureRandom != nullptr ? std::move(secureRandom) : std::make_unique<random::SecureRandom>();
 }
+
 #endif
 
 }

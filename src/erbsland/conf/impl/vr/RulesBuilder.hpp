@@ -15,6 +15,7 @@
 namespace erbsland::conf::impl {
 
 /// Build a validation-rule collection from documents or public builder calls.
+/// @tested{VrBuilderApiTest VrBuilderParityTest VrEntryTypeTest}
 class RulesBuilder {
 public: // programmatic construction
     /// Create an empty validation-rule builder.
@@ -56,11 +57,24 @@ public:
     void addAlternative(
         const NamePathLike &namePath, vr::RuleType ruleType, std::span<const vr::builder::Attribute *const> attributes);
 
-private:
+public: // branch construction
+    /// Apply attributes to an existing rule at a complete path.
+    /// @param namePath The complete rule path.
+    /// @param attributes The attributes to apply.
+    void configureRule(const NamePath &namePath, std::span<const vr::builder::Attribute *const> attributes);
     /// Resolve a rule name path to its canonical representation.
     /// @param namePathLike The source rule name path.
     /// @return The resolved name path.
-    [[nodiscard]] auto resolveRuleNamePath(const NamePathLike &namePathLike) -> NamePath;
+    [[nodiscard]] static auto resolveRuleNamePath(const NamePathLike &namePathLike) -> NamePath;
+
+private:
+    /// Apply attributes and validate an implicit entry before modifying the rule tree.
+    static auto applyAttributes(const RulePtr &rule, std::span<const vr::builder::Attribute *const> attributes)
+        -> RulePtr;
+    /// Prepare the requested scalar entry without attaching it to the rule tree.
+    static auto prepareImplicitEntry(const RulePtr &rule) -> RulePtr;
+    /// Attach a prepared entry after its parent has its final declaration path.
+    static void attachImplicitEntry(const RulePtr &rule, const RulePtr &entry);
 
 private:
     RulesPtr _rules; ///< The currently edited rules document.

@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
-#include <erbsland/network/http_server/HttpServerRequest.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/HttpServerRequest.hpp>
 
 #include <functional>
 #include <memory>

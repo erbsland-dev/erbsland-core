@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/CombinedChar.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/CpLength.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CombinedChar.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -30,16 +30,16 @@ public:
         REQUIRE(empty.isEmpty());
         REQUIRE_EQUAL(empty.first(), Char{});
         REQUIRE_EQUAL(empty.singleOrNull(), Char{});
-        REQUIRE_EQUAL(empty.characterCount(), CpLength::zero());
-        REQUIRE_EQUAL(empty.byteCount(), ByteLength::zero());
+        REQUIRE_EQUAL(empty.characterCount(), CpCount::zero());
+        REQUIRE_EQUAL(empty.byteCount(), ByteCount::zero());
         REQUIRE_EQUAL(empty.displayWidth(), 0);
 
         REQUIRE_FALSE(symbol.isEmpty());
         REQUIRE_EQUAL(symbol.first(), U'界');
         REQUIRE_EQUAL(symbol.singleOrNull(), U'界');
         REQUIRE_EQUAL(symbol.characters(), (CombinedChar::Storage{U'界', 0, 0}));
-        REQUIRE_EQUAL(symbol.characterCount(), CpLength{1});
-        REQUIRE_EQUAL(symbol.byteCount(), ByteLength{3});
+        REQUIRE_EQUAL(symbol.characterCount(), CpCount{1});
+        REQUIRE_EQUAL(symbol.byteCount(), ByteCount{3});
         REQUIRE_EQUAL(symbol.displayWidth(), 2);
         REQUIRE_EQUAL(symbol.toU32String(), U"界"_el);
     }
@@ -53,8 +53,8 @@ public:
         REQUIRE_EQUAL(fromUtf8.first(), U'e');
         REQUIRE_EQUAL(fromUtf8.singleOrNull(), Char{});
         REQUIRE_EQUAL(fromUtf8.characters(), (CombinedChar::Storage{U'e', U'\u0301', 0}));
-        REQUIRE_EQUAL(fromUtf8.characterCount(), CpLength{2});
-        REQUIRE_EQUAL(fromUtf8.byteCount(), ByteLength{3});
+        REQUIRE_EQUAL(fromUtf8.characterCount(), CpCount{2});
+        REQUIRE_EQUAL(fromUtf8.byteCount(), ByteCount{3});
         REQUIRE_EQUAL(fromUtf8.displayWidth(), 1);
         REQUIRE_EQUAL(fromUtf8.toString(), utf8);
         REQUIRE_EQUAL(fromUtf8.toU32String(), U"e\u0301"_el);
@@ -64,7 +64,7 @@ public:
         const auto combined = CombinedChar{U'e'}.withCombining(U'\u0301').withCombining(U'\u0302');
 
         REQUIRE_EQUAL(combined.characters(), (CombinedChar::Storage{U'e', U'\u0301', U'\u0302'}));
-        REQUIRE_EQUAL(combined.characterCount(), CpLength{3});
+        REQUIRE_EQUAL(combined.characterCount(), CpCount{3});
         REQUIRE_EQUAL(combined.singleOrNull(), Char{});
         REQUIRE_EQUAL(combined.displayWidth(), 1);
     }
@@ -75,6 +75,7 @@ public:
         REQUIRE_EQUAL(CombinedChar{}.withCombining(U'\u0301'), CombinedChar{});
         REQUIRE_EQUAL(CombinedChar{U'e'}.withCombining(U'x'), CombinedChar{U'e'});
         REQUIRE_EQUAL(CombinedChar{U'e'}.withCombining(U'\n'), CombinedChar{U'e'});
+        REQUIRE_EQUAL(CombinedChar{U'e'}.withCombining(U'\0'), CombinedChar{U'e'});
         REQUIRE_EQUAL(CombinedChar{U'e'}.withCombining(Char{0x110000U}), CombinedChar{U'e'});
         REQUIRE_EQUAL(full.withCombining(U'\u0303'), full);
     }
@@ -87,6 +88,10 @@ public:
         REQUIRE_EQUAL(CombinedChar::fromString(U"\u0301"_el).first(), Char::replacement());
         REQUIRE_EQUAL(CombinedChar::fromString(U"ab"_el).first(), Char::replacement());
         REQUIRE_EQUAL(CombinedChar::fromString("\n"_el).first(), Char::replacement());
+        REQUIRE_EQUAL(CombinedChar::fromString("\0"_el).first(), Char::replacement());
+        REQUIRE_EQUAL(CombinedChar::fromString("a\0"_el).first(), Char::replacement());
+        REQUIRE_EQUAL(CombinedChar::fromString(U"\0"_el).first(), Char::replacement());
+        REQUIRE_EQUAL(CombinedChar::fromString(U"a\0"_el).first(), Char::replacement());
         REQUIRE_EQUAL(
             CombinedChar::fromString(U32StringEditor{std::u32string_view{invalidUtf32.data(), invalidUtf32.size()}})
                 .first(),

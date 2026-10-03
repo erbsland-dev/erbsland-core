@@ -5,7 +5,7 @@
 namespace erbsland::network::impl {
 
 auto Http1DecodeEvent::requestHead(
-    HttpRequestHead head, const Http1BodyFraming framing, std::optional<unit::ByteLength> contentLength)
+    HttpRequestHead head, const Http1BodyFraming framing, std::optional<unit::ByteCount> contentLength)
     -> Http1DecodeEvent {
     auto result = Http1DecodeEvent{};
     result._kind = Kind::RequestHead;
@@ -16,7 +16,7 @@ auto Http1DecodeEvent::requestHead(
 }
 
 auto Http1DecodeEvent::responseHead(
-    HttpResponseHead head, const Http1BodyFraming framing, std::optional<unit::ByteLength> contentLength)
+    HttpResponseHead head, const Http1BodyFraming framing, std::optional<unit::ByteCount> contentLength)
     -> Http1DecodeEvent {
     auto result = Http1DecodeEvent{};
     result._kind = Kind::ResponseHead;

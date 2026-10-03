@@ -15,8 +15,8 @@ This page shows how to use Erbsland Core exceptions in application code.
 You will learn where to catch an error, which text interface to use, how to retain an original failure as a cause, and
 how ``Application`` turns an uncaught library exception into a consistent error report.
 
-Catch Errors Where You Can Act
-==============================
+Throwing Exceptions and Choosing Catch Locations
+================================================
 
 Throw an exception when a function cannot produce the result promised by its interface.
 Catch it where the program can make a meaningful decision: retry an operation, ask for corrected input, select a
@@ -30,7 +30,7 @@ handle every :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` in the same
 .. erbsland-demo::
     :source: err/Exception/ThrowAndCatch.cpp
     :exec: err/exception --demo ThrowAndCatch
-    :source-sha256: ba74946248c5a2e804330c73f3a0355b469088fbd0130362054b49c7a009d4d9
+    :sha256: bd84d35d37d935de0a95a131d90ab682196f5e8f42c2e6eed6b42d75e6bec0c2
 
 .. code-block:: cpp
 
@@ -54,20 +54,22 @@ handle every :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` in the same
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Please correct the notation: The dynamic marking must be 'piano' or 'forte'. at code point
-     0
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mPlease correct the notation: The dynamic marking must be 'piano' or 'forte'. at code point
+         0␛[0m
 
 .. erbsland-demo-end::
 
-Do not routinely catch :cpp:class:`LogicError <erbsland::err::LogicError>` to continue execution.
+Do not routinely catch :cpp:class:`LogicFailure <erbsland::err::LogicFailure>` to continue execution.
 It identifies faulty program logic, such as an invalid parameter or an operation outside a supported API range.
 Catching it only to suppress the failure can leave the program in a state its author did not design.
 
-Choose the Right Text Interface
-===============================
+Exception Reasons, Text, and Diagnostics
+========================================
 
 :cpp:class:`Exception <erbsland::err::Exception>` provides several views of its information:
 
@@ -83,7 +85,7 @@ Choose the Right Text Interface
 .. erbsland-demo::
     :source: err/Exception/ExceptionText.cpp
     :exec: err/exception --demo ExceptionText
-    :source-sha256: 439e87ad4359e985cab8706d9e53b8ef93906ea976d2cad45e3e8716c2c43319
+    :sha256: c95e277960430177d9ca84746822c1fda86eb1b2c323649e4be6883cd2fe25ca
 
 .. code-block:: cpp
 
@@ -101,12 +103,14 @@ Choose the Right Text Interface
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    reason(): Expected an integer number, got no digits
-    toString(): Expected an integer number, got no digits at code point 0
-    what(): Expected an integer number, got no digits
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mreason(): Expected an integer number, got no digits
+        toString(): Expected an integer number, got no digits at code point 0
+        what(): Expected an integer number, got no digits␛[0m
 
 .. erbsland-demo-end::
 
@@ -114,8 +118,8 @@ Prefer structured diagnostics for final user-facing reports.
 Concatenating ``toString()`` values loses semantic fields, source locations, rendering styles, and the relationship
 between causes.
 
-Preserve the Original Cause
-===========================
+Preserving Exception Cause Chains
+=================================
 
 Lower layers often expose technical details that are not meaningful to the caller.
 Translate such a failure into an exception from your own domain, but preserve the active exception with
@@ -126,7 +130,7 @@ The outer reason then explains which application operation failed, while
 .. erbsland-demo::
     :source: err/Exception/CauseChains.cpp
     :exec: err/exception --demo CauseChains
-    :source-sha256: 7252ef01ed1c24f2ba9504356ffae7e8dabbec1fd7c05b8d5fd5bfccb9da5437
+    :sha256: 0e567230b7c73a88b5eb64d314db0cb0c0fd7727a0e5a1389d9592becda45948
 
 .. code-block:: cpp
 
@@ -136,7 +140,7 @@ The outer reason then explains which application operation failed, while
         try {
             try {
                 throw std::runtime_error{"audio device disconnected"};
-            } catch (...) {
+            } catch (const std::runtime_error &) {
                 throw el::RuntimeError{"Shakuhachi recording could not be started."_el, std::current_exception()};
             }
         } catch (const el::RuntimeError &error) {
@@ -150,12 +154,14 @@ The outer reason then explains which application operation failed, while
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Outer reason: Shakuhachi recording could not be started.
-    Has cause: true
-    Original cause: audio device disconnected
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOuter reason: Shakuhachi recording could not be started.
+        Has cause: true
+        Original cause: audio device disconnected␛[0m
 
 .. erbsland-demo-end::
 
@@ -164,8 +170,8 @@ It may therefore refer to another Erbsland Core exception, a foreign ``std::exce
 :cpp:class:`DiagnosticHelper <erbsland::err::DiagnosticHelper>` understands all three cases and limits pathological
 cause depth while building a complete report.
 
-Let Application Report the Final Error
-======================================
+Application-Level Error Reporting and Exit Codes
+================================================
 
 :cpp:func:`Application::run() <erbsland::core::Application::run>` is the normal reporting boundary for an Erbsland
 application.
@@ -185,7 +191,7 @@ Build those optional details in an
     :source: err/Exception/ApplicationReporting.cpp
     :exec: err/exception --demo ApplicationReporting
     :exec-exit-code: 1
-    :source-sha256: 7e28667dd284d2609fa7ac921b516124c6c2d498d04a50ab9b8b4ad23bdbafca
+    :sha256: 6be05e3feb206f7e90270fd57ccf6e187145104cf52f69ba1b8c06ef8316fc13
 
 .. code-block:: cpp
 
@@ -203,16 +209,18 @@ Build those optional details in an
         throw el::ApplicationError{std::move(context), {}};
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Error: The score could not be read.
-      The main melody contains an unrecognized symbol.
-    Error Source:
-      Source: 春の合奏
-      Path:   scores/春の合奏.music
-      Line:   12
-      Column: 9
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mError: The score could not be read.
+          The main melody contains an unrecognized symbol.
+        Error Source:
+          Source: 春の合奏
+          Path:   scores/春の合奏.music
+          Line:   12
+          Column: 9␛[0m
 
 .. erbsland-demo-end::
 

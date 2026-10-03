@@ -13,6 +13,8 @@
 namespace erbsland::cterm {
 
 /// The input interface.
+/// Virtual terminals return empty input; see the terminal reference for timeout behavior.
+/// @seedoc{/reference/cterm/terminal}
 /// @tested{InputTest ApiWrapperDispatchTest}
 class Input {
 public:

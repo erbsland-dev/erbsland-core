@@ -4,7 +4,11 @@
 
 #include "../error/InternalError.hpp"
 
+#include "../../../text/StringJoins.hpp"
+
 namespace erbsland::re::impl {
+
+using namespace text;
 
 void PatternNode::addChild(const PatternNodePtr &node) {
     node->setParent(shared_from_this());
@@ -26,7 +30,7 @@ void PatternNode::replaceLastChild(const PatternNodePtr &node) {
     }
 }
 
-void PatternNode::addCharacter(const text::Char character) {
+void PatternNode::addCharacter(const Char character) {
     ERBSLAND_CORE_RE_REQUIRE_DEBUG(isCharacterSequence(), "Cannot append a character to a non-character sequence"_el);
     std::get<node_data::CharacterSequence>(_data).chars.append(character);
 }
@@ -133,17 +137,17 @@ void PatternNode::traverse(
     }
 }
 
-auto PatternNode::toTestString() const -> text::String {
-    return std::visit([](const auto &data) -> text::String { return data.toTestString(); }, _data);
+auto PatternNode::toTestString() const -> String {
+    return std::visit([](const auto &data) -> String { return data.toTestString(); }, _data);
 }
 
-auto PatternNode::toTestTree() const -> text::StringList {
-    text::StringList tree;
+auto PatternNode::toTestTree() const -> StringList {
+    StringList tree;
     traverse([&tree](const PatternNode &node, const int depth) -> void {
         tree.append(
-            text::String::fromJoined(
-                {text::String::fromCharacter(U' ', unit::CpLength{static_cast<std::uint32_t>(depth * 2)}),
-                    node.toTestString()}));
+            text::join(
+                String::fromCharacter(U' ', unit::CpCount::fromInteger(static_cast<std::uint32_t>(depth * 2))),
+                node.toTestString()));
     });
     return tree;
 }

@@ -8,9 +8,9 @@
 #include <erbsland/conf/SignatureValidator.hpp>
 #include <erbsland/conf/Signer.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/cryptology/Hasher.hpp>
-#include <erbsland/text/StringCharReader.hpp>
-#include <erbsland/text/StringEditor.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/StringCharReader.hpp>
+#include <erbsland/StringEditor.hpp>
 
 #include <algorithm>
 #include <ranges>

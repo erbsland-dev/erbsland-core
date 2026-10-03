@@ -11,9 +11,10 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
-void StringPartConstraint::validateText(const ValidationContext &context, const text::String &value) const {
+void StringPartConstraint::validateText(const ValidationContext &context, const String &value) const {
     bool doesMatch = false;
     for (const auto &expectedValue : _expectedValues) {
         if (doesPartMatch(expectedValue, value, context)) {
@@ -22,38 +23,38 @@ void StringPartConstraint::validateText(const ValidationContext &context, const 
         }
     }
     if (doesMatch == isNegated()) {
-        text::StringEditor expected;
+        StringEditor expected;
         for (const auto &expValue : _expectedValues) {
             if (!expected.isEmpty()) {
                 expected.append(" or "_el);
             }
-            const auto escapedValue = text::StringFormat{"{:/display}"_el}.build(expValue).truncated(
-                unit::CpLength::fromSizeT(200), text::TruncateMode::Middle, "…"_el);
-            expected.append(text::StringFormat{"\"{}\""_el}.build(escapedValue));
+            const auto escapedValue = StringFormat{"{:/display}"_el}.build(expValue).truncated(
+                unit::CpCount::fromSizeT(200), TruncateMode::Middle, "…"_el);
+            expected.append(StringFormat{"\"{}\""_el}.build(escapedValue));
         }
         throwValidationError(
-            text::StringFormat{"The text {} {} {} ({})"_el}.build(
-                text::String{isNegated() ? "must not"_el : "does not"_el},
+            StringFormat{"The text {} {} {} ({})"_el}.build(
+                String{isNegated() ? "must not"_el : "does not"_el},
                 partText(),
-                text::String{expected},
+                expected,
                 context.rule->caseSensitivity().toString()));
     }
 }
 
-auto StringPartConstraint::valuesFromContext(const ConstraintHandlerContext &context) -> text::StringList {
+auto StringPartConstraint::valuesFromContext(const ConstraintHandlerContext &context) -> StringList {
     const auto &node = context.node;
     const auto &rule = context.rule;
     if (rule->type() == vr::RuleType::Text) {
-        auto values = text::StringList{node->asList<text::String>()};
+        auto values = node->asStringList();
         if (values.isEmpty()) {
             throwValidationError(
-                text::StringFormat{"The '{}' constraint must specify a single text value or a list of texts"_el}.build(
+                StringFormat{"The '{}' constraint must specify a single text value or a list of texts"_el}.build(
                     node->name().asText()));
         }
         return values;
     }
     throwValidationError(
-        text::StringFormat{"The '{}' constraint is not supported for '{}' rules"_el}.build(
+        StringFormat{"The '{}' constraint is not supported for '{}' rules"_el}.build(
             node->name().asText(), rule->type().toText()));
 }
 

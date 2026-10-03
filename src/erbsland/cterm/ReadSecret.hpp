@@ -15,7 +15,7 @@ namespace erbsland::cterm {
 /// @tested{ReadSecretTest}
 class ReadSecret {
 public:
-    static constexpr auto cMaximumLength = unit::CpLength{1024U};
+    static constexpr auto cMaximumLength = unit::CpCount{1024U};
 
 public:
     // defaults/deletions
@@ -28,15 +28,18 @@ public:
 public:
     /// Create a protected single-line terminal editor.
     /// The requested maximum length is capped at 1024 code points. History and initial text must be empty.
-    /// @throws err::ParameterError If the terminal is null or unsupported options contain history or initial text.
+    /// @param terminal The terminal retained by the editor. Must not be null.
+    /// @param options The editing options. History and initial text must be empty.
     [[nodiscard]] static auto create(TerminalPtr terminal, ReadLineOptions options = {}) -> ReadSecretPtr;
 
 public:
-    /// Start interactive secret input.
+    /// Start interactive secret input; the operation must be inactive.
+    /// @throws TerminalError If interactive full-control output is unavailable.
     virtual void start() = 0;
-    /// Process available terminal input and return its result.
+    /// Process available terminal input and return its result; the operation must be active.
     [[nodiscard]] virtual auto update() -> ReadLineResult = 0;
-    /// Wait for input, process it, and return its result.
+    /// Wait for input, process it, and return its result; the operation must be inactive.
+    /// @throws TerminalError If interactive full-control output is unavailable.
     [[nodiscard]] virtual auto waitForInput() -> ReadLineResult = 0;
     /// Stop interactive secret input.
     virtual void stop() noexcept = 0;

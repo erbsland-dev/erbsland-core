@@ -5,13 +5,14 @@
 #include "U8Encoding.hpp"
 #include "U8StringDataView.hpp"
 
+#include "../../../unit/ByteCount.hpp"
 #include "../../../unit/ByteIndex.hpp"
-#include "../../../unit/ByteLength.hpp"
 #include "../../../unit/ByteRange.hpp"
-#include "../../../unit/CpLength.hpp"
+#include "../../../unit/CpCount.hpp"
 #include "../../Char.hpp"
 #include "../../CharSet.hpp"
 
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -20,7 +21,7 @@ namespace erbsland::text::impl {
 /// A view into string data with a specific byte range.
 /// This helper class provides all read-only algorithms on the string data, shared by `U8StringEditor` and `U8String`.
 /// It's meant to be used inline like `U8StringDataView{dataView()}.doSomething()`.
-/// @tested{U8StringReadToolsTest}
+/// @tested{U8StringReadToolsTest StringSeparatorSplitTest StringEncodingValidationTest}
 class U8StringReadTools final {
 public:
     /// A set of Unicode code-points for decoded character lookups.
@@ -40,7 +41,10 @@ public: // tests
     /// Test if the view is empty.
     [[nodiscard]] auto isEmpty() const noexcept -> bool { return _data.data().empty() || _data.range().isEmpty(); }
     /// Test if the view contains valid UTF-8.
-    [[nodiscard]] auto isValidUtf8() const noexcept -> bool;
+    [[nodiscard]] auto isEncodingValid() const noexcept -> bool;
+    /// Validate the selected span, reporting errors relative to its start.
+    /// @throws U8EncodingError If malformed UTF-8 is detected.
+    void encodingValidOrThrow() const;
 
 public: // find
     /// Find the first decoded character from the given character set.
@@ -61,9 +65,18 @@ public: // find
     /// Find the last decoded character not from the given character set before the given end byte index.
     [[nodiscard]] auto findLastNotOf(const CharSet &characters, unit::ByteIndex end) const noexcept -> unit::ByteIndex;
 
+    /// Find the native range of the first matching decoded character.
+    /// @param characters The separator set.
+    /// @return The relative match range, or no-range if the set is empty or no character matches.
+    [[nodiscard]] auto findFirstRange(const CharSet &characters) const noexcept -> unit::ByteRange;
+    /// Find the native range of the last matching decoded character.
+    /// @param characters The separator set.
+    /// @return The relative match range, or no-range if the set is empty or no character matches.
+    [[nodiscard]] auto findLastRange(const CharSet &characters) const noexcept -> unit::ByteRange;
+
 public: // read
     /// Get the byte length of the view.
-    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteCount;
     /// Get the approximate display width of the decoded text.
     [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// Access the character at the given start byte position.
@@ -75,9 +88,9 @@ public: // read
     /// If the index is out of bounds, returns a signal character and does not retreat the index.
     [[nodiscard]] auto readAndRetreat(unit::ByteIndex &index) const noexcept -> Char;
     /// Advance the given byte index to the start of the next character.
-    auto advance(unit::ByteIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
+    auto advance(unit::ByteIndex &index, unit::CpCount count = unit::CpCount::one()) const noexcept -> bool;
     /// Retreat the given byte index to the start of the previous character.
-    auto retreat(unit::ByteIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
+    auto retreat(unit::ByteIndex &index, unit::CpCount count = unit::CpCount::one()) const noexcept -> bool;
     /// Convert a relative byte range for this view into a bounded byte range for the backing data.
     [[nodiscard]] auto sliceRange(unit::ByteRange range) const noexcept -> unit::ByteRange;
 
@@ -94,12 +107,15 @@ public: // conversion
     [[nodiscard]] auto toStdWString() const noexcept -> std::wstring;
 
 private:
+    /// Return the sole ASCII character in a set, or no value for other sets.
+    [[nodiscard]] static auto singleAsciiCharacter(const CharSet &characters) noexcept -> std::optional<char>;
+
     /// Find the first decoded character that matches or does not match the character set.
     [[nodiscard]] auto findFirstOfCharacterSet(
-        const CharacterSet &characters, unit::ByteIndex start, bool isMatching) const noexcept -> unit::ByteIndex;
+        const CharacterSet &characters, unit::ByteIndex start, bool isMatching) const noexcept -> unit::ByteRange;
     /// Find the last decoded character that matches or does not match the character set.
     [[nodiscard]] auto findLastOfCharacterSet(
-        const CharacterSet &characters, unit::ByteIndex end, bool isMatching) const noexcept -> unit::ByteIndex;
+        const CharacterSet &characters, unit::ByteIndex end, bool isMatching) const noexcept -> unit::ByteRange;
 
 private:
     U8StringDataView _data;

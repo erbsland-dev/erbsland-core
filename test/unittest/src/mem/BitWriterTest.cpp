@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/mem/BitReader.hpp>
-#include <erbsland/mem/BitWriter.hpp>
+#include <erbsland/BitReader.hpp>
+#include <erbsland/BitWriter.hpp>
+#include <erbsland/OutOfRangeFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -128,7 +128,7 @@ public:
     void testInvalidFieldWidth() {
         auto writer = BitWriter{};
 
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, writer.writeBits(0U, 65U));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, writer.writeBits(0U, 65U));
         REQUIRE_EQUAL(writer.bitCount(), 0U);
     }
 
@@ -152,7 +152,7 @@ public:
             REQUIRE_EQUAL(writer.bitPosition(), 40U);
             writer.writeBool(true);
             const auto before = writer.toByteBlock();
-            REQUIRE_THROWS_AS(el::err::OutOfRangeError, writer.writeBytes(data.span()));
+            REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, writer.writeBytes(data.span()));
             REQUIRE_EQUAL(writer.toByteBlock(), before);
             REQUIRE_EQUAL(writer.bitPosition(), 41U);
             writer.reset();

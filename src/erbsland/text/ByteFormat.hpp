@@ -10,8 +10,8 @@
 
 #include "impl/ByteFormatData_fwd.hpp"
 
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 #include "../unit/ItemCount.hpp"
 
 #include <memory>
@@ -56,13 +56,13 @@ public: // accessors
     /// Set the letter case for hexadecimal digits.
     auto setLetterCase(LetterCase letterCase) noexcept -> ByteFormat &;
     /// Get the number of bytes per line.
-    [[nodiscard]] auto bytesPerLine() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto bytesPerLine() const noexcept -> unit::ByteCount;
     /// Set the number of bytes per line.
-    auto setBytesPerLine(unit::ByteLength bytesPerLine) noexcept -> ByteFormat &;
+    auto setBytesPerLine(unit::ByteCount bytesPerLine) noexcept -> ByteFormat &;
     /// Get the number of bytes per group.
-    [[nodiscard]] auto byteGroupSize() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto byteGroupSize() const noexcept -> unit::ByteCount;
     /// Set the number of bytes per group.
-    auto setByteGroupSize(unit::ByteLength byteGroupSize) noexcept -> ByteFormat &;
+    auto setByteGroupSize(unit::ByteCount byteGroupSize) noexcept -> ByteFormat &;
     /// Get the number of lines per group.
     [[nodiscard]] auto lineGroupSize() const noexcept -> unit::ItemCount;
     /// Set the number of lines per group.
@@ -88,9 +88,9 @@ public: // accessors
     /// Set the starting byte offset.
     auto setStartOffset(unit::ByteIndex startOffset) noexcept -> ByteFormat &;
     /// Get the maximum number of byte-like output items.
-    [[nodiscard]] auto maximum() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto maximum() const noexcept -> unit::ByteCount;
     /// Set the maximum number of byte-like output items.
-    auto setMaximum(unit::ByteLength maximum) noexcept -> ByteFormat &;
+    auto setMaximum(unit::ByteCount maximum) noexcept -> ByteFormat &;
     /// Get the truncation mode.
     [[nodiscard]] auto truncateMode() const noexcept -> TruncateMode;
     /// Set the truncation mode.
@@ -114,7 +114,7 @@ public: // factories
 
 private:
     /// Clamp a byte length to at least one.
-    [[nodiscard]] static auto atLeastOne(unit::ByteLength value) noexcept -> unit::ByteLength;
+    [[nodiscard]] static auto atLeastOne(unit::ByteCount value) noexcept -> unit::ByteCount;
     /// Clamp an item count to at least one.
     [[nodiscard]] static auto atLeastOne(unit::ItemCount value) noexcept -> unit::ItemCount;
 

@@ -16,21 +16,24 @@
 
 namespace erbsland::conf {
 
+using namespace mem;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-auto Value::toTestText(TestFormat format) const noexcept -> text::String {
+auto Value::toTestText(TestFormat format) const noexcept -> String {
     return impl::toTestText(*this, format);
 }
 
-auto Value::toTestValueTree(const TestFormat format) const noexcept -> text::String {
+auto Value::toTestValueTree(const TestFormat format) const noexcept -> String {
     auto thisValue = shared_from_this();
     auto lines = impl::ValueTreeHelper(thisValue, format).createLines();
-    unit::ByteLength resultSize;
+    ByteCount resultSize;
     for (const auto &line : lines) {
         resultSize += line.length();
-        resultSize += unit::ByteLength::one();
+        resultSize += ByteCount::one();
     }
-    text::StringEditor result;
+    StringEditor result;
     result.reserve(resultSize);
     for (const auto &line : lines) {
         result.append(line);
@@ -70,8 +73,8 @@ auto Value::toValueList() noexcept -> ValueList {
 template <typename tValueMatrix, typename tValue>
 auto Value::toValueMatrixImpl(tValue &value) noexcept -> tValueMatrix {
     if (value.type().isScalar()) {
-        tValueMatrix matrix{unit::ItemCount::one(), unit::ItemCount::one()};
-        matrix.setValue(unit::ItemIndex::zero(), unit::ItemIndex::zero(), value.shared_from_this());
+        tValueMatrix matrix{ItemCount::one(), ItemCount::one()};
+        matrix.setValue(ItemIndex::zero(), ItemIndex::zero(), value.shared_from_this());
         return matrix;
     }
     if (value.type() != ValueType::ValueList) {
@@ -89,20 +92,19 @@ auto Value::toValueMatrixImpl(tValue &value) noexcept -> tValueMatrix {
     if (maxColumns == 0) {
         return {};
     }
-    tValueMatrix matrix{unit::ItemCount::fromSizeT(valueList.size()), unit::ItemCount::fromSizeT(maxColumns)};
+    tValueMatrix matrix{ItemCount::fromSizeT(valueList.size()), ItemCount::fromSizeT(maxColumns)};
     for (std::size_t row = 0; row < valueList.size(); ++row) {
-        const auto rowIndex = unit::ItemIndex::fromSizeT(row);
+        const auto rowIndex = ItemIndex::fromSizeT(row);
         const auto &listEntry = valueList[row];
         ERBSLAND_CORE_CONF_REQUIRE_SAFETY(listEntry != nullptr, "Matrix entry cannot be null"_el);
         if (listEntry->type() != ValueType::ValueList) {
-            matrix.setValue(rowIndex, unit::ItemIndex::zero(), listEntry);
+            matrix.setValue(rowIndex, ItemIndex::zero(), listEntry);
             continue;
         }
         const auto rowList = listEntry->asValueList();
         for (std::size_t column = 0; column < rowList.size(); ++column) {
             ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rowList[column] != nullptr, "Matrix entry cannot be null"_el);
-            matrix.setValue(
-                rowIndex, unit::ItemIndex::fromSizeT(column), std::const_pointer_cast<Value>(rowList[column]));
+            matrix.setValue(rowIndex, ItemIndex::fromSizeT(column), std::const_pointer_cast<Value>(rowList[column]));
         }
     }
     return matrix;
@@ -146,8 +148,8 @@ auto Value::getFloat(const NamePathLike &namePath, Float defaultValue) const noe
     return impl::Value::valueGetter<Float>(*this, namePath, defaultValue);
 }
 
-auto Value::getText(const NamePathLike &namePath, text::String defaultValue) const noexcept -> text::String {
-    return impl::Value::valueGetter<text::String>(*this, namePath, std::move(defaultValue));
+auto Value::getText(const NamePathLike &namePath, String defaultValue) const noexcept -> String {
+    return impl::Value::valueGetter<String>(*this, namePath, std::move(defaultValue));
 }
 
 auto Value::getDate(const NamePathLike &namePath, const time::Date &defaultValue) const noexcept -> time::Date {
@@ -168,9 +170,8 @@ auto Value::getDateTime(const NamePathLike &namePath, const time::DateTime &defa
     return impl::Value::valueGetter<time::DateTime>(*this, namePath, defaultValue);
 }
 
-auto Value::getBytes(const NamePathLike &namePath, const mem::ByteBlock &defaultValue) const noexcept
-    -> mem::ByteBlock {
-    return impl::Value::valueGetter<mem::ByteBlock>(*this, namePath, defaultValue);
+auto Value::getBytes(const NamePathLike &namePath, const ByteBlock &defaultValue) const noexcept -> ByteBlock {
+    return impl::Value::valueGetter<ByteBlock>(*this, namePath, defaultValue);
 }
 
 auto Value::getCalendarDelta(const NamePathLike &namePath, const time::CalendarDelta &defaultValue) const noexcept
@@ -202,8 +203,8 @@ auto Value::getFloatOrThrow(const NamePathLike &namePath) const -> Float {
     return impl::Value::valueGetterOrThrow<Float, ValueType::Float>(*this, namePath);
 }
 
-auto Value::getTextOrThrow(const NamePathLike &namePath) const -> text::String {
-    return impl::Value::valueGetterOrThrow<text::String, ValueType::Text>(*this, namePath);
+auto Value::getTextOrThrow(const NamePathLike &namePath) const -> String {
+    return impl::Value::valueGetterOrThrow<String, ValueType::Text>(*this, namePath);
 }
 
 auto Value::getDateOrThrow(const NamePathLike &namePath) const -> time::Date {
@@ -222,8 +223,8 @@ auto Value::getDateTimeOrThrow(const NamePathLike &namePath) const -> time::Date
     return impl::Value::valueGetterOrThrow<time::DateTime, ValueType::DateTime>(*this, namePath);
 }
 
-auto Value::getBytesOrThrow(const NamePathLike &namePath) const -> mem::ByteBlock {
-    return impl::Value::valueGetterOrThrow<mem::ByteBlock, ValueType::Bytes>(*this, namePath);
+auto Value::getBytesOrThrow(const NamePathLike &namePath) const -> ByteBlock {
+    return impl::Value::valueGetterOrThrow<ByteBlock, ValueType::Bytes>(*this, namePath);
 }
 
 auto Value::getRegExOrThrow(const NamePathLike &namePath) const -> re::RegExPtr {
@@ -260,6 +261,41 @@ auto Value::getSectionWithTexts(const NamePathLike &namePath) const noexcept -> 
 
 auto Value::getSectionWithTextsOrThrow(const NamePathLike &namePath) const -> ValuePtr {
     return impl::Value::getterOrThrow<ValueType::SectionWithTexts>(*this, namePath);
+}
+
+auto Value::asStringListOrThrow() const -> StringList {
+    return asUniformList<StringList>();
+}
+
+auto Value::asStringList() const noexcept -> StringList {
+    try {
+        return asStringListOrThrow();
+    } catch (const ConfError &) {
+        return {};
+    }
+}
+
+auto Value::getStringListOrThrow(const NamePathLike &namePath) const -> StringList {
+    return valueOrThrow(namePath)->asStringListOrThrow();
+}
+
+auto Value::getStringListOrThrow(const NamePathLike &namePath, const StringList &defaultValue) const -> StringList {
+    try {
+        return getStringListOrThrow(namePath);
+    } catch (const ConfError &error) {
+        if (error.category() == ConfErrorCategory::ValueNotFound) {
+            return defaultValue;
+        }
+        throw;
+    }
+}
+
+auto Value::getStringList(const NamePathLike &namePath, const StringList &defaultValue) const noexcept -> StringList {
+    try {
+        return getStringListOrThrow(namePath);
+    } catch (const ConfError &) {
+        return defaultValue;
+    }
 }
 
 }

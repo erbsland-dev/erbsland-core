@@ -11,6 +11,7 @@
 
 namespace erbsland::compression::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 LzmaDecoder::LzmaDecoder(
@@ -29,7 +30,7 @@ LzmaDecoder::LzmaDecoder(
     _literalPositionMask{positionMask(lp)},
     _expected{expected},
     _maximum{maximum},
-    _output{std::move(output), std::max(dictionarySize, cMinimumDictionarySize), unit::ByteLength::fromSizeT(maximum)} {
+    _output{std::move(output), std::max(dictionarySize, cMinimumDictionarySize), ByteCount::fromSizeT(maximum)} {
     if (lc + lp > 4U) {
         throw CompressionError{
             CompressionErrorReason::UnsupportedFeature,
@@ -100,7 +101,7 @@ void LzmaDecoder::append(const uint8_t value) {
 void LzmaDecoder::decodeLiteral() {
     const auto outputSize = _output.length().toSizeT();
     const auto previous =
-        _output.isEmpty() ? uint8_t{} : _output.getOrThrow(unit::ByteIndex::fromSizeT(outputSize - 1U)).toUInt8();
+        _output.isEmpty() ? uint8_t{} : _output.getOrThrow(ByteIndex::fromSizeT(outputSize - 1U)).toUInt8();
     const auto context = ((outputSize & _literalPositionMask) << _lc) + (previous >> (8U - _lc));
     const auto probabilities = std::span{_probabilities.literals}.subspan(context * cLiteralTreeSize, cLiteralTreeSize);
     auto symbol = uint32_t{1U};
@@ -108,7 +109,7 @@ void LzmaDecoder::decodeLiteral() {
         if (_rep0 >= outputSize) {
             throw CompressionError{CompressionErrorReason::MalformedData, "Invalid LZMA literal reference."_el};
         }
-        auto match = _output.getOrThrow(unit::ByteIndex::fromSizeT(outputSize - _rep0 - 1U)).toUInt8();
+        auto match = _output.getOrThrow(ByteIndex::fromSizeT(outputSize - _rep0 - 1U)).toUInt8();
         do {
             const auto matchBit = (match >> 7U) & 1U;
             match <<= 1U;
@@ -212,8 +213,8 @@ void LzmaDecoder::copyMatch(const uint32_t length) {
     }
     const auto distance = static_cast<std::size_t>(_rep0) + 1U;
     _output.appendRepeated(
-        unit::ByteRange{unit::ByteIndex::fromSizeT(outputLength - distance), unit::ByteLength::fromSizeT(distance)},
-        unit::ByteLength::fromSizeT(length));
+        ByteRange{ByteIndex::fromSizeT(outputLength - distance), ByteCount::fromSizeT(distance)},
+        ByteCount::fromSizeT(length));
 }
 
 }

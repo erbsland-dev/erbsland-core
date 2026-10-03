@@ -15,8 +15,8 @@
 #include "../TruncateMode.hpp"
 
 #include "../../geometry/AlignmentFlags.hpp"
-#include "../../unit/ByteLength.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/ByteCount.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <optional>
 
@@ -27,7 +27,7 @@ namespace erbsland::text::impl {
 struct NamedLayoutSpec final {
     geometry::AlignmentFlag alignment{geometry::AlignmentFlag::None}; ///< The requested field alignment.
     Char fill{U' '};                                                  ///< The field fill character.
-    std::optional<unit::CpLength> width{};                            ///< The optional field width.
+    std::optional<unit::CpCount> width{};                             ///< The optional field width.
 };
 
 /// Legacy compact format specification.
@@ -38,8 +38,8 @@ struct LegacyFormatSpec final {
     IntegerSignMode signMode{IntegerSignMode::NegativeOnly};          ///< The integer sign mode.
     bool alternateForm{false};                                        ///< Whether alternate numeric form was requested.
     bool zeroFill{false};                                             ///< Whether leading zero-fill was requested.
-    std::optional<unit::CpLength> width{};                            ///< The optional field width.
-    std::optional<unit::CpLength> precision{};                        ///< The optional precision.
+    std::optional<unit::CpCount> width{};                             ///< The optional field width.
+    std::optional<unit::CpCount> precision{};                         ///< The optional precision.
     FormatPresentation presentation{FormatPresentation::Default};     ///< The presentation type.
     LetterCase letterCase{LetterCase::Lowercase};                     ///< The case for lettered presentations.
     EscapeFormat escapeFormat{EscapeFormat::None};                    ///< The escape format for `/` presentations.
@@ -50,7 +50,7 @@ struct LegacyFormatSpec final {
 /// @tested{U8FormatTest}
 struct NamedTextFormatSpec final {
     NamedLayoutSpec layout;                            ///< The output layout.
-    std::optional<unit::CpLength> maximum{};           ///< The optional source code-point maximum.
+    std::optional<unit::CpCount> maximum{};            ///< The optional source code-point maximum.
     std::optional<EscapeFormat> escapeFormat{};        ///< The optional escape format.
     EscapeAmount escapeAmount{EscapeAmount::Balanced}; ///< The escape amount.
     bool hasEscapeAmount{false};                       ///< Whether the escape amount was explicitly selected.
@@ -64,8 +64,8 @@ struct NamedNumberFormatSpec final {
     std::optional<FloatFormat::Style> notation{};            ///< The optional floating-point notation.
     LetterCase letterCase{LetterCase::Lowercase};            ///< The case for generated ASCII letters.
     IntegerSignMode signMode{IntegerSignMode::NegativeOnly}; ///< The sign mode.
-    std::optional<unit::CpLength> precision{};               ///< The optional precision.
-    bool alternateForm{false};                               ///< Whether alternate integer form is enabled.
+    std::optional<unit::CpCount> precision{};                ///< The optional precision.
+    bool basePrefix{false};                                  ///< Whether the integer base prefix is enabled.
     bool zeroFill{false};                                    ///< Whether numeric zero filling is enabled.
 };
 
@@ -79,9 +79,9 @@ struct NamedBooleanFormatSpec final {
 /// Named byte-block format specification.
 /// @tested{U8FormatTest}
 struct NamedBytesFormatSpec final {
-    bool separator{false};                                  ///< Whether bytes are separated.
-    unit::ByteLength maximum{unit::ByteLength::infinite()}; ///< The maximum output item count.
-    TruncateMode truncateMode{TruncateMode::End};           ///< The truncation mode.
+    bool separator{false};                                ///< Whether bytes are separated.
+    unit::ByteCount maximum{unit::ByteCount::infinite()}; ///< The maximum output item count.
+    TruncateMode truncateMode{TruncateMode::End};         ///< The truncation mode.
 };
 
 }

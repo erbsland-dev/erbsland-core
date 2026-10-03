@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/EnvironmentOptions.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/render/EnvironmentOptions.hpp>
+#include <erbsland/render/RenderError.hpp>
 #include <erbsland/text/render/impl/Tokenizer.hpp>
-#include <erbsland/text/render/RenderError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>

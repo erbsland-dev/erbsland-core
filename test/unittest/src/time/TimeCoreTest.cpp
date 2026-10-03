@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/math/SaturatingInteger.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/time/all.hpp>
-#include <erbsland/time/StdFormat.hpp>
-#include <erbsland/time/tz/TimeOffset.hpp>
+#include <erbsland/all_time.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/SaturatingInteger.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/tz/TimeOffset.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>

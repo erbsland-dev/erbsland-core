@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Throw.hpp"
 
+#include "../../err/OutOfRangeError.hpp"
 #include "../../err/OverflowError.hpp"
 
 namespace erbsland::unit::impl {
 
 void throwOverflow(const std::string_view reason) {
     throw err::OverflowError{reason};
+}
+
+void throwOutOfRange(const std::string_view reason) {
+    throw err::OutOfRangeError{reason};
 }
 
 }

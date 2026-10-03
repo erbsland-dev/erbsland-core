@@ -6,29 +6,56 @@
 
 #include "../Literals.hpp"
 #include "../StringFormat.hpp"
+#include "../StringList.hpp"
+#include "../StringSet.hpp"
 #include "../ToString.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../unit/ItemCount.hpp"
 
 #include <variant>
 
 namespace erbsland::text::render {
 
+using namespace err;
 using namespace text::literals;
 
 Value::Value(const bool value) : _storage{std::make_shared<impl::ValueData>(value)} {
 }
+
 Value::Value(String text) : _storage{std::make_shared<impl::ValueData>(std::move(text))} {
 }
+
 Value::Value(int64_t value) : _storage{std::make_shared<impl::ValueData>(value)} {
 }
+
 Value::Value(double value) : _storage{std::make_shared<impl::ValueData>(value)} {
 }
+
 Value::Value(const util::List<Value> &value) : _storage{std::make_shared<impl::ValueData>(value)} {
 }
+
+Value::Value(const StringList &value) {
+    auto list = ValueList{};
+    list.reserve(value.count());
+    for (const auto &text : value) {
+        list.append(text);
+    }
+    _storage = std::make_shared<impl::ValueData>(std::move(list));
+}
+
+Value::Value(const StringSet &value) {
+    auto list = ValueList{};
+    list.reserve(value.count());
+    for (const auto &text : value) {
+        list.append(text);
+    }
+    _storage = std::make_shared<impl::ValueData>(std::move(list));
+}
+
 Value::Value(const StringMap<Value> &value) : _storage{std::make_shared<impl::ValueData>(value)} {
 }
+
 Value::Value(ValueCallbackFn value) : _storage{std::make_shared<impl::ValueData>(std::move(value))} {
 }
 
@@ -113,7 +140,7 @@ auto Value::asBoolean() const -> bool {
             return *value;
         }
     }
-    throw err::LogicError{"The render value is not a boolean."_el};
+    throw LogicFailure{"The render value is not a boolean."_el};
 }
 
 auto Value::asInteger() const -> int64_t {
@@ -122,7 +149,7 @@ auto Value::asInteger() const -> int64_t {
             return *value;
         }
     }
-    throw err::LogicError{"The render value is not an integer."_el};
+    throw LogicFailure{"The render value is not an integer."_el};
 }
 
 auto Value::asFloat() const -> double {
@@ -131,7 +158,7 @@ auto Value::asFloat() const -> double {
             return *value;
         }
     }
-    throw err::LogicError{"The render value is not a floating-point number."_el};
+    throw LogicFailure{"The render value is not a floating-point number."_el};
 }
 
 auto Value::asText() const -> String {
@@ -140,7 +167,7 @@ auto Value::asText() const -> String {
             return *value;
         }
     }
-    throw err::LogicError{"The render value is not text."_el};
+    throw LogicFailure{"The render value is not text."_el};
 }
 
 auto Value::asList() const -> const ValueList & {
@@ -149,7 +176,7 @@ auto Value::asList() const -> const ValueList & {
             return *value;
         }
     }
-    throw err::LogicError{"The render value is not a list."_el};
+    throw LogicFailure{"The render value is not a list."_el};
 }
 
 auto Value::asMap() const -> const ValueMap & {
@@ -158,7 +185,7 @@ auto Value::asMap() const -> const ValueMap & {
             return *value;
         }
     }
-    throw err::LogicError{"The render value is not a map."_el};
+    throw LogicFailure{"The render value is not a map."_el};
 }
 
 auto Value::get(const unit::ItemIndex index) const -> Value {

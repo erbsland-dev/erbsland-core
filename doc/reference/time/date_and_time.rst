@@ -166,6 +166,9 @@ saturate.
 See :doc:`../../topics/time/working_with_monotonic_time_points` for checkpoints, interval direction, deadlines,
 clock-domain boundaries, and standard library interoperability.
 
+Throwing epoch factories report negative ticks and invalid fractions with ``OutOfRangeError``.
+Their non-throwing counterparts return no value.
+
 Interface
 =========
 

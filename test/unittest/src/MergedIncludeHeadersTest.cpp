@@ -5,11 +5,10 @@
 #include <erbsland/block/StdFormat.hpp>
 #include <erbsland/Host.hpp>
 #include <erbsland/Literals.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
 #include <erbsland/Network.hpp>
 #include <erbsland/ProcessInfo.hpp>
 #include <erbsland/StdFormat.hpp>
-#include <erbsland/SystemInfo.hpp>
+#include <erbsland/system/SystemInfo.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>
@@ -20,7 +19,7 @@
 using namespace el::text::literals;
 using namespace el::time::literals;
 
-TESTED_TARGETS(Host Literals MakeOneNamespace Network ProcessInfo StdFormat SystemInfo)
+TESTED_TARGETS(Definitions Host Literals Network ProcessInfo StdFormat SystemInfo)
 class MergedIncludeHeadersTest final : public el::UnitTest {
 private:
     struct MergedFormatUnitTag {};

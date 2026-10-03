@@ -1,11 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/data/xml/XmlDocument.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/NotFoundError.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/xml/XmlDocument.hpp>
 
 using namespace el::text::literals;
 using namespace el::data::xml;
@@ -33,7 +34,7 @@ public:
         REQUIRE(document.root() != nullptr);
         REQUIRE_EQUAL(document.root()->getAttribute("a"_el).value(), "x&y"_el);
         REQUIRE_FALSE(document.root()->textContent().has_value());
-        REQUIRE_THROWS_AS(el::err::LogicError, document.root()->textContentOrThrow());
+        REQUIRE_THROWS_AS(el::err::NotFoundError, document.root()->textContentOrThrow());
         REQUIRE_EQUAL(
             XmlDocument::fromStringOrThrow(document.toString()).root()->children().count(), el::unit::ItemCount{5U});
     }
@@ -44,7 +45,7 @@ public:
         REQUIRE_FALSE(XmlDocument::fromString("<a><!-- bad--inside --></a>"_el).has_value());
         REQUIRE_FALSE(XmlDocument::fromString("<a>"_el).has_value());
         REQUIRE_FALSE(
-            XmlDocument::fromString("<a/>"_el, XmlParseOptions{}.setMaximumInputLength(el::unit::ByteLength{3U}))
+            XmlDocument::fromString("<a/>"_el, XmlParseOptions{}.setMaximumInputLength(el::unit::ByteCount{3U}))
                 .has_value());
         REQUIRE_FALSE(XmlDocument::fromString("&broken;<a/>"_el).has_value());
         REQUIRE_FALSE(XmlDocument::fromString("<a>&#0;</a>"_el).has_value());
@@ -52,11 +53,10 @@ public:
         REQUIRE_FALSE(XmlDocument::fromString("<a x=\"&#0;\"/>"_el).has_value());
         REQUIRE_FALSE(XmlDocument::fromString("<?Xml?><a/>"_el).has_value());
         REQUIRE_FALSE(
-            XmlDocument::fromString(
-                "<a>abcd</a>"_el, XmlParseOptions{}.setMaximumStringLength(el::unit::ByteLength{3U}))
+            XmlDocument::fromString("<a>abcd</a>"_el, XmlParseOptions{}.setMaximumStringLength(el::unit::ByteCount{3U}))
                 .has_value());
         REQUIRE_FALSE(
-            XmlDocument::fromString("<long/>"_el, XmlParseOptions{}.setMaximumStringLength(el::unit::ByteLength{3U}))
+            XmlDocument::fromString("<long/>"_el, XmlParseOptions{}.setMaximumStringLength(el::unit::ByteCount{3U}))
                 .has_value());
     }
 
@@ -74,10 +74,10 @@ public:
         auto document = XmlDocument{};
         auto root = document.addRoot("ritim"_el);
         root->add(XmlNode::createDocType("<!DOCTYPE ritim>"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, document.toString());
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, document.toString());
         auto second = XmlDocument{};
         second.addRoot("a"_el);
         second.add(XmlNode::createElement("b"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, second.toString());
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, second.toString());
     }
 };

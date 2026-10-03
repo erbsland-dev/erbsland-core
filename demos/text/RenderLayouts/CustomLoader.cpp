@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/text/render/Environment.hpp>
-#include <erbsland/text/render/Loader.hpp>
+#include <erbsland/render/Context.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/render/LayoutSource.hpp>
+#include <erbsland/render/Loader.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 #include <memory>
 #include <optional>

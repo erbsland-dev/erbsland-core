@@ -7,7 +7,7 @@
 
 #include "../../stream/InputStreamSettings.hpp"
 #include "../../stream/OutputStreamSettings.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 namespace erbsland::compression::zip {
@@ -47,11 +47,11 @@ public:
         return *this;
     }
     /// Get the maximum bytes buffered for one uncompressed or compressed entry.
-    [[nodiscard]] auto maximumBufferedItemLength() const noexcept -> unit::ByteLength {
+    [[nodiscard]] auto maximumBufferedItemLength() const noexcept -> unit::ByteCount {
         return _maximumBufferedItemLength;
     }
     /// Set the maximum bytes buffered for one uncompressed or compressed entry.
-    auto setMaximumBufferedItemLength(unit::ByteLength value) noexcept -> ArchiveWriterOptions & {
+    auto setMaximumBufferedItemLength(unit::ByteCount value) noexcept -> ArchiveWriterOptions & {
         _maximumBufferedItemLength = value;
         return *this;
     }
@@ -69,7 +69,7 @@ private:
     ZipProgressFn _progress;                            ///< Entry observer.
 
     Zip64Policy _zip64Policy{Zip64Policy::Automatic};
-    unit::ByteLength _maximumBufferedItemLength{256U * 1024U * 1024U};
+    unit::ByteCount _maximumBufferedItemLength{256U * 1024U * 1024U};
     unit::ItemCount _maximumItemCount{100000U};
 };
 

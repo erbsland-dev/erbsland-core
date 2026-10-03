@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 
@@ -9,6 +13,7 @@ namespace demo {
 ///
 /// A hyphen between two characters defines a range.
 /// A leading or trailing hyphen is treated as a literal hyphen.
+/// A leading caret selects every Unicode scalar value outside the following set.
 void characterSetPatterns() {
     auto identifierChars = el::CharSet::fromPattern("_a-zA-Z0-9"_el);
     auto optionNameChars = el::CharSet::fromPattern("-_a-zA-Z0-9"_el);
@@ -16,6 +21,9 @@ void characterSetPatterns() {
     const auto stationId = el::String{"ORBIT_07"_el};
     const auto optionName = el::String{"orbite-07"_el};
     const auto spacedName = el::String{"orbite 07"_el};
+
+    const auto invalidOptionChars = el::CharSet::fromPattern("^-_a-zA-Z0-9"_el);
+    el::io::printLine("Filtered option ...........: "_el, spacedName.removedAll(invalidOptionChars));
 
     const auto yesNo = el::BooleanFormat::yesNo();
     el::io::printLine("Identifier \"", stationId, "\" ....: "_el, yesNo, stationId.containsOnly(identifierChars));

@@ -3,6 +3,12 @@
 
 #include "StringDemos.hpp"
 
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringSide.hpp>
+
 namespace demo {
 
 /// Read UTF-8 sequentially in either direction while keeping one native byte index.

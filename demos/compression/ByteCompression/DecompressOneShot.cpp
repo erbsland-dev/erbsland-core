@@ -2,6 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCompressor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteDecompressor.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/CompressionFormat.hpp>
+#include <erbsland/DecompressionOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -10,7 +21,7 @@ namespace demo {
 /// Stored options validate an exact output length and place independent limits
 /// on returned bytes and codec workspace before decoding starts.
 void decompressOneShot() {
-    const auto samples = el::ByteBlock{el::ByteBlockEditor{el::ByteLength{96U}, el::Byte{0x2aU}}};
+    const auto samples = el::ByteBlock{el::ByteBlockEditor{el::ByteCount{96U}, el::Byte{0x2aU}}};
     const auto rawBlock =
         el::ByteCompressor{el::CompressionAlgorithm::Lz4Block, el::CompressionFormat::Raw}.compress(samples);
     const auto envelope =
@@ -19,13 +30,13 @@ void decompressOneShot() {
     // Decode a raw block with external metadata and an envelope automatically.
     const auto rawOptions = el::DecompressionOptions{}
                                 .setExpectedOutputLength(samples.length())
-                                .setMaximumOutputLength(el::ByteLength{1024U})
-                                .setMaximumWorkspaceLength(el::ByteLength{4U * 1024U * 1024U});
+                                .setMaximumOutputLength(el::ByteCount{1024U})
+                                .setMaximumWorkspaceLength(el::ByteCount{4U * 1024U * 1024U});
     const auto rawDecompressor =
         el::ByteDecompressor{el::CompressionAlgorithm::Lz4Block, el::CompressionFormat::Raw, rawOptions};
     const auto coreOptions = el::DecompressionOptions{}
-                                 .setMaximumOutputLength(el::ByteLength{1024U})
-                                 .setMaximumWorkspaceLength(el::ByteLength{4U * 1024U * 1024U});
+                                 .setMaximumOutputLength(el::ByteCount{1024U})
+                                 .setMaximumWorkspaceLength(el::ByteCount{4U * 1024U * 1024U});
     const auto coreDecompressor =
         el::ByteDecompressor{el::CompressionAlgorithm::Lz4Block, el::CompressionFormat::Core, coreOptions};
     const auto fromRaw = rawDecompressor.decompress(rawBlock);

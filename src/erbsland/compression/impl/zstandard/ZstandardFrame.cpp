@@ -19,19 +19,22 @@
 
 namespace erbsland::compression::impl {
 
+using namespace err;
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
 [[nodiscard]] auto ZstandardFrame::windowLogFor(const CompressionLevel level) noexcept -> unsigned {
     return cWindowLogs[static_cast<std::size_t>(level)];
 }
 
-[[nodiscard]] auto ZstandardFrame::isRepeated(const mem::ConstByteSpan input) noexcept -> bool {
-    return std::ranges::all_of(input, [value = input.front()](const mem::Byte byte) { return byte == value; });
+[[nodiscard]] auto ZstandardFrame::isRepeated(const ConstByteSpan input) noexcept -> bool {
+    return std::ranges::all_of(input, [value = input.front()](const Byte byte) { return byte == value; });
 }
 
-void ZstandardFrame::appendLittle(mem::ByteBlockEditor &output, uint64_t value, const std::size_t count) {
+void ZstandardFrame::appendLittle(ByteBlockEditor &output, uint64_t value, const std::size_t count) {
     for (auto index = std::size_t{}; index < count; ++index) {
-        output.append(mem::Byte::fromCroppedUInt64(value));
+        output.append(Byte::fromCroppedUInt64(value));
         value >>= 8U;
     }
 }
@@ -43,13 +46,13 @@ void ZstandardFrame::appendLittle(mem::ByteBlockEditor &output, uint64_t value, 
 void ZstandardFrame::compressStream(CodecReader &input, CompressionLevel level, const CodecOutput::Write &sink) const {
     const auto windowLog = windowLogFor(level);
     const auto window = std::size_t{1U} << windowLog;
-    auto header = mem::ByteBlockEditor{};
+    auto header = ByteBlockEditor{};
     appendLittle(header, cMagic, 4U);
-    header.append(mem::Byte{cChecksumFlag});
-    header.append(mem::Byte::fromCroppedUInt32((windowLog - cWindowLogBase) << 3U));
+    header.append(Byte{cChecksumFlag});
+    header.append(Byte::fromCroppedUInt32((windowLog - cWindowLogBase) << 3U));
     sink(header.span());
-    auto history = mem::ByteBlockEditor{};
-    history.reserve(unit::ByteLength{65536U});
+    auto history = ByteBlockEditor{};
+    history.reserve(ByteCount{65536U});
     ZstandardChecksum checksum;
     auto encoder = ZstandardEncoder{{}, level, window};
     std::size_t removed{};
@@ -70,12 +73,12 @@ void ZstandardFrame::compressStream(CodecReader &input, CompressionLevel level, 
         if (repeated) {
             sink(block.span().first(1U));
         } else if (useCompressed) {
-            sink(mem::ConstByteSpan{*compressed});
+            sink(ConstByteSpan{*compressed});
         } else {
             sink(block.span());
         }
         removed = history.length().toSizeT() - std::min(history.length().toSizeT(), window);
-        history.remove(unit::ByteRange{unit::ByteIndex{}, unit::ByteLength::fromSizeT(removed)});
+        history.remove(ByteRange{ByteIndex{}, ByteCount::fromSizeT(removed)});
     } while (!input.atEnd());
     header.clear();
     appendLittle(header, checksum.value(), 4U);
@@ -99,12 +102,12 @@ void ZstandardFrame::decompressStream(
     const auto singleSegment = (descriptor & cSingleSegmentFlag) != 0U;
     const auto checksum = (descriptor & cChecksumFlag) != 0U;
     const auto dictionaryFlag = descriptor & cDictionaryFlagMask;
-    auto windowSize = uint64_t{};
+    auto windowSize = ByteCount{};
     if (!singleSegment) {
         const auto windowDescriptor = static_cast<uint8_t>(input.little(1U));
         const auto windowLog = static_cast<unsigned>((windowDescriptor >> 3U) + cWindowLogBase);
-        const auto base = uint64_t{1U} << windowLog;
-        windowSize = base + (base >> 3U) * (windowDescriptor & 7U);
+        const auto base = ByteCount{uint64_t{1U} << windowLog, ByteCount::Unchecked{}};
+        windowSize = base + (base / 8U) * (windowDescriptor & 7U);
     }
     const auto dictionaryFieldSize = dictionaryFlag == 3U ? std::size_t{4U} : static_cast<std::size_t>(dictionaryFlag);
     const auto dictionaryId = input.little(dictionaryFieldSize);
@@ -126,28 +129,28 @@ void ZstandardFrame::decompressStream(
             value += cTwoByteContentSizeBase;
         }
         if (value > std::numeric_limits<std::size_t>::max()) {
-            throw err::OutOfRangeError{"Zstandard content size exceeds this platform."_el};
+            throw OutOfRangeError{"Zstandard content size exceeds this platform."_el};
         }
         contentSize = static_cast<std::size_t>(value);
         if (singleSegment) {
-            windowSize = value;
+            windowSize = ByteCount::fromInteger(value);
         }
     }
-    if (windowSize > options.maximumWorkspaceLength().toSizeTOrThrow() ||
-        options.maximumWorkspaceLength().toRawValue() - windowSize < 2U * 1024U * 1024U) {
-        throw err::OutOfRangeError{"Zstandard window exceeds the configured workspace limit."_el};
+    if (windowSize > options.maximumWorkspaceLength() ||
+        options.maximumWorkspaceLength() - windowSize < ByteCount{2U * 1024U * 1024U}) {
+        throw OutOfRangeError{"Zstandard window exceeds the configured workspace limit."_el};
     }
-    const auto maximum = options.maximumOutputLength().toRawValue();
-    if (contentSize.has_value() && *contentSize > maximum) {
-        throw err::OutOfRangeError{"Zstandard content exceeds the configured output limit."_el};
+    const auto maximum = options.maximumOutputLength();
+    if (contentSize.has_value() && ByteCount::fromSizeT(*contentSize) > maximum) {
+        throw OutOfRangeError{"Zstandard content exceeds the configured output limit."_el};
     }
-    auto output = mem::ByteBlockEditor{};
-    output.reserve(unit::ByteLength{windowSize + cMaximumBlockSize});
-    uint64_t total{};
+    auto output = ByteBlockEditor{};
+    const auto windowLength = windowSize;
+    output.reserve(windowLength + ByteCount::fromSizeT(cMaximumBlockSize));
+    ByteCount total{};
     ZstandardChecksum checksumValue;
-    auto decoder =
-        ZstandardDecoder{output, static_cast<std::size_t>(windowSize), std::numeric_limits<std::size_t>::max()};
-    const auto maximumBlockOutput = std::min(cMaximumBlockSize, static_cast<std::size_t>(windowSize));
+    auto decoder = ZstandardDecoder{output, windowSize.toSizeTOrThrow(), std::numeric_limits<std::size_t>::max()};
+    const auto maximumBlockOutput = std::min(cMaximumBlockSize, windowSize.toSizeTOrThrow());
     auto last = false;
     while (!last) {
         const auto begin = output.length().toSizeT();
@@ -162,8 +165,8 @@ void ZstandardFrame::decompressStream(
             if (blockSize > maximumBlockOutput) {
                 malformed("Raw Zstandard block exceeds the frame window."_el);
             }
-            if (blockSize > maximum - total) {
-                throw err::OutOfRangeError{"Zstandard output exceeds the configured maximum."_el};
+            if (ByteCount::fromSizeT(blockSize) > maximum - total) {
+                throw OutOfRangeError{"Zstandard output exceeds the configured maximum."_el};
             }
             const auto block = input.block(blockSize);
             if (block.length().toSizeT() != blockSize) {
@@ -174,10 +177,10 @@ void ZstandardFrame::decompressStream(
             if (blockSize > maximumBlockOutput) {
                 malformed("RLE Zstandard block exceeds the frame window."_el);
             }
-            if (blockSize > maximum - total) {
-                throw err::OutOfRangeError{"Zstandard output exceeds the configured maximum."_el};
+            if (ByteCount::fromSizeT(blockSize) > maximum - total) {
+                throw OutOfRangeError{"Zstandard output exceeds the configured maximum."_el};
             }
-            output.append(input.byte(), unit::ByteLength::fromSizeT(blockSize));
+            output.append(input.byte(), ByteCount::fromSizeT(blockSize));
         } else if (blockType == 2U) {
             const auto block = input.block(blockSize);
             if (block.length().toSizeT() != blockSize) {
@@ -188,22 +191,21 @@ void ZstandardFrame::decompressStream(
             malformed("Reserved Zstandard block type."_el);
         }
         const auto produced = output.span().subspan(begin);
-        if (produced.size() > maximum - total) {
-            throw err::OutOfRangeError{"Zstandard output limit exceeded."_el};
+        if (ByteCount::fromSizeT(produced.size()) > maximum - total) {
+            throw OutOfRangeError{"Zstandard output limit exceeded."_el};
         }
-        total += produced.size();
+        total += ByteCount::fromSizeT(produced.size());
         checksumValue.update(produced);
         sink(produced);
-        if (output.length().toRawValue() > windowSize) {
-            output.remove(
-                unit::ByteRange{unit::ByteIndex::zero(), unit::ByteLength{output.length().toRawValue() - windowSize}});
+        if (output.length() > windowLength) {
+            output.remove(ByteRange{ByteIndex::zero(), output.length() - windowLength});
         }
     }
-    if (contentSize.has_value() && total != *contentSize) {
+    if (contentSize.has_value() && total != ByteCount::fromSizeT(*contentSize)) {
         throw CompressionError{
             CompressionErrorReason::LengthMismatch, "Zstandard frame content size does not match."_el};
     }
-    if (options.expectedOutputLength().has_value() && unit::ByteLength{total} != *options.expectedOutputLength()) {
+    if (options.expectedOutputLength().has_value() && total != *options.expectedOutputLength()) {
         throw CompressionError{CompressionErrorReason::LengthMismatch, "Zstandard output length does not match."_el};
     }
     if (checksum) {

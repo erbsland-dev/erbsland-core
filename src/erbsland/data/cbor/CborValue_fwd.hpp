@@ -6,7 +6,9 @@
 #include "../../util/List_fwd.hpp"
 
 namespace erbsland::data::cbor {
+
 class CborValue;
 using CborArray = util::List<CborValue>;
 using CborMap = text::StringMap<CborValue>;
+
 }

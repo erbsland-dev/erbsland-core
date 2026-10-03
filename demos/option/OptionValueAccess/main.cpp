@@ -1,7 +1,28 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationInfo.hpp>
+#include <erbsland/ArgumentCount.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/CommandLineArguments.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValue.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Version.hpp>
 
 #include <initializer_list>
 
@@ -11,7 +32,7 @@ using namespace el::text::literals;
 
 [[nodiscard]] auto makeArgs(std::initializer_list<el::String> args) -> el::CommandLineArguments {
     auto result = el::CommandLineArguments{};
-    result.reserve(el::ItemCount{args.size()});
+    result.reserve(el::ItemCount::fromInteger(args.size()));
     for (const auto &arg : args) {
         result.append(arg.copy());
     }
@@ -26,19 +47,19 @@ using namespace el::text::literals;
     options->setApplicationInfo(info);
     options->addOption({"-v"_el, "--verbose"_el, "verbose"_el})
         .setMaximum(el::ArgumentCount{4U})
-        .setHelpDescription("Increases the detail level. May be repeated."_el);
+        .setHelpTitle("Increases the detail level. May be repeated."_el);
     options->addOption({"-r"_el, "--route"_el, "route"_el})
         .setType(el::OptionType::Text)
         .setMaximum(el::ArgumentCount{3U})
-        .setHelpDescription("Route points for the round."_el);
+        .setHelpTitle("Route points for the round."_el);
     options->addOption({"--level"_el, "level"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{2})
-        .setHelpDescription("Static default level."_el);
+        .setHelpTitle("Static default level."_el);
 
     auto module = el::OptionModule::create("count"_el);
-    module->setHelpDescription("Counts observations in an area."_el);
-    module->addOption("area"_el).setRequired().setHelpDescription("Area to count."_el);
+    module->setHelpTitle("Counts observations in an area."_el);
+    module->addOption("area"_el).setRequired().setHelpTitle("Area to count."_el);
     options->addModule(module);
     return options;
 }
@@ -75,7 +96,7 @@ auto optionValueAccess() -> el::ExitCode {
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     app.setMainFn(demo::optionValueAccess);
     return app.run();
 }

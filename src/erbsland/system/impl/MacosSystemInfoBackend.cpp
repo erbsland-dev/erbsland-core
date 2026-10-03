@@ -6,6 +6,7 @@
 #include "ProcessIdAccess.hpp"
 
 #include "../../path/Path.hpp"
+#include "../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringFormat.hpp"
@@ -23,12 +24,14 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <span>
 #include <string_view>
 #include <thread>
 #include <utility>
 
 namespace erbsland::system::impl {
 
+using namespace text;
 using namespace text::literals;
 
 auto MacosSystemInfoBackend::currentProcessId() const noexcept -> ProcessId {
@@ -41,7 +44,7 @@ auto MacosSystemInfoBackend::loadProcessInfo(const ProcessId processId) const ->
         data.processError = {"Process does not exist."_el, {}};
         return data;
     }
-    return loadNativeProcessInfo(ProcessIdAccess::toNative(processId));
+    return loadNativeProcessInfo(ProcessIdAccess{processId}.toNative());
 }
 
 auto MacosSystemInfoBackend::operatingSystem() const noexcept -> OperatingSystem {
@@ -68,7 +71,7 @@ auto MacosSystemInfoBackend::cpuArchitecture() const noexcept -> CpuArchitecture
 }
 
 auto MacosSystemInfoBackend::architectureFromName(const std::string_view name) noexcept -> CpuArchitecture {
-    const auto value = text::String{name};
+    const auto value = String{name};
     if (value == "arm64"_el || value == "aarch64"_el) {
         return CpuArchitecture::Arm64;
     }
@@ -94,7 +97,7 @@ auto MacosSystemInfoBackend::logicalCpuCount() const noexcept -> std::uint32_t {
     return fallback > 0U ? fallback : 1U;
 }
 
-auto MacosSystemInfoBackend::error(text::String reason, const int errorCode) -> ProcessInfoError {
+auto MacosSystemInfoBackend::error(String reason, const int errorCode) -> ProcessInfoError {
     return {std::move(reason), PosixErrorContext::fromErrorCode(errorCode)};
 }
 
@@ -118,7 +121,7 @@ auto MacosSystemInfoBackend::loadNativeProcessInfo(const std::uint64_t processId
         auto data = ProcessInfoData{};
         data.exists = true;
         data.parentProcessId = ProcessIdAccess::fromNative(first.pbi_ppid);
-        data.ownerId = UserId{text::StringFormat{"{}"_el}.build(first.pbi_uid)};
+        data.ownerId = UserId{StringFormat{"{}"_el}.build(first.pbi_uid)};
         const auto start = time::Timestamp::fromTicks(
             time::Seconds{static_cast<std::int64_t>(first.pbi_start_tvsec)},
             time::Nanoseconds{static_cast<std::int64_t>(first.pbi_start_tvusec * 1'000ULL)},
@@ -134,7 +137,8 @@ auto MacosSystemInfoBackend::loadNativeProcessInfo(const std::uint64_t processId
         const auto pathLength = ::proc_pidpath(nativeProcessId, pathBuffer.data(), pathBuffer.size());
         if (pathLength > 0) {
             const auto length = ::strnlen(pathBuffer.data(), static_cast<std::size_t>(pathLength));
-            data.executablePath = path::Path::fromPosix(text::String{std::string_view{pathBuffer.data(), length}});
+            data.executablePath = path::Path::fromPosix(
+                text::impl::UnsafeU8StringBuffer{std::span{pathBuffer}.first(length)}.takeString());
             if (data.executablePath.isEmpty()) {
                 data.executablePathError = error("Process executable path is invalid."_el, EINVAL);
             }

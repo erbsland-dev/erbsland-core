@@ -4,6 +4,8 @@
 
 #include "ProfileTypes.hpp"
 
+#include <erbsland/Path.hpp>
+
 #include <optional>
 
 namespace app::stream {

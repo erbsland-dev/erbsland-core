@@ -3,6 +3,8 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(escape)
+
 target_sources(erbsland-core PRIVATE
         AnyStringBuilderBase.hpp
         AnyStringBuilderFactory.cpp
@@ -31,18 +33,11 @@ target_sources(erbsland-core PRIVATE
         CodeSnippetLayoutMarker.hpp
         CodeSnippetLayoutRow.cpp
         CodeSnippetLayoutRow.hpp
-        ConfigEscapeFormatter.cpp
-        ConfigEscapeFormatter.hpp
-        CppEscapeFormatter.cpp
-        CppEscapeFormatter.hpp
+        ComponentGlobMatcher.hpp
         DecodedStringSearch.hpp
-        DisplayEscapeFormatter.cpp
-        DisplayEscapeFormatter.hpp
         DynamicStringPatternData.cpp
         DynamicStringPatternData.hpp
-        EscapeFormatter.cpp
-        EscapeFormatter.hpp
-        EscapeFormatter_fwd.hpp
+        DynamicStringPatternData_posix_glob.cpp
         FloatConversion.cpp
         FloatConversion.hpp
         FloatTraits.hpp
@@ -61,24 +56,15 @@ target_sources(erbsland-core PRIVATE
         FormatTraits.hpp
         FormatWriter.cpp
         FormatWriter.hpp
-        HtmlEscapeFormatter.cpp
-        HtmlEscapeFormatter.hpp
         IndexMode.hpp
         IntegerAppend.hpp
         IntegerAppend_fwd.hpp
         IntegerConversion.hpp
-        JsonEscapeFormatter.cpp
-        JsonEscapeFormatter.hpp
         LinkData.hpp
-        LogEscapeFormatter.cpp
-        LogEscapeFormatter.hpp
-        MarkdownEscapeFormatter.cpp
-        MarkdownEscapeFormatter.hpp
         NamedFormatDomain.hpp
         NamedFormatParser.cpp
         NamedFormatParser.hpp
-        NoneEscapeFormatter.cpp
-        NoneEscapeFormatter.hpp
+        NamedFormatParser_number.cpp
         PlainTextRenderer.cpp
         PlainTextRenderer.hpp
         PlainTextRenderer_fwd.hpp
@@ -86,8 +72,6 @@ target_sources(erbsland-core PRIVATE
         PlatformU16StringAccess_fwd.hpp
         PlatformU8StringAccess.hpp
         PlatformU8StringAccess_fwd.hpp
-        RegExEscapeFormatter.cpp
-        RegExEscapeFormatter.hpp
         RepeatCount.hpp
         StaticStringPatternData.hpp
         StaticStringPatternData.tpp
@@ -104,6 +88,7 @@ target_sources(erbsland-core PRIVATE
         StringHashMap_fwd.hpp
         StringHashSet.hpp
         StringHashSet_fwd.hpp
+        StringJoinTools.hpp
         StringKey.hpp
         StringKey_fwd.hpp
         StringKeyTraits.hpp
@@ -121,10 +106,10 @@ target_sources(erbsland-core PRIVATE
         StringPatternElementKind.hpp
         StringPatternFactory.cpp
         StringPatternFactory.hpp
+        StringPatternParseMode.hpp
         StringReaderBase.cpp
         StringReaderBase.hpp
         StringReaderBase_fwd.hpp
-        StringSafeTransformTools.hpp
         StringSet.hpp
         StringSet_fwd.hpp
         StringSplitter.hpp
@@ -133,6 +118,11 @@ target_sources(erbsland-core PRIVATE
         StringStorageKind.cpp
         StringStorageKind.hpp
         StringTraits.hpp
+        StringTransformationSeparators.cpp
+        StringTransformationSeparators.hpp
+        StringTransformationSeparators_unicode.cpp
+        StringTransformationTools.hpp
+        StringTransformationTools.tpp
         StringTreeData.hpp
         StringTreeData_fwd.hpp
         StringTreeDataTypes.hpp
@@ -162,6 +152,6 @@ target_sources(erbsland-core PRIVATE
         UnsafeU8StringBuffer_fwd.hpp
         UnsafeU8StringEditorAccess.hpp
         UnsafeU8StringEditorAccess_fwd.hpp
-        XmlEscapeFormatter.cpp
-        XmlEscapeFormatter.hpp
+        UnsafeU8StringLiteralAccess.hpp
+        UnsafeU8StringLiteralAccess_fwd.hpp
 )

@@ -13,7 +13,7 @@
 #include "impl/input/U16StringInput.hpp"
 #include "impl/input/U32StringInput.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::re {
@@ -39,7 +39,7 @@ auto RegEx::findAll(const stream::TextInputStreamPtr input) const -> MatchGenera
 auto RegEx::findAll(const InputPtr input) const -> MatchGenerator {
     // The input is intentionally copied into the coroutine frame.
     if (input == nullptr) {
-        throw err::ParameterError{"Input cannot be null."_el, "input"_el};
+        throw err::ParameterFailure{"Input cannot be null."_el, "input"_el};
     }
     const auto engine = this->engine();
     auto state = engine->createState(input);
@@ -64,7 +64,7 @@ auto RegEx::findAll(const InputPtr input) const -> MatchGenerator {
 
 auto RegEx::findAll(const Input16Ptr input) const -> Match16Generator {
     if (input == nullptr) {
-        throw err::ParameterError{"Input cannot be null."_el, "input"_el};
+        throw err::ParameterFailure{"Input cannot be null."_el, "input"_el};
     }
     const auto engine = this->engine();
     auto state = engine->createState(input);
@@ -89,7 +89,7 @@ auto RegEx::findAll(const Input16Ptr input) const -> Match16Generator {
 
 auto RegEx::findAll(const Input32Ptr input) const -> Match32Generator {
     if (input == nullptr) {
-        throw err::ParameterError{"Input cannot be null."_el, "input"_el};
+        throw err::ParameterFailure{"Input cannot be null."_el, "input"_el};
     }
     const auto engine = this->engine();
     auto state = engine->createState(input);

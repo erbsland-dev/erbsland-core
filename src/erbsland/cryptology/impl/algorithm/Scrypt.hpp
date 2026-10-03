@@ -6,7 +6,7 @@
 
 #include "../SecureEraseGuard.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../math/IntegerBitOperations.hpp"
 #include "../../../mem/ByteArray.hpp"
 #include "../../../mem/ByteBlock.hpp"
@@ -17,7 +17,7 @@
 #include "../../../mem/impl/ByteWriteTools.hpp"
 #include "../../../mem/impl/SecureErase.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 
 #include <algorithm>
 #include <array>
@@ -111,32 +111,31 @@ inline void salsa20_8(const FixedByteSpan<64> block) noexcept {
 /// Successive Salsa results are first stored in Y, then all even results followed by all odd results are written back
 /// to B. This permutation is the source of scrypt's sequential memory access pattern.
 /// @param block The 128*r-byte block B modified in place.
-/// @param r The positive scrypt block-size parameter.
-/// @throws err::ParameterError If `r` is zero or does not match the supplied block length.
+/// @param r The positive scrypt block-size parameter. The block length must equal `128 * r` bytes.
 /// @tested{PasswordPrimitiveTest}
 inline void scryptBlockMix(ByteBuffer &block, const uint32_t r) {
     const auto expectedLength = static_cast<std::size_t>(128U) * r;
     if (r == 0U || block.length().toSizeT() != expectedLength) {
-        throw err::ParameterError{"Invalid scrypt BlockMix dimensions"_el, "r"_el};
+        throw err::ParameterFailure{"Invalid scrypt BlockMix dimensions"_el, "r"_el};
     }
     auto x = ByteArray<64>{};
     [[maybe_unused]] const auto xErase = SecureEraseGuard{x};
-    auto y = ByteBuffer{ByteLength::fromSizeT(expectedLength)};
+    auto y = ByteBuffer{ByteCount::fromSizeT(expectedLength)};
     [[maybe_unused]] const auto yErase = SecureEraseGuard{y};
     // RFC 7914 section 4 initializes X from the final 64-byte input chunk B[2r-1].
-    x.overwrite(block.span(ByteIndex::fromSizeT(expectedLength - 64U), ByteLength{64U}));
+    x.overwrite(block.span(ByteIndex::fromSizeT(expectedLength - 64U), ByteCount{64U}));
     // For each chunk, compute X = Salsa20/8(X XOR B[i]) and retain the result as Y[i].
     for (auto i = std::size_t{0}; i < static_cast<std::size_t>(2U) * r; ++i) {
-        x.xorWithOrThrow(block.span(ByteIndex::fromSizeT(i * 64U), ByteLength{64U}));
+        x.xorWithOrThrow(block.span(ByteIndex::fromSizeT(i * 64U), ByteCount{64U}));
         salsa20_8(x);
         y.overwrite(ByteIndex::fromSizeT(i * 64U), x.span());
     }
     // RFC 7914's output permutation concatenates the even Y chunks followed by the odd Y chunks.
     for (auto i = std::size_t{0}; i < r; ++i) {
-        block.overwrite(ByteIndex::fromSizeT(i * 64U), y.span(ByteIndex::fromSizeT(i * 2U * 64U), ByteLength{64U}));
+        block.overwrite(ByteIndex::fromSizeT(i * 64U), y.span(ByteIndex::fromSizeT(i * 2U * 64U), ByteCount{64U}));
         block.overwrite(
             ByteIndex::fromSizeT((static_cast<std::size_t>(r) + i) * 64U),
-            y.span(ByteIndex::fromSizeT((i * 2U + 1U) * 64U), ByteLength{64U}));
+            y.span(ByteIndex::fromSizeT((i * 2U + 1U) * 64U), ByteCount{64U}));
     }
 }
 
@@ -150,7 +149,7 @@ inline void scryptRomix(ByteBuffer &block, const uint64_t cost, const uint32_t r
     const auto blockLength = static_cast<std::size_t>(128U) * r;
     auto x = ByteBuffer{block.span()};
     [[maybe_unused]] const auto xErase = SecureEraseGuard{x};
-    auto v = ByteBuffer{ByteLength::fromSizeT(static_cast<std::size_t>(cost) * blockLength)};
+    auto v = ByteBuffer{ByteCount::fromSizeT(static_cast<std::size_t>(cost) * blockLength)};
     [[maybe_unused]] const auto vErase = SecureEraseGuard{v};
     // RFC 7914 section 5 first fills V sequentially: V[i] = X, then X = BlockMix(X).
     for (auto i = uint64_t{0}; i < cost; ++i) {
@@ -166,7 +165,7 @@ inline void scryptRomix(ByteBuffer &block, const uint64_t cost, const uint32_t r
         // N is required to be a power of two, so `integer & (N-1)` is exactly `integer mod N`.
         const auto selected = integer & (cost - 1U);
         const auto selectedOffset = static_cast<std::size_t>(selected) * blockLength;
-        x.xorWith(ByteRange::all(), v.span(ByteIndex::fromSizeT(selectedOffset), ByteLength::fromSizeT(blockLength)));
+        x.xorWith(ByteRange::all(), v.span(ByteIndex::fromSizeT(selectedOffset), ByteCount::fromSizeT(blockLength)));
         scryptBlockMix(x, r);
     }
     // Copy the final X back into the caller's B chunk.
@@ -181,12 +180,13 @@ inline void scryptRomix(ByteBuffer &block, const uint64_t cost, const uint32_t r
 /// Source: https://www.rfc-editor.org/rfc/rfc7914.html
 /// @param password The password bytes.
 /// @param salt The public salt.
-/// @param cost The CPU/memory cost N, which must be a power of two greater than one.
-/// @param r The positive block-size parameter.
-/// @param parallelization The positive parallelization parameter p.
+/// @param cost The CPU/memory cost N. Must be a power of two greater than one, with `128 * r * cost` representable by
+/// `std::size_t`.
+/// @param r The positive block-size parameter. `128 * r` must be representable by `std::size_t`.
+/// @param parallelization The positive parallelization parameter p. `128 * r * parallelization` must be representable
+/// by `std::size_t`.
 /// @param outputLength The requested derived-key length.
 /// @return The derived bytes in marked storage.
-/// @throws err::ParameterError If parameters are invalid or their dimensions overflow `std::size_t`.
 /// @tested{PasswordPrimitiveTest}
 [[nodiscard]] inline auto scrypt(
     const ConstByteSpan password,
@@ -196,31 +196,30 @@ inline void scryptRomix(ByteBuffer &block, const uint64_t cost, const uint32_t r
     const uint32_t parallelization,
     const std::size_t outputLength) -> ByteBlockEditor {
     if (cost <= 1U || (cost & (cost - 1U)) != 0U) {
-        throw err::ParameterError{"scrypt N must be a power of two greater than one"_el, "cost"_el};
+        throw err::ParameterFailure{"scrypt N must be a power of two greater than one"_el, "cost"_el};
     }
     if (r == 0U || parallelization == 0U) {
-        throw err::ParameterError{"scrypt r and p must be positive"_el, "parameters"_el};
+        throw err::ParameterFailure{"scrypt r and p must be positive"_el, "parameters"_el};
     }
     constexpr auto max = std::numeric_limits<std::size_t>::max();
     if constexpr (sizeof(std::size_t) <= sizeof(uint32_t)) {
         if (r > max / 128U) {
-            throw err::ParameterError{"scrypt dimensions overflow"_el, "parameters"_el};
+            throw err::ParameterFailure{"scrypt dimensions overflow"_el, "parameters"_el};
         }
     }
     if (parallelization > max / (static_cast<std::size_t>(128U) * r)) {
-        throw err::ParameterError{"scrypt dimensions overflow"_el, "parameters"_el};
+        throw err::ParameterFailure{"scrypt dimensions overflow"_el, "parameters"_el};
     }
     const auto blockLength = static_cast<std::size_t>(128U) * r;
     const auto expandedLength = blockLength * parallelization;
     if (cost > max / blockLength) {
-        throw err::ParameterError{"scrypt memory size overflows"_el, "cost"_el};
+        throw err::ParameterFailure{"scrypt memory size overflows"_el, "cost"_el};
     }
     // RFC 7914 section 6 step 1: B = PBKDF2-HMAC-SHA-256(P, S, 1, p * 128 * r).
     auto expanded = pbkdf2HmacSha256(password, salt, 1U, expandedLength);
     // Step 2: apply ROMix independently to each of the p consecutive 128*r-byte chunks.
     for (auto chunk = std::size_t{0}; chunk < parallelization; ++chunk) {
-        const auto chunkRange =
-            ByteRange{ByteIndex::fromSizeT(chunk * blockLength), ByteLength::fromSizeT(blockLength)};
+        const auto chunkRange = ByteRange{ByteIndex::fromSizeT(chunk * blockLength), ByteCount::fromSizeT(blockLength)};
         auto scratch = ByteBuffer{expanded.span(chunkRange)};
         [[maybe_unused]] const auto scratchErase = SecureEraseGuard{scratch};
         scryptRomix(scratch, cost, r);

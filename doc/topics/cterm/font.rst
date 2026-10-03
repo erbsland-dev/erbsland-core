@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-****
-Font
-****
+***********************************
+Rendering and Defining Bitmap Fonts
+***********************************
 
 The font classes allow you to render large, bitmap-based text directly in the terminal.
 You typically use fonts for titles, banners, or other decorative elements that should visually stand out in your
@@ -21,11 +21,9 @@ character rendering.
     72 terminal columns. This allows you to regenerate the visual output
     alongside the code snippets.
 
-Usage
-=====
 
 Rendering a Bitmap Font Title
------------------------------
+=============================
 
 ``Font`` integrates directly with ``BlockText``.
 Assign a font to a ``BlockText`` instance and render it like any other text block.
@@ -64,7 +62,7 @@ This means you can treat bitmap text just like regular text while achieving a mu
     ␛[97;40m                                                                        ␛[39;49m
 
 Creating a Font from Row Masks
-------------------------------
+==============================
 
 For small custom alphabets, the most direct approach is to create a ``Font`` with a fixed bitmap height and add only the
 glyphs you need using ``FontGlyph``.
@@ -122,7 +120,7 @@ Unicode block characters.
     ␛[97;40m                                                                        ␛[39;49m
 
 Embedding a Reusable Font Preset
---------------------------------
+================================
 
 If you want a custom font to live directly in your source tree, you can define glyphs as small pixel patterns and store
 them in a ``Font::GlyphMap``.
@@ -175,7 +173,7 @@ Characters that are not defined in the font are simply skipped during rendering.
     ␛[97;40m                                                                        ␛[39;49m
 
 Reusing Font Settings with BlockTextOptions
--------------------------------------------
+===========================================
 
 Fonts are part of ``BlockTextOptions``.
 This allows you to bundle a font together with colors, animation, alignment, and paragraph settings, and then reuse that

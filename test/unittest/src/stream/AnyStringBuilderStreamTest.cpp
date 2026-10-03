@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/math/SaturatingInteger.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/stream/AnyStringBuilderStream.hpp>
-#include <erbsland/text/AnyStringEditor.hpp>
-#include <erbsland/text/ByteFormat.hpp>
-#include <erbsland/text/IntegerFormatFlag.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/AnyStringEditor.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/IntegerFormatFlag.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/SaturatingInteger.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>
@@ -21,7 +21,7 @@
 
 using namespace el::text::literals;
 
-using el::unit::CpLength;
+using el::unit::CpCount;
 using namespace el::text;
 
 static_assert(std::is_same_v<decltype(std::declval<const el::stream::AnyStringBuilderStream &>().toString()), String>);
@@ -60,7 +60,7 @@ public:
         stream->writeLine("World"_el);
         stream->writeLine();
 
-        REQUIRE_EQUAL(stream->length(), CpLength{13U});
+        REQUIRE_EQUAL(stream->length(), CpCount{13U});
         REQUIRE_EQUAL(StringConverter{stream->toU8String()}.toStdString(), std::string{"Hello World\n\n"});
         REQUIRE_EQUAL(StringConverter{stream->toString()}.toStdString(), std::string{"Hello World\n\n"});
         REQUIRE_EQUAL(StringConverter{stream->toU16String()}.toStdString(), std::string{"Hello World\n\n"});
@@ -94,8 +94,8 @@ public:
 
         stream->printLine("hash: ", block);
 
-        auto dump = ByteFormat::memoryDump().setBytesPerLine(el::unit::ByteLength{4U});
-        dump.setByteGroupSize(el::unit::ByteLength{2U});
+        auto dump = ByteFormat::memoryDump().setBytesPerLine(el::unit::ByteCount{4U});
+        dump.setByteGroupSize(el::unit::ByteCount{2U});
         stream->print(dump, block);
 
         REQUIRE_EQUAL(

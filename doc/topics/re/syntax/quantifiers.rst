@@ -82,8 +82,8 @@ directly after the quantifier symbol.
 Optional Quantifiers
 ====================
 
-:expression:`?`
----------------
+Greedy Zero or One: :expression:`?`
+-----------------------------------
 
 Match **zero or one** occurrence (greedy).
 
@@ -96,8 +96,8 @@ Use this quantifier to make the preceding element optional.
 
 This matches ``color`` and ``colour``.
 
-:expression:`?+`
-----------------
+Possessive Zero or One: :expression:`?+`
+----------------------------------------
 
 Match **zero or one** occurrence (possessive).
 
@@ -110,8 +110,8 @@ Once the optional element is consumed, it is never given back during backtrackin
 
 This matches ``http`` or ``https`` and prevents backtracking inside the optional ``s``.
 
-:expression:`??`
-----------------
+Lazy Zero or One: :expression:`??`
+----------------------------------
 
 Match **zero or one** occurrence (lazy).
 
@@ -128,8 +128,8 @@ This allows following tokens to decide where the tag should close.
 Repetition Quantifiers
 ======================
 
-:expression:`*`
----------------
+Greedy Zero or More: :expression:`*`
+------------------------------------
 
 Match **zero or more** occurrences (greedy).
 
@@ -140,8 +140,8 @@ Match **zero or more** occurrences (greedy).
 
 This matches ``""``, ``"a"``, ``"aa"``, and so on.
 
-:expression:`*+`
-----------------
+Possessive Zero or More: :expression:`*+`
+-----------------------------------------
 
 Match **zero or more** occurrences (possessive).
 
@@ -155,8 +155,8 @@ backtracking.
 
 This consumes a whole run of non-whitespace characters and never backtracks.
 
-:expression:`*?`
-----------------
+Lazy Zero or More: :expression:`*?`
+-----------------------------------
 
 Match **zero or more** occurrences (lazy).
 
@@ -170,8 +170,8 @@ This matches the shortest possible tag.
 One-or-More Quantifiers
 =======================
 
-:expression:`+`
----------------
+Greedy One or More: :expression:`+`
+-----------------------------------
 
 Match **one or more** occurrences (greedy).
 
@@ -182,8 +182,8 @@ Match **one or more** occurrences (greedy).
 
 This matches one or more digits.
 
-:expression:`++`
-----------------
+Possessive One or More: :expression:`++`
+----------------------------------------
 
 Match **one or more** occurrences (possessive).
 
@@ -194,8 +194,8 @@ Match **one or more** occurrences (possessive).
 
 This consumes the longest possible word and never backtracks.
 
-:expression:`+?`
-----------------
+Lazy One or More: :expression:`+?`
+----------------------------------
 
 Match **one or more** occurrences (lazy).
 
@@ -209,8 +209,8 @@ This matches as few digits as possible while still allowing a full match.
 Counted Quantifiers
 ===================
 
-:expression:`{<n>}`
--------------------
+Exactly n Repetitions: :expression:`{<n>}`
+------------------------------------------
 
 Match **exactly** *n* occurrences (greedy).
 
@@ -221,8 +221,8 @@ Match **exactly** *n* occurrences (greedy).
 
 This matches a four-digit year.
 
-:expression:`{<n>,<m>}`
------------------------
+Greedy Bounded Repetition: :expression:`{<n>,<m>}`
+--------------------------------------------------
 
 Match **at least** *n* and **at most** *m* occurrences (greedy).
 
@@ -235,8 +235,8 @@ The engine rejects values where *m* is smaller than *n*.
 
 This matches 2 to 4 hexadecimal digits.
 
-:expression:`{<n>,<m>}+`
-------------------------
+Possessive Bounded Repetition: :expression:`{<n>,<m>}+`
+-------------------------------------------------------
 
 Match **at least** *n* and **at most** *m* occurrences (possessive).
 
@@ -247,8 +247,8 @@ Match **at least** *n* and **at most** *m* occurrences (possessive).
 
 This avoids backtracking within the counted range.
 
-:expression:`{<n>,<m>}?`
-------------------------
+Lazy Bounded Repetition: :expression:`{<n>,<m>}?`
+-------------------------------------------------
 
 Match **at least** *n* and **at most** *m* occurrences (lazy).
 
@@ -262,8 +262,8 @@ This expands only as far as necessary.
 Open-Ended Counted Quantifiers
 ==============================
 
-:expression:`{<n>,}`
---------------------
+Greedy At Least n Repetitions: :expression:`{<n>,}`
+---------------------------------------------------
 
 Match **at least** *n* occurrences (greedy).
 
@@ -274,8 +274,8 @@ Match **at least** *n* occurrences (greedy).
 
 This matches a word of length three or more.
 
-:expression:`{<n>,}+`
----------------------
+Possessive At Least n Repetitions: :expression:`{<n>,}+`
+--------------------------------------------------------
 
 Match **at least** *n* occurrences (possessive).
 
@@ -286,8 +286,8 @@ Match **at least** *n* occurrences (possessive).
 
 This consumes all following digits without backtracking.
 
-:expression:`{<n>,}?`
----------------------
+Lazy At Least n Repetitions: :expression:`{<n>,}?`
+--------------------------------------------------
 
 Match **at least** *n* occurrences (lazy).
 
@@ -403,8 +403,8 @@ quantifiers, or by adjusting the engine settings.
 Legacy and Compatibility Quantifiers
 ====================================
 
-:expression:`{,<m>}`
---------------------
+Zero to m Repetitions (Compatibility): :expression:`{,<m>}`
+-----------------------------------------------------------
 
 Match **zero to** *m* occurrences (greedy).
 

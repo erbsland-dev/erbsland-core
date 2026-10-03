@@ -4,7 +4,8 @@
 
 #include "../HttpGrammar.hpp"
 
-#include "../../../../err/LogicError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/AnyString.hpp"
 #include "../../../../text/AsciiCategory.hpp"
@@ -14,16 +15,17 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text;
 using namespace text::literals;
 
 void Http1Transaction::validateStart() const {
     if (_connection->state() != ConnectionState::Active) {
-        throw err::LogicError{"An HTTP transaction requires an active connection."_el};
+        throw LogicFailure{"An HTTP transaction requires an active connection."_el};
     }
     if (!_options.headerTimeout().isPositive() || !_options.bodyIdleTimeout().isPositive() ||
         !_options.totalTimeout().isPositive() || !_options.closeTimeout().isPositive()) {
-        throw err::LogicError{"HTTP transaction deadlines must all be positive."_el};
+        throw LogicFailure{"HTTP transaction deadlines must all be positive."_el};
     }
 }
 
@@ -150,7 +152,7 @@ void Http1Transaction::finishSuccess() {
     if (_callbacks.complete) {
         try {
             _callbacks.complete(_reusable);
-        } catch (...) {
+        } catch (const RuntimeError &) {
             _completionEmitted = false;
             fail(
                 Http1TransactionFailure{
@@ -162,7 +164,7 @@ void Http1Transaction::finishSuccess() {
         }
     }
     if (_reusable) {
-        ConnectionProtocolAccess::storeRetainedInput(*_connection, std::move(_bufferedInput));
+        ConnectionProtocolAccess{*_connection}.storeRetainedInput(std::move(_bufferedInput));
         unbindConnection();
         finishFinal();
     } else {
@@ -177,12 +179,12 @@ void Http1Transaction::fail(Http1TransactionFailure failure, const bool serverCa
     _failureEmitted = true;
     _state = State::Failed;
     _reusable = false;
-    ConnectionProtocolAccess::storeRetainedInput(*_connection, {});
+    ConnectionProtocolAccess{*_connection}.storeRetainedInput({});
     _connection->pauseReceiving();
     if (_callbacks.failure) {
         try {
             _callbacks.failure(failure);
-        } catch (...) {
+        } catch (const RuntimeError &) {
             // A failure callback cannot replace or duplicate the original terminal failure.
         }
     }
@@ -202,12 +204,12 @@ void Http1Transaction::finishFinal() {
         return;
     }
     _finalized = true;
-    ConnectionProtocolAccess::release(*_connection);
+    ConnectionProtocolAccess{*_connection}.release();
     ++_timerGeneration;
     if (_callbacks.final) {
         try {
             _callbacks.final();
-        } catch (...) {
+        } catch (const RuntimeError &) {
             // Finalization is exactly once even when its observer throws.
         }
     }

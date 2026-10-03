@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ApplicationError.hpp>
 #include <erbsland/profiling/AxisDefinition.hpp>
 #include <erbsland/profiling/ProfilingDefinition.hpp>
 #include <erbsland/unittest/UnitTest.hpp>

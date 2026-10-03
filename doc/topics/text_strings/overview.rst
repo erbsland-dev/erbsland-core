@@ -100,8 +100,8 @@ Many validators and cleanup passes are naturally described by a set of accepted 
 :doc:`/topics/text_strings/working_with_character_sets` shows how to construct and reuse those sets, combine policies, validate text, and
 apply the same policy to searching, trimming, removal, and transformation.
 
-Finding Similar Text by Edits
-=============================
+Fuzzy Matching with Edit Distance
+=================================
 
 When a user mistypes a short name, a nearby candidate can be more useful than a bare lookup failure.
 :doc:`/topics/text_strings/fuzzy_matching` shows how to rank a known list by Unicode edit distance, tune the comparison policy, and read

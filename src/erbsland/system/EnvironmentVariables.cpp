@@ -5,7 +5,9 @@
 #include "PlatformError.hpp"
 
 #include "../err/Exception.hpp"
-#include "../err/ParameterError.hpp"
+#include "../err/NotFoundError.hpp"
+#include "../err/ParameterFailure.hpp"
+#include "../err/ParseError.hpp"
 #include "../text/impl/UnsafeU8StringAccess.hpp"
 #include "../text/Literals.hpp"
 
@@ -14,6 +16,8 @@
 
 namespace erbsland::system {
 
+using namespace err;
+using namespace text;
 using namespace text::literals;
 
 EnvironmentVariables::EnvironmentVariables() : EnvironmentVariables{impl::createEnvironmentVariableBackend()} {
@@ -21,84 +25,90 @@ EnvironmentVariables::EnvironmentVariables() : EnvironmentVariables{impl::create
 
 EnvironmentVariables::EnvironmentVariables(impl::EnvironmentVariableBackendPtr backend) : _backend{std::move(backend)} {
     if (_backend == nullptr) {
-        throw err::ParameterError{"The environment-variable backend is missing."_el, "backend"_el};
+        throw ParameterFailure{"The environment-variable backend is missing."_el, "backend"_el};
     }
 }
 
-auto EnvironmentVariables::get(const text::String &name) const noexcept -> std::optional<text::String> {
+auto EnvironmentVariables::get(const String &name) const noexcept -> std::optional<String> {
     try {
         validateName(name);
         return _backend->get(name);
-    } catch (const err::Exception &) {
+    } catch (const ParseError &) {
+        return std::nullopt;
+    } catch (const system::PlatformError &) {
         return std::nullopt;
     }
 }
 
-auto EnvironmentVariables::get(const text::String &name, text::String defaultValue) const noexcept -> text::String {
+auto EnvironmentVariables::get(const String &name, String defaultValue) const noexcept -> String {
     if (auto value = get(name); value.has_value()) {
         return std::move(*value);
     }
     return defaultValue;
 }
 
-auto EnvironmentVariables::getOrThrow(const text::String &name) const -> text::String {
+auto EnvironmentVariables::getOrThrow(const String &name) const -> String {
     validateName(name);
     auto value = _backend->get(name);
     if (!value.has_value()) {
-        throw PlatformError{"The environment variable does not exist."_el};
+        throw NotFoundError{"The environment variable does not exist."_el};
     }
     return std::move(*value);
 }
 
-auto EnvironmentVariables::set(const text::String &name, const text::String &value) noexcept -> bool {
+auto EnvironmentVariables::set(const String &name, const String &value) noexcept -> bool {
     try {
         setOrThrow(name, value);
         return true;
-    } catch (const err::Exception &) {
+    } catch (const ParseError &) {
+        return false;
+    } catch (const system::PlatformError &) {
         return false;
     }
 }
 
-void EnvironmentVariables::setOrThrow(const text::String &name, const text::String &value) {
+void EnvironmentVariables::setOrThrow(const String &name, const String &value) {
     validateName(name);
     validateValue(value);
     _backend->set(name, value);
 }
 
-auto EnvironmentVariables::remove(const text::String &name) noexcept -> bool {
+auto EnvironmentVariables::remove(const String &name) noexcept -> bool {
     try {
         removeOrThrow(name);
         return true;
-    } catch (const err::Exception &) {
+    } catch (const ParseError &) {
+        return false;
+    } catch (const system::PlatformError &) {
         return false;
     }
 }
 
-void EnvironmentVariables::removeOrThrow(const text::String &name) {
+void EnvironmentVariables::removeOrThrow(const String &name) {
     validateName(name);
     _backend->remove(name);
 }
 
-void EnvironmentVariables::validateName(const text::String &name) {
+void EnvironmentVariables::validateName(const String &name) {
     if (name.isEmpty()) {
-        throw err::ParameterError{"The environment-variable name must not be empty."_el, "name"_el};
+        throw ParseError{"The environment-variable name must not be empty."_el};
     }
     const auto data = text::impl::UnsafeU8StringAccess{name}.dataSpan();
     if (std::ranges::find(data, '=') != data.end()) {
-        throw err::ParameterError{"The environment-variable name must not contain an equals sign."_el, "name"_el};
+        throw ParseError{"The environment-variable name must not contain an equals sign."_el};
     }
     if (containsNull(name)) {
-        throw err::ParameterError{"The environment-variable name must not contain a null byte."_el, "name"_el};
+        throw ParseError{"The environment-variable name must not contain a null byte."_el};
     }
 }
 
-void EnvironmentVariables::validateValue(const text::String &value) {
+void EnvironmentVariables::validateValue(const String &value) {
     if (containsNull(value)) {
-        throw err::ParameterError{"The environment-variable value must not contain a null byte."_el, "value"_el};
+        throw ParseError{"The environment-variable value must not contain a null byte."_el};
     }
 }
 
-auto EnvironmentVariables::containsNull(const text::String &value) noexcept -> bool {
+auto EnvironmentVariables::containsNull(const String &value) noexcept -> bool {
     const auto data = text::impl::UnsafeU8StringAccess{value}.dataSpan();
     return std::ranges::find(data, '\0') != data.end();
 }

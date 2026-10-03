@@ -84,7 +84,7 @@ The following board uses the default detach timing and an explicit data copy con
 .. erbsland-demo::
     :source: mem/SharedData/RegularCopyOnWrite.cpp
     :exec: mem/shared_data --demo RegularCopyOnWrite
-    :source-sha256: faa8e3a3d91c8d20cdbf02079a83c13d1c346b70cdf412d0d33fd0bbed4d14ef
+    :sha256: 1746885802118b33d9a818b38126a0d7ed89883b23afd27771e3bad5da36bca4
 
 .. code-block:: cpp
 
@@ -96,21 +96,19 @@ The following board uses the default detach timing and an explicit data copy con
     class DesignBoard {
         class Data final : public el::mem::SharedData {
         public:
-            Data(el::String title, std::vector<el::String> concepts) :
-                _title{std::move(title)}, _concepts{std::move(concepts)} {}
+            Data(el::String title, el::StringList concepts) : _title{std::move(title)}, _concepts{std::move(concepts)} {}
             Data(const Data &other) : SharedData{other}, _title{other._title}, _concepts{other._concepts} {}
 
             el::String _title;
-            std::vector<el::String> _concepts;
+            el::StringList _concepts;
         };
 
     public:
-        DesignBoard(el::String title, std::vector<el::String> concepts) :
-            _data{new Data{std::move(title), std::move(concepts)}} {}
+        DesignBoard(el::String title, el::StringList concepts) : _data{new Data{std::move(title), std::move(concepts)}} {}
 
-        void addConcept(el::String conceptName) { _data->_concepts.emplace_back(std::move(conceptName)); }
+        void addConcept(el::String conceptName) { _data->_concepts.append(std::move(conceptName)); }
         [[nodiscard]] auto title() const noexcept -> const el::String & { return _data->_title; }
-        [[nodiscard]] auto conceptCount() const noexcept -> std::size_t { return _data->_concepts.size(); }
+        [[nodiscard]] auto conceptCount() const noexcept -> std::size_t { return _data->_concepts.count().toSizeT(); }
         [[nodiscard]] auto isShared() const noexcept -> bool { return _data.isShared(); }
 
     private:
@@ -118,7 +116,7 @@ The following board uses the default detach timing and an explicit data copy con
     };
 
     void regularCopyOnWrite() {
-        auto original = DesignBoard{"Rolig form"_el, {"cirkel"_el, "bølge"_el}};
+        auto original = DesignBoard{"Rolig form"_el, el::StringList{"cirkel"_el, "bølge"_el}};
 
         // Copying the value only shares its data object.
         auto variation = original;
@@ -133,13 +131,15 @@ The following board uses the default detach timing and an explicit data copy con
         el::io::printLine("Variation concepts: "_el, variation.conceptCount());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Board             : Rolig form
-    Shared after copy : yes
-    Original concepts : 2
-    Variation concepts: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBoard             : Rolig form
+        Shared after copy : yes
+        Original concepts : 2
+        Variation concepts: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -170,7 +170,7 @@ the byte backend.
 .. erbsland-demo::
     :source: mem/SharedData/PolymorphicCopyOnWrite.cpp
     :exec: mem/shared_data --demo PolymorphicCopyOnWrite
-    :source-sha256: a808550d7374a6b610da19c66e019624b94ed0584247c01f12c4a81bbda30c22
+    :sha256: 63aa330f30b4980428153bbe0d11a79ba3eb43e7adfdd60328057d41df0440bd
 
 .. code-block:: cpp
 
@@ -244,13 +244,15 @@ the byte backend.
         el::io::printLine("Integer backend   : "_el, integerSequence.kind());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Byte backend      : bytes
-    Original first    : 12
-    Variation first   : 48
-    Integer backend   : integers
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mByte backend      : bytes
+        Original first    : 12
+        Variation first   : 48
+        Integer backend   : integers␛[0m
 
 .. erbsland-demo-end::
 
@@ -260,8 +262,8 @@ logically equivalent independent object.
 If a backend owns resources that cannot be copied, it is not a suitable copy-on-write representation unless ``clone()``
 can define a meaningful independent equivalent.
 
-Keeping an Array in One Allocation
-==================================
+Single-Allocation Copy-on-Write Arrays
+======================================
 
 A conventional shared data class containing a dynamic array normally needs one allocation for the data object and
 another for the array elements.
@@ -290,7 +292,7 @@ through a mutable ``SharedDataPointer`` operation.
 .. erbsland-demo::
     :source: mem/SharedData/ArrayCopyOnWrite.cpp
     :exec: mem/shared_data --demo ArrayCopyOnWrite
-    :source-sha256: 965d95132accb69cb9b168330636219228c9c154b1c991afdb6e2535278c0e1a
+    :sha256: 7b51653e2f520cb112b57c62b11a364aaf9de1a54f3c2d15213a57465edcfefa
 
 .. code-block:: cpp
 
@@ -332,14 +334,16 @@ through a mutable ``SharedDataPointer`` operation.
         el::io::printLine("Brighter first    : "_el, brighter.at(0U));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Concept           : nordisk lys
-    Tone count        : 3
-    Shared after copy : yes
-    Original first    : 18
-    Brighter first    : 64
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mConcept           : nordisk lys
+        Tone count        : 3
+        Shared after copy : yes
+        Original first    : 18
+        Brighter first    : 64␛[0m
 
 .. erbsland-demo-end::
 
@@ -349,8 +353,8 @@ complete allocation before releasing it.
 Choose that specialization when the storage can hold secrets, while remembering that temporary copies elsewhere may
 still need their own secure-lifetime design.
 
-Choosing a Higher-Level Storage Helper
-======================================
+CowStorage and CowManualStorage Helpers
+=======================================
 
 The intrusive classes are appropriate when allocation layout, an embedded reference count, or virtual cloning is part of
 the design.
@@ -373,7 +377,7 @@ mutation point.
 .. erbsland-demo::
     :source: mem/SharedData/StorageHelpers.cpp
     :exec: mem/shared_data --demo StorageHelpers
-    :source-sha256: d70c3403d4815a5f64e44e985765d645a9a84161f6cd6ec0b4ca128b79b5294b
+    :sha256: 4a56b958c942cf9e472f605a465a868f65e3fb76d06a17595016e97072aeb88e
 
 .. code-block:: cpp
 
@@ -383,19 +387,19 @@ mutation point.
     /// keeps `data()` read-only and names its writable path `detachedData()`, which
     /// is useful when a containing class must make every mutation easy to audit.
     void storageHelpers() {
-        using Concepts = std::vector<el::String>;
+        using Concepts = std::vector<int>;
 
-        auto automatic = el::mem::CowStorage<Concepts>::from({"form"_el, "rytme"_el});
+        auto automatic = el::mem::CowStorage<Concepts>::from({1, 2});
         auto automaticCopy = automatic;
 
         // A mutable data() call automatically detaches CowStorage.
-        automaticCopy.data().emplace_back("balance"_el);
+        automaticCopy.data().emplace_back(3);
 
-        auto explicitWrite = el::mem::CowManualStorage<Concepts>::from({"linje"_el, "flade"_el});
+        auto explicitWrite = el::mem::CowManualStorage<Concepts>::from({4, 5});
         auto explicitCopy = explicitWrite;
 
         // CowManualStorage gives the writable operation a distinct name.
-        explicitCopy.detachedData().emplace_back("rum"_el);
+        explicitCopy.detachedData().emplace_back(6);
 
         const auto &automaticRead = automatic;
         const auto &automaticCopyRead = automaticCopy;
@@ -405,13 +409,15 @@ mutation point.
         el::io::printLine("Explicit copy     : "_el, explicitCopy.data().size());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Automatic original: 2
-    Automatic copy    : 3
-    Explicit original : 2
-    Explicit copy     : 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAutomatic original: 2
+        Automatic copy    : 3
+        Explicit original : 2
+        Explicit copy     : 3␛[0m
 
 .. erbsland-demo-end::
 

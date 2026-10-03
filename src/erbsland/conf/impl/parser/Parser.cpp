@@ -7,11 +7,13 @@
 
 #include "../../../text/StringEditor.hpp"
 #include "../../../text/StringFormat.hpp"
+#include "../../../text/StringJoins.hpp"
 
 #include <ranges>
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 Parser::Parser(SourcePtr documentSource, const ParserSettings &settings) : _settings{settings} {
@@ -63,14 +65,14 @@ auto Parser::hasMoreContent() const -> bool {
 
 auto Parser::currentContext() -> ParserContext & {
     if (_contextStack.empty()) {
-        throw err::LogicError{"Called 'currentContext()` with no context available."};
+        throw err::LogicFailure{"Called 'currentContext()` with no context available."};
     }
     return *_contextStack.back();
 }
 
 auto Parser::currentContext() const -> const ParserContext & {
     if (_contextStack.empty()) {
-        throw err::LogicError{"Called 'currentContext()` with no context available."};
+        throw err::LogicFailure{"Called 'currentContext()` with no context available."};
     }
     return *_contextStack.back();
 }
@@ -136,7 +138,7 @@ void Parser::processMetaValue(const Assignment &assignment) {
         if (includeLevel >= limits::maxDocumentNesting) {
             throw ConfError{
                 ConfErrorCategory::LimitExceeded,
-                text::StringFormat{"The maximum document nesting level of {} is exceeded."_el}.build(
+                StringFormat{"The maximum document nesting level of {} is exceeded."_el}.build(
                     limits::maxDocumentNesting),
                 assignment.location()};
         }
@@ -191,16 +193,15 @@ auto Parser::sourceIdentifier() const -> SourceIdentifierPtr {
     return currentContext().sourceIdentifier();
 }
 
-auto Parser::signatureText() const -> text::String {
+auto Parser::signatureText() const -> String {
     return currentContext().signatureText();
 }
 
-auto Parser::digestText() const -> text::String {
-    return text::String::fromJoined({
+auto Parser::digestText() const -> String {
+    return text::join(
         defaults::documentHashAlgorithm.toString(),
         " "_el,
-        text::String::fromByteBlock(currentContext().digest(), text::ByteFormat::compact()),
-    });
+        String::fromByteBlock(currentContext().digest(), ByteFormat::compact()));
 }
 
 void Parser::preLeaveProcessing() {
@@ -224,7 +225,7 @@ void Parser::preLeaveProcessing() {
 
 void Parser::leaveContext() {
     if (_contextStack.empty()) {
-        throw err::LogicError{"Called 'leaveContext()` with no context available."};
+        throw err::LogicFailure{"Called 'leaveContext()` with no context available."};
     }
     currentContext().close();
     _contextStack.pop_back();

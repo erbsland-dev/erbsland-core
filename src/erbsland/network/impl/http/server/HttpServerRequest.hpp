@@ -9,6 +9,7 @@
 
 #include "../codec/Http1Transaction_fwd.hpp"
 
+#include "../../../../text/StringList.hpp"
 #include "../../../http_server/HttpServerOptions.hpp"
 #include "../../../http_server/HttpServerRequest.hpp"
 #include "../../../source/Connection_fwd.hpp"
@@ -53,7 +54,7 @@ public: // implement network::HttpServerRequest
     /// Select streamed request-body delivery.
     void streamBody() override;
     /// Select bounded aggregated request-body delivery.
-    void aggregateBody(unit::ByteLength maximumLength) override;
+    void aggregateBody(unit::ByteCount maximumLength) override;
     /// Reject unread request body bytes.
     void rejectBody() override;
     /// Pause an active streamed body.
@@ -89,7 +90,7 @@ public: // internal orchestration
     /// Get the private transport for protocol integration and white-box tests.
     [[nodiscard]] auto connection() const noexcept -> const ConnectionPtr & { return _connection; }
     /// Get pre-split decoded route segments.
-    [[nodiscard]] auto segments() const noexcept -> const std::vector<text::String> & { return _target.segments(); }
+    [[nodiscard]] auto segments() const noexcept -> const text::StringList & { return _target.segments(); }
     /// Test whether request framing carries a representation body.
     [[nodiscard]] auto hasBody() const noexcept -> bool { return _hasBody; }
     /// Attach the active transaction and provisional session.
@@ -117,7 +118,7 @@ public: // internal orchestration
 
 private:
     /// Normalize a fixed response and append manager-owned fields.
-    [[nodiscard]] auto prepareResponse(HttpResponseHead response, unit::ByteLength bodyLength) -> HttpResponseHead;
+    [[nodiscard]] auto prepareResponse(HttpResponseHead response, unit::ByteCount bodyLength) -> HttpResponseHead;
     /// Encode UTF-8 convenience output as a fixed response.
     void fixedResponse(HttpStatus status, HttpHeaders headers, mem::ByteBlock body, text::String contentType);
     /// Submit or retain the final framing operation.

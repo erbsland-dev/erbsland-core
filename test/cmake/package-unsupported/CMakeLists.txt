@@ -10,14 +10,19 @@ endif()
 
 include("${PACKAGE_SOURCE_DIRECTORY}/cmake/package.cmake")
 
-add_executable(package_unsupported main.cpp)
+add_executable(package_unsupported)
+if(PACKAGE_INVALID_TARGET)
+    add_executable(package-unsupported)
+endif()
+
+add_subdirectory(src)
+
 install(TARGETS package_unsupported RUNTIME DESTINATION bin)
 
 # Exercise the same branch on Windows and macOS hosts without changing their toolchain.
 set(WIN32 FALSE)
 set(APPLE FALSE)
 if(PACKAGE_INVALID_TARGET)
-    add_executable(package-unsupported main.cpp)
     erbsland_core_package(TARGET package-unsupported NAME unsupported)
 elseif(PACKAGE_INVALID_NAME)
     erbsland_core_package(TARGET package_unsupported NAME invalid-name)

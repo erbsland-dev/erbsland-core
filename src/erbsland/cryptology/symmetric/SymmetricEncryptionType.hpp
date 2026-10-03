@@ -7,7 +7,7 @@
 #include "../CryptographicSecurity.hpp"
 
 #include "../../text/String_fwd.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../util/impl/ComparisonHelper.hpp"
 
 #include <cstddef>
@@ -70,18 +70,18 @@ public: // accessors
     /// Get the required key width in bits.
     [[nodiscard]] auto keyBitCount() const noexcept -> std::size_t;
     /// Get the required key length.
-    [[nodiscard]] auto keyLength() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto keyLength() const noexcept -> unit::ByteCount;
     /// Get the required nonce length, or zero when this type does not use a nonce.
-    [[nodiscard]] auto nonceLength() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto nonceLength() const noexcept -> unit::ByteCount;
     /// Get the required authentication-tag length, or zero for unauthenticated encryption.
-    [[nodiscard]] auto tagLength() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto tagLength() const noexcept -> unit::ByteCount;
     /// Get the required initialization-vector length, or zero when this type does not use one.
-    [[nodiscard]] auto ivLength() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto ivLength() const noexcept -> unit::ByteCount;
     /// Calculate an upper bound for the encrypted payload length.
     /// Authentication tags are separate and are not included. Infinite and overflowing lengths saturate.
     /// @param originalLength The original plaintext length.
     /// @return The maximum encrypted payload length for this type.
-    [[nodiscard]] auto maximumEncryptedLength(unit::ByteLength originalLength) const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto maximumEncryptedLength(unit::ByteCount originalLength) const noexcept -> unit::ByteCount;
     /// Get the current coarse security level.
     [[nodiscard]] auto security() const noexcept -> CryptographicSecurity;
 

@@ -6,6 +6,7 @@ Text Processing
     :maxdepth: 1
 
     characters
+    cpp_tokenizer
     documents_and_rendering
     encoding
     formatting_and_parsing

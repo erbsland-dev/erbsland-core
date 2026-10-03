@@ -90,7 +90,7 @@ public: // reading characters
     [[nodiscard]] auto currentCharPosition() const noexcept -> unit::CpIndex {
         auto result = _reader.position();
         if (!_currentChar.isSignal()) {
-            result -= unit::CpLength::one();
+            result -= unit::CpCount::one();
         }
         return result;
     }

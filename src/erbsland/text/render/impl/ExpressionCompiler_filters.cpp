@@ -7,7 +7,7 @@
 #include "../RenderError.hpp"
 
 #include "../../../err/Exception.hpp"
-#include "../../../text/Literals.hpp"
+#include "../../Literals.hpp"
 
 #include <cmath>
 #include <limits>

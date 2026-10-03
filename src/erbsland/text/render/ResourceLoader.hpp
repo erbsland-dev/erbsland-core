@@ -15,12 +15,12 @@ namespace erbsland::text::render {
 /// @tested{ResourceLoaderTest}
 class ResourceLoader : public Loader {
 public:
-    /// Create a loader using the application resource manager.
+    /// Create a loader retaining the application resource manager independently of the application facade.
     /// @param identifier The exact portable resource identifier.
     /// @param pathPrefix The optional normalized relative resource path prefix.
     /// @return A new resource layout loader.
     [[nodiscard]] static auto create(String identifier, String pathPrefix = {}) -> LoaderPtr;
-    /// Create a loader retaining an explicit provider, or using application resources when it is null.
+    /// Create a loader retaining an explicit provider, or retaining application resources when it is null.
     /// @param resources The retained resource provider, or null for application resources.
     /// @param identifier The exact portable resource identifier.
     /// @param pathPrefix The optional normalized relative resource path prefix.

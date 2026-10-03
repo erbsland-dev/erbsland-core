@@ -6,10 +6,11 @@
 
 #include <erbsland/cterm/impl/ReadLine.hpp>
 #include <erbsland/cterm/ReadLine.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimePoint.hpp>
+#include <erbsland/cterm/TerminalError.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimePoint.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>
@@ -21,10 +22,13 @@ namespace erbsland::cterm::impl {
 
 class ReadLineTestAccess final {
 public:
-    static auto create(TerminalPtr terminal, ReadLineOptions options, std::function<time::TimePoint()> nowFn)
-        -> ReadLinePtr {
-        return ReadLinePtr{new ReadLine{std::move(terminal), std::move(options), std::move(nowFn)}};
-    }
+    explicit ReadLineTestAccess(ReadLine &readLine) noexcept : _readLine{readLine} {}
+
+public: // test clock
+    void setClock(std::function<time::TimePoint()> nowFn) { _readLine._nowFn = std::move(nowFn); }
+
+private:
+    ReadLine &_readLine;
 };
 
 }
@@ -81,11 +85,11 @@ public:
         auto readLine = ReadLine::create(testTerminal.terminal);
 
         REQUIRE_FALSE(readLine->isActive());
-        REQUIRE_THROWS_AS(erbsland::err::RuntimeError, readLine->update());
+        REQUIRE_THROWS_AS(erbsland::err::LogicFailure, readLine->update());
         readLine->start();
         REQUIRE(readLine->isActive());
         REQUIRE_EQUAL(testTerminal.backend->_inputMode, Input::Mode::Key);
-        REQUIRE_THROWS_AS(erbsland::err::RuntimeError, readLine->start());
+        REQUIRE_THROWS_AS(erbsland::err::LogicFailure, readLine->start());
         REQUIRE(readLine->update().isIdle());
 
         testTerminal.backend->_readKeyResults.push(Key::Escape);
@@ -101,24 +105,24 @@ public:
     }
 
     void testConstructionAndUnsupportedTerminals() {
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, ReadLine::create(TerminalPtr{}, ReadLineOptions{}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, ReadLine::create(TerminalPtr{}, ReadLineOptions{}));
 
         auto testTerminal = createTerminal();
         auto options = ReadLineOptions{};
         options.setNewLineKey(Key::Enter);
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, ReadLine::create(testTerminal.terminal, options));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, ReadLine::create(testTerminal.terminal, options));
         options = ReadLineOptions{};
         options.setDisplayStyle(static_cast<ReadLineDisplayStyle>(255));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, ReadLine::create(testTerminal.terminal, options));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, ReadLine::create(testTerminal.terminal, options));
 
         testTerminal.backend->_isInteractive = false;
         auto nonInteractive = ReadLine::create(testTerminal.terminal);
-        REQUIRE_THROWS_AS(erbsland::err::RuntimeError, nonInteractive->start());
+        REQUIRE_THROWS_AS(erbsland::cterm::TerminalError, nonInteractive->start());
 
         testTerminal.backend->_isInteractive = true;
         testTerminal.terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto plainOutput = ReadLine::create(testTerminal.terminal);
-        REQUIRE_THROWS_AS(erbsland::err::RuntimeError, plainOutput->start());
+        REQUIRE_THROWS_AS(erbsland::cterm::TerminalError, plainOutput->start());
     }
 
     void testBlockingEditingAndUnicode() {
@@ -159,7 +163,7 @@ public:
     void testLengthAndLineLimits() {
         auto testTerminal = createTerminal();
         auto options = ReadLineOptions{};
-        options.setMaximumLength(erbsland::unit::CpLength{4U});
+        options.setMaximumLength(erbsland::unit::CpCount{4U});
         options.setMaximumLines(erbsland::unit::LineCount{2U});
         options.setCurrentText("ab"_el);
         auto readLine = ReadLine::create(testTerminal.terminal, options);
@@ -248,7 +252,7 @@ public:
         auto options = ReadLineOptions{};
         options.setCurrentText("abcd\nef"_el);
         options.setHistory(erbsland::text::StringList{"12345"_el});
-        options.setMaximumLength(erbsland::unit::CpLength{4U});
+        options.setMaximumLength(erbsland::unit::CpCount{4U});
         auto readLine = ReadLine::create(testTerminal.terminal, options);
         readLine->start();
 
@@ -280,8 +284,8 @@ public:
         auto testTerminal = createTerminal();
         auto options = ReadLineOptions{};
         options.setTimeout(erbsland::time::Seconds{3});
-        auto readLine = erbsland::cterm::impl::ReadLineTestAccess::create(
-            testTerminal.terminal, options, [&now]() noexcept { return now; });
+        auto readLine = std::make_shared<erbsland::cterm::impl::ReadLine>(testTerminal.terminal, options);
+        erbsland::cterm::impl::ReadLineTestAccess{*readLine}.setClock([&now]() noexcept { return now; });
         readLine->start();
         requireOutputContains(testTerminal.backend->output(), "[3s]");
 
@@ -309,8 +313,8 @@ public:
         auto options = ReadLineOptions{};
         options.setTimeout(erbsland::time::Seconds{30});
         options.setTimeoutDisplayThreshold(erbsland::time::Seconds{20});
-        auto readLine = erbsland::cterm::impl::ReadLineTestAccess::create(
-            testTerminal.terminal, options, [&now]() noexcept { return now; });
+        auto readLine = std::make_shared<erbsland::cterm::impl::ReadLine>(testTerminal.terminal, options);
+        erbsland::cterm::impl::ReadLineTestAccess{*readLine}.setClock([&now]() noexcept { return now; });
         readLine->start();
         requireOutputMissing(testTerminal.backend->output(), "[30s]");
 
@@ -333,8 +337,8 @@ public:
         auto disabledTerminal = createTerminal();
         options.setTimeout(erbsland::time::Seconds{3});
         options.setTimeoutDisplayThreshold(erbsland::time::Seconds::zero());
-        auto disabled = erbsland::cterm::impl::ReadLineTestAccess::create(
-            disabledTerminal.terminal, options, [&now]() noexcept { return now; });
+        auto disabled = std::make_shared<erbsland::cterm::impl::ReadLine>(disabledTerminal.terminal, options);
+        erbsland::cterm::impl::ReadLineTestAccess{*disabled}.setClock([&now]() noexcept { return now; });
         disabled->start();
         requireOutputMissing(disabledTerminal.backend->output(), "[3s]");
         disabled->stop();
@@ -343,8 +347,8 @@ public:
     void testCursorBlinkUsesTheRenderedCursor() {
         auto now = erbsland::time::TimePoint{};
         auto testTerminal = createTerminal();
-        auto readLine = erbsland::cterm::impl::ReadLineTestAccess::create(
-            testTerminal.terminal, ReadLineOptions{}, [&now]() noexcept { return now; });
+        auto readLine = std::make_shared<erbsland::cterm::impl::ReadLine>(testTerminal.terminal, ReadLineOptions{});
+        erbsland::cterm::impl::ReadLineTestAccess{*readLine}.setClock([&now]() noexcept { return now; });
         readLine->start();
         requireOutputContains(testTerminal.backend->output(), "█");
 
@@ -363,8 +367,8 @@ public:
     void testCursorMovementRestartsTheVisibleBlinkPhase() {
         auto now = erbsland::time::TimePoint{};
         auto testTerminal = createTerminal();
-        auto readLine = erbsland::cterm::impl::ReadLineTestAccess::create(
-            testTerminal.terminal, ReadLineOptions{}, [&now]() noexcept { return now; });
+        auto readLine = std::make_shared<erbsland::cterm::impl::ReadLine>(testTerminal.terminal, ReadLineOptions{});
+        erbsland::cterm::impl::ReadLineTestAccess{*readLine}.setClock([&now]() noexcept { return now; });
         readLine->start();
 
         testTerminal.backend->clearOutput();

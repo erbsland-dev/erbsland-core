@@ -349,14 +349,14 @@ public:
 
     void testAsList() {
         setupTemplate2("1, 2, 3");
-        REQUIRE_EQUAL(value->asList<int>(), std::vector<int>({1, 2, 3}));
-        REQUIRE_EQUAL(value->asList<uint64_t>(), std::vector<uint64_t>({1U, 2U, 3U}));
-        REQUIRE_EQUAL(value->asListOrThrow<int>(), std::vector<int>({1, 2, 3}));
-        REQUIRE_EQUAL(value->asListOrThrow<uint64_t>(), std::vector<uint64_t>({1U, 2U, 3U}));
-        REQUIRE(value->asList<el::text::String>().empty());
+        REQUIRE_EQUAL(value->asList<int>(), el::List<int>({1, 2, 3}));
+        REQUIRE_EQUAL(value->asList<uint64_t>(), el::List<uint64_t>({1U, 2U, 3U}));
+        REQUIRE_EQUAL(value->asListOrThrow<int>(), el::List<int>({1, 2, 3}));
+        REQUIRE_EQUAL(value->asListOrThrow<uint64_t>(), el::List<uint64_t>({1U, 2U, 3U}));
+        REQUIRE(value->asList<el::text::String>().isEmpty());
         REQUIRE_THROWS_AS(ConfError, value->asListOrThrow<el::text::String>());
         setupTemplate2("1, 2, true");
-        REQUIRE(value->asList<int>().empty());
+        REQUIRE(value->asList<int>().isEmpty());
         REQUIRE_THROWS_AS(ConfError, value->asListOrThrow<int>());
     }
 };

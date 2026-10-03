@@ -6,6 +6,7 @@
 
 #include "impl/SystemInfoBackend.hpp"
 
+#include "../err/RuntimeError.hpp"
 #include "../text/Literals.hpp"
 
 #include <utility>
@@ -53,7 +54,7 @@ auto ProcessInfo::ownerIdOrThrow() const -> UserId {
 void ProcessInfo::reload() noexcept {
     try {
         _data = impl::systemInfoBackend().loadProcessInfo(_processId);
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         _data = {};
     }
 }

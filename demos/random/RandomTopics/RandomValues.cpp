@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/IntegerRange.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace demo {
 
@@ -34,9 +44,9 @@ void randomValues() {
     el::io::printLine("Guardian awake     : "_el, el::BooleanFormat::yesNo(), isAwake);
 
     // Build byte and string values when the caller needs generated data.
-    const auto bytes = random.buildByteBlock(el::ByteLength{4U});
+    const auto bytes = random.buildByteBlock(el::ByteCount{4U});
     const auto alphabet = el::CharSet::fromPattern("A-Z0-9"_el);
-    const auto label = random.buildString(el::CpLength{10U}, alphabet);
+    const auto label = random.buildString(el::CpCount{10U}, alphabet);
     el::io::printLine("First byte         : "_el, static_cast<unsigned>(bytes.get(el::ByteIndex{0U}).toUInt8()));
     el::io::printLine("Generated label    : "_el, label);
 }

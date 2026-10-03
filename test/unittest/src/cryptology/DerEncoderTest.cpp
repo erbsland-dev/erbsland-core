@@ -3,15 +3,15 @@
 
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/asn1/Asn1ObjectIdentifier.hpp>
+#include <erbsland/Asn1ObjectIdentifier.hpp>
 #include <erbsland/cryptology/impl/DerEncoder.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/time/Date.hpp>
-#include <erbsland/time/Time.hpp>
-#include <erbsland/time/TimeAmounts.hpp>
-#include <erbsland/time/Timestamp.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/Date.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/Time.hpp>
+#include <erbsland/TimeAmounts.hpp>
+#include <erbsland/Timestamp.hpp>
 
 using namespace el::cryptology;
 using namespace el::text::literals;
@@ -73,29 +73,29 @@ public:
     void testNestedLengthBackpatching() {
         auto encoder = DerEncoder{};
         const auto sequence = encoder.beginSequence();
-        encoder.appendOctetString(el::ByteBlock{el::ByteLength{128U}}.span());
+        encoder.appendOctetString(el::ByteBlock{el::ByteCount{128U}}.span());
         encoder.end(sequence);
         const auto expectedPrefix = bytesFromHex("308183048180");
-        REQUIRE_EQUAL(encoder.encoded().length(), el::ByteLength{134U});
+        REQUIRE_EQUAL(encoder.encoded().length(), el::ByteCount{134U});
         REQUIRE_EQUAL(encoder.encoded().slice(el::ByteIndex::zero(), expectedPrefix.length()), expectedPrefix);
     }
 
     void testRejectedNonCanonicalValues() {
         auto encoder = DerEncoder{};
-        REQUIRE_THROWS_AS(el::err::ParameterError, encoder.appendBitString(bytesFromHex("01").span(), 1U));
-        REQUIRE_THROWS_AS(el::err::ParameterError, encoder.appendPrintableString("not@printable"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, encoder.appendIa5String("Grüezi"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, encoder.beginExplicit(31U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, encoder.appendBitString(bytesFromHex("01").span(), 1U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, encoder.appendPrintableString("not@printable"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, encoder.appendIa5String("Grüezi"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, encoder.beginExplicit(31U));
         REQUIRE_NOTHROW(encoder.appendPrintableString("- AZaz09'()+,./:=?"_el));
 
         const auto malformedUtf8 = el::String{el::unittest::th::stdStringFromHex("41 C0 42")};
-        REQUIRE_THROWS_AS(el::err::ParameterError, encoder.appendUtf8String(malformedUtf8));
-        REQUIRE_THROWS_AS(el::err::ParameterError, encoder.appendPrintableString(malformedUtf8));
-        REQUIRE_THROWS_AS(el::err::ParameterError, encoder.appendIa5String(malformedUtf8));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, encoder.appendUtf8String(malformedUtf8));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, encoder.appendPrintableString(malformedUtf8));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, encoder.appendIa5String(malformedUtf8));
 
         auto nested = DerEncoder{};
         const auto outer = nested.beginSequence();
         [[maybe_unused]] const auto inner = nested.beginSequence();
-        REQUIRE_THROWS_AS(el::err::LogicError, nested.end(outer));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, nested.end(outer));
     }
 };

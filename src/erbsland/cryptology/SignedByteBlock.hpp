@@ -10,7 +10,8 @@
 #include "../mem/ByteBlock.hpp"
 #include "../mem/ByteSpan.hpp"
 #include "../text/String.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
+#include "../unit/ByteIndex.hpp"
 
 #include <optional>
 
@@ -35,10 +36,10 @@ public:
 
 public: // main operations
     /// Verify the complete signed record and return its payload only on success.
+    /// This signed record must not be an empty placeholder.
     /// @param key The expected Ed25519 public key.
     /// @param expectedPurpose The exact non-empty purpose chosen by the application.
     /// @return The authenticated payload, or no value for a mismatch.
-    /// @throws err::LogicError If this is an empty placeholder.
     /// @throws CryptologyError If cryptographic verification fails internally.
     [[nodiscard]] auto verify(const PublicKey &key, const text::String &expectedPurpose) const
         -> std::optional<mem::ByteBlock>;
@@ -52,24 +53,27 @@ public: // tests and accessors
 public: // conversion
     /// Return the exact canonical binary record.
     [[nodiscard]] auto toByteBlock() const noexcept -> mem::ByteBlock { return _encoded; }
-    /// Parse a binary record within an explicit payload limit, returning an empty placeholder on malformed input.
-    [[nodiscard]] static auto fromByteBlock(mem::ConstByteSpan encoded, unit::ByteLength maximumPayload) noexcept
+    /// Parse a binary record within an explicit payload limit.
+    /// @param encoded The encoded signed record.
+    /// @param maximumPayload The maximum accepted payload length.
+    /// @return The parsed record, or an empty placeholder if malformed, over the limit, or the limit is infinite.
+    [[nodiscard]] static auto fromByteBlock(mem::ConstByteSpan encoded, unit::ByteCount maximumPayload) noexcept
         -> SignedByteBlock;
     /// Parse a binary record within an explicit payload limit.
-    /// @throws err::ParseError If the record is malformed, noncanonical, or uses an unsupported version or algorithm.
-    /// @throws err::OutOfRangeError If the payload exceeds the caller's limit.
-    /// @throws err::ParameterError If `maximumPayload` is infinite.
-    [[nodiscard]] static auto fromByteBlockOrThrow(mem::ConstByteSpan encoded, unit::ByteLength maximumPayload)
+    /// @param encoded The encoded signed record.
+    /// @param maximumPayload The maximum accepted payload length. Must be finite.
+    /// @throws err::ParseError If malformed, noncanonical, over the payload limit, or using an unsupported format.
+    /// @throws text::EncodingError If a text field contains invalid UTF-8.
+    [[nodiscard]] static auto fromByteBlockOrThrow(mem::ConstByteSpan encoded, unit::ByteCount maximumPayload)
         -> SignedByteBlock;
 
 public: // factories
     /// Sign a self-contained record with Ed25519.
-    /// @param key An Ed25519 signing key.
+    /// @param key A non-empty Ed25519 signing key.
     /// @param payload The data to embed and authenticate.
     /// @param purpose A non-empty, valid UTF-8 purpose of at most 255 bytes.
     /// @param keyId An optional `[_a-z0-9]{1,64}` lookup hint.
     /// @return The complete signed record.
-    /// @throws err::ParameterError If any input is invalid or the key is not Ed25519.
     [[nodiscard]] static auto sign(
         const SigningPrivateKey &key,
         mem::ConstByteSpan payload,
@@ -82,15 +86,15 @@ private:
         mem::ByteBlock encoded,
         std::optional<text::String> keyId,
         text::String purpose,
-        std::size_t payloadOffset,
-        std::size_t payloadLength) noexcept;
+        unit::ByteIndex payloadOffset,
+        unit::ByteCount payloadLength) noexcept;
 
 private:
     mem::ByteBlock _encoded;            ///< Complete canonical record.
     std::optional<text::String> _keyId; ///< Signed but unverified key-lookup hint.
     text::String _purpose;              ///< Signed but unverified purpose.
-    std::size_t _payloadOffset{};       ///< Offset of embedded payload.
-    std::size_t _payloadLength{};       ///< Length of embedded payload.
+    unit::ByteIndex _payloadOffset{};   ///< Offset of embedded payload.
+    unit::ByteCount _payloadLength{};   ///< Length of embedded payload.
 };
 
 }

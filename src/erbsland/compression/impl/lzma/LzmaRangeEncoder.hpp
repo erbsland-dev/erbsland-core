@@ -29,18 +29,22 @@ private:
 public:
     /// Route encoded bytes to a bounded sink.
     void setOutput(CodecOutput::Write output) {
-        _output = CodecOutput{std::move(output), 0U, unit::ByteLength::infinite()};
+        _output = CodecOutput{std::move(output), 0U, unit::ByteCount::infinite()};
     }
 
     /// Encode one adaptive probability bit.
     void encodeBit(uint16_t &probability, const uint32_t bit);
 
     /// Encode a most-significant-bit-first probability tree.
-    /// @throws err::LogicError If the probability span is too small for `bitCount`.
+    /// @param probabilities The probability tree storage. Must contain at least `2^bitCount` entries.
+    /// @param bitCount The number of bits in the tree. Must be less than 32.
+    /// @param value The value to encode in the tree.
     void encodeTree(std::span<uint16_t> probabilities, unsigned bitCount, uint32_t value);
 
     /// Encode a least-significant-bit-first probability tree.
-    /// @throws err::LogicError If the probability span is too small for `bitCount`.
+    /// @param probabilities The probability tree storage. Must contain at least `2^bitCount` entries.
+    /// @param bitCount The number of bits in the tree. Must be less than 32.
+    /// @param value The value to encode in the tree.
     void encodeReverseTree(std::span<uint16_t> probabilities, unsigned bitCount, uint32_t value);
 
     /// Encode bits without an adaptive probability model.
@@ -51,7 +55,8 @@ public:
 
 private:
     /// Validate that a probability span contains the complete requested tree.
-    /// @throws err::LogicError If the probability span is too small for `bitCount`.
+    /// @param probabilities The probability tree storage. Must contain at least `2^bitCount` entries.
+    /// @param bitCount The number of bits in the tree. Must be less than 32.
     static void requireTreeSize(std::span<uint16_t> probabilities, unsigned bitCount);
     /// Restore range precision after encoding a symbol.
     void normalize();

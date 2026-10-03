@@ -4,6 +4,10 @@
 #include "CatalogServerPart.hpp"
 #include "CatalogStoragePart.hpp"
 
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationPartManagerState.hpp>
+#include <erbsland/StandardStreams.hpp>
+
 namespace demo {
 
 /// Register application parts before `run()` and let the default application main manage their lifecycle.

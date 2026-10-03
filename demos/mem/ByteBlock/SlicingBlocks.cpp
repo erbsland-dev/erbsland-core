@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -13,7 +20,7 @@ namespace demo {
 void slicingBlocks() {
     const auto completeTree = el::ByteBlock{
         el::Byte{1U}, el::Byte{2U}, el::Byte{3U}, el::Byte{5U}, el::Byte{8U}, el::Byte{13U}, el::Byte{21U}};
-    const auto branchRange = el::ByteRange{el::ByteIndex{2U}, el::ByteLength{3U}};
+    const auto branchRange = el::ByteRange{el::ByteIndex{2U}, el::ByteCount{3U}};
 
     // Share the original allocation when the source and branch have similar lifetimes.
     const auto sharedBranch = completeTree.slice(branchRange);

@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/text/named_key/Format.hpp>
-#include <erbsland/text/named_key/Parser.hpp>
-#include <erbsland/text/StringCharReader.hpp>
+#include <erbsland/named_key/Format.hpp>
+#include <erbsland/named_key/Parser.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringCharReader.hpp>
 
 namespace demo {
 
@@ -22,7 +24,7 @@ void registerQuizKeys() {
     format.setValueListAllowed(false);
 
     // The spelling in the input is normalized before lookup.
-    auto reader = el::StringCharReader{el::String{"SUBJECT=gezegen,level=2"_el}};
+    auto reader = el::StringCharReader{"SUBJECT=gezegen,level=2"_el};
     for (const auto &entry : el::named_key::Parser{reader, format}.readAllEntries()) {
         el::io::printLine(format.keyName(entry.keyIndex()), ": "_el, entry.value());
     }

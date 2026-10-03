@@ -9,6 +9,46 @@
 TESTED_TARGETS(CursorBuffer)
 class CursorBufferTest final : public UNITTEST_SUBCLASS(BufferTestHelper) {
 public:
+    void testScrollOutCallbackReceivesCompleteRowsBeforeMutation() {
+        auto buffer = erbsland::cterm::CursorBuffer{erbsland::block::Size{4, 2}};
+        buffer.print("界A"_el);
+        buffer.writeLineBreak();
+        buffer.print("last"_el);
+        auto captured = erbsland::StringList{};
+        buffer.setScrollOutCallback([&](const erbsland::cterm::ReadableBuffer &line) noexcept {
+            captured.append(
+                line.toString(erbsland::cterm::BufferRenderOptions{}.setFormat(erbsland::cterm::RenderFormat::Text)));
+        });
+        buffer.shift(erbsland::block::Direction::North, 2);
+        REQUIRE_EQUAL(captured.count(), erbsland::unit::ItemCount{2});
+        REQUIRE_EQUAL(captured.first(), "界A "_el);
+        REQUIRE_EQUAL(captured.last(), "last"_el);
+        buffer.shift(erbsland::block::Direction::South);
+        REQUIRE_EQUAL(captured.count(), erbsland::unit::ItemCount{2});
+        buffer.setScrollOutCallback({});
+        buffer.writeLineBreak();
+        REQUIRE_EQUAL(captured.count(), erbsland::unit::ItemCount{2});
+    }
+
+    void testObserversRemainBoundToTheirInstancesWhenContentsAreCopiedOrMoved() {
+        auto source = CursorBuffer{block::Size{2, 1}};
+        auto calls = 0;
+        source.setScrollOutCallback([&](const ReadableBuffer &) noexcept { ++calls; });
+        auto copied = source;
+        copied.writeLineBreak();
+        REQUIRE_EQUAL(calls, 0);
+        auto moved = std::move(copied);
+        moved.writeLineBreak();
+        REQUIRE_EQUAL(calls, 0);
+        moved.setScrollOutCallback([&](const ReadableBuffer &) noexcept { calls += 10; });
+        moved = source;
+        moved.writeLineBreak();
+        REQUIRE_EQUAL(calls, 10);
+        source = CursorBuffer{block::Size{2, 1}};
+        source.writeLineBreak();
+        REQUIRE_EQUAL(calls, 11);
+    }
+
     void testDefaultConstructionCreatesAn80x25Buffer() {
         const auto buffer = CursorBuffer{};
 
@@ -160,8 +200,8 @@ public:
     void testFillCharSetterRejectsCharactersThatDoNotOccupyExactlyOneCell() {
         auto buffer = CursorBuffer{block::Size{3, 2}};
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.setFillChar(Block{U'\n'}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.setFillChar(Block{U'界'}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.setFillChar(Block{U'\n'}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.setFillChar(Block{U'界'}));
     }
 
     void testMoveCursorClampsToTheBufferArea() {

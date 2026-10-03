@@ -3,16 +3,16 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/event/EventBackend.hpp>
-#include <erbsland/event/EventBackendTarget.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/EventRegistry.hpp>
-#include <erbsland/event/EventScheduler.hpp>
-#include <erbsland/event/EventTimer.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimeUnitTags.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/EventBackend.hpp>
+#include <erbsland/EventBackendTarget.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventRegistry.hpp>
+#include <erbsland/EventScheduler.hpp>
+#include <erbsland/EventTimer.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeUnitTags.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <optional>
@@ -217,7 +217,7 @@ public:
     void testRejectNullBackend() {
         const auto loop = EventLoop::create();
 
-        REQUIRE_THROWS_AS(el::err::ParameterError, loop->registerBackend(nullptr));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, loop->registerBackend(nullptr));
     }
 
     void testRejectNoBackendIdentifier() {
@@ -225,7 +225,7 @@ public:
         auto log = std::vector<int>{};
 
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             loop->registerBackend(std::make_unique<TestBackend>(log, id::NoBackend, 6, std::nullopt)));
     }
 
@@ -235,7 +235,7 @@ public:
 
         loop->registerBackend(std::make_unique<TestBackend>(log, id::SchedulerBackend, 7, std::nullopt));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             loop->registerBackend(std::make_unique<TestBackend>(log, id::SchedulerBackend, 8, std::nullopt)));
     }
 

@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/system/UserLookup.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/UserLookup.hpp>
 
 using namespace el::text::literals;
 
@@ -15,8 +15,8 @@ public:
         auto lookup = el::system::UserLookup{};
 
         for (const auto id : {"+1"_el, "-1"_el, " 1"_el, "1 "_el, "1x"_el, "4294967296"_el}) {
-            REQUIRE_THROWS_AS(el::err::ParameterError, lookup.userNameForId(el::system::UserId{id}));
-            REQUIRE_THROWS_AS(el::err::ParameterError, lookup.groupNameForId(el::system::GroupId{id}));
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, lookup.userNameForId(el::system::UserId{id}));
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, lookup.groupNameForId(el::system::GroupId{id}));
         }
     }
 };

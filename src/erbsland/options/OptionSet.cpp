@@ -4,6 +4,8 @@
 
 #include "Option.hpp"
 
+#include "impl/AsciiOptionText.hpp"
+
 #include <memory>
 #include <utility>
 
@@ -28,9 +30,10 @@ auto OptionSet::editOption(const text::String &name) -> OptionEditor {
 }
 
 auto OptionSet::findOption(const text::String &name) const -> OptionPtr {
+    const auto canonicalName = impl::normalizeOptionName(name);
     for (const auto &option : _options) {
         for (const auto &optionName : option->names()) {
-            if (optionName == name) {
+            if (optionName == canonicalName) {
                 return option;
             }
         }

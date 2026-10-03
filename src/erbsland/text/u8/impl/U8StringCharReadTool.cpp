@@ -10,10 +10,10 @@ namespace erbsland::text::impl {
 
 using namespace unit;
 
-auto U8StringCharReadTool::charLength() const noexcept -> CpLength {
+auto U8StringCharReadTool::charLength() const noexcept -> CpCount {
     const auto data = _data.dataSpan();
     auto position = ByteIndex::zero();
-    auto result = CpLength::zero();
+    auto result = CpCount::zero();
     while (position.toSizeT() < data.size()) {
         utf8::fastAdvanceChar(data, position);
         ++result;
@@ -85,11 +85,11 @@ auto U8StringCharReadTool::sliceRange(const CpRange range) const noexcept -> Byt
     const auto data = _data.dataSpan();
     auto position = ByteIndex::zero();
     auto currentIndex = CpIndex::zero();
-    while (position.toSizeT() < data.size() && currentIndex < range.index()) {
+    while (position.toSizeT() < data.size() && currentIndex < range.beginIndex()) {
         utf8::fastAdvanceChar(data, position);
         ++currentIndex;
     }
-    if (currentIndex < range.index() || position.toSizeT() >= data.size()) {
+    if (currentIndex < range.beginIndex() || position.toSizeT() >= data.size()) {
         return ByteRange::empty();
     }
 
@@ -102,8 +102,8 @@ auto U8StringCharReadTool::sliceRange(const CpRange range) const noexcept -> Byt
         }
     }
 
-    const auto sliceLength = ByteLength::fromSizeT(position.toSizeT() - sliceStart.toSizeT());
-    return ByteRange{sliceStart, sliceLength}.withOrigin(_data.range().index());
+    const auto sliceLength = ByteCount::fromSizeT(position.toSizeT() - sliceStart.toSizeT());
+    return ByteRange{sliceStart, sliceLength}.toAbsolute(_data.range().beginIndex());
 }
 
 auto U8StringCharReadTool::findFirstOf(const CharSet &characters) const noexcept -> CpIndex {

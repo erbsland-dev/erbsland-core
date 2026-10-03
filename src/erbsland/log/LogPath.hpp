@@ -13,8 +13,8 @@ public:
     /// Create the root path.
     LogPath() = default;
     /// Validate and create a path.
-    /// @param value The lowercase ASCII slash-delimited path, or an empty string for the root path.
-    /// @throws err::ParameterError If the path does not follow the log-path syntax.
+    /// @param value The log path, or empty for the root. At most 255 bytes and 16 non-empty `/`-separated segments
+    /// using `a-z`, `0-9`, `_`, and `-`; every segment must start and end with a letter or digit.
     explicit LogPath(const text::String &value);
 
     // defaults

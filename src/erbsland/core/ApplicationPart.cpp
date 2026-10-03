@@ -4,7 +4,7 @@
 
 #include "ApplicationPartManagerAccess.hpp"
 
-#include "../err/LogicError.hpp"
+#include "../err/LogicFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::core {
@@ -14,14 +14,14 @@ using namespace text::literals;
 auto ApplicationPart::partManager() const -> ApplicationPartManagerAccess & {
     const auto manager = _manager.lock();
     if (manager == nullptr) {
-        throw err::LogicError{"The application part is not bound to a manager."_el};
+        throw err::LogicFailure{"The application part is not bound to a manager."_el};
     }
     return *manager;
 }
 
 auto ApplicationPart::events() const -> event::EventsPtr {
     if (_events == nullptr) {
-        throw err::LogicError{"The application part has no event target before startup."_el};
+        throw err::LogicFailure{"The application part has no event target before startup."_el};
     }
     return _events;
 }

@@ -8,7 +8,8 @@
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/mem/impl/UnsafeByteBlockAccess.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/StringMap.hpp>
 
 #include <algorithm>
 #include <filesystem>
@@ -20,7 +21,7 @@ using namespace el::conf;
 /// @notest{This helper is exercised by parser test suites that inherit from it.}
 class ParserTestHelper : public ConfTestHelper {
 public:
-    using ExpectedValueMap = std::map<el::text::String, el::text::String>;
+    using ExpectedValueMap = el::StringMap<el::text::String>;
 
     /// Provides an in-memory configuration source for parser tests.
     /// @notest{Used by parser test cases.}
@@ -79,7 +80,7 @@ public:
     void verifyValueMap(const ExpectedValueMap &expectedValueMap) {
         auto flatMap = doc->toFlatValueMap();
         // First, convert and verify all name paths.
-        auto actualValues = std::map<el::text::String, el::text::String>{};
+        auto actualValues = el::StringMap<el::text::String>{};
         for (auto it = flatMap.begin(); it != flatMap.end(); ++it) {
             if (it->second->type() == ValueType::Document) {
                 continue; // ignore the document itself.
@@ -94,7 +95,7 @@ public:
                         el::text::StringConverter{namePathText}.toStdString(),
                         el::text::StringConverter{it->second->toTestText()}.toStdString());
                 });
-            actualValues[namePathText] = it->second->toTestText();
+            actualValues.set(namePathText, it->second->toTestText());
         }
         // Now test if all expected values are part of the document.
         for (const auto &[expectedNamePath, expectedValueText] : expectedValueMap) {
@@ -107,7 +108,7 @@ public:
                         el::text::StringConverter{expectedNamePath}.toStdString(),
                         el::text::StringConverter{expectedValueText}.toStdString());
                 });
-            const auto actualValueText = actualValues[expectedNamePath];
+            const auto actualValueText = actualValues.get(expectedNamePath, el::text::String{});
             if (expectedValueText.startsWith("Float("_el)) {
                 // special handling for floating point values.
                 const auto expectedText = el::text::StringConverter{expectedValueText}.toStdString();

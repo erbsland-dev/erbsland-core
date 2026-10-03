@@ -41,15 +41,14 @@ boilerplate. It supports Linux, macOS, and Windows and has no required dependenc
 - An extensive cryptography layer with no dependency on other libraries
 - Signed byte blocks and challenge-response authentication tokens
 
-## Alpha Status
+## Beta Status
 
-Erbsland Core is in alpha state. Its public API may change without a compatibility period.
+Erbsland Core is in beta status.
+While we try our best to keep its public API stable, there may be breaking changes without a compatibility period.
 
-**Use the cryptography API at your own risk!**
-
-We do our best to review the cryptography implementations while we build this library.
-But an independent review will be done earliest when the library reaches maturity.
-Therefore, be warned: **do not** use TLS connections for public networks.
+The cryptography implementation was reviewed internally, and we found no significant problems.
+There was no independent security audit yet, we plan on doing one after the first mature release.
+If you use the cryptography API in a security critical environment, please do your own independent security review.
 
 ## Documentation
 
@@ -69,6 +68,9 @@ contains the complete layout and commands; an
 ## Requirements
 
 - C++20 compiler and standard library
+  - MSVC 19.50 or newer
+  - GCC 14 or newer, with libstdc++ 14 or newer.
+  - LLVM Clang 17 or newer, with libc++ 17 or newer, or libstdc++ 14 or newer.
 - CMake 3.28 or newer
 - Git for the recommended submodule integration
 
@@ -82,6 +84,6 @@ rules used to develop Erbsland Core.
 
 ## License
 
-Copyright © 2026 Tobias Erbsland — [erbsland.dev](https://erbsland.dev/)
+Copyright (c) 2026 Tobias Erbsland — [erbsland.dev](https://erbsland.dev/)
 
 Licensed under the [Apache License, Version 2.0](LICENSE).

@@ -19,6 +19,39 @@ Option
 :cpp:class:`Option <erbsland::options::Option>` describes one command line value.
 The names you pass to ``addOption()`` decide whether the definition is a regular option or a positional argument.
 
+Name Normalization and Validation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Option names, module names, positional names, and internal lookup aliases use canonical ASCII names.
+Except for short options, ASCII letters are folded to lowercase and underscores within name bodies are replaced with
+dashes.
+For example, ``--One_Two`` becomes ``--one-two`` and ``Run_One`` becomes ``run-one``.
+Short names such as ``-A`` and ``-a`` remain distinct.
+
+The original prefix determines the name form.
+Short and long option prefixes must be literal ``-`` and ``--``; normalization never creates or changes a prefix.
+Leading underscores cannot introduce an option, and ``-_`` cannot become the end-of-options marker.
+
+A bare or long name body starts with an ASCII letter and consists of non-empty alphanumeric word segments separated by
+single dashes.
+Underscores are accepted as separator spellings before normalization.
+The body has at most 100 characters, excluding the optional ``--`` prefix.
+A short option has exactly one ASCII letter or digit after its literal dash.
+Modules, positional names, and internal aliases require the bare form.
+Empty supplied names, non-ASCII text, leading digits in bare or long names, trailing separators, and consecutive
+separators are invalid.
+
+Definition constructors and name setters validate immediately and throw ``err::ParameterFailure`` for malformed names.
+Failed name-list updates preserve the existing definition.
+Empty default objects and empty option-name lists remain available for staged construction.
+Parsed value-name setters use the same validation; an empty selected module name represents root scope.
+
+Developer lookups, command-line name matching, detailed help, and name suggestions use the same canonical spelling.
+Both ``--one-two`` and ``--one_two`` select a definition stored as ``--one-two``.
+Invalid lookup queries return the usual missing result.
+The original arguments and indexes remain available for diagnostics: normalization does not rewrite option values,
+choice values, executable names, paths, or positional data, including text after ``--``.
+
 Regular Options and Aliases
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -92,9 +125,35 @@ Built-in Requests
 The parser provides ``-h`` and ``--help[=<name>]`` for help output and the pure flag ``--version`` for version output by
 default.
 Bare help displays the ordinary document.
-The attached long form ``--help=<name>`` displays detailed help for a long, short, or internal option name.
-Detailed help searches global and module scopes in a deterministic order and provides ``See Also`` commands when the
-same name exists in other scopes.
+The attached long form ``--help=<name>`` finds detailed help for a module, option alias, or choice help alias.
+The keyword must use a valid ASCII option-name form: a bare or long name starts with a letter, followed by letters,
+digits and single word separators, with at most 100 characters excluding the optional ``--`` prefix.
+Underscores normalize to dashes; consecutive and trailing separators are invalid.
+A short name is ``-`` followed by one ASCII letter or digit and remains case-sensitive.
+A qualified choice selector, such as ``--help=--color/auto``, contains one slash: the option alias on the left and a
+bare choice help alias on the right.
+Each component follows its own name rules; the complete selector has at most 203 ASCII bytes.
+Literal dash prefixes remain mandatory, including in qualified selectors.
+Empty, oversized, non-ASCII, or otherwise malformed keywords produce a syntax error without echoing the keyword,
+generating suggestions, or including the command-line argument snapshot.
+The same validation applies when calling ``detailedHelpDocument()`` directly.
+Exact repeated option aliases prefer the selected module, then globals, then other modules in registration order.
+``See Also`` lists distinct alternatives without linking to the displayed target or repeating registrations.
+Collisions between modules, options and choices, or between choices in the same scope, produce a compact results list.
+Without an exact match, help first tries fuzzy matching using the existing edit-distance thresholds and then prefixes if
+there are no fuzzy matches.
+For example, ``--help=generate`` lists modules whose names start with ``generate``.
+Results show up to ten distinct targets with their names and brief titles; additional matches are reported.
+The heading identifies the searched keyword.
+Modules appear in a ``Modules`` section, global options in ``Options``, and module options in ``Options for <module>``.
+Option rows use their short and long aliases and value placeholders without repeating help commands or generated
+value/default annotations.
+Matching choices appear under ``Choices for <option>`` or ``Choices for <module> <option>``, showing their accepted
+values and brief titles; only matching choices are listed.
+Ranking and the ten-target limit apply before grouping, with existing scope priority retained between option and choice
+sections and ranking retained within each section.
+Even a single partial match produces a results list.
+When nothing matches, the error title is ``No matching help found`` and the description directs the user to ``--help``.
 Set :cpp:enumerator:`OptionParserFlag::NoHelpDetails <erbsland::options::OptionParserFlag::NoHelpDetails>` to make help
 a pure flag and reject an attached target.
 Use :cpp:enumerator:`OptionParserFlag::DisableHelp <erbsland::options::OptionParserFlag::DisableHelp>` or
@@ -222,15 +281,81 @@ Pass the bare name; generated help adds the angle brackets.
 These definitions are displayed as ``--config <path>`` and ``<source>`` in usage and option-list help.
 An empty value name clears the override and restores the type-derived or positional default.
 
+Help Titles and Descriptions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Help metadata separates brief text from details without falling back between fields.
+
+.. list-table:: Help field meanings
+    :header-rows: 1
+
+    * - Definition
+      - ``title``
+      - ``description``
+    * - Option
+      - Brief text beside its aliases in overview output
+      - Details on its help page
+    * - OptionSet
+      - Section heading
+      - Introduction immediately below the heading
+    * - OptionModule
+      - Brief text in the module overview
+      - Details in full module help
+    * - OptionChoice
+      - Brief text beside the accepted choice value
+      - Details on its help page
+
+``OptionHelp(String)`` and the string ``setHelp()`` editor overloads set the title.
+Use ``setHelpDescription()`` separately for detailed text.
+Sets sharing a section heading combine their option rows and display each distinct description once in registration
+order.
+Only sets with visible option rows contribute headings or descriptions; empty, description-only and fully filtered sets
+are omitted, including their introductions when another set shares the same heading.
+Root ``Options`` descriptions continue to introduce root help.
+
+Detail pages start with the brief title, or a localized identifying heading when no title is supplied, followed by a
+separate identity line showing the option aliases, module name, or choice value and owning option.
+Usage, nonempty descriptions, examples and epilogs follow.
+Option and choice details retain relevant generated value and default information.
+``--help=<module>`` and ``<module> --help`` produce the same full module page, including its option sections.
+
+Choice Help Aliases
+~~~~~~~~~~~~~~~~~~~
+
+Choice values are not restricted to option-name syntax and remain unchanged during parsing.
+For detailed help, configure independent bare aliases through
+:cpp:func:`setHelpNames() <erbsland::options::OptionChoice::setHelpNames>` or the choice editor.
+Aliases normalize ASCII case and underscores, follow the bare-name grammar, and have at most 100 characters each.
+Malformed aliases throw ``err::ParameterFailure`` immediately and leave previous aliases unchanged.
+An empty explicit alias list uses the normalized choice value as its help name when that value satisfies the bare-name
+rules; other values need an explicit alias for direct lookup.
+
+.. code-block:: cpp
+
+    auto choices = el::OptionChoices::create();
+    choices->addChoice("Deep Blue!"_el)
+        .setHelp("Use deep blue"_el)
+        .setHelpDescription("Choose this shade for the presentation."_el)
+        .setHelpNames({"deep-blue"_el, "blue"_el});
+    options->addOption("--color"_el).setChoices(choices);
+
+Use ``--help=blue`` or ``--help=--color/blue`` for this choice.
+Qualified selectors distinguish repeated choice aliases under different options.
+Search results identify the owning option and optional module in their choice-section headings; detailed pages and
+``See Also`` retain runnable help commands.
+
 Help, Version and Error Documents
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :cpp:class:`OptionManager <erbsland::options::OptionManager>` builds neutral
 :cpp:class:`TextDocument <erbsland::text::TextDocument>` trees for help, version and option-error output.
+The ``options.help_results_title`` display-text format accepts the searched keyword.
+``options.options_for_module_heading`` and ``options.choices_for_option_heading`` accept one name;
+``options.choices_for_module_option_heading`` accepts the module name followed by the preferred option alias.
 Applications can render these documents through
 :cpp:class:`PlainTextRenderer <erbsland::text::PlainTextRenderer>` or
 :cpp:class:`TerminalDocumentRenderer <erbsland::cterm::TerminalDocumentRenderer>`.
-``DisplayTextMap`` configures wording only; terminal colors and layout belong to
+``DisplayText`` configures wording only; terminal colors and layout belong to
 :cpp:class:`TerminalDocumentStyle <erbsland::cterm::TerminalDocumentStyle>`.
 
 :cpp:class:`OptionErrorContext <erbsland::options::OptionErrorContext>` keeps the structured objects needed to build a
@@ -239,12 +364,15 @@ The options root, selected module, option set and option are retained with share
 arguments and argument index preserve the source snapshot.
 Usage, contextual help and the full-help command are derived when the diagnostic is rendered instead of being copied
 into the context as plain text.
+Diagnostic titles describe the user-facing problem, while descriptions explain it and suggest a corrective action.
+Default wording comes from ``DisplayText``; application-authored callback titles remain unchanged.
+Malformed help selectors use the title ``Invalid help keyword`` and are never echoed in a diagnostic.
 The built-in parser escapes command-line values before inserting them into explanatory messages.
 Command-line snippets escape every displayed argument and calculate marker ranges from that escaped representation, so a
 visible sequence such as ``\\033`` is covered by the marker in full.
 The executable name derived from ``argv[0]`` is escaped in usage and full-help commands as well.
 
-Unknown long options, modules, detailed-help names, and visible choice values receive up to three ranked suggestions.
+Unknown long options, modules, and visible choice values receive up to three ranked error suggestions.
 Suggestions use decoded Unicode code points, adjacent-transposition-aware Damerau-Levenshtein distance, and conservative
 length-dependent thresholds.
 They are retained in ``OptionErrorContext::suggestions()`` and rendered in a localized ``Did You Mean`` section before

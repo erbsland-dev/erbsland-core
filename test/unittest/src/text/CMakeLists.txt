@@ -15,10 +15,12 @@ target_sources(erbsland-core-unittest PRIVATE
         ByteFormatTest.cpp
         CaseSensitivityTest.cpp
         CharRangeTest.cpp
+        CharSetConstructionTest.cpp
         CharSetTest.cpp
         CharTest.cpp
         CodeSnippetLayoutTest.cpp
         CombinedCharTest.cpp
+        CppTokenizerTest.cpp
         EncodingModeTest.cpp
         FloatConversionTest.cpp
         FormatAsTest.cpp
@@ -29,6 +31,8 @@ target_sources(erbsland-core-unittest PRIVATE
         PlatformStringAccessTest.cpp
         ReplacerTest.cpp
         StdFormatForTextTest.cpp
+        StringAppendAliasingTest.cpp
+        StringBinaryComparisonTest.cpp
         StringCharReaderTest.cpp
         StringConverterTest.cpp
         StringDecodeBufferTest.cpp
@@ -36,14 +40,21 @@ target_sources(erbsland-core-unittest PRIVATE
         StringDisplayWidthTest.cpp
         StringEncoderTest.cpp
         StringEncodingTest.cpp
+        StringEncodingValidationTest.cpp
         StringEscapingTest.cpp
+        StringJoinsTest.cpp
         StringListTest.cpp
         StringMapTest.cpp
         StringPatternTest.cpp
+        StringReplacementTest.cpp
+        StringSeparatorSplitTest.cpp
         StringSetTest.cpp
         StringSplitterTest.cpp
+        StringStorageBoundsTest.cpp
+        StringTransformationsTest.cpp
         StringTransformTest.cpp
         StringTreeTest.cpp
+        StringUnchangedResultTest.cpp
         TextDocumentTest.cpp
         ToStringTest.cpp
         U16EncodingTest.cpp
@@ -80,4 +91,5 @@ target_sources(erbsland-core-unittest PRIVATE
         UnicodeTest.cpp
         UnsafeU16StringEditorAccessTest.cpp
         UnsafeU8StringEditorAccessTest.cpp
+        UnsafeU8StringLiteralAccessTest.cpp
 )

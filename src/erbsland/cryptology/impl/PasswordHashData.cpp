@@ -6,7 +6,7 @@
 
 #include "../unsafe/UnsafeCustomPasswordHashParameters.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../mem/ByteArray.hpp"
 #include "../../mem/ByteBlockEditor.hpp"
@@ -22,6 +22,7 @@
 #include "../../text/named_key/Parser.hpp"
 #include "../../text/StringCharReader.hpp"
 #include "../../text/StringEditor.hpp"
+#include "../../unit/ItemCount.hpp"
 #include "../../util/List.hpp"
 
 #include <limits>
@@ -29,6 +30,7 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace err;
 using namespace text;
 using namespace literals;
 using namespace mem;
@@ -58,7 +60,7 @@ auto PasswordHashData::create(
     PasswordHashPolicy policy, const PasswordHashKey *key, const ConstByteSpan salt, const ConstByteSpan rawVerifier)
     -> PasswordHashDataPtr {
     if (salt.size() != policy.saltLength().toSizeT() || rawVerifier.size() != policy.outputLength().toSizeT()) {
-        throw err::LogicError{"Password hash data violates the policy length invariant"};
+        throw LogicFailure{"Password hash data violates the policy length invariant"};
     }
     const auto keyed = key != nullptr;
     const auto keyIdentifier = keyed ? key->_identifier : std::optional<String>{};
@@ -78,30 +80,30 @@ auto PasswordHashData::create(
 }
 
 auto PasswordHashData::fromStringOrThrow(const String &text) -> PasswordHashDataPtr {
-    if (text.isEmpty() || text.length() > ByteLength{512U}) {
-        throw err::ParseError{"Password hash record is empty or exceeds 512 bytes"};
+    if (text.isEmpty() || text.length() > ByteCount{512U}) {
+        throw ParseError{"Password hash record is empty or exceeds 512 bytes"};
     }
     static const auto cVisibleAscii = CharSet::fromRange(Char{U'!'}, Char{U'~'});
     if (!text.containsOnly(cVisibleAscii)) {
-        throw err::ParseError{"Password hash record must contain visible ASCII only"};
+        throw ParseError{"Password hash record must contain visible ASCII only"};
     }
 
     auto parserReader = StringCharReader{text};
     const auto fields = Parser{parserReader, passwordHashFormat()}.readAllEntries();
-    if (fields.count().toSizeT() < 9U || fieldValue(fields, ItemIndex{0U}, Field::Format) != "el-password-hash"_el ||
+    if (fields.count() < ItemCount{9U} || fieldValue(fields, ItemIndex{0U}, Field::Format) != "el-password-hash"_el ||
         fieldValue(fields, ItemIndex{1U}, Field::Version) != "1"_el) {
-        throw err::ParseError{"Unsupported password hash format or version"};
+        throw ParseError{"Unsupported password hash format or version"};
     }
 
     const auto algorithmText = fieldValue(fields, ItemIndex{2U}, Field::Algorithm);
     auto policy = PasswordHashPolicy{};
     auto modeIndex = ItemIndex::zero();
     if (algorithmText == "argon2id"_el) {
-        if (fields.count().toSizeT() != 10U && fields.count().toSizeT() != 11U) {
-            throw err::ParseError{"Unexpected Argon2id password hash fields"};
+        if (fields.count() != ItemCount{10U} && fields.count() != ItemCount{11U}) {
+            throw ParseError{"Unexpected Argon2id password hash fields"};
         }
         if (fieldValue(fields, ItemIndex{3U}, Field::ArgonVersion) != "19"_el) {
-            throw err::ParseError{"Unsupported Argon2 version"};
+            throw ParseError{"Unsupported Argon2 version"};
         }
         const auto memory = static_cast<uint32_t>(parseCanonicalInteger(
             fieldValue(fields, ItemIndex{4U}, Field::Memory), std::numeric_limits<uint32_t>::max()));
@@ -110,13 +112,13 @@ auto PasswordHashData::fromStringOrThrow(const String &text) -> PasswordHashData
         const auto lanes = static_cast<uint32_t>(parseCanonicalInteger(
             fieldValue(fields, ItemIndex{6U}, Field::Parallelization), std::numeric_limits<uint32_t>::max()));
         if (!unsafe::UnsafeCustomPasswordHashParameters::areValidArgon2idCosts(memory, passes, lanes)) {
-            throw err::ParseError{"Argon2id costs exceed the supported safety bounds"};
+            throw ParseError{"Argon2id costs exceed the supported safety bounds"};
         }
         policy = PasswordHashPolicy{unsafe::UnsafeCustomPasswordHashParameters::argon2id(memory, passes, lanes)};
         modeIndex = ItemIndex{7U};
     } else if (algorithmText == "scrypt"_el) {
-        if (fields.count().toSizeT() != 9U && fields.count().toSizeT() != 10U) {
-            throw err::ParseError{"Unexpected scrypt password hash fields"};
+        if (fields.count() != ItemCount{9U} && fields.count() != ItemCount{10U}) {
+            throw ParseError{"Unexpected scrypt password hash fields"};
         }
         const auto cost =
             parseCanonicalInteger(fieldValue(fields, ItemIndex{3U}, Field::Cost), std::numeric_limits<uint64_t>::max());
@@ -125,19 +127,19 @@ auto PasswordHashData::fromStringOrThrow(const String &text) -> PasswordHashData
         const auto parallelization = static_cast<uint32_t>(parseCanonicalInteger(
             fieldValue(fields, ItemIndex{5U}, Field::Parallelization), std::numeric_limits<uint32_t>::max()));
         if (!unsafe::UnsafeCustomPasswordHashParameters::areValidScryptCosts(cost, blockSize, parallelization)) {
-            throw err::ParseError{"scrypt costs exceed the supported safety bounds"};
+            throw ParseError{"scrypt costs exceed the supported safety bounds"};
         }
         policy =
             PasswordHashPolicy{unsafe::UnsafeCustomPasswordHashParameters::scrypt(cost, blockSize, parallelization)};
         modeIndex = ItemIndex{6U};
     } else {
-        throw err::ParseError{"Unsupported password hashing algorithm"};
+        throw ParseError{"Unsupported password hashing algorithm"};
     }
 
     const auto mode = fieldValue(fields, modeIndex, Field::Mode);
     const auto keyed = mode == "hmac-sha256"_el;
     if (!keyed && mode != "none"_el) {
-        throw err::ParseError{"Unsupported password hash protection mode"};
+        throw ParseError{"Unsupported password hash protection mode"};
     }
     auto index = modeIndex + ItemCount{1U};
     auto keyIdentifier = std::optional<String>{};
@@ -146,25 +148,25 @@ auto PasswordHashData::fromStringOrThrow(const String &text) -> PasswordHashData
     if (keyed && hasKeyIdentifier) {
         const auto identifier = fieldValue(fields, index++, Field::KeyIdentifier);
         if (!PasswordHashKey::isValidIdentifier(identifier)) {
-            throw err::ParseError{"Invalid password hash key identifier"};
+            throw ParseError{"Invalid password hash key identifier"};
         }
         keyIdentifier = identifier;
     }
     if (!keyed && hasKeyIdentifier) {
-        throw err::ParseError{"Unkeyed password hashes cannot contain a key identifier"};
+        throw ParseError{"Unkeyed password hashes cannot contain a key identifier"};
     }
 
     const auto saltText = fieldValue(fields, index++, Field::Salt);
     const auto verifierText = fieldValue(fields, index++, Field::Data);
     if (index != ItemIndex::end(fields.count())) {
-        throw err::ParseError{"Password hash contains unknown fields"};
+        throw ParseError{"Password hash contains unknown fields"};
     }
     auto salt = decodeBytes(saltText, policy.saltLength());
     auto verifier = decodeBytes(verifierText, policy.outputLength());
     auto header = buildHeader(policy, keyed, keyIdentifier, salt.span());
     auto canonical = buildRecord(header, verifier.span());
     if (canonical != text) {
-        throw err::ParseError{"Password hash record is not canonical"};
+        throw ParseError{"Password hash record is not canonical"};
     }
 
     return PasswordHashDataPtr{new PasswordHashData{
@@ -192,7 +194,7 @@ void PasswordHashData::performDummyVerification(
     const ConstByteSpan salt,
     const ConstByteSpan rawVerifier) {
     if (salt.size() != policy.saltLength().toSizeT() || rawVerifier.size() != policy.outputLength().toSizeT()) {
-        throw err::LogicError{"Dummy password verification violates the policy length invariant"};
+        throw LogicFailure{"Dummy password verification violates the policy length invariant"};
     }
     const auto keyIdentifier = key != nullptr ? key->_identifier : std::optional<String>{};
     const auto header = buildHeader(policy, key != nullptr, keyIdentifier, salt);
@@ -245,24 +247,24 @@ auto PasswordHashData::passwordHashFormat() -> const Format & {
 auto PasswordHashData::fieldValue(const FieldList &fields, const ItemIndex index, const Field expected)
     -> const String & {
     if (!index.isWithin(fields.count())) {
-        throw err::ParseError{"Password hash fields are missing or out of order"};
+        throw ParseError{"Password hash fields are missing or out of order"};
     }
     const auto &entry = fields.getRefOrThrow(index);
     if (entry.keyIndex() != static_cast<int>(expected)) {
-        throw err::ParseError{"Password hash fields are missing or out of order"};
+        throw ParseError{"Password hash fields are missing or out of order"};
     }
     return entry.value();
 }
 
 auto PasswordHashData::parseCanonicalInteger(const String &text, const uint64_t maximum) -> uint64_t {
-    if (text.isEmpty() || (text.characterLength() > CpLength::one() && text.charAt(StringSide::Front) == U'0')) {
-        throw err::ParseError{"Password hash contains a noncanonical integer"};
+    if (text.isEmpty() || (text.characterLength() > CpCount::one() && text.charAt(StringSide::Front) == U'0')) {
+        throw ParseError{"Password hash contains a noncanonical integer"};
     }
     auto options = IntegerParseOptions::parserDefault();
     options.setFixedBase(IntegerBase::Decimal);
     const auto result = text.toIntegerOrThrow<uint64_t>(options);
     if (result > maximum) {
-        throw err::ParseError{"Password hash contains an invalid integer"};
+        throw ParseError{"Password hash contains an invalid integer"};
     }
     return result;
 }
@@ -271,14 +273,14 @@ auto PasswordHashData::encodeBytes(const ConstByteSpan bytes) -> String {
     return base_n::BaseNEncoder{ByteBlock::fromSpan(bytes), storageBase64Format()}.toString();
 }
 
-auto PasswordHashData::decodeBytes(const String &encoded, const ByteLength expectedLength) -> ByteBlock {
-    const auto expectedEncodedLength = ByteLength::fromSizeT((expectedLength.toSizeT() * 8U + 5U) / 6U);
+auto PasswordHashData::decodeBytes(const String &encoded, const ByteCount expectedLength) -> ByteBlock {
+    const auto expectedEncodedLength = ByteCount::fromSizeT((expectedLength.toSizeT() * 8U + 5U) / 6U);
     if (encoded.length() != expectedEncodedLength) {
-        throw err::ParseError{"Password hash contains data with an invalid length"};
+        throw ParseError{"Password hash contains data with an invalid length"};
     }
     const auto result = base_n::BaseNDecoder{encoded, storageBase64Format()}.toDataOrThrow(expectedLength);
     if (result.length() != expectedLength || encodeBytes(result.span()) != encoded) {
-        throw err::ParseError{"Password hash contains noncanonical Base64url data"};
+        throw ParseError{"Password hash contains noncanonical Base64url data"};
     }
     return result;
 }
@@ -309,13 +311,13 @@ auto PasswordHashData::buildHeader(
         appendField(result, "i"_el, *keyIdentifier);
     }
     appendField(result, "s"_el, encodeBytes(salt));
-    return String{result};
+    return result;
 }
 
 auto PasswordHashData::buildRecord(const String &header, const ConstByteSpan verifier) -> String {
     auto result = StringEditor{header};
     appendField(result, "d"_el, encodeBytes(verifier));
-    return String{result};
+    return result;
 }
 
 auto PasswordHashData::protectVerifier(

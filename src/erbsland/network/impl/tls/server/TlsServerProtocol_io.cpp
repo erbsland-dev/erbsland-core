@@ -9,14 +9,16 @@
 #include "../../../../cryptology/tls_record/TlsRecordError.hpp"
 #include "../../../../cryptology/tls_record/TlsRecordErrorCategory.hpp"
 #include "../../../../err/Exception.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../mem/Byte.hpp"
 #include "../../../../text/Literals.hpp"
 
 namespace erbsland::network::impl {
 
+using namespace mem;
 using namespace text::literals;
 
-void TlsServerProtocol::feedTransport(const mem::ConstByteSpan data) noexcept {
+void TlsServerProtocol::feedTransport(const ConstByteSpan data) noexcept {
     if (_state == TlsServerProtocolState::Inactive || _state == TlsServerProtocolState::Closed ||
         _state == TlsServerProtocolState::Failed) {
         return;
@@ -49,10 +51,8 @@ void TlsServerProtocol::feedTransport(const mem::ConstByteSpan data) noexcept {
             break;
         }
         fail(alert, error.reason());
-    } catch (const err::Exception &error) {
+    } catch (const err::RuntimeError &error) {
         fail(TlsAlertDescription::InternalError, error.reason());
-    } catch (...) {
-        fail(TlsAlertDescription::InternalError, "An unexpected TLS server protocol operation failed."_el);
     }
 }
 
@@ -88,10 +88,8 @@ void TlsServerProtocol::processRetainedInputNoThrow() noexcept {
             break;
         }
         fail(alert, error.reason());
-    } catch (const err::Exception &error) {
+    } catch (const err::RuntimeError &error) {
         fail(TlsAlertDescription::InternalError, error.reason());
-    } catch (...) {
-        fail(TlsAlertDescription::InternalError, "An unexpected TLS server protocol operation failed."_el);
     }
 }
 
@@ -124,7 +122,7 @@ void TlsServerProtocol::processRecords() {
     }
 }
 
-void TlsServerProtocol::processRecord(const mem::ByteBlock &record) {
+void TlsServerProtocol::processRecord(const ByteBlock &record) {
     auto reader = TlsWireReader{record.span()};
     const auto type = reader.readU8();
     const auto legacyVersion = reader.readU16();
@@ -133,14 +131,18 @@ void TlsServerProtocol::processRecord(const mem::ByteBlock &record) {
 
     // RFC 8446 Appendix D.2: servers ignore the initial ClientHello record-layer version; after negotiation every
     // TLSPlaintext and TLSCiphertext legacy_record_version is 0x0303.
-    if (!(_handshakeStep == HandshakeStep::ClientHello && type == 22U) && legacyVersion != 0x0303U) {
+    if (!(_handshakeStep == HandshakeStep::ClientHello && !_retryGroup.has_value() && type == 22U) &&
+        legacyVersion != 0x0303U) {
         throw TlsProtocolError{TlsAlertDescription::ProtocolVersion, "TLS record legacy version is invalid."_el};
     }
 
     // RFC 8446 Section 5.1 and Appendix D.4: tolerate an exact dummy CCS only between ClientHello and peer Finished.
     if (type == 20U) {
+        const auto awaitingRetry = _handshakeStep == HandshakeStep::ClientHello && _retryGroup.has_value();
+        const auto awaitingClientFlight = _handshakeStep == HandshakeStep::ClientCertificate ||
+            _handshakeStep == HandshakeStep::ClientCertificateVerify || _handshakeStep == HandshakeStep::ClientFinished;
         if (!_handshakeStream.bufferedLength().isZero() || _state != TlsServerProtocolState::Handshaking ||
-            _handshakeStep != HandshakeStep::ClientFinished || content.size() != 1U || content[0] != mem::Byte{1U}) {
+            (!awaitingRetry && !awaitingClientFlight) || content.size() != 1U || content[0] != Byte{1U}) {
             throw TlsProtocolError{TlsAlertDescription::UnexpectedMessage, "TLS ChangeCipherSpec is invalid."_el};
         }
         ++_ignoredCcsCount;
@@ -158,7 +160,7 @@ void TlsServerProtocol::processRecord(const mem::ByteBlock &record) {
     processProtectedRecord(record);
 }
 
-void TlsServerProtocol::processPlaintextRecord(const uint8_t type, const mem::ConstByteSpan content) {
+void TlsServerProtocol::processPlaintextRecord(const uint8_t type, const ConstByteSpan content) {
     // RFC 8446 Section 5.1: no non-handshake content may interleave a fragmented handshake message.
     if (type != 22U && !_handshakeStream.bufferedLength().isZero()) {
         throw TlsProtocolError{
@@ -182,7 +184,7 @@ void TlsServerProtocol::processPlaintextRecord(const uint8_t type, const mem::Co
     }
 }
 
-void TlsServerProtocol::processProtectedRecord(const mem::ByteBlock &record) {
+void TlsServerProtocol::processProtectedRecord(const ByteBlock &record) {
     // RFC 8446 Section 5.2: no inner content is inspected or released until AEAD authentication succeeds.
     auto plaintext = _decryptor.unprotect(record.span());
     if (plaintext.type() != cryptology::TlsRecordContentType::Handshake &&

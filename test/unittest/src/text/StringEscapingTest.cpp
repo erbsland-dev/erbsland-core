@@ -1,19 +1,21 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/EscapeAmount.hpp>
-#include <erbsland/text/EscapeFormat.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/unit/CpIndex.hpp>
-#include <erbsland/unit/U16DataIndex.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/EscapeAmount.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/U16Index.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -23,14 +25,14 @@
 using namespace el::text::literals;
 
 using el::unit::CpIndex;
-using el::unit::U16DataIndex;
+using el::unit::U16Index;
 using namespace el::text;
 
 namespace th = erbsland::unittest::th;
 
 TESTED_TARGETS(
-    EscapeFormat EscapeAmount LogEscapeFormatter StringEditor String U16StringEditor U16String U32StringEditor
-        U32String)
+    EscapeFormat EscapeAmount LogEscapeFormatter UrlEscapeFormatter StringEditor String U16StringEditor U16String
+        U32StringEditor U32String)
 class StringEscapingTest final : public el::UnitTest {
 public:
     void testEscapeFormatConversion() {
@@ -68,6 +70,69 @@ public:
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("markdown"_el), EscapeFormat::Markdown);
         REQUIRE_FALSE(EscapeFormat::fromString("unknown"_el).has_value());
         REQUIRE_THROWS(EscapeFormat::fromStringOrThrow("unknown"_el));
+    }
+
+    void testUrlFormatsAndDelimiters() {
+        const auto delimiters = String{"!$&'()*+,;=:/?@#[]% "_el};
+        REQUIRE_EQUAL(
+            delimiters.toEscaped(EscapeFormat::Url), "%21%24%26%27%28%29%2A%2B%2C%3B%3D%3A%2F%3F%40%23%5B%5D%25%20"_el);
+        REQUIRE_EQUAL(delimiters.toEscaped(EscapeFormat::UrlPath), "!$&'()*+,;=:/%3F@%23%5B%5D%25%20"_el);
+        REQUIRE_EQUAL(delimiters.toEscaped(EscapeFormat::UrlQuery), "!$&'()*+,;=:/?@%23%5B%5D%25%20"_el);
+        REQUIRE_EQUAL(delimiters.toEscaped(EscapeFormat::UrlUserInfo), "!$&'()*+,;=%3A%2F%3F%40%23%5B%5D%25%20"_el);
+        REQUIRE_EQUAL(String{"A b+c%20"_el}.toEscaped(EscapeFormat::Url), "A%20b%2Bc%2520"_el);
+        REQUIRE_EQUAL(String{"a=1&b=2"_el}.toEscaped(EscapeFormat::Url), "a%3D1%26b%3D2"_el);
+        REQUIRE_EQUAL(String{"AZaz09-._~"_el}.toEscaped(EscapeFormat::Url), "AZaz09-._~"_el);
+        for (
+            const auto format :
+            {EscapeFormat::Url, EscapeFormat::UrlPath, EscapeFormat::UrlQuery, EscapeFormat::UrlUserInfo}) {
+            const auto name = EscapeFormat{format}.toString();
+            REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow(name), format);
+            REQUIRE_EQUAL(
+                StringFormat{el::join("{:text:escape="_el, name, "}"_el)}.build(delimiters),
+                delimiters.toEscaped(format));
+            REQUIRE_EQUAL(
+                StringFormat{el::join("{:/"_el, name, "}"_el)}.build(delimiters), delimiters.toEscaped(format));
+        }
+    }
+
+    void testUrlUtf8OctetsAndEscapeAmounts() {
+        const auto text = String{"A/ é€😀"_el};
+        const auto expected = String{"A%2F%20%C3%A9%E2%82%AC%F0%9F%98%80"_el};
+        const auto u16Text = U16String{u"A/ é€😀"_el};
+        const auto u32Text = U32String{U"A/ é€😀"_el};
+        for (const auto amount : {EscapeAmount::Required, EscapeAmount::Balanced, EscapeAmount::NonAscii}) {
+            REQUIRE_EQUAL(text.toEscaped(EscapeFormat::Url, amount), expected);
+            const auto u16Result = u16Text.toEscaped(EscapeFormat::Url, amount);
+            const auto u32Result = u32Text.toEscaped(EscapeFormat::Url, amount);
+            REQUIRE_EQUAL(StringConverter{u16Result}.toString(), expected);
+            REQUIRE_EQUAL(StringConverter{u32Result}.toString(), expected);
+            REQUIRE_EQUAL(text.escapedSize(EscapeFormat::Url, amount), expected.length());
+            REQUIRE_EQUAL(u16Text.escapedSize(EscapeFormat::Url, amount), u16Result.length());
+            REQUIRE_EQUAL(u32Text.escapedSize(EscapeFormat::Url, amount), u32Result.length());
+        }
+        REQUIRE_EQUAL(text.toEscaped(EscapeFormat::Url, EscapeAmount::Nothing), text);
+        REQUIRE_EQUAL(
+            text.toEscaped(EscapeFormat::Url, EscapeAmount::Everything), "%41%2F%20%C3%A9%E2%82%AC%F0%9F%98%80"_el);
+        const auto invalid = String{th::stdStringFromHex("41 C0 42")};
+        REQUIRE_EQUAL(invalid.toEscaped(EscapeFormat::Url), "A%EF%BF%BDB"_el);
+        REQUIRE_EQUAL(String{"é"_el}.toEscaped(EscapeFormat::Url), "e%CC%81"_el);
+    }
+
+    void testUrlAsciiOctets() {
+        for (
+            const auto format :
+            {EscapeFormat::Url, EscapeFormat::UrlPath, EscapeFormat::UrlQuery, EscapeFormat::UrlUserInfo}) {
+            auto text = StringEditor{};
+            for (auto value = 0U; value < 128U; ++value) {
+                text.append(Char{value});
+            }
+            const auto escaped = text.toEscaped(format);
+            REQUIRE_EQUAL(text.escapedSize(format), escaped.length());
+            REQUIRE_FALSE(escaped.contains(" "_el));
+            REQUIRE_FALSE(escaped.contains("\n"_el));
+            REQUIRE(escaped.contains("%00%01%02"_el));
+            REQUIRE(escaped.contains("%7F"_el));
+        }
     }
 
     void testEscapeAmountConversion() {
@@ -264,13 +329,13 @@ public:
     void testNoEscapePreservesNativeInvalidData() {
         const auto invalidUtf8 = String{th::stdStringFromHex("41 C0 42")};
         const auto unchangedUtf8 = invalidUtf8.toEscaped(EscapeFormat::Json, EscapeAmount::Nothing);
-        REQUIRE_FALSE(unchangedUtf8.isValidUtf8());
+        REQUIRE_FALSE(unchangedUtf8.isEncodingValid());
         REQUIRE_EQUAL(unchangedUtf8.length(), invalidUtf8.length());
 
         const auto invalidUtf16 = U16StringEditor{std::u16string{u'A', char16_t{0xD800U}, u'B'}};
         const auto unchangedUtf16 = invalidUtf16.toEscaped(EscapeFormat::Json, EscapeAmount::Nothing);
         REQUIRE_EQUAL(unchangedUtf16.length(), invalidUtf16.length());
-        REQUIRE(unchangedUtf16.charAt(U16DataIndex{1U}).isReplacement());
+        REQUIRE(unchangedUtf16.charAt(U16Index{1U}).isReplacement());
 
         const auto invalidUtf32 = U32StringEditor{std::u32string{U'A', char32_t{0x110000U}, U'B'}};
         const auto unchangedUtf32 = invalidUtf32.toEscaped(EscapeFormat::None, EscapeAmount::Everything);

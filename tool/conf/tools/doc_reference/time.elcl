@@ -1,0 +1,16 @@
+# Reference-document groups for the time domain.
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "time/date_and_time.rst"
+Title                        : "Date and Time"
+Header Globs                 :
+    * "time/*.hpp"
+    * "time/tz/*.hpp"
+Excluded Header Globs        :
+    * "time/Timestamp.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "time/timestamp.rst"
+Title                        : "UTC Timestamps"
+Headers                      :
+    * "time/Timestamp.hpp"

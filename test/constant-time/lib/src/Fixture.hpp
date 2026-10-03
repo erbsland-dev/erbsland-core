@@ -4,15 +4,14 @@
 
 #include "Checksum.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
@@ -37,12 +36,12 @@ protected:
     /// @param population False selects repeated 0x55; true selects random bytes.
     /// @param size Exact input size.
     /// @return Prepared input.
-    [[nodiscard]] static auto input(el::Random &random, bool population, std::size_t size) -> el::ByteBuffer {
-        auto bytes = random.buildByteBuffer(el::ByteLength{size});
+    [[nodiscard]] static auto input(el::Random &random, bool population, el::ByteCount size) -> el::ByteBuffer {
+        auto bytes = random.buildByteBuffer(size);
         const auto mask = el::Byte{population ? uint8_t{0xffU} : uint8_t{0U}};
         // Generate and visit the same number of bytes for both populations, outside measurement.
-        for (auto index = std::size_t{}; index < size; ++index) {
-            const auto position = el::ByteIndex{index};
+        for (auto index = el::ByteIndex::zero(); index.isWithin(size); index.uncheckedIncrement()) {
+            const auto position = index;
             bytes.set(position, (bytes.get(position) & mask) | (el::Byte{0x55U} & ~mask));
         }
         return bytes;
@@ -61,7 +60,7 @@ protected:
     /// @param condition Required invariant.
     static void require(bool condition) {
         if (!condition) {
-            throw el::LogicError{"Constant-time fixture validation failed."_el};
+            throw el::LogicFailure{"Constant-time fixture validation failed."_el};
         }
     }
 

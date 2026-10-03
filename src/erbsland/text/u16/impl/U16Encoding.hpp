@@ -4,8 +4,8 @@
 
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteReader.hpp"
-#include "../../../unit/U16DataIndex.hpp"
-#include "../../../unit/U16DataLength.hpp"
+#include "../../../unit/U16Count.hpp"
+#include "../../../unit/U16Index.hpp"
 #include "../../impl/ThrowHelper.hpp"
 #include "../../StringEncoding.hpp"
 #include "../../u8/impl/U8Encoding.hpp"
@@ -28,24 +28,25 @@ namespace erbsland::text::impl::utf16 {
 
 /// Get the UTF-16 encoded length
 /// @tested{U16EncodingTest}
-inline auto encodedLength(const Char character) noexcept -> unit::U16DataLength {
+inline auto encodedLength(const Char character) noexcept -> unit::U16Count {
     if (!character.isValidUnicode()) {
-        return unit::U16DataLength::one();
+        return unit::U16Count::one();
     }
     const auto codePoint = character.toRawValue();
     if (codePoint <= 0xFFFFU) {
-        return unit::U16DataLength::one();
+        return unit::U16Count::one();
     }
-    return unit::U16DataLength{2U};
+    return unit::U16Count{2U};
 }
 
 /// Decode a single UTF-16 character in the buffer and advance the position.
 /// On decoding error, throws an exception, position is unchanged.
+/// The read position must be inside the input.
 /// @tested{U16EncodingTest}
-inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16DataIndex &position) -> Char {
+inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16Index &position) -> Char {
     const auto index = position.toSizeT();
     if (index >= buffer.size()) {
-        throwOutOfRange("Read position out of range");
+        throwOutOfRangeFailure("Read position out of range");
     }
     const auto unit = buffer[index];
     if (Char::isHighSurrogate(unit)) {
@@ -54,7 +55,7 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
         }
         const char32_t codePoint = char32_t{0x10000U} + (static_cast<char32_t>(unit - 0xD800U) << 10U) +
             static_cast<char32_t>(buffer[index + 1U] - 0xDC00U);
-        position.advance(unit::U16DataLength{2U});
+        position.uncheckedAdvance(unit::U16Count{2U});
         return Char{codePoint};
     }
     if (Char::isLowSurrogate(unit)) {
@@ -64,14 +65,14 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
     if (!character.isValidUnicode()) {
         throwU16EncodingError("Invalid Unicode code point in UTF-16 data", index);
     }
-    position.advance(unit::U16DataLength::one());
+    position.uncheckedAdvance(unit::U16Count::one());
     return character;
 }
 
 /// Decode a single UTF-16 character in the buffer and advance the position.
 /// Malformed surrogate units are replaced and advance by one code unit.
-[[nodiscard]] inline auto decodeCharOrReplace(
-    const std::span<const char16_t> buffer, unit::U16DataIndex &position) noexcept -> Char {
+[[nodiscard]] inline auto decodeCharOrReplace(const std::span<const char16_t> buffer, unit::U16Index &position) noexcept
+    -> Char {
     const auto index = position.toSizeT();
     if (index >= buffer.size()) {
         return Char{0U};
@@ -81,24 +82,24 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
         if (index + 1U < buffer.size() && Char::isLowSurrogate(buffer[index + 1U])) {
             const char32_t codePoint = char32_t{0x10000U} + (static_cast<char32_t>(unit - 0xD800U) << 10U) +
                 static_cast<char32_t>(buffer[index + 1U] - 0xDC00U);
-            position.advance(unit::U16DataLength{2U});
+            position.uncheckedAdvance(unit::U16Count{2U});
             return Char{codePoint};
         }
-        position.increment();
+        position.uncheckedIncrement();
         return Char::replacement();
     }
     if (Char::isLowSurrogate(unit)) {
-        position.increment();
+        position.uncheckedIncrement();
         return Char::replacement();
     }
-    position.increment();
+    position.uncheckedIncrement();
     const auto character = Char{static_cast<char32_t>(unit)};
     return character.isValidUnicode() ? character : Char::replacement();
 }
 
 /// Decode a single UTF-16 character in the buffer and advance the position.
 /// Malformed surrogate units return no character and advance by one code unit.
-[[nodiscard]] inline auto tryDecodeChar(const std::span<const char16_t> buffer, unit::U16DataIndex &position) noexcept
+[[nodiscard]] inline auto tryDecodeChar(const std::span<const char16_t> buffer, unit::U16Index &position) noexcept
     -> std::optional<Char> {
     const auto index = position.toSizeT();
     if (index >= buffer.size()) {
@@ -109,48 +110,48 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
         if (index + 1U < buffer.size() && Char::isLowSurrogate(buffer[index + 1U])) {
             const char32_t codePoint = char32_t{0x10000U} + (static_cast<char32_t>(unit - 0xD800U) << 10U) +
                 static_cast<char32_t>(buffer[index + 1U] - 0xDC00U);
-            position.advance(unit::U16DataLength{2U});
+            position.uncheckedAdvance(unit::U16Count{2U});
             return Char{codePoint};
         }
-        position.increment();
+        position.uncheckedIncrement();
         return std::nullopt;
     }
     if (Char::isLowSurrogate(unit)) {
-        position.increment();
+        position.uncheckedIncrement();
         return std::nullopt;
     }
-    position.increment();
+    position.uncheckedIncrement();
     const auto character = Char{static_cast<char32_t>(unit)};
     return character.isValidUnicode() ? std::optional<Char>{character} : std::nullopt;
 }
 
 /// Fast advancing the position index in the given UTF-16 buffer.
 /// Malformed surrogate units advance by one code unit.
-inline void fastAdvanceChar(const std::span<const char16_t> buffer, unit::U16DataIndex &position) noexcept {
+inline void fastAdvanceChar(const std::span<const char16_t> buffer, unit::U16Index &position) noexcept {
     const auto index = position.toSizeT();
     if (index >= buffer.size() || buffer.empty()) {
         return;
     }
     if (Char::isHighSurrogate(buffer[index]) && index + 1U < buffer.size() &&
         Char::isLowSurrogate(buffer[index + 1U])) {
-        position.advance(unit::U16DataLength{2U});
+        position.uncheckedAdvance(unit::U16Count{2U});
         return;
     }
-    position.increment();
+    position.uncheckedIncrement();
 }
 
 /// Fast retreating the position index in the given UTF-16 buffer.
 /// Malformed surrogate units retreat by one code unit.
-inline void fastRetreatChar(const std::span<const char16_t> buffer, unit::U16DataIndex &position) noexcept {
+inline void fastRetreatChar(const std::span<const char16_t> buffer, unit::U16Index &position) noexcept {
     auto index = std::min(position.toSizeT(), buffer.size());
     if (index == 0U || buffer.empty()) {
         return;
     }
     if (index >= 2U && Char::isLowSurrogate(buffer[index - 1U]) && Char::isHighSurrogate(buffer[index - 2U])) {
-        position = unit::U16DataIndex::fromSizeT(index - 2U);
+        position = unit::U16Index{index - 2U, unit::U16Index::Unchecked{}};
         return;
     }
-    position = unit::U16DataIndex::fromSizeT(index - 1U);
+    position = unit::U16Index{index - 1U, unit::U16Index::Unchecked{}};
 }
 
 /// Iterate over a UTF-16 encoded string, decoding each character and handling errors according to the specified mode.
@@ -207,7 +208,7 @@ void forEachDecodedCharacter(const std::u16string &text, const EncodingMode mode
 /// @tested{U16EncodingTest}
 template <EncodingMode mode, typename Function>
 auto forEachDecodedCharacter(const std::span<const char16_t> data, Function function) -> bool {
-    auto position = unit::U16DataIndex::zero();
+    auto position = unit::U16Index::zero();
     while (position.toSizeT() < data.size()) {
         auto character = Char{};
         if constexpr (mode == EncodingMode::Strict) {
@@ -241,7 +242,7 @@ auto forEachDecodedCharacter(const std::span<const char16_t> data, const Encodin
 
 /// Test if the UTF-16 code-unit sequence is fully valid.
 [[nodiscard]] inline auto isValid(const std::span<const char16_t> data) noexcept -> bool {
-    auto position = unit::U16DataIndex::zero();
+    auto position = unit::U16Index::zero();
     while (position.toSizeT() < data.size()) {
         if (!tryDecodeChar(data, position).has_value()) {
             return false;

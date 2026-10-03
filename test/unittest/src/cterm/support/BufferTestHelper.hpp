@@ -5,7 +5,7 @@
 #include "BlockStringTestHelper.hpp"
 
 #include <erbsland/block/StdFormat.hpp>
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/StdFormat.hpp>
 
 #include <format>
 #include <memory>

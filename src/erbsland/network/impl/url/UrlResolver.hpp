@@ -4,7 +4,7 @@
 
 #include "UrlData.hpp"
 
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 #include "../../url/UrlParseOptions.hpp"
 
 #include <memory>
@@ -50,7 +50,7 @@ private:
     /// Remove the last segment from an output path.
     [[nodiscard]] static auto removeLastSegment(const text::String &path) -> text::String;
     /// Remove an ASCII byte prefix from text.
-    [[nodiscard]] static auto removePrefix(const text::String &text, unit::ByteLength length) -> text::String;
+    [[nodiscard]] static auto removePrefix(const text::String &text, unit::ByteCount length) -> text::String;
     /// Concatenate two strings.
     [[nodiscard]] static auto join(const text::String &first, const text::String &second) -> text::String;
 

@@ -42,7 +42,7 @@ public:
 
 public: // accessors
     /// Get the number of retained incomplete handshake bytes.
-    [[nodiscard]] auto bufferedLength() const noexcept -> unit::ByteLength { return _buffer.length(); }
+    [[nodiscard]] auto bufferedLength() const noexcept -> unit::ByteCount { return _buffer.length(); }
 
 private:
     static constexpr std::size_t cHeaderLength{4U};                 ///< Handshake header size.

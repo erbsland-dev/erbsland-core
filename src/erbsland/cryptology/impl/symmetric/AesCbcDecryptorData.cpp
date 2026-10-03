@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "AesCbcDecryptorData.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
 using namespace text::literals;
 
 AesCbcDecryptorData::AesCbcDecryptorData(
-    const SymmetricEncryptionType type, const mem::ConstByteSpan key, const mem::ConstByteSpan iv) :
+    const SymmetricEncryptionType type, const ConstByteSpan key, const ConstByteSpan iv) :
     _type{type}, _state{type, key, iv} {
 }
 
@@ -22,19 +23,19 @@ auto AesCbcDecryptorData::type() const noexcept -> SymmetricEncryptionType {
     return _type;
 }
 
-void AesCbcDecryptorData::addAuthenticatedData(mem::ConstByteSpan) {
-    throw err::LogicError{"AES-CBC does not support authenticated data."_el};
+void AesCbcDecryptorData::addAuthenticatedData(ConstByteSpan) {
+    throw err::LogicFailure{"AES-CBC does not support authenticated data."_el};
 }
 
-auto AesCbcDecryptorData::decrypt(const mem::ConstByteSpan data) -> mem::ByteBlock {
+auto AesCbcDecryptorData::decrypt(const ConstByteSpan data) -> ByteBlock {
     return _state.decrypt(data);
 }
 
-auto AesCbcDecryptorData::finalize(const SymmetricTag &) -> mem::ByteBlock {
-    throw err::LogicError{"AES-CBC decryption does not accept an authentication tag."_el};
+auto AesCbcDecryptorData::finalize(const SymmetricTag &) -> ByteBlock {
+    throw err::LogicFailure{"AES-CBC decryption does not accept an authentication tag."_el};
 }
 
-auto AesCbcDecryptorData::finalize() -> mem::ByteBlock {
+auto AesCbcDecryptorData::finalize() -> ByteBlock {
     return _state.finalizeDecryption();
 }
 

@@ -6,11 +6,10 @@
 
 #include "../../PreparedCase.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/cryptology/HashAlgorithm.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 

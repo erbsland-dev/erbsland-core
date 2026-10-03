@@ -12,7 +12,7 @@
 #include "OptionValueStorage.hpp"
 
 #include "../text/StringEditor.hpp"
-#include "../unit/ArgumentUnit.hpp"
+#include "../unit/ArgumentCount.hpp"
 
 #include <optional>
 
@@ -42,24 +42,24 @@ public:
     /// Access the edited option.
     /// @return The shared option edited by this object, or `nullptr` for an invalid editor.
     [[nodiscard]] auto option() const noexcept -> const OptionPtr & { return _option; }
-    /// Set the help description.
-    /// @param description User-facing help description for this option.
+    /// Set the brief help title.
+    /// @param title Brief text shown beside the option in overview output.
     /// @return This editor for chaining.
-    auto setHelp(text::String description) -> OptionEditor &;
+    auto setHelp(text::String title) -> OptionEditor &;
     /// Set the full help definition.
     /// @param help Complete help metadata.
     /// @return This editor for chaining.
     auto setHelp(OptionHelp help) -> OptionEditor &;
     /// Set the help title.
-    /// @param title Short title used when no description is available.
+    /// @param title Brief text shown in overview output.
     /// @return This editor for chaining.
     auto setHelpTitle(text::String title) -> OptionEditor &;
     /// Set the help description.
-    /// @param description User-facing help description for this option.
+    /// @param description Detailed description shown on the option help page.
     /// @return This editor for chaining.
     auto setHelpDescription(text::String description) -> OptionEditor &;
     /// Set the help epilog.
-    /// @param epilog Optional trailing text for renderers that support option-level epilogs.
+    /// @param epilog Trailing text shown after the option detail page.
     /// @return This editor for chaining.
     auto setHelpEpilog(text::String epilog) -> OptionEditor &;
     /// Set the detailed-help example.

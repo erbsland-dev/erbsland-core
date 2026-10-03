@@ -4,7 +4,7 @@
 
 #include "../Terminal.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../mem/impl/SecureErase.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../text/Literals.hpp"
@@ -17,9 +17,11 @@
 
 namespace erbsland::cterm::impl {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
+using unit::CpCount;
 using unit::CpIndex;
-using unit::CpLength;
 
 ReadSecret::ReadSecret(TerminalPtr terminal, ReadLineOptions options) :
     ReadSecret{std::move(terminal), prepareOptions(std::move(options))} {
@@ -37,15 +39,15 @@ ReadSecret::~ReadSecret() {
 
 auto ReadSecret::prepareOptions(ReadLineOptions options) -> PreparedOptions {
     if (!options.history().isEmpty()) {
-        throw err::ParameterError{"Secret input does not support history."_el, "history"_el};
+        throw err::ParameterFailure{"Secret input does not support history."_el, "history"_el};
     }
     if (!options.currentText().isEmpty()) {
-        throw err::ParameterError{"Secret input does not support initial text."_el, "currentText"_el};
+        throw err::ParameterFailure{"Secret input does not support initial text."_el, "currentText"_el};
     }
     const auto maximumLength = std::min(options.maximumLength(), cterm::ReadSecret::cMaximumLength);
     options.setMaximumLength(maximumLength);
-    options.setMaximumLines(unit::LineCount{1U});
-    options.setMaximumDisplayLines(unit::LineCount{1U});
+    options.setMaximumLines(LineCount{1U});
+    options.setMaximumDisplayLines(LineCount{1U});
     return {std::move(options), maximumLength};
 }
 
@@ -105,7 +107,7 @@ void ReadSecret::discardText() noexcept {
 }
 
 void ReadSecret::commitText() {
-    auto byteLength = unit::ByteLength{};
+    auto byteLength = ByteCount{};
     for (auto index = std::size_t{}; index < _length; ++index) {
         byteLength += text::impl::utf8::encodedLength(_characters[index]);
     }
@@ -115,7 +117,7 @@ void ReadSecret::commitText() {
         for (auto index = std::size_t{}; index < _length; ++index) {
             writer.write(_characters[index]);
         }
-        _committed = buffer.take(unit::ByteLength::fromSizeT(writer.position()));
+        _committed = buffer.take(ByteCount::fromSizeT(writer.position()));
         discardText();
     } catch (...) {
         discardText();
@@ -123,11 +125,11 @@ void ReadSecret::commitText() {
     }
 }
 
-auto ReadSecret::insertKeyText(const Key &key, const CpIndex index) -> CpLength {
+auto ReadSecret::insertKeyText(const Key &key, const CpIndex index) -> CpCount {
     if (!key.modifiers().empty()) {
         return {};
     }
-    auto characters = text::CombinedChar::Storage{};
+    auto characters = CombinedChar::Storage{};
     auto count = std::size_t{};
     if (key.type() == Key::Space) {
         characters[0] = U' ';
@@ -142,7 +144,7 @@ auto ReadSecret::insertKeyText(const Key &key, const CpIndex index) -> CpLength 
         return {};
     }
     for (auto offset = std::size_t{}; offset < count; ++offset) {
-        if (characters[offset].isNull() || characters[offset].isControl()) {
+        if (characters[offset].isControl()) {
             return {};
         }
     }
@@ -153,17 +155,17 @@ auto ReadSecret::insertKeyText(const Key &key, const CpIndex index) -> CpLength 
         _characters.begin() + static_cast<std::ptrdiff_t>(_length + count));
     std::copy_n(characters.begin(), count, _characters.begin() + static_cast<std::ptrdiff_t>(position));
     _length += count;
-    auto bullets = text::U32StringEditor{};
-    bullets.append(text::Char{U'\u2022'}, CpLength::fromSizeT(count));
+    auto bullets = U32StringEditor{};
+    bullets.append(Char{U'\u2022'}, CpCount::fromSizeT(count));
     _mask.insert(index, bullets);
-    return CpLength::fromSizeT(count);
+    return CpCount::fromSizeT(count);
 }
 
 auto ReadSecret::insertNewLine([[maybe_unused]] const CpIndex index) -> bool {
     return false;
 }
 
-void ReadSecret::eraseText(const CpIndex index, const CpLength length) noexcept {
+void ReadSecret::eraseText(const CpIndex index, const CpCount length) noexcept {
     if (index.toSizeT() >= _length || length.isZero()) {
         return;
     }
@@ -175,7 +177,7 @@ void ReadSecret::eraseText(const CpIndex index, const CpLength length) noexcept 
         _characters.begin() + static_cast<std::ptrdiff_t>(index.toSizeT()));
     eraseCharacters(_length - count, count);
     _length -= count;
-    _mask.remove(unit::CpRange{index, CpLength::fromSizeT(count)});
+    _mask.remove(CpRange{index, CpCount::fromSizeT(count)});
 }
 
 auto ReadSecret::previousUnitStart(CpIndex index) const noexcept -> CpIndex {
@@ -210,9 +212,7 @@ auto ReadSecret::result(const ReadLineStatus status) const -> ReadLineResult {
 }
 
 void ReadSecret::purgePendingInput() noexcept {
-    try {
-        terminal()->input().purgePendingInput();
-    } catch (...) {}
+    terminal()->input().purgePendingInput();
 }
 
 }

@@ -2,10 +2,39 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
+#include <erbsland/all_network_source.hpp>
+#include <erbsland/all_network_udp.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/cterm/BlockAttributes.hpp>
+#include <erbsland/cterm/ColorPart.hpp>
 #include <erbsland/cterm/Terminal.hpp>
-#include <erbsland/network/source/all.hpp>
-#include <erbsland/network/udp/all.hpp>
+#include <erbsland/Endianness.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/Host.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/IpEndpoint.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkError.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/OverflowError.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/Port.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/Time.hpp>
+#include <erbsland/TimeAmounts.hpp>
+#include <erbsland/TimeEpoch.hpp>
+#include <erbsland/Timestamp.hpp>
+#include <erbsland/UdpDatagram.hpp>
+#include <erbsland/UdpSocket.hpp>
 
 #include <cstdint>
 #include <utility>
@@ -27,12 +56,12 @@ protected: // implement Application
         options->setHelpDescription("Provides the RFC 868 UDP time service."_el);
         options->addOption({"-a"_el, "--address"_el, "address"_el})
             .setType(el::OptionType::Text)
-            .setHelpDescription("Local IPv4 or IPv6 address to bind."_el)
+            .setHelpTitle("Local IPv4 or IPv6 address to bind."_el)
             .setDefaultValue("0.0.0.0"_el)
             .setValidateTextValue<el::Host>("The address argument does not specify a valid IP address"_el);
         options->addOption({"-p"_el, "--port"_el, "port"_el})
             .setType(el::OptionType::Text)
-            .setHelpDescription("Local UDP port to bind."_el)
+            .setHelpTitle("Local UDP port to bind."_el)
             .setDefaultValue("37"_el)
             .setValidateTextValue<el::Port>("The port option does not specify a valid port number"_el);
     }
@@ -64,7 +93,7 @@ private:
 
     void onDatagram(const el::UdpDatagram &datagram) {
         uint8_t version = 1;
-        if (datagram.data().length() > el::ByteLength{1}) {
+        if (datagram.data().length() > el::ByteCount::one()) {
             return;
         }
         if (!datagram.data().isEmpty()) {
@@ -84,7 +113,7 @@ private:
             try {
                 const auto timestamp = ticks.value().toValue().castOrThrow<std::uint32_t>();
                 response.appendInteger(timestamp.toRawValue(), el::Endianness::Big);
-            } catch (const el::Exception &) {
+            } catch (const el::OverflowError &) {
                 return; // ignore the request if we cannot represent the timestamp
             }
         } else {

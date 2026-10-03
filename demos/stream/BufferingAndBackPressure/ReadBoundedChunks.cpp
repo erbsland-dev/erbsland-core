@@ -1,6 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/CpCount.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TextInputStream.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -22,7 +27,7 @@ void readBoundedChunks() {
 /// `readLine()` retains an incomplete line after a timeout. Retry the same call and the stream continues collecting the
 /// line until it can return it as one value.
 void readCellObservationLog(el::TextInputStream &input) {
-    constexpr auto cMaximumLineLength = el::CpLength{80U};
+    constexpr auto cMaximumLineLength = el::CpCount{80U};
     constexpr auto cMaximumTimeouts = 3U;
     auto consecutiveTimeouts = 0U;
 

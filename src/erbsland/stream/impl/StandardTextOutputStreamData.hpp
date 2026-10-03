@@ -9,6 +9,7 @@
 #include "../StreamState.hpp"
 
 #include "../../text/String.hpp"
+#include "../../util/impl/worker_executor/WorkerServices.hpp"
 
 #include <atomic>
 #include <condition_variable>
@@ -39,6 +40,7 @@ public:
     void performFlush(bool closeAfterFlush, uint64_t generation);
 
 public:
+    util::impl::WorkerReservation work{util::impl::worker_services::io().reserve()}; ///< Lifetime I/O admission.
     NativeOutputStreamPtr native;      ///< The synchronous native output target.
     OutputStreamSettings settings;     ///< The immutable stream settings.
     mutable std::mutex mutex;          ///< Protects the queue and non-atomic stream state.

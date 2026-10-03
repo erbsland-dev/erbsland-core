@@ -3,14 +3,14 @@
 
 #include "../ConfTestHelper.hpp"
 
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/CodeLocation.hpp>
 #include <erbsland/conf/impl/char/CharClass.hpp>
 #include <erbsland/conf/impl/char/CharStream.hpp>
 #include <erbsland/conf/impl/char/NamedChars.hpp>
 #include <erbsland/conf/Source.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
 #include <erbsland/mem/impl/UnsafeByteBlockAccess.hpp>
-#include <erbsland/unit/CodeLocation.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::conf;

@@ -3,19 +3,45 @@
 #pragma once
 
 #include "Fairness.hpp"
+#include "SeparatorSplitWorkload.hpp"
 #include "Statistics.hpp"
 #include "WidthTraits.hpp"
 
 #include "../Workload.hpp"
 
-#include <erbsland/cryptology/HashAlgorithm.hpp>
-#include <erbsland/cryptology/Hasher.hpp>
-#include <erbsland/system/EnvironmentVariables.hpp>
+#include <erbsland/Alignment.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/CpRange.hpp>
+#include <erbsland/EnvironmentVariables.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/FastRandom.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/LoopStatus.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringSide.hpp>
 #include <erbsland/text/impl/UnsafeU16StringBuffer.hpp>
 #include <erbsland/text/impl/UnsafeU8StringBuffer.hpp>
-#include <erbsland/text/u16/U16StringConstIterator.hpp>
-#include <erbsland/text/u32/U32StringConstIterator.hpp>
-#include <erbsland/text/u8/U8StringConstIterator.hpp>
+#include <erbsland/TruncateMode.hpp>
+#include <erbsland/U16Count.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U16StringConstIterator.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringConstIterator.hpp>
+#include <erbsland/U32StringEditor.hpp>
+#include <erbsland/U8String.hpp>
+#include <erbsland/U8StringConstIterator.hpp>
+#include <erbsland/U8StringEditor.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -44,8 +70,8 @@ using Clock = std::chrono::steady_clock;
 }
 
 /// Convert a raw value into a code-point length.
-[[nodiscard]] auto cpLength(const std::uint64_t value) -> el::CpLength {
-    return el::CpLength::fromSizeT(static_cast<std::size_t>(value));
+[[nodiscard]] auto cpLength(const std::uint64_t value) -> el::CpCount {
+    return el::CpCount::fromSizeT(static_cast<std::size_t>(value));
 }
 
 /// Mix a value into a deterministic random seed.
@@ -64,7 +90,11 @@ using Clock = std::chrono::steady_clock;
     const Scenario &scenario,
     const std::uint32_t worker,
     const std::uint64_t sample) noexcept -> std::uint64_t {
-    auto result = mixSeed(configuration.run.seed, scenario.id.toHash());
+    auto identity = scenario.id;
+    if (scenario.useCase == UseCase::SeparatorSplit) {
+        identity = identity.replacedAll("manual-"_el, ""_el);
+    }
+    auto result = mixSeed(configuration.run.seed, identity.toHash());
     result = mixSeed(result, worker);
     return mixSeed(result, sample);
 }
@@ -153,11 +183,11 @@ template <typename Traits>
         source.append(sourceCharacter(random, profile, index));
     }
     if constexpr (Traits::Width == StringWidth::U8) {
-        return el::StringConverter{el::U32String{source}}.toU8String();
+        return el::StringConverter{source}.toU8String();
     } else if constexpr (Traits::Width == StringWidth::U16) {
-        return el::StringConverter{el::U32String{source}}.toU16String();
+        return el::StringConverter{source}.toU16String();
     } else {
-        return el::U32String{source};
+        return source;
     }
 }
 
@@ -168,14 +198,14 @@ template <typename Traits>
     const auto interval = profile == ContentProfile::MalformedDense ? 3U : 97U;
     auto random = el::FastRandom{seed};
     if constexpr (Traits::Width == StringWidth::U8) {
-        auto text = el::text::impl::UnsafeU8StringBuffer{el::ByteLength{count}};
+        auto text = el::text::impl::UnsafeU8StringBuffer{el::ByteCount::fromInteger(count)};
         for (auto index = std::uint64_t{}; index < count; ++index) {
             text.data()[index] =
                 index % interval == 0U ? static_cast<char>(0x80U) : static_cast<char>('a' + random.getUInt32(0U, 25U));
         }
-        return el::U8String{text.take(el::ByteLength{count})};
+        return el::U8String{text.take(el::ByteCount::fromInteger(count))};
     } else if constexpr (Traits::Width == StringWidth::U16) {
-        const auto length = el::U16DataLength::fromSizeTOrThrow(static_cast<std::size_t>(count));
+        const auto length = el::U16Count::fromSizeTOrThrow(static_cast<std::size_t>(count));
         auto text = el::text::impl::UnsafeU16StringBuffer{length};
         for (auto index = std::uint64_t{}; index < count; ++index) {
             text.data()[index] = index % interval == 0U ? static_cast<char16_t>(0xd800U)
@@ -228,11 +258,11 @@ template <typename Traits>
     if (scenario.variant == "find-adversarial"_el) {
         auto result = typename Traits::Editor{source.slice(el::CpRange{el::CpIndex::zero(), cpLength(count)})};
         result.replace(
-            el::CpRange{cpIndex(count - 1U), el::CpLength::one()}, Traits::String::fromCharacter(el::Char{U'\u0001'}));
-        return typename Traits::String{result};
+            el::CpRange{cpIndex(count - 1U), el::CpCount::one()}, Traits::String::fromCharacter(el::Char{U'\u0001'}));
+        return result;
     }
     if (scenario.variant == "count-many"_el) {
-        return source.slice(el::CpRange{el::CpIndex::zero(), el::CpLength::one()});
+        return source.slice(el::CpRange{el::CpIndex::zero(), el::CpCount::one()});
     }
     const auto back = scenario.variant == "find-hit-back"_el || scenario.variant == "ends-with-hit"_el ||
         scenario.variant == "contains-hit-back"_el;
@@ -261,6 +291,7 @@ template <typename Traits, typename Value>
     -> WorkerResult {
     using String = typename Traits::String;
     using Editor = typename Traits::Editor;
+    static const auto cVowels = el::CharSet{"aeiou"_el};
     constexpr auto isEditor = std::same_as<Value, Editor>;
     auto sourceString = makeString<Traits>(scenario, seed);
     validateSource<Traits>(sourceString, scenario);
@@ -276,11 +307,11 @@ template <typename Traits, typename Value>
     }();
     auto differentEditor = Editor{sourceString};
     if (!differentEditor.isEmpty()) {
-        const auto differentIndex = scenario.variant == "different-back"_el
+        const auto differentIndex =
+            (scenario.variant == "different-back"_el || scenario.variant == "binary-different-back"_el)
             ? cpIndex(static_cast<std::uint64_t>(sourceString.characterLength().toRawValue()) - 1U)
             : el::CpIndex::zero();
-        differentEditor.replace(
-            el::CpRange{differentIndex, el::CpLength::one()}, String::fromCharacter(el::Char{U'Z'}));
+        differentEditor.replace(el::CpRange{differentIndex, el::CpCount::one()}, String::fromCharacter(el::Char{U'Z'}));
     }
     const auto different = String{differentEditor};
     const auto needle = makeNeedle<Traits>(sourceString, scenario);
@@ -301,6 +332,10 @@ template <typename Traits, typename Value>
     if (scenario.useCase == UseCase::Move) {
         moveFixtures.resize(static_cast<std::size_t>(operations), value);
     }
+    auto separatorSplit = std::optional<SeparatorSplitWorkload<Traits, Value>>{};
+    if (scenario.useCase == UseCase::SeparatorSplit) {
+        separatorSplit.emplace(sourceString, scenario);
+    }
     const auto start = Clock::now();
     for (auto iteration = std::uint64_t{}; iteration < operations; ++iteration) {
         switch (scenario.useCase) {
@@ -310,7 +345,7 @@ template <typename Traits, typename Value>
             } else if constexpr (isEditor) {
                 auto created = Editor{sourceString};
                 sink = mixSeed(sink, Traits::dataLength(created));
-                finalText = String{created};
+                finalText = created;
             } else {
                 finalText = sourceString.copy();
             }
@@ -332,11 +367,11 @@ template <typename Traits, typename Value>
         }
         case UseCase::TypeConvert:
             if constexpr (isEditor) {
-                finalText = String{value};
+                finalText = value;
             } else {
                 auto editor = Editor{value};
                 sink = mixSeed(sink, Traits::dataLength(editor));
-                finalText = String{editor};
+                finalText = editor;
             }
             break;
         case UseCase::WidthConvert:
@@ -347,6 +382,9 @@ template <typename Traits, typename Value>
             } else {
                 sink = mixSeed(sink, el::StringConverter{value}.toU32String().length().toRawValue());
             }
+            break;
+        case UseCase::SeparatorSplit:
+            sink = mixSeed(sink, separatorSplit->run());
             break;
         case UseCase::SliceSplit: {
             const auto count = cpCount / 2U;
@@ -419,7 +457,10 @@ template <typename Traits, typename Value>
             }
             break;
         case UseCase::Compare:
-            if (scenario.variant == "case-folded"_el) {
+            if (scenario.variant.startsWith("binary-"_el)) {
+                const auto &other = scenario.variant == "binary-equal"_el ? sourceString : different;
+                sink = mixSeed(sink, value.compareBinary(other) == 0 ? 1U : 2U);
+            } else if (scenario.variant == "case-folded"_el) {
                 sink = mixSeed(sink, value.compare(sourceString, el::Char::compareCaseFolded) == 0 ? 1U : 2U);
             } else {
                 sink = mixSeed(
@@ -431,10 +472,9 @@ template <typename Traits, typename Value>
             break;
         case UseCase::Search:
             if (scenario.variant == "find-first-of"_el) {
-                const auto characters = el::CharSet{"aeiou"_el};
-                sink = mixSeed(sink, value.findFirstOf(characters).toRawValue());
+                sink = mixSeed(sink, value.findFirstOf(cVowels).toRawValue());
             } else if (scenario.variant == "find-last-of"_el) {
-                sink = mixSeed(sink, value.findLastOf(el::CharSet{"aeiou"_el}).toRawValue());
+                sink = mixSeed(sink, value.findLastOf(cVowels).toRawValue());
             } else if (scenario.variant == "starts-with-hit"_el) {
                 sink = mixSeed(sink, value.startsWith(needle) ? 1U : 2U);
             } else if (scenario.variant == "ends-with-hit"_el) {
@@ -474,7 +514,7 @@ template <typename Traits, typename Value>
             break;
         case UseCase::Join:
             if constexpr (isEditor) {
-                finalText = String{Editor::fromJoined({sourceString, sourceString, sourceString, sourceString})};
+                finalText = Editor::fromJoined({sourceString, sourceString, sourceString, sourceString});
             } else {
                 finalText = String::fromJoined({sourceString, sourceString, sourceString, sourceString});
             }
@@ -517,6 +557,7 @@ template <typename Traits>
 void mutateEditor(
     typename Traits::Editor &value,
     const typename Traits::String &operand,
+    const el::CharSet &characters,
     const Scenario &scenario,
     const std::uint64_t iteration,
     std::uint64_t &sink) {
@@ -570,7 +611,7 @@ void mutateEditor(
         }
     } else if (scenario.useCase == UseCase::Replace) {
         if (scenario.variant == "all-dense"_el) {
-            value.replaceAll(el::CharSet{"aeiou"_el}, el::Char{U'x'});
+            value.replaceAll(characters, el::Char{U'x'});
         } else if (scenario.variant == "code-point-middle"_el) {
             value.replace(el::CpRange{cpIndex(middle), cpLength(rangeCount)}, operand);
         } else if (scenario.variant == "aliased"_el) {
@@ -585,7 +626,7 @@ void mutateEditor(
         }
     } else if (scenario.useCase == UseCase::RemoveKeep) {
         if (scenario.variant == "all-dense"_el) {
-            value.removeAll(el::CharSet{"aeiou"_el});
+            value.removeAll(characters);
         } else if (scenario.variant == "keep-middle"_el) {
             value.keep(el::CpRange{cpIndex(middle), cpLength(rangeCount)});
         } else {
@@ -594,7 +635,7 @@ void mutateEditor(
         }
     } else if (scenario.useCase == UseCase::Trim) {
         if (scenario.variant == "character-set"_el) {
-            value.trim(el::CharSet{"aeiou"_el});
+            value.trim(characters);
         } else {
             value.trim();
         }
@@ -648,6 +689,7 @@ template <typename Traits>
 [[nodiscard]] auto executeEditorMutation(
     const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations) -> WorkerResult {
     using Editor = typename Traits::Editor;
+    static const auto cVowels = el::CharSet{"aeiou"_el};
     auto source = makeString<Traits>(scenario, seed);
     validateSource<Traits>(source, scenario);
     setSensitive(source, scenario.sensitiveMode);
@@ -676,7 +718,7 @@ template <typename Traits>
     for (auto iteration = std::uint64_t{}; iteration < operations; ++iteration) {
         auto &value = fixtures[static_cast<std::size_t>(iteration)];
         const auto oldCapacity = value.capacity().toRawValue();
-        mutateEditor<Traits>(value, operand, scenario, iteration, sink);
+        mutateEditor<Traits>(value, operand, cVowels, scenario, iteration, sink);
         capacityChanges += value.capacity().toRawValue() != oldCapacity ? 1U : 0U;
         sink = mixSeed(sink, Traits::dataLength(value));
     }
@@ -890,7 +932,7 @@ auto runSample(
                 scenario.size,
                 scenario.operandSize));
     }
-    return digest(el::String{text});
+    return digest(text);
 }
 
 /// Print one benchmark sample.

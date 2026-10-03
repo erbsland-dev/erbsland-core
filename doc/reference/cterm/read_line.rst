@@ -40,6 +40,14 @@ history and initial text, and caps input at 1024 Unicode code points.
 It renders a fixed bullet mask and transports a marked :cpp:type:`String <erbsland::text::String>` through
 ``ReadLineResult``.
 
+Errors and Preconditions
+========================
+
+``ReadLine`` and ``ReadSecret`` raise ``TerminalError`` when interactive full-control output is unavailable.
+Starting an already active editor or updating an inactive editor violates the lifecycle precondition and raises
+``LogicFailure``.
+Calling ``stop()`` while inactive remains harmless.
+
 Interface
 =========
 

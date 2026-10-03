@@ -6,7 +6,7 @@
 
 #include "../algorithm/Sha2.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 #include <cstdint>
@@ -35,7 +35,7 @@ auto createHmacWorker(const HashAlgorithm algorithm, const mem::ConstByteSpan ke
         using Worker = HmacWorkerAdapter<Sha2_384, HashAlgorithm::Sha2_384, 128U, std::numeric_limits<uint64_t>::max()>;
         return std::make_unique<Worker>(key);
     }
-    throw err::ParameterError{"HMAC supports only SHA-256 and SHA-384."_el, "algorithm"_el};
+    throw err::ParameterFailure{"HMAC supports only SHA-256 and SHA-384."_el, "algorithm"_el};
 }
 
 }

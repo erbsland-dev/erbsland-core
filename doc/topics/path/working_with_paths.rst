@@ -9,6 +9,7 @@
     single: fromWindows
     single: path elements
     single: path suffixes
+    single: path comparison
     single: path joining
     single: path slicing
     single: path conversion
@@ -21,7 +22,8 @@ Working with Paths
 
 This page explains the platform-independent features of
 :cpp:class:`Path <erbsland::path::Path>`.
-You will learn how to construct, inspect, modify, join, slice, and convert paths without accessing the filesystem.
+You will learn how to construct, inspect, compare, modify, join, slice, and convert paths without accessing the
+filesystem.
 These operations work entirely on the logical structure of a path, making them deterministic and independent of the
 operating system.
 
@@ -50,7 +52,7 @@ or
 .. erbsland-demo::
     :source: path/WorkingWithPaths/ConstructionAndFormats.cpp
     :exec: path/working_with_paths --demo ConstructionAndFormats
-    :source-sha256: 3e496fc5a26f646b0d996cce9186dc0382ff7e6a6494b83ec910c62c04da8bca
+    :sha256: 17c49b40471d42bdb90fe215cfddad030838858372679b9a88203b4b20c8975a
 
 .. code-block:: cpp
 
@@ -78,28 +80,27 @@ or
         el::io::printLine("unc root ..........: "_el, sharedChart.root());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    generic ...........: expedicao/ceu/diario.txt
-    posix .............: c:/manifestos/vento.txt
-    relative ..........: yes
-    windows ...........: c:/Expedicao/rotas/manha.txt
-    unc root ..........: //porto-ceu/Mapas/
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mgeneric ...........: expedicao/ceu/diario.txt
+        posix .............: c:/manifestos/vento.txt
+        relative ..........: yes
+        windows ...........: c:/Expedicao/rotas/manha.txt
+        unc root ..........: //porto-ceu/Mapas/␛[0m
 
 .. erbsland-demo-end::
 
 Inspecting Paths
 ================
 
-Many path operations only require information about the path itself and do not need to access the filesystem.
-The :cpp:class:`Path <erbsland::path::Path>` class therefore provides a rich set of inspection functions that operate
-purely on its internal representation.
-
-Use
-:cpp:func:`isRelative() <erbsland::path::Path::isRelative>`,
+Before working with a path, you often need to know whether it names a location relative to another directory or starts
+at a root.
+The :cpp:func:`isRelative() <erbsland::path::Path::isRelative>`,
 :cpp:func:`isAbsolute() <erbsland::path::Path::isAbsolute>`, and
-:cpp:func:`isRoot() <erbsland::path::Path::isRoot>` to classify a path.
+:cpp:func:`isRoot() <erbsland::path::Path::isRoot>` functions answer these questions from the path itself.
 
 Absolute paths expose their root as the first public path element.
 For example, the path ``/arquivo/rotas.txt`` consists of the root ``/`` followed by the elements ``arquivo`` and
@@ -107,19 +108,18 @@ For example, the path ``/arquivo/rotas.txt`` consists of the root ``/`` followed
 Treating the root as part of the public element sequence keeps indexing and slicing explicit.
 A slice that contains the first element remains absolute, while a slice that starts after the root becomes relative.
 
-Use
-:cpp:func:`name() <erbsland::path::Path::name>`,
+For a report or archive path, you may also need the file name or its extension.
+The :cpp:func:`name() <erbsland::path::Path::name>`,
 :cpp:func:`stem() <erbsland::path::Path::stem>`,
 :cpp:func:`suffix() <erbsland::path::Path::suffix>`, and
-:cpp:func:`suffixes() <erbsland::path::Path::suffixes>` to inspect the final
-non-root element.
+:cpp:func:`suffixes() <erbsland::path::Path::suffixes>` functions inspect the final non-root element.
 Leading dots are considered part of the file name rather than suffix separators, allowing hidden files to behave as
 expected.
 
 .. erbsland-demo::
     :source: path/WorkingWithPaths/InspectingPaths.cpp
     :exec: path/working_with_paths --demo InspectingPaths
-    :source-sha256: e218177859f87e13102bf8d1a02ce2ab1608dae4910800eb27a7bb372f25b703
+    :sha256: 5e9f4abfff81db5d7e9de9090db296c351f191cc2e5121e561497991b5b9417e
 
 .. code-block:: cpp
 
@@ -149,30 +149,61 @@ expected.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    path ..............: /arquivo/rotas/relatorio.final.txt
-    root ..............: /
-    name ..............: relatorio.final.txt
-    stem ..............: relatorio
-    suffixes ..........: .final.txt
-    element 0 .........: /
-    element 1 .........: arquivo
-    element 2 .........: rotas
-    element 3 .........: relatorio.final.txt
-    parent ............: /arquivo/rotas
-    parent ............: /arquivo
-    parent ............: /
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mpath ..............: /arquivo/rotas/relatorio.final.txt
+        root ..............: /
+        name ..............: relatorio.final.txt
+        stem ..............: relatorio
+        suffixes ..........: .final.txt
+        element 0 .........: /
+        element 1 .........: arquivo
+        element 2 .........: rotas
+        element 3 .........: relatorio.final.txt
+        parent ............: /arquivo/rotas
+        parent ............: /arquivo
+        parent ............: /␛[0m
 
 .. erbsland-demo-end::
+
+Comparing Paths
+===============
+
+When you collect report paths or check for duplicate entries in a file list, you can compare
+:cpp:class:`Path <erbsland::path::Path>` values directly with ``==`` and the ordering operators.
+Like inspection, comparison works on the root and path elements without accessing the filesystem.
+The files do not need to exist, and you do not need to allocate strings by converting the paths to text first.
+The :cpp:func:`compare() <erbsland::path::Path::compare>` method provides the same ordering as a
+``std::strong_ordering`` result.
+
+Sorting paths follows their hierarchy: comparison starts with the roots, then proceeds through the elements until it
+finds a difference.
+A parent sorts before its descendants, so ``rotas`` comes before ``rotas/manha.txt``.
+That child also comes before ``rotas-antigas``, because the first element ``rotas`` sorts before ``rotas-antigas``.
+Sorting the text returned by :cpp:func:`toString() <erbsland::path::Path::toString>` would give a different order,
+because the separators would participate in the string comparison.
+Empty paths sort first, followed by relative paths and then absolute paths.
+
+Within each root or element, comparison uses case-sensitive Unicode code-point order.
+If your application's file list should ignore case, you can pass
+:cpp:func:`Char::compareCaseFolded() <erbsland::text::Char::compareCaseFolded>` to ``compare()``.
+This changes the character matching rule while keeping the same hierarchy.
+The :doc:`/topics/text_strings/comparing_strings` topic explains the available character comparison rules.
+
+Path equality answers whether the path values match; identifying an existing file requires filesystem information.
+For example, ``rotas/./manha.txt`` and ``rotas/manha.txt`` compare unequal because comparison preserves the ``.``
+element.
+Links or filesystem-specific case rules may also let different paths refer to the same file.
+Case folding alone cannot reproduce those rules.
+See :doc:`overview` for the filesystem operations that complement these path-value operations.
 
 Editing Names
 =============
 
-Paths are immutable.
-Operations that modify a path always return a new
-:cpp:class:`Path <erbsland::path::Path>` while leaving the original object
+The name-editing methods return a new :cpp:class:`Path <erbsland::path::Path>` while leaving the original object
 unchanged.
 
 Use
@@ -191,7 +222,7 @@ or companion resources from a common base path.
 .. erbsland-demo::
     :source: path/WorkingWithPaths/EditingPathNames.cpp
     :exec: path/working_with_paths --demo EditingPathNames
-    :source-sha256: e1bdeca81da7cc224769353e13764b28ea2d5b01019839bd8974a3072085d356
+    :sha256: b876beaef8d7e5334918d9c86c44493e16367abbffce26c2bf35ad5a08e7f233
 
 .. code-block:: cpp
 
@@ -215,14 +246,16 @@ or companion resources from a common base path.
         el::io::printLine("no suffix .........: "_el, plainName.toString());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    base ..............: expedicao/diario/vento.final.txt
-    name ..............: expedicao/diario/relatorio.txt
-    suffix ............: expedicao/diario/vento.md
-    stem ..............: expedicao/diario/arquivo-vento.final.txt
-    no suffix .........: expedicao/diario/vento
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mbase ..............: expedicao/diario/vento.final.txt
+        name ..............: expedicao/diario/relatorio.txt
+        suffix ............: expedicao/diario/vento.md
+        stem ..............: expedicao/diario/arquivo-vento.final.txt
+        no suffix .........: expedicao/diario/vento␛[0m
 
 .. erbsland-demo-end::
 
@@ -232,6 +265,12 @@ Joining and Slicing
 Build larger paths by combining smaller path fragments with
 :cpp:func:`join() <erbsland::path::Path::join>`,
 :cpp:func:`joined() <erbsland::path::Path::joined>`, or the ``/`` operator.
+``join()`` modifies the path, while ``joined()`` and ``/`` return a new path.
+
+String arguments use generic path parsing, where relative text treats both slashes and backslashes as separators.
+For text obtained from the native filesystem, use :cpp:func:`joinNative() <erbsland::path::Path::joinNative>` or
+:cpp:func:`joinedNative() <erbsland::path::Path::joinedNative>` instead.
+These methods use the current platform's path syntax, preserving a backslash inside a filename on POSIX systems.
 
 When the right-hand path is absolute, only its non-root elements are appended.
 This allows reusable path fragments to be combined safely regardless of whether they were originally parsed as absolute
@@ -249,7 +288,7 @@ across all supported path formats.
 .. erbsland-demo::
     :source: path/WorkingWithPaths/JoiningAndSlicing.cpp
     :exec: path/working_with_paths --demo JoiningAndSlicing
-    :source-sha256: f70a1d00bf03bf3cde211d103092f52b68a6c516522cb726229ca2bbd025fedf
+    :sha256: e6024a781857eaaf1811b39ee81a0cf81fde961f655a9e526e1ddcdcb3bcc920
 
 .. code-block:: cpp
 
@@ -275,13 +314,15 @@ across all supported path formats.
         el::io::printLine("relative slice ....: "_el, relativeSlice.toString());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    joined ............: /arquivo/expedicoes/ceu-leste/manha.txt
-    absolute rhs ......: /arquivo/expedicoes/rotas/noite.txt
-    absolute slice ....: /arquivo/expedicoes
-    relative slice ....: arquivo/expedicoes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mjoined ............: /arquivo/expedicoes/ceu-leste/manha.txt
+        absolute rhs ......: /arquivo/expedicoes/rotas/noite.txt
+        absolute slice ....: /arquivo/expedicoes
+        relative slice ....: arquivo/expedicoes␛[0m
 
 .. erbsland-demo-end::
 
@@ -311,7 +352,7 @@ necessary at API boundaries.
 .. erbsland-demo::
     :source: path/WorkingWithPaths/ConvertingPaths.cpp
     :exec: path/working_with_paths --demo ConvertingPaths
-    :source-sha256: c656f53e8aaef20efedd1a5c7aff6772f0de66ee8eec2f6908d06ff87b7dfab1
+    :sha256: f2804bab9242a14bd8ef033fd092c5a40a4a78139dd2ef149dd542c50088e982
 
 .. code-block:: cpp
 
@@ -336,18 +377,20 @@ necessary at API boundaries.
 
         // Use std::filesystem interop only when another API requires it.
         const auto stdPath = relative.toStdPath();
-        el::io::printLine("std ...............: "_el, el::String{stdPath.generic_string()});
+        el::io::printLine("std ...............: "_el, el::StringConverter{stdPath.generic_string()}.toString());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    display ...........: expedicao/rotas/manha.txt
-    posix   ...........: expedicao/rotas/manha.txt
-    windows ...........: expedicao\rotas\manha.txt
-    drive   ...........: c:\Expedicao\rotas\manha.txt
-    posix / ...........: /arquivo/rotas/manha.txt
-    std ...............: expedicao/rotas/manha.txt
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mdisplay ...........: expedicao/rotas/manha.txt
+        posix   ...........: expedicao/rotas/manha.txt
+        windows ...........: expedicao\rotas\manha.txt
+        drive   ...........: c:\Expedicao\rotas\manha.txt
+        posix / ...........: /arquivo/rotas/manha.txt
+        std ...............: expedicao/rotas/manha.txt␛[0m
 
 .. erbsland-demo-end::
     

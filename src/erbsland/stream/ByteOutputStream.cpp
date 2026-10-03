@@ -6,23 +6,25 @@
 
 namespace erbsland::stream {
 
-auto ByteOutputStream::endianness() const noexcept -> mem::Endianness {
+using namespace mem;
+
+auto ByteOutputStream::endianness() const noexcept -> Endianness {
     return _endianness;
 }
 
-void ByteOutputStream::setEndianness(const mem::Endianness endianness) noexcept {
+void ByteOutputStream::setEndianness(const Endianness endianness) noexcept {
     _endianness = endianness;
 }
 
-auto ByteOutputStream::write(const mem::Byte byte) -> StreamWriteStatus {
-    return write(mem::ConstByteSpan{&byte, 1U});
+auto ByteOutputStream::write(const Byte byte) -> StreamWriteStatus {
+    return write(ConstByteSpan{&byte, 1U});
 }
 
-auto ByteOutputStream::write(const mem::ByteBlock &bytes) -> StreamWriteStatus {
+auto ByteOutputStream::write(const ByteBlock &bytes) -> StreamWriteStatus {
     return write(mem::impl::UnsafeByteBlockAccess{bytes}.dataView().dataSpan());
 }
 
-auto ByteOutputStream::coWrite(mem::ByteBlock bytes) -> util::CoTask<StreamWriteStatus> {
+auto ByteOutputStream::coWrite(ByteBlock bytes) -> util::CoTask<StreamWriteStatus> {
     auto self = std::static_pointer_cast<ByteOutputStream>(sharedOutputStream());
     return util::CoTask<StreamWriteStatus>::run(
         [self = std::move(self), bytes = std::move(bytes)]() -> StreamWriteStatus { return self->write(bytes); });

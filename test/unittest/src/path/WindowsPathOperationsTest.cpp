@@ -4,14 +4,14 @@
 #include "PathTestFixture.hpp"
 
 #include <erbsland/core/impl/WindowsApi.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/path/impl/BackendFactory.hpp>
 #include <erbsland/path/impl/PathBackend.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathInfo.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PlatformErrorCategory.hpp>
 #include <erbsland/system/impl/WindowsErrorContext.hpp>
-#include <erbsland/system/PlatformErrorCategory.hpp>
-#include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>

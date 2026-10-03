@@ -3,8 +3,10 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/system/EnvironmentVariables.hpp>
-#include <erbsland/text/StringMap.hpp>
+#include <erbsland/EnvironmentVariables.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringMap.hpp>
 
 namespace demo {
 

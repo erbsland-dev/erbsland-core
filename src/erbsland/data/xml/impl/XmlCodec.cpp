@@ -2,31 +2,35 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "XmlCodec.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../err/ParseError.hpp"
 #include "../../../text/AnyString.hpp"
 #include "../../../text/CaseSensitivity.hpp"
 #include "../../../text/Literals.hpp"
+#include "../../../text/StringJoins.hpp"
 #include "../../../text/u8/U8StringConstIterator.hpp"
 
 #include <compare>
 
 namespace erbsland::data::xml::impl {
 
+using namespace err;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-XmlCodec::XmlCodec(text::String source, XmlParseOptions options) :
+XmlCodec::XmlCodec(String source, XmlParseOptions options) :
     _source{std::move(source)}, _reader{_source}, _parseOptions{options} {
 }
 
 XmlCodec::XmlCodec([[maybe_unused]] XmlFormatOptions options) {
 }
 
-auto XmlCodec::decode(const text::String &source, XmlParseOptions options) -> XmlDocument {
+auto XmlCodec::decode(const String &source, XmlParseOptions options) -> XmlDocument {
     return XmlCodec{source, options}.parse();
 }
 
-auto XmlCodec::encode(const XmlDocument &document, XmlFormatOptions options) -> text::String {
+auto XmlCodec::encode(const XmlDocument &document, XmlFormatOptions options) -> String {
     auto codec = XmlCodec{options};
     auto seenRoot = false;
     auto seenDocType = false;
@@ -35,25 +39,25 @@ auto XmlCodec::encode(const XmlDocument &document, XmlFormatOptions options) -> 
         switch (node->type()) {
         case XmlNodeType::Element:
             if (seenRoot) {
-                throw err::ParameterError{"XML document has more than one root."_el, "document"_el};
+                throw ParameterFailure{"XML document has more than one root."_el, "document"_el};
             }
             seenRoot = true;
             break;
         case XmlNodeType::DocType:
             if (seenRoot || seenDocType) {
-                throw err::ParameterError{"DOCTYPE must occur once before the XML root."_el, "document"_el};
+                throw ParameterFailure{"DOCTYPE must occur once before the XML root."_el, "document"_el};
             }
             seenDocType = true;
             break;
         case XmlNodeType::Declaration:
             if (seenAnyNode) {
-                throw err::ParameterError{"XML declaration must be the first node."_el, "document"_el};
+                throw ParameterFailure{"XML declaration must be the first node."_el, "document"_el};
             }
             break;
         case XmlNodeType::Text:
             for (const auto character : node->text()) {
                 if (character != U' ' && character != U'\t' && character != U'\r' && character != U'\n') {
-                    throw err::ParameterError{"Top-level XML text must be whitespace."_el, "document"_el};
+                    throw ParameterFailure{"Top-level XML text must be whitespace."_el, "document"_el};
                 }
             }
             break;
@@ -61,13 +65,13 @@ auto XmlCodec::encode(const XmlDocument &document, XmlFormatOptions options) -> 
         case XmlNodeType::ProcessingInstruction:
             break;
         default:
-            throw err::ParameterError{"Invalid top-level XML node."_el, "document"_el};
+            throw ParameterFailure{"Invalid top-level XML node."_el, "document"_el};
         }
         seenAnyNode = true;
         codec.writeNode(*node);
     }
     if (!seenRoot) {
-        throw err::ParameterError{"XML document requires one root element."_el, "document"_el};
+        throw ParameterFailure{"XML document requires one root element."_el, "document"_el};
     }
     return codec._builder.takeString();
 }
@@ -87,7 +91,7 @@ void XmlCodec::countNode() {
     ++_nodeCount;
 }
 
-auto XmlCodec::validNameChar(text::Char character, bool first) noexcept -> bool {
+auto XmlCodec::validNameChar(Char character, bool first) noexcept -> bool {
     if (character.isAsciiLetter() || character == U'_' || character == U':') {
         return true;
     }
@@ -105,13 +109,13 @@ auto XmlCodec::validNameChar(text::Char character, bool first) noexcept -> bool 
         (!first && (code == 0xb7U || (code >= 0x300U && code <= 0x36fU) || (code >= 0x203fU && code <= 0x2040U)));
 }
 
-auto XmlCodec::validXmlChar(text::Char character) noexcept -> bool {
+auto XmlCodec::validXmlChar(Char character) noexcept -> bool {
     const auto code = character.toRawValue();
     return code == 0x9U || code == 0xaU || code == 0xdU || (code >= 0x20U && code <= 0xd7ffU) ||
         (code >= 0xe000U && code <= 0xfffdU) || (code >= 0x10000U && code <= 0x10ffffU);
 }
 
-auto XmlCodec::validName(const text::String &value) -> bool {
+auto XmlCodec::validName(const String &value) -> bool {
     auto first = true;
     for (const auto character : value) {
         if (!validNameChar(character, first)) {
@@ -122,7 +126,7 @@ auto XmlCodec::validName(const text::String &value) -> bool {
     return !first;
 }
 
-auto XmlCodec::readName() -> text::String {
+auto XmlCodec::readName() -> String {
     _reader.clearBuffer();
     auto first = true;
     while (!_reader.isAtEnd() && validNameChar(_reader.peek(), first)) {
@@ -142,7 +146,7 @@ auto XmlCodec::readName() -> text::String {
     return name;
 }
 
-auto XmlCodec::readUntil(const text::String &terminator) -> text::String {
+auto XmlCodec::readUntil(const String &terminator) -> String {
     _reader.clearBuffer();
     while (!_reader.isAtEnd()) {
         if (_reader.advanceIf(terminator)) {
@@ -180,9 +184,9 @@ auto XmlCodec::readInstruction(bool declaration) -> XmlNodePtr {
     const auto content = readUntil("?>"_el);
     countNode();
     if (declaration) {
-        return XmlNode::createDeclaration(text::String::fromJoined({"<?"_el, name, content, "?>"_el}));
+        return XmlNode::createDeclaration(text::join("<?"_el, name, content, "?>"_el));
     }
-    if (name.compare("xml"_el, text::cCaseInsensitive.asciiComparisonFn()) == std::strong_ordering::equal) {
+    if (name.compare("xml"_el, cCaseInsensitive.asciiComparisonFn()) == std::strong_ordering::equal) {
         fail();
     }
     return XmlNode::createProcessingInstruction(name, content);
@@ -240,7 +244,7 @@ auto XmlCodec::readDocType() -> XmlNodePtr {
             if (content.length() > _parseOptions.maximumStringLength()) {
                 fail();
             }
-            return XmlNode::createDocType(text::String::fromJoined({"<!DOCTYPE"_el, content, ">"_el}));
+            return XmlNode::createDocType(text::join("<!DOCTYPE"_el, content, ">"_el));
         }
         _reader.appendToBuffer(character);
         previousPrevious = previous;
@@ -305,7 +309,7 @@ void XmlCodec::readAttribute(XmlNode &node) {
     _reader.clearBuffer();
     auto hasReferences = false;
     auto inReference = false;
-    auto referenceLength = unit::CpLength{};
+    auto referenceLength = CpCount{};
     auto referenceNumeric = false;
     auto referenceHex = false;
     auto numericDigits = uint32_t{};
@@ -329,7 +333,7 @@ void XmlCodec::readAttribute(XmlNode &node) {
         } else if (character == U';' && inReference) {
             if (referenceLength.isZero() ||
                 (referenceNumeric &&
-                    (numericDigits == 0U || !validXmlChar(text::Char{static_cast<char32_t>(numericValue)})))) {
+                    (numericDigits == 0U || !validXmlChar(Char{static_cast<char32_t>(numericValue)})))) {
                 fail();
             }
             inReference = false;
@@ -337,7 +341,7 @@ void XmlCodec::readAttribute(XmlNode &node) {
             if (referenceLength.isZero() && character == U'#') {
                 referenceNumeric = true;
             } else if (referenceNumeric) {
-                if (referenceLength == unit::CpLength{1U} && character == U'x') {
+                if (referenceLength == CpCount{1U} && character == U'x') {
                     referenceHex = true;
                 } else {
                     const auto code = character.toRawValue();
@@ -377,7 +381,7 @@ void XmlCodec::readAttribute(XmlNode &node) {
     node._attributes.append(std::move(attribute));
 }
 
-auto XmlCodec::readElement(unit::ItemCount depth) -> XmlNodePtr {
+auto XmlCodec::readElement(ItemCount depth) -> XmlNodePtr {
     if (depth >= _parseOptions.maximumNesting()) {
         fail();
     }
@@ -416,7 +420,7 @@ auto XmlCodec::readElement(unit::ItemCount depth) -> XmlNodePtr {
         } else if (_reader.advanceIf("<?"_el)) {
             node->add(readInstruction(false));
         } else if (_reader.advanceIf(U'<')) {
-            node->add(readElement(depth + unit::ItemCount::one()));
+            node->add(readElement(depth + ItemCount::one()));
         } else if (_reader.advanceIf(U'&')) {
             node->add(readReference());
         } else {
@@ -439,7 +443,7 @@ auto XmlCodec::parse() -> XmlDocument {
         (_reader.peek() == U' ' || _reader.peek() == U'\t' || _reader.peek() == U'\r' || _reader.peek() == U'\n')) {
         const auto content = readUntil("?>"_el);
         countNode();
-        document.add(XmlNode::createDeclaration(text::String::fromJoined({"<?xml"_el, content, "?>"_el})));
+        document.add(XmlNode::createDeclaration(text::join("<?xml"_el, content, "?>"_el)));
     } else {
         _reader.restore(declarationStart);
     }
@@ -482,7 +486,7 @@ auto XmlCodec::parse() -> XmlDocument {
 }
 
 [[noreturn]] void XmlCodec::fail() {
-    throw err::ParseError{"Malformed or unsupported XML document."_el};
+    throw ParseError{"Malformed or unsupported XML document."_el};
 }
 
 }

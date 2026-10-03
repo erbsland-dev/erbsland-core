@@ -71,7 +71,7 @@ This factory retains only the clock reading; use wrapping arithmetic when you al
 .. erbsland-demo::
     :source: time/Time/Create.cpp
     :exec: time/time --demo Create
-    :source-sha256: 315fa760056a963341b0646bdbb91ca5613da1bce440943f39f15d6cc3898d6e
+    :sha256: 771b6fb7df9fdbc3a5f9694119723543c0a1423ac3f98d2e9676b1d23de72ef2
 
 .. code-block:: cpp
 
@@ -104,14 +104,16 @@ This factory retains only the clock reading; use wrapping arithmetic when you al
         el::io::printLine(el::StringFormat{"External fields accepted: {}"_el}.build(fieldsAccepted));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Observation de Saturne: 23:45:00; precise reading: 23:45:12.123456789
-    Default: 00:00:00; first: 00:00:00; last: 23:59:59.999999999
-    25 hours: 01:00:00; minus one nanosecond: 23:59:59.999999999
-    Clamped fields: 23:59:59.999999999
-    External fields accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mObservation de Saturne: 23:45:00; precise reading: 23:45:12.123456789
+        Default: 00:00:00; first: 00:00:00; last: 23:59:59.999999999
+        25 hours: 01:00:00; minus one nanosecond: 23:59:59.999999999
+        Clamped fields: 23:59:59.999999999
+        External fields accepted: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -144,7 +146,7 @@ This differs from ``Date::parts()``, where gathering the calendar fields also av
 .. erbsland-demo::
     :source: time/Time/Inspect.cpp
     :exec: time/time --demo Inspect
-    :source-sha256: 8ef1a920ecb0bea50c1b3919ee5bd2c600d41668106581e63dd4bcfb9139580c
+    :sha256: c33cc37fcb1987ec0ae542c3f02b7131dddde7a1e5ebee5af5679f4934e09f30
 
 .. code-block:: cpp
 
@@ -173,20 +175,22 @@ This differs from ``Date::parts()``, where gathering the calendar fields also av
                 reading == el::Time{parts.hour, parts.minute, parts.second, parts.nanosecondFraction}));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Hour: 23; minute: 45; second: 12; fraction: 123456789 ns
-    Individual fields: 23 / 45 / 12
-    Millisecond fraction: 123; nanosecond fraction: 123456789
-    Midnight is zero: true; reading is zero: false
-    Midnight sorts before evening: true; same time equals: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mHour: 23; minute: 45; second: 12; fraction: 123456789 ns
+        Individual fields: 23 / 45 / 12
+        Millisecond fraction: 123; nanosecond fraction: 123456789
+        Midnight is zero: true; reading is zero: false
+        Midnight sorts before evening: true; same time equals: true␛[0m
 
 .. erbsland-demo-end::
 
 
-Converting a Reading Without Losing Its Meaning
-===============================================
+Time since Midnight, Interval, and Text Conversions
+===================================================
 
 A component and a total answer different questions.
 ``second()`` tells you the second within the current minute; the
@@ -221,7 +225,7 @@ See :ref:`time-iso-output` for the shared formatting types.
 .. erbsland-demo::
     :source: time/Time/Convert.cpp
     :exec: time/time --demo Convert
-    :source-sha256: cd4b9cfd5b83495983f6cc2dc5b116cb1c6afa9468ce97e307c2bf5e544573ac
+    :sha256: f8772930866e7afe43a52940183f1a144797950578f9294cbe58d0bdfbaebe35
 
 .. code-block:: cpp
 
@@ -249,15 +253,17 @@ See :ref:`time-iso-output` for the shared formatting types.
                 reading.toIsoString(format, el::DateTimePrecision::Millisecond)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Whole seconds since midnight: 85512
-    Nanoseconds since midnight: 85512123456789
-    Duration round trip: 23:45:12; TimeDelta round trip: 23:45:12.123456789
-    Display: 23:45:12.123456789; default ISO: 23:45:12
-    Nanosecond ISO: 23:45:12.123456789
-    Millisecond ISO: 23:45:12.123
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWhole seconds since midnight: 85512
+        Nanoseconds since midnight: 85512123456789
+        Duration round trip: 23:45:12; TimeDelta round trip: 23:45:12.123456789
+        Display: 23:45:12.123456789; default ISO: 23:45:12
+        Nanosecond ISO: 23:45:12.123456789
+        Millisecond ISO: 23:45:12.123␛[0m
 
 .. erbsland-demo-end::
 
@@ -286,7 +292,7 @@ Discarding it loses the date change even though the resulting clock reading rema
 .. erbsland-demo::
     :source: time/Time/Wrap.cpp
     :exec: time/time --demo Wrap
-    :source-sha256: 3a7f11f611177617945ca55d6580707759aa8ff3c5acd100895dea8fc96b3712
+    :sha256: 9e466e065be57c270f5591af2ce9acf5d7ea2020274be8e2b13507ada1d59b7f
 
 .. code-block:: cpp
 
@@ -314,14 +320,16 @@ Discarding it loses the date change even though the resulting clock reading rema
             el::StringFormat{"Minus 90 minutes in place: {}; day carry: {}"_el}.build(midnight, previousDays.toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Finish: 2028-03-01 01:15:00; day carry: 1
-    Start remains: 23:45:00
-    49 hours later: 00:45:00; day carry: 3
-    One nanosecond before midnight: 23:59:59.999999999; day carry: -1
-    Minus 90 minutes in place: 22:30:00; day carry: -1
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFinish: 2028-03-01 01:15:00; day carry: 1
+        Start remains: 23:45:00
+        49 hours later: 00:45:00; day carry: 3
+        One nanosecond before midnight: 23:59:59.999999999; day carry: -1
+        Minus 90 minutes in place: 22:30:00; day carry: -1␛[0m
 
 .. erbsland-demo-end::
 

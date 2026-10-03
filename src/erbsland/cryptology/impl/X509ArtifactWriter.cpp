@@ -16,9 +16,10 @@
 #include "../tls/TlsSignatureScheme.hpp"
 #include "../x509/X509KeyUsage.hpp"
 
-#include "../../core/Application.hpp"
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../../core/impl/ApplicationDataAccess.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../mem/Byte.hpp"
 #include "../../mem/ByteArray.hpp"
 #include "../../mem/ByteBlock.hpp"
@@ -29,14 +30,16 @@
 #include "../../text/impl/UnsafeU8StringAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../time/TimeAmounts.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../util/List.hpp"
 
 #include <algorithm>
 
 namespace erbsland::cryptology::impl {
 
+using namespace err;
 using namespace mem;
 using namespace text;
 using namespace text::literals;
@@ -44,7 +47,7 @@ using namespace unit;
 
 auto X509ArtifactWriter::createSelfSignedCertificate(const SigningPrivateKey &key) const -> X509Certificate {
     if (_builder._profile != X509CertificateProfile::CertificateAuthority) {
-        throw err::LogicError{"Only a certificate-authority profile can create a self-signed certificate."_el};
+        throw LogicFailure{"Only a certificate-authority profile can create a self-signed certificate."_el};
     }
     validateIdentity();
     auto nameEncoder = DerEncoder{};
@@ -59,25 +62,25 @@ auto X509ArtifactWriter::createCertificate(
     const SigningPrivateKey &issuerKey) const -> X509Certificate {
     validateIdentity();
     if (subjectKey.isEmpty() || issuerCertificate.isEmpty() || issuerKey.isEmpty()) {
-        throw err::LogicError{"Certificate issuance requires subject key, issuer certificate, and issuer key."_el};
+        throw LogicFailure{"Certificate issuance requires subject key, issuer certificate, and issuer key."_el};
     }
     if (!issuerKey.matches(issuerCertificate.publicKey())) {
-        throw err::ParameterError{"The issuer key does not match the issuer certificate."_el, "issuerKey"_el};
+        throw ParameterFailure{"The issuer key does not match the issuer certificate."_el, "issuerKey"_el};
     }
     const auto constraints = issuerCertificate.basicConstraints();
     const auto usage = issuerCertificate.keyUsage();
     if (!constraints.has_value() || !constraints->isCertificateAuthority() || !usage.has_value() ||
         !usage->isSet(X509KeyUsage::KeyCertificateSign)) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The issuer certificate is not authorized to sign certificates."_el, "issuerCertificate"_el};
     }
     if (_builder._profile == X509CertificateProfile::CertificateAuthority) {
         if (constraints->pathLength().has_value() && constraints->pathLength().value() == 0U) {
-            throw err::ParameterError{
+            throw ParameterFailure{
                 "The issuer path-length constraint forbids a subordinate CA."_el, "issuerCertificate"_el};
         }
         if (constraints->pathLength().has_value() && _builder._caPathLength >= constraints->pathLength().value()) {
-            throw err::ParameterError{
+            throw ParameterFailure{
                 "The subordinate CA path length is not below its issuer constraint."_el, "pathLength"_el};
         }
     }
@@ -93,7 +96,7 @@ auto X509ArtifactWriter::createSigningRequest(const SigningPrivateKey &subjectKe
     -> X509CertificateSigningRequest {
     validateIdentity();
     if (subjectKey.isEmpty()) {
-        throw err::LogicError{"A subject private key is required for a certificate signing request."_el};
+        throw LogicFailure{"A subject private key is required for a certificate signing request."_el};
     }
     auto infoEncoder = DerEncoder{};
     const auto info = infoEncoder.beginSequence();
@@ -135,7 +138,7 @@ auto X509ArtifactWriter::createCertificateImpl(
     const SigningPrivateKey &issuerKey,
     const X509Certificate *const issuerCertificate) const -> X509Certificate {
     if (subjectKey.isEmpty() || issuerKey.isEmpty()) {
-        throw err::LogicError{"Certificate creation requires nonempty signing keys."_el};
+        throw LogicFailure{"Certificate creation requires nonempty signing keys."_el};
     }
     const auto now = time::Timestamp::now();
     auto validFrom = _builder._validFrom.value_or(now - time::Duration{time::Minutes{5}});
@@ -151,20 +154,20 @@ auto X509ArtifactWriter::createCertificateImpl(
         validTo = now.addedOrThrow(time::Duration{time::Days{397}});
     }
     if (!validFrom.isValid() || !validTo.isValid() || validFrom >= validTo) {
-        throw err::ParameterError{"Certificate validity must be a nonempty valid range."_el, "validity"_el};
+        throw ParameterFailure{"Certificate validity must be a nonempty valid range."_el, "validity"_el};
     }
     if (issuerCertificate != nullptr) {
         if (_builder._validFrom.has_value() && validFrom < issuerCertificate->validFrom()) {
-            throw err::ParameterError{"Explicit certificate validity starts before the issuer."_el, "validFrom"_el};
+            throw ParameterFailure{"Explicit certificate validity starts before the issuer."_el, "validFrom"_el};
         }
         if ((_builder._validTo.has_value() || _builder._lifetime.has_value()) &&
             validTo > issuerCertificate->validTo()) {
-            throw err::ParameterError{"Explicit certificate validity ends after the issuer."_el, "validTo"_el};
+            throw ParameterFailure{"Explicit certificate validity ends after the issuer."_el, "validTo"_el};
         }
         validFrom = std::max(validFrom, issuerCertificate->validFrom());
         validTo = std::min(validTo, issuerCertificate->validTo());
         if (validFrom >= validTo) {
-            throw err::ParameterError{
+            throw ParameterFailure{
                 "Issuer validity does not overlap the requested certificate validity."_el, "validity"_el};
         }
     }
@@ -207,16 +210,16 @@ auto X509ArtifactWriter::createCertificateImpl(
 
 void X509ArtifactWriter::validateIdentity() const {
     if (!_builder._commonName.has_value() || _builder._commonName->isEmpty()) {
-        throw err::ParameterError{"A nonempty common name is required."_el, "commonName"_el};
+        throw ParameterFailure{"A nonempty common name is required."_el, "commonName"_el};
     }
     if ((_builder._profile == X509CertificateProfile::TlsServer ||
             _builder._profile == X509CertificateProfile::TlsServerAndClient) &&
         _builder._dnsNames.isEmpty() && _builder._ipAddresses.isEmpty()) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "A TLS server certificate requires at least one DNS name or IP address."_el, "subjectAlternativeNames"_el};
     }
-    if (_builder._country.has_value() && _builder._country->characterLength().toSizeT() != 2U) {
-        throw err::ParameterError{"The country code must contain exactly two characters."_el, "country"_el};
+    if (_builder._country.has_value() && _builder._country->characterLength() != CpCount{2U}) {
+        throw ParameterFailure{"The country code must contain exactly two characters."_el, "country"_el};
     }
 }
 
@@ -338,7 +341,7 @@ void X509ArtifactWriter::appendExtensions(
             const auto names = valueEncoder.beginSequence();
             for (const auto &name : _builder._dnsNames) {
                 if (!name.containsOnly(cAsciiCharacters)) {
-                    throw err::ParameterError{"DNS subject alternative names must be ASCII."_el, "dnsName"_el};
+                    throw ParameterFailure{"DNS subject alternative names must be ASCII."_el, "dnsName"_el};
                 }
                 const auto bytes = toConstByteSpan(text::impl::UnsafeU8StringAccess{name}.dataSpan());
                 valueEncoder.appendImplicitPrimitive(2U, bytes);
@@ -398,7 +401,7 @@ auto X509ArtifactWriter::signatureScheme(const SigningPrivateKey &key) const -> 
     case SigningKeyAlgorithm::Unknown:
         break;
     }
-    throw err::ParameterError{"The key has no supported X.509 signing scheme."_el, "key"_el};
+    throw ParameterFailure{"The key has no supported X.509 signing scheme."_el, "key"_el};
 }
 
 auto X509ArtifactWriter::keyIdentifier(const PublicKey &key) -> ByteBlock {
@@ -408,7 +411,8 @@ auto X509ArtifactWriter::keyIdentifier(const PublicKey &key) -> ByteBlock {
 }
 
 auto X509ArtifactWriter::serialNumber() -> ByteBlock {
-    auto random = core::application().secureRandom().buildByteBlock(ByteLength{20U});
+    const auto randomData = core::impl::applicationData()->random().get();
+    auto random = randomData->secureRandom().buildByteBlock(ByteCount{20U});
     auto editor = ByteBlockEditor{random};
     editor.set(ByteIndex::zero(), Byte{static_cast<uint8_t>(editor.get(ByteIndex::zero()).toUInt8() & 0x7fU)});
     auto nonzero = uint8_t{};

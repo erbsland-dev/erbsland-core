@@ -7,6 +7,7 @@
 #include "../PunycodeOptions.hpp"
 
 #include "../../String.hpp"
+#include "../../StringList.hpp"
 
 #include <span>
 #include <utility>
@@ -43,7 +44,7 @@ private:
     /// Fold ASCII uppercase and normalize to NFC, rejecting prohibited mapping input.
     [[nodiscard]] static auto prepareUnicode(const String &text) -> String;
     /// Split a label or domain according to the configured mode.
-    [[nodiscard]] auto split(const String &text) const -> std::vector<String>;
+    [[nodiscard]] auto split(const String &text) const -> StringList;
     /// Prepare one Unicode or A-label input for canonical processing.
     [[nodiscard]] auto prepareLabel(const String &label) const -> PreparedLabel;
     /// Prepare one ASCII A-label or NR-LDH label for decoding.
@@ -63,7 +64,7 @@ private:
     /// Validate DNS label and domain lengths.
     void validateAsciiLength(const String &text, bool label) const;
     /// Join processed labels using the ASCII full stop.
-    [[nodiscard]] static auto join(const std::vector<String> &labels) -> String;
+    [[nodiscard]] static auto join(const StringList &labels) -> String;
     /// Read a canonical label into code points and cache their generated attributes.
     [[nodiscard]] static auto codePoints(const String &label) -> std::vector<CodePoint>;
 

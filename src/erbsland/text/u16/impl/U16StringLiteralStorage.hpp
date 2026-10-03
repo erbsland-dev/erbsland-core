@@ -5,7 +5,7 @@
 #include "U16StringDataView.hpp"
 
 #include "../../../mem/StorageIdentifier.hpp"
-#include "../../../unit/U16DataRange.hpp"
+#include "../../../unit/U16Range.hpp"
 
 #include <cstddef>
 #include <span>
@@ -20,12 +20,12 @@ public:
     constexpr U16StringLiteralStorage() noexcept = default;
     /// Create literal storage from a static character span.
     explicit constexpr U16StringLiteralStorage(const char16_t *data, const std::size_t size) noexcept :
-        _data{data, size}, _range{unit::U16DataRange::fromSizeT(size)} {}
+        _data{data, size}, _range{unit::U16Range::fromSizeT(size)} {}
     /// Create literal storage from a static character span.
     explicit constexpr U16StringLiteralStorage(const std::span<const char16_t> data) noexcept :
-        _data{data}, _range{unit::U16DataRange::fromSizeT(data.size())} {}
+        _data{data}, _range{unit::U16Range::fromSizeT(data.size())} {}
     /// Create literal storage from a static character span and range.
-    constexpr U16StringLiteralStorage(const std::span<const char16_t> data, const unit::U16DataRange range) noexcept :
+    constexpr U16StringLiteralStorage(const std::span<const char16_t> data, const unit::U16Range range) noexcept :
         _data{data}, _range{range} {}
 
 public: // defaults
@@ -39,7 +39,7 @@ public: // accessors
     /// Access the literal data.
     [[nodiscard]] constexpr auto data() const noexcept -> std::span<const char16_t> { return _data; }
     /// Access the storage range.
-    [[nodiscard]] constexpr auto range() const noexcept -> unit::U16DataRange { return _range; }
+    [[nodiscard]] constexpr auto range() const noexcept -> unit::U16Range { return _range; }
     /// Get the literal size in UTF-16 code units.
     [[nodiscard]] constexpr auto size() const noexcept -> std::size_t { return _data.size(); }
     /// Get a unique identifier for the visible storage range.
@@ -47,7 +47,7 @@ public: // accessors
         if (_data.data() == nullptr) {
             return {};
         }
-        const auto *begin = _data.data() + _range.index().toSizeT();
+        const auto *begin = _data.data() + _range.beginIndex().toSizeT();
         return mem::StorageIdentifier::fromMemoryRange(begin, begin + _range.length().toSizeT());
     }
 
@@ -57,13 +57,13 @@ public:
         return U16StringDataView{_data, _range};
     }
     /// Get a view to the literal data with a custom range.
-    [[nodiscard]] constexpr auto dataView(const unit::U16DataRange range) const noexcept -> U16StringDataView {
+    [[nodiscard]] constexpr auto dataView(const unit::U16Range range) const noexcept -> U16StringDataView {
         return U16StringDataView{_data, range};
     }
 
 private:
-    std::span<const char16_t> _data;                        ///< Reference to the literal string data.
-    unit::U16DataRange _range{unit::U16DataRange::empty()}; ///< The range of `_data` that this storage represents.
+    std::span<const char16_t> _data;                ///< Reference to the literal string data.
+    unit::U16Range _range{unit::U16Range::empty()}; ///< The range of `_data` that this storage represents.
 };
 
 }

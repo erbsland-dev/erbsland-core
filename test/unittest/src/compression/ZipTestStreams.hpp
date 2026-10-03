@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/stream/ByteInputStream.hpp>
-#include <erbsland/stream/InputStreamSettings.hpp>
-#include <erbsland/stream/StreamCloseStatus.hpp>
-#include <erbsland/stream/StreamPositionOrigin.hpp>
-#include <erbsland/stream/StreamPositionStatus.hpp>
-#include <erbsland/stream/StreamReadStatus.hpp>
-#include <erbsland/stream/StreamState.hpp>
-#include <erbsland/stream/StreamWaitStatus.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/InputStreamSettings.hpp>
+#include <erbsland/StreamCloseStatus.hpp>
+#include <erbsland/StreamPositionOrigin.hpp>
+#include <erbsland/StreamPositionStatus.hpp>
+#include <erbsland/StreamReadStatus.hpp>
+#include <erbsland/StreamState.hpp>
+#include <erbsland/StreamWaitStatus.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -47,7 +47,7 @@ public: // implement InputStream
 
 protected: // implement ByteInputStream
     [[nodiscard]] auto readFromSource(mem::ByteSpan destination, ReadDeadline)
-        -> stream::StreamReadResult<unit::ByteLength> override {
+        -> stream::StreamReadResult<unit::ByteCount> override {
         const auto readOffset = _position;
         const auto available = _data.length().toSizeT() - _position;
         const auto count = std::min(destination.size(), available);
@@ -59,7 +59,7 @@ protected: // implement ByteInputStream
         readCalls.emplace_back(readOffset, count);
         return {
             count == 0U ? stream::StreamReadStatus::Finished : stream::StreamReadStatus::Data,
-            unit::ByteLength::fromSizeT(count)};
+            unit::ByteCount::fromSizeT(count)};
     }
     [[nodiscard]] auto sourceSupportsPositioning() const noexcept -> bool override { return _positionable; }
     [[nodiscard]] auto sourcePosition() const -> unit::ByteIndex override {

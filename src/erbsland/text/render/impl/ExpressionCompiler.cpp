@@ -7,7 +7,8 @@
 #include "../RenderError.hpp"
 
 #include "../../../err/Exception.hpp"
-#include "../../../text/Literals.hpp"
+#include "../../../err/RuntimeError.hpp"
+#include "../../Literals.hpp"
 
 #include <cmath>
 #include <limits>
@@ -196,6 +197,7 @@ void ExpressionCompiler::parseUnary() {
     }
     parseFiltered();
 }
+
 void ExpressionCompiler::parsePrimary() {
     const auto currentToken = token();
     switch (currentToken.kind) {
@@ -209,7 +211,7 @@ void ExpressionCompiler::parsePrimary() {
     case TokenKind::Integer:
         try {
             _writer.writePushInteger(currentToken.text.toIntegerOrThrow<int64_t>(), currentToken.location);
-        } catch (const err::Exception &) {
+        } catch (const err::RuntimeError &) {
             throwSyntax("The integer literal is outside the signed 64-bit range."_el, currentToken.location);
         }
         nextToken();
@@ -223,7 +225,7 @@ void ExpressionCompiler::parsePrimary() {
             _writer.writePushFloat(value, currentToken.location);
         } catch (const RenderError &) {
             throw;
-        } catch (const err::Exception &) {
+        } catch (const err::RuntimeError &) {
             throwSyntax("The floating-point literal is outside the supported range."_el, currentToken.location);
         }
         nextToken();
@@ -376,6 +378,7 @@ void ExpressionCompiler::parseMap() {
     nextToken();
     _writer.writeBuildMap(count, location);
 }
+
 void ExpressionCompiler::nextToken() {
     _tokenizer.advance();
     requireSupportedToken();
@@ -412,34 +415,48 @@ auto ExpressionCompiler::comparisonOpcode(const TokenKind kind) const -> Opcode 
 }
 
 auto ExpressionCompiler::valueTest(const String &name) noexcept -> std::optional<ValueTest> {
-    if (name == "none"_el || name == "null"_el)
+    if (name == "none"_el || name == "null"_el) {
         return ValueTest::Null;
-    if (name == "true"_el)
+    }
+    if (name == "true"_el) {
         return ValueTest::True;
-    if (name == "false"_el)
+    }
+    if (name == "false"_el) {
         return ValueTest::False;
-    if (name == "boolean"_el)
+    }
+    if (name == "boolean"_el) {
         return ValueTest::Boolean;
-    if (name == "integer"_el)
+    }
+    if (name == "integer"_el) {
         return ValueTest::Integer;
-    if (name == "float"_el)
+    }
+    if (name == "float"_el) {
         return ValueTest::Float;
-    if (name == "number"_el)
+    }
+    if (name == "number"_el) {
         return ValueTest::Number;
-    if (name == "text"_el || name == "string"_el)
+    }
+    if (name == "text"_el || name == "string"_el) {
         return ValueTest::Text;
-    if (name == "list"_el || name == "sequence"_el)
+    }
+    if (name == "list"_el || name == "sequence"_el) {
         return ValueTest::List;
-    if (name == "map"_el || name == "mapping"_el)
+    }
+    if (name == "map"_el || name == "mapping"_el) {
         return ValueTest::Map;
-    if (name == "iterable"_el)
+    }
+    if (name == "iterable"_el) {
         return ValueTest::Iterable;
-    if (name == "scalar"_el)
+    }
+    if (name == "scalar"_el) {
         return ValueTest::Scalar;
-    if (name == "even"_el)
+    }
+    if (name == "even"_el) {
         return ValueTest::Even;
-    if (name == "odd"_el)
+    }
+    if (name == "odd"_el) {
         return ValueTest::Odd;
+    }
     return std::nullopt;
 }
 

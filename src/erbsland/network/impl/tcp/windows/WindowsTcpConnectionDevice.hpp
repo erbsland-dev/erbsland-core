@@ -20,7 +20,7 @@ class WindowsTcpConnectionDevice final : public TcpConnectionDevice {
 public:
     /// Create a Windows TCP connection device.
     WindowsTcpConnectionDevice(
-        event::EventLoopDriverPtr driver, unit::ByteLength receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks);
+        event::EventLoopDriverPtr driver, unit::ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks);
     ~WindowsTcpConnectionDevice() override;
 
 public: // implement TcpConnectionDevice
@@ -28,7 +28,7 @@ public: // implement TcpConnectionDevice
     void accept(TcpAcceptedSocketPtr socket) override;
     [[nodiscard]] auto canAccept(const TcpAcceptedSocket &socket) const noexcept -> bool override;
     [[nodiscard]] auto send(mem::ByteBlock data) -> TcpConnectionDeviceSendStatus override;
-    void setReceiving(unit::ByteLength maximumBytes) override;
+    void setReceiving(unit::ByteCount maximumBytes) override;
     void close() noexcept override;
     void abort() noexcept override;
 

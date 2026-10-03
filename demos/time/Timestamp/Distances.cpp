@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/OverflowError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/Timestamp.hpp>
 
 namespace demo {
 
@@ -37,7 +42,7 @@ void distances() {
     try {
         const auto unexpected = el::Timestamp{}.secondsToOrThrow(start);
         el::io::printLine(el::StringFormat{"Unexpected successful result: {}"_el}.build(unexpected.toRawValue()));
-    } catch (const el::err::ParameterError &) {
+    } catch (const el::err::OutOfRangeError &) {
         el::io::printLine("Checked distance rejects an invalid operand."_el);
     }
 }

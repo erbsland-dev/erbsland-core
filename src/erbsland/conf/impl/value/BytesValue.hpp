@@ -3,12 +3,14 @@
 #pragma once
 
 #include "Value.hpp"
+#include "ValueDigest.hpp"
 
 #include "../../../mem/ByteBlock.hpp"
 
 namespace erbsland::conf::impl {
 
 /// The value implementation for bytes values.
+/// @tested{ValueAsMethodsTest ValueDigestTest}
 class BytesValue final : public Value {
 public:
     /// Store a byte value using perfect forwarding.
@@ -23,6 +25,7 @@ public:
     [[nodiscard]] auto asBytesOrThrow() const -> mem::ByteBlock override { return _value; }
     [[nodiscard]] auto toTextRepresentation() const noexcept -> text::String override;
     [[nodiscard]] auto deepCopy() const -> ValuePtr override { return std::make_shared<BytesValue>(_value); }
+    void updateDigestValue(ValueDigest &digest) const override { digest.update(_value); }
     /// Access the stored bytes without copying them.
     [[nodiscard]] auto rawStorage() const noexcept -> const mem::ByteBlock & { return _value; }
 

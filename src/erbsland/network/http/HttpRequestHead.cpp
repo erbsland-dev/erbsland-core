@@ -4,7 +4,7 @@
 
 #include "../impl/http/HttpGrammar.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::network {
@@ -15,13 +15,13 @@ HttpRequestHead::HttpRequestHead(
     HttpMethod method, text::String target, const HttpVersion version, HttpHeaders headers) :
     _method{std::move(method)}, _target{std::move(target)}, _version{version}, _headers{std::move(headers)} {
     if (!_method.isValid()) {
-        throw err::ParameterError{"An HTTP request head requires a valid method."_el, "method"_el};
+        throw err::ParameterFailure{"An HTTP request head requires a valid method."_el, "method"_el};
     }
     if (!impl::http_grammar::isRequestTarget(_target)) {
-        throw err::ParameterError{"An HTTP request head requires a strict ASCII request-target."_el, "target"_el};
+        throw err::ParameterFailure{"An HTTP request head requires a strict ASCII request-target."_el, "target"_el};
     }
     if (!_version.isValid()) {
-        throw err::ParameterError{"An HTTP request head requires a supported version."_el, "version"_el};
+        throw err::ParameterFailure{"An HTTP request head requires a supported version."_el, "version"_el};
     }
 }
 

@@ -2,6 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCompressor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteDecompressor.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/CompressionFormat.hpp>
+#include <erbsland/CompressionLevel.hpp>
+#include <erbsland/DecompressionOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringLiteral.hpp>
 
 #include <array>
 
@@ -23,10 +36,10 @@ constexpr auto cCompressionLevels = std::array<CompressionLevelEntry, 5U>{
 auto createObservatoryReadings() -> el::ByteBlock {
     auto readings = el::ByteBlockEditor{};
     for (auto cycle = 0U; cycle < 8U; ++cycle) {
-        readings.append(el::Byte{0x18U}, el::ByteLength{192U});
-        readings.append(el::Byte{0x2aU}, el::ByteLength{32U});
-        readings.append(el::Byte{0x19U}, el::ByteLength{192U});
-        readings.append(el::Byte{0x2aU}, el::ByteLength{32U});
+        readings.append(el::Byte{0x18U}, el::ByteCount{192U});
+        readings.append(el::Byte{0x2aU}, el::ByteCount{32U});
+        readings.append(el::Byte{0x19U}, el::ByteCount{192U});
+        readings.append(el::Byte{0x2aU}, el::ByteCount{32U});
     }
     return el::ByteBlock{readings};
 }
@@ -42,8 +55,8 @@ void compareCompressionLevels(
     const auto readings = createObservatoryReadings();
     const auto options = el::DecompressionOptions{}
                              .setExpectedOutputLength(readings.length())
-                             .setMaximumOutputLength(el::ByteLength{16U * 1024U})
-                             .setMaximumWorkspaceLength(el::ByteLength{64U * 1024U * 1024U});
+                             .setMaximumOutputLength(el::ByteCount{16U * 1024U})
+                             .setMaximumWorkspaceLength(el::ByteCount{64U * 1024U * 1024U});
 
     el::io::printLine("Instrument        : radiotelescópio"_el);
     el::io::printLine("Algorithm         : "_el, algorithmName);

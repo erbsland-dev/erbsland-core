@@ -1,10 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "HashWorkerWorkload.hpp"
 
-#include <erbsland/cryptology/Hasher.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/List.hpp>
 #include <erbsland/profiling/WorkerExecutionContext.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::cryptology {
 
@@ -19,7 +24,7 @@ HashWorkerWorkload::HashWorkerWorkload(
 
 auto HashWorkerWorkload::execute(const pf::WorkerExecutionContext &context) -> pf::WorkerMeasurement {
     if (_failWorker) {
-        throw el::ApplicationError{el::String{"Requested hash worker failure."_el}};
+        throw el::ApplicationError{"Requested hash worker failure."_el};
     }
     auto digest = el::ByteBlock{};
     auto operations = std::uint64_t{};

@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/StringPattern.hpp>
 
 namespace demo {
 
@@ -12,7 +16,7 @@ namespace demo {
 /// literal when they are part of the text format itself.
 void patternConstruction() {
     // A pattern can describe the small fixed shell around a laboratory record.
-    const auto probeRecord = el::StringPattern{"probe-??[0-9]*"_el};
+    const auto probeRecord = el::StringPattern::fromDivider("probe-??[0-9]*"_el);
 
     const auto probeLines = el::StringList{{
         "probe-AB7 temperatur=21.4C"_el,
@@ -24,7 +28,7 @@ void patternConstruction() {
     }
 
     // Escapes make the pattern syntax available for literal diagnostic markers.
-    const auto marker = el::StringPattern{"messung\\[\\?\\]\\*"_el};
+    const auto marker = el::StringPattern::fromDivider("messung\\[\\?\\]\\*"_el);
     el::io::printLine("escaped marker                : "_el, marker.matches("messung[?]* archiviert"_el));
 }
 

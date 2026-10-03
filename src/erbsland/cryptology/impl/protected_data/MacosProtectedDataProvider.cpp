@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "MacosProtectedDataProvider.hpp"
 
-#include "MacosDataReference.hpp"
-
+#include "../MacosKeychainInteraction.hpp"
+#include "../MacosOwnedReference.hpp"
 #include "../SecureEraseGuard.hpp"
 
 #include "../../../mem/ByteArray.hpp"
@@ -16,6 +16,8 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
 MacosProtectedDataProvider::MacosProtectedDataProvider() {
@@ -59,7 +61,12 @@ MacosProtectedDataProvider::MacosProtectedDataProvider() {
     const auto attributes = CFDictionaryCreate(
         kCFAllocatorDefault, keys, values, 4, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
     auto error = CFErrorRef{};
-    _privateKey = SecKeyCreateRandomKey(attributes, &error);
+    {
+        const auto interaction = MacosKeychainInteraction{false};
+        if (interaction.status() == errSecSuccess) {
+            _privateKey = SecKeyCreateRandomKey(attributes, &error);
+        }
+    }
     CFRelease(attributes);
     CFRelease(keySizeValue);
     CFRelease(privateAttributes);
@@ -93,7 +100,12 @@ MacosProtectedDataProvider::MacosProtectedDataProvider() {
             2,
             &kCFTypeDictionaryKeyCallBacks,
             &kCFTypeDictionaryValueCallBacks);
-        SecItemDelete(query);
+        {
+            const auto interaction = MacosKeychainInteraction{false};
+            if (interaction.status() == errSecSuccess) {
+                SecItemDelete(query);
+            }
+        }
         CFRelease(query);
         CFRelease(_applicationTag);
         _applicationTag = nullptr;
@@ -119,41 +131,51 @@ MacosProtectedDataProvider::~MacosProtectedDataProvider() {
             2,
             &kCFTypeDictionaryKeyCallBacks,
             &kCFTypeDictionaryValueCallBacks);
-        SecItemDelete(query);
+        {
+            const auto interaction = MacosKeychainInteraction{false};
+            if (interaction.status() == errSecSuccess) {
+                SecItemDelete(query);
+            }
+        }
         CFRelease(query);
         CFRelease(_applicationTag);
     }
 }
 
-auto MacosProtectedDataProvider::protect(const mem::ConstByteSpan plaintext, const unit::ByteLength plaintextLength)
-    -> mem::ByteBlock {
+auto MacosProtectedDataProvider::protect(const ConstByteSpan plaintext, const ByteCount plaintextLength) -> ByteBlock {
     // Provider framing: prepend the fixed-width length inside the authenticated ECIES plaintext. The sensitive guard
     // erases this sole application-owned plaintext allocation on success and on every exceptional exit.
-    auto input = mem::ByteBuffer{unit::ByteLength{8U + plaintext.size()}};
+    auto input = ByteBuffer{ByteCount::fromInteger(8U + plaintext.size())};
     input.setSensitive(true);
     const auto eraseGuard = SecureEraseGuard{input};
     input.setIntegerOrThrow<uint64_t>(
-        unit::ByteIndex::zero(), static_cast<uint64_t>(plaintextLength.toSizeT()), mem::Endianness::Big);
-    input.overwrite(unit::ByteIndex{8U}, plaintext);
+        ByteIndex::zero(), static_cast<uint64_t>(plaintextLength.toSizeT()), Endianness::Big);
+    input.overwrite(ByteIndex{8U}, plaintext);
     // Present the guarded allocation to Security without copying secret bytes into a second Core Foundation buffer.
     // kCFAllocatorNull keeps ownership and erasure responsibility with input for this synchronous operation.
-    const auto inputData = MacosDataReference{CFDataCreateWithBytesNoCopy(
+    const auto inputData = MacosOwnedReference{CFDataCreateWithBytesNoCopy(
         kCFAllocatorDefault,
         reinterpret_cast<const UInt8 *>(input.span().data()),
         static_cast<CFIndex>(input.span().size()),
         kCFAllocatorNull)};
-    if (inputData.isEmpty()) {
+    if (inputData.get() == nullptr) {
         throw CryptologyError{"Secure Enclave input allocation failed."_el};
     }
 
     // Apple Security performs cofactor ECDH, X9.63/SHA-256 derivation, and AES-GCM authentication as one operation.
     auto error = CFErrorRef{};
-    const auto encrypted = MacosDataReference{SecKeyCreateEncryptedData(
-        _publicKey, kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM, inputData.get(), &error)};
-    if (encrypted.isEmpty()) {
+    auto encrypted = MacosOwnedReference<CFDataRef>{};
+    {
+        const auto interaction = MacosKeychainInteraction{false};
+        if (interaction.status() == errSecSuccess) {
+            encrypted.reset(SecKeyCreateEncryptedData(
+                _publicKey, kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM, inputData.get(), &error));
+        }
+    }
+    if (encrypted.get() == nullptr) {
         throwError(error);
     }
-    auto result = mem::ByteBlock::fromSpan(
+    auto result = ByteBlock::fromSpan(
         std::span{
             reinterpret_cast<const std::byte *>(CFDataGetBytePtr(encrypted.get())),
             static_cast<std::size_t>(CFDataGetLength(encrypted.get()))});
@@ -161,26 +183,31 @@ auto MacosProtectedDataProvider::protect(const mem::ConstByteSpan plaintext, con
     return result;
 }
 
-auto MacosProtectedDataProvider::unprotect(const mem::ConstByteSpan envelope, const unit::ByteLength plaintextLength)
-    -> mem::ByteBlock {
+auto MacosProtectedDataProvider::unprotect(const ConstByteSpan envelope, const ByteCount plaintextLength) -> ByteBlock {
     // The opaque envelope is copied into non-secret Core Foundation storage for the synchronous Security operation.
-    const auto encrypted = MacosDataReference{CFDataCreate(
+    const auto encrypted = MacosOwnedReference{CFDataCreate(
         kCFAllocatorDefault, reinterpret_cast<const UInt8 *>(envelope.data()), static_cast<CFIndex>(envelope.size()))};
-    if (encrypted.isEmpty()) {
+    if (encrypted.get() == nullptr) {
         throw CryptologyError{"Secure Enclave envelope allocation failed."_el};
     }
 
     // Apple Security authenticates and decrypts the complete ECIES envelope before returning a plaintext CFData.
     auto error = CFErrorRef{};
-    const auto decrypted = MacosDataReference{SecKeyCreateDecryptedData(
-        _privateKey, kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM, encrypted.get(), &error)};
-    if (decrypted.isEmpty()) {
+    auto decrypted = MacosOwnedReference<CFDataRef>{};
+    {
+        const auto interaction = MacosKeychainInteraction{false};
+        if (interaction.status() == errSecSuccess) {
+            decrypted.reset(SecKeyCreateDecryptedData(
+                _privateKey, kSecKeyAlgorithmECIESEncryptionCofactorX963SHA256AESGCM, encrypted.get(), &error));
+        }
+    }
+    if (decrypted.get() == nullptr) {
         throwError(error);
     }
 
     // Copy the authenticated result immediately into erasable sensitive storage. Security owns the returned immutable
     // CFData allocation; its public API permits prompt release here but does not expose a supported explicit wipe.
-    auto temporary = mem::ByteBuffer::fromSpan(
+    auto temporary = ByteBuffer::fromSpan(
         std::span{
             reinterpret_cast<const std::byte *>(CFDataGetBytePtr(decrypted.get())),
             static_cast<std::size_t>(CFDataGetLength(decrypted.get()))});
@@ -189,13 +216,12 @@ auto MacosProtectedDataProvider::unprotect(const mem::ConstByteSpan envelope, co
 
     // The length field is inside the authenticated ECIES plaintext and binds the caller-visible block metadata.
     if (temporary.length().toSizeT() != 8U + plaintextLength.toSizeT() ||
-        temporary.getIntegerOrThrow<uint64_t>(unit::ByteIndex::zero(), mem::Endianness::Big) !=
-            plaintextLength.toSizeT()) {
+        temporary.getIntegerOrThrow<uint64_t>(ByteIndex::zero(), Endianness::Big) != plaintextLength.toSizeT()) {
         throw CryptologyError{"Protected-data length authentication failed."_el};
     }
 
     // Transfer only a sensitive copy of the payload; temporary retains and erases the framed plaintext allocation.
-    auto result = mem::ByteBlock::fromSpan(temporary.span().subspan(8U));
+    auto result = ByteBlock::fromSpan(temporary.span().subspan(8U));
     result.markAsSensitive();
     return result;
 }

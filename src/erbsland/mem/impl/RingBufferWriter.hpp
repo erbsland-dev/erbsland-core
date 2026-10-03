@@ -7,10 +7,10 @@
 #include "../ByteSpan.hpp"
 #include "../Endianness.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../text/Literals.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 
 #include <array>
 #include <concepts>
@@ -54,7 +54,7 @@ public: // write
             _spanPosition = 0U;
         }
         if (_spanIndex >= _spans.size()) {
-            throw err::LogicError{"Ring buffer writer exceeded the reserved storage."_el};
+            throw err::LogicFailure{"Ring buffer writer exceeded the reserved storage."_el};
         }
         _spans[_spanIndex][_spanPosition] = value;
         ++_spanPosition;
@@ -81,9 +81,9 @@ public: // write
     /// Commit all bytes written in this transaction.
     void commit() {
         if (_committed) {
-            throw err::LogicError{"Ring buffer writer transaction was already committed."_el};
+            throw err::LogicFailure{"Ring buffer writer transaction was already committed."_el};
         }
-        _access.commitWritten(unit::ByteLength::fromSizeT(_position));
+        _access.commitWritten(unit::ByteCount::fromSizeT(_position));
         _committed = true;
     }
 

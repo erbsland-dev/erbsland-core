@@ -4,6 +4,8 @@
 
 #include "HttpServerSession_fwd.hpp"
 
+#include "../../core/Definitions.hpp"
+
 namespace erbsland::network {
 
 /// Application-defined data associated with an HTTP server session.

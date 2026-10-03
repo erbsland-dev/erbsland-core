@@ -3,7 +3,6 @@
 #pragma once
 
 #include "ReadLineBase.hpp"
-#include "ReadLineTestAccess_fwd.hpp"
 
 #include "../ReadLine.hpp"
 
@@ -30,7 +29,6 @@ public: // implement cterm::ReadLine
     [[nodiscard]] auto isActive() const noexcept -> bool override { return isActiveBase(); }
 
 private:
-    friend class ReadLineTestAccess;
     /// Create a line editor with a custom clock for testing.
     /// @param terminal The terminal used for input and display.
     /// @param options The editor options.
@@ -42,9 +40,9 @@ private: // implement ReadLineBase storage
     void discardText() noexcept override;
     void commitText() override;
     [[nodiscard]] auto displayText() const noexcept -> const text::U32StringEditor & override { return _text; }
-    [[nodiscard]] auto insertKeyText(const Key &key, unit::CpIndex index) -> unit::CpLength override;
+    [[nodiscard]] auto insertKeyText(const Key &key, unit::CpIndex index) -> unit::CpCount override;
     [[nodiscard]] auto insertNewLine(unit::CpIndex index) -> bool override;
-    void eraseText(unit::CpIndex index, unit::CpLength length) noexcept override;
+    void eraseText(unit::CpIndex index, unit::CpCount length) noexcept override;
     [[nodiscard]] auto previousUnitStart(unit::CpIndex index) const noexcept -> unit::CpIndex override;
     [[nodiscard]] auto nextUnitEnd(unit::CpIndex index) const noexcept -> unit::CpIndex override;
     [[nodiscard]] auto selectPreviousHistory() -> bool override;

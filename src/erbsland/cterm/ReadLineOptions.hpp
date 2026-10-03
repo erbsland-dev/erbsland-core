@@ -12,7 +12,7 @@
 #include "../text/String.hpp"
 #include "../text/StringList.hpp"
 #include "../time/TimeAmounts.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 #include "../unit/LineCount.hpp"
 
 #include <optional>
@@ -97,18 +97,18 @@ public: // displayed text
 
 public: // input
     /// Get the maximum entered-text length in code points.
-    [[nodiscard]] auto maximumLength() const noexcept -> unit::CpLength { return _maximumLength; }
+    [[nodiscard]] auto maximumLength() const noexcept -> unit::CpCount { return _maximumLength; }
     /// Set the maximum entered-text length in code points.
-    auto setMaximumLength(unit::CpLength maximumLength) noexcept -> ReadLineOptions &;
+    auto setMaximumLength(unit::CpCount maximumLength) noexcept -> ReadLineOptions &;
     /// Get the maximum logical line count.
     [[nodiscard]] auto maximumLines() const noexcept -> unit::LineCount { return _maximumLines; }
     /// Set the maximum logical line count.
-    /// @throws err::ParameterError if the count is zero.
+    /// @param maximumLines The maximum logical line count. Must be greater than zero.
     auto setMaximumLines(unit::LineCount maximumLines) -> ReadLineOptions &;
     /// Get the maximum displayed edit-row count.
     [[nodiscard]] auto maximumDisplayLines() const noexcept -> unit::LineCount { return _maximumDisplayLines; }
     /// Set the maximum displayed edit-row count.
-    /// @throws err::ParameterError if the count is zero.
+    /// @param maximumDisplayLines The maximum displayed edit-row count. Must be greater than zero.
     auto setMaximumDisplayLines(unit::LineCount maximumDisplayLines) -> ReadLineOptions &;
     /// Get the history entries.
     [[nodiscard]] auto history() const noexcept -> const text::StringList & { return _history; }
@@ -124,7 +124,7 @@ public: // timing
     /// Zero disables the timeout.
     [[nodiscard]] auto timeout() const noexcept -> time::Seconds { return _timeout; }
     /// Set the inactivity timeout.
-    /// @throws err::ParameterError if the timeout is negative.
+    /// @param timeout The inactivity timeout. Must not be negative.
     auto setTimeout(time::Seconds timeout) -> ReadLineOptions &;
     /// Get the remaining-time threshold for displaying the timeout countdown.
     /// Zero disables the countdown display.
@@ -132,19 +132,18 @@ public: // timing
     /// Set the remaining-time threshold for displaying the timeout countdown.
     /// @param timeoutDisplayThreshold The non-negative display threshold.
     /// @return This options object.
-    /// @throws err::ParameterError if the threshold is negative.
     auto setTimeoutDisplayThreshold(time::Seconds timeoutDisplayThreshold) -> ReadLineOptions &;
     /// Get the cursor blink interval.
     [[nodiscard]] auto blinkInterval() const noexcept -> time::Milliseconds { return _blinkInterval; }
     /// Set the cursor blink interval.
-    /// @throws err::ParameterError if the interval is not positive.
+    /// @param blinkInterval The cursor blink interval. Must be positive.
     auto setBlinkInterval(time::Milliseconds blinkInterval) -> ReadLineOptions &;
 
 public: // cursor and keys
     /// Get the cursor block used over empty space.
     [[nodiscard]] auto cursorBlock() const noexcept -> const Block & { return _cursorBlock; }
     /// Set the cursor block used over empty space.
-    /// @throws err::ParameterError if the block does not occupy exactly one terminal cell.
+    /// @param cursorBlock The cursor block. Must occupy exactly one terminal cell.
     auto setCursorBlock(Block cursorBlock) -> ReadLineOptions &;
     /// Get the key that commits entered text.
     [[nodiscard]] auto commitKey() const noexcept -> const Key & { return _commitKey; }
@@ -180,7 +179,7 @@ private:
     BlockString _placeholder;               ///< Optional placeholder.
     time::Seconds _timeout;                 ///< Inactivity timeout.
     time::Seconds _timeoutDisplayThreshold; ///< Remaining-time threshold for the timeout display.
-    unit::CpLength _maximumLength;          ///< Maximum code-point count.
+    unit::CpCount _maximumLength;           ///< Maximum code-point count.
     unit::LineCount _maximumLines;          ///< Maximum logical line count.
     unit::LineCount _maximumDisplayLines;   ///< Maximum visible edit rows.
     time::Milliseconds _blinkInterval;      ///< Cursor blink interval.

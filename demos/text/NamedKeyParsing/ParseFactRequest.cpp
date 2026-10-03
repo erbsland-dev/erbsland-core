@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/text/named_key/Format.hpp>
-#include <erbsland/text/named_key/Parser.hpp>
-#include <erbsland/text/StringCharReader.hpp>
+#include <erbsland/named_key/Format.hpp>
+#include <erbsland/named_key/Parser.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringCharReader.hpp>
 
 namespace demo {
 
@@ -22,7 +24,7 @@ void parseFactRequest() {
                                 {"brief"_el, static_cast<int>(FactOption::Brief)},
                             })
                             .setValueListAllowed(false);
-    auto reader = el::StringCharReader{el::String{"subject=revontulet,lang=fi,brief"_el}};
+    auto reader = el::StringCharReader{"subject=revontulet,lang=fi,brief"_el};
     auto parser = el::named_key::Parser{reader, format};
 
     // Translate parsed entries into the application's options.

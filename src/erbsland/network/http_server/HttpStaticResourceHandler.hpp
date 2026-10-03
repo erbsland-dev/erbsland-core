@@ -6,7 +6,7 @@
 #include "HttpStaticResourceHandler_fwd.hpp"
 
 #include "../../resource/Resources_fwd.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::network {
 
@@ -16,14 +16,14 @@ namespace erbsland::network {
 class HttpStaticResourceHandler : public HttpStaticContentHandler {
 public:
     /// Default per-resource logical-content limit matching the resource compiler.
-    static constexpr auto cDefaultMaximumContentLength = unit::ByteLength{1024U * 1024U};
+    static constexpr auto cDefaultMaximumContentLength = unit::ByteCount{1024U * 1024U};
 
 public:
     /// Create a handler retaining an explicit resource provider.
     [[nodiscard]] static auto create(
         resource::ResourcesConstPtr resources, text::String identifier, text::String urlPrefix = text::String{"/"})
         -> HttpStaticResourceHandlerPtr;
-    /// Create a handler borrowing the application-lifetime resource provider.
+    /// Create a handler retaining the application's resource provider.
     [[nodiscard]] static auto create(text::String identifier, text::String urlPrefix = text::String{"/"})
         -> HttpStaticResourceHandlerPtr;
 
@@ -32,32 +32,29 @@ public:
 
 public: // accessors
     /// Get the resource provider.
-    [[nodiscard]] auto resources() const noexcept -> const resource::Resources & { return *_resources; }
+    [[nodiscard]] auto resources() const noexcept -> const resource::Resources & { return *_retainedResources; }
     /// Get the exact portable resource identifier.
     [[nodiscard]] auto identifier() const noexcept -> const text::String & { return _identifier; }
     /// Get the per-resource logical-content maximum.
-    [[nodiscard]] auto maximumContentLength() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto maximumContentLength() const noexcept -> unit::ByteCount;
     /// Set the positive finite per-resource logical-content maximum.
-    auto setMaximumContentLength(unit::ByteLength value) -> HttpStaticResourceHandler &;
+    auto setMaximumContentLength(unit::ByteCount value) -> HttpStaticResourceHandler &;
 
 protected:
     /// Create a retained-provider handler.
     HttpStaticResourceHandler(resource::ResourcesConstPtr resources, text::String identifier, text::String urlPrefix);
-    /// Create an application-provider handler.
-    HttpStaticResourceHandler(const resource::Resources &resources, text::String identifier, text::String urlPrefix);
     /// Validate one portable resource identifier.
     static void verifyIdentifier(const text::String &identifier);
 
-    /// Access the optionally retained provider for content objects.
+    /// Access the retained provider for content objects.
     [[nodiscard]] auto retainedResources() const noexcept -> const resource::ResourcesConstPtr & {
         return _retainedResources;
     }
 
 private:
-    resource::ResourcesConstPtr _retainedResources;                       ///< Optional retained provider.
-    const resource::Resources *_resources{};                              ///< Active provider.
-    text::String _identifier;                                             ///< Exact resource identifier.
-    unit::ByteLength _maximumContentLength{cDefaultMaximumContentLength}; ///< Logical content bound.
+    resource::ResourcesConstPtr _retainedResources;                      ///< Retained provider.
+    text::String _identifier;                                            ///< Exact resource identifier.
+    unit::ByteCount _maximumContentLength{cDefaultMaximumContentLength}; ///< Logical content bound.
 };
 
 }

@@ -1,29 +1,29 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/compression/ByteCompressor.hpp>
-#include <erbsland/compression/ByteDecompressor.hpp>
-#include <erbsland/compression/CompressionAlgorithm.hpp>
-#include <erbsland/compression/CompressionError.hpp>
-#include <erbsland/compression/CompressionFormat.hpp>
-#include <erbsland/compression/CompressionLevel.hpp>
-#include <erbsland/compression/DecompressionOptions.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/TempDirectory.hpp>
-#include <erbsland/system/Subprocess.hpp>
-#include <erbsland/system/SubprocessOptions.hpp>
-#include <erbsland/system/SubprocessOutputMode.hpp>
-#include <erbsland/text/CharSet.hpp>
-#include <erbsland/text/IntegerBase.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/text/u8/U8StringConstIterator.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCompressor.hpp>
+#include <erbsland/ByteDecompressor.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/CompressionError.hpp>
+#include <erbsland/CompressionFormat.hpp>
+#include <erbsland/CompressionLevel.hpp>
+#include <erbsland/DecompressionOptions.hpp>
+#include <erbsland/IntegerBase.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Subprocess.hpp>
+#include <erbsland/SubprocessOptions.hpp>
+#include <erbsland/SubprocessOutputMode.hpp>
+#include <erbsland/TempDirectory.hpp>
+#include <erbsland/U8StringConstIterator.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -63,11 +63,12 @@ private:
 private:
     [[nodiscard]] static auto levels() -> std::array<LevelCase, 5U> {
         using Level = el::compression::CompressionLevel;
-        return {{{Level::Fastest, "fastest"_el},
-            {Level::Fast, "fast"_el},
-            {Level::Default, "default"_el},
-            {Level::High, "high"_el},
-            {Level::Highest, "highest"_el}}};
+        return {
+            {{Level::Fastest, "fastest"_el},
+                {Level::Fast, "fast"_el},
+                {Level::Default, "default"_el},
+                {Level::High, "high"_el},
+                {Level::Highest, "highest"_el}}};
     }
 
     [[nodiscard]] static auto nextRandom(uint32_t &state) noexcept -> uint32_t {
@@ -168,7 +169,8 @@ private:
         if (algorithm == el::compression::CompressionAlgorithm::Bzip2) {
             sizes = {100'000U - 1U, 100'000U, 100'000U + 1U, 900'000U - 1U, 900'000U, 900'000U + 1U};
         } else if (algorithm == el::compression::CompressionAlgorithm::Lzma) {
-            sizes = {256U * 1024U - 1U,
+            sizes = {
+                256U * 1024U - 1U,
                 256U * 1024U,
                 256U * 1024U + 1U,
                 2U * 1024U * 1024U - 1U,
@@ -198,8 +200,7 @@ private:
         auto result = std::vector<DataCase>{};
         result.push_back({"all-byte-values"_el, createAllBytes()});
         result.push_back(
-            {"large-repetitive"_el,
-                el::mem::ByteBlock{el::unit::ByteLength{384U * 1024U}, el::mem::Byte{0x41U}}});
+            {"large-repetitive"_el, el::mem::ByteBlock{el::unit::ByteCount{384U * 1024U}, el::mem::Byte{0x41U}}});
         appendBoundaryCases(result);
         appendAlgorithmBoundaries(result, algorithm);
         appendDifferentialCases(result);
@@ -219,7 +220,8 @@ private:
             return {"level-1"_el, "level-5"_el, "level-9"_el};
         }
         if (algorithm == Algorithm::Lzma) {
-            return {"known-size"_el,
+            return {
+                "known-size"_el,
                 "liblzma-eos-default"_el,
                 "liblzma-eos-small-dictionary"_el,
                 "liblzma-eos-alt-properties"_el};
@@ -286,21 +288,22 @@ private:
         const auto path = el::path::Path{el::unittest::fh::unitTestExecutablePath()}.parent() /
             "compression-conformance-vectors.tsv"_el;
         const auto content = path.content().readTextOrThrow();
-        const auto lines = el::text::StringList::fromSplit(
-            content, el::text::CharSet{U'\n'}, el::unit::ItemCount::infinite(), true);
+        const auto lines =
+            el::text::StringList::fromSplit(content, el::text::CharSet{U'\n'}, el::unit::ItemCount::infinite(), true);
         auto result = std::vector<ConformanceVector>{};
         for (const auto &sourceLine : lines) {
             const auto line = sourceLine.trimmed();
             if (line.isEmpty() || line.startsWith("#"_el)) {
                 continue;
             }
-            const auto fields = el::text::StringList::fromSplit(
-                line, el::text::CharSet{U'\t'}, el::unit::ItemCount::infinite(), true);
+            const auto fields =
+                el::text::StringList::fromSplit(line, el::text::CharSet{U'\t'}, el::unit::ItemCount::infinite(), true);
             if (fields.count() != el::unit::ItemCount{8U}) {
                 throw el::err::RuntimeError{"Conformance vector does not have eight tab-separated fields."_el};
             }
             result.push_back(
-                {.algorithm = el::compression::CompressionAlgorithm::fromStringOrThrow(fields.get(el::unit::ItemIndex{0U})),
+                {.algorithm =
+                        el::compression::CompressionAlgorithm::fromStringOrThrow(fields.get(el::unit::ItemIndex{0U})),
                     .encoder = fields.get(el::unit::ItemIndex{1U}),
                     .version = fields.get(el::unit::ItemIndex{2U}),
                     .variant = fields.get(el::unit::ItemIndex{3U}),
@@ -321,8 +324,7 @@ private:
             casePath(directory, caseIndex, "source"_el).content().writeDataOrThrow(cases[caseIndex].data);
             for (const auto &levelCase : levelCases) {
                 const auto compressed =
-                    el::compression::ByteCompressor{
-                        algorithm, el::compression::CompressionFormat::Raw, levelCase.level}
+                    el::compression::ByteCompressor{algorithm, el::compression::CompressionFormat::Raw, levelCase.level}
                         .compress(cases[caseIndex].data);
                 casePath(directory, caseIndex, el::text::StringFormat{"core-{}"_el}.build(levelCase.name))
                     .content()
@@ -339,18 +341,20 @@ private:
         options.setInheritStandardInput(false)
             .setStandardOutputMode(el::system::SubprocessOutputMode::Discard)
             .setStandardErrorMode(el::system::SubprocessOutputMode::Capture);
-        auto process = el::system::Subprocess::start(
+        auto process = el::system::Subprocess::create(
             counterpartPath(),
-            el::text::StringList{"verify-batch"_el,
+            el::text::StringList{
+                "verify-batch"_el,
                 algorithm.toString(),
                 nativePathText(directory),
                 el::text::String::fromInteger(cases.size())},
             options);
-        const auto status = process.wait();
-        const auto counterpartError = el::text::StringConverter{process.standardError()}.toString();
+        process->start();
+        const auto status = process->wait();
+        const auto counterpartError = el::text::StringConverter{process->standardError()}.toString();
         if (!counterpartError.isEmpty()) {
-            _counterpartError = el::text::StringFormat{"{}\nRust counterpart error:\n{}"_el}.build(
-                _counterpartError, counterpartError);
+            _counterpartError =
+                el::text::StringFormat{"{}\nRust counterpart error:\n{}"_el}.build(_counterpartError, counterpartError);
         }
         REQUIRE(status.isSuccess());
     }
@@ -367,10 +371,7 @@ private:
                     [&]() -> void {
                         _counterpartError = diagnosticText(algorithm, cases[caseIndex], variant);
                         const auto reference =
-                            casePath(
-                                directory,
-                                caseIndex,
-                                el::text::StringFormat{"reference-{}"_el}.build(variant))
+                            casePath(directory, caseIndex, el::text::StringFormat{"reference-{}"_el}.build(variant))
                                 .content()
                                 .readDataOrThrow();
                         const auto options = el::compression::DecompressionOptions{}.setExpectedOutputLength(
@@ -382,8 +383,7 @@ private:
                         REQUIRE_EQUAL(decompressed, cases[caseIndex].data);
                         if (algorithm == el::compression::CompressionAlgorithm::Lzma) {
                             const auto withoutConfiguredLength =
-                                el::compression::ByteDecompressor{
-                                    algorithm, el::compression::CompressionFormat::Raw}
+                                el::compression::ByteDecompressor{algorithm, el::compression::CompressionFormat::Raw}
                                     .decompress(reference);
                             REQUIRE_EQUAL(withoutConfiguredLength, cases[caseIndex].data);
                         }
@@ -411,8 +411,7 @@ public: // implement UnitTest
         if (_counterpartError.isEmpty()) {
             return {};
         }
-        return el::text::StringConverter{
-            el::text::StringFormat{"Interop context:\n{}"_el}.build(_counterpartError)}
+        return el::text::StringConverter{el::text::StringFormat{"Interop context:\n{}"_el}.build(_counterpartError)}
             .toStdString();
     }
 
@@ -427,15 +426,15 @@ public:
         const auto vectors = conformanceVectors();
         REQUIRE_EQUAL(vectors.size(), 32U);
         for (const auto &vector : vectors) {
-            _counterpartError = el::text::StringFormat{
-                "algorithm: {}\nencoder: {} {}\nvariant: {}\noptions: {}\ndata case: {}"_el}
-                                    .build(
-                                        vector.algorithm.toString(),
-                                        vector.encoder,
-                                        vector.version,
-                                        vector.variant,
-                                        vector.options,
-                                        vector.caseName);
+            _counterpartError =
+                el::text::StringFormat{"algorithm: {}\nencoder: {} {}\nvariant: {}\noptions: {}\ndata case: {}"_el}
+                    .build(
+                        vector.algorithm.toString(),
+                        vector.encoder,
+                        vector.version,
+                        vector.variant,
+                        vector.options,
+                        vector.caseName);
             const auto decompressed =
                 el::compression::ByteDecompressor{
                     vector.algorithm,
@@ -445,8 +444,7 @@ public:
             REQUIRE_EQUAL(decompressed, vector.source);
             if (vector.algorithm == el::compression::CompressionAlgorithm::Lzma) {
                 const auto withoutConfiguredLength =
-                    el::compression::ByteDecompressor{
-                        vector.algorithm, el::compression::CompressionFormat::Raw}
+                    el::compression::ByteDecompressor{vector.algorithm, el::compression::CompressionFormat::Raw}
                         .decompress(vector.compressed);
                 REQUIRE_EQUAL(withoutConfiguredLength, vector.source);
             }

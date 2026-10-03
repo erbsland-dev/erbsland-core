@@ -5,19 +5,21 @@
 #include "impl/IsoDateTimeParser.hpp"
 
 #include "../err/OutOfRangeError.hpp"
-#include "../err/ParameterError.hpp"
 #include "../err/ParseError.hpp"
 #include "../math/SaturatingMath.hpp"
 #include "../mem/ByteWriter.hpp"
 #include "../text/Literals.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 
 #include <chrono>
 #include <limits>
 
 namespace erbsland::time {
 
+using namespace err;
+using namespace mem;
+using namespace text;
 using namespace text::literals;
 
 Timestamp::Timestamp(Date date, Time time) noexcept :
@@ -33,9 +35,9 @@ auto Timestamp::time() const noexcept -> Time {
     return Time::fromDurationSinceMidnight(TimeDelta{timeAsNanoseconds()});
 }
 
-auto Timestamp::toByteBlock() const -> mem::ByteBlock {
-    auto writer = mem::ByteWriter{};
-    writer.setEndianness(mem::Endianness::Big);
+auto Timestamp::toByteBlock() const -> ByteBlock {
+    auto writer = ByteWriter{};
+    writer.setEndianness(Endianness::Big);
     writer.writeInt32(_days).writeInt64(_nanoseconds);
     return writer.toByteBlock();
 }
@@ -50,12 +52,12 @@ auto Timestamp::toDateTime() const noexcept -> std::optional<DateTime> {
 auto Timestamp::toDateTimeOrThrow() const -> DateTime {
     const auto result = toDateTime();
     if (!result) {
-        throw err::OutOfRangeError{"An invalid timestamp has no DateTime representation"_el};
+        throw OutOfRangeError{"An invalid timestamp has no DateTime representation"_el};
     }
     return *result;
 }
 
-auto Timestamp::toIsoString() const -> std::optional<text::String> {
+auto Timestamp::toIsoString() const -> std::optional<String> {
     const auto value = toDateTime();
     if (!value) {
         return std::nullopt;
@@ -69,16 +71,16 @@ auto Timestamp::toIsoString() const -> std::optional<text::String> {
         DateTimePrecision::Nanosecond);
 }
 
-auto Timestamp::toIsoStringOrThrow() const -> text::String {
+auto Timestamp::toIsoStringOrThrow() const -> String {
     const auto result = toIsoString();
     if (!result) {
-        throw err::OutOfRangeError{"An invalid timestamp has no ISO representation"_el};
+        throw OutOfRangeError{"An invalid timestamp has no ISO representation"_el};
     }
     return *result;
 }
 
-auto Timestamp::toString() const -> text::String {
-    return toIsoString().value_or(text::String{});
+auto Timestamp::toString() const -> String {
+    return toIsoString().value_or(String{});
 }
 
 auto Timestamp::toSecondsAndFractions(TimeEpoch epochValue) const noexcept
@@ -94,7 +96,7 @@ auto Timestamp::toSecondsAndFractions(TimeEpoch epochValue) const noexcept
 auto Timestamp::toSecondsAndFractionsOrThrow(TimeEpoch epochValue) const -> std::pair<Seconds, Nanoseconds> {
     const auto result = toSecondsAndFractions(epochValue);
     if (!result) {
-        throw err::OutOfRangeError{"An invalid timestamp has no epoch representation"_el};
+        throw OutOfRangeError{"An invalid timestamp has no epoch representation"_el};
     }
     return *result;
 }
@@ -145,7 +147,7 @@ auto Timestamp::fromRawValue(int32_t days, int64_t nanoseconds) noexcept -> std:
 auto Timestamp::fromRawValueOrThrow(int32_t days, int64_t nanoseconds) -> Timestamp {
     const auto result = fromRawValue(days, nanoseconds);
     if (!result) {
-        throw err::ParameterError{"Timestamp fields exceed the calendar or time-of-day bounds"_el, "value"_el};
+        throw OutOfRangeError{"Timestamp fields exceed the calendar or time-of-day bounds"_el};
     }
     return *result;
 }
@@ -163,24 +165,24 @@ auto Timestamp::fromDaysAndNanoseconds(Days days, Nanoseconds nanoseconds) noexc
 auto Timestamp::fromDaysAndNanosecondsOrThrow(Days days, Nanoseconds nanoseconds) -> Timestamp {
     const auto result = fromDaysAndNanoseconds(days, nanoseconds);
     if (!result) {
-        throw err::ParameterError{"Timestamp fields exceed their bounds"_el, "value"_el};
+        throw OutOfRangeError{"Timestamp fields exceed their bounds"_el};
     }
     return *result;
 }
 
-auto Timestamp::fromByteBlock(const mem::ByteBlock &value) noexcept -> std::optional<Timestamp> {
-    if (value.length() != unit::ByteLength{12U}) {
+auto Timestamp::fromByteBlock(const ByteBlock &value) noexcept -> std::optional<Timestamp> {
+    if (value.length() != unit::ByteCount{12U}) {
         return std::nullopt;
     }
     return fromRawValue(
-        value.getInteger<int32_t>(unit::ByteIndex{0U}, mem::Endianness::Big),
-        value.getInteger<int64_t>(unit::ByteIndex{4U}, mem::Endianness::Big));
+        value.getInteger<int32_t>(unit::ByteIndex{0U}, Endianness::Big),
+        value.getInteger<int64_t>(unit::ByteIndex{4U}, Endianness::Big));
 }
 
-auto Timestamp::fromByteBlockOrThrow(const mem::ByteBlock &value) -> Timestamp {
+auto Timestamp::fromByteBlockOrThrow(const ByteBlock &value) -> Timestamp {
     const auto result = fromByteBlock(value);
     if (!result) {
-        throw err::ParameterError{"A timestamp requires 12 bytes containing canonical bounded fields"_el, "value"_el};
+        throw ParseError{"A timestamp requires 12 bytes containing canonical bounded fields"_el};
     }
     return *result;
 }
@@ -198,12 +200,12 @@ auto Timestamp::fromDateTime(const DateTime &value) noexcept -> std::optional<Ti
 auto Timestamp::fromDateTimeOrThrow(const DateTime &value) -> Timestamp {
     const auto result = fromDateTime(value);
     if (!result) {
-        throw err::OutOfRangeError{"An invalid DateTime has no timestamp representation"_el};
+        throw OutOfRangeError{"An invalid DateTime has no timestamp representation"_el};
     }
     return *result;
 }
 
-auto Timestamp::fromIsoString(const text::String &value) -> std::optional<Timestamp> {
+auto Timestamp::fromIsoString(const String &value) -> std::optional<Timestamp> {
     const auto parsed = impl::IsoDateTimeParser::parse(value, true);
     if (!parsed || !parsed->hasOffset || parsed->precision < DateTimePrecision::Second) {
         return std::nullopt;
@@ -213,10 +215,10 @@ auto Timestamp::fromIsoString(const text::String &value) -> std::optional<Timest
     return fromTicks(Seconds{seconds}, parsed->time.nanosecondFraction());
 }
 
-auto Timestamp::fromIsoStringOrThrow(const text::String &value) -> Timestamp {
+auto Timestamp::fromIsoStringOrThrow(const String &value) -> Timestamp {
     const auto result = fromIsoString(value);
     if (!result) {
-        throw err::ParseError{"Invalid ISO timestamp; seconds and an explicit UTC offset are required"_el};
+        throw ParseError{"Invalid ISO timestamp; seconds and an explicit UTC offset are required"_el};
     }
     return *result;
 }
@@ -238,11 +240,11 @@ auto Timestamp::fromTicks(Seconds seconds, Nanoseconds fractions, TimeEpoch epoc
 
 auto Timestamp::fromTicksOrThrow(Seconds seconds, Nanoseconds fractions, TimeEpoch epochValue) -> Timestamp {
     if (fractions.isNegative() || fractions.toRawValue() >= cNanosecondsPerSecond) {
-        throw err::ParameterError{"Nanosecond fractions must be within one second"_el, "fractions"_el};
+        throw OutOfRangeError{"Nanosecond fractions must be within one second"_el};
     }
     const auto result = fromTicks(seconds, fractions, epochValue);
     if (!result) {
-        throw err::OutOfRangeError{"Epoch ticks exceed the timestamp calendar range"_el};
+        throw OutOfRangeError{"Epoch ticks exceed the timestamp calendar range"_el};
     }
     return *result;
 }

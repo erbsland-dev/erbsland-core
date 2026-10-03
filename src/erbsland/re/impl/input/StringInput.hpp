@@ -21,7 +21,7 @@ public:
 public: // implement Input
     [[nodiscard]] auto read() -> CharAndPosition override;
     [[nodiscard]] auto peek() -> CharAndPosition override;
-    void skip(unit::CpLength characterCount) override;
+    void skip(unit::CpCount characterCount) override;
     [[nodiscard]] auto createMatch(CaptureGroupList captureGroupList) -> MatchPtr override;
 
 private:

@@ -1,6 +1,6 @@
-******************
-Fundamental Syntax
-******************
+***********************************
+Regular-Expression Assembler Syntax
+***********************************
 
 The assembler language is line based. Additional spacing around expressions is ignored. Also, empty lines and lines that only contain a comment are ignored as well.
 

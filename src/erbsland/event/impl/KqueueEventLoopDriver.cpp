@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "KqueueEventLoopDriver.hpp"
 
-#include "../../err/ParameterError.hpp"
-#include "../../err/RuntimeError.hpp"
+#include "../../err/ParameterFailure.hpp"
+#include "../../system/impl/PosixErrorContext.hpp"
+#include "../../system/PlatformError.hpp"
 #include "../../text/Literals.hpp"
 
 #include <sys/event.h>
@@ -15,18 +16,21 @@
 
 namespace erbsland::event::impl {
 
+using namespace err;
 using namespace text::literals;
 
 KqueueEventLoopDriver::KqueueEventLoopDriver() : _queue{::kqueue()} {
     if (_queue < 0) {
-        throw err::RuntimeError{"Failed to create the kqueue event-loop driver."};
+        throw system::PlatformError{
+            "Failed to create the kqueue event-loop driver."_el, system::impl::PosixErrorContext::fromErrno()};
     }
     struct kevent change{};
     EV_SET(&change, cWakeIdentifier, EVFILT_USER, EV_ADD | EV_CLEAR, 0, 0, nullptr);
     if (::kevent(_queue, &change, 1, nullptr, 0, nullptr) < 0) {
+        const auto context = system::impl::PosixErrorContext::fromErrno();
         ::close(_queue);
         _queue = -1;
-        throw err::RuntimeError{"Failed to register the kqueue wake event."};
+        throw system::PlatformError{"Failed to register the kqueue wake event."_el, context};
     }
 }
 
@@ -59,17 +63,17 @@ void KqueueEventLoopDriver::wake() noexcept {
 auto KqueueEventLoopDriver::registerDescriptor(
     const int descriptor, const bool read, const bool write, NativeEventCallback callback) -> RegistrationPtr {
     if (descriptor < 0) {
-        throw err::ParameterError{"The native descriptor must not be negative."_el, "descriptor"_el};
+        throw ParameterFailure{"The native descriptor must not be negative."_el, "descriptor"_el};
     }
     if (!read && !write) {
-        throw err::ParameterError{"At least one native event direction must be registered."_el, "read"_el};
+        throw ParameterFailure{"At least one native event direction must be registered."_el, "read"_el};
     }
     if (!callback) {
-        throw err::ParameterError{"The native event callback must not be empty."_el, "callback"_el};
+        throw ParameterFailure{"The native event callback must not be empty."_el, "callback"_el};
     }
     for (const auto &entry : _registrations) {
         if (entry.second.descriptor == descriptor) {
-            throw err::ParameterError{"The native descriptor is already registered."_el, "descriptor"_el};
+            throw ParameterFailure{"The native descriptor is already registered."_el, "descriptor"_el};
         }
     }
     const auto generation = _nextGeneration++;
@@ -96,7 +100,8 @@ auto KqueueEventLoopDriver::registerDescriptor(
             reinterpret_cast<void *>(static_cast<uintptr_t>(generation)));
     }
     if (::kevent(_queue, changes.data(), changeCount, nullptr, 0, nullptr) < 0) {
-        throw err::RuntimeError{"Failed to register a native descriptor with kqueue."_el};
+        throw system::PlatformError{
+            "Failed to register a native descriptor with kqueue."_el, system::impl::PosixErrorContext::fromErrno()};
     }
     _registrations.emplace(generation, Registration{descriptor, read, write, std::move(callback)});
     return std::make_unique<EventLoopDriverRegistration>(
@@ -156,7 +161,8 @@ void KqueueEventLoopDriver::waitInternal(const timespec *timeout) {
             return;
         }
         if (errno != EINTR) {
-            throw err::RuntimeError{"The kqueue event-loop wait failed."};
+            throw system::PlatformError{
+                "The kqueue event-loop wait failed."_el, system::impl::PosixErrorContext::fromErrno()};
         }
     }
 }

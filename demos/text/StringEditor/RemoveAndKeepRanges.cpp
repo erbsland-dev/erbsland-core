@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/CpRange.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
 
 namespace demo {
 
@@ -29,7 +36,7 @@ void removeAndKeepRanges() {
 
     // Code-point ranges are readable for small labels with fixed structure.
     auto label = el::StringEditor{"🌙Luna-04"_el};
-    label.keep(el::CpRange{el::CpIndex{1U}, el::CpLength{4U}});
+    label.keep(el::CpRange{el::CpIndex{1U}, el::CpCount{4U}});
 
     el::io::printLine("Original: "_el, record);
     el::io::printLine("After remove: "_el, compactRecord);

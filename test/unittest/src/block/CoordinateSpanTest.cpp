@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/Axis.hpp>
 #include <erbsland/block/CoordinateSpan.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/geometry/Axis.hpp>
-#include <erbsland/geometry/SignedAxis.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/SignedAxis.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 TESTED_TARGETS(CoordinateSpan)
@@ -44,6 +44,6 @@ public:
 
     void testInvalidAxis() {
         const auto span = el::block::CoordinateSpan{2, 3};
-        REQUIRE_THROWS_AS(el::err::ParameterError, span.component(el::geometry::Axis::Y));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, span.component(el::geometry::Axis::Y));
     }
 };

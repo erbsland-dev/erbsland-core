@@ -1,16 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "CryptologyResponseKeys.hpp"
 #include "CryptologyResponseReader.hpp"
 #include "CryptologyTestHelper.hpp"
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/CryptologyError.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricDecryptor.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricEncryptor.hpp>
-#include <erbsland/err/ParameterError.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/CryptologyError.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/SymmetricDecryptor.hpp>
+#include <erbsland/SymmetricEncryptor.hpp>
 
 #include <filesystem>
 #include <format>
@@ -55,9 +56,25 @@ private:
         std::size_t &invalidNonceCount) {
         record.requireAllowedSettings({"IVlen"_el, "Keylen"_el, "Taglen"_el});
         record.requireAllowedValues(
-            {"Count"_el, "Result"_el, "Flags"_el, "Key"_el, "Nonce"_el, "AAD"_el, "Msg"_el, "CT"_el, "Tag"_el});
+            {"Count"_el,
+                response_key::cResultField,
+                "Flags"_el,
+                "Key"_el,
+                "Nonce"_el,
+                "AAD"_el,
+                "Msg"_el,
+                "CT"_el,
+                "Tag"_el});
         record.requireValues(
-            {"Count"_el, "Result"_el, "Flags"_el, "Key"_el, "Nonce"_el, "AAD"_el, "Msg"_el, "CT"_el, "Tag"_el});
+            {"Count"_el,
+                response_key::cResultField,
+                "Flags"_el,
+                "Key"_el,
+                "Nonce"_el,
+                "AAD"_el,
+                "Msg"_el,
+                "CT"_el,
+                "Tag"_el});
         REQUIRE_EQUAL(record.unsignedSetting("Keylen"_el), 256U);
         REQUIRE_EQUAL(record.unsignedSetting("Taglen"_el), 128U);
         const auto key = SymmetricKey{bytesFromHex(record.value("Key"_el))};
@@ -69,15 +86,15 @@ private:
 
         if (record.unsignedSetting("IVlen"_el) != 96U) {
             ++invalidNonceCount;
-            REQUIRE_EQUAL(record.value("Result"_el), "invalid"_el);
+            REQUIRE_EQUAL(record.value(response_key::cResultField), "invalid"_el);
             REQUIRE_THROWS_AS(
-                el::err::ParameterError, SymmetricEncryptor(SymmetricEncryptionType::ChaCha20Poly1305, key, nonce));
+                el::err::ParameterFailure, SymmetricEncryptor(SymmetricEncryptionType::ChaCha20Poly1305, key, nonce));
             REQUIRE_THROWS_AS(
-                el::err::ParameterError, SymmetricDecryptor(SymmetricEncryptionType::ChaCha20Poly1305, key, nonce));
+                el::err::ParameterFailure, SymmetricDecryptor(SymmetricEncryptionType::ChaCha20Poly1305, key, nonce));
             return;
         }
 
-        if (record.value("Result"_el) == "valid"_el) {
+        if (record.value(response_key::cResultField) == "valid"_el) {
             ++validCount;
             auto encryptor = SymmetricEncryptor{SymmetricEncryptionType::ChaCha20Poly1305, key, nonce};
             encryptor.addAuthenticatedData(aad);

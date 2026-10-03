@@ -29,12 +29,10 @@ public:
     /// Get the start position of the match.
     [[nodiscard]] virtual auto begin() const -> InputPosition;
     /// Get the start position of the given group.
-    /// @param groupIndex The index of the group.
-    /// @throws err::ParameterError if the group index is invalid.
+    /// @param groupIndex The capture-group index. Must identify a group in this match.
     [[nodiscard]] virtual auto begin(CaptureGroupIndex groupIndex) const -> InputPosition;
     /// Get the start position of the given group.
-    /// @param groupName The name of the group.
-    /// @throws err::ParameterError if the group name is invalid.
+    /// @param groupName The capture-group name. Must identify a named group in this match.
     [[nodiscard]] virtual auto begin(const text::String &groupName) const -> InputPosition;
 
     /// Get the end position of the match.
@@ -42,13 +40,11 @@ public:
     [[nodiscard]] virtual auto end() const -> InputPosition;
     /// Get the end position of the given group.
     /// The end position points *after* the last character of the match.
-    /// @param groupIndex The index of the group.
-    /// @throws err::ParameterError if the group index is invalid.
+    /// @param groupIndex The capture-group index. Must identify a group in this match.
     [[nodiscard]] virtual auto end(CaptureGroupIndex groupIndex) const -> InputPosition;
     /// Get the end position of the given group.
     /// The end position points *after* the last character of the match.
-    /// @param groupName The name of the group.
-    /// @throws err::ParameterError if the group name is invalid.
+    /// @param groupName The capture-group name. Must identify a named group in this match.
     [[nodiscard]] virtual auto end(const text::String &groupName) const -> InputPosition;
 
     /// Get the range of the match.
@@ -56,27 +52,23 @@ public:
     [[nodiscard]] virtual auto range() const -> CaptureRange;
     /// Get the range of the given group.
     /// The range is defined as [begin, end] where begin is inclusive and end is exclusive.
-    /// @param groupIndex The index of the group.
-    /// @throws err::ParameterError if the group index is invalid.
+    /// @param groupIndex The capture-group index. Must identify a group in this match.
     [[nodiscard]] virtual auto range(CaptureGroupIndex groupIndex) const -> CaptureRange;
     /// Get the range of the given group.
     /// The range is defined as [begin, end] where begin is inclusive and end is exclusive.
-    /// @param groupName The group name.
-    /// @throws err::ParameterError if the group name is invalid.
+    /// @param groupName The capture-group name. Must identify a named group in this match.
     [[nodiscard]] virtual auto range(const text::String &groupName) const -> CaptureRange;
 
     /// Get the capture group of the match.
     /// @return A reference to the capture group instance.
     [[nodiscard]] virtual auto group() const -> const CaptureGroup &;
     /// Get the capture group of the given group.
-    /// @param groupIndex The index of the group.
+    /// @param groupIndex The capture-group index. Must identify a group in this match.
     /// @return A reference to the capture group instance.
-    /// @throws err::ParameterError if the group index is invalid.
     [[nodiscard]] virtual auto group(CaptureGroupIndex groupIndex) const -> const CaptureGroup &;
     /// Get the capture group of the given group.
-    /// @param groupName The name of the group.
+    /// @param groupName The capture-group name. Must identify a named group in this match.
     /// @return A reference to the capture group instance.
-    /// @throws err::ParameterError if the group name is invalid.
     [[nodiscard]] virtual auto group(const text::String &groupName) const -> const CaptureGroup &;
 
     /// Get the number of capture groups, including the full match.
@@ -96,9 +88,8 @@ protected:
 protected:
     /// Get the index of a group by name.
     /// This will build the group name to an index map on the first call.
-    /// @param groupName The group name.
+    /// @param groupName The capture-group name. Must identify a named group in this match.
     /// @return The index of the group.
-    /// @throws err::ParameterError if the group name is invalid.
     [[nodiscard]] auto getGroupIndex(const text::String &groupName) const -> CaptureGroupIndex;
 
     /// Build the group name to index map.

@@ -7,6 +7,7 @@
 #include <variant>
 
 namespace erbsland::data::cbor::impl {
+
 /// Shared storage for one CBOR value.
 /// @tested{CborValueTest}
 class CborValueData final {
@@ -31,4 +32,5 @@ public:
     explicit CborValueData(T value) : value{std::move(value)} {}
     Value value; ///< Stored value.
 };
+
 }

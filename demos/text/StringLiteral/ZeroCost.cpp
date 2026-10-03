@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringLiteral.hpp>
 
 namespace demo {
 
@@ -20,7 +22,7 @@ constexpr auto cRiverStory = el::StringLiteral{"川の水は静かに流れま�
 void zeroCost() {
     // Inspect a literal created with the `_el` suffix.
     el::io::printLine("Forest story .: "_el, cForestStory);
-    el::io::printLine("Valid UTF-8 ..: "_el, cForestStory.isValidUtf8());
+    el::io::printLine("Valid UTF-8 ..: "_el, cForestStory.isEncodingValid());
     el::io::printLine(
         "Length .......: "_el,
         cForestStory.length(),
@@ -30,7 +32,7 @@ void zeroCost() {
 
     // The same functionality using `el::StringLiteral`.
     el::io::printLine("\nRiver story ..: "_el, cRiverStory);
-    el::io::printLine("Valid UTF-8 ..: "_el, cRiverStory.isValidUtf8());
+    el::io::printLine("Valid UTF-8 ..: "_el, cRiverStory.isEncodingValid());
     el::io::printLine(
         "Length .......: "_el, cRiverStory.length(), " bytes / "_el, cRiverStory.characterLength(), " code-points"_el);
 

@@ -4,21 +4,26 @@
 
 #include "../CryptologyError.hpp"
 #include "../impl/key_agreement/KeyAgreementOperations.hpp"
+#include "../impl/key_agreement/P256KeyAgreement.hpp"
 #include "../impl/SecureEraseGuard.hpp"
 
-#include "../../core/Application.hpp"
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../../core/impl/ApplicationDataAccess.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/OutOfRangeError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../mem/ByteArray.hpp"
 #include "../../random/Random.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::cryptology {
 
+using namespace err;
+using namespace mem;
 using namespace text::literals;
 
 KeyAgreementPrivateKey::KeyAgreementPrivateKey(
-    const KeyAgreementAlgorithm algorithm, const mem::ConstByteSpan privateData, KeyAgreementPublicKey publicKey) :
+    const KeyAgreementAlgorithm algorithm, const ConstByteSpan privateData, KeyAgreementPublicKey publicKey) :
     _algorithm{algorithm}, _privateData{privateData}, _publicKey{std::move(publicKey)} {
 }
 
@@ -28,14 +33,14 @@ KeyAgreementPrivateKey::~KeyAgreementPrivateKey() {
 
 auto KeyAgreementPrivateKey::agree(const KeyAgreementPublicKey &peer) const -> KeyAgreementSharedSecret {
     if (isEmpty() || peer.isEmpty()) {
-        throw err::LogicError{"Both private and peer public keys are required for key agreement."_el};
+        throw LogicFailure{"Both private and peer public keys are required for key agreement."_el};
     }
     if (_algorithm != peer.algorithm()) {
-        throw err::ParameterError{"Private and peer public-key algorithms must match."_el, "peer"_el};
+        throw ParameterFailure{"Private and peer public-key algorithms must match."_el, "peer"_el};
     }
     auto result = KeyAgreementSharedSecret{};
     // Limit the private scalar's plaintext lifetime to this callback; ProtectedByteBlock erases it on every exit.
-    _privateData.withUnprotectedData([&](const mem::ConstByteSpan privateData) -> void {
+    _privateData.withUnprotectedData([&](const ConstByteSpan privateData) -> void {
         auto sharedData = impl::key_agreement::agree(_algorithm, privateData, peer.span());
 
         // The raw shared coordinate is secret. Mark it before any validation that can throw and guard every exit.
@@ -44,8 +49,8 @@ auto KeyAgreementPrivateKey::agree(const KeyAgreementPublicKey &peer) const -> K
 
         // RFC 7748 section 6.1 permits the all-zero check without leaking which input caused it; RFC 8446 section
         // 7.4.2 requires rejection for X25519. ByteBlock performs the comparison in constant time.
-        const auto zero = mem::ByteArray<32U>{};
-        if (sharedData.isEqualConstTime(zero.span())) {
+        const auto zero = ByteArray<32U>{};
+        if (_algorithm == KeyAgreementAlgorithm::X25519 && sharedData.isEqualConstTime(zero.span())) {
             throw CryptologyError{"Key agreement produced the forbidden all-zero shared secret."_el};
         }
 
@@ -62,30 +67,41 @@ void KeyAgreementPrivateKey::secureErase() noexcept {
 
 auto KeyAgreementPrivateKey::publicKey() const -> KeyAgreementPublicKey {
     if (isEmpty()) {
-        throw err::LogicError{"A private key is required to access its public key."_el};
+        throw LogicFailure{"A private key is required to access its public key."_el};
     }
     return _publicKey;
 }
 
 auto KeyAgreementPrivateKey::generate(const KeyAgreementAlgorithm algorithm) -> KeyAgreementPrivateKey {
     if (algorithm.privateKeySize().isZero()) {
-        throw err::ParameterError{"A valid key-agreement algorithm is required."_el, "algorithm"_el};
+        throw ParameterFailure{"A valid key-agreement algorithm is required."_el, "algorithm"_el};
     }
-    // RFC 7748 section 6.1: generate 32 random X25519 private bytes. The algorithm implementation applies clamping
-    // when the scalar is used; preserving the original bytes keeps import and generation behavior identical.
-    auto privateData = core::application().secureRandom().buildByteBlock(algorithm.privateKeySize());
-    privateData.markAsSensitive();
-    // Erase the unprotected random bytes after fromBytes has calculated the public key and protected its copy.
-    const auto eraseGuard = impl::SecureEraseGuard{privateData};
-    return fromBytes(algorithm, privateData.span());
+    // SEC 1 section 3.2.1: rejection-sample P-256 in [1,n-1], never reduce a random scalar modulo n.
+    // RFC 7748 section 6.1: all 32-byte X25519 strings are accepted; clamping happens at use.
+    // The 128-attempt limit detects a malfunctioning randomness provider, not a biased fallback.
+    const auto randomData = core::impl::applicationData()->random().get();
+    for (auto attempt = 0U; attempt < 128U; ++attempt) {
+        auto privateData = randomData->secureRandom().buildByteBlock(algorithm.privateKeySize());
+        privateData.markAsSensitive();
+        const auto eraseGuard = impl::SecureEraseGuard{privateData};
+        if (algorithm == KeyAgreementAlgorithm::P256 &&
+            !impl::p256_key_agreement::isValidPrivateKey(privateData.span())) {
+            continue;
+        }
+        return fromBytes(algorithm, privateData.span());
+    }
+    throw CryptologyError{"Failed to sample a valid key-agreement scalar."_el};
 }
 
-auto KeyAgreementPrivateKey::fromBytes(const KeyAgreementAlgorithm algorithm, const mem::ConstByteSpan data)
+auto KeyAgreementPrivateKey::fromBytes(const KeyAgreementAlgorithm algorithm, const ConstByteSpan data)
     -> KeyAgreementPrivateKey {
-    if (algorithm.privateKeySize().isZero() || data.size() != algorithm.privateKeySize().toSizeT()) {
-        throw err::ParameterError{"The private-key length does not match the key-agreement algorithm."_el, "data"_el};
+    if (algorithm.privateKeySize().isZero()) {
+        throw ParameterFailure{"A valid key-agreement algorithm is required."_el, "algorithm"_el};
     }
-    // RFC 7748 section 6.1: K_A = X25519(a, 9). The caller retains ownership and erasure responsibility for data.
+    if (data.size() != algorithm.privateKeySize().toSizeT()) {
+        throw OutOfRangeError{"The private-key length does not match the key-agreement algorithm."_el};
+    }
+    // RFC 7748 section 6.1 / SEC 1 section 3.2.1: derive the public key. The caller retains erasure ownership of data.
     const auto publicData = impl::key_agreement::publicKey(algorithm, data);
     return KeyAgreementPrivateKey{algorithm, data, KeyAgreementPublicKey{algorithm, publicData.span()}};
 }

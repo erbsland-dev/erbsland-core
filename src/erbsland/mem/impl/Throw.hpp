@@ -8,6 +8,7 @@ namespace erbsland::mem::impl {
 
 /// Throw an out of range error (slow, reason copy)
 /// Only use this call in templates to prevent a circular include dependency.
+/// @throws err::OutOfRangeError Always; reports the supplied bounds error.
 [[noreturn]] void throwOutOfRange(std::string_view reason);
 
 /// Throw an overflow error (slow, reson copy).

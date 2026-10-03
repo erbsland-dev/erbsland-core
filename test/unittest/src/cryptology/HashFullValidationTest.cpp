@@ -1,10 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "CryptologyResponseKeys.hpp"
 #include "CryptologyResponseReader.hpp"
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/Hasher.hpp>
+#include "../ParallelTestWork.hpp"
+
+#include <erbsland/Hasher.hpp>
 
 #include <algorithm>
 #include <array>
@@ -14,6 +17,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 using namespace el::cryptology;
 using namespace el::text::literals;
@@ -109,14 +113,15 @@ public:
                     SOURCE_LOCATION(),
                     [&]() -> void {
                         record.requireAllowedSettings({"L"_el});
-                        record.requireAllowedValues({"Len"_el, "Msg"_el, "MD"_el});
-                        record.requireValues({"Len"_el, "Msg"_el, "MD"_el});
+                        record.requireAllowedValues({"Len"_el, "Msg"_el, response_key::cMessageDigestField});
+                        record.requireValues({"Len"_el, "Msg"_el, response_key::cMessageDigestField});
                         const auto bitLength = record.unsignedValue("Len"_el);
                         REQUIRE_EQUAL(bitLength % 8U, 0U);
                         const auto message =
                             bitLength == 0U ? el::mem::ByteBlock{} : bytesFromHex(record.value("Msg"_el));
                         REQUIRE_EQUAL(message.length().toSizeT(), bitLength / 8U);
-                        verifyHash(file.algorithm, message, bytesFromHex(record.value("MD"_el)));
+                        verifyHash(
+                            file.algorithm, message, bytesFromHex(record.value(response_key::cMessageDigestField)));
                     },
                     [&]() -> std::string { return el::StringConverter{record.diagnostic()}.toStdString(); });
             }
@@ -126,23 +131,43 @@ public:
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
     void testNistMonteCarlo() {
+        auto allRecords = std::vector<std::vector<CryptologyResponseReader::Record>>{};
         for (const auto &file : monteCarloFiles) {
-            const auto records = CryptologyResponseReader{el::Path{std::filesystem::path{file.path}}}.read();
+            auto records = CryptologyResponseReader{el::Path{std::filesystem::path{file.path}}}.read();
             REQUIRE_EQUAL(records.size(), file.records + 1U);
             records.front().requireAllowedSettings({"L"_el});
             records.front().requireAllowedValues({"Seed"_el});
             records.front().requireValues({"Seed"_el});
-            auto seed = bytesFromHex(records.front().value("Seed"_el));
-            for (const auto &record : std::span{records}.subspan(1U)) {
+            allRecords.push_back(std::move(records));
+        }
+        // Each algorithm's chain remains serial; the seven independent chains can run concurrently.
+        const auto results = parallel_test_work::run(
+            monteCarloFiles.size(), [&](const std::size_t index) -> std::vector<el::mem::ByteBlock> {
+                const auto &records = allRecords[index];
+                auto seed = bytesFromHex(records.front().value("Seed"_el));
+                auto digests = std::vector<el::mem::ByteBlock>{};
+                digests.reserve(records.size() - 1U);
+                for (const auto &record : std::span{records}.subspan(1U)) {
+                    record.requireAllowedSettings({"L"_el});
+                    record.requireAllowedValues({"COUNT"_el, response_key::cMessageDigestField});
+                    record.requireValues({"COUNT"_el, response_key::cMessageDigestField});
+                    seed = monteCarloRound(monteCarloFiles[index].algorithm, seed);
+                    digests.push_back(seed);
+                }
+                return digests;
+            });
+        for (auto index = std::size_t{}; index < allRecords.size(); ++index) {
+            const auto &records = allRecords[index];
+            for (auto round = std::size_t{1U}; round < records.size(); ++round) {
+                const auto &record = records[round];
                 runWithContext(
                     SOURCE_LOCATION(),
                     [&]() -> void {
-                        record.requireAllowedSettings({"L"_el});
-                        record.requireAllowedValues({"COUNT"_el, "MD"_el});
-                        record.requireValues({"COUNT"_el, "MD"_el});
                         REQUIRE_EQUAL(record.unsignedValue("COUNT"_el), record.index - 1U);
-                        seed = monteCarloRound(file.algorithm, seed);
-                        REQUIRE_EQUAL(seed, bytesFromHex(record.value("MD"_el)));
+                        REQUIRE_NOTHROW(results[index].value());
+                        REQUIRE_EQUAL(
+                            results[index].value()[round - 1U],
+                            bytesFromHex(record.value(response_key::cMessageDigestField)));
                     },
                     [&]() -> std::string { return el::StringConverter{record.diagnostic()}.toStdString(); });
             }

@@ -22,7 +22,9 @@ Primary Types
 
 .. code-block:: text
 
+    TerminalError // an unavailable terminal capability required by an operation
     Terminal // high-level terminal screen, cursor output, and input interface
+    TerminalEmulation // incremental UTF-8 and ANSI interpretation into two screen buffers
     Block // one styled terminal cell
     BlockString // retained read-only cell sequence
     Color, BlockStyle, BlockAttributes // cell color and presentation values
@@ -82,6 +84,8 @@ Terminal Integration Types
     TerminalStream // text stream adapter for terminal output
     TerminalOutputGuard // move-only guard for terminal-wide multi-call output transactions
     TerminalFlags, UpdateSettings // terminal construction and screen update policies
+    TerminalEmulationOptions // emulated dimensions, growth, wrapping, tabs, and newline behavior
+    BufferRenderOptions, RenderFormat // fluent buffer serialization policies and extensible representation
 
 Document Types
 ==============
@@ -155,11 +159,12 @@ Terminal Patterns
 
 .. code-block:: text
 
-    T([size, flags]) // create a terminal using the platform backend
+    T([size, flags]) // create a terminal using the native or VirtualTty stdout backend
     T(backend[, size]) // create a terminal using a custom backend
     o.updateScreen(buffer[, settings]) // render a complete retained screen
     o.testScreenSize() // refresh detected drawable dimensions
-    o.size() -> block::Size // inspect drawable dimensions
+    o.size() -> block::Size // inspect the full usable screen dimensions
+    o.setSize(size) // change the assumed full screen dimensions without resizing a native window
     o.clearScreen()/flush() // apply immediate terminal output control
     o.input() -> Input& // access the terminal-owned input interface
     o.beginSession() -> TerminalSession // enter scoped terminal control
@@ -195,3 +200,18 @@ Document Rendering Patterns
     T::defaultPlain/defaultSystemOutput() -> T // create predefined document presentation
     o.renderTo(writer, document) // write completed styled physical lines to a cursor writer
     T::default❮Style❯() -> TerminalDocumentStyle // create a predefined style sheet
+
+Emulation and Rendering Patterns
+================================
+
+.. code-block:: text
+
+    o.write(rawText) // process incremental UTF-8 and terminal control input
+    o.finish()/reset() // finalize input or clear screens and stream state
+    o.regularBuffer()/alternateBuffer()/activeBuffer() -> const CursorBuffer& // inspect fixed terminal frames
+    o.scrollbackBuffer() -> const RemappedBuffer& // inspect retained regular-screen history
+    o.hasScrollback() -> bool // distinguish retained rows from the initial placeholder
+    o.setScrollOutCallback(callback) // observe complete rows leaving a cursor buffer
+    o.isAlternateScreenActive() -> bool // test the selected emulated screen
+    o.toString([renderOptions]) -> String // serialize a readable buffer as text or ANSI
+    o.setFormat(format) -> BufferRenderOptions& // select an extensible rendering representation

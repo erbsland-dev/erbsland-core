@@ -1,22 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathCreateMode.hpp>
-#include <erbsland/path/PathReadTextOptions.hpp>
-#include <erbsland/path/PathWriteDataOptions.hpp>
-#include <erbsland/path/PathWriteTextOptions.hpp>
-#include <erbsland/stream/AnyStringBuilderStream.hpp>
-#include <erbsland/stream/ByteInputStream.hpp>
-#include <erbsland/stream/ByteOutputStream.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/stream/StreamPositioning.hpp>
-#include <erbsland/stream/StreamPositionOrigin.hpp>
-#include <erbsland/stream/StreamPositionStatus.hpp>
-#include <erbsland/stream/TextInputStream.hpp>
-#include <erbsland/stream/TextOutputStream.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/ByteOutputStream.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathCreateMode.hpp>
+#include <erbsland/PathReadTextOptions.hpp>
+#include <erbsland/PathWriteDataOptions.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/StreamPositioning.hpp>
+#include <erbsland/StreamPositionOrigin.hpp>
+#include <erbsland/StreamPositionStatus.hpp>
+#include <erbsland/TextInputStream.hpp>
+#include <erbsland/TextOutputStream.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>
@@ -35,8 +35,8 @@ using el::stream::StreamPositionOrigin;
 using el::stream::StreamPositionStatus;
 using el::text::StringBomMode;
 using el::text::StringEncoding;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteOffset;
 using namespace el::text::literals;
 
@@ -91,7 +91,7 @@ public:
 
         REQUIRE(stream->supportsPositioning());
         REQUIRE_EQUAL(stream->position(), ByteIndex{0U});
-        REQUIRE_EQUAL(stream->read(ByteLength{2U}).data().toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
+        REQUIRE_EQUAL(stream->read(ByteCount{2U}).data().toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
         REQUIRE_EQUAL(stream->position(), ByteIndex{2U});
         REQUIRE(stream->movePosition(StreamPositionOrigin::Current, ByteOffset{-1}).isSuccess());
         REQUIRE_EQUAL(stream->position(), ByteIndex{1U});

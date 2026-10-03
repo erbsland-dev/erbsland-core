@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/core/MakeOneNamespace.hpp>
 #include <erbsland/cterm/Terminal.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 

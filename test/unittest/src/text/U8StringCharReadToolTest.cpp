@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/CpRange.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/text/u8/impl/U8StringCharReadTool.hpp>
 #include <erbsland/text/u8/impl/U8StringDataView.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ByteRange.hpp>
-#include <erbsland/unit/CpIndex.hpp>
-#include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/CpRange.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -50,13 +50,13 @@ public:
         REQUIRE(tool.byteIndexAt(CpIndex{1U}).isNoIndex());
         REQUIRE(tool.charIndexAt(ByteIndex{1U}).isNoIndex());
         REQUIRE(tool.find(el::text::impl::U8StringDataView{}, CpIndex::zero()).isZero());
-        REQUIRE(tool.findFirstOf(CharSet{Char{U'A'}}).isNoIndex());
-        REQUIRE(tool.findLastNotOf(CharSet{Char{U'A'}}).isNoIndex());
+        REQUIRE(tool.findFirstOf(CharSet{U'A'}).isNoIndex());
+        REQUIRE(tool.findLastNotOf(CharSet{U'A'}).isNoIndex());
     }
 
     void testReadAndSliceRange() {
         const auto tool = makeUtf8Tool(ByteRange::fromSizeT(cUtf8Text.size()));
-        const auto expectedRange = ByteRange{ByteIndex{1}, ByteLength{5}};
+        const auto expectedRange = ByteRange{ByteIndex{1}, ByteCount{5}};
 
         REQUIRE_EQUAL(tool.charLength().toSizeT(), 4U);
         REQUIRE_EQUAL(tool.charAt(CpIndex{0}).toRawValue(), U'A');
@@ -66,7 +66,7 @@ public:
         REQUIRE(tool.charAt(CpIndex{4}).isEndOfData());
         REQUIRE(tool.charAt(CpIndex{5}).isNoCodePoint());
         REQUIRE(tool.charAt(CpIndex::noIndex()).isNoCodePoint());
-        REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{1}, CpLength{2}}), expectedRange);
+        REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{1}, CpCount{2}}), expectedRange);
     }
 
     void testIndexConversions() {
@@ -93,22 +93,22 @@ public:
     }
 
     void testCharacterSliceRange() {
-        const auto tool = makeUtf8Tool(ByteRange{ByteIndex{1U}, ByteLength{9U}});
+        const auto tool = makeUtf8Tool(ByteRange{ByteIndex{1U}, ByteCount{9U}});
 
-        REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{1U}, CpLength{2U}}), (ByteRange{ByteIndex{3U}, ByteLength{7U}}));
+        REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{1U}, CpCount{2U}}), (ByteRange{ByteIndex{3U}, ByteCount{7U}}));
         REQUIRE_EQUAL(
-            tool.sliceRange(CpRange{CpIndex{1U}, CpLength::infinite()}), (ByteRange{ByteIndex{3U}, ByteLength{7U}}));
-        REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{2U}, CpLength{99U}}), (ByteRange{ByteIndex{6U}, ByteLength{4U}}));
-        REQUIRE(tool.sliceRange(CpRange{CpIndex{3U}, CpLength{1U}}).isEmpty());
-        REQUIRE(tool.sliceRange(CpRange{CpIndex::noIndex(), CpLength{1U}}).isEmpty());
+            tool.sliceRange(CpRange{CpIndex{1U}, CpCount::infinite()}), (ByteRange{ByteIndex{3U}, ByteCount{7U}}));
+        REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{2U}, CpCount{99U}}), (ByteRange{ByteIndex{6U}, ByteCount{4U}}));
+        REQUIRE(tool.sliceRange(CpRange{CpIndex{3U}, CpCount{1U}}).isEmpty());
+        REQUIRE(tool.sliceRange(CpRange{CpIndex::noIndex(), CpCount{1U}}).isEmpty());
         REQUIRE(tool.sliceRange(CpRange::noRange()).isEmpty());
     }
 
     void testCharacterSliceRangeWithInvalidUtf8() {
         const auto tool = makeInvalidUtf8Tool(ByteRange::fromSizeT(cInvalidUtf8Text.size()));
 
-        REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{1U}, CpLength{1U}}), (ByteRange{ByteIndex{1U}, ByteLength{1U}}));
-        REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{1U}, CpLength{2U}}), (ByteRange{ByteIndex{1U}, ByteLength{2U}}));
+        REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{1U}, CpCount{1U}}), (ByteRange{ByteIndex{1U}, ByteCount{1U}}));
+        REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{1U}, CpCount{2U}}), (ByteRange{ByteIndex{1U}, ByteCount{2U}}));
     }
 
     void testForwardFind() {
@@ -152,7 +152,7 @@ public:
     }
 
     void testSlicedRangeFind() {
-        const auto tool = makeUtf8Tool(ByteRange{ByteIndex{1}, ByteLength{9}});
+        const auto tool = makeUtf8Tool(ByteRange{ByteIndex{1}, ByteCount{9}});
         const auto euroAndEmojiText = th::stdStringFromHex("E2 82 AC F0 9F 98 80");
         const auto euroAndEmoji = makeDataView(euroAndEmojiText);
 

@@ -7,14 +7,16 @@
 #include "../text/IntegerFormat.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringEditor.hpp"
-#include "../unit/CpLength.hpp"
+#include "../text/StringJoins.hpp"
+#include "../unit/CpCount.hpp"
 
 namespace erbsland::time {
 
+using namespace text;
+using namespace unit;
 using text::IntegerFormat;
 using text::IntegerFormatFlag;
 using text::String;
-
 using namespace text::literals;
 
 Time::Time(const Hour hour, const Minute minute, const Second second, const Nanoseconds nsFraction) noexcept :
@@ -65,13 +67,13 @@ auto Time::toNanosecondsSinceMidnight() const noexcept -> Nanoseconds {
 }
 
 auto Time::toString() const -> String {
-    static const auto zeroCharacters = text::CharSet{U'0'};
-    static const auto dotCharacters = text::CharSet{U'.'};
-    auto result = text::StringEditor{toIsoString(
+    static const auto zeroCharacters = CharSet{U'0'};
+    static const auto dotCharacters = CharSet{U'.'};
+    auto result = StringEditor{toIsoString(
         IsoTimeFormatFlags{IsoTimeFormat::Extended, IsoTimeFormat::UseDotFraction}, DateTimePrecision::Nanosecond)};
-    result.trim(zeroCharacters, text::StringSide::Back);
+    result.trim(zeroCharacters, StringSide::Back);
     if (result.endsWith("."_el)) {
-        result.trim(dotCharacters, text::StringSide::Back);
+        result.trim(dotCharacters, StringSide::Back);
     }
     return result;
 }
@@ -80,7 +82,7 @@ auto Time::toIsoString(const IsoTimeFormatFlags flags, const DateTimePrecision p
     const auto extended = flags.isSet(IsoTimeFormat::Extended);
     const auto separator = flags.isSet(IsoTimeFormat::UseDotFraction) ? U'.' : U',';
     auto twoDigitFormat = IntegerFormat::decimal();
-    twoDigitFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{2U});
+    twoDigitFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(CpCount{2U});
 
     const auto partSeparator = extended ? String{":"_el} : String{};
     const auto minuteText =
@@ -91,27 +93,27 @@ auto Time::toIsoString(const IsoTimeFormatFlags flags, const DateTimePrecision p
     if (precision >= DateTimePrecision::Millisecond) {
         auto fractionFormat = IntegerFormat::decimal();
         auto fraction = nanosecondFraction().toValue();
-        auto fieldWidth = unit::CpLength{3};
+        auto fieldWidth = CpCount{3};
         if (precision == DateTimePrecision::Microsecond) {
             fraction /= 1000LL; // microsecond fraction
-            fieldWidth = unit::CpLength{6};
+            fieldWidth = CpCount{6};
         } else if (precision == DateTimePrecision::Nanosecond) {
-            fieldWidth = unit::CpLength{9}; // full nanoseconds
+            fieldWidth = CpCount{9}; // full nanoseconds
         } else {
-            fraction /= 1000000LL;          // millisecond fraction
+            fraction /= 1000000LL;   // millisecond fraction
         }
         fractionFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(fieldWidth);
         fractionText = String::fromInteger(fraction, fractionFormat);
     }
-    return String::fromJoined(
-        {flags.isSet(IsoTimeFormat::TimePrefix) ? String{"T"_el} : String{},
-            String::fromInteger(hour().toValue(), twoDigitFormat),
-            precision >= DateTimePrecision::Minute ? partSeparator : String{},
-            minuteText,
-            precision >= DateTimePrecision::Second ? partSeparator : String{},
-            secondText,
-            precision >= DateTimePrecision::Millisecond ? String::fromCharacter(separator) : String{},
-            fractionText});
+    return text::join(
+        flags.isSet(IsoTimeFormat::TimePrefix) ? String{"T"_el} : String{},
+        String::fromInteger(hour().toValue(), twoDigitFormat),
+        precision >= DateTimePrecision::Minute ? partSeparator : String{},
+        minuteText,
+        precision >= DateTimePrecision::Second ? partSeparator : String{},
+        secondText,
+        precision >= DateTimePrecision::Millisecond ? String::fromCharacter(separator) : String{},
+        fractionText);
 }
 
 auto Time::addWithWrap(const TimeDelta delta) noexcept -> Days {

@@ -8,7 +8,7 @@
 #include <erbsland/conf/impl/source/StringSource.hpp>
 #include <erbsland/conf/Source.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/String.hpp>
 
 #include <string>
 
@@ -119,7 +119,7 @@ public:
         REQUIRE_NOTHROW(source->open());
         const auto line = source->readLine();
         REQUIRE_EQUAL(line.length().toSizeT(), malformed.size());
-        REQUIRE_FALSE(line.isValidUtf8());
+        REQUIRE_FALSE(line.isEncodingValid());
     }
 
     void testReturnedLinesKeepTheirStorageAlive() {

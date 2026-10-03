@@ -10,7 +10,7 @@
 #include "../symmetric/SymmetricDecryptor.hpp"
 #include "../symmetric/SymmetricTag.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../mem/Byte.hpp"
 #include "../../mem/ByteBlock.hpp"
@@ -22,6 +22,8 @@
 
 namespace erbsland::cryptology {
 
+using namespace err;
+using namespace mem;
 using namespace text::literals;
 
 TlsRecordDecryptor::TlsRecordDecryptor() noexcept = default;
@@ -39,7 +41,7 @@ TlsRecordDecryptor::TlsRecordDecryptor(TlsRecordDecryptor &&) noexcept = default
 
 auto TlsRecordDecryptor::operator=(TlsRecordDecryptor &&) noexcept -> TlsRecordDecryptor & = default;
 
-auto TlsRecordDecryptor::unprotect(const mem::ConstByteSpan record) -> TlsRecordPlaintext {
+auto TlsRecordDecryptor::unprotect(const ConstByteSpan record) -> TlsRecordPlaintext {
     static constexpr std::size_t cHeaderLength{5U};
     static constexpr std::size_t cMaximumContentLength{uint16_t{1U} << 14U};
     static constexpr std::size_t cMaximumInnerPlaintextLength{cMaximumContentLength + 1U};
@@ -47,7 +49,7 @@ auto TlsRecordDecryptor::unprotect(const mem::ConstByteSpan record) -> TlsRecord
     static constexpr std::size_t cMaximumCiphertextLength{cMaximumContentLength + 256U};
 
     if (_state == nullptr) {
-        throw err::LogicError{"The TLS record decryptor is empty."_el};
+        throw LogicFailure{"The TLS record decryptor is empty."_el};
     }
 
     try {
@@ -108,7 +110,7 @@ auto TlsRecordDecryptor::unprotect(const mem::ConstByteSpan record) -> TlsRecord
             auto finalPlaintext = decryptor.finalize(receivedTag);
             finalPlaintext.markAsSensitive();
             const auto finalPlaintextEraseGuard = impl::SecureEraseGuard{finalPlaintext};
-            tentativePlaintext = mem::ByteBlock{mem::ByteBlockEditor{tentativePlaintext}.append(finalPlaintext.span())};
+            tentativePlaintext = ByteBlock{ByteBlockEditor{tentativePlaintext}.append(finalPlaintext.span())};
             tentativePlaintext.markAsSensitive();
         } catch (const CryptologyError &) {
             // Authentication rejected the tentative plaintext; its guard erases it before this categorized failure
@@ -118,7 +120,7 @@ auto TlsRecordDecryptor::unprotect(const mem::ConstByteSpan record) -> TlsRecord
 
         // RFC 8446 section 5.4: scan TLSInnerPlaintext backwards across zero padding to the first nonzero type octet.
         auto typeIndex = tentativePlaintext.span().size();
-        while (typeIndex > 0U && tentativePlaintext.span()[typeIndex - 1U] == mem::Byte{}) {
+        while (typeIndex > 0U && tentativePlaintext.span()[typeIndex - 1U] == Byte{}) {
             --typeIndex;
         }
         if (typeIndex == 0U) {
@@ -157,7 +159,7 @@ auto TlsRecordDecryptor::unprotect(const mem::ConstByteSpan record) -> TlsRecord
         }
 
         // Copy authenticated content into its own sensitive allocation before erasing type and padding scratch bytes.
-        auto content = mem::ByteBlock::fromSpan(tentativePlaintext.span().first(contentLength));
+        auto content = ByteBlock::fromSpan(tentativePlaintext.span().first(contentLength));
         content.markAsSensitive();
 
         // RFC 8446 section 5.3: advance the receiving sequence exactly once after authentication and validation.
@@ -165,7 +167,7 @@ auto TlsRecordDecryptor::unprotect(const mem::ConstByteSpan record) -> TlsRecord
 
         // Ownership of authenticated plaintext transfers to the result; its destructor or caller erases the allocation.
         return TlsRecordPlaintext{type, std::move(content)};
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         // RFC-facing peer rejection and backend failure are terminal for this direction; erase secret, key, IV, and
         // counters.
         secureErase();
@@ -175,12 +177,12 @@ auto TlsRecordDecryptor::unprotect(const mem::ConstByteSpan record) -> TlsRecord
 
 void TlsRecordDecryptor::updateApplicationTrafficKeys() {
     if (_state == nullptr) {
-        throw err::LogicError{"The TLS record decryptor is empty."_el};
+        throw LogicFailure{"The TLS record decryptor is empty."_el};
     }
     try {
         // RFC 8446 sections 4.6.3 and 7.2: replace this receiving direction after an authenticated KeyUpdate message.
         _state->updateApplicationTrafficKeys();
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         // Failed replacement is terminal: erase retained old state and any incomplete next generation.
         secureErase();
         throw;
@@ -200,7 +202,7 @@ auto TlsRecordDecryptor::isKeyUpdateRequired() const noexcept -> bool {
 
 auto TlsRecordDecryptor::suite() const -> TlsCipherSuite {
     if (_state == nullptr) {
-        throw err::LogicError{"The TLS record decryptor is empty."_el};
+        throw LogicFailure{"The TLS record decryptor is empty."_el};
     }
     return _state->suite();
 }

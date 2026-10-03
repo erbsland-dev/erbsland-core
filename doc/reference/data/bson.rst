@@ -16,6 +16,13 @@ Introduction
 frames.
 For usage, type mapping, and input limits, see :doc:`/topics/data/reading_and_writing_bson`.
 
+Truncated input is rejected as ``ParseError`` by the throwing decoder, or as an empty optional by the tolerant decoder.
+Internal bounds errors and resource failures are not converted into malformed-input errors.
+
+Text arguments accept ``String``, ``StringEditor``, and Core string literals directly, including when passed to
+``set()`` or ``append()``.
+Stored text retains its value if the original editor is changed later.
+
 Interface
 =========
 

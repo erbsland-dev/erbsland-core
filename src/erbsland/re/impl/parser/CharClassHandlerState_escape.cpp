@@ -1,10 +1,13 @@
 // Copyright (c) 2025-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
+
 #include "CharacterClassState.hpp"
 
 #include "../../../text/StringFormat.hpp"
 
 namespace erbsland::re::impl::parser {
+
+using namespace text;
 
 void CharClassHandlerState::handleDigit() {
     readNext(); // consume the letter.
@@ -62,12 +65,12 @@ void CharClassHandlerState::handleVerticalSpace() {
     }
 }
 
-void CharClassHandlerState::handleSingleEscapedCharacter(const text::Char character) {
+void CharClassHandlerState::handleSingleEscapedCharacter(const Char character) {
     readNext();
     processNewLiteral(character);
 }
 
-void CharClassHandlerState::handleLegacySingleEscapedCharacter(const text::Char character, const Feature feature) {
+void CharClassHandlerState::handleLegacySingleEscapedCharacter(const Char character, const Feature feature) {
     if (!hasFeature(feature)) {
         throwParsingError("This escape sequence is not supported"_el);
     }
@@ -98,19 +101,19 @@ void CharClassHandlerState::handleQuotedLiteral() {
 }
 
 void CharClassHandlerState::throwNegationNotAllowed() {
-    const auto character = text::String::fromCharacter(currentChar());
-    const auto lowercaseCharacter = text::String::fromCharacter(currentChar().toAsciiLowercase());
+    const auto character = String::fromCharacter(currentChar());
+    const auto lowercaseCharacter = String::fromCharacter(currentChar().toAsciiLowercase());
     throwParsingError(
-        text::StringFormat{"Negated ranges like '\\{0}' are not allowed in character classes '[...]'. "
-                           "Negate the class '[^\\{1}]' or join them using alternatives '(?:[...]|\\{0})'"}
+        StringFormat{"Negated ranges like '\\{0}' are not allowed in character classes '[...]'. "
+                     "Negate the class '[^\\{1}]' or join them using alternatives '(?:[...]|\\{0})'"}
             .build(character, lowercaseCharacter));
 }
 
 void CharClassHandlerState::throwAnchorNotAllowed() {
-    const auto character = text::String::fromCharacter(currentChar());
+    const auto character = String::fromCharacter(currentChar());
     throwParsingError(
-        text::StringFormat{"Anchors like '\\{0}' are not allowed in character classes '[...]'. "
-                           "Join them using alternatives '(?:[...]|\\{0})'"}
+        StringFormat{"Anchors like '\\{0}' are not allowed in character classes '[...]'. "
+                     "Join them using alternatives '(?:[...]|\\{0})'"}
             .build(character));
 }
 

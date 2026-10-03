@@ -3,6 +3,12 @@
 
 #include "StandardStreamsDemos.hpp"
 
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/TextOutputStream.hpp>
+
 #include <exception>
 
 namespace demo {

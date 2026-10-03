@@ -11,11 +11,48 @@
 
 #include "../Workload.hpp"
 
-#include <erbsland/cryptology/HashAlgorithm.hpp>
-#include <erbsland/cryptology/Hasher.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/ByteOutputStream.hpp>
+#include <erbsland/ByteSpan.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/CpRange.hpp>
+#include <erbsland/EncodingMode.hpp>
+#include <erbsland/EnvironmentVariables.hpp>
+#include <erbsland/FastRandom.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/InputStreamSettings.hpp>
+#include <erbsland/OutputStream.hpp>
+#include <erbsland/OutputStreamSettings.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathCreateMode.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathReadDataOptions.hpp>
+#include <erbsland/PathReadTextOptions.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/PathWriteDataOptions.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
 #include <erbsland/stream/impl/StreamBufferSizes.hpp>
-#include <erbsland/system/EnvironmentVariables.hpp>
-#include <erbsland/text/StringCharReader.hpp>
+#include <erbsland/StreamReadResult.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringBomMode.hpp>
+#include <erbsland/StringCharReader.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringEncoder.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringSide.hpp>
+#include <erbsland/TempDirectory.hpp>
+#include <erbsland/TimeDelta.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -85,20 +122,20 @@ void requireActive(const std::atomic_bool &cancelled) {
 }
 
 /// Calculate the MD5 digest of no more than the expected file data.
-[[nodiscard]] auto rawFileDigest(const el::Path &path, const std::uint64_t maximum) -> el::ByteBlock {
+[[nodiscard]] auto rawFileDigest(const el::Path &path, const el::ByteCount maximum) -> el::ByteBlock {
     auto options = el::PathReadDataOptions{};
-    options.setMaximumByteLength(el::ByteLength{maximum + 16U});
+    options.setMaximumByteLength(maximum + el::ByteCount{16U});
     return digest(path.content().readDataOrThrow(options));
 }
 
 /// Create deterministic text with approximately the requested byte length.
-[[nodiscard]] auto buildText(const std::uint64_t seed, const std::uint64_t targetBytes) -> el::String {
+[[nodiscard]] auto buildText(const std::uint64_t seed, const el::ByteCount targetBytes) -> el::String {
     auto random = el::FastRandom{seed};
     auto result = el::StringEditor{};
-    result.reserve(el::ByteLength{targetBytes + 16U});
+    result.reserve(targetBytes + el::ByteCount{16U});
     auto lineLength = std::uint64_t{};
     auto nextLineLength = random.getUInt64(24U, 120U);
-    while (result.length().toRawValue() < targetBytes) {
+    while (result.length() < targetBytes) {
         if (lineLength >= nextLineLength) {
             result.append(U'\n');
             lineLength = 0U;
@@ -145,7 +182,7 @@ void requireActive(const std::atomic_bool &cancelled) {
         result.append(source.slice(
             el::CpRange{
                 el::CpIndex::fromSizeTOrThrow(static_cast<std::size_t>(offset)),
-                el::CpLength::fromSizeTOrThrow(static_cast<std::size_t>(count))}));
+                el::CpCount::fromSizeTOrThrow(static_cast<std::size_t>(count))}));
         result.append(U'\n');
         offset += count;
     }
@@ -157,19 +194,19 @@ void requireActive(const std::atomic_bool &cancelled) {
     const Scenario &scenario,
     const el::Path &path,
     const std::uint64_t seed,
-    const std::uint64_t size,
+    const el::ByteCount size,
     const bool createInput) -> Fixture {
     auto result = Fixture{};
     result.path = path;
     if (scenario.fileType == FileType::Binary) {
         auto random = el::FastRandom{seed};
-        result.binary = random.buildByteBlock(el::ByteLength{size});
+        result.binary = random.buildByteBlock(size);
         result.expectedRawDigest = digest(result.binary);
-        result.rawLength = result.binary.length().toRawValue();
+        result.rawLength = result.binary.length();
         if (createInput) {
             auto options = el::PathWriteDataOptions{};
             options.setCreateParents(true).setStreamSettings(
-                el::OutputStreamSettings{}.setBackBufferLimit(el::ByteLength{result.rawLength}));
+                el::OutputStreamSettings{}.setBackBufferLimit(result.rawLength));
             path.content().writeDataOrThrow(result.binary, options);
             if (rawFileDigest(path, result.rawLength) != result.expectedRawDigest) {
                 workloadError("Generated binary fixture failed MD5 validation."_el);
@@ -182,11 +219,11 @@ void requireActive(const std::atomic_bool &cancelled) {
             encodingFor(scenario.fileType), el::StringBomMode::Automatic);
         result.expectedRawDigest = digest(encoded);
         result.expectedTextDigest = digest(createInput ? result.text : result.expectedText);
-        result.rawLength = encoded.length().toRawValue();
+        result.rawLength = encoded.length();
         if (createInput) {
             auto options = el::PathWriteDataOptions{};
             options.setCreateParents(true).setStreamSettings(
-                el::OutputStreamSettings{}.setBackBufferLimit(el::ByteLength{result.rawLength}));
+                el::OutputStreamSettings{}.setBackBufferLimit(result.rawLength));
             path.content().writeDataOrThrow(encoded, options);
             if (rawFileDigest(path, result.rawLength) != result.expectedRawDigest) {
                 workloadError("Generated text fixture failed raw MD5 validation."_el);
@@ -240,7 +277,7 @@ void requireActive(const std::atomic_bool &cancelled) {
     -> PreparedScenario {
     auto directoryOptions = el::PathTempDirectoryOptions{};
     directoryOptions.setPrefix(el::StringFormat{"scenario-{}-"_el}.build(scenario.id.toHash()))
-        .setRandomLength(el::CpLength{8U});
+        .setRandomLength(el::CpCount{8U});
     auto scenarioWorkspace = workspace->path().operations().createTempDirectoryOrThrow(directoryOptions);
     if (configuration.run.keepFiles) {
         scenarioWorkspace->setRemoveOnDestroy(false);
@@ -252,8 +289,12 @@ void requireActive(const std::atomic_bool &cancelled) {
     result.fixtures.resize(threadCount);
     if (scenario.direction == Direction::Read && scenario.locality == Locality::Hot) {
         const auto path = scenarioWorkspace->path() / el::StringFormat{"{}-shared.dat"_el}.build(scenario.id.toHash());
-        const auto fixture =
-            buildFixture(scenario, path, scenarioSeed(configuration.run.seed, scenario, 0U, 0U), fileSize, true);
+        const auto fixture = buildFixture(
+            scenario,
+            path,
+            scenarioSeed(configuration.run.seed, scenario, 0U, 0U),
+            el::ByteCount::fromInteger(fileSize),
+            true);
         for (auto &workerFixtures : result.fixtures) {
             workerFixtures.emplace_back(fixture);
         }
@@ -264,8 +305,8 @@ void requireActive(const std::atomic_bool &cancelled) {
             const auto path = scenarioWorkspace->path() /
                 el::StringFormat{"{}-worker-{}-slot-{}.dat"_el}.build(scenario.id.toHash(), worker, slot);
             const auto seed = scenarioSeed(configuration.run.seed, scenario, worker, slot);
-            result.fixtures[worker].emplace_back(
-                buildFixture(scenario, path, seed, fileSize, scenario.direction == Direction::Read));
+            result.fixtures[worker].emplace_back(buildFixture(
+                scenario, path, seed, el::ByteCount::fromInteger(fileSize), scenario.direction == Direction::Read));
         }
     }
     return result;
@@ -345,12 +386,12 @@ void readBinary(
     auto *hasherPtr = validate ? &hasher : nullptr;
     auto schedule = ChunkSchedule{scenario, seed};
     auto transferStart = Clock::now();
-    auto remaining = fixture.binary.length().toRawValue();
+    auto remaining = fixture.binary.length();
     if (scenario.method == Method::ReadAll) {
         while (true) {
             requireActive(cancelled);
             ++result.calls;
-            const auto read = input->readAll(el::ByteLength{remaining + 1U});
+            const auto read = input->readAll(remaining + el::ByteCount::one());
             if (read.isTimeout()) {
                 ++result.timeouts;
                 continue;
@@ -363,7 +404,7 @@ void readBinary(
         }
     } else {
         auto buffer = std::vector<el::Byte>(static_cast<std::size_t>(scenario.chunkSizeMaximum));
-        while (remaining > 0U) {
+        while (!remaining.isZero()) {
             requireActive(cancelled);
             if (scenario.method == Method::ReadByte) {
                 ++result.calls;
@@ -383,7 +424,7 @@ void readBinary(
             const auto count = schedule.next(remaining);
             ++result.calls;
             if (scenario.method == Method::ReadSpan) {
-                const auto read = input->read(el::ByteSpan{buffer}.first(static_cast<std::size_t>(count)));
+                const auto read = input->read(el::ByteSpan{buffer}.first(count.toSizeTOrThrow()));
                 if (read.isTimeout()) {
                     ++result.timeouts;
                     continue;
@@ -392,10 +433,14 @@ void readBinary(
                     workloadError("Byte stream ended before the expected length."_el);
                 }
                 addByteResult(result, hasherPtr, el::ConstByteSpan{buffer}.first(read.data().toSizeT()));
-                remaining -= read.data().toRawValue();
+                remaining -= read.data();
             } else {
-                const auto read = scenario.method == Method::ReadExact ? input->readExact(el::ByteLength{count})
-                                                                       : input->read(el::ByteLength{count});
+                const auto read = [&]() -> el::StreamReadResult<el::ByteBlock> {
+                    if (scenario.method == Method::ReadExact) {
+                        return input->readExact(count);
+                    }
+                    return input->read(count);
+                }();
                 if (read.isTimeout()) {
                     ++result.timeouts;
                     continue;
@@ -404,11 +449,11 @@ void readBinary(
                     workloadError("Byte stream ended before the expected length."_el);
                 }
                 addByteResult(result, hasherPtr, read.data().span());
-                remaining -= read.data().length().toRawValue();
+                remaining -= read.data().length();
             }
         }
     }
-    if (result.bytes != fixture.rawLength) {
+    if (el::ByteCount::fromInteger(result.bytes) != fixture.rawLength) {
         workloadError("Binary stream returned an unexpected byte count."_el);
     }
     while (true) {
@@ -433,7 +478,7 @@ void readBinary(
     if (validate) {
         result.digest = hasher.finalize();
     }
-    result.bytes = fixture.rawLength;
+    result.bytes = fixture.rawLength.toRawValue();
 }
 
 /// Write a binary fixture according to the scenario and collect its measurements.
@@ -445,8 +490,8 @@ void writeBinary(
     const std::atomic_bool &cancelled) {
     auto settings = el::OutputStreamSettings{};
     settings.setBuffering(scenario.buffering).setTimeout(el::TimeDelta::seconds(30));
-    if (scenario.backBufferLimit != 0U) {
-        settings.setBackBufferLimit(el::ByteLength{scenario.backBufferLimit});
+    if (!scenario.backBufferLimit.isZero()) {
+        settings.setBackBufferLimit(scenario.backBufferLimit);
     }
     auto options = el::PathWriteDataOptions{};
     options.setCreateParents(true).setCreationMode(el::PathCreateMode::CreateOrOverwrite).setStreamSettings(settings);
@@ -455,32 +500,31 @@ void writeBinary(
     result.openNanoseconds = elapsedNanoseconds(openStart);
     auto schedule = ChunkSchedule{scenario, seed};
     const auto transferStart = Clock::now();
-    auto offset = std::uint64_t{};
-    const auto length = fixture.binary.length().toRawValue();
-    while (offset < length) {
+    auto offset = el::ByteIndex{};
+    const auto length = fixture.binary.length();
+    while (offset.isWithin(length)) {
         requireActive(cancelled);
         if (scenario.method == Method::WriteByte) {
-            retryWrite(
-                [&]() { return output->write(fixture.binary.get(el::ByteIndex{offset})); }, output, result, cancelled);
-            ++offset;
+            retryWrite([&]() { return output->write(fixture.binary.get(offset)); }, output, result, cancelled);
+            offset.uncheckedIncrement();
             ++result.bytes;
             continue;
         }
-        const auto count = schedule.next(length - offset);
-        const auto bytes = fixture.binary.slice(el::ByteIndex{offset}, el::ByteLength{count});
+        const auto count = schedule.next(length - offset.distanceFromZero());
+        const auto bytes = fixture.binary.slice(offset, count);
         if (scenario.method == Method::WriteSpan) {
             retryWrite([&]() { return output->write(bytes.span()); }, output, result, cancelled);
         } else {
             retryWrite([&]() { return output->write(bytes); }, output, result, cancelled);
         }
         offset += count;
-        result.bytes += count;
+        result.bytes += count.toRawValue();
     }
     result.transferNanoseconds = elapsedNanoseconds(transferStart);
     const auto closeStart = Clock::now();
     closeOutput(output, result);
     result.closeNanoseconds = elapsedNanoseconds(closeStart);
-    result.bytes = fixture.rawLength;
+    result.bytes = fixture.rawLength.toRawValue();
 }
 
 /// Read a text fixture according to the scenario and collect its measurements.
@@ -523,7 +567,7 @@ void readText(
         const auto maximumRaw = scenario.method == Method::ReadAllText
             ? static_cast<std::uint64_t>(expectedCodePoints) + 1U
             : schedule.next();
-        const auto maximum = el::CpLength::fromSizeTOrThrow(static_cast<std::size_t>(maximumRaw));
+        const auto maximum = el::CpCount::fromSizeTOrThrow(static_cast<std::size_t>(maximumRaw));
         const auto read = scenario.method == Method::ReadText ? input->read(maximum)
             : scenario.method == Method::ReadLine             ? input->readLine(maximum)
                                                               : input->readAll(maximum);
@@ -550,7 +594,7 @@ void readText(
     if (validate) {
         result.digest = hasher.finalize();
     }
-    result.bytes = fixture.rawLength;
+    result.bytes = fixture.rawLength.toRawValue();
 }
 
 /// Write a text fixture according to the scenario and collect its measurements.
@@ -562,8 +606,8 @@ void writeText(
     const std::atomic_bool &cancelled) {
     auto settings = el::OutputStreamSettings{};
     settings.setBuffering(scenario.buffering).setTimeout(el::TimeDelta::seconds(30));
-    if (scenario.backBufferLimit != 0U) {
-        settings.setBackBufferLimit(el::ByteLength{scenario.backBufferLimit});
+    if (!scenario.backBufferLimit.isZero()) {
+        settings.setBackBufferLimit(scenario.backBufferLimit);
     }
     auto options = el::PathWriteTextOptions{encodingFor(scenario.fileType)};
     options.setCreateParents(true)
@@ -589,7 +633,7 @@ void writeText(
         }
         const auto count = schedule.next(length - offset);
         reader.startCapture();
-        reader.advanceOrThrow(el::CpLength::fromSizeTOrThrow(static_cast<std::size_t>(count)));
+        reader.advanceOrThrow(el::CpCount::fromSizeTOrThrow(static_cast<std::size_t>(count)));
         const auto text = reader.takeCapture().toString();
         if (scenario.method == Method::WriteLine) {
             retryWrite([&]() { return output->writeLine(text); }, output, result, cancelled);
@@ -604,7 +648,7 @@ void writeText(
     const auto closeStart = Clock::now();
     closeOutput(output, result);
     result.closeNanoseconds = elapsedNanoseconds(closeStart);
-    result.bytes = fixture.rawLength;
+    result.bytes = fixture.rawLength.toRawValue();
 }
 
 /// Execute one worker for a prepared scenario sample.
@@ -639,7 +683,8 @@ void writeText(
 void validateFixtureOutput(const PreparedScenario &prepared, const std::uint32_t worker, const std::uint64_t sample) {
     const auto &fixtures = prepared.fixtures[worker];
     const auto &fixture = fixtures[static_cast<std::size_t>(sample % fixtures.size())];
-    const auto actual = rawFileDigest(fixture.path, prepared.scenario.fileSizeMaximum * 5U + 1024U);
+    const auto actual = rawFileDigest(
+        fixture.path, el::ByteCount::fromInteger(prepared.scenario.fileSizeMaximum) * 5U + el::ByteCount{1024U});
     if (actual != fixture.expectedRawDigest) {
         workloadError(
             el::StringFormat{"MD5 mismatch for scenario '{}', worker {}, file '{}'."_el}.build(
@@ -808,8 +853,8 @@ auto runSample(
 void printSample(const Configuration &configuration, const Scenario &scenario, const SampleResult &sample) {
     const auto aggregateThroughput = throughput(sample.bytes, sample.wallNanoseconds);
     const auto bufferSizes = el::stream::impl::streamBufferSizes(scenario.buffering);
-    const auto effectiveBackLimit =
-        scenario.backBufferLimit != 0U ? scenario.backBufferLimit : bufferSizes.outputBackLimit.toRawValue();
+    const auto effectiveBackLimit = !scenario.backBufferLimit.isZero() ? scenario.backBufferLimit.toRawValue()
+                                                                       : bufferSizes.outputBackLimit.toRawValue();
     auto openNanoseconds = std::int64_t{};
     auto transferNanoseconds = std::int64_t{};
     auto closeNanoseconds = std::int64_t{};
@@ -891,8 +936,8 @@ void printCoverage(const Scenario &scenario, const SampleResult &sample) {
 void printBenchmark(
     const Configuration &configuration, const Scenario &scenario, const std::vector<SampleResult> &samples) {
     const auto bufferSizes = el::stream::impl::streamBufferSizes(scenario.buffering);
-    const auto effectiveBackLimit =
-        scenario.backBufferLimit != 0U ? scenario.backBufferLimit : bufferSizes.outputBackLimit.toRawValue();
+    const auto effectiveBackLimit = !scenario.backBufferLimit.isZero() ? scenario.backBufferLimit.toRawValue()
+                                                                       : bufferSizes.outputBackLimit.toRawValue();
     auto times = std::vector<std::int64_t>{};
     times.reserve(samples.size());
     auto bytes = std::uint64_t{};

@@ -3,6 +3,7 @@
 #include "CompressionErrorDiagnostic.hpp"
 
 #include "../../err/ErrorDocumentBuilder.hpp"
+#include "../../err/RuntimeError.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/PlainTextRenderer.hpp"
 #include "../../text/TextDocument.hpp"
@@ -13,32 +14,32 @@
 
 namespace erbsland::compression::impl {
 
+using namespace text;
 using namespace text::literals;
 
 CompressionErrorDiagnostic::CompressionErrorDiagnostic(CompressionErrorContext context) noexcept :
     _context{std::move(context)} {
 }
 
-auto CompressionErrorDiagnostic::toString() const noexcept -> text::String {
+auto CompressionErrorDiagnostic::toString() const noexcept -> String {
     try {
-        return text::PlainTextRenderer{toTextDocument({})}.build();
-    } catch (...) {
+        return PlainTextRenderer{toTextDocument()}.build();
+    } catch (const err::RuntimeError &) {
         return _context.title();
     }
 }
 
-auto CompressionErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
-    -> text::TextDocument {
-    auto builder = err::ErrorDocumentBuilder{_context.title(), _context.description(), displayText};
+auto CompressionErrorDiagnostic::toTextDocument() const -> TextDocument {
+    auto builder = err::ErrorDocumentBuilder{_context.title(), _context.description()};
     builder.addSection("Details"_el);
-    auto list = builder.root()->add(text::TextNodeType::FieldList);
-    auto item = list->add(text::TextNodeType::FieldItem);
-    item->add(text::TextNodeType::FieldLabel)->addText("reason"_el);
-    item->add(text::TextNodeType::FieldContent)->addText(reasonName(_context.reason()));
+    auto list = builder.root()->add(TextNodeType::FieldList);
+    auto item = list->add(TextNodeType::FieldItem);
+    item->add(TextNodeType::FieldLabel)->addText("reason"_el);
+    item->add(TextNodeType::FieldContent)->addText(reasonName(_context.reason()));
     return builder.takeDocument();
 }
 
-auto CompressionErrorDiagnostic::reasonName(const CompressionErrorReason reason) noexcept -> text::String {
+auto CompressionErrorDiagnostic::reasonName(const CompressionErrorReason reason) noexcept -> String {
     switch (reason) {
     case CompressionErrorReason::Cancelled:
         return "Cancelled"_el;

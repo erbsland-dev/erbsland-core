@@ -35,8 +35,8 @@ public:
     void testLineBreakEndMarkRejectsTooLongOrControlText() {
         auto options = ParagraphOptions{};
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakEndMark(BlockStringEditor{U"abc"_el}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakEndMark(BlockStringEditor{U"\n"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setLineBreakEndMark(BlockStringEditor{U"abc"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setLineBreakEndMark(BlockStringEditor{U"\n"_el}));
     }
 
     void testLineBreakStartMarkAllowsLongTextButRejectsControlText() {
@@ -44,7 +44,7 @@ public:
 
         options.setLineBreakStartMark(BlockStringEditor{U"│ │        "_el});
         REQUIRE_EQUAL(options.lineBreakStartMark().length(), BlockCount{11U});
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakStartMark(BlockStringEditor{U"\t"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setLineBreakStartMark(BlockStringEditor{U"\t"_el}));
     }
 
     void testIndentsAndMarginsCanBeConfiguredAsOneValueObject() {

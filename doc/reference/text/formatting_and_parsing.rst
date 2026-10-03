@@ -27,7 +27,7 @@ Core strings and stream ``print`` helpers.
 The default format writes lowercase ``true`` and ``false``.
 Use the style factories to select ``true`` /``false``, ``yes`` /``no``, ``on`` /``off``, or ``enabled`` /``disabled``
 output.
-Use :cpp:enum:`Capitalization <erbsland::text::Capitalization>` to switch between lowercase, uppercase, and titlecase
+Use :cpp:enum:`Capitalization <erbsland::text::Capitalization>` to switch between lowercase, uppercase, and capitalized
 words.
 
 Use a ``BooleanFormat`` object in a print argument list to change the format for following boolean values:
@@ -57,11 +57,10 @@ Use a ``ByteFormat`` object in a print argument list to change the format for fo
     el::io::printLine("hash: "_el, data);
     el::io::print(el::ByteFormat::memoryDump(), data);
 
-Bounded Output and Truncation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Bounded Output and Truncation ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Use ``setMaximum()`` to limit the number of byte-like output items.
-The default is ``ByteLength::infinite()``.
+The default is ``ByteCount::infinite()``.
 If the byte block exceeds this maximum, ``setTruncateMode()`` selects which source bytes are retained and
 ``setEllipsis()`` provides the inserted truncation marker.
 
@@ -211,7 +210,9 @@ It does not accept signs or separators and reads a single integer token.
 It accepts ``-`` and ``+`` signs and requires the complete input unless ``IgnoreTrailingChars`` is set.
 
 Use a fixed base when the syntax base is known.
-A fixed base rejects base prefixes such as ``0x``, ``0b``, and ``0o``.
+A fixed base rejects base prefixes such as ``0x``, ``0b``, and ``0o`` when their letters are not digits in that base.
+For fixed hexadecimal parsing, ``0b`` and ``0B`` are ordinary hexadecimal digits, so ``0B01`` parses as the integer 2817
+(``0x0B01``).
 Leave the base unset to auto-detect these prefixes.
 Use ``minimumDigits`` and ``maximumDigits`` to control the accepted digit count.
 Without ``StopAtMaximum``, extra digits beyond a finite maximum are an error.
@@ -230,7 +231,7 @@ Capitalization
 ~~~~~~~~~~~~~~
 
 :cpp:enum:`Capitalization <erbsland::text::Capitalization>` selects the capitalization for generated words.
-It is used by boolean formatting where titlecase output is useful for user-facing text.
+It is used by boolean formatting where capitalized output is useful for user-facing text.
 
 Safe String Output
 ~~~~~~~~~~~~~~~~~~
@@ -325,6 +326,58 @@ Higher amounts encode controls, format characters, and requested non-ASCII code 
 This format does not protect CommonMark contexts in which backslash escaping is disabled, such as code spans and code
 blocks.
 
+URL Percent-Encoding
+--------------------
+
+The URL escape formats accept decoded Unicode text and produce ASCII percent-encoded text.
+They follow `RFC 3986 sections 2.1–2.3 and 3 <https://www.rfc-editor.org/rfc/rfc3986.html#section-2.1>`_: each escaped
+octet becomes ``%HH`` using uppercase hexadecimal digits.
+Non-ASCII characters are encoded as UTF-8 octets, following the Unicode-to-octet rule in `RFC 3987 section 3.1
+<https://www.rfc-editor.org/rfc/rfc3987.html#section-3.1>`_.
+These operations perform no Unicode normalization, URL parsing, host-name conversion, or dot-segment removal.
+
+Choose the format for the context receiving the text:
+
+.. list-table::
+    :header-rows: 1
+    :widths: 24 76
+
+    *   - Format
+        - Characters preserved at ``Required``, ``Balanced``, and ``NonAscii``
+    *   - ``Url`` / ``url``
+        - Only RFC 3986 unreserved ASCII: letters, digits, ``-``, ``.``, ``_``, and ``~``.
+          Use for an individual query key/value or data that must not introduce delimiters.
+    *   - ``UrlPath`` / ``url_path``
+        - Unreserved ASCII, sub-delimiters, ``:``, ``@``, and ``/`` (the path grammar of section 3.3).
+          Use for a complete decoded path; slashes retain their role as segment separators.
+    *   - ``UrlQuery`` / ``url_query``
+        - The path characters plus ``?`` (the identical query and fragment grammars of sections 3.4 and 3.5).
+          Existing query separators such as ``&`` and ``=`` retain their role.
+    *   - ``UrlUserInfo`` / ``url_user_info``
+        - Unreserved ASCII and sub-delimiters.
+          This credential-field policy follows section 3.2.1 with the additional encoding of ``:`` so usernames and
+          passwords cannot introduce the separator used when composing user information.
+
+The RFC 3986 sub-delimiters are ``!$&'()*+,;=``.
+All four formats encode spaces as ``%20`` and a literal percent sign as ``%25``, including a percent sign in text that
+already looks like an escape.
+They do not implement HTML form encoding (``application/x-www-form-urlencoded``), where spaces can become ``+``.
+Pass decoded text once; these functions do not preserve existing percent escapes or convert a complete IRI to a URI.
+``EscapeAmount::Nothing`` bypasses escaping, while ``Everything`` also percent-encodes otherwise allowed characters.
+
+.. code-block:: cpp
+
+    const auto path = el::String{"/files/café #1.txt"_el}.toEscaped(el::EscapeFormat::UrlPath);
+    // /files/caf%C3%A9%20%231.txt
+    const auto value = el::String{"a/b & c"_el}.toEscaped(el::EscapeFormat::Url);
+    // a%2Fb%20%26%20c
+
+For links in HTML, escape the resulting URL separately with ``EscapeFormat::Html`` before inserting it into a quoted
+attribute.
+The URL formats support ``toEscaped()``, ``escapedSize()``, and both string-format syntaxes for UTF-8, UTF-16, and
+UTF-32 strings.
+
+
 String Formatter and Related Types
 ==================================
 
@@ -348,8 +401,7 @@ Values with ``toString() const -> String`` are automatically formatted as UTF-8 
 Specialize ``FormatAs`` only when formatting needs a different representation; it takes precedence over ``toString()``.
 Built-in values, including integers, floating-point values, text, characters, and ``ByteBlock``, are handled directly.
 
-Example
-^^^^^^^
+Example ^^^^^^^
 
 .. code-block:: cpp
 
@@ -375,8 +427,8 @@ Typed fields have this strict form:
     {[index]:selector:option,option,...}
 
 The selector and its trailing colon are mandatory.
-For example, ``{:bytes:}`` selects default byte formatting, and ``{2:number:base=hexadecimal,alternate}`` selects the
-third argument as a hexadecimal number.
+For example, ``{:bytes:}`` selects default byte formatting, and ``{2:number:hex,base-prefix}`` selects the third
+argument as a hexadecimal number.
 Typed fields accept only the named options described below; compact legacy modifiers cannot follow a selector.
 
 Selectors lock the accepted argument type:
@@ -397,7 +449,10 @@ Option names and enum values are ASCII case-insensitive.
 An option may appear only once, including through a mixture of its full name and alias.
 
 Unsigned decimal values may omit ``=``, so ``width=32``, ``width32``, and ``w32`` are equivalent.
-Enum values require ``=``.
+Enum values require ``=``, except integer base shortcuts.
+``hex`` / ``hexadecimal``, ``dec`` / ``decimal``, ``oct`` / ``octal``, and ``bin`` / ``binary`` select the base
+directly.
+They are equivalent to the corresponding ``base=...`` forms and cannot be combined with another base selection.
 Flags take no value.
 ``fill`` consumes exactly one direct safe Unicode code point and preserves its spelling.
 All other characters in a named specification must also be safe Unicode, while identifiers themselves are ASCII.
@@ -405,8 +460,7 @@ All other characters in a named specification must also be safe Unicode, while i
 Unknown options or values, duplicate options, missing values, incompatible combinations, leading or trailing empty
 options, empty options between commas, and unsafe characters raise ``FormatError``.
 
-Options by Domain
-^^^^^^^^^^^^^^^^^
+Options by Domain ^^^^^^^^^^^^^^^^^
 
 .. list-table::
     :header-rows: 1
@@ -422,9 +476,9 @@ Options by Domain
         - ``maximum`` / ``max``, ``escape`` / ``esc``, ``escape-amount`` / ``ea``
         - Maximum truncates source code points before escaping; layout is applied afterward.
     *   - Number
-        - ``base`` / ``bs``, ``notation`` / ``nt``, ``letter-case`` / ``lc``, ``sign`` / ``sg``,
-          ``precision`` / ``pr``, ``alternate`` / ``alt``, ``zero-fill`` / ``zf``
-        - ``alternate`` and ``zero-fill`` are flags. Integer-only and floating-point-only options reject the wrong
+        - ``base`` / ``b``, ``notation`` / ``nt``, ``letter-case`` / ``lc``, ``sign`` / ``sg``,
+          ``precision`` / ``pr``, ``base-prefix`` / ``bp``, ``zero-fill`` / ``zf``
+        - ``base-prefix`` and ``zero-fill`` are flags. Integer-only and floating-point-only options reject the wrong
           numeric subtype.
     *   - Boolean
         - ``style`` / ``sty``, ``capitalization`` / ``cap``
@@ -446,14 +500,15 @@ Value aliases are local to their option:
         - ``left`` / ``l``, ``right`` / ``r``, ``center`` / ``c``
     *   - ``escape``
         - ``none`` / ``n``, ``html`` / ``h``, ``json`` / ``j``, ``cpp`` / ``cp``, ``xml`` / ``x``,
-          ``regex`` / ``rx``, ``display`` / ``d``, ``config`` / ``cf``, ``config_test`` / ``ct``
+          ``regex`` / ``rx``, ``display`` / ``d``, ``config`` / ``cf``, ``config_test`` / ``ct``, ``markdown`` / ``md``,
+          ``url``, ``url_path``, ``url_query``, ``url_user_info``
     *   - ``escape-amount``
         - ``nothing`` / ``n``, ``required`` / ``r``, ``balanced`` / ``b``, ``non-ascii`` / ``na``, ``all`` / ``a``
     *   - ``base``
-        - ``decimal`` / ``d``, ``hexadecimal`` / ``x``, ``binary`` / ``b``, ``octal`` / ``o``
+        - ``decimal`` / ``dec`` / ``d``, ``hexadecimal`` / ``hex`` / ``x``, ``binary`` / ``bin`` / ``b``, ``octal`` / ``oct`` / ``o``
     *   - ``notation``
         - ``default`` / ``d``, ``fixed`` / ``f``, ``scientific`` / ``s``, ``general`` / ``g``,
-          ``hexadecimal`` / ``x``
+          ``hexadecimal`` / ``hex`` / ``x``
     *   - ``letter-case``
         - ``lowercase`` / ``l``, ``uppercase`` / ``u``
     *   - ``sign``
@@ -461,23 +516,26 @@ Value aliases are local to their option:
     *   - ``style``
         - ``true`` / ``t``, ``yes`` / ``y``, ``on`` / ``o``, ``enabled`` / ``e``
     *   - ``capitalization``
-        - ``lowercase`` / ``l``, ``uppercase`` / ``u``, ``titlecase`` / ``t``
+        - ``lowercase`` / ``l``, ``uppercase`` / ``u``, ``capitalized`` / ``c``
     *   - ``truncate``
         - ``end`` / ``e``, ``middle`` / ``m``, ``begin`` / ``b``
+
+``base-prefix`` / ``bp`` adds ``0x`` for hexadecimal, ``0b`` for binary, or ``0o`` for octal.
+Decimal output has no prefix.
+The flag rejects floating-point values.
 
 The ``bytes`` maximum has the same output-item semantics as ``ByteFormat``.
 Its non-empty Unicode ellipsis occupies one item, so a maximum of 16 retains 15 bytes when truncation is necessary.
 Middle truncation assigns an odd extra retained byte to the prefix.
 
-Examples
-^^^^^^^^
+Examples ^^^^^^^^
 
 .. code-block:: cpp
 
-    auto title = "{:text:maximum=20,width=24,alignment=center}"_ef.format(name);
-    auto mask = "{:number:bs=x,lc=u,alternate,zf,w=10}"_ef.format(value);
-    auto state = "{:bool:sty=yes,cap=titlecase}"_ef.format(enabled);
-    auto diagnostic = "{:bytes:maximum=16,truncate=middle}"_ef.format(data);
+    auto title = el::StringFormat{"{:text:maximum=20,width=24,alignment=center}"_el}.build(name);
+    auto mask = el::StringFormat{"{:number:hex,lc=u,bp,zf,w=10}"_el}.build(value);
+    auto state = el::StringFormat{"{:bool:sty=yes,cap=capitalized}"_el}.build(enabled);
+    auto diagnostic = el::StringFormat{"{:bytes:maximum=16,truncate=middle}"_el}.build(data);
 
 String Parser and Reader
 ========================
@@ -498,18 +556,29 @@ The reader keeps the source storage alive through the read-only string object st
 Copying a reader shares the immutable source data, but the cursor state is copied, so moving one reader forward does not
 move another copy.
 
-Positions and States
-^^^^^^^^^^^^^^^^^^^^
+Positions and States ^^^^^^^^^^^^^^^^^^^^
 
 :cpp:func:`position() <erbsland::text::StringCharReader::position>` returns the current decoded code-point index as
 ``unit::CpIndex``.
 This is the value user code should use for diagnostics and parse errors.
+For slicing the original input, use the accessor matching the reader's encoding:
+
+* ``u8Position()`` returns a ``unit::ByteIndex`` for UTF-8.
+* ``u16Position()`` returns a ``unit::U16Index`` for UTF-16.
+* ``u32Position()`` returns a ``unit::CpIndex`` for UTF-32.
+
+These accessors read the native cursor in constant time without rescanning or converting the input.
+They report the index of the next encoded unit, relative to the visible input slice; at end of data they report the
+input's native length.
+Malformed input still advances by the encoded units consumed by tolerant decoding.
+Calling an accessor for a different encoding raises ``LogicFailure``, including for an empty reader of that encoding.
+A default-constructed reader, or one constructed from an untyped empty ``AnyString``, has UTF-8 input.
+
 ``save()`` and ``restore()`` capture and restore the backend cursor and decoded position in constant time.
 A saved state must be restored only to the reader that created it or to a compatible copy over the same visible text and
 encoding; passing it to another reader is undefined.
 
-Reader Operations
-^^^^^^^^^^^^^^^^^
+Reader Operations ^^^^^^^^^^^^^^^^^
 
 :cpp:func:`read() <erbsland::text::StringCharReader::read>` consumes the next decoded character, while
 :cpp:func:`peek() <erbsland::text::StringCharReader::peek>` only inspects it.
@@ -527,7 +596,7 @@ The ``OrThrow`` variants reject end-of-data and malformed encoding before matchi
 
 ``readWhile()`` and ``readUntil()`` invoke a callback and return ``LoopResult`` because the callback can stop or report
 an error.
-``advanceWhile()`` and ``advanceUntil()`` have no callback and instead return the ``unit::CpLength`` actually skipped.
+``advanceWhile()`` and ``advanceUntil()`` have no callback and instead return the ``unit::CpCount`` actually skipped.
 They leave the boundary character unread and stop at the configured maximum or end-of-data.
 The count can be ignored when only the skip operation matters, for example when discarding optional whitespace.
 
@@ -554,8 +623,7 @@ count, and status.
 Use ``readIntegerOrThrow<T>()`` when a reader should consume an integer token, convert it into a native or saturating
 integer type, and report failures as ``ParseNumberError``.
 
-Capture and Buffer
-^^^^^^^^^^^^^^^^^^
+Capture and Buffer ^^^^^^^^^^^^^^^^^^
 
 The capture API marks a source range and returns it as an inexpensive owning read-only string slice.
 Use

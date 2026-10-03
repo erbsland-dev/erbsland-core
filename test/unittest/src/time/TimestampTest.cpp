@@ -1,15 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/time/StdFormat.hpp>
-#include <erbsland/time/Timestamp.hpp>
-#include <erbsland/unit/StdFormat.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/Timestamp.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -50,8 +49,8 @@ public:
         REQUIRE_EQUAL(Timestamp::fromRawValueOrThrow(-10, cMinimum), Timestamp{});
         REQUIRE_FALSE(Timestamp::fromRawValue(3'652'425, 0));
         REQUIRE_FALSE(Timestamp::fromRawValue(0, 86'400'000'000'000));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Timestamp::fromRawValueOrThrow(3'652'425, 0));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Timestamp::fromRawValueOrThrow(0, 86'400'000'000'000));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, Timestamp::fromRawValueOrThrow(3'652'425, 0));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, Timestamp::fromRawValueOrThrow(0, 86'400'000'000'000));
         REQUIRE_FALSE(Timestamp::fromDaysAndNanoseconds(Days{std::numeric_limits<int64_t>::max()}, Nanoseconds{}));
         REQUIRE_EQUAL(Timestamp::fromDaysAndNanosecondsOrThrow(Days{-1}, Nanoseconds{100}), Timestamp{});
         REQUIRE_EQUAL(Timestamp::fromRawValueOrThrow(Timestamp::last().toRawValue()), Timestamp::last());
@@ -64,13 +63,13 @@ public:
         const auto sample = Timestamp::fromRawValueOrThrow(0x010203, 0x010203040506LL);
         REQUIRE_EQUAL(sample.toByteBlock(), bytesFromHex("000102030000010203040506"_el));
         for (const auto timestamp : std::array{Timestamp{}, Timestamp::first(), sample, Timestamp::last()}) {
-            REQUIRE_EQUAL(timestamp.toByteBlock().length(), el::unit::ByteLength{12U});
+            REQUIRE_EQUAL(timestamp.toByteBlock().length(), el::unit::ByteCount{12U});
             REQUIRE_EQUAL(Timestamp::fromByteBlockOrThrow(timestamp.toByteBlock()), timestamp);
         }
         REQUIRE_FALSE(Timestamp::fromByteBlock(el::mem::ByteBlock{}));
         REQUIRE_FALSE(Timestamp::fromByteBlock(bytesFromHex("0000000000000000000000"_el)));
         REQUIRE_FALSE(Timestamp::fromByteBlock(bytesFromHex("00000000000000000000000000"_el)));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Timestamp::fromByteBlockOrThrow(el::mem::ByteBlock{}));
+        REQUIRE_THROWS_AS(el::err::ParseError, Timestamp::fromByteBlockOrThrow(el::mem::ByteBlock{}));
         REQUIRE_EQUAL(Timestamp::fromByteBlockOrThrow(bytesFromHex("00000001ffffffffffffffff"_el)), Timestamp{});
         REQUIRE_FALSE(Timestamp::fromByteBlock(bytesFromHex("7fffffff0000000000000000"_el)));
     }

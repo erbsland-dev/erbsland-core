@@ -11,6 +11,8 @@
 
 namespace erbsland::cryptology::impl::x25519 {
 
+using namespace mem;
+
 FieldElement::~FieldElement() {
     secureErase();
 }
@@ -111,7 +113,7 @@ auto FieldElement::one() noexcept -> FieldElement {
     return result;
 }
 
-auto FieldElement::fromBytes(const mem::ConstByteSpan bytes) noexcept -> FieldElement {
+auto FieldElement::fromBytes(const ConstByteSpan bytes) noexcept -> FieldElement {
     auto result = FieldElement{};
     if (bytes.size() != 32U) {
         return result;
@@ -134,11 +136,11 @@ auto FieldElement::fromBytes(const mem::ConstByteSpan bytes) noexcept -> FieldEl
     return result;
 }
 
-auto FieldElement::toBytes() const noexcept -> mem::ByteArray<32U> {
+auto FieldElement::toBytes() const noexcept -> ByteArray<32U> {
     // RFC 7748 section 5, encodeUCoordinate: reduce modulo p and emit the minimal 32-byte little-endian value.
     auto canonical = *this;
     canonical.normalize();
-    auto result = mem::ByteArray<32U>{};
+    auto result = ByteArray<32U>{};
     for (auto limb = std::size_t{0}; limb < canonical._limbs.size(); ++limb) {
         const auto offset = limbOffset(limb);
         const auto width = limbBits(limb);
@@ -147,7 +149,7 @@ auto FieldElement::toBytes() const noexcept -> mem::ByteArray<32U> {
             const auto byteIndex = unit::ByteIndex::fromSizeT(outputBit / 8U);
             const auto current = result.get(byteIndex).toUInt8();
             const auto value = static_cast<uint8_t>(((canonical._limbs[limb] >> bit) & 1U) << (outputBit % 8U));
-            result.set(byteIndex, mem::Byte{static_cast<uint8_t>(current | value)});
+            result.set(byteIndex, Byte{static_cast<uint8_t>(current | value)});
         }
     }
     return result;

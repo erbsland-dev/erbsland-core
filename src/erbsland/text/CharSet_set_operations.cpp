@@ -23,6 +23,12 @@
 
 namespace erbsland::text {
 
+auto CharSet::inverted() const -> CharSet {
+    auto universe = CharSet{};
+    universe.add(CharRange::all());
+    return universe.subtractedBy(*this);
+}
+
 auto CharSet::symmetricDifferenceWith(const CharSet &other) const -> CharSet {
     const auto left = rangeSpan();
     const auto right = other.rangeSpan();
@@ -80,12 +86,30 @@ auto CharSet::symmetricDifferenceWith(const CharSet &other) const -> CharSet {
 }
 
 auto CharSet::fromRange(const Char from, const Char to) -> CharSet {
-    auto builder = impl::CharSetRangeBuilder{1U};
-    builder.add(CharRange{from, to});
-    return builder.take();
+    return CharSet{CharRange{from, to}};
 }
 
 auto CharSet::from(const AsciiCategory category) -> CharSet {
+    // fast track constexpr construction.
+    switch (category) {
+    case AsciiCategory::Letter:
+        return CharSet{CharRange{U'A', U'Z'}, CharRange{U'a', U'z'}};
+    case AsciiCategory::LowercaseLetter:
+        return CharSet{CharRange{U'a', U'z'}};
+    case AsciiCategory::UppercaseLetter:
+        return CharSet{CharRange{U'A', U'Z'}};
+    case AsciiCategory::Digit:
+        return CharSet{CharRange{U'0', U'9'}};
+    case AsciiCategory::Whitespace:
+        return CharSet{CharRange{U'\t', U'\r'}, CharRange{U' '}};
+    case AsciiCategory::Blank:
+        return CharSet{CharRange{U'\t'}, CharRange{U' '}};
+    case AsciiCategory::Control:
+        return CharSet{CharRange{U'\0', U'\x1f'}, CharRange{U'\x7f'}};
+    default:
+        break;
+    }
+    // use the slow path if the set does not match into one or two ranges.
     auto counter = impl::CharSetRangeCounter{};
     for (auto codePoint = char32_t{0}; codePoint <= 0x7FU; ++codePoint) {
         const auto character = Char{codePoint};
@@ -172,7 +196,7 @@ auto CharSet::inlineRangeCount(const InlineRanges &ranges) noexcept -> std::size
 
 void CharSet::ensureSharedCapacity(const std::size_t requiredCapacity) {
     if (!RangeData::canAllocateWithCapacity(requiredCapacity)) {
-        impl::throwOverflow("Character set range count exceeds supported bounds");
+        impl::throwOutOfRangeFailure("Character set range count exceeds supported bounds");
     }
     if (auto *inlineRanges = std::get_if<InlineRanges>(&_storage)) {
         const auto usedSize = inlineRangeCount(*inlineRanges);

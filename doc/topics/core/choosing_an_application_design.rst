@@ -50,7 +50,8 @@ Comparing the Designs
 Understanding Main Dispatch
 ===========================
 
-After successful command-line parsing, ``Application::run()`` calls the virtual ``main()`` method.
+After successful command-line parsing, ``Application::run()`` calls ``handleCommandLineOptions(values)`` before the
+virtual ``main()`` method.
 The default implementation first calls the main function of the selected option module.
 If no module owns the command, it calls the function registered through ``setMainFn()``.
 If neither exists, it starts registered application parts and enters the main event loop.
@@ -60,8 +61,8 @@ An overridden ``main()`` expresses a procedural application, but it also replace
 Such an override must explicitly call ``Application::main()``, ``partManager()->start()``, or ``runEventLoop()`` if it
 wants any of those default behaviors.
 
-Keeping the Framework Boundary
-==============================
+Shared Application Startup and Error Handling
+=============================================
 
 The design only chooses how application work begins.
 All variants still benefit from consistent conversion of ``argc`` and ``argv``, generated help and version output,

@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -11,7 +18,7 @@ namespace demo {
 /// the buffer's lifetime. `secureErase()` immediately overwrites its complete
 /// capacity while preserving length, capacity, and sensitive mode.
 void eraseDynamicBuffer() {
-    auto sessionMaterial = el::ByteBuffer{el::ByteLength{6U}};
+    auto sessionMaterial = el::ByteBuffer{el::ByteCount{6U}};
     sessionMaterial.setSensitive(true);
     sessionMaterial.set(el::ByteIndex{0U}, el::Byte{0x4eU});
     sessionMaterial.set(el::ByteIndex{1U}, el::Byte{0x45U});
@@ -19,7 +26,7 @@ void eraseDynamicBuffer() {
     sessionMaterial.set(el::ByteIndex{3U}, el::Byte{0x2dU});
     sessionMaterial.set(el::ByteIndex{4U}, el::Byte{0x31U});
     sessionMaterial.set(el::ByteIndex{5U}, el::Byte{0x37U});
-    sessionMaterial.reserve(el::ByteLength{32U});
+    sessionMaterial.reserve(el::ByteCount{32U});
     const auto lengthBeforeErase = sessionMaterial.length();
     const auto capacityBeforeErase = sessionMaterial.capacity();
 

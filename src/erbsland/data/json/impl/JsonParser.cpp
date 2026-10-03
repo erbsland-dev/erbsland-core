@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "JsonParser.hpp"
 
-#include "../../../err/Exception.hpp"
+#include "../../../err/OverflowError.hpp"
 #include "../../../err/ParseError.hpp"
 #include "../../../math/SignedMagnitude.hpp"
 #include "../../../text/AnyString.hpp"
@@ -16,9 +16,12 @@
 
 namespace erbsland::data::json::impl {
 
+using namespace err;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-JsonParser::JsonParser(text::String text, JsonParseOptions options) :
+JsonParser::JsonParser(String text, JsonParseOptions options) :
     _text{std::move(text)}, _options{options}, _reader{_text} {
 }
 
@@ -27,7 +30,7 @@ auto JsonParser::parse() -> JsonValue {
         fail("The JSON document exceeds the configured input limit."_el);
     }
     skipWhitespace();
-    const auto result = parseValue(unit::ItemCount{});
+    const auto result = parseValue(ItemCount{});
     skipWhitespace();
     if (!_reader.isAtEnd()) {
         fail("Unexpected trailing text after the JSON value."_el);
@@ -35,7 +38,7 @@ auto JsonParser::parse() -> JsonValue {
     return result;
 }
 
-auto JsonParser::parseValue(const unit::ItemCount nesting) -> JsonValue {
+auto JsonParser::parseValue(const ItemCount nesting) -> JsonValue {
     countValue();
     const auto next = _reader.peek();
     if (next == U'[') {
@@ -62,8 +65,8 @@ auto JsonParser::parseValue(const unit::ItemCount nesting) -> JsonValue {
     fail("Expected a JSON value."_el);
 }
 
-auto JsonParser::parseArray(const unit::ItemCount nesting) -> JsonValue {
-    const auto nextNesting = nesting + unit::ItemCount::one();
+auto JsonParser::parseArray(const ItemCount nesting) -> JsonValue {
+    const auto nextNesting = nesting + ItemCount::one();
     if (nextNesting > _options.maximumNesting()) {
         fail("The JSON document exceeds the configured nesting limit."_el);
     }
@@ -87,8 +90,8 @@ auto JsonParser::parseArray(const unit::ItemCount nesting) -> JsonValue {
     return JsonValue{std::move(result)};
 }
 
-auto JsonParser::parseObject(const unit::ItemCount nesting) -> JsonValue {
-    const auto nextNesting = nesting + unit::ItemCount::one();
+auto JsonParser::parseObject(const ItemCount nesting) -> JsonValue {
+    const auto nextNesting = nesting + ItemCount::one();
     if (nextNesting > _options.maximumNesting()) {
         fail("The JSON document exceeds the configured nesting limit."_el);
     }
@@ -124,10 +127,10 @@ auto JsonParser::parseObject(const unit::ItemCount nesting) -> JsonValue {
     return JsonValue{std::move(result)};
 }
 
-auto JsonParser::parseString() -> text::String {
-    static const auto escapeOrEnd = []() -> text::CharSet {
-        auto result = text::CharSet{U'"', U'\\'};
-        result.add(text::CharRange{0x0000U, 0x001fU}); // ASCII control characters
+auto JsonParser::parseString() -> String {
+    static const auto escapeOrEnd = []() -> CharSet {
+        auto result = CharSet{U'"', U'\\'};
+        result.add(CharRange{0x0000U, 0x001fU}); // ASCII control characters
         return result;
     }();
     if (!_reader.advanceIf(U'"')) {
@@ -135,7 +138,7 @@ auto JsonParser::parseString() -> text::String {
     }
     auto remainingMaximum = _options.maximumStringLength();
     while (true) {
-        if (remainingMaximum > unit::CpLength::zero()) {
+        if (remainingMaximum > CpCount::zero()) {
             const auto result = _reader.readToBufferUntil(escapeOrEnd, remainingMaximum);
             if (result == util::LoopResult::EndOfData) {
                 fail("The JSON string is not terminated."_el);
@@ -152,7 +155,7 @@ auto JsonParser::parseString() -> text::String {
             break;
         }
         if (character != U'\\') {
-            throw err::LogicError("Unexpected parser state.");
+            throw LogicFailure("Unexpected parser state.");
         }
         parseEscapeSequence();
         if (_reader.bufferCharacterLength() > _options.maximumStringLength()) {
@@ -189,26 +192,26 @@ void JsonParser::parseEscapeSequence() {
         break;
     case U'u':
         try {
-            constexpr auto hexCodeOptions = text::IntegerParseOptions::fixedHex(unit::CpLength{4});
+            constexpr auto hexCodeOptions = IntegerParseOptions::fixedHex(CpCount{4});
             const auto first = _reader.readIntegerOrThrow<uint16_t>(hexCodeOptions);
-            if (text::Char::isHighSurrogate(first)) {
+            if (Char::isHighSurrogate(first)) {
                 if (!_reader.advanceIf(U'\\') || !_reader.advanceIf(U'u')) {
                     fail("A JSON high surrogate requires a following low surrogate."_el);
                 }
                 const auto second = _reader.readIntegerOrThrow<uint16_t>(hexCodeOptions);
-                if (!text::Char::isLowSurrogate(second)) {
+                if (!Char::isLowSurrogate(second)) {
                     fail("A JSON high surrogate is followed by an invalid low surrogate."_el);
                 }
                 const auto codePoint = char32_t{0x10000U} + ((static_cast<char32_t>(first) - 0xD800U) << 10U) +
                     (static_cast<char32_t>(second) - 0xDC00U);
                 _reader.appendToBuffer(codePoint);
-            } else if (text::Char::isLowSurrogate(first)) {
+            } else if (Char::isLowSurrogate(first)) {
                 fail("A JSON low surrogate has no preceding high surrogate."_el);
             } else {
                 _reader.appendToBuffer(static_cast<char32_t>(first));
             }
             break;
-        } catch (const err::ParseError &) {
+        } catch (const ParseError &) {
             fail("The JSON string contains an invalid escape sequence."_el);
         }
     default:
@@ -217,8 +220,8 @@ void JsonParser::parseEscapeSequence() {
 }
 
 auto JsonParser::parseNumber() -> JsonValue {
-    static const auto exponent = text::CharSet{U'e', U'E'};
-    static const auto sign = text::CharSet{U'+', U'-'};
+    static const auto exponent = CharSet{U'e', U'E'};
+    static const auto sign = CharSet{U'+', U'-'};
     // Enforce a stricter JSON number format, capture the number text for later conversion.
     _reader.startCapture();
     _reader.advanceIf(U'-');
@@ -230,7 +233,7 @@ auto JsonParser::parseNumber() -> JsonValue {
         if (!_reader.peek().isAsciiDigit() || _reader.peek() == U'0') {
             fail("A JSON number requires an integer part."_el);
         }
-        _reader.advanceWhile(text::AsciiCategory::Digit);
+        _reader.advanceWhile(AsciiCategory::Digit);
     }
     auto isInteger = true;
     if (_reader.advanceIf(U'.')) {
@@ -238,12 +241,12 @@ auto JsonParser::parseNumber() -> JsonValue {
         if (!_reader.peek().isAsciiDigit()) {
             fail("A JSON fraction requires at least one digit."_el);
         }
-        _reader.advanceWhile(text::AsciiCategory::Digit);
+        _reader.advanceWhile(AsciiCategory::Digit);
     }
     if (_reader.advanceIf(exponent)) {
         isInteger = false;
         _reader.advanceIf(sign);
-        if (_reader.advanceWhile(text::AsciiCategory::Digit) == unit::CpLength::zero()) {
+        if (_reader.advanceWhile(AsciiCategory::Digit) == CpCount::zero()) {
             fail("A JSON exponent requires at least one digit."_el);
         }
     }
@@ -251,8 +254,10 @@ auto JsonParser::parseNumber() -> JsonValue {
     if (isInteger) {
         try {
             return JsonValue{numberText.toIntegerOrThrow<int64_t>()};
-        } catch (const err::Exception &) { // NOLINT(*-empty-catch)
+        } catch (const ParseError &) { // NOLINT(*-empty-catch)
             // Continue with the floating-point representation for large lexical integers.
+        } catch (const OverflowError &) { // NOLINT(*-empty-catch)
+            // The lexical integer may still fit in the floating-point representation.
         }
     }
     try {
@@ -261,14 +266,16 @@ auto JsonParser::parseNumber() -> JsonValue {
             fail("The JSON number is outside the finite floating-point range."_el);
         }
         return JsonValue{value};
-    } catch (const err::Exception &) {
+    } catch (const ParseError &) {
+        fail("The JSON number is outside the supported range."_el);
+    } catch (const OverflowError &) {
         fail("The JSON number is outside the supported range."_el);
     }
 }
 
 void JsonParser::skipWhitespace() {
-    const auto whitespace = text::CharSet{U' ', U'\t', U'\n', U'\r'};
-    _reader.advanceWhile(whitespace);
+    static const auto cWhitespace = CharSet{U' ', U'\t', U'\n', U'\r'};
+    _reader.advanceWhile(cWhitespace);
 }
 
 void JsonParser::countValue() {
@@ -278,8 +285,8 @@ void JsonParser::countValue() {
     }
 }
 
-void JsonParser::fail(const text::String &reason) const {
-    throw err::ParseError{reason, _reader.position()};
+void JsonParser::fail(const String &reason) const {
+    throw ParseError{reason, _reader.position()};
 }
 
 }

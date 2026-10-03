@@ -3,9 +3,9 @@
 
 #include "MemoryLayoutLoader.hpp"
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Environment.hpp>
-#include <erbsland/text/render/RenderError.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/render/RenderError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>

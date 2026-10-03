@@ -31,8 +31,14 @@ Policies and Keys
 presets.
 :cpp:class:`PasswordHashKey <erbsland::cryptology::PasswordHashKey>` holds the application pepper and can carry a
 public identifier for rotation.
+Use ``PasswordHashKey::isValidIdentifier`` to validate identifiers read from configuration before constructing a key.
+Identifiers must contain 1-32 ASCII letters, digits, periods, underscores, or hyphens.
 See :doc:`/topics/cryptology/supported_password_hashing_algorithms` for construction details, parameters, and migration
 policy.
+
+The ``PasswordHasher::UnsafeNoPasswordHashKey{}`` tag explicitly selects hashing without an application pepper.
+The empty tag is a public nested struct of ``PasswordHasher`` in ``<erbsland/PasswordHasher.hpp>``.
+Pass it directly to the constructor when this reduced protection is intentional.
 
 Interface
 =========
@@ -50,6 +56,4 @@ Interface
 .. doxygenclass:: erbsland::cryptology::PasswordVerification
     :members:
 .. doxygenclass:: erbsland::cryptology::unsafe::UnsafeCustomPasswordHashParameters
-    :members:
-.. doxygenclass:: erbsland::cryptology::unsafe::UnsafeNoPasswordHashKey
     :members:

@@ -77,7 +77,7 @@ The POSIX, Windows, and RFC 868 epochs are ``1970-01-01``, ``1601-01-01``, and `
 .. erbsland-demo::
     :source: time/DateTime/Create.cpp
     :exec: time/date_time --demo Create
-    :source-sha256: e5ec131c2ccbe50c90cb69e887caa75155a4839352243b990662d52da7418583
+    :sha256: 4c0dd97a979a33b1a0cce957922214ecbcbb94e75df8bce10b76ef5d8f54fb38
 
 .. code-block:: cpp
 
@@ -109,17 +109,17 @@ The POSIX, Windows, and RFC 868 epochs are ``1970-01-01``, ``1601-01-01``, and `
                 el::DateTime::last()));
     }
 
-    }
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    Lesson: Μάθημα μαγείας; UTC input: 2026-07-01 14:30:00Z; named local input: 2026-07-01 14:
-    30:00+03:00
-    Fixed constructors agree: true; zoned-time constructor agrees: true
-    Default valid: false; invalid date valid: false; current clock valid: true
-    Core epoch: 0000-01-01 00:00:00Z; POSIX epoch: 1970-01-01 00:00:00Z; first: 0000-01-01 00:
-    00:00Z; last: 9999-12-31 23:59:59.999999999Z
+        ␛[0mLesson: Μάθημα μαγείας; UTC input: 2026-07-01 14:30:00Z; named local input: 2026-07-01 14:
+        30:00+03:00
+        Fixed constructors agree: true; zoned-time constructor agrees: true
+        Default valid: false; invalid date valid: false; current clock valid: true
+        Core epoch: 0000-01-01 00:00:00Z; POSIX epoch: 1970-01-01 00:00:00Z; first: 0000-01-01 00:
+        00:00Z; last: 9999-12-31 23:59:59.999999999Z␛[0m
 
 .. erbsland-demo-end::
 
@@ -161,7 +161,7 @@ Check validity before interpreting any components: invalid values expose fallbac
 .. erbsland-demo::
     :source: time/DateTime/Inspect.cpp
     :exec: time/date_time --demo Inspect
-    :source-sha256: 0e248efc85b798867b4738996d2cbc9f88cc8674d000fed64f314b7f0655492b
+    :sha256: ffb0aeed0e640e2009e4622dcb589697962af0483cc04a3ebc2c86b36532aff2
 
 .. code-block:: cpp
 
@@ -204,14 +204,16 @@ Check validity before interpreting any components: invalid values expose fallbac
                     reading.timeZoneAbbreviation()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Local: 2026-07-01 00:30:12.123456789; UTC: 2026-06-30 21:30:12.123456789
-    Parts: 2026-7-1 0:30:12; fraction: 123456789 ns
-    Individual fields: 2026-7-1 0:30:12; day of year: 182; weekday: 2
-    Millisecond fraction: 123; nanosecond fraction: 123456789; offset (seconds): 10800; zone:
-    Europe/Athens; abbreviation: EEST
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLocal: 2026-07-01 00:30:12.123456789; UTC: 2026-06-30 21:30:12.123456789
+        Parts: 2026-7-1 0:30:12; fraction: 123456789 ns
+        Individual fields: 2026-7-1 0:30:12; day of year: 182; weekday: 2
+        Millisecond fraction: 123; nanosecond fraction: 123456789; offset (seconds): 10800; zone:
+        Europe/Athens; abbreviation: EEST␛[0m
 
 .. erbsland-demo-end::
 
@@ -232,7 +234,7 @@ Invalid values have reset display metadata and compare equal to one another.
 .. erbsland-demo::
     :source: time/DateTime/Compare.cpp
     :exec: time/date_time --demo Compare
-    :source-sha256: 4025fb2c185a76db6d7f8286b15e141547c2e51c180f52a03ab8d2b750acda1e
+    :sha256: d55e2dd4936ad14f813561c0a9e7ffaf5abd2c677d082ce826f80475623176aa
 
 .. code-block:: cpp
 
@@ -251,13 +253,15 @@ Invalid values have reset display metadata and compare equal to one another.
                 .build(local < later, el::DateTime{} < utc, el::DateTime{} == el::DateTime{}));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Local: 2026-07-01 14:30:00+03:00; UTC: 2026-07-01 11:30:00Z
-    Same ordering position: true; same object value: false; equal after UTC conversion: true
-    Local instant before later UTC: true; invalid sorts first: true; invalid values equal: tru
-    e
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLocal: 2026-07-01 14:30:00+03:00; UTC: 2026-07-01 11:30:00Z
+        Same ordering position: true; same object value: false; equal after UTC conversion: true
+        Local instant before later UTC: true; invalid sorts first: true; invalid values equal: tru
+        e␛[0m
 
 .. erbsland-demo-end::
 
@@ -289,7 +293,7 @@ instant displays as ``02:30+02:00`` when the zone rules are resolved again.
 .. erbsland-demo::
     :source: time/DateTime/Zones.cpp
     :exec: time/date_time --demo Zones
-    :source-sha256: 7741498a8892680f6813af65187cacee956dfdd5c43265ea7541fd6f1c0dfa06
+    :sha256: ba9936ec9c3631cf7233b202f92e3a267d8f881a15a321545e20b2abde733c5f
 
 .. code-block:: cpp
 
@@ -320,15 +324,17 @@ instant displays as ``02:30+02:00`` when the zone rules are resolved again.
                 el::TimeZone::fromName("Unknown/Academy"_el).has_value(), !el::DateTime{}.toTimeZone(zone).isValid()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    First occurrence: 2026-10-25 03:30:00+03:00; second occurrence: 2026-10-25 03:30:00+02:00;
-     apart (seconds): 3600
-    Gap constructor display: 2026-03-29 03:30:00+03:00; refreshed display: 2026-03-29 02:30:00
-    +02:00; valid: true
-    Requested local fields retained after resolution: false
-    Unknown zone accepted: false; invalid remains invalid on zone conversion: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFirst occurrence: 2026-10-25 03:30:00+03:00; second occurrence: 2026-10-25 03:30:00+02:00;
+         apart (seconds): 3600
+        Gap constructor display: 2026-03-29 03:30:00+03:00; refreshed display: 2026-03-29 02:30:00
+        +02:00; valid: true
+        Requested local fields retained after resolution: false
+        Unknown zone accepted: false; invalid remains invalid on zone conversion: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -368,7 +374,7 @@ See :ref:`time-iso-output` for the shared formatting controls and
 .. erbsland-demo::
     :source: time/DateTime/Text.cpp
     :exec: time/date_time --demo Text
-    :source-sha256: 4e5b4583d83c80332a20dad2722a74122e1c4b2a431c069c3c6b0f454bcf3f99
+    :sha256: bf20f7e620d74aeb5f08c14a0950f896d32b43edba4eb9ae9dd4b629bd43618d
 
 .. code-block:: cpp
 
@@ -407,16 +413,18 @@ See :ref:`time-iso-output` for the shared formatting controls and
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Display: 2026-07-01 14:30:00.123456789+03:00; default ISO: 2026-07-01 14:30:00; precise IS
-    O: 2026-07-01T14:30:00.123456789+03:00
-    Default ISO preserves the instant when parsed as UTC: false
-    Local text with a zone: 2026-07-01 14:30:00+03:00; bare text interpreted as UTC: true
-    Offset text with explicit zone accepted: false; insufficient precision valid: false; inval
-    id output empty: true
-    Checked parsing rejects an impossible date.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDisplay: 2026-07-01 14:30:00.123456789+03:00; default ISO: 2026-07-01 14:30:00; precise IS
+        O: 2026-07-01T14:30:00.123456789+03:00
+        Default ISO preserves the instant when parsed as UTC: false
+        Local text with a zone: 2026-07-01 14:30:00+03:00; bare text interpreted as UTC: true
+        Offset text with explicit zone accepted: false; insufficient precision valid: false; inval
+        id output empty: true
+        Checked parsing rejects an impossible date.␛[0m
 
 .. erbsland-demo-end::
 
@@ -458,7 +466,7 @@ For raw-field and portable binary exchange, convert through ``Timestamp`` as des
 .. erbsland-demo::
     :source: time/DateTime/Ticks.cpp
     :exec: time/date_time --demo Ticks
-    :source-sha256: 8633648786c52026e0e95340348a22e2326337f5928cab1eb9465e658005cfd6
+    :sha256: f188f4a149a1cb06f8e88aa947677f6e7a1ca5bcd207455793f561acf90c455b
 
 .. code-block:: cpp
 
@@ -505,20 +513,20 @@ For raw-field and portable binary exchange, convert through ``Timestamp`` as des
                 el::DateTime::fromTimeT(native), el::DateTime::first().toTimeT()));
     }
 
-    }
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    POSIX seconds: 1782905400; fraction: 123456789; full precision round trip: true
-    Seconds: 1782905400; milliseconds: 1782905400123; microseconds: 1782905400123456; nanoseco
-    nds: 1782905400123456789
-    Nanosecond alias round trip: true; invalid split fraction accepted: false
-    Millisecond reconstruction: 2026-07-01 11:30:00.123Z
-    Modern date fits Core nanoseconds: false; Core epoch fits POSIX seconds: false; negative t
-    icks accepted: false
-    Checked conversion rejects a nanosecond total that does not fit.
-    Native whole-second reconstruction: 2026-07-01 11:30:00Z; pre-POSIX native output: -1
+        ␛[0mPOSIX seconds: 1782905400; fraction: 123456789; full precision round trip: true
+        Seconds: 1782905400; milliseconds: 1782905400123; microseconds: 1782905400123456; nanoseco
+        nds: 1782905400123456789
+        Nanosecond alias round trip: true; invalid split fraction accepted: false
+        Millisecond reconstruction: 2026-07-01 11:30:00.123Z
+        Modern date fits Core nanoseconds: false; Core epoch fits POSIX seconds: false; negative t
+        icks accepted: false
+        Checked conversion rejects a nanosecond total that does not fit.
+        Native whole-second reconstruction: 2026-07-01 11:30:00Z; pre-POSIX native output: -1␛[0m
 
 .. erbsland-demo-end::
 
@@ -557,7 +565,7 @@ and use its ``...ToOrThrow()`` APIs.
 .. erbsland-demo::
     :source: time/DateTime/Calculate.cpp
     :exec: time/date_time --demo Calculate
-    :source-sha256: c5b3942a36121cb2e3514d3d67cfc298ad6a4a7e4fe176c80589ce1143e04520
+    :sha256: 35e9bbdb289fa0218d1c4f1c326bec08e69b72d26f11132d396f23bd7a54f04a
 
 .. code-block:: cpp
 
@@ -601,16 +609,18 @@ and use its ``...ToOrThrow()`` APIs.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Start: 2026-03-28 12:00:00+02:00; 24 hours later: 2026-03-29 13:00:00+03:00; elapsed (seco
-    nds): 86400
-    In-place round trip: true
-    One month later: 2028-02-29 12:00:00Z; one month back: 2028-01-29 12:00:00Z
-    Fractional shift: 2028-01-31 12:00:00.25Z; DateTime delta: 0 s; Timestamp delta: 250 ms
-    Last plus second saturates: true; first minus second saturates: true; clamped: true
-    Checked calendar arithmetic rejects a boundary crossing.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mStart: 2026-03-28 12:00:00+02:00; 24 hours later: 2026-03-29 13:00:00+03:00; elapsed (seco
+        nds): 86400
+        In-place round trip: true
+        One month later: 2028-02-29 12:00:00Z; one month back: 2028-01-29 12:00:00Z
+        Fractional shift: 2028-01-31 12:00:00.25Z; DateTime delta: 0 s; Timestamp delta: 250 ms
+        Last plus second saturates: true; first minus second saturates: true; clamped: true
+        Checked calendar arithmetic rejects a boundary crossing.␛[0m
 
 .. erbsland-demo-end::
 
@@ -628,7 +638,7 @@ Resolving each local occurrence makes that difference explicit without changing 
 .. erbsland-demo::
     :source: time/DateTime/Recurrence.cpp
     :exec: time/date_time --demo Recurrence
-    :source-sha256: 61a5ff6ffe7d1dbb2fa19547224bede6c40a71fa0d4f2db768ddd101ec4645ee
+    :sha256: fa6752feeb7c460a0663ebb5e366fe20471662307638c5476ba77af2cf1a37c9
 
 .. code-block:: cpp
 
@@ -647,12 +657,14 @@ Resolving each local occurrence makes that difference explicit without changing 
             el::StringFormat{"Adding 24 hours instead: {}"_el}.build(today.addedOrThrow(el::Duration{el::Hours{24}})));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Today: 2026-03-28 12:00:00+02:00; next local occurrence: 2026-03-29 12:00:00+03:00; elapse
-    d (seconds): 82800
-    Adding 24 hours instead: 2026-03-29 13:00:00+03:00
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mToday: 2026-03-28 12:00:00+02:00; next local occurrence: 2026-03-29 12:00:00+03:00; elapse
+        d (seconds): 82800
+        Adding 24 hours instead: 2026-03-29 13:00:00+03:00␛[0m
 
 .. erbsland-demo-end::
 

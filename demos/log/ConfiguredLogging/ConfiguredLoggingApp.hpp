@@ -3,6 +3,10 @@
 #pragma once
 
 #include <DemoCommon.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionValues.hpp>
 
 namespace demo {
 
@@ -19,7 +23,7 @@ public:
 protected: // implement Application
     void initialize() override;
     void registerCommandLineOptions(const el::OptionsPtr &options) override;
-    void parseCommandLine() override;
+    void handleCommandLineOptions(const el::OptionValuesPtr &values) override;
     [[nodiscard]] auto main() -> el::ExitCode override;
 };
 

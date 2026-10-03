@@ -6,8 +6,9 @@
 #include "HttpServerEventEditor.hpp"
 #include "HttpServerSession.hpp"
 
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../mem/ByteBlock.hpp"
 #include "../../../../text/Literals.hpp"
@@ -27,6 +28,8 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
+using namespace unit;
 using namespace text::literals;
 
 HttpServer::HttpServer(event::EventsPtr ownerEvents) : network::HttpServer{std::move(ownerEvents)} {
@@ -79,7 +82,7 @@ void HttpServer::addStaticContentHandler(HttpStaticContentHandlerPtr handler) {
     verifyCurrentOwnerEvents();
     verifyInactive();
     if (handler == nullptr) {
-        throw err::ParameterError{"An HTTP server requires a valid static-content handler."_el, "handler"_el};
+        throw ParameterFailure{"An HTTP server requires a valid static-content handler."_el, "handler"_el};
     }
     _staticContentHandlers.emplace_back(std::move(handler));
 }
@@ -202,7 +205,7 @@ void HttpServer::abort() noexcept {
                     callback();
                 }
             });
-        } catch (...) {}
+        } catch (const RuntimeError &) {}
     }
 }
 
@@ -330,7 +333,7 @@ void HttpServer::assessClosed() {
 
 void HttpServer::verifyInactive() const {
     if (_state != NetworkSourceState::Inactive) {
-        throw err::LogicError{"An HTTP server can only be configured while inactive."_el};
+        throw LogicFailure{"An HTTP server can only be configured while inactive."_el};
     }
 }
 
@@ -352,13 +355,14 @@ void HttpServer::validateOptions() const {
         _options.staticContentChunkLength() > _options.maximumStaticContentQueueLength() ||
         !_options.headerTimeout().isPositive() || !_options.bodyIdleTimeout().isPositive() ||
         !_options.totalTimeout().isPositive() || !_options.closeTimeout().isPositive()) {
-        throw err::ParameterError{"The HTTP server limits and deadlines are invalid."_el, "options"_el};
+        throw ParameterFailure{"The HTTP server limits and deadlines are invalid."_el, "options"_el};
     }
     if (_tlsOptions.has_value() &&
         (_tlsOptions->maximumConcurrentHandshakes().isZero() ||
             _tlsOptions->maximumConcurrentHandshakes().isInfinite() || !_tlsOptions->handshakeTimeout().isPositive() ||
-            _tlsOptions->identityMappings().size() > TlsServerAcceptOptions::cMaximumIdentityMappings.toSizeT())) {
-        throw err::ParameterError{"The HTTP server TLS options are invalid."_el, "tlsOptions"_el};
+            _tlsOptions->configurationMappings().size() >
+                TlsServerAcceptOptions::cMaximumConfigurationMappings.toSizeT())) {
+        throw ParameterFailure{"The HTTP server TLS options are invalid."_el, "tlsOptions"_el};
     }
 }
 
@@ -390,7 +394,7 @@ void HttpServer::releaseStaticOperation() noexcept {
     }
 }
 
-auto HttpServer::reserveStaticQueue(const unit::ByteLength length) noexcept -> bool {
+auto HttpServer::reserveStaticQueue(const ByteCount length) noexcept -> bool {
     const auto maximum = _options.maximumStaticContentQueueLength().toRawValue();
     if (length.isInfinite() || length.toRawValue() > maximum - std::min(maximum, _staticQueueLength)) {
         return false;
@@ -399,11 +403,11 @@ auto HttpServer::reserveStaticQueue(const unit::ByteLength length) noexcept -> b
     return true;
 }
 
-void HttpServer::releaseStaticQueue(const unit::ByteLength length) noexcept {
+void HttpServer::releaseStaticQueue(const ByteCount length) noexcept {
     _staticQueueLength -= std::min(_staticQueueLength, length.toRawValue());
 }
 
-auto HttpServer::reserveStaticMemory(const unit::ByteLength length) noexcept -> bool {
+auto HttpServer::reserveStaticMemory(const ByteCount length) noexcept -> bool {
     const auto maximum = _options.maximumRetainedStaticContentMemoryLength().toRawValue();
     if (length.isInfinite() || length.toRawValue() > maximum - std::min(maximum, _staticMemoryLength)) {
         return false;
@@ -412,7 +416,7 @@ auto HttpServer::reserveStaticMemory(const unit::ByteLength length) noexcept -> 
     return true;
 }
 
-void HttpServer::releaseStaticMemory(const unit::ByteLength length) noexcept {
+void HttpServer::releaseStaticMemory(const ByteCount length) noexcept {
     _staticMemoryLength -= std::min(_staticMemoryLength, length.toRawValue());
 }
 
@@ -420,9 +424,9 @@ auto HttpServer::createTlsAcceptOptions() const -> TlsServerAcceptOptions {
     const auto &httpTls = *_tlsOptions;
     auto result = TlsServerAcceptOptions{ConnectionQuota::create(httpTls.maximumConcurrentHandshakes())};
     result.setConfigurationLabel(httpTls.configurationLabel())
-        .setIdentityMappings(httpTls.identityMappings())
+        .setConfigurationMappings(httpTls.configurationMappings())
         .setTcpOptions(_tcpAcceptOptions)
-        .setAlpnProtocols({"http/1.1"_el})
+        .setAlpnProtocols(text::StringList{"http/1.1"_el})
         .setHandshakeTimeout(httpTls.handshakeTimeout())
         .setCloseTimeout(_options.closeTimeout());
     return result;

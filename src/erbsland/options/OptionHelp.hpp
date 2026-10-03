@@ -13,14 +13,14 @@ namespace erbsland::options {
 /// Help visibility and text for options, sets, modules, choices, and the root options object.
 /// This object stores display metadata only; parser behavior is controlled by option names, types, flags, and
 /// callbacks.
-/// @tested{OptionsFrameworkTest}
+/// @tested{OptionsFrameworkTest OptionHelpDocumentTest}
 class OptionHelp {
 public:
     /// Create empty option help metadata.
     OptionHelp() = default;
-    /// Create help text from a description.
-    /// @param description User-facing description text for generated help output.
-    explicit OptionHelp(text::String description);
+    /// Create help metadata with a brief title.
+    /// @param title Brief text for overview rows, or a section heading for an option set.
+    explicit OptionHelp(text::String title);
 
     // defaults
     ~OptionHelp() = default;
@@ -38,17 +38,17 @@ public: // accessors
     /// Get the title.
     [[nodiscard]] auto title() const noexcept -> const text::String & { return _title; }
     /// Set the title.
-    /// @param title Short title, used for option-set groups and as fallback text when no description is available.
+    /// @param title Brief overview text for options, modules and choices, or the section heading for an option set.
     void setTitle(text::String title) { _title = std::move(title); }
     /// Get the main description.
     [[nodiscard]] auto description() const noexcept -> const text::String & { return _description; }
     /// Set the main description.
-    /// @param description Main user-facing help text.
+    /// @param description Detailed help text, or introductory text below an option-set heading or in root help.
     void setDescription(text::String description) { _description = std::move(description); }
     /// Get the epilog text.
     [[nodiscard]] auto epilog() const noexcept -> const text::String & { return _epilog; }
     /// Set the epilog text.
-    /// @param epilog Optional trailing help text rendered after root or module help output.
+    /// @param epilog Optional trailing text rendered after root, module or detailed help output.
     void setEpilog(text::String epilog) { _epilog = std::move(epilog); }
     /// Get the optional example text.
     [[nodiscard]] auto example() const noexcept -> const text::String & { return _example; }

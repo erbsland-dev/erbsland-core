@@ -18,8 +18,8 @@
 #include "../impl/SigningKeyEncoding.hpp"
 #include "../impl/SigningKeyGenerator.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../path/Path.hpp"
 #include "../../text/Literals.hpp"
@@ -30,6 +30,8 @@
 
 namespace erbsland::cryptology {
 
+using namespace err;
+using namespace path;
 using namespace mem;
 using namespace text;
 using namespace text::literals;
@@ -47,10 +49,10 @@ SigningPrivateKey::~SigningPrivateKey() {
 auto SigningPrivateKey::signTlsCertificateVerify(const TlsSignatureScheme scheme, const ConstByteSpan message) const
     -> ByteBlock {
     if (isEmpty()) {
-        throw err::LogicError{"A private key is required for signing."_el};
+        throw LogicFailure{"A private key is required for signing."_el};
     }
     if (!supports(scheme)) {
-        throw err::ParameterError{"The TLS signature scheme is incompatible with this private key."_el, "scheme"_el};
+        throw ParameterFailure{"The TLS signature scheme is incompatible with this private key."_el, "scheme"_el};
     }
     auto result = ByteBlock{};
     _privateData.withUnprotectedData([&](const ConstByteSpan privateData) -> void {
@@ -72,14 +74,14 @@ auto SigningPrivateKey::signTlsCertificateVerify(const TlsSignatureScheme scheme
         case SigningKeyAlgorithm::Unknown:
             break;
         }
-        throw err::LogicError{"The private-key algorithm has no signing implementation."_el};
+        throw LogicFailure{"The private-key algorithm has no signing implementation."_el};
     });
     return result;
 }
 
 auto SigningPrivateKey::signEd25519Framed(const ConstByteSpan message) const -> ByteBlock {
     if (_algorithm != SigningKeyAlgorithm::Ed25519 || isEmpty()) {
-        throw err::ParameterError{"Signed byte blocks require an Ed25519 private key."_el, "key"_el};
+        throw ParameterFailure{"Signed byte blocks require an Ed25519 private key."_el, "key"_el};
     }
     auto result = ByteBlock{};
     _privateData.withUnprotectedData(
@@ -89,7 +91,7 @@ auto SigningPrivateKey::signEd25519Framed(const ConstByteSpan message) const -> 
 
 auto SigningPrivateKey::fromEd25519Seed(const ConstByteSpan seed) -> SigningPrivateKey {
     if (seed.size() != 32U) {
-        throw err::ParameterError{"An Ed25519 seed must contain 32 bytes."_el, "seed"_el};
+        throw ParameterFailure{"An Ed25519 seed must contain 32 bytes."_el, "seed"_el};
     }
     const auto point = impl::ed25519_signer::publicKey(seed);
     auto encoder = impl::DerEncoder{};
@@ -119,21 +121,15 @@ auto SigningPrivateKey::supports(const TlsSignatureScheme scheme) const noexcept
         try {
             const auto key = impl::rsa_signature::decodePublicKey(_publicKey);
             const auto keyOid = _publicKey.algorithm().oid().toString();
-            const auto rsaeScheme =
-                scheme == TlsSignatureScheme::RsaPssRsaeSha256 || scheme == TlsSignatureScheme::RsaPssRsaeSha384;
-            const auto pssScheme =
-                scheme == TlsSignatureScheme::RsaPssPssSha256 || scheme == TlsSignatureScheme::RsaPssPssSha384;
-            if ((rsaeScheme && keyOid != impl::cryptology_oids::rsaEncryption) ||
-                (pssScheme && keyOid != impl::cryptology_oids::rsaPss) || (!rsaeScheme && !pssScheme)) {
+            if ((scheme.requiresRsaEncryptionKey() && keyOid != impl::cryptology_oids::rsaEncryption) ||
+                (scheme.requiresRsaPssKey() && keyOid != impl::cryptology_oids::rsaPss) ||
+                (!scheme.requiresRsaEncryptionKey() && !scheme.requiresRsaPssKey())) {
                 return false;
             }
-            const auto hash = HashAlgorithm{
-                (scheme == TlsSignatureScheme::RsaPssRsaeSha256 || scheme == TlsSignatureScheme::RsaPssPssSha256)
-                    ? HashAlgorithm::Sha2_256
-                    : HashAlgorithm::Sha2_384};
-            return impl::rsa_signature::parametersMatchKey(
-                {impl::rsa_signature::Padding::Pss, hash, hash.digestSize().toSizeT()}, key.restrictions);
-        } catch (const err::RuntimeError &) {
+            const auto parameters =
+                impl::rsa_signature::decodeSignatureParameters(scheme.signatureAlgorithmIdentifier());
+            return impl::rsa_signature::parametersMatchKey(parameters, key.restrictions);
+        } catch (const RuntimeError &) {
             return false;
         }
     case SigningKeyAlgorithm::Unknown:
@@ -155,20 +151,16 @@ auto SigningPrivateKey::matches(const PublicKey &publicKeyValue) const -> bool {
                 _publicKey.keyData().isEqualConstTime(publicKeyValue.keyData());
         case SigningKeyAlgorithm::EcdsaP256: {
             // RFC 5480 section 2.2: normalize compressed or uncompressed P-256 points to affine coordinates.
-            const auto parameters =
-                impl::ecdsa_signature::Parameters{impl::NistPrimeCurve::Name::P256, HashAlgorithm::Sha2_256};
             const auto curve = impl::NistPrimeCurve{impl::NistPrimeCurve::Name::P256};
-            const auto expected = curve.toAffine(impl::ecdsa_signature::decodePublicKey(_publicKey, parameters));
-            const auto candidate = curve.toAffine(impl::ecdsa_signature::decodePublicKey(publicKeyValue, parameters));
+            const auto expected = curve.toAffine(impl::ecdsa_signature::decodePublicKey(_publicKey, curve.name()));
+            const auto candidate = curve.toAffine(impl::ecdsa_signature::decodePublicKey(publicKeyValue, curve.name()));
             return expected.has_value() && candidate.has_value() && curve.compare(expected->x, candidate->x) == 0 &&
                 curve.compare(expected->y, candidate->y) == 0;
         }
         case SigningKeyAlgorithm::EcdsaP384: {
-            const auto parameters =
-                impl::ecdsa_signature::Parameters{impl::NistPrimeCurve::Name::P384, HashAlgorithm::Sha2_384};
             const auto curve = impl::NistPrimeCurve{impl::NistPrimeCurve::Name::P384};
-            const auto expected = curve.toAffine(impl::ecdsa_signature::decodePublicKey(_publicKey, parameters));
-            const auto candidate = curve.toAffine(impl::ecdsa_signature::decodePublicKey(publicKeyValue, parameters));
+            const auto expected = curve.toAffine(impl::ecdsa_signature::decodePublicKey(_publicKey, curve.name()));
+            const auto candidate = curve.toAffine(impl::ecdsa_signature::decodePublicKey(publicKeyValue, curve.name()));
             return expected.has_value() && candidate.has_value() && curve.compare(expected->x, candidate->x) == 0 &&
                 curve.compare(expected->y, candidate->y) == 0;
         }
@@ -193,7 +185,7 @@ auto SigningPrivateKey::matches(const PublicKey &publicKeyValue) const -> bool {
         case SigningKeyAlgorithm::Unknown:
             return false;
         }
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return false;
     }
     return false;
@@ -201,14 +193,14 @@ auto SigningPrivateKey::matches(const PublicKey &publicKeyValue) const -> bool {
 
 auto SigningPrivateKey::publicKey() const -> PublicKey {
     if (isEmpty()) {
-        throw err::LogicError{"A private key is required to access its public key."_el};
+        throw LogicFailure{"A private key is required to access its public key."_el};
     }
     return _publicKey;
 }
 
 auto SigningPrivateKey::toDer() const -> ByteBlock {
     if (isEmpty()) {
-        throw err::LogicError{"A private key is required for encoding."_el};
+        throw LogicFailure{"A private key is required for encoding."_el};
     }
     auto encoder = impl::DerEncoder{};
     _privateData.withUnprotectedData([&](const ConstByteSpan privateData) -> void {
@@ -227,7 +219,7 @@ auto SigningPrivateKey::toPem() const -> String {
     return result;
 }
 
-void SigningPrivateKey::writeToFile(const path::Path &path, const PemDerFormat format) const {
+void SigningPrivateKey::writeToFile(const Path &path, const PemDerFormat format) const {
     const auto file = impl::PemDerFileTools{path, impl::PemDerFileTools::Artifact::PrivateKey, true};
     if (file.outputFormat(format) == PemDerFormat::Pem) {
         file.writePem(toPem());
@@ -238,7 +230,7 @@ void SigningPrivateKey::writeToFile(const path::Path &path, const PemDerFormat f
 
 auto SigningPrivateKey::toEncryptedDer(const String &password) const -> ByteBlock {
     if (password.isEmpty()) {
-        throw err::ParameterError{"A private-key password must not be empty."_el, "password"_el};
+        throw ParameterFailure{"A private-key password must not be empty."_el, "password"_el};
     }
     auto passwordBytes = StringEncoder{password}.encode(StringEncoding::Utf8, StringBomMode::Reject);
     passwordBytes.markAsSensitive();
@@ -253,7 +245,7 @@ auto SigningPrivateKey::toEncryptedPem(const String &password) const -> String {
 }
 
 void SigningPrivateKey::writeEncryptedToFile(
-    const path::Path &path, const String &password, const PemDerFormat format) const {
+    const Path &path, const String &password, const PemDerFormat format) const {
     const auto file = impl::PemDerFileTools{path, impl::PemDerFileTools::Artifact::PrivateKey, true};
     if (file.outputFormat(format) == PemDerFormat::Pem) {
         file.writePem(toEncryptedPem(password));
@@ -269,7 +261,7 @@ auto SigningPrivateKey::generate(const SigningKeyProfile profile) -> SigningPriv
 auto SigningPrivateKey::fromDer(const ByteBlock &der) noexcept -> SigningPrivateKey {
     try {
         return fromDerOrThrow(der);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
@@ -281,7 +273,7 @@ auto SigningPrivateKey::fromDerOrThrow(const ByteBlock &der) -> SigningPrivateKe
 auto SigningPrivateKey::fromPem(const String &pem) noexcept -> SigningPrivateKey {
     try {
         return fromPemOrThrow(pem);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
@@ -292,15 +284,15 @@ auto SigningPrivateKey::fromPemOrThrow(const String &pem) -> SigningPrivateKey {
     return fromDerOrThrow(der);
 }
 
-auto SigningPrivateKey::fromFile(const path::Path &path, const PemDerFormat format) noexcept -> SigningPrivateKey {
+auto SigningPrivateKey::fromFile(const Path &path, const PemDerFormat format) noexcept -> SigningPrivateKey {
     try {
         return fromFileOrThrow(path, format);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
 
-auto SigningPrivateKey::fromFileOrThrow(const path::Path &path, const PemDerFormat format) -> SigningPrivateKey {
+auto SigningPrivateKey::fromFileOrThrow(const Path &path, const PemDerFormat format) -> SigningPrivateKey {
     const auto file = impl::PemDerFileTools{path, impl::PemDerFileTools::Artifact::PrivateKey, true};
     auto data = file.read();
     data.markAsSensitive();
@@ -314,15 +306,12 @@ auto SigningPrivateKey::fromFileOrThrow(const path::Path &path, const PemDerForm
 auto SigningPrivateKey::fromEncryptedDer(const ByteBlock &der, const String &password) noexcept -> SigningPrivateKey {
     try {
         return fromEncryptedDerOrThrow(der, password);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
 
 auto SigningPrivateKey::fromEncryptedDerOrThrow(const ByteBlock &der, const String &password) -> SigningPrivateKey {
-    if (password.isEmpty()) {
-        throw err::ParameterError{"A private-key password must not be empty."_el, "password"_el};
-    }
     try {
         auto passwordBytes = StringEncoder{password}.encode(StringEncoding::Utf8, StringBomMode::Reject);
         passwordBytes.markAsSensitive();
@@ -330,7 +319,7 @@ auto SigningPrivateKey::fromEncryptedDerOrThrow(const ByteBlock &der, const Stri
         auto plaintext = impl::encrypted_private_key_codec::decrypt(der, passwordBytes.span());
         const auto plaintextEraseGuard = impl::SecureEraseGuard{plaintext};
         return fromDerOrThrow(plaintext);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         throw CryptologyError{"Private-key decryption failed."_el};
     }
 }
@@ -338,34 +327,31 @@ auto SigningPrivateKey::fromEncryptedDerOrThrow(const ByteBlock &der, const Stri
 auto SigningPrivateKey::fromEncryptedPem(const String &pem, const String &password) noexcept -> SigningPrivateKey {
     try {
         return fromEncryptedPemOrThrow(pem, password);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
 
 auto SigningPrivateKey::fromEncryptedPemOrThrow(const String &pem, const String &password) -> SigningPrivateKey {
-    if (password.isEmpty()) {
-        throw err::ParameterError{"A private-key password must not be empty."_el, "password"_el};
-    }
     try {
         const auto values = impl::PemCodec{pem, impl::PemLabel::EncryptedPrivateKey}.decode();
         return fromEncryptedDerOrThrow(values.getRefOrThrow(ItemIndex::zero()), password);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         throw CryptologyError{"Private-key decryption failed."_el};
     }
 }
 
-auto SigningPrivateKey::fromEncryptedFile(
-    const path::Path &path, const String &password, const PemDerFormat format) noexcept -> SigningPrivateKey {
+auto SigningPrivateKey::fromEncryptedFile(const Path &path, const String &password, const PemDerFormat format) noexcept
+    -> SigningPrivateKey {
     try {
         return fromEncryptedFileOrThrow(path, password, format);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
 
-auto SigningPrivateKey::fromEncryptedFileOrThrow(
-    const path::Path &path, const String &password, const PemDerFormat format) -> SigningPrivateKey {
+auto SigningPrivateKey::fromEncryptedFileOrThrow(const Path &path, const String &password, const PemDerFormat format)
+    -> SigningPrivateKey {
     const auto file = impl::PemDerFileTools{path, impl::PemDerFileTools::Artifact::PrivateKey, true};
     const auto data = file.read();
     if (file.inputFormat(data, format) == PemDerFormat::Pem) {

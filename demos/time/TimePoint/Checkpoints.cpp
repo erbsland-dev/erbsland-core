@@ -3,7 +3,9 @@
 
 #include "TimePointDemos.hpp"
 
-#include <erbsland/time/TimePoint.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/TimePoint.hpp>
 
 #include <chrono>
 

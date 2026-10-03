@@ -3,11 +3,11 @@
 #pragma once
 
 #include "ColumnUnit.hpp"
-#include "IntegerUnitAmount.hpp"
+#include "IntegerUnitCount.hpp"
 
 namespace erbsland::unit {
 
 /// A source code column count.
-using ColumnCount = IntegerUnitAmount<ColumnUnit>;
+using ColumnCount = IntegerUnitCount<ColumnUnit>;
 
 }

@@ -5,9 +5,9 @@
 #include <erbsland/re/CharAndPosition.hpp>
 #include <erbsland/re/Input.hpp>
 #include <erbsland/re/InputBase.hpp>
-#include <erbsland/re/RegEx.hpp>
 #include <erbsland/re/StdFormat.hpp>
-#include <erbsland/text/U8EncodingError.hpp>
+#include <erbsland/RegEx.hpp>
+#include <erbsland/U8EncodingError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>
@@ -41,7 +41,7 @@ private:
             return {_characters[_position], _position};
         }
 
-        void skip(const el::unit::CpLength characterCount) override {
+        void skip(const el::unit::CpCount characterCount) override {
             _position = std::min(_characters.size(), _position + characterCount.toSizeT());
         }
 
@@ -77,7 +77,7 @@ private:
             }
             return {_operation == Operation::Skip ? Char{U'\n'} : Char::endOfData(), _position};
         }
-        void skip(el::unit::CpLength) override {
+        void skip(el::unit::CpCount) override {
             if (_operation == Operation::Skip) {
                 throwEncodingError();
             }
@@ -135,7 +135,7 @@ public:
 
     void testSkipBeyondEnd() {
         TestInput input{{Char{U'A'}}};
-        input.skip(el::unit::CpLength{10U});
+        input.skip(el::unit::CpCount{10U});
         REQUIRE(input.peek().character.isEndOfData());
         REQUIRE(input.read().character.isEndOfData());
     }

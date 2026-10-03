@@ -9,6 +9,7 @@
 #include <optional>
 
 namespace erbsland::data::xml {
+
 /// An ordered XML attribute with preserved references from parsed input.
 /// @tested{XmlDocumentTest}
 class XmlAttribute final {
@@ -31,4 +32,5 @@ private:                        // data
     text::String _value;        ///< Plain value or parsed value with references.
     bool _hasReferences{false}; ///< Parsed references are preserved.
 };
+
 }

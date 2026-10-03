@@ -3,6 +3,7 @@
 #include "TlsServerConnection.hpp"
 
 #include "../../../../err/Exception.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/Literals.hpp"
 
@@ -66,28 +67,32 @@ void TlsServerConnection::handleTransportConnected() {
     }
     try {
         _startProtocol(*_protocol);
-    } catch (const err::Exception &error) {
+    } catch (const err::RuntimeError &error) {
         finishFailed(
             NetworkErrorContext{"TLS handshake failed"_el, error.reason()}
-                .setReason(NetworkErrorReason::TlsInternalFailure)
-                .setPhase(NetworkErrorPhase::Handshaking));
-        return;
-    } catch (...) {
-        finishFailed(
-            NetworkErrorContext{"TLS handshake failed"_el, "TLS protocol initialization failed."_el}
                 .setReason(NetworkErrorReason::TlsInternalFailure)
                 .setPhase(NetworkErrorPhase::Handshaking));
         return;
     }
     const auto generation = ++_handshakeTimerGeneration;
     const auto deadline = time::TimePoint::now() + _options.handshakeTimeout();
+    _handshakeDeadline = deadline;
     const auto weakSelf =
         std::weak_ptr<TlsServerConnection>{std::static_pointer_cast<TlsServerConnection>(shared_from_this())};
-    ownerEvents()->invokeAfter(_options.handshakeTimeout(), [weakSelf, generation, deadline]() -> void {
-        if (const auto self = weakSelf.lock(); self != nullptr) {
-            self->handleHandshakeTimeout(generation, deadline);
-        }
-    });
+    try {
+        _handshakeTimer = event::impl::EventContinuation::create(ownerEvents());
+        _handshakeTimer->invokeAfter(_options.handshakeTimeout(), [weakSelf, generation, deadline]() -> void {
+            if (const auto self = weakSelf.lock(); self != nullptr) {
+                self->handleHandshakeTimeout(generation, deadline);
+            }
+        });
+    } catch (const err::RuntimeError &error) {
+        finishFailed(
+            NetworkErrorContext{"TLS deadline admission failed"_el, error.reason()}
+                .setReason(NetworkErrorReason::ResourceLimitExceeded)
+                .setPhase(NetworkErrorPhase::Handshaking));
+        return;
+    }
     assessProtocolState();
 }
 
@@ -100,13 +105,7 @@ void TlsServerConnection::handleTransportData(mem::ByteBlock data) {
         return;
     }
     _protocol->feedTransport(data.span());
-    serviceCheckpoints();
-    if (!canContinue()) {
-        return;
-    }
-    pumpTransportOutput();
-    drainApplicationInput();
-    assessProtocolState();
+    continueProtocol();
 }
 
 void TlsServerConnection::handleTransportWritable() {
@@ -174,17 +173,48 @@ void TlsServerConnection::handleTransportFinal() {
     }
 }
 
+auto TlsServerConnection::acceptBackgroundResult(const std::uint64_t generation) -> bool {
+    if (generation != _backgroundGeneration || !canContinue() || _state.load() != ConnectionState::Handshaking ||
+        _protocol == nullptr) {
+        return false;
+    }
+    _backgroundOperation.cancel();
+    if (time::TimePoint::now() >= _handshakeDeadline) {
+        handleHandshakeTimeout(_handshakeTimerGeneration, _handshakeDeadline);
+        return false;
+    }
+    return true;
+}
+
+void TlsServerConnection::continueProtocol() {
+    serviceCheckpoints();
+    if (!canContinue()) {
+        return;
+    }
+    pumpTransportOutput();
+    drainApplicationInput();
+    assessProtocolState();
+}
+
 void TlsServerConnection::serviceCheckpoints() {
     while (canContinue() && _protocol != nullptr && _protocol->hasCheckpoint()) {
         auto callback = NetworkEventFn{};
         switch (_protocol->checkpoint()) {
         case TlsServerProtocolCheckpoint::None:
             return;
+        case TlsServerProtocolCheckpoint::CertificateValidation:
+            startBackgroundOperation(
+                *_protocol->pendingCertificateValidation(), &TlsServerProtocol::completeCertificateValidation);
+            return;
+        case TlsServerProtocolCheckpoint::Signature:
+            startBackgroundOperation(*_protocol->pendingSignature(), &TlsServerProtocol::completeSignature);
+            return;
         case TlsServerProtocolCheckpoint::ClientHello:
             callback = _onClientHello;
             break;
         case TlsServerProtocolCheckpoint::HandshakeCompleted:
             _state.store(ConnectionState::Active);
+            cancelHandshakeTimer();
             ++_handshakeTimerGeneration;
             _handshakeLease.release();
             recordApplicationActivity();

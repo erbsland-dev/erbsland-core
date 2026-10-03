@@ -40,7 +40,7 @@ namespace erbsland::text {
 /// The set stores up to two ranges inline and uses copy-on-write storage for larger sets. Invalid characters are
 /// ignored.
 /// @seedoc{/reference/text/characters}
-/// @tested{CharSetTest}
+/// @tested{CharSetTest CharSetConstructionTest}
 class CharSet final {
     friend class impl::CharSetRangeBuilder;
 
@@ -70,15 +70,36 @@ public:
     /// Create an empty character set.
     CharSet() = default;
     /// Create a character set containing one character.
-    explicit CharSet(Char character);
+    /// @param character The single character included in this set.
+    constexpr explicit CharSet(const Char character) noexcept :
+        _storage{InlineRanges{.values = {CharRange{character}, CharRange{}}}} {}
+    /// Create a character set containing one character range.
+    /// @param charRange The single character range included in this set.
+    constexpr explicit CharSet(const CharRange charRange) noexcept :
+        _storage{InlineRanges{.values = {charRange, CharRange{}}}} {}
+    /// Create a character set containing two character ranges.
+    /// @param charRange1 The first character range.
+    /// @param charRange2 The second character range.
+    constexpr explicit CharSet(const CharRange charRange1, const CharRange charRange2) noexcept :
+        _storage{normalizedInlineRanges(charRange1, charRange2)} {}
+    /// Create a character set from two or more individual characters.
+    /// @tparam tFirst The first type implicitly convertible to Char.
+    /// @tparam tSecond The second type implicitly convertible to Char.
+    /// @tparam tRest The remaining types implicitly convertible to Char.
+    /// @param first The first character.
+    /// @param second The second character.
+    /// @param rest The remaining characters.
+    template <typename tFirst, typename tSecond, typename... tRest>
+        requires(
+            std::convertible_to<tFirst, Char> && std::convertible_to<tSecond, Char> &&
+            (std::convertible_to<tRest, Char> && ...))
+    constexpr CharSet(tFirst first, tSecond second, tRest... rest);
     /// Decode a UTF-8 view tolerantly into a character set.
     explicit CharSet(const U8String &characters);
     /// Create a character set from an ordered Erbsland Core set of characters.
     explicit CharSet(const util::Set<Char> &characters);
     /// Create a character set from an Erbsland Core list of characters.
     explicit CharSet(const util::List<Char> &characters);
-    /// Create a character set from a list of characters.
-    CharSet(std::initializer_list<Char> characters);
 
     // defaults
     ~CharSet();
@@ -106,6 +127,8 @@ public: // operators
     auto operator-(const CharSet &other) const -> CharSet { return subtractedBy(other); }
     /// Return the symmetric difference of two character sets.
     auto operator^(const CharSet &other) const -> CharSet { return symmetricDifferenceWith(other); }
+    /// Return all Unicode scalar values outside this set.
+    [[nodiscard]] auto operator~() const -> CharSet { return inverted(); }
     /// Add another set to this set.
     auto operator|=(const CharSet &other) -> CharSet &;
     /// Intersect this set with another set.
@@ -149,6 +172,9 @@ public: // accessors
     [[nodiscard]] auto subtractedBy(const CharSet &other) const -> CharSet;
     /// Create the symmetric difference of this set and another set.
     [[nodiscard]] auto symmetricDifferenceWith(const CharSet &other) const -> CharSet;
+    /// Return all Unicode scalar values outside this set, excluding surrogate code points.
+    /// @return The complement of this set in U+0000 through U+10FFFF.
+    [[nodiscard]] auto inverted() const -> CharSet;
 
 public: // modification
     /// Add another set to this set.
@@ -197,6 +223,10 @@ public: // conversion
     [[nodiscard]] auto toList() const -> util::List<Char>;
 
 public: // factory methods
+    /// Create a normalized character set from an initializer list.
+    /// @param characters The characters to include; duplicates and invalid code points are ignored.
+    /// @return The normalized character set.
+    [[nodiscard]] static auto fromCharacters(std::initializer_list<Char> characters) -> CharSet;
     /// Create a character set containing one character range.
     [[nodiscard]] static auto fromRange(Char from, Char to) -> CharSet;
     /// Create a character set from an ASCII-only category.
@@ -207,6 +237,7 @@ public: // factory methods
     /// @overload
     [[nodiscard]] static auto from(UnicodeCategoryGroup categoryGroup) -> CharSet;
     /// Create a character set from a regexp like pattern.
+    /// A leading `^` inverts the set; any subsequent caret is literal.
     /// The hypen character in the pattern defines ranges in the form `<first>-<last>`.
     /// The code point of `<first>` must be before `<last>`.
     /// The hypen character at the beginning or end of the pattern is treated as a literal character.
@@ -221,6 +252,23 @@ public: // factory methods
     [[nodiscard]] static auto fromPattern(const U32String &pattern) -> CharSet;
 
 private:
+    /// Order and merge two ranges into normalized inline storage.
+    [[nodiscard]] static constexpr auto normalizedInlineRanges(CharRange first, CharRange second) noexcept
+        -> InlineRanges {
+        if (first.isEmpty()) {
+            return InlineRanges{.values = {second, CharRange{}}};
+        }
+        if (second.isEmpty()) {
+            return InlineRanges{.values = {first, CharRange{}}};
+        }
+        if (first.canMergeWith(second)) {
+            return InlineRanges{.values = {first.mergedWith(second), CharRange{}}};
+        }
+        if (second.from() < first.from()) {
+            return InlineRanges{.values = {second, first}};
+        }
+        return InlineRanges{.values = {first, second}};
+    }
     /// Invoke a character- or range-iteration callback.
     template <typename Function, typename Value>
     [[nodiscard]] static auto processForEach(Function &function, Value &&value) -> util::LoopStatus;

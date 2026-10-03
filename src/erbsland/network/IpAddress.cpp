@@ -12,8 +12,9 @@
 #include "../text/ReadNumberStatus.hpp"
 #include "../text/StringCharReader.hpp"
 #include "../text/StringEditor.hpp"
+#include "../text/StringJoins.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 #include "../util/HashHelper.hpp"
 
 #include <algorithm>
@@ -21,6 +22,7 @@
 
 namespace erbsland::network {
 
+using namespace mem;
 using namespace unit;
 using namespace text;
 using namespace text::literals;
@@ -38,14 +40,13 @@ auto IpAddress::formatV4(const Bytes &bytes, const std::size_t offset) -> String
 
 auto IpAddress::isV4Mapped(const Bytes &bytes) noexcept -> bool {
     const auto span = bytes.span();
-    return std::all_of(
-               span.begin(), span.begin() + 10, [](const mem::Byte value) -> bool { return value == mem::Byte{}; }) &&
-        bytes.get(ByteIndex{10U}) == mem::Byte{0xffU} && bytes.get(ByteIndex{11U}) == mem::Byte{0xffU};
+    return std::all_of(span.begin(), span.begin() + 10, [](const Byte value) -> bool { return value == Byte{}; }) &&
+        bytes.get(ByteIndex{10U}) == Byte{0xffU} && bytes.get(ByteIndex{11U}) == Byte{0xffU};
 }
 
 auto IpAddress::formatV6(const Bytes &bytes) -> String {
     if (isV4Mapped(bytes)) {
-        return String::fromJoined({"::ffff:"_el, formatV4(bytes, 12U)});
+        return text::join("::ffff:"_el, formatV4(bytes, 12U));
     }
     auto words = std::array<uint16_t, 8>{};
     for (auto index = std::size_t{0}; index < words.size(); ++index) {
@@ -88,16 +89,16 @@ auto IpAddress::formatV6(const Bytes &bytes) -> String {
 
 auto IpAddress::parseV4(StringCharReader &reader, V4Bytes &bytes) noexcept -> bool {
     auto options = IntegerParseOptions{};
-    options.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpLength::one()).setMaximumDigits(CpLength{3U});
+    options.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpCount::one()).setMaximumDigits(CpCount{3U});
 
     for (auto index = std::size_t{0}; index < 4U; ++index) {
         const auto firstCharacter = reader.peek();
         const auto value = reader.parseInteger(options);
         if (value.status != ReadNumberStatus::Success || value.value > 255U ||
-            (value.digitCount > CpLength::one() && firstCharacter == U'0')) {
+            (value.digitCount > CpCount::one() && firstCharacter == U'0')) {
             return false;
         }
-        bytes.set(ByteIndex::fromSizeT(index), mem::Byte::fromUInt8(static_cast<uint8_t>(value.value)));
+        bytes.set(ByteIndex::fromSizeT(index), Byte::fromUInt8(static_cast<uint8_t>(value.value)));
         if (index < 3U) {
             if (!reader.advanceIf(U'.')) {
                 return false;
@@ -111,7 +112,7 @@ auto IpAddress::parseV4(StringCharReader &reader, V4Bytes &bytes) noexcept -> bo
 
 auto IpAddress::parseV6(StringCharReader &reader, Bytes &bytes) noexcept -> bool {
     auto options = IntegerParseOptions{};
-    options.setFixedBase(IntegerBase::Hexadecimal).setMinimumDigits(CpLength::one()).setMaximumDigits(CpLength{4U});
+    options.setFixedBase(IntegerBase::Hexadecimal).setMinimumDigits(CpCount::one()).setMaximumDigits(CpCount{4U});
 
     auto words = std::array<uint16_t, 8>{};
     auto wordCount = std::size_t{};
@@ -174,8 +175,8 @@ auto IpAddress::parseV6(StringCharReader &reader, Bytes &bytes) noexcept -> bool
         } else if (destination >= *compressionIndex + compressedWordCount) {
             word = words[destination - compressedWordCount];
         }
-        bytes.set(ByteIndex::fromSizeT(destination * 2U), mem::Byte::fromCroppedUInt16(word >> 8U));
-        bytes.set(ByteIndex::fromSizeT(destination * 2U + 1U), mem::Byte::fromCroppedUInt16(word));
+        bytes.set(ByteIndex::fromSizeT(destination * 2U), Byte::fromCroppedUInt16(word >> 8U));
+        bytes.set(ByteIndex::fromSizeT(destination * 2U + 1U), Byte::fromCroppedUInt16(word));
     }
     return true;
 }
@@ -183,18 +184,18 @@ auto IpAddress::parseV6(StringCharReader &reader, Bytes &bytes) noexcept -> bool
 auto IpAddress::isAny() const noexcept -> bool {
     const auto span = _bytes.span();
     const auto length = isV4() ? 4U : span.size();
-    return std::all_of(span.begin(), span.begin() + static_cast<std::ptrdiff_t>(length), [](const mem::Byte value) {
-        return value == mem::Byte{};
+    return std::all_of(span.begin(), span.begin() + static_cast<std::ptrdiff_t>(length), [](const Byte value) {
+        return value == Byte{};
     });
 }
 
 auto IpAddress::isLoopback() const noexcept -> bool {
     if (isV4()) {
-        return _bytes.get(ByteIndex::zero()) == mem::Byte{127U};
+        return _bytes.get(ByteIndex::zero()) == Byte{127U};
     }
     const auto span = _bytes.span();
-    return std::all_of(span.begin(), span.end() - 1, [](const mem::Byte value) { return value == mem::Byte{}; }) &&
-        _bytes.get(ByteIndex{15U}) == mem::Byte{1U};
+    return std::all_of(span.begin(), span.end() - 1, [](const Byte value) { return value == Byte{}; }) &&
+        _bytes.get(ByteIndex{15U}) == Byte{1U};
 }
 
 auto IpAddress::toString() const -> String {
@@ -238,7 +239,7 @@ auto IpAddress::fromStringOrThrow(const String &text) -> IpAddress {
 
 auto IpAddress::fromBytes(const IpVersion version, Bytes bytes) noexcept -> IpAddress {
     if (version == IpVersion::V4) {
-        bytes.fill(ByteRange{ByteIndex{4U}, ByteLength::infinite()}, {});
+        bytes.fill(ByteRange{ByteIndex{4U}, ByteCount::infinite()}, {});
     }
     return IpAddress{version, bytes};
 }
@@ -253,14 +254,14 @@ auto IpAddress::anyV6() noexcept -> IpAddress {
 
 auto IpAddress::loopbackV4() noexcept -> IpAddress {
     auto bytes = Bytes{};
-    bytes.set(ByteIndex{0U}, mem::Byte{127U});
-    bytes.set(ByteIndex{3U}, mem::Byte{1U});
+    bytes.set(ByteIndex{0U}, Byte{127U});
+    bytes.set(ByteIndex{3U}, Byte{1U});
     return IpAddress{IpVersion::V4, bytes};
 }
 
 auto IpAddress::loopbackV6() noexcept -> IpAddress {
     auto bytes = Bytes{};
-    bytes.set(ByteIndex{15U}, mem::Byte{1U});
+    bytes.set(ByteIndex{15U}, Byte{1U});
     return IpAddress{IpVersion::V6, bytes};
 }
 

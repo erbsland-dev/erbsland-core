@@ -13,5 +13,8 @@ add_subdirectory(parser)
 add_subdirectory(text)
 
 target_sources(erbsland-core PRIVATE
+        CachedMatches.hpp
         Limits.hpp
+        RegExCache.cpp
+        RegExCache.hpp
 )

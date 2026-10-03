@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "OptionParser.hpp"
 
+#include "AsciiOptionText.hpp"
+#include "HelpName.hpp"
 #include "OptionDisplayModel.hpp"
+#include "OptionLiterals.hpp"
 #include "OptionSuggestion.hpp"
 
 #include "../Option.hpp"
@@ -14,12 +17,15 @@
 #include "../OptionSet.hpp"
 #include "../OptionType.hpp"
 
+#include "../../i18n/DisplayText.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringFormat.hpp"
 #include "../../unit/ByteUnit.hpp"
 
 namespace erbsland::options::impl {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 auto OptionParser::collectActiveOptionSets() -> std::vector<OptionSetPtr> {
@@ -49,7 +55,7 @@ auto OptionParser::collectActiveOptionSets() -> std::vector<OptionSetPtr> {
     return result;
 }
 
-auto OptionParser::findModule(const text::String &name) const -> OptionModulePtr {
+auto OptionParser::findModule(const String &name) const -> OptionModulePtr {
     if (_options == nullptr) {
         return {};
     }
@@ -61,7 +67,7 @@ auto OptionParser::findModule(const text::String &name) const -> OptionModulePtr
     return {};
 }
 
-auto OptionParser::findLongOption(const text::String &name) const -> NameMatch {
+auto OptionParser::findLongOption(const String &name) const -> NameMatch {
     auto result = NameMatch{};
     for (const auto &optionSet : _activeOptionSets) {
         for (const auto &option : optionSet->options()) {
@@ -81,7 +87,7 @@ auto OptionParser::findLongOption(const text::String &name) const -> NameMatch {
     return result;
 }
 
-auto OptionParser::findShortOption(const text::Char shortName) const -> NameMatch {
+auto OptionParser::findShortOption(const Char shortName) const -> NameMatch {
     auto result = NameMatch{};
     for (const auto &optionSet : _activeOptionSets) {
         for (const auto &option : optionSet->options()) {
@@ -101,8 +107,8 @@ auto OptionParser::findShortOption(const text::Char shortName) const -> NameMatc
     return result;
 }
 
-auto OptionParser::suggestLongOptions(const text::String &name) const -> text::StringList {
-    auto candidates = text::StringList{};
+auto OptionParser::suggestLongOptions(const String &name) const -> StringList {
+    auto candidates = StringList{};
     for (const auto &optionSet : _activeOptionSets) {
         if (optionSet == nullptr || optionSet->flags().isSet(OptionFlag::Disabled) ||
             optionSet->help().visibility() == OptionHelpVisibility::Hidden) {
@@ -124,8 +130,8 @@ auto OptionParser::suggestLongOptions(const text::String &name) const -> text::S
     return findOptionSuggestions(name, candidates);
 }
 
-auto OptionParser::suggestModules(const text::String &name) const -> text::StringList {
-    auto candidates = text::StringList{};
+auto OptionParser::suggestModules(const String &name) const -> StringList {
+    auto candidates = StringList{};
     if (_options != nullptr) {
         for (const auto &module : _options->optionModules()) {
             if (module != nullptr && module->help().visibility() != OptionHelpVisibility::Hidden) {
@@ -143,16 +149,16 @@ auto OptionParser::isEnabledBuiltInOption(const OptionSetPtr &optionSet, const O
     if (option == nullptr || option->isDisabled()) {
         return false;
     }
-    if (option->hasLongName("--help"_el)) {
+    if (option->hasLongName(option_literal::cHelpLongName)) {
         return !_options->parserFlags().isSet(OptionParserFlag::DisableHelp);
     }
-    if (option->hasLongName("--version"_el)) {
+    if (option->hasLongName(option_literal::cVersionLongName)) {
         return !_options->parserFlags().isSet(OptionParserFlag::DisableVersion);
     }
     return true;
 }
 
-auto OptionParser::isEnabledBuiltInOptionName(const text::String &name) const -> bool {
+auto OptionParser::isEnabledBuiltInOptionName(const String &name) const -> bool {
     if (_options == nullptr) {
         return false;
     }
@@ -173,7 +179,7 @@ auto OptionParser::isEnabledBuiltInOptionName(const text::String &name) const ->
     return false;
 }
 
-auto OptionParser::parseBooleanLiteral(const text::String &text, bool &value) noexcept -> bool {
+auto OptionParser::parseBooleanLiteral(const String &text, bool &value) noexcept -> bool {
     const auto falseDefault = text.toBoolean(false);
     const auto trueDefault = text.toBoolean(true);
     if (falseDefault != trueDefault) {
@@ -183,11 +189,44 @@ auto OptionParser::parseBooleanLiteral(const text::String &text, bool &value) no
     return true;
 }
 
-auto OptionParser::builtInFlagAt(const unit::ArgumentIndex index) const -> std::optional<BuiltInFlagMatch> {
+auto OptionParser::validateHelpNames() -> bool {
+    for (auto index = ArgumentIndex::one(); isIndexInArgs(index); ++index) {
+        const auto argument = getArgAt(index);
+        if (argument == option_literal::cEndOfOptions) {
+            break;
+        }
+        const auto match = builtInFlagAt(index);
+        if (!match.has_value() || match->status != OptionResultStatus::DisplayHelp) {
+            continue;
+        }
+        const auto parts = argument.splitAtFirst(option_literal::cValueSeparator);
+        if (!parts || normalizeOptionName(parts->first) != option_literal::cHelpLongName) {
+            continue;
+        }
+        const auto &helpName = parts->second;
+        if (isValidHelpName(helpName)) {
+            continue;
+        }
+        _omitErrorArguments = true;
+        return makeError(
+            OptionErrorReason::SyntaxError,
+            i18n::displayText("options.malformed_help_name_title"_el),
+            i18n::displayText("options.malformed_help_name_description"_el),
+            index);
+    }
+    return true;
+}
+
+auto OptionParser::builtInFlagAt(const ArgumentIndex index) const -> std::optional<BuiltInFlagMatch> {
     const auto argument = getArgAt(index);
-    const auto equalsIndex = argument.find("="_el);
-    const auto name = argument.slice({unit::ByteIndex::zero(), equalsIndex});
-    if (name != "-h"_el && name != "--help"_el && name != "--version"_el) {
+    const auto parts = argument.splitAtFirst(option_literal::cValueSeparator);
+    auto rawName = argument;
+    if (parts) {
+        rawName = parts->first;
+    }
+    const auto name = normalizeOptionName(rawName);
+    if (name != option_literal::cHelpShortName && name != option_literal::cHelpLongName &&
+        name != option_literal::cVersionLongName) {
         return {};
     }
     if (!isEnabledBuiltInOptionName(name)) {
@@ -195,33 +234,35 @@ auto OptionParser::builtInFlagAt(const unit::ArgumentIndex index) const -> std::
     }
 
     auto result = BuiltInFlagMatch{
-        name == "--version"_el ? OptionResultStatus::DisplayVersion : OptionResultStatus::DisplayHelp, {}, true};
-    if (equalsIndex.isNoIndex()) {
+        name == option_literal::cVersionLongName ? OptionResultStatus::DisplayVersion : OptionResultStatus::DisplayHelp,
+        {},
+        true};
+    if (!parts) {
         return result;
     }
-    if (name == "--version"_el || name == "-h"_el ||
+    if (name == option_literal::cVersionLongName || name == option_literal::cHelpShortName ||
         (_options != nullptr && _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails))) {
         result.validValue = false;
         return result;
     }
-    result.helpName = argument.slice({equalsIndex.incremented(), unit::ByteLength::infinite()});
+    result.helpName = normalizeHelpName(parts->second);
     return result;
 }
 
 auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status) -> bool {
-    return isHelpOrVersionRequest(status, unit::ArgumentIndex::one());
+    return isHelpOrVersionRequest(status, ArgumentIndex::one());
 }
 
-auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status, const unit::ArgumentIndex startIndex) -> bool {
+auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status, const ArgumentIndex startIndex) -> bool {
     auto helpCount = std::size_t{0};
     auto versionCount = std::size_t{0};
     auto requestedStatus = std::optional<OptionResultStatus>{};
-    auto requestedHelpName = text::String{};
+    auto requestedHelpName = String{};
     auto invalidSyntax = false;
     auto index = startIndex;
     while (isIndexInArgs(index)) {
         const auto &argument = getArgAt(index);
-        if (argument == "--"_el) {
+        if (argument == option_literal::cEndOfOptions) {
             break;
         }
         if (const auto match = builtInFlagAt(index)) {
@@ -252,76 +293,75 @@ auto OptionParser::validateOptionNames() -> bool {
             if (!option->hasValidOptionNames()) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Invalid option definition"_el,
-                    text::StringFormat{"{} contains one or more malformed option names."}.build(
-                        OptionDisplayModel::optionTitle(option)),
-                    unit::ArgumentIndex::noIndex(),
+                    i18n::displayText("options.invalid_option_definition_title"_el),
+                    i18n::displayFormat("options.malformed_option_names_description"_el)
+                        .build(OptionDisplayModel::optionTitle(option)),
+                    ArgumentIndex::noIndex(),
                     option);
             }
             if (option->isPositionalArgument() && option->type() == OptionType::Flag) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Invalid option definition"_el,
-                    text::StringFormat{"{} is positional, but positional arguments cannot be flags."}.build(
-                        OptionDisplayModel::optionTitle(option)),
-                    unit::ArgumentIndex::noIndex(),
+                    i18n::displayText("options.invalid_option_definition_title"_el),
+                    i18n::displayFormat("options.positional_flag_definition_description"_el)
+                        .build(OptionDisplayModel::optionTitle(option)),
+                    ArgumentIndex::noIndex(),
                     option);
             }
             if (option->type() == OptionType::Flag && option->hasDefaultValue()) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Invalid option definition"_el,
-                    text::StringFormat{"{} is a flag and cannot define a default value."}.build(
-                        OptionDisplayModel::optionTitle(option)),
-                    unit::ArgumentIndex::noIndex(),
+                    i18n::displayText("options.invalid_option_definition_title"_el),
+                    i18n::displayFormat("options.flag_default_value_description"_el)
+                        .build(OptionDisplayModel::optionTitle(option)),
+                    ArgumentIndex::noIndex(),
                     option);
             }
             if (option->type() != OptionType::Flag && option->flags().isSet(OptionFlag::AcceptAsFlag) &&
                 (option->isPositionalArgument() || !option->maximum().isOne())) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Invalid option definition"_el,
-                    text::StringFormat{
-                        "{} accepts flag-form use and must be named, non-positional, and accept exactly one value."}
+                    i18n::displayText("options.invalid_option_definition_title"_el),
+                    i18n::displayFormat("options.invalid_flag_form_definition_description"_el)
                         .build(OptionDisplayModel::optionTitle(option)),
-                    unit::ArgumentIndex::noIndex(),
+                    ArgumentIndex::noIndex(),
                     option);
             }
             if (option->choices() != nullptr && option->type() != OptionType::Choice) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Invalid option definition"_el,
-                    text::StringFormat{"{} defines choices, but its type is not OptionType::Choice."}.build(
-                        OptionDisplayModel::optionTitle(option)),
-                    unit::ArgumentIndex::noIndex(),
+                    i18n::displayText("options.invalid_option_definition_title"_el),
+                    i18n::displayFormat("options.choice_type_mismatch_description"_el)
+                        .build(OptionDisplayModel::optionTitle(option)),
+                    ArgumentIndex::noIndex(),
                     option);
             }
             if (option->type() == OptionType::Choice &&
                 (option->choices() == nullptr || option->choices()->choiceCount().isZero())) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Invalid option definition"_el,
-                    text::StringFormat{"{} is a choice option, but it has no accepted choices."}.build(
-                        OptionDisplayModel::optionTitle(option)),
-                    unit::ArgumentIndex::noIndex(),
+                    i18n::displayText("options.invalid_option_definition_title"_el),
+                    i18n::displayFormat("options.missing_choice_definitions_description"_el)
+                        .build(OptionDisplayModel::optionTitle(option)),
+                    ArgumentIndex::noIndex(),
                     option);
             }
             if (option->type() == OptionType::SensitiveText && !option->maximum().isOne()) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Invalid option definition"_el,
-                    text::StringFormat{"{} is sensitive text and must accept exactly one value."}.build(
-                        OptionDisplayModel::optionTitle(option)),
-                    unit::ArgumentIndex::noIndex(),
+                    i18n::displayText("options.invalid_option_definition_title"_el),
+                    i18n::displayFormat("options.sensitive_option_definition_description"_el)
+                        .build(OptionDisplayModel::optionTitle(option)),
+                    ArgumentIndex::noIndex(),
                     option);
             }
             if (option->type() == OptionType::SensitiveText && option->hasDefaultValue()) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Invalid option definition"_el,
-                    text::StringFormat{"{} is sensitive text and cannot define a default value."}.build(
-                        OptionDisplayModel::optionTitle(option)),
-                    unit::ArgumentIndex::noIndex(),
+                    i18n::displayText("options.invalid_option_definition_title"_el),
+                    i18n::displayFormat("options.sensitive_default_value_description"_el)
+                        .build(OptionDisplayModel::optionTitle(option)),
+                    ArgumentIndex::noIndex(),
                     option);
             }
             for (const auto &otherSet : _activeOptionSets) {
@@ -333,10 +373,10 @@ auto OptionParser::validateOptionNames() -> bool {
                     if (option->hasConflictingOptionName(*otherOption)) {
                         return makeError(
                             OptionErrorReason::SyntaxError,
-                            "Duplicate option name"_el,
-                            text::StringFormat{"{} conflicts with another active option definition."}.build(
-                                OptionDisplayModel::optionTitle(option)),
-                            unit::ArgumentIndex::noIndex(),
+                            i18n::displayText("options.duplicate_option_name_title"_el),
+                            i18n::displayFormat("options.duplicate_option_name_description"_el)
+                                .build(OptionDisplayModel::optionTitle(option)),
+                            ArgumentIndex::noIndex(),
                             option);
                     }
                 }
@@ -346,15 +386,15 @@ auto OptionParser::validateOptionNames() -> bool {
     return true;
 }
 
-auto OptionParser::isIndexInArgs(const unit::ArgumentIndex index) const -> bool {
+auto OptionParser::isIndexInArgs(const ArgumentIndex index) const -> bool {
     return index.toSizeT() < _args.count().toSizeT();
 }
 
-auto OptionParser::getArgAt(const unit::ArgumentIndex index) const -> text::String {
+auto OptionParser::getArgAt(const ArgumentIndex index) const -> String {
     if (!isIndexInArgs(index)) {
         return {};
     }
-    return _args.get(unit::ItemIndex::fromSizeT(index.toSizeT()));
+    return _args.get(ItemIndex::fromSizeT(index.toSizeT()));
 }
 
 }

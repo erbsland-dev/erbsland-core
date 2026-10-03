@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "BuiltInFilters.hpp"
 
+#include "BuiltInFilterError.hpp"
 #include "ValueComparison.hpp"
 
 #include "../Value.hpp"
@@ -9,48 +10,51 @@
 #include "../../../data/json/JsonContainers.hpp"
 #include "../../../data/json/JsonFormatOptions.hpp"
 #include "../../../data/json/JsonValue.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../math/SaturatingMath.hpp"
-#include "../../../text/CharSet.hpp"
-#include "../../../text/Literals.hpp"
-#include "../../../text/StringEditor.hpp"
-#include "../../../text/StringList.hpp"
-#include "../../../text/StringSide.hpp"
+#include "../../../unit/ItemCount.hpp"
+#include "../../CharSet.hpp"
+#include "../../Literals.hpp"
+#include "../../StringEditor.hpp"
+#include "../../StringList.hpp"
+#include "../../StringSide.hpp"
+#include "../../StringTransformations.hpp"
 
 #include <cmath>
 
 namespace erbsland::text::render::impl::built_in_filters {
 
+using namespace unit;
 using namespace text::literals;
 
 void requireArity(const ValueList &arguments, const std::size_t minimum, const std::size_t maximum) {
     const auto count = arguments.count().toSizeT();
     if (count < minimum || count > maximum) {
-        throw err::ParameterError{"The built-in filter received an invalid number of arguments."_el, "arguments"_el};
+        throwInputError("The built-in filter received an invalid number of arguments."_el);
     }
 }
 
 auto argument(const ValueList &arguments, const std::size_t index) -> const Value & {
-    return arguments.getRefOrThrow(unit::ItemIndex::fromSizeT(index));
+    return arguments.getRefOrThrow(ItemIndex::fromSizeT(index));
 }
 
 auto list(const Value &value) -> const ValueList & {
     if (value.isList()) {
         return value.asList();
     }
-    throw err::ParameterError{"The built-in filter requires a list value."_el, "value"_el};
+    throwInputError("The built-in filter requires a list value."_el);
 }
 
 auto map(const Value &value) -> const ValueMap & {
     if (value.isMap()) {
         return value.asMap();
     }
-    throw err::ParameterError{"The built-in filter requires a map value."_el, "value"_el};
+    throwInputError("The built-in filter requires a map value."_el);
 }
 
 auto scalarText(const Value &value) -> String {
     if (value.isList() || value.isMap() || value.isCallback()) {
-        throw err::ParameterError{"The built-in filter requires a scalar value."_el, "value"_el};
+        throwInputError("The built-in filter requires a scalar value."_el);
     }
     return value.toString();
 }
@@ -63,9 +67,9 @@ auto less(const Value &left, const Value &right, const bool caseSensitive) -> bo
         if (caseSensitive) {
             return left.asText() < right.asText();
         }
-        return left.asText().transformed(Char::toLowercase) < right.asText().transformed(Char::toLowercase);
+        return toLowercase(left.asText()) < toLowercase(right.asText());
     }
-    throw err::ParameterError{"The values cannot be ordered by this built-in filter."_el, "value"_el};
+    throwInputError("The values cannot be ordered by this built-in filter."_el);
 }
 
 auto toJson(const Value &value) -> data::json::JsonValue {
@@ -96,50 +100,44 @@ auto toJson(const Value &value) -> data::json::JsonValue {
         }
         return data::json::JsonValue{std::move(result)};
     }
-    throw err::ParameterError{"Callbacks cannot be converted to JSON."_el, "value"_el};
+    throwInputError("Callbacks cannot be converted to JSON."_el);
 }
 
 auto capitalize(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 0U, 0U);
     if (!value.isText()) {
-        throw err::ParameterError{"The capitalize filter requires text."_el, "value"_el};
+        throwInputError("The capitalize filter requires text."_el);
     }
-    const auto text = value.asText().transformed(Char::toLowercase);
-    if (text.isEmpty()) {
-        return Value{text};
-    }
-    auto replacement = StringEditor{};
-    replacement.append(text.charAt(unit::CpIndex::zero()).toUppercase());
-    return Value{text.replaced(unit::CpRange{unit::CpIndex::zero(), unit::CpLength::one()}, String{replacement})};
+    return Value{toCapitalized(value.asText())};
 }
 
 auto lower(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 0U, 0U);
     if (!value.isText()) {
-        throw err::ParameterError{"The lower filter requires text."_el, "value"_el};
+        throwInputError("The lower filter requires text."_el);
     }
-    return Value{value.asText().transformed(Char::toLowercase)};
+    return Value{toLowercase(value.asText())};
 }
 
 auto upper(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 0U, 0U);
     if (!value.isText()) {
-        throw err::ParameterError{"The upper filter requires text."_el, "value"_el};
+        throwInputError("The upper filter requires text."_el);
     }
-    return Value{value.asText().transformed(Char::toUppercase)};
+    return Value{toUppercase(value.asText())};
 }
 
 auto trim(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 0U, 1U);
     if (!value.isText()) {
-        throw err::ParameterError{"The trim filter requires text."_el, "value"_el};
+        throwInputError("The trim filter requires text."_el);
     }
     if (arguments.isEmpty()) {
         return Value{value.asText().trimmed()};
     }
     const auto characters = argument(arguments, 0U);
     if (!characters.isText()) {
-        throw err::ParameterError{"The trim characters must be text."_el, "arguments"_el};
+        throwInputError("The trim characters must be text."_el);
     }
     return Value{value.asText().trimmed(CharSet{characters.asText()})};
 }
@@ -147,7 +145,7 @@ auto trim(const Value &value, const ValueList &arguments) -> Value {
 auto replace(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 2U, 2U);
     if (!value.isText() || !argument(arguments, 0U).isText() || !argument(arguments, 1U).isText()) {
-        throw err::ParameterError{"The replace filter requires text operands."_el, "value"_el};
+        throwInputError("The replace filter requires text operands."_el);
     }
     return Value{value.asText().replacedAll(argument(arguments, 0U).asText(), argument(arguments, 1U).asText())};
 }
@@ -155,43 +153,69 @@ auto replace(const Value &value, const ValueList &arguments) -> Value {
 auto first(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 0U, 0U);
     if (value.isList()) {
-        return list(value).get(unit::ItemIndex::zero(), Value{});
+        return list(value).get(ItemIndex::zero(), Value{});
     }
     if (value.isText()) {
-        return value.asText().isEmpty() ? Value{}
-                                        : Value{value.asText().slice(StringSide::Front, unit::CpLength::one())};
+        return value.asText().isEmpty() ? Value{} : Value{value.asText().slice(StringSide::Front, CpCount::one())};
     }
-    throw err::ParameterError{"The first filter requires a list or text."_el, "value"_el};
+    throwInputError("The first filter requires a list or text."_el);
 }
 
 auto last(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 0U, 0U);
     if (value.isList()) {
         const auto count = list(value).count().toSizeT();
-        return count == 0U ? Value{} : list(value).get(unit::ItemIndex::fromSizeT(count - 1U));
+        return count == 0U ? Value{} : list(value).get(ItemIndex::fromSizeT(count - 1U));
     }
     if (value.isText()) {
-        return value.asText().isEmpty() ? Value{}
-                                        : Value{value.asText().slice(StringSide::Back, unit::CpLength::one())};
+        return value.asText().isEmpty() ? Value{} : Value{value.asText().slice(StringSide::Back, CpCount::one())};
     }
-    throw err::ParameterError{"The last filter requires a list or text."_el, "value"_el};
+    throwInputError("The last filter requires a list or text."_el);
 }
 
 auto join(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 0U, 2U);
     const auto separator = arguments.isEmpty() ? String{} : scalarText(argument(arguments, 0U));
     auto result = StringList{};
-    const auto hasMember = arguments.count().toSizeT() == 2U;
+    const auto hasMember = arguments.count() == ItemCount{2U};
     auto member = String{};
     if (hasMember) {
         const auto memberValue = argument(arguments, 1U);
-        if (!memberValue.isText())
-            throw err::ParameterError{"The join member must be text."_el, "arguments"_el};
+        if (!memberValue.isText()) {
+            throwInputError("The join member must be text."_el);
+        }
         member = memberValue.asText();
     }
     list(value).forEach(
         [&](const Value &item) -> void { result.append(scalarText(hasMember ? item.get(member) : item)); });
     return Value{result.join(separator)};
+}
+
+auto batch(const Value &value, const ValueList &arguments) -> Value {
+    requireArity(arguments, 1U, 2U);
+    const auto &source = list(value);
+    const auto &sizeValue = argument(arguments, 0U);
+    if (!sizeValue.isInteger() || sizeValue.asInteger() <= 0) {
+        throwInputError("The batch size must be a positive integer."_el);
+    }
+    const auto batchSize = ItemCount{static_cast<uint64_t>(sizeValue.asInteger()), ItemCount::Unchecked{}};
+    const auto fill = arguments.count() == ItemCount{2U} ? argument(arguments, 1U) : Value{};
+    auto result = ValueList{};
+    auto row = ValueList{};
+    source.forEach([&](const Value &item) -> void {
+        row.append(item);
+        if (row.count() == batchSize) {
+            result.append(Value{row});
+            row = ValueList{};
+        }
+    });
+    if (!row.isEmpty()) {
+        if (!fill.isNull()) {
+            row.resize(batchSize, fill);
+        }
+        result.append(Value{row});
+    }
+    return Value{result};
 }
 
 auto length(const Value &value, const ValueList &arguments) -> Value {
@@ -202,7 +226,7 @@ auto length(const Value &value, const ValueList &arguments) -> Value {
     if (value.isList() || value.isMap()) {
         return Value{value.itemCount().toSizeT()};
     }
-    throw err::ParameterError{"The length filter requires text, a list, or a map."_el, "value"_el};
+    throwInputError("The length filter requires text, a list, or a map."_el);
 }
 
 auto reverse(const Value &value, const ValueList &arguments) -> Value {
@@ -214,13 +238,13 @@ auto reverse(const Value &value, const ValueList &arguments) -> Value {
         const auto &text = value.asText();
         auto result = StringEditor{};
         result.reserve(text.length());
-        auto index = unit::ByteIndex::end(text.length());
-        while (index > unit::ByteIndex::zero()) {
+        auto index = ByteIndex::end(text.length());
+        while (index > ByteIndex::zero()) {
             result.append(text.readCharAndRetreat(index));
         }
-        return Value{String{result}};
+        return Value{result};
     }
-    throw err::ParameterError{"The reverse filter requires text or a list."_el, "value"_el};
+    throwInputError("The reverse filter requires text or a list."_el);
 }
 
 auto sort(const Value &value, const ValueList &arguments) -> Value {
@@ -228,13 +252,15 @@ auto sort(const Value &value, const ValueList &arguments) -> Value {
     auto reverseOrder = false;
     auto caseSensitive = false;
     if (!arguments.isEmpty()) {
-        if (!argument(arguments, 0U).isBoolean())
-            throw err::ParameterError{"The sort reverse flag must be boolean."_el, "arguments"_el};
+        if (!argument(arguments, 0U).isBoolean()) {
+            throwInputError("The sort reverse flag must be boolean."_el);
+        }
         reverseOrder = argument(arguments, 0U).asBoolean();
     }
-    if (arguments.count().toSizeT() == 2U) {
-        if (!argument(arguments, 1U).isBoolean())
-            throw err::ParameterError{"The sort case flag must be boolean."_el, "arguments"_el};
+    if (arguments.count() == ItemCount{2U}) {
+        if (!argument(arguments, 1U).isBoolean()) {
+            throwInputError("The sort case flag must be boolean."_el);
+        }
         caseSensitive = argument(arguments, 1U).asBoolean();
     }
     auto result = list(value).sorted(
@@ -284,33 +310,33 @@ auto absolute(const Value &value, const ValueList &arguments) -> Value {
     if (value.isFloat()) {
         return Value{std::abs(value.asFloat())};
     }
-    throw err::ParameterError{"The abs filter requires a number."_el, "value"_el};
+    throwInputError("The abs filter requires a number."_el);
 }
 
 auto round(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 0U, 2U);
     if (!value.isInteger() && !value.isFloat()) {
-        throw err::ParameterError{"The round filter requires a number."_el, "value"_el};
+        throwInputError("The round filter requires a number."_el);
     }
     auto precision = int64_t{};
     if (!arguments.isEmpty()) {
         if (!argument(arguments, 0U).isInteger()) {
-            throw err::ParameterError{"The round precision must be an integer."_el, "arguments"_el};
+            throwInputError("The round precision must be an integer."_el);
         }
         precision = argument(arguments, 0U).asInteger();
         if (precision < -16 || precision > 16) {
-            throw err::ParameterError{"The round precision must be between -16 and 16."_el, "arguments"_el};
+            throwInputError("The round precision must be between -16 and 16."_el);
         }
     }
     auto mode = String{"common"_el};
-    if (arguments.count().toSizeT() == 2U) {
+    if (arguments.count() == ItemCount{2U}) {
         if (!argument(arguments, 1U).isText()) {
-            throw err::ParameterError{"The round mode must be text."_el, "arguments"_el};
+            throwInputError("The round mode must be text."_el);
         }
         mode = argument(arguments, 1U).asText();
     }
     if (mode != "common"_el && mode != "ceil"_el && mode != "floor"_el) {
-        throw err::ParameterError{"The round mode must be common, ceil, or floor."_el, "arguments"_el};
+        throwInputError("The round mode must be common, ceil, or floor."_el);
     }
     const auto number = value.isInteger() ? static_cast<double>(value.asInteger()) : value.asFloat();
     const auto factor = std::pow(10.0, static_cast<double>(precision));
@@ -324,11 +350,11 @@ auto sum(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 0U, 1U);
     auto result = arguments.isEmpty() ? Value{int64_t{0}} : argument(arguments, 0U);
     if (!result.isInteger() && !result.isFloat()) {
-        throw err::ParameterError{"The sum start must be numeric."_el, "arguments"_el};
+        throwInputError("The sum start must be numeric."_el);
     }
     list(value).forEach([&result](const Value &item) -> void {
         if (!item.isInteger() && !item.isFloat()) {
-            throw err::ParameterError{"The sum list must contain only numbers."_el, "value"_el};
+            throwInputError("The sum list must contain only numbers."_el);
         }
         if (result.isInteger() && item.isInteger()) {
             result = Value{math::saturatingAdd(result.asInteger(), item.asInteger())};
@@ -347,7 +373,7 @@ auto minimum(const Value &value, const ValueList &arguments) -> Value {
     if (source.isEmpty()) {
         return {};
     }
-    auto result = source.get(unit::ItemIndex::zero());
+    auto result = source.get(ItemIndex::zero());
     source.forEach([&result](const Value &item) -> void {
         if (less(item, result, true)) {
             result = item;
@@ -362,7 +388,7 @@ auto maximum(const Value &value, const ValueList &arguments) -> Value {
     if (source.isEmpty()) {
         return {};
     }
-    auto result = source.get(unit::ItemIndex::zero());
+    auto result = source.get(ItemIndex::zero());
     source.forEach([&result](const Value &item) -> void {
         if (less(result, item, true)) {
             result = item;
@@ -375,9 +401,9 @@ auto defaultValue(const Value &value, const ValueList &arguments) -> Value {
     requireArity(arguments, 0U, 2U);
     const auto replacement = arguments.isEmpty() ? Value{String{}} : argument(arguments, 0U);
     auto useFalse = false;
-    if (arguments.count().toSizeT() == 2U) {
+    if (arguments.count() == ItemCount{2U}) {
         if (!argument(arguments, 1U).isBoolean()) {
-            throw err::ParameterError{"The default false flag must be boolean."_el, "arguments"_el};
+            throwInputError("The default false flag must be boolean."_el);
         }
         useFalse = argument(arguments, 1U).asBoolean();
     }
@@ -389,17 +415,18 @@ auto toJsonText(const Value &value, const ValueList &arguments) -> Value {
     auto indentation = int64_t{};
     if (!arguments.isEmpty()) {
         if (!argument(arguments, 0U).isInteger()) {
-            throw err::ParameterError{"The JSON indentation must be an integer."_el, "arguments"_el};
+            throwInputError("The JSON indentation must be an integer."_el);
         }
         indentation = argument(arguments, 0U).asInteger();
         if (indentation < 0 || indentation > 16) {
-            throw err::ParameterError{"The JSON indentation must be between zero and 16."_el, "arguments"_el};
+            throwInputError("The JSON indentation must be between zero and 16."_el);
         }
     }
     auto options = data::json::JsonFormatOptions{};
-    options.setIndentation(unit::CpLength{static_cast<uint32_t>(indentation)});
+    options.setIndentation(CpCount{static_cast<uint32_t>(indentation), CpCount::Unchecked{}});
     return Value{toJson(value).toString(options)};
 }
+
 auto apply(const BuiltInFilter filter, const Value &value, const ValueList &arguments) -> Value {
     switch (filter) {
     case BuiltInFilter::Capitalize:
@@ -418,6 +445,8 @@ auto apply(const BuiltInFilter filter, const Value &value, const ValueList &argu
         return last(value, arguments);
     case BuiltInFilter::Join:
         return join(value, arguments);
+    case BuiltInFilter::Batch:
+        return batch(value, arguments);
     case BuiltInFilter::Length:
         return length(value, arguments);
     case BuiltInFilter::Reverse:
@@ -447,7 +476,7 @@ auto apply(const BuiltInFilter filter, const Value &value, const ValueList &argu
     case BuiltInFilter::Count:
         break;
     }
-    throw err::ParameterError{"The built-in filter identifier is invalid."_el, "filter"_el};
+    throw err::ParameterFailure{"The built-in filter identifier is invalid."_el, "filter"_el};
 }
 
 }

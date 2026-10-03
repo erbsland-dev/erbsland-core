@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteReader.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -15,8 +22,8 @@ void navigateReader() {
     auto reader = el::ByteReader{record};
 
     // Skip the marker after verifying that the complete header is present.
-    const auto hasHeader = reader.canRead(el::ByteLength{3U});
-    reader.advance(el::ByteLength{1U});
+    const auto hasHeader = reader.canRead(el::ByteCount{3U});
+    reader.advance(el::ByteCount{1U});
     const auto fieldPosition = reader.position();
 
     // A position beyond the input is safely clamped to its end.

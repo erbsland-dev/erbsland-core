@@ -59,10 +59,9 @@ end tags.
 
 .. erbsland-demo::
     :source: data/DataFormats/XmlExamples.cpp
-    :function-blocks: parseXmlDocument
-    :function-blocks-sha256: 90b01ff730063f5b89def3e70d12555888e8b4fd7531202e5f35097eeb9cd9b1
+    :show: f:parseXmlDocument
     :exec: data/data_formats --demo ParseXmlDocument
-    :source-sha256: a145738dffc0ee7977bd43f71e5b85f85645263c0897e7e4c042b1dd1b60911b
+    :sha256: e7da5cb409870769ff7927746ea633dc4bd51f4240e86d7881553567a253509a
 
 .. code-block:: cpp
 
@@ -82,12 +81,14 @@ end tags.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Root: orkester
-    Group: strygere
-    Invalid XML document
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRoot: orkester
+        Group: strygere
+        Invalid XML document␛[0m
 
 .. erbsland-demo-end::
 
@@ -107,10 +108,9 @@ The child order is the order in which each ``addElement()`` call appears.
 
 .. erbsland-demo::
     :source: data/DataFormats/XmlExamples.cpp
-    :function-blocks: buildXmlDocument
-    :function-blocks-sha256: 042165b407949ce77fcc6eb15918ef57013d4b1b8a506a547550bdb08b5cb1e0
+    :show: f:buildXmlDocument
     :exec: data/data_formats --demo BuildXmlDocument
-    :source-sha256: a145738dffc0ee7977bd43f71e5b85f85645263c0897e7e4c042b1dd1b60911b
+    :sha256: 694beaf02ba10514a4686ee2e6db4d286bc7272e8236fbbc80612ed4de43d286
 
 .. code-block:: cpp
 
@@ -127,11 +127,13 @@ The child order is the order in which each ``addElement()`` call appears.
         el::io::printLine("Instruments: "_el, group->children().count().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Groups: 1
-    Instruments: 2
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mGroups: 1
+        Instruments: 2␛[0m
 
 .. erbsland-demo-end::
 
@@ -144,10 +146,9 @@ Namespace declarations are ordinary attributes in this tree, so the example sets
 
 .. erbsland-demo::
     :source: data/DataFormats/XmlExamples.cpp
-    :function-blocks: buildXmlMarkup
-    :function-blocks-sha256: added138628d3ac825aada7b6ae8a70b88bc4636b3b74619dce1c144ae4c9cc7
+    :show: f:buildXmlMarkup
     :exec: data/data_formats --demo BuildXmlMarkup
-    :source-sha256: a145738dffc0ee7977bd43f71e5b85f85645263c0897e7e4c042b1dd1b60911b
+    :sha256: 3e33ee577ad4193375eab3845bbcd82beab3b5c8540b37379896d6461718e259
 
 .. code-block:: cpp
 
@@ -167,12 +168,14 @@ Namespace declarations are ordinary attributes in this tree, so the example sets
         el::io::printLine("Parsed root: "_el, XmlDocument::fromStringOrThrow(xml).root()->name());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    DOCTYPE written: true
-    CDATA written: true
-    Parsed root: musik:orkester
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDOCTYPE written: true
+        CDATA written: true
+        Parsed root: musik:orkester␛[0m
 
 .. erbsland-demo-end::
 
@@ -192,10 +195,9 @@ The parsed text is the original value, even though the serialized spelling is di
 
 .. erbsland-demo::
     :source: data/DataFormats/XmlExamples.cpp
-    :function-blocks: serializeXmlDocument
-    :function-blocks-sha256: 99b4e68cdf6bdb09566c924ba38b8ff8117a4118b3508a520be6856cf2d35c07
+    :show: f:serializeXmlDocument
     :exec: data/data_formats --demo SerializeXmlDocument
-    :source-sha256: a145738dffc0ee7977bd43f71e5b85f85645263c0897e7e4c042b1dd1b60911b
+    :sha256: 0e0268ae41fcebc6300a729955c7c4601f67212db06d2b7d22ee056ad8cd707b
 
 .. code-block:: cpp
 
@@ -209,17 +211,19 @@ The parsed text is the original value, even though the serialized spelling is di
         el::io::printLine("Text: "_el, XmlDocument::fromStringOrThrow(xml).root()->textContentOrThrow());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    XML: <instrument gruppe="strygere">violin &amp; bratsch</instrument>
-    Text: violin & bratsch
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mXML: <instrument gruppe="strygere">violin &amp; bratsch</instrument>
+        Text: violin & bratsch␛[0m
 
 .. erbsland-demo-end::
 
 The writer requires one root element.
 It also checks the placement of declarations and DOCTYPE nodes, XML names, characters, comments, CDATA, and processing
-instructions; invalid constructed content raises :cpp:class:`ParameterError <erbsland::err::ParameterError>`.
+instructions; invalid constructed content raises :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>`.
 A parsed document can be written again, but this is a *structural* round trip rather than a promise of byte-for-byte
 output.
 For example, the writer uses double quotes for attributes, escapes text in its own way, and writes empty elements with
@@ -288,17 +292,16 @@ It is empty when the attribute is absent or contains an unresolved reference.
 decoding references it understands and ignoring comments and processing instructions.
 If the complete text cannot be known because a reference is unresolved, it returns no value.
 Use :cpp:func:`textContentOrThrow <erbsland::data::xml::XmlNode::textContentOrThrow>` when that condition should be an
-error; it raises :cpp:class:`LogicError <erbsland::err::LogicError>`.
+error; it raises :cpp:class:`NotFoundError <erbsland::err::NotFoundError>`.
 
 This mixed-content example shows why indexing children as if they were all elements would be misleading.
 The first child is text, followed by an element, then more text.
 
 .. erbsland-demo::
     :source: data/DataFormats/XmlExamples.cpp
-    :function-blocks: inspectXmlDocument
-    :function-blocks-sha256: b3833eed555529334ec7dc540ba3a62da7859a47c1c9271516f6be6a52b268ac
+    :show: f:inspectXmlDocument
     :exec: data/data_formats --demo InspectXmlDocument
-    :source-sha256: a145738dffc0ee7977bd43f71e5b85f85645263c0897e7e4c042b1dd1b60911b
+    :sha256: d95c2bbee7b4725e2a7493576b1efd7faea15702626ebf15aef194c91afb65e5
 
 .. code-block:: cpp
 
@@ -314,13 +317,15 @@ The first child is text, followed by an element, then more text.
         el::io::printLine("All text: "_el, root->textContentOrThrow());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Group: træblæsere
-    First child is text: true
-    First instrument: fløjte
-    All text: Solo: fløjte og obo
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mGroup: træblæsere
+        First child is text: true
+        First instrument: fløjte
+        All text: Solo: fløjte og obo␛[0m
 
 .. erbsland-demo-end::
 
@@ -343,10 +348,9 @@ unresolved.
 
 .. erbsland-demo::
     :source: data/DataFormats/XmlExamples.cpp
-    :function-blocks: inspectXmlMarkup
-    :function-blocks-sha256: b8c2398431dd2890b34d295414c5f709303e83d9bdb4c86d0f54ecadfa6fb322
+    :show: f:inspectXmlMarkup
     :exec: data/data_formats --demo InspectXmlMarkup
-    :source-sha256: a145738dffc0ee7977bd43f71e5b85f85645263c0897e7e4c042b1dd1b60911b
+    :sha256: 25dc045f2bfc991b7723ccac5c63c2409ed2ee5af31096e596689746c942def1
 
 .. code-block:: cpp
 
@@ -364,23 +368,26 @@ unresolved.
         el::io::printLine("Attribute available: "_el, group->getAttribute("leder"_el).has_value());
         el::io::printLine("All text available: "_el, group->textContent().has_value());
         try {
-            (void)group->textContentOrThrow();
-        } catch (const el::err::LogicError &) {
+            auto text = group->textContentOrThrow();
+            el::io::printLine("Group text: ", text);
+        } catch (const el::err::NotFoundError &) {
             el::io::printLine("Unresolved entity reference"_el);
         }
         el::io::printLine("DOCTYPE retained: "_el, document.toString().contains("<!DOCTYPE"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Top-level nodes: 3
-    First child is CDATA: true
-    Known text: fløjte & obo
-    Attribute available: false
-    All text available: false
-    Unresolved entity reference
-    DOCTYPE retained: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTop-level nodes: 3
+        First child is CDATA: true
+        Known text: fløjte & obo
+        Attribute available: false
+        All text available: false
+        Unresolved entity reference
+        DOCTYPE retained: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -396,40 +403,41 @@ The following example tightens each limit against the same document.
 
 .. erbsland-demo::
     :source: data/DataFormats/XmlExamples.cpp
-    :function-blocks: limitXmlInput
-    :function-blocks-sha256: e3e83ae0321df5bcc111297d230114d7e6d5f15ed555dc0735b6af77e3c2db8c
+    :show: f:limitXmlInput
     :exec: data/data_formats --demo LimitXmlInput
-    :source-sha256: a145738dffc0ee7977bd43f71e5b85f85645263c0897e7e4c042b1dd1b60911b
+    :sha256: 627b4c795fae02405a8cd8d92d27586876a12b53d80a6d02055e618dc915980e
 
 .. code-block:: cpp
 
     void limitXmlInput() {
         // Each limit rejects the same source for an independent reason.
         const auto source = "<orkester><gruppe navn=\"strygere\"><instrument>violin</instrument></gruppe></orkester>"_el;
-        const auto input = XmlParseOptions{}.setMaximumInputLength(el::ByteLength{10U});
+        const auto input = XmlParseOptions{}.setMaximumInputLength(el::ByteCount{10U});
         const auto nesting = XmlParseOptions{}.setMaximumNesting(el::ItemCount{2U});
         const auto nodes = XmlParseOptions{}.setMaximumNodeCount(el::ItemCount{2U});
-        const auto strings = XmlParseOptions{}.setMaximumStringLength(el::ByteLength{4U});
+        const auto strings = XmlParseOptions{}.setMaximumStringLength(el::ByteCount{4U});
         el::io::printLine("Input accepted: "_el, XmlDocument::fromString(source, input).has_value());
         el::io::printLine("Nesting accepted: "_el, XmlDocument::fromString(source, nesting).has_value());
         el::io::printLine("Nodes accepted: "_el, XmlDocument::fromString(source, nodes).has_value());
         el::io::printLine("Strings accepted: "_el, XmlDocument::fromString(source, strings).has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Input accepted: false
-    Nesting accepted: false
-    Nodes accepted: false
-    Strings accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInput accepted: false
+        Nesting accepted: false
+        Nodes accepted: false
+        Strings accepted: false␛[0m
 
 .. erbsland-demo-end::
 
 Maximum Input Length
 --------------------
 
-``setMaximumInputLength(ByteLength{...})`` limits the byte length of the complete source ``String`` before parsing.
+``setMaximumInputLength(ByteCount{...})`` limits the byte length of the complete source ``String`` before parsing.
 The default is 16 MiB.
 The demo's ten-byte budget rejects the whole document, regardless of the size of any individual value.
 
@@ -450,7 +458,7 @@ The demo's budget of two nodes is exhausted before parsing the nested instrument
 Maximum String Length
 ---------------------
 
-``setMaximumStringLength(ByteLength{...})`` limits each parsed name, text segment, attribute value, and other node
+``setMaximumStringLength(ByteCount{...})`` limits each parsed name, text segment, attribute value, and other node
 content separately.
 The default is 8 MiB.
 This is a per-value limit, while ``maximumInputLength`` still bounds the complete document.

@@ -3,6 +3,8 @@
 
 #include "RegExBase.hpp"
 
+#include <erbsland/StringList.hpp>
+
 using namespace el::re;
 
 /// Test if a nested atomic group works as expected.
@@ -19,7 +21,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "abc"_el, // critical case.
                 "xyz"_el,
@@ -47,7 +49,7 @@ public:
         };
         WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "abcd"_el, // critical case.
             "xyz"_el,
@@ -65,7 +67,7 @@ public:
         };
         WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             "ac"_el,
             "abb"_el,
         };

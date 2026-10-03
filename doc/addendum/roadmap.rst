@@ -2,65 +2,62 @@
 Development Stages and Versioning
 *********************************
 
-Erbsland Core is a young project and is currently in its alpha stage. This page explains how the library will mature,
-what users can expect from each development stage, and how releases are versioned.
+Erbsland Core is in beta.
+Version ``0.90.0`` is Beta 1, the first beta release.
+This page explains the development stages, the remaining work toward a stable release, and the versioning policy.
 
 Alpha Stage
 ===========
 
-During the alpha stage, our primary focus is building the public API and implementing the core functionality. A first
-implementation may be deliberately simple, even when a faster or more robust solution is already conceivable.
+During the alpha stage, our primary focus was building the public API and implementing the core functionality.
+Initial implementations allowed us to try APIs in real code before committing to their final design.
 
-This approach allows us to develop the library incrementally. Core components often depend on one another, and
-implementing them in their final form too early would either duplicate functionality or rely on assumptions that have
-not yet been tested in practice. We therefore begin with a suitable API and a minimal, dependable implementation.
+Core components depend on one another, so internal applications and demos helped reveal awkward APIs, unnecessary
+boilerplate, and recurring workarounds.
+We revised those APIs as their usage became clearer.
+Alpha releases used version numbers below ``0.90.0``.
 
-As an API gains internal users, we examine how well it works in real code. If its use feels awkward, requires
-unnecessary boilerplate, or leads to recurring workarounds, we revise it. These revisions may include significant and
-incompatible changes. Once the API has proved itself, we improve its implementation to make it faster, more robust,
-and more efficient.
+Review and Test Coverage
+========================
 
-This incremental process gives both the API and its implementation time to settle. Their quality improves through
-practical use rather than speculation.
+Review of implementation quality, security, and test coverage continues throughout beta.
+Beta status does not imply that an independent security audit has been completed.
+The cryptography implementation has been reviewed internally; an independent audit remains planned for after the first
+mature release.
 
-Alpha releases use version numbers in the ``0.x`` series. Each development iteration increases the minor version
-number. The alpha stage ends when Erbsland Core reaches its initial feature-complete state.
-
-Transition from Alpha to Beta
-=============================
-
-Once the library is initially feature-complete, we will begin a thorough review of the entire codebase. Every
-implementation will be examined to ensure that it meets our quality and security standards.
-
-The review will also cover all unit tests. Here, the main concern is completeness: important behaviour, failure modes,
-boundary conditions, and unusual inputs must all be tested. Our goal is to approach complete test coverage and include
-as many meaningful edge cases as possible. Achieving this across a library as large as Erbsland Core will be
-challenging, but it remains an important target.
-
-After the review is complete and all significant findings have been addressed, the project will enter the beta stage.
+The review also covers unit tests.
+Here, the main concern is completeness: important behaviour, failure modes, boundary conditions, and unusual inputs must
+all be tested.
+Our goal is to approach complete test coverage and include as many meaningful edge cases as possible.
+Achieving this across a library as large as Erbsland Core will be challenging, but it remains an important target.
 
 Beta Stage
 ==========
 
-During the beta stage, we will begin using Erbsland Core in commercial projects running in laboratory and test
-environments. This is an important step: real applications place far greater demands on a library than isolated tests
-and demonstrations. They reveal missing functionality, awkward APIs, unexpected interactions, and implementation
-problems that are difficult to anticipate beforehand.
+During the beta stage, we plan to use Erbsland Core in commercial projects running in laboratory and test environments.
+This is an important step: real applications place far greater demands on a library than isolated tests and
+demonstrations.
+They reveal missing functionality, awkward APIs, unexpected interactions, and implementation problems that are difficult
+to anticipate beforehand.
 
-Documentation will become another major focus. By this point, the API should be substantially more stable, allowing us
-to invest in comprehensive documentation without repeatedly rewriting or removing large sections.
+Documentation is another major focus.
+As the API becomes more stable, we can invest in comprehensive documentation without repeatedly rewriting or removing
+large sections.
 
-Beta releases will continue to use version numbers in the ``0.x`` series. The minor version number will increase when
-the public API changes.
+Beta releases start with ``0.90.0`` (Beta 1).
+The minor version number increases when there are breaking API changes; patch releases contain compatible fixes.
+There is no compatibility period for breaking changes during beta.
+Pin a tested revision and review the changelog before updating an application.
 
 The beta stage ends when the library has no known release-blocking issues and has demonstrated sufficient stability in
-real-world test environments. We will then prepare the first stable release.
+real-world test environments.
+We will then prepare the first stable release.
 
 First Stable Release
 ====================
 
-The first stable release will be version ``1.0.0``. It will provide a stable public API, robust implementations, and
-comprehensive documentation.
+The first stable release will be version ``1.0.0``.
+It will provide a stable public API, robust implementations, and comprehensive documentation.
 
 From that point onward, releases will follow semantic versioning:
 

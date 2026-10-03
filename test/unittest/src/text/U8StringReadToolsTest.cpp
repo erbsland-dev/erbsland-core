@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/text/u8/impl/U8StringComparisonTools.hpp>
 #include <erbsland/text/u8/impl/U8StringReadTools.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -20,10 +20,10 @@
 using el::text::Char;
 using el::text::CharSet;
 using el::text::EncodingMode;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteRange;
-using el::unit::CpLength;
+using el::unit::CpCount;
 using el::unit::ItemCount;
 
 namespace th = erbsland::unittest::th;
@@ -49,7 +49,7 @@ public:
         const auto tools = el::text::impl::U8StringReadTools{el::text::impl::U8StringDataView{}};
 
         REQUIRE(tools.isEmpty());
-        REQUIRE(tools.isValidUtf8());
+        REQUIRE(tools.isEncodingValid());
         REQUIRE(tools.data().empty());
         REQUIRE(tools.range().isEmpty());
         REQUIRE_EQUAL(tools.byteLength().toSizeT(), 0U);
@@ -68,7 +68,7 @@ public:
     }
 
     void testSlicedRange() {
-        const auto tools = makeTools(ByteRange{ByteIndex{2U}, ByteLength{3U}});
+        const auto tools = makeTools(ByteRange{ByteIndex{2U}, ByteCount{3U}});
 
         REQUIRE_FALSE(tools.isEmpty());
         REQUIRE_EQUAL(tools.toStdString(), std::string{"cde"});
@@ -76,13 +76,13 @@ public:
     }
 
     void testRangeLengthIsClampedToAvailableData() {
-        const auto tools = makeTools(ByteRange{ByteIndex{4U}, ByteLength{99U}});
+        const auto tools = makeTools(ByteRange{ByteIndex{4U}, ByteCount{99U}});
 
         REQUIRE_EQUAL(tools.toStdString(), std::string{"ef"});
     }
 
     void testInvalidRangeReturnsEmptyString() {
-        const auto tools = makeTools(ByteRange{ByteIndex::noIndex(), ByteLength{1U}});
+        const auto tools = makeTools(ByteRange{ByteIndex::noIndex(), ByteCount{1U}});
 
         REQUIRE_FALSE(tools.isEmpty());
         REQUIRE_EQUAL(tools.toStdString(), std::string{});
@@ -90,7 +90,7 @@ public:
     }
 
     void testRangeStartingAfterDataReturnsEmptyString() {
-        const auto tools = makeTools(ByteRange{ByteIndex{99U}, ByteLength{1U}});
+        const auto tools = makeTools(ByteRange{ByteIndex{99U}, ByteCount{1U}});
 
         REQUIRE_EQUAL(tools.toStdString(), std::string{});
     }
@@ -105,7 +105,7 @@ public:
     void testUtf8Read() {
         const auto tools = makeUtf8Tools(ByteRange::fromSizeT(cUtf8Text.size()));
 
-        REQUIRE(tools.isValidUtf8());
+        REQUIRE(tools.isEncodingValid());
         REQUIRE_EQUAL(tools.byteLength().toSizeT(), cUtf8Text.size());
         REQUIRE_EQUAL(tools.charAt(ByteIndex{0}).toRawValue(), U'A');
         REQUIRE_EQUAL(tools.charAt(ByteIndex{1}).toRawValue(), U'\u00A2');
@@ -119,7 +119,7 @@ public:
     void testInvalidUtf8Read() {
         const auto tools = makeInvalidUtf8Tools(ByteRange::fromSizeT(cInvalidUtf8Text.size()));
 
-        REQUIRE_FALSE(tools.isValidUtf8());
+        REQUIRE_FALSE(tools.isEncodingValid());
         REQUIRE(tools.charAt(ByteIndex{1}).isReplacement());
     }
 
@@ -188,17 +188,17 @@ public:
         const auto tools = makeUtf8Tools(ByteRange::fromSizeT(cUtf8Text.size()));
         auto index = ByteIndex{1};
 
-        REQUIRE_FALSE(tools.advance(index, CpLength::zero()));
+        REQUIRE_FALSE(tools.advance(index, CpCount::zero()));
         REQUIRE_EQUAL(index.toSizeT(), 1U);
 
-        REQUIRE(tools.advance(index, CpLength{2}));
+        REQUIRE(tools.advance(index, CpCount{2}));
         REQUIRE_EQUAL(index.toSizeT(), 6U);
 
-        REQUIRE(tools.advance(index, CpLength{3}));
+        REQUIRE(tools.advance(index, CpCount{3}));
         REQUIRE_EQUAL(index.toSizeT(), 10U);
 
         index = ByteIndex::zero();
-        REQUIRE(tools.advance(index, CpLength::infinite()));
+        REQUIRE(tools.advance(index, CpCount::infinite()));
         REQUIRE_EQUAL(index.toSizeT(), 10U);
 
         REQUIRE_FALSE(tools.advance(index));
@@ -221,7 +221,7 @@ public:
         auto index = ByteIndex{5};
 
         // Zero count is a documented no-op, even for an index inside a multibyte sequence.
-        REQUIRE_FALSE(tools.retreat(index, CpLength::zero()));
+        REQUIRE_FALSE(tools.retreat(index, CpCount::zero()));
         REQUIRE_EQUAL(index.toSizeT(), 5U);
 
         // From the middle of the 3-byte euro sign, retreat is documented to move back by one raw byte.
@@ -230,7 +230,7 @@ public:
 
         // Retreating two characters from the end should land on the euro sign start at byte 3.
         index = ByteIndex{10};
-        REQUIRE(tools.retreat(index, CpLength{2}));
+        REQUIRE(tools.retreat(index, CpCount{2}));
         REQUIRE_EQUAL(index.toSizeT(), 3U);
 
         // An out-of-bounds index is considered as being at the end position.
@@ -241,13 +241,13 @@ public:
 
         // Infinite retreat moves all the way to the beginning.
         index = ByteIndex{6};
-        REQUIRE(tools.retreat(index, CpLength::infinite()));
+        REQUIRE(tools.retreat(index, CpCount::infinite()));
         REQUIRE_EQUAL(index.toSizeT(), 0U);
 
         // Once we are at the beginning, another retreat must stay there and report no movement.
         REQUIRE_FALSE(tools.retreat(index));
         REQUIRE_EQUAL(index.toSizeT(), 0U);
-        REQUIRE_FALSE(tools.retreat(index, CpLength::infinite()));
+        REQUIRE_FALSE(tools.retreat(index, CpCount::infinite()));
         REQUIRE_EQUAL(index.toSizeT(), 0U);
 
         // The special no-index value is never modified by retreat.
@@ -282,15 +282,15 @@ public:
     }
 
     void testSliceRange() {
-        const auto tools = makeTools(ByteRange{ByteIndex{1U}, ByteLength{4U}});
+        const auto tools = makeTools(ByteRange{ByteIndex{1U}, ByteCount{4U}});
 
         REQUIRE_EQUAL(
-            tools.sliceRange(ByteRange{ByteIndex{1U}, ByteLength{2U}}), (ByteRange{ByteIndex{2U}, ByteLength{2U}}));
+            tools.sliceRange(ByteRange{ByteIndex{1U}, ByteCount{2U}}), (ByteRange{ByteIndex{2U}, ByteCount{2U}}));
         REQUIRE_EQUAL(
-            tools.sliceRange(ByteRange{ByteIndex{2U}, ByteLength::infinite()}),
-            (ByteRange{ByteIndex{3U}, ByteLength{2U}}));
-        REQUIRE(tools.sliceRange(ByteRange{ByteIndex{4U}, ByteLength{1U}}).isEmpty());
-        REQUIRE(tools.sliceRange(ByteRange{ByteIndex::noIndex(), ByteLength{1U}}).isEmpty());
+            tools.sliceRange(ByteRange{ByteIndex{2U}, ByteCount::infinite()}),
+            (ByteRange{ByteIndex{3U}, ByteCount{2U}}));
+        REQUIRE(tools.sliceRange(ByteRange{ByteIndex{4U}, ByteCount{1U}}).isEmpty());
+        REQUIRE(tools.sliceRange(ByteRange{ByteIndex::noIndex(), ByteCount{1U}}).isEmpty());
         REQUIRE(tools.sliceRange(ByteRange::noRange()).isEmpty());
     }
 
@@ -329,7 +329,7 @@ public:
         const auto readTools = makeInvalidUtf8Tools(ByteRange::fromSizeT(cInvalidUtf8Text.size()));
         const auto tools = makeInvalidUtf8ComparisonTools(ByteRange::fromSizeT(cInvalidUtf8Text.size()));
 
-        REQUIRE_FALSE(readTools.isValidUtf8());
+        REQUIRE_FALSE(readTools.isEncodingValid());
         REQUIRE(tools.contains(Char::replacement()));
         REQUIRE(tools.containsOneOf(CharSet{Char::replacement()}));
         REQUIRE_FALSE(tools.startsWith(Char::replacement()));
@@ -495,7 +495,7 @@ public:
         const auto tools = makeInvalidUtf8Tools(ByteRange::fromSizeT(cInvalidUtf8Text.size()));
         const auto comparisonTools = makeInvalidUtf8ComparisonTools(ByteRange::fromSizeT(cInvalidUtf8Text.size()));
 
-        REQUIRE_FALSE(tools.isValidUtf8());
+        REQUIRE_FALSE(tools.isEncodingValid());
         REQUIRE_EQUAL(tools.findFirstOf(CharSet{Char::replacement()}), ByteIndex{1U});
         const auto invalidStartByte = th::stdStringFromHex("C0");
 

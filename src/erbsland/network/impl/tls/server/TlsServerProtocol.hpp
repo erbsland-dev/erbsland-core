@@ -8,8 +8,10 @@
 #include "TlsServerProtocolTestAccess_fwd.hpp"
 
 #include "../TlsAlertDescription.hpp"
+#include "../TlsCertificateValidationRequest.hpp"
 #include "../TlsHandshakeStream.hpp"
 #include "../TlsRecordStream.hpp"
+#include "../TlsSignatureRequest.hpp"
 
 #include "../../../../cryptology/impl/tls/Tls13KeySchedule.hpp"
 #include "../../../../cryptology/impl/tls/Tls13Transcript.hpp"
@@ -21,6 +23,7 @@
 #include "../../../../mem/ByteBlock.hpp"
 #include "../../../../mem/ByteSpan.hpp"
 #include "../../../../text/String.hpp"
+#include "../../../../text/StringList.hpp"
 #include "../../../../util/List.hpp"
 #include "../../../HostName.hpp"
 #include "../../../source/NetworkSendStatus.hpp"
@@ -36,20 +39,24 @@
 namespace erbsland::network::impl {
 
 /// Transport-independent authenticated TLS 1.3 server protocol core.
-/// The initial implementation follows RFC 8446 Sections 4--7 and Appendix A.2/D.4 for a non-PSK X25519 server,
+/// The initial implementation follows RFC 8446 Sections 4--7 and Appendix A.2/D.4 for a non-PSK X25519/P-256 server,
 /// RFC 6066 Section 3 for strict DNS SNI, and RFC 7301 Section 3.2 for ALPN. It uses one configured certificate
-/// identity and deliberately omits HelloRetryRequest, early data, resumption, and client authentication.
+/// identity and deliberately omits early data, resumption, and post-handshake authentication.
 /// Specification: https://www.rfc-editor.org/rfc/rfc8446.html
 /// @tested{TlsServerProtocolTest}
 class TlsServerProtocol final {
     friend class TlsServerProtocolTestAccess;
 
 private:
+    /// Complete the authenticated flight after external signing.
+    void finishSignedFlight(const mem::ByteBlock &signature);
     /// Expected next authenticated handshake message.
     enum class HandshakeStep : uint8_t {
-        ClientHello,    ///< Await the plaintext initial ClientHello.
-        ClientFinished, ///< Await client Finished under client handshake keys.
-        PostHandshake,  ///< Main handshake completed.
+        ClientHello,             ///< Await the plaintext initial ClientHello.
+        ClientCertificate,       ///< Await the requested client Certificate.
+        ClientCertificateVerify, ///< Await proof of possession of the client key.
+        ClientFinished,          ///< Await client Finished under client handshake keys.
+        PostHandshake,           ///< Main handshake completed.
     };
     /// Borrowed extension data from one complete enclosing message.
     struct ExtensionView {
@@ -79,7 +86,7 @@ public:
 
 public:
     /// Enter the handshaking state and await ClientHello.
-    /// @throws err::LogicError If the protocol is not inactive.
+    /// The protocol must be inactive.
     void start();
     /// Feed arbitrary coalesced or fragmented TCP bytes.
     /// Peer-controlled failures are converted to terminal state and an alert where transmission remains possible.
@@ -101,6 +108,37 @@ public:
     void timeout() noexcept;
     /// Signal that TCP reached EOF; EOF without close_notify is truncation.
     void transportClosed() noexcept;
+
+public: // certificate validation
+    /// Get pending client certificate validation work.
+    [[nodiscard]] auto pendingCertificateValidation() const noexcept
+        -> const std::optional<TlsCertificateValidationRequest> & {
+        return _pendingCertificateValidation;
+    }
+    /// Complete external certificate validation and continue processing.
+    /// @param validation The accepted chain or structured rejection.
+    void completeCertificateValidation(cryptology::X509CertificateValidation validation) noexcept;
+    /// Get the client path only after proof of possession and Finished verification.
+    [[nodiscard]] auto peerCertificatePath() const -> util::List<cryptology::X509Certificate> {
+        if (!_peerAuthenticated) {
+            return {};
+        }
+        return _validatedClientPath;
+    }
+    /// Test whether a client certificate authenticated the completed connection.
+    [[nodiscard]] auto isPeerAuthenticated() const noexcept -> bool { return _peerAuthenticated; }
+
+public: // external signing
+    /// Get pending external signing work, if any.
+    [[nodiscard]] auto pendingSignature() const noexcept -> const std::optional<TlsSignatureRequest> & {
+        return _pendingSignature;
+    }
+    /// Consume the result of the current signing request and resume the handshake.
+    /// @param signature The provider's verified TLS signature.
+    void completeSignature(mem::ByteBlock signature) noexcept;
+    /// Fail pending external work without exposing provider data.
+    /// @param diagnostic A diagnostic without private material.
+    void failPendingOperation(text::String diagnostic) noexcept;
 
 public: // queues
     /// Take the oldest complete encrypted transport record.
@@ -125,7 +163,12 @@ public: // accessors
     [[nodiscard]] auto failureAlert() const noexcept -> const std::optional<TlsAlertDescription> & {
         return _failureAlert;
     }
-    /// Get the terminal local diagnostic text.
+    /// Get the peer-certificate validation failure category.
+    [[nodiscard]] auto certificateFailureCategory() const noexcept
+        -> std::optional<cryptology::X509CertificateValidationFailureCategory> {
+        return _certificateFailureCategory;
+    }
+    /// Get the terminal failure diagnostic.
     [[nodiscard]] auto failureDiagnostic() const noexcept -> const text::String & { return _failureDiagnostic; }
     /// Test whether terminal failure was caused by a received peer alert.
     [[nodiscard]] auto failureWasPeerAlert() const noexcept -> bool { return _failureWasPeerAlert; }
@@ -146,12 +189,12 @@ public: // accessors
     /// Get the validated SNI host name, if offered.
     [[nodiscard]] auto serverName() const noexcept -> const std::optional<HostName> & { return _serverName; }
     /// Get the bounded client ALPN offer in wire order.
-    [[nodiscard]] auto offeredAlpn() const noexcept -> const std::vector<text::String> & { return _offeredAlpn; }
+    [[nodiscard]] auto offeredAlpn() const noexcept -> const text::StringList & { return _offeredAlpn; }
     /// Get the selected ALPN identifier, or an empty string when none was negotiated.
     [[nodiscard]] auto negotiatedAlpn() const noexcept -> const text::String & { return _negotiatedAlpn; }
     /// Get the selected identity index, zero for the default and one-based for named mappings.
-    [[nodiscard]] auto selectedIdentityIndex() const noexcept -> const std::optional<std::size_t> & {
-        return _selectedIdentityIndex;
+    [[nodiscard]] auto selectedConfigurationIndex() const noexcept -> const std::optional<std::size_t> & {
+        return _selectedConfigurationIndex;
     }
 
 private:
@@ -179,6 +222,20 @@ private:
     void processHandshake(const mem::ByteBlock &message);
     /// Parse and negotiate the initial ClientHello without creating server secrets.
     void processClientHello(const mem::ByteBlock &message);
+    /// Request one missing share and replace the initial transcript with message_hash.
+    void sendHelloRetryRequest(
+        const mem::ByteBlock &message,
+        cryptology::TlsCipherSuite suite,
+        cryptology::KeyAgreementAlgorithm group,
+        mem::ConstByteSpan sessionId);
+    /// Hash unchanged ClientHello fields and canonical extensions, excluding key_share and padding.
+    [[nodiscard]] auto clientHelloInvariant(const mem::ByteBlock &message) const -> mem::ByteBlock;
+    /// Add an initial client certificate request to the server flight when configured.
+    void appendCertificateRequest(OutputFlight &flight);
+    /// Parse a bounded client certificate list and start external validation.
+    void processClientCertificate(const mem::ByteBlock &message);
+    /// Verify the client's transcript signature using its validated leaf key.
+    void processClientCertificateVerify(const mem::ByteBlock &message);
     /// Verify client Finished and install client application read keys.
     void processClientFinished(const mem::ByteBlock &message);
     /// Process authenticated post-handshake messages.
@@ -207,7 +264,14 @@ private:
     void eraseSecurityState() noexcept;
 
 private:
-    static constexpr std::size_t cMaximumExtensions{64U};            ///< Per-message extension-count bound.
+    std::optional<TlsCertificateValidationRequest> _pendingCertificateValidation; ///< Pending bounded trust evaluation.
+    util::List<cryptology::X509Certificate> _validatedClientPath; ///< Validated chain, private until handshake success.
+    bool _peerAuthenticated{}; ///< Published only after the complete handshake succeeds.
+    std::vector<cryptology::TlsSignatureScheme> _clientSignatureSchemes; ///< Advertised client proof schemes.
+    TlsServerProtocolConfiguration _selectedConfiguration{nullptr};      ///< Complete SNI-selected profile.
+    std::optional<TlsSignatureRequest> _pendingSignature; ///< Owned public signing request and provider lifetime.
+    OutputFlight _pendingFlight;                          ///< Bounded encrypted prefix retained until signing succeeds.
+    static constexpr std::size_t cMaximumExtensions{64U}; ///< Per-message extension-count bound.
     static constexpr std::size_t cMaximumHandshakeRecords{256U};     ///< Handshake CPU/work record bound.
     static constexpr std::size_t cMaximumIgnoredCcs{8U};             ///< Compatibility CCS tolerance bound.
     static constexpr std::size_t cMaximumListEntries{256U};          ///< Suite, scheme, and group work bound.
@@ -221,20 +285,22 @@ private:
     HandshakeStep _handshakeStep{HandshakeStep::ClientHello};                   ///< Expected handshake transition.
     TlsRecordStream _recordStream;                                              ///< Incremental TCP record deframer.
     TlsHandshakeStream _handshakeStream;                                        ///< Incremental handshake deframer.
+    std::optional<cryptology::KeyAgreementAlgorithm> _retryGroup;               ///< The one requested retry group.
+    mem::ByteBlock _retryInvariant;                         ///< Hash of unchanged ClientHello1 fields.
     mem::ByteBlock _clientHello;                            ///< Exact ClientHello retained until transcript creation.
     mem::ByteBlock _legacySessionId;                        ///< Client compatibility session identifier.
-    cryptology::KeyAgreementPublicKey _clientKey;           ///< Validated public X25519 ClientHello key share.
-    cryptology::KeyAgreementPrivateKey _privateKey;         ///< Protected ephemeral server X25519 key.
+    cryptology::KeyAgreementPublicKey _clientKey;           ///< Validated public ClientHello key share.
+    cryptology::KeyAgreementPrivateKey _privateKey;         ///< Protected ephemeral server key-agreement key.
     std::optional<cryptology::TlsCipherSuite> _cipherSuite; ///< Negotiated suite.
     std::optional<cryptology::TlsSignatureScheme> _signatureScheme;   ///< Selected CertificateVerify scheme.
-    cryptology::TlsServerIdentityConstPtr _selectedIdentity;          ///< Selected default or exact-SNI identity.
-    std::optional<std::size_t> _selectedIdentityIndex;                ///< Default zero or named one-based index.
+    cryptology::TlsIdentityConstPtr _selectedIdentity;                ///< Selected default or exact-SNI identity.
+    std::optional<std::size_t> _selectedConfigurationIndex;           ///< Default zero or named one-based index.
     std::unique_ptr<cryptology::impl::Tls13Transcript> _transcript;   ///< Active handshake transcript.
     std::unique_ptr<cryptology::impl::Tls13KeySchedule> _keySchedule; ///< Active protected key schedule.
     cryptology::TlsRecordEncryptor _encryptor;                        ///< Current server write generation.
     cryptology::TlsRecordDecryptor _decryptor;                        ///< Current client read generation.
     std::optional<HostName> _serverName;                              ///< Strict parsed DNS SNI.
-    std::vector<text::String> _offeredAlpn;                           ///< Bounded ALPN offer in client order.
+    text::StringList _offeredAlpn;                                    ///< Bounded ALPN offer in client order.
     text::String _negotiatedAlpn;                                     ///< Selected ALPN protocol.
     bool _peerCloseNotify{};                          ///< Whether peer orderly closure was authenticated.
     bool _localCloseNotify{};                         ///< Whether local orderly closure was queued.
@@ -246,6 +312,8 @@ private:
     std::size_t _transportOutputBytes{};              ///< Aggregate queued encrypted bytes.
     std::deque<mem::ByteBlock> _applicationInput;     ///< Ordered authenticated application fragments.
     std::size_t _applicationInputBytes{};             ///< Aggregate queued authenticated bytes.
+    std::optional<cryptology::X509CertificateValidationFailureCategory>
+        _certificateFailureCategory;                  ///< Trust rejection.
     std::optional<TlsAlertDescription> _failureAlert; ///< Terminal alert category.
     text::String _failureDiagnostic;                  ///< Terminal local diagnostic.
 };

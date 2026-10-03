@@ -1,17 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteArray.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/Endianness.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/Endianness.hpp>
 #include <erbsland/mem/impl/ByteComparisonTools.hpp>
 #include <erbsland/mem/impl/ByteDataView.hpp>
 #include <erbsland/mem/impl/ByteReadTools.hpp>
 #include <erbsland/mem/impl/ByteWriteTools.hpp>
 #include <erbsland/mem/impl/UnsafeByteBlockBuffer.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ByteRange.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -25,8 +25,8 @@ using el::mem::impl::ByteDataView;
 using el::mem::impl::ByteReadTools;
 using el::mem::impl::ByteWriteTools;
 using el::mem::impl::UnsafeByteBlockBuffer;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteRange;
 
 TESTED_TARGETS(ByteDataView ByteReadTools ByteComparisonTools ByteWriteTools UnsafeByteBlockBuffer)
@@ -34,23 +34,23 @@ class ByteDataViewTest final : public el::UnitTest {
 public:
     void testRangeSelection() {
         const auto storage = ByteArray{Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}, Byte{5U}};
-        const auto view = ByteDataView{ConstByteSpan{storage.span()}, ByteRange{ByteIndex{1U}, ByteLength{3U}}};
+        const auto view = ByteDataView{ConstByteSpan{storage.span()}, ByteRange{ByteIndex{1U}, ByteCount{3U}}};
 
         REQUIRE_EQUAL(view.data().size(), std::size_t{5U});
-        REQUIRE_EQUAL(view.length(), ByteLength{3U});
+        REQUIRE_EQUAL(view.length(), ByteCount{3U});
         REQUIRE_EQUAL(view.dataSpan()[0], Byte{2U});
         REQUIRE_EQUAL(view.dataSpan()[2], Byte{4U});
 
-        const auto absolute = view.absoluteRange(ByteRange{ByteIndex{1U}, ByteLength::infinite()});
-        REQUIRE_EQUAL(absolute.index(), ByteIndex{2U});
-        REQUIRE_EQUAL(absolute.length(), ByteLength{2U});
+        const auto absolute = view.absoluteRange(ByteRange{ByteIndex{1U}, ByteCount::infinite()});
+        REQUIRE_EQUAL(absolute.beginIndex(), ByteIndex{2U});
+        REQUIRE_EQUAL(absolute.length(), ByteCount{2U});
 
-        const auto clamped = ByteDataView{ConstByteSpan{storage.span()}, ByteRange{ByteIndex{4U}, ByteLength{99U}}};
-        REQUIRE_EQUAL(clamped.length(), ByteLength{1U});
+        const auto clamped = ByteDataView{ConstByteSpan{storage.span()}, ByteRange{ByteIndex{4U}, ByteCount{99U}}};
+        REQUIRE_EQUAL(clamped.length(), ByteCount{1U});
         REQUIRE_EQUAL(clamped.dataSpan()[0], Byte{5U});
         REQUIRE(ByteDataView{ConstByteSpan{storage.span()}, ByteRange::noRange()}.dataSpan().empty());
         REQUIRE(
-            ByteDataView{ConstByteSpan{storage.span()}, ByteRange{ByteIndex{99U}, ByteLength{1U}}}.dataSpan().empty());
+            ByteDataView{ConstByteSpan{storage.span()}, ByteRange{ByteIndex{99U}, ByteCount{1U}}}.dataSpan().empty());
     }
 
     void testReadAndComparisonTools() {
@@ -102,18 +102,18 @@ public:
         REQUIRE_EQUAL(storage[0], Byte{9U});
         REQUIRE_EQUAL(storage[1], Byte{0xfeU});
 
-        write.fill(ByteRange{ByteIndex{2U}, ByteLength{2U}}, Byte{0xaaU});
+        write.fill(ByteRange{ByteIndex{2U}, ByteCount{2U}}, Byte{0xaaU});
         REQUIRE_EQUAL(storage[2], Byte{0xaaU});
         REQUIRE_EQUAL(storage[3], Byte{0xaaU});
 
         const auto overlappingSource = ByteDataView{el::mem::ConstByteSpan{storage}.first(4U)};
-        static_cast<void>(write.overwrite(ByteRange{ByteIndex{1U}, ByteLength{4U}}, overlappingSource));
+        static_cast<void>(write.overwrite(ByteRange{ByteIndex{1U}, ByteCount{4U}}, overlappingSource));
         const auto expectedAfterOverwrite =
             std::array{Byte{9U}, Byte{9U}, Byte{0xfeU}, Byte{0xaaU}, Byte{0xaaU}, Byte{5U}};
         REQUIRE_EQUAL(storage, expectedAfterOverwrite);
 
         const auto xorSource = ByteDataView{el::mem::ConstByteSpan{storage}.subspan(0U, 3U)};
-        write.xorWith(ByteRange{ByteIndex{1U}, ByteLength{3U}}, xorSource);
+        write.xorWith(ByteRange{ByteIndex{1U}, ByteCount{3U}}, xorSource);
         REQUIRE_EQUAL(storage[1], Byte{0U});
         REQUIRE_EQUAL(storage[2], Byte{0xf7U});
         REQUIRE_EQUAL(storage[3], Byte{0x54U});
@@ -121,27 +121,27 @@ public:
         REQUIRE(write.setInteger(ByteIndex{2U}, uint16_t{0x1234U}, el::mem::Endianness::Big));
         const auto read = ByteReadTools{ByteDataView{el::mem::ConstByteSpan{storage}}};
         REQUIRE_EQUAL(read.getInteger<uint16_t>(ByteIndex{2U}, el::mem::Endianness::Big), uint16_t{0x1234U});
-        REQUIRE_EQUAL(read.span(ByteRange{ByteIndex{4U}, ByteLength{99U}}).size(), std::size_t{2U});
+        REQUIRE_EQUAL(read.span(ByteRange{ByteIndex{4U}, ByteCount{99U}}).size(), std::size_t{2U});
     }
 
     void testUnsafeGrowingBuffer() {
-        auto buffer = UnsafeByteBlockBuffer{ByteLength{2U}};
+        auto buffer = UnsafeByteBlockBuffer{ByteCount{2U}};
         auto initial = buffer.data();
         initial[0] = Byte{1U};
         initial[1] = Byte{2U};
 
-        const auto grown = buffer.grow(ByteLength{5U}, ByteLength{2U}, ByteLength{7U});
-        REQUIRE_GREATER_EQUAL(buffer.capacity(), ByteLength{5U});
-        REQUIRE_LESS_EQUAL(buffer.capacity(), ByteLength{7U});
+        const auto grown = buffer.grow(ByteCount{5U}, ByteCount{2U}, ByteCount{7U});
+        REQUIRE_GREATER_EQUAL(buffer.capacity(), ByteCount{5U});
+        REQUIRE_LESS_EQUAL(buffer.capacity(), ByteCount{7U});
         REQUIRE_EQUAL(grown[0], Byte{1U});
         REQUIRE_EQUAL(grown[1], Byte{2U});
         grown[2] = Byte{3U};
         grown[3] = Byte{4U};
 
-        const auto block = ByteBlock{buffer.take(ByteLength{4U})};
+        const auto block = ByteBlock{buffer.take(ByteCount{4U})};
         REQUIRE_EQUAL(block, ByteBlock({1U, 2U, 3U, 4U}));
 
-        auto emptyBuffer = UnsafeByteBlockBuffer{ByteLength{4U}};
-        REQUIRE(emptyBuffer.take(ByteLength::zero()).isEmpty());
+        auto emptyBuffer = UnsafeByteBlockBuffer{ByteCount{4U}};
+        REQUIRE(emptyBuffer.take(ByteCount::zero()).isEmpty());
     }
 };

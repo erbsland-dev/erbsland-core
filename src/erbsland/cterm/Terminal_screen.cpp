@@ -11,7 +11,7 @@
 #include "impl/paragraph/Layout.hpp"
 #include "impl/paragraph/Printer.hpp"
 
-#include "../err/RuntimeError.hpp"
+#include "../err/LogicFailure.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringEditor.hpp"
 
@@ -202,7 +202,7 @@ auto Terminal::updateScreenAndCreateNewBackBuffer(const ReadableBuffer &buffer, 
 
 auto Terminal::updateScreenAndResizeBackBuffer(const ReadableBuffer &buffer, const UpdateSettings &settings) -> void {
     if (_backBuffer == nullptr) {
-        throw err::RuntimeError{"Back buffer is not initialized."};
+        throw err::LogicFailure{"Back buffer is not initialized."};
     }
     BufferConstRefView view(buffer, _size);
     settings.applyTo(view);
@@ -212,7 +212,7 @@ auto Terminal::updateScreenAndResizeBackBuffer(const ReadableBuffer &buffer, con
 
 auto Terminal::updateScreenPartialWithBackBuffer(const ReadableBuffer &view) -> void {
     if (_backBuffer == nullptr) {
-        throw err::RuntimeError{"Back buffer is not initialized."};
+        throw err::LogicFailure{"Back buffer is not initialized."};
     }
     impl::LineBufferEmitLockGuard guard(_lineBuffer);
     auto lastWriteCursor = Position{0, 0};
@@ -290,13 +290,6 @@ void Terminal::writeImpl(const ReadableBuffer &buffer, const bool withRowMove) n
     }
 }
 
-auto Terminal::applySafeMargin(const Size terminalSize) const noexcept -> Size {
-    if (!_safeMarginEnabled) {
-        return terminalSize;
-    }
-    return terminalSize - Size{1, 1};
-}
-
 void Terminal::initializeScreen() noexcept {
     _backend->initializePlatform();
     _style = BlockStyle::reset();
@@ -316,8 +309,7 @@ void Terminal::testScreenSize() noexcept {
         return;
     }
     if (const auto detectedSize = _backend->detectScreenSize(); detectedSize.has_value()) {
-        _terminalSize = *detectedSize;
-        setSize(applySafeMargin(_terminalSize));
+        setSize(*detectedSize);
     }
 }
 

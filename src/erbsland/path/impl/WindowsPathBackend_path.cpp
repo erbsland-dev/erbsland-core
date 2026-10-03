@@ -24,7 +24,7 @@
 #include "../../text/StringEditor.hpp"
 #include "../../text/u16/U16StringEditor.hpp"
 #include "../../time/impl/WindowsTimeConverter.hpp"
-#include "../../unit/U16DataLength.hpp"
+#include "../../unit/U16Count.hpp"
 
 #include <aclapi.h>
 #include <sddl.h>
@@ -38,9 +38,12 @@
 
 namespace erbsland::path::impl {
 
+using namespace text;
+using text::impl::PlatformU16StringAccess;
+using text::impl::UnsafeU16StringBuffer;
 using namespace text::literals;
 
-auto WindowsPathBackend::pathTextOrThrow(const Path &path) -> text::U16String {
+auto WindowsPathBackend::pathTextOrThrow(const Path &path) -> U16String {
     const auto pathText = path.toWindows(PathWindowsFormat::Extended);
     if (pathText.isEmpty()) {
         throw PathError{PathErrorContext{
@@ -48,7 +51,7 @@ auto WindowsPathBackend::pathTextOrThrow(const Path &path) -> text::U16String {
                 .setSourcePath(path.toString())
                 .setHelp("Use a path compatible with Windows."_el)};
     }
-    return text::StringConverter{pathText}.toU16String();
+    return StringConverter{pathText}.toU16String();
 }
 
 void WindowsPathBackend::createParentDirectoriesOrThrow(const Path &path) {
@@ -65,7 +68,7 @@ void WindowsPathBackend::createParentDirectoriesOrThrow(const Path &path) {
             continue;
         }
         const auto directoryText = pathTextOrThrow(directory);
-        const auto directoryTextAccess = text::impl::PlatformU16StringAccess{directoryText};
+        const auto directoryTextAccess = PlatformU16StringAccess{directoryText};
         if (CreateDirectoryW(directoryTextAccess.nullTerminatedWideCharPtr(), nullptr) != 0) {
             continue;
         }
@@ -169,7 +172,7 @@ auto WindowsPathBackend::windowsAttributesFromPathAttributes(const PathAttribute
     return result;
 }
 
-auto WindowsPathBackend::sidString(void *sid) -> text::String {
+auto WindowsPathBackend::sidString(void *sid) -> String {
     auto *sidText = static_cast<wchar_t *>(nullptr);
     if (sid == nullptr || ConvertSidToStringSidW(sid, &sidText) == 0) {
         throw PathError{PathErrorContext{
@@ -177,12 +180,12 @@ auto WindowsPathBackend::sidString(void *sid) -> text::String {
             "The Windows security identifier could not be converted to text."_el}};
     }
     const auto freeSidText = std::unique_ptr<void, decltype(&LocalFree)>{sidText, &LocalFree};
-    return text::StringConverter{std::wstring_view{sidText, std::wcslen(sidText)}}.toString();
+    return StringConverter{std::wstring_view{sidText, std::wcslen(sidText)}}.toString();
 }
 
 auto WindowsPathBackend::physicalPathOrThrow(const Path &path) -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathTextAccess = PlatformU16StringAccess{pathText};
     const auto handle = CreateFileW(
         pathTextAccess.nullTerminatedWideCharPtr(),
         FILE_READ_ATTRIBUTES,
@@ -208,7 +211,7 @@ auto WindowsPathBackend::physicalPathOrThrow(const Path &path) -> Path {
             path,
             GetLastError());
     }
-    auto buffer = text::impl::UnsafeU16StringBuffer{unit::U16DataLength::fromSizeT(length)};
+    auto buffer = UnsafeU16StringBuffer{unit::U16Count::fromSizeT(length)};
     const auto actualLength =
         GetFinalPathNameByHandleW(handle, buffer.dataAsWide(), length + 1U, FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
     if (actualLength == 0U || actualLength > length) {
@@ -218,12 +221,12 @@ auto WindowsPathBackend::physicalPathOrThrow(const Path &path) -> Path {
             path,
             GetLastError());
     }
-    return Path::fromWindowsOrThrow(buffer.takeAsUtf8(unit::U16DataLength::fromSizeT(actualLength)));
+    return Path::fromWindowsOrThrow(buffer.takeAsUtf8(unit::U16Count::fromSizeT(actualLength)));
 }
 
 auto WindowsPathBackend::existingPath(const Path &path) -> bool {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathTextAccess = PlatformU16StringAccess{pathText};
     const auto attributes = GetFileAttributesW(pathTextAccess.nullTerminatedWideCharPtr());
     if (attributes != INVALID_FILE_ATTRIBUTES) {
         return true;
@@ -242,16 +245,14 @@ auto WindowsPathBackend::existingPath(const Path &path) -> bool {
 auto WindowsPathBackend::weakPathOrThrow(const Path &path) -> Path {
     const auto elements = path.elements();
     for (auto count = elements.count(); !count.isZero(); --count) {
-        auto prefixElements = elements.prefix(count);
-        prefixElements.removeFirst();
-        const auto prefix = assemblePath(elements.first(), prefixElements);
+        const auto prefix = Path::fromElements(elements.prefix(count));
         if (!existingPath(prefix)) {
             continue;
         }
         const auto physicalPrefix = physicalPathOrThrow(prefix);
-        auto resultElements = nonRootElements(physicalPrefix);
+        auto resultElements = physicalPrefix.elements();
         resultElements.append(elements.suffix(elements.count() - count));
-        return lexicalPath(assemblePath(physicalPrefix.root(), resultElements));
+        return lexicalPath(Path::fromElements(resultElements));
     }
     return path;
 }
@@ -270,11 +271,11 @@ auto WindowsPathBackend::physicalNoFinalSymlinkPathOrThrow(const Path &path) -> 
     if (parent.isEmpty()) {
         return path;
     }
-    return joinedLexicalPath(physicalPathOrThrow(parent), Path{path.name()});
+    return lexicalPath(physicalPathOrThrow(parent).joinedNative(path.name()));
 }
 
-auto WindowsPathBackend::nonRootElements(const Path &path) -> text::StringList {
-    auto result = text::StringList{};
+auto WindowsPathBackend::nonRootElements(const Path &path) -> StringList {
+    auto result = StringList{};
     for (const auto &element : path.elements()) {
         if (path.isAbsolute() && element == path.root()) {
             continue;
@@ -285,15 +286,15 @@ auto WindowsPathBackend::nonRootElements(const Path &path) -> text::StringList {
 }
 
 void WindowsPathBackend::throwSystemError(
-    const text::String &title, const text::String &description, const Path &path, const unsigned long errorCode) {
+    const String &title, const String &description, const Path &path, const unsigned long errorCode) {
     throw PathError{PathErrorContext{title, description}
             .setSourcePath(path.toString())
             .setPlatformContext(system::impl::WindowsErrorContext::fromErrorCode(errorCode))};
 }
 
 void WindowsPathBackend::throwSystemError(
-    const text::String &title,
-    const text::String &description,
+    const String &title,
+    const String &description,
     const Path &source,
     const Path &destination,
     const unsigned long errorCode) {

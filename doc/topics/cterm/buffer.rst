@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-******
-Buffer
-******
+*****************************
+Working with Terminal Buffers
+*****************************
 
 The buffer classes represent rendered terminal content in memory before it is written to the screen.
 
@@ -19,11 +19,9 @@ Building on top of that, ``CursorBuffer`` provides a VT-style cursor-writing int
 Use these types whenever you want to build frames off-screen, compare frames, copy content between buffers, or derive
 masks from rendered characters.
 
-Usage
-=====
 
 Reading and Writing Through Buffer Interfaces
----------------------------------------------
+=============================================
 
 ``ReadableBuffer`` and ``WritableBuffer`` allow helper functions to operate on terminal content without depending on a
 specific implementation.
@@ -48,7 +46,7 @@ Use ``WritableBuffer`` when your function should modify the target buffer withou
 standalone ``Buffer`` or another writable implementation.
 
 Write-Clipped Paint Operations
-------------------------------
+==============================
 
 ``WriteClippedBufferRef`` is a thin writable wrapper for temporary subsurface painting.
 It exposes source coordinates to the drawing code and clips write operations to a target rectangle in the wrapped
@@ -71,7 +69,7 @@ Use ``WriteClippedBuffer`` when the wrapper must store a shared pointer to the w
 Use ``WriteClippedBufferRef`` for short-lived paint passes where the wrapped buffer already outlives the wrapper.
 
 Cloning, Copying, and Resizing
-------------------------------
+==============================
 
 ``Buffer`` supports the typical frame-management tasks required by interactive terminal applications: creating new
 frames, cloning the current state, and resizing buffers when the terminal size changes.
@@ -94,7 +92,7 @@ Use ``BufferResizeMode`` to make the resize intent explicit:
   provided fill character.
 
 Working with Remapped Buffers
------------------------------
+=============================
 
 ``RemappedBuffer`` is designed for workloads where the content remains logically grid-based, but rows or columns are
 frequently reshuffled.
@@ -124,7 +122,7 @@ If the secondary axis changes, preserving content requires rebuilding the logica
 more expensive.
 
 Streaming Scrollback with CursorBuffer
---------------------------------------
+======================================
 
 ``CursorBuffer`` is the right choice when text is appended over time, as if it were written directly to a terminal.
 
@@ -159,7 +157,7 @@ growing history buffer with a live viewport onto the most recent content.
 If your fill strategy changes later, update it with ``CursorBuffer::setFillChar``.
 
 For details about the streaming API itself—such as ``print()``, ``printLine()``, and cursor movement—see
-:doc:`Cursor Output <cursor-output>`.
+:doc:`Cursor-Based Terminal Output <cursor-output>`.
 
 .. important::
 
@@ -190,7 +188,7 @@ For details about the streaming API itself—such as ``print()``, ``printLine()`
         };
 
 Building Buffers from BlockText Lines
--------------------------------------
+=====================================
 
 For status panels, generated reports, or static UI elements, ``Buffer`` can be constructed directly from line-oriented
 text.
@@ -209,7 +207,7 @@ This is often the fastest way to turn preformatted terminal text into a buffer t
 larger layout.
 
 Copying and Aligning Sub-Regions
---------------------------------
+================================
 
 ``BufferDrawOptions`` makes buffer-to-buffer composition explicit.
 It bundles the target region, the optional source crop, and the color-combination strategy for
@@ -236,7 +234,7 @@ If you need to preserve the target glyphs while only adopting parts of the sourc
 ``BlockCombinationStyle`` through ``setCombinationStyle()``.
 
 Comparing Frames and Deriving Masks
------------------------------------
+===================================
 
 ``ReadableBuffer`` also provides analysis helpers that are useful for tests, animation pipelines, and bitmap-based
 effects.
@@ -252,4 +250,3 @@ effects.
 
 Use ``toMask()`` when you want to reason about the *structure* of rendered content (for example, line art or borders)
 instead of raw character or color data.
-

@@ -2,8 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/all_path.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/path/all.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -13,7 +20,7 @@ namespace demo {
 /// several regular files; the resolver sorts them before the parser processes their contents.
 void defaultFileResolver() {
     auto temporaryOptions = el::PathTempDirectoryOptions{};
-    temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpLength{8U});
+    temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpCount{8U});
     const auto temporary =
         el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
     const auto root = temporary->path();

@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/AxisMapper.hpp>
 #include <erbsland/block/CoordinateSpan.hpp>
 #include <erbsland/block/MarginPair.hpp>
 #include <erbsland/block/Margins.hpp>
 #include <erbsland/block/Position.hpp>
 #include <erbsland/block/Rectangle.hpp>
 #include <erbsland/block/Size.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/geometry/AxisMapper.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using el::geometry::Axis;
@@ -39,7 +39,7 @@ struct ThreeDimensionalValue final {
         case Axis::Z:
             return z;
         }
-        throw el::err::ParameterError{"Invalid axis.", "axis"};
+        throw el::err::ParameterFailure{"Invalid axis.", "axis"};
     }
 
     [[nodiscard]] constexpr auto component(const SignedAxis axis) const -> int {
@@ -125,18 +125,18 @@ public:
     }
 
     void testInvalidMappings() {
-        REQUIRE_THROWS_AS(el::err::ParameterError, (AxisMapping{Axis::X, Axis::X}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, (AxisMapping{Axis::X, Axis::Z}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, (SignedAxisMapping{SignedAxis::NegativeX, SignedAxis::PositiveX}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, (AxisMapping{Axis::X, Axis::X}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, (AxisMapping{Axis::X, Axis::Z}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, (SignedAxisMapping{SignedAxis::NegativeX, SignedAxis::PositiveX}));
 
         const auto invalidSignedAxis = SignedAxis{static_cast<Axis>(99)};
         REQUIRE_FALSE(invalidSignedAxis.isValid());
         REQUIRE_FALSE(invalidSignedAxis.isReversed());
-        REQUIRE_THROWS_AS(el::err::ParameterError, (SignedAxisMapping{invalidSignedAxis}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::block::Position{1, 2}.component(invalidSignedAxis));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, (SignedAxisMapping{invalidSignedAxis}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::block::Position{1, 2}.component(invalidSignedAxis));
 
         const auto one = AxisMapping{Axis::X};
-        REQUIRE_THROWS_AS(el::err::ParameterError, one.source(Axis::Y));
-        REQUIRE_THROWS_AS(el::err::ParameterError, AxisMapper{AxisMapping{Axis::X}}.map(el::block::Position{1, 2}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, one.source(Axis::Y));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, AxisMapper{AxisMapping{Axis::X}}.map(el::block::Position{1, 2}));
     }
 };

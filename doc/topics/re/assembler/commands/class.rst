@@ -1,7 +1,7 @@
 
-*****
-Class
-*****
+************************
+Assembler .class Command
+************************
 
 The ``.class`` command starts a new character class definition in the ``&class`` section.
 
@@ -15,8 +15,8 @@ Syntax
 :expression:`.class`
     Close the previous class (if any) and start a new one.
 
-Notes
-=====
+Character-Class Constraints
+===========================
 
 - ``.class`` can only be used in the ``&class`` section.
 - A class must not be empty:

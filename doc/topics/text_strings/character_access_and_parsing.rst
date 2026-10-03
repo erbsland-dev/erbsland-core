@@ -32,8 +32,8 @@ or code-point position makes direct access appropriate.
 The examples begin with the common UTF-8 :cpp:type:`String <erbsland::text::String>`, then explain where the explicit
 UTF-16 and UTF-32 types change the cost model.
 
-Start with the Way Your Algorithm Reads Text
-============================================
+Choosing Character Iteration, Parsing, or Indexed Access
+========================================================
 
 A parser naturally moves from left to right and occasionally looks ahead.
 ``StringCharReader`` matches that flow and can capture shared slices while retaining positions for diagnostics.
@@ -46,8 +46,8 @@ Direct indexing belongs to the less common case where a meaningful position alre
 character.
 Keeping that origin in mind prevents an algorithm from repeatedly translating positions or rescanning from the start.
 
-Understand the Coordinate Systems
-=================================
+Byte Indexes and Code-Point Indexes
+===================================
 
 The library exposes two fundamentally different position types.
 
@@ -62,8 +62,8 @@ Most APIs that work with string storage and slicing use byte positions.
 
 Understanding this distinction makes it easier to choose the correct access pattern throughout the rest of this page.
 
-Keep Parser State in ``StringCharReader``
-=========================================
+Parsing with ``StringCharReader``
+=================================
 
 :cpp:class:`StringCharReader <erbsland::text::StringCharReader>` accepts
 :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>` /
@@ -107,7 +107,7 @@ It returns a decoded code-point index, which is the unit users expect when they 
 .. erbsland-demo::
     :source: text/StringCharReader/StudyPlanParser.cpp
     :exec: text/string_char_reader --demo StudyPlanParser
-    :source-sha256: a7a1164a22aee500ded309400ff7f5ed22498d8c823d58bc2816057f1f3704f8
+    :sha256: 3d87c0c29bada1404c4df17190da32fe0890a135639f471e0f50419a5c470169
 
 .. code-block:: cpp
 
@@ -176,33 +176,35 @@ It returns a decoded code-point index, which is the unit users expect when they 
         try {
             minutes = reader.readIntegerOrThrow<int>(decMax3Digits);
             return true;
-        } catch (const el::Exception &) {
+        } catch (const el::ParseError &) {
             return false;
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    UTF-8 plan:
-      - matematik: 45 min
-      - fen: 30 min
-      - müzik: no duration
-    UTF-16 plan:
-      - geometri: 25 min
-      - şiir: 15 min
-    UTF-32 plan:
-      - astronomi: 40 min
-      - çizim: 20 min
-    plan with diagnostic:
-      - tarih: 25 min
-      - kimya: no duration
-      error at code point 15: unexpected 'x'
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUTF-8 plan:
+          - matematik: 45 min
+          - fen: 30 min
+          - müzik: no duration
+        UTF-16 plan:
+          - geometri: 25 min
+          - şiir: 15 min
+        UTF-32 plan:
+          - astronomi: 40 min
+          - çizim: 20 min
+        plan with diagnostic:
+          - tarih: 25 min
+          - kimya: no duration
+          error at code point 15: unexpected 'x'␛[0m
 
 .. erbsland-demo-end::
 
-Walk Through Every Decoded Character
-====================================
+Iterating over Decoded Characters
+=================================
 
 If your code only needs to visit decoded characters, use the iteration APIs instead of creating a parser.
 They are shorter, make the intent clearer, and avoid accidental byte-index mistakes.
@@ -223,7 +225,7 @@ Validate input first when malformed encoding should be rejected rather than tole
 .. erbsland-demo::
     :source: text/String/IteratingCharacters.cpp
     :exec: text/string --demo IteratingCharacters
-    :source-sha256: 45e4a67ce026432e3876467fb87b7f3b4c9b63f58f83be11d16226bc828a0891
+    :sha256: a12fb22af2ed9e2de6c5ad4790a8158afb3195af1a518574702db736a800f488
 
 .. code-block:: cpp
 
@@ -236,8 +238,8 @@ Validate input first when malformed encoding should be rejected rather than tole
     void iteratingCharacters() {
         const auto plan = el::String{"matematik:45;fen:30;müzik:20"_el};
 
-        auto lettersBeforeBreak = el::CpLength::zero();
-        auto digitsBeforeBreak = el::CpLength::zero();
+        auto lettersBeforeBreak = el::CpCount::zero();
+        auto digitsBeforeBreak = el::CpCount::zero();
 
         // Stop as soon as the first lesson entry ends.
         plan.forEach([&](const el::Char character) -> el::LoopStatus {
@@ -259,7 +261,7 @@ Validate input first when malformed encoding should be rejected rather than tole
         auto uppercased = el::StringEditor{};
 
         // Range-based iteration is compact when every decoded character is needed.
-        // Note: Use `String::transformed` to uppercase/lowercase transformations in production code.
+        // For case conversion alone, use `el::toUppercase()` or `el::toLowercase()`.
         for (const auto character : el::String{"ödev: çizim"_el}) {
             uppercased.append(character.toUppercase());
         }
@@ -267,18 +269,20 @@ Validate input first when malformed encoding should be rejected rather than tole
         el::io::printLine("Uppercase walk: "_el, uppercased);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Before the first separator:
-      ASCII letters: 9
-      ASCII digits: 2
-    Uppercase walk: ÖDEV: ÇIZIM
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBefore the first separator:
+          ASCII letters: 9
+          ASCII digits: 2
+        Uppercase walk: ÖDEV: ÇIZIM␛[0m
 
 .. erbsland-demo-end::
 
-Read Sequentially Without Parser State
-======================================
+Sequential Character Reading with Native Indexes
+================================================
 
 Some algorithms need more control than a complete iteration but none of the capture, lookahead, or diagnostic state of
 ``StringCharReader``.
@@ -286,7 +290,7 @@ They may already carry a native index, stop and resume at that position, or need
 the beginning.
 
 ``readCharAndAdvance(index)`` decodes the character at a native index and moves the index to the following character.
-For UTF-8, begin with ``ByteIndex::zero()``; UTF-16 uses ``U16DataIndex`` and UTF-32 uses ``CpIndex``.
+For UTF-8, begin with ``ByteIndex::zero()``; UTF-16 uses ``U16Index`` and UTF-32 uses ``CpIndex``.
 ``readCharAndRetreat(index)`` performs the reverse operation: initialize the index with ``indexAt(StringSide::Back)``,
 read the character before it, and leave the index at that character's start.
 This reverse traversal is not provided by ``StringCharReader`` or ``forEach()``.
@@ -299,7 +303,7 @@ code-point positions.
 .. erbsland-demo::
     :source: text/String/SequentialCharacterReading.cpp
     :exec: text/string --demo SequentialCharacterReading
-    :source-sha256: e1e00942e468e52254b94658bf65f164b6fcb57627619d4f720123fc36d9701e
+    :sha256: 9ba2efc959e99eb444be5196fb76d2005e20fd11aacd113eab180391a19ce0b1
 
 .. code-block:: cpp
 
@@ -334,26 +338,28 @@ code-point positions.
         el::io::printLine("Reverse index ..: "_el, reverseIndex);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Text ...........: veld🌱
-    Forward ........: veld🌱
-    Reverse ........: 🌱dlev
-    Forward index ..: 8
-    Reverse index ..: 0
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mText ...........: veld🌱
+        Forward ........: veld🌱
+        Reverse ........: 🌱dlev
+        Forward index ..: 8
+        Reverse index ..: 0␛[0m
 
 .. erbsland-demo-end::
 
-Use Indexed Access When a Position Already Matters
-==================================================
+Indexed Character Access
+========================
 
 Index-based access is sometimes the clearest solution, but each index kind has different costs and guarantees.
 The most important rule is simple: byte indexes are native for UTF-8 storage; code-point indexes are semantic but may
 require a scan.
 
-Fast Side Access
-----------------
+Accessing the First and Last Character
+--------------------------------------
 
 Use :cpp:func:`charAt(StringSide) <erbsland::text::U8String::charAt>` when you need the first or last character.
 This avoids spelling out the index and lets the string implementation choose the efficient path.
@@ -407,7 +413,7 @@ consistently.
 .. erbsland-demo::
     :source: text/String/CharacterAccess.cpp
     :exec: text/string --demo CharacterAccess
-    :source-sha256: 2016111cbdbfe7d8a5594ba296cc4f2467f3573a79b86ba8c99861f96bc4cf7a
+    :sha256: 10810f23d60a50458d22298b323e673aed10a9156e551f334f042c2ccc5aeac2
 
 .. code-block:: cpp
 
@@ -433,10 +439,10 @@ consistently.
         el::io::printLine("End byte index: "_el, describeCharacter(text.charAt(text.indexAt(el::StringSide::Back))));
         el::io::printLine(
             "Outside byte range: "_el,
-            describeCharacter(text.charAt(text.indexAt(el::StringSide::Back) + el::ByteLength{8U})));
+            describeCharacter(text.charAt(text.indexAt(el::StringSide::Back) + el::ByteCount{8U})));
 
         // Move byte indexes by decoded code points instead of incrementing raw bytes.
-        text.advance(byteIndex, el::CpLength{4U});
+        text.advance(byteIndex, el::CpCount{4U});
         el::io::printLine(
             "After advancing four characters: byte "_el, byteIndex, " -> ", describeCharacter(text.charAt(byteIndex)));
         text.retreat(byteIndex);
@@ -456,27 +462,29 @@ consistently.
         el::io::printLine("Sliced back: "_el, describeCharacter(lastCharacter), " | rest: "_el, withoutLast);
 
         // Code-point lengths can be used directly with regular string slicing.
-        el::io::printLine("Code-point prefix: "_el, text.slice(el::StringSide::Front, el::CpLength{4U}));
+        el::io::printLine("Code-point prefix: "_el, text.slice(el::StringSide::Front, el::CpCount{4U}));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Text: ödev📚:matematik
-    First character: 'ö'
-    Last character: 'k'
-    Byte index 0: 'ö'
-    Byte index 1: '�'
-    End byte index: end-of-data
-    Outside byte range: no-code-point
-    After advancing four characters: byte 5 -> '📚'
-    After retreating one character: byte 4 -> 'v'
-    Current byte index is code-point index 3
-    Code-point index 5 starts at byte 9
-    Character at code-point index 5: ':'
-    Sliced front: 'ö' | rest: dev📚:matematik
-    Sliced back: 'k' | rest: ödev📚:matemati
-    Code-point prefix: ödev
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mText: ödev📚:matematik
+        First character: 'ö'
+        Last character: 'k'
+        Byte index 0: 'ö'
+        Byte index 1: '�'
+        End byte index: end-of-data
+        Outside byte range: no-code-point
+        After advancing four characters: byte 5 -> '📚'
+        After retreating one character: byte 4 -> 'v'
+        Current byte index is code-point index 3
+        Code-point index 5 starts at byte 9
+        Character at code-point index 5: ':'
+        Sliced front: 'ö' | rest: dev📚:matematik
+        Sliced back: 'k' | rest: ödev📚:matemati
+        Code-point prefix: ödev␛[0m
 
 .. erbsland-demo-end::
 
@@ -489,8 +497,8 @@ worthwhile.
 Convert only when the data will be accessed by code-point index often enough to justify the extra memory, conversion
 cost, and API width change.
 
-Choose the Simplest Access Pattern That Fits
-============================================
+Character Access Methods and Their Costs
+========================================
 
 For ordinary read-only input, a :cpp:type:`String <erbsland::text::String>` parameter keeps the function pleasant to
 call from values, editors, and literals.

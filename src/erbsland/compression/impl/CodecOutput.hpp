@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../err/OutOfRangeError.hpp"
 #include "../../mem/ByteBlockEditor.hpp"
 #include "../../mem/ByteBuffer.hpp"
@@ -29,26 +29,28 @@ public:
     CodecOutput(const CodecOutput &) = delete;
     auto operator=(const CodecOutput &) -> CodecOutput & = delete;
     /// Create a streaming output with a history window.
-    CodecOutput(Write write, std::size_t history, unit::ByteLength maximum) :
+    CodecOutput(Write write, std::size_t history, unit::ByteCount maximum) :
         _write{std::move(write)}, _maximum{maximum} {
-        _history.resize(unit::ByteLength::fromSizeT(history));
+        _history.resize(unit::ByteCount::fromSizeT(history));
     }
 
 public:
     /// Append one literal without constructing a span or entering the bulk-copy loop.
+    /// @throws err::OutOfRangeError If the appended bytes exceed the configured output limit.
     void append(mem::Byte value) {
-        checkLength(unit::ByteLength::one());
+        checkLength(unit::ByteCount::one());
         prepareStorage();
         if (!_history.isEmpty()) {
-            _history.setOrThrow(unit::ByteIndex{_length.toRawValue() % _history.length().toRawValue()}, value);
+            _history.setOrThrow(unit::ByteIndex::end(_length % _history.length().toRawValue()), value);
         }
         _data.append(value);
-        _length += unit::ByteLength::one();
+        _length += unit::ByteCount::one();
         flushIfFull();
     }
     /// Append a repeated byte while enforcing the total output limit before writing.
-    void append(mem::Byte value, unit::ByteLength count) {
-        if (count == unit::ByteLength::one()) {
+    /// @throws err::OutOfRangeError If the appended bytes exceed the configured output limit.
+    void append(mem::Byte value, unit::ByteCount count) {
+        if (count == unit::ByteCount::one()) {
             append(value);
             return;
         }
@@ -62,10 +64,11 @@ public:
         }
     }
     /// Append a span in bounded batches.
+    /// @throws err::OutOfRangeError If the appended bytes exceed the configured output limit.
     void append(mem::ConstByteSpan data) {
-        checkLength(unit::ByteLength::fromSizeT(data.size()));
+        checkLength(unit::ByteCount::fromSizeT(data.size()));
         while (!data.empty()) {
-            const auto count = available(unit::ByteLength::fromSizeT(data.size())).toSizeTOrThrow();
+            const auto count = available(unit::ByteCount::fromSizeT(data.size())).toSizeTOrThrow();
             const auto offset = _data.length().toSizeT();
             _data.append(data.first(count));
             appended(offset);
@@ -73,45 +76,45 @@ public:
         }
     }
     /// Copy an overlapping match from prior output.
-    void appendRepeated(unit::ByteRange range, unit::ByteLength count) {
+    /// @throws err::OutOfRangeError If the appended bytes exceed the configured output limit.
+    void appendRepeated(unit::ByteRange range, unit::ByteCount count) {
         using namespace text::literals;
         checkLength(count);
         if (count.toRawValue() == 0U) {
             return;
         }
-        const auto distance = _length.toRawValue() - range.index().toRawValue();
-        const auto historyLength = _history.length().toRawValue();
-        if (range.index() >= unit::ByteIndex{_length.toRawValue()} || (_write && distance > historyLength)) {
-            throw err::LogicError{"Codec history reference is out of range."_el};
+        const auto distance = range.beginIndex().absoluteDistanceTo(unit::ByteIndex::end(_length));
+        const auto historyLength = _history.length();
+        if (range.beginIndex() >= unit::ByteIndex::end(_length) || (_write && distance > historyLength)) {
+            throw err::LogicFailure{"Codec history reference is out of range."_el};
         }
         while (count.toRawValue() != 0U) {
             auto part = available(count);
-            const auto offset = _data.length().toSizeT();
+            const auto offset = _data.length();
             if (distance <= offset) {
                 // The editor already implements overlapping repetition with bulk copies.
-                _data.appendRepeated(
-                    unit::ByteRange{unit::ByteIndex{offset - distance}, unit::ByteLength{distance}}, part);
+                _data.appendRepeated(unit::ByteRange{unit::ByteIndex::end(offset).retreated(distance), distance}, part);
             } else {
-                const auto index = static_cast<std::size_t>((_length.toRawValue() - distance) % historyLength);
-                part =
-                    std::min(part, unit::ByteLength{std::min(distance, historyLength - static_cast<uint64_t>(index))});
-                _data.append(_history.span().subspan(index, part.toSizeTOrThrow()));
+                const auto index = (_length - distance) % historyLength.toRawValue();
+                part = std::min({part, distance, historyLength - index});
+                _data.append(_history.span().subspan(index.toSizeTOrThrow(), part.toSizeTOrThrow()));
             }
-            appended(offset);
+            appended(offset.toSizeTOrThrow());
             count -= part;
         }
     }
     /// Read a retained output byte.
+    /// @throws err::OutOfRangeError If a buffered output index is outside the available bytes.
     auto getOrThrow(unit::ByteIndex index) const -> mem::Byte {
         using namespace text::literals;
         if (!_write) {
             return _data.getOrThrow(index);
         }
-        if (index.toRawValue() >= _length.toRawValue() ||
-            _length.toRawValue() - index.toRawValue() > _history.length().toRawValue()) {
-            throw err::LogicError{"Codec history reference is out of range."_el};
+        if (index >= unit::ByteIndex::end(_length) ||
+            index.absoluteDistanceTo(unit::ByteIndex::end(_length)) > _history.length()) {
+            throw err::LogicFailure{"Codec history reference is out of range."_el};
         }
-        return _history.getOrThrow(unit::ByteIndex{index.toRawValue() % _history.length().toRawValue()});
+        return _history.getOrThrow(unit::ByteIndex::end(index.distanceFromZero() % _history.length().toRawValue()));
     }
     /// Deliver pending output.
     void flush() {
@@ -121,7 +124,7 @@ public:
         }
     }
     /// Get the total output length.
-    auto length() const noexcept -> unit::ByteLength { return _length; }
+    auto length() const noexcept -> unit::ByteCount { return _length; }
     /// Test whether no output was produced.
     auto isEmpty() const noexcept -> bool { return _length.toRawValue() == 0; }
     /// Obtain collected output; streaming output is drained first.
@@ -132,7 +135,8 @@ public:
 
 private:
     /// Validate a complete append before accepting any of it.
-    void checkLength(unit::ByteLength count) const {
+    /// @throws err::OutOfRangeError If the appended bytes exceed the configured output limit.
+    void checkLength(unit::ByteCount count) const {
         using namespace text::literals;
         if (_length.addedOrThrow(count) > _maximum) {
             throw err::OutOfRangeError{"Codec output exceeds its limit."_el};
@@ -141,13 +145,13 @@ private:
     /// Prepare reusable storage before its first write.
     void prepareStorage() {
         if (_data.isEmpty()) {
-            _data.reserve(unit::ByteLength{65536U});
+            _data.reserve(unit::ByteCount{65536U});
         }
     }
     /// Choose a bounded append length.
-    auto available(unit::ByteLength count) -> unit::ByteLength {
+    auto available(unit::ByteCount count) -> unit::ByteCount {
         prepareStorage();
-        return _write ? std::min(count, unit::ByteLength{65536U} - _data.length()) : count;
+        return _write ? std::min(count, unit::ByteCount{65536U} - _data.length()) : count;
     }
     /// Retain the newest history bytes and publish a complete output buffer.
     void appended(std::size_t offset) {
@@ -161,7 +165,7 @@ private:
             _history.overwrite(unit::ByteIndex::fromSizeT(index), retained.first(first));
             _history.overwrite(retained.subspan(first));
         }
-        _length += unit::ByteLength::fromSizeT(bytes.size());
+        _length += unit::ByteCount::fromSizeT(bytes.size());
         flushIfFull();
     }
     /// Publish a complete output buffer.
@@ -172,10 +176,11 @@ private:
     }
 
 private:
-    Write _write;                                            ///< Output consumer, absent for collection.
-    mem::ByteBlockEditor _data;                              ///< Pending or collected output.
-    mem::ByteBuffer _history;                                ///< Circular match history.
-    unit::ByteLength _length;                                ///< Cumulative output length.
-    unit::ByteLength _maximum{unit::ByteLength::infinite()}; ///< Total output limit.
+    Write _write;                                          ///< Output consumer, absent for collection.
+    mem::ByteBlockEditor _data;                            ///< Pending or collected output.
+    mem::ByteBuffer _history;                              ///< Circular match history.
+    unit::ByteCount _length;                               ///< Cumulative output length.
+    unit::ByteCount _maximum{unit::ByteCount::infinite()}; ///< Total output limit.
 };
+
 }

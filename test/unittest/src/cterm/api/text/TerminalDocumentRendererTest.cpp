@@ -3,6 +3,7 @@
 
 #include "../buffer/CursorWriterTestProbe.hpp"
 
+#include "../../../core/ApplicationTestScope.hpp"
 #include "../../support/BlockStringTestHelper.hpp"
 
 #include <erbsland/cterm/CursorBuffer.hpp>
@@ -10,13 +11,13 @@
 #include <erbsland/cterm/impl/document_renderer/InlineTextBuilder.hpp>
 #include <erbsland/cterm/TerminalDocumentRenderer.hpp>
 #include <erbsland/cterm/TerminalDocumentStyle.hpp>
-#include <erbsland/err/DiagnosticHelper.hpp>
-#include <erbsland/err/Exception.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathErrorContext.hpp>
+#include <erbsland/DiagnosticHelper.hpp>
+#include <erbsland/Exception.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathErrorContext.hpp>
 #include <erbsland/system/impl/PosixErrorContext.hpp>
-#include <erbsland/text/TextDocument.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/TextDocument.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -69,6 +70,7 @@ public:
     }
 
     void testWriterRenderingUsesInlineStylesAndListMarkers() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         document.addHeading(1)->addText("Title"_el);
         auto paragraph = document.addParagraph();
@@ -95,6 +97,7 @@ public:
     }
 
     void testConsecutiveInlineListItemChildrenShareOneParagraph() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto item = document.addNumberedList(0)->addListItem();
         item->addStrong()->addText("White tea"_el);
@@ -107,6 +110,7 @@ public:
     }
 
     void testRendererCanRenderRepeatedDocuments() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto firstDocument = text::TextDocument{};
         firstDocument.addParagraph()->addText("first"_el);
         auto secondDocument = text::TextDocument{};
@@ -119,6 +123,7 @@ public:
     }
 
     void testFieldListUsesFormLayout() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.root()->add(text::TextNodeType::FieldList);
         auto first = list->add(text::TextNodeType::FieldItem);
@@ -137,6 +142,7 @@ public:
     }
 
     void testFieldListAlignsAtFirstAvailableColumn() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.root()->add(text::TextNodeType::FieldList);
         auto code = list->add(text::TextNodeType::FieldItem);
@@ -155,6 +161,7 @@ public:
     }
 
     void testFieldListStartsOversizedContentAfterLabel() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.root()->add(text::TextNodeType::FieldList);
         auto path = list->add(text::TextNodeType::FieldItem);
@@ -170,6 +177,7 @@ public:
     }
 
     void testContainerDecorationsSurroundAndPrefixContent() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto style = TerminalDocumentStyle{};
         style.edit(TerminalDocumentStyleSelector::blockquote())
             .setPrefix("top"_el)
@@ -183,6 +191,7 @@ public:
     }
 
     void testRenderToCursorBufferUsesMarginsAndTerminalWidthRules() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto style = TerminalDocumentStyle{};
         style.edit(TerminalDocumentStyleSelector::horizontalLine()).setMargins(block::Margins{1, 2, 0, 3});
 
@@ -202,6 +211,7 @@ public:
     }
 
     void testDeeplyNestedListsRenderWithoutDroppingItems() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.addBulletList(0);
         for (auto level = 0; level < 10; ++level) {
@@ -221,6 +231,7 @@ public:
     }
 
     void testManyInlineSpansRenderWithoutTextLoss() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto paragraph = document.addParagraph();
         auto expected = std::string{};
@@ -236,6 +247,7 @@ public:
     }
 
     void testSemanticSeparatorsAndEscapeSequencesControlWrappingWithoutHiddenCharacters() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto prefix = text::StringEditor{std::string(58, 'a')};
         auto separatorDocument = text::TextDocument{};
         auto separatorParagraph = separatorDocument.addParagraph();
@@ -269,6 +281,7 @@ public:
     }
 
     void testEffectiveWidthSnapshotsUseOneLayoutAlgorithm() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         document.addParagraph()->addText(text::StringEditor{std::string(70, 'x')});
         auto renderer = TerminalDocumentRenderer{};
@@ -285,6 +298,7 @@ public:
     }
 
     void testFramedDiagnosticUsesOnePrefixColumnForAllPhysicalLines() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto platform = std::make_shared<const erbsland::system::impl::PosixErrorContext>(2, "No such file"_el);
         const auto pathError = erbsland::path::PathError{erbsland::path::PathErrorContext{
             "Path could not be resolved"_el, "The path could not be resolved to its physical location."_el}
@@ -316,6 +330,7 @@ public:
     }
 
     void testTermListRenderingUsesColumnsAndOptionNames() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.add(text::TextNodeType::TermList);
         auto first = list->add(text::TextNodeType::TermItem);
@@ -357,6 +372,7 @@ public:
     }
 
     void testShortOptionRowsEnableLongOnlyFlagIndent() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.add(text::TextNodeType::TermList);
         auto first = list->add(text::TextNodeType::TermItem);
@@ -381,6 +397,7 @@ public:
     }
 
     void testOptionTermListKeepsMetaValuesInFirstColumn() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.add(text::TextNodeType::TermList);
         auto item = list->add(text::TextNodeType::TermItem);
@@ -398,6 +415,7 @@ public:
     }
 
     void testCodeSnippetUsesStableGutterAndMarkerStyles() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto lines = text::StringList{};
         lines.append("  padded value"_el);
@@ -436,6 +454,7 @@ public:
     }
 
     void testCodeSnippetWrapsPointMarkersAndWideCharacters() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto lines = text::StringList{};
         lines.append("abcdefghijklmnop"_el);
@@ -464,6 +483,7 @@ public:
     }
 
     void testWideTermListAlignsDescriptionsInCursorOutput() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.add(text::TextNodeType::TermList);
 
@@ -522,6 +542,7 @@ public:
     }
 
     void testNestedOptionDetailsUseAdditionalIndent() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.add(text::TextNodeType::TermList);
         auto item = list->add(text::TextNodeType::TermItem);
@@ -548,6 +569,7 @@ public:
     }
 
     void testAlignedTermListUsesQuarterWidthDescriptionColumn() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.add(text::TextNodeType::TermList);
         auto item = list->add(text::TextNodeType::TermItem);
@@ -566,6 +588,7 @@ public:
     }
 
     void testLongTermNameBreaksDescriptionAtTabStop() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.add(text::TextNodeType::TermList);
         auto item = list->add(text::TextNodeType::TermItem);
@@ -583,6 +606,7 @@ public:
     }
 
     void testUnknownWidthUsesNormalEightyColumnRendering() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.add(text::TextNodeType::TermList);
         auto item = list->add(text::TextNodeType::TermItem);
@@ -601,6 +625,7 @@ public:
     }
 
     void testSystemOutputStyleAddsOptionSemanticSuffixes() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto heading = document.addHeading(2);
         heading->setStyle("option-section"_el);
@@ -619,6 +644,7 @@ public:
     }
 
     void testNarrowWriterReceivesEightyColumnLayoutWithStyles() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.add(text::TextNodeType::TermList);
         auto item = list->add(text::TextNodeType::TermItem);
@@ -647,6 +673,7 @@ public:
     }
 
     void testLargeDocumentRepeatedRendersStayStable() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto expected = std::string{};
         for (auto index = 0; index < 96; ++index) {
@@ -665,6 +692,7 @@ public:
     }
 
     void testRendererHelpersAreDirectlyTestable() {
+        auto applicationScope = ApplicationTestScope<>{};
         REQUIRE_EQUAL(
             renderer_impl::collapsedVerticalMarginValue(block::Coordinate{2}, block::Coordinate{4}),
             block::Coordinate{4});

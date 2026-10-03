@@ -8,6 +8,7 @@
 #include "../conf/Value_fwd.hpp"
 #include "../conf/vr/Rules_fwd.hpp"
 #include "../cterm/Terminal_fwd.hpp"
+#include "../text/StringLiteral.hpp"
 
 #include <utility>
 
@@ -16,6 +17,8 @@ namespace erbsland::log {
 /// Parse and validate a logging configuration from any selected ELCL branch.
 /// @tested{LogConfigurationParserTest}
 class LogConfigurationParser final {
+    constexpr static auto cFormatValue = text::StringLiteral{"format"};
+
 public:
     /// Create a parser with an optional terminal for console-writer configuration.
     /// @param terminal The terminal used by configured console writers, or empty to reject console writers.
@@ -29,10 +32,14 @@ public:
     /// Validate and parse one document or section branch.
     /// @param sectionValue The selected ELCL section containing logging configuration values.
     /// @return A complete configuration with newly constructed built-in writers.
-    /// @throws conf::ConfError If the selected branch fails the compiled validation rules.
+    /// @throws conf::ConfError If the branch fails validation or has invalid or duplicate trace sections.
     [[nodiscard]] auto parse(const conf::ValuePtr &sectionValue) const -> LogConfiguration;
 
 private:
+    /// Parse complete line settings independently of the global format.
+    /// @param value The validated format section.
+    /// @return The settings, with omitted fields retaining library defaults.
+    [[nodiscard]] static auto parseLineFormat(const conf::ValuePtr &value) -> LogLineFormat;
     /// Parse one built-in writer definition.
     /// @param value The validated writer configuration object.
     /// @return A newly constructed built-in writer.

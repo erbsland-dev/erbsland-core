@@ -1,33 +1,32 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ConstantTimeApplication.hpp"
 
 #include "RunResults.hpp"
 #include "SelfTest.hpp"
 
-#include <erbsland/core/ApplicationError.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/protected_data/ProtectedDataMode.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/CpuArchitecture.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/cterm/TerminalDocumentRenderer.hpp>
-#include <erbsland/err/Exception.hpp>
-#include <erbsland/log/LogStream.hpp>
-#include <erbsland/options/OptionEditor.hpp>
-#include <erbsland/options/OptionManager.hpp>
-#include <erbsland/options/Options.hpp>
-#include <erbsland/options/OptionType.hpp>
-#include <erbsland/options/OptionValues.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/system/CpuArchitecture.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/LogStream.hpp>
+#include <erbsland/OperatingSystem.hpp>
+#include <erbsland/OptionEditor.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/ProtectedDataMode.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 #include <erbsland/system/impl/signal/ProcessSignalDispatcher.hpp>
-#include <erbsland/system/OperatingSystem.hpp>
 #include <erbsland/system/SystemInfo.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/time/TimePoint.hpp>
-#include <erbsland/unit/ExitCode.hpp>
-#include <erbsland/unit/Version.hpp>
+#include <erbsland/TimePoint.hpp>
+#include <erbsland/Version.hpp>
 
 #include <limits>
 
@@ -49,12 +48,12 @@ void ConstantTimeApplication::registerCommandLineOptions(const el::OptionsPtr &o
     options->setHelpTitle("Constant-time leakage assessment"_el);
     options->setHelpDescription(
         "Run selected experiments sequentially. Results are evidence from this build and platform, not proof of constant time."_el);
-    for (const auto &name : {"list-tests"_el, "all"_el, "self-test"_el}) {
+    for (const auto &name : {"list-tests"_el, cAllOption, "self-test"_el}) {
         options->addOption({el::StringFormat{"--{}"_el}.build(name), name})
             .setType(el::OptionType::Flag)
             .setHelpDescription(name);
     }
-    options->addOption({"--test"_el, "test"_el})
+    options->addOption({"--test"_el, cTestOption})
         .setType(el::OptionType::Text)
         .setMaximum(el::ArgumentCount::infinite())
         .setHelpDescription("Exact test ID; may be repeated."_el);
@@ -66,10 +65,10 @@ void ConstantTimeApplication::registerCommandLineOptions(const el::OptionsPtr &o
         .setType(el::OptionType::Integer)
         .setDefaultValue(int64_t{60})
         .setHelpDescription("Positive wall-time budget per test, including preparation."_el);
-    options->addOption({"--max-samples"_el, "max-samples"_el})
+    options->addOption({"--max-samples"_el, cMaxSamplesOption})
         .setType(el::OptionType::Integer)
         .setHelpDescription("Optional positive measurement count limit."_el);
-    options->addOption({"--seed"_el, "seed"_el})
+    options->addOption({"--seed"_el, cSeedOption})
         .setType(el::OptionType::Integer)
         .setHelpDescription("Nonnegative reproducible fixture seed."_el);
 }
@@ -77,7 +76,7 @@ void ConstantTimeApplication::registerCommandLineOptions(const el::OptionsPtr &o
 void ConstantTimeApplication::parseCommandLine() {
     try {
         Application::parseCommandLine();
-    } catch (const el::Exception &error) {
+    } catch (const el::RuntimeError &error) {
         throw el::ApplicationError{error.toString(), el::ExitCode{2}};
     }
 }
@@ -94,7 +93,7 @@ auto ConstantTimeApplication::main() -> el::ExitCode {
         });
     try {
         return execute();
-    } catch (const el::Exception &error) {
+    } catch (const el::RuntimeError &error) {
         logStream()->error(error.toString());
         return el::ExitCode{2};
     }
@@ -104,17 +103,17 @@ auto ConstantTimeApplication::execute() -> el::ExitCode {
     const auto &values = optionValues();
     const auto backend = values->getText("backend"_el);
     const auto duration = values->getInteger("duration-seconds"_el);
-    const auto maximum = values->getInteger("max-samples"_el);
-    const auto seed = values->getInteger("seed"_el);
+    const auto maximum = values->getInteger(cMaxSamplesOption);
+    const auto seed = values->getInteger(cSeedOption);
     if ((backend != "portable"_el && backend != "auto"_el && backend != "both"_el) || duration <= 0 || seed < 0 ||
-        (values->value("max-samples"_el) && maximum <= 0)) {
+        (values->value(cMaxSamplesOption) && maximum <= 0)) {
         throw el::ApplicationError{"Invalid backend, duration, sample limit, or seed."_el, el::ExitCode{2}};
     }
-    if (values->getFlag("all"_el) && !values->getTextList("test"_el).isEmpty()) {
+    if (values->getFlag(cAllOption) && !values->getTextList(cTestOption).isEmpty()) {
         throw el::ApplicationError{"--all and --test are mutually exclusive."_el, el::ExitCode{2}};
     }
     const auto registry = Registry::builtIn();
-    const auto selected = registry.select(values->getTextList("test"_el), values->getFlag("all"_el));
+    const auto selected = registry.select(values->getTextList(cTestOption), values->getFlag(cAllOption));
     auto runner = Runner{el::TimePoint::now, &_interrupted};
     if (values->getFlag("self-test"_el)) {
         SelfTest{}.checkDeterministic();
@@ -154,7 +153,7 @@ auto ConstantTimeApplication::execute() -> el::ExitCode {
     if (!ERBSLAND_CONSTANT_TIME_OPTIMIZED) {
         throw el::ApplicationError{"Timing experiments require a Release or RelWithDebInfo build."_el, el::ExitCode{2}};
     }
-    const auto actualSeed = values->value("seed"_el)
+    const auto actualSeed = values->value(cSeedOption)
         ? static_cast<uint64_t>(seed)
         : random().getUInt64(0, static_cast<uint64_t>(std::numeric_limits<int64_t>::max()));
     printBuild(actualSeed);
@@ -192,7 +191,7 @@ auto ConstantTimeApplication::execute() -> el::ExitCode {
                 });
                 printRecord(result.toString());
                 results.append(std::move(result));
-            } catch (const el::Exception &error) {
+            } catch (const el::RuntimeError &error) {
                 auto result = Result{TestMetadata{.id = entry.id()}, Outcome::Error, actualSeed};
                 result.setDetail(error.toString());
                 printRecord(result.toString());

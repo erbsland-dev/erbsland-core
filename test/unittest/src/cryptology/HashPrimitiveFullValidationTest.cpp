@@ -1,12 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "CryptologyResponseKeys.hpp"
 #include "CryptologyResponseReader.hpp"
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/Hmac.hpp>
+#include <erbsland/ByteBlock.hpp>
 #include <erbsland/cryptology/impl/algorithm/Blake2b.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/Hmac.hpp>
 
 #include <algorithm>
 #include <array>
@@ -24,19 +25,19 @@ class HashPrimitiveFullValidationTest final : public UNITTEST_SUBCLASS(Cryptolog
 private:
     void verifyBlake2b(const CryptologyResponseReader::Record &record) {
         record.requireAllowedSettings({"Hash"_el, "Keylen"_el, "Outlen"_el});
-        record.requireAllowedValues({"Count"_el, "Len"_el, "Msg"_el, "MD"_el});
-        record.requireValues({"Count"_el, "Len"_el, "Msg"_el, "MD"_el});
+        record.requireAllowedValues({"Count"_el, "Len"_el, response_key::cMessageField, "MD"_el});
+        record.requireValues({"Count"_el, "Len"_el, response_key::cMessageField, "MD"_el});
         REQUIRE_EQUAL(record.setting("Hash"_el), "BLAKE2b"_el);
         REQUIRE_EQUAL(record.unsignedSetting("Keylen"_el), 0U);
         REQUIRE_EQUAL(record.unsignedSetting("Outlen"_el), 512U);
-        const auto message = bytesFromHex(record.value("Msg"_el));
+        const auto message = bytesFromHex(record.value(response_key::cMessageField));
         REQUIRE_EQUAL(message.length().toSizeT() * 8U, record.unsignedValue("Len"_el));
         const auto expected = bytesFromHex(record.value("MD"_el));
 
-        auto whole = Blake2b{el::unit::ByteLength{64U}};
+        auto whole = Blake2b{el::unit::ByteCount{64U}};
         REQUIRE_EQUAL(ByteBlock{whole.digest(message.span())}, expected);
 
-        auto chunked = Blake2b{el::unit::ByteLength{64U}};
+        auto chunked = Blake2b{el::unit::ByteCount{64U}};
         for (auto offset = std::size_t{}; offset < message.length().toSizeT();) {
             const auto count = std::min(((offset * 17U) % 43U) + 1U, message.length().toSizeT() - offset);
             chunked.update(message.span().subspan(offset, count));
@@ -47,11 +48,12 @@ private:
 
     void verifyHmac(const CryptologyResponseReader::Record &record, const el::cryptology::HashAlgorithm algorithm) {
         record.requireAllowedSettings({"L"_el});
-        record.requireAllowedValues({"Count"_el, "Klen"_el, "Tlen"_el, "Key"_el, "Msg"_el, "Mac"_el});
-        record.requireValues({"Count"_el, "Klen"_el, "Tlen"_el, "Key"_el, "Msg"_el, "Mac"_el});
+        record.requireAllowedValues(
+            {"Count"_el, "Klen"_el, "Tlen"_el, "Key"_el, response_key::cMessageField, "Mac"_el});
+        record.requireValues({"Count"_el, "Klen"_el, "Tlen"_el, "Key"_el, response_key::cMessageField, "Mac"_el});
         REQUIRE_EQUAL(record.unsignedSetting("L"_el), algorithm.digestSize().toSizeT());
         const auto key = bytesFromHex(record.value("Key"_el));
-        const auto message = bytesFromHex(record.value("Msg"_el));
+        const auto message = bytesFromHex(record.value(response_key::cMessageField));
         const auto expected = bytesFromHex(record.value("Mac"_el));
         REQUIRE_EQUAL(key.length().toSizeT(), record.unsignedValue("Klen"_el));
         REQUIRE_EQUAL(expected.length().toSizeT(), record.unsignedValue("Tlen"_el));

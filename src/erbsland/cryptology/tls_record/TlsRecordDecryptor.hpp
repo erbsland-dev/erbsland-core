@@ -26,7 +26,8 @@ public:
     /// Create an empty record-decryptor placeholder.
     TlsRecordDecryptor() noexcept;
     /// Create RFC 8446 Sections 5.3 and 7.3 receiving state by consuming a matching traffic secret.
-    /// @throws err::ParameterError If the traffic secret does not match the suite hash.
+    /// @param trafficSecret The traffic secret to consume. Its hash algorithm must match the cipher suite.
+    /// @param suite The selected TLS cipher suite.
     /// @throws CryptologyError If key derivation or protected storage fails.
     TlsRecordDecryptor(TlsCipherSuite suite, TlsTrafficSecret &&trafficSecret);
     /// Securely erase record-protection state.
@@ -60,7 +61,7 @@ public: // tests
 
 public: // accessors
     /// Get the configured cipher suite.
-    /// @throws err::LogicError If this decryptor is empty.
+    /// This decryptor must not be empty.
     [[nodiscard]] auto suite() const -> TlsCipherSuite;
 
 private:

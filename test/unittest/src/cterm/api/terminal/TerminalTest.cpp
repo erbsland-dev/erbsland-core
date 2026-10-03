@@ -79,7 +79,7 @@ public:
         REQUIRE_EQUAL(firstBackend->_readLineCallCount, 1);
     }
 
-    void testInitializeScreenUsesDetectedSizeAndSafeMargin() {
+    void testInitializeScreenUsesFullDetectedSize() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         backend->_supportsCursorVisibilityCodes = false;
         backend->_detectedScreenSize = block::Size{6, 4};
@@ -90,13 +90,10 @@ public:
         REQUIRE_EQUAL(backend->_initializePlatformCallCount, 1);
         REQUIRE_EQUAL(backend->_detectScreenSizeCallCount, 1);
         REQUIRE_EQUAL(backend->_emitFlushCallCount, 1);
-        REQUIRE_EQUAL(terminal->size(), block::Size(5, 3));
+        REQUIRE_EQUAL(terminal->size(), block::Size(6, 4));
         REQUIRE_EQUAL(backend->_cursorVisibilityChanges.size(), std::size_t{1});
         REQUIRE_FALSE(backend->_cursorVisibilityChanges[0]);
         REQUIRE_EQUAL(backend->output(), std::string{});
-
-        terminal->setSafeMarginEnabled(false);
-        REQUIRE_EQUAL(terminal->size(), block::Size(6, 4));
 
         backend->_detectedScreenSize = block::Size{9, 7};
         terminal->testScreenSize();

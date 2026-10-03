@@ -12,8 +12,8 @@ part of a larger value.
 This page introduces :cpp:class:`Byte <erbsland::mem::Byte>`, explains why it is a better fit for binary data than a
 plain character or integer, and shows how to manipulate and convert bytes without hiding your intent.
 
-A Type That Says “This Is Binary Data”
-======================================
+The Byte Type
+=============
 
 The C++ language offers several types that occupy one byte, but they communicate different meanings.
 A ``char`` belongs to character data, while ``uint8_t`` is an integer that happens to be eight bits wide.
@@ -31,8 +31,8 @@ The library verifies at compile time that ``sizeof(Byte)`` equals ``sizeof(std::
 ``uint8_t``.
 You therefore gain a more expressive interface without making a byte larger or introducing runtime bookkeeping.
 
-Combining and Moving Bits
-=========================
+Bitwise Operators, Shifts, Rotations, and Masks
+===============================================
 
 When a byte contains flags or compact fields, the familiar ``|``, ``&``, ``^``, and ``~`` operators combine, retain,
 toggle, and invert bits.
@@ -57,7 +57,7 @@ first converting the byte to an integer.
 .. erbsland-demo::
     :source: mem/Byte/BitOperations.cpp
     :exec: mem/byte --demo BitOperations
-    :source-sha256: 64d8ed9f8f938951e867be3b2d134f5c996b6cd2cb309127456b2b760f8f7686
+    :sha256: 2745ac41fc083ae4461ef00238e4615f511bcb3a52eced9bee7ff1402d400874
 
 .. code-block:: cpp
 
@@ -72,7 +72,7 @@ first converting the byte to an integer.
             el::IntegerFormat::binary()
                 .setFlags(
                     el::IntegerFormatFlag::BasePrefix | el::IntegerFormatFlag::ZeroFill | el::IntegerFormatFlag::Separator)
-                .setFieldWidth(el::CpLength{8U});
+                .setFieldWidth(el::CpCount{8U});
         const auto silkRouteMarker = el::Byte{0b10110110U};
         const auto transportMask = el::Byte{0b11000000U};
         const auto verifiedFlag = el::Byte{0b00100000U};
@@ -128,29 +128,31 @@ first converting the byte to an integer.
         el::io::printLine("Sea route          : "_el, el::BooleanFormat::yesNo(), isSeaRoute);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Route              : Zijderoute
-    Original marker    : 0b1011'0110
-    Combined flags     : 0b1011'0110
-    Transport field    : 0b1000'0000
-    Toggled flags      : 0b1001'0110
-    Inverted flags     : 0b0100'1001
-    Edited flags       : 0b1010'0000
-    Operator shifts    : 0b0001'1011
-    Named shifts       : 0b0001'1011
-    In-place shifts    : 0b0001'1011
-    Rotated left       : 0b1101'1010
-    Rotated right      : 0b1010'1101
-    Rotation restored  : yes
-    Masked transport   : 0b1000'0000
-    Sea route          : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRoute              : Zijderoute
+        Original marker    : 0b1011'0110
+        Combined flags     : 0b1011'0110
+        Transport field    : 0b1000'0000
+        Toggled flags      : 0b1001'0110
+        Inverted flags     : 0b0100'1001
+        Edited flags       : 0b1010'0000
+        Operator shifts    : 0b0001'1011
+        Named shifts       : 0b0001'1011
+        In-place shifts    : 0b0001'1011
+        Rotated left       : 0b1101'1010
+        Rotated right      : 0b1010'1101
+        Rotation restored  : yes
+        Masked transport   : 0b1000'0000
+        Sea route          : yes␛[0m
 
 .. erbsland-demo-end::
 
-Crossing Type Boundaries Explicitly
-===================================
+Explicit Byte, Integer, and Character Conversions
+=================================================
 
 Binary data eventually meets another interface: a system API expects ``std::byte``, a parser needs a wider unsigned
 integer, or a byte represents a character from a known single-byte encoding.
@@ -171,7 +173,7 @@ during review.
 .. erbsland-demo::
     :source: mem/Byte/Conversions.cpp
     :exec: mem/byte --demo Conversions
-    :source-sha256: 5651b9442ef84b85aef1adb32de8e0318fe75aa3afa95e30b678142006a9b532
+    :sha256: 186be8f583ad28e6873d4055502f8843c7db6c022cf6ab123ee0b8a7d955f7bd
 
 .. code-block:: cpp
 
@@ -185,7 +187,7 @@ during review.
             el::IntegerFormat::binary()
                 .setFlags(
                     el::IntegerFormatFlag::BasePrefix | el::IntegerFormatFlag::ZeroFill | el::IntegerFormatFlag::Separator)
-                .setFieldWidth(el::CpLength{8U});
+                .setFieldWidth(el::CpCount{8U});
 
         // Create bytes from values read from a compact route archive.
         const auto direction = el::Byte::fromChar('E');
@@ -215,20 +217,22 @@ during review.
         el::io::printLine("As uint64_t        : "_el, byteFormat, count64);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Route              : Zijderoute
-    Direction          : E
-    Waypoint           : 0b0010'1010
-    Legacy marker      : 0b1010'1011
-    Map marker         : 0b1100'1101
-    Catalog marker     : 0b1111'0000
-    As std::byte       : 0b0010'1010
-    As uint8_t         : 0b0010'1010
-    As uint16_t        : 0b0010'1010
-    As uint32_t        : 0b0010'1010
-    As uint64_t        : 0b0010'1010
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRoute              : Zijderoute
+        Direction          : E
+        Waypoint           : 0b0010'1010
+        Legacy marker      : 0b1010'1011
+        Map marker         : 0b1100'1101
+        Catalog marker     : 0b1111'0000
+        As std::byte       : 0b0010'1010
+        As uint8_t         : 0b0010'1010
+        As uint16_t        : 0b0010'1010
+        As uint32_t        : 0b0010'1010
+        As uint64_t        : 0b0010'1010␛[0m
 
 .. erbsland-demo-end::
 

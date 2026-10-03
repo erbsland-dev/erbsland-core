@@ -4,6 +4,10 @@
 #include "CatalogServerPart.hpp"
 #include "CatalogStoragePart.hpp"
 
+#include <erbsland/ApplicationPartManager.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/StandardStreams.hpp>
+
 #include <exception>
 
 namespace demo {

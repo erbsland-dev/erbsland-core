@@ -36,7 +36,7 @@ namespace erbsland::re::impl::parser {
             text::StringEditor maxString;
             if (state.currentChar().isDigitValue(text::IntegerBase::Decimal)) {
                 while (state.currentChar().isDigitValue(text::IntegerBase::Decimal)) {
-                    if (minString.length() >= unit::ByteLength{5U}) {
+                    if (minString.length() >= unit::ByteCount{5U}) {
                         state.throwParsingError("Quantifier is too large. A maximum of five digits is allowed"_el);
                     }
                     minString.append(state.currentChar());
@@ -47,7 +47,7 @@ namespace erbsland::re::impl::parser {
                     minimum = minString.toInteger<std::uint16_t>();
                     if (state.currentChar().isDigitValue(text::IntegerBase::Decimal)) {
                         while (state.currentChar().isDigitValue(text::IntegerBase::Decimal)) {
-                            if (maxString.length() >= unit::ByteLength{5U}) {
+                            if (maxString.length() >= unit::ByteCount{5U}) {
                                 state.throwParsingError(
                                     "Quantifier is too large. A maximum of five digits is allowed"_el);
                             }
@@ -89,7 +89,7 @@ namespace erbsland::re::impl::parser {
                 }
                 if (state.currentChar().isDigitValue(text::IntegerBase::Decimal)) {
                     while (state.currentChar().isDigitValue(text::IntegerBase::Decimal)) {
-                        if (maxString.length() >= unit::ByteLength{5U}) {
+                        if (maxString.length() >= unit::ByteCount{5U}) {
                             state.throwParsingError("Quantifier is too large. A maximum of five digits is allowed"_el);
                         }
                         maxString.append(state.currentChar());

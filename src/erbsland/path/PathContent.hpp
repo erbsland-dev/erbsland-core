@@ -6,6 +6,8 @@
 #include "PathContent_fwd.hpp"
 #include "PathReadDataOptions.hpp"
 #include "PathReadTextOptions.hpp"
+#include "PathReplaceDataOptions.hpp"
+#include "PathReplaceTextOptions.hpp"
 #include "PathWriteDataOptions.hpp"
 #include "PathWriteTextOptions.hpp"
 
@@ -17,13 +19,13 @@
 #include "../stream/TextOutputStream_fwd.hpp"
 #include "../text/String.hpp"
 #include "../text/StringEditor.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../util/Result.hpp"
 
 namespace erbsland::path {
 
 /// Allows access to the content of a path.
-/// @tested{PathContentTest}
+/// @tested{PathContentTest PathReplacementTest}
 class PathContent final {
 public:
     /// Create an empty instance.
@@ -56,21 +58,19 @@ public: // content methods
     /// @return The string read from the file or std::nullopt on any error.
     [[nodiscard]] auto readText(PathReadTextOptions options = {}) const noexcept -> std::optional<text::String>;
     /// Read the contents of a file into a string.
-    /// @param options The read options.
+    /// @param options The read options. The file must not exceed the configured byte or code-point length limits.
     /// @return The string read from the file.
     /// @throws PathError if the operation failed (no file, access errors, etc.)
     /// @throws text::EncodingError if the operation failed due to encoding errors.
-    /// @throws err::OutOfRangeError if the file exceeds a set maximum length.
     [[nodiscard]] auto readTextOrThrow(PathReadTextOptions options = {}) const -> text::String;
     /// Read the contents of a file as byte data.
     /// @param options The read options.
     /// @return The byte block read from the file or std::nullopt on any error.
     [[nodiscard]] auto readData(PathReadDataOptions options = {}) const noexcept -> std::optional<mem::ByteBlock>;
     /// Read the contents of a file as byte data.
-    /// @param options The read options.
+    /// @param options The read options. The file must not exceed the configured maximum byte length.
     /// @return The byte block read from the file.
     /// @throws PathError if the operation failed (no file, access errors, etc.)
-    /// @throws err::OutOfRangeError if the file exceeds a set maximum length.
     [[nodiscard]] auto readDataOrThrow(PathReadDataOptions options = {}) const -> mem::ByteBlock;
     /// Write text into the file at this path.
     /// @param text The text to write.
@@ -92,6 +92,30 @@ public: // content methods
     /// @param data The data to write.
     /// @throws PathError if the operation failed (no file, access errors, etc.)
     void writeDataOrThrow(const mem::ByteBlock &data, PathWriteDataOptions options = {}) const;
+    /// Replace complete text content through a sibling temporary file.
+    /// @param text The complete replacement content.
+    /// @param options The replacement and backup policies.
+    /// @return Success after replacement, or Failure on any error.
+    [[nodiscard]] auto replaceText(const text::String &text, PathReplaceTextOptions options = {}) const noexcept
+        -> util::Result;
+    /// Replace complete text content through a sibling temporary file.
+    /// @param text The complete replacement content.
+    /// @param options The replacement and backup policies.
+    /// @throws PathError If any replacement stage fails, retaining its original cause.
+    /// @seedoc{/reference/path/file_system_paths}
+    void replaceTextOrThrow(const text::String &text, PathReplaceTextOptions options = {}) const;
+    /// Replace complete data content through a sibling temporary file.
+    /// @param data The complete replacement content.
+    /// @param options The replacement and backup policies.
+    /// @return Success after replacement, or Failure on any error.
+    [[nodiscard]] auto replaceData(const mem::ByteBlock &data, PathReplaceDataOptions options = {}) const noexcept
+        -> util::Result;
+    /// Replace complete data content through a sibling temporary file.
+    /// @param data The complete replacement content.
+    /// @param options The replacement and backup policies.
+    /// @throws PathError If any replacement stage fails, retaining its original cause.
+    /// @seedoc{/reference/path/file_system_paths}
+    void replaceDataOrThrow(const mem::ByteBlock &data, PathReplaceDataOptions options = {}) const;
     /// Open a file as a text stream for reading.
     /// The read limits (bytes and code-points) are ignored when reading from a stream.
     /// @param options The options to use.

@@ -15,6 +15,7 @@
 
 namespace erbsland::compression::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 DeflateDecoder::DeflateDecoder(CodecReader &input, const DecompressionOptions &options, CodecOutput::Write output) :
@@ -76,7 +77,7 @@ void DeflateDecoder::decodeStored() {
     if (!_reader.canReadBytes(length)) {
         throw CompressionError{CompressionErrorReason::MalformedData, "Deflate stored payload is truncated."_el};
     }
-    if (_output.length().addedOrThrow(unit::ByteLength{length}) > _options.maximumOutputLength()) {
+    if (_output.length().addedOrThrow(ByteCount{length, ByteCount::Unchecked{}}) > _options.maximumOutputLength()) {
         throw err::OutOfRangeError{"Deflate output exceeds the configured maximum."_el};
     }
     auto remaining = static_cast<std::size_t>(length);
@@ -154,20 +155,22 @@ void DeflateDecoder::decodeCompressed(
             throw CompressionError{CompressionErrorReason::MalformedData, "Deflate length symbol is invalid."_el};
         }
         const auto lengthIndex = static_cast<std::size_t>(symbol - cFirstLengthSymbol);
-        const auto length = unit::ByteLength{
+        const auto length = ByteCount{
             static_cast<uint64_t>(deflate_tables::cLengthBase[lengthIndex]) +
-            _reader.readBits(deflate_tables::cLengthExtra[lengthIndex])};
+                _reader.readBits(deflate_tables::cLengthExtra[lengthIndex]),
+            ByteCount::Unchecked{}};
         const auto distanceSymbol = distanceTable.decode(_reader);
         if (distanceSymbol > cMaximumDistanceSymbol) {
             throw CompressionError{CompressionErrorReason::MalformedData, "Deflate distance symbol is invalid."_el};
         }
-        const auto distance = unit::ByteLength{
+        const auto distance = ByteCount{
             static_cast<uint64_t>(deflate_tables::cDistanceBase[distanceSymbol]) +
-            _reader.readBits(deflate_tables::cDistanceExtra[distanceSymbol])};
+                _reader.readBits(deflate_tables::cDistanceExtra[distanceSymbol]),
+            ByteCount::Unchecked{}};
         if (distance.isZero() || distance > _output.length()) {
             throw CompressionError{CompressionErrorReason::MalformedData, "Deflate distance exceeds prior output."_el};
         }
-        _output.appendRepeated(unit::ByteRange{unit::ByteIndex::end(_output.length() - distance), distance}, length);
+        _output.appendRepeated(ByteRange{ByteIndex::end(_output.length() - distance), distance}, length);
     }
 }
 

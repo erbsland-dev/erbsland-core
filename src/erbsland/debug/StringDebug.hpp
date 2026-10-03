@@ -42,8 +42,8 @@ template <typename T>
 [[nodiscard]] auto toDebugString(
     const T &value,
     DebugViewDetails details = DebugViewDetail::Default,
-    unit::CpLength indentWidth = unit::CpLength{4U},
-    unit::CpLength initialIndentWidth = unit::CpLength::zero()) -> text::String {
+    unit::CpCount indentWidth = unit::CpCount{4U},
+    unit::CpCount initialIndentWidth = unit::CpCount::zero()) -> text::String {
     return toDebugTree(value, details).toString(indentWidth, initialIndentWidth);
 }
 

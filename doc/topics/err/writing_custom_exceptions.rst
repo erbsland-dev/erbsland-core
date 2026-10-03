@@ -16,21 +16,22 @@ that a neutral exception cannot express.
 This page starts with a minimal named type, then develops the context and diagnostic patterns used by Erbsland Core
 itself.
 
-Start with the Smallest Useful Type
-===================================
+Choosing a Base Class for a Custom Exception
+============================================
 
 Use an existing neutral exception when its category and reason are sufficient.
 A custom type is valuable when callers need a specific catch clause, when several operations share the same failure
 contract, or when you want to attach a domain diagnostic.
 
 Derive from :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` for failures that application code may handle.
-Derive from :cpp:class:`LogicError <erbsland::err::LogicError>` for broken invariants and invalid API use.
+Derive from :cpp:class:`LogicFailure <erbsland::err::LogicFailure>` for broken invariants and invalid API use.
+Name recoverable exception classes with the suffix ``Error`` and fatal exception classes with ``Failure``.
 A minimal type can inherit the base constructors and therefore receives reason and cause support without boilerplate.
 
 .. erbsland-demo::
     :source: err/Exception/MinimalCustomException.cpp
     :exec: err/exception --demo MinimalCustomException
-    :source-sha256: b6b4928d7da851abf036df76cf5fb8f794c4a3234a17e2b6045fcee9988076d9
+    :sha256: 3a2876f749ef72d7e83d26bf6455fab5d801a7ad94097a642775493971c0a2cd
 
 .. code-block:: cpp
 
@@ -51,10 +52,12 @@ A minimal type can inherit the base constructors and therefore receives reason a
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Instrument setup: The koto is missing one string.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInstrument setup: The koto is missing one string.␛[0m
 
 .. erbsland-demo-end::
 
@@ -62,8 +65,8 @@ Prefer one exception type for a coherent family of failures.
 Put machine-readable reasons or operation details in its context instead of creating a separate derived class for every
 message.
 
-Keep Details in a Context Object
-================================
+Storing Error Details in Context Objects
+========================================
 
 For a richer error, create a value type named ``MyErrorContext`` and let ``MyError`` own it.
 The context can collect a title, description, source information, operation identifiers, or domain-specific values
@@ -81,7 +84,7 @@ the available details before transferring the context into the exception.
 .. erbsland-demo::
     :source: err/Exception/ContextPattern.cpp
     :exec: err/exception --demo ContextPattern
-    :source-sha256: 727560a39d566e74c65cdbf13d48cc2924f314acf64aa165dadf0d4aeec44341
+    :sha256: a1cd1646b08f986bf986cceb68393b1bad4f20c36cbf5b10743c9762206c4cf2
 
 .. code-block:: cpp
 
@@ -131,9 +134,8 @@ the available details before transferring the context into the exception.
         el::io::printLine("Simple: "_el, simpleError.reason());
 
         try {
-            throw InstrumentSetupError{InstrumentErrorContext{"The string could not be tuned."_el}
-                                           .setInstrument("三味線"_el)
-                                           .setStringNumber(2)};
+            throw InstrumentSetupError{
+                InstrumentErrorContext{"The string could not be tuned."_el}.setInstrument("三味線"_el).setStringNumber(2)};
         } catch (const InstrumentSetupError &error) {
             el::io::printLine(
                 "Detailed: "_el,
@@ -145,21 +147,23 @@ the available details before transferring the context into the exception.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Simple: The instrument could not be prepared.
-    Detailed: 三味線 string 2: The string could not be tuned.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSimple: The instrument could not be prepared.
+        Detailed: 三味線 string 2: The string could not be tuned.␛[0m
 
 .. erbsland-demo-end::
 
 Let the exception reason be a concise description that remains useful through ``what()`` and ``toString()``.
 Keep additional fields in the context and expose the complete context through a const accessor.
 If the custom exception can wrap another failure, pass its ``std::exception_ptr`` to the ``RuntimeError`` or
-``LogicError`` constructor.
+``LogicFailure`` constructor.
 
-Translate Context into a Diagnostic
-===================================
+Generating Diagnostics from Error Context
+=========================================
 
 Override :cpp:func:`Exception::diagnostic() <erbsland::err::Exception::diagnostic>` when the context contains more than
 a plain reason.
@@ -175,7 +179,7 @@ Add domain details as semantic ``TextNode`` structures.
 .. erbsland-demo::
     :source: err/ErrorDocumentBuilder/CustomDiagnostic.cpp
     :exec: err/error_document_builder --demo CustomDiagnostic
-    :source-sha256: e741ad47f5f00dc1f3339d470d237b3ce86115650fd3e2a5b1255368106a8616
+    :sha256: 16b47c5a1ef9da8690a0e23acace2929778c99d4af6490a0518230761c6332d5
 
 .. code-block:: cpp
 
@@ -188,9 +192,8 @@ Add domain details as semantic ``TextNode`` structures.
 
     public: // implement Diagnostic
         [[nodiscard]] auto sourcePath() const noexcept -> el::String override { return _sourcePath; }
-        [[nodiscard]] auto toTextDocument(const el::DisplayTextMapConstPtr &displayText) const
-            -> el::TextDocument override {
-            auto builder = el::ErrorDocumentBuilder{_problem, {}, displayText};
+        [[nodiscard]] auto toTextDocument() const -> el::TextDocument override {
+            auto builder = el::ErrorDocumentBuilder{_problem, {}};
             builder.addSource({}, _sourcePath, {});
             builder.addSection("Instrument"_el);
             auto paragraph = builder.root()->addParagraph();
@@ -209,9 +212,7 @@ Add domain details as semantic ``TextNode`` structures.
     class InstrumentError final : public el::RuntimeError {
     public:
         InstrumentError(el::String instrument, el::String problem, el::String sourcePath) :
-            RuntimeError{problem},
-            _instrument{std::move(instrument)},
-            _sourcePath{std::move(sourcePath)} {}
+            RuntimeError{problem}, _instrument{std::move(instrument)}, _sourcePath{std::move(sourcePath)} {}
         ~InstrumentError() override = default;
 
     public: // implement Exception
@@ -226,19 +227,22 @@ Add domain details as semantic ``TextNode`` structures.
 
     /// Reporting code remains independent from the custom exception and diagnostic implementations.
     void customDiagnostic() {
-        const auto error = InstrumentError{"箏\x1b[31m"_el, "The instrument could not be prepared."_el, "舞台/春/箏.music"_el};
+        const auto error =
+            InstrumentError{"箏\x1b[31m"_el, "The instrument could not be prepared."_el, "舞台/春/箏.music"_el};
         auto document = el::DiagnosticHelper{error}.toDocument();
         el::io::printLine(document.toString());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Error: The instrument could not be prepared.
-    Error Source:
-      Path: 舞台/春/箏.music
-    Instrument:
-      Subject: 箏\033[31m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mError: The instrument could not be prepared.
+        Error Source:
+          Path: 舞台/春/箏.music
+        Instrument:
+          Subject: 箏\u{1b}[31m␛[0m
 
 .. erbsland-demo-end::
 
@@ -246,17 +250,17 @@ Keep the diagnostic renderer-neutral.
 Do not insert ANSI sequences or align fields with spaces.
 Use semantic nodes and let plain-text, terminal, or future renderers choose their presentation.
 
-Handle External Text Safely
-===========================
+Escaping External Text in Error Diagnostics
+===========================================
 
 Developer-authored titles, descriptions, and labels are trusted application text.
 Paths, arguments, native messages, file contents, and foreign exception messages may contain control characters.
 Add such values with escaped text nodes, as the custom diagnostic above does with ``addEscapedText()``.
 Use a semantic style for values such as paths when a renderer should treat them specially.
 
-Pass the display-text map received by ``toTextDocument()`` into ``ErrorDocumentBuilder``.
-This allows the reporting boundary to choose structural wording consistently, including when your diagnostic appears
-inside a cause chain from a different domain.
+``ErrorDocumentBuilder`` resolves structural wording through the application display-text registry.
+Register compiled catalogs or install a translator on that registry to customize labels consistently, including when
+your diagnostic appears inside a cause chain from a different domain.
 
 With these boundaries in place, the exception controls failure propagation, the context stores domain facts, the
 diagnostic describes those facts semantically, and the final renderer controls presentation.

@@ -5,17 +5,17 @@ Reference Page Guidelines
 
 .. note::
 
-    The ``pre_commit`` or ``reference_doc`` utilities create and update only pages explicitly configured in
-    ``utilities/conf/reference_doc.elcl``. They manage the final ``Interface`` section of those pages.
+    The ``pre-commit`` or ``doc-update-reference`` utilities create and update only pages explicitly configured in
+    ``tool/conf/tools/doc_update_reference.elcl``. They manage the final ``Interface`` section of those pages.
 
 File Structure
 ==============
 
-1.  The configuration `utilities/conf/reference_doc.elcl` assigns public headers to reference groups. Each group owns
+1.  The configuration `tool/conf/tools/doc_update_reference.elcl` assigns public headers to reference groups. Each group owns
     one page and can select headers by exact source-relative path or ``Header Globs``. A selected header must belong to
     exactly one group.
 
-2.  The ``update_doc`` utility (and ``pre_commit``) automatically create and update reference documentation pages.
+2.  The ``doc-update-reference`` command (and ``pre-commit``) automatically create and update reference documentation pages.
 
     -   Only the framework with "Interface" is created/updated.
     -   Pages no longer owned by a group are removed. Register prose-only pages in ``Manual Reference Pages`` before
@@ -59,3 +59,5 @@ Related Guidelines
 *   Read :doc:`writing_style` about the tone, vocabulary and style how our documentation shall be written.
 *   Read :doc:`examples` for guidelines how to write example and demos code.
 *   Read :doc:`demo` how to write demos and integrate them into documentation pages.
+
+See :doc:`demo_integration` for synchronized source excerpts, selectors, captured output, and full-source views.

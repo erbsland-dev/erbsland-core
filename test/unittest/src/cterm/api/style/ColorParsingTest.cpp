@@ -3,7 +3,7 @@
 
 #include "../../support/TestHelper.hpp"
 
-#include <erbsland/err/ParseError.hpp>
+#include <erbsland/ParseError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>

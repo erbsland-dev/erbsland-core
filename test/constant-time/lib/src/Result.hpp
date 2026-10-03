@@ -6,10 +6,9 @@
 #include "Outcome.hpp"
 #include "TestMetadata.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/time/TimeDelta.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TimeDelta.hpp>
 
 namespace app::constant_time {
 

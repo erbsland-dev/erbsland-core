@@ -9,7 +9,7 @@
 #include "impl/ByteReadTools.hpp"
 
 #include "../err/OutOfRangeError.hpp"
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <algorithm>
@@ -17,11 +17,12 @@
 
 namespace erbsland::mem {
 
+using namespace err;
 using namespace text::literals;
 using impl::ByteBlockDataPtr;
 using impl::ByteModifyTools;
+using unit::ByteCount;
 using unit::ByteIndex;
-using unit::ByteLength;
 using unit::ByteRange;
 
 ByteBlockEditor::ByteBlockEditor() = default;
@@ -36,7 +37,7 @@ auto ByteBlockEditor::operator=(const ByteBlockEditor &) -> ByteBlockEditor & = 
 
 auto ByteBlockEditor::operator=(ByteBlockEditor &&) noexcept -> ByteBlockEditor & = default;
 
-ByteBlockEditor::ByteBlockEditor(const ByteLength length, const Byte value) :
+ByteBlockEditor::ByteBlockEditor(const ByteCount length, const Byte value) :
     _data{ByteModifyTools<>::createData(length.toSizeTOrThrow(), length.toSizeTOrThrow())} {
     if (!_data.isNull()) {
         impl::ByteWriteTools{ByteSpan{_data.get()->data(), static_cast<std::size_t>(_data.get()->size())}}.fill(
@@ -121,7 +122,7 @@ auto ByteBlockEditor::contains(const ConstByteSpan bytes) const noexcept -> bool
     return impl::ByteComparisonTools{dataView()}.contains(impl::ByteDataView{bytes});
 }
 
-auto ByteBlockEditor::length() const noexcept -> ByteLength {
+auto ByteBlockEditor::length() const noexcept -> ByteCount {
     return dataView().length();
 }
 
@@ -142,7 +143,7 @@ void ByteBlockEditor::set(const ByteIndex index, const Byte value) {
 
 void ByteBlockEditor::setOrThrow(const ByteIndex index, const Byte value) {
     if (!index.isValid() || index.toSizeT() >= length().toSizeT()) {
-        throw err::OutOfRangeError{"Write position out of range"};
+        throw OutOfRangeError{"Write position out of range"};
     }
     impl::ByteWriteTools{writableSpan()}.setOrThrow(index, value);
 }
@@ -156,7 +157,7 @@ void ByteBlockEditor::xorAt(const ByteIndex index, const Byte value) {
 
 void ByteBlockEditor::xorAtOrThrow(const ByteIndex index, const Byte value) {
     if (!index.isValid() || index.toSizeT() >= length().toSizeT()) {
-        throw err::OutOfRangeError{"Write position out of range"};
+        throw OutOfRangeError{"Write position out of range"};
     }
     impl::ByteWriteTools{writableSpan()}.xorAtOrThrow(index, value);
 }
@@ -173,7 +174,7 @@ auto ByteBlockEditor::slice(const ByteIndex begin, const ByteIndex end) const no
     return slice(ByteRange{begin, end});
 }
 
-auto ByteBlockEditor::slice(const ByteIndex begin, const ByteLength length) const noexcept -> ByteBlock {
+auto ByteBlockEditor::slice(const ByteIndex begin, const ByteCount length) const noexcept -> ByteBlock {
     return slice(ByteRange{begin, length});
 }
 
@@ -226,7 +227,7 @@ void ByteBlockEditor::secureErase() {
     ByteModifyTools{_data}.secureErase();
 }
 
-auto ByteBlockEditor::resize(const ByteLength length) -> ByteBlockEditor & {
+auto ByteBlockEditor::resize(const ByteCount length) -> ByteBlockEditor & {
     ByteModifyTools{_data}.resize(length);
     return *this;
 }
@@ -261,7 +262,7 @@ auto ByteBlockEditor::insert(const ByteIndex index, const ConstByteSpan bytes) -
     return *this;
 }
 
-auto ByteBlockEditor::append(const Byte value, const ByteLength length) -> ByteBlockEditor & {
+auto ByteBlockEditor::append(const Byte value, const ByteCount length) -> ByteBlockEditor & {
     ByteModifyTools{_data}.append(value, length);
     return *this;
 }
@@ -276,7 +277,7 @@ auto ByteBlockEditor::append(const ConstByteSpan bytes) -> ByteBlockEditor & {
     return *this;
 }
 
-auto ByteBlockEditor::appendRepeated(const ByteRange sourceRange, const ByteLength outputLength) -> ByteBlockEditor & {
+auto ByteBlockEditor::appendRepeated(const ByteRange sourceRange, const ByteCount outputLength) -> ByteBlockEditor & {
     ByteModifyTools{_data}.appendRepeated(sourceRange, outputLength);
     return *this;
 }
@@ -291,7 +292,7 @@ auto ByteBlockEditor::overwrite(const ConstByteSpan bytes) -> ByteBlockEditor & 
 }
 
 auto ByteBlockEditor::overwrite(const ByteIndex index, const ConstByteSpan bytes) -> ByteBlockEditor & {
-    return overwrite(ByteRange{index, ByteLength::infinite()}, bytes);
+    return overwrite(ByteRange{index, ByteCount::infinite()}, bytes);
 }
 
 auto ByteBlockEditor::overwrite(const ByteRange range, const ConstByteSpan bytes) -> ByteBlockEditor & {
@@ -314,7 +315,7 @@ auto ByteBlockEditor::xorWith(const ByteBlock &bytes) -> bool {
 
 auto ByteBlockEditor::xorWithOrThrow(const ByteBlock &bytes) -> ByteBlockEditor & {
     if (!xorWith(bytes)) {
-        throw err::ParameterError{"XOR operands must have equal lengths"_el, "bytes"_el};
+        throw ParameterFailure{"XOR operands must have equal lengths"_el, "bytes"_el};
     }
     return *this;
 }
@@ -325,7 +326,7 @@ auto ByteBlockEditor::xorWith(const ConstByteSpan bytes) -> bool {
 
 auto ByteBlockEditor::xorWithOrThrow(const ConstByteSpan bytes) -> ByteBlockEditor & {
     if (!xorWith(bytes)) {
-        throw err::ParameterError{"XOR operands must have equal lengths."_el, "bytes"_el};
+        throw ParameterFailure{"XOR operands must have equal lengths."_el, "bytes"_el};
     }
     return *this;
 }
@@ -383,11 +384,11 @@ void ByteBlockEditor::detach() {
     ByteModifyTools{_data}.detach();
 }
 
-auto ByteBlockEditor::capacity() const noexcept -> ByteLength {
-    return _data.isNull() ? ByteLength::zero() : ByteLength::fromSizeT(_data.constGet()->capacity());
+auto ByteBlockEditor::capacity() const noexcept -> ByteCount {
+    return _data.isNull() ? ByteCount::zero() : ByteCount::fromSizeT(_data.constGet()->capacity());
 }
 
-void ByteBlockEditor::reserve(const ByteLength capacity) {
+void ByteBlockEditor::reserve(const ByteCount capacity) {
     ByteModifyTools{_data}.reserve(capacity);
 }
 
@@ -445,7 +446,7 @@ auto ByteBlockEditor::writableSpan() -> ByteSpan {
     return ByteModifyTools{_data}.writableData();
 }
 
-auto ByteBlockEditor::appendZeroed(const ByteLength length) -> ByteIndex {
+auto ByteBlockEditor::appendZeroed(const ByteCount length) -> ByteIndex {
     return ByteModifyTools{_data}.appendZeroed(length);
 }
 

@@ -6,10 +6,10 @@
 
 #include "../ZipError.hpp"
 
-#include "../../../compression/CompressionAlgorithm.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../mem/ByteWriter_fwd.hpp"
 #include "../../../text/String.hpp"
+#include "../../CompressionAlgorithm.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -49,15 +49,8 @@ void dateTimeToDos(const time::Timestamp &dateTime, uint16_t &date, uint16_t &ti
     const mem::ByteBlock &extra, time::Timestamp fallback, mem::ByteWriter *opaque = nullptr) -> time::Timestamp;
 /// Append the managed Extended Timestamp modification-time field.
 void appendExtendedTimestamp(mem::ByteWriter &extra, const time::Timestamp &dateTime);
-/// Match a normalized ZIP path against the documented `*`, `?`, and `**` syntax.
-[[nodiscard]] auto globMatches(const text::String &pattern, const text::String &value) noexcept -> bool;
-
 /// Throw a malformed-archive error with shared context.
 [[noreturn]] void throwMalformed(text::String description);
-/// Continue recursive glob matching at the supplied code-point positions.
-[[nodiscard]] auto globMatchesAt(
-    const text::String &pattern, std::size_t patternIndex, const text::String &value, std::size_t valueIndex) noexcept
-    -> bool;
 /// Test whether one normalized path component is portable across supported hosts.
 [[nodiscard]] auto isPortableComponent(const text::String &component) noexcept -> bool;
 /// Test whether one normalized path is a strict component prefix of another.

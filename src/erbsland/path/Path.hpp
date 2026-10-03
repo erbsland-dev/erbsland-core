@@ -30,6 +30,7 @@ namespace erbsland::path {
 
 using PathList = util::List<Path>;
 
+// clang-format off
 /// The convenience API to work with the filesystem.
 ///
 /// Represents a relative, absolute, or partial path in the file system.
@@ -60,9 +61,9 @@ using PathList = util::List<Path>;
 ///   Special Windows paths, like "/??/", "//./", "//?/Volume" and "//./PhysicalDrive0", etc. are not supported.
 ///   Any path that looks like a special path is converted into an empty path on construction for security reasons.
 /// @seedoc{/topics/path/working_with_paths}
-/// @tested{PathConstructionTest PathAccessTest PathModificationTest PathConversionTest}
-/// @tested{PathResolveBackendTest PathFileLockTest}
+/// @tested{PathConstructionTest PathAccessTest PathModificationTest PathConversionTest PathResolveBackendTest PathFileLockTest}
 class Path final {
+    // clang-format on
     friend class PathInfo;
     friend class impl::PathBackend;
 
@@ -93,11 +94,11 @@ public: // operators
 
     /// Join two paths (see `joined`)
     auto operator/(const Path &other) const -> Path;
-    /// Join two paths (see `joined`)
+    /// Join generic path text parsed using Path{other} (see `joined`).
     auto operator/(const text::String &other) const -> Path;
     /// Join two paths (see `join`)
     auto operator/=(const Path &other) -> Path &;
-    /// Join two paths (see `join`)
+    /// Join generic path text parsed using Path{other} (see `join`).
     auto operator/=(const text::String &other) -> Path &;
 
 public: // tests
@@ -117,9 +118,13 @@ public: // tests
     /// @return true, if the path is absolute and contains one root element.
     [[nodiscard]] auto isRoot() const noexcept -> bool;
 
-    /// Compare two paths.
+    /// Compare roots, then path components lexicographically without allocation or filesystem access.
+    /// Empty paths sort first, absent roots precede present roots, and equal prefixes precede descendants.
+    /// Dot components are not resolved; format and cached metadata do not affect the result.
     /// @param other The other path for comparison.
-    /// @param compareFn The character comparison function to use.
+    /// @param compareFn Optional decoded-character comparator within each root or component; case-sensitive by default.
+    /// @return The component ordering, which may differ from ordering serialized paths.
+    /// @seedoc{/reference/path/file_system_paths}
     [[nodiscard]] auto compare(const Path &other, text::CharCompareFn compareFn = {}) const noexcept
         -> std::strong_ordering;
 
@@ -189,20 +194,31 @@ public: // common path tools
 public: // path element tools
     /// Join one or more path elements.
     /// - If `other` on the right is an absolute path, it is added as a relative path without its root.
-    /// - If `other` is a string, it is converted into a path, then joined.
+    /// - String arguments use generic Path{other} parsing, including backslash separators in relative text.
     /// - No validation is performed on the resulting path.
     /// @param other The path to join.
     auto join(const Path &other) noexcept -> Path &;
     /// @overload
     auto join(const text::String &other) noexcept -> Path &;
+    /// Append text parsed using the current platform's native path syntax.
+    /// Equivalent to join(Path::fromNative(other)); preserves literal backslashes on POSIX.
+    /// An empty parsed path leaves this path unchanged; an absolute suffix contributes only its non-root components.
+    /// @param other Native path text, which may contain multiple components.
+    /// @return This path after joining, without filesystem access.
+    auto joinNative(const text::String &other) noexcept -> Path &;
     /// Join one or more path elements.
     /// - If `other` on the right is an absolute path, it is added as a relative path without its root.
-    /// - If `other` is a string, it is converted into a path, then joined.
+    /// - String arguments use generic Path{other} parsing, including backslash separators in relative text.
     /// - No validation is performed on the resulting path.
     /// @param other The path to join.
     [[nodiscard]] auto joined(const Path &other) const noexcept -> Path;
     /// @overload
     [[nodiscard]] auto joined(const text::String &other) const noexcept -> Path;
+    /// Return a copy with text appended using the current platform's native path syntax.
+    /// Equivalent to joined(Path::fromNative(other)); follows the same joining rules as joinNative().
+    /// @param other Native path text, which may contain multiple components.
+    /// @return The joined path, leaving this path unchanged and without filesystem access.
+    [[nodiscard]] auto joinedNative(const text::String &other) const noexcept -> Path;
     /// Get a slice of this path.
     /// @param range The range of elements to return.
     /// @return A new path containing the specified elements, clamped to the available tail. Returns empty if the start
@@ -288,6 +304,9 @@ public: // conversion
     /// Creates a string for display, joining the path using (`/`) path separators.
     /// @return A platform-agnostic string for display.
     [[nodiscard]] auto toString() const noexcept -> text::String;
+    /// Export a native path string suitable for command-line arguments on the current platform.
+    /// @return POSIX spelling, or Windows spelling with native backslashes and no extended-path prefix.
+    [[nodiscard]] auto toNativeString() const noexcept -> text::String;
     /// Assemble a path for several path elements.
     /// @param elements The path elements to join into a path.
     /// @return The assembled path.

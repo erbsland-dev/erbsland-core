@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <stdexcept>
 
@@ -13,7 +15,7 @@ void causeChains() {
     try {
         try {
             throw std::runtime_error{"audio device disconnected"};
-        } catch (...) {
+        } catch (const std::runtime_error &) {
             throw el::RuntimeError{"Shakuhachi recording could not be started."_el, std::current_exception()};
         }
     } catch (const el::RuntimeError &error) {

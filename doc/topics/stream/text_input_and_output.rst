@@ -115,8 +115,8 @@ The decoder may need several source bytes to produce one code point, so it retai
 UTF-32 sequence internally until it can return a complete character.
 Your processing loop never has to join partial encoded sequences.
 
-The maximum is a :cpp:type:`CpLength <erbsland::unit::CpLength>` rather than a byte count because the caller is already
-on the Unicode side of the boundary.
+The maximum is a :cpp:type:`CpCount <erbsland::unit::CpCount>` rather than a byte count because the caller is already on
+the Unicode side of the boundary.
 A block may contain fewer code points than requested when that is all the source can currently provide.
 It never ends in the middle of one encoded code point, although it can still end between user-perceived grapheme
 clusters made from several code points.
@@ -143,7 +143,7 @@ were being read.
 .. erbsland-demo::
     :source: stream/TextInputAndOutput/ReadUnicodeBlocks.cpp
     :exec: stream/text_input_and_output --demo ReadUnicodeBlocks
-    :source-sha256: 596750615a03ba938fa6c3bc7a075f4f6b4cd41423ab173bd58237226a15f6e2
+    :sha256: 99dd5885250264ce62050a587ebc984666293978c867ea2f616561731a7a9387
 
 .. code-block:: cpp
 
@@ -151,7 +151,7 @@ were being read.
     /// Handle normal end, timeout, and stream failure separately; a finite retry limit prevents a stalled source from
     /// keeping the application in this loop forever.
     void readUnicodeBlocks(el::TextInputStream &input) {
-        constexpr auto cBlockLength = el::CpLength{8U};
+        constexpr auto cBlockLength = el::CpCount{8U};
         constexpr auto cMaximumTimeouts = 3U;
         auto consecutiveTimeouts = 0U;
 
@@ -176,13 +176,15 @@ were being read.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Block: [Frö 🌱 – ]
-    Block: [två blad]
-    Block: [ – höjd ]
-    Block: [7 cm]
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBlock: [Frö 🌱 – ]
+        Block: [två blad]
+        Block: [ – höjd ]
+        Block: [7 cm]␛[0m
 
 .. erbsland-demo-end::
 
@@ -220,7 +222,7 @@ failure paths.
 .. erbsland-demo::
     :source: stream/TextInputAndOutput/ReadObservationLines.cpp
     :exec: stream/text_input_and_output --demo ReadObservationLines
-    :source-sha256: 4c05e31facc02cbd6d69f83b3ca763062e1e3aeee44c1fc51d5f488c6b020f14
+    :sha256: de4efab1f887e7781d124e71af1da9f2f33eba2b36739b06fa11bf876df80b2e
 
 .. code-block:: cpp
 
@@ -228,7 +230,7 @@ failure paths.
     /// `readLine()` keeps a line ending when one is present and returns a final unterminated line as data.
     /// Repeating the same call after timeout continues the pending logical line.
     void readObservationLines(el::TextInputStream &input) {
-        constexpr auto cMaximumLineLength = el::CpLength{40U};
+        constexpr auto cMaximumLineLength = el::CpCount{40U};
         constexpr auto cMaximumTimeouts = 3U;
 
         auto lineNumber = 1;
@@ -257,12 +259,14 @@ failure paths.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Line 1: Dag 1: 2 cm
-    Line 2: Dag 8: 7 cm
-    Line 3: Dag 15: 13 cm
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLine 1: Dag 1: 2 cm
+        Line 2: Dag 8: 7 cm
+        Line 3: Dag 15: 13 cm␛[0m
 
 .. erbsland-demo-end::
 
@@ -311,7 +315,7 @@ native stream failure with report-specific context.
 .. erbsland-demo::
     :source: stream/TextInputAndOutput/WriteGrowthReport.cpp
     :exec: stream/text_input_and_output --demo WriteGrowthReport
-    :source-sha256: 81c9153bb7bf25f0902016178a8591b66ac7d13264d9e63e63f459da38c3db1e
+    :sha256: 3f6d91749949e2d2d5a3ef3c8dec3a65262b9cbb7d4067b92a4058fca58100e6
 
 .. code-block:: cpp
 
@@ -339,12 +343,14 @@ native stream failure with report-specific context.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Tillväxtrapport
-    Mätserie: björkplantor
-    Dag 21: 18 cm 🌿
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTillväxtrapport
+        Mätserie: björkplantor
+        Dag 21: 18 cm 🌿␛[0m
 
 .. erbsland-demo-end::
 
@@ -375,7 +381,7 @@ time out, and moves the completed string to its caller.
 .. erbsland-demo::
     :source: stream/TextInputAndOutput/CaptureReport.cpp
     :exec: stream/text_input_and_output --demo CaptureReport
-    :source-sha256: cbffeaa051fcc593c8e261d354736d9608ca3580eacd5df036f9135c8ef0f098
+    :sha256: ab5cf25d37885385ab7cce317c08db22a7d4fb862b38bb61b61a4bc72c1270d3
 
 .. code-block:: cpp
 
@@ -392,16 +398,20 @@ time out, and moves the completed string to its caller.
     auto buildPlantSummary() -> el::String {
         const auto builder = el::AnyStringBuilderStream::create();
         if (writePlantSummary(*builder).isTimeout()) {
-            throw el::LogicError{"An in-memory string builder unexpectedly timed out."};
+            throw el::LogicFailure{"An in-memory string builder unexpectedly timed out."};
         }
 
         return builder->takeString();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Captured report:
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCaptured report:
+        Art: fjällsippa
+        Nya blad: 5␛[0m
 
 .. erbsland-demo-end::
 
@@ -412,8 +422,8 @@ Encoding is a property of the boundary, not of the application text.
 Choose it when the stream is opened through
 :cpp:class:`PathReadTextOptions <erbsland::path::PathReadTextOptions>` or
 :cpp:class:`PathWriteTextOptions <erbsland::path::PathWriteTextOptions>`.
-After opening, readers and writers continue to use the same Erbsland Core string and character types regardless of the byte
-representation below them.
+After opening, readers and writers continue to use the same Erbsland Core string and character types regardless of the
+byte representation below them.
 
 :cpp:class:`StringEncoding <erbsland::text::StringEncoding>` supports UTF-8 plus UTF-16 and UTF-32 in generic or explicit
 byte order.
@@ -457,7 +467,7 @@ output, and a native stream failure is reported with encoding-test context.
 .. erbsland-demo::
     :source: stream/TextInputAndOutput/ConfigureEncoding.cpp
     :exec: stream/text_input_and_output --demo ConfigureEncoding
-    :source-sha256: 3c7c8a6dccf588d21470717c4e41b310dfd5347a5884ff17c60282c7ada7f1aa
+    :sha256: 6efd97382929d53936a0b9b9633a727039a22f631375c385ca8afe9c74142220
 
 .. code-block:: cpp
 
@@ -474,7 +484,8 @@ output, and a native stream failure is reported with encoding-test context.
             for (auto attempt = 0U; attempt < cMaximumAttempts; ++attempt) {
                 if (output->writeLine("Rötter: 12 cm"_el).isSuccess()) {
                     el::io::printLine("Configured UTF-16: "_el, output->encoding() == el::StringEncoding::Utf16);
-                    el::io::printLine("Effective little-endian: "_el,
+                    el::io::printLine(
+                        "Effective little-endian: "_el,
                         output->effectiveEncoding() == el::StringEncoding::Utf16LittleEndian);
                     if (output->close().isTimeout()) {
                         output->abort();
@@ -492,11 +503,13 @@ output, and a native stream failure is reported with encoding-test context.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Configured UTF-16: true
-    Effective little-endian: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mConfigured UTF-16: true
+        Effective little-endian: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -514,8 +527,22 @@ continue with a lossy interpretation:
 
 ``Strict``
     Raises :cpp:class:`EncodingError <erbsland::text::EncodingError>` at the first malformed sequence.
-    Use it for configuration, source code, identifiers, signed text, and other formats where replacement could change
-    meaning or conceal corruption.
+    Choose it only when encoding validity must be enforced at this input boundary.
+
+.. important::
+
+    Strict validation can have a substantial performance cost: conversion and whole-file UTF-8 reading can be **much
+    slower** than their tolerant counterparts, even for valid input.
+    Incremental stream reads do not necessarily have the same slowdown; the difference depends on the operation and
+    input.
+    Keep ``Tolerant`` for ordinary text reading and reserve ``Strict`` for a required encoding-validation boundary.
+
+For example, security-sensitive processing or a protocol accepting untrusted network text may require malformed encoding
+to be rejected before interpreting the input.
+In that case, enforcing validity takes priority over the extra decoding time.
+The type of content alone does not require strict mode: configuration, source code, identifiers, or signed text need it
+at this boundary only when accepting replacement characters would violate the application's requirements.
+Once the text has been validated and remains unchanged, later internal conversions can keep the tolerant default.
 
 Set the mode before opening the stream.
 Choosing ``Strict`` does not turn a timeout into an exception: bounded flow control still returns ``Timeout``.
@@ -532,7 +559,7 @@ outcomes.
 .. erbsland-demo::
     :source: stream/TextInputAndOutput/HandleInvalidEncoding.cpp
     :exec: stream/text_input_and_output --demo HandleInvalidEncoding
-    :source-sha256: 00ea5ac72d9318051f19990b3c9cb788ce4b96766ac25709bdc90f18774e53a8
+    :sha256: 982d41a1bd54a3192fadb9e83d883fa792a3c176ac7d324bbbb2a69fd1dc66d6
 
 .. code-block:: cpp
 
@@ -546,7 +573,7 @@ outcomes.
         try {
             const auto input = path.content().openTextInputStream(options);
             for (auto attempt = 0U; attempt < cMaximumAttempts; ++attempt) {
-                if (!input->readAll(el::CpLength{100U}).isTimeout()) {
+                if (!input->readAll(el::CpCount{100U}).isTimeout()) {
                     throw el::RuntimeError{"The damaged text was unexpectedly accepted."_el};
                 }
             }
@@ -560,9 +587,11 @@ outcomes.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Invalid UTF-8 was rejected.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInvalid UTF-8 was rejected.␛[0m
 
 .. erbsland-demo-end::

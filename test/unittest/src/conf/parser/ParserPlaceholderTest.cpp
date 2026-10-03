@@ -3,14 +3,15 @@
 
 #include "ParserTestHelper.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/system/EnvironmentVariables.hpp>
-#include <erbsland/text/placeholder/Filter.hpp>
-#include <erbsland/text/placeholder/ReplacerError.hpp>
-#include <erbsland/text/placeholder/Source.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringMap.hpp>
+#include <erbsland/EnvironmentVariables.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/placeholder/Filter.hpp>
+#include <erbsland/placeholder/ReplacerError.hpp>
+#include <erbsland/placeholder/Source.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/StringMap.hpp>
 
 using namespace el::text::literals;
 
@@ -51,7 +52,7 @@ class ParserPlaceholderTest final : public UNITTEST_SUBCLASS(ParserTestHelper) {
             -> el::text::String override {
             lastFilter = filterName;
             lastParameter = parameter;
-            return el::text::String::fromJoined({"["_el, parameter, ":"_el, value, "]"_el});
+            return el::join("["_el, parameter, ":"_el, value, "]"_el);
         }
 
         el::text::String lastFilter;
@@ -78,7 +79,7 @@ class ParserPlaceholderTest final : public UNITTEST_SUBCLASS(ParserTestHelper) {
 
 public:
     [[nodiscard]] auto parseValue(Parser &parser, const el::text::String &valueText) -> el::text::String {
-        const auto sourceText = el::text::String::fromJoined({"[main]\nvalue: "_el, valueText, "\n"_el});
+        const auto sourceText = el::join("[main]\nvalue: "_el, valueText, "\n"_el);
         doc = parser.parseTextOrThrow(sourceText);
         return doc->value("main.value"_el)->asText();
     }
@@ -111,13 +112,13 @@ public:
         auto parser = Parser{};
         const auto source = std::make_shared<EchoSource>();
         const auto filter = std::make_shared<DecorateFilter>();
-        REQUIRE_THROWS_AS(el::err::ParameterError, parser.addPlaceholderSource({}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, parser.addPlaceholderFilter({}));
-        REQUIRE_THROWS_AS(el::err::LogicError, parser.addPlaceholderSource(std::make_shared<EmptySource>()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, parser.addPlaceholderSource({}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, parser.addPlaceholderFilter({}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, parser.addPlaceholderSource(std::make_shared<EmptySource>()));
         REQUIRE_NOTHROW(parser.addPlaceholderSource(source));
-        REQUIRE_THROWS_AS(el::err::LogicError, parser.addPlaceholderSource(std::make_shared<EchoSource>()));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, parser.addPlaceholderSource(std::make_shared<EchoSource>()));
         REQUIRE_NOTHROW(parser.addPlaceholderFilter(filter));
-        REQUIRE_THROWS_AS(el::err::LogicError, parser.addPlaceholderFilter(std::make_shared<DecorateFilter>()));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, parser.addPlaceholderFilter(std::make_shared<DecorateFilter>()));
         parser.removePlaceholderSource(source);
         parser.removePlaceholderFilter(filter);
         REQUIRE_EQUAL(parseValue(parser, R"("${echo:value}")"_el), "${echo:value}"_el);
@@ -227,7 +228,7 @@ public:
         namedParser.addPlaceholderEnvironmentSource("process environment"_el);
         REQUIRE_EQUAL(
             parseValue(namedParser, R"("${PROCESS_ENVIRONMENT:ERBSLAND_CORE_PLACEHOLDER_TEST}")"_el), "a\tb\ncd"_el);
-        REQUIRE_THROWS_AS(el::err::LogicError, namedParser.addPlaceholderEnvironmentSource("Process_Environment"_el));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, namedParser.addPlaceholderEnvironmentSource("Process_Environment"_el));
         if (previousValue.has_value()) {
             REQUIRE(environment.set(variableName, *previousValue));
         } else {
@@ -260,7 +261,7 @@ public:
         auto parserWithCustomVariableSource = Parser{};
         parserWithCustomVariableSource.addPlaceholderSource(std::make_shared<CustomVariableSource>());
         REQUIRE_THROWS_AS(
-            el::err::LogicError,
+            el::err::LogicFailure,
             parserWithCustomVariableSource.setPlaceholderVariableSource(
                 el::text::StringMap<el::text::String>{{{"name"_el, "value"_el}}}));
 

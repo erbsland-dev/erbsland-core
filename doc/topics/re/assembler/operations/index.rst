@@ -1,6 +1,6 @@
-**********
-Operations
-**********
+***************************************
+Regular-Expression Assembler Operations
+***************************************
 
 In this section I describe the syntax of each operation in detail.
 

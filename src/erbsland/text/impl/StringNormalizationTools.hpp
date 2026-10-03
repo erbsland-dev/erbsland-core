@@ -104,7 +104,7 @@ private:
             return character.value_or(Char::replacement()).toRawValue();
         } else {
             const auto character = Char{_data[_position.toSizeT()]};
-            _position.increment();
+            _position.uncheckedIncrement();
             encodingError = !character.isValidUnicode();
             return encodingError ? Char::replacement().toRawValue() : character.toRawValue();
         }
@@ -145,8 +145,7 @@ private:
         const auto beginOffset = begin.toSizeT();
         const auto length = begin.absoluteDistanceTo(end).toSizeT();
         const auto oldSize = _storage->range().length().toSizeT();
-        const auto newSize =
-            SharedStorage::checkedAddSize(oldSize, length, "Normalized string exceeds string size bounds");
+        const auto newSize = SharedStorage::checkedAddSize(oldSize, length);
         _storage->ensureMutableCapacity(newSize);
         std::memcpy(_storage->dataForWrite() + oldSize, _data.data() + beginOffset, length * sizeof(CodeUnit));
         _storage->resize(newSize);
@@ -167,8 +166,7 @@ private:
         }
 
         const auto oldSize = _storage->range().length().toSizeT();
-        const auto newSize =
-            SharedStorage::checkedAddSize(oldSize, encodedLength, "Normalized string exceeds string size bounds");
+        const auto newSize = SharedStorage::checkedAddSize(oldSize, encodedLength);
         _storage->ensureMutableCapacity(newSize);
         if constexpr (std::same_as<CodeUnit, char>) {
             auto writer = U8Writer{std::span<char>{_storage->dataForWrite() + oldSize, encodedLength}};

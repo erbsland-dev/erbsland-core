@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "BitmapDrawOptions.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::cterm {
 
+using namespace err;
 using namespace text::literals;
 
 BitmapDrawOptions::BitmapDrawOptions(ColorSequence colorSequence, BitmapColorMode colorMode) :
@@ -68,7 +69,7 @@ auto BitmapDrawOptions::fullBlock() const noexcept -> const Block & {
 
 void BitmapDrawOptions::setFullBlock(Block fullBlock) {
     if (fullBlock.displayWidth() != 1) {
-        throw err::ParameterError{"Full block character must have display width of 1."_el, "fullBlock"_el};
+        throw ParameterFailure{"Full block character must have display width of 1."_el, "fullBlock"_el};
     }
     _fullBlock = fullBlock;
 }
@@ -79,11 +80,11 @@ auto BitmapDrawOptions::doubleBlocks() const noexcept -> const BlockString & {
 
 void BitmapDrawOptions::setDoubleBlocks(BlockString doubleBlocks) {
     if (doubleBlocks.length() != BlockCount{2U}) {
-        throw err::ParameterError{"Double blocks string must contain exactly 2 characters."_el, "doubleBlocks"_el};
+        throw ParameterFailure{"Double blocks string must contain exactly 2 characters."_el, "doubleBlocks"_el};
     }
     for (const auto &character : doubleBlocks) {
         if (character.displayWidth() != 1) {
-            throw err::ParameterError{
+            throw ParameterFailure{
                 "Double blocks string must contain characters with display width of 1."_el, "doubleBlocks"_el};
         }
     }
@@ -96,11 +97,11 @@ auto BitmapDrawOptions::halfBlocks() const noexcept -> const BlockString & {
 
 void BitmapDrawOptions::setHalfBlocks(BlockString halfBlocks) {
     if (halfBlocks.length() != BlockCount{16U}) {
-        throw err::ParameterError{"Half blocks string must contain exactly 16 characters."_el, "halfBlocks"_el};
+        throw ParameterFailure{"Half blocks string must contain exactly 16 characters."_el, "halfBlocks"_el};
     }
     for (const auto &character : halfBlocks) {
         if (character.displayWidth() != 1) {
-            throw err::ParameterError{
+            throw ParameterFailure{
                 "Half blocks string must contain characters with display width of 1."_el, "halfBlocks"_el};
         }
     }

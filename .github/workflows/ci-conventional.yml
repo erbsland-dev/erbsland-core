@@ -14,11 +14,11 @@ jobs:
   build:
     name: Conventional build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ matrix.os == 'windows-latest' && 60 || 40 }}
+    timeout-minutes: ${{ matrix.os == 'windows-2025-vs2026' && 60 || 40 }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: [ ubuntu-latest, macos-latest, windows-2025-vs2026 ]
     env:
       BUILD_DIR: cmake-build
 
@@ -42,7 +42,7 @@ jobs:
             brew install ninja
           fi
 
-      - name: Setup MSVC (Windows)
+      - name: Setup MSVC 2026 (Windows)
         if: runner.os == 'Windows'
         # ilammy/msvc-dev-cmd@v1.13.0
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756

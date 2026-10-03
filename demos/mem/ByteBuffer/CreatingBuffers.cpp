@@ -2,6 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -13,7 +22,7 @@ namespace demo {
 void creatingBuffers() {
     // Start with empty, repeated, and explicitly listed forest measurements.
     const auto emptySurvey = el::ByteBuffer{};
-    const auto clearings = el::ByteBuffer{el::ByteLength{4U}, el::Byte{0U}};
+    const auto clearings = el::ByteBuffer{el::ByteCount{4U}, el::Byte{0U}};
     const auto canopy = el::ByteBuffer{el::Byte{18U}, el::Byte{42U}, el::Byte{67U}};
 
     // Copy a borrowed span into a buffer with an independent lifetime.

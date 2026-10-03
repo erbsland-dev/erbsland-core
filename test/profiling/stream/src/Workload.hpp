@@ -4,6 +4,8 @@
 
 #include "Configuration.hpp"
 
+#include <erbsland/ExitCode.hpp>
+
 namespace app::stream {
 
 /// Execute expanded file-stream profiling scenarios.

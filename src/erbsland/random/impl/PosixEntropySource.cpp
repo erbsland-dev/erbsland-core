@@ -4,7 +4,7 @@
 
 #include "PosixFileDescriptor.hpp"
 
-#include "../RandomError.hpp"
+#include "../RandomFailure.hpp"
 
 #include "../../system/impl/PosixErrorContext.hpp"
 #include "../../system/PlatformError.hpp"

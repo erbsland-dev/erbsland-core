@@ -8,7 +8,7 @@
 #include "impl/ByteModifyTools.hpp"
 #include "impl/ByteReadTools.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <utility>
@@ -17,11 +17,11 @@ namespace erbsland::mem {
 
 using namespace text::literals;
 using ModifyTools = impl::ByteModifyTools<impl::ByteBufferData, impl::ByteBufferData>;
+using unit::ByteCount;
 using unit::ByteIndex;
-using unit::ByteLength;
 using unit::ByteRange;
 
-ByteBuffer::ByteBuffer(const ByteLength length, const Byte value) :
+ByteBuffer::ByteBuffer(const ByteCount length, const Byte value) :
     _data{ModifyTools::createData(length.toSizeTOrThrow(), length.toSizeTOrThrow())} {
     fill(value);
 }
@@ -75,12 +75,12 @@ auto ByteBuffer::isEmpty() const noexcept -> bool {
     return length().isZero();
 }
 
-auto ByteBuffer::length() const noexcept -> ByteLength {
-    return ByteLength::fromSizeT(_data.size());
+auto ByteBuffer::length() const noexcept -> ByteCount {
+    return ByteCount::fromSizeT(_data.size());
 }
 
-auto ByteBuffer::capacity() const noexcept -> ByteLength {
-    return ByteLength::fromSizeT(_data.capacity());
+auto ByteBuffer::capacity() const noexcept -> ByteCount {
+    return ByteCount::fromSizeT(_data.capacity());
 }
 
 auto ByteBuffer::span() const noexcept -> ConstByteSpan {
@@ -129,7 +129,7 @@ void ByteBuffer::overwrite(const ConstByteSpan source) {
 }
 
 void ByteBuffer::overwrite(const ByteIndex index, const ConstByteSpan source) {
-    overwrite(ByteRange{index, ByteLength::infinite()}, source);
+    overwrite(ByteRange{index, ByteCount::infinite()}, source);
 }
 
 void ByteBuffer::overwrite(const ByteRange targetRange, const ConstByteSpan source) {
@@ -142,7 +142,7 @@ auto ByteBuffer::xorWith(const ConstByteSpan source) -> bool {
 
 void ByteBuffer::xorWithOrThrow(const ConstByteSpan source) {
     if (!xorWith(source)) {
-        throw err::ParameterError{"XOR operands must have equal lengths."_el, "source"_el};
+        throw err::ParameterFailure{"XOR operands must have equal lengths."_el, "source"_el};
     }
 }
 
@@ -154,12 +154,12 @@ void ByteBuffer::secureErase() noexcept {
     ModifyTools{_data}.secureErase();
 }
 
-auto ByteBuffer::resize(const ByteLength lengthValue) -> ByteBuffer & {
+auto ByteBuffer::resize(const ByteCount lengthValue) -> ByteBuffer & {
     ModifyTools{_data}.resize(lengthValue);
     return *this;
 }
 
-void ByteBuffer::reserve(const ByteLength capacityValue) {
+void ByteBuffer::reserve(const ByteCount capacityValue) {
     ModifyTools{_data}.reserve(capacityValue);
 }
 
@@ -176,7 +176,7 @@ void ByteBuffer::reset() noexcept {
     _data.reset();
 }
 
-auto ByteBuffer::append(const Byte value, const unit::ByteLength length) -> ByteBuffer & {
+auto ByteBuffer::append(const Byte value, const unit::ByteCount length) -> ByteBuffer & {
     ModifyTools{_data}.append(value, length);
     return *this;
 }

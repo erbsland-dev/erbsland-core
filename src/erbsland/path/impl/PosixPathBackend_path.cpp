@@ -21,7 +21,7 @@
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <fcntl.h>
 
@@ -45,6 +45,7 @@
 
 namespace erbsland::path::impl {
 
+using namespace text;
 using namespace text::literals;
 
 auto PosixPathBackend::physicalPathOrThrow(const Path &path) -> Path {
@@ -60,7 +61,7 @@ auto PosixPathBackend::physicalPathOrThrow(const Path &path) -> Path {
             path,
             errno);
     }
-    return Path::fromPosixOrThrow(text::String{std::string_view{resolved.get()}});
+    return Path::fromPosixOrThrow(String{std::string_view{resolved.get()}});
 }
 
 auto PosixPathBackend::existingPath(const Path &path) -> bool {
@@ -106,22 +107,18 @@ auto PosixPathBackend::physicalNoFinalSymlinkPathOrThrow(const Path &path) -> Pa
     if (parent.isEmpty()) {
         return path;
     }
-    return joinedLexicalPath(physicalPathOrThrow(parent), Path{path.name()});
+    return lexicalPath(physicalPathOrThrow(parent).joinedNative(path.name()));
 }
 
 void PosixPathBackend::throwSystemError(
-    const text::String &title, const text::String &description, const Path &path, const int errorCode) {
+    const String &title, const String &description, const Path &path, const int errorCode) {
     throw PathError{PathErrorContext{title, description}
             .setSourcePath(path.toString())
             .setPlatformContext(system::impl::PosixErrorContext::fromErrorCode(errorCode))};
 }
 
 void PosixPathBackend::throwSystemError(
-    const text::String &title,
-    const text::String &description,
-    const Path &source,
-    const Path &destination,
-    const int errorCode) {
+    const String &title, const String &description, const Path &source, const Path &destination, const int errorCode) {
     throw PathError{PathErrorContext{title, description}
             .setSourcePath(source.toString())
             .setTargetPath(destination.toString())

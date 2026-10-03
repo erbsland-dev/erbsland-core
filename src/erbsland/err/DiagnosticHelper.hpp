@@ -5,7 +5,6 @@
 #include "Diagnostic.hpp"
 #include "Exception_fwd.hpp"
 
-#include "../i18n/DisplayTextMap_fwd.hpp"
 #include "../text/TextDocument_fwd.hpp"
 
 #include <exception>
@@ -18,10 +17,9 @@ private:
     constexpr static auto cMaximumCauseDepth = std::size_t{32U};
 
 public:
-    /// Create a helper for one exception and optional display-text map.
+    /// Create a helper for one exception using the application display-text registry.
     /// @param error The exception to convert.
-    /// @param displayText The display texts, or the English defaults if null.
-    explicit DiagnosticHelper(const std::exception &error, const i18n::DisplayTextMapConstPtr &displayText = {});
+    explicit DiagnosticHelper(const std::exception &error);
 
     // defaults
     ~DiagnosticHelper() = default;
@@ -42,10 +40,8 @@ public:
 public: // helper
     /// Create a diagnostic document from an exception pointer.
     /// @param errorPtr The exception pointer to convert.
-    /// @param displayText The display texts, or the English defaults if null.
     /// @return The diagnostic document.
-    [[nodiscard]] static auto documentFromError(
-        const std::exception_ptr &errorPtr, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::TextDocument;
+    [[nodiscard]] static auto documentFromError(const std::exception_ptr &errorPtr) -> text::TextDocument;
 
 private:
     /// Append a diagnostic cause document.
@@ -55,7 +51,6 @@ private:
 
 private:
     const std::exception &_error;
-    i18n::DisplayTextMapConstPtr _displayText;
 };
 
 }

@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
 #include <erbsland/path/impl/CommonPathBackend.hpp>
 #include <erbsland/path/impl/PathInfoData.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/PathError.hpp>
 
 namespace erbsland::test::pathtest {
 

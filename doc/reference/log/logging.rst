@@ -19,10 +19,49 @@ Configuration and Routing
 
 :cpp:class:`erbsland::log::LogConfiguration <erbsland::log::LogConfiguration>` combines line formatting, queue
 limits, enabled trace sections, and writer routes.
-Each route filters complete path segments and levels.
+Each route filters complete path segments and levels and may carry a complete line-format override.
+Pass the override as the third argument to ``LogConfiguration::addWriter()``; omitting it selects the configuration's
+default format.
+The manager retains the fluent configuration value for ``configuration()`` and separately creates internal runtime data
+with active writer routes, limits, and trace policy.
+Each active route points directly to its compiled formatter; the runtime data does not own the user-facing
+configuration.
+The manager prepares immutable formatters before activating this runtime data, parsing each pattern once.
+Routes using the default share one formatter and reuse the same rendered line for each entry within a batch.
 Replacing a configuration is a synchronous barrier; streams update their cached trace flag before the call returns.
+An active batch finishes with its original formatters, while queued entries use the replacement configuration.
+Preparation or writer-binding failure leaves the active configuration intact.
 :cpp:class:`erbsland::log::LogConfigurationParser <erbsland::log::LogConfigurationParser>` validates any selected
 ELCL document branch with one shared compiled ruleset and creates the corresponding built-in writers.
+
+A default writer filter accepts all levels and paths.
+``setAcceptedLevels()`` keeps exactly the listed levels; ``setRejectedLevels()`` keeps all supported levels except those
+listed.
+Each setter replaces the previous level selection.
+``addAcceptedPath()`` limits acceptance to the given roots using complete path segments.
+
+Trace Sections
+==============
+
+A ``LogTraceSection`` accepts an empty name or an ASCII identifier beginning with a letter.
+Names contain at most 100 characters; subsequent characters may also include digits, underscores, and hyphens.
+Comparison ignores ASCII case and treats hyphens and underscores as equivalent: ``Foo-Bar`` equals ``foo_bar``.
+Application-created sections retain their original spelling, including when converted with ``toString()``.
+Repeated programmatic enabling retains the first spelling.
+
+Literal construction validates at compile time when used in a constant expression.
+Invalid runtime construction raises ``ParameterFailure``.
+
+.. code-block:: cpp
+
+    class RoutePlanner {
+        static constexpr auto cVerboseTraceSection = el::LogTraceSection{"verbose"_el};
+    };
+
+``LogConfigurationParser`` converts ELCL trace-section names to lowercase with underscores and rejects equivalent or
+exact duplicates with a source-aware ``ConfError``.
+Empty names remain ignored.
+See :doc:`../../topics/log/trace_sections` for grouping and guard examples.
 
 Writers
 =======
@@ -36,6 +75,14 @@ and supports time- or size-based rotation.
 The syslog writer emits RFC 5424 over UDP, RFC 6587 octet-counted TCP, or TLS using the ``log/syslog`` configuration
 label.
 The last-errors writer retains a bounded FIFO snapshot of error entries.
+
+Writers report expected delivery and flush failures with concrete exceptions derived from
+:cpp:class:`RuntimeError <erbsland::err::RuntimeError>`, such as
+:cpp:class:`StreamError <erbsland::stream::StreamError>` for output-stream failures.
+The manager contains and counts these failures so other writers can continue.
+Other exception types escape this boundary and terminate the worker.
+Programming errors, allocation failures, and thread-resource exhaustion are fatal; they are not discarded by the logging
+worker or its submission paths.
 
 Interface
 =========

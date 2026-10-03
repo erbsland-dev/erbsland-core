@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <cstdint>
 #include <limits>
@@ -19,10 +19,10 @@ static constexpr std::size_t maximumCaptureGroupCount = 100U;
 static constexpr std::size_t maximumFlagCount = 10U;
 
 /// The maximum length (code-points) of a pattern.
-static constexpr unit::CpLength maximumPatternLength{10'000'000U};
+static constexpr unit::CpCount maximumPatternLength{10'000'000U};
 
 /// The maximum length (code-points) of a replacement-text.
-static constexpr unit::CpLength maximumReplacementTextLength = maximumPatternLength;
+static constexpr unit::CpCount maximumReplacementTextLength = maximumPatternLength;
 
 /// The maximum numeric quantifier count
 static constexpr std::size_t maximumQuantifierCount = 10'000U;
@@ -52,7 +52,7 @@ static constexpr std::size_t maximumProgramLength = std::numeric_limits<uint16_t
 static constexpr std::size_t maximumCharacterClassCount = std::numeric_limits<uint16_t>::max() - 1;
 
 /// The maximum length of a line in assembler code.
-static constexpr unit::CpLength maximumAssemblerLineLength{1000U};
+static constexpr unit::CpCount maximumAssemblerLineLength{1000U};
 
 /// The maximum number of active threads in the engine
 static constexpr std::size_t maximumActiveThreads = 10'000U;

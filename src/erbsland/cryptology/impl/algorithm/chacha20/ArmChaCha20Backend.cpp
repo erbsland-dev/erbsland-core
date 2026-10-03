@@ -11,6 +11,9 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+using namespace unit;
+
 /// Rotate all four 32-bit lanes left, as required by RFC 8439 Section 2.1.
 /// @tested{ChaCha20BackendFullTest}
 template <int tAmount>
@@ -46,7 +49,7 @@ auto ArmChaCha20Backend::generateBlocks(const uint32_t firstCounter, const std::
     initial[3] = vdupq_n_u32(0x6b206574U);
     for (auto index = std::size_t{}; index < 8U; ++index) {
         initial[index + 4U] =
-            vdupq_n_u32(_key.getInteger<uint32_t>(unit::ByteIndex{index * 4U}, mem::Endianness::Little));
+            vdupq_n_u32(_key.getInteger<uint32_t>(ByteIndex::fromInteger(index * 4U), Endianness::Little));
     }
     const auto counters = std::array<uint32_t, 4>{
         firstCounter,
@@ -57,7 +60,7 @@ auto ArmChaCha20Backend::generateBlocks(const uint32_t firstCounter, const std::
     initial[12] = vld1q_u32(counters.data());
     for (auto index = std::size_t{}; index < 3U; ++index) {
         initial[index + 13U] =
-            vdupq_n_u32(_nonce.getInteger<uint32_t>(unit::ByteIndex{index * 4U}, mem::Endianness::Little));
+            vdupq_n_u32(_nonce.getInteger<uint32_t>(ByteIndex::fromInteger(index * 4U), Endianness::Little));
     }
     auto working = initial;
 
@@ -74,14 +77,14 @@ auto ArmChaCha20Backend::generateBlocks(const uint32_t firstCounter, const std::
     }
 
     // Transpose the lane-wise words into four RFC little-endian 64-byte blocks through the byte abstraction.
-    auto lanes = mem::ByteArray<16>{};
+    auto lanes = ByteArray<16>{};
     auto laneBytes = mem::impl::UnsafeByteArrayAccess{lanes}.writableData();
     for (auto wordIndex = std::size_t{}; wordIndex < working.size(); ++wordIndex) {
         working[wordIndex] = vaddq_u32(working[wordIndex], initial[wordIndex]);
         vst1q_u32(reinterpret_cast<uint32_t *>(laneBytes.data()), working[wordIndex]);
         for (auto lane = std::size_t{}; lane < 4U; ++lane) {
-            const auto value = lanes.getInteger<uint32_t>(unit::ByteIndex{lane * 4U}, mem::Endianness::Little);
-            result.setIntegerOrThrow(unit::ByteIndex{lane * 64U + wordIndex * 4U}, value, mem::Endianness::Little);
+            const auto value = lanes.getInteger<uint32_t>(ByteIndex::fromInteger(lane * 4U), Endianness::Little);
+            result.setIntegerOrThrow(ByteIndex::fromInteger(lane * 64U + wordIndex * 4U), value, Endianness::Little);
         }
     }
     lanes.secureErase();

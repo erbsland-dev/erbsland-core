@@ -6,8 +6,8 @@
 
 #include <erbsland/re/diagnostics/Assembler.hpp>
 #include <erbsland/re/diagnostics/Disassembler.hpp>
-#include <erbsland/re/RegEx.hpp>
 #include <erbsland/re/RegExError.hpp>
+#include <erbsland/RegEx.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RsaSigner.hpp"
 
-#include "../../../../err/ParseError.hpp"
+#include "RsaDecoding.hpp"
+
 #include "../../../../text/Literals.hpp"
 #include "../../../../unit/ItemIndex.hpp"
 #include "../../DerEncoder.hpp"
@@ -11,30 +12,6 @@
 
 #include <algorithm>
 #include <bit>
-
-namespace erbsland::cryptology::impl::rsa_signer::decoder {
-
-using namespace mem;
-using namespace text;
-using namespace text::literals;
-using namespace unit;
-using rsa_signature::Number;
-
-[[noreturn]] void fail(const String &reason) {
-    throw err::ParseError{reason};
-}
-
-[[nodiscard]] auto parseInteger(const Asn1Node &node, const String &name, const std::size_t count, const bool sensitive)
-    -> Number {
-    auto bytes = rsa_signature::decodePositiveInteger(node, name);
-    if (sensitive) {
-        bytes.markAsSensitive();
-    }
-    const auto bytesEraseGuard = SecureEraseGuard{bytes};
-    return Number::fromBigEndian(bytes.span(), count);
-}
-
-}
 
 namespace erbsland::cryptology::impl::rsa_signer {
 

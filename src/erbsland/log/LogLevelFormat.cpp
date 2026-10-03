@@ -9,9 +9,10 @@
 
 namespace erbsland::log {
 
+using namespace text;
 using namespace text::literals;
 
-auto LogLevelFormat::toString() const -> text::String {
+auto LogLevelFormat::toString() const -> String {
     switch (_value) {
     case ThreeLetterUpper:
         return "short_upper"_el;
@@ -25,11 +26,11 @@ auto LogLevelFormat::toString() const -> text::String {
     return {};
 }
 
-auto LogLevelFormat::allStrings() -> text::StringList {
-    return text::StringList{"short_upper"_el, "short_lower"_el, "full_lower"_el, "full_upper"_el};
+auto LogLevelFormat::allStrings() -> StringList {
+    return StringList{"short_upper"_el, "short_lower"_el, "full_lower"_el, "full_upper"_el};
 }
 
-auto LogLevelFormat::fromString(const text::String &text) noexcept -> std::optional<LogLevelFormat> {
+auto LogLevelFormat::fromString(const String &text) noexcept -> std::optional<LogLevelFormat> {
     const auto compare = ::erbsland::text::cCaseInsensitive.asciiComparisonFn();
     if (text.compare("short_upper"_el, compare) == std::strong_ordering::equal) {
         return ThreeLetterUpper;
@@ -46,7 +47,7 @@ auto LogLevelFormat::fromString(const text::String &text) noexcept -> std::optio
     return std::nullopt;
 }
 
-auto LogLevelFormat::fromStringOrThrow(const text::String &text) -> LogLevelFormat {
+auto LogLevelFormat::fromStringOrThrow(const String &text) -> LogLevelFormat {
     if (const auto result = fromString(text); result.has_value()) {
         return *result;
     }

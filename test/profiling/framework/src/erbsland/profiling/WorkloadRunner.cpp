@@ -1,6 +1,5 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "WorkloadRunner.hpp"
 
 #include "ScenarioWorkload.hpp"
@@ -10,6 +9,10 @@
 #include "TimeSource.hpp"
 #include "WorkerExecutionContext.hpp"
 #include "WorkerWorkload.hpp"
+
+#include <erbsland/ElapsedTimer.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <algorithm>
 #include <barrier>
@@ -73,7 +76,7 @@ auto WorkloadRunner::runSample(
     -> SampleMeasurement {
     const auto threadCount = _configuration.run.threadCount;
     auto workers = List<WorkerWorkloadPtr>{};
-    workers.reserve(ItemCount{threadCount});
+    workers.reserve(ItemCount::fromInteger(threadCount));
     for (auto worker = std::uint32_t{}; worker < threadCount; ++worker) {
         workers.append(workload.createWorker(worker));
     }
@@ -113,15 +116,14 @@ auto WorkloadRunner::runSample(
         measurement.operations += results[worker].operations;
         measurement.workers.append(results[worker]);
     }
-    const auto metricCount = _definition.metrics().count().toSizeT();
-    measurement.metrics.resize(ItemCount{metricCount}, 0U);
+    const auto metricCount = _definition.metrics().count();
+    measurement.metrics.resize(metricCount, 0U);
     for (const auto &worker : measurement.workers) {
-        if (worker.metrics.count().toSizeT() != metricCount) {
+        if (worker.metrics.count() != metricCount) {
             throw ApplicationError{"A workload returned an unexpected number of metrics."_el};
         }
-        for (auto index = std::size_t{}; index < metricCount; ++index) {
-            measurement.metrics.set(
-                ItemIndex{index}, measurement.metrics.toRawValue()[index] + worker.metrics.toRawValue()[index]);
+        for (auto index = ItemIndex::zero(); index.isWithin(metricCount); ++index) {
+            measurement.metrics.set(index, measurement.metrics.get(index) + worker.metrics.get(index));
         }
     }
     workload.validate(measurement);

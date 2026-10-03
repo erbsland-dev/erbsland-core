@@ -1,0 +1,5 @@
+#
+# The configuration for the time-zone data source.
+#
+----[ Time Zone ]-----------------------------------------------------------------------------------------------------
+input_directory             : "tool/data/time_zone"

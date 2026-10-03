@@ -13,9 +13,10 @@
 
 namespace erbsland::compression::impl {
 
+using namespace mem;
 using namespace text::literals;
 
-void ZstandardHuffmanTable::read(const mem::ConstByteSpan data, std::size_t &position) {
+void ZstandardHuffmanTable::read(const ConstByteSpan data, std::size_t &position) {
     if (position >= data.size()) {
         throw CompressionError{CompressionErrorReason::MalformedData, "Zstandard Huffman table is truncated."_el};
     }
@@ -48,23 +49,23 @@ void ZstandardHuffmanTable::read(const mem::ConstByteSpan data, std::size_t &pos
 }
 
 void ZstandardHuffmanTable::decodeStream(
-    const mem::ConstByteSpan data,
+    const ConstByteSpan data,
     const std::size_t begin,
     const std::size_t end,
     const std::size_t regeneratedSize,
-    mem::ByteBuffer &output) const {
+    ByteBuffer &output) const {
     if (!isValid()) {
         throw CompressionError{CompressionErrorReason::MalformedData, "Missing Zstandard Huffman table."_el};
     }
     auto reader = ZstandardReverseBitReader{data, begin, end};
-    output.reserve(output.length().addedOrThrow(unit::ByteLength::fromSizeT(regeneratedSize)));
+    output.reserve(output.length().addedOrThrow(unit::ByteCount::fromSizeT(regeneratedSize)));
     for (auto index = std::size_t{}; index < regeneratedSize; ++index) {
         const auto lookup = reader.peekPadded(_tableBits);
         const auto &entry = _entries[lookup];
         if (entry.bitCount == 0U || reader.remainingBitCount() < entry.bitCount) {
             throw CompressionError{CompressionErrorReason::MalformedData, "Zstandard Huffman stream is truncated."_el};
         }
-        output.append(mem::Byte{entry.symbol});
+        output.append(Byte{entry.symbol});
         reader.discard(entry.bitCount);
     }
     if (!reader.isAtEnd()) {
@@ -74,7 +75,7 @@ void ZstandardHuffmanTable::decodeStream(
 }
 
 auto ZstandardHuffmanTable::readCompressedWeights(
-    const mem::ConstByteSpan data, const std::size_t begin, const std::size_t end, std::array<uint8_t, 256U> &weights)
+    const ConstByteSpan data, const std::size_t begin, const std::size_t end, std::array<uint8_t, 256U> &weights)
     -> std::size_t {
     auto tablePosition = begin;
     auto table = ZstandardFseTable{};

@@ -21,8 +21,8 @@ the two separators, and the escape mode before constructing a
 This page explains each choice and the situations that can make a replacement surprising.
 The preceding pages introduce :doc:`placeholders` and show how to :doc:`extend_placeholders`.
 
-Choose a Frame
-==============
+Opening and Closing Placeholder Delimiters
+==========================================
 
 ``setFrame(begin, end)`` changes the opening and closing strings.
 For a gallery caption that already contains dollar signs, ``[[var=movement/upper]]`` can be easier to distinguish from
@@ -31,10 +31,9 @@ In that expression, ``[[`` starts the request and ``]]`` ends it.
 
 .. erbsland-demo::
     :source: text/Placeholders/PlaceholderDemos.cpp
-    :function-blocks: chooseSyntax
-    :function-blocks-sha256: 78b277ff356cb0bf4a46647680e9a95f01f313e74017f6d1e7b5a19f2e452884
+    :show: f:chooseSyntax
     :exec: text/text_placeholders --demo ChooseSyntax
-    :source-sha256: 16fb33a7e417b945628738d032f02b150acb8175e2921395aaa0bf4a98f324d0
+    :sha256: cb6fc02a584dcc02257308333daa9ac57a71c1ebc039e4883be20fffe677320d
 
 .. code-block:: cpp
 
@@ -48,20 +47,22 @@ In that expression, ``[[`` starts the request and ``]]`` ends it.
         el::io::printLine(replacer.replaceOrThrow("[[var=movement/upper]]"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ΕΞΠΡΕΣΙΟΝΙΣΜΌΣ
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mΕΞΠΡΕΣΙΟΝΙΣΜΌΣ␛[0m
 
 .. erbsland-demo-end::
 
 Each frame string must contain 1–16 Unicode code points.
-An empty frame or a longer one raises :cpp:class:`ParameterError <erbsland::err::ParameterError>` when you set it.
+An empty frame or a longer one raises :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` when you set it.
 The options are checked again when the replacer is constructed, because some combinations conflict with the selected
 escape mode.
 
-Separate Filters
-================
+Filter Separators and Disabled Filter Chains
+============================================
 
 ``setFilterSeparator()`` changes what divides filters.
 The example uses ``/`` so ``[[var=movement/upper]]`` reads the variable and then runs ``upper``.
@@ -73,8 +74,8 @@ values.
 With filters disabled, a filter-like character in a source parameter is ordinary parameter text unless it conflicts with
 the closing frame.
 
-Separate Names from Parameters
-==============================
+Name and Parameter Separators
+=============================
 
 ``setNameSeparator()`` changes the boundary after each source or filter name.
 The default ``:`` makes ``${var:movement}``; the example changes it to ``=`` for ``[[var=movement]]``.
@@ -90,8 +91,8 @@ At a position where more than one matches, the longest matching delimiter wins.
 For equal lengths, the closing frame has priority over the filter separator, which has priority over the name separator.
 Distinct delimiters are usually easier for the people who will edit the text.
 
-Write a Literal Delimiter
-=========================
+Escaping Literal Placeholder Delimiters
+=======================================
 
 ``setEscapeMode()`` chooses how an author writes a delimiter without starting or ending an expression.
 The default :cpp:enumerator:`Backslash <erbsland::text::placeholder::EscapeMode::Backslash>` mode lets a backslash
@@ -114,10 +115,9 @@ This mode helps when a backslash already has special meaning in the surrounding 
 
 .. erbsland-demo::
     :source: text/Placeholders/PlaceholderDemos.cpp
-    :function-blocks: chooseEscapeMode
-    :function-blocks-sha256: b596f2326323bc7fdee452d4d7d1e1c9b1492bc1afd0de8517e7a4a99e5109c5
+    :show: f:chooseEscapeMode
     :exec: text/text_placeholders --demo ChooseEscapeMode
-    :source-sha256: 16fb33a7e417b945628738d032f02b150acb8175e2921395aaa0bf4a98f324d0
+    :sha256: e361d1af84e9aa3cd8e8cbb2fe64e92e5e9fb370e7d691d089d102d726e5bac2
 
 .. code-block:: cpp
 
@@ -133,21 +133,23 @@ This mode helps when a backslash already has special meaning in the surrounding 
         el::io::printLine(doubled.replaceOrThrow("Literal: $${var:movement}; value: ${var:movement}"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Literal: ${var:movement}; value: Κυβισμός
-    Literal: ${var:movement}; value: Κυβισμός
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLiteral: ${var:movement}; value: Κυβισμός
+        Literal: ${var:movement}; value: Κυβισμός␛[0m
 
 .. erbsland-demo-end::
 
 In double mode, no configured delimiter may start with two copies of its first code point.
 For example, ``[[`` cannot be the opening frame in that mode: its first ``[`` could mean either the delimiter or its
 escape.
-Constructing the replacer with such options raises :cpp:class:`LogicError <erbsland::err::LogicError>`.
+Constructing the replacer with such options raises :cpp:class:`LogicFailure <erbsland::err::LogicFailure>`.
 
-Deal with Invalid Expressions
-=============================
+Strict and Tolerant Placeholder Replacement
+===========================================
 
 Strict replacement makes a final document predictable: ``replaceOrThrow()`` reports the first failed expression.
 Tolerant ``replace()`` is useful when someone is editing a draft; it keeps a failed expression and continues to later
@@ -156,10 +158,9 @@ The following example shows both policies on the same input.
 
 .. erbsland-demo::
     :source: text/Placeholders/PlaceholderDemos.cpp
-    :function-blocks: handleInvalidExpression
-    :function-blocks-sha256: b49b1d56b954125565a815279aa2bc3a60e0ceeac18d550761b7edca4f947422
+    :show: f:handleInvalidExpression
     :exec: text/text_placeholders --demo HandleInvalidExpression
-    :source-sha256: 16fb33a7e417b945628738d032f02b150acb8175e2921395aaa0bf4a98f324d0
+    :sha256: a48a166d489e993dffcfe6be9cb4e4a51613a3640ab81db8fd888291c1e178e4
 
 .. code-block:: cpp
 
@@ -176,11 +177,13 @@ The following example shows both policies on the same input.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Draft: ${var:missing}; Ρεαλισμός
-    Strict replacement failed: Placeholder variable is not defined: missing
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDraft: ${var:missing}; Ρεαλισμός
+        Strict replacement failed: Placeholder variable is not defined: missing␛[0m
 
 .. erbsland-demo-end::
 
@@ -189,14 +192,17 @@ Expressions cannot cross a physical line, contain a nested opening frame, or hav
 ``validate()`` and ``validateOrThrow()`` check the expression and provider parameters before replacement, but they
 cannot guarantee that a live source will still provide a value later.
 
-Think About the Destination Text
-================================
+Single and Repeated Replacement Passes
+======================================
 
 A replacement is inserted as literal text and is never scanned for more placeholders.
 That prevents a source from introducing a new placeholder request.
 It also means an intentional second replacement pass can change the result: if a source returns ``${var:other}``, a
 second call may interpret it.
 Normally, complete each text value in one pass.
+
+Escaping Replacement Values and Parsing Layers
+==============================================
 
 The replacer does not automatically escape a source value for its destination.
 If a value is inserted into HTML, JSON, or another language, use an appropriate text filter or encode it at the

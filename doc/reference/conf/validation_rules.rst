@@ -56,6 +56,87 @@ Rules written as ELCL documents use structural sections for rule definitions and
 ELCL documents cannot contain scalar values directly at their document root, so root scalar metadata such as a title is
 a programmatic-builder feature; dependencies and key indexes work in both forms.
 
+Membership constraints built with ``vr::builder::In`` accept ``List<Integer>``, ``List<Float>``, ``StringList``, and
+``List<ByteBlock>``.
+Parsed validation rules use the same containers without converting through standard vectors.
+
+Builder Branches
+================
+
+Use ``createBranch()`` to construct a subtree with relative paths:
+
+.. code-block:: cpp
+
+    builder.addRule("server"_el, RuleType::Section);
+    auto server = builder.createBranch("server"_el);
+    server.configureRoot(Title{"Server Settings"_el});
+    server.addRule("port"_el, RuleType::Integer, Minimum{1}, Maximum{65535});
+    server.addRule("tls"_el, RuleType::Section);
+    auto tls = server.createBranch("tls"_el);
+    tls.addRule("certificate"_el, RuleType::Text);
+
+A branch only establishes a prefix; it does not declare its parent rule.
+``parentPath()`` returns the complete prefix, or an empty path for the main builder.
+Nested branches append paths, including reserved names such as ``vr_entry`` and ``vr_any``.
+Empty paths, text names, and indexes are rejected using the same rules as ``addRule()``.
+
+Branches derive from ``RulesBuilder`` and can be passed to helpers accepting ``RulesBuilder&``.
+``configureRoot()`` configures the existing branch parent; dependencies and key paths remain relative to that rule.
+A missing parent raises a validation-category ``ConfError``.
+Only the main builder can call ``reset()`` or ``takeRules()``; either operation on a branch raises ``LogicFailure``.
+
+Branches share the backend and may outlive the builder or branch that created them.
+After the main builder resets or takes rules, existing branches retain their prefixes and operate on the new document.
+Declare the necessary parent rules again before using them.
+Builders and branches are neither copyable nor movable; ``createBranch()`` returns a branch directly by value.
+They provide no synchronization for concurrent mutation.
+
+Simple Value Lists
+==================
+
+Use ``EntryType`` when each value-list entry needs only a scalar type check:
+
+.. code-block:: cpp
+
+    builder.addRule(
+        "server.names"_el, RuleType::ValueList, EntryType{RuleType::Text}, IsOptional{});
+
+This creates the same child rule as an explicit ``server.names.vr_entry`` rule of type ``Text``.
+The existing value-list behavior still accepts a single scalar as a one-entry list.
+``EntryType{RuleType::Value}`` accepts any scalar type, and ``addAlternative()`` supports independent entry types for
+each alternative.
+List attributes continue to apply to the list itself.
+
+``EntryType`` accepts scalar rule types only and requires a ``ValueList`` parent.
+Duplicate entry attributes or an additional explicit ``vr_entry`` are rejected with ``ConfError`` in the validation
+category.
+Use ``EntryConstraints``, ``EntryTitle``, and ``EntryDescription`` to configure an implicit scalar entry:
+
+.. code-block:: cpp
+
+    server.addRule(
+        "names"_el,
+        RuleType::ValueList,
+        EntryType{RuleType::Text},
+        EntryConstraints{Minimum{2}, Matches{R"(\A[a-z]+\z)"_el}},
+        EntryTitle{"Server name"_el},
+        EntryDescription{"A lower-case server name with at least two characters."_el},
+        IsOptional{});
+
+These attributes may appear before or after ``EntryType`` and require it in the same builder call.
+``EntryConstraints`` owns its constraint arguments and accepts custom ``ConstraintAttribute`` subclasses.
+Stored entry attributes can be reused across declarations.
+An empty constraint pack is allowed; repeated constraints replace matching constraints, and repeated entry titles or
+descriptions use the last value.
+Entry constraints and metadata apply only to ``vr_entry``; ordinary attributes continue to configure the list.
+Invalid entry attributes are rejected before a new rule or alternative is attached.
+Each alternative has its own entry configuration.
+
+A branch targeting a value list can configure its missing entry using ``configureRoot()`` with ``EntryType`` and entry
+attributes in the same call.
+An existing explicit or implicit ``vr_entry`` cannot be replaced this way.
+For nested lists, matrices, section entries, or other entry attributes, declare ``vr_entry`` explicitly.
+
 Interface
 =========
 
@@ -72,6 +153,14 @@ Interface
 .. doxygenclass:: erbsland::conf::vr::builder::Dependency
     :members:
 .. doxygenclass:: erbsland::conf::vr::builder::Description
+    :members:
+.. doxygenclass:: erbsland::conf::vr::builder::EntryConstraints
+    :members:
+.. doxygenclass:: erbsland::conf::vr::builder::EntryDescription
+    :members:
+.. doxygenclass:: erbsland::conf::vr::builder::EntryTitle
+    :members:
+.. doxygenclass:: erbsland::conf::vr::builder::EntryType
     :members:
 .. doxygenclass:: erbsland::conf::vr::builder::IsOptional
     :members:
@@ -128,6 +217,8 @@ Interface
 .. doxygenclass:: erbsland::conf::vr::Rules
     :members:
 .. doxygenclass:: erbsland::conf::vr::RulesBuilder
+    :members:
+.. doxygenclass:: erbsland::conf::vr::RulesBuilderBranch
     :members:
 .. doxygenclass:: erbsland::conf::vr::RuleType
     :members:

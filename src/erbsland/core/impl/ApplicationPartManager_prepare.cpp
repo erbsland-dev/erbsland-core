@@ -4,19 +4,20 @@
 
 #include "ApplicationPartIdentifier.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../text/Literals.hpp"
 
 #include <utility>
 
 namespace erbsland::core::impl {
 
+using namespace err;
 using namespace text::literals;
 
 void ApplicationPartManager::registerPart(Registration registration) {
     const auto lock = std::scoped_lock{_mutex};
     if (_state != ApplicationPartManagerState::Uninitialized || _prepared) {
-        throw err::LogicError{"Can not register an application part after preparation started."_el};
+        throw LogicFailure{"Can not register an application part after preparation started."_el};
     }
     _registrations.emplace_back(std::move(registration));
 }
@@ -25,7 +26,7 @@ void ApplicationPartManager::prepare() {
     {
         const auto lock = std::scoped_lock{_mutex};
         if (_state != ApplicationPartManagerState::Uninitialized || _prepared) {
-            throw err::LogicError{"The application-part manager can only be prepared once."_el};
+            throw LogicFailure{"The application-part manager can only be prepared once."_el};
         }
     }
     try {
@@ -35,10 +36,10 @@ void ApplicationPartManager::prepare() {
         for (const auto &registration : _registrations) {
             const auto identifier = registration.identifier();
             if (identifier == nullptr) {
-                throw err::LogicError{"An application part returned a null identifier."_el};
+                throw LogicFailure{"An application part returned a null identifier."_el};
             }
             if (nameToNumber.contains(identifier->name())) {
-                throw err::LogicError{"An application-part identifier name is registered more than once."_el};
+                throw LogicFailure{"An application-part identifier name is registered more than once."_el};
             }
             const auto number = records.size() + 1;
             nameToNumber.set(identifier->name(), number);
@@ -54,14 +55,14 @@ void ApplicationPartManager::prepare() {
             const auto dependencies = _registrations[index].dependencies();
             for (const auto &identifier : dependencies) {
                 if (identifier == nullptr) {
-                    throw err::LogicError{"An application part returned a null dependency identifier."_el};
+                    throw LogicFailure{"An application part returned a null dependency identifier."_el};
                 }
                 const auto dependencyNumber = nameToNumber.get(identifier->name());
                 if (!dependencyNumber.has_value()) {
-                    throw err::LogicError{"An application-part dependency is not registered."_el};
+                    throw LogicFailure{"An application-part dependency is not registered."_el};
                 }
                 if (*dependencyNumber == index + 1) {
-                    throw err::LogicError{"An application part can not depend on itself."_el};
+                    throw LogicFailure{"An application part can not depend on itself."_el};
                 }
                 records[index].dependencies.emplace_back(*dependencyNumber);
                 records[*dependencyNumber - 1].dependents.emplace_back(index + 1);
@@ -81,7 +82,7 @@ void ApplicationPartManager::prepare() {
         for (std::size_t index = 0; index < _registrations.size(); ++index) {
             auto instance = _registrations[index].factory();
             if (instance == nullptr) {
-                throw err::LogicError{"An application-part factory returned a null instance."_el};
+                throw LogicFailure{"An application-part factory returned a null instance."_el};
             }
             instance->bind(managerAccess, {});
             const auto lock = std::scoped_lock{_mutex};
@@ -105,7 +106,7 @@ void ApplicationPartManager::registerCommandLineOptions(const options::OptionsPt
     {
         const auto lock = std::scoped_lock{_mutex};
         if (!_prepared) {
-            throw err::LogicError{"The application-part manager must be prepared before option registration."_el};
+            throw LogicFailure{"The application-part manager must be prepared before option registration."_el};
         }
         for (const auto &record : _records) {
             parts.emplace_back(record.part);
@@ -121,7 +122,7 @@ void ApplicationPartManager::parseCommandLine(const options::OptionValuesPtr &va
     {
         const auto lock = std::scoped_lock{_mutex};
         if (!_prepared) {
-            throw err::LogicError{"The application-part manager must be prepared before option parsing."_el};
+            throw LogicFailure{"The application-part manager must be prepared before option parsing."_el};
         }
         for (const auto &record : _records) {
             parts.emplace_back(record.part);
@@ -140,7 +141,7 @@ auto ApplicationPartManager::resolveIdentifier(const ApplicationPartIdentifierPt
 auto ApplicationPartManager::resolveIdentifierLocked(const ApplicationPartIdentifierPtr &identifier) const
     -> std::size_t {
     if (identifier == nullptr) {
-        throw err::LogicError{"The application-part identifier must not be null."_el};
+        throw LogicFailure{"The application-part identifier must not be null."_el};
     }
     if (const auto implementation = std::dynamic_pointer_cast<impl::ApplicationPartIdentifier>(identifier);
         implementation != nullptr) {
@@ -152,7 +153,7 @@ auto ApplicationPartManager::resolveIdentifierLocked(const ApplicationPartIdenti
     }
     const auto number = _nameToNumber.get(identifier->name());
     if (!number.has_value()) {
-        throw err::LogicError{"The application part is not registered in this manager."_el};
+        throw LogicFailure{"The application part is not registered in this manager."_el};
     }
     if (const auto implementation = std::dynamic_pointer_cast<impl::ApplicationPartIdentifier>(identifier);
         implementation != nullptr) {
@@ -174,7 +175,7 @@ void ApplicationPartManager::validateAcyclicPart(const std::size_t number, std::
         return;
     }
     if (mark == 1) {
-        throw err::LogicError{"The application-part dependency graph contains a cycle."_el};
+        throw LogicFailure{"The application-part dependency graph contains a cycle."_el};
     }
     mark = 1;
     for (const auto dependency : _records[number - 1].dependencies) {

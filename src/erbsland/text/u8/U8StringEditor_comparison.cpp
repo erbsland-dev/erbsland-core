@@ -6,11 +6,28 @@
 
 #include "impl/U8StringComparisonTools.hpp"
 
+#include "../../mem/ByteSpan.hpp"
+#include "../../mem/impl/ByteComparisonTools.hpp"
+#include "../../mem/impl/ByteDataView.hpp"
+
+#include <span>
+
 namespace erbsland::text {
+
+using namespace mem;
 
 auto U8StringEditor::compare(const U8String &other, const CharCompareFn compareFn) const noexcept
     -> std::strong_ordering {
     return impl::U8StringComparisonTools{dataView()}.compare(other.dataView(), compareFn);
+}
+
+auto U8StringEditor::compareBinary(const U8String &other) const noexcept -> std::strong_ordering {
+    const auto left = toConstByteSpan(std::as_bytes(dataView().dataSpan()));
+    const auto right = toConstByteSpan(std::as_bytes(other.dataView().dataSpan()));
+    if (left.data() == right.data()) {
+        return left.size() <=> right.size();
+    }
+    return mem::impl::ByteComparisonTools{mem::impl::ByteDataView{left}}.compare(mem::impl::ByteDataView{right});
 }
 
 auto U8StringEditor::operator<=>(const U8String &other) const noexcept -> std::strong_ordering {

@@ -1,17 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/random/RandomError.hpp>
-#include <erbsland/random/SecureRandom.hpp>
+#include <erbsland/RandomFailure.hpp>
+#include <erbsland/SecureRandom.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
 #include <cstddef>
 
-using el::random::RandomError;
+using el::random::RandomFailure;
 using el::random::SecureRandom;
 
-TESTED_TARGETS(SecureRandom RandomError EntropySource)
+TESTED_TARGETS(SecureRandom RandomFailure EntropySource)
 class SecureRandomTest final : public el::UnitTest {
 public:
     void testSecureRandomSmoke() {
@@ -29,5 +29,5 @@ public:
         REQUIRE_GREATER_EQUAL(value, 1.0);
     }
 
-    void testEntropySourceFailure() { REQUIRE_THROWS_AS(RandomError, throw RandomError{"test"}); }
+    void testEntropySourceFailure() { REQUIRE_THROWS_AS(RandomFailure, throw RandomFailure{"test"}); }
 };

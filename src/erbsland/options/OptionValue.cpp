@@ -10,6 +10,7 @@
 
 namespace erbsland::options {
 
+using namespace text;
 using unit::ArgumentCount;
 using unit::ArgumentIndex;
 
@@ -63,7 +64,7 @@ auto OptionValue::valueCount() const noexcept -> ArgumentCount {
     return std::visit(
         [](const auto &value) -> ArgumentCount {
             using Value = std::decay_t<decltype(value)>;
-            if constexpr (std::is_same_v<Value, text::StringList>) {
+            if constexpr (std::is_same_v<Value, StringList>) {
                 return ArgumentCount::fromSizeT(value.count().toSizeT());
             } else if constexpr (
                 std::is_same_v<Value, std::vector<bool>> || std::is_same_v<Value, std::vector<OptionInteger>>) {
@@ -89,9 +90,9 @@ auto OptionValue::type() const noexcept -> OptionValueType {
                 return OptionValueType::Integer;
             } else if constexpr (std::is_same_v<Value, std::vector<OptionInteger>>) {
                 return OptionValueType::IntegerList;
-            } else if constexpr (std::is_same_v<Value, text::String>) {
+            } else if constexpr (std::is_same_v<Value, String>) {
                 return value.isSensitive() ? OptionValueType::SensitiveText : OptionValueType::Text;
-            } else if constexpr (std::is_same_v<Value, text::StringList>) {
+            } else if constexpr (std::is_same_v<Value, StringList>) {
                 return OptionValueType::TextList;
             }
         },
@@ -129,19 +130,19 @@ auto OptionValue::getInteger(const OptionInteger defaultInteger) const -> Option
     return defaultInteger;
 }
 
-auto OptionValue::getText(const text::String &defaultText) const -> text::String {
-    if (const auto text = std::get_if<text::String>(&_storage)) {
+auto OptionValue::getText(const String &defaultText) const -> String {
+    if (const auto text = std::get_if<String>(&_storage)) {
         return *text;
     }
     return defaultText;
 }
 
-auto OptionValue::getTextList(text::StringList defaultTextList) const -> text::StringList {
-    if (const auto textList = std::get_if<text::StringList>(&_storage)) {
+auto OptionValue::getTextList(StringList defaultTextList) const -> StringList {
+    if (const auto textList = std::get_if<StringList>(&_storage)) {
         return *textList;
     }
-    if (const auto text = std::get_if<text::String>(&_storage)) {
-        return text::StringList{*text};
+    if (const auto text = std::get_if<String>(&_storage)) {
+        return StringList{*text};
     }
     return defaultTextList;
 }

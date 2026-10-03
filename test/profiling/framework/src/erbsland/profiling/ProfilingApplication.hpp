@@ -7,13 +7,24 @@
 #include "ProfilingDefinition.hpp"
 #include "ProfilingDefinition_fwd.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TimeDelta.hpp>
 
 namespace erbsland::profiling {
+
+using namespace el::text::literals;
 
 /// Common command-line application base for profiling tools.
 /// @tested{ProfilingApplicationTest}
 class ProfilingApplication : public Application {
+    constexpr static auto cListCoverageOption = "list-coverage"_el;
+    constexpr static auto cOverrideValue = "override"_el;
+
 public:
     using Application::Application;
 
@@ -43,7 +54,7 @@ private:
     /// Parse an ELCL time-delta command-line value.
     [[nodiscard]] static auto parseTimeDeltaOverride(const String &value) -> TimeDelta;
     /// Parse an ELCL byte-count command-line value.
-    [[nodiscard]] static auto parseByteLengthOverride(const String &value) -> ByteLength;
+    [[nodiscard]] static auto parseByteLengthOverride(const String &value) -> ByteCount;
 
 private:
     ProfilingDefinition _definition;

@@ -6,8 +6,9 @@
 
 namespace erbsland::cryptology::impl {
 
-ChaCha20Poly1305EncryptorData::ChaCha20Poly1305EncryptorData(
-    const mem::ConstByteSpan key, const mem::ConstByteSpan nonce) :
+using namespace mem;
+
+ChaCha20Poly1305EncryptorData::ChaCha20Poly1305EncryptorData(const ConstByteSpan key, const ConstByteSpan nonce) :
     _state{key, nonce} {
 }
 
@@ -19,15 +20,15 @@ auto ChaCha20Poly1305EncryptorData::type() const noexcept -> SymmetricEncryption
     return SymmetricEncryptionType::ChaCha20Poly1305;
 }
 
-void ChaCha20Poly1305EncryptorData::addAuthenticatedData(const mem::ConstByteSpan data) {
+void ChaCha20Poly1305EncryptorData::addAuthenticatedData(const ConstByteSpan data) {
     _state.addAuthenticatedData(data);
 }
 
-auto ChaCha20Poly1305EncryptorData::encrypt(const mem::ConstByteSpan data) -> mem::ByteBlock {
+auto ChaCha20Poly1305EncryptorData::encrypt(const ConstByteSpan data) -> ByteBlock {
     return _state.transform(data, true);
 }
 
-auto ChaCha20Poly1305EncryptorData::finalize() -> mem::ByteBlock {
+auto ChaCha20Poly1305EncryptorData::finalize() -> ByteBlock {
     _tag = _state.finalizeTag();
     return {};
 }

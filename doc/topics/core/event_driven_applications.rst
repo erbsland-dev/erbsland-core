@@ -27,7 +27,7 @@ managed event processing in an orderly way.
     :source: core/EventApplication/main.cpp
     :exec: core/core_event_application
     :exec-2: core/core_event_application --help
-    :source-sha256: 05a4f249e0eeb88d7a28d1a4fe49b4b6fca7ab76fcdfe26990b5fddc02042c13
+    :sha256: 6ab54a56e460b00b79c9c720729500bdd18c9400a4b9d39c79b761d0924b3643
 
 .. code-block:: cpp
 
@@ -62,34 +62,60 @@ managed event processing in an orderly way.
         return app.run();
     }
 
-.. rubric:: ``$ core/core_event_application``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    maintenance job started
-    maintenance job completed
+        $ core/core_event_application
 
-.. rubric:: ``$ core/core_event_application --help``
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[0mmaintenance job started
+        maintenance job completed␛[0m
 
-    Usage:
-    core_event_application [options]
-    Options:
-    -h, --help[=<boolean>]    Display this help.
-        --version[=<boolean>] Display version information.
+.. erbsland-demo-run::
+
+    .. code-block:: console
+
+        $ core/core_event_application --help
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUsage:
+        core_event_application [options]
+        Options:
+        -h, --help[=<keyword>]  Display this help.
+            --version           Display version information.␛[0m
 
 .. erbsland-demo-end::
 
-Starting Work at the Right Time
-===============================
+Starting Asynchronous Work after Option Parsing
+===============================================
 
 ``initialize()`` is useful for metadata, terminal setup, shared services, and work that must exist before parsing.
 ``registerCommandLineOptions()`` describes accepted arguments.
-When asynchronous work depends on parsed values, start it after the base parser has succeeded, for example from an
-overridden ``parseCommandLine()`` that first calls ``Application::parseCommandLine()`` and checks ``optionValues()``.
+When asynchronous work depends on parsed values, override ``handleCommandLineOptions(const OptionValuesPtr &values)``.
+The application calls this hook after successful parsing, before forwarding options to application parts and entering
+``main()``.
+The passed values are non-null; help, version output, module overview, and parsing errors skip this hook.
+Validate inputs and schedule the first event there so the base ``main()`` still supplies event dispatch.
+
+For example, a directory packer can resolve its source and queue a callback that starts scanning:
+
+.. code-block:: cpp
+
+    void handleCommandLineOptions(const el::OptionValuesPtr &values) override {
+        const auto source = el::Path::fromNativeOrThrow(values->getText("source"_el))
+                                .resolveOrThrow(el::PathResolveMode::Physical);
+        events()->invoke([this, source]() -> void { startScanning(source); });
+    }
+
+Here ``source`` is a required text option registered by the application, and ``startScanning()`` begins its workflow on
+the main loop.
+A workflow using raw worker threads must retain their owners until those threads have been cancelled and joined.
+Only override ``parseCommandLine()`` when the parsing behavior itself needs to change.
 
 Queued initialization events are harmless when the user requests help or version output because the application never
 enters the event loop in that case.
@@ -107,5 +133,5 @@ Use explicit result handling when a failure is expected and recoverable; throw `
 terminate the whole process with a diagnostic and exit code.
 
 Overriding ``main()`` disables the automatic event-loop entry.
-An application that needs custom synchronous preparation before dispatch can finish its override with
-``runEventLoop()``.
+Preparation that depends on options belongs in ``handleCommandLineOptions()`` and keeps that entry intact.
+A custom main that also needs work after dispatch can call ``runEventLoop()`` explicitly.

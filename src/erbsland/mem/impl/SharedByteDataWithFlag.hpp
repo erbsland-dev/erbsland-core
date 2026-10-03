@@ -153,27 +153,23 @@ private:
     mutable std::uint8_t _flags;
 };
 
-/// Access the mutable reference counter of flagged shared byte data.
 template <typename tDataType>
 auto SharedDataPointerTraits<SharedByteDataWithFlag<tDataType>>::referenceCounter(Type *data) noexcept
     -> ReferenceCounter & {
     return data->_referenceCount;
 }
 
-/// Access the immutable reference counter of flagged shared byte data.
 template <typename tDataType>
 auto SharedDataPointerTraits<SharedByteDataWithFlag<tDataType>>::referenceCounter(const Type *data) noexcept
     -> const ReferenceCounter & {
     return data->_referenceCount;
 }
 
-/// Clone flagged shared byte data into a separate allocation.
 template <typename tDataType>
 auto SharedDataPointerTraits<SharedByteDataWithFlag<tDataType>>::clone(const Type *data) -> Type * {
     return data->clone();
 }
 
-/// Destroy a flagged shared-byte-data allocation.
 template <typename tDataType>
 void SharedDataPointerTraits<SharedByteDataWithFlag<tDataType>>::destroy(Type *data) noexcept {
     Type::destroy(data);

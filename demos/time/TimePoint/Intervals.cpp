@@ -3,8 +3,11 @@
 
 #include "TimePointDemos.hpp"
 
-#include <erbsland/time/Literals.hpp>
-#include <erbsland/time/TimePoint.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimePoint.hpp>
 
 namespace demo {
 

@@ -7,7 +7,8 @@
 #include "impl/BackendFactory.hpp"
 #include "impl/PathBackend.hpp"
 
-#include "../core/Application.hpp"
+#include "../core/impl/application_data/ApplicationSystemData.hpp"
+#include "../core/impl/ApplicationDataAccess.hpp"
 #include "../system/PlatformError.hpp"
 #include "../system/UserLookup.hpp"
 #include "../text/Literals.hpp"
@@ -95,7 +96,7 @@ auto PathInfo::type() const noexcept -> PathType {
     return _cache->data.type;
 }
 
-auto PathInfo::fileSize() const noexcept -> unit::ByteLength {
+auto PathInfo::fileSize() const noexcept -> unit::ByteCount {
     ensureParts(PathInfoPart::Size);
     if (isEmpty()) {
         return {};
@@ -413,7 +414,8 @@ void PathInfo::resolveNames(const PathInfoParts parts, impl::PathInfoData &data)
     if (!needsOwner && !needsGroup) {
         return;
     }
-    auto &lookup = core::application().userLookup();
+    const auto systemData = core::impl::applicationData()->system().get();
+    auto &lookup = systemData->userLookup();
     if (needsOwner) {
         try {
             data.ownerName = lookup.userNameForId(data.ownerId);

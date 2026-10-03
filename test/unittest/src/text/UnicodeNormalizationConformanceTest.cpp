@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/NormalizationForm.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/NormalizationForm.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

@@ -1,7 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -14,7 +22,7 @@ public:
 
 protected:
     void initialize() override {
-        enableTerminal();
+        DemoTerminal::enable(*this);
         info().setApplicationName("Prism Bench"_el);
         info().setApplicationVersion(el::Version{0, 8, 0});
         info().setAuthorName("Erbsland DEV"_el);
@@ -23,19 +31,18 @@ protected:
     void registerCommandLineOptions(const el::OptionsPtr &options) override {
         options->setHelpTitle("Prism Bench"_el);
         options->setHelpDescription("Prepares a short measurement with bench optical instruments."_el);
-        options->addOption({"-q"_el, "--quiet"_el, "quiet"_el})
-            .setHelpDescription("Reduces output to essential values."_el);
+        options->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpTitle("Reduces output to essential values."_el);
         options->addOption({"-c"_el, "--count"_el, "count"_el})
             .setType(el::OptionType::Integer)
             .setDefaultValue(el::OptionInteger{3})
-            .setHelpDescription("Number of readings to take."_el);
+            .setHelpTitle("Number of readings to take."_el);
         options->addOption({"-m"_el, "--mode"_el, "mode"_el})
             .addChoice("fast"_el)
             .addChoice("precise"_el)
             .addChoice("night"_el)
             .setDefaultValue("precise"_el)
-            .setHelpDescription("Acquisition mode for the optical bench."_el);
-        options->addOption("sample"_el).setRequired().setHelpDescription("Sample placed in front of the prism."_el);
+            .setHelpTitle("Acquisition mode for the optical bench."_el);
+        options->addOption("sample"_el).setRequired().setHelpTitle("Sample placed in front of the prism."_el);
     }
     [[nodiscard]] auto main() -> el::ExitCode override { return el::ExitCode::success(); }
 };

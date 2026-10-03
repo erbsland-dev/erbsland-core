@@ -2,7 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/block/all.hpp>
+#include <erbsland/all_block.hpp>
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/block/Position.hpp>
+#include <erbsland/block/Size.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/IntegerFormat.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/Symmetry.hpp>
+#include <erbsland/TextOutputStream.hpp>
 
 #include <array>
 #include <cstddef>
@@ -48,7 +57,7 @@ void captureOutput() {
 void printMagicSquare(const el::TextOutputStreamPtr &outputStream) {
     auto square = MagicSquare{};
     buildMagicSquare(square);
-    const auto integerFormat = el::IntegerFormat::decimal().setFieldWidth(el::CpLength{3});
+    const auto integerFormat = el::IntegerFormat::decimal().setFieldWidth(el::CpCount{3});
     outputStream->printLine("┌─────┬─────┬─────┐ Sum: "_el, square.magicSum);
     outputStream->printLine(
         integerFormat, "│ "_el, square.values[0], " │ "_el, square.values[1], " │ "_el, square.values[2], " │"_el);

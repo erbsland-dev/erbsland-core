@@ -6,6 +6,7 @@
 #include "VersionMask_fwd.hpp"
 
 #include "../../../text/String.hpp"
+#include "../../../util/List.hpp"
 
 #include <initializer_list>
 #include <type_traits>
@@ -59,7 +60,7 @@ public:
     /// - Negative values are clamped to 0 by `ConfVersionRange`.
     /// - Duplicates are removed, and adjacent numbers are merged into ranges.
     /// - Empty input creates an empty mask (matches nothing).
-    [[nodiscard]] static auto fromIntegers(const std::vector<Integer> &values) noexcept -> VersionMask;
+    [[nodiscard]] static auto fromIntegers(const util::List<Integer> &values) noexcept -> VersionMask;
     /// Construct a mask from an initializer list of version integers.
     [[nodiscard]] static auto fromIntegers(const std::initializer_list<Integer> values) noexcept -> VersionMask;
 

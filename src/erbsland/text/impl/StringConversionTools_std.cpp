@@ -29,6 +29,7 @@
 #include <span>
 
 namespace erbsland::text::impl {
+
 auto StringConversionTools::toStdString(const U8StringEditor &str) -> std::string {
     const auto u8String = toU8StringEditor(str);
     return U8StringReadTools{u8String.dataView()}.toStdString();
@@ -206,4 +207,5 @@ auto StringConversionTools::toStdWString(const U32String &str) -> std::wstring {
     return U32StringReadTools{str.dataView()}.toStdWString();
 #endif
 }
+
 }

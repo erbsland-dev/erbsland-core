@@ -10,9 +10,9 @@ namespace erbsland::cryptology::impl {
 /// @notest{Exercised through ProtectedByteBlockTest.}
 class ApplicationProtectedDataAccess final : public ProtectedDataAccess {
 public:
-    [[nodiscard]] auto protect(mem::ConstByteSpan plaintext, unit::ByteLength plaintextLength)
+    [[nodiscard]] auto protect(mem::ConstByteSpan plaintext, unit::ByteCount plaintextLength)
         -> mem::ByteBlock override;
-    [[nodiscard]] auto unprotect(mem::ConstByteSpan envelope, unit::ByteLength plaintextLength)
+    [[nodiscard]] auto unprotect(mem::ConstByteSpan envelope, unit::ByteCount plaintextLength)
         -> mem::ByteBlock override;
 };
 

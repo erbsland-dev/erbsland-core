@@ -2,15 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "TlsConfigurationMapping.hpp"
 #include "TlsServerAcceptOptions_fwd.hpp"
-#include "TlsServerIdentityMapping.hpp"
 
 #include "../source/ConnectionQuota.hpp"
 #include "../source/SocketBufferLimits.hpp"
 #include "../tcp/TcpAcceptOptions.hpp"
 
+#include "../../cryptology/keys/KeyAgreementAlgorithm.hpp"
 #include "../../cryptology/tls/TlsCipherSuite.hpp"
 #include "../../text/String.hpp"
+#include "../../text/StringList.hpp"
 #include "../../time/TimeDelta.hpp"
 
 #include <utility>
@@ -23,7 +25,7 @@ namespace erbsland::network {
 class TlsServerAcceptOptions final {
 public:
     /// Reserved framework label for regular TLS servers.
-    inline static const auto cDefaultConfigurationLabel = text::String{"tls/server"};
+    inline static const auto cDefaultConfigurationLabel = text::String{"tls"};
     /// Default handshake deadline after TCP adoption.
     inline static const auto cDefaultHandshakeTimeout = time::TimeDelta::seconds(30);
     /// Default authenticated application idle deadline.
@@ -31,11 +33,11 @@ public:
     /// Default bidirectional close-notify deadline.
     inline static const auto cDefaultCloseTimeout = time::TimeDelta::seconds(10);
     /// Maximum accepted TLS-owned queue limit in either direction.
-    static constexpr auto cMaximumBufferLength = unit::ByteLength{16U * 1024U * 1024U};
+    static constexpr auto cMaximumBufferLength = unit::ByteCount{16U * 1024U * 1024U};
     /// Maximum one-shot application send size.
-    static constexpr auto cMaximumApplicationSendLength = unit::ByteLength{16U * 1024U};
-    /// Maximum number of exact SNI identity mappings.
-    static constexpr auto cMaximumIdentityMappings = unit::ItemCount{64U};
+    static constexpr auto cMaximumApplicationSendLength = unit::ByteCount{16U * 1024U};
+    /// Maximum number of exact SNI configuration mappings.
+    static constexpr auto cMaximumConfigurationMappings = unit::ItemCount{64U};
 
 public:
     /// Create options using a required shared handshake quota.
@@ -48,24 +50,24 @@ public:
 public: // accessors
     /// Get the shared incomplete-handshake quota.
     [[nodiscard]] auto handshakeQuota() const noexcept -> const ConnectionQuotaPtr & { return _handshakeQuota; }
-    /// Get the required default identity configuration label.
+    /// Get the required default server configuration label.
     [[nodiscard]] auto configurationLabel() const noexcept -> const text::String & { return _configurationLabel; }
-    /// Set the required default identity configuration label.
+    /// Set the required default server configuration label.
     /// @param value The exact or descendant registry label to resolve.
     /// @return This options object for chaining.
     auto setConfigurationLabel(text::String value) noexcept -> TlsServerAcceptOptions & {
         _configurationLabel = std::move(value);
         return *this;
     }
-    /// Get the exact canonical SNI identity mappings.
-    [[nodiscard]] auto identityMappings() const noexcept -> const std::vector<TlsServerIdentityMapping> & {
-        return _identityMappings;
+    /// Get the exact canonical SNI configuration mappings.
+    [[nodiscard]] auto configurationMappings() const noexcept -> const std::vector<TlsConfigurationMapping> & {
+        return _configurationMappings;
     }
-    /// Replace all exact canonical SNI identity mappings.
+    /// Replace all exact canonical SNI configuration mappings.
     /// @param value At most 64 mappings with unique server names.
     /// @return This options object for chaining.
-    auto setIdentityMappings(std::vector<TlsServerIdentityMapping> value) noexcept -> TlsServerAcceptOptions & {
-        _identityMappings = std::move(value);
+    auto setConfigurationMappings(std::vector<TlsConfigurationMapping> value) noexcept -> TlsServerAcceptOptions & {
+        _configurationMappings = std::move(value);
         return *this;
     }
     /// Get the nested accepted TCP stream options.
@@ -87,11 +89,11 @@ public: // accessors
         return *this;
     }
     /// Get supported ALPN identifiers in server-preference order.
-    [[nodiscard]] auto alpnProtocols() const noexcept -> const std::vector<text::String> & { return _alpnProtocols; }
+    [[nodiscard]] auto alpnProtocols() const noexcept -> const text::StringList & { return _alpnProtocols; }
     /// Set supported ALPN identifiers in server-preference order.
     /// @param value The bounded non-empty protocol identifiers.
     /// @return This options object for chaining.
-    auto setAlpnProtocols(std::vector<text::String> value) noexcept -> TlsServerAcceptOptions & {
+    auto setAlpnProtocols(text::StringList value) noexcept -> TlsServerAcceptOptions & {
         _alpnProtocols = std::move(value);
         return *this;
     }
@@ -104,6 +106,17 @@ public: // accessors
     /// @return This options object for chaining.
     auto setCipherSuites(std::vector<cryptology::TlsCipherSuite> value) noexcept -> TlsServerAcceptOptions & {
         _cipherSuites = std::move(value);
+        return *this;
+    }
+    /// Get supported key-agreement groups in preference order.
+    [[nodiscard]] auto supportedGroups() const noexcept -> const std::vector<cryptology::KeyAgreementAlgorithm> & {
+        return _supportedGroups;
+    }
+    /// Set a nonempty, duplicate-free group list, validated when the connection starts.
+    /// @param value Ordered supported algorithms; the client sends the first group's initial share.
+    /// @return This options object for chaining.
+    auto setSupportedGroups(std::vector<cryptology::KeyAgreementAlgorithm> value) noexcept -> TlsServerAcceptOptions & {
+        _supportedGroups = std::move(value);
         return *this;
     }
     /// Get the TLS handshake timeout.
@@ -136,15 +149,17 @@ public: // accessors
 
 private:
     ConnectionQuotaPtr _handshakeQuota;                           ///< Shared incomplete-handshake quota.
-    text::String _configurationLabel{cDefaultConfigurationLabel}; ///< Required default identity label.
-    std::vector<TlsServerIdentityMapping> _identityMappings;      ///< Exact SNI label mappings.
+    text::String _configurationLabel{cDefaultConfigurationLabel}; ///< Required default server configuration label.
+    std::vector<TlsConfigurationMapping> _configurationMappings;  ///< Exact SNI label mappings.
     TcpAcceptOptions _tcpOptions;                                 ///< Accepted TCP stream options.
     SocketBufferLimits _bufferLimits;                             ///< TLS queue limits.
-    std::vector<text::String> _alpnProtocols;                     ///< Server-preference ALPN identifiers.
+    text::StringList _alpnProtocols;                              ///< Server-preference ALPN identifiers.
     std::vector<cryptology::TlsCipherSuite> _cipherSuites;        ///< Server-preference cipher suites.
-    time::TimeDelta _handshakeTimeout{cDefaultHandshakeTimeout};  ///< Handshake deadline.
-    time::TimeDelta _idleTimeout{cDefaultIdleTimeout};            ///< Application idle deadline.
-    time::TimeDelta _closeTimeout{cDefaultCloseTimeout};          ///< Close-notify deadline.
+    std::vector<cryptology::KeyAgreementAlgorithm> _supportedGroups{
+        cryptology::KeyAgreementAlgorithm::X25519, cryptology::KeyAgreementAlgorithm::P256}; ///< Ordered groups.
+    time::TimeDelta _handshakeTimeout{cDefaultHandshakeTimeout};                             ///< Handshake deadline.
+    time::TimeDelta _idleTimeout{cDefaultIdleTimeout};   ///< Application idle deadline.
+    time::TimeDelta _closeTimeout{cDefaultCloseTimeout}; ///< Close-notify deadline.
 };
 
 }

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "GridLayout.hpp"
 
-#include "../err/OutOfRangeError.hpp"
-#include "../err/ParameterError.hpp"
+#include "../err/OutOfRangeFailure.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <numeric>
@@ -11,6 +11,7 @@
 
 namespace erbsland::cterm {
 
+using namespace err;
 using block::Coordinate;
 using block::Position;
 using block::Rectangle;
@@ -39,14 +40,14 @@ auto GridLayout::columnCount() const noexcept -> std::size_t {
 
 auto GridLayout::rowHeight(const std::size_t row) const -> Coordinate {
     if (row >= rowCount()) {
-        throw err::OutOfRangeError{"GridLayout row index is out of range."_el};
+        throw OutOfRangeFailure{"GridLayout row index is out of range."_el};
     }
     return _rowHeights[row];
 }
 
 auto GridLayout::columnWidth(const std::size_t column) const -> Coordinate {
     if (column >= columnCount()) {
-        throw err::OutOfRangeError{"GridLayout column index is out of range."_el};
+        throw OutOfRangeFailure{"GridLayout column index is out of range."_el};
     }
     return _columnWidths[column];
 }
@@ -76,7 +77,7 @@ auto GridLayout::cellRect(
     -> Rectangle {
 
     if (row >= rowCount() || column >= columnCount()) {
-        throw err::OutOfRangeError{"GridLayout cell index is out of range."_el};
+        throw OutOfRangeFailure{"GridLayout cell index is out of range."_el};
     }
     const auto leftSize = borderSize(border, FrameBorder::Element::Left);
     const auto topSize = borderSize(border, FrameBorder::Element::Top);
@@ -100,11 +101,11 @@ auto GridLayout::borderSize(const FrameBorder &border, const FrameBorder::Elemen
 
 void GridLayout::validateSizes(const std::vector<Coordinate> &sizes, const text::StringLiteral &name) {
     if (sizes.empty()) {
-        throw err::ParameterError{"The size list must not be empty."_el, name};
+        throw ParameterFailure{"The size list must not be empty."_el, name};
     }
     for (const auto size : sizes) {
         if (size <= 0) {
-            throw err::ParameterError{"The size list must contain only positive sizes."_el, name};
+            throw ParameterFailure{"The size list must contain only positive sizes."_el, name};
         }
     }
 }

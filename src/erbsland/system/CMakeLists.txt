@@ -9,14 +9,21 @@ target_sources(erbsland-core PRIVATE
         all.hpp
         CpuArchitecture.cpp
         CpuArchitecture.hpp
+        DetachedSubprocess.cpp
+        DetachedSubprocess.hpp
+        DetachedSubprocess_fwd.hpp
+        EnvironmentChanges.cpp
+        EnvironmentChanges.hpp
+        EnvironmentChanges_fwd.hpp
+        EnvironmentInherit.hpp
         EnvironmentVariables.cpp
         EnvironmentVariables.hpp
         EnvironmentVariables_fwd.hpp
+        EnvironmentVariables_path.cpp
         FileIdentity.hpp
         GroupId.hpp
         GroupName.cpp
         GroupName.hpp
-        MakeOneNamespace.hpp
         OperatingSystem.cpp
         OperatingSystem.hpp
         PlatformError.cpp
@@ -34,10 +41,14 @@ target_sources(erbsland-core PRIVATE
         Subprocess.cpp
         Subprocess.hpp
         Subprocess_fwd.hpp
+        SubprocessEventEditor.cpp
+        SubprocessEventEditor.hpp
         SubprocessExitStatus.hpp
+        SubprocessOptions.cpp
         SubprocessOptions.hpp
         SubprocessOptions_fwd.hpp
         SubprocessOutputMode.hpp
+        System.hpp
         SystemInfo.cpp
         SystemInfo.hpp
         UserId.hpp

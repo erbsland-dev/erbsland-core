@@ -5,9 +5,11 @@
 #include "../../mem/ByteBlock.hpp"
 
 namespace erbsland::data::cbor {
+
 /// Opaque binary CID carried by DAG-CBOR tag 42.
 /// @tested{CborValueTest}
 struct CborLink final {
     mem::ByteBlock cid; ///< CID bytes without the wire prefix.
 };
+
 }

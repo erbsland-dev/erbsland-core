@@ -113,7 +113,7 @@ inline auto readUnicodeProperty(ParserState &state) -> std::tuple<Category, bool
     }
     state.readNext();
     text::StringEditor propertyString;
-    propertyString.reserve(unit::ByteLength{Category::maximumNameLength});
+    propertyString.reserve(unit::ByteCount{Category::maximumNameLength});
     std::size_t totalReadCount = 0;
     std::size_t propertyStringLength = 0;
     while (state.currentChar() != U'}') {

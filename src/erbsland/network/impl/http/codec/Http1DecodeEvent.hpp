@@ -6,7 +6,7 @@
 #include "Http1DecodeEvent_fwd.hpp"
 
 #include "../../../../mem/ByteBlock.hpp"
-#include "../../../../unit/ByteLength.hpp"
+#include "../../../../unit/ByteCount.hpp"
 #include "../../../http/HttpRequestHead.hpp"
 #include "../../../http/HttpResponseHead.hpp"
 
@@ -32,11 +32,11 @@ public:
 public: // factories
     /// Create a request-head event.
     [[nodiscard]] static auto requestHead(
-        HttpRequestHead head, Http1BodyFraming framing, std::optional<unit::ByteLength> contentLength = {})
+        HttpRequestHead head, Http1BodyFraming framing, std::optional<unit::ByteCount> contentLength = {})
         -> Http1DecodeEvent;
     /// Create a response-head event.
     [[nodiscard]] static auto responseHead(
-        HttpResponseHead head, Http1BodyFraming framing, std::optional<unit::ByteLength> contentLength = {})
+        HttpResponseHead head, Http1BodyFraming framing, std::optional<unit::ByteCount> contentLength = {})
         -> Http1DecodeEvent;
     /// Create a body event.
     [[nodiscard]] static auto body(mem::ByteBlock data) -> Http1DecodeEvent;
@@ -59,7 +59,7 @@ public: // accessors
     /// Get the selected body framing.
     [[nodiscard]] auto framing() const noexcept -> Http1BodyFraming { return _framing; }
     /// Get the selected fixed body length, if any.
-    [[nodiscard]] auto contentLength() const noexcept -> const std::optional<unit::ByteLength> & {
+    [[nodiscard]] auto contentLength() const noexcept -> const std::optional<unit::ByteCount> & {
         return _contentLength;
     }
 
@@ -70,7 +70,7 @@ private:
     mem::ByteBlock _data;                              ///< Optional body fragment.
     HttpHeaders _trailers;                             ///< Optional trailer section.
     Http1BodyFraming _framing{Http1BodyFraming::None}; ///< Selected framing.
-    std::optional<unit::ByteLength> _contentLength;    ///< Optional fixed length.
+    std::optional<unit::ByteCount> _contentLength;     ///< Optional fixed length.
 };
 
 }

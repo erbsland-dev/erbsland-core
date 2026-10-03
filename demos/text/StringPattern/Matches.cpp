@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringPattern.hpp>
 
 namespace demo {
 
@@ -11,9 +14,9 @@ namespace demo {
 /// A leading `*` checks the end. A pattern with text on both sides of `*` requires both the prefix and suffix without
 /// overlap.
 void matches() {
-    const auto nameOnly = el::StringPattern{"messung:"_el};
-    const auto withUnit = el::StringPattern{"messung:*;C"_el};
-    const auto finished = el::StringPattern{"*;fertig"_el};
+    const auto nameOnly = el::StringPattern::fromDivider("messung:"_el);
+    const auto withUnit = el::StringPattern::fromDivider("messung:*;C"_el);
+    const auto finished = el::StringPattern::fromDivider("*;fertig"_el);
 
     const auto temperature = el::String{"messung:temperatur=21.4;C"_el};
     const auto completed = el::String{"messung:leitwert=0.42;fertig"_el};

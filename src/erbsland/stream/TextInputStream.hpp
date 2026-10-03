@@ -9,7 +9,7 @@
 #include "../text/Char.hpp"
 #include "../text/String.hpp"
 #include "../text/StringEncoding.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 #include "../util/CoAsyncGenerator.hpp"
 #include "../util/CoTask.hpp"
 
@@ -23,7 +23,7 @@ namespace erbsland::stream {
 class TextInputStream : public InputStream {
 public:
     /// The default maximum for no-argument text reads: 10 Mi code points.
-    static constexpr auto cDefaultTextReadMaximum = unit::CpLength{10U * 1024U * 1024U};
+    static constexpr auto cDefaultTextReadMaximum = unit::CpCount{10U * 1024U * 1024U};
 
 public:
     // defaults
@@ -63,104 +63,96 @@ public: // core interface
     /// @throws text::EncodingError If the stream was configured to throw on decoding errors and decoding fails.
     [[nodiscard]] virtual auto readChar() -> StreamReadResult<text::Char> = 0;
     /// Read up to `maximum` decoded characters.
-    /// @param maximum The maximum number of decoded characters to read.
+    /// @param maximum The maximum number of decoded characters to read. Must be finite.
     /// @return The status and decoded text.
     /// A data result may contain fewer than `maximum` characters.
-    /// @throws err::ParameterError If `maximum` is infinite.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
     /// @throws text::EncodingError If the stream was configured to throw on decoding errors and decoding fails.
-    [[nodiscard]] virtual auto read(unit::CpLength maximum) -> StreamReadResult<text::String> = 0;
+    [[nodiscard]] virtual auto read(unit::CpCount maximum) -> StreamReadResult<text::String> = 0;
     /// Read one line.
     /// The returned line includes its line ending when one is present.
-    /// @param maximum The maximum number of decoded characters to read.
+    /// @param maximum The maximum number of decoded characters to read. Must be finite.
     /// @return A complete line, maximum-length chunk, final unterminated line, or an empty status.
-    /// @throws err::ParameterError If `maximum` is infinite.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
     /// @throws text::EncodingError If the stream was configured to throw on decoding errors and decoding fails.
-    [[nodiscard]] virtual auto readLine(unit::CpLength maximum) -> StreamReadResult<text::String> = 0;
+    [[nodiscard]] virtual auto readLine(unit::CpCount maximum) -> StreamReadResult<text::String> = 0;
     /// Read all remaining text.
-    /// @param maximum The maximum number of decoded characters to read.
+    /// @param maximum The maximum number of decoded characters to read. Must be finite.
     /// @return Aggregated text up to the finite maximum or end-of-stream, or an empty status.
-    /// @throws err::ParameterError If `maximum` is infinite.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
     /// @throws text::EncodingError If the stream was configured to throw on decoding errors and decoding fails.
-    [[nodiscard]] virtual auto readAll(unit::CpLength maximum) -> StreamReadResult<text::String> = 0;
+    [[nodiscard]] virtual auto readAll(unit::CpCount maximum) -> StreamReadResult<text::String> = 0;
 
 public: // coroutine interface
     /// Asynchronously read one text block using the default maximum.
+    /// This stream must have shared ownership.
     /// @return A task with the same result as `read()`.
-    /// @throws err::LogicError If this stream is not shared-owned.
     /// @throws stream::StreamError When the task result is observed if the stream or backing source fails.
     /// @throws text::EncodingError When the task result is observed if configured decoding fails.
     [[nodiscard]] auto coRead() -> util::CoTask<StreamReadResult<text::String>>;
     /// Asynchronously read one text block at a code-point boundary.
-    /// @param maximum The maximum decoded code-point length.
+    /// This stream must have shared ownership.
+    /// @param maximum The maximum decoded code-point length. Must be finite.
     /// @return A task with the same result as `read(maximum)`.
-    /// @throws err::LogicError If this stream is not shared-owned.
-    /// @throws err::ParameterError When the task result is observed if `maximum` is infinite.
     /// @throws stream::StreamError When the task result is observed if the stream or backing source fails.
     /// @throws text::EncodingError When the task result is observed if configured decoding fails.
-    [[nodiscard]] auto coRead(unit::CpLength maximum) -> util::CoTask<StreamReadResult<text::String>>;
+    [[nodiscard]] auto coRead(unit::CpCount maximum) -> util::CoTask<StreamReadResult<text::String>>;
     /// Asynchronously read one line using the default maximum.
+    /// This stream must have shared ownership.
     /// @return A task with the same result as `readLine()`.
-    /// @throws err::LogicError If this stream is not shared-owned.
     /// @throws stream::StreamError When the task result is observed if the stream or backing source fails.
     /// @throws text::EncodingError When the task result is observed if configured decoding fails.
     [[nodiscard]] auto coReadLine() -> util::CoTask<StreamReadResult<text::String>>;
     /// Asynchronously read one line.
-    /// @param maximum The maximum decoded code-point length.
+    /// This stream must have shared ownership.
+    /// @param maximum The maximum decoded code-point length. Must be finite.
     /// @return A task with the same result as `readLine(maximum)`.
-    /// @throws err::LogicError If this stream is not shared-owned.
-    /// @throws err::ParameterError When the task result is observed if `maximum` is infinite.
     /// @throws stream::StreamError When the task result is observed if the stream or backing source fails.
     /// @throws text::EncodingError When the task result is observed if configured decoding fails.
-    [[nodiscard]] auto coReadLine(unit::CpLength maximum) -> util::CoTask<StreamReadResult<text::String>>;
+    [[nodiscard]] auto coReadLine(unit::CpCount maximum) -> util::CoTask<StreamReadResult<text::String>>;
     /// Asynchronously read all remaining text using the default maximum.
+    /// This stream must have shared ownership.
     /// @return A task with the same result as `readAll()`.
-    /// @throws err::LogicError If this stream is not shared-owned.
     /// @throws stream::StreamError When the task result is observed if the stream or backing source fails.
     /// @throws text::EncodingError When the task result is observed if configured decoding fails.
     [[nodiscard]] auto coReadAll() -> util::CoTask<StreamReadResult<text::String>>;
     /// Asynchronously read all remaining text.
-    /// @param maximum The maximum decoded code-point length.
+    /// This stream must have shared ownership.
+    /// @param maximum The maximum decoded code-point length. Must be finite.
     /// @return A task with the same result as `readAll(maximum)`.
-    /// @throws err::LogicError If this stream is not shared-owned.
-    /// @throws err::ParameterError When the task result is observed if `maximum` is infinite.
     /// @throws stream::StreamError When the task result is observed if the stream or backing source fails.
     /// @throws text::EncodingError When the task result is observed if configured decoding fails.
-    [[nodiscard]] auto coReadAll(unit::CpLength maximum) -> util::CoTask<StreamReadResult<text::String>>;
+    [[nodiscard]] auto coReadAll(unit::CpCount maximum) -> util::CoTask<StreamReadResult<text::String>>;
     /// Asynchronously generate text blocks using the default maximum block length.
     /// Data and timeout results are yielded; end-of-stream completes the generator.
+    /// This stream must have shared ownership when the generator is first advanced.
     /// @return A lazy generator for bounded text-block results.
-    /// @throws err::LogicError When first advanced if this stream is not shared-owned.
     /// @throws stream::StreamError When advancing if the stream or backing source fails.
     /// @throws text::EncodingError When advancing if configured decoding fails.
     [[nodiscard]] auto coReadBlocks() -> util::CoAsyncGenerator<StreamReadResult<text::String>>;
     /// Asynchronously generate text blocks at code-point boundaries.
+    /// This stream must have shared ownership when the generator is first advanced.
     /// @param maximum The positive finite maximum for each block.
     /// Data and timeout results are yielded; end-of-stream completes the generator.
     /// @return A lazy generator for bounded text-block results.
-    /// @throws err::ParameterError When first advanced if `maximum` is zero or infinite.
-    /// @throws err::LogicError When first advanced if this stream is not shared-owned.
     /// @throws stream::StreamError When advancing if the stream or backing source fails.
     /// @throws text::EncodingError When advancing if configured decoding fails.
-    [[nodiscard]] auto coReadBlocks(unit::CpLength maximum) -> util::CoAsyncGenerator<StreamReadResult<text::String>>;
+    [[nodiscard]] auto coReadBlocks(unit::CpCount maximum) -> util::CoAsyncGenerator<StreamReadResult<text::String>>;
     /// Asynchronously generate lines using the default maximum line length.
     /// Data and timeout results are yielded; end-of-stream completes the generator.
+    /// This stream must have shared ownership when the generator is first advanced.
     /// @return A lazy generator for bounded line results.
-    /// @throws err::LogicError When first advanced if this stream is not shared-owned.
     /// @throws stream::StreamError When advancing if the stream or backing source fails.
     /// @throws text::EncodingError When advancing if configured decoding fails.
     [[nodiscard]] auto coReadLines() -> util::CoAsyncGenerator<StreamReadResult<text::String>>;
     /// Asynchronously generate lines.
+    /// This stream must have shared ownership when the generator is first advanced.
     /// @param maximum The positive finite maximum for each returned line or line fragment.
     /// Data and timeout results are yielded; end-of-stream completes the generator.
     /// @return A lazy generator for bounded line results.
-    /// @throws err::ParameterError When first advanced if `maximum` is zero or infinite.
-    /// @throws err::LogicError When first advanced if this stream is not shared-owned.
     /// @throws stream::StreamError When advancing if the stream or backing source fails.
     /// @throws text::EncodingError When advancing if configured decoding fails.
-    [[nodiscard]] auto coReadLines(unit::CpLength maximum) -> util::CoAsyncGenerator<StreamReadResult<text::String>>;
+    [[nodiscard]] auto coReadLines(unit::CpCount maximum) -> util::CoAsyncGenerator<StreamReadResult<text::String>>;
 };
 
 }

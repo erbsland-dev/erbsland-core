@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HashSelector.hpp"
 
-#include "../core/Application.hpp"
+#include "../core/impl/application_data/ApplicationCryptologyData.hpp"
+#include "../core/impl/ApplicationDataAccess.hpp"
 #include "../util/List.hpp"
 
 #include <algorithm>
@@ -10,21 +11,25 @@
 namespace erbsland::cryptology {
 
 auto HashSelector::isSafe(const HashAlgorithm algorithm) const -> bool {
-    const auto configuration = core::application().cryptologyConfiguration().snapshot();
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    const auto configuration = cryptologyData->configuration().snapshot();
     return effectiveStatus(algorithm, configuration) == CryptographicStatus::Acceptable &&
         algorithm.security() >= CryptographicSecurity::Standard;
 }
 
 auto HashSelector::matches(const HashAlgorithm algorithm) const -> bool {
-    return matches(algorithm, core::application().cryptologyConfiguration().snapshot());
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    return matches(algorithm, cryptologyData->configuration().snapshot());
 }
 
 auto HashSelector::status(const HashAlgorithm algorithm) const -> CryptographicStatus {
-    return effectiveStatus(algorithm, core::application().cryptologyConfiguration().snapshot());
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    return effectiveStatus(algorithm, cryptologyData->configuration().snapshot());
 }
 
 auto HashSelector::allAccepted() const -> util::List<HashAlgorithm> {
-    const auto configuration = core::application().cryptologyConfiguration().snapshot();
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    const auto configuration = cryptologyData->configuration().snapshot();
     auto result = util::List<HashAlgorithm>{};
     for (const auto algorithm : HashAlgorithm::all()) {
         if (effectiveStatus(algorithm, configuration) == CryptographicStatus::Acceptable &&
@@ -36,7 +41,8 @@ auto HashSelector::allAccepted() const -> util::List<HashAlgorithm> {
 }
 
 auto HashSelector::matching() const -> util::List<HashAlgorithm> {
-    const auto configuration = core::application().cryptologyConfiguration().snapshot();
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    const auto configuration = cryptologyData->configuration().snapshot();
     auto result = util::List<HashAlgorithm>{};
     for (const auto algorithm : HashAlgorithm::all()) {
         if (matches(algorithm, configuration)) {
@@ -47,7 +53,8 @@ auto HashSelector::matching() const -> util::List<HashAlgorithm> {
 }
 
 auto HashSelector::recommended() const -> std::optional<HashAlgorithm> {
-    const auto configuration = core::application().cryptologyConfiguration().snapshot();
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    const auto configuration = cryptologyData->configuration().snapshot();
     auto result = std::optional<HashAlgorithm>{};
     for (const auto algorithm : HashAlgorithm::all()) {
         if (!matches(algorithm, configuration)) {

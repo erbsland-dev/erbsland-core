@@ -45,10 +45,12 @@ public:
     Bzip2Decoder(CodecReader &input, const DecompressionOptions &options, CodecOutput::Write output);
 
     /// Decode and validate the complete payload.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     void decode();
 
 private:
     /// Append a repeated output byte while enforcing the output limit.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     void append(uint8_t value, std::size_t count = 1U);
     /// Read the symbol alphabet used by the current block.
     [[nodiscard]] auto readAlphabet() -> std::vector<uint8_t>;
@@ -66,6 +68,7 @@ private:
     /// Reverse the first run-length transform and update the block CRC.
     void undoRle1(mem::ConstByteSpan data, Bzip2Crc &crc);
     /// Decode and validate one Bzip2 block.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     void decodeBlock();
 
 private:

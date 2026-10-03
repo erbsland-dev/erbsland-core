@@ -33,10 +33,9 @@ The example writes their Base64 representation and shows the available output st
 
 .. erbsland-demo::
     :source: text/BaseN/BaseNDemos.cpp
-    :function-blocks: encodeSoundTag
-    :function-blocks-sha256: c24ae64618c8cda6ecdad898a2eeca19a8788e427f7fc8241f1562fbac1cf5dd
+    :show: f:encodeSoundTag
     :exec: text/base_n --demo EncodeSoundTag
-    :source-sha256: 25ad05fcdf84c76b9b65f271db932811662bf5f38574ef658c1444b657225e11
+    :sha256: ef26014d5cddc92eba8747fdcd622900a777d7e90f265c38bd5ba1190db37976
 
 .. code-block:: cpp
 
@@ -52,12 +51,14 @@ The example writes their Base64 representation and shows the available output st
         el::io::printLine("UTF-32 characters: "_el, encoder.toU32String().characterLength().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Base64: a2Fpa3U=
-    UTF-16 characters: 8
-    UTF-32 characters: 8
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBase64: a2Fpa3U=
+        UTF-16 characters: 8
+        UTF-32 characters: 8␛[0m
 
 .. erbsland-demo-end::
 
@@ -81,10 +82,9 @@ The bytes are identical, but the text follows different transport rules.
 
 .. erbsland-demo::
     :source: text/BaseN/BaseNDemos.cpp
-    :function-blocks: chooseAlphabet
-    :function-blocks-sha256: b43e82aed5cac8e7111b8f9915d02ad9645381c543c2e9f2a98498c83f89e34e
+    :show: f:chooseAlphabet
     :exec: text/base_n --demo ChooseAlphabet
-    :source-sha256: 25ad05fcdf84c76b9b65f271db932811662bf5f38574ef658c1444b657225e11
+    :sha256: 5b74cc42cda94f490d9fe9359c1d1f1750c3f6db3e60b42046c88d9c65be2525
 
 .. code-block:: cpp
 
@@ -101,13 +101,15 @@ The bytes are identical, but the text follows different transport rules.
         el::io::printLine("Bits per character: "_el, custom.bitsPerCharacter());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Base64: +/8=
-    Base64url: -_8=
-    Custom Base16: 0400
-    Bits per character: 4
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBase64: +/8=
+        Base64url: -_8=
+        Custom Base16: 0400
+        Bits per character: 4␛[0m
 
 .. erbsland-demo-end::
 
@@ -136,10 +138,9 @@ The example changes it to ``~`` and confirms that the matching decoder recovers 
 
 .. erbsland-demo::
     :source: text/BaseN/BaseNDemos.cpp
-    :function-blocks: choosePadding
-    :function-blocks-sha256: cc68a177af563e07a003c366b5b077e225e8093cf7d2199fd3463c99441b47f2
+    :show: f:choosePadding
     :exec: text/base_n --demo ChoosePadding
-    :source-sha256: 25ad05fcdf84c76b9b65f271db932811662bf5f38574ef658c1444b657225e11
+    :sha256: 554197e8bb6c9907608aa5ea75ff896f471888521f3ddfced655d1cf2837a791
 
 .. code-block:: cpp
 
@@ -152,11 +153,13 @@ The example changes it to ``~`` and confirms that the matching decoder recovers 
         el::io::printLine("Round trip: "_el, el::base_n::BaseNDecoder{encoded, format}.toDataOrThrow() == bytes);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Alternate padding: a2Fpa3U~
-    Round trip: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAlternate padding: a2Fpa3U~
+        Round trip: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -184,10 +187,9 @@ Adding ``RequirePadding`` again makes that same text invalid for decoding.
 
 .. erbsland-demo::
     :source: text/BaseN/BaseNDemos.cpp
-    :function-blocks: chooseFlags
-    :function-blocks-sha256: 16ded97a6eb079db402d23393dd4e593e7801c05b4156176690434860568fa09
+    :show: f:chooseFlags
     :exec: text/base_n --demo ChooseFlags
-    :source-sha256: 25ad05fcdf84c76b9b65f271db932811662bf5f38574ef658c1444b657225e11
+    :sha256: 65ca642558587c200348c72445f593a7c3178887656adefa22c3e66d01ef205e
 
 .. code-block:: cpp
 
@@ -202,12 +204,14 @@ Adding ``RequirePadding`` again makes that same text invalid for decoding.
         el::io::printLine("Padding now required: "_el, el::base_n::BaseNDecoder{unpadded, format}.toData().has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Unpadded: a2Fpa3U
-    Unpadded accepted: true
-    Padding now required: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUnpadded: a2Fpa3U
+        Unpadded accepted: true
+        Padding now required: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -230,17 +234,16 @@ Without that flag, the stored length and separator do not change the output.
 
 .. erbsland-demo::
     :source: text/BaseN/BaseNDemos.cpp
-    :function-blocks: wrapLines
-    :function-blocks-sha256: d675af36c0d550f1fd48a61672fd92009f249c6b36a5c9dc915becc5da72263e
+    :show: f:wrapLines
     :exec: text/base_n --demo WrapLines
-    :source-sha256: 25ad05fcdf84c76b9b65f271db932811662bf5f38574ef658c1444b657225e11
+    :sha256: fcbf3b8869e08d2736039dedc663f315aae50e3e4853ad9ed6e1b469e5f8c9ca
 
 .. code-block:: cpp
 
     void wrapLines() {
         const auto bytes = el::ByteBlock::fromSpan(std::span<const char>{"kaiku", 5U});
         auto format = el::base_n::BaseNFormat::base64();
-        format.setLineLength(el::CpLength{4U})
+        format.setLineLength(el::CpCount{4U})
             .setLineSeparator(el::U32String{U"\n"_el})
             .addFlags(el::base_n::BaseNFormatFlag::WrapLines);
         const auto wrapped = el::base_n::BaseNEncoder{bytes, format}.toString();
@@ -248,13 +251,15 @@ Without that flag, the stored length and separator do not change the output.
         el::io::printLine("Round trip: "_el, el::base_n::BaseNDecoder{wrapped, format}.toDataOrThrow() == bytes);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Wrapped:
-    a2Fp
-    a3U=
-    Round trip: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWrapped:
+        a2Fp
+        a3U=
+        Round trip: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -264,5 +269,5 @@ Every separator character must also be in the decoder's ignored whitespace set.
 That rule lets the same format read the output it writes.
 
 Format setters validate each resulting combination and throw
-:cpp:class:`ParameterError <erbsland::err::ParameterError>` if it is invalid.
+:cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` if it is invalid.
 Build and validate a format before encoding data, especially when its settings came from configuration.

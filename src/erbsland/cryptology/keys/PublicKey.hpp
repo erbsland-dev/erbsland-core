@@ -56,11 +56,11 @@ public: // verification
     /// P-384/SHA-384 follow FIPS 186-5 section 6.4.2, RFC 5480, and RFC 5758. ECDSA signatures use canonical DER and
     /// accept compressed or uncompressed validated public points. Pure Ed25519 follows RFC 8032 section 5.1.7 and RFC
     /// 8410. Ed25519ctx, Ed25519ph, and Ed448 are not accepted.
+    /// This public key must not be empty.
     /// @param signatureAlgorithm The complete X.509 signature AlgorithmIdentifier.
     /// @param message The exact message bytes covered by the signature.
     /// @param signature The signature octets without an ASN.1 BIT STRING unused-bit-count octet.
     /// @return `true` only if the signature is valid.
-    /// @throws err::LogicError If this public key is empty.
     /// @throws err::ParseError If the key or algorithm encoding is malformed, unsupported, or outside fixed bounds.
     [[nodiscard]] auto verifySignature(
         const X509AlgorithmIdentifier &signatureAlgorithm,
@@ -72,11 +72,11 @@ public: // verification
     /// schemes, enforces the RSAE versus RSASSA-PSS public-key OID distinction, and uses digest-sized PSS salts.
     /// `message` must already contain the RFC 8446 section 4.4.3 pad, context string, separator, and transcript hash.
     /// All inputs and intermediates are public verification data; no secret state requiring erasure is created.
+    /// This public key must not be empty.
     /// @param scheme The supported TLS SignatureScheme received in `CertificateVerify`.
     /// @param message The exact content covered by the TLS signature.
     /// @param signature The signature octets from the TLS message.
     /// @return `true` only if the signature is valid.
-    /// @throws err::LogicError If this public key is empty.
     /// @throws err::ParseError If the scheme is forbidden, the key is incompatible, or an encoding is malformed.
     [[nodiscard]] auto verifyTlsCertificateVerifySignature(
         TlsSignatureScheme scheme, mem::ConstByteSpan message, mem::ConstByteSpan signature) const -> bool;
@@ -95,10 +95,9 @@ public: // factories
     /// @return The parsed public key, or an empty key on error.
     [[nodiscard]] static auto fromDer(const mem::ByteBlock &der) noexcept -> PublicKey;
     /// Parse one canonical DER SubjectPublicKeyInfo.
-    /// @param der The complete DER SubjectPublicKeyInfo.
+    /// @param der The complete DER SubjectPublicKeyInfo. Must fit the fixed DER parser resource limits.
     /// @return The parsed public key.
     /// @throws err::ParseError If the DER or SubjectPublicKeyInfo structure is malformed.
-    /// @throws err::OutOfRangeError If a fixed parser resource limit is exceeded.
     [[nodiscard]] static auto fromDerOrThrow(const mem::ByteBlock &der) -> PublicKey;
     /// Parse one strict `PUBLIC KEY` PEM block, returning an empty key on error.
     [[nodiscard]] static auto fromPem(const text::String &pem) noexcept -> PublicKey;

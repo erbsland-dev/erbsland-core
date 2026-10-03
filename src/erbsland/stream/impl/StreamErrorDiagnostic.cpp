@@ -3,7 +3,7 @@
 #include "StreamErrorDiagnostic.hpp"
 
 #include "../../err/ErrorDocumentBuilder.hpp"
-#include "../../i18n/DisplayTextMap.hpp"
+#include "../../i18n/DisplayText.hpp"
 #include "../../system/PlatformErrorContext.hpp"
 #include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
@@ -50,16 +50,16 @@ void StreamErrorDiagnostic::appendPath(TextNode &content, const String &path) {
     flushSegment();
 }
 
-auto StreamErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const -> TextDocument {
-    const auto resolvedDisplayText = displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap();
-    auto builder = err::ErrorDocumentBuilder{_context.title(), _context.description(), resolvedDisplayText};
+auto StreamErrorDiagnostic::toTextDocument() const -> TextDocument {
+
+    auto builder = err::ErrorDocumentBuilder{_context.title(), _context.description()};
     const auto help = _context.help();
     if (!help.isEmpty()) {
         builder.root()->addParagraph()->setStyle("diagnostic-help"_el).addText(help);
     }
 
     if (!_context.path().isEmpty()) {
-        builder.addSection(resolvedDisplayText->text("PathValuesHeading"_el));
+        builder.addSection(i18n::displayText("path_values_heading"_el));
         auto list = builder.root()->add(TextNodeType::FieldList);
         auto item = list->add(TextNodeType::FieldItem);
         item->add(TextNodeType::FieldLabel)->addText("path"_el);
@@ -69,7 +69,7 @@ auto StreamErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &d
     }
 
     if (_context.platformContext() != nullptr) {
-        builder.addSection(resolvedDisplayText->text("PlatformErrorHeading"_el));
+        builder.addSection(i18n::displayText("platform_error_heading"_el));
         auto platformDocument = _context.platformContext()->toTextDocument();
         for (const auto &child : platformDocument.root()->children()) {
             builder.root()->add(child->clone());

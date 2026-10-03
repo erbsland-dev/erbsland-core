@@ -8,15 +8,18 @@
 #include "RunResults.hpp"
 #include "SelfTest.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimePoint.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ItemCount.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimePoint.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+
+#include <exception>
 
 using namespace el::text::literals;
 
@@ -28,17 +31,17 @@ public:
     /// Selection And Deduplication.
     void testSelectionAndDeduplication() {
         REQUIRE_THROWS_AS(
-            el::LogicError, app::constant_time::Registration{std::shared_ptr<const app::constant_time::TestCase>{}});
+            el::LogicFailure, app::constant_time::Registration{std::shared_ptr<const app::constant_time::TestCase>{}});
         const auto descriptionOnly = app::constant_time::Registration{"description-only"_el};
-        REQUIRE_THROWS_AS(el::LogicError, descriptionOnly.create(false));
+        REQUIRE_THROWS_AS(el::LogicFailure, descriptionOnly.create(false));
         auto registry = app::constant_time::Registry{};
         registry.add({"first"_el, {}});
         registry.add({"second"_el, {}});
         REQUIRE_EQUAL(registry.select(el::StringList{"second"_el, "second"_el}, false).count(), el::ItemCount{1});
         REQUIRE_EQUAL(registry.select({}, true).count(), el::ItemCount{2});
-        REQUIRE_THROWS_AS(el::ParameterError, registry.select(el::StringList{"unknown"_el}, false));
-        REQUIRE_THROWS_AS(el::ParameterError, registry.select(el::StringList{"first"_el}, true));
-        REQUIRE_THROWS_AS(el::ParameterError, registry.add({"first"_el, {}}));
+        REQUIRE_THROWS_AS(el::ParameterFailure, registry.select(el::StringList{"unknown"_el}, false));
+        REQUIRE_THROWS_AS(el::ParameterFailure, registry.select(el::StringList{"first"_el}, true));
+        REQUIRE_THROWS_AS(el::ParameterFailure, registry.add({"first"_el, {}}));
     }
     /// Sample Limit And Cleanup.
     void testSampleLimitAndCleanup() {
@@ -66,9 +69,9 @@ public:
         REQUIRE_EQUAL(fastResult.samples(false) + fastResult.samples(true), 64U);
         REQUIRE_EQUAL(slowResult.samples(false) + slowResult.samples(true), 64U);
         REQUIRE(fast.calls != slow.calls);
-        for (auto index = std::size_t{}; index < 64; ++index) {
-            const auto fastPosition = el::ItemIndex{fast.trace.count().toSizeT() - 64 + index};
-            const auto slowPosition = el::ItemIndex{slow.trace.count().toSizeT() - 64 + index};
+        const auto fastStart = el::ItemIndex::end(fast.trace.count() - el::ItemCount{64U});
+        auto slowPosition = el::ItemIndex::end(slow.trace.count() - el::ItemCount{64U});
+        for (auto fastPosition = fastStart; fastPosition.isWithin(fast.trace.count()); ++fastPosition, ++slowPosition) {
             REQUIRE_EQUAL(fast.trace.getRefOrThrow(fastPosition), slow.trace.getRefOrThrow(slowPosition));
         }
     }
@@ -79,9 +82,19 @@ public:
         const auto result = runner.run(probe, {.duration = el::Microseconds{1}, .seed = 42});
         REQUIRE(result.outcome() == app::constant_time::Outcome::Insufficient);
         REQUIRE_EQUAL(probe.calls, 0U);
-        probe.fail = true;
-        REQUIRE(runner.run(probe, {}).outcome() == app::constant_time::Outcome::Error);
+        probe.preparationFailure = std::make_exception_ptr(el::ApplicationError{"Fixture failure"_el});
+        const auto failure = runner.run(probe, {});
+        REQUIRE(failure.outcome() == app::constant_time::Outcome::Error);
+        REQUIRE(failure.detail().contains("Fixture failure"_el));
+        REQUIRE_EQUAL(probe.prepared, 0U);
         REQUIRE(runner.run(probe, {.duration = el::TimeDelta{}}).outcome() == app::constant_time::Outcome::Error);
+    }
+    /// Programming failures propagate instead of becoming an experiment result.
+    void testPreparationLogicFailuresPropagate() {
+        auto probe = ConstantTimeProbe{};
+        probe.preparationFailure = std::make_exception_ptr(el::LogicFailure{"Fixture logic failure"_el});
+        auto runner = app::constant_time::Runner{[&probe]() -> el::TimePoint { return probe.now; }};
+        REQUIRE_THROWS_AS(el::LogicFailure, runner.run(probe, {}));
     }
     /// Factory Budget Memory And Timer Failures.
     void testFactoryBudgetMemoryAndTimerFailures() {
@@ -93,9 +106,9 @@ public:
             runner.run(probe, {.duration = el::Seconds{1}, .start = start}).outcome() ==
             app::constant_time::Outcome::Insufficient);
         REQUIRE_EQUAL(probe.calls, 0U);
-        probe.bytes = el::ByteLength{64U * 1024U * 1024U + 1};
+        probe.bytes = el::ByteCount{64U * 1024U * 1024U + 1};
         REQUIRE(runner.run(probe, {}).outcome() == app::constant_time::Outcome::Error);
-        probe.bytes = el::ByteLength{1024};
+        probe.bytes = el::ByteCount{1024};
         auto stationary = app::constant_time::Runner{[]() -> el::TimePoint { return {}; }};
         const auto result = stationary.run(probe, {});
         REQUIRE(result.outcome() == app::constant_time::Outcome::Insufficient);

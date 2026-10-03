@@ -4,14 +4,17 @@
 #include "CryptologyResponseReader.hpp"
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/keys/PublicKey.hpp>
-#include <erbsland/cryptology/x509/X509AlgorithmIdentifier.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include "../ParallelTestWork.hpp"
+
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/PublicKey.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/X509AlgorithmIdentifier.hpp>
 
 #include <array>
 #include <format>
+#include <optional>
 
 using namespace el::cryptology;
 using namespace el::text::literals;
@@ -31,10 +34,23 @@ public:
         for (const auto &file : files) {
             const auto records = CryptologyResponseReader{file}.read();
             recordCount += records.size();
-            for (const auto &record : records) {
+            const auto results = parallel_test_work::run(
+                records.size(),
+                [&](const std::size_t index) -> std::optional<bool> { return computeRecord(records[index]); });
+            for (auto index = std::size_t{}; index < records.size(); ++index) {
+                const auto &record = records[index];
                 runWithContext(
                     SOURCE_LOCATION(),
-                    [&]() -> void { validateRecord(record); },
+                    [&]() -> void {
+                        REQUIRE_NOTHROW(results[index].value());
+                        const auto &actual = results[index].value();
+                        const auto expected = record.value("Result"_el) == "valid"_el;
+                        if (actual.has_value()) {
+                            REQUIRE_EQUAL(*actual, expected);
+                        } else {
+                            REQUIRE_FALSE(expected);
+                        }
+                    },
                     [&]() -> std::string {
                         return std::format(
                             "{} count {} flags {}",
@@ -48,11 +64,10 @@ public:
     }
 
 private:
-    void validateRecord(const CryptologyResponseReader::Record &record) {
+    [[nodiscard]] static auto computeRecord(const CryptologyResponseReader::Record &record) -> std::optional<bool> {
         record.requireAllowedSettings({"Curve"_el, "Hash"_el, "PublicKeyDer"_el, "AlgorithmDer"_el});
         record.requireAllowedValues({"Count"_el, "Result"_el, "Flags"_el, "Msg"_el, "Sig"_el});
         record.requireValues({"Count"_el, "Result"_el, "Flags"_el, "Msg"_el, "Sig"_el});
-        const auto expected = record.value("Result"_el) == "valid"_el;
         auto actual = false;
         try {
             const auto publicKey = PublicKey::fromDerOrThrow(bytesFromHex(record.setting("PublicKeyDer"_el)));
@@ -62,9 +77,8 @@ private:
             const auto signature = bytesFromHex(record.value("Sig"_el));
             actual = publicKey.verifySignature(algorithm, message.span(), signature.span());
         } catch (const el::err::ParseError &) {
-            REQUIRE_FALSE(expected);
-            return;
+            return std::nullopt;
         }
-        REQUIRE_EQUAL(actual, expected);
+        return actual;
     }
 };

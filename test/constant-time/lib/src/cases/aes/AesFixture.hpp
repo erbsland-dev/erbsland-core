@@ -6,11 +6,11 @@
 
 #include "../../Fixture.hpp"
 
-#include <erbsland/core/Definitions.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesBlockCipherFactory.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/Random.hpp>
 
 namespace app::constant_time {
 
@@ -26,7 +26,7 @@ public:
     /// @param keySize AES key length in bytes.
     /// @param operation One fixed operation selected before repetitions.
     /// @param automatic Allow factory selection of an accelerated backend.
-    AesFixture(el::Random &random, bool population, std::size_t keySize, AesOperation operation, bool automatic);
+    AesFixture(el::Random &random, bool population, el::ByteCount keySize, AesOperation operation, bool automatic);
 
 public: // implement Fixture
     [[nodiscard]] auto measure(uint64_t repetitions) -> uint64_t override;

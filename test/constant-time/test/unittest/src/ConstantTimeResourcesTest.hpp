@@ -4,10 +4,9 @@
 
 #include "cases/rsa/RsaContext.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/resource/Resources.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Resources.hpp>
+#include <erbsland/String.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;
@@ -17,9 +16,9 @@ using namespace el::text::literals;
 TESTED_TARGETS(RsaContext)
 class ConstantTimeResourcesTest final : public el::UnitTest {
 public:
+    /// Load and parse the same embedded key used by the measurement fixtures.
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
-    /// Load and parse the same embedded key used by the measurement fixtures.
     void testEmbeddedPinnedKey() {
         const auto pem =
             el::application().resources().getTextOrThrow("constant-time-fixtures"_el, "rsa-2048-pkcs8.pem"_el);

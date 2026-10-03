@@ -2,25 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TlsConfigurationLabel.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/CharSet.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/u8/U8StringConstIterator.hpp"
 
 namespace erbsland::cryptology::impl::tls_configuration_label {
 
+using namespace text;
 using namespace text::literals;
 
-void validate(const text::String &label) {
+auto validationError(const String &label) -> String {
     if (label.length().toSizeT() > cMaximumLength) {
-        throw err::ParameterError{"A TLS configuration label must not exceed 255 bytes."_el, "label"_el};
+        return "A TLS configuration label must not exceed 255 bytes."_el;
     }
     if (label.isEmpty()) {
-        return;
+        return {};
     }
-    static const auto cAllowedCharacters = text::CharSet::fromPattern("a-z0-9/-"_el);
+    static const auto cAllowedCharacters = CharSet::fromPattern("a-z0-9/-"_el);
     if (!label.containsOnly(cAllowedCharacters)) {
-        throw err::ParameterError{"A TLS configuration label contains an invalid character."_el, "label"_el};
+        return "A TLS configuration label contains an invalid character."_el;
     }
     auto segmentCount = std::size_t{1U};
     auto segmentStart = true;
@@ -28,24 +29,31 @@ void validate(const text::String &label) {
     for (const auto character : label) {
         if (character == U'/') {
             if (segmentStart || previousWasHyphen) {
-                throw err::ParameterError{"A TLS configuration label contains an invalid segment."_el, "label"_el};
+                return "A TLS configuration label contains an invalid segment."_el;
             }
             ++segmentCount;
             if (segmentCount > cMaximumSegments) {
-                throw err::ParameterError{"A TLS configuration label must not exceed 16 segments."_el, "label"_el};
+                return "A TLS configuration label must not exceed 16 segments."_el;
             }
             segmentStart = true;
             previousWasHyphen = false;
             continue;
         }
         if (segmentStart && character == U'-') {
-            throw err::ParameterError{"A TLS configuration label segment cannot begin with a hyphen."_el, "label"_el};
+            return "A TLS configuration label segment cannot begin with a hyphen."_el;
         }
         segmentStart = false;
         previousWasHyphen = character == U'-';
     }
     if (segmentStart || previousWasHyphen) {
-        throw err::ParameterError{"A TLS configuration label contains an invalid segment."_el, "label"_el};
+        return "A TLS configuration label contains an invalid segment."_el;
+    }
+    return {};
+}
+
+void validate(const String &label) {
+    if (const auto reason = validationError(label); !reason.isEmpty()) {
+        throw err::ParameterFailure{reason, "label"_el};
     }
 }
 

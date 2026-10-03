@@ -5,7 +5,7 @@
 #include "CompressionTransferOperation.hpp"
 
 #include "../../err/OutOfRangeError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteBlockEditor.hpp"
 #include "../../text/Literals.hpp"
@@ -15,44 +15,45 @@
 
 namespace erbsland::compression::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
-auto CompressionCodec::compress(const mem::ByteBlock &data, const CompressionOptions &options) const -> mem::ByteBlock {
-    auto output = mem::ByteBlockEditor{};
+auto CompressionCodec::compress(const ByteBlock &data, const CompressionOptions &options) const -> ByteBlock {
+    auto output = ByteBlockEditor{};
     auto used = false;
     auto transfer = CompressionTransferOptions{}.setInputLength(data.length());
     // One-shot calls explicitly own complete values and are not constrained by the transfer fallback default.
-    transfer.setMaximumBufferedLength(unit::ByteLength{std::numeric_limits<uint64_t>::max() - 1U});
+    transfer.setMaximumBufferedLength(ByteCount{std::numeric_limits<uint64_t>::max() - 1U});
     compress(
-        [&]() -> mem::ByteBlock {
+        [&]() -> ByteBlock {
             if (used) {
                 return {};
             }
             used = true;
             return data;
         },
-        [&](const mem::ConstByteSpan bytes) -> void { output.append(bytes); },
+        [&](const ConstByteSpan bytes) -> void { output.append(bytes); },
         transfer,
         options);
     return output;
 }
 
-auto CompressionCodec::decompress(const mem::ByteBlock &data, const DecompressionOptions &options) const
-    -> mem::ByteBlock {
-    auto output = mem::ByteBlockEditor{};
+auto CompressionCodec::decompress(const ByteBlock &data, const DecompressionOptions &options) const -> ByteBlock {
+    auto output = ByteBlockEditor{};
     auto used = false;
     auto transfer = CompressionTransferOptions{}.setInputLength(data.length());
     // One-shot calls explicitly own complete values and are not constrained by the transfer fallback default.
-    transfer.setMaximumBufferedLength(unit::ByteLength{std::numeric_limits<uint64_t>::max() - 1U});
+    transfer.setMaximumBufferedLength(ByteCount::maximum());
     decompress(
-        [&]() -> mem::ByteBlock {
+        [&]() -> ByteBlock {
             if (used) {
                 return {};
             }
             used = true;
             return data;
         },
-        [&](const mem::ConstByteSpan bytes) { output.append(bytes); },
+        [&](const ConstByteSpan bytes) { output.append(bytes); },
         transfer,
         options);
     return output;
@@ -74,8 +75,8 @@ auto CompressionCodec::decompress(
     return CompressionTransferOperation{*this, true, std::move(read), std::move(write), transfer, options, {}}.run();
 }
 
-auto CompressionCodec::availableWorkspace(
-    const CompressionTransferOptions &transfer, const unit::ByteLength configuredLimit) -> unit::ByteLength {
+auto CompressionCodec::availableWorkspace(const CompressionTransferOptions &transfer, const ByteCount configuredLimit)
+    -> ByteCount {
     const auto streamBuffers = transfer.bufferLength()
                                    .addedOrThrow(transfer.bufferLength())
                                    .addedOrThrow(transfer.bufferLength())
@@ -85,7 +86,7 @@ auto CompressionCodec::availableWorkspace(
     }
     const auto result = configuredLimit - streamBuffers;
     if (!result.isFinite()) {
-        throw err::ParameterError{"Workspace limit must be finite."_el, "options"_el};
+        throw err::ParameterFailure{"Workspace limit must be finite."_el, "options"_el};
     }
     return result;
 }

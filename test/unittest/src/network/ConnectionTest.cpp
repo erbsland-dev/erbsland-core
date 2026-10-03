@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/network/source/Connection.hpp>
-#include <erbsland/network/source/ConnectionCloseContext.hpp>
-#include <erbsland/network/tcp/TcpConnection.hpp>
-#include <erbsland/network/tls/TlsClientConnection.hpp>
-#include <erbsland/network/tls/TlsServerConnection.hpp>
+#include <erbsland/Connection.hpp>
+#include <erbsland/ConnectionCloseContext.hpp>
+#include <erbsland/TcpConnection.hpp>
+#include <erbsland/TlsClientConnection.hpp>
+#include <erbsland/TlsServerConnection.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <concepts>

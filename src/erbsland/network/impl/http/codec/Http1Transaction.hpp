@@ -83,7 +83,7 @@ public: // incoming body policy
     void streamBody();
     /// Select bounded aggregation at the current body checkpoint.
     /// @param maximumLength The finite aggregate maximum.
-    void aggregateBody(unit::ByteLength maximumLength);
+    void aggregateBody(unit::ByteCount maximumLength);
     /// Reject the remaining incoming body and require connection closure.
     void rejectBody();
     /// Pause an active streaming body.
@@ -157,7 +157,7 @@ private: // decoding
 
 private: // encoding
     /// Access the role's final-message encoder.
-    [[nodiscard]] auto finalEncoderQueuedLength() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto finalEncoderQueuedLength() const noexcept -> unit::ByteCount;
     /// Test whether the final encoder accepted all semantic input.
     [[nodiscard]] auto isFinalEncoderComplete() const noexcept -> bool;
     /// Take output from the active informational or final encoder.
@@ -210,27 +210,27 @@ private:
     std::unique_ptr<mem::RingBuffer> _aggregate;                 ///< Optional bounded body aggregation.
     std::optional<mem::ByteBlock> _pendingInput;                 ///< One connection block awaiting decoder capacity.
     std::optional<mem::ByteBlock> _pendingOutput;                ///< One encoded block rejected by the connection.
-    mem::ByteBlock _bufferedInput;                          ///< Bounded input retained for a sequential transaction.
-    HttpMethod _requestMethod;                              ///< Request context for response framing.
-    State _state{State::Inactive};                          ///< Current transaction state.
-    BodyMode _bodyMode{BodyMode::None};                     ///< Incoming body delivery policy.
-    std::optional<unit::ByteLength> _incomingContentLength; ///< Fixed incoming body length at the checkpoint.
-    time::TimePoint _bodyDeadline;                          ///< Rolling decoded-body deadline.
-    std::uint64_t _timerGeneration{};                       ///< Invalidates every pending transaction timer.
-    bool _streamPaused{};                                   ///< Explicit streaming pause.
-    bool _drainingInput{};                                  ///< Decoder drain reentrancy guard.
-    bool _drainInputAgain{};                                ///< A nested operation requested another drain.
-    bool _incomingStarted{};                                ///< At least one byte of the incoming message arrived.
-    bool _informationalInput{};                             ///< Current decoded response is informational.
-    bool _incomingComplete{};                               ///< Final incoming message completed.
-    bool _outgoingStarted{};                                ///< Final outgoing message exists.
-    bool _outgoingTerminated{};                             ///< An early peer response terminated local upload.
-    bool _outgoingDrained{};                                ///< Final outgoing bytes reached the connection queue.
-    bool _semanticBlocked{};                                ///< A producer is owed one writable event.
-    bool _reusable{true};                                   ///< Current persistence eligibility.
-    bool _failureEmitted{};                                 ///< Exactly-once failure guard.
-    bool _completionEmitted{};                              ///< Exactly-once completion guard.
-    bool _finalized{};                                      ///< Exactly-once final guard.
+    mem::ByteBlock _bufferedInput;                         ///< Bounded input retained for a sequential transaction.
+    HttpMethod _requestMethod;                             ///< Request context for response framing.
+    State _state{State::Inactive};                         ///< Current transaction state.
+    BodyMode _bodyMode{BodyMode::None};                    ///< Incoming body delivery policy.
+    std::optional<unit::ByteCount> _incomingContentLength; ///< Fixed incoming body length at the checkpoint.
+    time::TimePoint _bodyDeadline;                         ///< Rolling decoded-body deadline.
+    std::uint64_t _timerGeneration{};                      ///< Invalidates every pending transaction timer.
+    bool _streamPaused{};                                  ///< Explicit streaming pause.
+    bool _drainingInput{};                                 ///< Decoder drain reentrancy guard.
+    bool _drainInputAgain{};                               ///< A nested operation requested another drain.
+    bool _incomingStarted{};                               ///< At least one byte of the incoming message arrived.
+    bool _informationalInput{};                            ///< Current decoded response is informational.
+    bool _incomingComplete{};                              ///< Final incoming message completed.
+    bool _outgoingStarted{};                               ///< Final outgoing message exists.
+    bool _outgoingTerminated{};                            ///< An early peer response terminated local upload.
+    bool _outgoingDrained{};                               ///< Final outgoing bytes reached the connection queue.
+    bool _semanticBlocked{};                               ///< A producer is owed one writable event.
+    bool _reusable{true};                                  ///< Current persistence eligibility.
+    bool _failureEmitted{};                                ///< Exactly-once failure guard.
+    bool _completionEmitted{};                             ///< Exactly-once completion guard.
+    bool _finalized{};                                     ///< Exactly-once final guard.
 };
 
 }

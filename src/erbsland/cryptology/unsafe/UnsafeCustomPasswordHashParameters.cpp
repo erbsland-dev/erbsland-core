@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "UnsafeCustomPasswordHashParameters.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 #include <limits>
@@ -23,7 +23,7 @@ UnsafeCustomPasswordHashParameters::UnsafeCustomPasswordHashParameters(
 auto UnsafeCustomPasswordHashParameters::argon2id(const uint32_t memoryKiB, const uint32_t passes, const uint32_t lanes)
     -> UnsafeCustomPasswordHashParameters {
     if (!areValidArgon2idCosts(memoryKiB, passes, lanes)) {
-        throw err::ParameterError{"Argon2id costs exceed the supported safety bounds"_el, "parameters"_el};
+        throw err::ParameterFailure{"Argon2id costs exceed the supported safety bounds"_el, "parameters"_el};
     }
     return {PasswordHashAlgorithm::Argon2id, memoryKiB, passes, lanes, 0U};
 }
@@ -32,7 +32,7 @@ auto UnsafeCustomPasswordHashParameters::scrypt(
     const uint64_t cost, const uint32_t blockSize, const uint32_t parallelization)
     -> UnsafeCustomPasswordHashParameters {
     if (!areValidScryptCosts(cost, blockSize, parallelization)) {
-        throw err::ParameterError{"scrypt costs exceed the supported safety bounds"_el, "parameters"_el};
+        throw err::ParameterFailure{"scrypt costs exceed the supported safety bounds"_el, "parameters"_el};
     }
     return {PasswordHashAlgorithm::Scrypt, blockSize, parallelization, 0U, cost};
 }

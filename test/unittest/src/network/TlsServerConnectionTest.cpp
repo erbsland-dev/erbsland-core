@@ -3,16 +3,13 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/keys/SigningPrivateKey.hpp>
-#include <erbsland/cryptology/tls/TlsConfiguration.hpp>
-#include <erbsland/cryptology/tls/TlsServerIdentity.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
-#include <erbsland/cryptology/x509/X509ServerCertificatePolicy.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/EventLoopDriver.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ConnectionQuota.hpp>
+#include <erbsland/cryptology/impl/system_trust/SystemTrustBackend.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventLoopDriver.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/host/HostResolver.hpp>
 #include <erbsland/network/impl/tcp/TcpAcceptedSocket.hpp>
 #include <erbsland/network/impl/tcp/TcpConnection.hpp>
@@ -21,18 +18,25 @@
 #include <erbsland/network/impl/tls/client/TlsClientProtocol.hpp>
 #include <erbsland/network/impl/tls/client/TlsClientProtocolOptions.hpp>
 #include <erbsland/network/impl/tls/server/TlsServerConnection.hpp>
-#include <erbsland/network/source/ConnectionQuota.hpp>
-#include <erbsland/network/tls/TlsServerConnection.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/Timestamp.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/SigningPrivateKey.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/Timestamp.hpp>
+#include <erbsland/TlsConfiguration.hpp>
+#include <erbsland/TlsIdentity.hpp>
+#include <erbsland/TlsServerConnection.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/X509CertificateBundle.hpp>
+#include <erbsland/X509TlsCertificatePolicy.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <exception>
 #include <functional>
+#include <future>
 #include <memory>
-#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -44,7 +48,7 @@ namespace mem = el::mem;
 namespace unit = el::unit;
 
 TESTED_TARGETS(
-    TlsServerConnection TlsServerAcceptOptions TlsServerIdentityMapping TlsServerConnectionEventEditor
+    TlsServerConnection TlsServerAcceptOptions TlsConfigurationMapping TlsServerConnectionEventEditor
         ConnectionCloseContext ConnectionState ConnectionQuota ConnectionQuotaLease)
 class TlsServerConnectionTest final : public el::UnitTest {
     using HostResolver = el::network::impl::HostResolver;
@@ -63,6 +67,50 @@ class TlsServerConnectionTest final : public el::UnitTest {
     using TlsServerConnectionEventEditor = el::network::impl::TlsServerConnectionEventEditor;
 
 private:
+    el::String _diagnostic;
+    auto additionalErrorMessages() -> std::string override { return el::StringConverter{_diagnostic}.toStdString(); }
+    struct TrustState final {
+        std::atomic<bool> started{};
+        std::atomic<bool> finished{};
+        std::promise<void> release;
+        std::shared_future<void> gate{release.get_future().share()};
+    };
+    class BlockingTrust final : public el::cryptology::impl::SystemTrustBackend {
+    public:
+        explicit BlockingTrust(std::shared_ptr<TrustState> state) : _state{std::move(state)} {}
+        auto validate(
+            const X509TlsCertificatePolicy &,
+            const X509CertificateBundle &,
+            const std::optional<Host> &host,
+            el::time::Timestamp) const -> X509CertificateValidation override {
+            if (host.has_value()) {
+                return reject(X509CertificateValidationFailureCategory::NativeFailure, "Expected client purpose"_el);
+            }
+            _state->started.store(true);
+            static_cast<void>(_state->gate.wait_for(std::chrono::seconds{10}));
+            _state->finished.store(true);
+            return reject(X509CertificateValidationFailureCategory::NativeFailure, "Test native failure"_el);
+        }
+
+    private:
+        std::shared_ptr<TrustState> _state;
+    };
+    inline static std::shared_ptr<TrustState> _trustState;
+    static auto createBlockingTrust() -> std::unique_ptr<el::cryptology::impl::SystemTrustBackend> {
+        return std::make_unique<BlockingTrust>(_trustState);
+    }
+    struct TrustFixture final {
+        TrustFixture() {
+            _trustState = std::make_shared<TrustState>();
+            el::cryptology::impl::SystemTrustBackend::setTestFactory(&createBlockingTrust);
+        }
+        ~TrustFixture() {
+            el::cryptology::impl::SystemTrustBackend::setTestFactory(nullptr);
+            _trustState->release.set_value();
+            _trustState.reset();
+        }
+    };
+
     class FakeResolver final : public HostResolver {
     public:
         auto resolve(const HostName &) -> el::util::List<IpAddress> override { return {}; }
@@ -100,7 +148,7 @@ private:
             _state->sends.emplace_back(std::move(data));
             return TcpConnectionDeviceSendStatus::Complete;
         }
-        void setReceiving(unit::ByteLength) override {}
+        void setReceiving(unit::ByteCount) override {}
         void close() noexcept override { _state->closed = true; }
         void abort() noexcept override { _state->aborted = true; }
 
@@ -125,32 +173,43 @@ private:
         const char *certificatePath = "data/network/tls-interop/server.pem",
         const char *keyPath = "data/network/tls-interop/server-key.pem") {
         auto configuration = TlsConfiguration{};
-        configuration.setServerIdentity(
-            TlsServerIdentity{
+        configuration.setServer(
+            el::cryptology::TlsServerConfiguration{TlsIdentity{
                 X509CertificateBundle::fromPemOrThrow(readText(certificatePath)),
-                SigningPrivateKey::fromPemOrThrow(readText(keyPath))});
+                SigningPrivateKey::fromPemOrThrow(readText(keyPath))}});
         el::core::application().cryptologyConfiguration().setTlsConfiguration(label, std::move(configuration));
     }
 
-    [[nodiscard]] static auto clientOptions(const el::text::String &host = "localhost"_el) -> TlsClientProtocolOptions {
+    [[nodiscard]] static auto clientOptions(const el::text::String &host = "localhost"_el, bool withIdentity = false)
+        -> TlsClientProtocolOptions {
+        auto identity = TlsIdentityConstPtr{};
+        if (withIdentity) {
+            identity = std::make_shared<const TlsIdentity>(
+                X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/client.pem")),
+                SigningPrivateKey::fromPemOrThrow(readText("data/network/tls-interop/client-key.pem")));
+        }
         return TlsClientProtocolOptions{
             Host::fromStringOrThrow(host),
-            X509ServerCertificatePolicy{
+            X509TlsCertificatePolicy{
                 X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/ca.pem"))},
-            el::time::Timestamp::now()};
+            el::time::Timestamp::now(),
+            {},
+            {},
+            {KeyAgreementAlgorithm::X25519},
+            identity};
     }
 
-    [[nodiscard]] static auto makeHarness() -> Harness {
+    [[nodiscard]] static auto makeHarness(EventLoopOptions options = {}) -> Harness {
         auto result = Harness{};
         result.driver = EventLoopDriver::createDefault();
-        result.loop = EventLoop::create(result.driver);
+        result.loop = EventLoop::create(result.driver, std::move(options));
         result.device = std::make_shared<FakeState>();
         const auto device = result.device;
         auto tcp = std::make_shared<el::network::impl::TcpConnection>(
             result.loop,
             result.driver,
             std::make_shared<FakeResolver>(),
-            [device](EventLoopDriverPtr, unit::ByteLength, TcpConnectionDeviceCallbacks callbacks) {
+            [device](EventLoopDriverPtr, unit::ByteCount, TcpConnectionDeviceCallbacks callbacks) {
                 device->callbacks = std::move(callbacks);
                 return std::make_unique<FakeDevice>(device);
             });
@@ -189,7 +248,13 @@ private:
             progress = true;
         }
         while (client.hasCheckpoint()) {
-            client.resume();
+            if (const auto &request = client.pendingCertificateValidation()) {
+                client.completeCertificateValidation(request->execute());
+            } else if (const auto &request = client.pendingSignature()) {
+                client.completeSignature(request->execute());
+            } else {
+                client.resume();
+            }
             progress = true;
         }
         return progress;
@@ -197,7 +262,7 @@ private:
 
     template <typename Predicate>
     void runUntil(const EventLoopPtr &loop, Predicate predicate) {
-        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{5};
         while (!predicate() && std::chrono::steady_clock::now() < deadline) {
             static_cast<void>(loop->runOnce(el::time::Milliseconds{10}));
         }
@@ -205,6 +270,97 @@ private:
     }
 
 public:
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
+    void testBlockedClientValidationTimeoutAbortAndLateCompletion() {
+        for (const auto cancel : {false, true}) {
+            auto applicationScope = ApplicationTestScope<>{};
+            registerIdentity("tls"_el);
+            auto &registry = applicationScope.app().cryptologyConfiguration();
+            auto profile = *registry.resolveTlsConfiguration("tls"_el, TlsRole::Server).configuration()->server();
+            profile.setClientAuthentication(TlsClientAuthentication::Required);
+            auto trust = TlsTrustConfiguration{};
+            trust.setSystemTrust(true);
+            profile.setTrust(trust);
+            registry.setTlsConfiguration("tls"_el, TlsConfiguration{profile});
+            auto harness = makeHarness(
+                EventLoopOptions{}.setMaximumQueuedEvents(32U).setQueueOverflowAction(
+                    EventQueueOverflowAction::Ignore));
+            auto quota = ConnectionQuota::create(unit::ItemCount{1U});
+            auto finalCount = std::size_t{};
+            auto reason = NetworkErrorReason::Unknown;
+            auto state = std::shared_ptr<TrustState>{};
+            {
+                const auto fixture = TrustFixture{};
+                state = _trustState;
+                run(harness, [&]() {
+                    harness.connection->events()
+                        .onHandshakeCompleted([&]() { REQUIRE(false); })
+                        .onData([&](mem::ByteBlock) { REQUIRE(false); })
+                        .onError([&](const NetworkErrorContext &context) { reason = context.reason(); })
+                        .onFinal([&]() { ++finalCount; });
+                    harness.connection->accept(
+                        makeRequest(), TlsServerAcceptOptions{quota}.setHandshakeTimeout(el::time::Milliseconds{3000}));
+                });
+                auto client = TlsClientProtocol{clientOptions("localhost"_el, true)};
+                client.start();
+                auto cursor = std::size_t{};
+                auto applicationSent = false;
+                runUntil(harness.loop, [&]() {
+                    static_cast<void>(transferClientOutput(harness, client));
+                    static_cast<void>(transferServerOutput(harness, client, cursor));
+                    if (!applicationSent && client.state() == TlsClientProtocolState::Established) {
+                        REQUIRE(client.sendApplication(mem::ByteBlock{'n', 'o'}.span()).isAccepted());
+                        applicationSent = true;
+                    }
+                    _diagnostic = el::StringFormat{"Started={} final={} reason={} client={}"_el}.build(
+                        state->started.load(), finalCount, static_cast<int>(reason), client.failureDiagnostic());
+                    return state->started.load();
+                });
+                REQUIRE_FALSE(harness.connection->isPeerAuthenticated());
+                REQUIRE(harness.connection->peerCertificatePath().isEmpty());
+                run(harness, [&]() {
+                    for (auto i = 0U; i < 32U; ++i) {
+                        harness.loop->invoke([]() {});
+                    }
+                    if (cancel) {
+                        harness.connection->abort();
+                    }
+                });
+                runUntil(harness.loop, [&]() {
+                    _diagnostic = el::StringFormat{"Waiting final: cancel={} final={} started={} finished={}"_el}.build(
+                        cancel, finalCount, state->started.load(), state->finished.load());
+                    return finalCount == 1U;
+                });
+                if (!cancel) {
+                    REQUIRE_EQUAL(reason, NetworkErrorReason::Timeout);
+                }
+                REQUIRE_FALSE(state->finished.load());
+                REQUIRE_EQUAL(quota->current(), unit::ItemCount{});
+            }
+            runUntil(harness.loop, [&]() {
+                _diagnostic = "Waiting for released backend completion"_el;
+                return state->finished.load();
+            });
+            static_cast<void>(harness.loop->runUntilIdle());
+            REQUIRE_EQUAL(finalCount, std::size_t{1U});
+            REQUIRE_FALSE(harness.connection->isPeerAuthenticated());
+        }
+    }
+
+    void testInactiveAbortSurvivesFullOwnerQueue() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        auto harness = makeHarness(
+            EventLoopOptions{}.setMaximumQueuedEvents(1U).setQueueOverflowAction(EventQueueOverflowAction::Ignore));
+        auto finalCount = std::size_t{};
+        run(harness, [&]() -> void {
+            harness.connection->events().onFinal([&]() -> void { ++finalCount; });
+            harness.loop->invoke([]() -> void {});
+            harness.connection->abort();
+        });
+        REQUIRE_EQUAL(finalCount, std::size_t{1U});
+    }
+
     void testConfigurationFailureAndHandshakeQuotaAdmission() {
         const auto applicationScope = ApplicationTestScope<>{};
         auto harness = makeHarness();
@@ -223,13 +379,14 @@ public:
         auto client = TlsClientProtocol{clientOptions()};
         client.start();
         REQUIRE(transferClientOutput(harness, client));
-        REQUIRE_EQUAL(harness.connection->requestedConfigurationLabel(), "tls/server"_el);
+        REQUIRE_EQUAL(harness.connection->requestedConfigurationLabel(), "tls"_el);
         REQUIRE_EQUAL(harness.connection->matchedConfigurationLabel(), "tls"_el);
         REQUIRE_EQUAL(quota->current(), unit::ItemCount{1U});
         run(harness, [&]() -> void { harness.connection->abort(); });
         REQUIRE_EQUAL(quota->current(), unit::ItemCount{});
 
-        auto rejectedHarness = makeHarness();
+        auto rejectedHarness = makeHarness(
+            EventLoopOptions{}.setMaximumQueuedEvents(1U).setQueueOverflowAction(EventQueueOverflowAction::Ignore));
         auto rejectedRequest = makeRequest();
         auto retainedLease = quota->tryAcquire();
         REQUIRE(retainedLease.has_value());
@@ -243,6 +400,7 @@ public:
                     phase = context.phase();
                 })
                 .onFinal([&]() -> void { ++finalCount; });
+            rejectedHarness.loop->invoke([]() -> void {});
             rejectedHarness.connection->accept(rejectedRequest, TlsServerAcceptOptions{quota});
         });
         REQUIRE_EQUAL(rejectedRequest->state(), TcpConnectionRequestState::Rejected);
@@ -254,7 +412,7 @@ public:
 
     void testHandshakeTimeoutAndAdmissionCallbackExceptionFinalizeOnce() {
         const auto applicationScope = ApplicationTestScope<>{};
-        registerIdentity("tls/server"_el);
+        registerIdentity("tls"_el);
         auto timeoutHarness = makeHarness();
         const auto timeoutQuota = ConnectionQuota::create(unit::ItemCount{1U});
         auto timeoutFinalCount = std::size_t{};
@@ -278,7 +436,7 @@ public:
         auto callbackFinalCount = std::size_t{};
         callbackHarness.loop->invoke([&]() -> void {
             callbackHarness.connection->events()
-                .onError([](const NetworkErrorContext &) -> void { throw std::runtime_error{"expected"}; })
+                .onError([](const NetworkErrorContext &) -> void { throw el::err::RuntimeError{"expected"}; })
                 .onFinal([&]() -> void { ++callbackFinalCount; });
             callbackHarness.connection->accept(makeRequest(), TlsServerAcceptOptions{callbackQuota});
         });
@@ -286,13 +444,13 @@ public:
         REQUIRE(callbackHarness.loop->runOnce());
         REQUIRE(callbackHarness.loop->hasError());
         REQUIRE_EQUAL(callbackFinalCount, std::size_t{1U});
-        REQUIRE_THROWS_AS(std::runtime_error, std::rethrow_exception(callbackHarness.loop->takeError()));
+        REQUIRE_THROWS_AS(el::err::RuntimeError, std::rethrow_exception(callbackHarness.loop->takeError()));
         REQUIRE_EQUAL(callbackHarness.connection->state(), ConnectionState::Failed);
     }
 
     void testClientHelloSelectionAndCheckpointAbort() {
         const auto applicationScope = ApplicationTestScope<>{};
-        registerIdentity("tls/server"_el);
+        registerIdentity("tls"_el);
         registerIdentity(
             "identity/exact"_el,
             "data/network/tls-interop/server-ecdsa.pem",
@@ -314,7 +472,7 @@ public:
                 .onHandshakeCompleted([&]() -> void { events.push_back(99); })
                 .onFinal([&]() -> void { events.push_back(3); });
             auto options = TlsServerAcceptOptions{quota};
-            options.setIdentityMappings({{HostName::fromStringOrThrow("LOCALHOST"_el), "identity/exact"_el}});
+            options.setConfigurationMappings({{HostName::fromStringOrThrow("LOCALHOST"_el), "identity/exact"_el}});
             harness.connection->accept(makeRequest(), std::move(options));
         });
         auto client = TlsClientProtocol{clientOptions()};
@@ -331,7 +489,7 @@ public:
     TAGS(FullRun)
     void testAuthenticatedLifecycleApplicationDataAndGracefulClose() {
         const auto applicationScope = ApplicationTestScope<>{};
-        registerIdentity("tls/server"_el);
+        registerIdentity("tls"_el);
         auto harness = makeHarness();
         const auto quota = ConnectionQuota::create(unit::ItemCount{1U});
         auto events = std::vector<int>{};
@@ -360,15 +518,12 @@ public:
         auto client = TlsClientProtocol{clientOptions()};
         auto serverOutputCursor = std::size_t{};
         client.start();
-        for (auto iteration = 0U; iteration < 100U; ++iteration) {
-            auto progress = transferClientOutput(harness, client);
-            progress = transferServerOutput(harness, client, serverOutputCursor) || progress;
-            if (client.state() == TlsClientProtocolState::Established &&
-                harness.connection->state() == ConnectionState::Active) {
-                break;
-            }
-            REQUIRE(progress);
-        }
+        runUntil(harness.loop, [&]() -> bool {
+            static_cast<void>(transferClientOutput(harness, client));
+            static_cast<void>(transferServerOutput(harness, client, serverOutputCursor));
+            return client.state() == TlsClientProtocolState::Established &&
+                harness.connection->state() == ConnectionState::Active;
+        });
         REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Active);
         REQUIRE_EQUAL(quota->current(), unit::ItemCount{});
         REQUIRE_EQUAL(events, std::vector<int>({1, 2, 3}));

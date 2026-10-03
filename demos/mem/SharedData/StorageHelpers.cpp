@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/mem/CowManualStorage.hpp>
-#include <erbsland/mem/CowStorage.hpp>
+#include <erbsland/CowManualStorage.hpp>
+#include <erbsland/CowStorage.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 #include <vector>
 
@@ -15,19 +17,19 @@ namespace demo {
 /// keeps `data()` read-only and names its writable path `detachedData()`, which
 /// is useful when a containing class must make every mutation easy to audit.
 void storageHelpers() {
-    using Concepts = std::vector<el::String>;
+    using Concepts = std::vector<int>;
 
-    auto automatic = el::mem::CowStorage<Concepts>::from({"form"_el, "rytme"_el});
+    auto automatic = el::mem::CowStorage<Concepts>::from({1, 2});
     auto automaticCopy = automatic;
 
     // A mutable data() call automatically detaches CowStorage.
-    automaticCopy.data().emplace_back("balance"_el);
+    automaticCopy.data().emplace_back(3);
 
-    auto explicitWrite = el::mem::CowManualStorage<Concepts>::from({"linje"_el, "flade"_el});
+    auto explicitWrite = el::mem::CowManualStorage<Concepts>::from({4, 5});
     auto explicitCopy = explicitWrite;
 
     // CowManualStorage gives the writable operation a distinct name.
-    explicitCopy.detachedData().emplace_back("rum"_el);
+    explicitCopy.detachedData().emplace_back(6);
 
     const auto &automaticRead = automatic;
     const auto &automaticCopyRead = automaticCopy;

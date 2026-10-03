@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../unit/ArgumentUnit.hpp"
+#include "../unit/ArgumentIndex.hpp"
 #include "../unit/ByteIndex.hpp"
 
 #include <vector>

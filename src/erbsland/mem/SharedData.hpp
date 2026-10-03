@@ -13,26 +13,6 @@ namespace erbsland::mem {
 /// @warning This is an advanced data type, meant for people extending the library.
 /// Do not use it unless you understand the implications and have a specific need.
 class SharedData {
-public:
-    /// Create a shared-data base with a zero reference count.
-    SharedData() = default;
-
-    /// Copy shared-data state without copying its reference counter.
-    /// @param other The source shared-data base.
-    SharedData(const SharedData &) noexcept {}
-    /// Move shared-data state without moving its reference counter.
-    /// @param other The source shared-data base.
-    SharedData(SharedData &&) noexcept {}
-    // defaults
-    ~SharedData() = default;
-    /// Assign shared-data state without assigning its reference counter.
-    /// @param other The source shared-data base.
-    auto operator=(const SharedData &) noexcept -> SharedData & { return *this; }
-    /// Move-assign shared-data state without assigning its reference counter.
-    /// @param other The source shared-data base.
-    auto operator=(SharedData &&) noexcept -> SharedData & { return *this; }
-
-private:
     template <typename, typename>
     friend struct impl::SharedDataPointerTraits;
     template <typename>
@@ -40,8 +20,27 @@ private:
     template <typename>
     friend struct impl::PolymorphicSharedDataPointerTraits;
 
+public:
+    /// Create a shared-data base with a zero reference count.
+    SharedData() = default;
+    /// Copy shared-data state without copying its reference counter.
+    /// @param other The source shared-data base.
+    SharedData([[maybe_unused]] const SharedData &other) noexcept {}
+    /// Move shared-data state without moving its reference counter.
+    /// @param other The source shared-data base.
+    SharedData([[maybe_unused]] SharedData &&other) noexcept {}
+    /// Assign shared-data state without assigning its reference counter.
+    /// @param other The source shared-data base.
+    auto operator=([[maybe_unused]] const SharedData &other) noexcept -> SharedData & { return *this; }
+    /// Move-assign shared-data state without assigning its reference counter.
+    /// @param other The source shared-data base.
+    auto operator=([[maybe_unused]] SharedData &&other) noexcept -> SharedData & { return *this; }
+
+    // defaults
+    ~SharedData() = default;
+
 private:
-    ReferenceCounter _referenceCount;
+    ReferenceCounter _referenceCount; ///< The reference counter.
 };
 
 }

@@ -4,10 +4,29 @@
 
 #include "JsonLine.hpp"
 
-#include <erbsland/cryptology/authentication/PendingAuthenticationChallenge.hpp>
-#include <erbsland/cryptology/authentication/ServerAuthenticationToken.hpp>
-#include <erbsland/network/source/all.hpp>
-#include <erbsland/network/tcp/all.hpp>
+#include <erbsland/all_network_source.hpp>
+#include <erbsland/all_network_tcp.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/IpEndpoint.hpp>
+#include <erbsland/json/JsonValue.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkError.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/PendingAuthenticationChallenge.hpp>
+#include <erbsland/Port.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/ServerAuthenticationToken.hpp>
+#include <erbsland/SocketBufferLimits.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TcpAcceptOptions.hpp>
+#include <erbsland/TcpConnection.hpp>
+#include <erbsland/TcpConnectionRequest.hpp>
+#include <erbsland/TcpListener.hpp>
 
 #include <algorithm>
 #include <functional>
@@ -36,7 +55,7 @@ public:
             .onError([this](const el::NetworkErrorContext &) -> void { _connection->abort(); })
             .onFinal([this]() -> void { _done(this); });
         auto options = el::TcpAcceptOptions{};
-        options.setBufferLimits(el::SocketBufferLimits{el::ByteLength{8192U}, el::ByteLength{8192U}});
+        options.setBufferLimits(el::SocketBufferLimits{el::ByteCount{8192U}, el::ByteCount{8192U}});
         _connection->accept(std::move(_request), options);
     }
 
@@ -44,7 +63,7 @@ private:
     void onData(el::ByteBlock data) {
         try {
             _lines.receive(data, [this](const el::json::JsonValue &record) -> void { onRecord(record); });
-        } catch (const el::Exception &) {
+        } catch (const el::RuntimeError &) {
             _connection->abort();
         }
     }
@@ -58,7 +77,7 @@ private:
             // Keep the one-use pending state with this TCP session.
             _pending = _token.createChallenge(el::time::Seconds{30});
             auto answer = el::json::JsonValue{el::json::JsonObject{}};
-            answer.set("type"_el, el::String{"challenge"_el});
+            answer.set("type"_el, "challenge"_el);
             answer.set("data"_el, JsonLine::base64(_pending->challengeBytes()));
             send(answer);
             _state = State::Proof;
@@ -67,12 +86,12 @@ private:
         if (_state != State::Proof || record.getOrThrow("type"_el).getTextOrThrow() != "response"_el) {
             throw el::ApplicationError{"Unexpected authentication record."_el};
         }
-        const auto response = JsonLine::unbase64(record.getOrThrow("data"_el).getTextOrThrow(), el::ByteLength{497U});
+        const auto response = JsonLine::unbase64(record.getOrThrow("data"_el).getTextOrThrow(), el::ByteCount{497U});
         const auto accepted = _pending->verify(response.span());
         _pending.reset();
         _state = State::Finished;
         auto answer = el::json::JsonValue{el::json::JsonObject{}};
-        answer.set("type"_el, el::String{"result"_el});
+        answer.set("type"_el, "result"_el);
         answer.set("accepted"_el, accepted);
         send(answer);
         // The demo grants no application access beyond this result.

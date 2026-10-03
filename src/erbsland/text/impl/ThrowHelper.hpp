@@ -39,10 +39,11 @@ namespace erbsland::text::impl {
 /// @param reason The reason for the format error.
 [[noreturn]] void throwFormatError(std::string_view reason);
 
-/// Throw an out-of-range error with the given reason.
+/// Report a fatal bounds or capacity violation.
 /// This method exists to resolve circular dependency issues and as convenience.
-/// @param reason The reason for the out-of-range error.
-[[noreturn]] void throwOutOfRange(std::string_view reason);
+/// @param reason The reason for the out-of-range failure.
+/// @tested{StringStorageBoundsTest}
+[[noreturn]] void throwOutOfRangeFailure(std::string_view reason);
 
 /// Throw an OverflowError with the given reason.
 /// This method exists to resolve circular dependency issues and as convenience.
@@ -58,5 +59,12 @@ namespace erbsland::text::impl {
 /// @param reason The reason for the parse error.
 /// @param status The status of the number parsing.
 [[noreturn]] void throwParseNumberError(std::string_view reason, ReadNumberStatus status);
+
+/// Report a fatal parameter precondition violation.
+/// This method exists to resolve circular dependency issues and as convenience.
+/// @param reason The reason for the parameter failure.
+/// @param parameterName The name of the invalid parameter.
+/// @tested{StringStorageBoundsTest}
+[[noreturn]] void throwParameterFailure(std::string_view reason, std::string_view parameterName);
 
 }

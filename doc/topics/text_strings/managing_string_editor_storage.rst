@@ -23,8 +23,8 @@ This page explains those deliberate exceptions.
 It connects capacity to the native unit of each encoding, shows when copy-on-write performs a real copy, and helps you
 decide whether reserving, detaching, clearing, or compacting will actually improve the workflow.
 
-Measure Capacity in the Encoding's Native Unit
-==============================================
+Native Capacity Units and Reservation
+=====================================
 
 ``capacity()`` and ``reserve()`` use the editor's native storage unit:
 
@@ -39,7 +39,7 @@ growth.
 .. erbsland-demo::
     :source: text/StringEditor/ReserveForAppend.cpp
     :exec: text/string_editor --demo ReserveForAppend
-    :source-sha256: 55eeca6e1313604f86b348e182d27cdefd6e87b8eeddcf2dcd98107c8c384480
+    :sha256: 7f6da6306640396bb250d768bf56a0c738faa2454d622ba38710d829bbf0130f
 
 .. code-block:: cpp
 
@@ -62,7 +62,7 @@ growth.
         }
 
         auto planned = el::StringEditor{};
-        planned.reserve(el::ByteLength::fromSizeT(requiredBytes));
+        planned.reserve(el::ByteCount::fromSizeT(requiredBytes));
 
         el::io::printLine("Planned reservation"_el);
         el::io::printLine("  required bytes : "_el, requiredBytes);
@@ -81,7 +81,7 @@ growth.
         el::io::printLine("Repeated exact reservations"_el);
         for (const auto &fragment : fragments) {
             const auto nextLength = repeated.length().toSizeT() + fragment.length().toSizeT() + 1U;
-            repeated.reserve(el::ByteLength::fromSizeT(nextLength));
+            repeated.reserve(el::ByteCount::fromSizeT(nextLength));
             repeated.append(fragment).append(U'\n');
             el::io::printLine("  after step: length "_el, repeated.length(), ", capacity "_el, repeated.capacity());
         }
@@ -91,30 +91,32 @@ growth.
         el::io::print(planned);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Planned reservation
-      required bytes : 84
-      length after reserve : 0
-      capacity after reserve : 84
-      length after append : 84
-      capacity after append : 84
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    Repeated exact reservations
-      after step: length 27, capacity 27
-      after step: length 55, capacity 55
-      after step: length 84, capacity 84
+        ␛[0mPlanned reservation
+          required bytes : 84
+          length after reserve : 0
+          capacity after reserve : 84
+          length after append : 84
+          capacity after append : 84
 
-    Final report:
-    Aurora station: céu limpo
-    Wind tunnel: brise légère
-    Observatory: 星が明るい
+        Repeated exact reservations
+          after step: length 27, capacity 27
+          after step: length 55, capacity 55
+          after step: length 84, capacity 84
+
+        Final report:
+        Aurora station: céu limpo
+        Wind tunnel: brise légère
+        Observatory: 星が明るい␛[0m
 
 .. erbsland-demo-end::
 
-The First Write to Shared Storage
-=================================
+Automatic Copy-on-Write Detachment
+==================================
 
 Editor copies can share a backing store.
 The first mutation of a shared editor detaches that editor so the other values remain unchanged.
@@ -127,7 +129,7 @@ requires more room.
 .. erbsland-demo::
     :source: text/StringEditor/CopyOnWrite.cpp
     :exec: text/string_editor --demo CopyOnWrite
-    :source-sha256: 4979f3fcb07f02077ef376b286ff493bfcd4eb9705e44b0126e83789021a3674
+    :sha256: bbca72594f6d4c220285c392127605a5123bc6e98f3445f826cdf69e4f0a0607
 
 .. code-block:: cpp
 
@@ -176,46 +178,48 @@ requires more room.
         printAll();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    After copying a -> b and b -> c
-    a: The treasure is hidden under the old oak tree.
-    U8StringEditor:
-        backingStorageId: 0x2623570f0afd9b9e:0x1a0ad47df613f4d0
-    b: The treasure is hidden under the old oak tree.
-    U8StringEditor:
-        backingStorageId: 0x2623570f0afd9b9e:0x1a0ad47df613f4d0
-    c: The treasure is hidden under the old oak tree.
-    U8StringEditor:
-        backingStorageId: 0x2623570f0afd9b9e:0x1a0ad47df613f4d0
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    After modifying b
-    a: The treasure is hidden under the old oak tree.
-    U8StringEditor:
-        backingStorageId: 0x2623570f0afd9b9e:0x1a0ad47df613f4d0
-    b: The secret is hidden under the old oak tree.
-    U8StringEditor:
-        backingStorageId: 0x2623570f0afd9a9e:0x1a0ad47df613f5d2
-    c: The treasure is hidden under the old oak tree.
-    U8StringEditor:
-        backingStorageId: 0x2623570f0afd9b9e:0x1a0ad47df613f4d0
+        ␛[0mAfter copying a -> b and b -> c
+        a: The treasure is hidden under the old oak tree.
+        U8StringEditor:
+            backingStorageId: 0x26235705d200308e:0x1a0ad4772eee5fc0
+        b: The treasure is hidden under the old oak tree.
+        U8StringEditor:
+            backingStorageId: 0x26235705d200308e:0x1a0ad4772eee5fc0
+        c: The treasure is hidden under the old oak tree.
+        U8StringEditor:
+            backingStorageId: 0x26235705d200308e:0x1a0ad4772eee5fc0
 
-    After modifying a
-    a: The treasure is hidden under the old oak tree. Nobody has found it yet.
-    U8StringEditor:
-        backingStorageId: 0x2623570f0afc39de:0x1a0ad47df61256f7
-    b: The secret is hidden under the old oak tree.
-    U8StringEditor:
-        backingStorageId: 0x2623570f0afd9a9e:0x1a0ad47df613f5d2
-    c: The treasure is hidden under the old oak tree.
-    U8StringEditor:
-        backingStorageId: 0x2623570f0afd9b9e:0x1a0ad47df613f4d0
+        After modifying b
+        a: The treasure is hidden under the old oak tree.
+        U8StringEditor:
+            backingStorageId: 0x26235705d200308e:0x1a0ad4772eee5fc0
+        b: The secret is hidden under the old oak tree.
+        U8StringEditor:
+            backingStorageId: 0x2623577da0fcd55e:0x1a0ad40f5c12ba12
+        c: The treasure is hidden under the old oak tree.
+        U8StringEditor:
+            backingStorageId: 0x26235705d200308e:0x1a0ad4772eee5fc0
+
+        After modifying a
+        a: The treasure is hidden under the old oak tree. Nobody has found it yet.
+        U8StringEditor:
+            backingStorageId: 0x2623577da0fc7a5e:0x1a0ad40f5c121577
+        b: The secret is hidden under the old oak tree.
+        U8StringEditor:
+            backingStorageId: 0x2623577da0fcd55e:0x1a0ad40f5c12ba12
+        c: The treasure is hidden under the old oak tree.
+        U8StringEditor:
+            backingStorageId: 0x26235705d200308e:0x1a0ad4772eee5fc0␛[0m
 
 .. erbsland-demo-end::
 
-Pay for Detachment at a Deliberate Point
-========================================
+Explicit Copy-on-Write Detachment
+=================================
 
 Mutating operations detach automatically.
 Call ``detach()`` only when low-level code deliberately wants to pay the copy cost before a group of edits or when
@@ -224,7 +228,7 @@ diagnostics must make the transition from shared to unique storage explicit.
 .. erbsland-demo::
     :source: text/StringEditor/ManualDetach.cpp
     :exec: text/string_editor --demo ManualDetach
-    :source-sha256: 4761192cf6765cf028b4c259c77d8a2d0784f49f421889167075abc489e31225
+    :sha256: 40899e30b599fc4664c57d573ee8a3188ee23d26dc8d89e0cbb2e83c83e06d96
 
 .. code-block:: cpp
 
@@ -263,35 +267,37 @@ diagnostics must make the transition from shared to unique storage explicit.
         el::io::printLine(el::toDebugString(archiveCopy, debugDetails));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Before detach:
-      same visible storage : yes
-    After detach:
-      same visible storage : no
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    Edited note : Fjord station: lichen sample 17A, lumière froide | checked
-    Archive copy: Fjord station: lichen sample 17, lumière froide
+        ␛[0mBefore detach:
+          same visible storage : yes
+        After detach:
+          same visible storage : no
 
-    Debug view after editing:
-    U8StringEditor:
-        length: 59
-        characterLength: 58
-        backingStorageId: 0x262357030cfc395e:0x1a0ad471f0125663
-        backingLength: 60
-        selectedRange: index: 0 - 59 (length: 59)
-    U8StringEditor:
-        length: 48
-        characterLength: 47
-        backingStorageId: 0x262357030cfddb0e:0x1a0ad471f013b45e
-        backingLength: 49
-        selectedRange: index: 0 - 48 (length: 48)
+        Edited note : Fjord station: lichen sample 17A, lumière froide | checked
+        Archive copy: Fjord station: lichen sample 17, lumière froide
+
+        Debug view after editing:
+        U8StringEditor:
+            length: 59
+            characterLength: 58
+            backingStorageId: 0x26235705d24d5e0e:0x1a0ad4772ea33153
+            backingLength: 60
+            selectedRange: index: 0 - 59 (length: 59)
+        U8StringEditor:
+            length: 48
+            characterLength: 47
+            backingStorageId: 0x26235705d24d37de:0x1a0ad4772ea358ee
+            backingLength: 49
+            selectedRange: index: 0 - 48 (length: 48)␛[0m
 
 .. erbsland-demo-end::
 
-Keep Capacity for Reuse or Give It Back
-=======================================
+Capacity Retention, clear(), reset(), and shrinkToFit()
+=======================================================
 
 ``clear()`` keeps capacity for the next editing pass.
 ``reset()`` releases the editor state.
@@ -304,7 +310,7 @@ Use it at a storage boundary after measuring or observing meaningful retention, 
 .. erbsland-demo::
     :source: text/StringEditor/ShrinkSlices.cpp
     :exec: text/string_editor --demo ShrinkSlices
-    :source-sha256: c95dc2995d3240be1d7a8273994f2eb2ee60671ee154122f137ccf189a9f10a8
+    :sha256: e37f86a6c5832f70d4fd737f89560c743f911e5bb71aef3cc88af71f03878990
 
 .. code-block:: cpp
 
@@ -315,7 +321,7 @@ Use it at a storage boundary after measuring or observing meaningful retention, 
     /// the editor is converted to a stored read-only string.
     void shrinkSlices() {
         auto note = el::StringEditor{};
-        note.reserve(el::ByteLength{96U});
+        note.reserve(el::ByteCount{96U});
         note.append("Specimen: "_el);
         note.append("Luzula sylvatica"_el);
 
@@ -337,26 +343,28 @@ Use it at a storage boundary after measuring or observing meaningful retention, 
         el::io::printLine("Stored result .: "_el, storedNote);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Before compaction:
-      text ........: Specimen: Luzula sylvatica
-      length ......: 26
-      capacity ....: 96
-      memory usage : 113
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    After shrinkToFit:
-      text ........: Specimen: Luzula sylvatica
-      length ......: 26
-      capacity ....: 26
-      memory usage : 43
-    Stored result .: Specimen: Luzula sylvatica
+        ␛[0mBefore compaction:
+          text ........: Specimen: Luzula sylvatica
+          length ......: 26
+          capacity ....: 96
+          memory usage : 113
+
+        After shrinkToFit:
+          text ........: Specimen: Luzula sylvatica
+          length ......: 26
+          capacity ....: 26
+          memory usage : 43
+        Stored result .: Specimen: Luzula sylvatica␛[0m
 
 .. erbsland-demo-end::
 
-Diagnose Retained and Shared Storage
-====================================
+Storage Capacity, Memory Usage, and Sharing Diagnostics
+=======================================================
 
 ``capacity()``, ``memoryUsage()``, and ``storageId()`` are useful diagnostics.
 They help distinguish visible text length from retained allocation and show when values share storage.

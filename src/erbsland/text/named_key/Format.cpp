@@ -3,21 +3,24 @@
 #include "Format.hpp"
 
 #include "../StringCharReader.hpp"
+#include "../StringTransformations.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../util/Set.hpp"
 
 namespace erbsland::text::named_key {
 
+using namespace err;
+
 void Format::Key::validate() const {
     if (name.isEmpty()) {
-        throw err::LogicError{"The name of a key must not be empty"};
+        throw LogicFailure{"The name of a key must not be empty"};
     }
-    if (name != name.transformed(Char::toIdentifierNormalized)) {
-        throw err::LogicError{"The name of a key must be in its normalized form"};
+    if (name != toIdentifierNormalized(name)) {
+        throw LogicFailure{"The name of a key must be in its normalized form"};
     }
     if (index < 0) {
-        throw err::LogicError{"A named-key index must not be negative"};
+        throw LogicFailure{"A named-key index must not be negative"};
     }
 }
 
@@ -30,7 +33,7 @@ auto Format::setKeys(Keys keys) -> Format & {
     for (const auto &key : keys) {
         key.validate();
         if (processedNames.contains(key.name)) {
-            throw err::LogicError{"A named-key alias must not be registered more than once"};
+            throw LogicFailure{"A named-key alias must not be registered more than once"};
         }
         processedNames.insert(key.name);
     }
@@ -43,7 +46,7 @@ auto Format::addKey(String name, const int index) -> Format & {
     key.validate();
     for (const auto &testedKey : _keys) {
         if (testedKey.name == key.name) {
-            throw err::LogicError{"A named-key alias must not be registered more than once"};
+            throw LogicFailure{"A named-key alias must not be registered more than once"};
         }
     }
     _keys.append(std::move(key));
@@ -51,7 +54,7 @@ auto Format::addKey(String name, const int index) -> Format & {
 }
 
 auto Format::keyIndex(const String &key) const -> std::optional<int> {
-    const auto normalized = key.transformed(Char::toIdentifierNormalized);
+    const auto normalized = toIdentifierNormalized(key);
     for (const auto &candidate : _keys) {
         if (candidate.name == normalized) {
             return candidate.index;
@@ -66,7 +69,7 @@ auto Format::keyName(const int keyIndex) const -> const String & {
             return key.name;
         }
     }
-    throw err::LogicError{"The named-key identifier is not registered"};
+    throw LogicFailure{"The named-key identifier is not registered"};
 }
 
 auto Format::setUniqueKeysRequired(const bool enabled) noexcept -> Format & {
@@ -94,7 +97,7 @@ auto Format::setMaximumValues(const unit::ItemCount maximum) noexcept -> Format 
     return *this;
 }
 
-auto Format::setMaximumValueLength(const unit::CpLength maximum) noexcept -> Format & {
+auto Format::setMaximumValueLength(const unit::CpCount maximum) noexcept -> Format & {
     _maximumValueLength = maximum;
     return *this;
 }
@@ -131,20 +134,20 @@ auto Format::setValueWithoutKeySeparatorChars(CharSet characters) noexcept -> Fo
 
 void Format::validate() const {
     if (_listSeparator.isSignal() || !_listSeparator.isSafeUnicode()) {
-        throw err::LogicError{"The named-key list separator must be a safe character"};
+        throw LogicFailure{"The named-key list separator must be a safe character"};
     }
     if (_valueSeparator.isSignal() || !_valueSeparator.isSafeUnicode()) {
-        throw err::LogicError{"The named-key value separator must be a safe character"};
+        throw LogicFailure{"The named-key value separator must be a safe character"};
     }
     if (_listSeparator == _valueSeparator) {
-        throw err::LogicError{"The named-key list and value separators must be different"};
+        throw LogicFailure{"The named-key list and value separators must be different"};
     }
     if (!_stopCharacter.isEndOfData()) {
         if (_stopCharacter.isSignal() || !_stopCharacter.isSafeUnicode()) {
-            throw err::LogicError{"The named-key stop character must be safe or end-of-data"};
+            throw LogicFailure{"The named-key stop character must be safe or end-of-data"};
         }
         if (_stopCharacter == _listSeparator || _stopCharacter == _valueSeparator) {
-            throw err::LogicError{"The named-key stop character must be distinct from the separators"};
+            throw LogicFailure{"The named-key stop character must be distinct from the separators"};
         }
     }
     for (const auto &key : _keys) {
@@ -155,7 +158,7 @@ void Format::validate() const {
             if (!character.isSafeUnicode() || character == _listSeparator || character == _valueSeparator ||
                 character == _stopCharacter || _valueWithoutKeySeparatorChars.contains(character) ||
                 (isFirst && _allowedKeyPrefixes.contains(character))) {
-                throw err::LogicError{"A named-key alias contains a configured syntax character"};
+                throw LogicFailure{"A named-key alias contains a configured syntax character"};
             }
             isFirst = false;
         }
@@ -163,12 +166,12 @@ void Format::validate() const {
     if (_allowedKeyPrefixes.contains(_listSeparator) || _allowedKeyPrefixes.contains(_valueSeparator) ||
         _allowedKeyPrefixes.contains(_stopCharacter) ||
         !_allowedKeyPrefixes.intersectedWith(_valueWithoutKeySeparatorChars).isEmpty()) {
-        throw err::LogicError{"A named-key prefix conflicts with a configured syntax character"};
+        throw LogicFailure{"A named-key prefix conflicts with a configured syntax character"};
     }
     if (_valueWithoutKeySeparatorChars.contains(_listSeparator) ||
         _valueWithoutKeySeparatorChars.contains(_valueSeparator) ||
         _valueWithoutKeySeparatorChars.contains(_stopCharacter)) {
-        throw err::LogicError{"A named-key compact-value character conflicts with a configured syntax character"};
+        throw LogicFailure{"A named-key compact-value character conflicts with a configured syntax character"};
     }
 }
 

@@ -4,6 +4,7 @@
 
 #include "Core.hpp"
 #include "Name.hpp"
+#include "Recovery.hpp"
 #include "ValueBytes.hpp"
 #include "ValueDateTime.hpp"
 #include "ValueFloat.hpp"
@@ -53,55 +54,63 @@ auto expectNameAndValue(TokenDecoder &decoder) -> TokenGenerator {
     co_return;
 }
 
-auto expectMultiLineValueList(TokenDecoder &decoder, const bool expandPlaceholders) -> TokenGenerator {
-    if (decoder.character() != nc::asterisk) {
-        decoder.throwInternalError("Called 'expectMultiLineValueList' in the wrong state."_el);
-    }
-    decoder.next();
+/// Read the bullet and values of one continued list row.
+/// @param decoder The decoder at the bullet.
+/// @param expandPlaceholders Whether ordinary text allows placeholder expansion.
+/// @return The row's tokens.
+/// @throws ConfError For invalid row input.
+/// @tested{LexerStandardValueListTest SyntaxParserTest LexerRecoveryTest}
+auto expectListRow(TokenDecoder &decoder, const bool expandPlaceholders) -> TokenGenerator {
+    decoder.expectAndNext(
+        nc::asterisk, "Expected the asterisk for a value list continuation, but got something else."_el);
     EL_YIELD_TOKEN(TokenType::MultiLineValueListSeparator);
     EL_YIELD_OPTIONAL(scanForSpacing(decoder));
     decoder.expectMore("Unexpected end in multi-line value list. Expected a value."_el);
     EL_YIELD_FROM(expectSingleLineValueOrValueList(decoder, expandPlaceholders));
-    // At this point, we are on the following line.
-    if (decoder.character().isEndOfData()) {
-        co_return; // This is a valid end of the document.
+}
+
+/// Read a continued list row or leave an indented blank/comment line unconsumed.
+/// @param decoder The decoder at the indentation.
+/// @param expandPlaceholders Whether ordinary text allows placeholder expansion.
+/// @param finished Set when the list ends before a blank or comment line.
+/// @return The continued row's tokens.
+/// @throws ConfError For invalid indentation or row input.
+/// @tested{LexerStandardValueListTest SyntaxParserTest LexerRecoveryTest}
+auto expectListContinuation(TokenDecoder &decoder, const bool expandPlaceholders, bool &finished) -> TokenGenerator {
+    auto transaction = Transaction{decoder};
+    decoder.advanceWhile(text::AsciiCategory::Blank);
+    if (decoder.character() == CharClass::EndOfLineStart) {
+        transaction.rollback();
+        finished = true;
+        co_return;
     }
-    if (decoder.character() != CharClass::Spacing) {
-        co_return; // If there is something else following the list, it is a valid end of the list.
+    const auto indentation = transaction.capturedString();
+    transaction.commit();
+    EL_YIELD_TOKEN(TokenType::Indentation);
+    if (indentation != decoder.indentationPattern()) {
+        decoder.throwError(
+            ConfErrorCategory::Indentation, "The indentation pattern does not match the one on the previous line."_el);
     }
-    if (!decoder.hasIndentationPattern()) {
-        decoder.throwInternalError("Expected to have an indentation patten at this point."_el);
-    }
-    // If the next line starts with spacing, it is potentially a continuation of the value list.
+    EL_YIELD_FROM(expectListRow(decoder, expandPlaceholders));
+}
+
+/// Read a complete continued list, retaining row context during syntax recovery.
+/// @param decoder The decoder at the first bullet, after its indentation.
+/// @param expandPlaceholders Whether ordinary text allows placeholder expansion.
+/// @return The list's tokens.
+/// @throws ConfError For strict parsing or unrecoverable failures.
+/// @tested{LexerStandardValueListTest SyntaxParserTest LexerRecoveryTest}
+auto expectMultiLineValueList(TokenDecoder &decoder, const bool expandPlaceholders) -> TokenGenerator {
+    auto first = Recovery{decoder};
+    EL_YIELD_FROM(first.tokens(expectListRow(decoder, expandPlaceholders)));
     while (decoder.character() == CharClass::Spacing) {
-        auto transaction = Transaction{decoder};
-        decoder.advanceWhile(text::AsciiCategory::Blank);
-        if (decoder.character() == CharClass::EndOfLineStart) {
-            // This is a valid empty line. Therefore, also a valid end of the list.
-            transaction.rollback();
+        auto finished = false;
+        auto row = Recovery{decoder};
+        EL_YIELD_FROM(row.tokens(expectListContinuation(decoder, expandPlaceholders, finished)));
+        if (finished) {
             co_return;
         }
-        if (transaction.capturedString() != decoder.indentationPattern()) {
-            EL_YIELD_TOKEN(TokenType::Indentation); // Consume the spacing as an indentation token.
-            transaction.commit();
-            decoder.throwError(
-                ConfErrorCategory::Indentation,
-                "The indentation pattern does not match the one on the previous line."_el);
-        }
-        if (decoder.character() != nc::asterisk) {
-            EL_YIELD_TOKEN(TokenType::Indentation); // Consume the spacing as an indentation token.
-            transaction.commit();
-            decoder.throwSyntaxError("Expected the asterisk for a value list continuation, but got something else."_el);
-        }
-        transaction.commit();
-        EL_YIELD_TOKEN(TokenType::Indentation);                 // Consume the spacing.
-        decoder.next();
-        EL_YIELD_TOKEN(TokenType::MultiLineValueListSeparator); // Consume the asterisk.
-        EL_YIELD_OPTIONAL(scanForSpacing(decoder));
-        decoder.expectMore("Unexpected end in multi-line value list. Expected a value."_el);
-        EL_YIELD_FROM(expectSingleLineValueOrValueList(decoder, expandPlaceholders));
     }
-    co_return;
 }
 
 auto expectValueOrValueList(
@@ -119,22 +128,7 @@ auto expectValueOrValueList(
         if (auto multiLineOpenToken = scanMultiLineOpen(decoder)) {
             const auto tokenType = multiLineOpenToken.value().type();
             co_yield std::move(multiLineOpenToken).value();
-            switch (tokenType.raw()) {
-            case TokenType::MultiLineTextOpen:
-                EL_YIELD_FROM(expectMultiLineText(decoder, tokenType, expandPlaceholders));
-                break;
-            case TokenType::MultiLineCodeOpen:
-                EL_YIELD_FROM(expectMultiLineText(decoder, tokenType));
-                break;
-            case TokenType::MultiLineRegexOpen:
-                EL_YIELD_FROM(expectMultiLineText(decoder, tokenType));
-                break;
-            case TokenType::MultiLineBytesOpen:
-                EL_YIELD_FROM(expectMultiLineBytes(decoder));
-                break;
-            default:
-                throw err::LogicError("Unexpected token type after opening bracket."_el);
-            }
+            EL_YIELD_FROM(expectMultiLineValue(decoder, tokenType, expandPlaceholders));
             co_return;
         }
     }

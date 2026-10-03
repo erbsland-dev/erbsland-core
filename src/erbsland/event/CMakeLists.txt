@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
+        BindEvent.hpp
+        BindEvent.tpp
         CurrentEvents.cpp
         CurrentEvents.hpp
         Event.hpp
@@ -31,6 +33,10 @@ target_sources(erbsland-core PRIVATE
         EventLoopDriver_fwd.hpp
         EventLoopErrorAction.hpp
         EventLoopErrorHandler.hpp
+        EventLoopErrorPolicy.hpp
+        EventLoopOptions.hpp
+        EventQueueFullError.hpp
+        EventQueueOverflowAction.hpp
         EventRegistry.cpp
         EventRegistry.hpp
         EventRegistry_fwd.hpp

@@ -1,16 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/EnvironmentOptions.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/render/EnvironmentOptions.hpp>
+#include <erbsland/render/LayoutSource.hpp>
+#include <erbsland/render/RenderError.hpp>
 #include <erbsland/text/render/impl/CompiledBlock.hpp>
 #include <erbsland/text/render/impl/CompiledExtends.hpp>
 #include <erbsland/text/render/impl/CompiledInclude.hpp>
 #include <erbsland/text/render/impl/CompiledLayout.hpp>
 #include <erbsland/text/render/impl/Compiler.hpp>
 #include <erbsland/text/render/impl/Engine.hpp>
-#include <erbsland/text/render/LayoutSource.hpp>
-#include <erbsland/text/render/RenderError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;
@@ -18,6 +18,9 @@ using namespace el::text::render;
 
 TESTED_TARGETS(CompiledBlock CompiledExtends CompiledInclude CompiledLayout Compiler)
 class RenderCompilerTest final : public el::UnitTest {
+private:
+    static constexpr auto cCustomFilter = "custom"_el;
+
     using CompiledBlock = el::text::render::impl::CompiledBlock;
     using CompiledExtends = el::text::render::impl::CompiledExtends;
     using CompiledInclude = el::text::render::impl::CompiledInclude;
@@ -106,7 +109,7 @@ public:
 
     void testApplicationFilterSnapshot() {
         auto filters = el::text::StringMap<FilterFn>{};
-        filters.set("custom"_el, [](const ValueList &) -> Value { return "old"_el; });
+        filters.set(cCustomFilter, [](const ValueList &) -> Value { return "old"_el; });
         const auto layout =
             Compiler{
                 "page"_el,
@@ -114,7 +117,7 @@ public:
                 EnvironmentOptions{},
                 filters}
                 .compile();
-        filters.set("custom"_el, [](const ValueList &) -> Value { return "new"_el; });
+        filters.set(cCustomFilter, [](const ValueList &) -> Value { return "new"_el; });
 
         const auto globalContext = Context{};
         const auto localContext = Context{};

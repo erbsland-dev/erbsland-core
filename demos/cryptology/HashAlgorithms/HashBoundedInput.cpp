@@ -2,8 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/cryptology/Hasher.hpp>
-#include <erbsland/cryptology/HashSelector.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/HashSelector.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TempDirectory.hpp>
 
 #include <algorithm>
 #include <array>

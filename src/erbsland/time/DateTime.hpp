@@ -263,9 +263,10 @@ public: // conversion
         -> std::optional<std::pair<Seconds, Nanoseconds>>;
     /// Convert to complete seconds and a nanosecond fraction from an epoch.
     /// This is the only method that returns the full precision of a date/time value.
+    /// This date/time must be valid and must not precede `epoch`.
     /// @param epoch The epoch.
     /// @return The non-negative seconds and fraction.
-    /// @throws err::OutOfRangeError If this date/time precedes the epoch or is invalid.
+    /// @throws err::OutOfRangeError If the date/time or epoch ticks cannot be represented in the requested range.
     [[nodiscard]] auto toSecondsAndFractionsOrThrow(TimeEpoch epoch = TimeEpoch::Core) const
         -> std::pair<Seconds, Nanoseconds>;
     /// Convert to exact ticks in seconds, milliseconds, microseconds or nanoseconds from an epoch.
@@ -287,18 +288,21 @@ public: // conversion
     }
     /// Convert to exact ticks in seconds, milliseconds, microseconds or nanoseconds from an epoch.
     /// Fractions outside the precision of the tick unit are discarded.
+    /// This date/time must be representable as ticks of `tUnit` relative to `epoch`.
     /// @tparam tUnit The tick unit: Nanoseconds, Microseconds, Milliseconds, or Seconds.
     /// @param epoch The epoch.
     /// @return Exact non-negative ticks.
-    /// @throws err::OutOfRangeError If the ticks cannot represent this date/time.
+    /// @throws err::OutOfRangeError If the date/time or epoch ticks cannot be represented in the requested range.
     template <typename tUnit>
         requires impl::DateTimeTickUnit<tUnit>
     [[nodiscard]] auto toTicksOrThrow(TimeEpoch epoch = TimeEpoch::Core) const -> tUnit;
     /// @overload
+    /// @throws err::OutOfRangeError If the date/time or epoch ticks cannot be represented in the requested range.
     [[nodiscard]] auto toSecondsOrThrow(const TimeEpoch epoch = TimeEpoch::Core) const -> Seconds {
         return toTicksOrThrow<Seconds>(epoch);
     }
     /// @overload
+    /// @throws err::OutOfRangeError If the date/time or epoch ticks cannot be represented in the requested range.
     [[nodiscard]] auto toNanosecondsOrThrow(const TimeEpoch epoch = TimeEpoch::Core) const -> Nanoseconds {
         return toTicksOrThrow<Nanoseconds>(epoch);
     }
@@ -340,19 +344,21 @@ public:
     /// Create a UTC date/time from exact ticks in seconds, milliseconds, microseconds or nanoseconds since an epoch.
     /// Fractions outside the precision of the tick unit are discarded.
     /// @tparam tUnit The tick unit: Nanoseconds, Microseconds, Milliseconds, or Seconds.
-    /// @param ticks The non-negative ticks.
+    /// @param ticks The non-negative tick count. Must produce a representable date/time relative to `epoch`.
     /// @param epoch The epoch.
     /// @return A date/time.
-    /// @throws err::OutOfRangeError If the ticks cannot be represented.
+    /// @throws err::OutOfRangeError If the date/time or epoch ticks cannot be represented in the requested range.
     template <typename tUnit>
         requires impl::DateTimeTickUnit<tUnit>
     [[nodiscard]] static auto fromTicksOrThrow(tUnit ticks, TimeEpoch epoch = TimeEpoch::Core) -> DateTime;
     /// @overload
+    /// @throws err::OutOfRangeError If the date/time or epoch ticks cannot be represented in the requested range.
     [[nodiscard]] static auto fromSecondsOrThrow(const Seconds ticks, const TimeEpoch epoch = TimeEpoch::Core)
         -> DateTime {
         return fromTicksOrThrow<Seconds>(ticks, epoch);
     }
     /// @overload
+    /// @throws err::OutOfRangeError If the date/time or epoch ticks cannot be represented in the requested range.
     [[nodiscard]] static auto fromNanosecondsOrThrow(const Nanoseconds ticks, const TimeEpoch epoch = TimeEpoch::Core)
         -> DateTime {
         return fromTicksOrThrow<Nanoseconds>(ticks, epoch);
@@ -367,11 +373,12 @@ public:
         Seconds seconds, Nanoseconds fractions, TimeEpoch epoch = TimeEpoch::Core) noexcept -> std::optional<DateTime>;
     /// Create a UTC date/time from complete seconds and a nanosecond fraction since an epoch.
     /// This is the only method that allows to construct a date/time at it's full range and precision.
-    /// @param seconds The non-negative complete seconds.
+    /// @param seconds The non-negative complete seconds. Together with `fractions` and `epoch`, must produce a
+    /// representable date/time.
     /// @param fractions The nanosecond fraction in the range 0 to 999999999.
     /// @param epoch The epoch.
     /// @return A date/time.
-    /// @throws err::OutOfRangeError If the values cannot be represented.
+    /// @throws err::OutOfRangeError If the date/time or epoch ticks cannot be represented in the requested range.
     [[nodiscard]] static auto fromTicksOrThrow(
         Seconds seconds, Nanoseconds fractions, TimeEpoch epoch = TimeEpoch::Core) -> DateTime;
     /// Parse an ISO date/time string.

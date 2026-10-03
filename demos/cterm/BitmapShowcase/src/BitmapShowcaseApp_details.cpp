@@ -1,13 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "BitmapShowcaseApp.hpp"
+
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <algorithm>
 #include <array>
 #include <vector>
 
 namespace demo {
+
 void BitmapShowcaseApp::drawPreviewPanel(const Rectangle rect, const el::String title, const Color fillColor) {
 
     if (rect.width() <= 4 || rect.height() <= 4) {

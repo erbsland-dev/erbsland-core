@@ -143,7 +143,7 @@ template <typename tString>
     if (data.empty()) {
         return result;
     }
-    auto reservedSize = unit::ByteLength::zero();
+    auto reservedSize = unit::ByteCount::zero();
     utf8::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> void {
         reservedSize += utf8::encodedLength(character);
     });
@@ -166,7 +166,7 @@ template <typename tString>
     if (data.empty()) {
         return result;
     }
-    auto reservedSize = unit::ByteLength::zero();
+    auto reservedSize = unit::ByteCount::zero();
     utf16::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> void {
         reservedSize += utf8::encodedLength(character);
     });
@@ -189,7 +189,7 @@ template <typename tString>
     if (data.empty()) {
         return result;
     }
-    auto reservedSize = unit::ByteLength::zero();
+    auto reservedSize = unit::ByteCount::zero();
     utf32::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> void {
         reservedSize += utf8::encodedLength(character);
     });

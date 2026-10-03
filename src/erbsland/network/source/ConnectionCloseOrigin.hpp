@@ -4,6 +4,8 @@
 
 #include "ConnectionCloseOrigin_fwd.hpp"
 
+#include "../../core/Definitions.hpp"
+
 namespace erbsland::network {
 
 /// The side that first initiated an orderly connection closure.

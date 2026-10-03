@@ -4,7 +4,8 @@
 
 #include "../impl/SecureEraseGuard.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/OutOfRangeError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/Literals.hpp"
 
@@ -12,9 +13,10 @@
 
 namespace erbsland::cryptology {
 
+using namespace mem;
 using namespace text::literals;
 
-TlsTrafficSecret::TlsTrafficSecret(const HashAlgorithm algorithm, const mem::ConstByteSpan data) :
+TlsTrafficSecret::TlsTrafficSecret(const HashAlgorithm algorithm, const ConstByteSpan data) :
     _hashAlgorithm{algorithm}, _data{data} {
 }
 
@@ -27,13 +29,13 @@ void TlsTrafficSecret::secureErase() noexcept {
     _data.secureErase();
 }
 
-auto TlsTrafficSecret::fromBytes(const HashAlgorithm algorithm, const mem::ConstByteSpan data) -> TlsTrafficSecret {
+auto TlsTrafficSecret::fromBytes(const HashAlgorithm algorithm, const ConstByteSpan data) -> TlsTrafficSecret {
     validate(algorithm, data);
     // Protect the borrowed traffic secret immediately. The caller remains responsible for its source allocation.
     return TlsTrafficSecret{algorithm, data};
 }
 
-auto TlsTrafficSecret::fromBytes(const HashAlgorithm algorithm, mem::ByteBlock &&data) -> TlsTrafficSecret {
+auto TlsTrafficSecret::fromBytes(const HashAlgorithm algorithm, ByteBlock &&data) -> TlsTrafficSecret {
     validate(algorithm, data.span());
     data.markAsSensitive();
     // The owning plaintext secret remains guarded while ProtectedByteBlock creates its authenticated envelope.
@@ -41,10 +43,12 @@ auto TlsTrafficSecret::fromBytes(const HashAlgorithm algorithm, mem::ByteBlock &
     return TlsTrafficSecret{algorithm, data.span()};
 }
 
-void TlsTrafficSecret::validate(const HashAlgorithm algorithm, const mem::ConstByteSpan data) {
-    if ((algorithm != HashAlgorithm::Sha2_256 && algorithm != HashAlgorithm::Sha2_384) ||
-        data.size() != algorithm.digestSize().toSizeT()) {
-        throw err::ParameterError{"A TLS traffic secret must match the SHA-256 or SHA-384 digest size."_el, "data"_el};
+void TlsTrafficSecret::validate(const HashAlgorithm algorithm, const ConstByteSpan data) {
+    if (algorithm != HashAlgorithm::Sha2_256 && algorithm != HashAlgorithm::Sha2_384) {
+        throw err::ParameterFailure{"A TLS traffic secret requires SHA-256 or SHA-384."_el, "algorithm"_el};
+    }
+    if (data.size() != algorithm.digestSize().toSizeT()) {
+        throw err::OutOfRangeError{"A TLS traffic secret must match the digest size."_el};
     }
 }
 

@@ -1,12 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CoTask.hpp>
+#include <erbsland/StandardStreams.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
 
 [[nodiscard]] auto countRiverBlocks(const std::shared_ptr<ScriptedByteInputStream> &input) -> el::CoTask<std::size_t> {
-    auto generator = input->coReadBlocks(el::ByteLength{2U});
+    auto generator = input->coReadBlocks(el::ByteCount{2U});
     auto count = std::size_t{0U};
     while (auto next = co_await generator.next()) {
         if (next->hasData()) {

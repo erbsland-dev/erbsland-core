@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/impl/SecureErase.hpp>
-#include <erbsland/mem/ReferenceCounter.hpp>
-#include <erbsland/mem/SharedArrayData.hpp>
-#include <erbsland/mem/SharedData.hpp>
-#include <erbsland/mem/SharedDataPointer.hpp>
-#include <erbsland/mem/SharedVirtualData.hpp>
+#include <erbsland/ReferenceCounter.hpp>
+#include <erbsland/SharedArrayData.hpp>
+#include <erbsland/SharedData.hpp>
+#include <erbsland/SharedDataPointer.hpp>
+#include <erbsland/SharedVirtualData.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>

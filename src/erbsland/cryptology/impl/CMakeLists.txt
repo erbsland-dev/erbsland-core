@@ -8,7 +8,9 @@ add_subdirectory(authentication)
 add_subdirectory(hash)
 add_subdirectory(key_agreement)
 add_subdirectory(protected_data)
+add_subdirectory(secure_storage)
 add_subdirectory(symmetric)
+add_subdirectory(system_trust)
 add_subdirectory(tls)
 
 target_sources(erbsland-core PRIVATE
@@ -25,6 +27,8 @@ target_sources(erbsland-core PRIVATE
         DerParser.cpp
         DerParser.hpp
         DerParser_fwd.hpp
+        EcPrivateScalarPolicy.cpp
+        EcPrivateScalarPolicy.hpp
         EncryptedPrivateKeyCodec.cpp
         EncryptedPrivateKeyCodec.hpp
         PasswordHashData.cpp
@@ -41,12 +45,22 @@ target_sources(erbsland-core PRIVATE
         PrivateKeyParser.cpp
         PrivateKeyParser.hpp
         PrivateKeyParser_fwd.hpp
+        NativeTlsAlgorithms.cpp
+        NativeTlsAlgorithms.hpp
         SecureEraseGuard.hpp
         SigningKeyEncoding.cpp
         SigningKeyEncoding.hpp
         SigningKeyGenerator.cpp
         SigningKeyGenerator.hpp
         SigningKeyGenerator_fwd.hpp
+        SoftwareTlsSigner.hpp
+        SystemIdentityBackend.cpp
+        SystemIdentityBackend.hpp
+        SystemIdentityBackend_fwd.hpp
+        SystemIdentityMaterial.hpp
+        TlsSigner.hpp
+        TlsSigner_fwd.hpp
+        UnsupportedSystemIdentityBackend.hpp
         TlsConfigurationLabel.cpp
         TlsConfigurationLabel.hpp
         TlsConfigurationRules.cpp
@@ -61,8 +75,30 @@ target_sources(erbsland-core PRIVATE
         X509Parser.hpp
         X509Parser_extensions.cpp
         X509Parser_fwd.hpp
-        X509ServerCertificateValidator.cpp
-        X509ServerCertificateValidator.hpp
-        X509ServerCertificateValidator_fwd.hpp
-        X509ServerCertificateValidator_validation.cpp
+        X509TlsCertificateValidator.cpp
+        X509TlsCertificateValidator.hpp
+        X509TlsCertificateValidator_fwd.hpp
+        X509TlsCertificateValidator_native.cpp
+        X509TlsCertificateValidator_validation.cpp
 )
+
+if (APPLE)
+    target_sources(erbsland-core PRIVATE
+            MacosKeychainInteraction.cpp
+            MacosKeychainInteraction.hpp
+            MacosOwnedReference.hpp
+            MacosSystemIdentityBackend.cpp
+            MacosSystemIdentityBackend.hpp
+            MacosTlsSigner.cpp
+            MacosTlsSigner.hpp
+    )
+elseif (WIN32)
+    target_sources(erbsland-core PRIVATE
+            WindowsIdentityResources.hpp
+            WindowsSystemIdentityBackend.cpp
+            WindowsSystemIdentityBackend.hpp
+            WindowsTlsSigner.cpp
+            WindowsTlsSigner.hpp
+    )
+    target_link_libraries(erbsland-core PRIVATE ncrypt crypt32)
+endif ()

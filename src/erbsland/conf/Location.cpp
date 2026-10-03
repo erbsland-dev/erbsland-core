@@ -36,6 +36,7 @@ auto internalView(const Location &object) -> impl::InternalViewPtr {
     result->setValue(u8"location", object._codeLocation.toString());
     return result;
 }
+
 #endif
 
 }

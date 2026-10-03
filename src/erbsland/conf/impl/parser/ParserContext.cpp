@@ -32,7 +32,7 @@ auto ParserContext::create(
 
 void ParserContext::initialize() {
     if (_initialized) {
-        throw err::LogicError("ParserContext::initialize() called twice."_el);
+        throw err::LogicFailure("ParserContext::initialize() called twice."_el);
     }
     if (!_source->isOpen()) {
         _source->open();
@@ -44,12 +44,12 @@ void ParserContext::initialize() {
 
 auto ParserContext::nextAssignment() -> Assignment {
     if (!_hasNextAssignment) {
-        throw err::LogicError{"ParserContext::nextAssignment() called after the end of the assignment stream."};
+        throw err::LogicFailure{"ParserContext::nextAssignment() called after the end of the assignment stream."};
     }
     auto assignment = _assignmentGenerator.next();
     if (!assignment.has_value()) {
         _hasNextAssignment = false;
-        throw err::LogicError{"The assignment stream ended without an EndOfDocument assignment."};
+        throw err::LogicFailure{"The assignment stream ended without an EndOfDocument assignment."};
     }
     _hasNextAssignment = assignment->type() != AssignmentType::EndOfDocument;
     return std::move(*assignment);

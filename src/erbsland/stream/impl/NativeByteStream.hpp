@@ -9,8 +9,8 @@
 
 #include "../../mem/Byte.hpp"
 #include "../../system/FileIdentity.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteOffset.hpp"
 
 #include <span>
@@ -30,6 +30,12 @@ public:
     /// Get the identity captured for the native file, or an invalid identity for other stream types.
     /// @return The opened file's identity, or an invalid identity for non-file native streams.
     [[nodiscard]] virtual auto fileIdentity() const noexcept -> system::FileIdentity { return {}; }
+    /// Get the regular-file size captured when opening the source, without another metadata query.
+    /// This allocation hint may be stale and must never be used to infer end-of-stream.
+    /// @return The captured byte length, or infinity when no regular-file size is available.
+    [[nodiscard]] virtual auto initialFileSize() const noexcept -> unit::ByteCount {
+        return unit::ByteCount::infinite();
+    }
     /// Test if the native stream supports byte positioning.
     [[nodiscard]] virtual auto supportsPositioning() const noexcept -> bool = 0;
     /// Get the native byte position.
@@ -41,7 +47,7 @@ public:
     /// Read bytes synchronously from the native source.
     /// @param destination The writable destination buffer.
     /// @return The number of bytes read, or zero at end-of-stream.
-    [[nodiscard]] virtual auto read(mem::ByteSpan destination) -> unit::ByteLength = 0;
+    [[nodiscard]] virtual auto read(mem::ByteSpan destination) -> unit::ByteCount = 0;
     /// Write all bytes synchronously to the native target.
     /// @param bytes The bytes to write completely before returning.
     virtual void write(mem::ConstByteSpan bytes) = 0;
@@ -54,4 +60,5 @@ public:
 };
 
 }
+
 #include "../../mem/ByteSpan.hpp"

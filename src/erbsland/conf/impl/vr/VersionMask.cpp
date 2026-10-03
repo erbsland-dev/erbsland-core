@@ -8,6 +8,7 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 auto VersionMask::empty() noexcept -> VersionMask {
@@ -18,7 +19,7 @@ auto VersionMask::fromRanges(const std::initializer_list<ConfVersionRange> value
     return VersionMask{normalize(std::vector<ConfVersionRange>{values})};
 }
 
-auto VersionMask::fromIntegers(const std::vector<Integer> &values) noexcept -> VersionMask {
+auto VersionMask::fromIntegers(const util::List<Integer> &values) noexcept -> VersionMask {
     return fromRanges(std::vector<ConfVersionRange>{values.begin(), values.end()});
 }
 
@@ -145,11 +146,11 @@ auto VersionMask::matches(const Integer version) const noexcept -> bool {
     return std::ranges::any_of(_ranges, [version](const auto &range) { return range.matches(version); });
 }
 
-auto VersionMask::toText() const noexcept -> text::String {
+auto VersionMask::toText() const noexcept -> String {
     if (_ranges.empty()) {
         return "none"_el;
     }
-    text::StringEditor result;
+    StringEditor result;
     for (const auto &range : _ranges) {
         if (!result.isEmpty()) {
             result.append(", "_el);
@@ -162,20 +163,20 @@ auto VersionMask::toText() const noexcept -> text::String {
             result.append("any"_el);
         } else if (range.first == range.last) {
             // Singleton value (also covers 0-0 -> "0")
-            result.append(text::StringEditor::fromInteger(range.first));
+            result.append(StringEditor::fromInteger(range.first));
         } else if (fromZero) {
             // Up-to form
             result.append("<="_el);
-            result.append(text::StringEditor::fromInteger(range.last));
+            result.append(StringEditor::fromInteger(range.last));
         } else if (toMax) {
             // From form
             result.append(">="_el);
-            result.append(text::StringEditor::fromInteger(range.first));
+            result.append(StringEditor::fromInteger(range.first));
         } else {
             // General interval
-            result.append(text::StringEditor::fromInteger(range.first));
+            result.append(StringEditor::fromInteger(range.first));
             result.append("-"_el);
-            result.append(text::StringEditor::fromInteger(range.last));
+            result.append(StringEditor::fromInteger(range.last));
         }
     }
     return result;

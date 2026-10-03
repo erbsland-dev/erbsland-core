@@ -8,16 +8,16 @@
 
 .. _options-option-sets:
 
-***********
-Option Sets
-***********
+************************
+Command-Line Option Sets
+************************
 
 An :cpp:class:`OptionSet <erbsland::options::OptionSet>` groups options that belong to one part of an application.
 This page explains how sets keep responsibilities separated, how set callbacks work, and how set help appears in
 generated output.
 
-Let Components Own Their Options
-================================
+Grouping Component Options with Option Sets
+===========================================
 
 Larger tools often have components that can explain their own settings better than a central command-line file can.
 A sensor reader may own acquisition options, a report writer may own output options, and a diagnostics component may own
@@ -31,7 +31,7 @@ After parsing, each component can read the values it owns in its own post-parsin
 .. erbsland-demo::
     :source: option/OptionSets/main.cpp
     :exec: option/option_sets
-    :source-sha256: 6594387d926b393690f317061c3825ab2f3609db22b2081f3322189e99d979c9
+    :sha256: c55743586265b13046b2a597fef468099b8d3bffc3366520ab5bb622512a61fb
 
 .. code-block:: cpp
 
@@ -44,12 +44,11 @@ After parsing, each component can read the values it owns in its own post-parsin
         auto instrumentSet = el::OptionSet::create();
         instrumentSet->setHelpTitle("Instrument"_el);
         instrumentSet->setHelpDescription("Options for the component that selects the instrument."_el);
-        instrumentSet->addOption({"-q"_el, "--quiet"_el, "quiet"_el})
-            .setHelpDescription("Reduces progress output."_el);
+        instrumentSet->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpTitle("Reduces progress output."_el);
         instrumentSet->addOption({"-i"_el, "--instrument"_el, "instrument"_el})
             .setType(el::OptionType::Text)
             .setRequired()
-            .setHelpDescription("Name of the laboratory instrument."_el);
+            .setHelpTitle("Name of the laboratory instrument."_el);
         instrumentSet->setPostParsingFn([](const el::OptionValuesPtr &values) -> void {
             appSettings.quiet = values->getFlag("quiet"_el);
             appSettings.instrument = values->getText("instrument"_el);
@@ -64,11 +63,11 @@ After parsing, each component can read the values it owns in its own post-parsin
         reportSet->addOption({"-t"_el, "--title"_el, "title"_el})
             .setType(el::OptionType::Text)
             .setDefaultValue("Calibration report"_el)
-            .setHelpDescription("Title of the generated report."_el);
+            .setHelpTitle("Title of the generated report."_el);
         reportSet->addOption({"-s"_el, "--samples"_el, "samples"_el})
             .setType(el::OptionType::Integer)
             .setDefaultValue(el::OptionInteger{4})
-            .setHelpDescription("Number of samples to include."_el);
+            .setHelpTitle("Number of samples to include."_el);
         reportSet->setPostParsingFn([](const el::OptionValuesPtr &values) -> void {
             appSettings.reportTitle = values->getText("title"_el);
             appSettings.sampleCount = values->getInteger("samples"_el);
@@ -88,8 +87,9 @@ After parsing, each component can read the values it owns in its own post-parsin
         options->addSet(createReportSet());
 
         auto manager = el::OptionManager{options};
-        const auto values = manager.parseOrThrow(
-            makeArgs({"instrumentos"_el, "--instrument"_el, "Interferómetro Norte"_el, "--title"_el, "Prueba matinal"_el}));
+        auto arguments =
+            makeArgs({"instrumentos"_el, "--instrument"_el, "Interferómetro Norte"_el, "--title"_el, "Prueba matinal"_el});
+        const auto values = manager.parseOrThrow(arguments);
         if (values == nullptr) {
             return el::ExitCode::success();
         }
@@ -101,18 +101,20 @@ After parsing, each component can read the values it owns in its own post-parsin
         return el::ExitCode::success();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    instrument: Interferómetro Norte
-    title: Prueba matinal
-    samples: 4
-    quiet: no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0minstrument: Interferómetro Norte
+        title: Prueba matinal
+        samples: 4
+        quiet: no␛[0m
 
 .. erbsland-demo-end::
 
-Set Help Becomes Help Groups
-============================
+Option-Set Help Groups and Metadata
+===================================
 
 Set help metadata gives generated help a logical structure.
 The set title becomes the option group title.
@@ -127,7 +129,7 @@ Set visibility is inherited by options whose own visibility is ``Inherit``.
     :source: option/OptionSetCallbacks/main.cpp
     :exec: option/option_set_callbacks --help
     :exec-2: option/option_set_callbacks
-    :source-sha256: 651c24178ff1eea60a185c499ec5e0423a581e60ad6c969087eedbd4d46a48f8
+    :sha256: 4e65863bc586664878249ed9953e92f265c005ed56588ad41f7731496a45e2e7
 
 .. code-block:: cpp
 
@@ -143,10 +145,10 @@ Set visibility is inherited by options whose own visibility is ``Inherit``.
         set->addOption({"-g"_el, "--area"_el, "area"_el})
             .setType(el::OptionType::Text)
             .setRequired()
-            .setHelpDescription("Name of the observation area."_el);
+            .setHelpTitle("Name of the observation area."_el);
         set->addOption({"-i"_el, "--interval"_el, "interval"_el})
             .setType(el::OptionType::Integer)
-            .setHelpDescription("Minutes between two observations."_el);
+            .setHelpTitle("Minutes between two observations."_el);
         set->setPreParsingFn([](const el::OptionSetPtr &optionSet) -> void {
             optionSet->editOption("interval"_el).setDefaultValue(el::OptionInteger{15});
         });
@@ -164,8 +166,8 @@ Set visibility is inherited by options whose own visibility is ``Inherit``.
         set->addOption({"-n"_el, "--note"_el, "note"_el})
             .setType(el::OptionType::Text)
             .setDefaultValue("no observations"_el)
-            .setHelpDescription("Short text for the field report."_el);
-        set->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpDescription("Suppresses progress lines."_el);
+            .setHelpTitle("Short text for the field report."_el);
+        set->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpTitle("Suppresses progress lines."_el);
         set->setPostParsingFn([](const el::OptionValuesPtr &values) -> void {
             settings.notitie = values->getText("note"_el);
             settings.stil = values->getFlag("quiet"_el);
@@ -177,8 +179,7 @@ Set visibility is inherited by options whose own visibility is ``Inherit``.
         auto set = el::OptionSet::create();
         set->setHelpTitle("Legacy"_el);
         set->setFlags(el::OptionFlag::Disabled);
-        set->addOption({"--old-route"_el, "old-route"_el})
-            .setHelpDescription("Deprecated option that is no longer accepted."_el);
+        set->addOption({"--old-route"_el, "old-route"_el}).setHelpTitle("Deprecated option that is no longer accepted."_el);
         return set;
     }
 
@@ -188,9 +189,7 @@ Set visibility is inherited by options whose own visibility is ``Inherit``.
         options->addSet(createObservationSet());
         options->addSet(createReportSet());
         options->addSet(createLegacySet());
-        options->addOption("round"_el)
-            .setRequired()
-            .setHelpDescription("Name of the planned night round."_el);
+        options->addOption("round"_el).setRequired().setHelpTitle("Name of the planned night round."_el);
     }
 
     void printSettings() {
@@ -210,9 +209,7 @@ Set visibility is inherited by options whose own visibility is ``Inherit``.
             info().setApplicationName("Night Logbook"_el);
             info().setApplicationVersion(el::Version{0, 8, 0});
         }
-        void registerCommandLineOptions(const el::OptionsPtr &options) override {
-            configureOptions(options);
-        }
+        void registerCommandLineOptions(const el::OptionsPtr &options) override { configureOptions(options); }
         [[nodiscard]] auto main() -> el::ExitCode override {
             printSettings();
             return el::ExitCode::success();
@@ -229,13 +226,9 @@ Set visibility is inherited by options whose own visibility is ``Inherit``.
         configureOptions(options);
 
         auto manager = el::OptionManager{options};
-        const auto values = manager.parseOrThrow(
-            makeArgs({"night-logbook"_el,
-                "--area"_el,
-                "duinrand"_el,
-                "--note"_el,
-                "vleermuizen actief"_el,
-                "round-a"_el}));
+        auto arguments =
+            makeArgs({"night-logbook"_el, "--area"_el, "duinrand"_el, "--note"_el, "vleermuizen actief"_el, "round-a"_el});
+        const auto values = manager.parseOrThrow(arguments);
         if (values == nullptr) {
             return el::ExitCode::success();
         }
@@ -244,38 +237,48 @@ Set visibility is inherited by options whose own visibility is ``Inherit``.
         return el::ExitCode::success();
     }
 
-.. rubric:: ``$ option/option_set_callbacks --help``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    Combines options from several parts of an observation app.
+        $ option/option_set_callbacks --help
 
-    ␛[1mUsage:
-      ␛[22;92moption_set_callbacks␛[39m ␛[90m[␛[96moptions␛[90m]␛[39m ␛[90m<␛[95mround␛[90m>
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[39;1mOptions:
-      ␛[22;93m-h␛[39m, ␛[96m--help␛[39m     Display this help.
-          ␛[96m--version␛[39m  Display version information.
+        ␛[0mCombines options from several parts of an observation app.
 
-    ␛[1mObservation:
-      ␛[22;93m-g␛[39m, ␛[96m--area␛[39m ␛[90m<␛[92mvalue␛[90m>␛[39m        Name of the observation area.
-      ␛[93m-i␛[39m, ␛[96m--interval␛[39m ␛[90m<␛[92minteger␛[90m>␛[39m  Minutes between two observations.
-          ␛[90m<␛[95mround␛[90m>␛[39m               Name of the planned night round.
+        ␛[1mUsage:
+          ␛[92;49m␛[22moption_set_callbacks␛[39;49m ␛[90;49m[␛[96;49moptions␛[90;49m]␛[39;49m ␛[90;49m<␛[95;49mround␛[90;49m>
 
-    ␛[1mReport:
-      ␛[22;93m-n␛[39m, ␛[96m--note␛[39m ␛[90m<␛[92mvalue␛[90m>␛[39m  Short text for the field report.
-      ␛[93m-q␛[39m, ␛[96m--quiet␛[39m         Suppresses progress lines.
+        ␛[39;49m␛[1mOptions:
+          ␛[93;49m␛[22m-h␛[39;49m, ␛[96;49m--help␛[39;49m[=␛[90;49m<␛[92;49mkeyword␛[90;49m>␛[39;49m]  Display this help.
+              ␛[96;49m--version␛[39;49m           Display version information.
 
-.. rubric:: ``$ option/option_set_callbacks``
+        ␛[1mObservation:
+        ␛[22mValues the field team needs to plan a night round.
+          ␛[93;49m-g␛[39;49m, ␛[96;49m--area␛[39;49m ␛[90;49m<␛[92;49mvalue␛[90;49m>␛[39;49m        Name of the observation area.
+          ␛[93;49m-i␛[39;49m, ␛[96;49m--interval␛[39;49m ␛[90;49m<␛[92;49minteger␛[90;49m>␛[39;49m  Minutes between two observations.
+              ␛[90;49m<␛[95;49mround␛[90;49m>␛[39;49m               Name of the planned night round.
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[1mReport:
+        ␛[22mValues used only by the reporting component.
+          ␛[93;49m-n␛[39;49m, ␛[96;49m--note␛[39;49m ␛[90;49m<␛[92;49mvalue␛[90;49m>␛[39;49m  Short text for the field report.
+          ␛[93;49m-q␛[39;49m, ␛[96;49m--quiet␛[39;49m         Suppresses progress lines.␛[0m
 
-    area: duinrand
-    interval: 15
-    note: vleermuizen actief
-    quiet: no
+.. erbsland-demo-run::
+
+    .. code-block:: console
+
+        $ option/option_set_callbacks
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0marea: duinrand
+        interval: 15
+        note: vleermuizen actief
+        quiet: no␛[0m
 
 .. erbsland-demo-end::
 

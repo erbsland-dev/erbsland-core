@@ -37,6 +37,7 @@ public:
     DeflateDecoder(CodecReader &input, const DecompressionOptions &options, CodecOutput::Write output);
 
     /// Decode and validate the complete payload.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     void decode();
 
 private:

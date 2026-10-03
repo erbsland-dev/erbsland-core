@@ -6,22 +6,23 @@
 
 namespace erbsland::conf::vr::builder {
 
+using namespace text;
 using namespace text::literals;
 
-auto ConstraintOptions::prefixedConstraintName(const text::String &constraintName) const -> text::String {
+auto ConstraintOptions::prefixedConstraintName(const String &constraintName) const -> String {
     return withNotPrefix(constraintName, isNegated);
 }
 
 void ConstraintOptions::addToRule(
-    RuleDefinition &rule, const vr::ConstraintPtr &constraint, const text::String &constraintName) const {
+    RuleDefinition &rule, const vr::ConstraintPtr &constraint, const String &constraintName) const {
     rule.addConstraint(constraint, constraintName, isNegated, errorMessage);
 }
 
-auto ConstraintOptions::withNotPrefix(const text::String &name, const bool isNegated) -> text::String {
+auto ConstraintOptions::withNotPrefix(const String &name, const bool isNegated) -> String {
     if (!isNegated) {
         return name;
     }
-    text::StringEditor result{"not_"_el};
+    StringEditor result{"not_"_el};
     result.append(name);
     return result;
 }

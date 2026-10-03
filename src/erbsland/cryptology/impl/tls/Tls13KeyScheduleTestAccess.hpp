@@ -4,7 +4,7 @@
 
 #include "Tls13KeySchedule.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../text/Literals.hpp"
 

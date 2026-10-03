@@ -3,7 +3,10 @@
 #pragma once
 
 #include <DemoCommon.hpp>
-#include <erbsland/debug/StringDebug.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringDebug.hpp>
 
 namespace demo {
 
@@ -11,8 +14,8 @@ namespace demo {
 inline void printMemoryAndRangeInfo(const el::String &text) {
     constexpr auto cDebugDetails =
         el::DebugViewDetail::BackingStore | el::DebugViewDetail::UnderlyingType | el::DebugViewDetail::Range;
-    constexpr auto cDebugIndentWidth = el::CpLength{4U};
-    constexpr auto cDebugInitialIndentWidth = el::CpLength{8U};
+    constexpr auto cDebugIndentWidth = el::CpCount{4U};
+    constexpr auto cDebugInitialIndentWidth = el::CpCount{8U};
     el::io::printLine(el::toDebugString(text, cDebugDetails, cDebugIndentWidth, cDebugInitialIndentWidth));
 }
 

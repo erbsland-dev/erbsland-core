@@ -6,6 +6,9 @@
 
 #include "../ProfileTypes.hpp"
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/FastRandom.hpp>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -51,6 +54,11 @@ public:
             }
         }
         return std::max<std::uint64_t>(1U, std::min(result, remaining));
+    }
+
+    /// Get the next byte transfer length, limited by the remaining data.
+    [[nodiscard]] auto next(const el::ByteCount remaining) -> el::ByteCount {
+        return std::max(el::ByteCount::one(), std::min(el::ByteCount::fromInteger(next()), remaining));
     }
 
 private:

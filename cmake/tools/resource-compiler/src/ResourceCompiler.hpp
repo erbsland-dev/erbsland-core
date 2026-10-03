@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/path/Path.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
 #include <erbsland/text/AnyStringBuilder_fwd.hpp>
-#include <erbsland/text/String.hpp>
 
 namespace erbsland::resource::compiler {
 
@@ -44,7 +44,7 @@ private:
     [[nodiscard]] auto createDescriptorSource(const mem::ByteBlock &infoBlock) const -> text::String;
     /// Create the versioned metadata block kept separate from the resource data.
     [[nodiscard]] auto createInfoBlock(
-        unit::ByteLength originalSize, unit::ByteLength storedSize, bool compressed, const mem::ByteBlock &hash) const
+        unit::ByteCount originalSize, unit::ByteCount storedSize, bool compressed, const mem::ByteBlock &hash) const
         -> mem::ByteBlock;
     /// Append a sequence of C++ byte initializers.
     static void appendByteInitializers(text::AnyStringBuilder &output, const mem::ByteBlock &bytes, bool addSentinel);

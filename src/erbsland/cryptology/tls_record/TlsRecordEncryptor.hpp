@@ -10,7 +10,7 @@
 
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/ByteSpan.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <memory>
 
@@ -28,7 +28,8 @@ public:
     /// Create an empty record-encryptor placeholder.
     TlsRecordEncryptor() noexcept;
     /// Create RFC 8446 Sections 5.3 and 7.3 sending state by consuming a matching traffic secret.
-    /// @throws err::ParameterError If the traffic secret does not match the suite hash.
+    /// @param trafficSecret The traffic secret to consume. Its hash algorithm must match the cipher suite.
+    /// @param suite The selected TLS cipher suite.
     /// @throws CryptologyError If key derivation or protected storage fails.
     TlsRecordEncryptor(TlsCipherSuite suite, TlsTrafficSecret &&trafficSecret);
     /// Securely erase record-protection state.
@@ -43,17 +44,15 @@ public:
 
 public:
     /// Protect one complete TLS 1.3 record under RFC 8446 Sections 5.2--5.5.
-    /// @param type The authenticated inner content type.
-    /// @param content The exact content bytes, at most 2^14 bytes.
-    /// @param paddingLength The explicit number of zero padding octets.
+    /// @param type The authenticated inner content type. Must be Alert, Handshake, or ApplicationData.
+    /// @param content The exact content bytes. Must contain at most 16,384 bytes; only ApplicationData may be empty.
+    /// @param paddingLength The number of zero padding octets. Content plus padding must contain at most 16,384 bytes.
     /// @return A complete TLSCiphertext header and encrypted body.
-    /// @throws err::ParameterError If type or plaintext bounds are invalid.
     /// @throws TlsRecordError If key usage is exhausted.
     /// @throws CryptologyError If encryption fails.
     [[nodiscard]] auto protect(
-        TlsRecordContentType type,
-        mem::ConstByteSpan content,
-        unit::ByteLength paddingLength = unit::ByteLength::zero()) -> mem::ByteBlock;
+        TlsRecordContentType type, mem::ConstByteSpan content, unit::ByteCount paddingLength = unit::ByteCount::zero())
+        -> mem::ByteBlock;
     /// Derive and install the next application traffic-secret generation under RFC 8446 Sections 4.6.3 and 7.2.
     /// The caller must invoke this only at the RFC 8446 section 4.6.3 protocol transition.
     void updateApplicationTrafficKeys();
@@ -68,7 +67,7 @@ public: // tests
 
 public: // accessors
     /// Get the configured cipher suite.
-    /// @throws err::LogicError If this encryptor is empty.
+    /// This encryptor must not be empty.
     [[nodiscard]] auto suite() const -> TlsCipherSuite;
 
 private:

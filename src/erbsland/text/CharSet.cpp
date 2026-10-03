@@ -23,10 +23,6 @@
 
 namespace erbsland::text {
 
-CharSet::CharSet(const Char character) {
-    add(character);
-}
-
 CharSet::CharSet(const U8String &characters) {
     const auto capacityHint = characters.length().toSizeT();
     characters.forEach([this, capacityHint](const Char character) -> util::LoopStatus {
@@ -50,12 +46,6 @@ CharSet::CharSet(const util::List<Char> &characters) {
     }
 }
 
-CharSet::CharSet(const std::initializer_list<Char> characters) {
-    for (const auto character : characters) {
-        addWithCapacity(CharRange{character}, characters.size());
-    }
-}
-
 CharSet::~CharSet() = default;
 
 CharSet::CharSet(const CharSet &) noexcept = default;
@@ -70,6 +60,14 @@ auto CharSet::operator=(CharSet &&other) noexcept -> CharSet & {
         _storage = other._storage;
     }
     return *this;
+}
+
+auto CharSet::fromCharacters(const std::initializer_list<Char> characters) -> CharSet {
+    auto result = CharSet{};
+    for (const auto character : characters) {
+        result.addWithCapacity(CharRange{character}, characters.size());
+    }
+    return result;
 }
 
 auto CharSet::operator==(const CharSet &other) const noexcept -> bool {

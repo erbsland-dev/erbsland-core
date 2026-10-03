@@ -107,8 +107,8 @@ At the tag, ``v1.4.0`` yields ``1.4.0``.
 Later commits append the commit distance and abbreviated hash, such as ``1.4.0-3-a1b2c3d``.
 Git must be available to CMake, and the source checkout needs a matching reachable tag.
 
-Shape the Archive
-=================
+Archive Root Directory, Filename, and Runtime Contents
+======================================================
 
 Root Directory: ``target_dir``
 ------------------------------
@@ -363,8 +363,8 @@ For a single-target package, the target section can also set ``version_source``,
 For a package with several targets, define those three shared values in ``[main]``, a platform section, or a package
 section; the target sections customize each executable's staging.
 
-Keep Secrets Out of the File
-============================
+Signing Credentials from Environment Placeholders
+=================================================
 
 ELCL environment placeholders let a shared file refer to values supplied by a release environment:
 

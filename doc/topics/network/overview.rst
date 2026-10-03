@@ -29,11 +29,11 @@ respond to output back-pressure and oversized input, and choose graceful or imme
 :doc:`using-tcp-connections` explains outgoing resolution, listeners and admission filters, transferable accepted
 sockets, stream back-pressure, and normal or immediate shutdown.
 
-:doc:`using-tls-client-connections` explains authenticated outgoing TLS connections, configuration snapshots,
-checkpoints, back-pressure, deadlines, and ``close_notify``.
+:doc:`using-tls-client-connections` explains how to authenticate a server, exchange protected application data, handle
+back-pressure, and finish an outgoing connection on its owning event loop.
 
-:doc:`using-tls-server-connections` explains shared accepted-connection and handshake quotas, default and exact-SNI
-identities, ClientHello inspection, authenticated stream flow, and graceful shutdown.
+:doc:`using-tls-server-connections` explains how to accept and retain TLS sessions, select identities with SNI,
+authenticate clients, bound concurrent work, and shut down a service cleanly.
 
 HTTP Servers
 ============

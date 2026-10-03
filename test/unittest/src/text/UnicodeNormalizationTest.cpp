@@ -1,16 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/NormalizationForm.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/text/impl/StringTraits.hpp>
-#include <erbsland/text/NormalizationForm.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
+#include <erbsland/U8String.hpp>
+#include <erbsland/U8StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -31,8 +31,8 @@ static_assert(
 static_assert(std::same_as<el::text::impl::SharedStorageFor<U32StringEditor>, el::text::impl::U32StringSharedStorage>);
 static_assert(std::same_as<el::text::impl::StringIndexTypeFor<const U8String &>, el::unit::ByteIndex>);
 static_assert(std::same_as<el::text::impl::StringIndexTypeFor<U8StringEditor>, el::unit::ByteIndex>);
-static_assert(std::same_as<el::text::impl::StringIndexTypeFor<const U16String &>, el::unit::U16DataIndex>);
-static_assert(std::same_as<el::text::impl::StringIndexTypeFor<U16StringEditor>, el::unit::U16DataIndex>);
+static_assert(std::same_as<el::text::impl::StringIndexTypeFor<const U16String &>, el::unit::U16Index>);
+static_assert(std::same_as<el::text::impl::StringIndexTypeFor<U16StringEditor>, el::unit::U16Index>);
 static_assert(std::same_as<el::text::impl::StringIndexTypeFor<const U32String &>, el::unit::CpIndex>);
 static_assert(std::same_as<el::text::impl::StringIndexTypeFor<U32StringEditor>, el::unit::CpIndex>);
 
@@ -108,9 +108,9 @@ public:
         auto u8 = U8StringEditor{"Already normalized"};
         auto u16 = U16StringEditor{u"Already normalized"};
         auto u32 = U32StringEditor{U"Already normalized"};
-        u8.reserve(el::unit::ByteLength{100});
-        u16.reserve(el::unit::U16DataLength{100});
-        u32.reserve(el::unit::CpLength{100});
+        u8.reserve(el::unit::ByteCount{100});
+        u16.reserve(el::unit::U16Count{100});
+        u32.reserve(el::unit::CpCount{100});
         const auto u8Id = u8.storageId();
         const auto u16Id = u16.storageId();
         const auto u32Id = u32.storageId();
@@ -187,9 +187,9 @@ public:
         invalidU8Editor.normalize(NormalizationForm::Nfc);
         invalidU16Editor.normalize(NormalizationForm::Nfc);
         invalidU32Editor.normalize(NormalizationForm::Nfc);
-        REQUIRE(invalidU8Editor.isValidUtf8());
-        REQUIRE(invalidU16Editor.isValidUtf16());
-        REQUIRE(invalidU32Editor.isValidUtf32());
+        REQUIRE(invalidU8Editor.isEncodingValid());
+        REQUIRE(invalidU16Editor.isEncodingValid());
+        REQUIRE(invalidU32Editor.isEncodingValid());
         REQUIRE_EQUAL(StringConverter{invalidU8Editor}.toU32String(), expected[1]);
         REQUIRE_EQUAL(StringConverter{invalidU16Editor}.toU32String(), expected[1]);
         REQUIRE_EQUAL(U32String{invalidU32Editor}, expected[1]);
@@ -221,10 +221,10 @@ public:
 
     void testCombiningMarkLimit() {
         auto thirtyMarks = U32StringEditor{U"A"};
-        thirtyMarks.append(Char{U'\u0301'}, el::unit::CpLength{30});
+        thirtyMarks.append(Char{U'\u0301'}, el::unit::CpCount{30});
         const auto accepted = U32String{thirtyMarks};
         auto acceptedComposed = U32StringEditor{U"\u00C1"};
-        acceptedComposed.append(Char{U'\u0301'}, el::unit::CpLength{29});
+        acceptedComposed.append(Char{U'\u0301'}, el::unit::CpCount{29});
         WITH_CONTEXT(requireAllWidths(accepted, NormalizationForm::Nfd, accepted));
         WITH_CONTEXT(requireAllWidths(accepted, NormalizationForm::Nfkd, accepted));
         WITH_CONTEXT(requireAllWidths(accepted, NormalizationForm::Nfc, U32String{acceptedComposed}));
@@ -239,21 +239,21 @@ public:
         }
 
         auto leadingMarks = U32StringEditor{};
-        leadingMarks.append(Char{U'\u0301'}, el::unit::CpLength{31});
+        leadingMarks.append(Char{U'\u0301'}, el::unit::CpCount{31});
         WITH_CONTEXT(requireAllWidths(U32String{leadingMarks}, NormalizationForm::Nfd, U32String{U"\uFFFD"}));
 
         thirtyOneMarks.append(Char{U'B'});
         WITH_CONTEXT(requireAllWidths(U32String{thirtyOneMarks}, NormalizationForm::Nfd, U32String{U"\uFFFDB"}));
 
         auto excessiveMarks = U32StringEditor{U"A"};
-        excessiveMarks.append(Char{U'\u0301'}, el::unit::CpLength{1000});
+        excessiveMarks.append(Char{U'\u0301'}, el::unit::CpCount{1000});
         excessiveMarks.append(Char{U'B'});
         WITH_CONTEXT(requireAllWidths(U32String{excessiveMarks}, NormalizationForm::Nfd, U32String{U"\uFFFDB"}));
     }
 
     void testCombiningMarkLimitCountsDecomposition() {
         auto source = U32StringEditor{U"A"};
-        source.append(Char{U'\u0301'}, el::unit::CpLength{29});
+        source.append(Char{U'\u0301'}, el::unit::CpCount{29});
         source.append(Char{U'\u0344'}); // Decomposes into two non-starters.
 
         WITH_CONTEXT(requireAllWidths(U32String{source}, NormalizationForm::Nfd, U32String{U"\uFFFD"}));
@@ -262,14 +262,14 @@ public:
 
     void testRawCopyAroundChangedWindow() {
         auto source = U32StringEditor{};
-        source.append(Char{U'A'}, el::unit::CpLength{4096});
+        source.append(Char{U'A'}, el::unit::CpCount{4096});
         source.append(Char{U'\uFB03'});
-        source.append(Char{U'Z'}, el::unit::CpLength{4096});
+        source.append(Char{U'Z'}, el::unit::CpCount{4096});
 
         auto expected = U32StringEditor{};
-        expected.append(Char{U'A'}, el::unit::CpLength{4096});
+        expected.append(Char{U'A'}, el::unit::CpCount{4096});
         expected.append(U32String{U"ffi"});
-        expected.append(Char{U'Z'}, el::unit::CpLength{4096});
+        expected.append(Char{U'Z'}, el::unit::CpCount{4096});
         WITH_CONTEXT(requireAllWidths(U32String{source}, NormalizationForm::Nfkc, U32String{expected}));
     }
 };

@@ -2,10 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/all_conf_vr.hpp>
+#include <erbsland/all_conf_vr_builder.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/vr/RulesBuilder.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
+
+using namespace el::text::literals;
 
 /// Build validation rules directly in C++.
 ///
@@ -18,10 +23,11 @@ void compiledRules(const el::Path &configurationPath) {
 
     auto builder = el::conf::vr::RulesBuilder{};
     builder.addRule("patch"_el, RuleType::Section);
-    builder.addRule("patch.name"_el, RuleType::Text);
-    builder.addRule("patch.voices"_el, RuleType::Integer, Minimum(1), Maximum(32));
-    builder.addRule("patch.oscillator"_el, RuleType::Section);
-    builder.addRule("patch.oscillator.waveform"_el, RuleType::Text);
+    auto patch = builder.createBranch("patch"_el);
+    patch.addRule("name"_el, RuleType::Text);
+    patch.addRule("voices"_el, RuleType::Integer, Minimum(1), Maximum(32));
+    patch.addRule("oscillator"_el, RuleType::Section);
+    patch.addRule("oscillator.waveform"_el, RuleType::Text);
     const auto rules = builder.takeRules();
 
     const auto document = el::conf::Parser{}.parseFileOrThrow(configurationPath);

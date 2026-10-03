@@ -1,18 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/network/http_client/HttpClientSession.hpp>
-#include <erbsland/network/http_client/HttpClientSessionOptions.hpp>
-#include <erbsland/network/http_client/HttpClientTlsOptions.hpp>
-#include <erbsland/network/http_server/HttpServer.hpp>
-#include <erbsland/network/http_server/HttpServerRouteOptions.hpp>
-#include <erbsland/network/http_server/HttpServerTlsOptions.hpp>
-#include <erbsland/network/Network.hpp>
-#include <erbsland/network/tcp/TcpConnection.hpp>
-#include <erbsland/network/tcp/TcpListener.hpp>
-#include <erbsland/network/tls/TlsClientConnection.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/HttpClientSession.hpp>
+#include <erbsland/HttpClientSessionOptions.hpp>
+#include <erbsland/HttpClientTlsOptions.hpp>
+#include <erbsland/HttpServer.hpp>
+#include <erbsland/HttpServerRouteOptions.hpp>
+#include <erbsland/HttpServerTlsOptions.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/TcpConnection.hpp>
+#include <erbsland/TcpListener.hpp>
+#include <erbsland/TlsClientConnection.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::event;
@@ -25,13 +25,13 @@ class NetworkFacadeTest final : public el::UnitTest {
 public:
     void testHttpServerConvenienceOptionDefaults() {
         const auto tls = HttpServerTlsOptions{};
-        REQUIRE_EQUAL(tls.configurationLabel(), "http/server"_el);
+        REQUIRE_EQUAL(tls.configurationLabel(), "http"_el);
         REQUIRE_EQUAL(tls.maximumConcurrentHandshakes(), el::unit::ItemCount{128U});
         REQUIRE_EQUAL(tls.handshakeTimeout(), el::time::TimeDelta::seconds(30));
-        REQUIRE(tls.identityMappings().empty());
+        REQUIRE(tls.configurationMappings().empty());
 
         const auto route = HttpServerRouteOptions{};
-        REQUIRE_EQUAL(route.maximumBodyLength(), el::unit::ByteLength{1024U * 1024U});
+        REQUIRE_EQUAL(route.maximumBodyLength(), el::unit::ByteCount{1024U * 1024U});
         REQUIRE_FALSE(route.acceptedContentTypes().has_value());
     }
 
@@ -39,14 +39,14 @@ public:
         const auto options = HttpClientSessionOptions{};
         REQUIRE_EQUAL(options.maximumConcurrentRequests(), el::unit::ItemCount{8U});
         REQUIRE_EQUAL(options.maximumPendingRequests(), el::unit::ItemCount{256U});
-        REQUIRE_EQUAL(options.maximumRetainedRequestBodyLength(), el::unit::ByteLength{64U * 1024U * 1024U});
+        REQUIRE_EQUAL(options.maximumRetainedRequestBodyLength(), el::unit::ByteCount{64U * 1024U * 1024U});
         REQUIRE_EQUAL(options.dnsTimeout(), el::time::TimeDelta::seconds(10));
         REQUIRE_EQUAL(options.connectTimeout(), el::time::TimeDelta::seconds(30));
         REQUIRE_EQUAL(options.headerTimeout(), el::time::TimeDelta::seconds(30));
         REQUIRE_EQUAL(options.bodyIdleTimeout(), el::time::TimeDelta::minutes(5));
         REQUIRE_EQUAL(options.overallTimeout(), el::time::TimeDelta::minutes(30));
         REQUIRE_EQUAL(options.closeTimeout(), el::time::TimeDelta::seconds(10));
-        REQUIRE_EQUAL(HttpClientTlsOptions{}.configurationLabel(), "http/client"_el);
+        REQUIRE_EQUAL(HttpClientTlsOptions{}.configurationLabel(), "http"_el);
     }
 
     void testDefaultBackendCreatesInactiveSourcesOnOwnerLoop() {

@@ -22,10 +22,8 @@ public: // implement Diagnostic
     [[nodiscard]] auto location() const noexcept -> unit::CodeLocation override;
     [[nodiscard]] auto toString() const noexcept -> text::String override;
     /// Convert this diagnostic into localized structured text.
-    /// @param displayText The optional map of localized display texts.
     /// @return The structured diagnostic text.
-    [[nodiscard]] auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText = {}) const
-        -> text::TextDocument override;
+    [[nodiscard]] auto toTextDocument() const -> text::TextDocument override;
 
 private:
     ConfErrorContext _context;

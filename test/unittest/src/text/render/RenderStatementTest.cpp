@@ -3,9 +3,9 @@
 
 #include "MemoryLayoutLoader.hpp"
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Environment.hpp>
-#include <erbsland/text/render/RenderError.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/render/RenderError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;
@@ -13,6 +13,10 @@ using namespace el::text::render;
 
 TESTED_TARGETS(Compiler Engine)
 class RenderStatementTest final : public el::UnitTest {
+private:
+    static constexpr auto cPageLayout = "page"_el;
+    static constexpr auto cValueKey = "value"_el;
+
 public:
     void testIfElifElseAndNesting() {
         REQUIRE_EQUAL(render("{% if true %}yes{% else %}no{% endif %}"_el), "yes"_el);
@@ -24,16 +28,16 @@ public:
     void testSetScopeAndPrecedence() {
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
         loader->set(
-            "page"_el,
+            cPageLayout,
             "{{ value }}|{% set value = \"render\" %}{{ value }}|"
             "{% if true %}{% set branch = 7 %}{% endif %}{{ branch }}"_el);
         const auto environment = Environment::create();
         environment->addLayoutLoader(loader);
-        environment->setGlobalContext(Context{}.set("value"_el, "global"_el));
-        const auto local = Context{}.set("value"_el, "local"_el);
+        environment->setGlobalContext(Context{}.set(cValueKey, "global"_el));
+        const auto local = Context{}.set(cValueKey, "local"_el);
 
-        REQUIRE_EQUAL(environment->render("page"_el, local), "render|render|7"_el);
-        REQUIRE_EQUAL(local.get("value"_el).asText(), "local"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout, local), "render|render|7"_el);
+        REQUIRE_EQUAL(local.get(cValueKey).asText(), "local"_el);
         REQUIRE_FALSE(local.contains("branch"_el));
     }
 
@@ -75,9 +79,9 @@ public:
 private:
     [[nodiscard]] static auto render(const el::text::String &text, const Context &context = {}) -> el::text::String {
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, text);
+        loader->set(cPageLayout, text);
         const auto environment = Environment::create();
         environment->addLayoutLoader(loader);
-        return environment->render("page"_el, context);
+        return environment->render(cPageLayout, context);
     }
 };

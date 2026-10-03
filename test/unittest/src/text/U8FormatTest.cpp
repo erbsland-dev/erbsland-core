@@ -1,16 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/AnyStringBuilder.hpp>
-#include <erbsland/text/FormatError.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8Format.hpp>
+#include <erbsland/AnyStringBuilder.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/FormatError.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32StringEditor.hpp>
+#include <erbsland/U8Format.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -163,21 +165,63 @@ public:
     }
 
     void testNamedNumberFormatting() {
-        const auto integer = U8Format{"{:number:base=hexadecimal,alternate,letter-case=uppercase,width=8,zero-fill}"};
+        const auto integer = U8Format{"{:number:base=hexadecimal,base-prefix,letter-case=uppercase,width=8,zero-fill}"};
         REQUIRE_EQUAL(StringConverter{integer.build(42)}.toStdString(), std::string{"0X00002A"});
 
-        const auto aliases = U8Format{"{:NUMBER:bs=b,pr8}"};
+        const auto aliases = U8Format{"{:NUMBER:b=b,pr8}"};
         REQUIRE_EQUAL(StringConverter{aliases.build(5)}.toStdString(), std::string{"00000101"});
 
         const auto floating = U8Format{"{:number:notation=fixed,precision=2,sign=always}"};
         REQUIRE_EQUAL(StringConverter{floating.build(12.345)}.toStdString(), std::string{"+12.35"});
     }
 
+    void testNamedBaseShortcuts() {
+        for (const auto &name : StringList{"hex"_el, "hexadecimal"_el, "HEX"_el}) {
+            REQUIRE_EQUAL(U8Format{el::join("{:number:"_el, name, "}"_el)}.build(42), "2a"_el);
+            REQUIRE_EQUAL(U8Format{el::join("{:number:base="_el, name, "}"_el)}.build(42), "2a"_el);
+        }
+        for (const auto &name : StringList{"dec"_el, "decimal"_el}) {
+            REQUIRE_EQUAL(U8Format{el::join("{:number:"_el, name, "}"_el)}.build(42), "42"_el);
+            REQUIRE_EQUAL(U8Format{el::join("{:number:b="_el, name, "}"_el)}.build(42), "42"_el);
+        }
+        for (const auto &name : StringList{"oct"_el, "octal"_el}) {
+            REQUIRE_EQUAL(U8Format{el::join("{:number:"_el, name, "}"_el)}.build(42), "52"_el);
+            REQUIRE_EQUAL(U8Format{el::join("{:number:base="_el, name, "}"_el)}.build(42), "52"_el);
+        }
+        for (const auto &name : StringList{"bin"_el, "binary"_el}) {
+            REQUIRE_EQUAL(U8Format{el::join("{:number:"_el, name, "}"_el)}.build(5), "101"_el);
+            REQUIRE_EQUAL(U8Format{el::join("{:number:base="_el, name, "}"_el)}.build(5), "101"_el);
+        }
+        REQUIRE_EQUAL(U8Format{"{:number:hex,bp}"}.build(-42), "-0x2a"_el);
+        REQUIRE_EQUAL(U8Format{"{:number:oct,base-prefix}"}.build(42), "0o52"_el);
+        REQUIRE_EQUAL(U8Format{"{:number:bin,bp}"}.build(5), "0b101"_el);
+        REQUIRE_EQUAL(U8Format{"{:number:dec,bp}"}.build(42), "42"_el);
+        REQUIRE_THROWS(U8Format{"{:number:hex}"}.build(1.5));
+        REQUIRE_THROWS(U8Format{"{:number:hex,hexadecimal}"});
+        REQUIRE_THROWS(U8Format{"{:number:hex,dec}"});
+        REQUIRE_THROWS(U8Format{"{:number:hex,base=hex}"});
+        REQUIRE_THROWS(U8Format{"{:number:base=hex,hex}"});
+        REQUIRE_THROWS(U8Format{"{:number:hex=true}"});
+        REQUIRE_THROWS(U8Format{"{:number:b}"});
+        REQUIRE_THROWS(U8Format{"{:number:base}"});
+        REQUIRE_THROWS(U8Format{"{:number:bp,base-prefix}"});
+        REQUIRE_THROWS(U8Format{"{:number:hex,notation=fixed}"});
+        REQUIRE_THROWS(U8Format{"{:text:hex}"});
+        REQUIRE_THROWS(U8Format{"{:number:bs=x}"});
+        REQUIRE_THROWS(U8Format{"{:number:alternate}"});
+    }
+
     void testNamedBooleanFormatting() {
         const auto format = U8Format{"{:bool:style=yes,capitalization=uppercase,width=5,alignment=right,fill=·}"};
 
         REQUIRE_EQUAL(StringConverter{format.build(true)}.toStdString(), std::string{"··YES"});
-        REQUIRE_EQUAL(StringConverter{U8Format{"{:bool:sty=o,cap=t}"}.build(false)}.toStdString(), std::string{"Off"});
+        REQUIRE_EQUAL(StringConverter{U8Format{"{:bool:sty=o,cap=c}"}.build(false)}.toStdString(), std::string{"Off"});
+    }
+
+    void testNamedCapitalizedSpelling() {
+        REQUIRE_EQUAL(U8Format{"{:bool:style=yes,capitalization=capitalized}"_el}.build(true), "Yes"_el);
+        REQUIRE_THROWS(U8Format{"{:bool:cap=titlecase}"_el});
+        REQUIRE_THROWS(U8Format{"{:bool:cap=t}"_el});
     }
 
     void testNamedByteFormatting() {
@@ -219,7 +263,7 @@ public:
         REQUIRE_THROWS(U8Format{"{:text:escape-amount=balanced}"});
         REQUIRE_THROWS(U8Format{"{:number:base=decimal,notation=fixed}"});
         REQUIRE_THROWS(U8Format{"{:number:zero-fill,fill=·}"});
-        REQUIRE_THROWS(U8Format{"{:number:alternate=true}"});
+        REQUIRE_THROWS(U8Format{"{:number:base-prefix=true}"});
         REQUIRE_THROWS(U8Format{"{:bytes:separator=yes}"});
         REQUIRE_THROWS(U8Format{"{:number:#08x}"});
     }

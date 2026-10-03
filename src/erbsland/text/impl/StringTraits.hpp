@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringKeyTraits.hpp"
+
 #include "../u16/impl/U16StringTraits.hpp"
 #include "../u16/U16String_fwd.hpp"
 #include "../u16/U16StringEditor_fwd.hpp"
@@ -28,6 +30,11 @@ concept AnyStringEditorType = std::is_same_v<std::remove_cvref_t<tString>, U8Str
 
 template <typename tString>
 concept AnyStringOrStringEditorType = AnyStringType<tString> || AnyStringEditorType<tString>;
+
+/// Select the read-only string with the same encoding as a concrete string or editor.
+/// @tparam T The concrete string or editor type.
+template <AnyStringOrStringEditorType T>
+using ReadOnlyStringFor = typename StringTypes<std::remove_cvref_t<T>>::ReadOnly;
 
 /// Select the width-specific implementation traits for a concrete string or editor type.
 template <AnyStringOrStringEditorType tString>

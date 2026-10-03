@@ -6,6 +6,9 @@
 
 #include "../ProfileTypes.hpp"
 
+#include <erbsland/StreamBuffering.hpp>
+#include <erbsland/String.hpp>
+
 namespace app::stream::impl {
 
 /// Unexpanded stream-profiler scenario configuration.
@@ -22,7 +25,7 @@ struct ScenarioTemplate {
     std::uint64_t fileSizeMaximum{8ULL * 1024ULL * 1024ULL};
     std::uint64_t chunkSizeMinimum{64ULL * 1024ULL};
     std::uint64_t chunkSizeMaximum{64ULL * 1024ULL};
-    std::uint64_t backBufferLimit{};
+    el::ByteCount backBufferLimit{};
     std::uint32_t weight{1U};
     bool allMethods{true};
 };

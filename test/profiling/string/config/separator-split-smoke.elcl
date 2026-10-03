@@ -1,0 +1,27 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Duration            : 30s
+Threads             : 1
+Warmup Samples      : 0
+Samples             : 1
+Minimum Sample Time : 50us
+Memory Limit        : 16 MiB
+Progress Interval   : 5s
+Sensitive Mode      : "normal"
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "split-boundaries"
+Widths              : "all"
+Types               : "all"
+Use Cases           : "separator-split"
+Variants            : "all"
+Content Profiles    : "ascii", "mixed", "malformed-sparse"
+Size Modes          : "fixed"
+Size Min            : 0
+Size Max            : 128
+Operand Size Min    : 64
+Operand Size Max    : 64
+Sensitive Modes     : "normal"
+Weight              : 1

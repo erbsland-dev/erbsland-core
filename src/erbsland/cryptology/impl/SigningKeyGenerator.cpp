@@ -4,6 +4,7 @@
 
 #include "CryptologyOids.hpp"
 #include "DerEncoder.hpp"
+#include "EcPrivateScalarPolicy.hpp"
 #include "SecureEraseGuard.hpp"
 #include "SigningKeyEncoding.hpp"
 
@@ -16,10 +17,13 @@
 #include "../keys/PublicKey.hpp"
 #include "../keys/SigningPrivateKey.hpp"
 
-#include "../../core/Application.hpp"
+#include "../../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../../core/impl/ApplicationDataAccess.hpp"
 #include "../../random/Random.hpp"
+#include "../../random/RandomFailure.hpp"
 #include "../../text/Literals.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../text/StringFormat.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::cryptology::impl {
 
@@ -41,7 +45,8 @@ auto SigningKeyGenerator::generate() const -> SigningPrivateKey {
 }
 
 auto SigningKeyGenerator::generateEd25519() const -> SigningPrivateKey {
-    auto seed = core::application().secureRandom().buildByteBlock(unit::ByteLength{32U});
+    const auto randomData = core::impl::applicationData()->random().get();
+    auto seed = randomData->secureRandom().buildByteBlock(unit::ByteCount{32U});
     seed.markAsSensitive();
     const auto seedEraseGuard = SecureEraseGuard{seed};
     const auto point = ed25519_signer::publicKey(seed.span());
@@ -75,13 +80,13 @@ auto SigningKeyGenerator::generateEc() const -> SigningPrivateKey {
     const auto algorithm =
         _profile == SigningKeyProfile::EcdsaP256 ? SigningKeyAlgorithm::EcdsaP256 : SigningKeyAlgorithm::EcdsaP384;
     const auto curve = NistPrimeCurve{curveName};
-    // FIPS 186-5 section A.2.2: sample a full-width candidate and reject zero or values at least n.
-    for (auto attempt = 0U; attempt < 128U; ++attempt) {
-        auto scalar = core::application().secureRandom().buildByteBlock(unit::ByteLength{curve.byteLength()});
-        scalar.markAsSensitive();
+    // Use full-width rejection sampling with the additional library policy for extreme signing scalars.
+    const auto randomData = core::impl::applicationData()->random().get();
+    for (auto attempt = 0U; attempt < cMaximumEcAttempts; ++attempt) {
+        auto scalar = randomData->secureRandom().buildByteBlock(curve.byteLength());
+        scalar.markAsSensitive(); // should be already marked it as sensitive, but better safe than sorry.
         const auto scalarEraseGuard = SecureEraseGuard{scalar};
-        const auto number = curve.numberFromBigEndian(scalar.span());
-        if (!number.has_value() || curve.isZero(*number) || curve.compare(*number, curve.order()) >= 0) {
+        if (!ec_private_scalar_policy::isAcceptable(scalar.span(), curveName)) {
             continue;
         }
         const auto point = ecdsa_signer::publicKey(scalar.span(), curveName);
@@ -90,7 +95,9 @@ auto SigningKeyGenerator::generateEc() const -> SigningPrivateKey {
         const auto publicKey = PublicKey::fromDerOrThrow(encoder.encoded());
         return SigningPrivateKey{algorithm, scalar.span(), publicKey};
     }
-    throw CryptologyError{"Secure randomness did not produce a valid EC scalar within the fixed bound."_el};
+    throw random::RandomFailure{
+        text::StringFormat{"EC P-{} signing-key generation rejected all {} random candidates."_el}.build(
+            curve.byteLength().toSizeT() * 8U, cMaximumEcAttempts)};
 }
 
 }

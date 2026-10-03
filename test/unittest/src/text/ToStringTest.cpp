@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/BooleanFormat.hpp>
-#include <erbsland/text/EscapeFormat.hpp>
-#include <erbsland/text/IntegerFormat.hpp>
-#include <erbsland/text/IntegerFormatFlag.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/ToString.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/IntegerFormat.hpp>
+#include <erbsland/IntegerFormatFlag.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/ToString.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>
@@ -40,7 +40,7 @@ public:
         REQUIRE_EQUAL(
             toString(true, BooleanFormat::trueFalse().setCapitalization(Capitalization::Uppercase)), "TRUE"_el);
         REQUIRE_EQUAL(
-            toString(false, BooleanFormat::trueFalse().setCapitalization(Capitalization::Titlecase)), "False"_el);
+            toString(false, BooleanFormat::trueFalse().setCapitalization(Capitalization::Capitalized)), "False"_el);
         REQUIRE_EQUAL(StringEditor::fromBoolean(true), "true"_el);
         REQUIRE_EQUAL(
             StringEditor::fromBoolean(false, BooleanFormat::trueFalse().setCapitalization(Capitalization::Uppercase)),
@@ -68,9 +68,9 @@ public:
         REQUIRE_EQUAL(toString(true, format), "YES"_el);
         REQUIRE_EQUAL(toString(false, format), "NO"_el);
 
-        REQUIRE_EQUAL(toString(true, BooleanFormat::onOff().setCapitalization(Capitalization::Titlecase)), "On"_el);
+        REQUIRE_EQUAL(toString(true, BooleanFormat::onOff().setCapitalization(Capitalization::Capitalized)), "On"_el);
         REQUIRE_EQUAL(
-            toString(false, BooleanFormat::enabledDisabled().setCapitalization(Capitalization::Titlecase)),
+            toString(false, BooleanFormat::enabledDisabled().setCapitalization(Capitalization::Capitalized)),
             "Disabled"_el);
     }
 

@@ -1,11 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OverflowError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/time/StdFormat.hpp>
-#include <erbsland/time/Timestamp.hpp>
-#include <erbsland/unit/StdFormat.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/OverflowError.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/Timestamp.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -100,8 +99,8 @@ public:
         REQUIRE_EQUAL(Timestamp{}.nanosecondsTo(Timestamp::last()), Nanoseconds{});
         REQUIRE_EQUAL(Timestamp::last().nanosecondsTo(Timestamp{}), Nanoseconds{});
         REQUIRE_FALSE(Timestamp{}.wouldNanosecondsToSaturate(Timestamp::last()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Timestamp{}.secondsToOrThrow(Timestamp::first()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Timestamp::first().timeDeltaToOrThrow(Timestamp{}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, Timestamp{}.secondsToOrThrow(Timestamp::first()));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, Timestamp::first().timeDeltaToOrThrow(Timestamp{}));
     }
 
 private:

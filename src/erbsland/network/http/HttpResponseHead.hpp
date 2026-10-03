@@ -23,9 +23,8 @@ public:
     /// Create a validated response head.
     /// @param version The supported HTTP version.
     /// @param status The valid response status.
-    /// @param reasonPhrase The exact optional reason phrase.
+    /// @param reasonPhrase The exact optional reason phrase. Must not contain prohibited HTTP control bytes.
     /// @param headers The ordered response header fields.
-    /// @throws err::ParameterError If a control value is invalid.
     HttpResponseHead(HttpVersion version, HttpStatus status, text::String reasonPhrase, HttpHeaders headers = {});
 
     // defaults

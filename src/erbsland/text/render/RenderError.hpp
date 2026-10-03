@@ -14,6 +14,8 @@ namespace erbsland::text::render {
 class RenderError final : public err::RuntimeError {
 public:
     /// Create a new render error from the given context.
+    /// Filters and lazy value callbacks should use category Runtime for rejected input.
+    /// If layout, origin, and location are all unset, the renderer supplies the callback's template location.
     /// @param context The context of the error.
     /// @param cause The optional cause of the error.
     explicit RenderError(RenderErrorContext context, const std::exception_ptr &cause = {});

@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "WindowsEventLoopDriver.hpp"
 
-#include "../../err/ParameterError.hpp"
-#include "../../err/RuntimeError.hpp"
+#include "../../err/ParameterFailure.hpp"
+#include "../../system/impl/WindowsErrorContext.hpp"
+#include "../../system/PlatformError.hpp"
 #include "../../text/Literals.hpp"
 
 #include <chrono>
@@ -16,7 +17,8 @@ using namespace text::literals;
 WindowsEventLoopDriver::WindowsEventLoopDriver() :
     _completionPort{CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1)} {
     if (_completionPort == nullptr) {
-        throw err::RuntimeError{"Failed to create the IOCP event-loop driver."};
+        throw system::PlatformError{
+            "Failed to create the IOCP event-loop driver."_el, system::impl::WindowsErrorContext::fromLastError()};
     }
 }
 
@@ -49,20 +51,22 @@ void WindowsEventLoopDriver::wake() noexcept {
 
 auto WindowsEventLoopDriver::registerHandle(HANDLE handle, NativeCompletionCallback callback) -> RegistrationPtr {
     if (handle == nullptr || handle == INVALID_HANDLE_VALUE) {
-        throw err::ParameterError{"The native handle must be valid."_el, "handle"_el};
+        throw err::ParameterFailure{"The native handle must be valid."_el, "handle"_el};
     }
     if (!callback) {
-        throw err::ParameterError{"The native completion callback must not be empty."_el, "callback"_el};
+        throw err::ParameterFailure{"The native completion callback must not be empty."_el, "callback"_el};
     }
     const auto lock = std::scoped_lock{_registrationMutex};
     for (const auto &entry : _registrations) {
         if (entry.second.handle == handle) {
-            throw err::ParameterError{"The native handle is already registered."_el, "handle"_el};
+            throw err::ParameterFailure{"The native handle is already registered."_el, "handle"_el};
         }
     }
     const auto generation = _nextGeneration++;
     if (CreateIoCompletionPort(handle, _completionPort, generation, 0) == nullptr) {
-        throw err::RuntimeError{"Failed to associate a native handle with the event-loop completion port."_el};
+        throw system::PlatformError{
+            "Failed to associate a native handle with the event-loop completion port."_el,
+            system::impl::WindowsErrorContext::fromLastError()};
     }
     _registrations.emplace(generation, Registration{handle, std::move(callback)});
     return std::make_unique<EventLoopDriverRegistration>(
@@ -88,7 +92,8 @@ void WindowsEventLoopDriver::waitInternal(const DWORD timeoutMilliseconds) {
         return;
     }
     if (result == 0 && overlapped == nullptr) {
-        throw err::RuntimeError{"The IOCP event-loop wait failed."};
+        throw system::PlatformError{
+            "The IOCP event-loop wait failed."_el, system::impl::WindowsErrorContext::fromErrorCode(error)};
     }
     auto callback = NativeCompletionCallback{};
     {

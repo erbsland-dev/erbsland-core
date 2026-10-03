@@ -48,9 +48,7 @@ auto TerminalDocumentStyle::edit(const TerminalDocumentStyleSelector &selector) 
     auto resolved = resolve(selector, selector.requiredStyleTokens());
     _data->definitions.append(
         impl::TerminalDocumentStyleData::Entry{.selector = selector, .rule = std::move(resolved)});
-    using EntryList = impl::TerminalDocumentStyleData::EntryList;
-    const auto index = EntryList::Index::end(_data->definitions.count() - EntryList::Count::one());
-    return _data->definitions.mutableAt(index).rule;
+    return _data->definitions.mutableAt(_data->definitions.lastIndex()).rule;
 }
 
 void TerminalDocumentStyle::erase(const TerminalDocumentStyleSelector &selector) noexcept {
@@ -336,6 +334,7 @@ auto TerminalDocumentStyle::createSystemOutputDefaultStyle() -> TerminalDocument
     style.edit(Selector{TextNodeType::CodeLineMarker, {"error"_el}}).setTextStyle(Style{fg::BrightRed});
     style.edit(Selector{TextNodeType::CodeLineMarker, {"warning"_el}}).setTextStyle(Style{fg::BrightYellow});
     style.edit(Selector{TextNodeType::CodeLineMarker, {"note"_el}}).setTextStyle(Style{fg::BrightCyan});
+    style.edit(Selector{TextNodeType::OptionValue}).setTextStyle(Style{fg::BrightGreen});
     style.edit(Selector{TextNodeType::OptionExecutable}).setTextStyle(Style{fg::BrightGreen});
     style.edit(Selector{TextNodeType::OptionModule}).setTextStyle(Style{fg::BrightGreen});
     style.edit(Selector{TextNodeType::OptionShort}).setTextStyle(Style{fg::BrightYellow});

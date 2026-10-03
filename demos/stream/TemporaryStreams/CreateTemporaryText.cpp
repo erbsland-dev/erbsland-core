@@ -1,6 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/Path.hpp>
+#include <erbsland/PathAccessProfile.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempFileOptions.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringEncoding.hpp>
+#include <erbsland/TempTextOutputStream.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {

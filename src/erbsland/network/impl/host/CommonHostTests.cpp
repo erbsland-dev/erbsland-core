@@ -16,7 +16,7 @@ void testCommonHostText(const String &text, const StringLiteral &parsedObject) {
     if (text.isEmpty()) {
         throw err::ParseError{StringFormat{"The {} must not be empty."_el}.build(parsedObject)};
     }
-    if (text.length() > ByteLength{1024U}) {
+    if (text.length() > ByteCount{1024U}) {
         throw err::ParseError{StringFormat{"The {} exceeds the maximum length of 1024 bytes."_el}.build(parsedObject)};
     }
 }

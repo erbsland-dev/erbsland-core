@@ -8,7 +8,8 @@
 #include "TimeSource_fwd.hpp"
 #include "WorkloadRunner_fwd.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/List.hpp>
 
 #include <cstdint>
 

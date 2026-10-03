@@ -4,11 +4,11 @@
 
 #include "StoragePaths.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/core/MakeOneNamespace.hpp>
-#include <erbsland/options/Options.hpp>
-#include <erbsland/options/OptionValues.hpp>
-#include <erbsland/unit/ExitCode.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 

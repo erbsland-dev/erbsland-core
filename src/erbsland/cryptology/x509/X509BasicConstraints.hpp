@@ -4,6 +4,8 @@
 
 #include "../impl/X509Parser_fwd.hpp"
 
+#include "../../core/Definitions.hpp"
+
 #include <cstdint>
 #include <optional>
 

@@ -67,24 +67,33 @@ auto HttpMethod::fromStringOrThrow(const text::String &text) -> HttpMethod {
 }
 
 auto HttpMethod::classify(const text::String &text) noexcept -> HttpMethodType {
-    if (text == "CONNECT"_el)
+    if (text == "CONNECT"_el) {
         return HttpMethodType::Connect;
-    if (text == "DELETE"_el)
+    }
+    if (text == "DELETE"_el) {
         return HttpMethodType::Delete;
-    if (text == "GET"_el)
+    }
+    if (text == "GET"_el) {
         return HttpMethodType::Get;
-    if (text == "HEAD"_el)
+    }
+    if (text == "HEAD"_el) {
         return HttpMethodType::Head;
-    if (text == "OPTIONS"_el)
+    }
+    if (text == "OPTIONS"_el) {
         return HttpMethodType::Options;
-    if (text == "PATCH"_el)
+    }
+    if (text == "PATCH"_el) {
         return HttpMethodType::Patch;
-    if (text == "POST"_el)
+    }
+    if (text == "POST"_el) {
         return HttpMethodType::Post;
-    if (text == "PUT"_el)
+    }
+    if (text == "PUT"_el) {
         return HttpMethodType::Put;
-    if (text == "TRACE"_el)
+    }
+    if (text == "TRACE"_el) {
         return HttpMethodType::Trace;
+    }
     return HttpMethodType::None;
 }
 

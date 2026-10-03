@@ -136,13 +136,13 @@ public:
         }
     }
     /// Print an object using its `toString()` result.
-    template <impl::PrintObjectWithToString T>
-    void print(const T &value) {
+    template <impl::PrintObjectWithToString tStringObject>
+    void print(const tStringObject &value) {
         print(value.toString());
     }
     /// Print an object using its `toRawValue()` result.
-    template <impl::PrintObjectWithRawInteger T>
-    void print(const T &value) {
+    template <impl::PrintObjectWithRawInteger tIntegerObject>
+    void print(const tIntegerObject &value) {
         print(value.toRawValue());
     }
 };

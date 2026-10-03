@@ -4,8 +4,8 @@
 
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteReader.hpp"
+#include "../../../unit/ByteCount.hpp"
 #include "../../../unit/ByteIndex.hpp"
-#include "../../../unit/ByteLength.hpp"
 #include "../../Char.hpp"
 #include "../../EncodingMode.hpp"
 #include "../../impl/ThrowHelper.hpp"
@@ -25,20 +25,20 @@ namespace erbsland::text::impl::utf8 {
 /// Get the UTF-8 sequence length of this code-point.
 /// Returns zero for invalid Unicode code-points.
 /// @return The length of the UTF-8 sequence for this code-point.
-[[nodiscard]] constexpr auto encodedLength(const Char character) noexcept -> unit::ByteLength {
+[[nodiscard]] constexpr auto encodedLength(const Char character) noexcept -> unit::ByteCount {
     if (!character.isValidUnicode()) {
-        return unit::ByteLength{};
+        return unit::ByteCount{};
     }
     if (character.toRawValue() <= 0x7FU) {
-        return unit::ByteLength{1U};
+        return unit::ByteCount{1U};
     }
     if (character.toRawValue() <= 0x7FFU) {
-        return unit::ByteLength{2U};
+        return unit::ByteCount{2U};
     }
     if (character.toRawValue() <= 0xFFFFU) {
-        return unit::ByteLength{3U};
+        return unit::ByteCount{3U};
     }
-    return unit::ByteLength{4U};
+    return unit::ByteCount{4U};
 }
 
 /// Decode the continuation byte of a multi-byte UTF-8 character.
@@ -62,15 +62,16 @@ inline void decodeCharOrThrow_decodeCont(
 /// @param buffer The byte buffer to decode.
 /// @param position The read position that is advanced after a successful read.
 /// @throws text::U8EncodingError On any UTF-8 encoding error.
+/// The read position must be inside the input.
 /// @tested{U8EncodingTest}
 inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteIndex &position) -> Char {
     auto index = position.toSizeT();
     if (index >= buffer.size()) {
-        throwOutOfRange("Read position out of range");
+        throwOutOfRangeFailure("Read position out of range");
     }
     const auto decodedByte = static_cast<std::uint8_t>(buffer[index]);
     if (decodedByte < 0x80U) { // 7-bit ASCII?
-        position.advance(unit::ByteLength{1U});
+        position.uncheckedAdvance(unit::ByteCount{1U});
         return Char{static_cast<char32_t>(decodedByte)};
     }
     char32_t unicodeValue{};
@@ -102,7 +103,7 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
     if (!result.isValidUnicode()) {
         throwU8EncodingError("Invalid Unicode character", position.toSizeT());
     }
-    position = unit::ByteIndex{index};
+    position = unit::ByteIndex{index, unit::ByteIndex::Unchecked{}};
     return result;
 }
 
@@ -122,7 +123,7 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
     auto decodedByte = static_cast<std::uint8_t>(buffer[index]);
     index += 1;
     if (decodedByte < 0x80U) { // 7-bit ASCII?
-        position = unit::ByteIndex::fromSizeT(index);
+        position = unit::ByteIndex{index, unit::ByteIndex::Unchecked{}};
         return Char{static_cast<char32_t>(decodedByte)};
     }
     uint8_t sequenceSize = 0;
@@ -137,17 +138,17 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
         sequenceSize = 4; // 4-byte sequence
         unicodeValue = static_cast<char32_t>(decodedByte & 0b00000111U);
     } else {
-        position.increment();
+        position.uncheckedIncrement();
         return Char::replacement();
     }
     for (uint8_t i = 1; i < sequenceSize; ++i) {
         if (index >= buffer.size()) {
-            position.increment();
+            position.uncheckedIncrement();
             return Char::replacement();
         }
         decodedByte = static_cast<std::uint8_t>(buffer[index]);
         if ((decodedByte & 0b11000000U) != 0b10000000U) {
-            position.increment();
+            position.uncheckedIncrement();
             return Char::replacement();
         }
         index += 1;
@@ -155,10 +156,10 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
         unicodeValue |= static_cast<char32_t>(decodedByte & 0b00111111U);
     }
     if ((sequenceSize == 3 && unicodeValue < 0x800) || (sequenceSize == 4 && unicodeValue < 0x10000)) {
-        position.increment();
+        position.uncheckedIncrement();
         return Char::replacement();
     }
-    position = unit::ByteIndex::fromSizeT(index);
+    position = unit::ByteIndex{index, unit::ByteIndex::Unchecked{}};
     const auto result = Char{unicodeValue};
     if (!result.isValidUnicode()) {
         return Char::replacement();
@@ -180,7 +181,7 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
     auto decodedByte = static_cast<std::uint8_t>(buffer[index]);
     index += 1;
     if (decodedByte < 0x80U) { // 7-bit ASCII?
-        position = unit::ByteIndex::fromSizeT(index);
+        position = unit::ByteIndex{index, unit::ByteIndex::Unchecked{}};
         return Char{static_cast<char32_t>(decodedByte)};
     }
     uint8_t sequenceSize = 0;
@@ -195,17 +196,17 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
         sequenceSize = 4; // 4-byte sequence
         unicodeValue = static_cast<char32_t>(decodedByte & 0b00000111U);
     } else {
-        position.increment();
+        position.uncheckedIncrement();
         return std::nullopt;
     }
     for (uint8_t i = 1; i < sequenceSize; ++i) {
         if (index >= buffer.size()) {
-            position.increment();
+            position.uncheckedIncrement();
             return std::nullopt;
         }
         decodedByte = static_cast<std::uint8_t>(buffer[index]);
         if ((decodedByte & 0b11000000U) != 0b10000000U) {
-            position.increment();
+            position.uncheckedIncrement();
             return std::nullopt;
         }
         index += 1;
@@ -213,10 +214,10 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
         unicodeValue |= static_cast<char32_t>(decodedByte & 0b00111111U);
     }
     if ((sequenceSize == 3 && unicodeValue < 0x800) || (sequenceSize == 4 && unicodeValue < 0x10000)) {
-        position.increment();
+        position.uncheckedIncrement();
         return std::nullopt;
     }
-    position = unit::ByteIndex::fromSizeT(index);
+    position = unit::ByteIndex{index, unit::ByteIndex::Unchecked{}};
     const auto result = Char{unicodeValue};
     if (!result.isValidUnicode()) {
         return std::nullopt;
@@ -245,24 +246,24 @@ inline void fastAdvanceChar(const std::span<const char> buffer, unit::ByteIndex 
         return static_cast<std::uint8_t>(buffer[index + delta]);
     };
     auto decodedByte = static_cast<std::uint8_t>(buffer[index]);
-    unit::ByteLength advanceLength{1};
+    unit::ByteCount advanceLength{1};
     if (decodedByte < 0x80U || (decodedByte & 0b11111000U) == 0b11111000U) {
         // advanced 1-byte
     } else if ((decodedByte & 0b11100000U) == 0b11000000U) {
         if (decodedByte >= 0b11000010U && isContinuationByte(1U)) {
-            advanceLength = unit::ByteLength{2};
+            advanceLength = unit::ByteCount{2};
         }
     } else if ((decodedByte & 0b11110000U) == 0b11100000U) {
         if (isContinuationByte(1U) && isContinuationByte(2U) && (decodedByte != 0xE0U || byteAt(1U) >= 0xA0U)) {
-            advanceLength = unit::ByteLength{3};
+            advanceLength = unit::ByteCount{3};
         }
     } else if ((decodedByte & 0b11111000U) == 0b11110000U) {
         if (decodedByte < 0b11110101U && isContinuationByte(1U) && isContinuationByte(2U) && isContinuationByte(3U) &&
             (decodedByte != 0xF0U || byteAt(1U) >= 0x90U)) {
-            advanceLength = unit::ByteLength{4};
+            advanceLength = unit::ByteCount{4};
         }
     }
-    position.advance(advanceLength);
+    position.uncheckedAdvance(advanceLength);
 }
 
 /// Fast retreating the position index in the given buffer.
@@ -273,6 +274,9 @@ inline void fastAdvanceChar(const std::span<const char> buffer, unit::ByteIndex 
 /// Encoding errors retreat by one byte. Byte-structured sequences for invalid Unicode code-points are skipped as
 /// one sequence.
 inline void fastRetreatChar(const std::span<const char> buffer, unit::ByteIndex &position) {
+    if (position.isNoIndex()) {
+        return;
+    }
     auto index = std::min(position.toSizeT(), buffer.size());
     if (index == 0 || buffer.empty()) {
         return;
@@ -316,19 +320,20 @@ inline void fastRetreatChar(const std::span<const char> buffer, unit::ByteIndex 
     };
     for (std::size_t delta = 1U; delta <= 4U; ++delta) {
         if (const auto result = lengthByte(delta); result > 0) {
-            position.retreat(unit::ByteLength::fromSizeT(result));
+            position.uncheckedRetreat(unit::ByteCount{result, unit::ByteCount::Unchecked{}});
             return;
         }
     }
-    position.retreat(unit::ByteLength{1U});
+    position.uncheckedRetreat(unit::ByteCount{1U});
 }
 
 /// Decode all UTF-8 characters with the selected error handling mode and call the function for each result.
 /// Stops when the callback returns `false`.
 /// @tested{U8EncodingTest}
 template <EncodingMode mode, typename Function>
-auto forEachDecodedCharacter(const std::span<const char> data, Function function) -> bool {
-    auto position = unit::ByteIndex::zero();
+auto forEachDecodedCharacter(
+    const std::span<const char> data, Function function, const unit::ByteIndex startPosition = {}) -> bool {
+    auto position = startPosition;
     while (position.toSizeT() < data.size()) {
         auto character = Char{};
         if constexpr (mode == EncodingMode::Strict) {

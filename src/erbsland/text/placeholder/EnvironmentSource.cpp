@@ -8,6 +8,7 @@
 #include "../CharSet.hpp"
 #include "../Literals.hpp"
 #include "../StringFormat.hpp"
+#include "../StringTransformations.hpp"
 
 #include "../../system/EnvironmentVariables.hpp"
 #include "../../unit/ItemCount.hpp"
@@ -74,7 +75,7 @@ auto EnvironmentSource::parseParameters(const String &parameter) -> Parameters {
 }
 
 void EnvironmentSource::applyFlag(Parameters &parameters, const String &flag) {
-    const auto normalizedFlag = flag.transformed(Char::toIdentifierNormalized);
+    const auto normalizedFlag = toIdentifierNormalized(flag);
     if (normalizedFlag == "required"_el && !parameters.isRequired) {
         parameters.isRequired = true;
         return;

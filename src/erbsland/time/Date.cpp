@@ -7,12 +7,14 @@
 #include "../text/IntegerFormat.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringEditor.hpp"
-#include "../unit/CpLength.hpp"
+#include "../text/StringJoins.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <algorithm>
 
 namespace erbsland::time {
 
+using namespace err;
 using namespace text::literals;
 using text::IntegerFormat;
 using text::IntegerFormatFlag;
@@ -109,7 +111,7 @@ auto Date::added(const Days amount) const noexcept -> Date {
 
 auto Date::addedOrThrow(const Days amount) const -> Date {
     if (wouldAddSaturate(amount)) {
-        throw err::OverflowError{"Date day addition would exceed supported date range"};
+        throw OverflowError{"Date day addition would exceed supported date range"};
     }
     return added(amount);
 }
@@ -135,7 +137,7 @@ auto Date::added(Months amount) const noexcept -> Date {
 
 auto Date::addedOrThrow(const Months amount) const -> Date {
     if (wouldAddSaturate(amount)) {
-        throw err::OverflowError{"Date month addition would exceed supported date range"};
+        throw OverflowError{"Date month addition would exceed supported date range"};
     }
     return added(amount);
 }
@@ -146,7 +148,7 @@ auto Date::added(Years amount) const noexcept -> Date {
 
 auto Date::addedOrThrow(const Years amount) const -> Date {
     if (wouldAddSaturate(amount)) {
-        throw err::OverflowError{"Date year addition would exceed supported date range"};
+        throw OverflowError{"Date year addition would exceed supported date range"};
     }
     return added(amount);
 }
@@ -220,20 +222,20 @@ auto Date::toIsoString(const IsoTimeFormatFlags flags, const DateTimePrecision p
     const auto [year, month, day] = parts();
     const auto extended = flags.isSet(IsoTimeFormat::Extended);
     auto yearFormat = IntegerFormat::decimal();
-    yearFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{4U});
+    yearFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpCount{4U});
     auto partFormat = IntegerFormat::decimal();
-    partFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{2U});
+    partFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpCount{2U});
     const auto separator = extended ? String{"-"_el} : String{};
     const auto monthText =
         precision >= DateTimePrecision::Month ? String::fromInteger(month.toValue(), partFormat) : String{};
     const auto dayText =
         precision >= DateTimePrecision::Day ? String::fromInteger(day.toValue(), partFormat) : String{};
-    return String::fromJoined(
-        {String::fromInteger(year.toValue(), yearFormat),
-            precision >= DateTimePrecision::Month ? separator : String{},
-            monthText,
-            precision >= DateTimePrecision::Day ? separator : String{},
-            dayText});
+    return text::join(
+        String::fromInteger(year.toValue(), yearFormat),
+        precision >= DateTimePrecision::Month ? separator : String{},
+        monthText,
+        precision >= DateTimePrecision::Day ? separator : String{},
+        dayText);
 }
 
 auto Date::fromYearMonthDay(const int year, const int month, const int day) noexcept -> Date {
@@ -246,7 +248,7 @@ auto Date::fromYearMonthDay(const int year, const int month, const int day) noex
 auto Date::fromYearMonthDayOrThrow(const int year, const int month, const int day) -> Date {
     auto result = fromYearMonthDay(year, month, day);
     if (!result.isValid()) {
-        throw err::OutOfRangeError{"Date parts are outside the supported date range"};
+        throw OutOfRangeError{"Date parts are outside the supported date range"};
     }
     return result;
 }
@@ -258,7 +260,7 @@ auto Date::fromParts(const Year year, const Month month, const Day day) noexcept
 auto Date::fromPartsOrThrow(const Year year, const Month month, const Day day) -> Date {
     auto result = fromParts(year, month, day);
     if (!result.isValid()) {
-        throw err::OutOfRangeError{"Date parts are outside the supported date range"};
+        throw OutOfRangeError{"Date parts are outside the supported date range"};
     }
     return result;
 }
@@ -318,4 +320,5 @@ auto Date::daysFromParts(const Year year, const Month month, const Day day) noex
     }
     return year.daysSinceEpoch() + year.daysBeforeMonth(month) + day.toAmount();
 }
+
 }

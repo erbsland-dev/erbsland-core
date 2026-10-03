@@ -115,7 +115,7 @@ formats below.
 .. erbsland-demo::
     :source: mem/ByteIntegerFormat/FixedFormats.cpp
     :exec: mem/byte_integer_format --demo FixedFormats
-    :source-sha256: aafff61173586061dbe7e07370aff17aef4450af0e2da989dbf133db87ba3701
+    :sha256: bb73e0424662b5fce27f757f218d7962182350d5131bfcc0b65472de035f24cd
 
 .. code-block:: cpp
 
@@ -148,15 +148,17 @@ formats below.
         el::io::printLine("Identifier signed  : "_el, el::BooleanFormat::yesNo(), idFormat.isSigned());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill              : Flèche d'aurore
-    Encoded fields     : 12 34 56 ff ff fe d4
-    Skill identifier   : 1193046
-    Signed modifier    : -300
-    Identifier bytes   : 3
-    Identifier signed  : no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill              : Flèche d'aurore
+        Encoded fields     : 12 34 56 ff ff fe d4
+        Skill identifier   : 1193046
+        Signed modifier    : -300
+        Identifier bytes   : 3
+        Identifier signed  : no␛[0m
 
 .. erbsland-demo-end::
 
@@ -199,7 +201,7 @@ byte: ``81 2c``.
 .. erbsland-demo::
     :source: mem/ByteIntegerFormat/UnsignedVariableLength.cpp
     :exec: mem/byte_integer_format --demo UnsignedVariableLength
-    :source-sha256: 7e95109bae9672730a9f6f5624101216100df0993917224d9747fc4c6255fef4
+    :sha256: 30c6f209d2f6078fd76563e332e4dc747a4b3ac437ab21883da3c723f92832ac
 
 .. code-block:: cpp
 
@@ -230,13 +232,16 @@ byte: ``81 2c``.
         el::io::printLine("Mastery points     : "_el, masteryPoints);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill tree         : Héritage du phénix
-    Encoded totals     : 2a 81 2c d2 34 56
-    Novice points      : 42
-    Adept points       : 300
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill tree         : Héritage du phénix
+        Encoded totals     : 2a 81 2c d2 34 56
+        Novice points      : 42
+        Adept points       : 300
+        Mastery points     : 1193046␛[0m
 
 .. erbsland-demo-end::
 
@@ -267,7 +272,7 @@ positive value may cross a size boundary earlier than its unsigned equivalent.
 .. erbsland-demo::
     :source: mem/ByteIntegerFormat/SignedVariableLength.cpp
     :exec: mem/byte_integer_format --demo SignedVariableLength
-    :source-sha256: 1a6b57922df3377c951988b5163bced1edafbda28fd3e8153d47d12cc02dbddf
+    :sha256: f9cf36e89c573d59867df56458884274896fae3ea982e11aacc57fc096c9751a
 
 .. code-block:: cpp
 
@@ -298,14 +303,16 @@ positive value may cross a size boundary earlier than its unsigned equivalent.
         el::io::printLine("Mastery modifier   : "_el, masteryPenalty);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill pair         : Ombre et lumière
-    Encoded modifiers  : 01 02 82 57
-    Shadow modifier    : -1
-    Light modifier     : 1
-    Mastery modifier   : -300
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill pair         : Ombre et lumière
+        Encoded modifiers  : 01 02 82 57
+        Shadow modifier    : -1
+        Light modifier     : 1
+        Mastery modifier   : -300␛[0m
 
 .. erbsland-demo-end::
 
@@ -345,7 +352,7 @@ bit layouts and encoded values are different.
 .. erbsland-demo::
     :source: mem/ByteIntegerFormat/UnsignedBase128.cpp
     :exec: mem/byte_integer_format --demo UnsignedBase128
-    :source-sha256: 7edb48267d60d6a62238257eb3c8c93d4f1e88a2d4baace8d2a207c7bbd989f6
+    :sha256: e4c9e7509a922f557eafc5f3174aed9745cb1c50e88b146b9123e75633bf55d6
 
 .. code-block:: cpp
 
@@ -376,13 +383,15 @@ bit layouts and encoded values are different.
         el::io::printLine("Third node         : "_el, thirdNode);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill route        : Constellation du mage
-    Encoded nodes      : 7f 81 00 81 80 00
-    First node         : 127
-    Second node        : 128
-    Third node         : 16384
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill route        : Constellation du mage
+        Encoded nodes      : 7f 81 00 81 80 00
+        First node         : 127
+        Second node        : 128
+        Third node         : 16384␛[0m
 
 .. erbsland-demo-end::

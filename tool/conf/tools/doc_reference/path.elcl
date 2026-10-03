@@ -1,0 +1,15 @@
+# Reference-document groups for the path domain.
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "path/file_system_paths.rst"
+Title                        : "File-System Paths"
+Header Globs                 :
+    * "path/*.hpp"
+Excluded Header Globs        :
+    * "path/PathGlob*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "path/path_glob_patterns.rst"
+Title                        : "Path Glob Patterns"
+Header Globs                 :
+    * "path/PathGlob*.hpp"

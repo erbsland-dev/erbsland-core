@@ -9,8 +9,8 @@
 
 namespace erbsland::conf::impl::lexer {
 
+using namespace text;
 using namespace text::literals;
-
 using ParsedTime = std::variant<time::Time, time::TimeWithZone>;
 
 auto scanTimeValue(TokenDecoder &decoder) -> std::optional<ParsedTime>;
@@ -89,7 +89,7 @@ auto scanTimeValue(TokenDecoder &decoder) -> std::optional<ParsedTime> {
     auto offsetSign = Sign::Positive;
     int64_t offsetHour = -1;
     int64_t offsetMinute = 0;
-    parseNumber(decoder, text::IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(hour);
+    parseNumber(decoder, IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(hour);
     if (hour < 0 || decoder.character() != nc::timeSeparator) {
         return {};
     }
@@ -101,7 +101,7 @@ auto scanTimeValue(TokenDecoder &decoder) -> std::optional<ParsedTime> {
     if (decoder.character() != CharClass::DecimalDigit) {
         decoder.throwSyntaxOrUnexpectedEndError("Expected the minute part after the colon for a time value."_el);
     }
-    parseNumber(decoder, text::IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(minute);
+    parseNumber(decoder, IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(minute);
     if (minute < 0) {
         decoder.throwSyntaxOrUnexpectedEndError(
             "Expected a two digit minute part after the colon for a time value."_el);
@@ -116,7 +116,7 @@ auto scanTimeValue(TokenDecoder &decoder) -> std::optional<ParsedTime> {
             decoder.throwSyntaxOrUnexpectedEndError(
                 "Expected the second part after the second colon for a time value."_el);
         }
-        parseNumber(decoder, text::IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(second);
+        parseNumber(decoder, IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(second);
         if (second < 0) {
             decoder.throwSyntaxOrUnexpectedEndError(
                 "Expected a two digit second part after the second colon for a time value."_el);
@@ -132,7 +132,7 @@ auto scanTimeValue(TokenDecoder &decoder) -> std::optional<ParsedTime> {
                     "Expected the second fraction part after the decimal point."_el);
             }
             std::size_t digitCount = 0;
-            parseNumber(decoder, text::IntegerBase::Decimal, Sign::Positive, NumberSeparators::No)
+            parseNumber(decoder, IntegerBase::Decimal, Sign::Positive, NumberSeparators::No)
                 .assignTo(fraction, digitCount);
             if (fraction < 0) {
                 decoder.throwSyntaxOrUnexpectedEndError("Expected a fraction part after the decimal point."_el);
@@ -156,7 +156,7 @@ auto scanTimeValue(TokenDecoder &decoder) -> std::optional<ParsedTime> {
         if (decoder.character() != CharClass::DecimalDigit) {
             decoder.throwSyntaxOrUnexpectedEndError("Expected an offset hour."_el);
         }
-        parseNumber(decoder, text::IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(offsetHour);
+        parseNumber(decoder, IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(offsetHour);
         if (offsetHour < 0) {
             decoder.throwSyntaxOrUnexpectedEndError("Expected a two digit offset hour."_el);
         }
@@ -168,8 +168,7 @@ auto scanTimeValue(TokenDecoder &decoder) -> std::optional<ParsedTime> {
             if (decoder.character() != CharClass::DecimalDigit) {
                 decoder.throwSyntaxOrUnexpectedEndError("Expected an offset minute."_el);
             }
-            parseNumber(decoder, text::IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2)
-                .assignTo(offsetMinute);
+            parseNumber(decoder, IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(offsetMinute);
             if (offsetMinute < 0) {
                 decoder.throwSyntaxOrUnexpectedEndError("Expected a two digit offset minute."_el);
             }
@@ -197,7 +196,7 @@ auto scanDate(TokenDecoder &decoder) -> std::optional<time::Date> {
     int64_t year = 0;
     int64_t month = 0;
     int64_t day = 0;
-    parseNumber(decoder, text::IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 4).assignTo(year);
+    parseNumber(decoder, IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 4).assignTo(year);
     if (year < 0) {
         return {};
     }
@@ -208,7 +207,7 @@ auto scanDate(TokenDecoder &decoder) -> std::optional<time::Date> {
     if (decoder.character() != CharClass::DecimalDigit) {
         decoder.throwSyntaxOrUnexpectedEndError("Expected a month part after the date separator."_el);
     }
-    parseNumber(decoder, text::IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(month);
+    parseNumber(decoder, IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(month);
     if (month < 0) {
         decoder.throwSyntaxOrUnexpectedEndError("Expected two digits for the month in a date."_el);
     }
@@ -222,7 +221,7 @@ auto scanDate(TokenDecoder &decoder) -> std::optional<time::Date> {
     if (decoder.character() != CharClass::DecimalDigit) {
         decoder.throwSyntaxOrUnexpectedEndError("Expected a day part after the date separator."_el);
     }
-    parseNumber(decoder, text::IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(day);
+    parseNumber(decoder, IntegerBase::Decimal, Sign::Positive, NumberSeparators::No, 2).assignTo(day);
     if (day < 0) {
         decoder.throwSyntaxOrUnexpectedEndError("Expected two digits for the day in a date."_el);
     }

@@ -1,6 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteOffset.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamPositionOrigin.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -14,7 +21,7 @@ void moveRelativeToEnd() {
     const auto input = path.content().openByteInputStream();
 
     input->movePosition(el::StreamPositionOrigin::End, el::ByteOffset{-2});
-    const auto trailer = input->readExact(el::ByteLength{2U});
+    const auto trailer = input->readExact(el::ByteCount{2U});
     el::io::printLine(
         "Trailer marker: "_el,
         trailer.data().get(el::ByteIndex{0U}).toUInt8(),

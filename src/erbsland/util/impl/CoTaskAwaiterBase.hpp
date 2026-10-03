@@ -5,7 +5,7 @@
 #include "CoTaskCancelled.hpp"
 #include "CoTaskStateBase.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 
 #include <coroutine>
 #include <memory>
@@ -49,10 +49,10 @@ public:
         return _state->complete;
     }
     /// Register a single continuation for this task.
+    /// No other coroutine may already be awaiting this task.
     /// @tparam tPromise The awaiting coroutine promise type.
     /// @param continuation The coroutine awaiting the task.
     /// @return `true` if the caller must suspend, or `false` if the task completed meanwhile.
-    /// @throws err::LogicError If another coroutine is already awaiting this task.
     template <typename tPromise>
     auto await_suspend(const std::coroutine_handle<tPromise> continuation) -> bool {
         _continuation = continuation;
@@ -64,7 +64,7 @@ public:
             return false;
         }
         if (_state->continuation) {
-            throw err::LogicError{"A CoTask can only be awaited once."};
+            throw err::LogicFailure{"A CoTask can only be awaited once."};
         }
         _state->continuation = continuation;
         return true;

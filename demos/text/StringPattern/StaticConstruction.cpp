@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/StringPattern.hpp>
 
 namespace demo {
 
@@ -13,14 +17,8 @@ namespace demo {
 void staticConstruction() {
     using namespace el::pattern;
 
-    static const auto acceptedRecord = el::StringPattern{
-        Text{U"probe-"},
-        Range{U'A', U'Z'},
-        Set{{U'0', U'9'}},
-        OneChar{},
-        Divider{},
-        Text{U";ok"},
-    };
+    static const auto acceptedRecord = el::StringPattern::fromDivider(
+        Text{U"probe-"}, Range{U'A', U'Z'}, Set{{U'0', U'9'}}, OneChar{}, Divider{}, Text{U";ok"});
 
     const auto probeLines = el::StringList{{
         "probe-A7b wert=0.42;ok"_el,

@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteWriter.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -13,7 +18,7 @@ void storageManagement() {
     auto writer = el::ByteWriter{};
 
     // Reserve once for the expected record, then transfer the finished editor.
-    writer.reserve(el::ByteLength{64U});
+    writer.reserve(el::ByteCount{64U});
     writer.writeByte(el::Byte{0x4eU}).writeByte(el::Byte{0x01U});
     auto editableRecord = writer.takeByteBlockEditor();
 

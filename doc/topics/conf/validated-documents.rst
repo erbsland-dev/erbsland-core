@@ -35,7 +35,7 @@ These labels are often better for a configuration editor or diagnostic than a no
 .. erbsland-demo::
     :source: conf/ValidatedDocuments/RuleMetadata.cpp
     :exec: conf/validated_documents --demo RuleMetadata
-    :source-sha256: 2feb16e3032181d34d4316c1cae3dcb9a3e26c5a53d0bbedaacd86e31f8e755d
+    :sha256: 02bb639cdc8e86f3957a5073bda1851b2022c5ce5bd145a3ab2588e924469e29
 
 .. code-block:: cpp
 
@@ -69,11 +69,13 @@ These labels are often better for a configuration editor or diagnostic than a no
         el::io::printLine("Description: "_el, rule->description());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Title: Floresta observada
-    Description: Nome da área florestal incluída no levantamento.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTitle: Floresta observada
+        Description: Nome da área florestal incluída no levantamento.␛[0m
 
 .. erbsland-demo-end::
 
@@ -88,8 +90,8 @@ Use the value's name or name path as a fallback rather than requiring every rule
 Other rule properties can support richer tools, but application behavior should still read the validated value rather
 than trying to reproduce the validator from its constraints.
 
-Handle Secret Values Deliberately
-=================================
+Secret Configuration Values and Sensitive Storage
+=================================================
 
 A rule marked with ``is_secret`` causes :cpp:func:`Value::isSecret() <erbsland::conf::Value::isSecret>` to return
 ``true`` on the validated value.
@@ -104,7 +106,7 @@ When extracted text must remain in memory, mark its shared storage as sensitive 
 .. erbsland-demo::
     :source: conf/ValidatedDocuments/SecretValues.cpp
     :exec: conf/validated_documents --demo SecretValues
-    :source-sha256: 4e57296038cb6a1320f62e1228b97b45b345a54d4dfc007d5574ce10fd135df0
+    :sha256: b2ac39be79f4c72048e7514ef9aa6a7d009207095920d0d9d14e932a66068e9b
 
 .. code-block:: cpp
 
@@ -137,11 +139,13 @@ When extracted text must remain in memory, mark its shared storage as sensitive 
         el::io::printLine("Extracted text is sensitive: "_el, el::BooleanFormat::yesNo(), token.isSensitive());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Rule marks value as secret: yes
-    Extracted text is sensitive: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRule marks value as secret: yes
+        Extracted text is sensitive: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -177,7 +181,7 @@ rule set is applied, and inspects a branch accepted with
 .. erbsland-demo::
     :source: conf/ValidatedDocuments/DefaultsAndValidation.cpp
     :exec: conf/validated_documents --demo DefaultsAndValidation
-    :source-sha256: fa596a5ab11fc489dc2fdce3e6f51f0def20344408870e3b59324faea0a27aed
+    :sha256: 0332964c400317eedf430cf016df094f36843845fe21a41cb7fbfee97276f967
 
 .. code-block:: cpp
 
@@ -191,9 +195,10 @@ rule set is applied, and inspects a branch accepted with
 
         auto builder = el::conf::vr::RulesBuilder{};
         builder.addRule("survey"_el, RuleType::Section);
-        builder.addRule("survey.forest"_el, RuleType::Text);
-        builder.addRule("survey.region"_el, RuleType::Text, Default{"Mata Atlântica"_el});
-        builder.addRule("survey.extension"_el, RuleType::NotValidated);
+        auto survey = builder.createBranch("survey"_el);
+        survey.addRule("forest"_el, RuleType::Text);
+        survey.addRule("region"_el, RuleType::Text, Default{"Mata Atlântica"_el});
+        survey.addRule("extension"_el, RuleType::NotValidated);
         const auto rules = builder.takeRules();
 
         const auto configuration = "[survey]\n"
@@ -217,13 +222,15 @@ rule set is applied, and inspects a branch accepted with
         el::io::printLine("Extension rule: "_el, extension->validationRule()->type().toText());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Forest validated before rules: no
-    Forest validated after rules: yes
-    Region is a default: yes
-    Extension rule: NotValidated
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mForest validated before rules: no
+        Forest validated after rules: yes
+        Region is a default: yes
+        Extension rule: NotValidated␛[0m
 
 .. erbsland-demo-end::
 
@@ -233,8 +240,8 @@ A ``NotValidated`` branch still receives its ``NotValidated`` rule, so ``wasVali
 schema explicitly accepted the branch without checking its type or content.
 Inspect the attached rule's type when tooling needs to distinguish that decision from ordinary validation.
 
-Keep Metadata with the Tree
-===========================
+Validation Metadata Lifetime and Configuration-Tree Ownership
+=============================================================
 
 Validation metadata belongs to the configuration tree.
 If an application copies the final settings into its own structure and releases the document, copy any metadata the

@@ -46,6 +46,8 @@ public:
     /// Access the optional trace section.
     [[nodiscard]] auto traceSection() const noexcept -> const LogTraceSection & { return _traceSection; }
     /// Read the cached trace-enabled flag with one atomic operation.
+    /// Manager-owned streams are enabled when unnamed or when their named section is enabled.
+    /// Writer filters control delivery independently of this producer-side flag.
     [[nodiscard]] auto traceEnabled() const noexcept -> bool { return _traceEnabled.load(std::memory_order_relaxed); }
 
 public:

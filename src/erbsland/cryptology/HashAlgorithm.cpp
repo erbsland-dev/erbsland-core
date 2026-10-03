@@ -9,25 +9,26 @@
 
 namespace erbsland::cryptology {
 
+using namespace unit;
 using namespace text::literals;
 
-auto HashAlgorithm::digestSize() const noexcept -> unit::ByteLength {
+auto HashAlgorithm::digestSize() const noexcept -> ByteCount {
     switch (_value) {
     case Sha3_256:
     case Sha2_256:
-        return unit::ByteLength{32U};
+        return ByteCount{32U};
     case Sha3_384:
     case Sha2_384:
-        return unit::ByteLength{48U};
+        return ByteCount{48U};
     case Sha3_512:
     case Sha2_512:
-        return unit::ByteLength{64U};
+        return ByteCount{64U};
     case Sha1:
-        return unit::ByteLength{20U};
+        return ByteCount{20U};
     case Md5:
-        return unit::ByteLength{16U};
+        return ByteCount{16U};
     }
-    return unit::ByteLength::zero();
+    return ByteCount::zero();
 }
 
 auto HashAlgorithm::security() const noexcept -> CryptographicSecurity {

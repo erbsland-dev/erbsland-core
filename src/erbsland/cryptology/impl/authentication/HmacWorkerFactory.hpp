@@ -18,10 +18,9 @@ namespace erbsland::cryptology::impl {
 [[nodiscard]] auto isHmacAlgorithmSupported(HashAlgorithm algorithm) noexcept -> bool;
 
 /// Create a built-in HMAC worker.
-/// @param algorithm The supported underlying hash algorithm.
+/// @param algorithm The underlying hash algorithm. Must be SHA-256 or SHA-384.
 /// @param key The exact secret key bytes.
 /// @return A new keyed worker.
-/// @throws err::ParameterError If the algorithm is unsupported.
 /// @tested{HmacTest HashPrimitiveFullValidationTest}
 [[nodiscard]] auto createHmacWorker(HashAlgorithm algorithm, mem::ConstByteSpan key) -> std::unique_ptr<HmacWorker>;
 

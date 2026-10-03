@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/text/Char.hpp>
-#include <erbsland/text/fuzzy/Matcher.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/fuzzy/Matcher.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace demo {
 
@@ -14,7 +17,7 @@ namespace demo {
 /// and adjacent transpositions each count as one edit. A distance limit keeps unrelated names out of suggestions.
 void suggestSoundNames() {
     const auto candidates = el::StringList{"kaiku"_el, "sointu"_el, "sävel"_el, "kaiut"_el};
-    const auto matches = el::fuzzy::Matcher{"kaik"_el}.setMaximumDistance(el::CpLength{1U}).findMatches(candidates);
+    const auto matches = el::fuzzy::Matcher{"kaik"_el}.setMaximumDistance(el::CpCount{1U}).findMatches(candidates);
     for (const auto &match : matches) {
         el::io::printLine(match.candidate(), " (edits: "_el, match.distance().toSizeT(), ")"_el);
     }
@@ -27,7 +30,7 @@ void suggestSoundNames() {
 void tuneSuggestions() {
     auto matcher = el::fuzzy::Matcher{};
     matcher.setPattern("KAIKU"_el)
-        .setMaximumDistance(el::CpLength{1U})
+        .setMaximumDistance(el::CpCount{1U})
         .setMaximumResults(el::ItemCount{2U})
         .setComparisonFn(el::Char::compareAsciiFolded);
 
@@ -44,7 +47,7 @@ void tuneSuggestions() {
 /// distances keep input order. Each result holds the original candidate text, so it can be shown directly to a user.
 void inspectMatches() {
     const auto candidates = el::StringList{u8"sävel"_el, u8"savel"_el, u8"säevl"_el, u8"säveli"_el};
-    const auto matches = el::fuzzy::Matcher{u8"sävel"_el}.setMaximumDistance(el::CpLength{1U}).findMatches(candidates);
+    const auto matches = el::fuzzy::Matcher{u8"sävel"_el}.setMaximumDistance(el::CpCount{1U}).findMatches(candidates);
     for (const auto &match : matches) {
         el::io::printLine("Candidate: "_el, match.text(), ", distance: "_el, match.distance().toSizeT());
     }

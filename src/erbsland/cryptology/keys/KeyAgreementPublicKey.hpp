@@ -17,7 +17,8 @@ public:
     /// Create an empty public key.
     KeyAgreementPublicKey() noexcept = default;
     /// Create a public key by copying its exact encoded bytes.
-    /// @throws err::ParameterError If the algorithm or key length is invalid.
+    /// @param algorithm The key-agreement algorithm. Must be a valid supported algorithm.
+    /// @param data The exact encoded public key. Its length must match the selected algorithm.
     KeyAgreementPublicKey(KeyAgreementAlgorithm algorithm, mem::ConstByteSpan data);
 
     // defaults

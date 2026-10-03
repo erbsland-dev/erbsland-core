@@ -25,6 +25,7 @@ auto internalView(const Source &object) -> impl::InternalViewPtr {
     }
     return view;
 }
+
 #endif
 
 }

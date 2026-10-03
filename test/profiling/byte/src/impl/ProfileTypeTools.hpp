@@ -4,6 +4,9 @@
 
 #include "../ProfileTypes.hpp"
 
+#include <erbsland/String.hpp>
+#include <erbsland/StringLiteral.hpp>
+
 #include <array>
 #include <initializer_list>
 
@@ -23,7 +26,7 @@ void addDescriptor(
         auto descriptor = UseCaseDescriptor{.type = type, .useCase = useCase, .variant = el::String{variant}};
         descriptor.workUnit = workUnit;
         for (const auto api : apiFamilies) {
-            descriptor.apiFamilies.emplace_back(api);
+            descriptor.apiFamilies.append(el::String{api});
         }
         target.emplace_back(std::move(descriptor));
     }

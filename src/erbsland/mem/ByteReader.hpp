@@ -15,8 +15,8 @@
 #include "impl/ByteReaderTools_fwd.hpp"
 
 #include "../text/String_fwd.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -45,7 +45,7 @@ public:
 
 public: // accessors
     /// Get the readable byte length.
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto length() const noexcept -> unit::ByteCount;
     /// Get the current read position.
     [[nodiscard]] auto position() const noexcept -> unit::ByteIndex { return _position; }
     /// Set the read position, clamped to `length()`.
@@ -57,15 +57,15 @@ public: // accessors
     /// Test if the reader is at the end of the data.
     [[nodiscard]] auto isAtEnd() const noexcept -> bool { return _position >= unit::ByteIndex::end(length()); }
     /// Test if `byteCount` bytes can be read at the current position.
-    [[nodiscard]] auto canRead(unit::ByteLength byteCount) const noexcept -> bool;
+    [[nodiscard]] auto canRead(unit::ByteCount byteCount) const noexcept -> bool;
     /// Compatibility overload using a native byte count.
     [[nodiscard]] auto canRead(std::size_t byteCount) const noexcept -> bool {
-        return canRead(unit::ByteLength::fromSizeT(byteCount));
+        return canRead(unit::ByteCount::fromSizeT(byteCount));
     }
     /// Advance the current position by `byteCount`, clamped to `length()`.
-    void advance(unit::ByteLength byteCount) noexcept;
+    void advance(unit::ByteCount byteCount) noexcept;
     /// Compatibility overload using a native byte count.
-    void advance(std::size_t byteCount) noexcept { advance(unit::ByteLength::fromSizeT(byteCount)); }
+    void advance(std::size_t byteCount) noexcept { advance(unit::ByteCount::fromSizeT(byteCount)); }
 
 public: // byte read
     /// Read one byte or return zero at end.
@@ -77,20 +77,20 @@ public: // byte read
     /// Read one byte at an offset from the current position without advancing, or return a default value.
     [[nodiscard]] auto peekByte(std::size_t offset, Byte defaultValue = Byte{}) const noexcept -> Byte;
     /// Read one byte or throw at end.
-    /// @throws err::OutOfRangeError If there is no byte at the current position.
+    /// @throws err::OutOfRangeError If the requested field exceeds the remaining input.
     [[nodiscard]] auto readByteOrThrow() -> Byte;
     /// Read one byte without advancing, or throw at end.
-    /// @throws err::OutOfRangeError If there is no byte at the current position.
+    /// @throws err::OutOfRangeError If the requested field exceeds the remaining input.
     [[nodiscard]] auto peekByteOrThrow() const -> Byte;
     /// Read exactly `length` bytes into a byte block.
     /// Returns no value without advancing if there are not enough bytes.
     /// @param length The number of bytes to read.
-    [[nodiscard]] auto readBytes(unit::ByteLength length) noexcept -> std::optional<ByteBlock>;
+    [[nodiscard]] auto readBytes(unit::ByteCount length) noexcept -> std::optional<ByteBlock>;
     /// Read exactly `length` bytes into a byte block.
-    /// @param length The number of bytes to read.
+    /// @param length The number of bytes to read. Must be finite.
     /// @return A shared block containing the requested bytes.
-    /// @throws err::OutOfRangeError If there are not enough bytes.
-    [[nodiscard]] auto readBytesOrThrow(unit::ByteLength length) -> ByteBlock;
+    /// @throws err::OutOfRangeError If the requested field exceeds the remaining input.
+    [[nodiscard]] auto readBytesOrThrow(unit::ByteCount length) -> ByteBlock;
     /// Read text using the given framing, or no value if it is incomplete or invalid.
     /// @param options The encoding and framing options.
     /// @return The decoded text, or no value if the complete valid frame is unavailable.
@@ -98,8 +98,8 @@ public: // byte read
     /// Read text using the given framing.
     /// @param options The encoding and framing options.
     /// @return The decoded text.
-    /// @throws err::OutOfRangeError If the complete field is unavailable.
-    /// @throws err::ParseError If an end mark is missing or mismatched.
+    /// @throws err::ParseError If the frame is incomplete, exceeds its configured limit, or has a missing or mismatched
+    /// end mark.
     [[nodiscard]] auto readTextOrThrow(const ByteTextOptions &options = {}) -> text::String;
 
 public: // integer read
@@ -112,7 +112,7 @@ public: // integer read
     /// Read an integer value or throw if there are not enough bytes.
     /// @tparam T One of the fixed-width native integer types from `int8_t` through `uint64_t`.
     /// @return The decoded integer.
-    /// @throws err::OutOfRangeError If there are not enough bytes.
+    /// @throws err::OutOfRangeError If the requested field exceeds the remaining input.
     template <impl::NativeByteInteger T>
     [[nodiscard]] auto readIntegerOrThrow() -> T;
     /// Read an explicitly formatted integer, or no value if it is incomplete or does not fit `T`.
@@ -125,14 +125,16 @@ public: // integer read
     template <impl::NativeByteInteger T>
     [[nodiscard]] auto readInteger(ByteIntegerFormat::Value format) -> std::optional<T>;
     /// Read an explicitly formatted integer.
+    /// The complete wire value selected by `format` must be available.
     /// @tparam T One of the fixed-width native integer types from `int8_t` through `uint64_t`.
     /// @param format The integer wire format.
     /// @return The decoded integer.
-    /// @throws err::OutOfRangeError If the complete wire value is unavailable.
     /// @throws err::OverflowError If the wire value cannot fit `T`.
+    /// @throws err::OutOfRangeError If the requested field exceeds the remaining input.
     template <impl::NativeByteInteger T>
     [[nodiscard]] auto readIntegerOrThrow(ByteIntegerFormat format) -> T;
     /// @overload
+    /// @throws err::OutOfRangeError If the requested field exceeds the remaining input.
     template <impl::NativeByteInteger T>
     [[nodiscard]] auto readIntegerOrThrow(ByteIntegerFormat::Value format) -> T;
     /// Read an integer into `value`.

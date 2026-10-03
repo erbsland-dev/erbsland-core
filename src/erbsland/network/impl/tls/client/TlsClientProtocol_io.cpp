@@ -11,17 +11,19 @@
 #include "../../../../cryptology/tls_record/TlsRecordError.hpp"
 #include "../../../../cryptology/tls_record/TlsRecordErrorCategory.hpp"
 #include "../../../../err/Exception.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../mem/Byte.hpp"
 #include "../../../../text/Literals.hpp"
-#include "../../../../unit/ByteLength.hpp"
+#include "../../../../unit/ByteCount.hpp"
 
 #include <utility>
 
 namespace erbsland::network::impl {
 
+using namespace mem;
 using namespace text::literals;
 
-void TlsClientProtocol::feedTransport(const mem::ConstByteSpan data) noexcept {
+void TlsClientProtocol::feedTransport(const ConstByteSpan data) noexcept {
     if (_state == TlsClientProtocolState::Inactive || _state == TlsClientProtocolState::Closed ||
         _state == TlsClientProtocolState::Failed) {
         return;
@@ -54,14 +56,18 @@ void TlsClientProtocol::feedTransport(const mem::ConstByteSpan data) noexcept {
             break;
         }
         fail(alert, error.reason());
-    } catch (const err::Exception &error) {
+    } catch (const err::RuntimeError &error) {
         fail(TlsAlertDescription::InternalError, error.reason());
-    } catch (...) {
-        fail(TlsAlertDescription::InternalError, "An unexpected TLS protocol operation failed."_el);
     }
 }
 
 void TlsClientProtocol::resume() noexcept {
+    if (_checkpoint == TlsClientProtocolCheckpoint::Signature) {
+        return;
+    }
+    if (_checkpoint == TlsClientProtocolCheckpoint::CertificateValidation) {
+        return;
+    }
     if (!hasCheckpoint() || _state == TlsClientProtocolState::Closed || _state == TlsClientProtocolState::Failed) {
         return;
     }
@@ -101,10 +107,8 @@ void TlsClientProtocol::processRetainedInputNoThrow() noexcept {
             break;
         }
         fail(alert, error.reason());
-    } catch (const err::Exception &error) {
+    } catch (const err::RuntimeError &error) {
         fail(TlsAlertDescription::InternalError, error.reason());
-    } catch (...) {
-        fail(TlsAlertDescription::InternalError, "An unexpected TLS protocol operation failed."_el);
     }
 }
 
@@ -138,7 +142,7 @@ void TlsClientProtocol::processRecords() {
     }
 }
 
-void TlsClientProtocol::processRecord(const mem::ByteBlock &record) {
+void TlsClientProtocol::processRecord(const ByteBlock &record) {
     auto reader = TlsWireReader{record.span()};
     const auto type = reader.readU8();
     const auto legacyVersion = reader.readU16();
@@ -157,7 +161,7 @@ void TlsClientProtocol::processRecord(const mem::ByteBlock &record) {
                 TlsAlertDescription::UnexpectedMessage, "ChangeCipherSpec interleaves a fragmented handshake."_el};
         }
         if (_state != TlsClientProtocolState::Handshaking || _handshakeStep == HandshakeStep::PostHandshake ||
-            content.size() != 1U || content[0] != mem::Byte{1U}) {
+            content.size() != 1U || content[0] != Byte{1U}) {
             throw TlsProtocolError{TlsAlertDescription::UnexpectedMessage, "The TLS ChangeCipherSpec is invalid."_el};
         }
         ++_ignoredCcsCount;
@@ -175,7 +179,7 @@ void TlsClientProtocol::processRecord(const mem::ByteBlock &record) {
     processProtectedRecord(record);
 }
 
-void TlsClientProtocol::processPlaintextRecord(const uint8_t type, const mem::ConstByteSpan content) {
+void TlsClientProtocol::processPlaintextRecord(const uint8_t type, const ConstByteSpan content) {
     // RFC 8446 section 5.1: no other record type may interleave a fragmented handshake message.
     if (type != 22U && !_handshakeStream.bufferedLength().isZero()) {
         throw TlsProtocolError{
@@ -200,7 +204,7 @@ void TlsClientProtocol::processPlaintextRecord(const uint8_t type, const mem::Co
     }
 }
 
-void TlsClientProtocol::processProtectedRecord(const mem::ByteBlock &record) {
+void TlsClientProtocol::processProtectedRecord(const ByteBlock &record) {
     // RFC 8446 section 5.2: no inner content is inspected or released until AEAD authentication succeeds.
     auto plaintext = _decryptor.unprotect(record.span());
     // RFC 8446 section 5.1: an incomplete handshake message cannot be interleaved with another inner content type.
@@ -246,7 +250,7 @@ void TlsClientProtocol::processHandshakeMessages() {
     }
 }
 
-void TlsClientProtocol::processAlert(const mem::ConstByteSpan content) {
+void TlsClientProtocol::processAlert(const ConstByteSpan content) {
     // RFC 8446 section 6: every alert record contains exactly AlertLevel and AlertDescription.
     if (content.size() != 2U) {
         throw TlsProtocolError{TlsAlertDescription::DecodeError, "A TLS alert must contain exactly two bytes."_el};
@@ -275,7 +279,7 @@ void TlsClientProtocol::processAlert(const mem::ConstByteSpan content) {
     fail(static_cast<TlsAlertDescription>(description), "The TLS peer reported a fatal alert."_el, false);
 }
 
-void TlsClientProtocol::processApplicationData(const mem::ConstByteSpan content) {
+void TlsClientProtocol::processApplicationData(const ConstByteSpan content) {
     if (_peerCloseNotify) {
         return;
     }
@@ -283,7 +287,7 @@ void TlsClientProtocol::processApplicationData(const mem::ConstByteSpan content)
         return;
     }
     requireReceiveCapacity(content.size());
-    auto block = mem::ByteBlock::fromSpan(content);
+    auto block = ByteBlock::fromSpan(content);
     block.markAsSensitive();
     _applicationInputBytes += block.length().toSizeT();
     _applicationInput.push_back(std::move(block));

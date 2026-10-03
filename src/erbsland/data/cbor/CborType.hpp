@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../../core/Definitions.hpp"
+
 #include <cstdint>
 
 namespace erbsland::data::cbor {
+
 /// The semantic type of a supported CBOR value.
 enum class CborType : uint8_t {
     Null,     ///< Null.
@@ -19,4 +22,5 @@ enum class CborType : uint8_t {
     DateTime, ///< Tagged date/time.
     Link,     ///< DAG-CBOR CID link.
 };
+
 }

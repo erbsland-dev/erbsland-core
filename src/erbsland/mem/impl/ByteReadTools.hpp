@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
+#include <optional>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -25,15 +26,15 @@
 namespace erbsland::mem::impl {
 
 /// Implements common non-comparing reads from a byte-data view.
-/// @tested{ByteDataViewTest ByteBlockTest}
+/// @tested{ByteDataViewTest ByteBlockTest LastIndexTest}
 class ByteReadTools final {
 public:
     /// A decoded formatted integer and the number of consumed bytes.
     /// @tested{ByteReaderWriterTest}
     struct IntegerValue final {
-        bool isNegative{};           ///< Whether the decoded value is negative.
-        uint64_t magnitude{};        ///< The absolute decoded value.
-        unit::ByteLength byteLength; ///< The encoded byte length.
+        bool isNegative{};          ///< Whether the decoded value is negative.
+        uint64_t magnitude{};       ///< The absolute decoded value.
+        unit::ByteCount byteLength; ///< The encoded byte length.
     };
 
 public:
@@ -44,9 +45,13 @@ public: // accessors
     /// Test if the selected data is empty.
     [[nodiscard]] constexpr auto isEmpty() const noexcept -> bool { return _data.dataSpan().empty(); }
     /// Get the selected byte length.
-    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteLength { return _data.length(); }
+    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteCount { return _data.length(); }
     /// Get the index after the final selected byte.
     [[nodiscard]] constexpr auto endIndex() const noexcept -> unit::ByteIndex { return unit::ByteIndex::end(length()); }
+    /// Get the final selected byte index, or noIndex() if the selection is empty.
+    [[nodiscard]] constexpr auto lastIndex() const noexcept -> unit::ByteIndex {
+        return unit::ByteIndex::last(length());
+    }
     /// Access all selected bytes.
     [[nodiscard]] constexpr auto span() const noexcept -> ConstByteSpan { return _data.dataSpan(); }
     /// Access a clamped relative byte range.
@@ -64,6 +69,7 @@ public: // read
         return bytes[index.toSizeT()];
     }
     /// Get a byte or throw if the index is invalid.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     [[nodiscard]] auto getOrThrow(unit::ByteIndex index) const -> Byte {
         const auto bytes = _data.dataSpan();
         if (!index.isValid() || index.toSizeT() >= bytes.size()) {
@@ -72,15 +78,18 @@ public: // read
         return bytes[index.toSizeT()];
     }
     /// Decode a formatted integer without modifying the source.
-    /// @param index The first byte index.
+    /// @param index The first byte index. The complete encoded integer must fit at this position.
     /// @param format The wire format.
     /// @param endianness The byte order for fixed-width formats.
     /// @return The decoded sign, magnitude, and encoded byte length.
-    /// @throws err::OutOfRangeError If the complete encoded integer is unavailable.
     /// @throws err::OverflowError If the encoded integer exceeds 64 bits.
     /// @throws err::ParseError If a variable-width integer is not minimally encoded.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     [[nodiscard]] auto getIntegerOrThrow(unit::ByteIndex index, ByteIntegerFormat format, Endianness endianness) const
         -> IntegerValue;
+    /// Decode a formatted integer, returning no value for truncated, invalid, or overflowing input.
+    [[nodiscard]] auto getInteger(unit::ByteIndex index, ByteIntegerFormat format, Endianness endianness) const
+        -> std::optional<IntegerValue>;
     /// Get a native integer or return a default value for an invalid range.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
@@ -91,6 +100,7 @@ public: // read
         return mem::getInteger<T>(_data.dataSpan(), index, endianness, defaultOnError);
     }
     /// Get a native integer or throw for an invalid range.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     [[nodiscard]] constexpr auto getIntegerOrThrow(
@@ -140,6 +150,8 @@ public: // conversion
     [[nodiscard]] auto toCharVector() const -> std::vector<char> { return copyToVector<char>(); }
 
 private:
+    /// Test whether the entire encoded integer is available without decoding or throwing.
+    [[nodiscard]] auto hasCompleteInteger(unit::ByteIndex index, ByteIntegerFormat format) const noexcept -> bool;
     /// Copy the selected bytes into a vector with a same-sized trivial element type.
     template <typename T>
     [[nodiscard]] auto copyToVector() const -> std::vector<T> {

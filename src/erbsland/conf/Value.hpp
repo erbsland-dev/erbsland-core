@@ -17,21 +17,24 @@
 #include "impl/utilities/TypeTraits.hpp"
 #include "vr/Rule_fwd.hpp"
 
+#include "../cryptology/HashAlgorithm.hpp"
 #include "../math/SaturatingMath.hpp"
 #include "../mem/ByteBlock.hpp"
 #include "../re/RegEx_fwd.hpp"
 #include "../text/String.hpp"
 #include "../text/StringFormat.hpp"
+#include "../text/StringList.hpp"
 #include "../time/CalendarDelta.hpp"
 #include "../time/Date.hpp"
 #include "../time/DateTime.hpp"
 #include "../time/Time.hpp"
 #include "../time/TimeWithZone.hpp"
+#include "../util/List.hpp"
 
 namespace erbsland::conf {
 
 /// The base class and interface for all values.
-/// @tested{ValueAsMethodsTest ValueGetMethodsTest}
+/// @tested{ValueAsMethodsTest ValueGetMethodsTest ValueGetListTest ValueDigestTest}
 class Value : public std::enable_shared_from_this<Value> {
 public:
     // defaults
@@ -48,6 +51,15 @@ public: // basic properties.
     [[nodiscard]] virtual auto parent() const noexcept -> ValuePtr = 0;
     /// The type of this value.
     [[nodiscard]] virtual auto type() const noexcept -> ValueType = 0;
+
+public: // local change detection
+    /// Digest this value's name, type, contents, and descendants in configuration order.
+    /// The digest excludes ancestor paths, source locations, and validation metadata. It is a local change detector,
+    /// with no compatibility guarantee across platforms or library versions.
+    /// @param algorithm The fixed-output hash algorithm to use.
+    /// @return The digest of the current parsed value tree.
+    /// @seedoc{/reference/conf/configuration_language}
+    [[nodiscard]] virtual auto digest(cryptology::HashAlgorithm algorithm) const -> mem::ByteBlock = 0;
 
 public: // location
     /// Test if this value has location info.
@@ -243,11 +255,18 @@ public: // conversions
 
     /// @return A list with values of this type, or an empty list on any problem.
     template <typename T>
-    [[nodiscard]] auto asList() const noexcept -> std::vector<T>;
+    [[nodiscard]] auto asList() const noexcept -> util::List<T>;
     /// @return A list with values of this type.
     /// @throws ConfError In case of any type mismatch or syntax error in the name path.
     template <typename T>
-    [[nodiscard]] auto asListOrThrow() const -> std::vector<T>;
+    [[nodiscard]] auto asListOrThrow() const -> util::List<T>;
+    /// Get text values as a string list, promoting a scalar text to one element.
+    /// @return The strings, or an empty list for incompatible values.
+    [[nodiscard]] auto asStringList() const noexcept -> text::StringList;
+    /// Get text values as a string list, promoting a scalar text to one element.
+    /// @return The strings in configuration order.
+    /// @throws ConfError If this value contains non-text values.
+    [[nodiscard]] auto asStringListOrThrow() const -> text::StringList;
     /// @return A matrix with values of this type, or an empty matrix on any problem.
     template <typename T>
     [[nodiscard]] auto asMatrix() const noexcept -> Matrix<T>;
@@ -345,7 +364,7 @@ public: // Convenience methods.
     template <typename tExpectedType>
     [[nodiscard]] auto getOrThrow([[maybe_unused]] const NamePathLike &namePath) const -> tExpectedType {
         using namespace text::literals;
-        throw err::LogicError("getOrThrow() not implemented for the given type."_el);
+        throw err::LogicFailure("getOrThrow() not implemented for the given type."_el);
     }
     /// @private
     template <typename tExpectedType>
@@ -429,14 +448,42 @@ public: // Convenience methods.
     /// @{
 
     /// @param namePath The name-path, name, or index of the value list.
-    /// @return A list with values of this type, or an empty list on any problem.
+    /// @param defaultValue The list returned for a missing path or incompatible value.
+    /// @return A uniform list, or `defaultValue` on a lookup or conversion error.
     template <typename T>
-    [[nodiscard]] auto getList(const NamePathLike &namePath) const noexcept -> std::vector<T>;
+    [[nodiscard]] auto getList(const NamePathLike &namePath, const util::List<T> &defaultValue = {}) const noexcept
+        -> util::List<T>;
     /// @param namePath The name-path, name, or index of the value list.
     /// @return A list with values of this type.
     /// @throws ConfError In case of any type mismatch or syntax error in the name path.
     template <typename T>
-    [[nodiscard]] auto getListOrThrow(const NamePathLike &namePath) const -> std::vector<T>;
+    [[nodiscard]] auto getListOrThrow(const NamePathLike &namePath) const -> util::List<T>;
+    /// Get a uniform list, using a default only when the path is missing.
+    /// @param namePath The name-path, name, or index of the value list.
+    /// @param defaultValue The list returned for a missing path.
+    /// @return The configured list, or the default for a missing path.
+    /// @throws ConfError If the path is invalid or a value has an incompatible type.
+    template <typename T>
+    [[nodiscard]] auto getListOrThrow(const NamePathLike &namePath, const util::List<T> &defaultValue) const
+        -> util::List<T>;
+    /// Get text values as a string list, promoting a scalar text to one element.
+    /// @param namePath The name-path, name, or index of the text or list.
+    /// @param defaultValue The list returned for a missing path or incompatible value.
+    /// @return The strings, or `defaultValue` on a lookup or conversion error.
+    [[nodiscard]] auto getStringList(
+        const NamePathLike &namePath, const text::StringList &defaultValue = {}) const noexcept -> text::StringList;
+    /// Get text values as a string list, promoting a scalar text to one element.
+    /// @param namePath The name-path, name, or index of the text or list.
+    /// @return The strings in configuration order.
+    /// @throws ConfError If the path is invalid, missing, or contains non-text values.
+    [[nodiscard]] auto getStringListOrThrow(const NamePathLike &namePath) const -> text::StringList;
+    /// Get text values as a string list, using a default only when the path is missing.
+    /// @param namePath The name-path, name, or index of the text or list.
+    /// @param defaultValue The list returned for a missing path.
+    /// @return The strings, or the default for a missing path.
+    /// @throws ConfError If the path is invalid or a value has an incompatible type.
+    [[nodiscard]] auto getStringListOrThrow(const NamePathLike &namePath, const text::StringList &defaultValue) const
+        -> text::StringList;
     /// @param namePath The name-path, name, or index of the value list.
     /// @return A matrix with values of this type, or an empty matrix on any problem.
     template <typename T>
@@ -523,6 +570,12 @@ public: // Convenience methods.
     /// @}
 
 private:
+    /// Convert a scalar or homogeneous value list to a Core list container.
+    /// @tparam tList The list type, whose element type must be supported by configuration values.
+    /// @return The converted elements in configuration order.
+    /// @throws ConfError If any value has an incompatible type.
+    template <typename tList>
+    [[nodiscard]] auto asUniformList() const -> tList;
     /// Convert a scalar or list value to its uniform matrix representation.
     template <typename tValueMatrix, typename tValue>
     [[nodiscard]] static auto toValueMatrixImpl(tValue &value) noexcept -> tValueMatrix;

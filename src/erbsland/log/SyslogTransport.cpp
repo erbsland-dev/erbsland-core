@@ -9,9 +9,10 @@
 
 namespace erbsland::log {
 
+using namespace text;
 using namespace text::literals;
 
-auto SyslogTransport::toString() const -> text::String {
+auto SyslogTransport::toString() const -> String {
     switch (_value) {
     case Udp:
         return "udp"_el;
@@ -23,11 +24,11 @@ auto SyslogTransport::toString() const -> text::String {
     return {};
 }
 
-auto SyslogTransport::allStrings() -> text::StringList {
-    return text::StringList{"udp"_el, "tcp"_el, "tls"_el};
+auto SyslogTransport::allStrings() -> StringList {
+    return StringList{"udp"_el, "tcp"_el, "tls"_el};
 }
 
-auto SyslogTransport::fromString(const text::String &text) noexcept -> std::optional<SyslogTransport> {
+auto SyslogTransport::fromString(const String &text) noexcept -> std::optional<SyslogTransport> {
     const auto compare = ::erbsland::text::cCaseInsensitive.asciiComparisonFn();
     if (text.compare("udp"_el, compare) == std::strong_ordering::equal) {
         return Udp;
@@ -41,7 +42,7 @@ auto SyslogTransport::fromString(const text::String &text) noexcept -> std::opti
     return std::nullopt;
 }
 
-auto SyslogTransport::fromStringOrThrow(const text::String &text) -> SyslogTransport {
+auto SyslogTransport::fromStringOrThrow(const String &text) -> SyslogTransport {
     if (const auto result = fromString(text); result.has_value()) {
         return *result;
     }

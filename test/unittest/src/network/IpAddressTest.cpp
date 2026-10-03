@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/network/IpAddress.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::network;

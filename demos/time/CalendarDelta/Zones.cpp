@@ -3,7 +3,21 @@
 
 #include "CalendarDeltaDemos.hpp"
 
-#include <erbsland/time/all.hpp>
+#include <erbsland/all_time.hpp>
+#include <erbsland/CalendarDelta.hpp>
+#include <erbsland/Date.hpp>
+#include <erbsland/DateTime.hpp>
+#include <erbsland/Day.hpp>
+#include <erbsland/Hour.hpp>
+#include <erbsland/Minute.hpp>
+#include <erbsland/Month.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/Time.hpp>
+#include <erbsland/TimeOccurrenceInFold.hpp>
+#include <erbsland/TimeWithZone.hpp>
+#include <erbsland/TimeZone.hpp>
+#include <erbsland/Year.hpp>
 
 namespace demo {
 

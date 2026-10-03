@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
 
 namespace demo {
 
@@ -12,7 +16,7 @@ namespace demo {
 /// the editor is converted to a stored read-only string.
 void shrinkSlices() {
     auto note = el::StringEditor{};
-    note.reserve(el::ByteLength{96U});
+    note.reserve(el::ByteCount{96U});
     note.append("Specimen: "_el);
     note.append("Luzula sylvatica"_el);
 

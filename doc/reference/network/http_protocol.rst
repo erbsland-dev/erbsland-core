@@ -118,6 +118,9 @@ KiB for each chunk-metadata line, 16 MiB for a decoded body, 16 KiB for yielded 
 input or output queue.
 Limits are checked before attacker-controlled allocation.
 
+``HttpStatus::fromCodeOrThrow()`` reports codes outside 100 through 599 with ``OutOfRangeError``.
+Media-type parsers validate external input before invoking constructors and report malformed input with ``ParseError``.
+
 Interface
 =========
 

@@ -1,35 +1,44 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/core/ApplicationInfo.hpp>
-#include <erbsland/err/Diagnostic.hpp>
-#include <erbsland/i18n/DisplayTextMap.hpp>
+#include "../core/ApplicationTestScope.hpp"
+#include "../cterm/api/buffer/CursorWriterTestProbe.hpp"
+#include "../cterm/support/BlockStringTestHelper.hpp"
+#include "../i18n/DisplayTextTestLayer.hpp"
+
+#include <erbsland/ApplicationInfo.hpp>
+#include <erbsland/ArgumentIndex.hpp>
+#include <erbsland/cterm/TerminalDocumentRenderer.hpp>
+#include <erbsland/cterm/TerminalDocumentStyle.hpp>
+#include <erbsland/Diagnostic.hpp>
+#include <erbsland/DisplayText.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Option.hpp>
+#include <erbsland/OptionChoice.hpp>
+#include <erbsland/OptionChoices.hpp>
+#include <erbsland/OptionError.hpp>
+#include <erbsland/OptionErrorContext.hpp>
+#include <erbsland/OptionHelp.hpp>
+#include <erbsland/OptionHelpVisibility.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
 #include <erbsland/options/impl/OptionDocumentBuilder.hpp>
-#include <erbsland/options/Option.hpp>
-#include <erbsland/options/OptionChoice.hpp>
-#include <erbsland/options/OptionChoices.hpp>
-#include <erbsland/options/OptionError.hpp>
-#include <erbsland/options/OptionErrorContext.hpp>
-#include <erbsland/options/OptionHelp.hpp>
-#include <erbsland/options/OptionHelpVisibility.hpp>
-#include <erbsland/options/OptionManager.hpp>
-#include <erbsland/options/OptionModule.hpp>
-#include <erbsland/options/Options.hpp>
-#include <erbsland/options/OptionSet.hpp>
-#include <erbsland/options/OptionType.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/text/TextDocument.hpp>
-#include <erbsland/text/TextNode.hpp>
-#include <erbsland/text/TextNodeData.hpp>
-#include <erbsland/text/TextNodeType.hpp>
-#include <erbsland/unit/ArgumentUnit.hpp>
-#include <erbsland/unit/ItemCount.hpp>
-#include <erbsland/unit/Version.hpp>
+#include <erbsland/OptionSet.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/TextDocument.hpp>
+#include <erbsland/TextNode.hpp>
+#include <erbsland/TextNodeData.hpp>
+#include <erbsland/TextNodeType.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/Version.hpp>
 
 #include <initializer_list>
 #include <string>
@@ -39,10 +48,20 @@ using namespace el::options;
 using namespace el::text::literals;
 namespace th = erbsland::unittest::th;
 
-TESTED_TARGETS(ApplicationInfo DisplayTextMap OptionDocumentBuilder OptionManager OptionParserFlag TextDocument)
-class OptionDocumentTest final : public el::UnitTest {
+TESTED_TARGETS(ApplicationInfo DisplayText OptionDocumentBuilder OptionManager OptionParserFlag TextDocument)
+class OptionDocumentTest final : public UNITTEST_SUBCLASS(BlockStringTestHelper) {
+private:
+    static constexpr auto cCountOption = "--count"_el;
+    static constexpr auto cForceOption = "--force"_el;
+    static constexpr auto cModeOption = "--mode"_el;
+    static constexpr auto cVerboseOption = "--verbose"_el;
+    static constexpr auto cMOption = "-m"_el;
+    static constexpr auto cVOption = "-v"_el;
+    static constexpr auto cPathOption = "path"_el;
+
 public:
     void testRootHelp() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto options = makeOptions();
         auto manager = OptionManager{options};
 
@@ -53,7 +72,7 @@ public:
         requireContains(text, "demo-tool <module> [options] [--mode <choice>]\n");
         requireContains(text, "Modules:\n");
         requireContains(text, "run");
-        requireContains(text, "Run module.");
+        requireContains(text, "Run Commands");
         requireContains(text, "Options:\n");
         requireContains(text, "-h, --help");
         requireContains(text, "--version");
@@ -69,6 +88,7 @@ public:
     }
 
     void testModuleHelpIncludesRootAndModuleOptions() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto options = makeOptions();
         auto manager = OptionManager{options};
 
@@ -82,6 +102,7 @@ public:
     }
 
     void testVersionOutput() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto options = makeOptions();
         auto manager = OptionManager{options};
 
@@ -94,6 +115,7 @@ public:
     }
 
     void testDisabledBuiltInOptionsAreHidden() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = makeOptions();
         options->setParserFlag(OptionParserFlag::DisableVersion);
         auto manager = OptionManager{options};
@@ -109,13 +131,14 @@ public:
     }
 
     void testHelpDetailsCanBeDisabled() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("tool"_el);
-        options->addOption({"-v"_el, "--verbose"_el});
+        options->addOption({cVOption, cVerboseOption});
         auto manager = OptionManager{options};
 
         auto text = toStdString(manager.helpDocument({}).toString());
-        requireContains(text, "-h, --help[=<value>]");
+        requireContains(text, "-h, --help[=<keyword>]");
         requireContains(text, "-v, --verbose");
         requireContains(text, "--version");
 
@@ -124,20 +147,21 @@ public:
         requireContains(text, "-h, --help");
         requireContains(text, "-v, --verbose");
         requireContains(text, "--version");
-        requireMissing(text, "[=<value>]");
+        requireMissing(text, "[=<keyword>]");
     }
 
     void testDetailedHelpSearchUsageExampleAndSeeAlso() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("tool"_el);
-        options->addOption({"-m"_el, "--mode"_el, "mode"_el})
+        options->addOption({cMOption, cModeOption, "mode"_el})
             .setType(OptionType::Text)
             .setFlag(OptionFlag::AcceptAsFlag)
             .setHelpTitle("Global Mode"_el)
             .setHelpDescription("Select the global mode."_el)
             .setHelpExample("tool run --mode=fast"_el);
         auto module = OptionModule::create("run"_el);
-        module->addOption({"--mode"_el, "mode"_el})
+        module->addOption({cModeOption, "mode"_el})
             .setType(OptionType::Choice)
             .addChoice("fast"_el)
             .addChoice("safe"_el)
@@ -155,37 +179,303 @@ public:
         requireContains(text, "Example:\n");
         requireContains(text, "tool run --mode=fast");
         requireContains(text, "See Also:\n");
-        requireContains(text, "tool run --help=mode");
+        requireContains(text, "tool run --help=--mode");
 
         text = toStdString(manager.detailedHelpDocument("run"_el, "--MODE"_el).toString());
         requireContains(text, "Run Mode\n");
         requireContains(text, "tool run --mode=<choice>\n");
         requireContains(text, "tool --help=--mode");
 
-        text = toStdString(manager.detailedHelpDocument({}, "-m"_el).toString());
+        text = toStdString(manager.detailedHelpDocument({}, cMOption).toString());
         requireContains(text, "Global Mode\n");
         REQUIRE_THROWS_AS(OptionError, manager.detailedHelpDocument({}, "-M"_el));
     }
 
-    void testDetailedHelpRejectsHiddenNamesWithSuggestions() {
+    void testDetailedHelpPreservesSemanticColorsAndCommandLayout() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("tool"_el);
-        options->addOption("--verbose"_el).setHelpDescription("Verbose output."_el);
+        options->addOption({cMOption, cModeOption, "mode"_el})
+            .setType(OptionType::Text)
+            .setFlag(OptionFlag::AcceptAsFlag)
+            .setHelpTitle("Choose a mode."_el);
+        auto module = OptionModule::create("run"_el);
+        module->addOption({cModeOption, "mode"_el}).setType(OptionType::Text);
+        options->addModule(module);
+        auto manager = OptionManager{options};
+        const auto document = manager.detailedHelpDocument({}, "mode"_el);
+        const auto plain = toStdString(document.toString());
+        requireContains(plain, "-m, --mode <value>\n");
+        requireContains(plain, "tool <module> -m[=<value>]\n");
+        requireContains(plain, "tool <module> --mode[=<value>]\n");
+        requireContains(plain, "tool run --help=--mode");
+        REQUIRE(document.root()->contains(el::text::TextNodeType::OptionExecutable));
+        REQUIRE(document.root()->contains(el::text::TextNodeType::OptionShort));
+        REQUIRE(document.root()->contains(el::text::TextNodeType::OptionLong));
+        REQUIRE(document.root()->contains(el::text::TextNodeType::OptionMeta));
+        REQUIRE(document.root()->contains(el::text::TextNodeType::OptionOptional));
+        REQUIRE(document.root()->contains(el::text::TextNodeType::OptionValue));
+
+        for (const auto width : {80, 40}) {
+            auto writer = renderHelp(document, width);
+            const auto &shortUsage = requireRenderedLine(writer, "  tool <module> -m[=<value>]");
+            requireColor(shortUsage, "tool", fg::BrightGreen);
+            requireColor(shortUsage, "module", fg::BrightGreen);
+            requireColor(shortUsage, "-m", fg::BrightYellow);
+            requireColor(shortUsage, "value", fg::BrightGreen);
+            requireColor(shortUsage, "<", fg::BrightBlack);
+            requireColor(shortUsage, "]", fg::BrightBlack);
+            const auto &longUsage = requireRenderedLine(writer, "  tool <module> --mode[=<value>]");
+            requireColor(longUsage, "--mode", fg::BrightCyan);
+            const auto &seeAlso = requireRenderedLine(writer, "  tool run --help=--mode");
+            requireColor(seeAlso, "run", fg::BrightGreen);
+            requireColor(seeAlso, "--help", fg::BrightCyan);
+            requireColor(seeAlso, "mode", fg::BrightGreen);
+            const auto &title = requireRenderedLine(writer, "-m, --mode <value>");
+            requireColor(title, "-m", fg::BrightYellow);
+            requireColor(title, "--mode", fg::BrightCyan);
+        }
+    }
+
+    void testDetailedHelpFlagsRequiredValuesLocalizationAndCustomTitles() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        options->addOption(cForceOption).setHelpTitle("Force execution"_el);
+        options->addOption(cCountOption).setType(OptionType::Integer);
+        auto wording = DisplayTextTestLayer{
+            {"options"_el, "integer_placeholder"_el, "number"_el},
+        };
+        auto manager = OptionManager{options};
+        const auto flag = manager.detailedHelpDocument({}, cForceOption);
+        requireContains(toStdString(flag.toString()), "Force execution\n");
+        requireContains(toStdString(flag.toString()), "tool --force");
+        REQUIRE(!flag.root()->children().first()->contains(el::text::TextNodeType::OptionLong));
+        const auto required = manager.detailedHelpDocument({}, cCountOption);
+        requireContains(toStdString(required.toString()), "tool --count=<number>");
+        auto writer = renderHelp(required);
+        const auto &usage = requireRenderedLine(writer, "  tool --count=<number>");
+        requireColor(usage, "number", fg::BrightGreen);
+    }
+
+    void testModuleChoiceAndSearchDocumentsRetainSemanticColors() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        auto module = OptionModule::create("generate-data"_el);
+        module->setHelpTitle("Generate data"_el);
+        module->setHelpDescription("Generate the configured tables."_el);
+        auto choices = OptionChoices::create();
+        choices->addChoice("fast"_el).setHelp("Prefer speed"_el).setHelpDescription("Use the fast path."_el);
+        module->addOption({cMOption, cModeOption}).setChoices(choices).setValueName("profile"_el);
+        options->addModule(module);
+        auto manager = OptionManager{options};
+        const auto moduleDocument = manager.detailedHelpDocument({}, "generate-data"_el);
+        const auto choiceDocument = manager.detailedHelpDocument("generate-data"_el, "--mode/fast"_el);
+        const auto resultsDocument = manager.detailedHelpDocument({}, "generate"_el);
+        const auto optionResults = manager.detailedHelpDocument("generate-data"_el, "--mod"_el);
+        const auto choiceResults = manager.detailedHelpDocument("generate-data"_el, "--mode/fas"_el);
+        REQUIRE(optionResults.root()->contains(el::text::TextNodeType::OptionName));
+        REQUIRE(!optionResults.root()->contains(el::text::TextNodeType::OptionExecutable));
+        REQUIRE(choiceResults.root()->contains(el::text::TextNodeType::OptionValue));
+        REQUIRE(choiceDocument.root()->contains(el::text::TextNodeType::OptionValue));
+        for (const auto width : {80, 40}) {
+            auto moduleWriter = renderHelp(moduleDocument, width);
+            requireColor(requireRenderedLine(moduleWriter, "generate-data"), "generate-data", fg::BrightGreen);
+            const auto &moduleUsage = requireRenderedLine(moduleWriter, "  tool generate-data [options]");
+            requireColor(moduleUsage, "tool", fg::BrightGreen);
+            requireColor(moduleUsage, "[", fg::BrightBlack);
+            auto choiceWriter = renderHelp(choiceDocument, width);
+            const auto &choiceUsage = requireRenderedLine(choiceWriter, "  tool generate-data --mode=fast");
+            requireColor(choiceUsage, "--mode", fg::BrightCyan);
+            requireColor(choiceUsage, "fast", fg::BrightGreen);
+            requireColor(requireRenderedLine(choiceWriter, "  tool generate-data -m=fast"), "-m", fg::BrightYellow);
+            auto resultsWriter = renderHelp(resultsDocument, width);
+            const auto &moduleResult = requireRenderedContainingLine(resultsWriter, "generate-data");
+            requireColor(moduleResult, "generate-data", fg::BrightGreen);
+            auto optionWriter = renderHelp(optionResults, width);
+            const auto &optionResult = requireRenderedContainingLine(optionWriter, "-m, --mode");
+            requireColor(optionResult, "-m", fg::BrightYellow);
+            requireColor(optionResult, "--mode", fg::BrightCyan);
+            requireColor(optionResult, "profile", fg::BrightGreen);
+            requireColor(optionResult, "<", fg::BrightBlack);
+            requireColor(optionResult, ">", fg::BrightBlack);
+            static_cast<void>(requireRenderedContainingLine(optionWriter, "  -m, --mode"));
+            auto valueWriter = renderHelp(choiceResults, width);
+            const auto &valueResult = requireRenderedContainingLine(valueWriter, "fast");
+            requireColor(valueResult, "fast", fg::BrightGreen);
+        }
+    }
+
+    void testSuggestionsRetainContextSpecificColors() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        options->addOption({cVOption, cVerboseOption, "verbose-alias"_el});
+        options->addOption(cModeOption).setType(OptionType::Choice).addChoice("--safe"_el);
+        options->addModule(OptionModule::create("run"_el));
+        auto manager = OptionManager{options};
+        auto context = OptionErrorContext{}.setOptions(options).setReason(OptionErrorReason::UnknownName);
+        context.setSuggestions(
+            el::text::StringList{cVOption, cVerboseOption, "run"_el, "verbose-alias"_el, "custom"_el, "--custom"_el});
+        auto writer = renderHelp(manager.errorDocument(context));
+        requireColor(requireRenderedLine(writer, "  -v"), "-v", fg::BrightYellow);
+        requireColor(requireRenderedLine(writer, "  --verbose"), "--verbose", fg::BrightCyan);
+        requireColor(requireRenderedLine(writer, "  run"), "run", fg::BrightGreen);
+        requireColor(requireRenderedLine(writer, "  verbose-alias"), "verbose-alias", fg::BrightGreen);
+        requireColor(requireRenderedLine(writer, "  custom"), "custom", fg::Default);
+        requireColor(requireRenderedLine(writer, "  --custom"), "--custom", fg::Default);
+        context.setReason(OptionErrorReason::UnexpectedValueType)
+            .setOption(options->optionSets().back()->options().back());
+        context.setSuggestions(el::text::StringList{"--safe"_el});
+        writer = renderHelp(manager.errorDocument(context));
+        requireColor(requireRenderedLine(writer, "  --safe"), "--safe", fg::BrightGreen);
+    }
+
+    void testCanonicalHelpNamesAndSuggestions() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        options->addOption({"-A"_el, "--One_Two"_el, "One_Two"_el});
+        auto module = OptionModule::create("Run_One"_el);
+        options->addModule(module);
+        auto manager = OptionManager{options};
+        module->addOption("--Two_Three"_el);
+        requireContains(toStdString(manager.helpDocument("RUN_ONE"_el).toString()), "tool run-one");
+        requireContains(
+            toStdString(manager.detailedHelpDocument("RUN_ONE"_el, "--TWO_THREE"_el).toString()),
+            "tool run-one --two-three");
+        const auto document = manager.detailedHelpDocument("RUN_ONE"_el, "--ONE_TWO"_el);
+        requireContains(toStdString(document.toString()), "tool <module> --one-two");
+        REQUIRE_EQUAL(document.toString(), manager.detailedHelpDocument("run-one"_el, "one_two"_el).toString());
+        auto arguments = makeArgs({"tool"_el, "run_one"_el, "--HELP=ONE_TWO"_el});
+        const auto result = manager.parse(arguments);
+        REQUIRE_EQUAL(result.status(), OptionResultStatus::DisplayHelp);
+        REQUIRE_EQUAL(result.helpName(), "one-two"_el);
+        const auto results = manager.detailedHelpDocument({}, "--one_tow"_el).toString();
+        REQUIRE(results.contains("Matching help for"_el));
+        REQUIRE(results.contains("--one-two"_el));
+        auto unknownModule = makeArgs({"tool"_el, "run_eno"_el});
+        const auto moduleError = manager.parse(unknownModule);
+        REQUIRE(moduleError.errorContext()->suggestions().contains("run-one"_el));
+    }
+
+    void testMalformedHelpKeywordsAreRejectedWithoutInputDisclosure() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->addOption(cVerboseOption);
+        auto callbackCalled = false;
+        options->optionSets().front()->setPreParsingFn(
+            [&callbackCalled](const OptionSetPtr &) -> void { callbackCalled = true; });
+        auto wording = DisplayTextTestLayer{
+            {"options"_el, "malformed_help_name_title"_el, "Invalid translated help keyword"_el},
+            {"options"_el, "malformed_help_name_description"_el, "Translated help keyword rules."_el},
+        };
+        auto manager = OptionManager{options};
+        const auto oversized = el::text::String{el::text::StringEditor{}.append(U'a', el::unit::CpCount{101U})};
+        const auto malformed = el::text::StringList{
+            ""_el,
+            "bad keyword"_el,
+            "bad=keyword"_el,
+            "bad/keyword/more"_el,
+            "_a"_el,
+            "__help"_el,
+            "-_a"_el,
+            "one__two"_el,
+            "one-"_el,
+            "---verbose"_el,
+            "-ab"_el,
+            "9mode"_el,
+            "_mode"_el,
+            "mödé"_el,
+            "bad\nkeyword"_el,
+            el::text::String{el::text::StringEditor{th::stdStringFromHex("ff")}},
+            oversized,
+            el::join("--"_el, oversized)};
+        for (const auto &keyword : malformed) {
+            runWithContext(SOURCE_LOCATION(), [&]() -> void {
+                const auto helpArgument = el::join("--help="_el, keyword);
+                auto arguments = makeArgs({"tool"_el, helpArgument});
+                const auto result = manager.parse(arguments);
+                REQUIRE_EQUAL(result.status(), OptionResultStatus::Error);
+                REQUIRE(result.errorContext().has_value());
+                const auto &context = result.errorContext().value();
+                REQUIRE_EQUAL(context.reason(), OptionErrorReason::SyntaxError);
+                REQUIRE_EQUAL(context.title(), "Invalid translated help keyword"_el);
+                REQUIRE_EQUAL(context.description(), "Translated help keyword rules."_el);
+                REQUIRE(context.arguments().isEmpty());
+                REQUIRE(context.suggestions().isEmpty());
+                REQUIRE(!manager.errorDocument(context).toString().contains(helpArgument));
+                REQUIRE_FALSE(callbackCalled);
+                try {
+                    static_cast<void>(manager.detailedHelpDocument({}, keyword));
+                    REQUIRE(false);
+                } catch (const OptionError &error) {
+                    REQUIRE_EQUAL(error.context().reason(), OptionErrorReason::SyntaxError);
+                    REQUIRE_EQUAL(error.context().description(), "Translated help keyword rules."_el);
+                    REQUIRE(error.context().arguments().isEmpty());
+                    REQUIRE(error.context().suggestions().isEmpty());
+                }
+            });
+        }
+    }
+
+    void testHelpKeywordBoundariesAndTerminator() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        auto manager = OptionManager{options};
+        const auto maximumName = el::text::String{el::text::StringEditor{}.append(U'a', el::unit::CpCount{100U})};
+        for (
+            const auto &keyword : el::text::StringList{
+                "verbose"_el,
+                cVerboseOption,
+                "-A"_el,
+                "-1"_el,
+                "mode-2-safe"_el,
+                maximumName,
+                el::join("--"_el, maximumName)}) {
+            auto arguments = makeArgs({"tool"_el, el::join("--help="_el, keyword)});
+            const auto result = manager.parse(arguments);
+            REQUIRE_EQUAL(result.status(), OptionResultStatus::DisplayHelp);
+            REQUIRE_EQUAL(result.helpName(), keyword);
+        }
+        options->addModule(OptionModule::create("run"_el));
+        auto moduleArguments = makeArgs({"tool"_el, "run"_el, "--help=bad keyword"_el});
+        const auto moduleResult = manager.parse(moduleArguments);
+        REQUIRE_EQUAL(moduleResult.status(), OptionResultStatus::Error);
+        REQUIRE(moduleResult.errorContext()->arguments().isEmpty());
+        options->setParserFlag(OptionParserFlag::NoHelpDetails);
+        auto disabledDetails = makeArgs({"tool"_el, "--help=bad keyword"_el});
+        const auto disabledResult = manager.parse(disabledDetails);
+        REQUIRE_EQUAL(disabledResult.errorContext()->reason(), OptionErrorReason::SyntaxError);
+        REQUIRE(disabledResult.errorContext()->arguments().isEmpty());
+
+        auto positionalOptions = Options::create();
+        positionalOptions->addOption(cPathOption).setType(OptionType::Text);
+        auto positionalManager = OptionManager{positionalOptions};
+        auto afterTerminator = makeArgs({"tool"_el, "--"_el, "--help=bad keyword"_el});
+        const auto positionalResult = positionalManager.parse(afterTerminator);
+        REQUIRE_EQUAL(positionalResult.status(), OptionResultStatus::Success);
+        REQUIRE_EQUAL(positionalResult.values()->getText(cPathOption), "--help=bad keyword"_el);
+    }
+
+    void testDetailedHelpRejectsHiddenNamesWithSuggestions() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        options->addOption(cVerboseOption).setHelpTitle("Verbose output."_el);
         options->addOption("--hidden"_el).setHelpVisibility(OptionHelpVisibility::Hidden);
         auto manager = OptionManager{options};
 
-        try {
-            static_cast<void>(manager.detailedHelpDocument({}, "--verbsoe"_el));
-            REQUIRE(false);
-        } catch (const OptionError &error) {
-            REQUIRE(error.context().reason() == OptionErrorReason::UnknownName);
-            REQUIRE(error.context().suggestions().count() >= el::unit::ItemCount::one());
-            REQUIRE(error.context().suggestions().get(el::unit::ItemIndex::zero()) == "--verbose"_el);
-        }
+        const auto results = manager.detailedHelpDocument({}, "--verbsoe"_el).toString();
+        REQUIRE(results.contains("Matching help for"_el));
+        REQUIRE(results.contains(cVerboseOption));
+        REQUIRE(!results.contains("--hidden"_el));
         REQUIRE_THROWS_AS(OptionError, manager.detailedHelpDocument({}, "--hidden"_el));
     }
 
     void testReducedModuleOverview() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = makeOptions();
         auto manager = OptionManager{options};
 
@@ -199,6 +489,7 @@ public:
     }
 
     void testReducedModuleOverviewWithNoVisibleModules() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("tool"_el);
         auto module = OptionModule::create("hidden"_el);
@@ -213,12 +504,14 @@ public:
     }
 
     void testSuggestionsAreLocalizedBeforeUsage() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("tool"_el);
-        options->addOption("--verbose"_el);
-        auto displayText = el::i18n::DisplayTextMap::defaultMap()->clone();
-        displayText->set("options.DidYouMeanHeading"_el, "Perhaps"_el);
-        auto manager = OptionManager{options, displayText};
+        options->addOption(cVerboseOption);
+        auto displayText = DisplayTextTestLayer{
+            {"options"_el, "did_you_mean_heading"_el, "Perhaps"_el},
+        };
+        auto manager = OptionManager{options};
         auto arguments = makeArgs({"tool"_el, "--verbsoe"_el});
         const auto result = manager.parse(arguments);
         REQUIRE(result.errorContext().has_value());
@@ -230,17 +523,18 @@ public:
     }
 
     void testCustomDisplayText() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto options = makeOptions();
-        auto displayText = el::i18n::DisplayTextMap::defaultMap()->clone();
-        displayText->set("options.UsageLabel"_el, "Use"_el)
-            .set("options.ModulePlaceholder"_el, "action"_el)
-            .set("options.OptionsPlaceholder"_el, "flags"_el)
-            .set("options.OptionsHeading"_el, "Flags"_el)
-            .set("options.HelpOptionDescription"_el, "Show assistance."_el)
-            .set("options.VersionOptionDescription"_el, "Show release information."_el)
-            .set("options.ChoicePlaceholder"_el, "variant"_el);
+        auto displayText = DisplayTextTestLayer{
+            {"options"_el, "usage_label"_el, "Use"_el},
+            {"options"_el, "module_placeholder"_el, "action"_el},
+            {"options"_el, "options_placeholder"_el, "flags"_el},
+            {"options"_el, "options_heading"_el, "Flags"_el},
+            {"options"_el, "help_option_description"_el, "Show assistance."_el},
+            {"options"_el, "version_option_description"_el, "Show release information."_el},
+            {"options"_el, "choice_placeholder"_el, "variant"_el},
+        };
         auto manager = OptionManager{options};
-        manager.setDisplayTextMap(displayText);
 
         const auto text = toStdString(manager.helpDocument({}).toString());
 
@@ -254,7 +548,70 @@ public:
         requireContains(text, "--mode <variant>");
     }
 
+    void testParserAndStorageDiagnosticsUseDisplayTextLayer() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->addOption(cCountOption).setType(OptionType::Integer);
+        options->addOption(cModeOption).setType(OptionType::Choice).addChoice("safe"_el);
+        auto wording = DisplayTextTestLayer{
+            {"options"_el, "unknown_option_title"_el, "Unknown translated option"_el},
+            {"options"_el, "unknown_option_description"_el, "Translated unknown: {}"_el},
+            {"options"_el, "invalid_integer_value_title"_el, "Translated integer error"_el},
+            {"options"_el, "invalid_integer_description"_el, "Translated integer: {1} rejects {0}"_el},
+            {"options"_el, "invalid_choice_title"_el, "Translated choice error"_el},
+            {"options"_el, "invalid_choice_description"_el, "Translated choice: {1} rejects {0}. {2}"_el},
+            {"options"_el, "choices_label"_el, "Translated choices"_el},
+        };
+        auto manager = OptionManager{options};
+        auto unknown = makeArgs({"tool"_el, "--missing"_el});
+        auto result = manager.parse(unknown);
+        REQUIRE(result.errorContext().has_value());
+        REQUIRE_EQUAL(result.errorContext()->title(), "Unknown translated option"_el);
+        REQUIRE_EQUAL(result.errorContext()->description(), "Translated unknown: --missing"_el);
+        auto invalidInteger = makeArgs({"tool"_el, "--count=wrong"_el});
+        result = manager.parse(invalidInteger);
+        REQUIRE(result.errorContext().has_value());
+        REQUIRE_EQUAL(result.errorContext()->title(), "Translated integer error"_el);
+        requireContains(
+            toStdString(result.errorContext()->description()), "Translated integer: --count <integer> rejects wrong");
+        auto invalidChoice = makeArgs({"tool"_el, "--mode=wrong"_el});
+        result = manager.parse(invalidChoice);
+        REQUIRE(result.errorContext().has_value());
+        REQUIRE_EQUAL(result.errorContext()->title(), "Translated choice error"_el);
+        requireContains(toStdString(result.errorContext()->description()), "Translated choices: safe.");
+    }
+
+    void testBuiltInDetailedHelpUsesDisplayTextLayer() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto wording = DisplayTextTestLayer{
+            {"options"_el, "help_option_description"_el, "Translated help description."_el},
+            {"options"_el, "version_option_description"_el, "Translated version description."_el},
+            {"options"_el, "help_option_details"_el, "Translated help details."_el},
+            {"options"_el, "version_option_details"_el, "Translated version details."_el},
+            {"options"_el, "help_keyword_placeholder"_el, "topic"_el},
+            {"options"_el, "unknown_help_name_title"_el, "Translated unknown help"_el},
+            {"options"_el, "unknown_help_name_description"_el, "Translated help failure: {}"_el},
+        };
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        auto manager = OptionManager{options};
+        const auto help = toStdString(manager.detailedHelpDocument({}, "--help"_el).toString());
+        requireContains(help, "-h, --help <topic>");
+        requireContains(help, "tool --help[=<topic>]");
+        requireContains(help, "Translated help description.");
+        const auto version = toStdString(manager.detailedHelpDocument({}, "--version"_el).toString());
+        requireContains(version, "Translated version details.");
+        try {
+            static_cast<void>(manager.detailedHelpDocument({}, "missing"_el));
+            REQUIRE(false);
+        } catch (const OptionError &error) {
+            REQUIRE_EQUAL(error.context().title(), "Translated unknown help"_el);
+            REQUIRE_EQUAL(error.context().description(), "Translated help failure: missing"_el);
+        }
+    }
+
     void testGroupsMergeAndOptionsSortByDisplayedName() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("/usr/bin/lab-tool"_el);
 
@@ -284,24 +641,25 @@ public:
     }
 
     void testCustomValueNamesAreUsedInUsageAndOptionLists() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("/usr/bin/lab-tool"_el);
         options->setHelpDescription("Collect readings."_el);
         options->addOption({"--config"_el, "config"_el})
             .setType(OptionType::Text)
-            .setValueName("path"_el)
-            .setHelpDescription("Configuration file."_el);
+            .setValueName(cPathOption)
+            .setHelpTitle("Configuration file."_el);
         options->addOption({"--repeat"_el, "repeat"_el})
             .setType(OptionType::Integer)
             .setValueName("count"_el)
-            .setHelpDescription("Number of repeated readings."_el);
-        options->addOption({"--mode"_el, "mode"_el})
+            .setHelpTitle("Number of repeated readings."_el);
+        options->addOption({cModeOption, "mode"_el})
             .addChoice("fast"_el)
             .addChoice("safe"_el)
             .setValueName("profile"_el)
-            .setHelpDescription("Reading profile."_el)
+            .setHelpTitle("Reading profile."_el)
             .setHelpVisibility(OptionHelpVisibility::Usage);
-        options->addOption("input"_el).setValueName("source"_el).setRequired().setHelpDescription("Input source."_el);
+        options->addOption("input"_el).setValueName("source"_el).setRequired().setHelpTitle("Input source."_el);
 
         auto manager = OptionManager{options};
         const auto text = toStdString(manager.helpDocument({}).toString());
@@ -319,6 +677,7 @@ public:
     }
 
     void testErrorOutputUsesCommandLineSnippet() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("demo-tool"_el);
         const auto option = options->addOption("--name"_el).setType(OptionType::Text).option();
@@ -352,6 +711,7 @@ public:
     }
 
     void testExternalCommandLineTextIsEscapedAndMarkerMatches() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto unsafeBytes = th::stdStringFromHex("2D 2D 74 65 73 74 1B");
         const auto unsafeArgument = el::text::StringEditor{std::string_view{unsafeBytes}};
         auto options = Options::create();
@@ -369,6 +729,7 @@ public:
     }
 
     void testExternalExecutableNameIsEscaped() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto unsafeBytes = th::stdStringFromHex("2F 75 73 72 2F 62 69 6E 2F 74 6F 6F 6C 1B");
         auto options = Options::create();
         options->setExecutablePath(el::text::StringEditor{std::string_view{unsafeBytes}});
@@ -380,6 +741,7 @@ public:
     }
 
     void testErrorOutputUsesArgumentWindow() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("tool"_el);
         auto manager = OptionManager{options};
@@ -415,12 +777,13 @@ public:
     }
 
     void testMissingPositionalErrorOutputUsesUsageDetails() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("file_size_monitor"_el);
         const auto fileOption = options->addOption("file"_el)
                                     .setType(OptionType::Text)
                                     .setRequired()
-                                    .setHelpDescription("The path to the file to monitor."_el)
+                                    .setHelpTitle("The path to the file to monitor."_el)
                                     .option();
         auto manager = OptionManager{options};
         auto context = OptionErrorContext{};
@@ -441,15 +804,14 @@ public:
     }
 
     void testErrorContextRetainsDefinitionsForExceptionDiagnostic() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto context = OptionErrorContext{};
         {
             auto options = Options::create();
             options->setExecutablePath("tool"_el);
-            options->addOption("--count"_el)
-                .setType(OptionType::Integer)
-                .setHelpDescription("Number of operations."_el);
+            options->addOption(cCountOption).setType(OptionType::Integer).setHelpTitle("Number of operations."_el);
             auto manager = OptionManager{options};
-            auto arguments = makeArgs({"tool"_el, "--count"_el, "wrong"_el});
+            auto arguments = makeArgs({"tool"_el, cCountOption, "wrong"_el});
             const auto result = manager.parse(arguments);
             REQUIRE(result.errorContext().has_value());
             context = result.errorContext().value();
@@ -467,14 +829,15 @@ public:
     }
 
     void testModuleErrorUsesModuleHelpCommand() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("tool"_el);
         auto module = OptionModule::create("run"_el);
         module->setHelpDescription("Run the configured operation."_el);
-        module->addOption("--count"_el).setType(OptionType::Integer).setHelpDescription("Number of operations."_el);
+        module->addOption(cCountOption).setType(OptionType::Integer).setHelpTitle("Number of operations."_el);
         options->addModule(module);
         auto manager = OptionManager{options};
-        auto arguments = makeArgs({"tool"_el, "run"_el, "--count"_el, "wrong"_el});
+        auto arguments = makeArgs({"tool"_el, "run"_el, cCountOption, "wrong"_el});
         const auto result = manager.parse(arguments);
         REQUIRE(result.errorContext().has_value());
 
@@ -488,6 +851,7 @@ public:
     }
 
     void testSetAndModuleSubjectsRenderTheirOwnHelp() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setExecutablePath("tool"_el);
         auto optionSet = OptionSet::create();
@@ -517,6 +881,48 @@ public:
     }
 
 private:
+    [[nodiscard]] auto renderHelp(const el::text::TextDocument &document, const int width = 80) -> CursorWriterProbe {
+        auto writer = CursorWriterProbe{};
+        writer._size = block::Size{width, 25};
+        TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()}.renderTo(writer, document);
+        return writer;
+    }
+
+    [[nodiscard]] auto requireRenderedLine(const CursorWriterProbe &writer, const std::string &expected)
+        -> const BlockStringEditor & {
+        for (const auto &line : writer._writtenStrings) {
+            if (render(line) == expected) {
+                return line;
+            }
+        }
+        auto output = std::string{};
+        for (const auto &line : writer._writtenStrings) {
+            output += render(line) + "\n";
+        }
+        requireContains(output, expected);
+        REQUIRE(false);
+        return writer._writtenStrings.front();
+    }
+
+    [[nodiscard]] auto requireRenderedContainingLine(const CursorWriterProbe &writer, const std::string &expected)
+        -> const BlockStringEditor & {
+        for (const auto &line : writer._writtenStrings) {
+            if (render(line).find(expected) != std::string::npos) {
+                return line;
+            }
+        }
+        REQUIRE(false);
+        return writer._writtenStrings.front();
+    }
+
+    void requireColor(const BlockStringEditor &line, const std::string &text, const Foreground color) {
+        const auto position = render(line).find(text);
+        REQUIRE_NOT_EQUAL(position, std::string::npos);
+        for (auto index = position; index < position + text.size(); ++index) {
+            REQUIRE_EQUAL(line[BlockIndex::fromSizeT(index)].style().fg(), color);
+        }
+    }
+
     [[nodiscard]] static auto makeOptions() -> OptionsPtr {
         auto options = Options::create();
         auto applicationInfo = el::core::ApplicationInfo{};
@@ -530,9 +936,10 @@ private:
 
         auto rootHelp = OptionHelp{"Operate demo files."_el};
         rootHelp.setTitle("Demo Tool"_el);
+        rootHelp.setDescription("Operate demo files."_el);
         options->setHelp(rootHelp);
 
-        options->addOption({"-v"_el, "--verbose"_el, "verbose-alias"_el})
+        options->addOption({cVOption, cVerboseOption, "verbose-alias"_el})
             .setHelp("Enable verbose output."_el)
             .setHelpVisibility(OptionHelpVisibility::Overview);
         auto hiddenHelp = OptionHelp{"Hidden debug mode."_el};
@@ -540,19 +947,18 @@ private:
         options->addOption("--debug"_el).setHelp(hiddenHelp);
 
         auto choices = OptionChoices::create();
-        choices->addChoice("fast"_el).setHelpDescription("Prefer speed."_el);
-        choices->addChoice("safe"_el).setHelpDescription("Prefer safety."_el);
-        choices->addChoice("expert"_el)
-            .setHelpDescription("Expert mode."_el)
-            .setHelpVisibility(OptionHelpVisibility::Hidden);
-        options->addOption("--mode"_el).setHelp("Select mode."_el).setChoices(choices);
-        options->editOption("--mode"_el).setHelpVisibility(OptionHelpVisibility::Usage);
+        choices->addChoice("fast"_el).setHelpTitle("Prefer speed."_el);
+        choices->addChoice("safe"_el).setHelpTitle("Prefer safety."_el);
+        choices->addChoice("expert"_el).setHelpTitle("Expert mode."_el).setHelpVisibility(OptionHelpVisibility::Hidden);
+        options->addOption(cModeOption).setHelp("Select mode."_el).setChoices(choices);
+        options->editOption(cModeOption).setHelpVisibility(OptionHelpVisibility::Usage);
 
         auto module = OptionModule::create("run"_el);
         auto moduleHelp = OptionHelp{"Run module."_el};
         moduleHelp.setTitle("Run Commands"_el);
+        moduleHelp.setDescription("Run module."_el);
         module->setHelp(moduleHelp);
-        module->addOption("--force"_el).setHelp("Force execution."_el);
+        module->addOption(cForceOption).setHelp("Force execution."_el);
         options->addModule(module);
 
         return options;
@@ -564,7 +970,7 @@ private:
 
     [[nodiscard]] static auto makeArgs(std::initializer_list<el::text::String> args) -> el::text::StringList {
         auto result = el::text::StringList{};
-        result.reserve(el::unit::ItemCount{args.size()});
+        result.reserve(el::unit::ItemCount::fromInteger(args.size()));
         for (const auto &arg : args) {
             result.append(arg.copy());
         }

@@ -4,15 +4,17 @@
 
 #include "../text/Literals.hpp"
 #include "../text/StringFormat.hpp"
+#include "../text/StringJoins.hpp"
 
 namespace erbsland::time {
 
+using namespace text;
 using namespace text::literals;
 
-auto TimeWithZone::toString() const -> text::String {
-    static const auto namedFormat = text::StringFormat{"{}[{}]"_el};
-    static const auto minuteOffsetFormat = text::StringFormat{"{}{}{:02}:{:02}"_el};
-    static const auto secondOffsetFormat = text::StringFormat{"{}{}{:02}:{:02}:{:02}"_el};
+auto TimeWithZone::toString() const -> String {
+    static const auto namedFormat = StringFormat{"{}[{}]"_el};
+    static const auto minuteOffsetFormat = StringFormat{"{}{}{:02}:{:02}"_el};
+    static const auto secondOffsetFormat = StringFormat{"{}{}{:02}:{:02}:{:02}"_el};
     if (_timeZone.isLocalTime()) {
         return _time.toString();
     }
@@ -21,7 +23,7 @@ auto TimeWithZone::toString() const -> text::String {
     }
     const auto offset = _timeZone.staticOffset().toSeconds().toRawValue();
     if (offset == 0) {
-        return text::String::fromJoined({_time.toString(), "Z"_el});
+        return text::join(_time.toString(), "Z"_el);
     }
     const auto absoluteOffset = offset < 0 ? static_cast<uint64_t>(-(offset + 1)) + 1U : static_cast<uint64_t>(offset);
     const auto hours = absoluteOffset / 3600;

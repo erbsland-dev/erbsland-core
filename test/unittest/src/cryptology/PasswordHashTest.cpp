@@ -3,22 +3,21 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/PasswordHash.hpp>
-#include <erbsland/cryptology/PasswordHasher.hpp>
-#include <erbsland/cryptology/PasswordHashKey.hpp>
-#include <erbsland/cryptology/PasswordHashPolicy.hpp>
-#include <erbsland/cryptology/unsafe/UnsafeCustomPasswordHashParameters.hpp>
-#include <erbsland/cryptology/unsafe/UnsafeNoPasswordHashKey.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/PasswordHash.hpp>
+#include <erbsland/PasswordHasher.hpp>
+#include <erbsland/PasswordHashKey.hpp>
+#include <erbsland/PasswordHashPolicy.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/unsafe/UnsafeCustomPasswordHashParameters.hpp>
 
 #include <array>
 #include <string>
@@ -39,8 +38,8 @@ public:
         REQUIRE_EQUAL(recommended.memoryKiB(), 64U * 1024U);
         REQUIRE_EQUAL(recommended.passes(), 3U);
         REQUIRE_EQUAL(recommended.lanes(), 4U);
-        REQUIRE_EQUAL(recommended.saltLength(), el::unit::ByteLength{16U});
-        REQUIRE_EQUAL(recommended.outputLength(), el::unit::ByteLength{32U});
+        REQUIRE_EQUAL(recommended.saltLength(), el::unit::ByteCount{16U});
+        REQUIRE_EQUAL(recommended.outputLength(), el::unit::ByteCount{32U});
 
         const auto lowMemory = PasswordHashPolicy::lowMemory();
         REQUIRE_EQUAL(lowMemory.memoryKiB(), 19U * 1024U);
@@ -57,11 +56,17 @@ public:
     void testUnsafeParametersAreStillBounded() {
         REQUIRE_NOTHROW(fastArgon());
         REQUIRE_NOTHROW(fastScrypt());
-        REQUIRE_THROWS_AS(el::err::ParameterError, unsafe::UnsafeCustomPasswordHashParameters::argon2id(7U, 1U, 1U));
-        REQUIRE_THROWS_AS(el::err::ParameterError, unsafe::UnsafeCustomPasswordHashParameters::argon2id(32U, 11U, 1U));
-        REQUIRE_THROWS_AS(el::err::ParameterError, unsafe::UnsafeCustomPasswordHashParameters::scrypt(15U, 1U, 1U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, unsafe::UnsafeCustomPasswordHashParameters::argon2id(7U, 1U, 1U));
+        REQUIRE_THROWS_AS(
+            el::err::ParameterFailure, unsafe::UnsafeCustomPasswordHashParameters::argon2id(32U, 11U, 1U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, unsafe::UnsafeCustomPasswordHashParameters::scrypt(15U, 1U, 1U));
     }
     void testKeyValidationAndIdentifiers() {
+        REQUIRE(PasswordHashKey::isValidIdentifier(el::text::String{"current-2026.a_b"}));
+        REQUIRE_FALSE(PasswordHashKey::isValidIdentifier({}));
+        REQUIRE_FALSE(PasswordHashKey::isValidIdentifier(el::text::String{"contains,comma"}));
+        REQUIRE(PasswordHashKey::isValidIdentifier(el::text::String{"12345678901234567890123456789012"}));
+        REQUIRE_FALSE(PasswordHashKey::isValidIdentifier(el::text::String{"123456789012345678901234567890123"}));
         const auto unnamed = testKey(1U);
         REQUIRE_FALSE(unnamed.isIdentified());
 
@@ -71,17 +76,17 @@ public:
         REQUIRE(identifier.has_value());
         REQUIRE_EQUAL(*identifier, el::text::String{"current-2026"});
 
-        auto keyBytes = ByteBlock{ByteBlockEditor{el::unit::ByteLength{32U}}};
+        auto keyBytes = ByteBlock{ByteBlockEditor{el::unit::ByteCount{32U}}};
         const auto markedKey = PasswordHashKey{keyBytes};
         REQUIRE(keyBytes.isSensitive());
         static_cast<void>(markedKey);
 
-        auto shortBytes = ByteBlockEditor{el::unit::ByteLength{31U}};
-        REQUIRE_THROWS_AS(el::err::ParameterError, PasswordHashKey{ByteBlock{shortBytes}});
+        auto shortBytes = ByteBlockEditor{el::unit::ByteCount{31U}};
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, PasswordHashKey{ByteBlock{shortBytes}});
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             PasswordHashKey::identified(
-                el::text::String{"contains,comma"}, ByteBlock{ByteBlockEditor{el::unit::ByteLength{32U}}}));
+                el::text::String{"contains,comma"}, ByteBlock{ByteBlockEditor{el::unit::ByteCount{32U}}}));
     }
 
     void testHashSerializeAndVerify() {
@@ -174,7 +179,7 @@ public:
     void testUnkeyedMigration() {
         const auto applicationScope = ApplicationTestScope<>{};
         const auto password = testPassword();
-        const auto unkeyed = PasswordHasher{unsafe::UnsafeNoPasswordHashKey::acknowledgeRisk(), fastArgon()};
+        const auto unkeyed = PasswordHasher{PasswordHasher::UnsafeNoPasswordHashKey{}, fastArgon()};
         const auto oldHash = unkeyed.hash(password);
         REQUIRE_FALSE(oldHash.isKeyed());
         REQUIRE(unkeyed.verify(password, oldHash).isAccepted());
@@ -236,7 +241,7 @@ public:
         const auto invalid = PasswordHash::fromString(el::text::String{"not-a-password-hash"});
         REQUIRE_FALSE(invalid.isValid());
         REQUIRE(invalid.toString().isEmpty());
-        REQUIRE_THROWS_AS(el::err::LogicError, invalid.algorithm());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, invalid.algorithm());
         REQUIRE_THROWS_AS(
             el::err::ParseError, PasswordHash::fromStringOrThrow(el::text::String{"not-a-password-hash"}));
         REQUIRE(hasher.verify(password, invalid).isRejected());
@@ -270,7 +275,7 @@ public:
         }
 
         const auto oversizedPassword = String{std::string(1024U * 1024U + 1U, 'x')};
-        REQUIRE_THROWS_AS(el::err::ParameterError, hasher.hash(oversizedPassword));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, hasher.hash(oversizedPassword));
         REQUIRE(hasher.verify(oversizedPassword, invalid).isRejected());
     }
 
@@ -306,7 +311,7 @@ private:
     }
 
     static auto testKey(const uint8_t value, const std::string_view identifier = {}) -> PasswordHashKey {
-        auto bytes = ByteBlockEditor{el::unit::ByteLength{32U}};
+        auto bytes = ByteBlockEditor{el::unit::ByteCount{32U}};
         for (auto index = el::unit::ByteIndex{0U}; index < el::unit::ByteIndex{32U}; ++index) {
             bytes.set(index, el::mem::Byte{value});
         }

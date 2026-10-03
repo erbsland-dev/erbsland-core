@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/Axis.hpp>
 #include <erbsland/block/MarginPair.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/geometry/Axis.hpp>
-#include <erbsland/geometry/SignedAxis.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/SignedAxis.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 TESTED_TARGETS(MarginPair)
@@ -43,6 +43,6 @@ public:
 
     void testInvalidAxis() {
         const auto pair = el::block::MarginPair{2, 3};
-        REQUIRE_THROWS_AS(el::err::ParameterError, pair.component(el::geometry::Axis::Z));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, pair.component(el::geometry::Axis::Z));
     }
 };

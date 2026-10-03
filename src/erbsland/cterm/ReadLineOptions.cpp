@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ReadLineOptions.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <algorithm>
@@ -10,7 +10,10 @@
 
 namespace erbsland::cterm {
 
+using namespace err;
+using namespace text;
 using namespace text::literals;
+using namespace unit;
 
 ReadLineOptions::ReadLineOptions() :
     _cursorStyle{BlockAttributes::Reverse},
@@ -20,9 +23,9 @@ ReadLineOptions::ReadLineOptions() :
     _prompt{BlockString{"› "_el}},
     _timeout{time::Seconds::zero()},
     _timeoutDisplayThreshold{20},
-    _maximumLength{4096U},
-    _maximumLines{1U},
-    _maximumDisplayLines{5U},
+    _maximumLength{CpCount{4096U}},
+    _maximumLines{LineCount{1U}},
+    _maximumDisplayLines{LineCount{5U}},
     _blinkInterval{800},
     _cursorBlock{Block{U'█'}},
     _commitKey{Key::Enter},
@@ -81,7 +84,7 @@ auto ReadLineOptions::setTitle(BlockString title) noexcept -> ReadLineOptions & 
     return *this;
 }
 
-auto ReadLineOptions::setTitle(const text::String &title) -> ReadLineOptions & {
+auto ReadLineOptions::setTitle(const String &title) -> ReadLineOptions & {
     return setTitle(BlockString{title});
 }
 
@@ -90,7 +93,7 @@ auto ReadLineOptions::setPrompt(BlockString prompt) noexcept -> ReadLineOptions 
     return *this;
 }
 
-auto ReadLineOptions::setPrompt(const text::String &prompt) -> ReadLineOptions & {
+auto ReadLineOptions::setPrompt(const String &prompt) -> ReadLineOptions & {
     return setPrompt(BlockString{prompt});
 }
 
@@ -99,26 +102,26 @@ auto ReadLineOptions::setPlaceholder(BlockString placeholder) noexcept -> ReadLi
     return *this;
 }
 
-auto ReadLineOptions::setPlaceholder(const text::String &placeholder) -> ReadLineOptions & {
+auto ReadLineOptions::setPlaceholder(const String &placeholder) -> ReadLineOptions & {
     return setPlaceholder(BlockString{placeholder});
 }
 
-auto ReadLineOptions::setMaximumLength(const unit::CpLength maximumLength) noexcept -> ReadLineOptions & {
+auto ReadLineOptions::setMaximumLength(const CpCount maximumLength) noexcept -> ReadLineOptions & {
     _maximumLength = maximumLength;
     return *this;
 }
 
-auto ReadLineOptions::setMaximumLines(const unit::LineCount maximumLines) -> ReadLineOptions & {
+auto ReadLineOptions::setMaximumLines(const LineCount maximumLines) -> ReadLineOptions & {
     if (maximumLines.isZero()) {
-        throw err::ParameterError{"The read-line maximum line count must be at least one."_el, "maximumLines"_el};
+        throw ParameterFailure{"The read-line maximum line count must be at least one."_el, "maximumLines"_el};
     }
     _maximumLines = maximumLines;
     return *this;
 }
 
-auto ReadLineOptions::setMaximumDisplayLines(const unit::LineCount maximumDisplayLines) -> ReadLineOptions & {
+auto ReadLineOptions::setMaximumDisplayLines(const LineCount maximumDisplayLines) -> ReadLineOptions & {
     if (maximumDisplayLines.isZero()) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The read-line maximum display line count must be at least one.",
             "maximumDisplayLines",
         };
@@ -127,19 +130,19 @@ auto ReadLineOptions::setMaximumDisplayLines(const unit::LineCount maximumDispla
     return *this;
 }
 
-auto ReadLineOptions::setHistory(text::StringList history) noexcept -> ReadLineOptions & {
+auto ReadLineOptions::setHistory(StringList history) noexcept -> ReadLineOptions & {
     _history = std::move(history);
     return *this;
 }
 
-auto ReadLineOptions::setCurrentText(text::String currentText) noexcept -> ReadLineOptions & {
+auto ReadLineOptions::setCurrentText(String currentText) noexcept -> ReadLineOptions & {
     _currentText = std::move(currentText);
     return *this;
 }
 
 auto ReadLineOptions::setTimeout(const time::Seconds timeout) -> ReadLineOptions & {
     if (timeout.isNegative()) {
-        throw err::ParameterError{"The read-line timeout must not be negative."_el, "timeout"_el};
+        throw ParameterFailure{"The read-line timeout must not be negative."_el, "timeout"_el};
     }
     _timeout = timeout;
     return *this;
@@ -147,7 +150,7 @@ auto ReadLineOptions::setTimeout(const time::Seconds timeout) -> ReadLineOptions
 
 auto ReadLineOptions::setTimeoutDisplayThreshold(const time::Seconds timeoutDisplayThreshold) -> ReadLineOptions & {
     if (timeoutDisplayThreshold.isNegative()) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The read-line timeout display threshold must not be negative."_el, "timeoutDisplayThreshold"_el};
     }
     _timeoutDisplayThreshold = timeoutDisplayThreshold;
@@ -156,7 +159,7 @@ auto ReadLineOptions::setTimeoutDisplayThreshold(const time::Seconds timeoutDisp
 
 auto ReadLineOptions::setBlinkInterval(const time::Milliseconds blinkInterval) -> ReadLineOptions & {
     if (!blinkInterval.isPositive()) {
-        throw err::ParameterError{"The read-line blink interval must be positive."_el, "blinkInterval"_el};
+        throw ParameterFailure{"The read-line blink interval must be positive."_el, "blinkInterval"_el};
     }
     _blinkInterval = blinkInterval;
     return *this;
@@ -164,7 +167,7 @@ auto ReadLineOptions::setBlinkInterval(const time::Milliseconds blinkInterval) -
 
 auto ReadLineOptions::setCursorBlock(Block cursorBlock) -> ReadLineOptions & {
     if (cursorBlock.displayWidth() != 1 || cursorBlock.isControl()) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The read-line cursor block must occupy exactly one terminal cell.",
             "cursorBlock",
         };

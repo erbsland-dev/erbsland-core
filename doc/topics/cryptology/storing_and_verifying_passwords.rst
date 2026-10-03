@@ -64,7 +64,7 @@ It gives the key a public random identifier so future records can identify the p
 
 .. erbsland-demo::
     :source: cryptology/PasswordHandler/src/PepperStore_create.cpp
-    :source-sha256: 1e341e7eb7cc8466456a0467bd0048f20e322dbe65c9519256be65b24e9fc7f3
+    :sha256: eebc32d084ed909f23ba2662dfea55758c2dbb1c080276a89ffcd25f0a0aa452
 
 .. code-block:: cpp
 
@@ -73,19 +73,18 @@ It gives the key a public random identifier so future records can identify the p
     /// The key identifier is public, random, and filename-safe. The 32 random bytes are generated directly in protected
     /// storage. The ELCL file uses a native byte literal and collision-stop creation so an existing key is never silently
     /// replaced.
-    void PepperStore::create(const el::Path &path) {
-        constexpr auto pepperLength = el::ByteLength{32U};
+    void PepperStore::create() const {
+        constexpr auto pepperLength = el::ByteCount{32U};
         static const auto identifierCharacters = el::CharSet{"abcdefghijklmnopqrstuvwxyz0123456789"_el};
-        const auto identifier = el::String::fromJoined(
-            {"key-"_el, el::application().secureRandom().buildString(el::CpLength{16U}, identifierCharacters)});
+        const auto identifier =
+            el::join("key-"_el, el::application().secureRandom().buildString(el::CpCount{16U}, identifierCharacters));
 
-        const auto protectedBytes = el::application().secureRandom().buildByteBlock(pepperLength);
-        const auto activeKey = el::PasswordHashKey::identified(identifier, protectedBytes);
+        auto protectedBytes = el::application().secureRandom().buildByteBlock(pepperLength);
+        protectedBytes.markAsSensitive();
         auto output = el::StringEditor{"@version: \"1.0\"\n\n[Pepper]\n"_el};
         appendElclText(output, "Identifier"_el, identifier);
         output.append(el::StringFormat{"Key: <{}>\n"_el}.build(protectedBytes));
-        static_cast<void>(activeKey);
-        writeStorageFile(path, el::String{output}, el::PathCollisionMode::Stop);
+        writeStorageFile(_path, output, el::PathCollisionMode::Stop);
     }
 
 .. erbsland-demo-end::
@@ -109,7 +108,7 @@ Ordinary byte values returned by the parser are copied into protected storage an
 
 .. erbsland-demo::
     :source: cryptology/PasswordHandler/src/PepperStore.cpp
-    :source-sha256: e1efed75f61d9402ce00c5bef02c449e50f303dd5907f1d702024dce092f2ba9
+    :sha256: a97a6fd30d68993bd04371acf180bb844168efa8edc8b8d520d3f8243780a6bd
 
 .. code-block:: cpp
 
@@ -117,59 +116,60 @@ Ordinary byte values returned by the parser are copied into protected storage an
     ///
     /// Every byte value is marked as sensitive at its shared allocation. The active key has a public identifier. Fallback
     /// keys may be identified or, for legacy records, contain one unnamed key.
-    auto PepperStore::loadHasher(const el::Path &path) -> el::PasswordHasher {
+    auto PepperStore::loadHasher() const -> el::PasswordHasher {
         el::conf::DocumentPtr document;
         auto source = el::String{};
         try {
             auto readOptions = el::path::PathReadTextOptions{};
             readOptions.setSensitive(true);
-            source = path.content().readTextOrThrow(readOptions);
+            source = _path.content().readTextOrThrow(readOptions);
             document = el::conf::Parser{}.parseTextOrThrow(source);
-        } catch (const el::Exception &) {
-            throwInvalidPepper(path, "The file is not a valid ELCL document."_el);
+        } catch (const el::RuntimeError &) {
+            throwInvalidPepper("The file is not a valid ELCL document."_el);
         }
         if (document->size() != 1U || !document->hasValue("Pepper"_el)) {
-            throwInvalidPepper(path, "The document must contain only one Pepper section."_el);
+            throwInvalidPepper("The document must contain only one Pepper section."_el);
         }
         const auto pepper = document->valueOrThrow("Pepper"_el);
         const auto fallbackValue = pepper->value("Fallback"_el);
         const auto expectedSize = fallbackValue == nullptr ? 2U : 3U;
         if (pepper->size() != expectedSize || !pepper->hasValue("Identifier"_el) || !pepper->hasValue("Key"_el)) {
-            throwInvalidPepper(path, "Pepper must contain Identifier and Key, plus an optional Fallback section list."_el);
+            throwInvalidPepper("Pepper must contain Identifier and Key, plus an optional Fallback section list."_el);
         }
 
         el::String activeIdentifier;
         try {
             activeIdentifier = pepper->getTextOrThrow("Identifier"_el);
-        } catch (const el::Exception &) {
-            throwInvalidPepper(path, "The active key Identifier must be text."_el);
+        } catch (const el::conf::ConfError &) {
+            throwInvalidPepper("The active key Identifier must be text."_el);
         }
-        if (activeIdentifier.isEmpty()) {
-            throwInvalidPepper(path, "The active key Identifier must not be empty."_el);
+        if (!el::PasswordHashKey::isValidIdentifier(activeIdentifier)) {
+            throwInvalidPepper("The active key Identifier must contain 1-32 ASCII letters, digits, '.', '_' or '-'."_el);
         }
-        auto activeKey = el::PasswordHashKey::identified(activeIdentifier, readKeyBytes(pepper, path));
+        auto activeKey = el::PasswordHashKey::identified(activeIdentifier, readKeyBytes(pepper));
         auto fallbackKeys = el::List<el::PasswordHashKey>{};
 
         if (fallbackValue != nullptr) {
             if (fallbackValue->type() != el::conf::ValueType::SectionList) {
-                throwInvalidPepper(path, "Pepper.Fallback must be a section list."_el);
+                throwInvalidPepper("Pepper.Fallback must be a section list."_el);
             }
             for (const auto &entry : *fallbackValue) {
                 const auto hasIdentifier = entry->hasValue("Identifier"_el);
                 const auto expectedEntrySize = hasIdentifier ? 2U : 1U;
                 if (entry->size() != expectedEntrySize || !entry->hasValue("Key"_el)) {
-                    throwInvalidPepper(path, "Fallback entries contain only an optional Identifier and a required Key."_el);
+                    throwInvalidPepper("Fallback entries contain only an optional Identifier and a required Key."_el);
                 }
-                const auto keyBytes = readKeyBytes(entry, path);
+                const auto keyBytes = readKeyBytes(entry);
                 if (hasIdentifier) {
                     el::String identifier;
                     try {
                         identifier = entry->getTextOrThrow("Identifier"_el);
-                    } catch (const el::Exception &) {
-                        throwInvalidPepper(path, "A fallback Identifier must be text."_el);
+                    } catch (const el::conf::ConfError &) {
+                        throwInvalidPepper("A fallback Identifier must be text."_el);
                     }
-                    if (identifier.isEmpty()) {
-                        throwInvalidPepper(path, "A fallback Identifier must not be empty."_el);
+                    if (!el::PasswordHashKey::isValidIdentifier(identifier)) {
+                        throwInvalidPepper(
+                            "A fallback Identifier must contain 1-32 ASCII letters, digits, '.', '_' or '-'."_el);
                     }
                     fallbackKeys.append(el::PasswordHashKey::identified(identifier, keyBytes));
                 } else {
@@ -177,12 +177,23 @@ Ordinary byte values returned by the parser are copied into protected storage an
                 }
             }
         }
-        // Let PasswordHasher validate identifier uniqueness and the single unnamed-fallback rule.
-        try {
-            return buildPasswordHasher(activeKey, fallbackKeys);
-        } catch (const el::Exception &) {
-            throwInvalidPepper(path, "The active and fallback key identifiers do not form a valid rotation set."_el);
+        auto identifiers = el::List<el::String>{};
+        identifiers.append(activeIdentifier);
+        auto hasUnnamed = false;
+        for (const auto &key : fallbackKeys) {
+            if (const auto identifier = key.identifier(); identifier.has_value()) {
+                if (identifiers.contains(*identifier)) {
+                    throwInvalidPepper("Active and fallback key identifiers must be unique."_el);
+                }
+                identifiers.append(*identifier);
+            } else {
+                if (hasUnnamed) {
+                    throwInvalidPepper("Only one unnamed fallback key is allowed."_el);
+                }
+                hasUnnamed = true;
+            }
         }
+        return buildPasswordHasher(activeKey, fallbackKeys);
     }
 
 .. erbsland-demo-end::
@@ -202,7 +213,7 @@ without imposing composition rules.
 
 .. erbsland-demo::
     :source: cryptology/PasswordHandler/src/PasswordPrompt.cpp
-    :source-sha256: 182c55a13e85e7985a1c2b4be165771e9877c247de81a3eade455486a4112f25
+    :sha256: 8a9b585bdb72bbc5d34a1cf71948bb442b2ab9b40c081ab82b194ce98a0fac10
 
 .. code-block:: cpp
 
@@ -210,13 +221,13 @@ without imposing composition rules.
     ///
     /// New passwords require at least 15 Unicode code points. Spaces and Unicode are accepted exactly as entered without
     /// trimming, case folding, composition rules, or normalization.
-    auto PasswordPrompt::readNewPassword(const el::cterm::TerminalPtr &terminal) -> el::String {
-        auto password = read(terminal, "Enter new password"_el);
-        if (password.characterLength() < el::CpLength{15U}) {
+    auto PasswordPrompt::readNewPassword() const -> el::String {
+        auto password = read("Enter new password"_el);
+        if (password.characterLength() < el::CpCount{15U}) {
             throw el::ApplicationError{el::core::ApplicationErrorContext{
                 "Password is too short"_el, "New passwords must contain at least 15 Unicode code points."_el}};
         }
-        const auto confirmation = read(terminal, "Confirm new password"_el);
+        const auto confirmation = read("Confirm new password"_el);
         if (password != confirmation) {
             throw el::ApplicationError{el::core::ApplicationErrorContext{
                 "Passwords do not match"_el, "Enter the same password in both prompts."_el}};
@@ -225,9 +236,9 @@ without imposing composition rules.
     }
 
     /// Read one masked password through a fresh blocking `ReadSecret`.
-    auto PasswordPrompt::read(const el::cterm::TerminalPtr &terminal, const el::String &title) -> el::String {
+    auto PasswordPrompt::read(const el::String &title) const -> el::String {
         auto options = el::cterm::ReadLineOptions{}.setTitle(title).setPlaceholder("Password"_el);
-        const auto editor = el::cterm::ReadSecret::create(terminal, options);
+        const auto editor = el::cterm::ReadSecret::create(_terminal, options);
         auto result = editor->waitForInput();
         if (!result.isCommitted()) {
             throw el::ApplicationError{el::core::ApplicationErrorContext{
@@ -255,7 +266,7 @@ It hashes the protected password with the active pepper and stores only
 
 .. erbsland-demo::
     :source: cryptology/PasswordHandler/src/PasswordHandlerApp_addUser.cpp
-    :source-sha256: a926ba221d330e7b9c3e4f3cbcab67cd6779be05dff998293d855f8dd5ba818c
+    :sha256: 2a8967b4bea119525e2f44935cd9e061b4ad9a0e122b49b7d4f1fa996b0dae1f
 
 .. code-block:: cpp
 
@@ -275,11 +286,14 @@ It hashes the protected password with the active pepper and stores only
             throw el::ApplicationError{"The exact username already exists."_el};
         }
 
-        const auto password = PasswordPrompt::readNewPassword(terminal());
+        const auto password = PasswordPrompt{terminal()}.readNewPassword();
         initializeStorage(paths);
-        auto hasher = PepperStore::loadHasher(paths.pepper);
+        auto pepperStore = PepperStore{std::move(paths.pepper)};
+        auto hasher = pepperStore.loadHasher();
         const auto passwordHash = hasher.hash(password);
-        static_cast<void>(database.tryAdd(username, passwordHash.toString()));
+        if (!database.tryAdd(username, passwordHash.toString())) {
+            throw el::ApplicationError{"The exact username already exists."_el};
+        }
         database.save(paths.database, el::PathCollisionMode::Overwrite);
         el::io::printLine("User added: "_el, displayUsername(username));
         return el::ExitCode::success();
@@ -312,7 +326,7 @@ Incorrect passwords, unknown usernames, and malformed hashes therefore use ident
 
 .. erbsland-demo::
     :source: cryptology/PasswordHandler/src/PasswordHandlerApp_login.cpp
-    :source-sha256: efc12fab39c97197dd7a9e51cdd38c57c99418f24e33bdd4bcfe6c0f2247447d
+    :sha256: 0861171b5e603d0eb646ea3422a875512fb0cc2e918d0673e4e40e9a3db389af
 
 .. code-block:: cpp
 
@@ -330,16 +344,19 @@ Incorrect passwords, unknown usernames, and malformed hashes therefore use ident
         auto database = paths.database.info().exists() ? UserDatabase::load(paths.database) : UserDatabase{};
         const auto storedHash = database.contains(username) ? el::PasswordHash::fromString(database.passwordHash(username))
                                                             : el::PasswordHash{};
-        const auto password = PasswordPrompt::readPassword(terminal());
+        const auto password = PasswordPrompt{terminal()}.readPassword();
         initializeStorage(paths);
-        auto hasher = PepperStore::loadHasher(paths.pepper);
+        auto pepperStore = PepperStore{std::move(paths.pepper)};
+        auto hasher = pepperStore.loadHasher();
         const auto verification = hasher.verify(password, storedHash);
         if (verification.isRejected()) {
             el::io::printLine("Login rejected."_el);
             return el::ExitCode::failure();
         }
         if (verification.replacementHash().has_value()) {
-            static_cast<void>(database.trySetPassword(username, verification.replacementHash()->toString()));
+            if (!database.trySetPassword(username, verification.replacementHash()->toString())) {
+                throw el::ApplicationError{"The verified user no longer exists in the password database."_el};
+            }
             database.save(paths.database, el::PathCollisionMode::Overwrite);
         }
         el::io::printLine("Login accepted."_el);
@@ -367,7 +384,7 @@ One identifier-less fallback is allowed for legacy records created before key id
 
 .. erbsland-demo::
     :source: cryptology/PasswordHandler/src/PepperRotation.cpp
-    :source-sha256: ec4168672ea20ae5c39a8ce04177b48148440b558360660b5259f8da17c0b43b
+    :sha256: 61348a86a2dc77013e40b37e1ab7e3114391707e99f151da7468dc5a6992ac6b
 
 .. code-block:: cpp
 
@@ -426,8 +443,8 @@ transactional multi-user store.
 A production implementation still needs concurrency control, durable transactional storage, crash-recovery semantics,
 and a coordinated transaction when related state spans multiple records or systems.
 
-Operational Protection Still Matters
-====================================
+Authentication Rate Limits, Transport, and Storage Protection
+=============================================================
 
 Password hashing protects stored verifiers, not the complete authentication workflow.
 A production system must additionally:
@@ -440,8 +457,8 @@ A production system must additionally:
 * keep database and secret-store access narrow and monitor unusual verification volume;
 * exclude passwords, peppers, raw derivation output, and request bodies from logs, traces, metrics, and crash reports.
 
-Sensitive Erasure Boundary
-==========================
+Password-Data Erasure Guarantees and Limits
+===========================================
 
 A marked :cpp:type:`String <erbsland::text::String>` and marked
 :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` allocations are securely erased when their final owner releases them.

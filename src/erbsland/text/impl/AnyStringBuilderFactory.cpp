@@ -11,9 +11,9 @@
 namespace erbsland::text::impl {
 
 using mem::SharedDataPointer;
-using unit::ByteLength;
-using unit::CpLength;
-using unit::U16DataLength;
+using unit::ByteCount;
+using unit::CpCount;
+using unit::U16Count;
 
 auto createAnyStringBuilder(const StringKind kind) -> SharedDataPointer<AnyStringBuilderBase> {
     switch (kind) {
@@ -27,35 +27,34 @@ auto createAnyStringBuilder(const StringKind kind) -> SharedDataPointer<AnyStrin
     return SharedDataPointer<AnyStringBuilderBase>{new U8StringBuilder{}};
 }
 
-auto createAnyStringBuilder(const StringKind kind, const CpLength capacity) -> SharedDataPointer<AnyStringBuilderBase> {
+auto createAnyStringBuilder(const StringKind kind, const CpCount capacity) -> SharedDataPointer<AnyStringBuilderBase> {
     switch (kind) {
     case StringKind::U8: {
-        using Value = ByteLength::Value;
+        using Value = ByteCount::Value;
         const auto rawCapacity = math::saturatingMultiply(static_cast<Value>(capacity.toRawValue()), Value{4U});
-        return createU8StringBuilder(ByteLength{rawCapacity});
+        return createU8StringBuilder(ByteCount::fromInteger(rawCapacity));
     }
     case StringKind::U16: {
-        using Value = U16DataLength::Value;
+        using Value = U16Count::Value;
         const auto rawCapacity = math::saturatingMultiply(static_cast<Value>(capacity.toRawValue()), Value{2U});
-        const auto boundedCapacity =
-            rawCapacity > U16DataLength::cRawMaximum ? U16DataLength::cRawMaximum : rawCapacity;
-        return createU16StringBuilder(U16DataLength{boundedCapacity});
+        const auto boundedCapacity = rawCapacity > U16Count::cRawMaximum ? U16Count::cRawMaximum : rawCapacity;
+        return createU16StringBuilder(U16Count{boundedCapacity, U16Count::Unchecked{}});
     }
     case StringKind::U32:
         return createU32StringBuilder(capacity);
     }
-    return createU8StringBuilder(ByteLength{});
+    return createU8StringBuilder(ByteCount{});
 }
 
-auto createU8StringBuilder(const ByteLength capacity, const bool sensitive) -> SharedDataPointer<AnyStringBuilderBase> {
+auto createU8StringBuilder(const ByteCount capacity, const bool sensitive) -> SharedDataPointer<AnyStringBuilderBase> {
     return SharedDataPointer<AnyStringBuilderBase>{new U8StringBuilder{capacity, sensitive}};
 }
 
-auto createU16StringBuilder(const U16DataLength capacity) -> SharedDataPointer<AnyStringBuilderBase> {
+auto createU16StringBuilder(const U16Count capacity) -> SharedDataPointer<AnyStringBuilderBase> {
     return SharedDataPointer<AnyStringBuilderBase>{new U16StringBuilder{capacity}};
 }
 
-auto createU32StringBuilder(const CpLength capacity) -> SharedDataPointer<AnyStringBuilderBase> {
+auto createU32StringBuilder(const CpCount capacity) -> SharedDataPointer<AnyStringBuilderBase> {
     return SharedDataPointer<AnyStringBuilderBase>{new U32StringBuilder{capacity}};
 }
 

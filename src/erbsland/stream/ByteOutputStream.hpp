@@ -54,9 +54,9 @@ public: // default interface
 
 public: // coroutine interface
     /// Asynchronously write an owned byte block.
+    /// This stream must have shared ownership.
     /// @param bytes The bytes retained by the operation until it completes.
     /// @return A task with the same result as `write(ByteBlock)`.
-    /// @throws err::LogicError If this stream is not shared-owned.
     /// @throws stream::StreamError When the task result is observed if the stream or backing target fails.
     [[nodiscard]] auto coWrite(mem::ByteBlock bytes) -> util::CoTask<StreamWriteStatus>;
 
@@ -95,5 +95,6 @@ private:
 };
 
 }
+
 #include "../mem/ByteArray.hpp"
 #include "../mem/ByteSpan.hpp"

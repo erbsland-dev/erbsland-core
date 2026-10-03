@@ -3,8 +3,8 @@
 
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/vr/RulesBuilder.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::conf;

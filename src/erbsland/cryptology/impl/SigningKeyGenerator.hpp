@@ -11,10 +11,14 @@ namespace erbsland::cryptology::impl {
 
 /// Bounded signing-key generation using application secure randomness.
 ///
-/// EC scalar generation follows FIPS 186-5 section A.2.2 by rejection sampling into the interval `[1, n-1]`.
+/// EC generation adds the library's extreme-scalar policy to FIPS 186-5 section A.2.2 rejection sampling.
+/// Exhausting 128 EC candidates throws the fatal logic failure `random::RandomFailure`.
 /// RSA generation delegates to the fixed-width FIPS 186-5 key-generation implementation.
-/// @tested{X509CertificateBuilderTest}
+/// @seedoc{/reference/cryptology/key_management}
+/// @tested{X509CertificateBuilderTest EcSigningKeyTest}
 class SigningKeyGenerator final {
+    static constexpr auto cMaximumEcAttempts = 128U; ///< Maximum total EC candidate draws per generated key.
+
 public:
     /// Create a generator for one fixed key profile.
     explicit SigningKeyGenerator(SigningKeyProfile profile) noexcept : _profile{profile} {}

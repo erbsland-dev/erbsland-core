@@ -5,7 +5,8 @@
 
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
-#include <erbsland/resource/Resources.hpp>
+#include <erbsland/Resources.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

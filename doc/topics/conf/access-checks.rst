@@ -16,8 +16,8 @@ Resolving that request and trusting its result are deliberately separate decisio
 This page explains how the parser checks every source before opening it, how to configure the built-in filesystem
 boundary, and when an application should extend or replace that policy.
 
-Every Source Crosses the Access Boundary
-========================================
+Access Checks for Root and Included Sources
+===========================================
 
 The :cpp:class:`AccessCheck <erbsland::conf::AccessCheck>` sits between source resolution and source I/O.
 The parser calls its ``check()`` method for the initial document and for every source returned by an include resolver.
@@ -39,8 +39,8 @@ parent or the original trust root.
 The identifiers are lightweight descriptions; an access check should inspect their source names and paths without
 opening the sources itself.
 
-The Default File Boundary
-=========================
+Default File Include Access Restrictions
+========================================
 
 Every new :cpp:class:`Parser <erbsland::conf::Parser>` uses a
 :cpp:class:`FileAccessCheck <erbsland::conf::FileAccessCheck>`.
@@ -99,7 +99,7 @@ The generated theme uses Polish station names as configuration data; the policy 
 .. erbsland-demo::
     :source: conf/AccessChecks/ConfigureFileAccess.cpp
     :exec: conf/access_checks --demo ConfigureFileAccess
-    :source-sha256: 1b241b92d6c346da43c619111ee91b629a8d03784fb09282fa8fa9588dac5172
+    :sha256: a68a94ef126f127e86231cf946df5e6a39019e8de466f97e7ba651f5c51a4e29
 
 .. code-block:: cpp
 
@@ -125,7 +125,7 @@ The generated theme uses Polish station names as configuration data; the policy 
     /// Configure and install a file access check before parsing a document.
     void configureFileAccess() {
         auto temporaryOptions = el::PathTempDirectoryOptions{};
-        temporaryOptions.setPrefix("stacja-badawcza-"_el).setRandomLength(el::CpLength{8U});
+        temporaryOptions.setPrefix("stacja-badawcza-"_el).setRandomLength(el::CpCount{8U});
         const auto temporary =
             el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
         const auto root = temporary->path();
@@ -147,10 +147,12 @@ The generated theme uses Polish station names as configuration data; the policy 
         el::io::printLine("Station: "_el, document->getTextOrThrow("station.name"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Station: Stacja Polarna Aurora
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mStation: Stacja Polarna Aurora␛[0m
 
 .. erbsland-demo-end::
 
@@ -183,7 +185,7 @@ initial document as well as its include.
 .. erbsland-demo::
     :source: conf/AccessChecks/CustomAccessCheck.cpp
     :exec: conf/access_checks --demo CustomAccessCheck
-    :source-sha256: 925bb12938f77812653ac1a1623274c352393fe7987001f726af0ebdc253a824
+    :sha256: 9380ba616071a8f81857868f00a4a67d67970294decac1a456d424746d84e09c
 
 .. code-block:: cpp
 
@@ -234,7 +236,7 @@ initial document as well as its include.
     /// Install a custom access check that implements an application-owned trust boundary.
     void customAccessCheck() {
         auto temporaryOptions = el::PathTempDirectoryOptions{};
-        temporaryOptions.setPrefix("stacja-badawcza-"_el).setRandomLength(el::CpLength{8U});
+        temporaryOptions.setPrefix("stacja-badawcza-"_el).setRandomLength(el::CpCount{8U});
         const auto temporary =
             el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
         const auto root = temporary->path();
@@ -253,10 +255,12 @@ initial document as well as its include.
         el::io::printLine("Approved station: "_el, document->getTextOrThrow("station.name"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Approved station: Obserwatorium Północne
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mApproved station: Obserwatorium Północne␛[0m
 
 .. erbsland-demo-end::
 

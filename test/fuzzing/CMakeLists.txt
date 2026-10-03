@@ -11,11 +11,12 @@ endif()
 # no-link variant so libFuzzer can observe coverage inside the code under test.
 target_compile_options(erbsland-core PRIVATE -fsanitize=fuzzer-no-link,address,undefined)
 
+add_subdirectory(common)
 add_subdirectory(ecdsa-signature)
 add_subdirectory(http1-request)
 add_subdirectory(http1-response)
-add_subdirectory(punycode)
 add_subdirectory(pkcs8-key)
+add_subdirectory(punycode)
 add_subdirectory(tls-client-protocol)
 add_subdirectory(tls-record)
 add_subdirectory(tls-server-protocol)

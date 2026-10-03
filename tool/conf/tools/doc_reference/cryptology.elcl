@@ -1,0 +1,63 @@
+# Reference-document groups for the cryptology domain.
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "cryptology/cryptographic_operations.rst"
+Title                        : "Cryptographic Operations"
+Headers                      :
+    * "cryptology/CryptologyError.hpp"
+    * "cryptology/Hkdf.hpp"
+    * "cryptology/Hmac.hpp"
+    * "cryptology/StdFormat.hpp"
+Header Globs                 :
+    * "cryptology/Cryptographic*.hpp"
+    * "cryptology/Hash*.hpp"
+    * "cryptology/configuration/*.hpp"
+    * "cryptology/symmetric/*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "cryptology/signed_byte_blocks.rst"
+Title                        : "Signed Byte Blocks"
+Headers                      :
+    * "cryptology/SignedByteBlock.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "cryptology/authentication_tokens.rst"
+Title                        : "Authentication Tokens"
+Header Globs                 :
+    * "cryptology/authentication/*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "cryptology/protected_data.rst"
+Title                        : "Protected Data"
+Header Globs                 :
+    * "cryptology/protected_data/*.hpp"
+    * "cryptology/SecureStorage*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "cryptology/key_management.rst"
+Title                        : "Key Agreement and Signing"
+Headers                      :
+    * "cryptology/PemDerFormat.hpp"
+Header Globs                 :
+    * "cryptology/keys/*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "cryptology/password_hashing.rst"
+Title                        : "Password Hashing"
+Header Globs                 :
+    * "cryptology/Password*.hpp"
+    * "cryptology/unsafe/*Password*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "cryptology/tls.rst"
+Title                        : "TLS Support"
+Header Globs                 :
+    * "cryptology/tls/*.hpp"
+    * "cryptology/tls_record/*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "cryptology/x509_certificates.rst"
+Title                        : "X.509 Certificates"
+Header Globs                 :
+    * "cryptology/asn1/*.hpp"
+    * "cryptology/x509/*.hpp"

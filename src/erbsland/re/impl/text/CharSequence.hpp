@@ -65,10 +65,12 @@ private:
 }
 
 namespace std {
+
 template <>
 struct hash<erbsland::re::impl::CharSequence> {
     auto operator()(const erbsland::re::impl::CharSequence &charSequence) const noexcept -> std::size_t {
         return charSequence.hash();
     }
 };
+
 }

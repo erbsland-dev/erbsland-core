@@ -104,11 +104,11 @@ public:
     void testBlockValidationRejectsInvalidWidthsAndCounts() {
         auto options = BitmapDrawOptions{};
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setFullBlock(Block{U'界'}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setDoubleBlocks(BlockStringEditor{"X"_el}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setDoubleBlocks(BlockStringEditor{U"界X"_el}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setHalfBlocks(BlockStringEditor{"short"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setFullBlock(Block{U'界'}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setDoubleBlocks(BlockStringEditor{"X"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setDoubleBlocks(BlockStringEditor{U"界X"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, options.setHalfBlocks(BlockStringEditor{"short"_el}));
         REQUIRE_THROWS_AS(
-            erbsland::err::ParameterError, options.setHalfBlocks(BlockStringEditor{U"abcdefghijklmno界"_el}));
+            erbsland::err::ParameterFailure, options.setHalfBlocks(BlockStringEditor{U"abcdefghijklmno界"_el}));
     }
 };

@@ -3,10 +3,16 @@
 Changelog
 *********
 
-.. note::
+Version 0.90.0 — Beta 1
+=======================
 
-    This changelog will not get updates until the first ``1.0.0`` version is released.
-    Check the changelog and release notes on GitHub for changes on alpha and beta versions.
+The first beta release begins the stabilization phase toward ``1.0.0``.
+See :doc:`roadmap` for the beta compatibility policy and review goals.
+
+Earlier Alpha Releases
+======================
+
+See the GitHub release notes for the intervening alpha releases.
 
 Version 0.1 - 2026-05-20
 ========================

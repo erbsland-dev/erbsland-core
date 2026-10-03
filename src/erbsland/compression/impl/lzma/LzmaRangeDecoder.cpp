@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "LzmaRangeDecoder.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../CompressionError.hpp"
 
@@ -82,11 +82,11 @@ LzmaRangeDecoder::LzmaRangeDecoder(CodecReader &input) : _source{input} {
 
 void LzmaRangeDecoder::requireTreeSize(const std::span<uint16_t> probabilities, const unsigned bitCount) {
     if (bitCount >= std::numeric_limits<uint32_t>::digits) {
-        throw err::LogicError{"The LZMA probability-tree bit count is too large."_el};
+        throw err::LogicFailure{"The LZMA probability-tree bit count is too large."_el};
     }
     const auto requiredSize = std::size_t{1U} << bitCount;
     if (probabilities.size() < requiredSize) {
-        throw err::LogicError{"The LZMA probability span is too small for the requested tree."_el};
+        throw err::LogicFailure{"The LZMA probability span is too small for the requested tree."_el};
     }
 }
 

@@ -39,7 +39,7 @@ private:
 public:
     /// Create state for a Windows TCP connection.
     WindowsTcpConnectionState(
-        event::EventLoopDriverPtr driver, unit::ByteLength receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks);
+        event::EventLoopDriverPtr driver, unit::ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks);
     /// Release the connection state and native operations.
     ~WindowsTcpConnectionState();
 
@@ -51,7 +51,7 @@ public:
     /// Queue `data` for sending.
     [[nodiscard]] auto send(mem::ByteBlock data) -> TcpConnectionDeviceSendStatus;
     /// Configure the maximum number of bytes received next.
-    void setReceiving(unit::ByteLength maximumBytes);
+    void setReceiving(unit::ByteCount maximumBytes);
     /// Begin graceful connection shutdown.
     void close() noexcept;
 
@@ -97,12 +97,12 @@ private:
     std::unique_ptr<WindowsTcpConnectionOperation> _connectOperation; ///< Pending connect.
     std::unique_ptr<WindowsTcpConnectionOperation> _receiveOperation; ///< Pending receive.
     std::unique_ptr<WindowsTcpConnectionOperation> _sendOperation;    ///< Pending send.
-    unit::ByteLength _receiveChunkLimit;                              ///< Largest receive chunk.
+    unit::ByteCount _receiveChunkLimit;                               ///< Largest receive chunk.
     std::optional<IpEndpoint> _localEndpoint;                         ///< Established local endpoint.
     std::optional<IpEndpoint> _remoteEndpoint;                        ///< Established remote endpoint.
     std::uint64_t _generation{1U};                                    ///< Current operation generation.
     bool _connected{false};                                           ///< Whether the socket is established.
-    unit::ByteLength _maximumReceiveSize;                             ///< Largest next native receive, or zero.
+    unit::ByteCount _maximumReceiveSize;                              ///< Largest next native receive, or zero.
     bool _closed{false};                                              ///< Whether shutdown started.
 };
 

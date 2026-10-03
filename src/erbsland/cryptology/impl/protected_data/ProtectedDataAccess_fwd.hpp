@@ -7,5 +7,6 @@ namespace erbsland::cryptology::impl {
 class ApplicationProtectedDataAccess;
 class ProtectedDataAccess;
 class ProtectedDataTestAccess;
+class ProtectedDataProviderTestAccess;
 
 }

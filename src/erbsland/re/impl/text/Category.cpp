@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Category.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 #include <algorithm>
@@ -169,125 +169,212 @@ auto Category::characterSet() const -> CharSet {
     using UC = UnicodeCategory;
     using UG = UnicodeCategoryGroup;
     switch (_value) {
-    case Other:
-        return CharSet::from(UG::Other);
-    case Letter:
-        return CharSet::from(UG::Letter);
-    case Mark:
-        return CharSet::from(UG::Mark);
-    case Number:
-        return CharSet::from(UG::Number);
-    case Punctuation:
-        return CharSet::from(UG::Punctuation);
-    case Symbol:
-        return CharSet::from(UG::Symbol);
-    case Separator:
-        return CharSet::from(UG::Separator);
-    case Control:
-        return CharSet::from(UC::Control);
-    case Format:
-        return CharSet::from(UC::Format);
-    case Unassigned:
-        return CharSet::from(UC::Unassigned);
-    case PrivateUse:
-        return CharSet::from(UC::PrivateUse);
-    case Surrogate:
-        return CharSet::from(UC::Surrogate);
-    case LowercaseLetter:
-        return CharSet::from(UC::LowercaseLetter);
-    case ModifierLetter:
-        return CharSet::from(UC::ModifierLetter);
-    case OtherLetter:
-        return CharSet::from(UC::OtherLetter);
-    case TitlecaseLetter:
-        return CharSet::from(UC::TitlecaseLetter);
-    case UppercaseLetter:
-        return CharSet::from(UC::UppercaseLetter);
-    case SpacingMark:
-        return CharSet::from(UC::SpacingMark);
-    case EnclosingMark:
-        return CharSet::from(UC::EnclosingMark);
-    case NonspacingMark:
-        return CharSet::from(UC::NonspacingMark);
-    case DecimalNumber:
-        return CharSet::from(UC::DecimalNumber);
-    case LetterNumber:
-        return CharSet::from(UC::LetterNumber);
-    case OtherNumber:
-        return CharSet::from(UC::OtherNumber);
-    case ConnectorPunctuation:
-        return CharSet::from(UC::ConnectorPunctuation);
-    case DashPunctuation:
-        return CharSet::from(UC::DashPunctuation);
-    case ClosePunctuation:
-        return CharSet::from(UC::ClosePunctuation);
-    case FinalPunctuation:
-        return CharSet::from(UC::FinalPunctuation);
-    case InitialPunctuation:
-        return CharSet::from(UC::InitialPunctuation);
-    case OtherPunctuation:
-        return CharSet::from(UC::OtherPunctuation);
-    case OpenPunctuation:
-        return CharSet::from(UC::OpenPunctuation);
-    case CurrencySymbol:
-        return CharSet::from(UC::CurrencySymbol);
-    case ModifierSymbol:
-        return CharSet::from(UC::ModifierSymbol);
-    case MathSymbol:
-        return CharSet::from(UC::MathSymbol);
-    case OtherSymbol:
-        return CharSet::from(UC::OtherSymbol);
-    case LineSeparator:
-        return CharSet::from(UC::LineSeparator);
-    case ParagraphSeparator:
-        return CharSet::from(UC::ParagraphSeparator);
-    case SpaceSeparator:
-        return CharSet::from(UC::SpaceSeparator);
+    case Other: {
+        static const auto cCharacters = CharSet::from(UG::Other);
+        return cCharacters;
+    }
+    case Letter: {
+        static const auto cCharacters = CharSet::from(UG::Letter);
+        return cCharacters;
+    }
+    case Mark: {
+        static const auto cCharacters = CharSet::from(UG::Mark);
+        return cCharacters;
+    }
+    case Number: {
+        static const auto cCharacters = CharSet::from(UG::Number);
+        return cCharacters;
+    }
+    case Punctuation: {
+        static const auto cCharacters = CharSet::from(UG::Punctuation);
+        return cCharacters;
+    }
+    case Symbol: {
+        static const auto cCharacters = CharSet::from(UG::Symbol);
+        return cCharacters;
+    }
+    case Separator: {
+        static const auto cCharacters = CharSet::from(UG::Separator);
+        return cCharacters;
+    }
+    case Control: {
+        static const auto cCharacters = CharSet::from(UC::Control);
+        return cCharacters;
+    }
+    case Format: {
+        static const auto cCharacters = CharSet::from(UC::Format);
+        return cCharacters;
+    }
+    case Unassigned: {
+        static const auto cCharacters = CharSet::from(UC::Unassigned);
+        return cCharacters;
+    }
+    case PrivateUse: {
+        static const auto cCharacters = CharSet::from(UC::PrivateUse);
+        return cCharacters;
+    }
+    case Surrogate: {
+        static const auto cCharacters = CharSet::from(UC::Surrogate);
+        return cCharacters;
+    }
+    case LowercaseLetter: {
+        static const auto cCharacters = CharSet::from(UC::LowercaseLetter);
+        return cCharacters;
+    }
+    case ModifierLetter: {
+        static const auto cCharacters = CharSet::from(UC::ModifierLetter);
+        return cCharacters;
+    }
+    case OtherLetter: {
+        static const auto cCharacters = CharSet::from(UC::OtherLetter);
+        return cCharacters;
+    }
+    case TitlecaseLetter: {
+        static const auto cCharacters = CharSet::from(UC::TitlecaseLetter);
+        return cCharacters;
+    }
+    case UppercaseLetter: {
+        static const auto cCharacters = CharSet::from(UC::UppercaseLetter);
+        return cCharacters;
+    }
+    case SpacingMark: {
+        static const auto cCharacters = CharSet::from(UC::SpacingMark);
+        return cCharacters;
+    }
+    case EnclosingMark: {
+        static const auto cCharacters = CharSet::from(UC::EnclosingMark);
+        return cCharacters;
+    }
+    case NonspacingMark: {
+        static const auto cCharacters = CharSet::from(UC::NonspacingMark);
+        return cCharacters;
+    }
     case DigitUnicode:
-        return CharSet::from(UC::DecimalNumber);
+    case DecimalNumber: {
+        static const auto cCharacters = CharSet::from(UC::DecimalNumber);
+        return cCharacters;
+    }
+    case LetterNumber: {
+        static const auto cCharacters = CharSet::from(UC::LetterNumber);
+        return cCharacters;
+    }
+    case OtherNumber: {
+        static const auto cCharacters = CharSet::from(UC::OtherNumber);
+        return cCharacters;
+    }
+    case ConnectorPunctuation: {
+        static const auto cCharacters = CharSet::from(UC::ConnectorPunctuation);
+        return cCharacters;
+    }
+    case DashPunctuation: {
+        static const auto cCharacters = CharSet::from(UC::DashPunctuation);
+        return cCharacters;
+    }
+    case ClosePunctuation: {
+        static const auto cCharacters = CharSet::from(UC::ClosePunctuation);
+        return cCharacters;
+    }
+    case FinalPunctuation: {
+        static const auto cCharacters = CharSet::from(UC::FinalPunctuation);
+        return cCharacters;
+    }
+    case InitialPunctuation: {
+        static const auto cCharacters = CharSet::from(UC::InitialPunctuation);
+        return cCharacters;
+    }
+    case OtherPunctuation: {
+        static const auto cCharacters = CharSet::from(UC::OtherPunctuation);
+        return cCharacters;
+    }
+    case OpenPunctuation: {
+        static const auto cCharacters = CharSet::from(UC::OpenPunctuation);
+        return cCharacters;
+    }
+    case CurrencySymbol: {
+        static const auto cCharacters = CharSet::from(UC::CurrencySymbol);
+        return cCharacters;
+    }
+    case ModifierSymbol: {
+        static const auto cCharacters = CharSet::from(UC::ModifierSymbol);
+        return cCharacters;
+    }
+    case MathSymbol: {
+        static const auto cCharacters = CharSet::from(UC::MathSymbol);
+        return cCharacters;
+    }
+    case OtherSymbol: {
+        static const auto cCharacters = CharSet::from(UC::OtherSymbol);
+        return cCharacters;
+    }
+    case LineSeparator: {
+        static const auto cCharacters = CharSet::from(UC::LineSeparator);
+        return cCharacters;
+    }
+    case ParagraphSeparator: {
+        static const auto cCharacters = CharSet::from(UC::ParagraphSeparator);
+        return cCharacters;
+    }
+    case SpaceSeparator: {
+        static const auto cCharacters = CharSet::from(UC::SpaceSeparator);
+        return cCharacters;
+    }
     case DigitAscii:
         return CharSet::fromRange(U'0', U'9');
     case WordUnicode: {
-        auto result = CharSet::from(UG::Letter);
-        result.add(CharSet::from(UC::DecimalNumber));
-        result.add(U'_');
-        return result;
+        static const auto cCharacters = []() -> CharSet {
+            auto result = CharSet::from(UG::Letter);
+            result.add(CharSet::from(UC::DecimalNumber));
+            result.add(U'_');
+            return result;
+        }();
+        return cCharacters;
     }
     case WordAscii: {
-        auto result = CharSet::fromRange(U'0', U'9');
-        result.add(CharSet::fromRange(U'A', U'Z'));
-        result.add(CharSet::fromRange(U'a', U'z'));
-        result.add(U'_');
-        return result;
+        static const auto cCharacters = []() -> CharSet {
+            auto result = CharSet::fromRange(U'0', U'9');
+            result.add(CharSet::fromRange(U'A', U'Z'));
+            result.add(CharSet::fromRange(U'a', U'z'));
+            result.add(U'_');
+            return result;
+        }();
+        return cCharacters;
     }
+    case HorizontalSpaceUnicode:
     case SpaceUnicode: {
-        auto result = CharSet::from(UC::SpaceSeparator);
-        result.add(U'\t');
-        return result;
-    }
-    case SpaceAscii:
-        return CharSet{U'\t', U' ', Char{0x00A0U}};
-    case SpaceUnicodeDotAll: {
-        auto result = CharSet::from(UC::SpaceSeparator);
-        result.add(CharSet::from(UC::LineSeparator));
-        result.add(CharSet::from(UC::ParagraphSeparator));
-        result.add(CharSet{U'\t', U'\n', U'\v', U'\f', U'\r'});
-        return result;
-    }
-    case SpaceAsciiDotAll:
-        return CharSet{U'\t', U' ', U'\n', U'\v', U'\f', U'\r', Char{0x00A0U}};
-    case HorizontalSpaceUnicode: {
-        auto result = CharSet::from(UC::SpaceSeparator);
-        result.add(U'\t');
-        return result;
+        static const auto cCharacters = []() -> CharSet {
+            auto result = CharSet::from(UC::SpaceSeparator);
+            result.add(U'\t');
+            return result;
+        }();
+        return cCharacters;
     }
     case HorizontalSpaceAscii:
-        return CharSet{U'\t', U' ', Char{0x00A0U}};
+    case SpaceAscii: {
+        static const auto cCharacters = CharSet{U'\t', U' ', Char{0x00A0U}};
+        return cCharacters;
+    }
+    case SpaceUnicodeDotAll: {
+        static const auto cCharacters = []() -> CharSet {
+            auto result = CharSet::from(UC::SpaceSeparator);
+            result.add(CharSet::from(UC::LineSeparator));
+            result.add(CharSet::from(UC::ParagraphSeparator));
+            result.add(CharSet{U'\t', U'\n', U'\v', U'\f', U'\r'});
+            return result;
+        }();
+        return cCharacters;
+    }
+    case SpaceAsciiDotAll: {
+        static const auto cCharacters = CharSet{U'\t', U' ', U'\n', U'\v', U'\f', U'\r', Char{0x00A0U}};
+        return cCharacters;
+    }
     case VerticalSpaceUnicode: {
-        auto result = CharSet{U'\n', U'\v', U'\f', U'\r', Char{0x0085U}};
-        result.add(CharSet::from(UC::LineSeparator));
-        result.add(CharSet::from(UC::ParagraphSeparator));
-        return result;
+        static const auto cCharacters = []() -> CharSet {
+            auto result = CharSet{U'\n', U'\v', U'\f', U'\r', Char{0x0085U}};
+            result.add(CharSet::from(UC::LineSeparator));
+            result.add(CharSet::from(UC::ParagraphSeparator));
+            return result;
+        }();
+        return cCharacters;
     }
     case VerticalSpaceAscii:
         return CharSet{U'\n', U'\v', U'\f', U'\r'};

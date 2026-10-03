@@ -94,11 +94,11 @@ private:
             auto &data = std::get<node_data::Group>(node.data());
             auto &captureGroupNames = _data->captureGroupNames;
             if (data.index > 0) {
-                const auto groupIndex = static_cast<uint32_t>(captureGroupNames.size() + 1);
+                const auto groupIndex = static_cast<uint32_t>(captureGroupNames.count().toSizeT() + 1);
                 // Overwrite the index in the node tree - this shouldn't change anything.
                 data.index = groupIndex;
                 // Add the group name or an empty string for each capture group in the pattern.
-                captureGroupNames.emplace_back(data.name);
+                captureGroupNames.append(data.name);
             }
             if (data.atomicGroupId != cNoAtomicGroupId) {
                 _data->hasAtomicGroups = true;

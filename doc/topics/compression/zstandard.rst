@@ -187,10 +187,9 @@ Every frame is then decoded with a workspace limit large enough for the highest 
 
 .. erbsland-demo::
     :source: compression/ByteCompression/CompareCompressionLevels.cpp
-    :function-blocks: compareCompressionLevels compareZstandardLevels
-    :function-blocks-sha256: ce499797c560ded6884f7734b80b115db0530efa8644a530bda59835f493883d
+    :show: f:compareCompressionLevels, f:compareZstandardLevels
     :exec: compression/byte_compression --demo CompareZstandardLevels
-    :source-sha256: b3c7307dcd75e59cb0081271e8b3969dddac878977706dc3b308f7400b5dfcb7
+    :sha256: b5095be4ef7d46864b1f5fdb6a237452d9cd8a39ab4388d8d677a01d09545f14
 
 .. code-block:: cpp
 
@@ -201,8 +200,8 @@ Every frame is then decoded with a workspace limit large enough for the highest 
         const auto readings = createObservatoryReadings();
         const auto options = el::DecompressionOptions{}
                                  .setExpectedOutputLength(readings.length())
-                                 .setMaximumOutputLength(el::ByteLength{16U * 1024U})
-                                 .setMaximumWorkspaceLength(el::ByteLength{64U * 1024U * 1024U});
+                                 .setMaximumOutputLength(el::ByteCount{16U * 1024U})
+                                 .setMaximumWorkspaceLength(el::ByteCount{64U * 1024U * 1024U});
 
         el::io::printLine("Instrument        : radiotelescópio"_el);
         el::io::printLine("Algorithm         : "_el, algorithmName);
@@ -228,16 +227,18 @@ Every frame is then decoded with a workspace limit large enough for the highest 
         compareCompressionLevels(el::CompressionAlgorithm::Zstandard, el::CompressionFormat::Raw, "zstandard"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Instrument        : radiotelescópio
-    Algorithm         : zstandard
-    Original bytes    : 3584
-    Fastest bytes: 3599, restored: yes
-    Fast bytes: 3599, restored: yes
-    Default bytes: 3599, restored: yes
-    High bytes: 3599, restored: yes
-    Highest bytes: 3599, restored: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInstrument        : radiotelescópio
+        Algorithm         : zstandard
+        Original bytes    : 3584
+        Fastest bytes: 173, restored: yes
+        Fast bytes: 176, restored: yes
+        Default bytes: 96, restored: yes
+        High bytes: 39, restored: yes
+        Highest bytes: 35, restored: yes␛[0m
 
 .. erbsland-demo-end::

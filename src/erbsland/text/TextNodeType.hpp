@@ -54,6 +54,7 @@ public:
         OptionName,            ///< Option output complete option name.
         OptionShort,           ///< Option output short option name.
         OptionLong,            ///< Option output long option name.
+        OptionValue,           ///< Option output literal argument or choice value.
         OptionMeta,            ///< Option output meta value.
         OptionOptional,        ///< Option output optional placeholder.
         OptionDetails,         ///< Option output inline details.

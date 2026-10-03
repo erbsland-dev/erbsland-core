@@ -6,6 +6,8 @@
 
 #include "../EventSubscription.hpp"
 
+#include "../../err/RuntimeError.hpp"
+
 #include <algorithm>
 #include <exception>
 #include <memory>
@@ -75,7 +77,7 @@ public:
             }
             try {
                 registration->callback()(args...);
-            } catch (...) {
+            } catch (const err::RuntimeError &) {
                 std::forward<tErrorHandler>(errorHandler)(std::current_exception());
             }
         }

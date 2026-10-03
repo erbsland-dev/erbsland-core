@@ -54,8 +54,8 @@ public:
     [[nodiscard]] auto hasNext() const noexcept -> bool { return _hasNextAssignment; }
 
     /// Retrieve the next assignment.
+    /// The assignment stream must satisfy its terminal-marker contract.
     /// @throws ConfError For any problems while parsing a document.
-    /// @throws err::LogicError If the assignment stream violates its terminal-marker contract.
     [[nodiscard]] auto nextAssignment() -> Assignment;
 
     /// Set the signature text for this context.

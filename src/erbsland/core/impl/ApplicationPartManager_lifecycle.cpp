@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ApplicationPartManager.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../ApplicationError.hpp"
+
+#include "../../err/LogicFailure.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../event/Events.hpp"
 #include "../../text/Literals.hpp"
@@ -11,19 +13,20 @@
 
 namespace erbsland::core::impl {
 
+using namespace err;
 using namespace text::literals;
 
 void ApplicationPartManager::start() {
     {
         const auto lock = std::scoped_lock{_mutex};
         if (!_prepared) {
-            throw err::LogicError{"The application-part manager must be prepared before startup."_el};
+            throw LogicFailure{"The application-part manager must be prepared before startup."_el};
         }
         if (_state == ApplicationPartManagerState::Starting || _state == ApplicationPartManagerState::Running) {
             return;
         }
         if (_state != ApplicationPartManagerState::Ready) {
-            throw err::LogicError{"The application-part manager lifecycle is one-shot."_el};
+            throw LogicFailure{"The application-part manager lifecycle is one-shot."_el};
         }
     }
     invokeControl([weak = weak_from_this()]() -> void {
@@ -38,11 +41,11 @@ void ApplicationPartManager::start(const ApplicationPartIdentifierPtr &identifie
     {
         const auto lock = std::scoped_lock{_mutex};
         if (!_prepared) {
-            throw err::LogicError{"The application-part manager must be prepared before startup."_el};
+            throw LogicFailure{"The application-part manager must be prepared before startup."_el};
         }
         if (_state == ApplicationPartManagerState::Stopping || _state == ApplicationPartManagerState::Stopped ||
             _state == ApplicationPartManagerState::Failed) {
-            throw err::LogicError{"The application-part manager lifecycle is one-shot."_el};
+            throw LogicFailure{"The application-part manager lifecycle is one-shot."_el};
         }
         auto marks = std::vector<uint8_t>(_records.size(), 0);
         validateDependencyClosureCanStartLocked(number, marks);
@@ -67,7 +70,7 @@ void ApplicationPartManager::stop() {
     {
         const auto lock = std::scoped_lock{_mutex};
         if (!_prepared) {
-            throw err::LogicError{"The application-part manager must be prepared before shutdown."_el};
+            throw LogicFailure{"The application-part manager must be prepared before shutdown."_el};
         }
         if (_state == ApplicationPartManagerState::Stopping || _state == ApplicationPartManagerState::Stopped ||
             _state == ApplicationPartManagerState::Failed) {
@@ -107,7 +110,7 @@ void ApplicationPartManager::validateDependencyClosureCanStartLocked(
     mark = 1;
     const auto &record = _records[number - 1];
     if (record.state == ApplicationPartState::Stopped || record.state == ApplicationPartState::Failed) {
-        throw err::LogicError{"A stopped application part can not be restarted."_el};
+        throw LogicFailure{"A stopped application part can not be restarted."_el};
     }
     for (const auto dependency : record.dependencies) {
         validateDependencyClosureCanStartLocked(dependency, marks);
@@ -156,7 +159,7 @@ void ApplicationPartManager::progressStartup() {
             if (evaluateAutomatic) {
                 try {
                     shouldStart = part->automaticStart();
-                } catch (...) {
+                } catch (const RuntimeError &) {
                     handlePartFailure(number, std::current_exception());
                     madeProgress = true;
                     continue;
@@ -250,12 +253,7 @@ void ApplicationPartManager::startPart(const std::size_t number) {
         _records[number - 1].thread = thread;
     }
     setPartState(number, ApplicationPartState::Starting);
-    try {
-        thread->start();
-    } catch (...) {
-        handlePartFailure(number, std::current_exception());
-        handlePartExited(number);
-    }
+    thread->start();
 }
 
 void ApplicationPartManager::handlePartRunning(const std::size_t number) {
@@ -369,7 +367,7 @@ void ApplicationPartManager::stopPart(const std::size_t number) {
                 }
             });
         }
-    } catch (...) {
+    } catch (const RuntimeError &) {
         handlePartFailure(number, std::current_exception());
         thread->quit();
     }
@@ -404,7 +402,10 @@ void ApplicationPartManager::handlePartTimeout(const std::size_t number, const u
         thread = record.thread;
     }
     handlePartFailure(
-        number, std::make_exception_ptr(err::RuntimeError{"The application part exceeded its shutdown timeout."_el}));
+        number,
+        std::make_exception_ptr(
+            ApplicationError{
+                "Application part shutdown timed out"_el, "The application part exceeded its shutdown timeout."_el}));
     if (thread != nullptr) {
         thread->quit();
     }
@@ -427,7 +428,7 @@ void ApplicationPartManager::handlePartFailure(const std::size_t number, std::ex
     if (handler) {
         try {
             action = handler(identifier, error);
-        } catch (...) {
+        } catch (const RuntimeError &) {
             addError(std::current_exception());
             action = ApplicationPartErrorAction::StopAll;
         }

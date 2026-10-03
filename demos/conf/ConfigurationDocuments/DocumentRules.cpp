@@ -4,6 +4,8 @@
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

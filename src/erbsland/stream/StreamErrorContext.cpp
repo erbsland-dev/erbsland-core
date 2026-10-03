@@ -10,34 +10,35 @@
 
 namespace erbsland::stream {
 
+using namespace text;
 using namespace text::literals;
 using system::PlatformErrorCategory;
 using system::PlatformErrorContextConstPtr;
 
-StreamErrorContext::StreamErrorContext(text::String title, text::String description) noexcept :
+StreamErrorContext::StreamErrorContext(String title, String description) noexcept :
     _title{std::move(title)}, _description{std::move(description)} {
 }
 
-auto StreamErrorContext::setTitle(text::String title) noexcept -> StreamErrorContext & {
+auto StreamErrorContext::setTitle(String title) noexcept -> StreamErrorContext & {
     _title = std::move(title);
     return *this;
 }
 
-auto StreamErrorContext::setDescription(text::String description) noexcept -> StreamErrorContext & {
+auto StreamErrorContext::setDescription(String description) noexcept -> StreamErrorContext & {
     _description = std::move(description);
     return *this;
 }
 
-auto StreamErrorContext::help() const noexcept -> text::String {
+auto StreamErrorContext::help() const noexcept -> String {
     return !_help.isEmpty() ? _help : categoryHelp();
 }
 
-auto StreamErrorContext::setHelp(text::String help) noexcept -> StreamErrorContext & {
+auto StreamErrorContext::setHelp(String help) noexcept -> StreamErrorContext & {
     _help = std::move(help);
     return *this;
 }
 
-auto StreamErrorContext::setPath(text::String path) noexcept -> StreamErrorContext & {
+auto StreamErrorContext::setPath(String path) noexcept -> StreamErrorContext & {
     _path = std::move(path);
     return *this;
 }
@@ -48,7 +49,7 @@ auto StreamErrorContext::setPlatformContext(PlatformErrorContextConstPtr platfor
     return *this;
 }
 
-auto StreamErrorContext::categoryHelp() const noexcept -> text::String {
+auto StreamErrorContext::categoryHelp() const noexcept -> String {
     if (_platformContext == nullptr) {
         return {};
     }

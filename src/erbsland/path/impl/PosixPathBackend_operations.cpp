@@ -12,7 +12,7 @@
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -28,11 +28,14 @@
 
 namespace erbsland::path::impl {
 
+using namespace text;
+using text::impl::PlatformU8StringAccess;
+using text::impl::UnsafeU8StringBuffer;
 using namespace text::literals;
 
 auto PosixPathBackend::directoryEntriesOrThrow(const Path &path, const Path &resolvedPath) const -> std::vector<Path> {
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     auto *directory = ::opendir(pathAccess.nullTerminatedCharPtr());
     if (directory == nullptr) {
         throwSystemError(
@@ -49,7 +52,7 @@ auto PosixPathBackend::directoryEntriesOrThrow(const Path &path, const Path &res
     while (auto *entry = ::readdir(directory)) {
         const auto name = std::string_view{entry->d_name};
         if (name != "." && name != "..") {
-            const auto pathName = text::String{name};
+            const auto pathName = String{name};
             auto child = directoryEntryPath(path, pathName);
             if (child.isEmpty()) {
                 throw PathError{PathErrorContext{
@@ -91,7 +94,7 @@ auto PosixPathBackend::directoryEntriesOrThrow(const Path &path, const Path &res
 
 void PosixPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathAccessProfile profile) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     if (::mkdir(pathAccess.nullTerminatedCharPtr(), profileMode(profile, PathType::Directory)) != 0) {
         throwSystemError(
             "Directory could not be created"_el,
@@ -115,7 +118,7 @@ void PosixPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathA
 
 void PosixPathBackend::removeEntryOrThrow(const Path &path) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     struct stat info{};
     if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) != 0) {
         throwSystemError(
@@ -136,8 +139,8 @@ void PosixPathBackend::removeEntryOrThrow(const Path &path) const {
 void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::PlatformU8StringAccess{sourceText};
-    const auto destinationAccess = text::impl::PlatformU8StringAccess{destinationText};
+    const auto sourceAccess = PlatformU8StringAccess{sourceText};
+    const auto destinationAccess = PlatformU8StringAccess{destinationText};
     const auto sourceDescriptor = ::open(sourceAccess.nullTerminatedCharPtr(), O_RDONLY);
     if (sourceDescriptor < 0) {
         throwSystemError(
@@ -216,8 +219,8 @@ void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &dest
 void PosixPathBackend::moveEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::PlatformU8StringAccess{sourceText};
-    const auto destinationAccess = text::impl::PlatformU8StringAccess{destinationText};
+    const auto sourceAccess = PlatformU8StringAccess{sourceText};
+    const auto destinationAccess = PlatformU8StringAccess{destinationText};
     if (::rename(sourceAccess.nullTerminatedCharPtr(), destinationAccess.nullTerminatedCharPtr()) != 0) {
         throwSystemError(
             "Path could not be moved"_el,
@@ -232,10 +235,10 @@ void PosixPathBackend::moveEntryOrThrow(const Path &source, const Path &destinat
 
 auto PosixPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     auto bufferSize = std::size_t{256U};
     while (true) {
-        auto buffer = text::impl::UnsafeU8StringBuffer{bufferSize};
+        auto buffer = UnsafeU8StringBuffer{bufferSize};
         const auto length = ::readlink(pathAccess.nullTerminatedCharPtr(), buffer.data(), buffer.dataSize());
         if (length < 0) {
             throwSystemError(
@@ -245,7 +248,7 @@ auto PosixPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
                 errno);
         }
         if (static_cast<std::size_t>(length) < buffer.dataSize()) {
-            return Path::fromPosixOrThrow(buffer.take(unit::ByteLength::fromSizeT(static_cast<std::size_t>(length))));
+            return Path::fromPosixOrThrow(buffer.take(unit::ByteCount::fromSizeT(static_cast<std::size_t>(length))));
         }
         bufferSize *= 2U;
     }
@@ -255,8 +258,8 @@ void PosixPathBackend::createSymlinkOrThrow(
     const Path &target, const Path &path, [[maybe_unused]] const bool targetIsDirectory) const {
     const auto targetText = pathTextOrThrow(target);
     const auto pathText = pathTextOrThrow(path);
-    const auto targetAccess = text::impl::PlatformU8StringAccess{targetText};
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto targetAccess = PlatformU8StringAccess{targetText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     if (::symlink(targetAccess.nullTerminatedCharPtr(), pathAccess.nullTerminatedCharPtr()) != 0) {
         throwSystemError(
             "Symbolic link could not be created"_el,

@@ -4,6 +4,11 @@
 #include "ManagerDemoWriters.hpp"
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogManagerOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <memory>
 #include <utility>
@@ -16,7 +21,7 @@ namespace demo {
 /// message is shortened. The immutable entry records that producer-side truncation occurred.
 void managerMessageSize() {
     auto options = el::LogManagerOptions{};
-    options.setMaximumMessageBytes(el::ByteLength{32U});
+    options.setMaximumMessageBytes(el::ByteCount{32U});
     const auto captured = std::make_shared<CapturingLogWriter>();
     auto configuration = el::LogConfiguration{};
     configuration.setManagerOptions(options).addWriter(captured);

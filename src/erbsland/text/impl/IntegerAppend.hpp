@@ -23,12 +23,12 @@ auto appendDigitField(
     const tDigits &digits,
     const std::size_t digitCount,
     const std::size_t zeroPadCount,
-    const IntegerFormat &format) -> unit::CpLength {
+    const IntegerFormat &format) -> unit::CpCount {
     const auto base = format.base();
     const auto useSeparator = format.hasFlag(IntegerFormatFlag::Separator);
     const auto groupSize = base.digitGroupSize();
     const auto paddedDigitCount = digitCount + zeroPadCount;
-    auto appendedLength = unit::CpLength::zero();
+    auto appendedLength = unit::CpCount::zero();
     auto firstGroupSize = paddedDigitCount % groupSize;
     if (firstGroupSize == 0U) {
         firstGroupSize = groupSize;
@@ -50,7 +50,7 @@ auto appendDigitField(
 
 /// Append an integer to a decoded-character sink.
 template <math::AnyIntegerType T>
-auto appendInteger(StringAppendTools &sink, T value, const IntegerFormat &format) -> unit::CpLength {
+auto appendInteger(StringAppendTools &sink, T value, const IntegerFormat &format) -> unit::CpCount {
     using NativeValue = math::NativeIntegerOfT<T>;
     using Magnitude = math::SignedMagnitude<NativeValue>;
     using UnsignedValue = typename Magnitude::Unsigned;
@@ -78,7 +78,7 @@ auto appendInteger(StringAppendTools &sink, T value, const IntegerFormat &format
     const auto fieldZeroPadCount = format.hasFlag(IntegerFormatFlag::ZeroFill) ? missingDigits : std::size_t{0U};
     const auto zeroPadCount = precisionZeroPadCount + fieldZeroPadCount;
     const auto spacePadCount = format.hasFlag(IntegerFormatFlag::ZeroFill) ? std::size_t{0U} : missingDigits;
-    auto appendedLength = unit::CpLength::zero();
+    auto appendedLength = unit::CpCount::zero();
 
     for (auto i = std::size_t{0U}; i < spacePadCount; ++i) {
         appendedLength += sink.append(Char{U' '});

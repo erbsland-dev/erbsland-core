@@ -10,33 +10,37 @@
 #include "../impl/DerEncoder.hpp"
 #include "../impl/SigningKeyEncoding.hpp"
 
-#include "../../core/Application.hpp"
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../../core/impl/ApplicationDataAccess.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../random/Random.hpp"
 #include "../../text/Literals.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::cryptology {
 
+using namespace err;
+using namespace text;
 using namespace text::literals;
 
-ServerAuthenticationToken::ServerAuthenticationToken(text::String id, PublicKey key) noexcept :
+ServerAuthenticationToken::ServerAuthenticationToken(String id, PublicKey key) noexcept :
     _id{std::move(id)}, _key{std::move(key)} {
 }
 
 auto ServerAuthenticationToken::createChallenge(const time::TimeDelta lifetime) const
     -> PendingAuthenticationChallenge {
     if (isEmpty()) {
-        throw err::LogicError{"Cannot create a challenge from an empty server token."_el};
+        throw LogicFailure{"Cannot create a challenge from an empty server token."_el};
     }
     if (!lifetime.isPositive() || lifetime > time::TimeDelta{time::Seconds{60}}) {
-        throw err::ParameterError{"Challenge lifetime must be positive and at most 60 seconds."_el, "lifetime"_el};
+        throw ParameterFailure{"Challenge lifetime must be positive and at most 60 seconds."_el, "lifetime"_el};
     }
     const auto start = time::TimePoint::now();
-    const auto nonce = core::application().secureRandom().buildByteBlock(unit::ByteLength{32U});
+    const auto randomData = core::impl::applicationData()->random().get();
+    const auto nonce = randomData->secureRandom().buildByteBlock(unit::ByteCount{32U});
     const auto challenge = impl::authentication_codec::encodeChallenge(_id, nonce.span());
     return PendingAuthenticationChallenge{_id, _key, challenge, start + lifetime};
 }
@@ -45,30 +49,30 @@ auto ServerAuthenticationToken::matches(const ClientAuthenticationToken &client)
     return !isEmpty() && !client.isEmpty() && _id == client._id && client._key.matches(_key);
 }
 
-auto ServerAuthenticationToken::toString() const -> text::String {
+auto ServerAuthenticationToken::toString() const -> String {
     if (isEmpty()) {
-        throw err::LogicError{"Cannot encode an empty server token."_el};
+        throw LogicFailure{"Cannot encode an empty server token."_el};
     }
     return impl::authentication_codec::encodeToken(_id, 's', _key.keyData().span());
 }
 
-auto ServerAuthenticationToken::fromString(const text::String &token) noexcept -> ServerAuthenticationToken {
+auto ServerAuthenticationToken::fromString(const String &token) noexcept -> ServerAuthenticationToken {
     try {
         return fromStringOrThrow(token);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
 
-auto ServerAuthenticationToken::fromStringOrThrow(const text::String &token) -> ServerAuthenticationToken {
-    auto identifier = text::String{};
+auto ServerAuthenticationToken::fromStringOrThrow(const String &token) -> ServerAuthenticationToken {
+    auto identifier = String{};
     const auto publicBytes = impl::authentication_codec::decodeToken(token, 's', identifier);
     auto encoder = impl::DerEncoder{};
     impl::signing_key_encoding::appendEd25519PublicKey(encoder, publicBytes.span());
     auto key = PublicKey::fromDerOrThrow(encoder.encoded());
     const auto point = impl::ed25519_signature::decodePoint(publicBytes.span());
     if (!point.has_value() || !impl::ed25519_signature::isPrimeOrderPoint(*point)) {
-        throw err::ParseError{"Server authentication token contains an invalid Ed25519 public key."_el};
+        throw ParseError{"Server authentication token contains an invalid Ed25519 public key."_el};
     }
     return ServerAuthenticationToken{std::move(identifier), std::move(key)};
 }

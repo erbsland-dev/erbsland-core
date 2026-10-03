@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/ConsoleLogWriterOptions.hpp>
+#include <erbsland/cterm/ParagraphOptions.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogLineFormat.hpp>
+#include <erbsland/LogWriter.hpp>
 
 #include <memory>
 

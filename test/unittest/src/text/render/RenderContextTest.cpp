@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Context.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/render/Context.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;
@@ -10,20 +10,24 @@ using namespace el::text::render;
 
 TESTED_TARGETS(Context)
 class RenderContextTest final : public el::UnitTest {
+private:
+    static constexpr auto cActiveKey = "active"_el;
+    static constexpr auto cNameKey = "name"_el;
+
 public:
     void testNamedValues() {
         auto context = Context{};
-        REQUIRE_FALSE(context.contains("name"_el));
-        REQUIRE(context.get("name"_el).isNull());
+        REQUIRE_FALSE(context.contains(cNameKey));
+        REQUIRE(context.get(cNameKey).isNull());
 
-        context.set("name"_el, "Ada"_el).set("active"_el, true);
-        REQUIRE(context.contains("name"_el));
-        REQUIRE_EQUAL(context.get("name"_el).asText(), "Ada"_el);
-        REQUIRE(context.get("active"_el).asBoolean());
+        context.set(cNameKey, "Ada"_el).set(cActiveKey, true);
+        REQUIRE(context.contains(cNameKey));
+        REQUIRE_EQUAL(context.get(cNameKey).asText(), "Ada"_el);
+        REQUIRE(context.get(cActiveKey).asBoolean());
 
         const auto copy = context;
-        context.set("name"_el, "Grace"_el);
-        REQUIRE_EQUAL(copy.get("name"_el).asText(), "Ada"_el);
-        REQUIRE_EQUAL(context.get("name"_el).asText(), "Grace"_el);
+        context.set(cNameKey, "Grace"_el);
+        REQUIRE_EQUAL(copy.get(cNameKey).asText(), "Ada"_el);
+        REQUIRE_EQUAL(context.get(cNameKey).asText(), "Grace"_el);
     }
 };

@@ -4,12 +4,12 @@
 
 #include "TestMetadata.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -27,14 +27,14 @@ public:
     /// @param automatic Whether factory selection may use acceleration.
     /// @return Independently owned experiment.
     [[nodiscard]] virtual auto create([[maybe_unused]] bool automatic) const -> std::unique_ptr<TestCase> {
-        throw el::LogicError{"This test double has no variant factory."_el};
+        throw el::LogicFailure{"This test double has no variant factory."_el};
     }
     // defaults
     virtual ~TestCase() = default;
     /// Get the experiment description.
     [[nodiscard]] virtual auto metadata() const noexcept -> const TestMetadata & = 0;
     /// Get a conservative memory estimate for one fixture.
-    [[nodiscard]] virtual auto fixtureBytes() const noexcept -> el::ByteLength = 0;
+    [[nodiscard]] virtual auto fixtureBytes() const noexcept -> el::ByteCount = 0;
     /// Clear the previous batch outside measured execution.
     virtual void clear() = 0;
     /// Prepare and validate one sample outside measured execution.
@@ -45,6 +45,7 @@ public:
     /// @param index The prepared sample index.
     /// @param repetitions Fixed operation count shared by both populations.
     /// @return Observable checksum.
-    [[nodiscard]] virtual auto execute(std::size_t index, uint64_t repetitions) -> uint64_t = 0;
+    [[nodiscard]] virtual auto execute(el::ItemIndex index, uint64_t repetitions) -> uint64_t = 0;
 };
+
 }

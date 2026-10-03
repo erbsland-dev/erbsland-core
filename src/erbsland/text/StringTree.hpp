@@ -10,7 +10,7 @@
 #include "impl/StringTreeData.hpp"
 
 #include "../math/IntegerTraits.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <concepts>
 #include <ranges>
@@ -70,8 +70,8 @@ public: // modifiers
 public: // conversion
     /// Convert the tree into formatted text.
     [[nodiscard]] auto toString(
-        unit::CpLength indentWidth = unit::CpLength{4U},
-        unit::CpLength initialIndentWidth = unit::CpLength::zero()) const -> String;
+        unit::CpCount indentWidth = unit::CpCount{4U}, unit::CpCount initialIndentWidth = unit::CpCount::zero()) const
+        -> String;
 
 private:
     /// Create a string tree from shared data.
@@ -82,18 +82,18 @@ private:
     static void appendData(
         StringEditor &result,
         const impl::StringTreeData &data,
-        unit::CpLength indentWidth,
-        unit::CpLength indent,
+        unit::CpCount indentWidth,
+        unit::CpCount indent,
         bool &firstLine);
     /// Append one data entry to formatted output.
     static void appendEntry(
         StringEditor &result,
         const impl::StringTreeEntry &entry,
-        unit::CpLength indentWidth,
-        unit::CpLength indent,
+        unit::CpCount indentWidth,
+        unit::CpCount indent,
         bool &firstLine);
     /// Append indentation before a formatted output line.
-    static void appendLinePrefix(StringEditor &result, unit::CpLength indent, bool &firstLine);
+    static void appendLinePrefix(StringEditor &result, unit::CpCount indent, bool &firstLine);
     /// Create the label for an indexed list entry.
     [[nodiscard]] static auto listIndexLabel(std::size_t index) -> String;
     /// Detach shared data before modifying this tree.

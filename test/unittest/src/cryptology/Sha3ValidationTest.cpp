@@ -3,7 +3,7 @@
 
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/Hasher.hpp>
+#include <erbsland/Hasher.hpp>
 
 using namespace el::cryptology;
 

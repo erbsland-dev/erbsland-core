@@ -4,7 +4,7 @@
 
 #include "impl/sign/Signer.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 
 #include <utility>
 
@@ -14,7 +14,7 @@ using namespace text::literals;
 
 Signer::Signer(SignatureSignerPtr signatureSigner) : _signatureSigner{std::move(signatureSigner)} {
     if (_signatureSigner == nullptr) {
-        throw err::ParameterError("Signature signer must not be null"_el, "signatureSigner"_el);
+        throw err::ParameterFailure("Signature signer must not be null"_el, "signatureSigner"_el);
     }
 }
 

@@ -1,9 +1,9 @@
 .. index::
     !single: Comparing Whole and Partial Strings
-    single: Compare Whole Strings
-    single: Choose a Character Comparison Function
-    single: Test Prefixes, Suffixes, and Contained Text
-    single: Handle Invalid Encodings Before Comparing
+    single: Whole-String Comparison
+    single: Character Comparison Rules
+    single: Partial-String Comparison
+    single: Binary String Comparison
     single: String
     single: StringEditor
     single: StringLiteral
@@ -14,6 +14,7 @@
     single: U32String
     single: U32StringEditor
     single: compare
+    single: compareBinary
     single: compareCaseFolded
     single: compareAsciiFolded
     single: compareIdentifier
@@ -21,9 +22,8 @@
     single: endsWith
     single: contains
     single: count
-    single: isValidUtf8
-    single: isValidUtf16
-    single: isValidUtf32
+    single: isEncodingValid
+    single: encodingValidOrThrow
     single: Case-Insensitive Comparison
     single: Identifier Comparison
     single: Partial StringEditor Tests
@@ -34,39 +34,40 @@ Comparing Whole and Partial Strings
 ***********************************
 
 Two strings can be “the same” in several useful but incompatible ways.
-A protocol token may require exact equality, a user-facing lookup may ignore case, and an identifier may need its own
-restricted folding rule.
-Choosing the comparison deliberately matters more than choosing a clever function name.
+A protocol token may require exact character matching, a user-facing lookup may ignore case, and an index may need to
+distinguish the bytes used to store the text.
+This page explains how to choose a comparison rule for your data, apply it to whole strings or selected parts, and
+handle malformed text at an untrusted boundary.
 
-Erbsland Core compares decoded Unicode code points, so the rule behaves consistently across UTF-8, UTF-16, and UTF-32.
-This page begins with predictable exact equality and ordering, then introduces character comparison functions, partial
-tests, and the encoding validation required at an untrusted boundary.
 The examples use the common UTF-8 :cpp:type:`String <erbsland::text::String>`; the same model applies to the matching
 width-specific values, editors, and literals.
 
-Begin with Exact Equality and Ordering
-======================================
+Decoded String Equality and Ordering
+====================================
 
-Whole-string comparison is exact by default.
+When you compare strings with ``==``, ``<``, or the other comparison operators, you compare their decoded Unicode code
+points.
+This gives you a consistent character order across UTF-8, UTF-16, and UTF-32, which is useful for keys, configuration
+values, and protocol text.
+Uppercase and lowercase letters remain distinct, as do accented and unaccented characters.
+Comparison does not normalize text or apply the sorting rules of a particular language.
 
-The comparison operators do not fold case, normalize identifiers, ignore accents, or apply locale-specific collation
-rules.
-This behavior is intentional.
-Exact comparison is deterministic, easy to reason about, and suitable for keys, caches, configuration values, protocol
-data, tests, and other situations where the stored text must match exactly.
+The :cpp:func:`compare() <erbsland::text::U8String::compare>` method provides the same comparison as a
+``std::strong_ordering`` result when you need to distinguish less, equal, and greater explicitly.
 
 For UTF-8 code, compare a :cpp:type:`String <erbsland::text::String>` directly with another ``String``, a
 :cpp:type:`StringEditor <erbsland::text::StringEditor>`, or a ``"_el"`` literal.
 
-For UTF-16 and UTF-32 code, compare values of the same width.
-Compare ``U16String`` with ``U16StringEditor`` or ``u"..."_el``, and compare ``U32String`` with ``U32StringEditor`` or
-``U"..."_el``.
-Convert explicitly when you intentionally compare text stored in different encodings.
+The UTF-16 and UTF-32 variants follow the same pattern with values of the same width:
+:cpp:class:`U16String <erbsland::text::U16String>` works with
+:cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>` or ``u"..."_el``, while
+:cpp:class:`U32String <erbsland::text::U32String>` works with
+:cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` or ``U"..."_el``.
 
 .. erbsland-demo::
     :source: text/String/WholeStringComparison.cpp
     :exec: text/string --demo WholeStringComparison
-    :source-sha256: e445d26dfaf14c5f3ab743eb51b359de7e8abe678cf7b922805899cf98630288
+    :sha256: 2afea925708028c080dee00c9d38033efed4386ed057a979d26122a103ad9913
 
 .. code-block:: cpp
 
@@ -104,25 +105,33 @@ Convert explicitly when you intentionally compare text stored in different encod
         el::io::printLine("u32Habitat == u32 literal .....: "_el, booleanFormat, u32Habitat == U"ledová kra"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    tag == sameString .............: yes
-    tag == "lišejník"_el ..........: yes
-    tag != "tuleň"_el .............: yes
-    tag <=> "tuleň"_el ............: less
-    tag.compare("LIŠEJNÍK"_el) ....: greater
-    tag < "tuleň"_el ..............: yes
-    tag <= sameString .............: yes
-    tag >= "arka"_el ..............: yes
-    u8Habitat == u8 literal .......: yes
-    u16Habitat == u16 literal .....: yes
-    u32Habitat == u32 literal .....: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mtag == sameString .............: yes
+        tag == "lišejník"_el ..........: yes
+        tag != "tuleň"_el .............: yes
+        tag <=> "tuleň"_el ............: less
+        tag.compare("LIŠEJNÍK"_el) ....: greater
+        tag < "tuleň"_el ..............: yes
+        tag <= sameString .............: yes
+        tag >= "arka"_el ..............: yes
+        u8Habitat == u8 literal .......: yes
+        u16Habitat == u16 literal .....: yes
+        u32Habitat == u32 literal .....: yes␛[0m
 
 .. erbsland-demo-end::
 
-Change the Rule, Not the Stored Text
-====================================
+When text arrives in different encodings, you can compare it through
+:cpp:class:`AnyString <erbsland::text::AnyString>`.
+Its :cpp:func:`compare() <erbsland::text::AnyString::compare>` method decodes each string in its own encoding, so the
+UTF-8 and UTF-16 versions of ``ledová kra`` compare equal without creating converted strings.
+This is useful when your code accepts text from several sources but only needs to compare its characters.
+
+Custom Character Comparison Rules
+=================================
 
 The comparison operators always perform exact code-point comparison.
 
@@ -154,7 +163,7 @@ semantics visible and lets different fields use the rules their domains require.
 .. erbsland-demo::
     :source: text/String/ComparisonFunctions.cpp
     :exec: text/string --demo ComparisonFunctions
-    :source-sha256: 7afdca4b37258bdb78cc605681b9a1b3249f6d8f254aa8495861d31f48019782
+    :sha256: 16f4d22e152980f19d45d3bae455b707d6e206b3dde57f56b5be77997e9091f4
 
 .. code-block:: cpp
 
@@ -195,19 +204,21 @@ semantics visible and lets different fields use the rules their domains require.
             el::toString(identifier.compare(normalizedIdentifier, el::Char::compareIdentifier)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    snowyOwl.compare(snowyOwlLower) .........................: less
-    snowyOwl.compare(..., Char::compareCaseFolded) ..........: equal
-    asciiLabel.compare(..., Char::compareAsciiFolded) .......: equal
-    snowyOwl.compare(..., Char::compareAsciiFolded) .........: less
-    identifier.compare(..., Char::compareIdentifier) ........: equal
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0msnowyOwl.compare(snowyOwlLower) .........................: less
+        snowyOwl.compare(..., Char::compareCaseFolded) ..........: equal
+        asciiLabel.compare(..., Char::compareAsciiFolded) .......: equal
+        snowyOwl.compare(..., Char::compareAsciiFolded) .........: less
+        identifier.compare(..., Char::compareIdentifier) ........: equal␛[0m
 
 .. erbsland-demo-end::
 
-Ask a Smaller Question Than Whole-string Equality
-=================================================
+Prefix, Suffix, Substring, and Occurrence Tests
+===============================================
 
 Many string-related questions concern only part of a string.
 
@@ -235,7 +246,7 @@ These operations only inspect the relevant edge of the string and avoid a full c
 .. erbsland-demo::
     :source: text/String/PartialStringComparison.cpp
     :exec: text/string --demo PartialStringComparison
-    :source-sha256: c4ddb0e309fb734706e8f0fe3612b08dd88c736d7857ffe8b665b5a91522f1b2
+    :sha256: e63f929527861d84fed9c21a204940a8c2c571bab9a4d4aaa47c9f2e0aa5f49c
 
 .. code-block:: cpp
 
@@ -280,56 +291,76 @@ These operations only inspect the relevant edge of the string and avoid a full c
         el::io::printLine("count(\"\"_el) ............................: "_el, observationLog.count(""_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Observation Log:
-    Lachtan: LEDOVÁ KRA; lachtan: tiché moře; tuleň: ledová kra; mrož: severní útes
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    startsWith("Lachtan"_el) ................: yes
-    endsWith("severní útes"_el) .............: yes
-    contains("tiché moře"_el) ...............: yes
-    count("ledová kra"_el) ..................: 1
+        ␛[0mObservation Log:
+        Lachtan: LEDOVÁ KRA; lachtan: tiché moře; tuleň: ledová kra; mrož: severní útes
 
-    startsWith("lachtan"_el, case-folded) ...: yes
-    contains("LEDOVÁ KRA"_el, case-folded) ..: yes
-    count("lachtan"_el, case-folded) ........: 2
-    count("ledová kra"_el, case-folded) .....: 2
-    count(""_el) ............................: 0
+        startsWith("Lachtan"_el) ................: yes
+        endsWith("severní útes"_el) .............: yes
+        contains("tiché moře"_el) ...............: yes
+        count("ledová kra"_el) ..................: 1
+
+        startsWith("lachtan"_el, case-folded) ...: yes
+        contains("LEDOVÁ KRA"_el, case-folded) ..: yes
+        count("lachtan"_el, case-folded) ........: 2
+        count("ledová kra"_el, case-folded) .....: 2
+        count(""_el) ............................: 0␛[0m
 
 .. erbsland-demo-end::
 
-Validate Untrusted Encodings Before Comparison
-==============================================
+Comparing Stored Bytes
+======================
 
-Comparison operations remain deterministic even when the input contains malformed UTF data.
+Some tasks depend on how text is stored.
+For example, an index of encoded values may need to keep distinct byte sequences as separate entries even when they
+decode to the same text.
+The :cpp:func:`compareBinary() <erbsland::text::U8String::compareBinary>` method gives you a fast ordering for this
+purpose by comparing bytes directly without decoding.
+Like ``compare()``, it returns ``std::strong_ordering`` and is available on all three string widths and their editors.
+The same-width string, editor, and literal combinations shown earlier also work for binary comparison.
 
-During decoding, malformed UTF-8, UTF-16, and UTF-32 sequences are replaced with the Unicode replacement character
-``U+FFFD``.
-All comparison and search operations work on the decoded character stream, including these replacement characters.
+Bytes are compared as unsigned values, with the first difference deciding the order.
+When one byte sequence is a prefix of the other, the shorter sequence comes first: ``abc`` precedes ``abcd``.
+Only the content of the string or slice participates.
+An embedded NUL is part of that content and does not stop comparison; a storage terminator or unused editor capacity
+does not affect the result.
 
-This behavior is often useful when processing text from untrusted or partially corrupted sources because operations can
-continue without throwing exceptions or failing unexpectedly.
+For valid UTF-8, byte order agrees with decoded code-point order.
+UTF-16 and UTF-32 store each code unit in several bytes, so their binary ordering depends on the machine's native byte
+order and can differ from character ordering.
+If you need sorted output to be reproducible across machines or independent of the encoding, ordinary decoded comparison
+provides that guarantee.
 
-However, different malformed inputs can decode to the same sequence of replacement characters.
-As a result, two different invalid strings can compare equal after decoding.
+For mixed encodings, :cpp:func:`AnyString::compareBinary() <erbsland::text::AnyString::compareBinary>` and
+:cpp:func:`AnyStringEditor::compareBinary() <erbsland::text::AnyStringEditor::compareBinary>` also distinguish the
+encoding itself.
+The UTF-8 and UTF-16 versions of ``ledová kra`` therefore compare unequal, although they compare equal with
+``compare()``.
+Nonempty strings are grouped by encoding in the order UTF-8, UTF-16, UTF-32, then ordered by their bytes within each
+group.
+Empty strings compare equal regardless of their encoding and sort before every nonempty string.
 
-If invalid data must be rejected, validate the encoding before performing comparisons:
+Validating Untrusted Text
+=========================
 
-- Use :cpp:func:`isValidUtf8() <erbsland::text::U8String::isValidUtf8>` for
-  :cpp:class:`U8String <erbsland::text::U8String>` and the common
-  :cpp:type:`String <erbsland::text::String>` alias.
-- Use :cpp:func:`isValidUtf16() <erbsland::text::U16String::isValidUtf16>` for UTF-16 text.
-- Use :cpp:func:`isValidUtf32() <erbsland::text::U32String::isValidUtf32>` for UTF-32 text.
+Text received from a file or another application may contain malformed UTF-8, UTF-16, or UTF-32 sequences.
+Ordinary comparison and search can still inspect it: decoding substitutes the Unicode replacement character ``U+FFFD``,
+available as :cpp:func:`Char::replacement() <erbsland::text::Char::replacement>`, for malformed input.
+This tolerant behavior is useful when you want to display or inspect damaged text.
 
-Validation is particularly important for:
+The replacement also means that different malformed byte sequences can compare equal after decoding.
+Binary comparison preserves those byte differences, but it does not check whether either string is valid text.
+When an identifier or protocol value must contain valid Unicode, validation belongs before comparison, whichever
+comparison rule you choose.
 
-- security-sensitive identifiers,
-- protocol values,
-- file formats,
-- authentication data,
-- and information crossing trust boundaries.
-
-For display-oriented workflows, tolerant comparison may provide a better user experience.
-At an untrusted boundary, decide whether malformed text is acceptable before choosing that tolerant behavior; comparison
-must not accidentally become validation.
+For the common :cpp:type:`String <erbsland::text::String>` alias and other
+:cpp:class:`U8String <erbsland::text::U8String>` values,
+:cpp:func:`isEncodingValid() <erbsland::text::U8String::isEncodingValid>` lets you reject malformed input at that boundary.
+The same method is available for UTF-16 and UTF-32 strings.
+Use ``encodingValidOrThrow()`` when validation failures should propagate as exceptions with an error position.
+Once the input has passed validation, you can apply the matching rule your application requires without accepting
+malformed text through replacement-character equality.

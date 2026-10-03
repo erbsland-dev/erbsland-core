@@ -5,7 +5,8 @@
 #include "HardwareFeatures.hpp"
 #include "PortableGaloisMultiplier.hpp"
 
-#include "../../../../core/Application.hpp"
+#include "../../../../core/impl/application_data/ApplicationCryptologyData.hpp"
+#include "../../../../core/impl/ApplicationDataAccess.hpp"
 #include "../../../configuration/CryptologyConfiguration.hpp"
 
 #if defined(ERBSLAND_AES_ARM_BACKEND)
@@ -18,7 +19,8 @@
 namespace erbsland::cryptology::impl {
 
 auto createGaloisMultiplier() -> std::unique_ptr<GaloisMultiplier> {
-    if (core::application().cryptologyConfiguration().hardwareAccelerationEnabled()) {
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    if (cryptologyData->configuration().hardwareAccelerationEnabled()) {
 #if defined(ERBSLAND_AES_ARM_BACKEND)
         if (hardware_features::hasArmPmull()) {
             return std::make_unique<ArmGaloisMultiplier>();

@@ -8,7 +8,7 @@
 #include "../http/HttpMediaType.hpp"
 
 #include "../../text/String.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 #include <mutex>
@@ -32,7 +32,7 @@ public:
     /// Maximum number of custom suffix mappings.
     static constexpr auto cMaximumSuffixCount = unit::ItemCount{256U};
     /// Maximum length of one suffix.
-    static constexpr auto cMaximumSuffixLength = unit::ByteLength{64U};
+    static constexpr auto cMaximumSuffixLength = unit::ByteCount{64U};
 
 public:
     /// Create an empty mapping with an application/octet-stream fallback.

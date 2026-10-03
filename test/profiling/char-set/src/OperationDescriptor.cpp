@@ -1,7 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "OperationDescriptor.hpp"
+
+#include <erbsland/List.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace app::charset {
 
@@ -37,7 +39,7 @@ auto operationDescriptors() -> const el::List<OperationDescriptor> & {
         {Operation::ConstructInitializerList,
             "construct-initializer-list"_el,
             "Construction from an initializer list."_el,
-            el::StringList{"CharSet::CharSet(initializer_list<Char>)"_el},
+            el::StringList{"CharSet::fromCharacters(initializer_list<Char>)"_el},
             el::StringList{"single"_el, "adjacent"_el, "sparse-ascii"_el, "unicode"_el}},
         {Operation::CopyConstruct,
             "copy-construct"_el,

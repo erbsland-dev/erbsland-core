@@ -7,7 +7,7 @@
 #include <erbsland/conf/Document.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::conf;

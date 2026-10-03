@@ -6,7 +6,7 @@
 
 #include "../network/HostEndpoint.hpp"
 #include "../text/String.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 #include <cstdint>
 
@@ -73,11 +73,11 @@ public:
     /// @return These options for chained configuration.
     auto setTlsConfigurationLabel(text::String value) -> SyslogLogWriterOptions &;
     /// Get the maximum pending network-data size.
-    [[nodiscard]] auto maximumPendingBytes() const noexcept -> unit::ByteLength { return _maximumPendingBytes; }
+    [[nodiscard]] auto maximumPendingBytes() const noexcept -> unit::ByteCount { return _maximumPendingBytes; }
     /// Validate and set the maximum pending network-data size.
     /// @param value The positive byte limit for messages awaiting transmission.
     /// @return These options for chained configuration.
-    auto setMaximumPendingBytes(unit::ByteLength value) -> SyslogLogWriterOptions &;
+    auto setMaximumPendingBytes(unit::ByteCount value) -> SyslogLogWriterOptions &;
 
 private:
     SyslogTransport _transport{SyslogTransport::Udp};       ///< Network transport for syslog delivery.
@@ -88,7 +88,7 @@ private:
     text::String _processId{cNotSet};                       ///< RFC 5424 PROCID field.
     text::String _messageId{cNotSet};                       ///< RFC 5424 MSGID field.
     text::String _tlsLabel{cDefaultTlsLabel};               ///< Network/TLS configuration label.
-    unit::ByteLength _maximumPendingBytes{1024U * 1024U};   ///< Pending network-data byte limit.
+    unit::ByteCount _maximumPendingBytes{1024U * 1024U};    ///< Pending network-data byte limit.
 };
 
 }

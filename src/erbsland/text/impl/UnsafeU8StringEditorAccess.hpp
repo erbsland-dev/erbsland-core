@@ -4,6 +4,7 @@
 
 #include "UnsafeU8StringEditorAccess_fwd.hpp"
 
+#include "../u8/impl/U8StringAppendTools.hpp"
 #include "../u8/U8StringEditor.hpp"
 
 #include <span>
@@ -30,6 +31,13 @@ public:
     [[nodiscard]] auto dataSpan() const noexcept -> std::span<const char> { return _string->dataView().dataSpan(); }
     /// Access the internal data view.
     [[nodiscard]] auto dataView() const noexcept -> U8StringDataView { return _string->dataView(); }
+
+    /// Access append algorithms for a mutable editor without constructing an intermediate string.
+    /// The returned tools borrow `string`, which must outlive their use.
+    /// Callers must retain source spans across destination detachment or growth and prevent write-range overlap.
+    [[nodiscard]] static auto appendTools(U8StringEditor &string) noexcept -> U8StringAppendTools {
+        return U8StringAppendTools{string._storage};
+    }
 
 private: // using raw-pointers is approved for this class (te)
     const U8StringEditor *_string;

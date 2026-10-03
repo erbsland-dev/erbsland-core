@@ -9,6 +9,7 @@
 #include "../../../Float.hpp"
 #include "../../../Integer.hpp"
 
+#include <concepts>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -23,24 +24,24 @@ public:
     using Value = std::variant<Integer, bool, Float, text::String, mem::ByteBlock, std::pair<Integer, Integer>>;
 
     /// Creates an integer equality constraint.
-    /// @tparam TValue An integer type.
+    /// @tparam tValue An integer type.
     /// @param value The expected value.
     /// @param options Additional constraint options.
-    template <typename TValue>
-        requires(std::is_integral_v<TValue> && !std::is_same_v<TValue, bool>)
-    explicit Equals(const TValue value, ConstraintOptions options = {}) :
+    template <std::integral tValue>
+        requires(std::is_integral_v<tValue> && !std::is_same_v<tValue, bool>)
+    explicit Equals(const tValue value, ConstraintOptions options = {}) :
         _value{static_cast<Integer>(value)}, _options{std::move(options)} {}
     /// Creates a Boolean equality constraint.
     /// @param value The expected value.
     /// @param options Additional constraint options.
     explicit Equals(const bool value, ConstraintOptions options = {}) : _value{value}, _options{std::move(options)} {}
     /// Creates a floating-point equality constraint.
-    /// @tparam TValue A floating-point type.
+    /// @tparam tValue A floating-point type.
     /// @param value The expected value.
     /// @param options Additional constraint options.
-    template <typename TValue>
-        requires std::is_floating_point_v<TValue>
-    explicit Equals(const TValue value, ConstraintOptions options = {}) :
+    template <std::floating_point tValue>
+        requires std::is_floating_point_v<tValue>
+    explicit Equals(const tValue value, ConstraintOptions options = {}) :
         _value{static_cast<Float>(value)}, _options{std::move(options)} {}
     /// Creates a text equality constraint.
     /// @param value The expected value.

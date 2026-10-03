@@ -7,8 +7,8 @@ Core Semantics
 
 .. code-block:: text
 
-    index = zero-based position with an optional no-index state
-    length or count = non-negative span with an optional infinite state
+    index = zero-based position with an no-index state
+    length or count = non-negative span with an infinite state
     offset = signed movement relative to an index
     range = half-open start index plus length
     integer amount = signed ratio-scaled value with explicit compatible-ratio conversion
@@ -19,7 +19,7 @@ Primary Types
 .. code-block:: text
 
     IntegerUnitIndex❮Unit❯ // zero-based index with a no-index state
-    IntegerUnitAmount❮Unit❯ // non-negative length or count with an infinite state
+    IntegerUnitCount❮Unit❯ // non-negative length or count with an infinite state
     IntegerUnitOffset❮Unit❯ // signed movement or index difference
     IntegerUnitRange❮Unit❯ // half-open index and length composition
     IntegerAmount❮UnitRatio❯ // signed ratio-scaled amount
@@ -29,9 +29,9 @@ Concrete Unit Types
 
 .. code-block:: text
 
-    ByteIndex, ByteLength, ByteOffset, ByteRange // UTF-8, memory, and stream byte units
-    U16DataIndex, U16DataLength, U16DataOffset, U16DataRange // UTF-16 storage units
-    CpIndex, CpLength, CpOffset, CpRange // Unicode code-point units
+    ByteIndex, ByteCount, ByteOffset, ByteRange // UTF-8, memory, and stream byte units
+    U16Index, U16Count, U16Offset, U16Range // unsigned 16-bit value units
+    CpIndex, CpCount, CpOffset, CpRange // Unicode code-point units
     ItemIndex, ItemCount, ItemOffset, ItemRange // generic container units
     ArgumentIndex, ArgumentCount // command-line and format argument units
     LineIndex, LineCount, LineOffset, LineRange // diagnostic source-line units
@@ -52,11 +52,11 @@ Supporting Types
 .. code-block:: text
 
     IntegerUnit // base tag for index, amount, offset, and range families
-    ByteUnit, U16DataUnit, CpUnit, ItemUnit, ArgumentUnit // storage and collection unit tags
+    ByteUnit, U16Unit, CpUnit, ItemUnit, ArgumentUnit // storage and collection unit tags
     LineUnit, ColumnUnit // diagnostic source-position unit tags
     VersionPart // selected version comparison precision
     Major, Minor, Revision, BuildNumber // strongly typed version parts
-    VersionUnit, MajorUnit, MinorUnit, RevisionUnit, BuildNumberUnit // version unit tags
+    VersionComponent❮Part❯ // independent unsigned 16-bit version component
 
 Pattern Definitions
 ===================
@@ -64,7 +64,7 @@ Pattern Definitions
 .. code-block:: text
 
     I = ❮Unit❯Index // index in a unit family
-    L = ❮Unit❯Length/❮Unit❯Count // non-negative span in a unit family
+    L = ❮Unit❯Count // non-negative span in a unit family
     O = ❮Unit❯Offset // signed movement in a unit family
     R = ❮NativeInteger❯ // underlying native integer
 
@@ -73,7 +73,9 @@ Common Value Patterns
 
 .. code-block:: text
 
-    T(value) // explicitly create from a raw value
+    T(constant) // checked compile-time integer construction; no numeric sentinels
+    T(value, T::Unchecked{}) // direct raw construction after proving representability
+    T::fromInteger(value)/fromIntegerOrThrow(value) -> T // saturating or exact runtime construction
     o.toRawValue() -> R // cross the explicit native-integer boundary
     o.isZero/isOne/isMinimum/isMaximum() -> bool // test common value states
     T::zero/one/minimum/maximum() -> T // create common value states
@@ -90,9 +92,20 @@ Index Patterns
     o.move(offset) -> T& // move in place by a signed offset
     o.moved(offset) -> T // return a value moved by a signed offset
     o.increment/decrement() -> T& // move one position
+    o.uncheckedAdvance/uncheckedRetreat(length) -> T& // exact movement with caller-proven bounds
+    o.uncheckedMove(offset) -> T& // exact movement with caller-proven bounds
+    o.uncheckedIncrement/uncheckedDecrement() -> T& // exact step with caller-proven bounds
+    o.uncheckedAdvanced/uncheckedRetreated/uncheckedMoved(step) -> T // matching copy variants
+    o.uncheckedIncremented/uncheckedDecremented() -> T // matching copy variants
     o.distanceFromZero/absoluteDistanceTo(index) -> L // calculate non-directional distance
     o.offsetFromZero/offsetTo(index) -> O // calculate signed distance
+    o.wouldAdvanceSaturate/wouldRetreatSaturate(length) -> bool // exact movement failure
+    o.wouldMoveSaturate(offset) -> bool // exact movement failure
+    o.canAdvance/canRetreat(step, bounds) -> bool // exact movement ending inside bounds
+    o.canMove(offset, bounds) -> bool // exact movement ending inside bounds
+    o.mirroredWithin(length) -> I // mirror a valid position within a finite length
     T::noIndex()/end(length) -> T // create the absent state or first excluded index
+    T::last(length) -> T // final included index; noIndex for a zero or infinite length
 
 Length and Offset Patterns
 ==========================
@@ -100,11 +113,15 @@ Length and Offset Patterns
 .. code-block:: text
 
     o.isInfinite()/isFinite() -> bool // test amount special states
+    o.remainingFrom(index) -> L // amount from an index to this bound; zero for absent or out-of-bounds indexes
     o.add/subtract(value) -> T& // combine values in place with saturation
     o.added/subtracted(value) -> T // return a combined value
     o.multiply/divide/applyModulo(integer) -> T& // scale or reduce in place
     o.multiplied/divided/modulo(integer) -> T // return a scaled or reduced value
-    o.wouldAddSaturate/wouldSubtractSaturate(value) -> bool // test arithmetic saturation
+    o.uncheckedAdd/uncheckedSubtract(length) -> T& // exact arithmetic with caller-proven finite bounds
+    o.uncheckedAdded/uncheckedSubtracted(length) -> T // matching copy variants
+    o.uncheckedIncrement/uncheckedDecrement() -> T& // exact step with caller-proven finite bounds
+    o.forEach(function) -> util::LoopResult // visit indexes below a finite length
     o.absoluteLength() -> L // convert an offset magnitude to a matching length
     o.negated() -> O // reverse an offset direction
     T::infinite()/minusOne() -> T // create family-specific special values
@@ -115,10 +132,17 @@ Range Patterns
 .. code-block:: text
 
     T(index, length) // create a half-open range
-    T::fromBeginEnd(begin, end) -> T // create from included and excluded boundaries
-    o.index()/length()/endIndex() -> T // inspect range components
+    T(begin, end) // compact slicing syntax; reversed finite endpoints produce emptyAt(begin)
+    T::fromBegin(begin) -> T // preserve the beginning directly and set infinite length
+    T::fromBeginEnd(begin, end)/fromBeginEndOrThrow(begin, end) -> T // permissive or validated endpoints
+    o.beginIndex()/length()/endIndex() -> T // inspect range components
+    o.lastIndex() -> I // final absolute index; noIndex for an empty, infinite, or invalid range
     o.contains(index)/isWithin(length) -> bool // test membership or complete fit
-    o.isEmpty()/isInfinite()/isValid() -> bool // test range states
+    o.isEmpty()/isInfinite()/isNoRange()/isValid() -> bool // test range states
+    o.toAbsolute(origin)/relativeTo(origin) -> T // exact coordinate conversion or noRange
+    o.intersection(range) -> T // common range, or empty at the later beginning
+    o.remainingFrom(index) -> T // suffix clamped to this range; noRange for invalid input
+    o.contains(range) -> bool // complete containment, including empty endpoints
     o.forEach(function) -> util::LoopResult // visit each represented index
     o.advance/retreat(length) -> T& // move by a non-negative length
     o.move(offset) -> T& // move a range in place

@@ -1,5 +1,5 @@
 # CategoryContainsTest data
-# Generated from UnicodeData.txt using utilities/generate_category_contains_test_data.py
+# Generated from UnicodeData.txt (Unicode 17.0.0) by erbsland-core-tool generate-category-test-data.
 # Format: HEX_CODE_POINT;MaskExpr (where MaskExpr uses Category::Value enumerator names)
 000000;Any | AnyDotAll | Cc
 000008;Any | AnyDotAll | Cc

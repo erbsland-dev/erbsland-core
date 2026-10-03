@@ -287,24 +287,21 @@ public: // drawing methods
         std::size_t animationCycle = 0) noexcept;
     /// Draw the contents of another buffer into this one.
     /// Resulting positions outside the target rectangle are clipped.
-    /// @param buffer The buffer to draw.
+    /// @param buffer The buffer to draw. Must not be this buffer.
     /// @param targetPos The target position where to draw the top-left corner of the buffer.
-    /// @throws err::ParameterError if `buffer` is this buffer.
     void drawBuffer(const ReadableBuffer &buffer, block::Position targetPos = block::Position{});
     /// Draw the contents of another buffer into this one.
     /// Resulting positions outside the target rectangle are clipped.
-    /// @param buffer The buffer to draw.
+    /// @param buffer The buffer to draw. Must not be this buffer.
     /// @param targetRect The target rectangle where to draw the buffer. Clips `buffer` if larger.
     /// @param alignment The alignment of the buffer within the target rectangle.
-    /// @throws err::ParameterError if `buffer` is this buffer.
     void drawBuffer(
         const ReadableBuffer &buffer,
         block::Rectangle targetRect,
         geometry::Alignment alignment = geometry::Alignment::TopLeft);
     /// Draw the contents of another buffer into this one.
-    /// @param buffer The buffer to draw.
+    /// @param buffer The buffer to draw. Must not be this buffer.
     /// @param options The options for drawing the buffer.
-    /// @throws err::ParameterError if `buffer` is this buffer.
     virtual void drawBuffer(const ReadableBuffer &buffer, const BufferDrawOptions &options);
 
 protected: // implementation

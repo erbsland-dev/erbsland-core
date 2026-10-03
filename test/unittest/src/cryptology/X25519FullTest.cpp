@@ -6,15 +6,15 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/CryptologyError.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/cryptology/impl/algorithm/x25519/X25519.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementAlgorithm.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementPrivateKey.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementPublicKey.hpp>
-#include <erbsland/cryptology/protected_data/ProtectedDataMode.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/CryptologyError.hpp>
+#include <erbsland/KeyAgreementAlgorithm.hpp>
+#include <erbsland/KeyAgreementPrivateKey.hpp>
+#include <erbsland/KeyAgreementPublicKey.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ProtectedDataMode.hpp>
 
 using namespace el::cryptology;
 using namespace el::text::literals;

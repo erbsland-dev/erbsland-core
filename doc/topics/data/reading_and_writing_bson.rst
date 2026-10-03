@@ -68,10 +68,9 @@ The byte array is complete, so it can be passed directly to the parser.
 
 .. erbsland-demo::
     :source: data/DataFormats/BsonExamples.cpp
-    :function-blocks: parseBsonDocument
-    :function-blocks-sha256: e0df346f22a0c9dcc4066635e201aa27be877ea46fb6e229a76b7c71b42921c1
+    :show: f:parseBsonDocument
     :exec: data/data_formats --demo ParseBsonDocument
-    :source-sha256: 259768e098c82898e77c7db8020400f99eb732a1a637a2f1ca4b646dec9966e2
+    :sha256: 2bc13a4f79bdea77ddc8bca7e40791dca9c47b85ccceac58af9d7a4d48036e94
 
 .. code-block:: cpp
 
@@ -91,11 +90,13 @@ The byte array is complete, so it can be passed directly to the parser.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Plant: lale
-    Invalid BSON document
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mPlant: lale
+        Invalid BSON document␛[0m
 
 .. erbsland-demo-end::
 
@@ -115,10 +116,9 @@ Use ``BsonBinary`` when the other side needs a specific subtype.
 
 .. erbsland-demo::
     :source: data/DataFormats/BsonExamples.cpp
-    :function-blocks: makePlantRecord buildBsonDocument
-    :function-blocks-sha256: 691a5c73b77601c76a340e971fac8a19a20f91d055fda7900ed69a581e56edb1
+    :show: f:makePlantRecord, f:buildBsonDocument
     :exec: data/data_formats --demo BuildBsonDocument
-    :source-sha256: 259768e098c82898e77c7db8020400f99eb732a1a637a2f1ca4b646dec9966e2
+    :sha256: 17c884e714ad1ce8e3f4f71e8a4d856f8f1bbf9b72104f23c927c7188e0e94b7
 
 .. code-block:: cpp
 
@@ -140,12 +140,14 @@ Use ``BsonBinary`` when the other side needs a specific subtype.
         el::io::printLine("Binary subtype: "_el, static_cast<int>(record.getOrThrow("ornek"_el).getBinary()->subtype));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Fields: 4
-    Readings: 2
-    Binary subtype: 128
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFields: 4
+        Readings: 2
+        Binary subtype: 128␛[0m
 
 .. erbsland-demo-end::
 
@@ -154,16 +156,15 @@ Serializing a Document
 
 :cpp:func:`toByteBlock <erbsland::data::bson::BsonValue::toByteBlock>` writes a complete BSON frame that you can store
 or send to a peer.
-It requires a document root and throws :cpp:class:`ParameterError <erbsland::err::ParameterError>` for an array or
+It requires a document root and throws :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` for an array or
 scalar root, a key containing NUL, a value that cannot be represented, or an encoded document that is too long.
 The output is binary data; do not treat it as text.
 
 .. erbsland-demo::
     :source: data/DataFormats/BsonExamples.cpp
-    :function-blocks: serializeBsonDocument
-    :function-blocks-sha256: 6731ace219298c16d6a63f373c4b30e95911fbf25e76490644b5ecfe57aa0eeb
+    :show: f:serializeBsonDocument
     :exec: data/data_formats --demo SerializeBsonDocument
-    :source-sha256: 259768e098c82898e77c7db8020400f99eb732a1a637a2f1ca4b646dec9966e2
+    :sha256: 29e3c4d56e3aa3d8864ee1c1161889d2871e4e916ac66adcf8878dc5aba4ad39
 
 .. code-block:: cpp
 
@@ -174,11 +175,13 @@ The output is binary data; do not treat it as text.
         el::io::printLine("Round-trip fields: "_el, BsonValue::fromByteBlockOrThrow(bytes).itemCount().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Encoded bytes: 53
-    Round-trip fields: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mEncoded bytes: 53
+        Round-trip fields: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -208,10 +211,9 @@ The original document in this example keeps its two readings when the copy gains
 
 .. erbsland-demo::
     :source: data/DataFormats/BsonExamples.cpp
-    :function-blocks: inspectBsonDocument
-    :function-blocks-sha256: 1c2de4b67a347827300d1554858c3a05315e7626be3ba390c7ea339a9074755f
+    :show: f:inspectBsonDocument
     :exec: data/data_formats --demo InspectBsonDocument
-    :source-sha256: 259768e098c82898e77c7db8020400f99eb732a1a637a2f1ca4b646dec9966e2
+    :sha256: 7bfcb4dde3d531d68c4f4e7c77ce6e2f27fba84f9cf2799879574b80c74e142a
 
 .. code-block:: cpp
 
@@ -229,13 +231,15 @@ The original document in this example keeps its two readings when the copy gains
         el::io::printLine("Revised readings: "_el, revised.getOrThrow("nem"_el).itemCount().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    First reading: 42
-    Missing is null: true
-    Original readings: 2
-    Revised readings: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFirst reading: 42
+        Missing is null: true
+        Original readings: 2
+        Revised readings: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -301,10 +305,9 @@ The example reads an ObjectId as an opaque value and verifies that the complete 
 
 .. erbsland-demo::
     :source: data/DataFormats/BsonExamples.cpp
-    :function-blocks: preserveOpaqueBsonValue
-    :function-blocks-sha256: 0664ef04774267a9b38a3cfe122494aa6221d9ac36de35e5b15016f765cc17fb
+    :show: f:preserveOpaqueBsonValue
     :exec: data/data_formats --demo PreserveOpaqueBsonValue
-    :source-sha256: 259768e098c82898e77c7db8020400f99eb732a1a637a2f1ca4b646dec9966e2
+    :sha256: 67a378b3effb0717d265bf939f4ff69577ede31fba9856e1983d765ef518c35a
 
 .. code-block:: cpp
 
@@ -318,12 +321,14 @@ The example reads an ObjectId as an opaque value and verifies that the complete 
         el::io::printLine("Preserved: "_el, record.toByteBlock() == bytes);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Type code: 7
-    Payload bytes: 12
-    Preserved: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mType code: 7
+        Payload bytes: 12
+        Preserved: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -340,39 +345,40 @@ This example applies each limit separately to the same plant record.
 
 .. erbsland-demo::
     :source: data/DataFormats/BsonExamples.cpp
-    :function-blocks: limitBsonDocument
-    :function-blocks-sha256: a8ca0240094a44735c64906f6ea401188ed3fb1b998789c71fa1199c1cae1a91
+    :show: f:limitBsonDocument
     :exec: data/data_formats --demo LimitBsonDocument
-    :source-sha256: 259768e098c82898e77c7db8020400f99eb732a1a637a2f1ca4b646dec9966e2
+    :sha256: 254e0bc83d94a4bc291147c55bb88d5ff779b2e9efca24015cfb94b2902b8748
 
 .. code-block:: cpp
 
     void limitBsonDocument() {
         const auto bytes = makePlantRecord().toByteBlock();
-        const auto input = BsonParseOptions{}.setMaximumInputLength(el::ByteLength{10U});
+        const auto input = BsonParseOptions{}.setMaximumInputLength(el::ByteCount{10U});
         const auto nesting = BsonParseOptions{}.setMaximumNesting(el::ItemCount{1U});
         const auto values = BsonParseOptions{}.setMaximumValueCount(el::ItemCount{2U});
-        const auto strings = BsonParseOptions{}.setMaximumStringLength(el::ByteLength{3U});
+        const auto strings = BsonParseOptions{}.setMaximumStringLength(el::ByteCount{3U});
         el::io::printLine("Input accepted: "_el, BsonValue::fromByteBlock(bytes, input).has_value());
         el::io::printLine("Nesting accepted: "_el, BsonValue::fromByteBlock(bytes, nesting).has_value());
         el::io::printLine("Values accepted: "_el, BsonValue::fromByteBlock(bytes, values).has_value());
         el::io::printLine("Strings accepted: "_el, BsonValue::fromByteBlock(bytes, strings).has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Input accepted: false
-    Nesting accepted: false
-    Values accepted: false
-    Strings accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInput accepted: false
+        Nesting accepted: false
+        Values accepted: false
+        Strings accepted: false␛[0m
 
 .. erbsland-demo-end::
 
 Maximum Input Length
 --------------------
 
-``setMaximumInputLength(ByteLength)`` caps the complete frame in bytes, including its length field and terminator.
+``setMaximumInputLength(ByteCount)`` caps the complete frame in bytes, including its length field and terminator.
 The default is 16 MiB.
 In the demo, a ten-byte limit rejects the document before its fields are read.
 Choose this limit from the largest frame your protocol permits.
@@ -396,7 +402,7 @@ The demo's limit of two rejects a record with three fields and two array element
 Maximum String Length
 ---------------------
 
-``setMaximumStringLength(ByteLength)`` caps the UTF-8 byte length of each individual key or string value, excluding its
+``setMaximumStringLength(ByteCount)`` caps the UTF-8 byte length of each individual key or string value, excluding its
 NUL terminator.
 The default is 8 MiB per string or key.
 The demo's three-byte limit rejects the four-byte name ``lale`` and the five-byte key ``bitki``.

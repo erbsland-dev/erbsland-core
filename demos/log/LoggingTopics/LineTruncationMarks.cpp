@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogLineFormat.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogMessageTruncation.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 #include <memory>
 #include <utility>
@@ -19,7 +27,7 @@ void lineTruncationMarks() {
         auto lineFormat = el::LogLineFormat{};
         lineFormat.setPattern("{message}"_el)
             .setMessageTruncation(el::LogMessageTruncation::CharacterCount)
-            .setMessageLimit(el::CpLength{36U})
+            .setMessageLimit(el::CpCount{36U})
             .setTruncationMark(std::move(mark));
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(lineFormat))

@@ -12,9 +12,10 @@ It provides a consistent API for Linux, macOS, and Windows and depends only on t
 
 .. warning::
 
-    Erbsland Core is in **alpha**.
-    The available status is already useful for experiments and new applications, but the public API can change without a
-    compatibility period. See :doc:`addendum/roadmap` for details.
+    Erbsland Core **0.90.0 (Beta 1)** is the first beta release.
+    The public API can change without a compatibility period.
+    Minor version updates may introduce breaking API changes.
+    See :doc:`addendum/roadmap` for details.
 
 .. button-ref:: get-started/index
     :ref-type: doc
@@ -61,6 +62,12 @@ Choose Your Starting Point
         :link-type: doc
 
         Check compiler, CMake, Git, platform, and contributor-tool requirements.
+
+    .. grid-item-card:: :fas:`screwdriver-wrench;sd-text-success` Library Development
+        :link: development/index
+        :link-type: doc
+
+        Prepare a checkout to work on Core itself, run repository maintenance commands, or extend the maintenance tool.
 
 Features Available Today
 ========================
@@ -119,11 +126,8 @@ All Documentation
     addendum/roadmap
     addendum/requirements
     addendum/changelog
+    development/index
     guidelines/index
-
-The :doc:`guidelines/index` section is contributor material for developing Core itself.
-The :doc:`topics/time/index` topics provide practical demos for timestamps, calendar calculations, time zones, typed
-intervals, and monotonic clocks.
 
 Documentation Indices
 =====================

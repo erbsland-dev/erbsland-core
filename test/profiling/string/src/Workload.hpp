@@ -4,6 +4,8 @@
 
 #include "Configuration.hpp"
 
+#include <erbsland/ExitCode.hpp>
+
 namespace app::string {
 
 /// Execute expanded string profiling scenarios.

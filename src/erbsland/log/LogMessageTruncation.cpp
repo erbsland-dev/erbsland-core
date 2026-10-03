@@ -9,9 +9,10 @@
 
 namespace erbsland::log {
 
+using namespace text;
 using namespace text::literals;
 
-auto LogMessageTruncation::toString() const -> text::String {
+auto LogMessageTruncation::toString() const -> String {
     switch (_value) {
     case None:
         return "none"_el;
@@ -25,11 +26,11 @@ auto LogMessageTruncation::toString() const -> text::String {
     return {};
 }
 
-auto LogMessageTruncation::allStrings() -> text::StringList {
-    return text::StringList{"none"_el, "first_line"_el, "characters"_el, "total_line"_el};
+auto LogMessageTruncation::allStrings() -> StringList {
+    return StringList{"none"_el, "first_line"_el, "characters"_el, "total_line"_el};
 }
 
-auto LogMessageTruncation::fromString(const text::String &text) noexcept -> std::optional<LogMessageTruncation> {
+auto LogMessageTruncation::fromString(const String &text) noexcept -> std::optional<LogMessageTruncation> {
     const auto compare = ::erbsland::text::cCaseInsensitive.asciiComparisonFn();
     if (text.compare("none"_el, compare) == std::strong_ordering::equal) {
         return None;
@@ -46,7 +47,7 @@ auto LogMessageTruncation::fromString(const text::String &text) noexcept -> std:
     return std::nullopt;
 }
 
-auto LogMessageTruncation::fromStringOrThrow(const text::String &text) -> LogMessageTruncation {
+auto LogMessageTruncation::fromStringOrThrow(const String &text) -> LogMessageTruncation {
     if (const auto result = fromString(text); result.has_value()) {
         return *result;
     }

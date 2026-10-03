@@ -1,20 +1,20 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteArray.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/LoopResult.hpp>
+#include <erbsland/LoopStatus.hpp>
 #include <erbsland/mem/impl/SecureErase.hpp>
 #include <erbsland/mem/impl/UnsafeByteBufferAccess.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ByteRange.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/LoopResult.hpp>
-#include <erbsland/util/LoopStatus.hpp>
 
 #include <algorithm>
 #include <concepts>
@@ -28,8 +28,8 @@ using el::mem::Byte;
 using el::mem::ByteArray;
 using el::mem::ByteBuffer;
 using el::mem::ConstByteSpan;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteRange;
 
 TESTED_TARGETS(ByteBuffer ByteBufferData UnsafeByteBufferAccess)
@@ -58,12 +58,13 @@ private:
     inline static constexpr bool hasCommonByteRead = requires(
         const T &value,
         const ByteIndex index,
-        const ByteLength length,
+        const ByteCount length,
         const ByteRange range,
         const ConstByteSpan source) {
         { value.isEmpty() } -> std::same_as<bool>;
-        { value.length() } -> std::same_as<ByteLength>;
+        { value.length() } -> std::same_as<ByteCount>;
         { value.endIndex() } -> std::same_as<ByteIndex>;
+        { value.lastIndex() } -> std::same_as<ByteIndex>;
         { value.isEqualConstTime(source) } -> std::same_as<bool>;
         { value.get(index) } -> std::same_as<Byte>;
         { value.getOrThrow(index) } -> std::same_as<Byte>;
@@ -80,7 +81,7 @@ private:
     inline static constexpr bool hasCommonByteWrite = requires(
         T &value,
         const ByteIndex index,
-        const ByteLength length,
+        const ByteCount length,
         const ByteRange range,
         const ConstByteSpan source,
         const Byte byte) {
@@ -101,9 +102,9 @@ private:
 
     template <typename T>
     inline static constexpr bool hasCommonResizableByteWrite =
-        hasCommonByteWrite<T> && requires(T &value, const ByteLength length) {
+        hasCommonByteWrite<T> && requires(T &value, const ByteCount length) {
             value.resize(length);
-            { value.capacity() } -> std::same_as<ByteLength>;
+            { value.capacity() } -> std::same_as<ByteCount>;
             value.reserve(length);
             value.shrinkToFit();
             value.clear();
@@ -191,14 +192,14 @@ public:
     }
 
     void testStorageManagement() {
-        auto bytes = ByteBuffer{ByteLength{3U}, Byte{7U}};
-        bytes.reserve(ByteLength{32U});
+        auto bytes = ByteBuffer{ByteCount{3U}, Byte{7U}};
+        bytes.reserve(ByteCount{32U});
         const auto capacity = bytes.capacity();
-        REQUIRE_GREATER_EQUAL(capacity, ByteLength{32U});
+        REQUIRE_GREATER_EQUAL(capacity, ByteCount{32U});
 
-        bytes.resize(ByteLength{5U});
+        bytes.resize(ByteCount{5U});
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({7U, 7U, 7U, 0U, 0U}));
-        bytes.resize(ByteLength{2U});
+        bytes.resize(ByteCount{2U});
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({7U, 7U}));
         bytes.clear();
         REQUIRE(bytes.isEmpty());
@@ -212,7 +213,7 @@ public:
     }
 
     void testUnsafeWritableAccess() {
-        auto bytes = ByteBuffer{ByteLength{3U}};
+        auto bytes = ByteBuffer{ByteCount{3U}};
         auto access = el::mem::impl::UnsafeByteBufferAccess{bytes};
         auto writable = access.writableData();
 
@@ -223,7 +224,7 @@ public:
     }
 
     void testReadWriteAndIteration() {
-        auto bytes = ByteBuffer{ByteLength{12U}};
+        auto bytes = ByteBuffer{ByteCount{12U}};
         const auto borrowed = bytes.span();
         bytes.set(ByteIndex{0U}, Byte{1U});
         bytes.setOrThrow(ByteIndex{1U}, Byte{2U});
@@ -245,7 +246,7 @@ public:
         REQUIRE_EQUAL(result, el::util::LoopResult::Stopped);
         REQUIRE_EQUAL(indexes, std::vector<std::size_t>({0U, 1U, 2U}));
 
-        const auto shortenedSpanSize = bytes.span(ByteIndex{10U}, ByteLength{9U}).size();
+        const auto shortenedSpanSize = bytes.span(ByteIndex{10U}, ByteCount{9U}).size();
         REQUIRE_EQUAL(shortenedSpanSize, std::size_t{2U});
         REQUIRE(bytes.span(ByteRange::noRange()).empty());
     }
@@ -260,38 +261,37 @@ public:
 
         auto bytes = ByteBuffer{Byte{0U}, Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}, Byte{5U}};
         const auto shortSource = ByteArray{Byte{9U}, Byte{8U}};
-        bytes.overwrite(ByteRange{ByteIndex{1U}, ByteLength{4U}}, shortSource.span());
+        bytes.overwrite(ByteRange{ByteIndex{1U}, ByteCount{4U}}, shortSource.span());
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({0U, 9U, 8U, 3U, 4U, 5U}));
 
         const auto longSource = ByteArray{Byte{7U}, Byte{6U}, Byte{5U}, Byte{4U}};
-        bytes.overwrite(ByteRange{ByteIndex{4U}, ByteLength::infinite()}, longSource.span());
+        bytes.overwrite(ByteRange{ByteIndex{4U}, ByteCount::infinite()}, longSource.span());
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({0U, 9U, 8U, 3U, 7U, 6U}));
         bytes.overwrite(ByteIndex{99U}, longSource.span());
         bytes.overwrite(ByteRange::noRange(), longSource.span());
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({0U, 9U, 8U, 3U, 7U, 6U}));
 
         auto overlap = ByteBuffer{Byte{0U}, Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}};
-        overlap.overwrite(ByteIndex{1U}, overlap.span(ByteIndex{0U}, ByteLength{4U}));
+        overlap.overwrite(ByteIndex{1U}, overlap.span(ByteIndex{0U}, ByteCount{4U}));
         REQUIRE_EQUAL(overlap.toUInt8Vector(), std::vector<uint8_t>({0U, 0U, 1U, 2U, 3U}));
-        overlap.overwrite(ByteRange{ByteIndex{0U}, ByteLength{4U}}, overlap.span(ByteIndex{1U}, ByteLength{4U}));
+        overlap.overwrite(ByteRange{ByteIndex{0U}, ByteCount{4U}}, overlap.span(ByteIndex{1U}, ByteCount{4U}));
         REQUIRE_EQUAL(overlap.toUInt8Vector(), std::vector<uint8_t>({0U, 1U, 2U, 3U, 3U}));
 
-        bytes.fill(ByteRange{ByteIndex{1U}, ByteLength{3U}}, Byte{0xaaU});
-        bytes.xorWith(
-            ByteRange{ByteIndex{1U}, ByteLength{3U}}, ByteArray{Byte{0xffU}, Byte{0x0fU}, Byte{0xf0U}}.span());
+        bytes.fill(ByteRange{ByteIndex{1U}, ByteCount{3U}}, Byte{0xaaU});
+        bytes.xorWith(ByteRange{ByteIndex{1U}, ByteCount{3U}}, ByteArray{Byte{0xffU}, Byte{0x0fU}, Byte{0xf0U}}.span());
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({0U, 0x55U, 0xa5U, 0x5aU, 7U, 6U}));
 
         auto xorOverlap = ByteBuffer{Byte{1U}, Byte{2U}, Byte{4U}, Byte{8U}, Byte{16U}};
-        xorOverlap.xorWith(ByteRange{ByteIndex{1U}, ByteLength{4U}}, xorOverlap.span(ByteIndex{0U}, ByteLength{4U}));
+        xorOverlap.xorWith(ByteRange{ByteIndex{1U}, ByteCount{4U}}, xorOverlap.span(ByteIndex{0U}, ByteCount{4U}));
         REQUIRE_EQUAL(xorOverlap.toUInt8Vector(), std::vector<uint8_t>({1U, 3U, 6U, 12U, 24U}));
-        xorOverlap.xorWith(ByteRange{ByteIndex{0U}, ByteLength{4U}}, xorOverlap.span(ByteIndex{1U}, ByteLength{4U}));
+        xorOverlap.xorWith(ByteRange{ByteIndex{0U}, ByteCount{4U}}, xorOverlap.span(ByteIndex{1U}, ByteCount{4U}));
         REQUIRE_EQUAL(xorOverlap.toUInt8Vector(), std::vector<uint8_t>({2U, 5U, 10U, 20U, 24U}));
 
         auto strict = ByteBuffer{Byte{0xf0U}, Byte{0x0fU}};
         strict.xorWithOrThrow(ByteArray{Byte{0xaaU}, Byte{0x55U}}.span());
         REQUIRE_EQUAL(strict.toUInt8Vector(), std::vector<uint8_t>({0x5aU, 0x5aU}));
         const auto strictSnapshot = strict;
-        REQUIRE_THROWS_AS(el::err::ParameterError, strict.xorWithOrThrow(ByteArray{Byte{1U}}.span()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, strict.xorWithOrThrow(ByteArray{Byte{1U}}.span()));
         REQUIRE_EQUAL(strict, strictSnapshot);
     }
 
@@ -300,18 +300,18 @@ public:
         bytes.append(Byte{4U})
             .append(ByteArray{Byte{5U}, Byte{6U}}.span())
             .insert(ByteIndex{1U}, ByteArray{Byte{8U}, Byte{9U}}.span())
-            .replace(ByteRange{ByteIndex{2U}, ByteLength{4U}}, ByteArray{Byte{7U}}.span());
+            .replace(ByteRange{ByteIndex{2U}, ByteCount{4U}}, ByteArray{Byte{7U}}.span());
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({1U, 8U, 7U, 5U, 6U}));
-        bytes.remove(ByteRange{ByteIndex{1U}, ByteLength{2U}});
+        bytes.remove(ByteRange{ByteIndex{1U}, ByteCount{2U}});
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({1U, 5U, 6U}));
-        bytes.keep(ByteRange{ByteIndex{1U}, ByteLength::infinite()});
+        bytes.keep(ByteRange{ByteIndex{1U}, ByteCount::infinite()});
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({5U, 6U}));
     }
 
     void testSensitiveModeLifecycleAndCopies() {
         const auto observer = EraseObserverGuard{};
         auto bytes = ByteBuffer{Byte{1U}, Byte{2U}, Byte{3U}};
-        bytes.reserve(ByteLength{32U});
+        bytes.reserve(ByteCount{32U});
         const auto capacity = bytes.capacity();
 
         bytes.setSensitive(true);
@@ -334,7 +334,7 @@ public:
         REQUIRE_EQUAL(bytes.capacity(), capacity);
         REQUIRE_FALSE(eraseEvents.empty());
 
-        bytes.resize(ByteLength{4U}).fill(Byte{0x55U});
+        bytes.resize(ByteCount{4U}).fill(Byte{0x55U});
         eraseEvents.clear();
         bytes.setSensitive(false);
         REQUIRE_FALSE(bytes.isSensitive());
@@ -345,19 +345,19 @@ public:
 
     void testSensitiveMutationErasesDiscardedStorage() {
         const auto observer = EraseObserverGuard{};
-        auto bytes = ByteBuffer{ByteLength{8U}, Byte{0xaaU}};
+        auto bytes = ByteBuffer{ByteCount{8U}, Byte{0xaaU}};
         bytes.setSensitive(true);
 
         eraseEvents.clear();
-        bytes.reserve(ByteLength{64U});
+        bytes.reserve(ByteCount{64U});
         REQUIRE_FALSE(eraseEvents.empty());
 
         eraseEvents.clear();
-        bytes.resize(ByteLength{4U});
+        bytes.resize(ByteCount{4U});
         REQUIRE_FALSE(eraseEvents.empty());
 
         eraseEvents.clear();
-        bytes.remove(ByteRange{ByteIndex{1U}, ByteLength{2U}});
+        bytes.remove(ByteRange{ByteIndex{1U}, ByteCount{2U}});
         REQUIRE_FALSE(eraseEvents.empty());
 
         eraseEvents.clear();
@@ -397,11 +397,11 @@ public:
     void testOrdinaryModeDoesNotEraseAutomatically() {
         const auto observer = EraseObserverGuard{};
         {
-            auto bytes = ByteBuffer{ByteLength{8U}, Byte{0xaaU}};
-            bytes.reserve(ByteLength{64U});
+            auto bytes = ByteBuffer{ByteCount{8U}, Byte{0xaaU}};
+            bytes.reserve(ByteCount{64U});
             eraseEvents.clear();
-            bytes.resize(ByteLength{4U});
-            bytes.remove(ByteRange{ByteIndex{1U}, ByteLength{2U}});
+            bytes.resize(ByteCount{4U});
+            bytes.remove(ByteRange{ByteIndex{1U}, ByteCount{2U}});
             bytes.clear();
         }
         REQUIRE(eraseEvents.empty());
@@ -410,7 +410,7 @@ public:
     void testSecureEraseCompleteCapacity() {
         const auto observer = EraseObserverGuard{};
         auto bytes = ByteBuffer{Byte{1U}, Byte{2U}, Byte{3U}};
-        bytes.reserve(ByteLength{64U});
+        bytes.reserve(ByteCount{64U});
         const auto length = bytes.length();
         const auto capacity = bytes.capacity();
 

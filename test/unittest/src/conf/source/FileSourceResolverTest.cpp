@@ -5,11 +5,11 @@
 
 #include <erbsland/conf/FileSourceResolver.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringList.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::conf;
@@ -18,12 +18,20 @@ using namespace el::text::literals;
 TESTED_TARGETS(FileSourceResolver)
 class FileSourceResolverTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
 public:
-    void testInvalidFeaturesAreParameterErrors() {
+    void testNativeBackslashFilename() {
+#ifndef ERBSLAND_OS_WINDOWS
+        setupFileList({"config/main.elcl", R"(config/a\b.elcl)"});
+        WITH_CONTEXT(expectSuccess(R"(a\\b.elcl)"_el, {R"(config/a\b.elcl)"_el}));
+        WITH_CONTEXT(expectSuccess(R"(a\\*.elcl)"_el, {R"(config/a\b.elcl)"_el}));
+#endif
+    }
+
+    void testInvalidFeaturesAreParameterFailures() {
         auto resolver = FileSourceResolver::create();
         const auto invalidFeature = static_cast<FileSourceResolver::Feature>(FileSourceResolver::_featureCount);
-        REQUIRE_THROWS_AS(el::err::ParameterError, resolver->enable(invalidFeature));
-        REQUIRE_THROWS_AS(el::err::ParameterError, resolver->disable(invalidFeature));
-        REQUIRE_THROWS_AS(el::err::ParameterError, resolver->isEnabled(invalidFeature));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, resolver->enable(invalidFeature));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, resolver->disable(invalidFeature));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, resolver->isEnabled(invalidFeature));
     }
 
     [[nodiscard]] static auto concatenate(std::initializer_list<el::text::String> parts) -> el::text::String {
@@ -306,15 +314,15 @@ public:
         // normalization required
         WITH_CONTEXT(expectSuccessVariants("./SameDir.elcl"_el, {"config/SameDir.elcl"_el}));
         WITH_CONTEXT(expectSuccessVariants(".//SameDir.elcl"_el, {"config/SameDir.elcl"_el}));
-        WITH_CONTEXT(expectSuccessVariants(".\\SameDir.elcl"_el, {"config/SameDir.elcl"_el}));
+        WITH_CONTEXT(expectFailure(".\\SameDir.elcl"_el));
         WITH_CONTEXT(expectSuccessVariants("./././SameDir.elcl"_el, {"config/SameDir.elcl"_el}));
         WITH_CONTEXT(expectSuccessVariants(".//////./////.///SameDir.elcl"_el, {"config/SameDir.elcl"_el}));
         WITH_CONTEXT(expectSuccessVariants("SubDir/../SameDir.elcl"_el, {"config/SameDir.elcl"_el}));
-        WITH_CONTEXT(expectSuccessVariants("SubDir\\..\\.\\SameDir.elcl"_el, {"config/SameDir.elcl"_el}));
+        WITH_CONTEXT(expectFailure("SubDir\\..\\.\\SameDir.elcl"_el));
         WITH_CONTEXT(expectSuccessVariants(
             "./SubDir/../../config/SubDir/SubDirDocument.elcl"_el, {"config/SubDir/SubDirDocument.elcl"_el}));
         WITH_CONTEXT(expectSuccessVariants("../other/../ParentDocument.elcl"_el, {"ParentDocument.elcl"_el}));
-        WITH_CONTEXT(expectSuccessVariants(".\\..\\other\\OtherDocument.elcl"_el, {"other/OtherDocument.elcl"_el}));
+        WITH_CONTEXT(expectFailure(".\\..\\other\\OtherDocument.elcl"_el));
     }
 
     void testPlainPathsLight() {
@@ -645,8 +653,56 @@ public:
     }
 
     void testDirectoryWildcardsLight() {
-        setupFileList({"config/main.elcl", "config/sub/document.elcl", "config/sub/readme.txt"});
-        WITH_CONTEXT(expectSuccess("**/*.elcl"_el, {"config/main.elcl"_el, "config/sub/document.elcl"_el}));
+        setupFileList({"config/main.elcl", "config/a/document.elcl", "config/a/readme.txt"});
+        WITH_CONTEXT(expectSuccess("**/*.elcl"_el, {"config/main.elcl"_el, "config/a/document.elcl"_el}));
+    }
+
+    void testLiteralEscapedFilename() {
+#ifndef ERBSLAND_OS_WINDOWS
+        setupFileList({"config/main.elcl", "config/a\\b.elcl", "config/a*b.elcl"});
+        WITH_CONTEXT(expectSuccess(R"(a\\b.elcl)"_el, {R"(config/a\b.elcl)"_el}));
+        const auto resolver = FileSourceResolver::create();
+        resolver->disable(FileSourceResolver::Wildcards);
+        REQUIRE_EQUAL(
+            resolver->resolve({.includeText = R"(a\*b.elcl)"_el, .sourceIdentifier = documentSourceIdentifier})->size(),
+            1U);
+#endif
+    }
+
+    void testExtendedPatternsAndFeatureControls() {
+        setupFileList({"config/main.elcl", "config/a/one.elcl", "config/a/two.txt", "config/b/two.elcl"});
+        WITH_CONTEXT(expectSuccess("[ab]/?ne.*"_el, {"config/a/one.elcl"_el}));
+        WITH_CONTEXT(expectSuccess("*/t*o.*"_el, {"config/a/two.txt"_el, "config/b/two.elcl"_el}));
+        WITH_CONTEXT(expectFailure("*/../main.elcl"_el));
+        WITH_CONTEXT(expectFailure("main.elcl;other.elcl"_el));
+        WITH_CONTEXT(expectFailure("main.elcl\nother.elcl"_el));
+        const auto resolver = FileSourceResolver::create();
+        resolver->disable(FileSourceResolver::RecursiveWildcard);
+        REQUIRE_THROWS_AS(
+            ConfError,
+            resolver->resolve({.includeText = "**/*.elcl"_el, .sourceIdentifier = documentSourceIdentifier}));
+        REQUIRE_EQUAL(
+            resolver->resolve({.includeText = "*/*.elcl"_el, .sourceIdentifier = documentSourceIdentifier})->size(),
+            2U);
+        resolver->disable(FileSourceResolver::Wildcards);
+        for (const auto &pattern : {"*/*.elcl"_el, "a/?ne.elcl"_el, "[ab]/one.elcl"_el}) {
+            REQUIRE_THROWS_AS(
+                ConfError, resolver->resolve({.includeText = pattern, .sourceIdentifier = documentSourceIdentifier}));
+        }
+        REQUIRE_EQUAL(
+            resolver->resolve({.includeText = "a/one.elcl"_el, .sourceIdentifier = documentSourceIdentifier})->size(),
+            1U);
+        resolver->disable(FileSourceResolver::AbsolutePaths);
+        const auto absolute = el::path::Path{useTestFileDirectory()}.toString();
+        REQUIRE_THROWS_AS(
+            ConfError,
+            resolver->resolve(
+                {.includeText = concatenate({absolute, "/config/a/one.elcl"_el}),
+                    .sourceIdentifier = documentSourceIdentifier}));
+        resolver->disable(FileSourceResolver::FileProtocol);
+        REQUIRE_THROWS_AS(
+            ConfError,
+            resolver->resolve({.includeText = "file:a/one.elcl"_el, .sourceIdentifier = documentSourceIdentifier}));
     }
 
     void testErrors() {
@@ -671,16 +727,16 @@ public:
         WITH_CONTEXT(expectFailure("SubDir/"_el));
         WITH_CONTEXT(expectFailure("../SubDir/"_el));
         // Test invalid wildcards
-        WITH_CONTEXT(expectFailure("Sub*Dir/SubDirDocument.elcl"_el));
+        WITH_CONTEXT(expectSuccess("Sub*Dir/SubDirDocument.elcl"_el, {"config/SubDir/SubDirDocument.elcl"_el}));
         WITH_CONTEXT(expectFailure("Sub**Dir/SubDirDocument.elcl"_el));
         WITH_CONTEXT(expectFailure("Sub***Dir/SubDirDocument.elcl"_el));
-        WITH_CONTEXT(expectFailure("**/**/SubDirDocument.elcl"_el));
-        WITH_CONTEXT(expectFailure("**/**/SubDirDocument.elcl"_el));
-        WITH_CONTEXT(expectFailure("SubDir/**/**/SubDirDocument.elcl"_el));
-        WITH_CONTEXT(expectFailure("*/**/SubDirDocument.elcl"_el));
+        WITH_CONTEXT(expectSuccess("**/**/SubDirDocument.elcl"_el, {"config/SubDir/SubDirDocument.elcl"_el}));
+        WITH_CONTEXT(expectSuccess("**/**/SubDirDocument.elcl"_el, {"config/SubDir/SubDirDocument.elcl"_el}));
+        WITH_CONTEXT(expectSuccess("SubDir/**/**/SubDirDocument.elcl"_el, {"config/SubDir/SubDirDocument.elcl"_el}));
+        WITH_CONTEXT(expectSuccess("*/**/SubDirDocument.elcl"_el, {"config/SubDir/SubDirDocument.elcl"_el}));
         WITH_CONTEXT(expectFailure("Sub**/SubDirDocument.elcl"_el));
         WITH_CONTEXT(expectFailure("**Dir/SubDirDocument.elcl"_el));
-        WITH_CONTEXT(expectFailure("SubDir/S*D*Document.elcl"_el));
+        WITH_CONTEXT(expectSuccess("SubDir/S*D*Document.elcl"_el, {"config/SubDir/SubDirDocument.elcl"_el}));
         WITH_CONTEXT(expectFailure("SubDir/S**Document.elcl"_el));
         WITH_CONTEXT(expectFailure("SubDir/S***Document.elcl"_el));
         // Test invalid UNC paths

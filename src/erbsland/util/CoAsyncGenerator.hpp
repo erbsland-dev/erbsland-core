@@ -75,8 +75,6 @@ private:
     handle_type _handle;
 };
 
-/// Create the public generator connected to this promise.
-/// @return The lazy generator.
 template <typename tValue>
 auto impl::CoAsyncGeneratorPromise<tValue>::get_return_object() -> CoAsyncGenerator<tValue> {
     return CoAsyncGenerator<tValue>{std::coroutine_handle<CoAsyncGeneratorPromise<tValue>>::from_promise(*this)};

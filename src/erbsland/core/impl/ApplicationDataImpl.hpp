@@ -28,19 +28,21 @@ public: // implement ApplicationData
     [[nodiscard]] auto cryptology() const noexcept -> const ApplicationCryptologyDataAccessor & override;
     [[nodiscard]] auto resources() const noexcept -> const ApplicationResourceDataAccessor & override;
     [[nodiscard]] auto system() const noexcept -> const ApplicationSystemDataAccessor & override;
+    [[nodiscard]] auto regularExpressions() const noexcept -> const ApplicationRegExDataAccessor & override;
 
 private:
-    ApplicationRuntimeDataAccessor _runtime;       ///< Runtime data accessor.
-    ApplicationOptionsDataAccessor _options;       ///< Option data accessor.
-    ApplicationLifecycleDataAccessor _lifecycle;   ///< Lifecycle data accessor.
-    ApplicationPartsDataAccessor _parts;           ///< Application-part data accessor.
-    ApplicationEventDataAccessor _events;          ///< Event data accessor.
-    ApplicationTerminalDataAccessor _terminal;     ///< Terminal data accessor.
-    ApplicationLogDataAccessor _logging;           ///< Logging data accessor.
-    ApplicationRandomDataAccessor _random;         ///< Random-generator data accessor.
-    ApplicationCryptologyDataAccessor _cryptology; ///< Cryptology data accessor.
-    ApplicationResourceDataAccessor _resources;    ///< Resource data accessor.
-    ApplicationSystemDataAccessor _system;         ///< System-service data accessor.
+    ApplicationRuntimeDataAccessor _runtime;          ///< Runtime data accessor.
+    ApplicationOptionsDataAccessor _options;          ///< Option data accessor.
+    ApplicationLifecycleDataAccessor _lifecycle;      ///< Lifecycle data accessor.
+    ApplicationPartsDataAccessor _parts;              ///< Application-part data accessor.
+    ApplicationEventDataAccessor _events;             ///< Event data accessor.
+    ApplicationTerminalDataAccessor _terminal;        ///< Terminal data accessor.
+    ApplicationLogDataAccessor _logging;              ///< Logging data accessor.
+    ApplicationRandomDataAccessor _random;            ///< Random-generator data accessor.
+    ApplicationCryptologyDataAccessor _cryptology;    ///< Cryptology data accessor.
+    ApplicationResourceDataAccessor _resources;       ///< Resource data accessor.
+    ApplicationSystemDataAccessor _system;            ///< System-service data accessor.
+    ApplicationRegExDataAccessor _regularExpressions; ///< Compiled-pattern cache accessor.
 };
 
 }

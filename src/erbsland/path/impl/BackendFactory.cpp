@@ -38,6 +38,7 @@ void setPathBackend(PathBackendPtr &&backend) noexcept {
         storage = std::move(backend);
     }
 }
+
 #endif
 
 }

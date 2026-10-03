@@ -33,10 +33,9 @@ public:
     /// @return The current state.
     [[nodiscard]] virtual auto state() const noexcept -> NetworkSourceState = 0;
     /// Start binding the inactive socket to a complete endpoint.
-    /// @param localEndpoint The local address, port, and optional IPv6 scope.
-    /// @param options The datagram and queue options captured for this socket.
-    /// @throws err::LogicError If called outside the owner event loop or more than once.
-    /// @throws err::ParameterError If the endpoint or options are invalid.
+    /// Must be called on the owner event loop, at most once.
+    /// @param localEndpoint The local address, port, and optional IPv6 scope. Must form a valid bind endpoint.
+    /// @param options The captured datagram and queue options. Must be valid for this socket.
     virtual void start(IpEndpoint localEndpoint, UdpSocketOptions options = {}) = 0;
     /// Start with an automatic IPv4 address and port.
     /// @param options The datagram and queue options captured for this socket.
@@ -55,11 +54,11 @@ public:
     /// @param options The datagram and queue options captured for this socket.
     void start(IpAddress localAddress, Port localPort, UdpSocketOptions options = {});
     /// Atomically submit one addressed datagram.
-    /// @param datagram The owned payload and destination endpoint.
+    /// Must be called on the owner event loop.
+    /// @param datagram The owned payload and destination endpoint. The destination and payload must be valid for this
+    /// socket.
     /// @return Whether the datagram was accepted, would block, or was rejected because the socket is closed.
     /// Fixed invalid datagrams throw synchronously; operational failures are reported through `onError()`.
-    /// @throws err::LogicError If called outside the owner event loop.
-    /// @throws err::ParameterError If the destination or payload is invalid for this socket.
     [[nodiscard]] virtual auto send(const UdpDatagram &datagram) -> NetworkSendStatus = 0;
     /// Atomically submit one payload to a destination endpoint.
     /// @param destination The remote destination endpoint.

@@ -18,8 +18,8 @@
 #include "../OptionValues_fwd.hpp"
 
 #include "../../core/CommandLineArguments.hpp"
-#include "../../i18n/DisplayTextMap_fwd.hpp"
-#include "../../unit/ArgumentUnit.hpp"
+#include "../../unit/ArgumentCount.hpp"
+#include "../../unit/ArgumentIndex.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -29,11 +29,11 @@
 namespace erbsland::options::impl {
 
 /// Internal option parser.
-/// @tested{OptionsParserTest}
+/// @tested{OptionsParserTest OptionDocumentTest}
 class OptionParser final {
 public:
     /// Create a parser for the given options and command line arguments.
-    OptionParser(OptionsPtr options, core::CommandLineArguments &args, i18n::DisplayTextMapConstPtr displayText);
+    OptionParser(OptionsPtr options, core::CommandLineArguments &args);
 
     /// Destroy the parser after masking sensitive command-line text.
     ~OptionParser();
@@ -151,6 +151,8 @@ private:
     [[nodiscard]] auto isEnabledBuiltInOptionName(const text::String &name) const -> bool;
     /// Parse a recognized boolean literal.
     [[nodiscard]] static auto parseBooleanLiteral(const text::String &text, bool &value) noexcept -> bool;
+    /// Reject malformed attached help keywords without including them in diagnostics.
+    [[nodiscard]] auto validateHelpNames() -> bool;
     /// Get the built-in flag match at an argument index.
     [[nodiscard]] auto builtInFlagAt(unit::ArgumentIndex index) const -> std::optional<BuiltInFlagMatch>;
     /// Test whether any argument requests help or version output.
@@ -186,7 +188,7 @@ private:
 private:
     OptionsPtr _options;                                  ///< The options root.
     core::CommandLineArguments &_args;                    ///< The mutable arguments to parse and mask.
-    i18n::DisplayTextMapConstPtr _displayText;            ///< The wording captured for diagnostics.
+
     OptionModulePtr _selectedModule;                      ///< The selected module, if any.
     text::String _moduleName;                             ///< The canonical selected module name.
     text::String _helpName;                               ///< The requested detailed-help target.
@@ -198,6 +200,7 @@ private:
     unit::ArgumentIndex _moduleArgumentIndex;             ///< The selected module argument index.
     std::optional<OptionErrorContext> _error;             ///< The first parse error.
     OptionSensitiveTextLocations _sensitiveTextLocations; ///< Sensitive argument suffixes found during parsing.
+    bool _omitErrorArguments{false};                      ///< Omit the source snapshot for malformed help keywords.
     std::size_t _sensitiveTextCleanupIndex{0};            ///< The next sensitive location to clean.
 };
 

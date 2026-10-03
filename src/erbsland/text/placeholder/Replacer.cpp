@@ -16,7 +16,7 @@
 #include "../StringList.hpp"
 #include "../StringSide.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../unit/CpRange.hpp"
 
 #include <memory>
@@ -76,7 +76,7 @@ void Replacer::setVariableSource(StringMap<String> variables, const String &name
     if (const auto current = source(effectiveName); current != nullptr) {
         const auto builtIn = std::dynamic_pointer_cast<VariableSource>(current);
         if (builtIn == nullptr) {
-            throw err::LogicError{"The placeholder source name belongs to another provider."_el};
+            throw err::LogicFailure{"The placeholder source name belongs to another provider."_el};
         }
         builtIn->setVariables(std::move(variables));
         return;
@@ -90,7 +90,7 @@ void Replacer::addTextFilters() {
 
 void Replacer::requireSources() const {
     if (!_registry.hasSources()) {
-        throw err::LogicError{"At least one placeholder source must be registered."_el};
+        throw err::LogicFailure{"At least one placeholder source must be registered."_el};
     }
 }
 
@@ -138,7 +138,7 @@ auto Replacer::advanceDoubledBegin(StringCharReader &reader) const -> bool {
 
 auto Replacer::delimiterAt(const StringCharReader &reader, const bool isName) const -> Delimiter {
     auto result = Delimiter::None;
-    auto bestLength = unit::CpLength::zero();
+    auto bestLength = unit::CpCount::zero();
     const auto character = reader.peek();
     if (character == _endFirst && matches(reader, _options.frameEnd())) {
         result = Delimiter::End;
@@ -187,7 +187,7 @@ auto Replacer::parseContent(StringCharReader &reader, const bool isName) const -
             }
         }
         if (delimiterAt(reader, isName) != Delimiter::None) {
-            return String{result};
+            return result;
         }
         if (character == _beginFirst && matches(reader, _options.frameBegin())) {
             throw ReplacerError{ReplacerErrorCategory::Syntax, "Nested placeholders are not allowed."_el};
@@ -252,7 +252,7 @@ auto Replacer::parseExpression(StringCharReader &reader, const bool validation, 
                     StringFormat{"Placeholder filter '{}' rejected its parameter."_el}.build(part.name)};
             }
         } else {
-            value = filter->apply(part.name, part.parameter, value);
+            value = _registry.apply(part.name, part.parameter, value);
         }
     }
     return value;
@@ -350,7 +350,11 @@ auto Replacer::process(const String &input, const bool validation, const bool to
         return input;
     }
     pieces.append(reader.takeCapture().toString());
-    return pieces.join();
+    auto result = pieces.join();
+    if (input.isSensitive()) {
+        result.markAsSensitive();
+    }
+    return result;
 }
 
 }

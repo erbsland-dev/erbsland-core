@@ -3,6 +3,17 @@
 #pragma once
 
 #include <DemoCommon.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/ByteOutputStream.hpp>
+#include <erbsland/InputStreamSettings.hpp>
+#include <erbsland/OutputStreamSettings.hpp>
+#include <erbsland/StreamCloseStatus.hpp>
+#include <erbsland/StreamReadResult.hpp>
+#include <erbsland/StreamState.hpp>
+#include <erbsland/StreamWaitStatus.hpp>
+#include <erbsland/StreamWriteStatus.hpp>
 
 #include <cstddef>
 #include <memory>
@@ -27,7 +38,7 @@ public: // implement InputStream
 
 protected: // implement ByteInputStream
     [[nodiscard]] auto readFromSource(std::span<el::Byte> destination, ReadDeadline deadline)
-        -> el::StreamReadResult<el::ByteLength> override;
+        -> el::StreamReadResult<el::ByteCount> override;
 
 private:
     std::vector<uint8_t> _bytes;

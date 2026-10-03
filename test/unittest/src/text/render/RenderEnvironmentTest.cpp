@@ -3,11 +3,13 @@
 
 #include "MemoryLayoutLoader.hpp"
 
-#include <erbsland/err/Diagnostic.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Environment.hpp>
-#include <erbsland/text/render/Loader.hpp>
-#include <erbsland/text/render/RenderError.hpp>
+#include "../../core/ApplicationTestScope.hpp"
+
+#include <erbsland/Diagnostic.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/render/Loader.hpp>
+#include <erbsland/render/RenderError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>
@@ -20,42 +22,88 @@ using namespace el::text::render;
 
 TESTED_TARGETS(Delimiters Environment EnvironmentOptions LayoutSource Loader RenderError RenderErrorContext)
 class RenderEnvironmentTest final : public el::UnitTest {
+private:
+    static constexpr auto cBadLayout = "bad"_el;
+    static constexpr auto cEmptyLayout = "empty"_el;
+    static constexpr auto cLateKey = "late"_el;
+    static constexpr auto cNameKey = "name"_el;
+    static constexpr auto cPageLayout = "page"_el;
+    static constexpr auto cProfileKey = "profile"_el;
+    static constexpr auto cUserKey = "user"_el;
+    static constexpr auto cValueKey = "value"_el;
+
 public:
-    void testStaticCommentsAndUnicode() {
+    void testLineStatementsCommentsAndExpressions() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("empty"_el, ""_el);
-        loader->set("page"_el, "Hello {# removed #}wörld!"_el);
+        loader->set("loop"_el, "before\n  //% for value in [1, 2]\n[[ value ]]\n\t//% endfor\nafter"_el);
+        loader->set(
+            "mixed"_el,
+            "//% set value = \"%}\"\r\n[[ value ]]\n{% set other = 7 %}[[ other ]]\ninline //% set value = 9\n//% set final = 1"_el);
+        loader->set("expression"_el, "  //= \"hello\"\n// comment\n  //# removed\nend"_el);
+        loader->set(cEmptyLayout, "//# comment at end"_el);
+        loader->set("empty_comment"_el, "{# comment at end #}"_el);
+        loader->set(cBadLayout, "//% if true\nbody\n"_el);
+        auto options = EnvironmentOptions{};
+        options.setExpressionDelimiters(Delimiters{"[["_el, "]]"_el, "//="_el});
+        options.setStatementDelimiters(Delimiters{"{%"_el, "%}"_el, "//%"_el});
+        options.setCommentDelimiters(Delimiters{"{#"_el, "#}"_el, "//#"_el});
+        const auto environment = Environment::create(options);
+        environment->addLayoutLoader(loader);
+        REQUIRE_EQUAL(environment->render("loop"_el), "before\n1\n2\nafter"_el);
+        REQUIRE_EQUAL(environment->render("mixed"_el), "%}\n7\ninline //% set value = 9\n"_el);
+        REQUIRE_EQUAL(environment->render("expression"_el), "hello// comment\nend"_el);
+        REQUIRE_EQUAL(environment->render(cEmptyLayout), ""_el);
+        REQUIRE_EQUAL(environment->render("empty_comment"_el), ""_el);
+        REQUIRE_THROWS_AS(RenderError, environment->render(cBadLayout));
+    }
+
+    void testAmbiguousLinePrefixesAreRejected() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = EnvironmentOptions{};
+        options.setStatementDelimiters(Delimiters{"{%"_el, "%}"_el, "//"_el});
+        options.setCommentDelimiters(Delimiters{"{#"_el, "#}"_el, "//#"_el});
+        REQUIRE_THROWS(Environment::create(options));
+    }
+
+    void testStaticCommentsAndUnicode() {
+        auto applicationScope = ApplicationTestScope<>{};
+        const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
+        loader->set(cEmptyLayout, ""_el);
+        loader->set(cPageLayout, "Hello {# removed #}wörld!"_el);
         const auto environment = environmentFor(loader);
 
-        REQUIRE_EQUAL(environment->render("empty"_el), ""_el);
-        REQUIRE_EQUAL(environment->render("page"_el), "Hello wörld!"_el);
+        REQUIRE_EQUAL(environment->render(cEmptyLayout), ""_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "Hello wörld!"_el);
     }
 
     void testExpressionsAndContextPrecedence() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, "{{ name }}|{{ user.profile.name }}|{{ missing.path }}|{{ late }}"_el);
+        loader->set(cPageLayout, "{{ name }}|{{ user.profile.name }}|{{ missing.path }}|{{ late }}"_el);
         const auto environment = environmentFor(loader);
 
         auto globalProfile = ValueMap{};
-        globalProfile.set("name"_el, "global nested"_el);
+        globalProfile.set(cNameKey, "global nested"_el);
         auto globalUser = ValueMap{};
-        globalUser.set("profile"_el, globalProfile);
+        globalUser.set(cProfileKey, globalProfile);
         environment->setGlobalContext(
-            Context{}.set("name"_el, "global"_el).set("user"_el, globalUser).set("late"_el, "global late"_el));
+            Context{}.set(cNameKey, "global"_el).set(cUserKey, globalUser).set(cLateKey, "global late"_el));
 
         auto localProfile = ValueMap{};
-        localProfile.set("name"_el, "local nested"_el);
+        localProfile.set(cNameKey, "local nested"_el);
         auto localUser = ValueMap{};
-        localUser.set("profile"_el, localProfile);
+        localUser.set(cProfileKey, localProfile);
         auto local = Context{};
-        local.set("name"_el, "local"_el).set("user"_el, localUser).set("late"_el, ValueCallbackFn{[]() -> Value {
+        local.set(cNameKey, "local"_el).set(cUserKey, localUser).set(cLateKey, ValueCallbackFn{[]() -> Value {
             return "callback"_el;
         }});
 
-        REQUIRE_EQUAL(environment->render("page"_el, local), "local|local nested||callback"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout, local), "local|local nested||callback"_el);
     }
 
     void testWhitespaceMarkers() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
         loader->set("none"_el, "A \n{{ value }} \nB"_el);
         loader->set("left"_el, "A \n{{- value }} \nB"_el);
@@ -63,7 +111,7 @@ public:
         loader->set("both"_el, "A \n{{- value -}} \nB"_el);
         loader->set("comment"_el, "A \n{#- hidden -#} \nB"_el);
         const auto environment = environmentFor(loader);
-        const auto context = Context{}.set("value"_el, "X"_el);
+        const auto context = Context{}.set(cValueKey, "X"_el);
 
         REQUIRE_EQUAL(environment->render("none"_el, context), "A \nX \nB"_el);
         REQUIRE_EQUAL(environment->render("left"_el, context), "AX \nB"_el);
@@ -73,31 +121,33 @@ public:
     }
 
     void testCustomDelimitersAndSyntaxErrors() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
         loader->set("custom"_el, "Hello [[ name ]]"_el);
-        loader->set("bad"_el, "before [[ name"_el);
+        loader->set(cBadLayout, "before [[ name"_el);
         auto options = EnvironmentOptions{};
         options.setExpressionDelimiters(Delimiters{"[["_el, "]]"_el});
         const auto environment = Environment::create(options);
         environment->addLayoutLoader(loader);
 
-        REQUIRE_EQUAL(environment->render("custom"_el, Context{}.set("name"_el, "Ada"_el)), "Hello Ada"_el);
-        REQUIRE_THROWS_AS(RenderError, environment->render("bad"_el));
+        REQUIRE_EQUAL(environment->render("custom"_el, Context{}.set(cNameKey, "Ada"_el)), "Hello Ada"_el);
+        REQUIRE_THROWS_AS(RenderError, environment->render(cBadLayout));
 
         try {
-            static_cast<void>(environment->render("bad"_el));
+            static_cast<void>(environment->render(cBadLayout));
             REQUIRE(false);
         } catch (const RenderError &error) {
             REQUIRE_EQUAL(error.context().category(), RenderErrorCategory::Syntax);
-            REQUIRE_EQUAL(error.context().layout(), "bad"_el);
+            REQUIRE_EQUAL(error.context().layout(), cBadLayout);
             REQUIRE_EQUAL(error.context().origin(), "memory:bad"_el);
             REQUIRE_FALSE(error.context().location().isUndefined());
-            REQUIRE_EQUAL(error.diagnostic()->sourceName(), "bad"_el);
+            REQUIRE_EQUAL(error.diagnostic()->sourceName(), cBadLayout);
             REQUIRE_EQUAL(error.diagnostic()->sourcePath(), "memory:bad"_el);
         }
     }
 
     void testValidationAndStrictRendering() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
         loader->set("container"_el, "{{ value }}"_el);
         const auto environment = environmentFor(loader);
@@ -107,7 +157,7 @@ public:
         REQUIRE_THROWS_AS(RenderError, environment->render("missing"_el));
 
         try {
-            static_cast<void>(environment->render("container"_el, Context{}.set("value"_el, ValueMap{})));
+            static_cast<void>(environment->render("container"_el, Context{}.set(cValueKey, ValueMap{})));
             REQUIRE(false);
         } catch (const RenderError &error) {
             REQUIRE_EQUAL(error.context().category(), RenderErrorCategory::Runtime);
@@ -116,51 +166,54 @@ public:
     }
 
     void testLoaderPriorityAndCacheReuse() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto first = std::make_shared<erbsland::test::MemoryLayoutLoader>();
         const auto second = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        first->set("page"_el, "first"_el);
-        second->set("page"_el, "second"_el);
+        first->set(cPageLayout, "first"_el);
+        second->set(cPageLayout, "second"_el);
         const auto environment = Environment::create();
         environment->addLayoutLoader(first, 0);
         environment->addLayoutLoader(second, 10);
 
-        REQUIRE_EQUAL(environment->render("page"_el), "second"_el);
-        REQUIRE_EQUAL(environment->render("page"_el), "second"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "second"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "second"_el);
         REQUIRE_EQUAL(first->loadCount(), std::size_t{0U});
         REQUIRE_EQUAL(second->loadCount(), std::size_t{1U});
 
         const auto equalPriority = Environment::create();
         equalPriority->addLayoutLoader(first);
         equalPriority->addLayoutLoader(second);
-        REQUIRE_EQUAL(equalPriority->render("page"_el), "first"_el);
+        REQUIRE_EQUAL(equalPriority->render(cPageLayout), "first"_el);
     }
 
     void testReloadAndFailedReloadRecovery() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, "old"_el);
+        loader->set(cPageLayout, "old"_el);
         const auto environment = Environment::create();
         environment->addLayoutLoader(loader);
         environment->enableAutoReload();
 
-        REQUIRE_EQUAL(environment->render("page"_el), "old"_el);
-        loader->set("page"_el, "new {{ value }}"_el);
-        REQUIRE_EQUAL(environment->render("page"_el, Context{}.set("value"_el, "generation"_el)), "new generation"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "old"_el);
+        loader->set(cPageLayout, "new {{ value }}"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout, Context{}.set(cValueKey, "generation"_el)), "new generation"_el);
 
-        loader->set("page"_el, "broken {{"_el);
-        REQUIRE_THROWS_AS(RenderError, environment->render("page"_el));
-        loader->set("page"_el, "new {{ value }}"_el);
-        REQUIRE_EQUAL(environment->render("page"_el, Context{}.set("value"_el, "generation"_el)), "new generation"_el);
+        loader->set(cPageLayout, "broken {{"_el);
+        REQUIRE_THROWS_AS(RenderError, environment->render(cPageLayout));
+        loader->set(cPageLayout, "new {{ value }}"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout, Context{}.set(cValueKey, "generation"_el)), "new generation"_el);
     }
 
     void testCallbackDepthLimit() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, "{{ value }}"_el);
+        loader->set(cPageLayout, "{{ value }}"_el);
         const auto environment = environmentFor(loader);
         const auto callback = std::make_shared<ValueCallbackFn>();
         *callback = [callback]() -> Value { return Value{*callback}; };
 
         try {
-            static_cast<void>(environment->render("page"_el, Context{}.set("value"_el, Value{*callback})));
+            static_cast<void>(environment->render(cPageLayout, Context{}.set(cValueKey, Value{*callback})));
             REQUIRE(false);
         } catch (const RenderError &error) {
             REQUIRE_EQUAL(error.context().category(), RenderErrorCategory::Limit);
@@ -168,12 +221,13 @@ public:
     }
 
     void testConcurrentRenderSnapshots() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, "old"_el);
+        loader->set(cPageLayout, "old"_el);
         const auto environment = Environment::create();
         environment->addLayoutLoader(loader);
         environment->enableAutoReload();
-        REQUIRE_EQUAL(environment->render("page"_el), "old"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "old"_el);
 
         auto failed = std::atomic_bool{false};
         auto workers = std::vector<std::thread>{};
@@ -181,7 +235,7 @@ public:
             workers.emplace_back([&]() -> void {
                 for (auto iteration = 0; iteration < 25; ++iteration) {
                     try {
-                        const auto result = environment->render("page"_el);
+                        const auto result = environment->render(cPageLayout);
                         if (result != "old"_el && result != "new"_el) {
                             failed = true;
                         }
@@ -191,12 +245,12 @@ public:
                 }
             });
         }
-        loader->set("page"_el, "new"_el);
+        loader->set(cPageLayout, "new"_el);
         for (auto &worker : workers) {
             worker.join();
         }
         REQUIRE_FALSE(failed.load());
-        REQUIRE_EQUAL(environment->render("page"_el), "new"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout), "new"_el);
     }
 
 private:

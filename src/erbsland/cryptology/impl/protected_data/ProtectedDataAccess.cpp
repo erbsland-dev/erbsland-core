@@ -24,6 +24,7 @@ auto ProtectedDataAccess::access() -> ProtectedDataAccess & {
 void ProtectedDataAccess::setTestAccess(ProtectedDataAccess *access) noexcept {
     _testAccess.store(access, std::memory_order_release);
 }
+
 #endif
 
 }

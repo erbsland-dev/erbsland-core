@@ -9,6 +9,7 @@
 #include "../../text/impl/StringEncodingWriter.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEncoder.hpp"
+#include "../../text/StringJoins.hpp"
 
 #include <exception>
 #include <string_view>
@@ -176,7 +177,7 @@ auto EncodedTextOutputStream::writeLine(const String &text) -> StreamWriteStatus
     if (!lock.owns_lock()) {
         return StreamWriteStatus::Timeout;
     }
-    return writeLocked(String::fromJoined({text, "\n"_el}));
+    return writeLocked(text::join(text, "\n"_el));
 }
 
 auto EncodedTextOutputStream::bomModeForNextWrite() const noexcept -> StringBomMode {

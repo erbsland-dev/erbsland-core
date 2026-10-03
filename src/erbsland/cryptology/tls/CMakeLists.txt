@@ -4,8 +4,14 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        SystemIdentityInfo.hpp
+        SystemIdentityStore.cpp
+        SystemIdentityStore.hpp
+        SystemIdentityStore_fwd.hpp
         TlsCipherSuite.cpp
         TlsCipherSuite.hpp
+        TlsClientAuthentication.hpp
+        TlsClientConfiguration.hpp
         TlsConfiguration.hpp
         TlsConfiguration_fwd.hpp
         TlsConfigurationEntry.hpp
@@ -13,10 +19,15 @@ target_sources(erbsland-core PRIVATE
         TlsConfigurationParser.hpp
         TlsConfigurationParser_fwd.hpp
         TlsConfigurationResolution.hpp
-        TlsServerIdentity.cpp
-        TlsServerIdentity.hpp
-        TlsServerIdentity_fwd.hpp
+        TlsConfigurationSet.hpp
+        TlsIdentity.cpp
+        TlsIdentity.hpp
+        TlsIdentity_fwd.hpp
+        TlsRole.hpp
+        TlsServerConfiguration.hpp
+        TlsSettings.hpp
         TlsSignatureScheme.cpp
         TlsSignatureScheme.hpp
         TlsSignatureScheme_fwd.hpp
+        TlsTrustConfiguration.hpp
 )

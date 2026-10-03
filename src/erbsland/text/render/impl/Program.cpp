@@ -6,22 +6,22 @@
 
 namespace erbsland::text::render::impl {
 
-auto Program::locationAt(const unit::ByteIndex programCounter) const noexcept -> unit::CodeLocation {
+using namespace unit;
+
+auto Program::locationAt(const ByteIndex programCounter) const noexcept -> CodeLocation {
     const auto entry = std::upper_bound(
         _sourceMap.begin(),
         _sourceMap.end(),
         programCounter,
-        [](const unit::ByteIndex position, const SourceMapEntry &candidate) -> bool {
-            return position < candidate.first;
-        });
+        [](const ByteIndex position, const SourceMapEntry &candidate) -> bool { return position < candidate.first; });
     if (entry == _sourceMap.begin()) {
         return {};
     }
     return std::prev(entry)->second;
 }
 
-auto Program::locationAt(const unit::ByteIndex programCounter, std::size_t &nextSourceMapEntry) const noexcept
-    -> unit::CodeLocation {
+auto Program::locationAt(const ByteIndex programCounter, std::size_t &nextSourceMapEntry) const noexcept
+    -> CodeLocation {
     if (nextSourceMapEntry < _sourceMap.size() && _sourceMap[nextSourceMapEntry].first == programCounter) {
         return _sourceMap[nextSourceMapEntry++].second;
     }
@@ -29,9 +29,7 @@ auto Program::locationAt(const unit::ByteIndex programCounter, std::size_t &next
         _sourceMap.begin(),
         _sourceMap.end(),
         programCounter,
-        [](const unit::ByteIndex position, const SourceMapEntry &candidate) -> bool {
-            return position < candidate.first;
-        });
+        [](const ByteIndex position, const SourceMapEntry &candidate) -> bool { return position < candidate.first; });
     nextSourceMapEntry = static_cast<std::size_t>(std::distance(_sourceMap.begin(), entry));
     if (entry == _sourceMap.begin()) {
         return {};
@@ -39,14 +37,12 @@ auto Program::locationAt(const unit::ByteIndex programCounter, std::size_t &next
     return std::prev(entry)->second;
 }
 
-auto Program::hasInstructionAt(const unit::ByteIndex programCounter) const noexcept -> bool {
+auto Program::hasInstructionAt(const ByteIndex programCounter) const noexcept -> bool {
     const auto entry = std::lower_bound(
         _sourceMap.begin(),
         _sourceMap.end(),
         programCounter,
-        [](const SourceMapEntry &candidate, const unit::ByteIndex position) -> bool {
-            return candidate.first < position;
-        });
+        [](const SourceMapEntry &candidate, const ByteIndex position) -> bool { return candidate.first < position; });
     return entry != _sourceMap.end() && entry->first == programCounter;
 }
 

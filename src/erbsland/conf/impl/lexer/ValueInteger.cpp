@@ -9,11 +9,13 @@
 #include "../utilities/YieldMacros.hpp"
 
 #include "../../../math/SaturatingMath.hpp"
+#include "../../../unit/ByteCount.hpp"
 
 #include <utility>
 
 namespace erbsland::conf::impl::lexer {
 
+using namespace text;
 using namespace text::literals;
 
 /// Scan for a time or quantity unit that may follow the decimal integer.
@@ -35,24 +37,24 @@ auto scanDecimalSuffix(TokenDecoder &decoder, Transaction &transaction, int64_t 
 
     // At this point, we know that a letter follows the integer (with- or without a space).
     // Therefore, it must be a valid suffix. If not, it is a syntax error.
-    text::StringEditor identifier;
+    StringEditor identifier;
     while (decoder.character() == CharClass::IntegerSuffixChar) {
         identifier.append(decoder.character().toAsciiLowercase());
         decoder.next();
-        if (identifier.length().toSizeT() > 12) {
+        if (identifier.length() > unit::ByteCount{12}) {
             decoder.throwSyntaxError("Unknown integer suffix."_el);
         }
     }
 
     // Check the table with valid integer suffixes.
-    const auto it = LiteralTables::integerSuffixMap.find(identifier);
-    if (it == LiteralTables::integerSuffixMap.end()) {
+    const auto it = literal_tables::integerSuffixMap().find(identifier);
+    if (it == literal_tables::integerSuffixMap().end()) {
         decoder.throwSyntaxError("Unknown integer suffix."_el);
     }
 
     // If it's a byte count, this is still an integer.
-    if (std::holds_alternative<LiteralTables::ByteCountSuffix>(it->second)) {
-        const auto factor = std::get<LiteralTables::ByteCountSuffix>(it->second).factor;
+    if (std::holds_alternative<literal_tables::ByteCountSuffix>(it->second)) {
+        const auto factor = std::get<literal_tables::ByteCountSuffix>(it->second).factor;
         if (factor <= 0 || math::willMultiplyOverflow(number, factor)) {
             decoder.throwError(ConfErrorCategory::LimitExceeded, "The byte count exceeds a 64bit value."_el);
         }
@@ -64,28 +66,28 @@ auto scanDecimalSuffix(TokenDecoder &decoder, Transaction &transaction, int64_t 
     // If it's a time unit, this is a time delta.
     suffixTransaction.commit();
     transaction.commit();
-    const auto unit = std::get<LiteralTables::TimeDeltaSuffix>(it->second).unit;
+    const auto unit = std::get<literal_tables::TimeDeltaSuffix>(it->second).unit;
     auto delta = [&]() -> time::CalendarDelta {
         switch (unit) {
-        case LiteralTables::TimeDeltaUnit::Nanoseconds:
+        case literal_tables::TimeDeltaUnit::Nanoseconds:
             return time::Nanoseconds{number};
-        case LiteralTables::TimeDeltaUnit::Microseconds:
+        case literal_tables::TimeDeltaUnit::Microseconds:
             return time::Microseconds{number};
-        case LiteralTables::TimeDeltaUnit::Milliseconds:
+        case literal_tables::TimeDeltaUnit::Milliseconds:
             return time::Milliseconds{number};
-        case LiteralTables::TimeDeltaUnit::Seconds:
+        case literal_tables::TimeDeltaUnit::Seconds:
             return time::Seconds{number};
-        case LiteralTables::TimeDeltaUnit::Minutes:
+        case literal_tables::TimeDeltaUnit::Minutes:
             return time::Minutes{number};
-        case LiteralTables::TimeDeltaUnit::Hours:
+        case literal_tables::TimeDeltaUnit::Hours:
             return time::Hours{number};
-        case LiteralTables::TimeDeltaUnit::Days:
+        case literal_tables::TimeDeltaUnit::Days:
             return time::Days{number};
-        case LiteralTables::TimeDeltaUnit::Weeks:
+        case literal_tables::TimeDeltaUnit::Weeks:
             return time::Weeks{number};
-        case LiteralTables::TimeDeltaUnit::Months:
+        case literal_tables::TimeDeltaUnit::Months:
             return time::Months{number};
-        case LiteralTables::TimeDeltaUnit::Years:
+        case literal_tables::TimeDeltaUnit::Years:
             return time::Years{number};
         }
         decoder.throwInternalError("Unsupported time delta unit."_el);
@@ -113,14 +115,13 @@ auto scanIntegerOrTimeDelta(TokenDecoder &decoder) -> std::optional<LexerToken> 
         decoder.next();     // Skip the leading zero.
         if (decoder.character() == CharClass::LetterX) {
             decoder.next(); // Skip the letter X.
-            parseNumber(decoder, text::IntegerBase::Hexadecimal, sign, NumberSeparators::Yes)
-                .assignTo(number, digitCount);
+            parseNumber(decoder, IntegerBase::Hexadecimal, sign, NumberSeparators::Yes).assignTo(number, digitCount);
             if (digitCount == 0) {
                 decoder.throwSyntaxError("Hexadecimal number must contain at least one digit."_el);
             }
         } else if (decoder.character() == CharClass::LetterB) {
             decoder.next(); // Skip the letter B.
-            parseNumber(decoder, text::IntegerBase::Binary, sign, NumberSeparators::Yes).assignTo(number, digitCount);
+            parseNumber(decoder, IntegerBase::Binary, sign, NumberSeparators::Yes).assignTo(number, digitCount);
             if (digitCount == 0) {
                 decoder.throwSyntaxError("Binary number must contain at least one digit."_el);
             }
@@ -136,7 +137,7 @@ auto scanIntegerOrTimeDelta(TokenDecoder &decoder) -> std::optional<LexerToken> 
             decoder.throwSyntaxError("Hexadecimal or binary floats are not supported by the language."_el);
         }
     } else { // If the number starts with a digit 1-9 expect a regular decimal.
-        parseNumber(decoder, text::IntegerBase::Decimal, sign, NumberSeparators::Yes).assignTo(number);
+        parseNumber(decoder, IntegerBase::Decimal, sign, NumberSeparators::Yes).assignTo(number);
         isDecimal = true;
     }
 

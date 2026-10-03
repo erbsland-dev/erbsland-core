@@ -7,7 +7,8 @@
 namespace erbsland::err {
 
 /// A runtime exception.
-/// Runtime exceptions are meany to be caught and handled in user-code.
+/// Runtime exceptions are meant to be caught and handled in user-code.
+/// @tested{ExceptionHierarchyTest}
 class RuntimeError : public Exception {
 public:
     using Exception::Exception;

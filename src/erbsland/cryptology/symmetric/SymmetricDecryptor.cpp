@@ -5,8 +5,8 @@
 #include "../impl/symmetric/SymmetricDataFactory.hpp"
 #include "../impl/symmetric/SymmetricDecryptorData.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/Literals.hpp"
@@ -15,6 +15,8 @@
 
 namespace erbsland::cryptology {
 
+using namespace err;
+using namespace mem;
 using namespace text::literals;
 
 SymmetricDecryptor::SymmetricDecryptor(
@@ -62,30 +64,30 @@ void SymmetricDecryptor::secureErase() noexcept {
     _state = State::Empty;
 }
 
-void SymmetricDecryptor::addAuthenticatedData(const mem::ConstByteSpan data) {
+void SymmetricDecryptor::addAuthenticatedData(const ConstByteSpan data) {
     requireUsable();
     if (!type().isAead()) {
-        throw err::LogicError{"Authenticated data requires an AEAD encryption type."_el};
+        throw LogicFailure{"Authenticated data requires an AEAD encryption type."_el};
     }
     if (_state != State::Active) {
-        throw err::LogicError{"Authenticated data must be added before payload decryption."_el};
+        throw LogicFailure{"Authenticated data must be added before payload decryption."_el};
     }
     try {
         _data->addAuthenticatedData(data);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         _state = State::Failed;
         throw;
     }
 }
 
-void SymmetricDecryptor::addAuthenticatedData(const mem::ByteBlock &data) {
+void SymmetricDecryptor::addAuthenticatedData(const ByteBlock &data) {
     addAuthenticatedData(data.span());
 }
 
-auto SymmetricDecryptor::decrypt(const mem::ConstByteSpan data) -> mem::ByteBlock {
+auto SymmetricDecryptor::decrypt(const ConstByteSpan data) -> ByteBlock {
     requireUsable();
     if (_state == State::Finalized) {
-        throw err::LogicError{"Cannot decrypt data after finalization."_el};
+        throw LogicFailure{"Cannot decrypt data after finalization."_el};
     }
     try {
         auto result = markSensitive(_data->decrypt(data));
@@ -93,50 +95,50 @@ auto SymmetricDecryptor::decrypt(const mem::ConstByteSpan data) -> mem::ByteBloc
             _state = State::Payload;
         }
         return result;
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         _state = State::Failed;
         throw;
     }
 }
 
-auto SymmetricDecryptor::decrypt(const mem::ByteBlock &data) -> mem::ByteBlock {
+auto SymmetricDecryptor::decrypt(const ByteBlock &data) -> ByteBlock {
     return decrypt(data.span());
 }
 
-auto SymmetricDecryptor::finalize(const SymmetricTag &tag) -> mem::ByteBlock {
+auto SymmetricDecryptor::finalize(const SymmetricTag &tag) -> ByteBlock {
     requireUsable();
     if (!type().isAead()) {
-        throw err::LogicError{"Tag finalization requires an AEAD encryption type."_el};
+        throw LogicFailure{"Tag finalization requires an AEAD encryption type."_el};
     }
     if (_state == State::Finalized) {
-        throw err::LogicError{"Cannot finalize decryption more than once."_el};
+        throw LogicFailure{"Cannot finalize decryption more than once."_el};
     }
     if (tag.byteLength() != type().tagLength()) {
-        throw err::ParameterError{"The authentication tag has the wrong length."_el, "tag"_el};
+        throw ParameterFailure{"The authentication tag has the wrong length."_el, "tag"_el};
     }
     try {
         auto result = markSensitive(_data->finalize(tag));
         _state = State::Finalized;
         return result;
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         _state = State::Failed;
         throw;
     }
 }
 
-auto SymmetricDecryptor::finalize() -> mem::ByteBlock {
+auto SymmetricDecryptor::finalize() -> ByteBlock {
     requireUsable();
     if (type().isAead()) {
-        throw err::LogicError{"AEAD decryption must be finalized with an authentication tag."_el};
+        throw LogicFailure{"AEAD decryption must be finalized with an authentication tag."_el};
     }
     if (_state == State::Finalized) {
-        throw err::LogicError{"Cannot finalize decryption more than once."_el};
+        throw LogicFailure{"Cannot finalize decryption more than once."_el};
     }
     try {
         auto result = markSensitive(_data->finalize());
         _state = State::Finalized;
         return result;
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         _state = State::Failed;
         throw;
     }
@@ -144,49 +146,49 @@ auto SymmetricDecryptor::finalize() -> mem::ByteBlock {
 
 auto SymmetricDecryptor::type() const -> SymmetricEncryptionType {
     if (isEmpty()) {
-        throw err::LogicError{"Cannot access an empty symmetric decryptor."_el};
+        throw LogicFailure{"Cannot access an empty symmetric decryptor."_el};
     }
     return _data->type();
 }
 
 void SymmetricDecryptor::validateCommon(const SymmetricEncryptionType type, const SymmetricKey &key) {
     if (!type.isValid()) {
-        throw err::ParameterError{"A valid symmetric encryption type is required."_el, "type"_el};
+        throw ParameterFailure{"A valid symmetric encryption type is required."_el, "type"_el};
     }
     if (key.byteLength() != type.keyLength()) {
-        throw err::ParameterError{"The symmetric key has the wrong length."_el, "key"_el};
+        throw ParameterFailure{"The symmetric key has the wrong length."_el, "key"_el};
     }
 }
 
 void SymmetricDecryptor::validateNonce(const SymmetricEncryptionType type, const SymmetricNonce &nonce) {
     if (!type.isAead()) {
-        throw err::ParameterError{"This encryption type requires an initialization vector."_el, "type"_el};
+        throw ParameterFailure{"This encryption type requires an initialization vector."_el, "type"_el};
     }
     if (nonce.byteLength() != type.nonceLength()) {
-        throw err::ParameterError{"The symmetric nonce has the wrong length."_el, "nonce"_el};
+        throw ParameterFailure{"The symmetric nonce has the wrong length."_el, "nonce"_el};
     }
 }
 
 void SymmetricDecryptor::validateIv(const SymmetricEncryptionType type, const SymmetricIv &iv) {
     if (!type.requiresIv()) {
-        throw err::ParameterError{"This encryption type requires a nonce."_el, "type"_el};
+        throw ParameterFailure{"This encryption type requires a nonce."_el, "type"_el};
     }
     if (iv.byteLength() != type.ivLength()) {
-        throw err::ParameterError{"The symmetric initialization vector has the wrong length."_el, "iv"_el};
+        throw ParameterFailure{"The symmetric initialization vector has the wrong length."_el, "iv"_el};
     }
 }
 
-auto SymmetricDecryptor::markSensitive(mem::ByteBlock result) noexcept -> mem::ByteBlock {
+auto SymmetricDecryptor::markSensitive(ByteBlock result) noexcept -> ByteBlock {
     result.markAsSensitive();
     return result;
 }
 
 void SymmetricDecryptor::requireUsable() const {
     if (isEmpty()) {
-        throw err::LogicError{"Cannot use an empty symmetric decryptor."_el};
+        throw LogicFailure{"Cannot use an empty symmetric decryptor."_el};
     }
     if (_state == State::Failed) {
-        throw err::LogicError{"Cannot reuse a symmetric decryptor after a backend failure."_el};
+        throw LogicFailure{"Cannot reuse a symmetric decryptor after a backend failure."_el};
     }
 }
 

@@ -1,0 +1,10 @@
+----[ Include Dependencies ]------------------------------------------------------------------------------------------
+Public Header Map            : "tool/data/public_headers/header_map.txt"
+Git Executable               : "git"
+Safe Binary Directories      : "/bin", "/usr/bin", "/opt/local/bin"
+
+---*[ Include Dependencies . Required Dependencies ]*-----------------------------------------------------------------
+Name                         : "definitions"
+Target                       : "core/Definitions.hpp"
+Excluded Headers             :
+    * "core/Namespaces.hpp"

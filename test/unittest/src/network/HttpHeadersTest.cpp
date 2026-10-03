@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/network/http/HttpHeaders.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/HttpHeaders.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -29,20 +29,20 @@ public:
         REQUIRE(HttpFieldType{HttpFieldType::SetCookie}.isResponseField());
         REQUIRE_FALSE(HttpFieldType{HttpFieldType::SetCookie}.isRequestField());
 
-        REQUIRE_THROWS_AS(el::err::ParameterError, HttpFieldName{"bad name"_el});
-        REQUIRE_THROWS_AS(el::err::ParameterError, HttpField{"Good"_el, "bad\r\nvalue"_el});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, HttpFieldName{"bad name"_el});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, HttpField{"Good"_el, "bad\r\nvalue"_el});
         REQUIRE_NOTHROW(HttpField{"Good"_el, "a\tb"_el});
 
         for (const auto *hex : {"00", "01", "7F"}) {
             const auto control = el::text::String{el::unittest::th::stdStringFromHex(hex)};
-            REQUIRE_THROWS_AS(el::err::ParameterError, HttpField("Good"_el, control));
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, HttpField("Good"_el, control));
         }
 
         const auto malformedBytes = el::unittest::th::stdStringFromHex("6F 6B FF");
         const auto malformed = el::text::String{malformedBytes};
         const auto field = HttpField{"X-Raw"_el, malformed};
-        REQUIRE_EQUAL(field.value().length(), el::unit::ByteLength{3U});
-        REQUIRE_FALSE(field.value().isValidUtf8());
+        REQUIRE_EQUAL(field.value().length(), el::unit::ByteCount{3U});
+        REQUIRE_FALSE(field.value().isEncodingValid());
     }
 
     void testOrderingLookupAndCopyOnWrite() {
@@ -83,21 +83,21 @@ public:
         const auto countLimits = HttpHeaderLimits{}.setMaximumFieldCount(el::unit::ItemCount::one());
         auto countHeaders = HttpHeaders{countLimits};
         countHeaders.addField("A"_el, "1"_el);
-        REQUIRE_THROWS_AS(el::err::ParameterError, countHeaders.addField("B"_el, "2"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, countHeaders.addField("B"_el, "2"_el));
         REQUIRE_EQUAL(countHeaders.fieldCount(), el::unit::ItemCount::one());
 
-        auto nameHeaders = HttpHeaders{HttpHeaderLimits{}.setMaximumNameLength(el::unit::ByteLength{3U})};
-        REQUIRE_THROWS_AS(el::err::ParameterError, nameHeaders.addField("Long"_el, "x"_el));
+        auto nameHeaders = HttpHeaders{HttpHeaderLimits{}.setMaximumNameLength(el::unit::ByteCount{3U})};
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, nameHeaders.addField("Long"_el, "x"_el));
         REQUIRE(nameHeaders.fieldCount().isZero());
 
-        auto valueHeaders = HttpHeaders{HttpHeaderLimits{}.setMaximumValueLength(el::unit::ByteLength{2U})};
-        REQUIRE_THROWS_AS(el::err::ParameterError, valueHeaders.addField("A"_el, "123"_el));
+        auto valueHeaders = HttpHeaders{HttpHeaderLimits{}.setMaximumValueLength(el::unit::ByteCount{2U})};
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, valueHeaders.addField("A"_el, "123"_el));
         REQUIRE(valueHeaders.fieldCount().isZero());
 
-        auto aggregateHeaders = HttpHeaders{HttpHeaderLimits{}.setMaximumAggregateLength(el::unit::ByteLength{7U})};
+        auto aggregateHeaders = HttpHeaders{HttpHeaderLimits{}.setMaximumAggregateLength(el::unit::ByteCount{7U})};
         aggregateHeaders.addField("A"_el, "12"_el);
-        REQUIRE_EQUAL(aggregateHeaders.serializedLength(), el::unit::ByteLength{7U});
-        REQUIRE_THROWS_AS(el::err::ParameterError, aggregateHeaders.addField("B"_el, ""_el));
+        REQUIRE_EQUAL(aggregateHeaders.serializedLength(), el::unit::ByteCount{7U});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, aggregateHeaders.addField("B"_el, ""_el));
         REQUIRE_EQUAL(aggregateHeaders.fieldCount(), el::unit::ItemCount::one());
     }
 };

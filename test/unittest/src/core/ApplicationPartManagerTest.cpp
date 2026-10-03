@@ -1,20 +1,21 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/core/ApplicationPartIdentifier.hpp>
-#include <erbsland/core/ApplicationPartManager.hpp>
-#include <erbsland/core/ApplicationPartTraits.hpp>
-#include <erbsland/core/ApplicationPartWithInterface.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/Events.hpp>
-#include <erbsland/event/UnmanagedEventThread.hpp>
-#include <erbsland/options/Options.hpp>
-#include <erbsland/options/OptionValues.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ApplicationPartIdentifier.hpp>
+#include <erbsland/ApplicationPartManager.hpp>
+#include <erbsland/ApplicationPartTraits.hpp>
+#include <erbsland/ApplicationPartWithInterface.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/RuntimeError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/UnmanagedEventThread.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -146,7 +147,7 @@ public:
 
 public:
     void fail() {
-        events()->invoke([]() -> void { throw el::err::LogicError{"expected failure"_el}; });
+        events()->invoke([]() -> void { throw el::err::RuntimeError{"expected failure"_el}; });
     }
 };
 
@@ -260,7 +261,7 @@ protected:
     void running() override {
         try {
             static_cast<void>(partManager().waitForRunning());
-        } catch (const el::err::LogicError &) {
+        } catch (const el::err::LogicFailure &) {
             cWaitRejected = true;
         }
     }
@@ -398,10 +399,10 @@ public:
         const auto identifier = ApplicationPartIdentifier::create("com.example.frontend-v2"_el);
         REQUIRE_EQUAL(identifier->name(), "com.example.frontend-v2"_el);
         REQUIRE_EQUAL(identifier->toString(), identifier->name());
-        REQUIRE_THROWS_AS(el::err::ParameterError, ApplicationPartIdentifier::create({}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, ApplicationPartIdentifier::create("invalid/name"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ApplicationPartIdentifier::create({}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ApplicationPartIdentifier::create("invalid/name"_el));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             ApplicationPartIdentifier::create(
                 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
                 "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"_el));
@@ -429,23 +430,23 @@ public:
             const auto manager = ApplicationPartManager::create();
             manager->registerPart<ManagerTestRootPart>();
             manager->registerPart<ManagerTestDuplicatePart>();
-            REQUIRE_THROWS_AS(el::err::LogicError, manager->prepare());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, manager->prepare());
         }
         {
             const auto manager = ApplicationPartManager::create();
             manager->registerPart<ManagerTestMissingPart>();
-            REQUIRE_THROWS_AS(el::err::LogicError, manager->prepare());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, manager->prepare());
         }
         {
             const auto manager = ApplicationPartManager::create();
             manager->registerPart<ManagerTestCyclePartA>();
             manager->registerPart<ManagerTestCyclePartB>();
-            REQUIRE_THROWS_AS(el::err::LogicError, manager->prepare());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, manager->prepare());
         }
         {
             const auto manager = ApplicationPartManager::create();
             manager->registerPart<ManagerTestNullFactoryPart>();
-            REQUIRE_THROWS_AS(el::err::LogicError, manager->prepare());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, manager->prepare());
         }
     }
 
@@ -456,8 +457,8 @@ public:
         REQUIRE_EQUAL(ManagerTestDeferredPart::cConstructionCount.load(), 0);
         manager->prepare();
         REQUIRE_EQUAL(ManagerTestDeferredPart::cConstructionCount.load(), 1);
-        REQUIRE_THROWS_AS(el::err::LogicError, manager->registerPart<ManagerTestRootPart>());
-        REQUIRE_THROWS_AS(el::err::LogicError, manager->part<ManagerTestWrongInterface>());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, manager->registerPart<ManagerTestRootPart>());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, manager->part<ManagerTestWrongInterface>());
     }
 
     void testDependencyStartupAndReverseShutdown() {
@@ -505,7 +506,7 @@ public:
         REQUIRE(manager->waitForStopped(ManagerTestDependentInterface::partIdentifier()));
         REQUIRE(manager->waitForStopped(ManagerTestRootInterface::partIdentifier()));
         REQUIRE_EQUAL(manager->state(), ApplicationPartManagerState::Running);
-        REQUIRE_THROWS_AS(el::err::LogicError, manager->start(ManagerTestRootInterface::partIdentifier()));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, manager->start(ManagerTestRootInterface::partIdentifier()));
         manager->stop();
         REQUIRE(manager->waitForStopped());
         REQUIRE_FALSE(ManagerTestRootPart::cRunning.load());
@@ -573,6 +574,7 @@ public:
         manager->stop(ManagerTestTimeoutPart::partIdentifier());
         REQUIRE_FALSE(manager->waitForStopped(ManagerTestTimeoutPart::partIdentifier()));
         REQUIRE(manager->hasError());
+        REQUIRE_THROWS_AS(el::ApplicationError, std::rethrow_exception(manager->takeError()));
 
         manager->stop();
         REQUIRE(manager->waitForStopped());
@@ -702,7 +704,7 @@ public:
         REQUIRE_FALSE(manager->waitForStopped());
         const auto partError = manager->takeError();
         const auto callbackError = manager->takeError();
-        REQUIRE_THROWS_AS(el::err::LogicError, std::rethrow_exception(partError));
+        REQUIRE_THROWS_AS(el::err::RuntimeError, std::rethrow_exception(partError));
         REQUIRE_THROWS_AS(el::err::RuntimeError, std::rethrow_exception(callbackError));
         REQUIRE_FALSE(manager->hasError());
         REQUIRE_EQUAL(manager->state(), ApplicationPartManagerState::Failed);

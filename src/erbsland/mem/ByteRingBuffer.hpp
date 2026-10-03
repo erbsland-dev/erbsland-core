@@ -36,7 +36,7 @@ public: // integers
             return std::nullopt;
         }
         auto bytes = ByteArray<sizeof(T)>{};
-        if (read(impl::UnsafeByteArrayAccess{bytes}.writableData()) != unit::ByteLength::fromSizeT(sizeof(T))) {
+        if (read(impl::UnsafeByteArrayAccess{bytes}.writableData()) != unit::ByteCount::fromSizeT(sizeof(T))) {
             std::terminate();
         }
         return bytes.template getInteger<T>(unit::ByteIndex::zero(), _endianness);

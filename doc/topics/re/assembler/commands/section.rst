@@ -1,7 +1,7 @@
 
-*******
-Section
-*******
+**************************
+Assembler .section Command
+**************************
 
 The assembler uses different *sections* for different kinds of data:
 
@@ -31,8 +31,8 @@ The ``.section`` command expects exactly one argument:
 ``&identifier``
     The section name. Valid values are ``&program``, ``&sequence`` and ``&class``.
 
-Notes
-=====
+Section Switching Rules
+=======================
 
 - Section identifiers are case-insensitive.
 - If a character class definition is currently open, switching sections will close it.

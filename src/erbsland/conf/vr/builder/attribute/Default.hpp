@@ -16,6 +16,7 @@
 #include "../../../Integer.hpp"
 #include "../../../Value_fwd.hpp"
 
+#include <concepts>
 #include <type_traits>
 #include <vector>
 
@@ -50,13 +51,13 @@ public:
     /// Creates a regular-expression default-value attribute.
     explicit Default(const re::RegExPtr &value);
     /// Creates an integer default-value attribute from a native integer.
-    template <typename TValue>
-        requires(std::is_integral_v<TValue> && !std::is_same_v<TValue, bool> && !std::is_same_v<TValue, Integer>)
-    explicit Default(const TValue value) : Default(static_cast<Integer>(value)) {}
+    template <std::integral tValue>
+        requires(std::is_integral_v<tValue> && !std::is_same_v<tValue, bool> && !std::is_same_v<tValue, Integer>)
+    explicit Default(const tValue value) : Default(static_cast<Integer>(value)) {}
     /// Creates a floating-point default-value attribute from a native float.
-    template <typename TValue>
-        requires(std::is_floating_point_v<TValue> && !std::is_same_v<TValue, Float>)
-    explicit Default(const TValue value) : Default(static_cast<Float>(value)) {}
+    template <std::floating_point tValue>
+        requires(std::is_floating_point_v<tValue> && !std::is_same_v<tValue, Float>)
+    explicit Default(const tValue value) : Default(static_cast<Float>(value)) {}
     /// Creates a default-value attribute from integer values.
     /// @param values The default integer values.
     explicit Default(const std::vector<Integer> &values);

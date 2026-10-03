@@ -17,6 +17,7 @@
 
 namespace erbsland::text::impl {
 
+using namespace unit;
 using namespace text::literals;
 using geometry::Alignment;
 using geometry::AlignmentFlag;
@@ -225,7 +226,7 @@ auto FormatWriter::namedNumberFieldText(const FormatArgument &argument, const Na
         if (spec.precision.has_value()) {
             format.setPrecision(spec.precision.value());
         }
-        if (spec.alternateForm) {
+        if (spec.basePrefix) {
             format.addFlags(IntegerFormatFlag::BasePrefix);
         }
         text = argument.kind() == FormatArgumentKind::SignedInteger
@@ -237,12 +238,12 @@ auto FormatWriter::namedNumberFieldText(const FormatArgument &argument, const Na
         if (spec.base.has_value()) {
             throw FormatError("Named floating-point format does not support an integer base"_el);
         }
-        if (spec.alternateForm) {
-            throw FormatError("Named floating-point format does not support alternate form"_el);
+        if (spec.basePrefix) {
+            throw FormatError("Named floating-point format does not support a base prefix"_el);
         }
         auto format = FloatFormat{spec.notation.value_or(FloatFormat::Style::Default)}.setLetterCase(spec.letterCase);
         if (spec.precision.has_value()) {
-            format.setPrecision(unit::ItemCount{spec.precision->toRawValue()});
+            format.setPrecision(ItemCount{spec.precision->toRawValue(), ItemCount::Unchecked{}});
         }
         text = U8StringEditor{String::fromFloat(argument.floatingPoint(), format)};
         if (spec.signMode == IntegerSignMode::Always && !text.startsWith("-"_el)) {
@@ -362,7 +363,7 @@ auto FormatWriter::floatFormat(const LegacyFormatSpec &spec) -> FloatFormat {
     }
     result.setLetterCase(spec.letterCase);
     if (spec.precision.has_value()) {
-        result.setPrecision(unit::ItemCount{spec.precision.value().toRawValue()});
+        result.setPrecision(ItemCount{spec.precision.value().toRawValue(), ItemCount::Unchecked{}});
     }
     return result;
 }
@@ -377,7 +378,7 @@ auto FormatWriter::formattedAlignment(const NamedLayoutSpec &spec, const Alignme
     return Alignment{alignment};
 }
 
-auto FormatWriter::zeroPaddedNumericText(const String &text, const unit::CpLength width) -> U8StringEditor {
+auto FormatWriter::zeroPaddedNumericText(const String &text, const CpCount width) -> U8StringEditor {
     static const auto signPrefixCharSet = CharSet{U'-', U'+', U' '};
     static const auto basePrefixCharSet = CharSet{U'x', U'X', U'b', U'B', U'o', U'O'};
     const auto textLength = text.characterLength();
@@ -385,25 +386,25 @@ auto FormatWriter::zeroPaddedNumericText(const String &text, const unit::CpLengt
         return U8StringEditor{text};
     }
 
-    auto cpPrefixEnd = unit::CpIndex::zero();
+    auto cpPrefixEnd = CpIndex::zero();
     if (!text.isEmpty()) {
         const auto first = text.charAt(StringSide::Front);
         if (signPrefixCharSet.contains(first)) {
-            cpPrefixEnd = unit::CpIndex::one();
+            cpPrefixEnd = CpIndex::one();
         }
     }
-    if (textLength >= cpPrefixEnd.distanceFromZero() + unit::CpLength{2U} && text.charAt(cpPrefixEnd) == U'0') {
-        const auto basePrefix = text.charAt(cpPrefixEnd + unit::CpLength::one());
+    if (textLength >= cpPrefixEnd.distanceFromZero() + CpCount{2U} && text.charAt(cpPrefixEnd) == U'0') {
+        const auto basePrefix = text.charAt(cpPrefixEnd + CpCount::one());
         if (basePrefixCharSet.contains(basePrefix)) {
-            cpPrefixEnd += unit::CpLength{2U};
+            cpPrefixEnd += CpCount{2U};
         }
     }
 
     const auto prefixEnd = text.indexAt(cpPrefixEnd);
     return U8StringEditor{String::fromJoined(
-        {text.slice(unit::ByteRange{unit::ByteIndex::zero(), prefixEnd}),
+        {text.slice(ByteRange{ByteIndex::zero(), prefixEnd}),
             String::fromCharacter(U'0', width - textLength),
-            text.slice(unit::ByteRange{prefixEnd, text.indexAt(StringSide::Back)})})};
+            text.slice(ByteRange{prefixEnd, text.indexAt(StringSide::Back)})})};
 }
 
 auto FormatWriter::applyPrecision(const String &text, const LegacyFormatSpec &spec) -> StringEditor {

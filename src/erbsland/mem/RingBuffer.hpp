@@ -8,7 +8,7 @@
 
 #include "impl/UnsafeRingBufferAccess_fwd.hpp"
 
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../util/Result.hpp"
 
 #include <array>
@@ -26,9 +26,9 @@ class RingBuffer {
 
 public:
     /// Create a fixed-capacity ring.
-    explicit RingBuffer(unit::ByteLength capacity);
+    explicit RingBuffer(unit::ByteCount capacity);
     /// Create a growable ring.
-    RingBuffer(unit::ByteLength initialCapacity, unit::ByteLength maximumCapacity);
+    RingBuffer(unit::ByteCount initialCapacity, unit::ByteCount maximumCapacity);
 
     /// Destroy this ring buffer.
     virtual ~RingBuffer();
@@ -41,19 +41,19 @@ public:
 
 public: // state
     /// Get the current storage capacity.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteCount;
     /// Get the hard storage limit.
-    [[nodiscard]] auto maximumCapacity() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto maximumCapacity() const noexcept -> unit::ByteCount;
     /// Get the number of readable bytes.
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto length() const noexcept -> unit::ByteCount;
     /// Get the writable space in the current storage.
-    [[nodiscard]] auto available() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto available() const noexcept -> unit::ByteCount;
     /// Test if the ring contains no readable bytes.
     [[nodiscard]] auto isEmpty() const noexcept -> bool { return _length == 0U; }
     /// Test if the current storage has no writable space.
     [[nodiscard]] auto isFull() const noexcept -> bool { return _length == _storage.size(); }
     /// Test if an atomic write can fit within the hard storage limit.
-    [[nodiscard]] auto canWrite(unit::ByteLength length) const noexcept -> bool;
+    [[nodiscard]] auto canWrite(unit::ByteCount length) const noexcept -> bool;
     /// Test if discarded storage is securely erased.
     [[nodiscard]] auto isSensitive() const noexcept -> bool { return _sensitive; }
     /// Enable or disable secure erasure for discarded storage.
@@ -63,18 +63,18 @@ public: // state
 public: // safe access
     /// Reserve space for additional bytes without changing the visible data.
     /// @return `Success` if the requested space is available, `Failure` if it exceeds the hard limit.
-    [[nodiscard]] auto reserveAdditional(unit::ByteLength length) -> util::Result;
+    [[nodiscard]] auto reserveAdditional(unit::ByteCount length) -> util::Result;
     /// Copy as many bytes as possible into the ring.
     /// @return The number of copied bytes.
-    auto write(ConstByteSpan bytes) -> unit::ByteLength;
+    auto write(ConstByteSpan bytes) -> unit::ByteCount;
     /// Atomically copy all bytes into the ring.
     /// @return `Failure` without modification if the bytes exceed the hard limit.
     [[nodiscard]] auto writeExact(ConstByteSpan bytes) -> util::Result;
     /// Copy as many buffered bytes as possible to the destination.
     /// @return The number of copied bytes.
-    auto read(ByteSpan destination) -> unit::ByteLength;
+    auto read(ByteSpan destination) -> unit::ByteCount;
     /// Read up to the requested number of bytes.
-    [[nodiscard]] auto read(unit::ByteLength maximum) -> ByteBlock;
+    [[nodiscard]] auto read(unit::ByteCount maximum) -> ByteBlock;
     /// Discard all buffered bytes.
     void clear() noexcept;
     /// Securely erase the complete allocation and discard all buffered bytes.

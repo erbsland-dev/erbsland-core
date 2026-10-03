@@ -1,7 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/conf/Name.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/Version.hpp>
 
 #include <utility>
 
@@ -14,7 +22,7 @@ class ListAction final {
 public:
     [[nodiscard]] auto module() -> el::OptionModulePtr {
         auto result = el::OptionModule::create("list"_el);
-        result->setHelpDescription("Lists the entries in the deployment catalog."_el);
+        result->setHelpTitle("Lists the entries in the deployment catalog."_el);
         result->setMainFn([this](el::OptionValuesPtr values) -> el::ExitCode { return main(std::move(values)); });
         return result;
     }
@@ -31,8 +39,8 @@ class AddAction final {
 public:
     [[nodiscard]] auto module() -> el::OptionModulePtr {
         auto result = el::OptionModule::create("add"_el);
-        result->setHelpDescription("Adds an entry to the deployment catalog."_el);
-        result->addOption("name"_el).setRequired().setHelpDescription("Name of the new catalog entry."_el);
+        result->setHelpTitle("Adds an entry to the deployment catalog."_el);
+        result->addOption("name"_el).setRequired().setHelpTitle("Name of the new catalog entry."_el);
         result->setMainFn([this](el::OptionValuesPtr values) -> el::ExitCode { return main(std::move(values)); });
         return result;
     }
@@ -49,8 +57,8 @@ class RemoveAction final {
 public:
     [[nodiscard]] auto module() -> el::OptionModulePtr {
         auto result = el::OptionModule::create("remove"_el);
-        result->setHelpDescription("Removes an entry from the deployment catalog."_el);
-        result->addOption("name"_el).setRequired().setHelpDescription("Name of the catalog entry to remove."_el);
+        result->setHelpTitle("Removes an entry from the deployment catalog."_el);
+        result->addOption("name"_el).setRequired().setHelpTitle("Name of the catalog entry to remove."_el);
         result->setMainFn([this](el::OptionValuesPtr values) -> el::ExitCode { return main(std::move(values)); });
         return result;
     }

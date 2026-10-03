@@ -11,7 +11,7 @@
 #include "../../stream/ByteOutputStream.hpp"
 #include "../../text/String.hpp"
 #include "../../time/Timestamp.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <cstdint>
 
@@ -48,16 +48,16 @@ public: // metadata
     /// Get the declared CRC-32 of the uncompressed bytes.
     [[nodiscard]] virtual auto crc32() const noexcept -> uint32_t = 0;
     /// Get the declared compressed payload length.
-    [[nodiscard]] virtual auto compressedLength() const noexcept -> unit::ByteLength = 0;
+    [[nodiscard]] virtual auto compressedLength() const noexcept -> unit::ByteCount = 0;
     /// Get the declared uncompressed payload length.
-    [[nodiscard]] virtual auto uncompressedLength() const noexcept -> unit::ByteLength = 0;
+    [[nodiscard]] virtual auto uncompressedLength() const noexcept -> unit::ByteCount = 0;
     /// Get the entry comment decoded as tolerant UTF-8.
     [[nodiscard]] virtual auto comment() const noexcept -> const text::String & = 0;
 
 public: // payload access
     /// Extract and validate this entry into memory.
     /// @throws ZipError If the reader is closed, the limit is exceeded, decoding fails, or CRC/length validation fails.
-    [[nodiscard]] virtual auto extract(unit::ByteLength maximumLength) const -> mem::ByteBlock = 0;
+    [[nodiscard]] virtual auto extract(unit::ByteCount maximumLength) const -> mem::ByteBlock = 0;
     /// Extract a file entry to an explicit destination path.
     virtual void extractToFile(const path::Path &destination, ArchiveExtractionOptions options = {}) const = 0;
     /// Extract this entry below a root while retaining its archive path.

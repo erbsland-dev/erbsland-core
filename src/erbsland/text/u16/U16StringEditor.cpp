@@ -70,57 +70,60 @@ auto U16StringEditor::toHashCI() const noexcept -> std::size_t {
     return result;
 }
 
-auto U16StringEditor::isValidUtf16() const noexcept -> bool {
-    return U16StringReadTools{dataView()}.isValidUtf16();
+auto U16StringEditor::isEncodingValid() const noexcept -> bool {
+    return U16StringReadTools{dataView()}.isEncodingValid();
 }
 
-auto U16StringEditor::findFirstOf(const CharSet &characters) const noexcept -> U16DataIndex {
+void U16StringEditor::encodingValidOrThrow() const {
+    U16StringReadTools{dataView()}.encodingValidOrThrow();
+}
+
+auto U16StringEditor::findFirstOf(const CharSet &characters) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findFirstOf(characters);
 }
 
-auto U16StringEditor::findFirstOf(const CharSet &characters, const U16DataIndex start) const noexcept -> U16DataIndex {
+auto U16StringEditor::findFirstOf(const CharSet &characters, const U16Index start) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findFirstOf(characters, start);
 }
 
-auto U16StringEditor::findFirstNotOf(const CharSet &characters) const noexcept -> U16DataIndex {
+auto U16StringEditor::findFirstNotOf(const CharSet &characters) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findFirstNotOf(characters);
 }
 
-auto U16StringEditor::findFirstNotOf(const CharSet &characters, const U16DataIndex start) const noexcept
-    -> U16DataIndex {
+auto U16StringEditor::findFirstNotOf(const CharSet &characters, const U16Index start) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findFirstNotOf(characters, start);
 }
 
-auto U16StringEditor::findLastOf(const CharSet &characters) const noexcept -> U16DataIndex {
+auto U16StringEditor::findLastOf(const CharSet &characters) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findLastOf(characters);
 }
 
-auto U16StringEditor::findLastOf(const CharSet &characters, const U16DataIndex end) const noexcept -> U16DataIndex {
+auto U16StringEditor::findLastOf(const CharSet &characters, const U16Index end) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findLastOf(characters, end);
 }
 
-auto U16StringEditor::findLastNotOf(const CharSet &characters) const noexcept -> U16DataIndex {
+auto U16StringEditor::findLastNotOf(const CharSet &characters) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findLastNotOf(characters);
 }
 
-auto U16StringEditor::findLastNotOf(const CharSet &characters, const U16DataIndex end) const noexcept -> U16DataIndex {
+auto U16StringEditor::findLastNotOf(const CharSet &characters, const U16Index end) const noexcept -> U16Index {
     return U16StringReadTools{dataView()}.findLastNotOf(characters, end);
 }
 
-auto U16StringEditor::find(const U16String &text, const CharCompareFn compareFn) const noexcept -> U16DataIndex {
+auto U16StringEditor::find(const U16String &text, const CharCompareFn compareFn) const noexcept -> U16Index {
     return U16StringComparisonTools{dataView()}.find(text.dataView(), compareFn);
 }
 
-auto U16StringEditor::find(
-    const U16String &text, const U16DataIndex start, const CharCompareFn compareFn) const noexcept -> U16DataIndex {
+auto U16StringEditor::find(const U16String &text, const U16Index start, const CharCompareFn compareFn) const noexcept
+    -> U16Index {
     return U16StringComparisonTools{dataView()}.find(text.dataView(), start, compareFn);
 }
 
-auto U16StringEditor::length() const noexcept -> U16DataLength {
+auto U16StringEditor::length() const noexcept -> U16Count {
     return U16StringReadTools{dataView()}.byteLength();
 }
 
-auto U16StringEditor::characterLength() const noexcept -> CpLength {
+auto U16StringEditor::characterLength() const noexcept -> CpCount {
     return U16StringCharReadTool{dataView()}.charLength();
 }
 
@@ -128,8 +131,8 @@ auto U16StringEditor::displayWidth() const noexcept -> int {
     return U16StringReadTools{dataView()}.displayWidth();
 }
 
-auto U16StringEditor::indexAt(const StringSide side) const noexcept -> U16DataIndex {
-    return side == StringSide::Front ? U16DataIndex::zero() : U16DataIndex::end(length());
+auto U16StringEditor::indexAt(const StringSide side) const noexcept -> U16Index {
+    return side == StringSide::Front ? U16Index::zero() : U16Index::end(length());
 }
 
 auto U16StringEditor::charAt(const StringSide side) const noexcept -> Char {
@@ -137,7 +140,7 @@ auto U16StringEditor::charAt(const StringSide side) const noexcept -> Char {
         return Char::null();
     }
     if (side == StringSide::Front) {
-        return charAt(U16DataIndex::zero());
+        return charAt(U16Index::zero());
     }
     auto index = indexAt(StringSide::Back);
     if (!retreat(index)) {
@@ -146,15 +149,15 @@ auto U16StringEditor::charAt(const StringSide side) const noexcept -> Char {
     return charAt(index);
 }
 
-auto U16StringEditor::charAt(const U16DataIndex startIndex) const noexcept -> Char {
+auto U16StringEditor::charAt(const U16Index startIndex) const noexcept -> Char {
     return U16StringReadTools{dataView()}.charAt(startIndex);
 }
 
-auto U16StringEditor::readCharAndAdvance(U16DataIndex &index) const noexcept -> Char {
+auto U16StringEditor::readCharAndAdvance(U16Index &index) const noexcept -> Char {
     return U16StringReadTools{dataView()}.read(index);
 }
 
-auto U16StringEditor::readCharAndRetreat(U16DataIndex &index) const noexcept -> Char {
+auto U16StringEditor::readCharAndRetreat(U16Index &index) const noexcept -> Char {
     return U16StringReadTools{dataView()}.readAndRetreat(index);
 }
 
@@ -162,7 +165,7 @@ auto U16StringEditor::charAt(const CpIndex index) const noexcept -> Char {
     return U16StringCharReadTool{dataView()}.charAt(index);
 }
 
-auto U16StringEditor::operator[](const U16DataIndex index) const noexcept -> Char {
+auto U16StringEditor::operator[](const U16Index index) const noexcept -> Char {
     return charAt(index);
 }
 
@@ -170,23 +173,23 @@ auto U16StringEditor::operator[](const CpIndex index) const noexcept -> Char {
     return charAt(index);
 }
 
-auto U16StringEditor::advance(U16DataIndex &index, const CpLength count) const noexcept -> bool {
+auto U16StringEditor::advance(U16Index &index, const CpCount count) const noexcept -> bool {
     return U16StringReadTools{dataView()}.advance(index, count);
 }
 
-auto U16StringEditor::retreat(U16DataIndex &index, const CpLength count) const noexcept -> bool {
+auto U16StringEditor::retreat(U16Index &index, const CpCount count) const noexcept -> bool {
     return U16StringReadTools{dataView()}.retreat(index, count);
 }
 
-auto U16StringEditor::indexAt(const CpIndex index) const noexcept -> U16DataIndex {
+auto U16StringEditor::indexAt(const CpIndex index) const noexcept -> U16Index {
     return U16StringCharReadTool{dataView()}.byteIndexAt(index);
 }
 
-auto U16StringEditor::toCharIndex(const U16DataIndex index) const noexcept -> CpIndex {
+auto U16StringEditor::toCharIndex(const U16Index index) const noexcept -> CpIndex {
     return U16StringCharReadTool{dataView()}.charIndexAt(index);
 }
 
-auto U16StringEditor::slice(const U16DataRange range) const noexcept -> U16StringEditor {
+auto U16StringEditor::slice(const U16Range range) const noexcept -> U16StringEditor {
     return withRange(U16StringReadTools{dataView()}.sliceRange(range));
 }
 
@@ -194,36 +197,36 @@ auto U16StringEditor::slice(const CpRange range) const noexcept -> U16StringEdit
     return withRange(U16StringCharReadTool{dataView()}.sliceRange(range));
 }
 
-auto U16StringEditor::slice(const StringSide side, const U16DataLength length) const noexcept -> U16StringEditor {
+auto U16StringEditor::slice(const StringSide side, const U16Count length) const noexcept -> U16StringEditor {
     if (side == StringSide::Front) {
-        return slice(U16DataRange(U16DataIndex::zero(), length));
+        return slice(U16Range(U16Index::zero(), length));
     }
     const auto fullLength = this->length();
     if (length.isInfinite() || length >= fullLength) {
-        return slice(U16DataRange::fromLength(fullLength));
+        return slice(U16Range::fromLength(fullLength));
     }
-    const auto start = U16DataIndex::end(fullLength - length);
-    return slice(U16DataRange{start, length});
+    const auto start = U16Index::end(fullLength - length);
+    return slice(U16Range{start, length});
 }
 
-auto U16StringEditor::slice(const StringSide side, const U16DataIndex index) const noexcept -> U16StringEditor {
+auto U16StringEditor::slice(const StringSide side, const U16Index index) const noexcept -> U16StringEditor {
     const auto end = indexAt(StringSide::Back);
     if (index.isNoIndex() || index >= end) {
-        return side == StringSide::Front ? slice(U16DataRange{U16DataIndex::zero(), end}) : U16StringEditor{};
+        return side == StringSide::Front ? slice(U16Range{U16Index::zero(), end}) : U16StringEditor{};
     }
     if (side == StringSide::Front) {
-        return slice(U16DataRange{U16DataIndex::zero(), index});
+        return slice(U16Range{U16Index::zero(), index});
     }
-    return slice(U16DataRange{index, end});
+    return slice(U16Range{index, end});
 }
 
-auto U16StringEditor::slice(const StringSide side, const CpLength length) const noexcept -> U16StringEditor {
+auto U16StringEditor::slice(const StringSide side, const CpCount length) const noexcept -> U16StringEditor {
     if (side == StringSide::Front) {
         return slice(CpRange{CpIndex::zero(), length});
     }
     auto start = indexAt(StringSide::Back);
     retreat(start, length);
-    return slice(U16DataRange{start, indexAt(StringSide::Back)});
+    return slice(U16Range{start, indexAt(StringSide::Back)});
 }
 
 auto U16StringEditor::slice(const StringSide side, const CpIndex index) const noexcept -> U16StringEditor {
@@ -235,17 +238,17 @@ auto U16StringEditor::slice(const StringSide side) const noexcept -> std::tuple<
         return {Char::endOfData(), {}};
     }
     if (side == StringSide::Front) {
-        auto end = U16DataIndex::zero();
+        auto end = U16Index::zero();
         const auto character = charAt(end);
         advance(end);
-        return {character, slice(U16DataRange{end, indexAt(StringSide::Back)})};
+        return {character, slice(U16Range{end, indexAt(StringSide::Back)})};
     }
     auto start = indexAt(StringSide::Back);
     retreat(start);
-    return {charAt(start), slice(U16DataRange{indexAt(StringSide::Front), start})};
+    return {charAt(start), slice(U16Range{indexAt(StringSide::Front), start})};
 }
 
-auto U16StringEditor::splitAt(const U16DataIndex index) const noexcept -> std::pair<U16StringEditor, U16StringEditor> {
+auto U16StringEditor::splitAt(const U16Index index) const noexcept -> std::pair<U16StringEditor, U16StringEditor> {
     return {slice(StringSide::Front, index), slice(StringSide::Back, index)};
 }
 

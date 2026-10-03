@@ -6,7 +6,7 @@
 
 #include "../String.hpp"
 
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../util/List.hpp"
 
 #include <utility>
@@ -22,7 +22,7 @@ public:
     /// Create a match.
     /// @param text The matching candidate text.
     /// @param distance The Damerau-Levenshtein edit distance.
-    Match(text::String text, unit::CpLength distance) noexcept : _text{std::move(text)}, _distance{distance} {}
+    Match(text::String text, unit::CpCount distance) noexcept : _text{std::move(text)}, _distance{distance} {}
 
     // defaults
     ~Match() = default;
@@ -37,11 +37,11 @@ public: // accessors
     /// Get the matching candidate text.
     [[nodiscard]] auto candidate() const noexcept -> const text::String & { return _text; }
     /// Get the edit distance from the pattern.
-    [[nodiscard]] auto distance() const noexcept -> unit::CpLength { return _distance; }
+    [[nodiscard]] auto distance() const noexcept -> unit::CpCount { return _distance; }
 
 private:
-    text::String _text;                                   ///< The matching candidate.
-    unit::CpLength _distance{unit::CpLength::infinite()}; ///< The edit distance.
+    text::String _text;                                 ///< The matching candidate.
+    unit::CpCount _distance{unit::CpCount::infinite()}; ///< The edit distance.
 };
 
 }

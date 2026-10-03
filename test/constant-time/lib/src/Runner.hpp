@@ -6,9 +6,8 @@
 #include "RunOptions.hpp"
 #include "TestCase.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/time/TimePoint.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/TimePoint.hpp>
 
 #include <atomic>
 #include <functional>
@@ -37,4 +36,5 @@ private:
     std::function<el::TimePoint()> _clock; ///< Injectable monotonic clock.
     const std::atomic<bool> *_interrupted; ///< Optional cooperative stop flag.
 };
+
 }

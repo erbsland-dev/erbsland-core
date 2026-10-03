@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "SymmetricEncryptionSelector.hpp"
 
-#include "../../core/Application.hpp"
+#include "../../core/impl/application_data/ApplicationCryptologyData.hpp"
+#include "../../core/impl/ApplicationDataAccess.hpp"
 #include "../../util/List.hpp"
 
 #include <algorithm>
@@ -10,15 +11,18 @@
 namespace erbsland::cryptology {
 
 auto SymmetricEncryptionSelector::matches(const SymmetricEncryptionType type) const -> bool {
-    return matches(type, core::application().cryptologyConfiguration().snapshot());
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    return matches(type, cryptologyData->configuration().snapshot());
 }
 
 auto SymmetricEncryptionSelector::status(const SymmetricEncryptionType type) const -> CryptographicStatus {
-    return effectiveStatus(type, core::application().cryptologyConfiguration().snapshot());
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    return effectiveStatus(type, cryptologyData->configuration().snapshot());
 }
 
 auto SymmetricEncryptionSelector::allAccepted() const -> util::List<SymmetricEncryptionType> {
-    const auto configuration = core::application().cryptologyConfiguration().snapshot();
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    const auto configuration = cryptologyData->configuration().snapshot();
     auto result = util::List<SymmetricEncryptionType>{};
     for (const auto type : SymmetricEncryptionType::all()) {
         if (effectiveStatus(type, configuration) == CryptographicStatus::Acceptable) {
@@ -29,7 +33,8 @@ auto SymmetricEncryptionSelector::allAccepted() const -> util::List<SymmetricEnc
 }
 
 auto SymmetricEncryptionSelector::matching() const -> util::List<SymmetricEncryptionType> {
-    const auto configuration = core::application().cryptologyConfiguration().snapshot();
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    const auto configuration = cryptologyData->configuration().snapshot();
     auto result = util::List<SymmetricEncryptionType>{};
     for (const auto type : SymmetricEncryptionType::all()) {
         if (matches(type, configuration)) {
@@ -40,7 +45,8 @@ auto SymmetricEncryptionSelector::matching() const -> util::List<SymmetricEncryp
 }
 
 auto SymmetricEncryptionSelector::recommended() const -> std::optional<SymmetricEncryptionType> {
-    const auto configuration = core::application().cryptologyConfiguration().snapshot();
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    const auto configuration = cryptologyData->configuration().snapshot();
     for (const auto type : SymmetricEncryptionType::all()) {
         if (matches(type, configuration)) {
             return type;

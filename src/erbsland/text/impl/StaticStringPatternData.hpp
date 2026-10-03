@@ -6,11 +6,13 @@
 
 #include "../pattern/AnyElement.hpp"
 #include "../pattern/Divider.hpp"
-#include "../pattern/impl/Require.hpp"
 #include "../pattern/OneChar.hpp"
 #include "../pattern/PatternSet.hpp"
 #include "../pattern/Range.hpp"
+#include "../pattern/Star.hpp"
 #include "../pattern/Text.hpp"
+#include "../StringLiteral.hpp"
+#include "../StringPatternKind.hpp"
 
 #include <array>
 #include <limits>
@@ -29,9 +31,10 @@ public:
     StaticStringPatternData() = default;
     /// Compile a sequence of string pattern elements.
     /// @tparam Args The supplied pattern element types.
+    /// @param kind Divider or Glob matching semantics.
     /// @param elements The pattern elements to compile.
     template <pattern::AnyElement... Args>
-    explicit StaticStringPatternData(const Args &...elements);
+    explicit StaticStringPatternData(StringPatternKind kind, const Args &...elements);
 
 public: // implement StringPatternData
     [[nodiscard]] auto view() const noexcept -> StringPatternView override;
@@ -50,6 +53,8 @@ private:
     void append(const pattern::Set &set);
     /// Append the pattern divider element.
     void append(const pattern::Divider &);
+    /// Append a glob wildcard element.
+    void append(const pattern::Star &);
     /// Append one literal character.
     /// @param character The character to append.
     void appendCharacter(Char character);
@@ -63,13 +68,14 @@ private:
     /// Require a pattern construction condition.
     /// @param condition The condition to require.
     /// @param reason The reason reported when the condition is false.
-    void requirePattern(bool condition, std::string_view reason) const;
+    void requirePattern(bool condition, const StringLiteral &reason) const;
     /// Convert and bounds-check a range count.
     /// @param count The count to convert.
     /// @return The count represented as `uint16_t`.
     [[nodiscard]] auto checkedRangeCount(std::size_t count) const -> std::uint16_t;
 
 private:
+    StringPatternKind _kind{StringPatternKind::Divider};        ///< Matching and extraction semantics.
     std::array<StringPatternElement, tMaxElements> _elements{}; ///< The compiled pattern elements.
     std::array<CharRange, tMaxRanges> _ranges{};                ///< The pooled character set ranges.
     std::size_t _elementCount{};                                ///< The number of used elements.

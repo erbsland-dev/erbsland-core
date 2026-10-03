@@ -9,26 +9,29 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
+using namespace unit;
+
 FastNameDecoder::FastNameDecoder(Buffer buffer) : _buffer{std::move(buffer)} {
 }
 
 void FastNameDecoder::initialize() {
     _charIndex = {};
     _readIndex = {};
-    _position = unit::CodeLocation{unit::LineIndex::zero(), unit::ColumnIndex::zero(), unit::CpIndex::zero()};
+    _position = CodeLocation{LineIndex::zero(), ColumnIndex::zero(), CpIndex::zero()};
     if (_buffer.isEmpty()) {
-        _currentChar = text::Char::endOfData();
+        _currentChar = Char::endOfData();
         return;
     }
     readCurrentCharacter();
 }
 
 auto FastNameDecoder::location() const -> Location {
-    return Location{SourceIdentifier::create(text::String{defaults::namePathIdentifier}, {}), _position};
+    return Location{SourceIdentifier::create(String{defaults::namePathIdentifier}, {}), _position};
 }
 
 auto FastNameDecoder::sourceIdentifier() const noexcept -> SourceIdentifierPtr {
-    return SourceIdentifier::create(text::String{defaults::namePathIdentifier}, {});
+    return SourceIdentifier::create(String{defaults::namePathIdentifier}, {});
 }
 
 void FastNameDecoder::next() {
@@ -37,8 +40,8 @@ void FastNameDecoder::next() {
     }
     _position.nextColumn();
     _charIndex = _readIndex;
-    if (_readIndex >= unit::ByteIndex::end(_buffer.length())) {
-        _currentChar = text::Char::endOfData();
+    if (_readIndex >= ByteIndex::end(_buffer.length())) {
+        _currentChar = Char::endOfData();
         return;
     }
     readCurrentCharacter();
@@ -55,8 +58,8 @@ void FastNameDecoder::restoreDecoderState(const DecoderState &state) noexcept {
     _position = state.location();
 }
 
-auto FastNameDecoder::captureFromDecoderState(const DecoderState &state) const noexcept -> text::String {
-    return _buffer.slice(unit::ByteRange{state.characterIndex(), _charIndex});
+auto FastNameDecoder::captureFromDecoderState(const DecoderState &state) const noexcept -> String {
+    return _buffer.slice(ByteRange{state.characterIndex(), _charIndex});
 }
 
 void FastNameDecoder::readCurrentCharacter() {

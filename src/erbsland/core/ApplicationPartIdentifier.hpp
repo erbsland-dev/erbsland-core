@@ -26,9 +26,9 @@ public:
 
 public: // factory methods
     /// Create an application-part identifier.
-    /// @param name A non-empty ASCII reverse-domain token using letters, digits, `.`, `_`, and `-`.
+    /// @param name A non-empty ASCII reverse-domain token of at most 200 characters using letters, digits, `.`, `_`,
+    /// and `-`.
     /// @return A new identifier with no manager-local cache.
-    /// @throws err::ParameterError If `name` is invalid or longer than 200 characters.
     [[nodiscard]] static auto create(text::String name) -> ApplicationPartIdentifierPtr;
 };
 

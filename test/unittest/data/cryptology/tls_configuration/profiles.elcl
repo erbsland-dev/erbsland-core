@@ -1,16 +1,20 @@
 # TLS configuration parser fixtures. Material paths are relative to this file.
-*[tls]*
-Label                         : "http/server"
-Server Certificate Chain File: "../../network/tls-interop/server.pem"
-Server Signing Key File       : "../../network/tls-interop/server-key.pem"
 
-*[tls]*
-Label                         : "http/client"
-Trust Anchors File            : "../../network/tls-interop/ca.pem"
-Intermediate Certificates File: "../../network/tls-interop/server.pem"
+*[TLS . Server]*
+Label: "http/server"
+certificate_chain_file: "../../network/tls-interop/server.pem"
+signing_key_file: "../../network/tls-interop/server-key.pem"
 
-*[tls]*
-Label                         : "http/combined"
-Trust Anchors File            : "../../network/tls-interop/ca.pem"
-Server Certificate Chain File: "../../network/tls-interop/server.pem"
-Server Signing Key File       : "../../network/tls-interop/server-key.pem"
+*[TLS . Client]*
+Label: "http/client"
+trust_anchors_file: "../../network/tls-interop/ca.pem"
+intermediate_certificates_file: "../../network/tls-interop/server.pem"
+
+*[TLS . Server]*
+Label: "http/combined"
+certificate_chain_file: "../../network/tls-interop/server.pem"
+signing_key_file: "../../network/tls-interop/server-key.pem"
+
+*[TLS . Client]*
+Label: "http/combined"
+trust_anchors_file: "../../network/tls-interop/ca.pem"

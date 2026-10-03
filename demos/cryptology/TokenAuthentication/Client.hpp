@@ -4,10 +4,27 @@
 
 #include "JsonLine.hpp"
 
-#include <erbsland/cryptology/authentication/ClientAuthenticationToken.hpp>
-#include <erbsland/cryptology/SignedByteBlock.hpp>
-#include <erbsland/network/source/all.hpp>
-#include <erbsland/network/tcp/all.hpp>
+#include <erbsland/all_network_source.hpp>
+#include <erbsland/all_network_tcp.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ClientAuthenticationToken.hpp>
+#include <erbsland/ConnectionCloseContext.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Host.hpp>
+#include <erbsland/HostEndpoint.hpp>
+#include <erbsland/json/JsonValue.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/Port.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/SignedByteBlock.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TcpConnection.hpp>
 
 namespace demo {
 
@@ -41,7 +58,7 @@ private:
     void onData(el::ByteBlock data) {
         try {
             _lines.receive(data, [this](const el::json::JsonValue &record) -> void { onRecord(record); });
-        } catch (const el::Exception &) {
+        } catch (const el::RuntimeError &) {
             _connection->abort();
         }
     }
@@ -52,11 +69,11 @@ private:
                 throw el::ApplicationError{"Expected an authentication challenge."_el};
             }
             const auto challenge =
-                JsonLine::unbase64(record.getOrThrow("data"_el).getTextOrThrow(), el::ByteLength{102U});
+                JsonLine::unbase64(record.getOrThrow("data"_el).getTextOrThrow(), el::ByteCount{102U});
             // createResponse checks that the challenge addresses this token's identifier.
             const auto response = _token.createResponse(challenge.span()).toByteBlock();
             auto answer = el::json::JsonValue{el::json::JsonObject{}};
-            answer.set("type"_el, el::String{"response"_el});
+            answer.set("type"_el, "response"_el);
             answer.set("data"_el, JsonLine::base64(response));
             send(answer);
             _state = State::Result;
@@ -74,7 +91,7 @@ private:
 
     void sendHello() {
         auto hello = el::json::JsonValue{el::json::JsonObject{}};
-        hello.set("type"_el, el::String{"hello"_el});
+        hello.set("type"_el, "hello"_el);
         hello.set("id"_el, _token.id());
         send(hello);
     }

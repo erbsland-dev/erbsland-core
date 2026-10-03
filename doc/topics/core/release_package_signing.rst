@@ -18,8 +18,8 @@ This page connects those platform procedures to the package tool and shows how t
 For the first package and the general configuration format, see :doc:`release_packages` and
 :doc:`release_package_configuration`.
 
-What the Two Checks Mean
-========================
+Code Signing and macOS Notarization
+===================================
 
 Windows code signing uses a publisher certificate and its private key to sign executable files.
 The package tool signs the staged executable and each staged non-system DLL, then asks SignTool to verify each

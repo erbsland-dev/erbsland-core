@@ -3,22 +3,25 @@
 
 #include "PathTestFixture.hpp"
 
-#include <erbsland/path/PathAccessProfile.hpp>
-#include <erbsland/path/PathChangeOptions.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathCopyOptions.hpp>
-#include <erbsland/path/PathCreateDirectoryOptions.hpp>
-#include <erbsland/path/PathCreateFileOptions.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/path/PathMoveOptions.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/PathRemoveOptions.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/Timestamp.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/PathAccessProfile.hpp>
+#include <erbsland/PathChangeOptions.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathCopyOptions.hpp>
+#include <erbsland/PathCreateDirectoryOptions.hpp>
+#include <erbsland/PathCreateFileOptions.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathMoveOptions.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathRemoveOptions.hpp>
+#include <erbsland/Timestamp.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/util/impl/worker_executor/WorkerAdmissionError.hpp>
+#include <erbsland/util/impl/worker_executor/WorkerServices.hpp>
 
 #include <filesystem>
+#include <vector>
 
 using namespace el::text::literals;
 using namespace erbsland::test::pathtest;
@@ -26,6 +29,26 @@ using namespace erbsland::test::pathtest;
 TESTED_TARGETS(Path PathOperations PathProgress)
 class PathOperationsTest final : public el::UnitTest {
 public:
+    void testOverloadedOutputDoesNotTruncateFile() {
+        const auto fixture = PathTestFixture{"operations-worker-overload"};
+        const auto path = fixture.child("preserved.txt");
+        path.content().writeTextOrThrow("preserved"_el);
+        auto reservations = std::vector<el::util::impl::WorkerReservation>{};
+        for (auto index = std::size_t{}; index < 1024U; ++index) {
+            try {
+                reservations.push_back(el::util::impl::worker_services::io().reserve());
+            } catch (const el::util::impl::WorkerAdmissionError &) {
+                break;
+            }
+        }
+        REQUIRE_THROWS_AS(el::util::impl::WorkerAdmissionError, path.content().openByteOutputStream());
+        REQUIRE_THROWS_AS(
+            el::util::impl::WorkerAdmissionError, fixture.child("not-created.txt").content().openByteOutputStream());
+        REQUIRE_FALSE(std::filesystem::exists(fixture.stdPath() / "not-created.txt"));
+        reservations.clear();
+        REQUIRE_EQUAL(path.content().readTextOrThrow(), "preserved"_el);
+    }
+
     void testCreateFileAndDirectory() {
         const auto fixture = PathTestFixture{"operations-create"};
         auto directoryOptions = el::path::PathCreateDirectoryOptions{};

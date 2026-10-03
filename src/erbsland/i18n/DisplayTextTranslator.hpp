@@ -11,7 +11,7 @@ namespace erbsland::i18n {
 /// Translates one registered English display text.
 ///
 /// Return an empty string to keep the English source text.
-/// @tested{DisplayTextMapTest}
+/// @tested{DisplayTextTest}
 class DisplayTextTranslator {
 protected:
     // defaults

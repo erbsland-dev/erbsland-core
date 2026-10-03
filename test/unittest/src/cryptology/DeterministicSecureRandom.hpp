@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/random/Random.hpp>
+#include <erbsland/Random.hpp>
 
 #include <cstddef>
 #include <cstdint>

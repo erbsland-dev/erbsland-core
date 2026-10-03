@@ -25,25 +25,26 @@ public:
 public: // factory methods
     /// Create an interactive terminal line editor.
     /// Text and history are copied and normalized to the configured limits.
-    /// @param terminal The terminal retained for the lifetime of this object.
-    /// @param options The appearance and editing options.
+    /// @param terminal The terminal retained for the lifetime of this object. Must not be null.
+    /// @param options The appearance and editing options. Must be structurally valid.
     /// @return The new line editor.
-    /// @throws err::ParameterError if `terminal` is null or `options` is structurally invalid.
     [[nodiscard]] static auto create(TerminalPtr terminal, ReadLineOptions options = {}) -> ReadLinePtr;
 
 public: // operation
     /// Start a non-blocking read-line operation.
-    /// @throws err::RuntimeError if already active or interactive full-control output is unavailable.
+    /// The operation must be inactive.
+    /// @throws TerminalError If interactive full-control output is unavailable.
     virtual void start() = 0;
     /// Poll and update an active read-line operation.
     /// Terminal results remain latched until `stop()` is called.
     /// @return `Idle`, `Committed`, `Cancelled`, or `Timeout`.
-    /// @throws err::RuntimeError if no operation is active.
+    /// The operation must be active.
     [[nodiscard]] virtual auto update() -> ReadLineResult = 0;
     /// Run a complete blocking read-line operation.
     /// This method never returns `Idle` and always stops the operation before returning or propagating an exception.
     /// @return `Committed`, `Cancelled`, or `Timeout`.
-    /// @throws err::RuntimeError if already active or interactive full-control output is unavailable.
+    /// The operation must be inactive.
+    /// @throws TerminalError If interactive full-control output is unavailable.
     [[nodiscard]] virtual auto waitForInput() -> ReadLineResult = 0;
     /// Stop the operation and restore or retain the rendered input area according to the cleanup option.
     /// Calling this method while inactive has no effect.

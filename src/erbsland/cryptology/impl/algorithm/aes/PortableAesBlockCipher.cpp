@@ -6,6 +6,8 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace unit;
+
 PortableAesBlockCipher::~PortableAesBlockCipher() noexcept {
     secureErase();
 }
@@ -50,15 +52,13 @@ void PortableAesBlockCipher::secureErase() noexcept {
 }
 
 void PortableAesBlockCipher::substituteBytes(Block &state) noexcept {
-    for (auto index = unit::ByteIndex{}; index < Block::endIndex(); ++index) {
-        state.set(index, aes::substitute(state.get(index)));
-    }
+    Block::length().forEach(
+        [&](const ByteIndex index) -> void { state.set(index, aes::substitute(state.get(index))); });
 }
 
 void PortableAesBlockCipher::inverseSubstituteBytes(Block &state) noexcept {
-    for (auto index = unit::ByteIndex{}; index < Block::endIndex(); ++index) {
-        state.set(index, aes::inverseSubstitute(state.get(index)));
-    }
+    Block::length().forEach(
+        [&](const ByteIndex index) -> void { state.set(index, aes::inverseSubstitute(state.get(index))); });
 }
 
 void PortableAesBlockCipher::shiftRows(Block &state) noexcept {
@@ -67,7 +67,9 @@ void PortableAesBlockCipher::shiftRows(Block &state) noexcept {
     for (auto row = 0U; row < 4U; ++row) {
         for (auto column = 0U; column < 4U; ++column) {
             const auto sourceColumn = (column + row) % 4U;
-            state.set(unit::ByteIndex{row + 4U * column}, input.get(unit::ByteIndex{row + 4U * sourceColumn}));
+            state.set(
+                ByteIndex{row + 4U * column, ByteIndex::Unchecked{}},
+                input.get(ByteIndex{row + 4U * sourceColumn, ByteIndex::Unchecked{}}));
         }
     }
 }
@@ -77,45 +79,50 @@ void PortableAesBlockCipher::inverseShiftRows(Block &state) noexcept {
     for (auto row = 0U; row < 4U; ++row) {
         for (auto column = 0U; column < 4U; ++column) {
             const auto sourceColumn = (column + 4U - row) % 4U;
-            state.set(unit::ByteIndex{row + 4U * column}, input.get(unit::ByteIndex{row + 4U * sourceColumn}));
+            state.set(
+                ByteIndex{row + 4U * column, ByteIndex::Unchecked{}},
+                input.get(ByteIndex{row + 4U * sourceColumn, ByteIndex::Unchecked{}}));
         }
     }
 }
 
 void PortableAesBlockCipher::mixColumns(Block &state) noexcept {
     for (auto column = 0U; column < 4U; ++column) {
-        const auto offset = column * 4U;
-        const auto a0 = state.get(unit::ByteIndex{offset});
-        const auto a1 = state.get(unit::ByteIndex{offset + 1U});
-        const auto a2 = state.get(unit::ByteIndex{offset + 2U});
-        const auto a3 = state.get(unit::ByteIndex{offset + 3U});
+        const auto offset = ByteIndex{column * 4U, ByteIndex::Unchecked{}};
+        const auto a0 = state.get(offset);
+        const auto a1 = state.get(offset.uncheckedAdvanced(ByteCount{1U}));
+        const auto a2 = state.get(offset.uncheckedAdvanced(ByteCount{2U}));
+        const auto a3 = state.get(offset.uncheckedAdvanced(ByteCount{3U}));
         // FIPS 197, Equation 5.8: multiply each column by the fixed Rijndael matrix.
-        state.set(unit::ByteIndex{offset}, aes::multiply(a0, 0x02U) ^ aes::multiply(a1, 0x03U) ^ a2 ^ a3);
-        state.set(unit::ByteIndex{offset + 1U}, a0 ^ aes::multiply(a1, 0x02U) ^ aes::multiply(a2, 0x03U) ^ a3);
-        state.set(unit::ByteIndex{offset + 2U}, a0 ^ a1 ^ aes::multiply(a2, 0x02U) ^ aes::multiply(a3, 0x03U));
-        state.set(unit::ByteIndex{offset + 3U}, aes::multiply(a0, 0x03U) ^ a1 ^ a2 ^ aes::multiply(a3, 0x02U));
+        state.set(offset, aes::multiply(a0, 0x02U) ^ aes::multiply(a1, 0x03U) ^ a2 ^ a3);
+        state.set(
+            offset.uncheckedAdvanced(ByteCount{1U}), a0 ^ aes::multiply(a1, 0x02U) ^ aes::multiply(a2, 0x03U) ^ a3);
+        state.set(
+            offset.uncheckedAdvanced(ByteCount{2U}), a0 ^ a1 ^ aes::multiply(a2, 0x02U) ^ aes::multiply(a3, 0x03U));
+        state.set(
+            offset.uncheckedAdvanced(ByteCount{3U}), aes::multiply(a0, 0x03U) ^ a1 ^ a2 ^ aes::multiply(a3, 0x02U));
     }
 }
 
 void PortableAesBlockCipher::inverseMixColumns(Block &state) noexcept {
     for (auto column = 0U; column < 4U; ++column) {
-        const auto offset = column * 4U;
-        const auto a0 = state.get(unit::ByteIndex{offset});
-        const auto a1 = state.get(unit::ByteIndex{offset + 1U});
-        const auto a2 = state.get(unit::ByteIndex{offset + 2U});
-        const auto a3 = state.get(unit::ByteIndex{offset + 3U});
+        const auto offset = ByteIndex{column * 4U, ByteIndex::Unchecked{}};
+        const auto a0 = state.get(offset);
+        const auto a1 = state.get(offset.uncheckedAdvanced(ByteCount{1U}));
+        const auto a2 = state.get(offset.uncheckedAdvanced(ByteCount{2U}));
+        const auto a3 = state.get(offset.uncheckedAdvanced(ByteCount{3U}));
         // FIPS 197, Equation 5.15: multiply each column by the inverse Rijndael matrix.
         state.set(
-            unit::ByteIndex{offset},
+            offset,
             aes::multiply(a0, 0x0eU) ^ aes::multiply(a1, 0x0bU) ^ aes::multiply(a2, 0x0dU) ^ aes::multiply(a3, 0x09U));
         state.set(
-            unit::ByteIndex{offset + 1U},
+            offset.uncheckedAdvanced(ByteCount{1U}),
             aes::multiply(a0, 0x09U) ^ aes::multiply(a1, 0x0eU) ^ aes::multiply(a2, 0x0bU) ^ aes::multiply(a3, 0x0dU));
         state.set(
-            unit::ByteIndex{offset + 2U},
+            offset.uncheckedAdvanced(ByteCount{2U}),
             aes::multiply(a0, 0x0dU) ^ aes::multiply(a1, 0x09U) ^ aes::multiply(a2, 0x0eU) ^ aes::multiply(a3, 0x0bU));
         state.set(
-            unit::ByteIndex{offset + 3U},
+            offset.uncheckedAdvanced(ByteCount{3U}),
             aes::multiply(a0, 0x0bU) ^ aes::multiply(a1, 0x0dU) ^ aes::multiply(a2, 0x09U) ^ aes::multiply(a3, 0x0eU));
     }
 }

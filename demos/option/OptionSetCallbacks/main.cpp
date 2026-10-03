@@ -1,7 +1,30 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationInfo.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/CommandLineArguments.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/conf/Name.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Option.hpp>
+#include <erbsland/OptionFlag.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionSet.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TimeAmounts.hpp>
+#include <erbsland/Version.hpp>
 
 #include <initializer_list>
 
@@ -20,7 +43,7 @@ ObservationSettings settings;
 
 [[nodiscard]] auto makeArgs(std::initializer_list<el::String> args) -> el::CommandLineArguments {
     auto result = el::CommandLineArguments{};
-    result.reserve(el::ItemCount{args.size()});
+    result.reserve(el::ItemCount::fromInteger(args.size()));
     for (const auto &arg : args) {
         result.append(arg.copy());
     }
@@ -39,10 +62,10 @@ ObservationSettings settings;
     set->addOption({"-g"_el, "--area"_el, "area"_el})
         .setType(el::OptionType::Text)
         .setRequired()
-        .setHelpDescription("Name of the observation area."_el);
+        .setHelpTitle("Name of the observation area."_el);
     set->addOption({"-i"_el, "--interval"_el, "interval"_el})
         .setType(el::OptionType::Integer)
-        .setHelpDescription("Minutes between two observations."_el);
+        .setHelpTitle("Minutes between two observations."_el);
     set->setPreParsingFn([](const el::OptionSetPtr &optionSet) -> void {
         optionSet->editOption("interval"_el).setDefaultValue(el::OptionInteger{15});
     });
@@ -60,8 +83,8 @@ ObservationSettings settings;
     set->addOption({"-n"_el, "--note"_el, "note"_el})
         .setType(el::OptionType::Text)
         .setDefaultValue("no observations"_el)
-        .setHelpDescription("Short text for the field report."_el);
-    set->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpDescription("Suppresses progress lines."_el);
+        .setHelpTitle("Short text for the field report."_el);
+    set->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpTitle("Suppresses progress lines."_el);
     set->setPostParsingFn([](const el::OptionValuesPtr &values) -> void {
         settings.notitie = values->getText("note"_el);
         settings.stil = values->getFlag("quiet"_el);
@@ -73,8 +96,7 @@ ObservationSettings settings;
     auto set = el::OptionSet::create();
     set->setHelpTitle("Legacy"_el);
     set->setFlags(el::OptionFlag::Disabled);
-    set->addOption({"--old-route"_el, "old-route"_el})
-        .setHelpDescription("Deprecated option that is no longer accepted."_el);
+    set->addOption({"--old-route"_el, "old-route"_el}).setHelpTitle("Deprecated option that is no longer accepted."_el);
     return set;
 }
 
@@ -84,7 +106,7 @@ void configureOptions(const el::OptionsPtr &options) {
     options->addSet(createObservationSet());
     options->addSet(createReportSet());
     options->addSet(createLegacySet());
-    options->addOption("round"_el).setRequired().setHelpDescription("Name of the planned night round."_el);
+    options->addOption("round"_el).setRequired().setHelpTitle("Name of the planned night round."_el);
 }
 
 void printSettings() {
@@ -100,7 +122,7 @@ public:
 
 protected:
     void initialize() override {
-        enableTerminal();
+        DemoTerminal::enable(*this);
         info().setApplicationName("Night Logbook"_el);
         info().setApplicationVersion(el::Version{0, 8, 0});
     }
@@ -140,7 +162,7 @@ auto main(const int argc, char *argv[]) -> int {
         return app.run();
     }
     auto app = el::Application{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     app.setMainFn(demo::optionSetCallbacks);
     return app.run();
 }

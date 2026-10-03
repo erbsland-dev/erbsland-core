@@ -1,196 +1,255 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlockLiteral.hpp>
-#include <erbsland/mem/ByteWriter.hpp>
-#include <erbsland/resource/ResourceError.hpp>
-#include <erbsland/resource/ResourceManager.hpp>
-#include <erbsland/resource/ResourceStorageRegistration.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringBomMode.hpp>
-#include <erbsland/text/StringEncoder.hpp>
-#include <erbsland/text/StringEncoding.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockLiteral.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteSpan.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ResourceError.hpp>
+#include <erbsland/ResourceErrorCategory.hpp>
+#include <erbsland/ResourceInfo.hpp>
+#include <erbsland/ResourceManager.hpp>
+#include <erbsland/ResourceStorageRegistration.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringBomMode.hpp>
+#include <erbsland/StringEncoder.hpp>
+#include <erbsland/StringEncoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
+#include <barrier>
+#include <cstddef>
 #include <cstdint>
-#include <span>
-#include <thread>
-#include <vector>
+#include <future>
 
-namespace erbsland::test::resourcemanagertest {
-
-using namespace text::literals;
-
-const auto cPlainData = std::array<std::uint8_t, 6U>{'h', 'e', 'l', 'l', 'o', 0U};
-const auto cEmptyData = std::array<std::uint8_t, 1U>{0U};
-const auto cCompressedData =
-    std::array<std::uint8_t, 14U>{0x40U, 'a', 'b', 'c', 'd', 0x04U, 0x00U, 0x50U, 'a', 'b', 'c', 'd', 'e', 0U};
-const auto cInvalidData = std::array<std::uint8_t, 3U>{0U, 0U, 0U};
-
-class ResourceFixture final {
-public:
-    [[nodiscard]] static auto plainData() noexcept -> mem::ByteBlockLiteral {
-        return mem::impl::unsafeCreateByteBlockLiteral(cPlainData.data(), 5U);
-    }
-    [[nodiscard]] static auto emptyData() noexcept -> mem::ByteBlockLiteral {
-        return mem::impl::unsafeCreateByteBlockLiteral(cEmptyData.data(), 0U);
-    }
-    [[nodiscard]] static auto compressedData() noexcept -> mem::ByteBlockLiteral {
-        return mem::impl::unsafeCreateByteBlockLiteral(cCompressedData.data(), 13U);
-    }
-    [[nodiscard]] static auto invalidData() noexcept -> mem::ByteBlockLiteral {
-        return mem::impl::unsafeCreateByteBlockLiteral(cInvalidData.data(), 2U);
-    }
-    [[nodiscard]] static auto literal(const std::vector<std::uint8_t> &data) noexcept -> mem::ByteBlockLiteral {
-        return mem::impl::unsafeCreateByteBlockLiteral(data.data(), data.size());
-    }
-    [[nodiscard]] static auto createInfo(
-        const text::String &path,
-        const unit::ByteLength originalSize,
-        const unit::ByteLength storedSize,
-        const bool compressed,
-        const bool hashed) -> std::vector<std::uint8_t> {
-        const auto identifier = text::String{"test"_el};
-        const auto identifierBytes =
-            text::StringEncoder{identifier}.encode(text::StringEncoding::Utf8, text::StringBomMode::Reject);
-        const auto pathBytes =
-            text::StringEncoder{path}.encode(text::StringEncoding::Utf8, text::StringBomMode::Reject);
-        const auto hash = hashed ? mem::ByteBlock{unit::ByteLength{32U}, mem::Byte{0x42U}} : mem::ByteBlock{};
-        auto writer = mem::ByteWriter{};
-        writer.writeByte(mem::Byte::fromChar('E'))
-            .writeByte(mem::Byte::fromChar('L'))
-            .writeByte(mem::Byte::fromChar('R'))
-            .writeByte(mem::Byte::fromChar('I'))
-            .writeUInt8(1U)
-            .writeUInt8(compressed ? 1U : 0U)
-            .writeUInt8(hashed ? 1U : 0U)
-            .writeUInt8(0U)
-            .writeUInt64(originalSize.toRawValue())
-            .writeUInt64(storedSize.toRawValue())
-            .writeUInt32(static_cast<std::uint32_t>(identifierBytes.length().toRawValue()))
-            .writeUInt32(static_cast<std::uint32_t>(pathBytes.length().toRawValue()))
-            .writeUInt16(static_cast<std::uint16_t>(hash.length().toRawValue()))
-            .writeUInt16(0U)
-            .writeBytes(identifierBytes)
-            .writeBytes(pathBytes)
-            .writeBytes(hash);
-        return writer.toByteBlock().toUInt8Vector();
-    }
-    [[nodiscard]] static auto createMalformedInfo() -> std::vector<std::uint8_t> {
-        auto result = createInfo("malformed.bin"_el, unit::ByteLength{}, unit::ByteLength{}, false, false);
-        result[4U] = 2U;
-        return result;
-    }
-};
-
-const auto cPlainInfo =
-    ResourceFixture::createInfo("plain.txt"_el, unit::ByteLength{5U}, unit::ByteLength{5U}, false, true);
-const auto cEmptyInfo =
-    ResourceFixture::createInfo("empty.txt"_el, unit::ByteLength{}, unit::ByteLength{}, false, false);
-const auto cCompressedInfo =
-    ResourceFixture::createInfo("compressed.txt"_el, unit::ByteLength{13U}, unit::ByteLength{13U}, true, true);
-const auto cInvalidInfo =
-    ResourceFixture::createInfo("invalid.bin"_el, unit::ByteLength{4U}, unit::ByteLength{2U}, true, false);
-const auto cMalformedInfo = ResourceFixture::createMalformedInfo();
-
-const auto cPlainRegistration =
-    resource::impl::ResourceStorageRegistration{ResourceFixture::plainData, ResourceFixture::literal(cPlainInfo)};
-const auto cEmptyRegistration =
-    resource::impl::ResourceStorageRegistration{ResourceFixture::emptyData, ResourceFixture::literal(cEmptyInfo)};
-const auto cCompressedRegistration = resource::impl::ResourceStorageRegistration{
-    ResourceFixture::compressedData, ResourceFixture::literal(cCompressedInfo)};
-const auto cInvalidRegistration =
-    resource::impl::ResourceStorageRegistration{ResourceFixture::invalidData, ResourceFixture::literal(cInvalidInfo)};
-const auto cMalformedRegistration =
-    resource::impl::ResourceStorageRegistration{ResourceFixture::emptyData, ResourceFixture::literal(cMalformedInfo)};
-
-}
-
-using namespace el::text::literals;
-using namespace erbsland::test::resourcemanagertest;
+using namespace el;
 
 TESTED_TARGETS(ResourceInfo Resources ResourceManager ResourceError ResourceStorageRegistration ResourceStorageInfo)
-class ResourceManagerTest final : public el::UnitTest {
-public:
-    void testLookupAndMissingDistinction() {
-        const auto resources = el::resource::ResourceManager{};
-        REQUIRE(resources.contains("test"_el, "plain.txt"_el));
-        REQUIRE_FALSE(resources.contains("test"_el, "missing.txt"_el));
-        REQUIRE_EQUAL(resources.getTextOrThrow("test"_el, "plain.txt"_el), "hello"_el);
+class ResourceManagerTest final : public UnitTest {
+private:
+    static constexpr auto cIdentifier = "test"_el;
+    static constexpr auto cPlainPath = "plain.txt"_el;
+    static constexpr auto cEmptyPath = "empty.txt"_el;
+    static constexpr auto cCompressedPath = "compressed.txt"_el;
+    static constexpr auto cPlainText = "hello"_el;
+    static constexpr auto cCompressedText = "Compiled resources preserve the original bytes.\n"
+                                            "Compiled resources preserve the original bytes.\n"
+                                            "Compiled resources preserve the original bytes.\n"
+                                            "Compiled resources preserve the original bytes.\n"_el;
 
-        const auto empty = resources.getData("test"_el, "empty.txt"_el);
-        REQUIRE(empty.has_value());
-        REQUIRE(empty->isEmpty());
-        REQUIRE_FALSE(resources.getData("test"_el, "missing.txt"_el).has_value());
-        REQUIRE_THROWS_AS(el::resource::ResourceError, resources.getDataOrThrow("test"_el, "missing.txt"_el));
+public: // tests
+    void testLookupAndMissingDistinction() {
+        const auto resources = ResourceManager{};
+        REQUIRE(resources.contains(cIdentifier, cPlainPath));
+        REQUIRE_EQUAL(resources.getTextOrThrow(cIdentifier, cPlainPath), cPlainText);
+        WITH_CONTEXT(requireMissing(resources, cIdentifier, "missing.txt"_el));
+        WITH_CONTEXT(requireMissing(resources, "missing"_el, cPlainPath));
+        WITH_CONTEXT(requireMissing(resources, "Test"_el, cPlainPath));
+        WITH_CONTEXT(requireMissing(resources, cIdentifier, "Plain.txt"_el));
+    }
+
+    void testEmptyResource() {
+        const auto resources = ResourceManager{};
+        REQUIRE(resources.contains(cIdentifier, cEmptyPath));
+        const auto stored = resources.getStoredData(cIdentifier, cEmptyPath);
+        REQUIRE(stored.has_value());
+        REQUIRE(stored->empty());
+        const auto data = resources.getData(cIdentifier, cEmptyPath);
+        REQUIRE(data.has_value());
+        REQUIRE(data->isEmpty());
+        const auto text = resources.getText(cIdentifier, cEmptyPath);
+        REQUIRE(text.has_value());
+        REQUIRE(text->isEmpty());
+        REQUIRE(resources.getStoredDataOrThrow(cIdentifier, cEmptyPath).empty());
+        REQUIRE(resources.getDataOrThrow(cIdentifier, cEmptyPath).isEmpty());
+        REQUIRE(resources.getTextOrThrow(cIdentifier, cEmptyPath).isEmpty());
     }
 
     void testStoredAndLogicalData() {
-        const auto resources = el::resource::ResourceManager{};
-        const auto stored = resources.getStoredDataOrThrow("test"_el, "compressed.txt"_el);
-        REQUIRE_EQUAL(stored.data(), ResourceFixture::compressedData().span().data());
-        REQUIRE_EQUAL(stored.size(), ResourceFixture::compressedData().span().size());
-        REQUIRE_EQUAL(resources.getTextOrThrow("test"_el, "compressed.txt"_el), "abcdabcdabcde"_el);
+        const auto resources = ResourceManager{};
+        const auto plainStored = resources.getStoredDataOrThrow(cIdentifier, cPlainPath);
+        const auto plain = resources.getDataOrThrow(cIdentifier, cPlainPath);
+        REQUIRE_EQUAL(plain, utf8(cPlainText));
+        REQUIRE_EQUAL(plain.span().data(), plainStored.data());
+        REQUIRE_EQUAL(plain.span().size(), plainStored.size());
 
-        const auto plain = resources.getDataOrThrow("test"_el, "plain.txt"_el);
-        REQUIRE_EQUAL(plain.span().data(), ResourceFixture::plainData().span().data());
-        const auto compressed = resources.getDataOrThrow("test"_el, "compressed.txt"_el);
-        REQUIRE_NOT_EQUAL(compressed.span().data(), ResourceFixture::compressedData().span().data());
+        const auto compressedStored = resources.getStoredDataOrThrow(cIdentifier, cCompressedPath);
+        const auto compressed = resources.getDataOrThrow(cIdentifier, cCompressedPath);
+        REQUIRE_EQUAL(compressed, utf8(cCompressedText));
+        REQUIRE_LESS(compressedStored.size(), compressed.span().size());
+        REQUIRE_NOT_EQUAL(compressed.span().data(), compressedStored.data());
+        REQUIRE_EQUAL(resources.getTextOrThrow(cIdentifier, cCompressedPath), cCompressedText);
+        const auto storedAgain = resources.getStoredDataOrThrow(cIdentifier, cCompressedPath);
+        REQUIRE_EQUAL(storedAgain.data(), compressedStored.data());
+        REQUIRE_EQUAL(storedAgain.size(), compressedStored.size());
     }
 
     void testMetadata() {
-        const auto resources = el::resource::ResourceManager{};
-        const auto compressed = resources.getInfoOrThrow("test"_el, "compressed.txt"_el);
+        const auto resources = ResourceManager{};
+        const auto compressed = resources.getInfoOrThrow(cIdentifier, cCompressedPath);
         REQUIRE(compressed.isCompressed());
-        REQUIRE(compressed.hasHash());
+        REQUIRE(compressed.compressionAlgorithm().has_value());
+        REQUIRE_EQUAL(*compressed.compressionAlgorithm(), CompressionAlgorithm::Lz4Block);
+        REQUIRE_EQUAL(compressed.originalSize(), utf8(cCompressedText).length());
+        REQUIRE_EQUAL(
+            compressed.storedSize(),
+            ByteCount::fromSizeT(resources.getStoredDataOrThrow(cIdentifier, cCompressedPath).size()));
+        REQUIRE_LESS(compressed.storedSize(), compressed.originalSize());
+        WITH_CONTEXT(requireHash(compressed, cCompressedText));
         REQUIRE_FALSE(compressed.isEncrypted());
-        REQUIRE_EQUAL(compressed.originalSize(), el::unit::ByteLength{13U});
-        REQUIRE_EQUAL(compressed.storedSize(), el::unit::ByteLength{13U});
-        REQUIRE_EQUAL(*compressed.compressionAlgorithm(), el::compression::CompressionAlgorithm::Lz4Block);
-        REQUIRE_EQUAL(*compressed.hashAlgorithm(), el::cryptology::HashAlgorithm::Sha3_256);
-        REQUIRE_EQUAL(compressed.hash().length(), el::unit::ByteLength{32U});
-        REQUIRE_EQUAL(compressed.hash().getOrThrow(el::unit::ByteIndex{}), el::mem::Byte{0x42U});
 
-        const auto plain = resources.getInfoOrThrow("test"_el, "plain.txt"_el);
+        const auto plain = resources.getInfoOrThrow(cIdentifier, cPlainPath);
         REQUIRE_FALSE(plain.isCompressed());
-        REQUIRE(plain.hasHash());
+        REQUIRE_FALSE(plain.compressionAlgorithm().has_value());
+        REQUIRE_EQUAL(plain.originalSize(), utf8(cPlainText).length());
+        REQUIRE_EQUAL(plain.storedSize(), plain.originalSize());
+        WITH_CONTEXT(requireHash(plain, cPlainText));
+        REQUIRE_FALSE(plain.isEncrypted());
+
+        const auto empty = resources.getInfoOrThrow(cIdentifier, cEmptyPath);
+        REQUIRE_EQUAL(empty.originalSize(), ByteCount{});
+        REQUIRE_EQUAL(empty.storedSize(), ByteCount{});
+        REQUIRE_FALSE(empty.isCompressed());
+        REQUIRE_FALSE(empty.compressionAlgorithm().has_value());
+        REQUIRE_FALSE(empty.hasHash());
+        REQUIRE_FALSE(empty.hashAlgorithm().has_value());
+        REQUIRE(empty.hash().isEmpty());
+        REQUIRE_FALSE(empty.isEncrypted());
     }
 
     void testInvalidData() {
-        const auto resources = el::resource::ResourceManager{};
-        REQUIRE_FALSE(resources.getData("test"_el, "invalid.bin"_el).has_value());
-        try {
-            static_cast<void>(resources.getDataOrThrow("test"_el, "invalid.bin"_el));
-            REQUIRE(false);
-        } catch (const el::resource::ResourceError &error) {
-            REQUIRE_EQUAL(error.category(), el::resource::ResourceErrorCategory::InvalidData);
-        }
+        // Valid version-1 metadata for invalid/data: LZ4, four logical bytes, two stored bytes, no hash.
+        // This deliberately corrupt stream cannot be produced by the resource compiler.
+        // clang-format off
+        static constexpr std::uint8_t cInfo[] = {
+            'E', 'L', 'R', 'I', 1, 1, 0, 0,
+            4, 0, 0, 0, 0, 0, 0, 0,
+            2, 0, 0, 0, 0, 0, 0, 0,
+            7, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0,
+            'i', 'n', 'v', 'a', 'l', 'i', 'd', 'd', 'a', 't', 'a',
+        };
+        // clang-format on
+        // The intrusive registry and both byte blocks must remain alive for the rest of the process.
+        static const auto cRegistration =
+            resource::impl::ResourceStorageRegistration{invalidData, ByteBlockLiteral{cInfo}};
+        const auto resources = ResourceManager{};
+        const auto identifier = "invalid"_el;
+        const auto path = "data"_el;
+        REQUIRE(resources.contains(identifier, path));
+        REQUIRE(resources.getInfoOrThrow(identifier, path).isCompressed());
+        REQUIRE_EQUAL(ByteBlock::fromSpan(resources.getStoredDataOrThrow(identifier, path)), ByteBlock{invalidData()});
+        REQUIRE_FALSE(resources.getData(identifier, path).has_value());
+        REQUIRE_FALSE(resources.getText(identifier, path).has_value());
+        WITH_CONTEXT(requireError(ResourceErrorCategory::InvalidData, [&]() -> ByteBlock {
+            return resources.getDataOrThrow(identifier, path);
+        }));
+        WITH_CONTEXT(requireError(ResourceErrorCategory::InvalidData, [&]() -> String {
+            return resources.getTextOrThrow(identifier, path);
+        }));
     }
 
     void testMalformedMetadataIsIgnored() {
-        const auto resources = el::resource::ResourceManager{};
-        REQUIRE_FALSE(resources.contains("test"_el, "malformed.bin"_el));
+        // Otherwise valid metadata for malformed/data, with the unsupported format version 2.
+        // clang-format off
+        static constexpr std::uint8_t cInfo[] = {
+            'E', 'L', 'R', 'I', 2, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            9, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0,
+            'm', 'a', 'l', 'f', 'o', 'r', 'm', 'e', 'd', 'd', 'a', 't', 'a',
+        };
+        // clang-format on
+        static const auto cRegistration =
+            resource::impl::ResourceStorageRegistration{emptyData, ByteBlockLiteral{cInfo}};
+        const auto resources = ResourceManager{};
+        WITH_CONTEXT(requireMissing(resources, "malformed"_el, "data"_el));
+        REQUIRE_EQUAL(resources.getTextOrThrow(cIdentifier, cPlainPath), cPlainText);
     }
 
-    void testTextCachingAndConcurrency() {
-        const auto resources = el::resource::ResourceManager{};
-        const auto first = resources.getTextOrThrow("test"_el, "plain.txt"_el);
-        const auto second = resources.getTextOrThrow("test"_el, "plain.txt"_el);
-        REQUIRE_EQUAL(first.storageId(), second.storageId());
+    void testDecodedValuesAreCached() {
+        const auto resources = ResourceManager{};
+        const auto firstData = resources.getDataOrThrow(cIdentifier, cCompressedPath);
+        const auto secondData = resources.getDataOrThrow(cIdentifier, cCompressedPath);
+        REQUIRE_EQUAL(firstData, utf8(cCompressedText));
+        REQUIRE_EQUAL(firstData.span().data(), secondData.span().data());
+        const auto firstText = resources.getTextOrThrow(cIdentifier, cCompressedPath);
+        const auto secondText = resources.getTextOrThrow(cIdentifier, cCompressedPath);
+        REQUIRE_EQUAL(firstText, cCompressedText);
+        REQUIRE_EQUAL(firstText.storageId(), secondText.storageId());
+    }
 
-        auto threads = std::vector<std::thread>{};
-        auto valid = std::array<bool, 8U>{};
-        for (auto index = std::size_t{}; index < valid.size(); ++index) {
-            threads.emplace_back([&resources, &valid, index] {
-                valid[index] = resources.getTextOrThrow("test"_el, "compressed.txt"_el) == "abcdabcdabcde"_el;
+    void testConcurrentFirstAccess() {
+        const auto resources = ResourceManager{};
+        auto start = std::barrier{8};
+        auto readers = std::array<std::future<String>, 8>{};
+        for (auto &reader : readers) {
+            reader = std::async(std::launch::async, [&]() -> String {
+                start.arrive_and_wait();
+                return resources.getTextOrThrow(cIdentifier, cCompressedPath);
             });
         }
-        for (auto &thread : threads) {
-            thread.join();
+        // Futures propagate worker exceptions to the test runner and join on destruction.
+        const auto first = readers.front().get();
+        REQUIRE_EQUAL(first, cCompressedText);
+        for (auto index = std::size_t{1}; index < readers.size(); ++index) {
+            const auto result = readers[index].get();
+            REQUIRE_EQUAL(result, cCompressedText);
+            REQUIRE_EQUAL(result.storageId(), first.storageId());
         }
-        for (const auto result : valid) {
-            REQUIRE(result);
+    }
+
+private:
+    [[nodiscard]] static auto utf8(const String &text) -> ByteBlock {
+        return StringEncoder{text}.encode(StringEncoding::Utf8, StringBomMode::Reject);
+    }
+
+    [[nodiscard]] static auto invalidData() noexcept -> ByteBlockLiteral {
+        return ByteBlockLiteral::fromValues<0, 0>();
+    }
+
+    [[nodiscard]] static auto emptyData() noexcept -> ByteBlockLiteral { return {}; }
+
+    void requireHash(const ResourceInfo &info, const String &text) {
+        REQUIRE(info.hasHash());
+        REQUIRE(info.hashAlgorithm().has_value());
+        REQUIRE_EQUAL(*info.hashAlgorithm(), HashAlgorithm::Sha3_256);
+        auto hasher = Hasher{HashAlgorithm::Sha3_256};
+        hasher.update(utf8(text));
+        REQUIRE_EQUAL(info.hash(), hasher.finalize());
+    }
+
+    void requireMissing(const ResourceManager &resources, const String &identifier, const String &path) {
+        REQUIRE_FALSE(resources.contains(identifier, path));
+        REQUIRE_FALSE(resources.getStoredData(identifier, path).has_value());
+        REQUIRE_FALSE(resources.getData(identifier, path).has_value());
+        REQUIRE_FALSE(resources.getText(identifier, path).has_value());
+        REQUIRE_FALSE(resources.getInfo(identifier, path).has_value());
+        WITH_CONTEXT(requireError(ResourceErrorCategory::NotFound, [&]() -> ConstByteSpan {
+            return resources.getStoredDataOrThrow(identifier, path);
+        }));
+        WITH_CONTEXT(requireError(ResourceErrorCategory::NotFound, [&]() -> ByteBlock {
+            return resources.getDataOrThrow(identifier, path);
+        }));
+        WITH_CONTEXT(requireError(
+            ResourceErrorCategory::NotFound, [&]() -> String { return resources.getTextOrThrow(identifier, path); }));
+        WITH_CONTEXT(requireError(ResourceErrorCategory::NotFound, [&]() -> ResourceInfo {
+            return resources.getInfoOrThrow(identifier, path);
+        }));
+    }
+
+    template <typename T>
+    void requireError(const ResourceErrorCategory expectedCategory, const T &action) {
+        try {
+            [[maybe_unused]] const auto result = action();
+        } catch (const ResourceError &error) {
+            REQUIRE_EQUAL(error.category(), expectedCategory);
+            return;
         }
+        REQUIRE(false);
     }
 };

@@ -2,6 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringCharReader.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringSide.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
 
 namespace demo {
 
@@ -57,11 +69,11 @@ void indexing() {
     auto byteIndex = el::ByteIndex::zero();
     text.advance(byteIndex);
     printCharacterAtByByteIndex(text, byteIndex);
-    text.advance(byteIndex, el::CpLength{4});
+    text.advance(byteIndex, el::CpCount{4});
     printCharacterAtByByteIndex(text, byteIndex);
     text.retreat(byteIndex);
     printCharacterAtByByteIndex(text, byteIndex);
-    text.retreat(byteIndex, el::CpLength{2});
+    text.retreat(byteIndex, el::CpCount{2});
     printCharacterAtByByteIndex(text, byteIndex);
 
     // If you need to parse a string character by character, use `el::StringCharReader` or `String::forEach()`.
@@ -86,7 +98,7 @@ void indexing() {
     // Out-of-range access is safe and returns a signal character.
     el::io::printLine("\nOut-of-range access:"_el);
     printCharacterAtByByteIndex(text, text.indexAt(el::StringSide::Back));
-    printCharacterAtByByteIndex(text, text.indexAt(el::StringSide::Back) + el::ByteLength{5000});
+    printCharacterAtByByteIndex(text, text.indexAt(el::StringSide::Back) + el::ByteCount{5000});
 
     // Strict callers validate the returned signal before continuing.
     el::io::printLine("\nSignal validation:"_el);

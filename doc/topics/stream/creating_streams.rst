@@ -32,14 +32,14 @@ the other receives decoded text.
 .. erbsland-demo::
     :source: stream/CreatingStreams/ChooseStreamFamily.cpp
     :exec: stream/creating_streams --demo ChooseStreamFamily
-    :source-sha256: 12516c1a60ba5a984f70533db3b0940f900fe6e74f4d6235ed1f6095833d66f8
+    :sha256: 6b1086c968604e8fdf54f004cebecc27086d45c9eea337c110492225ce96fd8a
 
 .. code-block:: cpp
 
     /// Accept a byte input stream when a component must work with the exact file representation.
     /// This function can read any byte source; it neither knows nor cares that the caller opened a file.
     void printFileAsHex(const el::ByteInputStreamPtr &input) {
-        const auto result = input->readAll(el::ByteLength{1024U});
+        const auto result = input->readAll(el::ByteCount{1024U});
         if (result.hasData()) {
             // The UTF-8 encoding of “Ö” is visible as the final two bytes.
             el::io::printLine("Bytes: "_el, el::ByteFormat::separated(), result.data());
@@ -49,18 +49,20 @@ the other receives decoded text.
     /// Accept a text input stream when a component needs decoded Unicode characters.
     /// The same function also works with temporary, standard, redirected, or custom text input streams.
     void printFileAsText(const el::TextInputStreamPtr &input) {
-        const auto result = input->readAll(el::CpLength{1024U});
+        const auto result = input->readAll(el::CpCount{1024U});
         if (result.hasData()) {
             // The stream decoder turns the file encoding into an Erbsland Core string.
             el::io::printLine("Text: "_el, result.data());
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Bytes: 4d 6f 74 69 76 3a 20 c3 96 6c
-    Text: Motiv: Öl
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBytes: 4d 6f 74 69 76 3a 20 c3 96 6c
+        Text: Motiv: Öl␛[0m
 
 .. erbsland-demo-end::
 
@@ -131,7 +133,7 @@ it clear that no later component may continue reading through another shared ali
 .. erbsland-demo::
     :source: stream/CreatingStreams/OpenFileStreams.cpp
     :exec: stream/creating_streams --demo OpenFileStreams
-    :source-sha256: 07f7bef7df973017f217f4bf526145e4acc1efa6468037cc31184ec3c4b486a0
+    :sha256: e5f6f065dee4b39c02a7903544294dccd416c418ccaf1dde01c0b273d80eb198
 
 .. code-block:: cpp
 
@@ -155,10 +157,12 @@ it clear that no later component may continue reading through another shared ali
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Studie 17: Licht auf dem Nordhang
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mStudie 17: Licht auf dem Nordhang␛[0m
 
 .. erbsland-demo-end::
 
@@ -226,7 +230,7 @@ marked byte blocks when this setting is enabled.
     auto options = el::PathReadTextOptions{};
     options.setStreamSettings(streamSettings);
     const auto input = path.content().openTextInputStream(options);
-    const auto result = input->readAll(el::CpLength{4096U});
+    const auto result = input->readAll(el::CpCount{4096U});
     if (result.hasData()) {
         useSecretText(result.data());
     }
@@ -310,7 +314,7 @@ file.
 .. erbsland-demo::
     :source: stream/CreatingStreams/ConfigureAtCreation.cpp
     :exec: stream/creating_streams --demo ConfigureAtCreation
-    :source-sha256: 43ed48965ccbacf5c3476fd876994923e1be8a3405169cb757aeeae37571d220
+    :sha256: a1ea67d87bfccfaa2a5252294777fd32a0bb7ebfabb38e6017695f43464698ac
 
 .. code-block:: cpp
 
@@ -321,7 +325,7 @@ file.
         auto streamSettings = el::OutputStreamSettings{};
         streamSettings.setTimeout(el::TimeDelta::milliseconds(250))
             .setBuffering(el::StreamBuffering::Throughput)
-            .setBackBufferLimit(el::ByteLength{128U * 1024U});
+            .setBackBufferLimit(el::ByteCount{128U * 1024U});
 
         auto options = el::PathWriteTextOptions{el::StringEncoding::Utf16LittleEndian};
         options.setCreationMode(el::PathCreateMode::CreateOrOverwrite)
@@ -337,11 +341,13 @@ file.
         el::io::printLine("Back-buffer limit: "_el, streamSettings.backBufferLimit().toSizeT(), " bytes"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Encoding configured: UTF-16 LE
-    Back-buffer limit: 131072 bytes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mEncoding configured: UTF-16 LE
+        Back-buffer limit: 131072 bytes␛[0m
 
 .. erbsland-demo-end::
 
@@ -369,7 +375,7 @@ all producers or consumers have finished.
 .. erbsland-demo::
     :source: stream/CreatingStreams/ShareStreamWithWriter.cpp
     :exec: stream/creating_streams --demo ShareStreamWithWriter
-    :source-sha256: d79bc2e4141e125a4190dba878743e132aa3863dbde2874cddd0ed7e1690ca43
+    :sha256: 570421211ca130872e86ca356afb1bef5245284d4b1965cc9bd31299f86583a9
 
 .. code-block:: cpp
 
@@ -386,11 +392,13 @@ all producers or consumers have finished.
         el::io::print(output->takeString());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Motiv: Birken im Morgennebel
-    Motiv: Felsen nach dem Regen
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMotiv: Birken im Morgennebel
+        Motiv: Felsen nach dem Regen␛[0m
 
 .. erbsland-demo-end::
 

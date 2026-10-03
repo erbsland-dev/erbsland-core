@@ -12,7 +12,7 @@ namespace erbsland::text {
 
 auto U8String::normalized(const NormalizationForm form) const -> U8String {
     if (auto storage = impl::StringNormalizationTools{*this, form}.normalizedIfChanged()) {
-        return U8String{U8StringEditor{std::move(*storage)}};
+        return U8StringEditor{std::move(*storage)};
     }
     return *this;
 }

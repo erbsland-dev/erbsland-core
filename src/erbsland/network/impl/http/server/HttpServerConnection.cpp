@@ -15,6 +15,7 @@
 #include "../HttpGrammar.hpp"
 
 #include "../../../../err/Exception.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/AnyString.hpp"
 #include "../../../../text/AsciiCategory.hpp"
@@ -247,7 +248,7 @@ void HttpServerConnection::handleRequestHead(const Http1DecodeEvent &event) {
             event.request().method() == HttpMethod{HttpMethodType::Head});
         request->attach(_transaction, {});
         _request = request;
-    } catch (const err::Exception &error) {
+    } catch (const err::RuntimeError &error) {
         auto context = NetworkErrorContext{"Invalid HTTP request target"_el, error.reason()};
         context.setReason(NetworkErrorReason::HttpProtocolFailure);
         if (_connection != nullptr) {
@@ -262,13 +263,10 @@ void HttpServerConnection::handleRequestHead(const Http1DecodeEvent &event) {
         server->notifyConnectionError(info, context);
         sendFrameworkError(HttpStatus::BadRequest);
         return;
-    } catch (...) {
-        sendFrameworkError(HttpStatus::InternalServerError);
-        return;
     }
     try {
         dispatch(request, event);
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         if (!request->isResponseStarted()) {
             request->sendError(HttpStatus::InternalServerError, {});
         } else {
@@ -393,7 +391,8 @@ auto HttpServerConnection::createConnectionInfo() const -> HttpConnectionInfo {
                 tls->offeredAlpn(),
                 tls->negotiatedAlpn(),
                 tls->cipherSuite(),
-                tls->signatureScheme());
+                tls->signatureScheme(),
+                tls->peerCertificatePath());
         }
     }
     return HttpConnectionInfo{std::move(localEndpoint), std::move(remoteEndpoint), std::move(tlsInfo)};

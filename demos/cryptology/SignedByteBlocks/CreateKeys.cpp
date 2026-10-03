@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/cryptology/keys/SigningPrivateKey.hpp>
+#include <erbsland/PublicKey.hpp>
+#include <erbsland/SigningKeyProfile.hpp>
+#include <erbsland/SigningPrivateKey.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

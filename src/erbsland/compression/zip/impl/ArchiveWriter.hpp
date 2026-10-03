@@ -51,7 +51,7 @@ public: // implement zip::ArchiveWriter
         stream::ByteInputStreamPtr source,
         const path::Path &storagePath,
         ArchiveEntryOptions options = {},
-        unit::ByteLength length = unit::ByteLength::infinite()) override;
+        unit::ByteCount length = unit::ByteCount::infinite()) override;
     /// Implement `zip::ArchiveWriter::addDirectory()`.
     void addDirectory(const path::Path &source, ArchiveDirectoryOptions options = {}) override;
     /// Implement `zip::ArchiveWriter::addItem()`.
@@ -84,7 +84,7 @@ private:
         const mem::ByteBlock &payload,
         const path::Path &storagePath,
         CompressionMethod method,
-        unit::ByteLength uncompressedLength,
+        unit::ByteCount uncompressedLength,
         uint32_t crc32,
         time::Timestamp modificationTime,
         text::String comment,
@@ -92,7 +92,7 @@ private:
         mem::ByteBlock opaqueCentralExtra = {},
         bool directory = false,
         std::function<void(ZipEntryRecord &)> producer = {},
-        std::optional<unit::ByteLength> compressedBound = {},
+        std::optional<unit::ByteCount> compressedBound = {},
         std::optional<uint16_t> methodFlags = {});
 
     /// Emit central-directory and classic or ZIP64 end records.
@@ -100,14 +100,14 @@ private:
     /// Emit one central-directory entry.
     void writeCentralEntry(const WrittenEntry &entry);
     /// Emit classic and optional ZIP64 end records.
-    void writeEndRecords(unit::ByteLength directoryOffset, unit::ByteLength directoryLength, bool archiveNeedsZip64);
+    void writeEndRecords(unit::ByteCount directoryOffset, unit::ByteCount directoryLength, bool archiveNeedsZip64);
     /// Write one complete record block and advance the checked output offset.
     void write(const mem::ByteBlock &data);
     /// Atomically move a completed sibling temporary archive into place.
     void commitPathDestination();
     /// Apply include then exclude globs to one normalized directory path.
-    [[nodiscard]] auto includeDirectoryPath(
-        const text::String &storagePath, const ArchiveDirectoryOptions &options) const -> bool;
+    [[nodiscard]] auto includeDirectoryPath(const path::Path &storagePath, const ArchiveDirectoryOptions &options) const
+        -> bool;
     /// Throw a ZIP error carrying the writer destination path.
     [[noreturn]] void throwWriterError(
         ZipErrorReason reason, ZipOperationPhase phase, text::String title, text::String description) const;
@@ -124,7 +124,7 @@ private:
     mem::ByteBlock _comment;
     std::vector<WrittenEntry> _entries;
     std::map<path::Path, bool> _paths;
-    unit::ByteLength _offset;
+    unit::ByteCount _offset;
     bool _cleanupEnabled{true};
     bool _finalized{};
     bool _aborted{};

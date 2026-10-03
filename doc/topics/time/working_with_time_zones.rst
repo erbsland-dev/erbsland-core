@@ -60,7 +60,7 @@ enough.
 .. erbsland-demo::
     :source: time/TimeZone/Create.cpp
     :exec: time/time_zone --demo Create
-    :source-sha256: 039881f8cabef0bac1e2b5be85ac7dda577da1b3bd295ec9f8b6628227915980
+    :sha256: 163b561b52bfe1484b2b8c1296950753de7db6a31b41819056399abac0af3fda
 
 .. code-block:: cpp
 
@@ -108,25 +108,27 @@ enough.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Αντάντε: named zone Europe/Athens
-    Default UTC: true
-    Utc() UTC: true
-    Unknown zone: choose a supported name before resolving local input.
-    Throwing lookup reports ParseError.
-    Athens supported: true
-    Unknown supported: false
-    Negative seconds: -12615
-    Mixed signs: -9000
-    Clamped parts: 86399
-    Normalized total: 10800
-    Z: offset seconds 0
-    GMT: offset seconds 0
-    +0530: offset seconds 19800
-    UTC+05:00: offset seconds 18000
-    Etc/GMT+5: offset seconds -18000
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mΑντάντε: named zone Europe/Athens
+        Default UTC: true
+        Utc() UTC: true
+        Unknown zone: choose a supported name before resolving local input.
+        Throwing lookup reports ParseError.
+        Athens supported: true
+        Unknown supported: false
+        Negative seconds: -12615
+        Mixed signs: -9000
+        Clamped parts: 86399
+        Normalized total: 10800
+        Z: offset seconds 0
+        GMT: offset seconds 0
+        +0530: offset seconds 19800
+        UTC+05:00: offset seconds 18000
+        Etc/GMT+5: offset seconds -18000␛[0m
 
 .. erbsland-demo-end::
 
@@ -180,7 +182,7 @@ Resolve or convert a ``DateTime`` and read its ``timeOffset()`` when you need th
 .. erbsland-demo::
     :source: time/TimeZone/Inspect.cpp
     :exec: time/time_zone --demo Inspect
-    :source-sha256: 1e88397154ac1a5ab1794a041479fa135fc054929f8ed84ca0e0b474e45feba5
+    :sha256: 507c3db9bd0067eadb705b6629505873620c980a605d9804116cee348ce87262
 
 .. code-block:: cpp
 
@@ -220,45 +222,47 @@ Resolve or convert a ``DateTime`` and read its ``timeOffset()`` when you need th
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    UTC: true
-    Fixed: false
-    Named: false
-    Local: false
-    Name:
-    UTC id: true
-    Static seconds: 0
-    UTC: false
-    Fixed: true
-    Named: false
-    Local: false
-    Name:
-    UTC id: true
-    Static seconds: 7200
-    UTC: false
-    Fixed: false
-    Named: true
-    Local: false
-    Name: Europe/Athens
-    UTC id: false
-    Static seconds: 0
-    UTC: false
-    Fixed: false
-    Named: true
-    Local: true
-    Name: Europe/Zurich
-    UTC id: false
-    Static seconds: 0
-    Named equals fixed: false
-    Alias equals primary: true
-    2026-01-15: named seconds 7200
-    Fixed seconds 7200
-    Offsets equal: true
-    2026-07-15: named seconds 10800
-    Fixed seconds 7200
-    Offsets equal: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUTC: true
+        Fixed: false
+        Named: false
+        Local: false
+        Name:
+        UTC id: true
+        Static seconds: 0
+        UTC: false
+        Fixed: true
+        Named: false
+        Local: false
+        Name:
+        UTC id: true
+        Static seconds: 7200
+        UTC: false
+        Fixed: false
+        Named: true
+        Local: false
+        Name: Europe/Athens
+        UTC id: false
+        Static seconds: 0
+        UTC: false
+        Fixed: false
+        Named: true
+        Local: true
+        Name: Europe/Zurich
+        UTC id: false
+        Static seconds: 0
+        Named equals fixed: false
+        Alias equals primary: true
+        2026-01-15: named seconds 7200
+        Fixed seconds 7200
+        Offsets equal: true
+        2026-07-15: named seconds 10800
+        Fixed seconds 7200
+        Offsets equal: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -283,7 +287,7 @@ UTC and fixed offsets have no named-zone abbreviation, so an empty label is expe
 .. erbsland-demo::
     :source: time/TimeZone/Convert.cpp
     :exec: time/time_zone --demo Convert
-    :source-sha256: e62dc75bed197825b5fb444ff298a768a52ad328c2c9459a07ab265c10acd696
+    :sha256: ef7b139d51185d07e675a428eb19337a360e7735498e815887b1179e4f02bed0
 
 .. code-block:: cpp
 
@@ -326,47 +330,49 @@ UTC and fixed offsets have no named-zone abbreviation, so an empty label is expe
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Local: 2026-07-15 23:30:00
-    UTC: 2026-07-15 23:30:00
-    Offset seconds: 0
-    Abbreviation:
-    Same ordering position: true
-    Same value: true
-    Local origin: false
-    Named zone: false
-    Local: 2026-07-16 05:00:00
-    UTC: 2026-07-15 23:30:00
-    Offset seconds: 19800
-    Abbreviation:
-    Same ordering position: true
-    Same value: false
-    Local origin: false
-    Named zone: false
-    Local: 2026-07-16 02:30:00
-    UTC: 2026-07-15 23:30:00
-    Offset seconds: 10800
-    Abbreviation: EEST
-    Same ordering position: true
-    Same value: false
-    Local origin: false
-    Named zone: true
-    Local: 2026-07-16 01:30:00
-    UTC: 2026-07-15 23:30:00
-    Offset seconds: 7200
-    Abbreviation: CEST
-    Same ordering position: true
-    Same value: false
-    Local origin: true
-    Named zone: true
-    Seasonal display: 2026-01-15 14:00:00+02:00
-    Offset seconds: 7200
-    Label: EET
-    Seasonal display: 2026-07-15 15:00:00+03:00
-    Offset seconds: 10800
-    Label: EEST
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLocal: 2026-07-15 23:30:00
+        UTC: 2026-07-15 23:30:00
+        Offset seconds: 0
+        Abbreviation:
+        Same ordering position: true
+        Same value: true
+        Local origin: false
+        Named zone: false
+        Local: 2026-07-16 05:00:00
+        UTC: 2026-07-15 23:30:00
+        Offset seconds: 19800
+        Abbreviation:
+        Same ordering position: true
+        Same value: false
+        Local origin: false
+        Named zone: false
+        Local: 2026-07-16 02:30:00
+        UTC: 2026-07-15 23:30:00
+        Offset seconds: 10800
+        Abbreviation: EEST
+        Same ordering position: true
+        Same value: false
+        Local origin: false
+        Named zone: true
+        Local: 2026-07-16 01:30:00
+        UTC: 2026-07-15 23:30:00
+        Offset seconds: 7200
+        Abbreviation: CEST
+        Same ordering position: true
+        Same value: false
+        Local origin: true
+        Named zone: true
+        Seasonal display: 2026-01-15 14:00:00+02:00
+        Offset seconds: 7200
+        Label: EET
+        Seasonal display: 2026-07-15 15:00:00+03:00
+        Offset seconds: 10800
+        Label: EEST␛[0m
 
 .. erbsland-demo-end::
 
@@ -397,7 +403,7 @@ local-input constructor.
 .. erbsland-demo::
     :source: time/TimeZone/Resolve.cpp
     :exec: time/time_zone --demo Resolve
-    :source-sha256: 5dd3e6a2f4cb64e52e97e0d3bd88d1fc7cc17cb90da89fcfe1c01a2a96a4721e
+    :sha256: 5864c28014010c24975647b66c133bd0cc9be802f3f581a880142c224ee8147d
 
 .. code-block:: cpp
 
@@ -420,15 +426,17 @@ local-input constructor.
                 el::DateTime{el::Date{}, reading, zone}.isValid()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Local input: 2026-07-15 09:15:00+03:00
-    Its UTC: 2026-07-15 06:15:00Z
-    UTC input: 2026-07-15 09:15:00Z
-    Its zoned display: 2026-07-15 12:15:00+03:00
-    Same instant as local input: false
-    Invalid local date accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLocal input: 2026-07-15 09:15:00+03:00
+        Its UTC: 2026-07-15 06:15:00Z
+        UTC input: 2026-07-15 09:15:00Z
+        Its zoned display: 2026-07-15 12:15:00+03:00
+        Same instant as local input: false
+        Invalid local date accepted: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -473,7 +481,7 @@ explicit.
 .. erbsland-demo::
     :source: time/TimeZone/Transitions.cpp
     :exec: time/time_zone --demo Transitions
-    :source-sha256: e829bca43091194d6ca76a18070f82fd0244888bde865c1019e88b9aa4c4bb3b
+    :sha256: 3aa3dcd365aa1020e51d024f8145beee3eb68d119a3cad096ff3f105f98b9f3d
 
 .. code-block:: cpp
 
@@ -508,22 +516,24 @@ explicit.
                     selected.toUtc() != el::DateTime{gapDate, skipped, zone, el::TimeOccurrenceInFold::Second}.toUtc()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Fold first: 2026-04-05 01:45:00+11:00
-    Second: 2026-04-05 01:45:00+10:30
-    Elapsed seconds: 1800
-    UTC first: 2026-04-04 14:45:00Z
-    UTC second: 2026-04-04 15:15:00Z
-    Default chooses first: true
-    Gap requested: 2026-10-04 02:15:00
-    Constructor: 2026-10-04 02:15:00+11:00
-    Resolved: 2026-10-04 01:45:00+10:30
-    UTC: 2026-10-03 15:15:00Z
-    Valid: true
-    Requested fields occurred: false
-    Gap occurrence choice changes instant: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFold first: 2026-04-05 01:45:00+11:00
+        Second: 2026-04-05 01:45:00+10:30
+        Elapsed seconds: 1800
+        UTC first: 2026-04-04 14:45:00Z
+        UTC second: 2026-04-04 15:15:00Z
+        Default chooses first: true
+        Gap requested: 2026-10-04 02:15:00
+        Constructor: 2026-10-04 02:15:00+11:00
+        Resolved: 2026-10-04 01:45:00+10:30
+        UTC: 2026-10-03 15:15:00Z
+        Valid: true
+        Requested fields occurred: false
+        Gap occurrence choice changes instant: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -561,7 +571,7 @@ your application needs to select a different one during its lifetime.
 .. erbsland-demo::
     :source: time/TimeZone/Local.cpp
     :exec: time/time_zone --demo Local
-    :source-sha256: 4be108162812170451610dec32b4d1013832cd30b03fd248255f1d6d0cf2722a
+    :sha256: c9da7722ee95ca289ca66dda63b401f8359b5a6770e6f985721d3c78aa1811fc
 
 .. code-block:: cpp
 
@@ -597,24 +607,26 @@ your application needs to select a different one during its lifetime.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Local zone equals explicit base zone: false
-    Cached zone equal: true
-    Local origin: true
-    Default display: 2026-07-15 09:15:00
-    Explicit numeric shift: 2026-07-15 09:15:00+02:00
-    Copy local: true
-    Arithmetic local: true
-    UTC local: false
-    Returned local: true
-    Local occurrence: 2026-01-15 09:00:00
-    Offset seconds: 3600
-    Abbreviation: CET
-    Local occurrence: 2026-07-15 09:00:00
-    Offset seconds: 7200
-    Abbreviation: CEST
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLocal zone equals explicit base zone: false
+        Cached zone equal: true
+        Local origin: true
+        Default display: 2026-07-15 09:15:00
+        Explicit numeric shift: 2026-07-15 09:15:00+02:00
+        Copy local: true
+        Arithmetic local: true
+        UTC local: false
+        Returned local: true
+        Local occurrence: 2026-01-15 09:00:00
+        Offset seconds: 3600
+        Abbreviation: CET
+        Local occurrence: 2026-07-15 09:00:00
+        Offset seconds: 7200
+        Abbreviation: CEST␛[0m
 
 .. erbsland-demo-end::
 
@@ -652,7 +664,7 @@ An abbreviation is a display label and cannot substitute for any of these identi
 .. erbsland-demo::
     :source: time/TimeZone/Details.cpp
     :exec: time/time_zone --demo Details
-    :source-sha256: 7fa40ee74781acafd8d7556126bda5b62a8e52605c88194727d1a39e2545b205
+    :sha256: ab02ce3cc541a88a1c4de0a2243d2e5b4afc6c423432196cdb2a89f9be70a016
 
 .. code-block:: cpp
 
@@ -691,31 +703,33 @@ An abbreviation is a display label and cannot substitute for any of these identi
                 occurrence.timeOffset().toSeconds().toRawValue(), occurrence.timeZoneAbbreviation()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Stored name: Europe/Athens
-    Id round trip: true
-    Copied id: true
-    Default id UTC: true
-    Seconds: 0
-    UTC: true
-    Fixed: false
-    Named: false
-    DST: false
-    Local: false
-    UTC id: true
-    Abbreviation index: 0
-    Seconds: 19800
-    UTC: false
-    Fixed: true
-    Named: false
-    DST: false
-    Local: true
-    UTC id: true
-    Abbreviation index: 0
-    Application-level resolved offset seconds: 10800
-    Display abbreviation: EEST
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mStored name: Europe/Athens
+        Id round trip: true
+        Copied id: true
+        Default id UTC: true
+        Seconds: 0
+        UTC: true
+        Fixed: false
+        Named: false
+        DST: false
+        Local: false
+        UTC id: true
+        Abbreviation index: 0
+        Seconds: 19800
+        UTC: false
+        Fixed: true
+        Named: false
+        DST: false
+        Local: true
+        UTC id: true
+        Abbreviation index: 0
+        Application-level resolved offset seconds: 10800
+        Display abbreviation: EEST␛[0m
 
 .. erbsland-demo-end::
 
@@ -746,7 +760,7 @@ The system setting chooses a local zone, while the bundled rules describe its be
 .. erbsland-demo::
     :source: time/TimeZone/Database.cpp
     :exec: time/time_zone --demo Database
-    :source-sha256: 8a66e20d636501b06d58a5862cfe467e2080c811bdd4dba2f02b377feb6c5e17
+    :sha256: c882a78313264b64586d5a31708dd7acc2a95bc66ed6b28e29732f4473de364a
 
 .. code-block:: cpp
 
@@ -764,13 +778,15 @@ The system setting chooses a local zone, while the bundled rules describe its be
         el::io::printLine(el::StringFormat{"Requested name listed: {}"_el}.build(!names.findFirst(requested).isNoIndex()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Bundled rule version: 1.2026.2
-    Supported names: 597
-    Alias US/Eastern has primary name: America/New_York
-    Requested name listed: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBundled rule version: 1.2026.2
+        Supported names: 597
+        Alias US/Eastern has primary name: America/New_York
+        Requested name listed: true␛[0m
 
 .. erbsland-demo-end::
 

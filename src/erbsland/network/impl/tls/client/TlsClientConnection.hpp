@@ -7,8 +7,11 @@
 #include "TlsClientProtocol.hpp"
 #include "TlsClientProtocolStartFn.hpp"
 
+#include "../TlsBackgroundOperation.hpp"
+
 #include "../../../../cryptology/tls/TlsConfiguration.hpp"
 #include "../../../../time/TimePoint.hpp"
+#include "../../../../util/impl/worker_executor/WorkerAdmissionError.hpp"
 #include "../../../source/ConnectionCloseContext.hpp"
 #include "../../../source/NetworkErrorContext.hpp"
 #include "../../../tcp/TcpConnection.hpp"
@@ -55,6 +58,48 @@ public: // implement network::TlsClientConnection
     [[nodiscard]] auto events() -> network::TlsClientConnectionEventEditor & override;
 
 private:
+    /// Dispatch a deterministic protocol request without holding connection locks during native work.
+    template <typename Request, typename Result>
+    void startBackgroundOperation(const Request &request, void (TlsClientProtocol::*complete)(Result) noexcept) {
+        using namespace text::literals;
+        if (_backgroundOperation.isPending()) {
+            return;
+        }
+        const auto generation = ++_backgroundGeneration;
+        const auto weakSelf =
+            std::weak_ptr<TlsClientConnection>{std::static_pointer_cast<TlsClientConnection>(shared_from_this())};
+        try {
+            _backgroundOperation.start(
+                request,
+                ownerEvents(),
+                _handshakeDeadline,
+                [weakSelf, generation, complete](std::optional<Result> result, text::String diagnostic) -> void {
+                    if (const auto self = weakSelf.lock(); self != nullptr) {
+                        const auto lock = std::scoped_lock{self->_mutex};
+                        if (!self->acceptBackgroundResult(generation)) {
+                            return;
+                        }
+                        if (result.has_value()) {
+                            (self->_protocol.get()->*complete)(std::move(*result));
+                        } else {
+                            self->_protocol->failPendingOperation(std::move(diagnostic));
+                        }
+                        self->continueProtocol();
+                    }
+                });
+        } catch (const err::RuntimeError &error) {
+            finishFailed(
+                NetworkErrorContext{"TLS background operation rejected"_el, error.reason()}
+                    .setReason(NetworkErrorReason::ResourceLimitExceeded)
+                    .setPhase(NetworkErrorPhase::Handshaking));
+        }
+    }
+    /// Reject stale, cancelled, or expired completions before consuming their result.
+    [[nodiscard]] auto acceptBackgroundResult(std::uint64_t generation) -> bool;
+    /// Service checkpoints, output, and application input after any protocol transition.
+    void continueProtocol();
+    /// Release the reserved handshake timer on every terminal handshake transition.
+    void cancelHandshakeTimer() noexcept;
     /// Install the internal TCP callbacks for the current facade instance.
     void configureTcpEvents();
     /// Validate every synchronous operational option.
@@ -123,6 +168,11 @@ private:
     TlsClientConnectOptions _options;                               ///< Captured operational options.
     std::optional<mem::ByteBlock> _pendingTransportRecord;          ///< One TCP-rejected complete record.
     std::optional<ConnectionCloseOrigin> _closeOrigin;              ///< First close-notify initiator.
+    event::impl::EventContinuationPtr _finalContinuation;           ///< Pre-admitted abort and rejection delivery.
+    event::impl::EventContinuationPtr _handshakeTimer;              ///< Cancellable reserved deadline callback.
+    TlsBackgroundOperation _backgroundOperation;                    ///< Reserved native work and completion capacity.
+    std::uint64_t _backgroundGeneration{};                          ///< Rejects stale operation completions.
+    time::TimePoint _handshakeDeadline;                             ///< Includes background queue and execution time.
     time::TimePoint _idleDeadline;                                  ///< Updated absolute application-idle deadline.
     std::atomic<ConnectionState> _state{ConnectionState::Inactive}; ///< Lifecycle state.
     std::atomic<bool> _started{false};                              ///< One-shot consumption guard.

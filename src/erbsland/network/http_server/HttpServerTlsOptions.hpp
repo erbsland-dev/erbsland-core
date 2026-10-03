@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../tls/TlsServerIdentityMapping.hpp"
+#include "../tls/TlsConfigurationMapping.hpp"
 
 #include "../../text/String.hpp"
 #include "../../time/TimeDelta.hpp"
@@ -18,7 +18,7 @@ namespace erbsland::network {
 class HttpServerTlsOptions final {
 public:
     /// Default server-identity configuration label.
-    inline static const auto cDefaultConfigurationLabel = text::String{"http/server"};
+    inline static const auto cDefaultConfigurationLabel = text::String{"http"};
     /// Default incomplete-handshake capacity.
     static constexpr auto cDefaultMaximumConcurrentHandshakes = unit::ItemCount{128U};
     /// Default TLS handshake deadline.
@@ -32,13 +32,13 @@ public:
         _configurationLabel = std::move(value);
         return *this;
     }
-    /// Get exact canonical SNI identity mappings.
-    [[nodiscard]] auto identityMappings() const noexcept -> const std::vector<TlsServerIdentityMapping> & {
-        return _identityMappings;
+    /// Get exact canonical SNI configuration mappings.
+    [[nodiscard]] auto configurationMappings() const noexcept -> const std::vector<TlsConfigurationMapping> & {
+        return _configurationMappings;
     }
-    /// Replace exact canonical SNI identity mappings.
-    auto setIdentityMappings(std::vector<TlsServerIdentityMapping> value) noexcept -> HttpServerTlsOptions & {
-        _identityMappings = std::move(value);
+    /// Replace exact canonical SNI configuration mappings.
+    auto setConfigurationMappings(std::vector<TlsConfigurationMapping> value) noexcept -> HttpServerTlsOptions & {
+        _configurationMappings = std::move(value);
         return *this;
     }
     /// Get the maximum number of concurrent incomplete handshakes.
@@ -60,7 +60,7 @@ public:
 
 private:
     text::String _configurationLabel{cDefaultConfigurationLabel}; ///< Default identity registry label.
-    std::vector<TlsServerIdentityMapping> _identityMappings;      ///< Exact SNI identity mappings.
+    std::vector<TlsConfigurationMapping> _configurationMappings;  ///< Exact SNI configuration mappings.
     unit::ItemCount _maximumConcurrentHandshakes{cDefaultMaximumConcurrentHandshakes}; ///< Handshake quota.
     time::TimeDelta _handshakeTimeout{cDefaultHandshakeTimeout};                       ///< Handshake deadline.
 };

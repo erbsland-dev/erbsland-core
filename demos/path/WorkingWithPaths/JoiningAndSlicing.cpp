@@ -4,6 +4,11 @@
 #include "WorkingWithPathsDemos.hpp"
 
 #include <DemoCommon.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/ItemRange.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

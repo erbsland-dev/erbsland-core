@@ -2,9 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/all_path.hpp>
+#include <erbsland/conf/ConfError.hpp>
+#include <erbsland/conf/ConfErrorCategory.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/SourceResolver.hpp>
-#include <erbsland/path/all.hpp>
+#include <erbsland/conf/SourceResolverContext.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -35,7 +44,7 @@ private:
 /// Install a custom source resolver for application-specific include descriptors.
 void customResolver() {
     auto temporaryOptions = el::PathTempDirectoryOptions{};
-    temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpLength{8U});
+    temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpCount{8U});
     const auto temporary =
         el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
     const auto root = temporary->path();

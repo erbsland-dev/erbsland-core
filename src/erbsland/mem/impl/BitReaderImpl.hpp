@@ -65,10 +65,15 @@ public:
     /// Read a field or return a fallback without advancing.
     [[nodiscard]] auto readBits(std::size_t bitCount, uint64_t defaultOnError) noexcept -> uint64_t;
     /// Read a field or throw if unavailable.
+    /// @param bitCount The field width, at most 64.
+    /// @throws err::OutOfRangeError If fewer bits or bytes remain than requested.
     [[nodiscard]] auto readBitsOrThrow(std::size_t bitCount) -> uint64_t;
 
     /// Read a byte-aligned field, sharing the input block or copying a retained prefix.
-    [[nodiscard]] auto readBytesOrThrow(unit::ByteLength length) -> ByteBlock;
+    /// The current position must be byte-aligned.
+    /// @param length The finite number of bytes to read.
+    /// @throws err::OutOfRangeError If fewer bits or bytes remain than requested.
+    [[nodiscard]] auto readBytesOrThrow(unit::ByteCount length) -> ByteBlock;
 
 protected:
     /// Read a byte from the retained tail or the shared input block.

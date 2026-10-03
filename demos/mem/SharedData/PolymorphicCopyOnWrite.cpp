@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/mem/SharedDataPointer.hpp>
-#include <erbsland/mem/SharedVirtualData.hpp>
+#include <erbsland/SharedDataPointer.hpp>
+#include <erbsland/SharedVirtualData.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 #include <cstddef>
 #include <cstdint>

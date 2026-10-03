@@ -7,15 +7,17 @@
 
 namespace erbsland::options::impl {
 
-auto findOptionSuggestions(const text::String &pattern, const text::StringList &candidates) -> text::StringList {
+using namespace text;
+
+auto findOptionSuggestions(const String &pattern, const StringList &candidates) -> StringList {
     const auto length = pattern.characterLength().toSizeT();
     const auto maximumDistance = length <= 4U ? 1U : (length <= 8U ? 2U : 3U);
-    const auto matches = text::fuzzy::Matcher{pattern}
-                             .setMaximumDistance(unit::CpLength::fromSizeT(maximumDistance))
+    const auto matches = fuzzy::Matcher{pattern}
+                             .setMaximumDistance(unit::CpCount::fromSizeT(maximumDistance))
                              .setMaximumResults(unit::ItemCount{3U})
-                             .setComparisonFn(text::cCaseInsensitive.comparisonFn())
+                             .setComparisonFn(cCaseInsensitive.comparisonFn())
                              .findMatches(candidates);
-    auto result = text::StringList{};
+    auto result = StringList{};
     result.reserve(matches.count());
     for (const auto &match : matches) {
         result.append(match.text());

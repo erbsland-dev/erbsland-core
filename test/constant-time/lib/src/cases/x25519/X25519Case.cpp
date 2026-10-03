@@ -1,12 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "X25519Case.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
@@ -15,7 +14,7 @@ using namespace el::text::literals;
 X25519Case::X25519Case(X25519Operation operation) : _operation{operation} {
     const auto id = identifier();
 
-    configure(TestMetadata{id, "Curve25519 scalar and field operation"_el}, el::ByteLength{4096});
+    configure(TestMetadata{id, "Curve25519 scalar and field operation"_el}, el::ByteCount{4096});
 }
 
 auto X25519Case::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {
@@ -39,7 +38,7 @@ auto X25519Case::identifier() const -> el::String {
     case X25519Operation::Swap:
         return "x25519/field-swap"_el;
     }
-    throw el::LogicError{"Unknown scenario operation."_el};
+    throw el::LogicFailure{"Unknown scenario operation."_el};
 }
 
 }

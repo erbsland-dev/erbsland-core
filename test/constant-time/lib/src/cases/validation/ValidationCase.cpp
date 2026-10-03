@@ -1,22 +1,21 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ValidationCase.hpp"
 
 #include "../../BackendInfo.hpp"
 
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesBlockCipherFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/GaloisMultiplierFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/ChaCha20BackendFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/Poly1305Factory.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/PortablePoly1305.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace app::constant_time {
 
@@ -26,9 +25,12 @@ using namespace el::text::literals;
 
 ValidationCase::ValidationCase(ValidationOperation operation) : _operation{operation} {
     const auto id = identifier();
-    const auto keySize = operation == ValidationOperation::Aes128Gcm ? std::size_t{16} : std::size_t{32};
-    const auto key = el::ByteBuffer{el::ByteLength{keySize}, el::Byte{0x55U}};
-    const auto nonce = el::ByteBuffer{el::ByteLength{12}};
+    auto keyLength = el::ByteCount{32U};
+    if (operation == ValidationOperation::Aes128Gcm) {
+        keyLength = el::ByteCount{16U};
+    }
+    const auto key = el::ByteBuffer{keyLength, el::Byte{0x55U}};
+    const auto nonce = el::ByteBuffer{el::ByteCount{12}};
     auto backend = el::String{"portable"_el};
     if (operation == ValidationOperation::ChaCha20Poly1305) {
         const auto chacha = ci::createChaCha20Backend(key.span(), nonce.span());
@@ -56,7 +58,7 @@ ValidationCase::ValidationCase(ValidationOperation operation) : _operation{opera
                                                          : "first-vs-last-invalid-tag-byte"_el,
             backend,
             true},
-        el::ByteLength{16384});
+        el::ByteCount{16384});
 }
 
 auto ValidationCase::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {
@@ -78,7 +80,7 @@ auto ValidationCase::identifier() const -> el::String {
     case ValidationOperation::CbcPadding:
         return "aes-cbc/invalid-padding"_el;
     }
-    throw el::LogicError{"Unknown scenario operation."_el};
+    throw el::LogicFailure{"Unknown scenario operation."_el};
 }
 
 }

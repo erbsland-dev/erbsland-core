@@ -4,5 +4,4 @@
 
 #include "ByteRange_fwd.hpp"
 #include "IntegerUnitRange.hpp"
-
 // The public alias is declared in the canonical forward header.

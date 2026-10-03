@@ -6,8 +6,13 @@
 #include "ProfilingConfiguration.hpp"
 #include "ProfilingDefinition.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlock.hpp>
 #include <erbsland/conf/Value.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <optional>
 

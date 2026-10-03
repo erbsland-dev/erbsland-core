@@ -3,11 +3,13 @@
 #include "UrlParser.hpp"
 
 #include "../../../err/Exception.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../err/ParseError.hpp"
+#include "../../../err/RuntimeError.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../text/AsciiCategory.hpp"
 #include "../../../text/CharSet.hpp"
+#include "../../../text/EncodingError.hpp"
 #include "../../../text/EncodingMode.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/NormalizationForm.hpp"
@@ -16,24 +18,27 @@
 #include "../../../text/StringEditor.hpp"
 #include "../../../text/StringEncoding.hpp"
 #include "../../../text/StringList.hpp"
+#include "../../../text/StringTransformations.hpp"
 
 namespace erbsland::network::impl {
 
+using namespace err;
+using namespace unit;
 using namespace text;
 using namespace text::literals;
 
 auto UrlParser::parse() const -> std::shared_ptr<UrlData> {
     if (_text.length() > _options.maximumLength()) {
-        throw err::ParseError{"The URL exceeds the configured length limit."_el};
+        throw ParseError{"The URL exceeds the configured length limit."_el};
     }
-    if (!_text.isValidUtf8()) {
-        throw err::ParseError{"The URL is not valid UTF-8."_el};
+    if (!_text.isEncodingValid()) {
+        throw ParseError{"The URL is not valid UTF-8."_el};
     }
     auto reader = StringCharReader{_text};
     auto schemeEditor = StringEditor{};
     const auto first = reader.read();
     if (!first.isAsciiLetter()) {
-        throw err::ParseError{"A URL scheme must start with an ASCII letter."_el};
+        throw ParseError{"A URL scheme must start with an ASCII letter."_el};
     }
     schemeEditor.append(first.toAsciiLowercase());
     while (true) {
@@ -42,12 +47,12 @@ auto UrlParser::parse() const -> std::shared_ptr<UrlData> {
             break;
         }
         if (!character.isAsciiCategory(AsciiCategory::UrlScheme)) {
-            throw err::ParseError{"The URL scheme contains an invalid character."_el, reader.position()};
+            throw ParseError{"The URL scheme contains an invalid character."_el, reader.position()};
         }
         schemeEditor.append(character.toAsciiLowercase());
     }
     auto result = std::make_shared<UrlData>();
-    result->schemeText = String{schemeEditor};
+    result->schemeText = schemeEditor;
     result->scheme = schemeFromText(result->schemeText);
 
     const auto requiresAuthority = result->scheme == UrlScheme::Http || result->scheme == UrlScheme::Https ||
@@ -57,20 +62,20 @@ auto UrlParser::parse() const -> std::shared_ptr<UrlData> {
         reader.advance();
         if (reader.advanceIf(U'/')) {
             if (result->scheme == UrlScheme::Mailto) {
-                throw err::ParseError{"A mailto URL must not contain a slash."_el, reader.position()};
+                throw ParseError{"A mailto URL must not contain a slash."_el, reader.position()};
             }
             result->hasAuthority = true;
             auto authority = StringEditor{};
             while (!reader.isAtEnd() && reader.peek() != U'/' && reader.peek() != U'?' && reader.peek() != U'#') {
                 authority.append(reader.read());
             }
-            result->authorityText = String{authority};
+            result->authorityText = authority;
         } else {
             reader.restore(saved);
         }
     }
     if (requiresAuthority && !result->hasAuthority) {
-        throw err::ParseError{"This URL scheme requires a double-slash authority."_el, reader.position()};
+        throw ParseError{"This URL scheme requires a double-slash authority."_el, reader.position()};
     }
 
     auto path = StringEditor{};
@@ -91,9 +96,9 @@ auto UrlParser::parse() const -> std::shared_ptr<UrlData> {
             fragment.append(reader.read());
         }
     }
-    result->path = decodeComponent(String{path});
-    result->query = decodeComponent(String{query});
-    result->fragment = decodeComponent(String{fragment});
+    result->path = decodeComponent(path);
+    result->query = decodeComponent(query);
+    result->fragment = decodeComponent(fragment);
 
     switch (result->scheme) {
     case UrlScheme::Http:
@@ -109,10 +114,10 @@ auto UrlParser::parse() const -> std::shared_ptr<UrlData> {
         break;
     case UrlScheme::Mailto:
         if (result->hasAuthority) {
-            throw err::ParseError{"A mailto URL must not contain an authority."_el};
+            throw ParseError{"A mailto URL must not contain an authority."_el};
         }
         if (result->path.contains("/"_el)) {
-            throw err::ParseError{"A mailto URL path must not contain a slash."_el};
+            throw ParseError{"A mailto URL path must not contain a slash."_el};
         }
         break;
     case UrlScheme::Custom:
@@ -130,10 +135,10 @@ auto UrlParser::network(const UrlScheme scheme, HostEndpoint endpoint, String pa
     -> std::shared_ptr<UrlData> {
     if (scheme != UrlScheme::Http && scheme != UrlScheme::Https && scheme != UrlScheme::Ftp &&
         scheme != UrlScheme::Ftps) {
-        throw err::ParameterError{"The URL scheme is not a host network scheme."_el, "scheme"_el};
+        throw ParameterFailure{"The URL scheme is not a host network scheme."_el, "scheme"_el};
     }
     if (endpoint.port().isAutomatic()) {
-        throw err::ParameterError{"A remote URL endpoint must not use port zero."_el, "endpoint"_el};
+        throw ParameterFailure{"A remote URL endpoint must not use port zero."_el, "endpoint"_el};
     }
     validateAuthorityPath(path);
     auto result = std::make_shared<UrlData>();
@@ -191,9 +196,9 @@ auto UrlParser::mailto(String address, String query, String fragment) -> std::sh
 auto UrlParser::custom(String scheme, std::optional<String> authority, String path, String query, String fragment)
     -> std::shared_ptr<UrlData> {
     validateSchemeText(scheme);
-    scheme = scheme.transformed(Char::toAsciiLowercase);
+    scheme = text::toAsciiLowercase(scheme);
     if (schemeFromText(scheme) != UrlScheme::Custom) {
-        throw err::ParameterError{"A custom URL requires an unrecognized scheme name."_el, "scheme"_el};
+        throw ParameterFailure{"A custom URL requires an unrecognized scheme name."_el, "scheme"_el};
     }
     if (authority.has_value()) {
         validateAuthorityText(*authority);
@@ -284,8 +289,8 @@ auto UrlParser::decodeComponent(const String &text) -> String {
                     result.append(
                         StringDecoder{encoded}.decode(
                             StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict));
-                } catch (const err::Exception &) {
-                    throw err::ParseError{"A percent-encoded URL component is not valid UTF-8."_el, reader.position()};
+                } catch (const text::EncodingError &) {
+                    throw ParseError{"A percent-encoded URL component is not valid UTF-8."_el, reader.position()};
                 }
                 encoded.clear();
             }
@@ -296,7 +301,7 @@ auto UrlParser::decodeComponent(const String &text) -> String {
         const auto high = reader.read().digitValue(IntegerBase::Hexadecimal);
         const auto low = reader.read().digitValue(IntegerBase::Hexadecimal);
         if (!high.has_value() || !low.has_value()) {
-            throw err::ParseError{"A URL percent escape requires two hexadecimal digits."_el, reader.position()};
+            throw ParseError{"A URL percent escape requires two hexadecimal digits."_el, reader.position()};
         }
         encoded.append(mem::Byte{static_cast<uint8_t>((*high << 4U) | *low)});
     }
@@ -304,16 +309,16 @@ auto UrlParser::decodeComponent(const String &text) -> String {
         try {
             result.append(
                 StringDecoder{encoded}.decode(StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict));
-        } catch (const err::Exception &) {
-            throw err::ParseError{"A percent-encoded URL component is not valid UTF-8."_el};
+        } catch (const text::EncodingError &) {
+            throw ParseError{"A percent-encoded URL component is not valid UTF-8."_el};
         }
     }
     return String{result}.normalized(NormalizationForm::Nfc);
 }
 
 auto UrlParser::normalizedComponent(String text) -> String {
-    if (!text.isValidUtf8()) {
-        throw err::ParameterError{"A URL component must be valid UTF-8."_el, "text"_el};
+    if (!text.isEncodingValid()) {
+        throw ParameterFailure{"A URL component must be valid UTF-8."_el, "text"_el};
     }
     return text.normalized(NormalizationForm::Nfc);
 }
@@ -323,19 +328,20 @@ void UrlParser::parseKnownAuthority(UrlData &data, const Port port) {
     parseUserInfo(data, hostPort);
     data.endpoint = parseHostPort(hostPort, port, false);
     if (data.endpoint.port().isAutomatic()) {
-        throw err::ParseError{"A remote URL endpoint must not use port zero."_el};
+        throw ParseError{"A remote URL endpoint must not use port zero."_el};
     }
     data.authorityParsed = true;
     data.hasEndpoint = true;
 }
 
 void UrlParser::parseFileAuthority(UrlData &data) {
+    static const auto cUnsupportedCharacters = CharSet{U'@', U':', U'[', U']'};
     if (data.authorityText.isEmpty()) {
         data.authorityParsed = true;
         return;
     }
-    if (data.authorityText.containsOneOf(CharSet{U'@', U':', U'[', U']'})) {
-        throw err::ParseError{"A file URL authority must be a plain host without credentials or a port."_el};
+    if (data.authorityText.containsOneOf(cUnsupportedCharacters)) {
+        throw ParseError{"A file URL authority must be a plain host without credentials or a port."_el};
     }
     data.endpoint = HostEndpoint{Host::fromStringOrThrow(decodeComponent(data.authorityText)), Port{}};
     data.authorityParsed = true;
@@ -352,7 +358,7 @@ void UrlParser::parseCustomAuthority(UrlData &data) noexcept {
         }
         data.authorityParsed = true;
         data.hasEndpoint = true;
-    } catch (const err::Exception &) {
+    } catch (const RuntimeError &) {
         data.username = {};
         data.password = {};
         data.hasUserInfo = false;
@@ -364,108 +370,107 @@ void UrlParser::parseCustomAuthority(UrlData &data) noexcept {
 }
 
 void UrlParser::parseUserInfo(UrlData &data, String &hostPort) {
-    const auto parts = StringList::fromSplit(hostPort, CharSet{U'@'}, unit::ItemCount::infinite(), true);
-    if (parts.count() > unit::ItemCount{2U}) {
-        throw err::ParseError{"A URL authority contains more than one user-info delimiter."_el};
+    const auto parts = StringList::fromSplit(hostPort, CharSet{U'@'}, ItemCount::infinite(), true);
+    if (parts.count() > ItemCount{2U}) {
+        throw ParseError{"A URL authority contains more than one user-info delimiter."_el};
     }
-    if (parts.count() == unit::ItemCount::one()) {
+    if (parts.count() == ItemCount::one()) {
         return;
     }
     data.hasUserInfo = true;
-    const auto userParts =
-        StringList::fromSplit(parts.get(unit::ItemIndex::zero()), CharSet{U':'}, unit::ItemCount{1U}, true);
-    data.username = decodeComponent(userParts.get(unit::ItemIndex::zero()));
-    if (userParts.count() == unit::ItemCount{2U}) {
+    const auto userParts = StringList::fromSplit(parts.get(ItemIndex::zero()), CharSet{U':'}, ItemCount{1U}, true);
+    data.username = decodeComponent(userParts.get(ItemIndex::zero()));
+    if (userParts.count() == ItemCount{2U}) {
         data.hasPassword = true;
-        data.password = decodeComponent(userParts.get(unit::ItemIndex{1U}));
+        data.password = decodeComponent(userParts.get(ItemIndex{1U}));
     }
-    hostPort = parts.get(unit::ItemIndex{1U});
+    hostPort = parts.get(ItemIndex{1U});
 }
 
 auto UrlParser::parseHostPort(const String &text, const Port defaultPortValue, const bool requirePort) -> HostEndpoint {
     if (text.isEmpty()) {
-        throw err::ParseError{"A URL authority requires a host."_el};
+        throw ParseError{"A URL authority requires a host."_el};
     }
     auto endpointText = text;
     auto hasPort = false;
     if (text.startsWith("["_el)) {
         const auto close = text.find("]"_el);
         if (close.isNoIndex()) {
-            throw err::ParseError{"A bracketed URL host requires a closing bracket."_el};
+            throw ParseError{"A bracketed URL host requires a closing bracket."_el};
         }
-        const auto after = text.slice(StringSide::Back, close.advanced(unit::ByteLength::one()));
+        const auto after = text.slice(StringSide::Back, close.advanced(ByteCount::one()));
         if (after.isEmpty()) {
             // Add the scheme default below.
         } else if (after.startsWith(":"_el)) {
             hasPort = true;
         } else {
-            throw err::ParseError{"Unexpected text follows a bracketed URL host."_el};
+            throw ParseError{"Unexpected text follows a bracketed URL host."_el};
         }
         const auto percentCount = endpointText.count("%"_el);
-        if (percentCount > unit::ItemCount::one() ||
-            (percentCount == unit::ItemCount::one() && !endpointText.contains("%25"_el))) {
-            throw err::ParseError{"An IPv6 URL scope delimiter must be percent-encoded as %25."_el};
+        if (percentCount > ItemCount::one() || (percentCount == ItemCount::one() && !endpointText.contains("%25"_el))) {
+            throw ParseError{"An IPv6 URL scope delimiter must be percent-encoded as %25."_el};
         }
-        if (percentCount == unit::ItemCount::one()) {
+        if (percentCount == ItemCount::one()) {
             endpointText = endpointText.replacedFirst("%25"_el, "%"_el);
         }
     } else {
-        const auto parts = StringList::fromSplit(text, CharSet{U':'}, unit::ItemCount::infinite(), true);
-        if (parts.count() > unit::ItemCount{2U}) {
-            throw err::ParseError{"An IPv6 URL host must be enclosed in brackets."_el};
+        const auto parts = StringList::fromSplit(text, CharSet{U':'}, ItemCount::infinite(), true);
+        if (parts.count() > ItemCount{2U}) {
+            throw ParseError{"An IPv6 URL host must be enclosed in brackets."_el};
         }
-        hasPort = parts.count() == unit::ItemCount{2U};
+        hasPort = parts.count() == ItemCount{2U};
         if (!hasPort && (requirePort || defaultPortValue.isAutomatic())) {
-            throw err::ParseError{"This URL authority requires an explicit port."_el};
+            throw ParseError{"This URL authority requires an explicit port."_el};
         }
-        const auto port = hasPort ? Port::fromStringOrThrow(parts.get(unit::ItemIndex{1U})) : defaultPortValue;
-        return HostEndpoint{Host::fromStringOrThrow(decodeComponent(parts.get(unit::ItemIndex::zero()))), port};
+        const auto port = hasPort ? Port::fromStringOrThrow(parts.get(ItemIndex::one())) : defaultPortValue;
+        return HostEndpoint{Host::fromStringOrThrow(decodeComponent(parts.get(ItemIndex::zero()))), port};
     }
     if (!hasPort) {
         if (requirePort || defaultPortValue.isAutomatic()) {
-            throw err::ParseError{"This URL authority requires an explicit port."_el};
+            throw ParseError{"This URL authority requires an explicit port."_el};
         }
         auto editor = StringEditor{endpointText};
         editor.append(U':').append(defaultPortValue.toString());
-        endpointText = String{editor};
+        endpointText = editor;
     }
     return HostEndpoint::fromStringOrThrow(endpointText);
 }
 
 void UrlParser::validateSchemeText(const String &scheme) {
-    if (!scheme.isValidUtf8() || scheme.isEmpty()) {
-        throw err::ParameterError{"A custom URL scheme must not be empty."_el, "scheme"_el};
+    if (!scheme.isEncodingValid() || scheme.isEmpty()) {
+        throw ParameterFailure{"A custom URL scheme must not be empty."_el, "scheme"_el};
     }
     auto reader = StringCharReader{scheme};
     if (!reader.read().isAsciiLetter()) {
-        throw err::ParameterError{"A custom URL scheme must start with an ASCII letter."_el, "scheme"_el};
+        throw ParameterFailure{"A custom URL scheme must start with an ASCII letter."_el, "scheme"_el};
     }
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
         if (!character.isAsciiCategory(AsciiCategory::UrlScheme)) {
-            throw err::ParameterError{"A custom URL scheme contains an invalid character."_el, "scheme"_el};
+            throw ParameterFailure{"A custom URL scheme contains an invalid character."_el, "scheme"_el};
         }
     }
 }
 
 void UrlParser::validateMailtoPath(const String &path) {
     if (path.contains("/"_el)) {
-        throw err::ParameterError{"A mailto URL path must not contain a slash."_el, "address"_el};
+        throw ParameterFailure{"A mailto URL path must not contain a slash."_el, "address"_el};
     }
 }
 
 void UrlParser::validateAuthorityPath(const String &path) {
     if (!path.isEmpty() && !path.startsWith("/"_el)) {
-        throw err::ParameterError{"A URL path following an authority must start with a slash."_el, "path"_el};
+        throw ParameterFailure{"A URL path following an authority must start with a slash."_el, "path"_el};
     }
 }
 
 void UrlParser::validateAuthorityText(const String &authority) {
-    if (!authority.isValidUtf8()) {
-        throw err::ParameterError{"A custom URL authority must be valid UTF-8."_el, "authority"_el};
+    static const auto cDelimiters = CharSet{U'/', U'?', U'#'};
+    if (!authority.isEncodingValid()) {
+        throw ParameterFailure{"A custom URL authority must be valid UTF-8."_el, "authority"_el};
     }
-    if (authority.containsOneOf(CharSet{U'/', U'?', U'#'})) {
-        throw err::ParameterError{
+    if (authority.containsOneOf(cDelimiters)) {
+        throw ParameterFailure{
             "A custom URL authority must not contain path, query, or fragment delimiters."_el, "authority"_el};
     }
 }

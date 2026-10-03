@@ -3,6 +3,13 @@
 
 #include "StandardStreamsDemos.hpp"
 
+#include <erbsland/CpCount.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TextInputStream.hpp>
 #include <StreamDemoSupport.hpp>
 
 #include <exception>
@@ -27,7 +34,7 @@ void readRedirectedInput() {
 /// A stable proxy follows the replacement even when obtained before the redirect.
 /// A finite line length and attempt count bound both memory use and time spent on a source that repeatedly stalls.
 auto readTempoFrom(el::TextInputStreamPtr input) -> el::String {
-    constexpr auto cMaximumLineLength = el::CpLength{40U};
+    constexpr auto cMaximumLineLength = el::CpCount{40U};
     constexpr auto cMaximumAttempts = 3U;
     const auto standardInput = el::stdIn();
 

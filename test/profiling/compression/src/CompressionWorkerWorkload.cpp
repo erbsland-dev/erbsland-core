@@ -1,8 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "CompressionWorkerWorkload.hpp"
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCompressor.hpp>
+#include <erbsland/ByteDecompressor.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/CompressionFormat.hpp>
+#include <erbsland/CompressionLevel.hpp>
+#include <erbsland/DecompressionOptions.hpp>
+#include <erbsland/List.hpp>
 #include <erbsland/profiling/WorkerExecutionContext.hpp>
 
 #include <utility>

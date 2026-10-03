@@ -4,14 +4,15 @@
 cmake_minimum_required(VERSION 3.23)
 include_guard()
 
+include("${CMAKE_CURRENT_LIST_DIR}/compiler-requirements.cmake")
+
 # Apply the compiler and language requirements for an Erbsland Core target.
 #
 # Parameters:
 #   target - Name of an existing CMake target.
 #
-# The requirements are propagated to consumers where necessary: C++20, the C++ linker language, namespace-flattening
-# selection, and developer-build selection are public. Compiler workarounds and build-performance options remain
-# private to the target.
+# The requirements are propagated to consumers where necessary: C++20, the C++ linker language, and developer-build
+# selection are public. Compiler workarounds and build-performance options remain private to the target.
 function(erbsland_set_required_compiler_options target)
     set_target_properties(${target} PROPERTIES LINKER_LANGUAGE CXX)
     target_compile_features(${target} PUBLIC cxx_std_20)
@@ -39,9 +40,6 @@ function(erbsland_set_required_compiler_options target)
         )
     endif()
 
-    if(ERBSLAND_CORE_DO_NOT_FLATTEN_NS)
-        target_compile_definitions(${target} PUBLIC -DERBSLAND_CORE_DO_NOT_FLATTEN_NS=1)
-    endif()
     if(ERBSLAND_CORE_DEVELOPER_BUILD)
         target_compile_definitions(${target} PUBLIC $<$<CONFIG:Debug>:-DERBSLAND_CORE_DEVELOPER_BUILD=1>)
     endif()

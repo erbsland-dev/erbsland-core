@@ -2,22 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 namespace erbsland::compression {
+
 /// Compressor memory policy.
 /// @tested{CompressionStreamingTest}
 class CompressionOptions final {
 public:
     /// Get the maximum codec workspace.
-    auto maximumWorkspaceLength() const noexcept -> unit::ByteLength { return _maximumWorkspaceLength; }
+    auto maximumWorkspaceLength() const noexcept -> unit::ByteCount { return _maximumWorkspaceLength; }
     /// Set the finite maximum codec workspace.
-    auto setMaximumWorkspaceLength(unit::ByteLength value) -> CompressionOptions & {
+    auto setMaximumWorkspaceLength(unit::ByteCount value) -> CompressionOptions & {
         _maximumWorkspaceLength = value;
         return *this;
     }
 
 private:
-    unit::ByteLength _maximumWorkspaceLength{256U * 1024U * 1024U}; ///< Codec allocation limit.
+    unit::ByteCount _maximumWorkspaceLength{256U * 1024U * 1024U}; ///< Codec allocation limit.
 };
+
 }

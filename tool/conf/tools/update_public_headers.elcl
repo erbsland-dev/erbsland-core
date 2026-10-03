@@ -1,0 +1,278 @@
+#
+# Configuration for the update_public_headers tool
+#
+----[ Update Public Headers ]-----------------------------------------------------------------------------------------
+Source Base Directory        : "src/erbsland"
+Include Base Directory       : "include/erbsland"
+Base Namespace               : "erbsland"
+Namespaces Header            : "core/Namespaces.hpp"
+Make One Namespace Header    : "core/impl/MakeOneNamespace.hpp"
+Mapping File                 : "tool/data/public_headers/header_map.txt"
+Generated Markers            : "// !!! THIS IS A GENERATED FILE"
+Excluded Directories         : "impl", "attribute", "constraint"
+Excluded Headers             : "*_*.hpp", "fwd.hpp", "all.hpp"
+Excluded From All Headers    : "StdFormat.hpp"
+Mergeable Header Names       : "Literals.hpp", "StdFormat.hpp"
+Declared Namespaces          : "cterm::theme", "stream::io", "system::info"
+
+------[ . Namespace Aliases ]----
+Cpp                          : "text::cpp"
+Io                           : "stream::io"
+Html                         : "text::html"
+Punycode                     : "text::punycode"
+Sys Info                     : "system::info"
+
+# Preserve this historical root include even though system exports are selective.
+------[ . Header Aliases . System Info ]----
+Source Header                : "system/SystemInfo.hpp"
+Include Header               : "SystemInfo.hpp"
+
+----[ Update Public Headers . Directory ]-----------------------------------------------------------------------------
+# The individual configurations for each directory.
+
+------[ . Block ]----
+
+------[ . Compression ]----
+Flatten                      : Yes
+
+------[ . Compression . Zip ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "zip"
+
+------[ . Conf ]----
+
+------[ . Conf . Syntax ]----
+Nested Namespace             : Yes
+
+------[ . Conf . Vr ]----
+Nested Namespace             : Yes
+
+------[ . Conf . Vr . Builder ]----
+Nested Namespace             : Yes
+
+------[ . Core ]----
+Flatten                      : Yes
+
+------[ . Cryptology ]----
+Flatten                      : Yes
+
+------[ . Cryptology . Asn1 ]----
+
+------[ . Cryptology . Authentication ]----
+
+------[ . Cryptology . Configuration ]----
+
+------[ . Cryptology . Keys ]----
+
+------[ . Cryptology . Protected Data ]----
+
+------[ . Cryptology . Symmetric ]----
+
+------[ . Cryptology . Tls ]----
+
+------[ . Cryptology . Tls Record ]----
+
+------[ . Cryptology . Unsafe ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "unsafe"
+
+------[ . Cryptology . X509 ]----
+
+------[ . Cterm ]----
+
+------[ . Data ]----
+Flatten                      : Yes
+
+------[ . Data . Bson ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "bson"
+
+------[ . Data . Cbor ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "cbor"
+
+------[ . Data . Json ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "json"
+
+------[ . Data . Xml ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "xml"
+
+------[ . Debug ]----
+Flatten                      : Yes
+
+------[ . Err ]----
+Flatten                      : Yes
+
+------[ . Event ]----
+Flatten                      : Yes
+
+------[ . Geometry ]----
+Flatten                      : Yes
+
+------[ . I18n ]----
+Flatten                      : Yes
+
+------[ . Log ]----
+Flatten                      : Yes
+
+------[ . Log . Line ]----
+
+------[ . Math ]----
+Flatten                      : Yes
+
+------[ . Mem ]----
+Flatten                      : Yes
+
+------[ . Network ]----
+Flatten                      : Yes
+
+------[ . Network . Host Lookup ]----
+
+------[ . Network . Http ]----
+
+------[ . Network . Http Client ]----
+
+------[ . Network . Http Server ]----
+
+------[ . Network . Source ]----
+
+------[ . Network . Tcp ]----
+
+------[ . Network . Tls ]----
+
+------[ . Network . Udp ]----
+
+------[ . Network . Url ]----
+
+------[ . Options ]----
+Flatten                      : Yes
+
+------[ . Path ]----
+Flatten                      : Yes
+
+------[ . Random ]----
+Flatten                      : Yes
+
+------[ . Re ]----
+Flatten                      : Yes
+Included Symbols             : "RegEx"
+
+------[ . Re . Diagnostics ]----
+Nested Namespace             : Yes
+Flatten                      : No
+
+------[ . Resource ]----
+Flatten                      : Yes
+Excluded From All Headers    : "ResourceStorageRegistration.hpp"
+
+------[ . Stream ]----
+Flatten                      : Yes
+
+------[ . System ]----
+Flatten                      : Yes
+Included Symbols             :
+    * "CpuArchitecture"
+    * "DetachedSubprocess"
+    * "DetachedSubprocessPtr"
+    * "EnvironmentChanges"
+    * "EnvironmentInherit"
+    * "EnvironmentVariables"
+    * "EnvironmentVariablesPtr"
+    * "FileIdentity"
+    * "GroupId"
+    * "GroupName"
+    * "OperatingSystem"
+    * "PlatformError"
+    * "PlatformErrorCategory"
+    * "PlatformErrorContext"
+    * "PlatformErrorContextConstPtr"
+    * "PlatformErrorContextPtr"
+    * "ProcessId"
+    * "ProcessInfo"
+    * "Subprocess"
+    * "SubprocessEventEditor"
+    * "SubprocessExitStatus"
+    * "SubprocessOptions"
+    * "SubprocessOutputMode"
+    * "SubprocessPtr"
+    * "System"
+    * "UserId"
+    * "UserLookup"
+    * "UserLookupPtr"
+    * "UserName"
+
+------[ . Text ]----
+Flatten                      : Yes
+
+------[ . Text . Base N ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "base_n"
+
+------[ . Text . Cpp ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "cpp"
+
+------[ . Text . Fuzzy ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "fuzzy"
+
+------[ . Text . Html ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "html"
+
+------[ . Text . Named Key ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "named_key"
+
+------[ . Text . Pattern ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "pattern"
+
+------[ . Text . Placeholder ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "placeholder"
+
+------[ . Text . Punycode ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "punycode"
+
+------[ . Text . Render ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "render"
+
+------[ . Text . U16 ]----
+
+------[ . Text . U32 ]----
+
+------[ . Text . U8 ]----
+
+------[ . Time ]----
+Flatten                      : Yes
+
+------[ . Time . Tz ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "tz"
+
+------[ . Unit ]----
+Flatten                      : Yes
+
+------[ . Util ]----
+Flatten                      : Yes

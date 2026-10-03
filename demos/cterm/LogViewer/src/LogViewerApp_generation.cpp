@@ -1,13 +1,20 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "LogViewerApp.hpp"
+
+#include <erbsland/AnyStringBuilder.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringSide.hpp>
 
 #include <algorithm>
 #include <array>
 #include <utility>
 
 namespace demo {
+
 auto LogViewerApp::generateLogMessage() -> LogMessage {
     const auto level = randomLogLevel();
     const auto lengthRoll = random().selectInteger<unsigned int>(1, 100);
@@ -61,7 +68,8 @@ auto LogViewerApp::generateShortMessage(const LogLevel level) -> el::String {
         errorFormat.appendTo(message, method, route, random().selectElement(errorChoices()), backend);
         break;
     }
-    return message.toString().slice(el::StringSide::Front, el::CpLength{random().selectInteger<unsigned int>(75, 120)});
+    return message.toString().slice(
+        el::StringSide::Front, el::CpCount::fromInteger(random().selectInteger<unsigned int>(75, 120)));
 }
 
 auto LogViewerApp::generateLongMessage(const LogLevel level) -> el::String {
@@ -69,7 +77,7 @@ auto LogViewerApp::generateLongMessage(const LogLevel level) -> el::String {
         "; request-id {}; upstream {}; user-agent {}; rate-limit bucket {}; payload {} bytes; cache state {}; "
         "TLS resume {}; compression {}; forwarded-for {}; origin latency {} ms"_el);
     auto message = el::AnyStringBuilder::basedOn(generateShortMessage(level));
-    const auto targetLength = el::CpLength{random().selectInteger<unsigned int>(300, 600)};
+    const auto targetLength = el::CpCount::fromInteger(random().selectInteger<unsigned int>(300, 600));
     while (true) {
         format.appendTo(
             message,
@@ -83,7 +91,7 @@ auto LogViewerApp::generateLongMessage(const LogLevel level) -> el::String {
             random().selectElement({el::String{"brotli"_el}, el::String{"gzip"_el}}),
             randomIpAddress(),
             random().selectInteger(8, 430));
-        if (message.length() > targetLength && message.length() >= el::CpLength{300}) {
+        if (message.length() > targetLength && message.length() >= el::CpCount{300}) {
             break;
         }
     }

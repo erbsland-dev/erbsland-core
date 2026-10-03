@@ -11,16 +11,17 @@
 
 #include "../RenderError.hpp"
 
-#include "../../../text/Literals.hpp"
+#include "../../Literals.hpp"
 #include "../../StringFormat.hpp"
 
 #include <algorithm>
 
 namespace erbsland::text::render::impl {
 
+using namespace unit;
 using namespace text::literals;
 
-void Compiler::compileInclude(Tokenizer &tokenizer, const unit::CodeLocation statementLocation) {
+void Compiler::compileInclude(Tokenizer &tokenizer, const CodeLocation statementLocation) {
     if (tokenizer.current().kind != TokenKind::String) {
         throwSyntax("An 'include' statement requires one static string layout name."_el, tokenizer.current().location);
     }
@@ -85,7 +86,7 @@ void Compiler::compileInclude(Tokenizer &tokenizer, const unit::CodeLocation sta
     writer().writeInclude(includeIndex, statementLocation);
 }
 
-void Compiler::compileExtends(Tokenizer &tokenizer, const unit::CodeLocation statementLocation) {
+void Compiler::compileExtends(Tokenizer &tokenizer, const CodeLocation statementLocation) {
     if (!isLayoutTopLevel()) {
         throwSyntax("An 'extends' statement is allowed only at layout level."_el, statementLocation);
     }
@@ -123,7 +124,7 @@ void Compiler::compileExtends(Tokenizer &tokenizer, const unit::CodeLocation sta
     _extends = std::make_shared<const CompiledExtends>(name, std::move(parent), statementLocation);
 }
 
-void Compiler::compileBlock(Tokenizer &tokenizer, const unit::CodeLocation statementLocation) {
+void Compiler::compileBlock(Tokenizer &tokenizer, const CodeLocation statementLocation) {
     if (tokenizer.current().kind != TokenKind::Identifier) {
         throwSyntax("A 'block' statement requires one ASCII identifier name."_el, tokenizer.current().location);
     }
@@ -140,7 +141,7 @@ void Compiler::compileBlock(Tokenizer &tokenizer, const unit::CodeLocation state
     _programs.emplace_back(ProgramContext{name, statementLocation, {}, {}});
 }
 
-void Compiler::compileEndBlock(Tokenizer &tokenizer, const unit::CodeLocation statementLocation) {
+void Compiler::compileEndBlock(Tokenizer &tokenizer, const CodeLocation statementLocation) {
     if (tokenizer.current().kind != TokenKind::TagEnd) {
         throwSyntax("An 'endblock' statement does not accept arguments."_el, tokenizer.current().location);
     }

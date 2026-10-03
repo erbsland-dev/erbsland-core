@@ -4,6 +4,10 @@
 
 #include "CatalogStorage.hpp"
 
+#include <erbsland/ApplicationPartWithInterface.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+
 #include <memory>
 
 namespace demo {

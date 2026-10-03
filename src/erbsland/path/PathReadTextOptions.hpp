@@ -9,8 +9,8 @@
 #include "../text/StringBomMode.hpp"
 #include "../text/StringEncoding.hpp"
 #include "../time/TimeDelta.hpp"
-#include "../unit/ByteLength.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/ByteCount.hpp"
+#include "../unit/CpCount.hpp"
 
 namespace erbsland::path {
 
@@ -27,10 +27,10 @@ public:
 
     /// Create UTF-8, replacement char and automatic BOM with a maximum byte length.
     /// @param maximumByteLength The maximum byte length to read.
-    PathReadTextOptions(unit::ByteLength maximumByteLength); // NOLINT(*-explicit-constructor)
+    PathReadTextOptions(unit::ByteCount maximumByteLength); // NOLINT(*-explicit-constructor)
     /// Create UTF-8, replacement char and automatic BOM with a maximum code-point length.
     /// @param maximumCpLength The maximum code-point length to read.
-    PathReadTextOptions(unit::CpLength maximumCpLength); // NOLINT(*-explicit-constructor)
+    PathReadTextOptions(unit::CpCount maximumCpLength); // NOLINT(*-explicit-constructor)
     /// Use defaults with a different encoding
     /// @param encoding The encoding to use.
     PathReadTextOptions(text::StringEncoding encoding); // NOLINT(*-explicit-constructor)
@@ -54,13 +54,13 @@ public:
     /// Set the handling mode for encoding errors.
     auto setEncodingMode(text::EncodingMode value) -> PathReadTextOptions &;
     /// Get the maximum number of bytes to read.
-    [[nodiscard]] auto maximumByteLength() const -> unit::ByteLength { return _maximumByteLength; }
+    [[nodiscard]] auto maximumByteLength() const -> unit::ByteCount { return _maximumByteLength; }
     /// Set the maximum number of bytes to read.
-    auto setMaximumByteLength(unit::ByteLength value) -> PathReadTextOptions &;
+    auto setMaximumByteLength(unit::ByteCount value) -> PathReadTextOptions &;
     /// Get the maximum number of code points to read.
-    [[nodiscard]] auto maximumCpLength() const -> unit::CpLength { return _maximumCpLength; }
+    [[nodiscard]] auto maximumCpLength() const -> unit::CpCount { return _maximumCpLength; }
     /// Set the maximum number of code points to read.
-    auto setMaximumCpLength(unit::CpLength value) -> PathReadTextOptions &;
+    auto setMaximumCpLength(unit::CpCount value) -> PathReadTextOptions &;
     /// Get how symbolic links are handled while opening the input file.
     [[nodiscard]] auto symlinkMode() const noexcept -> SymlinkMode { return _symlinkMode; }
     /// Set how symbolic links are handled while opening the input file.
@@ -92,8 +92,8 @@ private:
     text::StringEncoding _encoding = text::StringEncoding::Utf8;
     text::StringBomMode _bomMode = text::StringBomMode::Automatic;
     text::EncodingMode _encodingMode = text::EncodingMode::Tolerant;
-    unit::ByteLength _maximumByteLength = unit::ByteLength{10'000'000LL};
-    unit::CpLength _maximumCpLength = unit::CpLength::infinite();
+    unit::ByteCount _maximumByteLength = unit::ByteCount{10'000'000LL};
+    unit::CpCount _maximumCpLength = unit::CpCount::infinite();
     SymlinkMode _symlinkMode{SymlinkMode::Follow};
     stream::InputStreamSettings _streamSettings{stream::InputStreamSettings{}.setTimeout(cDefaultTimeout)};
 };

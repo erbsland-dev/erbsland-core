@@ -13,6 +13,8 @@
 
 namespace erbsland::cterm {
 
+using namespace err;
+using namespace text;
 using namespace text::literals;
 
 auto BlockAttributes::attributeFlags() noexcept -> const std::array<Flag, 8> & {
@@ -29,8 +31,8 @@ auto BlockAttributes::attributeFlags() noexcept -> const std::array<Flag, 8> & {
     return flags;
 }
 
-auto BlockAttributes::attributeFormat() -> const text::named_key::Format & {
-    static const auto keys = text::named_key::Format::Keys{{
+auto BlockAttributes::attributeFormat() -> const named_key::Format & {
+    static const auto keys = named_key::Format::Keys{{
         {"inherited"_el, cInheritedKey},
         {"bold"_el, BlockAttributes::Bold.value},
         {"dim"_el, BlockAttributes::Dim.value},
@@ -41,19 +43,19 @@ auto BlockAttributes::attributeFormat() -> const text::named_key::Format & {
         {"hidden"_el, BlockAttributes::Hidden.value},
         {"strikethrough"_el, BlockAttributes::Strikethrough.value},
     }};
-    static const auto format = text::named_key::Format{}
+    static const auto format = named_key::Format{}
                                    .setKeys(keys)
-                                   .setAllowedKeyPrefixes(text::CharSet{U'+', U'-'})
+                                   .setAllowedKeyPrefixes(CharSet{U'+', U'-'})
                                    .setValuesAllowed(false)
                                    .setValueListAllowed(false);
     return format;
 }
 
-auto BlockAttributes::toString() const -> text::String {
+auto BlockAttributes::toString() const -> String {
     if (_specifiedMask == 0) {
         return "inherited"_el;
     }
-    auto result = text::StringEditor{};
+    auto result = StringEditor{};
     for (const auto flag : attributeFlags()) {
         if (!isSpecified(flag)) {
             continue;
@@ -66,31 +68,31 @@ auto BlockAttributes::toString() const -> text::String {
         }
         result.append(attributeFormat().keyName(flag.value));
     }
-    return text::String{result};
+    return result;
 }
 
-auto BlockAttributes::fromString(const text::String &str, const BlockAttributes defaultValue) -> BlockAttributes {
+auto BlockAttributes::fromString(const String &str, const BlockAttributes defaultValue) -> BlockAttributes {
     try {
         return fromStringOrThrow(str);
-    } catch (const err::ParseError &) {
+    } catch (const ParseError &) {
         return defaultValue;
     }
 }
 
-auto BlockAttributes::fromStringOrThrow(const text::String &str) -> BlockAttributes {
+auto BlockAttributes::fromStringOrThrow(const String &str) -> BlockAttributes {
     if (str.isEmpty()) {
-        throw err::ParseError{"A block attribute list must not be empty."_el};
+        throw ParseError{"A block attribute list must not be empty."_el};
     }
 
-    auto reader = text::StringCharReader{str};
-    const auto entries = text::named_key::Parser{reader, attributeFormat()}.readAllEntries();
+    auto reader = StringCharReader{str};
+    const auto entries = named_key::Parser{reader, attributeFormat()}.readAllEntries();
     if (entries.isEmpty()) {
-        throw err::ParseError{"A block attribute list must not be empty."_el};
+        throw ParseError{"A block attribute list must not be empty."_el};
     }
     const auto first = entries.first();
     if (first.keyIndex() == cInheritedKey) {
         if (entries.count() != unit::ItemCount::one() || !first.prefix().isNoCodePoint()) {
-            throw err::ParseError{"The inherited attribute state cannot be combined with other attributes."_el};
+            throw ParseError{"The inherited attribute state cannot be combined with other attributes."_el};
         }
         return {};
     }
@@ -98,7 +100,7 @@ auto BlockAttributes::fromStringOrThrow(const text::String &str) -> BlockAttribu
     auto result = BlockAttributes{};
     for (const auto &entry : entries) {
         if (entry.keyIndex() == cInheritedKey) {
-            throw err::ParseError{"The inherited attribute state cannot be combined with other attributes."_el};
+            throw ParseError{"The inherited attribute state cannot be combined with other attributes."_el};
         }
         const auto flag = Flag{static_cast<uint8_t>(entry.keyIndex())};
         result.setFlag(flag, entry.prefix() != U'-');

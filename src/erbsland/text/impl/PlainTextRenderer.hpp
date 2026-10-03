@@ -10,7 +10,7 @@
 #include "../TextDocument_fwd.hpp"
 #include "../TextNode_fwd.hpp"
 
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <cstddef>
 
@@ -45,13 +45,13 @@ private:
     /// Render a term-list node.
     void renderTermList(AnyStringBuilder &builder, const TextNode &node);
     /// Render one term-list item at a description column.
-    void renderTermItem(AnyStringBuilder &builder, const TextNode &node, unit::CpLength descriptionColumn);
+    void renderTermItem(AnyStringBuilder &builder, const TextNode &node, unit::CpCount descriptionColumn);
     /// Get the term name from a term-list item.
     [[nodiscard]] static auto termName(const TextNode &node) -> String;
     /// Get the term description from a term-list item.
     [[nodiscard]] static auto termDescription(const TextNode &node) -> String;
     /// Determine the description column for a term list.
-    [[nodiscard]] static auto termListDescriptionColumn(const TextNode &node) -> unit::CpLength;
+    [[nodiscard]] static auto termListDescriptionColumn(const TextNode &node) -> unit::CpCount;
     /// Append one node's inline representation.
     static void appendInline(AnyStringBuilder &builder, const TextNode &node);
     /// Append the inline representations of one node's children.
@@ -65,7 +65,7 @@ private:
     void appendWrappedLine(
         AnyStringBuilder &builder, const String &prefix, const String &continuation, const String &text);
     /// Append the requested indentation.
-    static void appendIndent(AnyStringBuilder &builder, unit::CpLength indent);
+    static void appendIndent(AnyStringBuilder &builder, unit::CpCount indent);
     /// Append the textual content of one node.
     static void appendNodeText(AnyStringBuilder &builder, const TextNode &node);
     /// Get the textual content of one node.
@@ -80,16 +80,16 @@ private:
     [[nodiscard]] auto isRootDiagnosticContent(const TextNode &node) const noexcept -> bool;
 
 private:
-    static constexpr auto cPlainTermListWidth = unit::CpLength{80U}; ///< The target width for term lists.
-    static constexpr auto cPlainCodeSnippetWidth = 80;               ///< The target width for code snippets.
-    static constexpr auto cCodeLineNumberWidth = 4;                  ///< The width reserved for code line numbers.
-    static constexpr auto cTermDescriptionMinimumColumn = unit::CpLength{12U}; ///< The minimum term description column.
-    static constexpr auto cTermDescriptionMaximumColumn = unit::CpLength{26U}; ///< The maximum term description column.
+    static constexpr auto cPlainTermListWidth = unit::CpCount{80U}; ///< The target width for term lists.
+    static constexpr auto cPlainCodeSnippetWidth = 80;              ///< The target width for code snippets.
+    static constexpr auto cCodeLineNumberWidth = 4;                 ///< The width reserved for code line numbers.
+    static constexpr auto cTermDescriptionMinimumColumn = unit::CpCount{12U}; ///< The minimum term description column.
+    static constexpr auto cTermDescriptionMaximumColumn = unit::CpCount{26U}; ///< The maximum term description column.
 
-    const TextDocument &_document;                                             ///< The rendered document.
-    bool _firstLine{true};                                                     ///< Set while no line was rendered yet.
+    const TextDocument &_document;                                            ///< The rendered document.
+    bool _firstLine{true};                                                    ///< Set while no line was rendered yet.
     bool _diagnosticDocument{}; ///< Set when rendering an error diagnostic document.
-    unit::CpLength _indent;     ///< The current block indentation.
+    unit::CpCount _indent;      ///< The current block indentation.
 };
 
 }

@@ -4,7 +4,7 @@
 
 #include "HashWorkerWorkload_fwd.hpp"
 
-#include <erbsland/cryptology/HashAlgorithm.hpp>
+#include <erbsland/HashAlgorithm.hpp>
 #include <erbsland/profiling/WorkerWorkload.hpp>
 
 #include <memory>

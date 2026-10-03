@@ -4,11 +4,11 @@
 
 #include "U16StringDataView.hpp"
 
+#include "../../../unit/CpCount.hpp"
 #include "../../../unit/CpIndex.hpp"
-#include "../../../unit/CpLength.hpp"
 #include "../../../unit/CpRange.hpp"
-#include "../../../unit/U16DataIndex.hpp"
-#include "../../../unit/U16DataRange.hpp"
+#include "../../../unit/U16Index.hpp"
+#include "../../../unit/U16Range.hpp"
 #include "../../Char.hpp"
 #include "../../CharSet.hpp"
 
@@ -30,15 +30,15 @@ public:
 
 public: // read
     /// Get the character length of the view.
-    [[nodiscard]] auto charLength() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto charLength() const noexcept -> unit::CpCount;
     /// Access the character at the given character position.
     [[nodiscard]] auto charAt(unit::CpIndex index) const noexcept -> Char;
     /// Get the start UTF-16 data index for the given code-point index.
-    [[nodiscard]] auto byteIndexAt(unit::CpIndex index) const noexcept -> unit::U16DataIndex;
+    [[nodiscard]] auto byteIndexAt(unit::CpIndex index) const noexcept -> unit::U16Index;
     /// Get the code-point index for the given UTF-16 data index.
-    [[nodiscard]] auto charIndexAt(unit::U16DataIndex index) const noexcept -> unit::CpIndex;
+    [[nodiscard]] auto charIndexAt(unit::U16Index index) const noexcept -> unit::CpIndex;
     /// Convert a relative character range for this view into a bounded byte range for the backing data.
-    [[nodiscard]] auto sliceRange(unit::CpRange range) const noexcept -> unit::U16DataRange;
+    [[nodiscard]] auto sliceRange(unit::CpRange range) const noexcept -> unit::U16Range;
 
 public: // find
     /// Find the first decoded character from the given character set.
@@ -71,9 +71,8 @@ private:
         const CharacterSet &characters, unit::CpIndex end, bool isMatching) const noexcept -> unit::CpIndex;
     /// Test if the haystack at the candidate start matches the decoded needle.
     [[nodiscard]] static auto matchesCharacterSequence(
-        std::span<const char16_t> haystack,
-        unit::U16DataIndex candidateStart,
-        std::span<const char16_t> needle) noexcept -> bool;
+        std::span<const char16_t> haystack, unit::U16Index candidateStart, std::span<const char16_t> needle) noexcept
+        -> bool;
 
 private:
     U16StringDataView _data;

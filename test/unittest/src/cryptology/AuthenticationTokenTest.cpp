@@ -3,15 +3,15 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/cryptology/authentication/AuthenticationTokenPair.hpp>
-#include <erbsland/cryptology/authentication/PendingAuthenticationChallenge.hpp>
-#include <erbsland/cryptology/SignedByteBlock.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/time/TimeAmounts.hpp>
-#include <erbsland/time/TimeDelta.hpp>
+#include <erbsland/AuthenticationTokenPair.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/PendingAuthenticationChallenge.hpp>
+#include <erbsland/SignedByteBlock.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/TimeAmounts.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::cryptology;
@@ -21,10 +21,17 @@ namespace erbsland::cryptology::impl {
 
 class AuthenticationChallengeTestAccess final {
 public:
-    [[nodiscard]] static auto verifyExpired(PendingAuthenticationChallenge &pending, const mem::ConstByteSpan response)
-        -> bool {
-        return pending.verifyAt(response, pending._deadline + time::TimeDelta{time::Nanoseconds{1}});
+    /// Bind access to the target instance, which must outlive this helper.
+    /// @param pending The accessed instance.
+    explicit AuthenticationChallengeTestAccess(PendingAuthenticationChallenge &pending) noexcept : _pending{pending} {}
+
+public: // access
+    [[nodiscard]] auto verifyExpired(const mem::ConstByteSpan response) -> bool {
+        return _pending.verifyAt(response, _pending._deadline + time::TimeDelta{time::Nanoseconds{1}});
     }
+
+private:
+    PendingAuthenticationChallenge &_pending; ///< The accessed instance.
 };
 
 }
@@ -52,7 +59,7 @@ public:
         padded.append(U'=');
         REQUIRE(ClientAuthenticationToken::fromString(el::text::String{padded}).isEmpty());
         auto wrongMarker = el::text::StringEditor{clientText};
-        wrongMarker.replace(el::unit::ByteRange{el::unit::ByteIndex{17U}, el::unit::ByteLength{1U}}, "B"_el);
+        wrongMarker.replace(el::unit::ByteRange{el::unit::ByteIndex{17U}, el::unit::ByteCount{1U}}, "B"_el);
         REQUIRE(ClientAuthenticationToken::fromString(el::text::String{wrongMarker}).isEmpty());
         const auto another = AuthenticationTokenPair::generate("site_001"_el);
         REQUIRE_FALSE(parsedServer.matches(another.client()));
@@ -80,7 +87,7 @@ public:
         auto pendingTampered = pair.server().createChallenge();
         auto tampered = el::mem::ByteBlockEditor{
             pair.client().createResponse(pendingTampered.challengeBytes().span()).toByteBlock()};
-        tampered.xorAt(el::unit::ByteIndex{tampered.length().toSizeT() - 1U}, el::mem::Byte{1U});
+        tampered.xorAt(tampered.lastIndex(), el::mem::Byte{1U});
         REQUIRE_FALSE(pendingTampered.verify(tampered.span()));
     }
 
@@ -91,7 +98,7 @@ public:
         REQUIRE_THROWS(pair.server().createChallenge(el::time::Seconds{61}));
         auto pending = pair.server().createChallenge(el::time::Seconds{1});
         const auto response = pair.client().createResponse(pending.challengeBytes().span()).toByteBlock();
-        REQUIRE_FALSE(el::cryptology::impl::AuthenticationChallengeTestAccess::verifyExpired(pending, response.span()));
+        REQUIRE_FALSE(el::cryptology::impl::AuthenticationChallengeTestAccess{pending}.verifyExpired(response.span()));
         REQUIRE_FALSE(pending.verify(response.span()));
     }
 };

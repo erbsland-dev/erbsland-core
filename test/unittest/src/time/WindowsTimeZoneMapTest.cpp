@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/time/StdFormat.hpp>
-#include <erbsland/time/TimeZone.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/time/tz/impl/WindowsTimeZoneMap.hpp>
+#include <erbsland/TimeZone.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;

@@ -2,18 +2,32 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/stream/ByteBlockInputStream.hpp>
-#include <erbsland/stream/TempByteOutputStream.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteBlockInputStream.hpp>
+#include <erbsland/ByteCompressor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteDecompressor.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/CompressionFormat.hpp>
+#include <erbsland/DecompressionOptions.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TempByteOutputStream.hpp>
 
 namespace demo {
+
 /// Decompress a framed instrument record directly into a byte stream.
 void decompressStreaming() {
-    const auto readings = el::ByteBlock{el::ByteBlockEditor{el::ByteLength{96U}, el::Byte{0x19U}}};
+    const auto readings = el::ByteBlock{el::ByteBlockEditor{el::ByteCount{96U}, el::Byte{0x19U}}};
     const auto encoded =
         el::ByteCompressor{el::CompressionAlgorithm::Deflate, el::CompressionFormat::Core}.compress(readings);
     auto source = el::stream::ByteBlockInputStream{encoded};
     auto destination = el::Path::systemTempDirectoryOrThrow().operations().openTempByteOutputStreamOrThrow();
-    const auto limits = el::DecompressionOptions{}.setMaximumOutputLength(el::ByteLength{1024U});
+    const auto limits = el::DecompressionOptions{}.setMaximumOutputLength(el::ByteCount{1024U});
     const auto decompressor =
         el::ByteDecompressor{el::CompressionAlgorithm::Deflate, el::CompressionFormat::Core, limits};
     const auto counts = decompressor.decompress(source, *destination);
@@ -25,4 +39,5 @@ void decompressStreaming() {
         destination->abort();
     }
 }
+
 }

@@ -30,7 +30,10 @@ public:
     /// Return immutable snapshots in deterministic creation order.
     [[nodiscard]] virtual auto cookies() -> std::vector<HttpCookie> = 0;
     /// Insert or replace one cookie as if it was received for the given URL.
-    /// @throws err::ParameterError If the cookie or its attributes are invalid.
+    /// @param name The cookie name. Must be a valid cookie-name token.
+    /// @param value The cookie value. Must satisfy the cookie-value syntax.
+    /// @param options The insertion attributes. Must be valid for the supplied URL and cookie.
+    /// @param url The source URL used to validate and scope the cookie.
     virtual void setCookie(
         const Url &url, text::String name, text::String value, HttpCookieInsertionOptions options = {}) = 0;
     /// Remove the exact name/domain/path tuple and report whether it existed.

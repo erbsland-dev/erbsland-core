@@ -13,8 +13,9 @@
 #include "../codec/Http1TransactionOptions.hpp"
 #include "../cookie/PublicSuffixList.hpp"
 
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../http/HttpFieldType.hpp"
@@ -80,7 +81,7 @@ void HttpClientRequest::setHeaders(HttpHeaders headers) {
         if (type == HttpFieldType::Host || type == HttpFieldType::ContentLength ||
             type == HttpFieldType::TransferEncoding || type == HttpFieldType::Expect ||
             type == HttpFieldType::Upgrade) {
-            throw err::ParameterError{
+            throw err::ParameterFailure{
                 "Host, framing, Expect, and Upgrade fields are controlled by the HTTP client."_el, "headers"_el};
         }
     }
@@ -105,7 +106,7 @@ void HttpClientRequest::setRedirectOptions(HttpClientRedirectOptions options) {
     verifyCurrentOwnerEvents();
     verifyPrepared();
     if (options.maximumRedirects().isZero() || options.maximumRedirects().isInfinite()) {
-        throw err::ParameterError{"The redirect limit must be positive and finite."_el, "options"_el};
+        throw err::ParameterFailure{"The redirect limit must be positive and finite."_el, "options"_el};
     }
     _requestRedirectOptions = options;
 }
@@ -196,7 +197,7 @@ void HttpClientRequest::submit(
     _hopMethod = _method;
     _effectiveUrl = _url;
     _hopHeaders = _headers;
-    _redirectHistory = {canonicalRequestUrl(_effectiveUrl)};
+    _redirectHistory = text::StringList{canonicalRequestUrl(_effectiveUrl)};
     _submitted = true;
     _state = NetworkSourceState::Starting;
     const auto generation = ++_overallGeneration;
@@ -269,7 +270,7 @@ void HttpClientRequest::start() {
             tlsOptions.setConfigurationLabel(_tlsOptions.configurationLabel())
                 .setTcpOptions(tcpOptions)
                 .setBufferLimits(_tlsOptions.bufferLimits())
-                .setAlpnProtocols({"http/1.1"_el})
+                .setAlpnProtocols(text::StringList{"http/1.1"_el})
                 .setHandshakeTimeout(_tlsOptions.handshakeTimeout())
                 .setIdleTimeout(_tlsOptions.idleTimeout())
                 .setCloseTimeout(_options.closeTimeout());
@@ -296,7 +297,7 @@ void HttpClientRequest::start() {
             _connection = connection;
             connection->connect(_effectiveUrl.endpoint(), std::move(tcpOptions));
         }
-    } catch (const err::Exception &error) {
+    } catch (const err::RuntimeError &error) {
         auto context = NetworkErrorContext{"HTTP client setup failed"_el, error.reason()};
         context.setReason(NetworkErrorReason::ConfigurationFailed).setPhase(NetworkErrorPhase::Configuration);
         fail(std::move(context));

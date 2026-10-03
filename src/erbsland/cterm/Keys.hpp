@@ -109,8 +109,7 @@ private:
         return std::numeric_limits<MainCount>::max();
     }
     /// Validate a key as a displayable key binding.
-    /// @param key The key to validate.
-    /// @throws err::ParameterError if the key is not displayable.
+    /// @param key The key to validate. Must be displayable.
     static void validateKey(const Key &key);
     /// Validate and convert one special key type into a key.
     /// @param keyType The special key type.

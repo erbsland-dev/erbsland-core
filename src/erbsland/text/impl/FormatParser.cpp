@@ -16,7 +16,7 @@ namespace erbsland::text::impl {
 using namespace text::literals;
 using unit::ArgumentCount;
 using unit::ArgumentIndex;
-using unit::CpLength;
+using unit::CpCount;
 
 FormatParser::FormatParser(const U8String &pattern) :
     _reader{pattern}, _staticText{StringKind::U8}, _data{new FormatData{}} {
@@ -108,17 +108,17 @@ auto FormatParser::consumeSpecificationChar() -> Char {
     return character;
 }
 
-auto FormatParser::readLimitedDecimal(const StringLiteral &tooLargeMessage) -> CpLength {
+auto FormatParser::readLimitedDecimal(const StringLiteral &tooLargeMessage) -> CpCount {
     auto options = IntegerParseOptions::parserDefault();
     options.setFixedBase(IntegerBase::Decimal).setMaximumDigits(cMaximumDecimalDigits);
     const auto result = _reader.parseInteger(options);
     if (result.status == ReadNumberStatus::NoDigits) {
-        return CpLength::zero();
+        return CpCount::zero();
     }
     if (result.status != ReadNumberStatus::Success || result.value > cMaximumFieldWidth.toRawValue()) {
         throw FormatError(tooLargeMessage);
     }
-    return CpLength::fromSizeT(static_cast<std::size_t>(result.value));
+    return CpCount::fromSizeT(static_cast<std::size_t>(result.value));
 }
 
 auto FormatParser::parseSpecification() -> FormatSpec {
@@ -207,7 +207,7 @@ void FormatParser::parsePrecision(LegacyFormatSpec &spec) {
     if (result.status != ReadNumberStatus::Success || result.value > cMaximumFieldWidth.toRawValue()) {
         throw FormatError("Format field precision is too large"_el);
     }
-    spec.precision = CpLength::fromSizeT(static_cast<std::size_t>(result.value));
+    spec.precision = CpCount::fromSizeT(static_cast<std::size_t>(result.value));
 }
 
 void FormatParser::parsePresentation(LegacyFormatSpec &spec) {

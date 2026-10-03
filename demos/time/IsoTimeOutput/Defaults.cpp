@@ -3,7 +3,17 @@
 
 #include "IsoTimeOutputDemos.hpp"
 
-#include <erbsland/time/all.hpp>
+#include <erbsland/all_time.hpp>
+#include <erbsland/Date.hpp>
+#include <erbsland/DateTime.hpp>
+#include <erbsland/DateTimePrecision.hpp>
+#include <erbsland/Hour.hpp>
+#include <erbsland/IsoTimeFormat.hpp>
+#include <erbsland/Minute.hpp>
+#include <erbsland/Second.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/Time.hpp>
 
 namespace demo {
 

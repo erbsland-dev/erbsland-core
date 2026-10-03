@@ -15,6 +15,8 @@ foreach(required_text
         "use-case=cow-stress"
         "use-case=edit-stress"
         "use-case=sensitive-storage"
+        "use-case=separator-split"
+        "splitAtFirst/splitAtLast"
         "apis=")
     string(FIND "${coverage_output}" "${required_text}" found_at)
     if(found_at EQUAL -1)

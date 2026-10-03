@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/text/u16/impl/U16StringData.hpp>
 #include <erbsland/text/u16/impl/U16StringTraits.hpp>
 #include <erbsland/unittest/UnitTest.hpp>

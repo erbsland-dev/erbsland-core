@@ -17,8 +17,8 @@ entry are valid here?
 You will learn how to register keys, choose between named and positional entries, and set useful limits on values.
 If you are new to the parser, begin with :doc:`parsing_named_key_parameters` for a complete reading example.
 
-Give Keys Stable Meanings
-=========================
+Key Identifiers and Accepted Spellings
+======================================
 
 A spelling is what a reader types; an identifier is what your application uses after parsing.
 Keeping these separate lets you accept aliases without giving the rest of your code several names for one option.
@@ -54,7 +54,7 @@ Its small vocabulary is only an illustration; the same pattern works for any com
 .. erbsland-demo::
     :source: text/NamedKeyParsing/RegisterQuizKeys.cpp
     :exec: text/named_key_parsing --demo RegisterQuizKeys
-    :source-sha256: a20577477d0d4a44eae5cd4191f251a9cf4959746a7f7415eb87e114c0611c16
+    :sha256: bb6cb7419e8beca1d03220fd74e6821dca7a3ba39dba29cd62c646082eaff830
 
 .. code-block:: cpp
 
@@ -72,19 +72,21 @@ Its small vocabulary is only an illustration; the same pattern works for any com
         format.setValueListAllowed(false);
 
         // The spelling in the input is normalized before lookup.
-        auto reader = el::StringCharReader{el::String{"SUBJECT=gezegen,level=2"_el}};
+        auto reader = el::StringCharReader{"SUBJECT=gezegen,level=2"_el};
         for (const auto &entry : el::named_key::Parser{reader, format}.readAllEntries()) {
             el::io::printLine(format.keyName(entry.keyIndex()), ": "_el, entry.value());
         }
         el::io::printLine("Registered aliases: "_el, format.keys().count());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    topic: gezegen
-    level: 2
-    Registered aliases: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mtopic: gezegen
+        level: 2
+        Registered aliases: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -162,7 +164,7 @@ It changes one policy at a time, then explicitly enables positional values for i
 .. erbsland-demo::
     :source: text/NamedKeyParsing/ChooseEntryPolicies.cpp
     :exec: text/named_key_parsing --demo ChooseEntryPolicies
-    :source-sha256: 0c827669e1ae252a196e5ae6823a3c4e76f794821db623240468efcd57037978
+    :sha256: b433ea01e161c3e78405c15e09bd5e78b27d5ede81f35546034081824f0ee2c0
 
 .. code-block:: cpp
 
@@ -175,32 +177,34 @@ It changes one policy at a time, then explicitly enables positional values for i
 
         // A repeated semantic key can represent several requested topics.
         const auto repeated = el::named_key::Format{base}.setUniqueKeysRequired(false).setValueListAllowed(false);
-        auto repeatedReader = el::StringCharReader{el::String{"topic=gezegen,topic=yıldız"_el}};
+        auto repeatedReader = el::StringCharReader{"topic=gezegen,topic=yıldız"_el};
         el::io::printLine("Topics: "_el, el::named_key::Parser{repeatedReader, repeated}.readAllEntries().count());
 
         // Require a value after each recognized key.
         const auto valued = el::named_key::Format{base}.setKeysWithoutValuesAllowed(false);
-        auto valuedReader = el::StringCharReader{el::String{"topic=gezegen"_el}};
+        auto valuedReader = el::StringCharReader{"topic=gezegen"_el};
         el::io::printLine("Valued key: "_el, el::named_key::Parser{valuedReader, valued}.readEntry().isKeyWithValue());
 
         // A flags-only field accepts a bare key but no keyed value.
         const auto flags = el::named_key::Format{base}.setValuesAllowed(false);
-        auto flagReader = el::StringCharReader{el::String{"hint"_el}};
+        auto flagReader = el::StringCharReader{"hint"_el};
         el::io::printLine("Bare flag: "_el, el::named_key::Parser{flagReader, flags}.readEntry().isKey());
 
         // A positional-answer field accepts a value without a registered key.
         const auto answers = el::named_key::Format{base}.setValueListAllowed(true);
-        auto answerReader = el::StringCharReader{el::String{"gezegen"_el}};
+        auto answerReader = el::StringCharReader{"gezegen"_el};
         el::io::printLine("Positional answer: "_el, el::named_key::Parser{answerReader, answers}.readEntry().isValue());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Topics: 2
-    Valued key: true
-    Bare flag: true
-    Positional answer: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTopics: 2
+        Valued key: true
+        Bare flag: true
+        Positional answer: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -231,7 +235,7 @@ It also shows that a too-long value is rejected when attached to a registered ke
 .. erbsland-demo::
     :source: text/NamedKeyParsing/LimitAnswerValues.cpp
     :exec: text/named_key_parsing --demo LimitAnswerValues
-    :source-sha256: 4c68e0c047b320041059aee593225b3b0f56b5d65a1f305a86d6d53dbb373688
+    :sha256: 895f2780d555ad7702d8b863ca690a242b28d77217af0fb3232fec4f2bf28fbb
 
 .. code-block:: cpp
 
@@ -241,12 +245,12 @@ It also shows that a too-long value is rejected when attached to a registered ke
     /// every positional or keyed entry in Unicode code points.
     void limitAnswerValues() {
         const auto format =
-            el::named_key::Format{}.setMaximumValues(el::unit::ItemCount{2U}).setMaximumValueLength(el::unit::CpLength{5U});
-        auto acceptedReader = el::StringCharReader{el::String{"Mars,Venüs"_el}};
+            el::named_key::Format{}.setMaximumValues(el::unit::ItemCount{2U}).setMaximumValueLength(el::unit::CpCount{5U});
+        auto acceptedReader = el::StringCharReader{"Mars,Venüs"_el};
         el::io::printLine("Accepted answers: "_el, el::named_key::Parser{acceptedReader, format}.readAllEntries().count());
 
         // A third positional entry exceeds the count limit.
-        auto extraReader = el::StringCharReader{el::String{"Mars,Venüs,Ay"_el}};
+        auto extraReader = el::StringCharReader{"Mars,Venüs,Ay"_el};
         try {
             const auto entries = el::named_key::Parser{extraReader, format}.readAllEntries();
             el::io::printLine("Unexpected accepted answers: "_el, entries.count());
@@ -257,7 +261,7 @@ It also shows that a too-long value is rejected when attached to a registered ke
         // The length limit also applies to a value attached to a key.
         auto keyedFormat = format;
         keyedFormat.addKey("topic"_el, 0);
-        auto longReader = el::StringCharReader{el::String{"topic=gezegen"_el}};
+        auto longReader = el::StringCharReader{"topic=gezegen"_el};
         try {
             const auto entry = el::named_key::Parser{longReader, keyedFormat}.readEntry();
             el::io::printLine("Unexpected accepted topic: "_el, entry.value());
@@ -266,12 +270,14 @@ It also shows that a too-long value is rejected when attached to a registered ke
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Accepted answers: 2
-    Third answer rejected
-    Long topic rejected
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAccepted answers: 2
+        Third answer rejected
+        Long topic rejected␛[0m
 
 .. erbsland-demo-end::
 

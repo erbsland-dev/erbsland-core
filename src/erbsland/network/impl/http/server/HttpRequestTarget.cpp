@@ -5,6 +5,7 @@
 #include "../../../../err/Exception.hpp"
 #include "../../../../err/ParseError.hpp"
 #include "../../../../mem/ByteBlockEditor.hpp"
+#include "../../../../text/EncodingError.hpp"
 #include "../../../../text/EncodingMode.hpp"
 #include "../../../../text/IntegerBase.hpp"
 #include "../../../../text/Literals.hpp"
@@ -17,12 +18,13 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text;
 using namespace text::literals;
 
 HttpRequestTarget::HttpRequestTarget(const String &target) {
-    if (!target.isValidUtf8() || !target.startsWith("/"_el) || target.contains("#"_el)) {
-        throw err::ParseError{"The HTTP server requires an origin-form request target."_el};
+    if (!target.isEncodingValid() || !target.startsWith("/"_el) || target.contains("#"_el)) {
+        throw ParseError{"The HTTP server requires an origin-form request target."_el};
     }
     auto reader = StringCharReader{target};
     reader.advance();
@@ -32,8 +34,8 @@ HttpRequestTarget::HttpRequestTarget(const String &target) {
     while (!reader.isAtEnd() && reader.peek() != U'?') {
         const auto character = reader.read();
         if (character == U'/') {
-            auto segment = decodeSegment(String{rawSegment});
-            _segments.emplace_back(segment);
+            auto segment = decodeSegment(rawSegment);
+            _segments.append(segment);
             decodedPath.append(segment);
             decodedPath.append(U'/');
             rawSegment.clear();
@@ -41,9 +43,9 @@ HttpRequestTarget::HttpRequestTarget(const String &target) {
             rawSegment.append(character);
         }
     }
-    if (!rawSegment.isEmpty() || decodedPath.length() > unit::ByteLength::one()) {
-        auto segment = decodeSegment(String{rawSegment});
-        _segments.emplace_back(segment);
+    if (!rawSegment.isEmpty() || decodedPath.length() > unit::ByteCount::one()) {
+        auto segment = decodeSegment(rawSegment);
+        _segments.append(segment);
         decodedPath.append(segment);
     }
     if (reader.advanceIf(U'?')) {
@@ -51,7 +53,7 @@ HttpRequestTarget::HttpRequestTarget(const String &target) {
         while (!reader.isAtEnd()) {
             query.append(reader.read());
         }
-        _query = String{query};
+        _query = query;
     }
     _path = String{decodedPath}.normalized(NormalizationForm::Nfc);
 }
@@ -67,8 +69,8 @@ auto HttpRequestTarget::decodeSegment(const String &segment) -> String {
         try {
             result.append(
                 StringDecoder{encoded}.decode(StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict));
-        } catch (const err::Exception &) {
-            throw err::ParseError{"A request-target segment contains invalid percent-encoded UTF-8."_el};
+        } catch (const text::EncodingError &) {
+            throw ParseError{"A request-target segment contains invalid percent-encoded UTF-8."_el};
         }
         encoded.clear();
     };
@@ -82,14 +84,14 @@ auto HttpRequestTarget::decodeSegment(const String &segment) -> String {
         const auto high = reader.read().digitValue(IntegerBase::Hexadecimal);
         const auto low = reader.read().digitValue(IntegerBase::Hexadecimal);
         if (!high.has_value() || !low.has_value()) {
-            throw err::ParseError{"A request-target percent escape requires two hexadecimal digits."_el};
+            throw ParseError{"A request-target percent escape requires two hexadecimal digits."_el};
         }
         encoded.append(mem::Byte{static_cast<uint8_t>((*high << 4U) | *low)});
     }
     flushEncoded();
     const auto decoded = String{result};
-    if (!decoded.isValidUtf8()) {
-        throw err::ParseError{"A request-target segment is not valid UTF-8."_el};
+    if (!decoded.isEncodingValid()) {
+        throw ParseError{"A request-target segment is not valid UTF-8."_el};
     }
     return decoded.normalized(NormalizationForm::Nfc);
 }

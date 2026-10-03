@@ -8,7 +8,7 @@
 #include "IntegerSignMode.hpp"
 #include "LetterCase.hpp"
 
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <optional>
 
@@ -68,20 +68,20 @@ public: // accessors
         return *this;
     }
     /// Get the minimum digit field width.
-    [[nodiscard]] constexpr auto fieldWidth() const noexcept -> unit::CpLength { return _fieldWidth; }
+    [[nodiscard]] constexpr auto fieldWidth() const noexcept -> unit::CpCount { return _fieldWidth; }
     /// Set the minimum digit field width.
-    constexpr auto setFieldWidth(unit::CpLength fieldWidth) noexcept -> IntegerFormat & {
+    constexpr auto setFieldWidth(unit::CpCount fieldWidth) noexcept -> IntegerFormat & {
         _fieldWidth = fieldWidth;
         return *this;
     }
     /// Test if a minimum digit precision is configured.
     [[nodiscard]] constexpr auto hasPrecision() const noexcept -> bool { return _precision.has_value(); }
     /// Get the minimum digit precision, or zero if no precision is configured.
-    [[nodiscard]] constexpr auto precision() const noexcept -> unit::CpLength {
-        return _precision.value_or(unit::CpLength::zero());
+    [[nodiscard]] constexpr auto precision() const noexcept -> unit::CpCount {
+        return _precision.value_or(unit::CpCount::zero());
     }
     /// Set the minimum digit precision.
-    constexpr auto setPrecision(unit::CpLength precision) noexcept -> IntegerFormat & {
+    constexpr auto setPrecision(unit::CpCount precision) noexcept -> IntegerFormat & {
         _precision = precision;
         return *this;
     }
@@ -122,8 +122,8 @@ private:
     IntegerBase _base{IntegerBase::Decimal};                  ///< The integer base.
     IntegerFormatFlags _flags{};                              ///< The active format flags.
     LetterCase _letterCase{LetterCase::Lowercase};            ///< The case for ASCII letters.
-    unit::CpLength _fieldWidth{unit::CpLength::zero()};       ///< The minimum digit field width.
-    std::optional<unit::CpLength> _precision{};               ///< The minimum digit precision.
+    unit::CpCount _fieldWidth{unit::CpCount::zero()};         ///< The minimum digit field width.
+    std::optional<unit::CpCount> _precision{};                ///< The minimum digit precision.
     IntegerSignMode _signMode{IntegerSignMode::NegativeOnly}; ///< The sign handling mode.
 };
 

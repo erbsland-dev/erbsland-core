@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "WindowsEntropySource.hpp"
 
-#include "../RandomError.hpp"
+#include "../RandomFailure.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
 #include "../../system/impl/WindowsErrorContext.hpp"

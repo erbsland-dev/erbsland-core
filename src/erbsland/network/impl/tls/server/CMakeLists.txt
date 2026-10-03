@@ -14,11 +14,15 @@ target_sources(erbsland-core PRIVATE
         TlsServerProtocol.cpp
         TlsServerProtocol.hpp
         TlsServerProtocol_application.cpp
+        TlsServerProtocol_certificates.cpp
         TlsServerProtocol_flight.cpp
         TlsServerProtocol_fwd.hpp
         TlsServerProtocol_handshake.cpp
         TlsServerProtocol_io.cpp
+        TlsServerProtocol_retry.cpp
+        TlsServerProtocol_signing.cpp
         TlsServerProtocolCheckpoint.hpp
+        TlsServerProtocolConfiguration.hpp
         TlsServerProtocolOptions.cpp
         TlsServerProtocolOptions.hpp
         TlsServerProtocolState.hpp

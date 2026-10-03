@@ -6,7 +6,7 @@
 #include "../text/IntegerBase.hpp"
 #include "../text/IntegerParseOptions.hpp"
 #include "../text/Literals.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 
 namespace erbsland::network {
 
@@ -27,7 +27,7 @@ auto Port::fromString(const String &text) noexcept -> std::optional<Port> {
 }
 
 auto Port::fromStringOrThrow(const String &text) -> Port {
-    const auto options = IntegerParseOptions{}.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpLength::one());
+    const auto options = IntegerParseOptions{}.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpCount::one());
     return Port{text.toIntegerOrThrow<uint16_t>(options)};
 }
 

@@ -15,6 +15,111 @@ Units and Versions
 Integer Indexes, Amounts, Offsets and Ranges
 ============================================
 
+Representation and Construction
+-------------------------------
+
+Include each concrete unit type through its own public header, such as ``<erbsland/ArgumentIndex.hpp>`` or
+``<erbsland/ArgumentCount.hpp>``.
+``ArgumentUnit.hpp`` declares only the shared argument-unit tag.
+
+Positional unit tags identify the coordinate system without configuring storage.
+Indexes and amounts use unsigned 64-bit values; offsets use signed 64-bit values.
+The largest unsigned value is reserved for ``noIndex()`` or ``infinite()``.
+``maximum()`` is always the largest finite value.
+
+Numeric constructors are ``consteval``: ``ByteIndex{12}`` and ``ByteIndex(12)`` both validate their input at compile
+time.
+Native integer types other than ``bool`` are accepted, but floating-point inputs, negative indexes or amounts, and
+numeric sentinel values are rejected.
+Negative offsets are valid, including the signed minimum.
+Default construction produces zero; copying typed values remains available at runtime.
+
+For runtime integers, ``fromInteger(value)`` saturates into the finite domain and ``fromIntegerOrThrow(value)`` throws
+``OverflowError`` outside that domain.
+Use ``noIndex()`` and ``infinite()`` explicitly to create special states.
+``fromSizeT()`` and ``fromSizeTOrThrow()`` follow the same rules.
+Extraction through ``toSizeTOrThrow()`` checks representability only: it does not reject a sentinel that fits.
+
+Movement and Distances
+----------------------
+
+Move indexes by matching amounts with ``advance()`` and ``retreat()``, or by signed offsets with ``move()``.
+Their copy variants are ``advanced()``, ``retreated()``, and ``moved()``.
+Regular movement saturates and preserves an absent index; ``OrThrow`` variants require exact finite movement.
+``wouldAdvanceSaturate()``, ``wouldRetreatSaturate()``, and ``wouldMoveSaturate()`` detect failure of that exact
+operation.
+``canAdvance(step, bounds)``, ``canRetreat(step, bounds)``, and ``canMove(offset, bounds)`` additionally require the
+result to lie within the supplied length.
+The starting index may be outside those bounds.
+
+``distanceFromZero()`` and ``absoluteDistanceTo()`` return non-negative amounts, using infinity for absent indexes.
+``offsetFromZero()`` and ``offsetTo()`` return signed offsets, saturating when necessary; their ``OrThrow`` variants
+reject absent indexes and unrepresentable differences.
+``mirroredWithin(length)`` returns ``length - index - 1`` only for positions inside a finite length, otherwise no-index.
+
+An amount's ``remainingFrom(index)`` returns the length or count from an inclusive index to that amount's exclusive end.
+Positions at or beyond the end return zero, as does ``noIndex()``.
+An infinite amount returns infinity for every valid index and zero for ``noIndex()``.
+For example, ``ByteCount{12}.remainingFrom(ByteIndex{5})`` returns ``ByteCount{7}``.
+The method accepts only the matching index family.
+
+``Index::last(length)`` returns the final included index of a finite, nonempty sequence measured from zero.
+For example, ``ByteIndex::last(ByteCount{8})`` returns ``ByteIndex{7}``.
+Zero and infinite lengths return ``noIndex()`` because they have no last element.
+Unlike ``Index::end(length).decremented()``, the empty case does not saturate to index zero.
+
+Ranges
+------
+
+A range stores an inclusive ``beginIndex()`` and a length; ``endIndex()`` is exclusive.
+Construction accepts either ``(begin, length)`` or ``(begin, end)``, including compact slicing such as
+``text.slice({begin, end})``.
+``fromBeginEnd()`` provides the same endpoint semantics:
+
+* Ordered finite endpoints produce their difference.
+* Reversed finite endpoints produce an empty range at the beginning.
+* An absent beginning produces ``noRange()``.
+* A valid beginning and absent endpoint produce an open-ended range.
+
+``fromBeginEndOrThrow()`` rejects reversed endpoints and an absent beginning with ``OutOfRangeError``; it accepts an
+open endpoint.
+
+``fromBegin(begin)`` stores the beginning directly and sets an infinite length.
+An absent beginning produces an absent, invalid range that retains its infinite length.
+The factory performs no checks or conversions.
+
+``isNoRange()`` tests an absent beginning.
+``isEmpty()`` tests zero length independently of validity.
+``isValid()`` requires a valid beginning and, for finite lengths, an exclusive endpoint at most ``Index::maximum()``.
+An empty range at the maximum is valid; a finite one-element range beginning there is invalid.
+Open-ended ranges remain valid and include the maximum index.
+``endIndex()`` returns no-index for invalid or open-ended ranges.
+``lastIndex()`` returns the final included index, accounting for the range's beginning.
+For example, ``ByteRange{ByteIndex{4}, ByteCount{3}}.lastIndex()`` returns ``ByteIndex{6}``.
+Empty, infinite, and invalid ranges return ``noIndex()``.
+
+Invalid ranges contain nothing, produce ``noRange()`` when clamped or translated, and return ``LoopResult::Error`` from
+``forEach()``.
+Open-ended iteration visits representable indexes through the maximum without wrapping.
+Saturating movement preserves length and keeps a valid range valid by limiting its beginning to ``maximum() - length()``
+for finite ranges.
+Throwing movement variants reject invalid input or required saturation.
+
+``toAbsolute(origin)`` adds an origin; ``relativeTo(origin)`` subtracts it.
+Both preserve length exactly and return ``noRange()`` for invalid input, overflow, or subtraction below zero.
+``intersection(other)`` returns the common range, an empty range at the later beginning if disjoint or touching, or
+``noRange()`` if either operand is invalid.
+Open endpoints are treated as unbounded.
+``contains(otherRange)`` requires both ranges to be valid.
+An empty range is contained at either boundary; a finite range never contains an open-ended range.
+
+``remainingFrom(index)`` returns the suffix beginning at an absolute index in the range's coordinate system.
+An index before or at the beginning returns the original range; one at or beyond a finite end returns an empty range at
+that end.
+Open-ended ranges retain their infinite length.
+An absent index or invalid range returns ``noRange()``.
+For example, ``ByteRange{ByteIndex{4}, ByteCount{8}}.remainingFrom(ByteIndex{7})`` represents ``[7, 12)``.
+
 Scalar Arithmetic
 -----------------
 
@@ -26,9 +131,33 @@ values.
 
 Unit values are not multiplied, divided or modulo-applied with other unit values.
 Indexes also keep their stricter domain model and can only be moved with matching lengths and offsets.
-The ``uncheckedAdvance()`` and ``uncheckedIncrement()`` operations are reserved for measured low-level loops whose
-finite inputs and valid result bounds are already proven.
-Regular code uses the checked, saturating index operations.
+Unchecked Operations and Iteration
+----------------------------------
+
+Use ``T{rawValue, T::Unchecked{}}`` when the native value is already proven representable.
+The constructor stores the raw representation directly, including the reserved sentinel representation.
+It does not validate narrowing or signed-to-unsigned conversion before construction.
+Keep runtime factories at boundaries where negative values, overflow, or numeric sentinels remain possible.
+
+Indexes provide ``uncheckedAdvance()``, ``uncheckedRetreat()``, ``uncheckedMove()``, ``uncheckedIncrement()``, and
+``uncheckedDecrement()``, plus the copy variants ending in ``Advanced``, ``Retreated``, ``Moved``, ``Incremented``, and
+``Decremented``.
+Amounts provide ``uncheckedAdd()``, ``uncheckedSubtract()``, their copy variants ``uncheckedAdded()`` and
+``uncheckedSubtracted()``, and ``uncheckedIncrement()`` and ``uncheckedDecrement()``.
+These operations require finite operands and an exactly representable finite result.
+Use them inside loops whose enclosing buffer or range checks already establish those bounds.
+
+``amount.forEach(function)`` visits indexes from zero up to the exclusive amount bound.
+An infinite amount returns ``LoopResult::Error`` without invoking the callback.
+``range.forEach(function)`` visits the range's indexes after validating the range once.
+Both capture their original bounds, use raw increments internally, and accept callbacks returning ``void`` or
+``LoopStatus``.
+``Continue`` proceeds, ``Stop`` returns ``LoopResult::Stopped``, and ``Error`` returns ``LoopResult::Error``.
+An empty valid iteration returns ``LoopResult::Success`` without calling the function.
+Exceptions from callbacks propagate to the caller.
+
+Scalar Limits
+-------------
 
 Finite length multiplication saturates at the largest finite length.
 Infinite lengths remain infinite for scalar multiplication, division and modulo.
@@ -120,31 +249,34 @@ Use :cpp:func:`all() <erbsland::unit::VersionRange::all>` for an open range,
 :cpp:func:`between() <erbsland::unit::VersionRange::between>` for inclusive minimum and maximum bounds, and
 :cpp:func:`exact() <erbsland::unit::VersionRange::exact>` for a single version.
 
-Version Unit
-============
+Version Components
+==================
 
-:cpp:struct:`VersionUnit <erbsland::unit::VersionUnit>` is the shared base unit for unsigned 16-bit version components.
-It disables the ``noIndex()`` sentinel so the full 16-bit range is available to
-:cpp:class:`IntegerUnitIndex <erbsland::unit::IntegerUnitIndex>`.
-Use the public aliases :cpp:type:`Major <erbsland::unit::Major>`, :cpp:type:`Minor <erbsland::unit::Minor>`,
-:cpp:type:`Revision <erbsland::unit::Revision>`, and :cpp:type:`BuildNumber <erbsland::unit::BuildNumber>` in user code.
+``VersionComponent<VersionPart>`` represents an independent unsigned 16-bit version field.
+Use the distinct aliases ``Major``, ``Minor``, ``Revision``, and ``BuildNumber``.
+Each accepts the full range 0–65535 and has no index or infinity state.
 
-The concrete units :cpp:struct:`MajorUnit <erbsland::unit::MajorUnit>`,
-:cpp:struct:`MinorUnit <erbsland::unit::MinorUnit>`, :cpp:struct:`RevisionUnit <erbsland::unit::RevisionUnit>`, and
-:cpp:struct:`BuildNumberUnit <erbsland::unit::BuildNumberUnit>` keep the represented
-:cpp:enum:`VersionPart <erbsland::unit::VersionPart>` in the type.
+Compile-time integer construction and runtime ``fromInteger()`` / ``fromIntegerOrThrow()`` follow the unit construction
+rules, with 65535 as the finite maximum.
+Components support comparison, hashing, formatting, saturating increment and decrement, and unsigned scalar addition and
+subtraction.
+``addedOrThrow()`` and ``subtractedOrThrow()`` reject results outside the component range; matching mutating variants
+are also available.
+
+The raw numeric ``Version`` constructor validates constants at compile time.
+For runtime values, construct typed components with the appropriate runtime factories and pass those to ``Version``.
+Parsing and packed 64-bit representation retain their existing format.
 
 Interface
 =========
 
+.. doxygentypedef:: erbsland::unit::ArgumentCount
+.. doxygentypedef:: erbsland::unit::ArgumentIndex
 .. doxygenstruct:: erbsland::unit::ArgumentUnit
     :members:
-
-.. doxygentypedef:: erbsland::unit::ArgumentIndex
-
-.. doxygentypedef:: erbsland::unit::ArgumentCount
+.. doxygentypedef:: erbsland::unit::BuildNumber
+.. doxygentypedef:: erbsland::unit::ByteCount
 .. doxygentypedef:: erbsland::unit::ByteIndex
-.. doxygentypedef:: erbsland::unit::ByteLength
 .. doxygentypedef:: erbsland::unit::ByteOffset
 .. doxygentypedef:: erbsland::unit::ByteRange
 .. doxygenstruct:: erbsland::unit::ByteUnit
@@ -159,8 +291,8 @@ Interface
 .. doxygentypedef:: erbsland::unit::ColumnRange
 .. doxygenstruct:: erbsland::unit::ColumnUnit
     :members:
+.. doxygentypedef:: erbsland::unit::CpCount
 .. doxygentypedef:: erbsland::unit::CpIndex
-.. doxygentypedef:: erbsland::unit::CpLength
 .. doxygentypedef:: erbsland::unit::CpOffset
 .. doxygentypedef:: erbsland::unit::CpRange
 .. doxygenstruct:: erbsland::unit::CpUnit
@@ -171,7 +303,7 @@ Interface
     :members:
 .. doxygenstruct:: erbsland::unit::IntegerUnit
     :members:
-.. doxygenclass:: erbsland::unit::IntegerUnitAmount
+.. doxygenclass:: erbsland::unit::IntegerUnitCount
     :members:
 .. doxygenclass:: erbsland::unit::IntegerUnitIndex
     :members:
@@ -191,38 +323,19 @@ Interface
 .. doxygentypedef:: erbsland::unit::LineRange
 .. doxygenstruct:: erbsland::unit::LineUnit
     :members:
-.. doxygentypedef:: erbsland::unit::U16DataIndex
-.. doxygentypedef:: erbsland::unit::U16DataLength
-.. doxygentypedef:: erbsland::unit::U16DataOffset
-.. doxygentypedef:: erbsland::unit::U16DataRange
-.. doxygenstruct:: erbsland::unit::U16DataUnit
+.. doxygentypedef:: erbsland::unit::Major
+.. doxygentypedef:: erbsland::unit::Minor
+.. doxygentypedef:: erbsland::unit::Revision
+.. doxygentypedef:: erbsland::unit::U16Count
+.. doxygentypedef:: erbsland::unit::U16Index
+.. doxygentypedef:: erbsland::unit::U16Offset
+.. doxygentypedef:: erbsland::unit::U16Range
+.. doxygenstruct:: erbsland::unit::U16Unit
     :members:
 .. doxygenclass:: erbsland::unit::Version
     :members:
-
-.. doxygenstruct:: std::hash
+.. doxygenclass:: erbsland::unit::VersionComponent
     :members:
 .. doxygenenum:: erbsland::unit::VersionPart
 .. doxygenclass:: erbsland::unit::VersionRange
     :members:
-.. doxygenstruct:: erbsland::unit::VersionUnit
-    :members:
-.. doxygenstruct:: erbsland::unit::MajorUnit
-    :members:
-
-.. doxygenstruct:: erbsland::unit::MinorUnit
-    :members:
-
-.. doxygenstruct:: erbsland::unit::RevisionUnit
-    :members:
-
-.. doxygenstruct:: erbsland::unit::BuildNumberUnit
-    :members:
-
-.. doxygentypedef:: erbsland::unit::Major
-
-.. doxygentypedef:: erbsland::unit::Minor
-
-.. doxygentypedef:: erbsland::unit::Revision
-
-.. doxygentypedef:: erbsland::unit::BuildNumber

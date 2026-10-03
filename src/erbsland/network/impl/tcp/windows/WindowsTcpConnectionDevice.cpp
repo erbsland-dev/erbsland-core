@@ -4,7 +4,8 @@
 
 #include "WindowsTcpSocket.hpp"
 
-#include "../../../../err/RuntimeError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../mem/impl/UnsafeByteBlockAccess.hpp"
 #include "../../../../system/impl/WindowsErrorContext.hpp"
 #include "../../../../text/Literals.hpp"
@@ -17,12 +18,13 @@
 
 namespace erbsland::network::impl {
 
+using namespace mem;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 WindowsTcpConnectionState::WindowsTcpConnectionState(
-    event::EventLoopDriverPtr driver,
-    const unit::ByteLength receiveChunkLimit,
-    TcpConnectionDeviceCallbacks callbacks) :
+    event::EventLoopDriverPtr driver, const ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks) :
     _runtime{WindowsNetworkRuntime::shared()},
     _driver{requireDriver(std::move(driver))},
     _callbacks{std::move(callbacks)},
@@ -75,7 +77,8 @@ void WindowsTcpConnectionState::accept(TcpAcceptedSocketPtr socket) {
     const auto lock = std::scoped_lock{_operationMutex};
     auto *windowsSocket = dynamic_cast<WindowsTcpSocket *>(socket.get());
     if (windowsSocket == nullptr) {
-        throw err::RuntimeError{"The accepted TCP socket is incompatible with the Windows connection device."_el};
+        throw err::ParameterFailure{
+            "The accepted TCP socket is incompatible with the Windows connection device."_el, "socket"_el};
     }
     _localEndpoint = windowsSocket->localEndpoint();
     _remoteEndpoint = windowsSocket->remoteEndpoint();
@@ -96,10 +99,10 @@ void WindowsTcpConnectionState::accept(TcpAcceptedSocketPtr socket) {
     }
 }
 
-auto WindowsTcpConnectionState::send(mem::ByteBlock data) -> TcpConnectionDeviceSendStatus {
+auto WindowsTcpConnectionState::send(ByteBlock data) -> TcpConnectionDeviceSendStatus {
     const auto lock = std::scoped_lock{_operationMutex};
     if (_closed || !_connected || _sendOperation != nullptr) {
-        throw err::RuntimeError{"The native TCP device cannot retain another output block."_el};
+        throw err::LogicFailure{"The native TCP device cannot retain another output block."_el};
     }
     _sendOperation =
         std::make_unique<WindowsTcpConnectionOperation>(WindowsTcpConnectionOperation::Type::Send, _generation);
@@ -113,7 +116,7 @@ auto WindowsTcpConnectionState::send(mem::ByteBlock data) -> TcpConnectionDevice
     return TcpConnectionDeviceSendStatus::Pending;
 }
 
-void WindowsTcpConnectionState::setReceiving(const unit::ByteLength maximumBytes) {
+void WindowsTcpConnectionState::setReceiving(const ByteCount maximumBytes) {
     const auto lock = std::scoped_lock{_operationMutex};
     if (_closed) {
         return;
@@ -153,7 +156,8 @@ auto WindowsTcpConnectionState::requireDriver(event::EventLoopDriverPtr driver)
     -> std::shared_ptr<event::impl::WindowsEventLoopDriver> {
     auto result = std::dynamic_pointer_cast<event::impl::WindowsEventLoopDriver>(std::move(driver));
     if (result == nullptr) {
-        throw err::RuntimeError{"TCP sockets require the platform's default native event-loop driver."_el};
+        throw err::ParameterFailure{
+            "TCP sockets require the platform's default native event-loop driver."_el, "driver"_el};
     }
     return result;
 }
@@ -219,7 +223,7 @@ void WindowsTcpConnectionState::submitSend() {
     }
     const auto bytes = mem::impl::UnsafeByteBlockAccess{_sendOperation->sendData}.dataView().dataSpan();
     const auto remaining = bytes.subspan(_sendOperation->sendOffset);
-    _sendOperation->nativeBuffer.buf = reinterpret_cast<char *>(const_cast<mem::Byte *>(remaining.data()));
+    _sendOperation->nativeBuffer.buf = reinterpret_cast<char *>(const_cast<Byte *>(remaining.data()));
     _sendOperation->nativeBuffer.len =
         static_cast<ULONG>(std::min(remaining.size(), static_cast<std::size_t>(std::numeric_limits<ULONG>::max())));
     auto transferred = DWORD{};
@@ -319,7 +323,7 @@ void WindowsTcpConnectionState::completeReceive(const DWORD transferred, const D
         }
         return;
     }
-    auto data = operation->receiveBuffer.take(unit::ByteLength::fromSizeT(static_cast<std::size_t>(transferred)));
+    auto data = operation->receiveBuffer.take(ByteCount::fromSizeT(static_cast<std::size_t>(transferred)));
     if (_callbacks.data) {
         _callbacks.data(std::move(data));
     } else {
@@ -384,12 +388,12 @@ auto WindowsTcpConnectionState::queryLocalEndpoint() const -> IpEndpoint {
     return *endpoint;
 }
 
-auto WindowsTcpConnectionState::createError(const int errorCode, text::String title, text::String description) const
+auto WindowsTcpConnectionState::createError(const int errorCode, String title, String description) const
     -> NetworkError {
     return NetworkError{createContext(errorCode, std::move(title), std::move(description))};
 }
 
-auto WindowsTcpConnectionState::createContext(const int errorCode, text::String title, text::String description) const
+auto WindowsTcpConnectionState::createContext(const int errorCode, String title, String description) const
     -> NetworkErrorContext {
     auto context = NetworkErrorContext{std::move(title), std::move(description)};
     context.setReason(errorReason(errorCode))
@@ -431,9 +435,7 @@ auto WindowsTcpConnectionState::errorReason(const int errorCode) noexcept -> Net
 }
 
 WindowsTcpConnectionDevice::WindowsTcpConnectionDevice(
-    event::EventLoopDriverPtr driver,
-    const unit::ByteLength receiveChunkLimit,
-    TcpConnectionDeviceCallbacks callbacks) :
+    event::EventLoopDriverPtr driver, const ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks) :
     _state{std::make_shared<WindowsTcpConnectionState>(std::move(driver), receiveChunkLimit, std::move(callbacks))} {
 }
 
@@ -453,11 +455,11 @@ auto WindowsTcpConnectionDevice::canAccept(const TcpAcceptedSocket &socket) cons
     return dynamic_cast<const WindowsTcpSocket *>(&socket) != nullptr;
 }
 
-auto WindowsTcpConnectionDevice::send(mem::ByteBlock data) -> TcpConnectionDeviceSendStatus {
+auto WindowsTcpConnectionDevice::send(ByteBlock data) -> TcpConnectionDeviceSendStatus {
     return _state->send(std::move(data));
 }
 
-void WindowsTcpConnectionDevice::setReceiving(const unit::ByteLength maximumBytes) {
+void WindowsTcpConnectionDevice::setReceiving(const ByteCount maximumBytes) {
     _state->setReceiving(maximumBytes);
 }
 
@@ -470,7 +472,7 @@ void WindowsTcpConnectionDevice::abort() noexcept {
 }
 
 auto TcpConnectionDevice::create(
-    event::EventLoopDriverPtr driver, const unit::ByteLength receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
+    event::EventLoopDriverPtr driver, const ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
     -> TcpConnectionDevicePtr {
     return std::make_unique<WindowsTcpConnectionDevice>(std::move(driver), receiveChunkLimit, std::move(callbacks));
 }

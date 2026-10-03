@@ -3,10 +3,10 @@
 
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/keys/PublicKey.hpp>
-#include <erbsland/cryptology/x509/X509AlgorithmIdentifier.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/PublicKey.hpp>
+#include <erbsland/X509AlgorithmIdentifier.hpp>
 
 #include <string>
 #include <string_view>

@@ -5,11 +5,11 @@
 #include "U8StringData_fwd.hpp"
 #include "U8StringSharedStorage_fwd.hpp"
 
+#include "../../../unit/ByteCount.hpp"
 #include "../../../unit/ByteIndex.hpp"
-#include "../../../unit/ByteLength.hpp"
 #include "../../../unit/ByteRange.hpp"
+#include "../../../unit/CpCount.hpp"
 #include "../../../unit/CpIndex.hpp"
-#include "../../../unit/CpLength.hpp"
 #include "../../../unit/CpRange.hpp"
 #include "../../StringKind.hpp"
 
@@ -28,10 +28,10 @@ struct U8StringTraits final {
     using StandardView = std::string_view;
     using StandardU8View = std::u8string_view;
     using DataIndex = unit::ByteIndex;
-    using DataLength = unit::ByteLength;
+    using DataLength = unit::ByteCount;
     using DataRange = unit::ByteRange;
     using CharacterIndex = unit::CpIndex;
-    using CharacterLength = unit::CpLength;
+    using CharacterLength = unit::CpCount;
     using CharacterRange = unit::CpRange;
 
     static constexpr auto kind = StringKind::U8; ///< String encoding represented by these traits.

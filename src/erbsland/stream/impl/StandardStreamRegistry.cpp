@@ -12,7 +12,7 @@
 
 #include "../StreamError.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::stream::impl {
@@ -142,7 +142,7 @@ auto StandardStreamRegistry::startSensitiveInput(const std::source_location loca
 void StandardStreamRegistry::stopSensitiveInput(const uint64_t id) {
     auto lock = std::scoped_lock{_mutex};
     if (id == 0U || _sensitiveInputRequests.erase(id) == 0U) {
-        throw err::LogicError{"Invalid or already stopped sensitive-input token."};
+        throw err::LogicFailure{"Invalid or already stopped sensitive-input token."};
     }
     if (_sensitiveInputRequests.empty() && _nativeInputTarget != nullptr) {
         std::static_pointer_cast<EncodedTextInputStream>(_nativeInputTarget)->setSensitive(false);

@@ -14,7 +14,7 @@ public:
         // Each `^` anchor generates one ANCHOR operation.
         // We need > 65534 operations.
 
-        const auto pattern = String::fromCharacter(el::text::Char{U'^'}, el::unit::CpLength{66'000U});
+        const auto pattern = String::fromCharacter(el::text::Char{U'^'}, el::unit::CpCount{66'000U});
 
         try {
             compileAndDisassemble(pattern);

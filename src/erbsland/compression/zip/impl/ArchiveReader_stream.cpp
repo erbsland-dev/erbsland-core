@@ -4,15 +4,15 @@
 
 #include "ZipTools.hpp"
 
-#include "../../../compression/CompressionError.hpp"
-#include "../../../compression/CompressionFormat.hpp"
-#include "../../../compression/DecompressionOptions.hpp"
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../stream/StreamPositionStatus.hpp"
 #include "../../../stream/StreamReadStatus.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../unit/ByteIndex.hpp"
+#include "../../CompressionError.hpp"
+#include "../../CompressionFormat.hpp"
+#include "../../DecompressionOptions.hpp"
 #include "../../impl/CompressionCodec.hpp"
 #include "../../impl/CompressionCrc32.hpp"
 
@@ -22,15 +22,17 @@
 
 namespace erbsland::compression::zip::impl {
 
+using namespace stream;
+using namespace unit;
 using namespace text::literals;
 
 void ArchiveReader::extractTo(
     const ZipEntryRecord &record,
-    unit::ByteLength maximum,
+    ByteCount maximum,
     const compression::impl::CodecOutput::Write &output,
     ZipProgressFn progress) const {
     if (!maximum.isFinite()) {
-        throw err::ParameterError{"Extraction maximum must be finite."_el, "maximum"_el};
+        throw err::ParameterFailure{"Extraction maximum must be finite."_el, "maximum"_el};
     }
     maximum = std::min(maximum, _options.maximumItemLength());
     if (record.uncompressedLength > maximum) {
@@ -42,10 +44,10 @@ void ArchiveReader::extractTo(
     }
     const auto lock = std::lock_guard{_sourceMutex};
     if (!_isOpen || !_source) {
-        throw err::LogicError{"ZIP reader is closed."_el};
+        throw err::LogicFailure{"ZIP reader is closed."_el};
     }
     const auto entry = readEntryData(record, false);
-    if (_source->setPosition(entry.payloadOffset) != stream::StreamPositionStatus::Success) {
+    if (_source->setPosition(entry.payloadOffset) != StreamPositionStatus::Success) {
         throwArchiveError(
             ZipErrorReason::StreamFailure,
             ZipOperationPhase::Payload,
@@ -67,15 +69,15 @@ void ArchiveReader::extractTo(
             throw;
         }
     };
-    unit::ByteLength remaining = record.compressedLength;
-    unit::ByteLength produced;
+    ByteCount remaining = record.compressedLength;
+    ByteCount produced;
     compression::impl::CompressionCrc32 crc;
     auto read = [&]() -> mem::ByteBlock {
         if (remaining.toRawValue() == 0U) {
             return {};
         }
-        const auto value = _source->read(std::min(remaining, unit::ByteLength{65536U}));
-        if (value != stream::StreamReadStatus::Data) {
+        const auto value = _source->read(std::min(remaining, ByteCount{65536U}));
+        if (value != StreamReadStatus::Data) {
             throwArchiveError(
                 ZipErrorReason::StreamFailure,
                 ZipOperationPhase::Payload,
@@ -86,7 +88,7 @@ void ArchiveReader::extractTo(
         return value.data();
     };
     const auto sink = [&](mem::ConstByteSpan bytes) {
-        const auto next = produced.addedOrThrow(unit::ByteLength::fromSizeT(bytes.size()));
+        const auto next = produced.addedOrThrow(ByteCount::fromSizeT(bytes.size()));
         if (next > record.uncompressedLength || next > maximum) {
             throwArchiveError(
                 ZipErrorReason::ResourceLimit,
@@ -165,10 +167,10 @@ void ArchiveReader::copyPayload(
     const ZipEntryRecord &record, const compression::impl::CodecOutput::Write &output) const {
     const auto lock = std::lock_guard{_sourceMutex};
     if (!_isOpen || !_source) {
-        throw err::LogicError{"ZIP reader is closed."_el};
+        throw err::LogicFailure{"ZIP reader is closed."_el};
     }
     const auto entry = readEntryData(record, false);
-    if (_source->setPosition(entry.payloadOffset) != stream::StreamPositionStatus::Success) {
+    if (_source->setPosition(entry.payloadOffset) != StreamPositionStatus::Success) {
         throwArchiveError(
             ZipErrorReason::StreamFailure,
             ZipOperationPhase::Payload,
@@ -177,8 +179,8 @@ void ArchiveReader::copyPayload(
     }
     auto remaining = record.compressedLength;
     while (remaining.toRawValue()) {
-        const auto block = _source->read(std::min(remaining, unit::ByteLength{65536U}));
-        if (block != stream::StreamReadStatus::Data) {
+        const auto block = _source->read(std::min(remaining, ByteCount{65536U}));
+        if (block != StreamReadStatus::Data) {
             throwArchiveError(
                 ZipErrorReason::StreamFailure,
                 ZipOperationPhase::Payload,

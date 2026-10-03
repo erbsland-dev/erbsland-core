@@ -4,7 +4,6 @@
 
 #include "Asn1ObjectIdentifierCodec.hpp"
 
-#include "../../err/OutOfRangeError.hpp"
 #include "../../err/OverflowError.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../mem/impl/UnsafeByteBlockAccess.hpp"
@@ -17,11 +16,12 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
 using namespace unit;
 using namespace text;
 using namespace text::literals;
 
-DerParser::DerParser(mem::ByteBlock der) noexcept : _der{std::move(der)}, _reader{_der} {
+DerParser::DerParser(ByteBlock der) noexcept : _der{std::move(der)}, _reader{_der} {
 }
 
 auto DerParser::parseDocument() -> Asn1Node {
@@ -41,10 +41,10 @@ auto DerParser::parseDocument() -> Asn1Node {
 auto DerParser::parseNode(const std::size_t depth) -> Asn1Node {
     // ITU-T X.690 section 8.1: parse one identifier-length-contents value; sections 10 and 11 add DER rules.
     if (depth >= cMaximumDepth) {
-        throw err::OutOfRangeError{"DER nesting exceeds the fixed depth limit."_el};
+        throwParseError("DER nesting exceeds the fixed depth limit."_el, _reader.position());
     }
     if (_nodeCount >= cMaximumNodes) {
-        throw err::OutOfRangeError{"DER input exceeds the fixed node-count limit."_el};
+        throwParseError("DER input exceeds the fixed node-count limit."_el, _reader.position());
     }
     ++_nodeCount;
     const auto encodedOffset = _reader.position();
@@ -90,22 +90,17 @@ auto DerParser::readTagNumber(const uint8_t identifier) -> uint32_t {
     }
     // ITU-T X.690 section 8.1.2.4: high-tag-number form is an unsigned base-128 integer.
     const auto tagOffset = _reader.position();
-    if (!_reader.canRead(ByteLength::one())) {
+    if (!_reader.canRead(ByteCount::one())) {
         throwParseError("DER input is truncated."_el, tagOffset);
     }
     if ((_reader.peekByte().toUInt8() & 0x7fU) == 0U) {
         throwParseError("DER tag number is not minimally encoded."_el, tagOffset);
     }
-    auto decodedTagNumber = uint64_t{};
-    try {
-        decodedTagNumber = _reader.readIntegerOrThrow<uint64_t>(mem::ByteIntegerFormat::UnsignedBase128);
-    } catch (const err::OutOfRangeError &) {
-        throwParseError("DER tag number is truncated."_el, tagOffset);
-    } catch (const err::OverflowError &) {
-        throwParseError("DER tag number is too large."_el, tagOffset);
-    } catch (const err::ParseError &) {
-        throwParseError("DER tag number is not minimally encoded."_el, tagOffset);
+    const auto decoded = _reader.readInteger<uint64_t>(ByteIntegerFormat::UnsignedBase128);
+    if (!decoded.has_value()) {
+        throwParseError("DER tag number is truncated, invalid, or too large."_el, tagOffset);
     }
+    const auto decodedTagNumber = *decoded;
     if (decodedTagNumber > std::numeric_limits<uint32_t>::max()) {
         throwParseError("DER tag number is too large."_el, tagOffset);
     }
@@ -115,19 +110,19 @@ auto DerParser::readTagNumber(const uint8_t identifier) -> uint32_t {
     return static_cast<uint32_t>(decodedTagNumber);
 }
 
-auto DerParser::readLength() -> ByteLength {
+auto DerParser::readLength() -> ByteCount {
     // ITU-T X.690 sections 8.1.3 and 10.1: DER uses minimally encoded definite lengths.
     const auto lengthOffset = _reader.position();
     const auto firstLength = readByte();
     if ((firstLength & 0x80U) == 0U) {
-        return ByteLength{firstLength};
+        return ByteCount{firstLength, ByteCount::Unchecked{}};
     }
-    const auto lengthOctets = ByteLength{firstLength & 0x7FU};
+    const auto lengthOctets = ByteCount{firstLength & 0x7FU, ByteCount::Unchecked{}};
     if (lengthOctets.isZero()) {
         throwParseError("DER forbids indefinite lengths."_el, lengthOffset);
     }
     // A minimally encoded four-octet length is already larger than the fixed one MiB document limit.
-    if (lengthOctets > ByteLength{3U}) {
+    if (lengthOctets > ByteCount{3U}) {
         throwParseError("DER length is too large."_el, lengthOffset);
     }
     if (!_reader.canRead(lengthOctets)) {
@@ -136,17 +131,17 @@ auto DerParser::readLength() -> ByteLength {
     if (_reader.peekByte().toUInt8() == 0U) {
         throwParseError("DER length is not minimally encoded."_el, _reader.position());
     }
-    _reader.setEndianness(mem::Endianness::Big);
+    _reader.setEndianness(Endianness::Big);
     auto length = uint32_t{};
     switch (lengthOctets.toSizeT()) {
     case 1U:
-        length = _reader.readIntegerOrThrow<uint32_t>(mem::ByteIntegerFormat::UnsignedFixed8Bit);
+        length = _reader.readIntegerOrThrow<uint32_t>(ByteIntegerFormat::UnsignedFixed8Bit);
         break;
     case 2U:
-        length = _reader.readIntegerOrThrow<uint32_t>(mem::ByteIntegerFormat::UnsignedFixed16Bit);
+        length = _reader.readIntegerOrThrow<uint32_t>(ByteIntegerFormat::UnsignedFixed16Bit);
         break;
     case 3U:
-        length = _reader.readIntegerOrThrow<uint32_t>(mem::ByteIntegerFormat::UnsignedFixed24Bit);
+        length = _reader.readIntegerOrThrow<uint32_t>(ByteIntegerFormat::UnsignedFixed24Bit);
         break;
     default:
         throwParseError("DER length is invalid."_el, lengthOffset);
@@ -154,11 +149,11 @@ auto DerParser::readLength() -> ByteLength {
     if (length < 128U) {
         throwParseError("DER length is not minimally encoded."_el, lengthOffset);
     }
-    return ByteLength{length};
+    return ByteCount{length, ByteCount::Unchecked{}};
 }
 
 auto DerParser::readByte() -> uint8_t {
-    if (!_reader.canRead(ByteLength::one())) {
+    if (!_reader.canRead(ByteCount::one())) {
         throwParseError("DER input is truncated."_el, _reader.position());
     }
     return _reader.readByte().toUInt8();
@@ -210,7 +205,7 @@ void DerParser::validatePrimitive(
     const Asn1TagClass tagClass,
     const uint32_t tagNumber,
     const ByteIndex contentOffset,
-    const ByteLength contentLength) const {
+    const ByteCount contentLength) const {
     if (tagClass != Asn1TagClass::Universal) {
         return;
     }
@@ -288,7 +283,7 @@ void DerParser::validatePrimitive(
     }
 }
 
-void DerParser::validateInteger(const mem::ConstByteSpan content, const ByteIndex contentOffset) const {
+void DerParser::validateInteger(const ConstByteSpan content, const ByteIndex contentOffset) const {
     // ITU-T X.690 sections 8.3 and 10.2: two's-complement INTEGER uses the fewest possible octets.
     if (content.empty()) {
         throwParseError("DER INTEGER is empty."_el, contentOffset);
@@ -302,7 +297,7 @@ void DerParser::validateInteger(const mem::ConstByteSpan content, const ByteInde
     }
 }
 
-void DerParser::validateBitString(const mem::ConstByteSpan content, const ByteIndex contentOffset) const {
+void DerParser::validateBitString(const ConstByteSpan content, const ByteIndex contentOffset) const {
     // ITU-T X.690 sections 8.6 and 11.2: first octet is unused-bit count and padding bits are zero.
     if (content.empty() || content.front().toUInt8() > 7U) {
         throwParseError("DER BIT STRING has an invalid unused-bit count."_el, contentOffset);
@@ -313,11 +308,11 @@ void DerParser::validateBitString(const mem::ConstByteSpan content, const ByteIn
     }
     if (unused != 0U && (content.back().toUInt8() & ((1U << unused) - 1U)) != 0U) {
         throwParseError(
-            "DER BIT STRING has nonzero unused bits."_el, contentOffset + ByteLength::fromSizeT(content.size() - 1U));
+            "DER BIT STRING has nonzero unused bits."_el, contentOffset + ByteCount::fromSizeT(content.size() - 1U));
     }
 }
 
-void DerParser::validatePrintableString(const mem::ConstByteSpan content, const ByteIndex contentOffset) const {
+void DerParser::validatePrintableString(const ConstByteSpan content, const ByteIndex contentOffset) const {
     // ITU-T X.680 section 41.4 defines the complete PrintableString character repertoire.
     static const auto cPrintableCharacters = CharSet::fromPattern("A-Za-z0-9 '()+,./:=?-"_el);
     auto byteIndex = contentOffset;
@@ -331,13 +326,13 @@ void DerParser::validatePrintableString(const mem::ConstByteSpan content, const 
 
 void DerParser::validateSetOrder(const util::List<Asn1Node> &children) const {
     // ITU-T X.690 section 11.6: SET components are ordered by their complete DER encodings.
-    for (auto index = std::size_t{1U}; index < children.count().toSizeT(); ++index) {
-        const auto &previous = children.getRefOrThrow(ItemIndex{index - 1U});
-        const auto &current = children.getRefOrThrow(ItemIndex{index});
+    for (auto index = ItemIndex{1U}; index.isWithin(children.count()); index.uncheckedIncrement()) {
+        const auto &previous = children.getRefOrThrow(index.decremented());
+        const auto &current = children.getRefOrThrow(index);
         const auto previousBytes = previous.encodedData();
         const auto currentBytes = current.encodedData();
         if (currentBytes < previousBytes) {
-            const auto derStorageIndex = mem::impl::UnsafeByteBlockAccess{_der}.dataView().range().index();
+            const auto derStorageIndex = mem::impl::UnsafeByteBlockAccess{_der}.dataView().range().beginIndex();
             const auto byteIndex =
                 ByteIndex::end(derStorageIndex.absoluteDistanceTo(current.encodedStorageByteIndex()));
             throwParseError("DER SET elements are not in canonical order."_el, byteIndex);

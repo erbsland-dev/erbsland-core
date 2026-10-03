@@ -14,17 +14,22 @@ constexpr auto U8StringLiteral<tChar>::isEmpty() const noexcept -> bool {
 }
 
 template <typename tChar>
-auto U8StringLiteral<tChar>::isValidUtf8() const noexcept -> bool {
-    return impl::U8StringReadTools{dataView()}.isValidUtf8();
+auto U8StringLiteral<tChar>::isEncodingValid() const noexcept -> bool {
+    return impl::U8StringReadTools{dataView()}.isEncodingValid();
 }
 
 template <typename tChar>
-constexpr auto U8StringLiteral<tChar>::length() const noexcept -> unit::ByteLength {
-    return _charPtr == nullptr ? unit::ByteLength::zero() : unit::ByteLength::fromSizeT(_size);
+void U8StringLiteral<tChar>::encodingValidOrThrow() const {
+    impl::U8StringReadTools{dataView()}.encodingValidOrThrow();
 }
 
 template <typename tChar>
-auto U8StringLiteral<tChar>::characterLength() const noexcept -> unit::CpLength {
+constexpr auto U8StringLiteral<tChar>::length() const noexcept -> unit::ByteCount {
+    return _charPtr == nullptr ? unit::ByteCount::zero() : unit::ByteCount::fromSizeT(_size);
+}
+
+template <typename tChar>
+auto U8StringLiteral<tChar>::characterLength() const noexcept -> unit::CpCount {
     return impl::U8StringCharReadTool{dataView()}.charLength();
 }
 

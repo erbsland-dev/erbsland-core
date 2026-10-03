@@ -51,7 +51,7 @@ public: // accessors
         if (_data.data() == nullptr) {
             return {};
         }
-        const auto *begin = _data.data() + _range.index().toSizeT();
+        const auto *begin = _data.data() + _range.beginIndex().toSizeT();
         return mem::StorageIdentifier::fromMemoryRange(begin, begin + _range.length().toSizeT());
     }
 

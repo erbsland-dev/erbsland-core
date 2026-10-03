@@ -1,10 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ParserWorkerWorkload.hpp"
 
+#include <erbsland/ApplicationError.hpp>
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/List.hpp>
 #include <erbsland/profiling/WorkerExecutionContext.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace app::conf {
 
@@ -19,7 +22,7 @@ ParserWorkerWorkload::ParserWorkerWorkload(
 
 auto ParserWorkerWorkload::execute(const pf::WorkerExecutionContext &context) -> pf::WorkerMeasurement {
     if (_failWorker) {
-        throw el::ApplicationError{el::String{"Requested parser worker failure."_el}};
+        throw el::ApplicationError{"Requested parser worker failure."_el};
     }
     auto parser = el::conf::Parser{};
     auto sink = std::uint64_t{};

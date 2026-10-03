@@ -4,9 +4,9 @@
 #include "PathTestHelper.hpp"
 
 #include <erbsland/core/impl/WindowsApi.hpp>
-#include <erbsland/path/PathResolveMode.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/PathResolveMode.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <filesystem>

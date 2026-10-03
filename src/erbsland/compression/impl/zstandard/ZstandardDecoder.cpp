@@ -15,17 +15,19 @@
 
 namespace erbsland::compression::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
 ZstandardDecoder::ZstandardDecoder(
-    mem::ByteBlockEditor &output, const std::size_t windowSize, const std::size_t maximumOutputLength) noexcept :
+    ByteBlockEditor &output, const std::size_t windowSize, const std::size_t maximumOutputLength) noexcept :
     _output{output},
     _windowSize{windowSize},
     _maximumOutputLength{maximumOutputLength},
     _maximumBlockSize{std::min(windowSize, std::size_t{128U * 1024U})} {
 }
 
-void ZstandardDecoder::decodeBlock(const mem::ConstByteSpan data) {
+void ZstandardDecoder::decodeBlock(const ConstByteSpan data) {
     _blockBegin = _output.length().toSizeT();
     auto position = decodeLiterals(data);
     const auto sequenceCount = initializeSequences(data, position);
@@ -40,7 +42,7 @@ void ZstandardDecoder::decodeBlock(const mem::ConstByteSpan data) {
     executeSequences(data, position, sequenceCount);
 }
 
-auto ZstandardDecoder::decodeLiterals(const mem::ConstByteSpan data) -> std::size_t {
+auto ZstandardDecoder::decodeLiterals(const ConstByteSpan data) -> std::size_t {
     if (data.empty()) {
         throw CompressionError{CompressionErrorReason::MalformedData, "Zstandard literals section is missing."_el};
     }
@@ -49,7 +51,7 @@ auto ZstandardDecoder::decodeLiterals(const mem::ConstByteSpan data) -> std::siz
     return (header & 3U) < 2U ? decodeRawLiterals(data, header, 1U) : decodeHuffmanLiterals(data, header, 1U);
 }
 
-auto ZstandardDecoder::decodeRawLiterals(const mem::ConstByteSpan data, const uint8_t header, std::size_t position)
+auto ZstandardDecoder::decodeRawLiterals(const ConstByteSpan data, const uint8_t header, std::size_t position)
     -> std::size_t {
     const auto raw = (header & 3U) == 0U;
     std::size_t regeneratedSize;
@@ -71,7 +73,7 @@ auto ZstandardDecoder::decodeRawLiterals(const mem::ConstByteSpan data, const ui
     if (regeneratedSize > _maximumBlockSize) {
         throw CompressionError{CompressionErrorReason::MalformedData, "Zstandard literals exceed the block limit."_el};
     }
-    _literals.reserve(unit::ByteLength::fromSizeT(regeneratedSize));
+    _literals.reserve(ByteCount::fromSizeT(regeneratedSize));
     if (raw) {
         if (regeneratedSize > data.size() - position) {
             throw CompressionError{CompressionErrorReason::MalformedData, "Raw Zstandard literals are truncated."_el};
@@ -83,11 +85,11 @@ auto ZstandardDecoder::decodeRawLiterals(const mem::ConstByteSpan data, const ui
     if (position >= data.size()) {
         throw CompressionError{CompressionErrorReason::MalformedData, "Zstandard RLE literal byte is missing."_el};
     }
-    _literals.append(data[position], unit::ByteLength::fromSizeT(regeneratedSize));
+    _literals.append(data[position], ByteCount::fromSizeT(regeneratedSize));
     return position + 1U;
 }
 
-auto ZstandardDecoder::decodeHuffmanLiterals(const mem::ConstByteSpan data, const uint8_t header, std::size_t position)
+auto ZstandardDecoder::decodeHuffmanLiterals(const ConstByteSpan data, const uint8_t header, std::size_t position)
     -> std::size_t {
     std::size_t regeneratedSize;
     std::size_t compressedSize;
@@ -133,7 +135,7 @@ auto ZstandardDecoder::decodeHuffmanLiterals(const mem::ConstByteSpan data, cons
         throw CompressionError{
             CompressionErrorReason::MalformedData, "Zstandard Huffman table exceeds its section."_el};
     }
-    _literals.reserve(unit::ByteLength::fromSizeT(regeneratedSize));
+    _literals.reserve(ByteCount::fromSizeT(regeneratedSize));
     const auto streamSize = compressedEnd - position;
     if (streamCount == 1U) {
         _huffmanTable.decodeStream(data, position, compressedEnd, regeneratedSize, _literals);
@@ -144,10 +146,7 @@ auto ZstandardDecoder::decodeHuffmanLiterals(const mem::ConstByteSpan data, cons
 }
 
 void ZstandardDecoder::decodeFourHuffmanStreams(
-    const mem::ConstByteSpan data,
-    const std::size_t position,
-    const std::size_t size,
-    const std::size_t regeneratedSize) {
+    const ConstByteSpan data, const std::size_t position, const std::size_t size, const std::size_t regeneratedSize) {
     if (size < 6U || position > data.size() || size > data.size() - position) {
         throw CompressionError{CompressionErrorReason::MalformedData, "Zstandard Huffman jump table is truncated."_el};
     }
@@ -177,7 +176,7 @@ void ZstandardDecoder::decodeFourHuffmanStreams(
     }
 }
 
-auto ZstandardDecoder::initializeSequences(const mem::ConstByteSpan data, std::size_t &position) -> std::size_t {
+auto ZstandardDecoder::initializeSequences(const ConstByteSpan data, std::size_t &position) -> std::size_t {
     if (position >= data.size()) {
         throw CompressionError{CompressionErrorReason::MalformedData, "Zstandard sequences section is missing."_el};
     }
@@ -215,7 +214,7 @@ auto ZstandardDecoder::initializeSequences(const mem::ConstByteSpan data, std::s
 }
 
 void ZstandardDecoder::initializeSequenceTable(
-    const mem::ConstByteSpan data,
+    const ConstByteSpan data,
     std::size_t &position,
     const ZstandardSequenceCode kind,
     const uint8_t mode,
@@ -236,7 +235,7 @@ void ZstandardDecoder::initializeSequenceTable(
 }
 
 void ZstandardDecoder::executeSequences(
-    const mem::ConstByteSpan data, const std::size_t position, const std::size_t sequenceCount) {
+    const ConstByteSpan data, const std::size_t position, const std::size_t sequenceCount) {
     auto reader = ZstandardReverseBitReader{data, position, data.size()};
     auto literalState = reader.read(_literalLengthTable.accuracyLog());
     auto offsetState = reader.read(_offsetTable.accuracyLog());
@@ -320,8 +319,8 @@ void ZstandardDecoder::appendMatch(const uint32_t offset, const uint32_t length)
     }
     requireOutputSpace(length);
     _output.appendRepeated(
-        unit::ByteRange{unit::ByteIndex::fromSizeT(outputLength - offset), unit::ByteLength::fromSizeT(offset)},
-        unit::ByteLength::fromSizeT(length));
+        ByteRange{ByteIndex::fromSizeT(outputLength - offset), ByteCount::fromSizeT(offset)},
+        ByteCount::fromSizeT(length));
 }
 
 void ZstandardDecoder::requireOutputSpace(const std::size_t count) const {

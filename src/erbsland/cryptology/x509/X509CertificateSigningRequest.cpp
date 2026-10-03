@@ -5,7 +5,7 @@
 #include "../impl/PemCodec.hpp"
 #include "../impl/PemDerFileTools.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../path/Path.hpp"
 #include "../../text/Literals.hpp"
 
@@ -19,7 +19,7 @@ auto X509CertificateSigningRequest::toPem() const -> text::String {
 
 void X509CertificateSigningRequest::writeToFile(const path::Path &path, const PemDerFormat format) const {
     if (isEmpty()) {
-        throw err::LogicError{"A certificate signing request is required for writing."_el};
+        throw err::LogicFailure{"A certificate signing request is required for writing."_el};
     }
     const auto file = impl::PemDerFileTools{path, impl::PemDerFileTools::Artifact::CertificateRequest};
     if (file.outputFormat(format) == PemDerFormat::Pem) {

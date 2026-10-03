@@ -17,6 +17,7 @@ namespace erbsland::re::impl {
 class ProgramReader {
 public:
     /// Bind the program reader to a program.
+    /// @param program The program to read from.
     explicit ProgramReader(const Program &program) noexcept : _program{program} {}
 
     // defaults
@@ -28,6 +29,7 @@ public:
 
 public: // decode
     /// Read the operation at a program counter without advancing it.
+    /// @param programCounter The current program counter.
     [[nodiscard]] auto peekOperation(const ProgramCounter programCounter) const -> Operation {
         if (programCounter >= _program.size()) {
             return Operation::Failure;
@@ -36,8 +38,11 @@ public: // decode
     }
 
     /// Advance a program counter past its current operation.
+    /// @param programCounter The current program counter.
     void skipOperation(ProgramCounter &programCounter) const { _program.skipCode(programCounter); }
 
+    /// Read two split program counters.
+    /// @param programCounter The current program counter.
     /// @return Programm counter A and B.
     [[nodiscard]] auto readSplit(ProgramCounter &programCounter) const -> std::pair<ProgramCounter, ProgramCounter> {
         auto programCounterA = Program::extractProgramCounter(_program.readCode(programCounter));
@@ -45,34 +50,43 @@ public: // decode
         return {programCounterA, programCounterB};
     }
 
+    /// Read a jump location.
+    /// @param programCounter The current program counter.
     /// @return The program counter.
     [[nodiscard]] auto readJump(ProgramCounter &programCounter) const -> ProgramCounter {
         return Program::extractProgramCounter(_program.readCode(programCounter));
     }
 
+    /// Read the raw text anchor value.
+    /// @param programCounter The current program counter.
     /// @return The text anchor value.
     [[nodiscard]] auto readAnchorValue(ProgramCounter &programCounter) const -> uint8_t {
         return Program::extractByte<0>(_program.readCode(programCounter));
     }
 
+    /// Read a text anchor.
+    /// @param programCounter The current program counter.
     /// @return The text anchor.
     [[nodiscard]] auto readAnchor(ProgramCounter &programCounter) const -> TextAnchor {
         return TextAnchor{static_cast<TextAnchor::Value>(readAnchorValue(programCounter))};
     }
 
     /// The `START CAPTURE` and `STOP CAPTURE` operations.
+    /// @param programCounter The current program counter.
     /// @return The capture group index (0-based, representing the 1st capture group).
     [[nodiscard]] auto readCapture(ProgramCounter &programCounter) const -> uint16_t {
         return Program::extractLowerWord(_program.readCode(programCounter));
     }
 
     /// The `START ATOMIC` and `STOP ATOMIC` operations.
+    /// @param programCounter The current program counter.
     /// @return The atomic group id.
     [[nodiscard]] auto readAtomic(ProgramCounter &programCounter) const -> AtomicGroupId {
         return static_cast<AtomicGroupId>(Program::extractLowerWord(_program.readCode(programCounter)));
     }
 
-    /// Read `COUNTER`, `ADD COUNTER`, `MAXIMUM` and `SKIP MAXIMUM`, 'MINIMUM`
+    /// Read `COUNTER`, `ADD COUNTER`, `MAXIMUM` and `SKIP MAXIMUM`, `MINIMUM`.
+    /// @param programCounter The current program counter.
     /// @return The counter-index, the value to set.
     [[nodiscard]] auto readCounter(ProgramCounter &programCounter) const -> std::pair<CounterIndex, CounterType> {
         const auto code = _program.readCode(programCounter);
@@ -82,18 +96,21 @@ public: // decode
     }
 
     /// Read `CHAR`, `CI CHAR`, `NOT CHAR` and `NOT CI CHAR`
+    /// @param programCounter The current program counter.
     /// @return The character value.
     [[nodiscard]] auto readCharValue(ProgramCounter &programCounter) const -> uint32_t {
         return Program::extractLower24bits(_program.readCode(programCounter));
     }
 
     /// Read `CHAR`, `CI CHAR`, `NOT CHAR` and `NOT CI CHAR`
+    /// @param programCounter The current program counter.
     /// @return The char.
     [[nodiscard]] auto readChar(ProgramCounter &programCounter) const -> text::Char {
         return text::Char{static_cast<char32_t>(readCharValue(programCounter))};
     }
 
     /// Read `SEQUENCE` and `CI SEQUENCE`
+    /// @param programCounter The current program counter.
     /// @return The sequence index, the sequence length.
     [[nodiscard]] auto readSequence(ProgramCounter &programCounter) const -> std::pair<SequenceIndex, SequenceLength> {
         const auto code = _program.readCode(programCounter);
@@ -102,18 +119,22 @@ public: // decode
         return {sequenceIndex, sequenceLength};
     }
 
+    /// Read the raw category value.
+    /// @param programCounter The current program counter.
     /// @return The category value
     [[nodiscard]] auto readCategoryValue(ProgramCounter &programCounter) const -> uint32_t {
         return Program::extractLower24bits(_program.readCode(programCounter));
     }
 
     /// Read `CATEGORY` and `NOT CATEGORY`
+    /// @param programCounter The current program counter.
     /// @return The category
     [[nodiscard]] auto readCategory(ProgramCounter &programCounter) const -> Category {
         return Category{static_cast<Category::Value>(readCategoryValue(programCounter))};
     }
 
     /// Read `CLASS`, `CI CLASS`, `NOT CLASS` and `NOT CI CLASS`
+    /// @param programCounter The current program counter.
     /// @return The class-index
     [[nodiscard]] auto readClass(ProgramCounter &programCounter) const -> uint16_t {
         return Program::extractLowerWord(_program.readCode(programCounter));

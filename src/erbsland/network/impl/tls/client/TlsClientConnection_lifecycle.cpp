@@ -2,12 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TlsClientConnection.hpp"
 
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/Literals.hpp"
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text::literals;
+
+void TlsClientConnection::cancelHandshakeTimer() noexcept {
+    if (_handshakeTimer != nullptr) {
+        _handshakeTimer->cancel();
+        _handshakeTimer.reset();
+    }
+}
 
 void TlsClientConnection::recordApplicationActivity() {
     _idleDeadline = time::TimePoint::now() + _options.idleTimeout();
@@ -110,6 +119,14 @@ auto TlsClientConnection::protocolErrorContext() const -> NetworkErrorContext {
     if (_protocol->failureAlert().has_value()) {
         context.setTlsAlert(*_protocol->failureAlert());
     }
+    if (_protocol->certificateFailureCategory() ==
+        cryptology::X509CertificateValidationFailureCategory::TrustUnavailable) {
+        return context.setReason(NetworkErrorReason::TlsTrustUnavailable);
+    }
+    if (_protocol->certificateFailureCategory() ==
+        cryptology::X509CertificateValidationFailureCategory::NativeFailure) {
+        return context.setReason(NetworkErrorReason::TlsNativeFailure);
+    }
     if (_protocol->failureWasTruncation()) {
         return context.setReason(NetworkErrorReason::TlsTruncation);
     }
@@ -181,6 +198,9 @@ void TlsClientConnection::finishFailed(NetworkErrorContext context) {
         return;
     }
     _state.store(ConnectionState::Failed);
+    _backgroundOperation.cancel();
+    cancelHandshakeTimer();
+    ++_backgroundGeneration;
     ++_handshakeTimerGeneration;
     ++_idleTimerGeneration;
     ++_closeTimerGeneration;
@@ -190,13 +210,13 @@ void TlsClientConnection::finishFailed(NetworkErrorContext context) {
     }
     try {
         _tcpConnection->abort();
-    } catch (...) {}
+    } catch (const RuntimeError &) {}
     try {
         const auto callback = _onError;
         if (callback) {
             callback(context);
         }
-    } catch (...) {
+    } catch (const RuntimeError &) {
         finishFinal();
         throw;
     }
@@ -215,7 +235,7 @@ void TlsClientConnection::finishClosed() {
         if (callback) {
             callback(context);
         }
-    } catch (...) {
+    } catch (const RuntimeError &) {
         finishFinal();
         throw;
     }
@@ -223,9 +243,13 @@ void TlsClientConnection::finishClosed() {
 }
 
 void TlsClientConnection::finishFinal() {
+    _backgroundOperation.cancel();
+    cancelHandshakeTimer();
+    ++_backgroundGeneration;
     if (_finalized.exchange(true)) {
         return;
     }
+    _finalContinuation.reset();
     const auto callback = _onFinal;
     if (callback) {
         callback();
@@ -236,13 +260,13 @@ void TlsClientConnection::postAbortFinal() {
     const auto weakSelf =
         std::weak_ptr<TlsClientConnection>{std::static_pointer_cast<TlsClientConnection>(shared_from_this())};
     try {
-        ownerEvents()->invoke([weakSelf]() -> void {
+        _finalContinuation->invoke([weakSelf]() -> void {
             if (const auto self = weakSelf.lock(); self != nullptr) {
                 const auto lock = std::scoped_lock{self->_mutex};
                 self->finishFinal();
             }
         });
-    } catch (...) {}
+    } catch (const RuntimeError &) {}
 }
 
 }

@@ -7,15 +7,15 @@
     single: Render Context; Preparing Values
     single: Render Values; Lazy Callbacks
 
-**************************************
-Preparing Values for a Rendered Layout
-**************************************
+************************************
+Preparing Render Contexts and Values
+************************************
 
 A layout describes the shape of a document; a context supplies the names and values that make one rendering specific.
 This page shows how to prepare those values, group related data, and defer a calculation until a layout needs it.
 
-Give Names to the Data
-======================
+Binding Names in a Render Context
+=================================
 
 A :cpp:class:`Context <erbsland::text::render::Context>` is a collection of named
 :cpp:class:`Value <erbsland::text::render::Value>` objects.
@@ -26,7 +26,7 @@ For example, a terrain report might receive a region and an elevation measured d
 .. erbsland-demo::
     :source: text/RenderLayouts/ContextValues.cpp
     :exec: text/render_layouts --demo ContextValues
-    :source-sha256: c9c9e01f637044297184c6eb95ce435fb9a97bc9333427469ba14350874a9bb7
+    :sha256: 6ceaba62f095b71438cbee5e3a032d55df8b4da33344fcee580a659d291e87cc
 
 .. code-block:: cpp
 
@@ -52,14 +52,16 @@ For example, a terrain report might receive a region and an elevation measured d
         el::io::printLine("Missing value is null: "_el, context.get("slope"_el).isNull() ? "yes"_el : "no"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Region: sierra
-    Elevation: 1920 m
-    Named values: 2
-    No slope classification was supplied.
-    Missing value is null: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRegion: sierra
+        Elevation: 1920 m
+        Named values: 2
+        No slope classification was supplied.
+        Missing value is null: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -73,8 +75,8 @@ When rendering, the context passed to ``render()`` is local to that call.
 The environment can also hold shared values; a local name takes precedence over the same global name.
 The :doc:`render environment page <configuring_the_render_environment>` shows how to set those shared defaults.
 
-Choose the Shape of Each Value
-==============================
+Scalar, List, and Map Values
+============================
 
 ``Value`` keeps the type of the data you provide.
 It accepts Core text, Boolean values, signed integers and other integral types that fit in 64 bits, floating-point
@@ -86,12 +88,15 @@ without a separate conversion step.
 For data with several fields, use a :cpp:type:`ValueMap <erbsland::text::render::ValueMap>`.
 A layout can reach its members with dotted names such as ``site.name``.
 A :cpp:type:`ValueList <erbsland::text::render::ValueList>` holds a sequence that a layout can iterate.
+For text-only collections, pass a ``StringList`` or ``StringSet`` directly to ``Context::set()``.
+Both become lists of text values; string lists preserve their order and duplicates, while string sets follow their
+ordered iteration.
 The next example uses both shapes in a small terrain classification report.
 
 .. erbsland-demo::
     :source: text/RenderLayouts/ValueShapes.cpp
     :exec: text/render_layouts --demo ValueShapes
-    :source-sha256: 105253b24660afcbcf7fcdb7cf380bb4e6230a1913e97d1d252670cd40fe1928
+    :sha256: e3a3e98470704446016f12c9472e0eb3dd1dd52725e8202a6426f9e5a563a761
 
 .. code-block:: cpp
 
@@ -133,16 +138,18 @@ The next example uses both shapes in a small terrain classification report.
         el::io::print(environment->render("terrain.txt"_el, context));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    First terrain: valle
-    Site height: 1920 m
-    Valle Clara (1920 m)
-    - valle
-    - meseta
-    - sierra
-    Surveyed: true; ratio: 0.75
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFirst terrain: valle
+        Site height: 1920 m
+        Valle Clara (1920 m)
+        - valle
+        - meseta
+        - sierra
+        Surveyed: true; ratio: 0.75␛[0m
 
 .. erbsland-demo-end::
 
@@ -158,8 +165,8 @@ Rendering either collection directly as an expression is an error; render a scal
 instead.
 Null and missing names render as empty text and are false in a layout condition.
 
-Compute a Value When It Is Needed
-=================================
+Lazy Render Values and Callback Lifetime
+========================================
 
 Sometimes a value is expensive to obtain, or only some layouts need it.
 A :cpp:type:`ValueCallbackFn <erbsland::text::render::ValueCallbackFn>` is a callable that returns a ``Value`` when the
@@ -169,7 +176,7 @@ The context can therefore expose a classification without calculating it while t
 .. erbsland-demo::
     :source: text/RenderLayouts/LazyValue.cpp
     :exec: text/render_layouts --demo LazyValue
-    :source-sha256: 6f492bb88136dbb0b9ac6816d60466851ce6dad76a5f50b99cb3facfa0e464a2
+    :sha256: 3b43dcd3f9cb0859edc7f7c8494aa8b289eded5be4f869b1673aabe4244e6818
 
 .. code-block:: cpp
 
@@ -201,12 +208,14 @@ The context can therefore expose a classification without calculating it while t
         el::io::printLine("Calculations after render: "_el, calculations);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Calculations before render: 0
-    altiplano: meseta
-    Calculations after render: 1
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCalculations before render: 0
+        altiplano: meseta
+        Calculations after render: 1␛[0m
 
 .. erbsland-demo-end::
 
@@ -216,6 +225,12 @@ If a layout reads a callback value more than once, the callable can run more tha
 repeat or cache its result in your application when needed.
 Captured references must remain valid until rendering finishes, and callbacks used by concurrent renders must handle
 concurrent calls safely.
+
+A lazy value source should throw ``RenderError`` with category ``Runtime`` when it cannot produce a required value.
+Provide a title and description in ``RenderErrorContext`` and leave layout, origin, and location unset; the renderer
+adds the callback's template location.
+
+Return a null ``Value`` only when missing data is an intentional result; do not turn a failed required lookup into null.
 
 The :doc:`render workflow <using_the_render_engine>` shows where a local context enters a complete render call.
 The :doc:`layout introduction <rendering_text_layouts>` shows how layouts use names, expressions, and statements.

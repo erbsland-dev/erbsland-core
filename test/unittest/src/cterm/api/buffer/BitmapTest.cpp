@@ -64,7 +64,7 @@ public:
 
         REQUIRE(bitmap.pixel(block::Position{1, 0}));
         REQUIRE(bitmap.readPixelRef(block::Position{1, 0}));
-        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, bitmap.readPixelRef(block::Position{2, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeFailure, bitmap.readPixelRef(block::Position{2, 0}));
     }
 
     void testFlipHorizontalMirrorsContent() {

@@ -3,10 +3,15 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(impl)
+
 target_sources(erbsland-core PRIVATE
         all.hpp
-        DisplayTextMap.cpp
-        DisplayTextMap.hpp
-        DisplayTextMap_fwd.hpp
+        DisplayText.cpp
+        DisplayText.hpp
+        DisplayText_fwd.hpp
+        DisplayTextData.cpp
+        DisplayTextData.hpp
+        DisplayTextData_fwd.hpp
         DisplayTextTranslator.hpp
 )

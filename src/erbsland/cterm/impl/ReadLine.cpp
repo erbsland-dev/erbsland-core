@@ -49,10 +49,11 @@ void ReadLine::normalizeConfiguredText() {
 }
 
 auto ReadLine::normalizedText(const String &value) const -> U32StringEditor {
+    static const auto cLineBreaks = CharSet{U'\n'};
+    static const auto cRemovedControls = CharSet::from(UnicodeCategory::Control) - cLineBreaks;
     auto source = U32StringEditor{StringConverter{value}.toU32String()};
-    const auto lineBreaks = CharSet{Char{U'\n'}};
-    source.removeAll(CharSet::from(UnicodeCategory::Control) - lineBreaks);
-    auto lines = U32StringList::fromSplit(U32String{source}, lineBreaks, ItemCount::infinite(), true);
+    source.removeAll(cRemovedControls);
+    auto lines = U32StringList::fromSplit(source, cLineBreaks, ItemCount::infinite(), true);
     const auto maximumLineCount = ItemCount::fromSizeT(options().maximumLines().toSizeT());
     if (lines.count() > maximumLineCount) {
         lines.resize(maximumLineCount);
@@ -88,7 +89,7 @@ void ReadLine::commitText() {
     appendCommittedHistory();
 }
 
-auto ReadLine::insertKeyText(const Key &key, const CpIndex index) -> CpLength {
+auto ReadLine::insertKeyText(const Key &key, const CpIndex index) -> CpCount {
     if (!key.modifiers().empty()) {
         return {};
     }
@@ -122,7 +123,7 @@ auto ReadLine::insertNewLine(const CpIndex index) -> bool {
     return true;
 }
 
-void ReadLine::eraseText(const CpIndex index, const CpLength length) noexcept {
+void ReadLine::eraseText(const CpIndex index, const CpCount length) noexcept {
     _text.remove(CpRange{index, length});
     _historyIndex.reset();
 }

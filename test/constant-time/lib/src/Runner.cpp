@@ -1,18 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "Runner.hpp"
 
 #include "Checksum.hpp"
 #include "Statistics.hpp"
 
-#include <erbsland/err/Exception.hpp>
-#include <erbsland/math/SaturatingMath.hpp>
-#include <erbsland/random/FastRandom.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/unit/ItemIndex.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/Exception.hpp>
+#include <erbsland/FastRandom.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/SaturatingMath.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -31,7 +31,7 @@ auto Runner::run(TestCase &test, const RunOptions &options, std::function<void(c
         return (_interrupted != nullptr && _interrupted->load(std::memory_order_relaxed)) ||
             _clock() - start >= options.duration;
     };
-    const auto measure = [&](std::size_t index) -> double {
+    const auto measure = [&](el::ItemIndex index) -> double {
         const auto before = _clock();
         const auto checksum = test.execute(index, result._repetitions);
         const auto after = _clock();
@@ -56,8 +56,10 @@ auto Runner::run(TestCase &test, const RunOptions &options, std::function<void(c
                 }
             }
             overhead.sort();
-            const auto floor =
-                overhead.isEmpty() ? 0.0 : overhead.getRefOrThrow(el::ItemIndex{overhead.count().toSizeT() / 2});
+            auto floor = 0.0;
+            if (!overhead.isEmpty()) {
+                floor = overhead.getRefOrThrow(el::ItemIndex::end(overhead.count() / 2U));
+            }
             const auto target = std::max(10000.0, floor * 100.0);
             test.clear();
             const auto prepareStart = _clock();
@@ -72,11 +74,11 @@ auto Runner::run(TestCase &test, const RunOptions &options, std::function<void(c
             auto calibrated = false;
             auto measurementCost = 0.0;
             while (!stopped()) {
-                const auto fixed = measure(0);
+                const auto fixed = measure(el::ItemIndex{0U});
                 if (stopped()) {
                     break;
                 }
-                const auto varying = measure(1);
+                const auto varying = measure(el::ItemIndex{1U});
                 if (stopped()) {
                     break;
                 }
@@ -105,8 +107,11 @@ auto Runner::run(TestCase &test, const RunOptions &options, std::function<void(c
                     test.prepare(random, random.getBool());
                 }
                 // An interrupted preparation never executes missing fixture indices.
-                for (auto index = uint64_t{}; index < pilotPrepared && !stopped(); ++index) {
-                    const auto value = measure(static_cast<std::size_t>(index));
+                const auto pilotCount = el::ItemCount::fromInteger(pilotPrepared);
+                for (
+                    auto index = el::ItemIndex::zero(); index.isWithin(pilotCount) && !stopped();
+                    index.uncheckedIncrement()) {
+                    const auto value = measure(index);
                     if (value > 0 && std::isfinite(value)) {
                         pilot.append(value);
                     } else {
@@ -129,8 +134,10 @@ auto Runner::run(TestCase &test, const RunOptions &options, std::function<void(c
                             test.prepare(measurementRandom, population);
                             classes.append(static_cast<uint8_t>(population));
                         }
-                        for (auto index = std::size_t{}; index < classes.count().toSizeT() && !stopped(); ++index) {
-                            const auto population = classes.getRefOrThrow(el::ItemIndex{index}) != 0;
+                        for (
+                            auto index = el::ItemIndex::zero(); index.isWithin(classes.count()) && !stopped();
+                            index.uncheckedIncrement()) {
+                            const auto population = classes.getRefOrThrow(index) != 0;
                             const auto value = measure(index);
                             ++measured;
                             if (value > 0 && std::isfinite(value)) {
@@ -161,12 +168,9 @@ auto Runner::run(TestCase &test, const RunOptions &options, std::function<void(c
                 }
             }
         }
-    } catch (const el::Exception &error) {
+    } catch (const el::RuntimeError &error) {
         result._outcome = Outcome::Error;
         result._detail = error.toString();
-    } catch (const std::exception &error) {
-        result._outcome = Outcome::Error;
-        result._detail = el::String{error.what()};
     }
     if (result._outcome == Outcome::Insufficient && result._detail.isEmpty()) {
         result._detail = "Insufficient populations or degenerate variance within the budget."_el;

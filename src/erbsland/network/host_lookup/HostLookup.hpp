@@ -32,17 +32,17 @@ public:
     [[nodiscard]] virtual auto state() const noexcept -> NetworkSourceState = 0;
     /// Start an inactive lookup operation.
     /// Completion is always delivered asynchronously on the owner event loop.
+    /// Must be called on the owner event loop while no lookup operation is active.
     /// @param host The address or unresolved name to resolve.
-    /// @param options The options for this operation.
-    /// @throws err::LogicError If called outside the owner event loop or while an operation is active.
-    /// @throws err::ParameterError If the timeout or attempt count is not positive, or the retry delay is negative.
+    /// @param options The operation options. Timeout and attempt count must be positive; retry delay must not be
+    /// negative.
     virtual void start(Host host, HostLookupOptions options = {}) = 0;
     /// Cancel the lookup immediately.
     /// This method is thread-safe and suppresses completion that has not started dispatching.
     virtual void cancel() noexcept = 0;
     /// Access the editor for the lookup-owned event handlers.
+    /// Must be called on the owner event loop.
     /// @return The stable source-owned editor.
-    /// @throws err::LogicError If called outside the owner event loop.
     [[nodiscard]] auto events() -> HostLookupEventEditor & override = 0;
 
 protected:

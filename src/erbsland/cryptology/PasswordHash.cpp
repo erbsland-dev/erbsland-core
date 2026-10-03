@@ -4,17 +4,19 @@
 
 #include "impl/PasswordHashData.hpp"
 
-#include "../err/LogicError.hpp"
+#include "../err/LogicFailure.hpp"
 #include "../err/ParseError.hpp"
 
 #include <utility>
 
 namespace erbsland::cryptology {
 
+using namespace text;
+
 PasswordHash::PasswordHash(impl::PasswordHashDataPtr data) noexcept : _data{std::move(data)} {
 }
 
-auto PasswordHash::fromString(const text::String &text) noexcept -> PasswordHash {
+auto PasswordHash::fromString(const String &text) noexcept -> PasswordHash {
     try {
         return PasswordHash{impl::PasswordHashData::fromStringOrThrow(text)};
     } catch (const err::ParseError &) {
@@ -22,17 +24,17 @@ auto PasswordHash::fromString(const text::String &text) noexcept -> PasswordHash
     }
 }
 
-auto PasswordHash::fromStringOrThrow(const text::String &text) -> PasswordHash {
+auto PasswordHash::fromStringOrThrow(const String &text) -> PasswordHash {
     return PasswordHash{impl::PasswordHashData::fromStringOrThrow(text)};
 }
 
-auto PasswordHash::toString() const -> text::String {
-    return _data == nullptr ? text::String{} : _data->toString();
+auto PasswordHash::toString() const -> String {
+    return _data == nullptr ? String{} : _data->toString();
 }
 
 auto PasswordHash::algorithm() const -> PasswordHashAlgorithm {
     if (_data == nullptr) {
-        throw err::LogicError{"An invalid password hash has no algorithm"};
+        throw err::LogicFailure{"An invalid password hash has no algorithm"};
     }
     return _data->policy().algorithm();
 }
@@ -41,7 +43,7 @@ auto PasswordHash::isKeyed() const noexcept -> bool {
     return _data != nullptr && _data->isKeyed();
 }
 
-auto PasswordHash::keyIdentifier() const noexcept -> std::optional<text::String> {
+auto PasswordHash::keyIdentifier() const noexcept -> std::optional<String> {
     return _data == nullptr ? std::nullopt : _data->keyIdentifier();
 }
 

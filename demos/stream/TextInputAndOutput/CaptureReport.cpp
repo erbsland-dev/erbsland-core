@@ -1,6 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamWriteStatus.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TextOutputStream.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -26,7 +32,7 @@ auto writePlantSummary(el::TextOutputStream &output) -> el::StreamWriteStatus {
 auto buildPlantSummary() -> el::String {
     const auto builder = el::AnyStringBuilderStream::create();
     if (writePlantSummary(*builder).isTimeout()) {
-        throw el::LogicError{"An in-memory string builder unexpectedly timed out."};
+        throw el::LogicFailure{"An in-memory string builder unexpectedly timed out."};
     }
 
     return builder->takeString();

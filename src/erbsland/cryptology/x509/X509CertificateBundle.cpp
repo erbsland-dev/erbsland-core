@@ -5,40 +5,41 @@
 #include "../impl/PemCodec.hpp"
 #include "../impl/PemDerFileTools.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../path/Path.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::cryptology {
 
+using namespace err;
+using namespace mem;
 using namespace text::literals;
 
 X509CertificateBundle::X509CertificateBundle(util::List<X509Certificate> certificates) :
     _certificates{std::move(certificates)} {
     if (_certificates.count().toSizeT() > impl::PemCodec::cMaximumCertificates) {
-        throw err::ParameterError{
-            "Certificate bundle exceeds the fixed certificate-count limit."_el, "certificates"_el};
+        throw ParameterFailure{"Certificate bundle exceeds the fixed certificate-count limit."_el, "certificates"_el};
     }
     for (const auto &certificate : _certificates) {
         if (certificate.isEmpty()) {
-            throw err::ParameterError{"Certificate bundle contains an empty certificate."_el, "certificates"_el};
+            throw ParameterFailure{"Certificate bundle contains an empty certificate."_el, "certificates"_el};
         }
     }
 }
 
 auto X509CertificateBundle::toPem() const -> text::String {
-    auto data = util::List<mem::ByteBlock>{};
+    auto data = util::List<ByteBlock>{};
     for (const auto &certificate : _certificates) {
         data.append(certificate.toDer());
     }
     return impl::PemCodec{std::move(data)}.encode();
 }
 
-auto X509CertificateBundle::toDer() const -> mem::ByteBlock {
+auto X509CertificateBundle::toDer() const -> ByteBlock {
     if (_certificates.count() != unit::ItemCount{1U}) {
-        throw err::LogicError{"DER output requires a certificate bundle containing exactly one certificate."_el};
+        throw LogicFailure{"DER output requires a certificate bundle containing exactly one certificate."_el};
     }
     return _certificates.first().toDer();
 }
@@ -57,7 +58,7 @@ auto X509CertificateBundle::fromPem(const text::String &text, const X509Certific
     -> X509CertificateBundle {
     try {
         return fromPemOrThrow(text, mode);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
@@ -72,16 +73,16 @@ auto X509CertificateBundle::fromPemOrThrow(const text::String &text, const X509C
     return X509CertificateBundle{std::move(certificates)};
 }
 
-auto X509CertificateBundle::fromDer(const mem::ByteBlock &data, const X509CertificateProfileMode mode) noexcept
+auto X509CertificateBundle::fromDer(const ByteBlock &data, const X509CertificateProfileMode mode) noexcept
     -> X509CertificateBundle {
     try {
         return fromDerOrThrow(data, mode);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }
 
-auto X509CertificateBundle::fromDerOrThrow(const mem::ByteBlock &data, const X509CertificateProfileMode mode)
+auto X509CertificateBundle::fromDerOrThrow(const ByteBlock &data, const X509CertificateProfileMode mode)
     -> X509CertificateBundle {
     return X509CertificateBundle{util::List<X509Certificate>{X509Certificate::fromDerOrThrow(data, mode)}};
 }
@@ -91,7 +92,7 @@ auto X509CertificateBundle::fromFile(
     -> X509CertificateBundle {
     try {
         return fromFileOrThrow(path, format, mode);
-    } catch (const err::RuntimeError &) {
+    } catch (const RuntimeError &) {
         return {};
     }
 }

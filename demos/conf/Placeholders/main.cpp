@@ -4,12 +4,13 @@
 #include "PlaceholdersDemos.hpp"
 
 #include <DemoCommon.hpp>
+#include <DemoTerminal.hpp>
 
 using namespace demo;
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
-    app.enableTerminal();
+    DemoTerminal::enable(app);
     app.registerDemo("BuiltInProviders"_el, builtInProviders);
     app.registerDemo("BuiltInEnvironmentSource"_el, builtInEnvironmentSource);
     app.registerDemo("BuiltInVariableSource"_el, builtInVariableSource);

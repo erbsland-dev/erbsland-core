@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/stream/AnyStringBuilderStream.hpp>
-#include <erbsland/stream/StandardStreams.hpp>
-#include <erbsland/stream/TextInputStream.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/TextInputStream.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>
@@ -60,14 +60,14 @@ class StandardStreamsTest final : public el::UnitTest {
         void abort() noexcept override { _state = el::stream::StreamState::Closed; }
 
         [[nodiscard]] auto readChar() -> el::stream::StreamReadResult<el::text::Char> override {
-            const auto text = read(el::unit::CpLength{1U});
+            const auto text = read(el::unit::CpCount{1U});
             if (text != el::stream::StreamReadStatus::Data || text.data().isEmpty()) {
                 return {text, el::text::Char{}};
             }
             return {el::stream::StreamReadStatus::Data, text.data()[el::unit::CpIndex{0U}]};
         }
 
-        [[nodiscard]] auto read(el::unit::CpLength maximum) -> el::stream::StreamReadResult<el::text::String> override {
+        [[nodiscard]] auto read(el::unit::CpCount maximum) -> el::stream::StreamReadResult<el::text::String> override {
             if (_position >= _text.size()) {
                 return {el::stream::StreamReadStatus::Finished, el::text::String{}};
             }
@@ -77,12 +77,12 @@ class StandardStreamsTest final : public el::UnitTest {
             return {el::stream::StreamReadStatus::Data, el::text::StringEditor{std::string_view{result}}};
         }
 
-        [[nodiscard]] auto readLine(el::unit::CpLength maximum)
+        [[nodiscard]] auto readLine(el::unit::CpCount maximum)
             -> el::stream::StreamReadResult<el::text::String> override {
             return read(maximum);
         }
 
-        [[nodiscard]] auto readAll(el::unit::CpLength maximum)
+        [[nodiscard]] auto readAll(el::unit::CpCount maximum)
             -> el::stream::StreamReadResult<el::text::String> override {
             return read(maximum);
         }
@@ -157,7 +157,7 @@ public:
 
         REQUIRE(redirect.isActive());
         REQUIRE_EQUAL(capturedInput, stdIn());
-        REQUIRE_EQUAL(toStdString(capturedInput->readAll(el::unit::CpLength{8U}).data()), std::string{"captured"});
+        REQUIRE_EQUAL(toStdString(capturedInput->readAll(el::unit::CpCount{8U}).data()), std::string{"captured"});
 
         redirect.reset();
         REQUIRE_FALSE(redirect.isActive());

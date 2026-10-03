@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/punycode/PunycodeDecoder.hpp>
-#include <erbsland/text/punycode/PunycodeEncoder.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/punycode/PunycodeDecoder.hpp>
+#include <erbsland/punycode/PunycodeEncoder.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

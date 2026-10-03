@@ -4,14 +4,16 @@
 
 #include "AesOperations.hpp"
 
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../text/Literals.hpp"
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
-AesKeySchedule::AesKeySchedule(const mem::ConstByteSpan key) {
+AesKeySchedule::AesKeySchedule(const ConstByteSpan key) {
     if (key.size() == 16U) {
         _roundCount = 10U;
         _keyWordCount = 4U;
@@ -19,7 +21,7 @@ AesKeySchedule::AesKeySchedule(const mem::ConstByteSpan key) {
         _roundCount = 14U;
         _keyWordCount = 8U;
     } else {
-        throw err::ParameterError{"AES requires a 16-byte or 32-byte key."_el, "key"_el};
+        throw err::ParameterFailure{"AES requires a 16-byte or 32-byte key."_el, "key"_el};
     }
     expand(key);
 }
@@ -34,43 +36,49 @@ void AesKeySchedule::secureErase() noexcept {
     _keyWordCount = 0U;
 }
 
-auto AesKeySchedule::roundKey(const std::size_t round) const noexcept -> mem::ByteArray<16> {
-    auto result = mem::ByteArray<16>{};
+auto AesKeySchedule::roundKey(const std::size_t round) const noexcept -> ByteArray<16> {
+    auto result = ByteArray<16>{};
     if (round <= _roundCount) {
-        result.overwrite(_roundKeys.span(unit::ByteIndex{round * 16U}, unit::ByteLength{16U}));
+        result.overwrite(_roundKeys.span(ByteIndex{round * 16U, ByteIndex::Unchecked{}}, ByteCount{16U}));
     }
     return result;
 }
 
-void AesKeySchedule::expand(const mem::ConstByteSpan key) noexcept {
+void AesKeySchedule::expand(const ConstByteSpan key) noexcept {
     _roundKeys.overwrite(key);
     const auto totalWordCount = 4U * (_roundCount + 1U);
-    auto roundConstant = mem::Byte{0x01U};
+    auto roundConstant = Byte{0x01U};
 
     // FIPS 197, Section 5.2: each new word derives from the preceding word and the word Nk positions earlier.
     for (auto word = _keyWordCount; word < totalWordCount; ++word) {
-        auto temporary = mem::ByteArray<4>{};
-        for (auto byte = 0U; byte < 4U; ++byte) {
-            temporary.set(unit::ByteIndex{byte}, _roundKeys.get(unit::ByteIndex{(word - 1U) * 4U + byte}));
-        }
+        auto temporary = ByteArray<4>{};
+        temporary.length().forEach([&](const ByteIndex byte) -> void {
+            temporary.set(
+                byte,
+                _roundKeys.get(
+                    ByteIndex{(word - 1U) * 4U, ByteIndex::Unchecked{}}.uncheckedAdvanced(byte.distanceFromZero())));
+        });
         if (word % _keyWordCount == 0U) {
             // FIPS 197, Section 5.2: RotWord, SubWord, and Rcon at every Nk-th word.
-            const auto first = temporary.get(unit::ByteIndex{});
-            temporary.set(unit::ByteIndex{}, aes::substitute(temporary.get(unit::ByteIndex{1U})) ^ roundConstant);
-            temporary.set(unit::ByteIndex{1U}, aes::substitute(temporary.get(unit::ByteIndex{2U})));
-            temporary.set(unit::ByteIndex{2U}, aes::substitute(temporary.get(unit::ByteIndex{3U})));
-            temporary.set(unit::ByteIndex{3U}, aes::substitute(first));
-            roundConstant = aes::multiply(roundConstant, mem::Byte{0x02U});
+            const auto first = temporary.get(ByteIndex{});
+            temporary.set(ByteIndex{}, aes::substitute(temporary.get(ByteIndex{1U})) ^ roundConstant);
+            temporary.set(ByteIndex{1U}, aes::substitute(temporary.get(ByteIndex{2U})));
+            temporary.set(ByteIndex{2U}, aes::substitute(temporary.get(ByteIndex{3U})));
+            temporary.set(ByteIndex{3U}, aes::substitute(first));
+            roundConstant = aes::multiply(roundConstant, Byte{0x02U});
         } else if (_keyWordCount == 8U && word % _keyWordCount == 4U) {
             // FIPS 197, Section 5.2: AES-256 applies SubWord to word positions congruent to four modulo Nk.
-            for (auto byte = unit::ByteIndex{}; byte < temporary.endIndex(); ++byte) {
-                temporary.set(byte, aes::substitute(temporary.get(byte)));
-            }
+            temporary.length().forEach(
+                [&](const ByteIndex byte) -> void { temporary.set(byte, aes::substitute(temporary.get(byte))); });
         }
-        for (auto byte = 0U; byte < 4U; ++byte) {
-            const auto previous = _roundKeys.get(unit::ByteIndex{(word - _keyWordCount) * 4U + byte});
-            _roundKeys.set(unit::ByteIndex{word * 4U + byte}, previous ^ temporary.get(unit::ByteIndex{byte}));
-        }
+        temporary.length().forEach([&](const ByteIndex byte) -> void {
+            const auto previous = _roundKeys.get(
+                ByteIndex{(word - _keyWordCount) * 4U, ByteIndex::Unchecked{}}.uncheckedAdvanced(
+                    byte.distanceFromZero()));
+            _roundKeys.set(
+                ByteIndex{word * 4U, ByteIndex::Unchecked{}}.uncheckedAdvanced(byte.distanceFromZero()),
+                previous ^ temporary.get(byte));
+        });
         temporary.secureErase();
     }
 }

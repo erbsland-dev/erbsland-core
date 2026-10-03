@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CborCodec.hpp"
 
-#include "../../../err/Exception.hpp"
 #include "../../../err/ParseError.hpp"
+#include "../../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../../text/Literals.hpp"
 
 #include <algorithm>
@@ -11,33 +11,28 @@
 #include <cmath>
 #include <limits>
 #include <optional>
-#include <string_view>
 
 namespace erbsland::data::cbor::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
-CborCodec::CborCodec(mem::ByteBlock bytes, CborParseOptions options) :
+CborCodec::CborCodec(ByteBlock bytes, CborParseOptions options) :
     _input{std::move(bytes)}, _reader{_input}, _parseOptions{options} {
-    _reader.setEndianness(mem::Endianness::Big);
-    _writer.setEndianness(mem::Endianness::Big);
+    _reader.setEndianness(Endianness::Big);
+    _writer.setEndianness(Endianness::Big);
 }
 
 CborCodec::CborCodec(CborFormatOptions options) : _formatOptions{options} {
-    _writer.setEndianness(mem::Endianness::Big);
+    _writer.setEndianness(Endianness::Big);
 }
 
-auto CborCodec::decode(const mem::ByteBlock &bytes, CborParseOptions options) -> CborValue {
-    try {
-        return CborCodec{bytes, options}.parse();
-    } catch (const err::ParseError &) {
-        throw;
-    } catch (const err::Exception &) {
-        fail();
-    }
+auto CborCodec::decode(const ByteBlock &bytes, CborParseOptions options) -> CborValue {
+    return CborCodec{bytes, options}.parse();
 }
 
-auto CborCodec::encode(const CborValue &value, CborFormatOptions options) -> mem::ByteBlock {
+auto CborCodec::encode(const CborValue &value, CborFormatOptions options) -> ByteBlock {
     auto codec = CborCodec{options};
     codec.writeValue(value);
     return codec._writer.toByteBlock();
@@ -63,13 +58,13 @@ auto CborCodec::readArgument(uint8_t additional, bool allowIndefinite) -> uint64
     }
     uint64_t value{};
     if (additional == 24U) {
-        value = _reader.readUInt8OrThrow();
+        value = readInteger<uint8_t>();
     } else if (additional == 25U) {
-        value = _reader.readUInt16OrThrow();
+        value = readInteger<uint16_t>();
     } else if (additional == 26U) {
-        value = _reader.readUInt32OrThrow();
+        value = readInteger<uint32_t>();
     } else if (additional == 27U) {
-        value = _reader.readUInt64OrThrow();
+        value = readInteger<uint64_t>();
     } else {
         fail();
     }
@@ -82,14 +77,14 @@ auto CborCodec::readArgument(uint8_t additional, bool allowIndefinite) -> uint64
     return value;
 }
 
-auto CborCodec::readBytes(uint8_t additional, uint8_t major) -> mem::ByteBlock {
+auto CborCodec::readBytes(uint8_t additional, uint8_t major) -> ByteBlock {
     const auto length = readArgument(additional, true);
     if (length != UINT64_MAX) {
         if (length > _parseOptions.maximumInputLength().toRawValue() ||
             !_reader.canRead(static_cast<std::size_t>(length))) {
             fail();
         }
-        return _reader.readBytesOrThrow(unit::ByteLength{length});
+        return _reader.readBytesOrThrow(ByteCount::fromInteger(length));
     }
     const auto start = _writer.length();
     while (true) {
@@ -100,7 +95,7 @@ auto CborCodec::readBytes(uint8_t additional, uint8_t major) -> mem::ByteBlock {
             _reader.advance(1U);
             break;
         }
-        const auto head = _reader.readUInt8OrThrow();
+        const auto head = readInteger<uint8_t>();
         if ((head >> 5U) != major || (head & 31U) == 31U) {
             fail();
         }
@@ -109,17 +104,12 @@ auto CborCodec::readBytes(uint8_t additional, uint8_t major) -> mem::ByteBlock {
             !_reader.canRead(static_cast<std::size_t>(partLength))) {
             fail();
         }
-        _writer.writeBytes(_reader.readBytesOrThrow(unit::ByteLength{partLength}));
+        _writer.writeBytes(_reader.readBytesOrThrow(ByteCount::fromInteger(partLength)));
         if (_writer.length() > _parseOptions.maximumInputLength()) {
             fail();
         }
     }
-    return _writer.toByteBlock().slice(unit::ByteIndex{start.toRawValue()}, _writer.length() - start);
-}
-
-auto CborCodec::bytesToText(const mem::ByteBlock &bytes) -> text::String {
-    const auto span = bytes.span();
-    return text::String{std::string_view{reinterpret_cast<const char *>(span.data()), span.size()}};
+    return _writer.toByteBlock().slice(ByteIndex::end(start), _writer.length() - start);
 }
 
 auto CborCodec::readText(uint8_t additional) -> text::String {
@@ -127,14 +117,14 @@ auto CborCodec::readText(uint8_t additional) -> text::String {
     if (bytes.length() > _parseOptions.maximumStringLength()) {
         fail();
     }
-    auto value = bytesToText(bytes);
-    if (_parseOptions.isDagCbor() && !value.isValidUtf8()) {
+    auto value = text::impl::UnsafeU8StringBuffer{bytes.span()}.takeString();
+    if (_parseOptions.isDagCbor() && !value.isEncodingValid()) {
         fail();
     }
     return value;
 }
 
-auto CborCodec::readArray(uint8_t additional, unit::ItemCount depth) -> CborValue {
+auto CborCodec::readArray(uint8_t additional, ItemCount depth) -> CborValue {
     if (depth >= _parseOptions.maximumNesting()) {
         fail();
     }
@@ -151,12 +141,12 @@ auto CborCodec::readArray(uint8_t additional, unit::ItemCount depth) -> CborValu
         if (_reader.isAtEnd()) {
             fail();
         }
-        array.append(readValue(depth + unit::ItemCount::one()));
+        array.append(readValue(depth + ItemCount::one()));
     }
     return CborValue{std::move(array)};
 }
 
-auto CborCodec::readMap(uint8_t additional, unit::ItemCount depth) -> CborValue {
+auto CborCodec::readMap(uint8_t additional, ItemCount depth) -> CborValue {
     if (depth >= _parseOptions.maximumNesting()) {
         fail();
     }
@@ -165,7 +155,7 @@ auto CborCodec::readMap(uint8_t additional, unit::ItemCount depth) -> CborValue 
         fail();
     }
     auto map = CborMap{};
-    auto previous = mem::ByteBlock{};
+    auto previous = ByteBlock{};
     for (uint64_t i = 0; count == UINT64_MAX || i < count; ++i) {
         if (count == UINT64_MAX && _reader.peekByte().toUInt8() == 0xffU) {
             _reader.advance(1U);
@@ -175,7 +165,7 @@ auto CborCodec::readMap(uint8_t additional, unit::ItemCount depth) -> CborValue 
             fail();
         }
         const auto start = _reader.position();
-        const auto keyValue = readValue(depth + unit::ItemCount::one());
+        const auto keyValue = readValue(depth + ItemCount::one());
         if (!keyValue.is(CborType::Text)) {
             fail();
         }
@@ -194,12 +184,12 @@ auto CborCodec::readMap(uint8_t additional, unit::ItemCount depth) -> CborValue 
             }
             previous = encoded;
         }
-        map.set(key, readValue(depth + unit::ItemCount::one()));
+        map.set(key, readValue(depth + ItemCount::one()));
     }
     return CborValue{std::move(map)};
 }
 
-auto CborCodec::readTag(uint8_t additional, unit::ItemCount depth) -> CborValue {
+auto CborCodec::readTag(uint8_t additional, ItemCount depth) -> CborValue {
     const auto tag = readArgument(additional);
     if (tag == 42U) {
         const auto value = readValue(depth);
@@ -208,10 +198,10 @@ auto CborCodec::readTag(uint8_t additional, unit::ItemCount depth) -> CborValue 
         }
         const auto bytes = value.getBytes().value();
         if (bytes.isEmpty() || bytes.span()[0].toUInt8() != 0U ||
-            !validCid(bytes.slice(unit::ByteIndex{1U}, bytes.length() - unit::ByteLength{1U}))) {
+            !validCid(bytes.slice(ByteIndex{1U}, bytes.length() - ByteCount{1U}))) {
             fail();
         }
-        return CborValue{CborLink{bytes.slice(unit::ByteIndex{1U}, bytes.length() - unit::ByteLength{1U})}};
+        return CborValue{CborLink{bytes.slice(ByteIndex{1U}, bytes.length() - ByteCount{1U})}};
     }
     if (_parseOptions.isDagCbor()) {
         fail();
@@ -225,7 +215,11 @@ auto CborCodec::readTag(uint8_t additional, unit::ItemCount depth) -> CborValue 
         if (!date.isValid()) {
             fail();
         }
-        return CborValue{time::Timestamp::fromDateTimeOrThrow(date)};
+        const auto timestamp = time::Timestamp::fromDateTime(date);
+        if (!timestamp.has_value()) {
+            fail();
+        }
+        return CborValue{*timestamp};
     }
     if (tag == 1U) {
         const auto value = readValue(depth);
@@ -305,11 +299,11 @@ auto CborCodec::readSimple(uint8_t additional) -> CborValue {
         }
         double value{};
         if (additional == 25U) {
-            value = halfToDouble(_reader.readUInt16OrThrow());
+            value = halfToDouble(readInteger<uint16_t>());
         } else if (additional == 26U) {
-            value = static_cast<double>(std::bit_cast<float>(_reader.readUInt32OrThrow()));
+            value = static_cast<double>(std::bit_cast<float>(readInteger<uint32_t>()));
         } else {
-            value = std::bit_cast<double>(_reader.readUInt64OrThrow());
+            value = std::bit_cast<double>(readInteger<uint64_t>());
         }
         if (_parseOptions.isDagCbor() && (!std::isfinite(value) || (value == 0.0 && std::signbit(value)))) {
             fail();
@@ -319,12 +313,12 @@ auto CborCodec::readSimple(uint8_t additional) -> CborValue {
     fail();
 }
 
-auto CborCodec::readValue(unit::ItemCount depth) -> CborValue {
+auto CborCodec::readValue(ItemCount depth) -> CborValue {
     if (_reader.isAtEnd() || _valueCount >= _parseOptions.maximumValueCount()) {
         fail();
     }
     ++_valueCount;
-    const auto head = _reader.readUInt8OrThrow();
+    const auto head = readInteger<uint8_t>();
     const auto major = static_cast<uint8_t>(head >> 5U);
     const auto additional = static_cast<uint8_t>(head & 31U);
     switch (major) {
@@ -354,7 +348,7 @@ auto CborCodec::readValue(unit::ItemCount depth) -> CborValue {
     }
 }
 
-auto CborCodec::validCid(const mem::ByteBlock &bytes) noexcept -> bool {
+auto CborCodec::validCid(const ByteBlock &bytes) noexcept -> bool {
     const auto data = bytes.span();
     if (data.size() < 1U) {
         return false;

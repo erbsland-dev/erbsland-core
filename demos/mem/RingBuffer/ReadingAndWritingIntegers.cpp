@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteRingBuffer.hpp>
+#include <erbsland/Endianness.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <cstdint>
 
@@ -13,7 +18,7 @@ namespace demo {
 /// Writes are atomic at the hard capacity limit, and reads return an empty
 /// optional without consuming data when a complete value is unavailable.
 void readingAndWritingIntegers() {
-    auto measurements = el::ByteRingBuffer{el::ByteLength{4U}, el::ByteLength{8U}};
+    auto measurements = el::ByteRingBuffer{el::ByteCount{4U}, el::ByteCount{8U}};
     measurements.setEndianness(el::Endianness::Big);
 
     // Queue two complete fields in their stream order.

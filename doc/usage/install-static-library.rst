@@ -34,13 +34,12 @@ Clone the chosen revision and configure a consumer-oriented Release build:
           -DERBSLAND_CORE_ENABLE_TESTS=OFF \
           -DERBSLAND_CORE_ENABLE_DEMOS=OFF \
           -DERBSLAND_CORE_ENABLE_PRECOMPILED_HEADERS=ON \
-          -DERBSLAND_CORE_DO_NOT_FLATTEN_NS=OFF \
           -DERBSLAND_CORE_DEVELOPER_BUILD=OFF
     $ cmake --build erbsland-core-build
     $ cmake --install erbsland-core-build --prefix "$PWD/erbsland-core-install"
 
-Disabling ``ERBSLAND_CORE_DO_NOT_FLATTEN_NS`` gives installed consumers the regular flattened namespace and ``el``
-alias.
+Installed consumers receive the regular flattened namespace and ``el`` alias by default.
+Core itself always compiles with explicit domain namespaces.
 Developer mode is disabled so the installed binary does not expose development-only hooks.
 
 The selected prefix receives the static library, public headers, the package configuration, and the Git-version CMake

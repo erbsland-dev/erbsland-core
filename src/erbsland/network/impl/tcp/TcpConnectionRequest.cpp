@@ -72,9 +72,7 @@ void TcpConnectionRequest::releaseSlot() noexcept {
         callback = std::move(_releaseSlot);
     }
     if (callback) {
-        try {
-            callback();
-        } catch (...) {}
+        callback();
     }
 }
 

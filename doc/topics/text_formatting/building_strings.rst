@@ -6,7 +6,7 @@
     !single: Building Strings
     single: Joining Strings
     single: StringEditor append
-    single: String fromJoined
+    single: join; fixed strings
     single: StringList join
     single: AnyStringBuilder
     single: StringFormat
@@ -34,7 +34,7 @@ The table is a quick map; the following sections explain the reasoning behind ea
         -   Preferred approach
         -   Allocation behavior
     *   -   A fixed set of text fragments
-        -   :cpp:func:`String::fromJoined() <erbsland::text::U8String::fromJoined>`
+        -   ``el::join(...)``
         -   Calculates the complete native length and allocates final character storage once.
     *   -   A dynamic collection of fragments
         -   :cpp:type:`StringList <erbsland::text::StringList>` followed by ``join()``
@@ -49,8 +49,8 @@ The table is a quick map; the following sections explain the reasoning behind ea
         -   :cpp:type:`StringFormat <erbsland::text::StringFormat>`
         -   ``appendTo()`` writes into a builder without creating an intermediate formatted string.
 
-When an Editor Is Already the Working Value
-===========================================
+Appending to StringEditor with Reserved Capacity
+================================================
 
 Appending to an editor is simple, but an editor with insufficient capacity must obtain a larger allocation and copy its
 existing character data before continuing.
@@ -64,9 +64,8 @@ Do not call ``reserve()`` before every append; that defeats the purpose of plann
 
 .. erbsland-demo::
     :source: text/StringBuilding/JoiningStrategies.cpp
-    :function-blocks: joinWithStringEditor
-    :function-blocks-sha256: dfb975176de36f2ff47515fabfd64a9a7de8294bf655f27844cf7d418b175d10
-    :source-sha256: 730f48e8e18d7122cf315d6e4bc9f70d3cd04d8813454e6a05e205ab74ac132b
+    :show: f:joinWithStringEditor
+    :sha256: d3697496af204b033d67eb3229d9278abc779c363f5ca37fadcca7421f881dcd
 
 .. code-block:: cpp
 
@@ -80,7 +79,7 @@ Do not call ``reserve()`` before every append; that defeats the purpose of plann
             el::String{"79"_el},
         };
 
-        auto finalLength = el::ByteLength{};
+        auto finalLength = el::ByteCount{};
         for (const auto &fragment : fragments) {
             finalLength += fragment.length();
         }
@@ -90,42 +89,43 @@ Do not call ``reserve()`` before every append; that defeats the purpose of plann
         for (const auto &fragment : fragments) {
             result.append(fragment);
         }
-        return el::String{result};
+        return result;
     }
 
 .. erbsland-demo-end::
 
 This approach is appropriate when the editor is already needed for later in-place editing.
-For pure concatenation of fixed fragments, ``String::fromJoined()`` expresses the operation directly and performs the
-same size planning internally.
+For pure concatenation of fixed fragments, ``el::join()`` expresses the operation directly and performs the same size
+planning internally.
 
-When Every Fragment Is Known
-============================
+Concatenating Known String Fragments
+====================================
 
-Use ``String::fromJoined({...})`` when all fragments are present at the call site.
-The method adds their native lengths, allocates the final result once, and copies each fragment into that allocation.
+Use ``el::join(a, b, ...)`` when all fragments are present at the call site.
+The function adds their native lengths, allocates the final result once, and copies each fragment into that allocation.
 It avoids both a growable editor and a separate fragment container.
 
 .. erbsland-demo::
     :source: text/StringBuilding/JoiningStrategies.cpp
-    :function-blocks: joinWithFromJoined
-    :function-blocks-sha256: 02f43c4041b1172b86dde43fb4a9f900813a243ef553605d4424720338f8b91f
-    :source-sha256: 730f48e8e18d7122cf315d6e4bc9f70d3cd04d8813454e6a05e205ab74ac132b
+    :show: f:joinFixedFragments
+    :sha256: f7f77484e68bb95dc05ea44efff0646b22dfb7dfdbb50fc5f85b59113c946035
 
 .. code-block:: cpp
 
-    auto joinWithFromJoined() -> el::String {
-        return el::String::fromJoined({"元素: "_el, "金"_el, " ("_el, "Au"_el, "), 原子番号 "_el, "79"_el});
+    auto joinFixedFragments() -> el::String {
+        return el::join("元素: "_el, "金"_el, " ("_el, "Au"_el, "), 原子番号 "_el, "79"_el);
     }
 
 .. erbsland-demo-end::
 
-The initializer-list form is intentionally best for a fixed number of fragments.
+The argument count is fixed at the call site; ``el::join({a, b, ...})`` is also supported.
+Include ``<erbsland/StringJoins.hpp>`` and use strings, editors, or literals of the same encoding.
+The result is always a read-only string of that encoding.
 If a loop discovers fragments at run time, collect them in a ``StringList`` instead of rebuilding a larger result after
 every iteration.
 
-When Fragments Arrive Dynamically
-=================================
+Collecting and Joining Dynamic String Fragments
+===============================================
 
 ``StringList`` stores ``String`` values.
 Those values are normally lightweight handles to static, shared, or sliced storage, so collecting them does not copy the
@@ -137,9 +137,8 @@ This makes it a strong choice for fragments discovered by parsing, filtering, or
 
 .. erbsland-demo::
     :source: text/StringBuilding/JoiningStrategies.cpp
-    :function-blocks: joinWithStringList
-    :function-blocks-sha256: e85d497ff230a8e5ff53b6791c64898d09899500c2e67e04a020b5abccf4ed87
-    :source-sha256: 730f48e8e18d7122cf315d6e4bc9f70d3cd04d8813454e6a05e205ab74ac132b
+    :show: f:joinWithStringList
+    :sha256: cbd21f7ac28534ae875b3cd22733a32211a0273377e4e36167968a8cf2e14fa6
 
 .. code-block:: cpp
 
@@ -165,8 +164,8 @@ This makes it a strong choice for fragments discovered by parsing, filtering, or
 If the approximate fragment count is known and list growth itself matters, reserve list capacity before collecting.
 That optimization concerns the handle array, not the final character allocation.
 
-When One Builder Must Serve Every String Width
-==============================================
+Building UTF-8, UTF-16, and UTF-32 with AnyStringBuilder
+========================================================
 
 ``AnyStringBuilder`` lets one function target UTF-8, UTF-16, or UTF-32. It accepts input from every supported string
 width and converts directly into the configured output.
@@ -179,9 +178,8 @@ require scanning variable-width UTF-8 or UTF-16 data.
 
 .. erbsland-demo::
     :source: text/StringBuilding/JoiningStrategies.cpp
-    :function-blocks: appendElementLabel joinWithAnyStringBuilder
-    :function-blocks-sha256: 2e9634c31d60e8572bbee27270b847ac6ea96653319359375afc1944baced02e
-    :source-sha256: 730f48e8e18d7122cf315d6e4bc9f70d3cd04d8813454e6a05e205ab74ac132b
+    :show: f:appendElementLabel, f:joinWithAnyStringBuilder
+    :sha256: 457cae497c7256abe1d63a6c6636e6a037a143468f2634ba5f95c4dab5c6ec80
 
 .. code-block:: cpp
 
@@ -203,8 +201,7 @@ require scanning variable-width UTF-8 or UTF-16 data.
 .. erbsland-demo-end::
 
 An unreserved builder can still reallocate and copy its accumulated character data while it grows.
-Use ``AnyStringBuilder::u8(ByteLength)``, ``u16(U16DataLength)``, or ``u32(CpLength)`` when the exact native capacity is
-known.
+Use ``AnyStringBuilder::u8(ByteCount)``, ``u16(U16Count)``, or ``u32(CpCount)`` when the exact native capacity is known.
 Use ``withCapacity()`` when only a conservative code-point capacity is known for a runtime-selected width.
 
 The complete builder example below demonstrates direct numeric and byte-block formatting, cross-width input and output,
@@ -213,7 +210,7 @@ and the cached code-point length.
 .. erbsland-demo::
     :source: text/AnyStringBuilder/FieldGuideCards.cpp
     :exec: text/any_string_builder --demo FieldGuideCards
-    :source-sha256: 5cd5031951ee8c6f77d58a4eb74d2d9f9d3539c9ad56b38fafe2dafb025bf04d
+    :sha256: 8521d0038ed0d369690f74163b195b69d162cc83d6b8eff17f5ec016c1d99f49
 
 .. code-block:: cpp
 
@@ -300,79 +297,81 @@ and the cached code-point length.
             .append(U' ')
             .append(observation.species)
             .append(U' ')
-            .append(U'─', el::CpLength{53} - observation.species.characterLength() - observation.symbol.characterLength())
+            .append(U'─', el::CpCount{53} - observation.species.characterLength() - observation.symbol.characterLength())
             .append("╮\n"_el);
         builder.append(u"│ Place : "_el).append(observation.place).append(U'\n');
         builder.append("│ Count : "_el).appendInteger(observation.count).append(U'\n');
         builder.append("│ Moist.: "_el).appendFloat(observation.moisture).append(" %\n"_el);
         builder.append("│ Sample: "_el).appendByteBlock(observation.sampleId, el::ByteFormat::compact()).append(U'\n');
         builder.append("│ Note  : "_el).append(observation.note).append(U'\n');
-        builder.append(U'╰').append(U'─', el::CpLength{58}).append("╯\n"_el);
+        builder.append(U'╰').append(U'─', el::CpCount{58}).append("╯\n"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    First card preview:
-    ╭─ 🌿 Farn im Moos ────────────────────────────────────────╮
-    │ Place : Bachufer · 水辺
-    │ Count : 7
-    │ Moist.: 62.5 %
-    │ Sample: 0fa7
-    │ Note  : New leaves curl like tiny green clocks.
-    ╰──────────────────────────────────────────────────────────╯
-    Cached code-point length after first card: 239
-    Cached code-point length after second card: 484
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    Taken field guide draft:
-    ╭─ 🌿 Farn im Moos ────────────────────────────────────────╮
-    │ Place : Bachufer · 水辺
-    │ Count : 7
-    │ Moist.: 62.5 %
-    │ Sample: 0fa7
-    │ Note  : New leaves curl like tiny green clocks.
-    ╰──────────────────────────────────────────────────────────╯
+        ␛[0mFirst card preview:
+        ╭─ 🌿 Farn im Moos ────────────────────────────────────────╮
+        │ Place : Bachufer · 水辺
+        │ Count : 7
+        │ Moist.: 62.5 %
+        │ Sample: 0fa7
+        │ Note  : New leaves curl like tiny green clocks.
+        ╰──────────────────────────────────────────────────────────╯
+        Cached code-point length after first card: 239
+        Cached code-point length after second card: 484
 
-    ╭─ 🌳 chêne ancien ────────────────────────────────────────╮
-    │ Place : Forêt claire · północ
-    │ Count : 3
-    │ Moist.: 48.25 %
-    │ Sample: 103c
-    │ Note  : Acorns found beside warm limestone.
-    ╰──────────────────────────────────────────────────────────╯
-    After take: 0
+        Taken field guide draft:
+        ╭─ 🌿 Farn im Moos ────────────────────────────────────────╮
+        │ Place : Bachufer · 水辺
+        │ Count : 7
+        │ Moist.: 62.5 %
+        │ Sample: 0fa7␛[0m
+        ␛[0m│ Note  : New leaves curl like tiny green clocks.
+        ╰──────────────────────────────────────────────────────────╯
 
-    Reused builder:
-    ╭─ 🌲 κυπαρίσσι ───────────────────────────────────────────╮
-    │ Place : Sun trail · camino del sol
-    │ Count : 12
-    │ Moist.: 31.75 %
-    │ Sample: 12ce
-    │ Note  : Resin scent after noon rain.
-    ╰──────────────────────────────────────────────────────────╯
+        ╭─ 🌳 chêne ancien ────────────────────────────────────────╮
+        │ Place : Forêt claire · północ
+        │ Count : 3
+        │ Moist.: 48.25 %
+        │ Sample: 103c
+        │ Note  : Acorns found beside warm limestone.
+        ╰──────────────────────────────────────────────────────────╯
+        After take: 0
 
-    UTF-16 export:
-    ╭─ 🌲 κυπαρίσσι ───────────────────────────────────────────╮
-    │ Place : Sun trail · camino del sol
-    │ Count : 12
-    │ Moist.: 31.75 %
-    │ Sample: 12ce
-    │ Note  : Resin scent after noon rain.
-    ╰──────────────────────────────────────────────────────────╯
+        Reused builder:
+        ╭─ 🌲 κυπαρίσσι ───────────────────────────────────────────╮
+        │ Place : Sun trail · camino del sol
+        │ Count : 12
+        │ Moist.: 31.75 %
+        │ Sample: 12ce
+        │ Note  : Resin scent after noon rain.
+        ╰──────────────────────────────────────────────────────────╯
 
-    UTF-32 export:
-    ╭─ 🌲 κυπαρίσσι ───────────────────────────────────────────╮
-    │ Place : Sun trail · camino del sol
-    │ Count : 12
-    │ Moist.: 31.75 %
-    │ Sample: 12ce
-    │ Note  : Resin scent after noon rain.
-    ╰──────────────────────────────────────────────────────────╯
+        UTF-16 export:
+        ╭─ 🌲 κυπαρίσσι ───────────────────────────────────────────╮
+        │ Place : Sun trail · camino del sol
+        │ Count : 12
+        │ Moist.: 31.75 %
+        │ Sample: 12ce
+        │ Note  : Resin scent after noon rain.
+        ╰──────────────────────────────────────────────────────────╯
+
+        UTF-32 export:
+        ╭─ 🌲 κυπαρίσσι ───────────────────────────────────────────╮
+        │ Place : Sun trail · camino del sol
+        │ Count : 12
+        │ Moist.: 31.75 %
+        │ Sample: 12ce
+        │ Note  : Resin scent after noon rain.
+        ╰──────────────────────────────────────────────────────────╯␛[0m
 
 .. erbsland-demo-end::
 
-Seeing the Trade-offs Side by Side
-==================================
+Comparing String Construction and Allocation Strategies
+=======================================================
 
 All four functions in the central example produce the same visible value.
 Their differences are the time at which the final size is known and whether the abstraction provides editing,
@@ -380,32 +379,33 @@ collection, or formatted-width-independent behavior.
 
 .. erbsland-demo::
     :source: text/StringBuilding/JoiningStrategies.cpp
-    :function-blocks: joiningStrategies
-    :function-blocks-sha256: 9c7c06f8ed950ea83c0c6bd423f4d720777b416babc05d1adb04f91d6818db03
+    :show: f:joiningStrategies
     :exec: text/string_building --demo JoiningStrategies
-    :source-sha256: 730f48e8e18d7122cf315d6e4bc9f70d3cd04d8813454e6a05e205ab74ac132b
+    :sha256: e2ee08fc31b24b1650767d2b3f2b5125e75af04fbf9996af3e656f9958e70139
 
 .. code-block:: cpp
 
     void joiningStrategies() {
         el::io::printLine("StringEditor ......: "_el, joinWithStringEditor());
-        el::io::printLine("String::fromJoined : "_el, joinWithFromJoined());
+        el::io::printLine("el::join ..........: "_el, joinFixedFragments());
         el::io::printLine("StringList::join ..: "_el, joinWithStringList());
         el::io::printLine("AnyStringBuilder ..: "_el, joinWithAnyStringBuilder());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    StringEditor ......: 元素: 金 (Au), 原子番号 79
-    String::fromJoined : 元素: 金 (Au), 原子番号 79
-    StringList::join ..: 元素: 金 (Au), 原子番号 79
-    AnyStringBuilder ..: 元素: 金 (Au), 原子番号 79
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mStringEditor ......: 元素: 金 (Au), 原子番号 79
+        el::join ..........: 元素: 金 (Au), 原子番号 79
+        StringList::join ..: 元素: 金 (Au), 原子番号 79
+        AnyStringBuilder ..: 元素: 金 (Au), 原子番号 79␛[0m
 
 .. erbsland-demo-end::
 
-Let a Format Describe Structured Output
-=======================================
+Structured Output with StringFormat
+===================================
 
 Prefer :cpp:type:`StringFormat <erbsland::text::StringFormat>` when the result has a stable structure with placeholders.
 The format object makes alignment, numeric formatting, and escaping explicit and can reuse its parsed pattern.

@@ -4,6 +4,8 @@
 
 #include "TcpConnectionFilterResult_fwd.hpp"
 
+#include "../../core/Definitions.hpp"
+
 namespace erbsland::network {
 
 /// The synchronous admission decision for an incoming TCP connection.

@@ -3,6 +3,7 @@
 #include "StringDebugBuilder.hpp"
 
 #include "../../text/IntegerFormatFlag.hpp"
+#include "../../text/StringJoins.hpp"
 
 namespace erbsland::debug::impl {
 
@@ -16,7 +17,7 @@ auto storageIdentifierText(const mem::StorageIdentifier &storageId) -> String {
     const auto values = storageId.toRawValues();
     const auto format =
         IntegerFormat::hexadecimal().setFlags(IntegerFormatFlag::BasePrefix | IntegerFormatFlag::ZeroFill);
-    return String::fromJoined({String::fromInteger(values[0], format), ":"_el, String::fromInteger(values[1], format)});
+    return text::join(String::fromInteger(values[0], format), ":"_el, String::fromInteger(values[1], format));
 }
 
 }

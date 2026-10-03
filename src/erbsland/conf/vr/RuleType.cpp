@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RuleType.hpp"
 
+#include "../../unit/ByteCount.hpp"
+
 #include <cassert>
 
 namespace erbsland::conf::vr {
 
+using namespace text;
 using namespace text::literals;
 
 auto RuleType::all() noexcept -> const std::array<RuleType, 19> & {
@@ -34,7 +37,7 @@ auto RuleType::all() noexcept -> const std::array<RuleType, 19> & {
 
 auto RuleType::valueToTextMap() noexcept -> const ValueMap & {
     static const ValueMap valueMap = {
-        Entry{Undefined, "Undefined"_el, ValueType::Undefined, text::String{}},
+        Entry{Undefined, "Undefined"_el, ValueType::Undefined, String{}},
         Entry{Integer, "Integer"_el, ValueType::Integer, "an integer value"_el},
         Entry{Boolean, "Boolean"_el, ValueType::Boolean, "a Boolean value"_el},
         Entry{Float, "Float"_el, ValueType::Float, "a floating-point or integer value"_el},
@@ -51,8 +54,8 @@ auto RuleType::valueToTextMap() noexcept -> const ValueMap & {
         Entry{Section, "Section"_el, ValueType::SectionWithNames, "a section"_el},
         Entry{SectionList, "SectionList"_el, ValueType::SectionList, "a section list"_el},
         Entry{SectionWithTexts, "SectionWithTexts"_el, ValueType::SectionWithTexts, "a section with texts"_el},
-        Entry{NotValidated, "NotValidated"_el, ValueType::Undefined, text::String{}},
-        Entry{Alternatives, "Alternatives"_el, ValueType::Undefined, text::String{}},
+        Entry{NotValidated, "NotValidated"_el, ValueType::Undefined, String{}},
+        Entry{Alternatives, "Alternatives"_el, ValueType::Undefined, String{}},
     };
     return valueMap;
 }
@@ -108,17 +111,17 @@ auto RuleType::matchesValueType(const ValueType valueType) const noexcept -> boo
     }
 }
 
-auto RuleType::toText() const noexcept -> const text::String & {
+auto RuleType::toText() const noexcept -> const String & {
     return entry().text;
 }
 
-auto RuleType::fromText(const text::String &text) noexcept -> RuleType {
-    if (text.isEmpty() || text.length().toSizeT() > 20) {
+auto RuleType::fromText(const String &text) noexcept -> RuleType {
+    if (text.isEmpty() || text.length() > unit::ByteCount{20}) {
         return Undefined;
     }
     const auto &map = textToValueMap();
     for (const auto &[name, value] : map) {
-        if (name.compare(text, text::Char::compareIdentifier) == std::strong_ordering::equal) {
+        if (name.compare(text, Char::compareIdentifier) == std::strong_ordering::equal) {
             return value;
         }
     }
@@ -129,7 +132,7 @@ auto RuleType::toValueType() const noexcept -> ValueType {
     return entry().valueType;
 }
 
-auto RuleType::expectedValueTypeText() const noexcept -> const text::String & {
+auto RuleType::expectedValueTypeText() const noexcept -> const String & {
     return entry().expectedValueTypeText;
 }
 

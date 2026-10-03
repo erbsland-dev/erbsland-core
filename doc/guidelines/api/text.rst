@@ -12,6 +12,9 @@ Core Semantics
     signal = explicit non-character result from tolerant character access
     ASCII folding = case-insensitive comparison limited to ASCII letters
     Unicode folding = case-insensitive comparison using Unicode mapping
+    separator split = shared before/after halves excluding the complete match; absent or empty separator yields nullopt
+    first/last separator = leftmost/rightmost decoded match, including overlapping occurrences
+    set separator = exactly one decoded member; direct membership without a comparison callback
 
 Primary Types
 =============
@@ -31,6 +34,7 @@ Processing Types
     StringLiteral, U8StringLiteral, U16StringLiteral, U32StringLiteral // compile-time string literals
     StringCharReader, StringCharReaderState // sequential decoded-character reader and retained state
     StringSplitter, U8StringSplitter, U16StringSplitter, U32StringSplitter // owning sequential splitters
+    StringSplitter::ProcessPartFn, StringSplitter::ProcessPartWithIndexFn // part callbacks with optional source index
     CharRange, CharSet, CombinedChar, CharSignal // code-point range, set, combined value, and access signal
     UnicodeCategory, UnicodeCategoryGroup, AsciiCategory // character classifications
     NormalizationForm // NFC, NFD, NFKC, and NFKD Unicode normalization selection
@@ -41,7 +45,9 @@ Processing Types
     placeholder::Replacer, placeholder::ReplacerOptions // reusable text substitution and syntax configuration
     placeholder::Source, placeholder::Filter // application-defined value lookup and transformation
     placeholder::EnvironmentSource, placeholder::VariableSource, placeholder::TextFilter // built-in providers
+    placeholder::SecureStorageSource // explicitly registered namespace-bound persistent secret lookup
     placeholder::EscapeMode, placeholder::ReplacerError, placeholder::ReplacerErrorCategory // syntax and failure policy
+    cpp::CppTokenizer, cpp::CppToken // streaming C++ lexical scanner and retained token value
     named_key::Parser, named_key::Format, named_key::Entry, named_key::EntryKind // named-key entry parsing
 
 Formatting and Parsing Types
@@ -119,24 +125,65 @@ Pattern Definitions
     I = unit::❮Index❯ // native or code-point string index
     S = String/U❮width❯String // read-only string for the selected width
 
+Character Set Construction Patterns
+===================================
+
+.. code-block:: text
+
+    T(character) // initialize one character directly in inline storage, including brace construction
+    T(first, second, rest...) // normalize individual characters, not inclusive endpoints
+    T(range)/T(firstRange, secondRange) // initialize normalized inline ranges
+    T::fromCharacters(initializer-list) -> CharSet // explicitly import a list without intercepting brace construction
+    T::fromRange(first, last) -> CharSet // create an inclusive character range
+
 String Value Patterns
 =====================
 
 .. code-block:: text
 
     o.length()/characterLength()/isEmpty() -> T // inspect native-unit and code-point bounds
+    o.isEncodingValid() -> bool // validate the visible encoding, uniformly for all string widths
+    o.encodingValidOrThrow() // validate or throw a width-specific encoding error with a relative native index
     o.charAt(index-or-side) -> Char // access a decoded character or signal
     o.indexAt(cpIndex-or-side)/toCharIndex(nativeIndex) -> I // convert between native and code-point positions
     o.slice(range-or-side)/copy() -> S // create a shared slice or compact independent value
-    o.compare(text[, comparison]) -> std::strong_ordering // compare decoded text
+    o.compare(text[, comparison]) -> std::strong_ordering // decoded order with tolerant replacement
+    o.compareBinary(text) -> std::strong_ordering // allocation-free native-byte representation order
     o.find/findLast(text[, start, comparison]) -> I // locate text using native indexes
     o.startsWith/endsWith/contains(text[, comparison]) -> bool // test text membership
     o.containsOnly(set-or-ascii-category) -> bool // validate decoded character membership
     o.forEach(function) -> util::LoopResult // visit decoded code points
     o.splitAt(index) -> std::pair❮S❯ // split into read-only values
+    o.splitAtFirst/splitAtLast(text[, comparison]) -> T // optional read-only pair, excluding the match
+    o.splitAtFirst/splitAtLast(set) -> T // optional read-only pair, excluding one matched character
     o.trimmed/transformed([arguments]) -> S // return processed read-only text
     o.normalized(form) -> S // explicitly normalize and share storage when already normalized
     o.toEscaped/toSafeString([options]) -> S // create escaped or bounded diagnostic text
+
+String Joining Patterns
+=======================
+
+.. code-block:: text
+
+    join(a, b, ...) -> S // fixed same-encoding Core strings, editors, or literals; no separator
+    join({a, b, ...}) -> S // fixed braced list; same read-only result and encoding constraints
+    join(a) -> S // share one input's storage as a read-only string
+
+String Transformation Patterns
+==============================
+
+.. code-block:: text
+
+    toLowercase/toUppercase(text) -> S // same-width read-only text using simple Unicode mappings
+    toAsciiLowercase/toAsciiUppercase(text) -> S // same-width read-only text using ASCII mappings
+    toCapitalized/toAsciiCapitalized(text) -> S // uppercase first code point, lowercase the remainder
+    toCapitalization/toAsciiCapitalization(text, capitalization) -> S // apply the selected casing
+    toCaseFolded/toIdentifierNormalized(text) -> S // simple Unicode folding or ASCII identifier normalization
+    toCamelCaseFromWords(text[, separators][, capitalization]) -> S // join words; default Unicode whitespace
+    toAsciiCamelCaseFromWords(text[, separators][, capitalization]) -> S // join words; default ASCII whitespace
+    toWordsFromCamelCase(text[, separator][, capitalization]) -> S // Unicode word boundaries; default space
+    toAsciiWordsFromCamelCase(text[, separator][, capitalization]) -> S // ASCII word boundaries; default space
+    toWhitespaceSimplified/toAsciiWhitespaceSimplified(text[, separator]) -> S // trim and collapse; default space
 
 String Editing Patterns
 =======================
@@ -147,6 +194,7 @@ String Editing Patterns
     o.append/insert/replace(position, text) -> E& // add or replace text in place
     o.remove/trim(range-or-characters) -> E& // remove text in place
     o.slice/trimmed(range-or-characters) -> E // return an editable result
+    o.splitAtFirst/splitAtLast(separator[, comparison]) -> T // optional editable pair, excluding the match
     o.normalize(form) -> E& // normalize in place
     o.normalized(form) -> E // return an editable normalized result
     o.clear()/reset() // empty while retaining or releasing storage
@@ -161,11 +209,14 @@ Reader and Split Patterns
 
     T(text[, separator, mode]) // create an owning reader or splitter
     o.isAtEnd()/position()/remaining() -> T // inspect sequential state
+    o.u8Position()/u16Position()/u32Position() -> I // native cursor; requires the matching reader encoding
     o.next()/peek() -> T // consume or inspect the next character or slice
     o.advanceIf(character-or-string[, compare]) -> bool // transactionally skip an optional token
-    o.advanceWhile/advanceUntil(set-or-ascii-category[, maximum]) -> unit::CpLength // skip and inspect the count
+    o.advanceWhile/advanceUntil(set-or-ascii-category[, maximum]) -> unit::CpCount // skip and inspect the count
     o.readWhile/readUntil(function, set-or-ascii-category[, maximum]) -> util::LoopResult // decoded scan
+    o.splitCount()/splitIndex() -> T // count consumed parts or index the next part
     o.skip() // discard the next splitter part without creating a slice
+    o.forEach(function) -> util::LoopResult // consume remaining splitter parts, optionally passing their ItemIndex
     o.reset([state]) // restart or restore retained reader state
 
 Conversion and Encoding Patterns
@@ -179,7 +230,7 @@ Conversion and Encoding Patterns
     o.decode([mode]) -> S // decode owned bytes to the requested width
     o.validateOrThrow(encoding[, bom-mode]) // strictly validate encoded bytes without creating a string
     o.encode() -> mem::ByteBlock // tolerantly encode text into owned bytes
-    o.encodedLength() -> unit::ByteLength // calculate encoded byte length
+    o.encodedLength() -> unit::ByteCount // calculate encoded byte length
     o.encodeTo(ring) -> util::Result // atomically encode into a byte ring
     o.peek❮Width❯String/take❮Width❯String(maximum) -> S // inspect or consume bounded decoded text
     o.setSensitive(enabled) // configure StringDecodeBuffer storage and UTF-8 result marking
@@ -300,3 +351,31 @@ Punycode and IDNA Patterns
     T::idna2008Label() -> PunycodeOptions // create strict IDNA2008 label options
     T::idna2008Domain() -> PunycodeOptions // create strict IDNA2008 domain options
     T::network() -> PunycodeOptions // create the strict network-domain policy
+
+String Matching Patterns
+========================
+
+.. code-block:: text
+
+    T::fromDivider(AnyString) -> StringPattern // compile parsed prefix/divider syntax
+    T::fromDivider(elements...) -> StringPattern // compile typed prefix/divider elements
+    o.kind() -> StringPatternKind // report Divider, Glob, or PosixGlob
+    T::fromGlob(AnyString) -> StringPattern // compile Core glob syntax with caret negation and escapes
+    T::fromGlob(elements...) -> StringPattern // compile typed glob elements with repeated Star markers
+    T::fromPosixGlob(AnyString) -> StringPattern // compile the preserved Python-style glob dialect
+    o.trim(editor) -> bool // remove matching text from an editable string
+    o.trimmed(text) -> S // obtain the remaining read-only text
+    o.matches(text) -> bool // reuse compiled wildcard elements and character ranges
+
+C++ Source Scanning Patterns
+============================
+
+.. code-block:: text
+
+    T(source) // bind immutable C++ source for lightweight lexical inspection
+    o.next() -> cpp::CppToken // skip whitespace and read one token, including End
+    T::tokens(source) -> CoGenerator<CppToken> // lazily iterate without End
+    o.isEnd() -> bool // test a token for end of input
+    o.kind()/text() // lexical category and shared source slice
+    o.position()/range()/length() // native UTF-8 byte position, range, and length
+    o.characterPosition()/characterRange()/characterLength() // decoded code-point position, range, and length

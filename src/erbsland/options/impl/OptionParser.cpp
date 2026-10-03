@@ -11,8 +11,8 @@
 #include "../OptionType.hpp"
 #include "../OptionValues.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../i18n/DisplayTextMap.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../i18n/DisplayText.hpp"
 #include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
@@ -22,17 +22,17 @@
 
 namespace erbsland::options::impl {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-OptionParser::OptionParser(
-    OptionsPtr options, core::CommandLineArguments &args, i18n::DisplayTextMapConstPtr displayText) :
+OptionParser::OptionParser(OptionsPtr options, core::CommandLineArguments &args) :
     _options{std::move(options)},
     _args{args},
-    _displayText{displayText != nullptr ? std::move(displayText) : i18n::DisplayTextMap::defaultMap()},
-    _argumentIndex{unit::ArgumentIndex::one()},
-    _moduleArgumentIndex{unit::ArgumentIndex::noIndex()} {
+    _argumentIndex{ArgumentIndex::one()},
+    _moduleArgumentIndex{ArgumentIndex::noIndex()} {
     if (_options != nullptr) {
-        _options->setExecutablePath(_args.isEmpty() ? text::String{} : _args.first());
+        _options->setExecutablePath(_args.isEmpty() ? String{} : _args.first());
     }
 }
 
@@ -41,21 +41,25 @@ OptionParser::~OptionParser() {
 }
 
 auto OptionParser::parse() -> OptionResult {
-    if (_args.count() > unit::ItemCount{5'000U}) {
+    if (_args.count() > ItemCount{5'000U}) {
         makeError(
             OptionErrorReason::SyntaxError,
-            "Too many command-line arguments"_el,
-            "This command accepts at most 5,000 command-line arguments."_el,
+            i18n::displayText("options.too_many_command_line_arguments_title"_el),
+            i18n::displayText("options.too_many_command_line_arguments_description"_el),
             {});
         return finishError();
     }
     if (_options == nullptr) {
-        throw err::LogicError{"parse() was called without an options object"};
+        throw err::LogicFailure{"parse() was called without an options object"};
+    }
+
+    if (!validateHelpNames()) {
+        return finishError();
     }
 
     auto status = OptionResultStatus::Success;
     if (!_options->optionModules().empty()) {
-        if (_args.count() <= unit::ItemCount::one() &&
+        if (_args.count() <= ItemCount::one() &&
             !_options->parserFlags().isSet(OptionParserFlag::ErrorOnMissingModule)) {
             return finishStatus(OptionResultStatus::DisplayModuleOverview);
         }
@@ -72,10 +76,10 @@ auto OptionParser::parse() -> OptionResult {
         if (isHelpOrVersionRequest(status)) {
             return finishStatus(status);
         }
-        _argumentIndex = unit::ArgumentIndex::one();
+        _argumentIndex = ArgumentIndex::one();
     }
     _activeOptionSets = collectActiveOptionSets();
-    if (_args.count() <= unit::ItemCount::one() &&
+    if (_args.count() <= ItemCount::one() &&
         !_options->parserFlags().isSet(OptionParserFlag::ErrorOnEmptyRequiredPositionals)) {
         for (const auto &option : positionalOptions()) {
             if (option->flags().isSet(OptionFlag::Required)) {
@@ -137,7 +141,7 @@ auto OptionParser::finishStatus(const OptionResultStatus status) -> OptionResult
 
 auto OptionParser::finishError() -> OptionResult {
     cleanupSensitiveText();
-    if (_error.has_value()) {
+    if (_error.has_value() && !_omitErrorArguments) {
         _error->setArguments(_args);
     }
     auto result = OptionResult{};
@@ -160,20 +164,16 @@ auto OptionParser::acceptStorageResult(const bool success) -> bool {
 }
 
 auto OptionParser::storeValue(
-    const OptionPtr &option,
-    const text::String &value,
-    const unit::ArgumentIndex argumentIndex,
-    const unit::ByteIndex startIndex) -> bool {
+    const OptionPtr &option, const String &value, const ArgumentIndex argumentIndex, const ByteIndex startIndex)
+    -> bool {
     if (option != nullptr && option->type() == OptionType::Boolean) {
         auto boolean = false;
         if (!parseBooleanLiteral(value, boolean)) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
-                "Invalid boolean value"_el,
-                text::StringFormat{
-                    "\"{}\" is not a supported boolean value for {}. Use true, on, yes, enabled, false, off, no, "
-                    "or disabled."}
-                    .build(value.toEscaped(text::EscapeFormat::Display), OptionDisplayModel::optionTitle(option)),
+                i18n::displayText("options.invalid_boolean_value_title"_el),
+                i18n::displayFormat("options.invalid_boolean_description"_el)
+                    .build(value.toEscaped(EscapeFormat::Display), OptionDisplayModel::optionTitle(option)),
                 argumentIndex,
                 option);
         }
@@ -181,7 +181,7 @@ auto OptionParser::storeValue(
     }
     if (option != nullptr && option->type() == OptionType::SensitiveText) {
         if (!argumentIndex.isNoIndex()) {
-            const auto elementIndex = unit::ItemIndex::fromSizeT(argumentIndex.toSizeT());
+            const auto elementIndex = ItemIndex::fromSizeT(argumentIndex.toSizeT());
             if (elementIndex.toSizeT() < _args.count().toSizeT()) {
                 auto source = _args.get(elementIndex);
                 source.markAsSensitive();
@@ -200,7 +200,7 @@ void OptionParser::cleanupSensitiveText() {
         if (location.argumentIndex().isNoIndex() || location.startIndex().isNoIndex()) {
             continue;
         }
-        const auto argumentIndex = unit::ItemIndex::fromSizeT(location.argumentIndex().toSizeT());
+        const auto argumentIndex = ItemIndex::fromSizeT(location.argumentIndex().toSizeT());
         if (argumentIndex.toSizeT() >= _args.count().toSizeT()) {
             continue;
         }
@@ -208,27 +208,22 @@ void OptionParser::cleanupSensitiveText() {
         if (location.startIndex().toSizeT() > original.length().toSizeT()) {
             continue;
         }
-        auto replacement =
-            text::StringEditor{original.slice(unit::ByteRange{unit::ByteIndex::zero(), location.startIndex()})};
+        auto replacement = StringEditor{original.slice(ByteRange{ByteIndex::zero(), location.startIndex()})};
         replacement.append("*****"_el);
-        _args.set(argumentIndex, text::String{replacement});
+        _args.set(argumentIndex, replacement);
     }
 }
 
 void OptionParser::cleanupSensitiveTextNoThrow() noexcept {
-    try {
-        cleanupSensitiveText();
-    } catch (...) {}
+    cleanupSensitiveText();
 }
 
-auto OptionParser::makeError(const OptionErrorReason reason, text::String description, const unit::ArgumentIndex index)
-    -> bool {
+auto OptionParser::makeError(const OptionErrorReason reason, String description, const ArgumentIndex index) -> bool {
     return makeError(OptionErrorContext{}.setReason(reason).setTitle(std::move(description)).setArgumentIndex(index));
 }
 
 auto OptionParser::makeError(
-    const OptionErrorReason reason, text::String title, text::String description, const unit::ArgumentIndex index)
-    -> bool {
+    const OptionErrorReason reason, String title, String description, const ArgumentIndex index) -> bool {
     return makeError(
         OptionErrorContext{}
             .setReason(reason)
@@ -238,8 +233,7 @@ auto OptionParser::makeError(
 }
 
 auto OptionParser::makeError(
-    const OptionErrorReason reason, text::String description, const unit::ArgumentIndex index, const OptionPtr &option)
-    -> bool {
+    const OptionErrorReason reason, String description, const ArgumentIndex index, const OptionPtr &option) -> bool {
     return makeError(
         OptionErrorContext{}
             .setReason(reason)
@@ -250,9 +244,9 @@ auto OptionParser::makeError(
 
 auto OptionParser::makeError(
     const OptionErrorReason reason,
-    text::String title,
-    text::String description,
-    const unit::ArgumentIndex index,
+    String title,
+    String description,
+    const ArgumentIndex index,
     const OptionPtr &option) -> bool {
     return makeError(
         OptionErrorContext{}
@@ -270,33 +264,32 @@ auto OptionParser::makeError(OptionErrorContext context) -> bool {
     if (context.module() == nullptr) {
         context.setModule(_selectedModule);
     }
-    context.setDisplayText(_displayText);
     if (context.description().isEmpty()) {
         switch (context.reason()) {
         case OptionErrorReason::SyntaxError:
-            context.setDescription("Review the marked argument and the usage information below."_el);
+            context.setDescription(i18n::displayText("options.syntax_error_description"_el));
             break;
         case OptionErrorReason::UnknownName:
-            context.setDescription("The marked name is not available for this command."_el);
+            context.setDescription(i18n::displayText("options.unknown_name_description"_el));
             break;
         case OptionErrorReason::UnexpectedValueType:
-            context.setDescription("The marked value does not meet the requirements of this option."_el);
+            context.setDescription(i18n::displayText("options.unexpected_value_type_description"_el));
             break;
         case OptionErrorReason::ValidationError:
-            context.setDescription("The supplied options did not pass validation."_el);
+            context.setDescription(i18n::displayText("options.validation_error_description"_el));
             break;
         case OptionErrorReason::NotImplemented:
-            context.setDescription("This option operation has not been implemented."_el);
+            context.setDescription(i18n::displayText("options.not_implemented_description"_el));
             break;
         case OptionErrorReason::None:
-            context.setDescription("Option processing stopped without additional details."_el);
+            context.setDescription(i18n::displayText("options.generic_error_description"_el));
             break;
         }
     }
     if (context.argumentIndex().isNoIndex()) {
         if (const auto option = context.option(); option != nullptr) {
             if (option->isPositionalArgument()) {
-                context.setTitle("Required argument is missing"_el);
+                context.setTitle(i18n::displayText("options.required_argument_is_missing_title"_el));
             }
         }
     }

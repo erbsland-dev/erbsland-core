@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "EventRegistry.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/AsciiCategory.hpp"
 
 #include <thread>
@@ -10,6 +10,8 @@
 
 namespace erbsland::event {
 
+using namespace err;
+using namespace unit;
 using namespace text::literals;
 using text::String;
 
@@ -20,19 +22,19 @@ EventRegistry::EventRegistry(PrivateTag) {
 auto EventRegistry::registerEvent(String name, String description) -> EventId {
     std::scoped_lock lock{_mutex};
     if (!name.containsOnly(text::AsciiCategory::DottedName)) {
-        throw err::ParameterError{"The event name contains invalid characters."_el, "name"_el};
+        throw ParameterFailure{"The event name contains invalid characters."_el, "name"_el};
     }
-    if (name.length() > unit::ByteLength{800} || name.characterLength() > unit::CpLength{200}) {
-        throw err::ParameterError{"The event name exceeds the maximum length."_el, "name"_el};
+    if (name.length() > ByteCount{800} || name.characterLength() > CpCount{200}) {
+        throw ParameterFailure{"The event name exceeds the maximum length."_el, "name"_el};
     }
-    if (!description.isValidUtf8()) {
-        throw err::ParameterError{"The event description contains invalid characters."_el, "description"_el};
+    if (!description.isEncodingValid()) {
+        throw ParameterFailure{"The event description contains invalid characters."_el, "description"_el};
     }
-    if (description.length() > unit::ByteLength{8000} || description.characterLength() > unit::CpLength{2000}) {
-        throw err::ParameterError{"The event description exceeds the maximum length."_el, "description"_el};
+    if (description.length() > ByteCount{8000} || description.characterLength() > CpCount{2000}) {
+        throw ParameterFailure{"The event description exceeds the maximum length."_el, "description"_el};
     }
     if (_eventIds.contains(name)) {
-        throw err::ParameterError{"The event name is already registered."_el, "name"_el};
+        throw ParameterFailure{"The event name is already registered."_el, "name"_el};
     }
     const auto newEventValue = _nextCustomEventValue;
     _nextCustomEventValue += 1;
@@ -68,19 +70,19 @@ auto EventRegistry::getEventInfo(const EventId identifier) const noexcept -> Eve
 auto EventRegistry::registerBackend(String name, String description) -> EventBackendId {
     std::scoped_lock lock{_mutex};
     if (!name.containsOnly(text::AsciiCategory::DottedName)) {
-        throw err::ParameterError{"The backend name contains invalid characters."_el, "name"_el};
+        throw ParameterFailure{"The backend name contains invalid characters."_el, "name"_el};
     }
-    if (name.length() > unit::ByteLength{800} || name.characterLength() > unit::CpLength{200}) {
-        throw err::ParameterError{"The backend name exceeds the maximum length."_el, "name"_el};
+    if (name.length() > ByteCount{800} || name.characterLength() > CpCount{200}) {
+        throw ParameterFailure{"The backend name exceeds the maximum length."_el, "name"_el};
     }
-    if (!description.isValidUtf8()) {
-        throw err::ParameterError{"The backend description contains invalid characters."_el, "description"_el};
+    if (!description.isEncodingValid()) {
+        throw ParameterFailure{"The backend description contains invalid characters."_el, "description"_el};
     }
-    if (description.length() > unit::ByteLength{8000} || description.characterLength() > unit::CpLength{2000}) {
-        throw err::ParameterError{"The backend description exceeds the maximum length."_el, "description"_el};
+    if (description.length() > ByteCount{8000} || description.characterLength() > CpCount{2000}) {
+        throw ParameterFailure{"The backend description exceeds the maximum length."_el, "description"_el};
     }
     if (_backendIds.contains(name)) {
-        throw err::ParameterError{"The backend name is already registered."_el, "name"_el};
+        throw ParameterFailure{"The backend name is already registered."_el, "name"_el};
     }
     const auto newBackendValue = _nextCustomBackendValue;
     _nextCustomBackendValue += 1;
@@ -120,6 +122,8 @@ void EventRegistry::registerInternalIds() noexcept {
     addEvent(timer(), "dev.erbsland.core.Timer"_el, "A timer event"_el);
     addBackend(noBackend(), "dev.erbsland.core.NoBackend"_el, "No backend"_el);
     addBackend(schedulerBackend(), "dev.erbsland.core.SchedulerBackend"_el, "Scheduler backend"_el);
+    addBackend(systemBackend(), "dev.erbsland.core.SystemBackend"_el, "System backend"_el);
+    addBackend(utilitiesBackend(), "dev.erbsland.core.UtilitiesBackend"_el, "Utilities backend"_el);
     addBackend(networkBackend(), "dev.erbsland.core.NetworkBackend"_el, "Network backend"_el);
 }
 

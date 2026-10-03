@@ -6,7 +6,7 @@
 
 namespace erbsland::stream {
 
-auto OutputStreamSettings::backBufferLimit() const noexcept -> unit::ByteLength {
+auto OutputStreamSettings::backBufferLimit() const noexcept -> unit::ByteCount {
     return _backBufferLimit.value_or(impl::streamBufferSizes(_buffering).outputBackLimit);
 }
 

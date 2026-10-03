@@ -1,18 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/compression/CompressionError.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteBlockInputStream.hpp>
+#include <erbsland/ByteOutputStream.hpp>
 #include <erbsland/compression/impl/CodecBitOutput.hpp>
 #include <erbsland/compression/impl/CompressionCodec.hpp>
 #include <erbsland/compression/impl/lzma/LzmaDecoder.hpp>
 #include <erbsland/compression/impl/lzma/LzmaRangeDecoder.hpp>
 #include <erbsland/compression/impl/lzma/LzmaRangeEncoder.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/stream/ByteBlockInputStream.hpp>
-#include <erbsland/stream/ByteOutputStream.hpp>
+#include <erbsland/CompressionError.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -54,9 +54,9 @@ private:
             const auto result = el::mem::ByteBlock{'d'};
             output(result.span());
         }
-        [[nodiscard]] auto maximumPayloadLength(const el::unit::ByteLength length) const
-            -> el::unit::ByteLength override {
-            return length.addedOrThrow(el::unit::ByteLength::one());
+        [[nodiscard]] auto maximumPayloadLength(const el::unit::ByteCount length) const
+            -> el::unit::ByteCount override {
+            return length.addedOrThrow(el::unit::ByteCount::one());
         }
 
     private:
@@ -166,16 +166,16 @@ public:
         using namespace el::compression;
         const auto invalidAlgorithm = CompressionAlgorithm{static_cast<CompressionAlgorithm::Value>(0U)};
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, impl::CompressionCodec::create(invalidAlgorithm, CompressionFormat::Raw));
+            el::err::ParameterFailure, impl::CompressionCodec::create(invalidAlgorithm, CompressionFormat::Raw));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             impl::CompressionCodec::create(CompressionAlgorithm::Deflate, static_cast<CompressionFormat>(255U)));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             impl::CompressionCodec::create(
                 CompressionAlgorithm::Deflate, CompressionFormat::Raw, static_cast<CompressionLevel>(255U)));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             impl::CompressionCodec::create(CompressionAlgorithm::Lz4Block, CompressionFormat::Zip));
     }
 
@@ -209,9 +209,9 @@ public:
         requireRejected(withByte(8U, 4U));
         requireRejected(withByte(16U, static_cast<uint8_t>(compressed.span()[16U].toUInt8() + 1U)));
 
-        const auto wrongExpected = DecompressionOptions{}.setExpectedOutputLength(el::unit::ByteLength{4U});
+        const auto wrongExpected = DecompressionOptions{}.setExpectedOutputLength(el::unit::ByteCount{4U});
         REQUIRE_THROWS_AS(CompressionError, codec->decompress(compressed, wrongExpected));
-        const auto tooSmall = DecompressionOptions{}.setMaximumOutputLength(el::unit::ByteLength{2U});
+        const auto tooSmall = DecompressionOptions{}.setMaximumOutputLength(el::unit::ByteCount{2U});
         REQUIRE_THROWS_AS(el::err::OutOfRangeError, codec->decompress(compressed, tooSmall));
     }
 
@@ -241,9 +241,9 @@ public:
     void testLzmaProbabilityTreeBounds() {
         auto probabilities = std::array<uint16_t, 1U>{};
         auto encoder = el::compression::impl::LzmaRangeEncoder{};
-        REQUIRE_THROWS_AS(el::err::LogicError, encoder.encodeTree(probabilities, 1U, 0U));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encoder.encodeTree(probabilities, 1U, 0U));
         REQUIRE_THROWS_AS(
-            el::err::LogicError, encoder.encodeReverseTree(probabilities, std::numeric_limits<uint32_t>::digits, 0U));
+            el::err::LogicFailure, encoder.encodeReverseTree(probabilities, std::numeric_limits<uint32_t>::digits, 0U));
 
         const auto encoded = el::mem::ByteBlock({0U, 0U, 0U, 0U, 0U});
         auto used = false;
@@ -255,8 +255,8 @@ public:
             return encoded;
         }};
         auto decoder = el::compression::impl::LzmaRangeDecoder{reader};
-        REQUIRE_THROWS_AS(el::err::LogicError, decoder.decodeTree(probabilities, 1U));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, decoder.decodeTree(probabilities, 1U));
         REQUIRE_THROWS_AS(
-            el::err::LogicError, decoder.decodeReverseTree(probabilities, std::numeric_limits<uint32_t>::digits));
+            el::err::LogicFailure, decoder.decodeReverseTree(probabilities, std::numeric_limits<uint32_t>::digits));
     }
 };

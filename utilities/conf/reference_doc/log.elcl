@@ -1,8 +1,0 @@
-# Reference-document groups for the log domain.
-
-------------*[ Reference Groups ]
-Page        : "log/logging.rst"
-Title       : "Logging"
-Header Globs:
-    * "log/*.hpp"
-    * "log/line/*.hpp"

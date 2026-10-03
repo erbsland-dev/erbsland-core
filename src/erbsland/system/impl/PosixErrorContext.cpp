@@ -75,6 +75,10 @@ auto PosixErrorContext::category() const noexcept -> PlatformErrorCategory {
     case EXDEV:
         return PlatformErrorCategory::CrossDevice;
     case EBUSY:
+    case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+    case EWOULDBLOCK:
+#endif
         return PlatformErrorCategory::ResourceBusy;
     case EMFILE:
     case ENFILE:

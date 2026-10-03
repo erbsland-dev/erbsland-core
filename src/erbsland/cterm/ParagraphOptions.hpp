@@ -217,8 +217,8 @@ private:
     ParagraphBackgroundMode _backgroundMode{ParagraphBackgroundMode::Default}; ///< The background mode.
     BlockString _lineBreakEndMark{};   ///< BlockString to mark wrapped lines on the right side. Max 2 characters.
     BlockString _lineBreakStartMark{}; ///< BlockString to mark wrapped lines on the left side.
-    ParagraphSpacing _paragraphSpacing{ParagraphSpacing::SingleLine};     ///< Spacing between paragraphs.
-    text::CharSet _wordSeparators{{text::Char{U'\t'}, text::Char{U' '}}}; ///< Shared word separators.
+    ParagraphSpacing _paragraphSpacing{ParagraphSpacing::SingleLine}; ///< Spacing between paragraphs.
+    text::CharSet _wordSeparators{U'\t', U' '};                       ///< Shared word separators.
     Block _wordBreakMark{text::Char{U'-'}}; ///< The mark added if a long word needs to be broken.
     int _maximumLineWraps{0};               ///< The maximum number of lines in a paragraph.
     BlockString _paragraphEllipsisMark{text::U32String{text::U32StringLiteral{U"…"}}}; ///< The ellipsis mark.

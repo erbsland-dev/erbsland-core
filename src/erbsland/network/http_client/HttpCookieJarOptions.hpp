@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 namespace erbsland::network {
@@ -11,15 +11,15 @@ namespace erbsland::network {
 /// @tested{HttpCookieJarTest}
 class HttpCookieJarOptions final {
 public:
-    static constexpr auto cDefaultMaximumCookieLength = unit::ByteLength{4U * 1024U};
+    static constexpr auto cDefaultMaximumCookieLength = unit::ByteCount{4U * 1024U};
     static constexpr auto cDefaultMaximumCookiesPerRegistrableDomain = unit::ItemCount{180U};
     static constexpr auto cDefaultMaximumCookies = unit::ItemCount{3000U};
 
 public:
     /// Get the maximum serialized length of one cookie.
-    [[nodiscard]] constexpr auto maximumCookieLength() const noexcept -> unit::ByteLength { return _maximumLength; }
+    [[nodiscard]] constexpr auto maximumCookieLength() const noexcept -> unit::ByteCount { return _maximumLength; }
     /// Set the maximum serialized length of one cookie.
-    constexpr auto setMaximumCookieLength(const unit::ByteLength value) noexcept -> HttpCookieJarOptions & {
+    constexpr auto setMaximumCookieLength(const unit::ByteCount value) noexcept -> HttpCookieJarOptions & {
         _maximumLength = value;
         return *this;
     }
@@ -42,7 +42,7 @@ public:
     }
 
 private:
-    unit::ByteLength _maximumLength{cDefaultMaximumCookieLength};
+    unit::ByteCount _maximumLength{cDefaultMaximumCookieLength};
     unit::ItemCount _maximumPerDomain{cDefaultMaximumCookiesPerRegistrableDomain};
     unit::ItemCount _maximum{cDefaultMaximumCookies};
 };

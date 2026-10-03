@@ -80,7 +80,7 @@ Only the final replay check uses an explicit seed, because that line intentional
 .. erbsland-demo::
     :source: random/RandomTopics/ApiOverview.cpp
     :exec: random/random_topics --demo ApiOverview
-    :source-sha256: 36fb66d931ec58c4c07e781b7af7b8b63942d7078309760c4a71ceb081de1fc1
+    :sha256: 1ccdd6de95fca684161b12dc94f6e1daedbb57b110b4f3b92fb90832a98dd80a
 
 .. code-block:: cpp
 
@@ -102,7 +102,7 @@ Only the final replay check uses an explicit seed, because that line intentional
                 }
                 row.append(random.selectElement(terrain));
             }
-            rows.append(el::String{row});
+            rows.append(row);
         }
         return rows;
     }
@@ -121,7 +121,7 @@ Only the final replay check uses an explicit seed, because that line intentional
 
         // Secure randomness is used when a generated value protects something.
         const auto tokenAlphabet = el::CharSet::fromPattern("A-Za-z0-9"_el);
-        const auto token = el::application().secureRandom().buildString(el::CpLength{16U}, tokenAlphabet);
+        const auto token = el::application().secureRandom().buildString(el::CpCount{16U}, tokenAlphabet);
         el::io::printLine("Secure token length: "_el, token.characterLength().toSizeT());
 
         // WARNING: Use explicit seeds only when reproducibility is the purpose.
@@ -132,16 +132,18 @@ Only the final replay check uses an explicit seed, because that line intentional
         el::io::printLine("Seeded replay check: "_el, yesNo, sameReplaySequence);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Application random map:
-    louka skala les skala
-    voda louka voda les
-    les skala skala louka
-    Shared wind sample in range: yes
-    Secure token length: 16
-    Seeded replay check: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mApplication random map:
+        louka skala les skala
+        voda louka voda les
+        les skala skala louka
+        Shared wind sample in range: yes
+        Secure token length: 16
+        Seeded replay check: yes␛[0m
 
 .. erbsland-demo-end::
 

@@ -6,8 +6,8 @@
 
 namespace erbsland::event {
 
-auto UnmanagedEventThread::create() -> UnmanagedEventThreadPtr {
-    return std::make_shared<impl::UnmanagedEventThread>();
+auto UnmanagedEventThread::create(const EventLoopOptions &options) -> UnmanagedEventThreadPtr {
+    return std::make_shared<impl::UnmanagedEventThread>(options);
 }
 
 }

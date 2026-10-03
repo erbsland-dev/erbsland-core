@@ -6,10 +6,11 @@
 #include "Value.hpp"
 #include "ValueHelper.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 
 namespace erbsland::conf::impl {
 
+using namespace err;
 using namespace text::literals;
 
 void DocumentBuilderStorage::reset() {
@@ -26,10 +27,10 @@ auto DocumentBuilderStorage::getDocumentAndReset() noexcept -> std::shared_ptr<D
 
 void DocumentBuilderStorage::updateLastSection(const ValuePtr &sectionValue, const NamePath &sectionNamePath) {
     if (sectionValue == nullptr) {
-        throw err::ParameterError{"sectionValue must not be null."_el, "sectionValue"_el};
+        throw ParameterFailure{"sectionValue must not be null."_el, "sectionValue"_el};
     }
     if (sectionNamePath.empty()) {
-        throw err::ParameterError{"sectionNamePath must not be empty."_el, "sectionNamePath"_el};
+        throw ParameterFailure{"sectionNamePath must not be empty."_el, "sectionNamePath"_el};
     }
     _lastSectionValue = sectionValue;
     _lastSectionNamePath = sectionNamePath;
@@ -51,7 +52,7 @@ auto DocumentBuilderStorage::resolveForSection(const NamePath &namePath, const L
             if (sectionValue->type() == ValueType::SectionList) {
                 sectionValue = getImplValue(sectionValue->lastValue());
                 if (sectionValue == nullptr) {
-                    throw err::LogicError{"Empty section list element."};
+                    throw LogicFailure{"Empty section list element."};
                 }
             } else if (!sectionValue->type().isMap()) {
                 throw ConfError{
@@ -89,7 +90,7 @@ auto DocumentBuilderStorage::resolveForValue(const NamePath &namePath, const Loc
             if (sectionValue->type() == ValueType::SectionList) {
                 sectionValue = getImplValue(sectionValue->lastValue());
                 if (sectionValue == nullptr) {
-                    throw err::LogicError{"Empty section list element."};
+                    throw LogicFailure{"Empty section list element."};
                 }
             } else if (!sectionValue->type().isMap()) {
                 throw ConfError{
@@ -134,10 +135,10 @@ void DocumentBuilderStorage::addChildValue(
 
 void DocumentBuilderStorage::validateAddArguments(const NamePath &namePath, const ValuePtr &value) const {
     if (namePath.empty()) {
-        throw err::ParameterError{"namePath must not be empty."_el, "namePath"_el};
+        throw ParameterFailure{"namePath must not be empty."_el, "namePath"_el};
     }
     if (value == nullptr) {
-        throw err::ParameterError{"value must not be null."_el, "value"_el};
+        throw ParameterFailure{"value must not be null."_el, "value"_el};
     }
 }
 
@@ -201,10 +202,10 @@ void DocumentBuilderStorage::applyContainerRules(
         }
     } else if (container->type() == ValueType::SectionList) {
         if (value->type() != ValueType::SectionWithNames) {
-            throw err::LogicError{"Can only add SectionWithNames to SectionList."};
+            throw LogicFailure{"Can only add SectionWithNames to SectionList."};
         }
     } else {
-        throw err::LogicError{"Values can only added to containers."};
+        throw LogicFailure{"Values can only added to containers."};
     }
 }
 

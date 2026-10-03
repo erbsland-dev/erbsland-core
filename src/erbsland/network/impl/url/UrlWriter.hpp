@@ -7,8 +7,6 @@
 #include "../../../text/StringEditor.hpp"
 #include "../../url/UrlFormatOptions.hpp"
 
-#include <cstdint>
-
 namespace erbsland::network::impl {
 
 /// Serialize canonical URL text.
@@ -25,22 +23,12 @@ public:
     [[nodiscard]] auto writeHostField() -> text::String;
 
 private:
-    /// URL component encoding context.
-    enum class Component : uint8_t { UserInfo, Path, Query, Fragment };
-
-private:
     /// Write an authority according to its parsing state.
     void writeAuthority();
     /// Write a parsed authority from structured components.
     void writeParsedAuthority();
     /// Write a host using the requested IDNA representation.
     void writeHost();
-    /// Percent-encode one decoded URL component.
-    void writeEncoded(const text::String &value, Component component);
-    /// Write one percent-encoded byte.
-    void writeEncodedByte(uint8_t value);
-    /// Test whether a character is permitted unescaped in a component.
-    [[nodiscard]] auto isAllowed(text::Char character, Component component) const noexcept -> bool;
     /// Get the inferred port for the URL scheme.
     [[nodiscard]] auto defaultPort() const noexcept -> Port;
 

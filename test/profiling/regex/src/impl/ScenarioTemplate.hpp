@@ -5,6 +5,9 @@
 #include "../ProfileTypes.hpp"
 
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/re/Flags.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -21,7 +24,7 @@ struct ScenarioTemplate {
     el::String name;
     std::vector<UseCase> useCases;
     std::vector<InputKind> inputs;
-    std::vector<el::String> fileEncodings;
+    el::StringList fileEncodings;
     el::String patternName;
     el::String pattern;
     el::re::Flags flags;

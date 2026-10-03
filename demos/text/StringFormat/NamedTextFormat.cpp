@@ -3,6 +3,9 @@
 
 #include "StringFormatDemos.hpp"
 
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+
 namespace demo {
 
 /// Named text specifications make truncation, escaping, and layout readable at the call site.

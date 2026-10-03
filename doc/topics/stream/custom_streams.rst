@@ -28,7 +28,7 @@ The sample types keep state with their data and expose shared factories for coro
 
 .. erbsland-demo::
     :source: stream/CustomStreams/SkillTreeStreams.hpp
-    :source-sha256: f2382d07e7f80729ac6908ab9b34ab6f0cbedfedde0d5b837d1e5ffe249479bc
+    :sha256: 02982ddc42467cb7597190fc8472807d07000b20be80135d8d62e2a2ae6f7811
 
 .. code-block:: cpp
 
@@ -48,7 +48,7 @@ The sample types keep state with their data and expose shared factories for coro
 
     protected: // implement ByteInputStream
         [[nodiscard]] auto readFromSource(std::span<el::Byte> destination, ReadDeadline deadline)
-            -> el::StreamReadResult<el::ByteLength> override;
+            -> el::StreamReadResult<el::ByteCount> override;
 
     private:
         std::vector<uint8_t> _bytes;
@@ -102,24 +102,27 @@ Call ``discardRetainedInput()`` when closing or aborting.
 .. erbsland-demo::
     :source: stream/CustomStreams/ReadCustomStream.cpp
     :exec: stream/custom_streams --demo ReadCustomStream
-    :source-sha256: 62656fbc81dd7f98a2cbb44218b57b74493cdedc3662e41e2f449ca5dc8f3b36
+    :sha256: 9784547e015ef421fe8090b6cce6f0270963a0b0c8c6dedf955e43d5e2d93326
 
 .. code-block:: cpp
 
     /// Derive a custom byte input from `ByteInputStream` and implement one bounded `readFromSource()` operation.
-    /// The base class supplies exact reads, aggregate reads, integer helpers, retained partial input, and coroutine wrappers.
+    /// The base class supplies exact reads, aggregate reads, integer helpers, retained partial input, and coroutine
+    /// wrappers.
     void readCustomStream() {
         auto input = SkillTreeInputStream{{1U, 4U, 2U, 8U, 5U, 7U}};
-        const auto root = input.readExact(el::ByteLength{4U});
+        const auto root = input.readExact(el::ByteCount{4U});
         el::io::printLine("Skill-tree root-node bytes: "_el, root.data().length().toSizeT());
         el::io::printLine("The base class combines the underlying short reads."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill-tree root-node bytes: 4
-    The base class combines the underlying short reads.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill-tree root-node bytes: 4
+        The base class combines the underlying short reads.␛[0m
 
 .. erbsland-demo-end::
 
@@ -136,7 +139,7 @@ The destructor must call the non-blocking abort path rather than waiting for clo
 .. erbsland-demo::
     :source: stream/CustomStreams/WriteCustomStream.cpp
     :exec: stream/custom_streams --demo WriteCustomStream
-    :source-sha256: 2940357cd42de6a19f8584404376ea377bdbc4dc8bce8d7c32cdc460ab7c01f2
+    :sha256: 58637d8b197874fa183756c2fe185d07ade900f0c93510d820290fb0acdcd5df
 
 .. code-block:: cpp
 
@@ -153,10 +156,12 @@ The destructor must call the non-blocking abort path rather than waiting for clo
         output->close();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Atomically written bytes: 4
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAtomically written bytes: 4␛[0m
 
 .. erbsland-demo-end::
 
@@ -182,7 +187,7 @@ algorithms and tests.
 .. erbsland-demo::
     :source: stream/CustomStreams/UseCustomStreamAsynchronously.cpp
     :exec: stream/custom_streams --demo UseCustomStreamAsynchronously
-    :source-sha256: ccfbc1da504c8deff9f0571835384509ec92eb1f9abe0e7c9d9181f54dbf6a0e
+    :sha256: 6b07a4c83797ba78e636a6cbe668ffb368ff810e6c4f12e2850c6f5d77aa7399
 
 .. code-block:: cpp
 
@@ -190,15 +195,17 @@ algorithms and tests.
     /// The coroutine wrapper retains the custom stream while its bounded source operation runs on the worker service.
     void useCustomStreamAsynchronously() {
         const auto input = SkillTreeInputStream::create({9U, 8U, 7U, 6U});
-        auto task = input->coReadExact(el::ByteLength{4U});
+        auto task = input->coReadExact(el::ByteCount{4U});
         waitForTask(task);
         el::io::printLine("Asynchronous read completed: "_el, task.result().hasData());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Asynchronous read completed: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAsynchronous read completed: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -214,7 +221,7 @@ generator cancellation.
 .. erbsland-demo::
     :source: stream/CustomStreams/VerifyCustomContracts.cpp
     :exec: stream/custom_streams --demo VerifyCustomContracts
-    :source-sha256: 9ee8bbedc78e20befa1d14d344e8e844f176d25d0998e873c4ff53673f4fb419
+    :sha256: 45eb02efe557792fa92961d3eb5a832172198e0bc3a5bdaadf9cf4ea3c9f45fa
 
 .. code-block:: cpp
 
@@ -223,7 +230,7 @@ generator cancellation.
     /// ownership requirement for coroutine methods.
     void verifyCustomContracts() {
         auto input = SkillTreeInputStream{{1U, 2U, 3U, 4U, 5U}};
-        const auto exact = input.readExact(el::ByteLength{5U});
+        const auto exact = input.readExact(el::ByteCount{5U});
         const auto finished = input.readByte();
         auto output = SkillTreeOutputStream{};
         const auto write = output.writeUInt32(0x01020304U);
@@ -235,12 +242,14 @@ generator cancellation.
         el::io::printLine("Closed normally: "_el, close.isClosed());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Exact read: true
-    Stream finished: true
-    Atomic write: true
-    Closed normally: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mExact read: true
+        Stream finished: true
+        Atomic write: true
+        Closed normally: true␛[0m
 
 .. erbsland-demo-end::

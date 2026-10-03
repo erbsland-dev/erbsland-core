@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/network/host_lookup/HostLookup.hpp>
-#include <erbsland/network/host_lookup/HostLookupEventEditor.hpp>
-#include <erbsland/network/Network.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimeUnitTags.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/HostLookup.hpp>
+#include <erbsland/HostLookupEventEditor.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeUnitTags.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>

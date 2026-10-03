@@ -1,6 +1,6 @@
-*********
-Registers
-*********
+**************************************
+Regular-Expression Assembler Registers
+**************************************
 
 The engine and each thread in the engine has a set of registers.
 

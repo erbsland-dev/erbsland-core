@@ -10,6 +10,7 @@ target_sources(erbsland-core-unittest PRIVATE
         NameTypeTest.cpp
         ValueAsMethodsTest.cpp
         ValueChildValueTest.cpp
+        ValueDigestTest.cpp
         ValueGetListTest.cpp
         ValueGetMethodsTest.cpp
         ValueLocationTest.cpp

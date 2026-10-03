@@ -6,7 +6,7 @@
 #include "ApplicationTerminalData_fwd.hpp"
 
 #include "../../../cterm/Terminal_fwd.hpp"
-#include "../../../i18n/DisplayTextMap_fwd.hpp"
+#include "../../../i18n/DisplayText_fwd.hpp"
 #include "../../../log/impl/ConsoleLogWriter_fwd.hpp"
 #include "../../../log/impl/LastErrorsLogWriter_fwd.hpp"
 #include "../../../log/LogManager_fwd.hpp"
@@ -28,7 +28,7 @@ public:
     /// Shut down logging and render a retained-error dump when requested.
     void cleanup(
         unit::ExitCode exitCode,
-        const i18n::DisplayTextMapConstPtr &displayText,
+        const i18n::DisplayTextPtr &displayText,
         ApplicationTerminalData *terminalData) noexcept;
 
 private:

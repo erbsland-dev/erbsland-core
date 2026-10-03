@@ -33,10 +33,13 @@ install(EXPORT erbsland-core-targets
 
 # Step 5: Generate the package configuration and compatibility-version files in the build tree.
 include(CMakePackageConfigHelpers)
+erbsland_core_read_git_version("${CMAKE_CURRENT_SOURCE_DIR}" ERBSLAND_CORE_PACKAGE_VERSION)
+erbsland_core_collect_git_dependencies(version_dependencies "${CMAKE_CURRENT_SOURCE_DIR}")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${version_dependencies})
 write_basic_package_version_file(
         "${CMAKE_CURRENT_BINARY_DIR}/erbsland-coreConfigVersion.cmake"
-        VERSION 1.0.0
-        COMPATIBILITY SameMajorVersion
+        VERSION "${ERBSLAND_CORE_PACKAGE_VERSION_MAJOR}.${ERBSLAND_CORE_PACKAGE_VERSION_MINOR}.${ERBSLAND_CORE_PACKAGE_VERSION_REVISION}"
+        COMPATIBILITY SameMinorVersion
 )
 configure_package_config_file(
         "${CMAKE_CURRENT_LIST_DIR}/erbsland-coreConfig.cmake.in"
@@ -46,9 +49,11 @@ configure_package_config_file(
 
 # Step 6: Install the package configuration and public helper modules beside the target export.
 install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/compiler-requirements.cmake"
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/git-version.cmake"
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/application.cmake"
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/resources.cmake"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/display-text.cmake"
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/package.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/erbsland-coreConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/erbsland-coreConfigVersion.cmake"

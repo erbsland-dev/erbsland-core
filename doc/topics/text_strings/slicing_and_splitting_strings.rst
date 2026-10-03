@@ -22,8 +22,8 @@ source backing store.
 This page shows how to describe their boundaries correctly, when byte coordinates are the efficient choice, and what it
 means for the lifetime of a small result that still refers to a much larger source.
 
-Describe a Boundary in the Right Coordinate System
-==================================================
+Slicing with Byte and Code-Point Ranges
+=======================================
 
 Use byte coordinates for UTF-8 positions returned by search, parsing, or iteration APIs.
 They address the native storage directly and avoid rescanning text to translate a code-point position.
@@ -35,7 +35,7 @@ For UTF-8 and UTF-16, converting a code-point index can require scanning from a 
 .. erbsland-demo::
     :source: text/String/ByteRangeSlicing.cpp
     :exec: text/string --demo ByteRangeSlicing
-    :source-sha256: 3b261de38fe8da028c25bda08d4b4b688314de3607cade86fc2fa1c4fb7767db
+    :sha256: 815977e2b0bc17dab052431c1ac7c806d8bd51f9af51a81eb0a8fcdf8171d857
 
 .. code-block:: cpp
 
@@ -69,21 +69,23 @@ For UTF-8 and UTF-16, converting a code-point index can require scanning from a 
         el::io::printLine("Weather: "_el, weather);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Journal: dag=12|plats=Norrpasset|väder=klar|signal=stjärna
-    First separator at byte: 6
-    Day: dag=12
-    Place: plats=Norrpasset
-    Weather: väder=klar
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mJournal: dag=12|plats=Norrpasset|väder=klar|signal=stjärna
+        First separator at byte: 6
+        Day: dag=12
+        Place: plats=Norrpasset
+        Weather: väder=klar␛[0m
 
 .. erbsland-demo-end::
 
 .. erbsland-demo::
     :source: text/String/CodePointRangeSlicing.cpp
     :exec: text/string --demo CodePointRangeSlicing
-    :source-sha256: 7007230c12e1371594584f0cea5a1d1c9ffbccac6b15fcdda1a01d31264821ac
+    :sha256: c1a066613c7dde4b0ccbd6334b884c77d6a182d6ac6e09822d440bd974163904
 
 .. code-block:: cpp
 
@@ -98,8 +100,8 @@ For UTF-8 and UTF-16, converting a code-point index can require scanning from a 
         const auto label = el::String{"Färd-Karta-07"_el};
 
         // The label is short and fixed-shape, so code-point positions are readable.
-        const auto mapName = label.slice(el::CpRange{el::CpIndex{5U}, el::CpLength{5U}});
-        const auto number = label.slice(el::CpRange{el::CpIndex{11U}, el::CpLength{2U}});
+        const auto mapName = label.slice(el::CpRange{el::CpIndex{5U}, el::CpCount{5U}});
+        const auto number = label.slice(el::CpRange{el::CpIndex{11U}, el::CpCount{2U}});
 
         el::io::printLine("Label: "_el, label);
         el::io::printLine("Map name: "_el, mapName);
@@ -107,18 +109,20 @@ For UTF-8 and UTF-16, converting a code-point index can require scanning from a 
         el::io::printLine("Map name byte length: "_el, mapName.length());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Label: Färd-Karta-07
-    Map name: Karta
-    Map number: 07
-    Map name byte length: 5
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLabel: Färd-Karta-07
+        Map name: Karta
+        Map number: 07
+        Map name byte length: 5␛[0m
 
 .. erbsland-demo-end::
 
-Keep the Beginning, End, or Middle
-==================================
+Prefix, Suffix, and Middle Slices
+=================================
 
 Use ``slice()``, ``first()``, and ``last()`` when the result should remain a shared read-only value.
 The slice retains ownership of the backing store, so it remains valid independently of the source object.
@@ -126,16 +130,16 @@ The slice retains ownership of the backing store, so it remains valid independen
 .. erbsland-demo::
     :source: text/String/FrontBackSlicing.cpp
     :exec: text/string --demo FrontBackSlicing
-    :source-sha256: 6fa6339565a2f53e43d9dc5b9ba7e0fc67a0b4f9f4ce629190e2a9a52ef94b18
+    :sha256: 168e409d5c38329713943eee58e42ee18b99407bd888c090cf99c91108f05c9a
 
 .. code-block:: cpp
 
     /// Side-based slicing takes a prefix or suffix without spelling out a full
     /// range.
     ///
-    /// Use `slice(StringSide::Front, ByteLength)` when a previous byte-index search
+    /// Use `slice(StringSide::Front, ByteCount)` when a previous byte-index search
     /// already told you how long the prefix is. Use
-    /// `slice(StringSide::Back, CpLength)` when the suffix is naturally counted in
+    /// `slice(StringSide::Back, CpCount)` when the suffix is naturally counted in
     /// decoded characters. The byte length of that suffix can then be used to take
     /// the remaining prefix efficiently.
     void frontBackSlicing() {
@@ -146,7 +150,7 @@ The slice retains ownership of the backing store, so it remains valid independen
         const auto origin = route.slice(el::StringSide::Front, separator.distanceFromZero());
 
         // A destination name is user-visible text, so take it as code points.
-        const auto destination = route.slice(el::StringSide::Back, el::CpLength{8U});
+        const auto destination = route.slice(el::StringSide::Back, el::CpCount{8U});
         const auto withoutDestination = route.slice(el::StringSide::Front, route.length() - destination.length());
 
         el::io::printLine("Route: "_el, route);
@@ -155,18 +159,20 @@ The slice retains ownership of the backing store, so it remains valid independen
         el::io::printLine("Without destination: ["_el, withoutDestination, "]"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Route: Rutt: Åsleden -> Nordljus
-    Origin: Rutt: Åsleden
-    Destination: Nordljus
-    Without destination: [Rutt: Åsleden -> ]
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRoute: Rutt: Åsleden -> Nordljus
+        Origin: Rutt: Åsleden
+        Destination: Nordljus
+        Without destination: [Rutt: Åsleden -> ]␛[0m
 
 .. erbsland-demo-end::
 
-Turn One Value into Shared Fields
-=================================
+Splitting Strings into Shared Slices
+====================================
 
 ``split()`` produces a ``StringList`` whose entries normally reference ranges in the source.
 This makes tokenization inexpensive, but a retained token can keep the complete source allocation alive.
@@ -179,7 +185,7 @@ otherwise disappear from the logical record.
 .. erbsland-demo::
     :source: text/String/SplittingText.cpp
     :exec: text/string --demo SplittingText
-    :source-sha256: 5ab83c6021b051c04328fd2ce99b1dd404a8a52aa0f1e8346a667ad679fcb9d9
+    :sha256: 896253a63bcfbf156c807a48e1c21a38e680dddceb23d30ab991d284859ccc38
 
 .. code-block:: cpp
 
@@ -207,18 +213,20 @@ otherwise disappear from the logical record.
         el::io::printLine("Limited split: "_el, limited.join(" / "_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Rows: 4
-      dag | plats | väder
-      12 | Åsleden | klar
-      13 |  | dimma
-      14 | Nordljus | stjärnklart
-    Limited split: 14 / Nordljus;stjärnklart
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRows: 4
+          dag | plats | väder
+          12 | Åsleden | klar
+          13 |  | dimma
+          14 | Nordljus | stjärnklart
+        Limited split: 14 / Nordljus;stjärnklart␛[0m
 
 .. erbsland-demo-end::
 
 Joining belongs to construction rather than slicing.
-See :doc:`/topics/text_formatting/building_strings` for the allocation differences between ``String::fromJoined()``,
+See :doc:`/topics/text_formatting/building_strings` for the allocation differences between ``el::join()``,
 ``StringList::join()``, a reserved editor, and ``AnyStringBuilder``.

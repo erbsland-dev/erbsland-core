@@ -2,8 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
-#include <erbsland/log/line/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/all_log_line.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/Date.hpp>
+#include <erbsland/FileLogWriterOptions.hpp>
+#include <erbsland/Hour.hpp>
+#include <erbsland/LogEntry.hpp>
+#include <erbsland/LogFileMode.hpp>
+#include <erbsland/LogFileRotation.hpp>
+#include <erbsland/LogLevel.hpp>
+#include <erbsland/LogLine.hpp>
+#include <erbsland/LogLinePart.hpp>
+#include <erbsland/LogLineSegment.hpp>
+#include <erbsland/LogPath.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/Minute.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TempDirectory.hpp>
+#include <erbsland/Time.hpp>
+#include <erbsland/Timestamp.hpp>
 
 #include <memory>
 #include <utility>
@@ -13,7 +39,7 @@ namespace demo {
 
 auto createFileWriterDemoDirectory() -> el::TempDirectoryPtr {
     auto options = el::PathTempDirectoryOptions{};
-    options.setPrefix("retkikunta-"_el).setRandomLength(el::CpLength{8U});
+    options.setPrefix("retkikunta-"_el).setRandomLength(el::CpCount{8U});
     return el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(options);
 }
 
@@ -99,7 +125,7 @@ void fileWriterMaximumSize() {
     auto options = el::FileLogWriterOptions{path};
     options.setMode(el::LogFileMode::Overwrite)
         .setRotation(el::LogFileRotation::Size)
-        .setMaximumSize(el::ByteLength{24U});
+        .setMaximumSize(el::ByteCount{24U});
     const auto writer = el::LogWriter::createForFile(options);
 
     writeFileDemoLine(writer, el::Timestamp::now(), "First observation"_el, 1U);
@@ -120,7 +146,7 @@ void fileWriterRetention() {
     auto options = el::FileLogWriterOptions{path};
     options.setMode(el::LogFileMode::Overwrite)
         .setRotation(el::LogFileRotation::Size)
-        .setMaximumSize(el::ByteLength{12U})
+        .setMaximumSize(el::ByteCount{12U})
         .setRetention(2U);
     const auto writer = el::LogWriter::createForFile(options);
 

@@ -2,47 +2,53 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../err/OutOfRangeError.hpp"
-
 namespace erbsland::time {
 
 template <typename tUnit>
     requires impl::DateTimeTickUnit<tUnit>
 auto DateTime::toTicks(const TimeEpoch epoch) const noexcept -> std::optional<tUnit> {
-    try {
-        return toTicksOrThrow<tUnit>(epoch);
-    } catch (const err::Exception &) {
+    const auto parts = toSecondsAndFractions(epoch);
+    if (!parts.has_value()) {
         return std::nullopt;
+    }
+    const auto &[seconds, fractions] = *parts;
+    if constexpr (std::same_as<tUnit, Seconds>) {
+        return seconds;
+    } else {
+        if (seconds.template wouldConvertSaturate<tUnit>()) {
+            return std::nullopt;
+        }
+        const auto result = seconds.template converted<tUnit>();
+        const auto fractionTicks = fractions.template converted<tUnit>();
+        if (result.wouldAddSaturate(fractionTicks)) {
+            return std::nullopt;
+        }
+        return result + fractionTicks;
     }
 }
 
 template <typename tUnit>
     requires impl::DateTimeTickUnit<tUnit>
 auto DateTime::toTicksOrThrow(const TimeEpoch epoch) const -> tUnit {
-    const auto &[seconds, fractions] = toSecondsAndFractionsOrThrow(epoch);
-    if constexpr (std::same_as<tUnit, Seconds>) {
-        return seconds;
-    } else {
-        if (seconds.template wouldConvertSaturate<tUnit>()) {
-            throwDateTimeNotTickConvertible();
-        }
-        auto result = seconds.template converted<tUnit>();
-        const auto fractionTicks = fractions.template converted<tUnit>();
-        if (result.wouldAddSaturate(fractionTicks)) [[unlikely]] {
-            throwDateTimeNotTickConvertible();
-        }
-        result += fractionTicks;
-        return result;
+    const auto result = toTicks<tUnit>(epoch);
+    if (!result.has_value()) {
+        throwDateTimeNotTickConvertible();
     }
+    return *result;
 }
 
 template <typename tUnit>
     requires impl::DateTimeTickUnit<tUnit>
-auto DateTime::fromTicks(const tUnit ticks, const TimeEpoch epoch) noexcept -> std::optional<DateTime> {
-    try {
-        return fromTicksOrThrow<tUnit>(ticks, epoch);
-    } catch (const err::Exception &) {
+auto DateTime::fromTicks(tUnit ticks, const TimeEpoch epoch) noexcept -> std::optional<DateTime> {
+    if (ticks.isNegative()) {
         return std::nullopt;
+    }
+    if constexpr (std::same_as<tUnit, Seconds>) {
+        return fromTicks(ticks, Nanoseconds{}, epoch);
+    } else {
+        const auto seconds = ticks.template extract<Seconds>();
+        const auto fractions = ticks.template converted<Nanoseconds>();
+        return fromTicks(seconds, fractions, epoch);
     }
 }
 

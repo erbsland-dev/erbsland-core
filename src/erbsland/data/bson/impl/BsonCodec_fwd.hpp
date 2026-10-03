@@ -3,5 +3,7 @@
 #pragma once
 
 namespace erbsland::data::bson::impl {
+
 class BsonCodec;
+
 }

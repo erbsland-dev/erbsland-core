@@ -24,7 +24,10 @@ namespace erbsland::compression {
 class ByteCompressor final {
 public:
     /// Create a configured byte compressor.
-    /// @throws err::ParameterError If the algorithm and format combination is unsupported.
+    /// @param algorithm The compression algorithm. Must support the selected `format`.
+    /// @param format The representation format. Must be supported by the selected `algorithm`.
+    /// @param level The compression effort level. Must be valid.
+    /// @param options The codec configuration options.
     ByteCompressor(
         CompressionAlgorithm algorithm,
         CompressionFormat format,
@@ -40,14 +43,16 @@ public:
 
 public: // one-shot compression
     /// Compress a byte block using the configured representation.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     [[nodiscard]] auto compress(const mem::ByteBlock &data) const -> mem::ByteBlock;
     /// Calculate the upper bound for a compressed result in the configured representation.
-    /// @throws err::OutOfRangeError If `length` is infinite or the bound is not representable.
-    [[nodiscard]] auto maximumCompressedLength(unit::ByteLength length) const -> unit::ByteLength;
+    /// @param length The uncompressed length. Must be finite and yield a representable compressed-length bound.
+    [[nodiscard]] auto maximumCompressedLength(unit::ByteCount length) const -> unit::ByteCount;
 
 public: // stream transfer
     /// Transform one source prefix into a borrowed destination; neither stream is closed or flushed.
     /// @throws CompressionError On invalid data, cancellation, or timeout. Output may be partial.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     auto compress(
         stream::ByteInputStream &source,
         stream::ByteOutputStream &destination,

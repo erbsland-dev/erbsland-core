@@ -4,17 +4,18 @@
 
 #include "../RenderError.hpp"
 
-#include "../../../text/AnyString.hpp"
-#include "../../../text/IntegerBase.hpp"
-#include "../../../text/Literals.hpp"
-#include "../../../text/StringSide.hpp"
-#include "../../../text/u8/U8StringConstIterator.hpp"
 #include "../../../unit/ColumnIndex.hpp"
 #include "../../../unit/CpIndex.hpp"
 #include "../../../unit/LineIndex.hpp"
+#include "../../AnyString.hpp"
+#include "../../IntegerBase.hpp"
+#include "../../Literals.hpp"
+#include "../../StringSide.hpp"
+#include "../../u8/U8StringConstIterator.hpp"
 
 namespace erbsland::text::render::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 Tokenizer::Tokenizer(String layout, String origin, String source, EnvironmentOptions options) :
@@ -22,12 +23,19 @@ Tokenizer::Tokenizer(String layout, String origin, String source, EnvironmentOpt
     _origin{std::move(origin)},
     _source{std::move(source)},
     _options{std::move(options)},
-    _expressionOpeningCharacter{_options.expressionDelimiters().begin().charAt(unit::ByteIndex::zero())},
-    _statementOpeningCharacter{_options.statementDelimiters().begin().charAt(unit::ByteIndex::zero())},
-    _commentOpeningCharacter{_options.commentDelimiters().begin().charAt(unit::ByteIndex::zero())},
+    _expressionOpeningCharacter{_options.expressionDelimiters().begin().charAt(ByteIndex::zero())},
+    _statementOpeningCharacter{_options.statementDelimiters().begin().charAt(ByteIndex::zero())},
+    _commentOpeningCharacter{_options.commentDelimiters().begin().charAt(ByteIndex::zero())},
     _openingCharacters{_expressionOpeningCharacter, _statementOpeningCharacter, _commentOpeningCharacter},
     _reader{_source},
-    _location{unit::LineIndex::zero(), unit::ColumnIndex::zero(), unit::CpIndex::zero()} {
+    _location{LineIndex::zero(), ColumnIndex::zero(), CpIndex::zero()} {
+    for (
+        const auto *delimiters :
+        {&_options.expressionDelimiters(), &_options.statementDelimiters(), &_options.commentDelimiters()}) {
+        if (!delimiters->line().isEmpty()) {
+            _openingCharacters.add(delimiters->line().charAt(ByteIndex::zero()));
+        }
+    }
 }
 
 void Tokenizer::advance() {
@@ -61,18 +69,23 @@ auto Tokenizer::readTextToken() -> Token {
 
             auto text = _reader.takeCapture().toString();
             const auto tagLocation = _location;
-            consume(opening->delimiters->begin());
-            const auto leftTrim = _reader.peek() == U'-';
+            _isLineTag = opening->isLine;
+            if (_isLineTag) {
+                text = text.trimmed(CharSet{" \t"_el}, StringSide::Back);
+            }
+            consume(_isLineTag ? opening->delimiters->line() : opening->delimiters->begin());
+            const auto leftTrim = !_isLineTag && _reader.peek() == U'-';
             if (leftTrim) {
                 read();
                 text = text.trimmed(std::nullopt, StringSide::Back);
             }
 
             _activeDelimiters = opening->delimiters;
-            _activeClosingCharacter = _activeDelimiters->end().charAt(unit::ByteIndex::zero());
+            _activeClosingCharacter = _activeDelimiters->end().charAt(ByteIndex::zero());
             _tagLocation = tagLocation;
             if (opening->isComment) {
-                skipComment(*opening, tagLocation);
+                skipComment(tagLocation);
+                _reader.startCapture();
                 if (!text.isEmpty()) {
                     return Token{TokenKind::Text, std::move(text), textLocation};
                 }
@@ -105,19 +118,19 @@ auto Tokenizer::readTagToken() -> Token {
         read();
     }
     const auto location = _location;
-    if (_reader.isAtEnd()) {
+    if (_reader.isAtEnd() && !_isLineTag) {
         throwSyntax("Invalid layout syntax"_el, "The layout tag has no closing delimiter."_el, _tagLocation);
     }
     if (isAtRightTrimClosingDelimiter()) {
         read();
-        consume(_activeDelimiters->end());
+        consumeClosingDelimiter();
         skipRawWhitespace();
         _activeDelimiters = nullptr;
         _mode = Mode::Text;
         return Token{TokenKind::TagEnd, {}, location};
     }
     if (isAtClosingDelimiter()) {
-        consume(_activeDelimiters->end());
+        consumeClosingDelimiter();
         _activeDelimiters = nullptr;
         _mode = Mode::Text;
         return Token{TokenKind::TagEnd, {}, location};
@@ -193,17 +206,17 @@ auto Tokenizer::readTagToken() -> Token {
     return Token{TokenKind::Unsupported, {}, location};
 }
 
-void Tokenizer::skipComment(const Opening &opening, const unit::CodeLocation tagLocation) {
-    while (!_reader.isAtEnd()) {
+void Tokenizer::skipComment(const CodeLocation tagLocation) {
+    while (!_reader.isAtEnd() || _isLineTag) {
         if (isAtRightTrimClosingDelimiter()) {
             read();
-            consume(opening.delimiters->end());
+            consumeClosingDelimiter();
             skipRawWhitespace();
             _activeDelimiters = nullptr;
             return;
         }
         if (isAtClosingDelimiter()) {
-            consume(opening.delimiters->end());
+            consumeClosingDelimiter();
             _activeDelimiters = nullptr;
             return;
         }
@@ -212,7 +225,7 @@ void Tokenizer::skipComment(const Opening &opening, const unit::CodeLocation tag
     throwSyntax("Invalid layout syntax"_el, "The layout tag has no closing delimiter."_el, tagLocation);
 }
 
-auto Tokenizer::readIdentifier(const unit::CodeLocation location) -> Token {
+auto Tokenizer::readIdentifier(const CodeLocation location) -> Token {
     _reader.startCapture();
     readWhile(AsciiCategory::Word);
     auto text = _reader.takeCapture().toString();
@@ -251,6 +264,7 @@ auto Tokenizer::readIdentifier(const unit::CodeLocation location) -> Token {
     }
     return Token{kind, std::move(text), location};
 }
+
 auto Tokenizer::openingAtCurrent() -> std::optional<Opening> {
     const auto match = [this](
                            const Mode mode,
@@ -259,7 +273,10 @@ auto Tokenizer::openingAtCurrent() -> std::optional<Opening> {
                            const Char openingCharacter,
                            const bool isComment = false) -> std::optional<Opening> {
         if (_reader.peek() == openingCharacter && matches(delimiters.begin())) {
-            return Opening{mode, tokenKind, &delimiters, isComment};
+            return Opening{mode, tokenKind, &delimiters, false, isComment};
+        }
+        if (_lineOnlyIndent && !delimiters.line().isEmpty() && matches(delimiters.line())) {
+            return Opening{mode, tokenKind, &delimiters, true, isComment};
         }
         return std::nullopt;
     };
@@ -277,12 +294,15 @@ auto Tokenizer::openingAtCurrent() -> std::optional<Opening> {
 }
 
 auto Tokenizer::isAtClosingDelimiter() -> bool {
+    if (_isLineTag) {
+        return _reader.isAtEnd() || _reader.peek() == U'\n' || _reader.peek() == U'\r';
+    }
     return _activeDelimiters != nullptr && _reader.peek() == _activeClosingCharacter &&
         matches(_activeDelimiters->end());
 }
 
 auto Tokenizer::isAtRightTrimClosingDelimiter() -> bool {
-    if (_activeDelimiters == nullptr || _reader.peek() != U'-') {
+    if (_isLineTag || _activeDelimiters == nullptr || _reader.peek() != U'-') {
         return false;
     }
     const auto state = _reader.save();
@@ -306,6 +326,20 @@ void Tokenizer::consume(const String &expected) {
     advanceLocation(expected);
 }
 
+void Tokenizer::consumeClosingDelimiter() {
+    if (_isLineTag) {
+        if (_reader.peek() == U'\r') {
+            read();
+        }
+        if (_reader.peek() == U'\n') {
+            read();
+        }
+        _isLineTag = false;
+    } else {
+        consume(_activeDelimiters->end());
+    }
+}
+
 auto Tokenizer::read() -> Char {
     const auto character = _reader.read();
     advanceLocation(character);
@@ -320,8 +354,8 @@ auto Tokenizer::readIf(const Char expected) -> bool {
     return true;
 }
 
-auto Tokenizer::readWhile(const AsciiCategory category) -> unit::CpLength {
-    auto count = unit::CpLength::zero();
+auto Tokenizer::readWhile(const AsciiCategory category) -> CpCount {
+    auto count = CpCount::zero();
     while (!isAtClosingDelimiter() && !isAtRightTrimClosingDelimiter() && _reader.peek().isAsciiCategory(category)) {
         read();
         ++count;
@@ -341,8 +375,12 @@ auto Tokenizer::nextIsAsciiDigit() -> bool {
 void Tokenizer::advanceLocation(const Char character) noexcept {
     if (character == U'\n') {
         _location.nextLine();
+        _lineOnlyIndent = true;
     } else if (!character.isSignal()) {
         _location.nextColumn();
+        if (character != U' ' && character != U'\t' && character != U'\r') {
+            _lineOnlyIndent = false;
+        }
     }
 }
 
@@ -358,7 +396,7 @@ void Tokenizer::skipRawWhitespace() {
     }
 }
 
-void Tokenizer::throwSyntax(String title, String description, const unit::CodeLocation location) const {
+void Tokenizer::throwSyntax(String title, String description, const CodeLocation location) const {
     throw RenderError{RenderErrorContext{RenderErrorCategory::Syntax, std::move(title), std::move(description)}
             .setLayout(_layout)
             .setOrigin(_origin)

@@ -6,10 +6,10 @@
 
 #include "../../PreparedCase.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
@@ -21,7 +21,7 @@ public:
     /// @param size Public input length in bytes.
     /// @param mode Equal content or targeted mismatch populations.
     /// @param container Core byte container path under measurement.
-    explicit ComparisonCase(std::size_t size, ComparisonMode mode, ComparisonContainer container);
+    explicit ComparisonCase(el::ByteCount size, ComparisonMode mode, ComparisonContainer container);
 
 public: // implement TestCase
     [[nodiscard]] auto create(bool automatic) const -> std::unique_ptr<TestCase> override;
@@ -43,7 +43,7 @@ private:
     [[nodiscard]] auto populationName() const -> el::String;
 
 private:
-    std::size_t _size;              ///< Scenario configuration.
+    el::ByteCount _size;            ///< Scenario configuration.
     ComparisonMode _mode;           ///< Scenario configuration.
     ComparisonContainer _container; ///< Scenario configuration.
 };

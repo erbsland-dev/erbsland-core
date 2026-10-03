@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogLevel.hpp>
+#include <erbsland/LogLineFormat.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogTraceSection.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/LogWriterFilter.hpp>
 
 #include <memory>
 #include <utility>
@@ -14,8 +21,8 @@ namespace demo {
 /// The route-search section spans map and weather modules because both help explain route selection. Radio frames
 /// answer a different question and remain silent even though the writer route accepts trace from every path.
 void traceSectionGrouping() {
-    const auto routeSearch = el::LogTraceSection{"route-search"_el};
-    const auto radioFrames = el::LogTraceSection{"radio-frames"_el};
+    constexpr auto routeSearch = el::LogTraceSection{"route-search"_el};
+    constexpr auto radioFrames = el::LogTraceSection{"radio-frames"_el};
     auto format = el::LogLineFormat{};
     format.setPattern("{level} [{name}] {message}"_el);
     auto configuration = el::LogConfiguration{};
@@ -23,7 +30,7 @@ void traceSectionGrouping() {
         .enableTraceSection(routeSearch)
         .addWriter(
             el::LogWriter::createForConsole(el::application().terminal()),
-            el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace}});
+            el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Trace}));
 
     const auto manager = el::LogManager::create();
     manager->setConfiguration(std::move(configuration));

@@ -18,7 +18,7 @@
 namespace erbsland::debug::impl {
 
 /// The width for content previews in string debug titles.
-constexpr auto cContentsPreviewWidth = unit::CpLength{60U};
+constexpr auto cContentsPreviewWidth = unit::CpCount{60U};
 
 /// Convert a storage identifier to debug text.
 [[nodiscard]] auto storageIdentifierText(const mem::StorageIdentifier &storageId) -> text::String;
@@ -30,7 +30,7 @@ void appendRange(text::StringTree &tree, const T &range) {
     using namespace text::literals;
 
     static const auto rangeFormat = text::StringFormat{"index: {} - {} (length: {})"_el};
-    tree.append("selectedRange"_el, rangeFormat.build(range.index(), range.endIndex(), range.length()));
+    tree.append("selectedRange"_el, rangeFormat.build(range.beginIndex(), range.endIndex(), range.length()));
 }
 
 /// Append memory details to the debug tree.

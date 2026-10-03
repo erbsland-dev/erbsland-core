@@ -62,7 +62,7 @@ public:
                 },
                 [&]() -> std::string {
                     return std::format(
-                        "Failed at pattern \"{}\"", testCase.pattern.toSafeString(el::unit::CpLength{200U}));
+                        "Failed at pattern \"{}\"", testCase.pattern.toSafeString(el::unit::CpCount{200U}));
                 });
         }
     }

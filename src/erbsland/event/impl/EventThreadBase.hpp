@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../EventLoop_fwd.hpp"
+#include "EventLoop.hpp"
+
 #include "../Events_fwd.hpp"
 
 #include <mutex>
@@ -15,7 +16,10 @@ namespace erbsland::event::impl {
 class EventThreadBase {
 public:
     /// Create an event-thread base with an unstarted event loop.
-    EventThreadBase();
+    /// @param options Copied capacity and error policies. Policies must be valid.
+    /// @param failureHandler Optional managed-application failure delivery. Must be set if a policy requires
+    /// application delivery.
+    explicit EventThreadBase(const EventLoopOptions &options = {}, EventLoop::FailureHandler failureHandler = {});
     /// Stop and join the event thread when necessary.
     virtual ~EventThreadBase() noexcept;
 

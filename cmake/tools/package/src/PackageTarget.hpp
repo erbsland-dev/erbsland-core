@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
 
 namespace erbsland::package {
 
@@ -11,8 +11,8 @@ namespace erbsland::package {
 /// @notest{Covered by package integration tests.}
 struct PackageTarget final {
     text::String name; ///< CMake target name.
-    path::Path file;    ///< Built executable path.
-    bool bundle{};      ///< Whether CMake built a MACOSX_BUNDLE target.
+    path::Path file;   ///< Built executable path.
+    bool bundle{};     ///< Whether CMake built a MACOSX_BUNDLE target.
 };
 
 }

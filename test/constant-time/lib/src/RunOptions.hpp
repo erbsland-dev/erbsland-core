@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimePoint.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimePoint.hpp>
 
 #include <optional>
 

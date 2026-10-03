@@ -17,8 +17,8 @@ An application could use it to request a short fact card about the northern ligh
 The named-key parser reads this kind of field and returns its entries in order.
 This page shows how to give those entries meaning in your application.
 
-Where Named-Key Blocks Fit
-==========================
+Named-Key Entry Syntax and Use Cases
+====================================
 
 A named-key block is a short list of entries inside a larger piece of text.
 An entry may pair a key with a value, as ``lang=fi`` does, or contain only a key, as ``brief`` does.
@@ -33,8 +33,8 @@ The parser can tell you which registered key it found and whether that entry car
 It cannot know what those choices mean to your application.
 That distinction matters when you decide which checks belong in the format and which belong in your own code.
 
-From a Field to Application Options
-===================================
+Parsing Named-Key Entries and Accessing Results
+===============================================
 
 First, give each option a stable identifier.
 An enum makes the identifiers easier to recognize in the code that handles parsed entries.
@@ -55,10 +55,9 @@ Notice that it checks the entry kind as well as the identifier: ``subject`` and 
 
 .. erbsland-demo::
     :source: text/NamedKeyParsing/ParseFactRequest.cpp
-    :function-blocks: parseFactRequest
-    :function-blocks-sha256: 8eed815e85bd7d26d1f5babf0255d9e8117e6590376bb233e679cc63cc4eabe1
+    :show: f:parseFactRequest
     :exec: text/named_key_parsing --demo ParseFactRequest
-    :source-sha256: b7534f5fe378488a335d79217fe085beb5b8e787ad31e4f7e6854a394eb68121
+    :sha256: 67bdadc0428a675c788311da76a3220833bde599668dee78262ee93924229f8f
 
 .. code-block:: cpp
 
@@ -72,7 +71,7 @@ Notice that it checks the entry kind as well as the identifier: ``subject`` and 
                                     {"brief"_el, static_cast<int>(FactOption::Brief)},
                                 })
                                 .setValueListAllowed(false);
-        auto reader = el::StringCharReader{el::String{"subject=revontulet,lang=fi,brief"_el}};
+        auto reader = el::StringCharReader{"subject=revontulet,lang=fi,brief"_el};
         auto parser = el::named_key::Parser{reader, format};
 
         // Translate parsed entries into the application's options.
@@ -105,12 +104,14 @@ Notice that it checks the entry kind as well as the identifier: ``subject`` and 
         el::io::printLine("Brief: "_el, brief);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Subject: revontulet
-    Language: fi
-    Brief: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSubject: revontulet
+        Language: fi
+        Brief: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -122,8 +123,8 @@ The call to ``setValueListAllowed(false)`` makes this field a named-entry list.
 Without that setting, an unrecognized bare word at the beginning could be treated as a positional value instead of an
 unknown key.
 
-Deciding What to Reject
-=======================
+Named-Key Parameter Validation
+==============================
 
 The parser checks the syntax and the registered keys.
 Your application checks rules that depend on what each key *means*, such as requiring a value for ``subject`` but a bare
@@ -136,8 +137,8 @@ syntax errors, unknown keys, and duplicate identifiers.
 The spellings ``language`` and ``lang`` share an identifier, so ``language=fi,lang=sv`` counts as a duplicate under the
 default unique-key policy.
 
-Keeping a Vocabulary Consistent
-===============================
+Shared Key Definitions and Allowed-Key Restrictions
+===================================================
 
 If several fields use related options, define their identifiers and spellings together.
 Reusing the format then keeps ``lang`` tied to the same meaning everywhere.

@@ -3,6 +3,12 @@
 
 #include "StandardStreamsDemos.hpp"
 
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+
 namespace demo {
 
 [[nodiscard]] auto captureRehearsalNotes() -> el::String;
@@ -24,7 +30,7 @@ auto captureRehearsalNotes() -> el::String {
         auto redirect = el::redirectStdOut(capture);
         if (el::io::printLine("Moderato, 96 bpm"_el).isTimeout() ||
             el::io::printLine("Rallentando nelle ultime quattro battute"_el).isTimeout()) {
-            throw el::LogicError{"An in-memory standard-output capture unexpectedly timed out."};
+            throw el::LogicFailure{"An in-memory standard-output capture unexpectedly timed out."};
         }
     }
     return capture->takeString();

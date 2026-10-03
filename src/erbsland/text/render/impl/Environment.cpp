@@ -11,15 +11,19 @@
 
 #include "../Loader.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
-#include "../../../text/Char.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
+#include "../../../err/RuntimeError.hpp"
+#include "../../Char.hpp"
 #include "../../StringFormat.hpp"
+#include "../../StringList.hpp"
 
 #include <algorithm>
 
 namespace erbsland::text::render::impl {
 
+using namespace err;
+using namespace unit;
 using namespace text::literals;
 
 Environment::Environment(EnvironmentOptions options) : _options{std::move(options)} {
@@ -27,18 +31,18 @@ Environment::Environment(EnvironmentOptions options) : _options{std::move(option
 }
 
 void Environment::addLayoutLoader(const LoaderPtr &loader, int priority) {
-    std::unique_lock lock{_mutex};
+    std::unique_lock lock{_compileMutex};
     ensureNotInitialized();
     if (loader == nullptr) {
-        throw err::ParameterError{"The layout loader must not be null."_el, "loader"_el};
+        throw ParameterFailure{"The layout loader must not be null."_el, "loader"_el};
     }
     _loaders.forEach([&](const LoaderEntry &entry) -> void {
         if (entry.first == loader) {
-            throw err::ParameterError("Loader already added"_el, "loader"_el);
+            throw ParameterFailure("Loader already added"_el, "loader"_el);
         }
     });
-    auto insertAt = unit::ItemIndex::fromSizeT(_loaders.count().toSizeT());
-    _loaders.forEach([&](const LoaderEntry &entry, const unit::ItemIndex index) -> util::LoopStatus {
+    auto insertAt = ItemIndex::fromSizeT(_loaders.count().toSizeT());
+    _loaders.forEach([&](const LoaderEntry &entry, const ItemIndex index) -> util::LoopStatus {
         if (priority > entry.second) {
             insertAt = index;
             return util::LoopStatus::Stop;
@@ -49,55 +53,48 @@ void Environment::addLayoutLoader(const LoaderPtr &loader, int priority) {
 }
 
 void Environment::addFilter(const String &name, FilterFn filter) {
-    std::unique_lock lock{_mutex};
+    std::unique_lock lock{_compileMutex};
     ensureNotInitialized();
-    if (name.isEmpty() ||
-        !(name.charAt(unit::ByteIndex::zero()).isAsciiLetter() || name.charAt(unit::ByteIndex::zero()) == U'_')) {
-        throw err::ParameterError{"A layout filter name must be an ASCII identifier."_el, "name"_el};
+    if (name.isEmpty() || !(name.charAt(ByteIndex::zero()).isAsciiLetter() || name.charAt(ByteIndex::zero()) == U'_')) {
+        throw ParameterFailure{"A layout filter name must be an ASCII identifier."_el, "name"_el};
     }
-    auto position = unit::ByteIndex::zero();
-    const auto end = unit::ByteIndex::end(name.length());
+    auto position = ByteIndex::zero();
+    const auto end = ByteIndex::end(name.length());
     while (position < end) {
         if (!name.charAt(position).isAsciiWord()) {
-            throw err::ParameterError{"A layout filter name must be an ASCII identifier."_el, "name"_el};
+            throw ParameterFailure{"A layout filter name must be an ASCII identifier."_el, "name"_el};
         }
         name.advance(position);
     }
     if (!filter) {
-        throw err::ParameterError{"A layout filter callback must not be empty."_el, "filter"_el};
+        throw ParameterFailure{"A layout filter callback must not be empty."_el, "filter"_el};
     }
     if (name == "escape"_el || name == "e"_el || name == "safe"_el) {
-        throw err::ParameterError{"The filter name is reserved for an output modifier."_el, "name"_el};
+        throw ParameterFailure{"The filter name is reserved for an output modifier."_el, "name"_el};
     }
     if (_applicationFilters.contains(name)) {
-        throw err::ParameterError{"A layout filter with this name is already registered."_el, "name"_el};
+        throw ParameterFailure{"A layout filter with this name is already registered."_el, "name"_el};
     }
     _applicationFilters.set(name, std::move(filter));
 }
 
 void Environment::enableAutoReload() {
-    std::unique_lock lock{_mutex};
+    std::unique_lock compileLock{_compileMutex};
     ensureNotInitialized();
+    std::unique_lock lock{_mutex};
     _autoReload = true;
 }
 
 void Environment::setGlobalContext(Context context) {
     // Replacing the global snapshot does not trigger initialization.
     std::unique_lock lock{_mutex};
-    _globalContext = std::move(context);
+    std::swap(_globalContext, context); // Release the previous context after unlocking.
 }
 
 auto Environment::render(const String &layout, const Context &context) -> String {
-    validateLayoutName(layout);
-    triggerInitialize();
-    const auto generation = compiledLayout(layout);
-    auto globalContext = Context{};
-    {
-        std::unique_lock lock{_mutex};
-        globalContext = _globalContext;
-    }
+    const auto state = renderState(layout);
     try {
-        return Engine{generation, globalContext, context, _options.renderLimits()}.render();
+        return Engine{state.layout, state.globalContext, context, _options.renderLimits()}.render();
     } catch (const RenderError &) {
         throw;
     } catch (const ProgramError &exception) {
@@ -107,7 +104,7 @@ auto Environment::render(const String &layout, const Context &context) -> String
             exception.reason(),
             layout,
             std::current_exception());
-    } catch (...) {
+    } catch (const RuntimeError &) {
         throw error(
             RenderErrorCategory::Runtime,
             "Layout rendering failed"_el,
@@ -119,7 +116,7 @@ auto Environment::render(const String &layout, const Context &context) -> String
 
 void Environment::ensureNotInitialized() {
     if (_initialized) {
-        throw err::LogicError("Environment is already initialized"_el);
+        throw LogicFailure("Environment is already initialized"_el);
     }
 }
 
@@ -141,21 +138,21 @@ void Environment::validateOptions() {
         for (const auto &[sideFn, sideName] : delimiterSide) {
             const auto &delimiter = (delimiters.*sideFn)();
             if (delimiter.isEmpty()) {
-                throw err::ParameterError(
+                throw ParameterFailure(
                     StringFormat{"The {} {} delimiter must not be empty"_el}.build(sideName, name), "options"_el);
             }
-            if (delimiter.characterLength() > unit::CpLength{8}) {
-                throw err::ParameterError(
+            if (delimiter.characterLength() > CpCount{8}) {
+                throw ParameterFailure(
                     StringFormat{"The {} {} delimiter must not exceed eight code points"_el}.build(sideName, name),
                     "options"_el);
             }
-            if (!delimiter.isValidUtf8()) {
-                throw err::ParameterError(
+            if (!delimiter.isEncodingValid()) {
+                throw ParameterFailure(
                     StringFormat{"The {} {} delimiter must be valid UTF-8"_el}.build(sideName, name), "options"_el);
             }
         }
-        if (delimiters.line().characterLength() > unit::CpLength{8}) {
-            throw err::ParameterError(
+        if (delimiters.line().characterLength() > CpCount{8}) {
+            throw ParameterFailure(
                 StringFormat{"The line {} delimiter must not exceed eight code points"_el}.build(name), "options"_el);
         }
     }
@@ -163,11 +160,17 @@ void Environment::validateOptions() {
         _options.expressionDelimiters().begin(),
         _options.statementDelimiters().begin(),
         _options.commentDelimiters().begin(),
+        _options.expressionDelimiters().line(),
+        _options.statementDelimiters().line(),
+        _options.commentDelimiters().line(),
     };
     for (auto first = std::size_t{0U}; first < begins.size(); ++first) {
         for (auto second = first + 1U; second < begins.size(); ++second) {
+            if (begins[first].isEmpty() || begins[second].isEmpty()) {
+                continue;
+            }
             if (begins[first].startsWith(begins[second]) || begins[second].startsWith(begins[first])) {
-                throw err::ParameterError{
+                throw ParameterFailure{
                     "Layout tag opening delimiters must be distinct and must not be prefixes of each other."_el,
                     "options"_el};
             }
@@ -175,32 +178,27 @@ void Environment::validateOptions() {
     }
 }
 
-void Environment::triggerInitialize() {
-    std::unique_lock lock{_mutex};
+void Environment::initialize() {
     if (_initialized) {
         return;
     }
-    initialize();
+    if (_loaders.isEmpty()) {
+        throw LogicFailure{"At least one layout loader must be configured before rendering."_el};
+    }
     _initialized = true;
 }
 
-void Environment::initialize() {
-    if (_loaders.isEmpty()) {
-        throw err::LogicError{"At least one layout loader must be configured before rendering."_el};
-    }
-}
-
 void Environment::validateLayoutName(const String &layout) const {
-    if (layout.isEmpty() || layout.characterLength() > unit::CpLength{200}) {
+    if (layout.isEmpty() || layout.characterLength() > CpCount{200}) {
         throw error(
             RenderErrorCategory::InvalidLayoutName,
             "Invalid layout name"_el,
             "A layout name must contain between one and 200 ASCII characters."_el,
             layout);
     }
-    auto componentBegin = unit::ByteIndex::zero();
-    auto position = unit::ByteIndex::zero();
-    const auto end = unit::ByteIndex::end(layout.length());
+    auto componentBegin = ByteIndex::zero();
+    auto position = ByteIndex::zero();
+    const auto end = ByteIndex::end(layout.length());
     while (position < end) {
         const auto character = layout.charAt(position);
         const auto allowed = character.isAsciiLowercaseLetter() || character.isAsciiDigit() || character == U'-' ||
@@ -213,7 +211,7 @@ void Environment::validateLayoutName(const String &layout) const {
                 layout);
         }
         if (character == U'/') {
-            const auto component = layout.slice(unit::ByteRange{componentBegin, position});
+            const auto component = layout.slice(ByteRange{componentBegin, position});
             if (component.isEmpty() || component == "."_el || component == ".."_el) {
                 throw error(
                     RenderErrorCategory::InvalidLayoutName,
@@ -227,7 +225,7 @@ void Environment::validateLayoutName(const String &layout) const {
         }
         layout.advance(position);
     }
-    const auto lastComponent = layout.slice(unit::ByteRange{componentBegin, end});
+    const auto lastComponent = layout.slice(ByteRange{componentBegin, end});
     if (lastComponent.isEmpty() || lastComponent == "."_el || lastComponent == ".."_el) {
         throw error(
             RenderErrorCategory::InvalidLayoutName,
@@ -237,23 +235,41 @@ void Environment::validateLayoutName(const String &layout) const {
     }
 }
 
-auto Environment::compiledLayout(const String &layout) -> ConstCompiledLayoutPtr {
-    // Loading and publication are serialized so an older concurrently loaded revision can never replace a newer one.
-    // The lock is released before program execution; active renders retain their immutable generation independently.
-    std::unique_lock lock{_mutex};
-    auto stack = std::vector<String>{};
-    auto memo = StringMap<ConstCompiledLayoutPtr>{};
-    return compiledLayout(layout, stack, memo);
+auto Environment::cachedRenderState(const String &layout) const -> std::optional<RenderState> {
+    std::shared_lock lock{_mutex};
+    if (!_autoReload) {
+        if (auto generation = _cache.get(layout)) {
+            return RenderState{std::move(*generation), _globalContext};
+        }
+    }
+    return {};
 }
 
-auto Environment::compiledLayout(
-    const String &layout, std::vector<String> &stack, StringMap<ConstCompiledLayoutPtr> &memo)
+auto Environment::renderState(const String &layout) -> RenderState {
+    if (auto state = cachedRenderState(layout)) {
+        return std::move(*state);
+    }
+    validateLayoutName(layout);
+    // Loading stays serialized, while cached renders and context updates only need the separate state lock.
+    std::unique_lock compileLock{_compileMutex};
+    initialize();
+    if (auto state = cachedRenderState(layout)) {
+        return std::move(*state);
+    }
+    auto stack = StringList{};
+    auto memo = StringMap<ConstCompiledLayoutPtr>{};
+    auto generation = compiledLayout(layout, stack, memo);
+    std::shared_lock lock{_mutex};
+    return RenderState{std::move(generation), _globalContext};
+}
+
+auto Environment::compiledLayout(const String &layout, StringList &stack, StringMap<ConstCompiledLayoutPtr> &memo)
     -> ConstCompiledLayoutPtr {
     if (const auto memoized = memo.get(layout); memoized.has_value()) {
         return *memoized;
     }
     validateLayoutName(layout);
-    if (stack.size() > _options.renderLimits().staticDependencyDepth()) {
+    if (stack.count().toSizeT() > _options.renderLimits().staticDependencyDepth()) {
         throw error(
             RenderErrorCategory::Limit,
             "Layout dependency depth exceeded"_el,
@@ -267,12 +283,16 @@ auto Environment::compiledLayout(
             "The static include and inheritance graph contains a direct or indirect cycle."_el,
             layout);
     }
-    stack.emplace_back(layout);
+    stack.append(layout);
     try {
-        const auto cached = _cache.get(layout, ConstCompiledLayoutPtr{});
+        auto cached = ConstCompiledLayoutPtr{};
+        {
+            std::shared_lock lock{_mutex};
+            cached = _cache.get(layout, ConstCompiledLayoutPtr{});
+        }
         if (cached != nullptr && !_autoReload) {
             memo.set(layout, cached);
-            stack.pop_back();
+            stack.removeLast();
             return cached;
         }
 
@@ -308,7 +328,7 @@ auto Environment::compiledLayout(
             }
             if (!dependenciesChanged) {
                 memo.set(layout, cached);
-                stack.pop_back();
+                stack.removeLast();
                 return cached;
             }
         }
@@ -317,18 +337,21 @@ auto Environment::compiledLayout(
             return resolveInclude(name, ignoreMissing, stack, memo);
         };
         auto compiled = Compiler{layout, std::move(source), _options, _applicationFilters, resolver}.compile();
-        _cache.set(layout, compiled);
+        {
+            std::unique_lock lock{_mutex};
+            _cache.set(layout, compiled);
+        }
         memo.set(layout, compiled);
-        stack.pop_back();
+        stack.removeLast();
         return compiled;
     } catch (...) {
-        stack.pop_back();
+        stack.removeLast();
         throw;
     }
 }
 
 auto Environment::resolveInclude(
-    const String &layout, const bool ignoreMissing, std::vector<String> &stack, StringMap<ConstCompiledLayoutPtr> &memo)
+    const String &layout, const bool ignoreMissing, StringList &stack, StringMap<ConstCompiledLayoutPtr> &memo)
     -> ConstCompiledLayoutPtr {
     try {
         const auto result = compiledLayout(layout, stack, memo);
@@ -365,7 +388,7 @@ auto Environment::loadLayout(const String &layout, const util::List<LoaderEntry>
         }
     } catch (const RenderError &) {
         throw;
-    } catch (...) {
+    } catch (const RuntimeError &) {
         throw error(
             RenderErrorCategory::Load,
             "Unable to load layout"_el,

@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteWriter.hpp>
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/ByteWriter.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/text/u32/impl/U32Writer.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>

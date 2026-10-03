@@ -4,6 +4,10 @@
 
 #include <erbsland/conf/ConfError.hpp>
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 using namespace el::text::literals;
 
@@ -21,7 +25,7 @@ void Application::registerCommandLineOptions(const el::OptionsPtr &options) {
         .setDefaultValue("1.0"_el)
         .setValueName("language-version"_el)
         .setHelpDescription("ELCL language version used to parse the test file."_el);
-    options->addOption("configuration-file"_el)
+    options->addOption(cConfigurationFileOption)
         .setType(el::OptionType::Text)
         .setRequired()
         .setHelpDescription("ELCL configuration file to parse."_el);
@@ -34,7 +38,7 @@ auto Application::main() -> el::ExitCode {
         return el::ExitCode{2};
     }
 
-    const auto configurationFile = el::Path{optionValues()->getText("configuration-file"_el)};
+    const auto configurationFile = el::Path{optionValues()->getText(cConfigurationFileOption)};
     if (!configurationFile.info().isRegularFile()) {
         el::io::printErrorLine("Error: Configuration file does not exist: "_el, configurationFile.toString());
         return el::ExitCode{2};
@@ -48,7 +52,7 @@ auto Application::main() -> el::ExitCode {
     } catch (const el::conf::ConfError &error) {
         el::io::printLine("FAIL = "_el, error.category().toText(), "("_el, error.toString(), ")"_el);
         return el::ExitCode::failure();
-    } catch (const el::Exception &error) {
+    } catch (const el::RuntimeError &error) {
         el::io::printErrorLine("Unexpected adapter error: "_el, error.toString());
         return el::ExitCode{2};
     }

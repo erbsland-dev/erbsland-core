@@ -14,10 +14,10 @@
 
 namespace erbsland::text {
 
-using unit::ByteLength;
-using unit::CpLength;
+using unit::ByteCount;
+using unit::CpCount;
 
-auto StringDecodeBuffer::peekAnyString(const CpLength maximum) -> AnyString {
+auto StringDecodeBuffer::peekAnyString(const CpCount maximum) -> AnyString {
     if (_effectiveEncoding.isUtf16()) {
         return peekU16String(maximum);
     }
@@ -27,19 +27,19 @@ auto StringDecodeBuffer::peekAnyString(const CpLength maximum) -> AnyString {
     return peekU8String(maximum);
 }
 
-auto StringDecodeBuffer::peekString(const CpLength maximum) -> String {
+auto StringDecodeBuffer::peekString(const CpCount maximum) -> String {
     return peekU8String(maximum);
 }
 
-auto StringDecodeBuffer::peekU8String(const CpLength maximum) -> U8String {
+auto StringDecodeBuffer::peekU8String(const CpCount maximum) -> U8String {
     return decodeToU8(maximum, false, false).text;
 }
 
-auto StringDecodeBuffer::peekU16String(const CpLength maximum) -> U16String {
+auto StringDecodeBuffer::peekU16String(const CpCount maximum) -> U16String {
     return decodeToU16(maximum, false);
 }
 
-auto StringDecodeBuffer::peekU32String(const CpLength maximum) -> U32String {
+auto StringDecodeBuffer::peekU32String(const CpCount maximum) -> U32String {
     return decodeToU32(maximum, false);
 }
 
@@ -57,7 +57,7 @@ void StringDecodeBuffer::setSensitive(const bool sensitive) noexcept {
     }
 }
 
-auto StringDecodeBuffer::takeAnyString(const CpLength maximum) -> AnyString {
+auto StringDecodeBuffer::takeAnyString(const CpCount maximum) -> AnyString {
     if (_effectiveEncoding.isUtf16()) {
         return takeU16String(maximum);
     }
@@ -67,23 +67,23 @@ auto StringDecodeBuffer::takeAnyString(const CpLength maximum) -> AnyString {
     return takeU8String(maximum);
 }
 
-auto StringDecodeBuffer::takeString(const CpLength maximum) -> String {
+auto StringDecodeBuffer::takeString(const CpCount maximum) -> String {
     return takeU8String(maximum);
 }
 
-auto StringDecodeBuffer::takeStringLine(const CpLength maximum) -> String {
+auto StringDecodeBuffer::takeStringLine(const CpCount maximum) -> String {
     return decodeToU8(maximum, true, true).text;
 }
 
-auto StringDecodeBuffer::takeU8String(const CpLength maximum) -> U8String {
+auto StringDecodeBuffer::takeU8String(const CpCount maximum) -> U8String {
     return decodeToU8(maximum, false, true).text;
 }
 
-auto StringDecodeBuffer::takeU16String(const CpLength maximum) -> U16String {
+auto StringDecodeBuffer::takeU16String(const CpCount maximum) -> U16String {
     return decodeToU16(maximum, true);
 }
 
-auto StringDecodeBuffer::takeU32String(const CpLength maximum) -> U32String {
+auto StringDecodeBuffer::takeU32String(const CpCount maximum) -> U32String {
     return decodeToU32(maximum, true);
 }
 
@@ -91,13 +91,13 @@ auto StringDecodeBuffer::storageWritableSpan() noexcept -> mem::ByteSpan {
     return mem::impl::UnsafeByteBufferAccess{_buffer}.writableData();
 }
 
-auto StringDecodeBuffer::takeStringWithLength(const CpLength maximum, const bool stopAtLineEnd)
-    -> std::pair<String, CpLength> {
+auto StringDecodeBuffer::takeStringWithLength(const CpCount maximum, const bool stopAtLineEnd)
+    -> std::pair<String, CpCount> {
     auto decoded = decodeToU8(maximum, stopAtLineEnd, true);
     return {std::move(decoded.text), decoded.characterLength};
 }
 
-auto StringDecodeBuffer::decodeToU8(const CpLength maximum, const bool stopAtLineEnd, const bool consumeDecoded)
+auto StringDecodeBuffer::decodeToU8(const CpCount maximum, const bool stopAtLineEnd, const bool consumeDecoded)
     -> DecodedU8String {
     const auto range = decodedRange(maximum, stopAtLineEnd);
     if (effectiveEncoding().isUtf8() && range.isValid) {
@@ -106,27 +106,26 @@ auto StringDecodeBuffer::decodeToU8(const CpLength maximum, const bool stopAtLin
         return {U8String{buffer.take(range.byteLength)}, range.characterLength};
     }
     auto buffer =
-        impl::UnsafeU8StringBuffer{ByteLength::fromSizeT(range.characterLength.toSizeTOrThrow()) * 4U, isSensitive()};
+        impl::UnsafeU8StringBuffer{ByteCount::fromSizeT(range.characterLength.toSizeTOrThrow()) * 4U, isSensitive()};
     auto writer = impl::U8Writer{std::span<char>{buffer.data(), buffer.capacity().toSizeT()}};
     forEachDecodedCharacter(range, consumeDecoded, [&](const Char character) -> void { writer.write(character); });
-    return {U8String{buffer.take(ByteLength::fromSizeT(writer.position()))}, range.characterLength};
+    return {U8String{buffer.take(ByteCount::fromSizeT(writer.position()))}, range.characterLength};
 }
 
-auto StringDecodeBuffer::decodeToU16(const CpLength maximum, const bool consumeDecoded) -> U16String {
+auto StringDecodeBuffer::decodeToU16(const CpCount maximum, const bool consumeDecoded) -> U16String {
     const auto range = decodedRange(maximum, false);
-    auto buffer =
-        impl::UnsafeU16StringBuffer{unit::U16DataLength::fromSizeT(range.characterLength.toSizeTOrThrow()) * 2U};
+    auto buffer = impl::UnsafeU16StringBuffer{unit::U16Count::fromSizeT(range.characterLength.toSizeTOrThrow()) * 2U};
     auto writer = impl::U16Writer{std::span<char16_t>{buffer.data(), buffer.capacity().toSizeT()}};
     forEachDecodedCharacter(range, consumeDecoded, [&](const Char character) -> void { writer.write(character); });
     return U16String{buffer.take(writer.position())};
 }
 
-auto StringDecodeBuffer::decodeToU32(const CpLength maximum, const bool consumeDecoded) -> U32String {
+auto StringDecodeBuffer::decodeToU32(const CpCount maximum, const bool consumeDecoded) -> U32String {
     const auto range = decodedRange(maximum, false);
     auto result = U32StringEditor{};
     result.reserve(range.characterLength);
     forEachDecodedCharacter(range, consumeDecoded, [&](const Char character) -> void { result.append(character); });
-    return U32String{result};
+    return result;
 }
 
 }

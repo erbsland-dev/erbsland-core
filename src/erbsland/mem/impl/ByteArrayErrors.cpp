@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ByteArrayErrors.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::mem::impl {
@@ -10,7 +10,7 @@ namespace erbsland::mem::impl {
 using namespace text::literals;
 
 void throwByteArrayWrongLength() {
-    throw err::ParameterError{"The byte span has the wrong length."_el, "bytes"_el};
+    throw err::ParameterFailure{"The byte span has the wrong length."_el, "bytes"_el};
 }
 
 }

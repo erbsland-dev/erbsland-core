@@ -14,6 +14,8 @@
 
 namespace erbsland::compression::impl {
 
+using namespace unit;
+
 DeflateEncoder::DeflateEncoder(const CompressionLevel level) : _level{level} {
 }
 
@@ -155,7 +157,7 @@ void DeflateEncoder::writeDistance(const std::size_t distance) {
 
 void DeflateEncoder::encodeStream(CodecReader &input, const CodecOutput::Write &output) {
     auto history = mem::ByteBlockEditor{};
-    history.reserve(unit::ByteLength{65536U});
+    history.reserve(ByteCount{65536U});
     while (!input.atEnd()) {
         const auto block = input.block(cMaximumStoredLength);
         const auto historyLength = history.length().toSizeT();
@@ -188,7 +190,7 @@ void DeflateEncoder::encodeStream(CodecReader &input, const CodecOutput::Write &
             return;
         }
         const auto removed = history.length().toSizeT() - std::min(history.length().toSizeT(), cMaximumMatchDistance);
-        history.remove(unit::ByteRange{unit::ByteIndex{}, unit::ByteLength::fromSizeT(removed)});
+        history.remove(ByteRange{ByteIndex{}, ByteCount::fromSizeT(removed)});
     }
     _writer.reset();
     _writer.writeBits(1U, 3U);

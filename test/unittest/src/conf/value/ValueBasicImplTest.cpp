@@ -6,7 +6,7 @@
 #include <erbsland/conf/impl/value/Value.hpp>
 #include <erbsland/conf/Location.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>

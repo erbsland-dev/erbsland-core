@@ -1,17 +1,24 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "../cterm/support/TerminalTestBackend.hpp"
+
 #include <erbsland/conf/ConfError.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
+#include <erbsland/cterm/Terminal.hpp>
+#include <erbsland/Date.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/log/impl/ActiveLogConfiguration.hpp>
 #include <erbsland/log/impl/FileLogWriter.hpp>
+#include <erbsland/log/impl/LogLineFormatter.hpp>
 #include <erbsland/log/impl/SyslogLogWriter.hpp>
-#include <erbsland/log/line/LogLine.hpp>
-#include <erbsland/log/LogConfigurationParser.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/time/Date.hpp>
-#include <erbsland/time/Time.hpp>
+#include <erbsland/LogConfigurationParser.hpp>
+#include <erbsland/LogLine.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Time.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -21,6 +28,9 @@ using namespace el::text::literals;
 
 TESTED_TARGETS(LogConfigurationParser)
 class LogConfigurationParserTest final : public el::UnitTest {
+private:
+    static constexpr auto cLoggingValue = "logging"_el;
+
 public:
     void testCompiledRulesCoverCompleteSchema() {
         auto parser = el::conf::Parser{};
@@ -66,7 +76,7 @@ public:
             "wrapped_line_indent: -1\n"
             "maximum_line_wraps: 0\n"_el);
 
-        const auto logging = document->valueOrThrow("logging"_el);
+        const auto logging = document->valueOrThrow(cLoggingValue);
         REQUIRE_NOTHROW(el::log::LogConfigurationParser::validationRules()->validate(logging, 0));
         for (const auto &value : *logging) {
             WITH_CONTEXT(requireRuleDocumentation(value));
@@ -80,7 +90,7 @@ public:
             "maximum_entries: 0\n"_el);
         REQUIRE_THROWS_AS(
             el::conf::ConfError,
-            el::log::LogConfigurationParser::validationRules()->validate(invalidQueue->valueOrThrow("logging"_el), 0));
+            el::log::LogConfigurationParser::validationRules()->validate(invalidQueue->valueOrThrow(cLoggingValue), 0));
 
         const auto invalidWriter = parser.parseTextOrThrow(
             "[logging]\n"
@@ -89,7 +99,8 @@ public:
             "facility: 24\n"_el);
         REQUIRE_THROWS_AS(
             el::conf::ConfError,
-            el::log::LogConfigurationParser::validationRules()->validate(invalidWriter->valueOrThrow("logging"_el), 0));
+            el::log::LogConfigurationParser::validationRules()->validate(
+                invalidWriter->valueOrThrow(cLoggingValue), 0));
     }
 
     void testCompiledRulesEnforceEnumChoices() {
@@ -109,7 +120,7 @@ public:
             const auto document = parser.parseTextOrThrow(configuration);
             REQUIRE_THROWS_AS(
                 el::conf::ConfError,
-                el::log::LogConfigurationParser::validationRules()->validate(document->valueOrThrow("logging"_el), 0));
+                el::log::LogConfigurationParser::validationRules()->validate(document->valueOrThrow(cLoggingValue), 0));
         }
     }
 
@@ -120,7 +131,7 @@ public:
             "[.format]\n"
             "timestamp_zone: \"invalid\"\n"_el);
         try {
-            el::log::LogConfigurationParser::validationRules()->validate(document->valueOrThrow("logging"_el), 0);
+            el::log::LogConfigurationParser::validationRules()->validate(document->valueOrThrow(cLoggingValue), 0);
         } catch (const el::conf::ConfError &error) {
             REQUIRE_EQUAL(error.description(), "The text must be one of \"utc\" or \"local\" (case-insensitive)"_el);
             return;
@@ -154,9 +165,139 @@ public:
         REQUIRE_EQUAL(configuration.lineFormat().timestampZone(), el::log::LogTimestampZone::Local);
         REQUIRE_EQUAL(configuration.lineFormat().nameFormat(), el::log::LogNameFormat::Leaf);
         REQUIRE_EQUAL(configuration.managerOptions().maximumEntries(), std::size_t{123U});
-        REQUIRE_EQUAL(configuration.managerOptions().maximumBytes(), el::unit::ByteLength{65536U});
+        REQUIRE_EQUAL(configuration.managerOptions().maximumBytes(), el::unit::ByteCount{65536U});
         REQUIRE(configuration.isTraceSectionEnabled(el::log::LogTraceSection{"database"_el}));
         REQUIRE_EQUAL(configuration.writerCount(), std::size_t{1U});
+    }
+
+    void testTraceSectionCanonicalization() {
+        auto parser = el::conf::Parser{};
+        const auto document =
+            parser.parseTextOrThrow("[logging]\ntrace_sections: \"Foo-Bar\", \"NETWORK_Details\", \"\", \"\"\n"_el);
+        const auto configuration = el::LogConfigurationParser{}.parse(document->valueOrThrow(cLoggingValue));
+        REQUIRE_EQUAL(configuration.traceSections().size(), std::size_t{2});
+        REQUIRE_EQUAL(configuration.traceSections()[0].toString(), "foo_bar"_el);
+        REQUIRE_EQUAL(configuration.traceSections()[1].toString(), "network_details"_el);
+        REQUIRE(configuration.isTraceSectionEnabled(el::LogTraceSection{"FOO-BAR"_el}));
+    }
+
+    void testTraceSectionDuplicatesAndInvalidNames() {
+        const auto entries = el::StringList{
+            "\"foo-bar\", \"foo-bar\""_el,
+            "\"foo-bar\", \"FOO-BAR\""_el,
+            "\"foo-bar\", \"foo_bar\""_el,
+            "\"foo-bar\", \"0bad\""_el,
+            "\"foo-bar\", \"_bad\""_el,
+            "\"foo-bar\", \"bad name\""_el,
+            "\"foo-bar\", \"\u00e4\""_el};
+        auto parser = el::conf::Parser{};
+        for (const auto &entry : entries) {
+            const auto document = parser.parseTextOrThrow(el::join("[logging]\ntrace_sections: "_el, entry, "\n"_el));
+            const auto logging = document->valueOrThrow(cLoggingValue);
+            const auto duplicate = logging->valueOrThrow("trace_sections"_el)->toValueList()[1];
+            try {
+                (void)el::LogConfigurationParser{}.parse(logging);
+            } catch (const el::conf::ConfError &error) {
+                REQUIRE_EQUAL(error.category(), el::conf::ConfErrorCategory::Validation);
+                REQUIRE_EQUAL(error.location(), duplicate->location().codeLocation());
+                REQUIRE_EQUAL(error.namePath(), duplicate->namePath());
+                REQUIRE(error.description().contains("trace section"_el));
+                continue;
+            }
+            REQUIRE(false);
+        }
+    }
+
+    void testTraceSectionLengthBoundaries() {
+        constexpr auto maximumName =
+            "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij"_el;
+        auto parser = el::conf::Parser{};
+        const auto validDocument =
+            parser.parseTextOrThrow(el::join("[logging]\ntrace_sections: \""_el, maximumName, "\"\n"_el));
+        const auto configuration = el::LogConfigurationParser{}.parse(validDocument->valueOrThrow(cLoggingValue));
+        REQUIRE_EQUAL(configuration.traceSections().front().toString(), maximumName);
+        const auto invalidDocument =
+            parser.parseTextOrThrow(el::join("[logging]\ntrace_sections: \""_el, maximumName, "a\"\n"_el));
+        REQUIRE_THROWS_AS(
+            el::conf::ConfError, el::LogConfigurationParser{}.parse(invalidDocument->valueOrThrow(cLoggingValue)));
+    }
+
+    void testWriterFormatsForAllWriterTypesAndGlobalFallback() {
+        auto parser = el::conf::Parser{};
+        const auto document = parser.parseTextOrThrow(
+            "[logging]\n"
+            "[.format]\npattern: \"global: {message}\"\nlevel: \"full_upper\"\n"
+            "*[logging.writers]*\ntype: \"console\"\n"
+            "[.format]\npattern: \"{level}: {message}\"\n"
+            "*[logging.writers]*\ntype: \"file\"\npath: \"unused.log\"\n"
+            "[.format]\npattern: \"file: {message}\"\n"
+            "*[logging.writers]*\ntype: \"syslog\"\nendpoint: \"127.0.0.1:514\"\n"
+            "[.format]\npattern: \"syslog: {message}\"\n"
+            "*[logging.writers]*\ntype: \"file\"\npath: \"unused-default.log\"\n"
+            "*[logging.writers]*\ntype: \"file\"\npath: \"unused-empty.log\"\n[.format]\n"_el);
+        const auto terminal = std::make_shared<el::cterm::Terminal>(std::make_shared<TerminalTestBackend>());
+        const auto configuration =
+            el::log::LogConfigurationParser{terminal}.parse(document->valueOrThrow(cLoggingValue));
+        const auto active = el::log::impl::ActiveLogConfiguration{configuration};
+        const auto entry = el::log::LogEntry{
+            1U,
+            el::time::Timestamp{el::time::Date::fromYearMonthDay(2026, 8, 31), el::time::Time{}},
+            el::log::LogLevel::Warning,
+            el::log::LogPath{},
+            "value"_el};
+        const auto expected = el::StringList{
+            "WRN: value"_el,
+            "file: value"_el,
+            "syslog: value"_el,
+            "global: value"_el,
+            "2026-08-31 00:00:00Z WRN - value"_el};
+        REQUIRE_EQUAL(configuration.writerCount(), expected.count().toSizeT());
+        for (auto index = std::size_t{}; index < expected.count().toSizeT(); ++index) {
+            REQUIRE_EQUAL(
+                active.writers()[index].formatter->format(entry)->text(),
+                expected.getRef(el::ItemIndex::fromInteger(index)));
+        }
+    }
+
+    void testCompleteWriterFormatSchemaAndRendering() {
+        auto parser = el::conf::Parser{};
+        const auto document = parser.parseTextOrThrow(
+            "[logging]\n*[.writers]*\ntype: \"file\"\npath: \"unused.log\"\n"
+            "[.format]\n"
+            "pattern: \"{{{level}}} {name}: {message}\"\n"
+            "timestamp_zone: \"utc\"\nlevel: \"full_upper\"\nname: \"left_truncated\"\n"
+            "name_limit: 4\nmessage_truncation: \"characters\"\nmessage_limit: 3\ntruncation_mark: \"~\"\n"_el);
+        const auto logging = document->valueOrThrow(cLoggingValue);
+        const auto configuration = el::log::LogConfigurationParser{}.parse(logging);
+        for (const auto &value : *logging) {
+            WITH_CONTEXT(requireRuleDocumentation(value));
+        }
+        const auto active = el::log::impl::ActiveLogConfiguration{configuration};
+        const auto entry = el::log::LogEntry{
+            1U, el::time::Timestamp::now(), el::log::LogLevel::Warning, el::log::LogPath{"app/query"_el}, "abcdef"_el};
+        REQUIRE_EQUAL(active.writers()[0U].formatter->format(entry)->text(), "{WARNING} ~ery: ab~"_el);
+    }
+
+    void testInvalidWriterFormatFields() {
+        const auto fields = el::text::StringList{
+            "timestamp_zone: \"invalid\"\n"_el,
+            "level: \"invalid\"\n"_el,
+            "name: \"invalid\"\n"_el,
+            "message_truncation: \"invalid\"\n"_el,
+            "name_limit: -1\n"_el,
+            "message_limit: -1\n"_el};
+        auto parser = el::conf::Parser{};
+        for (const auto &field : fields) {
+            const auto document = parser.parseTextOrThrow(
+                el::join("[logging]\n*[.writers]*\ntype: \"file\"\npath: \"unused.log\"\n[.format]\n"_el, field));
+            REQUIRE_THROWS_AS(
+                el::conf::ConfError, el::log::LogConfigurationParser{}.parse(document->valueOrThrow(cLoggingValue)));
+        }
+        const auto document = parser.parseTextOrThrow(
+            "[logging]\n*[.writers]*\ntype: \"file\"\npath: \"unused.log\"\n"
+            "[.format]\npattern: \"{unknown}\"\n"_el);
+        REQUIRE_THROWS_AS(
+            el::err::ParameterFailure, el::log::LogConfigurationParser{}.parse(document->valueOrThrow(cLoggingValue)));
     }
 
     void testSyslogWireFormatsAndTlsDefault() {
@@ -183,7 +324,7 @@ public:
     void testSyslogPendingQueueDropsOversizedMessages() {
         auto options = el::log::SyslogLogWriterOptions{};
         options.setEndpoint(el::network::HostEndpoint::fromStringOrThrow("127.0.0.1:514"_el))
-            .setMaximumPendingBytes(el::unit::ByteLength{8U});
+            .setMaximumPendingBytes(el::unit::ByteCount{8U});
         auto writer = el::log::impl::SyslogLogWriter{options};
         const auto entry = std::make_shared<el::log::LogEntry>(
             1U, el::time::Timestamp::now(), el::log::LogLevel::Information, el::log::LogPath{}, "message"_el);

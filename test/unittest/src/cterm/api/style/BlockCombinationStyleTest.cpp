@@ -65,11 +65,12 @@ public:
 
     void testMatrixCombinationStyleRejectsInvalidDefinitions() {
         static constexpr auto cTooSmallResultMatrix = std::array<uint8_t, 2>{{0x00U, 0x01U}};
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, MatrixBlockCombinationStyle(U"ab"_el, cTooSmallResultMatrix));
         REQUIRE_THROWS_AS(
-            erbsland::err::ParameterError,
+            erbsland::err::ParameterFailure, MatrixBlockCombinationStyle(U"ab"_el, cTooSmallResultMatrix));
+        REQUIRE_THROWS_AS(
+            erbsland::err::ParameterFailure,
             MatrixBlockCombinationStyle(
-                erbsland::text::U32StringEditor::fromCharacter(U'a', erbsland::unit::CpLength{256U}), {}));
+                erbsland::text::U32StringEditor::fromCharacter(U'a', erbsland::unit::CpCount{256U}), {}));
     }
 
     void testCommonBoxFrameCombinesExactMatches() {

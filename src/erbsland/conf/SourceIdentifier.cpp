@@ -7,45 +7,45 @@
 
 #include "../text/Literals.hpp"
 #include "../text/StringEditor.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <utility>
 
 namespace erbsland::conf {
 
+using namespace text;
 using namespace text::literals;
 
-SourceIdentifier::SourceIdentifier(text::String name, text::String path, PrivateTag) noexcept :
+SourceIdentifier::SourceIdentifier(String name, String path, PrivateTag) noexcept :
     _name{std::move(name)}, _path{std::move(path)} {
 }
 
-auto SourceIdentifier::create(text::String name, text::String path) noexcept -> SourceIdentifierPtr {
+auto SourceIdentifier::create(String name, String path) noexcept -> SourceIdentifierPtr {
     return std::make_shared<SourceIdentifier>(std::move(name), std::move(path), PrivateTag{});
 }
 
-auto SourceIdentifier::createForFile(text::String path) noexcept -> SourceIdentifierPtr {
+auto SourceIdentifier::createForFile(String path) noexcept -> SourceIdentifierPtr {
     return std::make_shared<SourceIdentifier>(
-        text::String{impl::defaults::fileSourceIdentifier}, std::move(path), PrivateTag{});
+        String{impl::defaults::fileSourceIdentifier}, std::move(path), PrivateTag{});
 }
 
 auto SourceIdentifier::createForText() noexcept -> SourceIdentifierPtr {
-    return std::make_shared<SourceIdentifier>(
-        text::String{impl::defaults::textSourceIdentifier}, text::String{}, PrivateTag{});
+    return std::make_shared<SourceIdentifier>(String{impl::defaults::textSourceIdentifier}, String{}, PrivateTag{});
 }
 
-auto SourceIdentifier::toText() const noexcept -> text::String {
-    const auto safePath = _path.toSafeString(unit::CpLength{200});
+auto SourceIdentifier::toText() const noexcept -> String {
+    const auto safePath = _path.toSafeString(unit::CpCount{200});
     if (_name.isEmpty() || _path.isEmpty()) {
         if (!_name.isEmpty()) {
             return _name;
         }
-        auto result = text::StringEditor{"unknown:"_el};
+        auto result = StringEditor{"unknown:"_el};
         result.append(safePath);
-        return text::String{result};
+        return result;
     }
-    auto result = text::StringEditor{_name};
+    auto result = StringEditor{_name};
     result.append(":"_el).append(safePath);
-    return text::String{result};
+    return result;
 }
 
 auto SourceIdentifier::areEqual(const SourceIdentifierPtr &a, const SourceIdentifierPtr &b) noexcept -> bool {
@@ -65,6 +65,7 @@ auto internalView(const SourceIdentifier &object) -> impl::InternalViewPtr {
     view->setValue(u8"path", object._path);
     return view;
 }
+
 #endif
 
 }

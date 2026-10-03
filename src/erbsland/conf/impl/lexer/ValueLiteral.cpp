@@ -6,6 +6,8 @@
 
 #include "../utilities/YieldMacros.hpp"
 
+#include "../../../text/StringTransformations.hpp"
+
 namespace erbsland::conf::impl::lexer {
 
 using namespace text::literals;
@@ -21,7 +23,7 @@ auto scanLiteral(TokenDecoder &decoder) -> std::optional<LexerToken> {
             decoder.throwSyntaxError("Unknown value literal."_el);
         }
     }
-    const auto identifier = transaction.capturedString().transformed(text::Char::toAsciiLowercase);
+    const auto identifier = text::toAsciiLowercase(transaction.capturedString());
     if (identifier == "t"_el && decoder.character() == CharClass::DecimalDigit) {
         // This is most likely a time prefix - backtracking.
         return std::nullopt;
@@ -29,8 +31,8 @@ auto scanLiteral(TokenDecoder &decoder) -> std::optional<LexerToken> {
     if (decoder.character() != CharClass::ValidAfterValue) {
         decoder.throwSyntaxError("Unexpected character after literal."_el);
     }
-    const auto findIt = LiteralTables::identifierMap.find(identifier);
-    if (findIt == LiteralTables::identifierMap.end()) {
+    const auto findIt = literal_tables::identifierMap().find(identifier);
+    if (findIt == literal_tables::identifierMap().end()) {
         decoder.throwSyntaxError("Unknown value literal."_el);
     }
     transaction.commit();

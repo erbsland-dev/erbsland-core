@@ -10,6 +10,7 @@
 #include "../../../unit/ExitCode.hpp"
 
 #include <exception>
+#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -17,7 +18,7 @@ namespace erbsland::core::impl {
 
 /// Main event loop, registry, managed threads, and application exit state.
 /// @tested{ApplicationEventTest ApplicationPartApplicationTest}
-class ApplicationEventData final {
+class ApplicationEventData final : public std::enable_shared_from_this<ApplicationEventData> {
 public:
     /// Create the main event loop and its private event registry.
     ApplicationEventData();
@@ -30,19 +31,25 @@ public:
     /// Access the private application event registry.
     [[nodiscard]] auto eventRegistry() noexcept -> event::EventRegistry &;
     /// Create and retain a managed event thread.
-    [[nodiscard]] auto createEventThread() -> event::ManagedEventThreadPtr;
+    /// @param options Copied capacity and error policies. The policies must be valid.
+    /// @return The new, unstarted event thread.
+    [[nodiscard]] auto createEventThread(const event::EventLoopOptions &options = {}) -> event::ManagedEventThreadPtr;
     /// Run the main event loop and capture its first callback failure.
     void runLoop();
     /// Test whether the main event loop has a pending quit request.
     [[nodiscard]] auto isQuitRequested() const noexcept -> bool;
     /// Finish event processing, join managed threads, and rethrow a captured loop error.
     [[nodiscard]] auto finishRun() -> unit::ExitCode;
+    /// Quit and join managed workers, then rethrow the first retained event failure.
+    void finishThreads();
     /// Preserve the first application exit code.
     void recordExitCode(unit::ExitCode exitCode) noexcept;
     /// Request shutdown of the main loop and every managed event thread.
     void quit() noexcept;
 
 private:
+    /// Preserve the first failure, stop main-loop dispatch, and quit all managed event threads.
+    void recordFailure(std::exception_ptr error) noexcept;
     /// Collect live managed event threads and remove expired weak references.
     [[nodiscard]] auto managedThreads() -> std::vector<event::ManagedEventThreadPtr>;
 

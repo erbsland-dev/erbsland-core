@@ -3,8 +3,10 @@
 
 #include "ValidationRulesDemos.hpp"
 
+#include <erbsland/all_conf_vr.hpp>
+#include <erbsland/all_conf_vr_builder.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/vr/RulesBuilder.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -26,11 +28,11 @@ void builtRules() {
     auto builder = el::conf::vr::RulesBuilder{};
     builder.configureRoot(Title{"Levantamento florestal"_el});
     builder.addRule("survey"_el, RuleType::Section, Title{"Levantamento da floresta"_el});
-    builder.addRule(
-        "survey.forest"_el, RuleType::Text, Description{"Nome da floresta observada"_el}, Minimum{3}, Maximum{80});
-    builder.addRule("survey.observers"_el, RuleType::Integer, Minimum{1}, Maximum{12});
-    builder.addRule("survey.region"_el, RuleType::Text, Default{"Mata Atlântica"_el});
-    builder.addRule("survey.api_token"_el, RuleType::Text, IsOptional{}, IsSecret{});
+    auto survey = builder.createBranch("survey"_el);
+    survey.addRule("forest"_el, RuleType::Text, Description{"Nome da floresta observada"_el}, Minimum{3}, Maximum{80});
+    survey.addRule("observers"_el, RuleType::Integer, Minimum{1}, Maximum{12});
+    survey.addRule("region"_el, RuleType::Text, Default{"Mata Atlântica"_el});
+    survey.addRule("api_token"_el, RuleType::Text, IsOptional{}, IsSecret{});
     const auto rules = builder.takeRules();
 
     const auto configuration = "[survey]\n"

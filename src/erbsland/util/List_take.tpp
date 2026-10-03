@@ -25,7 +25,7 @@ auto List<tElement, tSelf>::take(const Range range) -> Self {
     if (!boundedRange.isValid() || boundedRange.isEmpty()) {
         return {};
     }
-    const auto begin = boundedRange.index().toSizeT();
+    const auto begin = boundedRange.beginIndex().toSizeT();
     const auto end = boundedRange.endIndex().toSizeT();
     auto result =
         Raw{data.begin() + static_cast<typename Raw::difference_type>(begin),
@@ -65,7 +65,7 @@ auto List<tElement, tSelf>::takeLast() -> Element {
     if (raw().empty()) {
         return {};
     }
-    return take(Index::fromSizeT(raw().size() - 1U));
+    return take(lastIndex());
 }
 
 }

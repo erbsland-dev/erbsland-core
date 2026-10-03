@@ -11,24 +11,32 @@
 
 namespace erbsland::options {
 
-OptionError::OptionError(text::String reason, const std::exception_ptr &cause) noexcept :
+using namespace text;
+
+OptionError::OptionError(String reason, const std::exception_ptr &cause) noexcept :
     OptionError(OptionErrorContext{}.setDescription(std::move(reason)), cause) {
 }
 
 OptionError::OptionError(
-    text::String title, text::String description, const OptionValuePtr &value, const std::exception_ptr &cause) noexcept
-    :
+    String title, String description, const OptionValuePtr &value, const std::exception_ptr &cause) noexcept :
     OptionError(
         OptionErrorContext{}
             .setTitle(std::move(title))
             .setDescription(std::move(description))
-            .setOption(value->option().lock()),
+            .setOption(value->option().lock())
+            .setArgumentIndex(value->argumentIndex())
+            .setReason(OptionErrorReason::ValidationError),
         cause) {
 }
 
-OptionError::OptionError(
-    text::String description, const OptionValuePtr &value, const std::exception_ptr &cause) noexcept :
-    OptionError(OptionErrorContext{}.setDescription(std::move(description)).setOption(value->option().lock()), cause) {
+OptionError::OptionError(String description, const OptionValuePtr &value, const std::exception_ptr &cause) noexcept :
+    OptionError(
+        OptionErrorContext{}
+            .setDescription(std::move(description))
+            .setOption(value->option().lock())
+            .setArgumentIndex(value->argumentIndex())
+            .setReason(OptionErrorReason::ValidationError),
+        cause) {
 }
 
 OptionError::OptionError(OptionErrorContext context) noexcept : OptionError(std::move(context), {}) {
@@ -42,4 +50,5 @@ OptionError::OptionError(OptionErrorContext context, const std::exception_ptr &c
 auto OptionError::diagnostic() const -> err::DiagnosticConstPtr {
     return std::make_shared<impl::OptionErrorDiagnostic>(_context);
 }
+
 }

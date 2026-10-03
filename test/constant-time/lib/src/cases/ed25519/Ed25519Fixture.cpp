@@ -1,19 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "Ed25519Fixture.hpp"
 
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/cryptology/impl/algorithm/ed25519_signature/Ed25519Signer.hpp>
 #include <erbsland/cryptology/impl/DerEncoder.hpp>
 #include <erbsland/cryptology/impl/SigningKeyEncoding.hpp>
-#include <erbsland/cryptology/keys/PublicKey.hpp>
-#include <erbsland/cryptology/tls/TlsSignatureScheme.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/PublicKey.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TlsSignatureScheme.hpp>
 
 namespace app::constant_time {
 
@@ -21,9 +20,9 @@ using namespace el::text::literals;
 
 Ed25519Fixture::Ed25519Fixture(el::Random &random, const bool population, Ed25519Operation operation) :
     _operation{operation} {
-    auto secret = input(random, population, 32);
+    auto secret = input(random, population, el::ByteCount{32});
     _secret = std::move(secret);
-    _message = el::ByteBuffer{el::ByteLength{32}, el::Byte{0x33U}};
+    _message = el::ByteBuffer{el::ByteCount{32}, el::Byte{0x33U}};
     _ed = ci::ed25519_signer::reduceScalar(_secret.span());
     const auto canonical = _ed.span();
     const auto field = ci::ed25519_signature::FieldElement::fromCanonicalBytes(canonical);
@@ -89,7 +88,7 @@ auto Ed25519Fixture::measure(const uint64_t repetitions) -> uint64_t {
     case Ed25519Operation::FieldInvert:
         return repeat(repetitions, [this]() -> uint64_t { return sample<Ed25519Operation::FieldInvert>(); });
     }
-    throw el::LogicError{"Unknown sample operation."_el};
+    throw el::LogicFailure{"Unknown sample operation."_el};
 }
 
 }

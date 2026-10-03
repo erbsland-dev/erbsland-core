@@ -23,8 +23,8 @@ public:
 
 public: // implement EntropySource
     /// Fill the destination with system entropy bytes.
+    /// The entropy source must be able to supply all requested bytes.
     /// @param destination The bytes to fill.
-    /// @throws random::RandomError If the system entropy source cannot provide the requested bytes.
     void fillBytes(std::span<std::byte> destination) override;
 
 private:

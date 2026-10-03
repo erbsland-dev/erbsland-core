@@ -12,7 +12,9 @@ namespace erbsland::event::impl {
 class UnmanagedEventThread final : public event::UnmanagedEventThread, private EventThreadBase {
 public:
     /// Create an inactive unmanaged event thread.
-    UnmanagedEventThread() = default;
+    /// @param options Copied capacity and error policies. Must be valid and must not require managed-application
+    /// delivery.
+    explicit UnmanagedEventThread(const EventLoopOptions &options = {}) : EventThreadBase{options} {}
     /// Stop and release the unmanaged event thread.
     ~UnmanagedEventThread() noexcept override;
 

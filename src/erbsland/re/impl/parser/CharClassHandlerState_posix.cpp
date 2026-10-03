@@ -1,5 +1,6 @@
 // Copyright (c) 2025-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
+
 #include "CharacterClassState.hpp"
 
 #include "../../../text/Literals.hpp"
@@ -8,6 +9,7 @@
 
 namespace erbsland::re::impl::parser {
 
+using namespace text;
 using namespace text::literals;
 
 void CharClassHandlerState::handlePosixCharacterClass() {
@@ -29,7 +31,7 @@ void CharClassHandlerState::handlePosixCharacterClass() {
         if (!hasFeature(Feature::PosixClasses)) {
             throwParsingError("POSIX character classes are not supported"_el);
         }
-        text::StringEditor posixName;
+        StringEditor posixName;
         // Test for negation
         if (currentChar() == U'^') {
             if (classCount > 1) {
@@ -68,14 +70,14 @@ void CharClassHandlerState::handlePosixCharacterClass() {
     }
 }
 
-void CharClassHandlerState::processPosixRangesFor(const text::String &name) {
+void CharClassHandlerState::processPosixRangesFor(const String &name) {
     // The definitions of the character sets are commonly expected sets for engines like PCRE.
     // They do not follow any formal rule and are only provided for compatibility.
     struct PosixRangeDefinition {
         std::vector<CharRange> ranges{};
         std::vector<Category> categories{};
     };
-    static const text::StringHashMap<PosixRangeDefinition> unicodePosixRanges{{
+    static const StringHashMap<PosixRangeDefinition> unicodePosixRanges{{
         {"alnum"_el, {.categories = {Category::L, Category::Nl, Category::Nd}}},
         {"alpha"_el, {.categories = {Category::L, Category::Nl}}},
         {"ascii"_el, {.ranges = {CharRange(U'\u0001', U'\u007f')}}},
@@ -100,7 +102,7 @@ void CharClassHandlerState::processPosixRangesFor(const text::String &name) {
         {"word"_el, {.categories = {Category::L, Category::Nl, Category::Nd, Category::Pc}}},
         {"xdigit"_el, {.ranges = {CharRange(U'0', U'9'), CharRange(U'a', U'f'), CharRange(U'A', U'F')}}},
     }};
-    static const text::StringHashMap<PosixRangeDefinition> asciiPosixRanges{{
+    static const StringHashMap<PosixRangeDefinition> asciiPosixRanges{{
         {"alnum"_el, {.ranges = {CharRange(U'0', U'9'), CharRange(U'A', U'Z'), CharRange(U'a', U'z')}}},
         {"alpha"_el, {.ranges = {CharRange(U'A', U'Z'), CharRange(U'a', U'z')}}},
         {"ascii"_el, {.ranges = {CharRange(U'\u0001', U'\u007f')}}},
@@ -126,7 +128,7 @@ void CharClassHandlerState::processPosixRangesFor(const text::String &name) {
             addCategory(category);
         }
     } else {
-        throwParsingError(text::StringFormat{"Unknown POSIX character class name '{}'"}.build(name));
+        throwParsingError(StringFormat{"Unknown POSIX character class name '{}'"}.build(name));
     }
 }
 

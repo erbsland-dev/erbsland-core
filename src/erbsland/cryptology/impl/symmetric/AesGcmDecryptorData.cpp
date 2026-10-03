@@ -2,17 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "AesGcmDecryptorData.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../CryptologyError.hpp"
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
 using namespace text::literals;
 
 AesGcmDecryptorData::AesGcmDecryptorData(
-    const SymmetricEncryptionType type, const mem::ConstByteSpan key, const mem::ConstByteSpan nonce) :
+    const SymmetricEncryptionType type, const ConstByteSpan key, const ConstByteSpan nonce) :
     _type{type}, _state{key, nonce} {
 }
 
@@ -24,15 +25,15 @@ auto AesGcmDecryptorData::type() const noexcept -> SymmetricEncryptionType {
     return _type;
 }
 
-void AesGcmDecryptorData::addAuthenticatedData(const mem::ConstByteSpan data) {
+void AesGcmDecryptorData::addAuthenticatedData(const ConstByteSpan data) {
     _state.addAuthenticatedData(data);
 }
 
-auto AesGcmDecryptorData::decrypt(const mem::ConstByteSpan data) -> mem::ByteBlock {
+auto AesGcmDecryptorData::decrypt(const ConstByteSpan data) -> ByteBlock {
     return _state.transform(data, false);
 }
 
-auto AesGcmDecryptorData::finalize(const SymmetricTag &tag) -> mem::ByteBlock {
+auto AesGcmDecryptorData::finalize(const SymmetricTag &tag) -> ByteBlock {
     _tag = _state.finalizeTag();
     // SP 800-38D, Section 7.2: a tag mismatch yields only a generic authentication failure.
     if (!_tag.isEqualConstTime(tag.span())) {
@@ -41,8 +42,8 @@ auto AesGcmDecryptorData::finalize(const SymmetricTag &tag) -> mem::ByteBlock {
     return {};
 }
 
-auto AesGcmDecryptorData::finalize() -> mem::ByteBlock {
-    throw err::LogicError{"AES-GCM decryption requires an authentication tag."_el};
+auto AesGcmDecryptorData::finalize() -> ByteBlock {
+    throw err::LogicFailure{"AES-GCM decryption requires an authentication tag."_el};
 }
 
 void AesGcmDecryptorData::secureErase() noexcept {

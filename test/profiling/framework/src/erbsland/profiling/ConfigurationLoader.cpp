@@ -1,11 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ConfigurationLoader.hpp"
 
+#include <erbsland/ApplicationError.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/cryptology/HashAlgorithm.hpp>
-#include <erbsland/cryptology/Hasher.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/StringSet.hpp>
 
 #include <optional>
 #include <set>
@@ -99,7 +102,7 @@ void ConfigurationLoader::parseRun(const conf::ValuePtr &value, RunConfiguration
         if (memoryLimit < 1) {
             configurationError("The profiling memory limit must be positive."_el);
         }
-        run.memoryLimit = ByteLength{static_cast<std::uint64_t>(memoryLimit)};
+        run.memoryLimit = ByteCount::fromInteger(static_cast<std::uint64_t>(memoryLimit));
     }
     if (value->hasValue("progress_interval"_el)) {
         run.progressInterval = value->getCalendarDeltaOrThrow("progress_interval"_el).toTimeDeltaOrThrow();
@@ -146,7 +149,7 @@ auto ConfigurationLoader::parseDocument(
             if (!entry->hasValue(name)) {
                 configurationError(StringFormat{"Scenario '{}' requires axis '{}'."_el}.build(base.group, name));
             }
-            const auto values = StringList{entry->getListOrThrow<String>(name)};
+            const auto values = entry->getStringListOrThrow(name);
             if (values.isEmpty()) {
                 configurationError(StringFormat{"Scenario '{}' has an empty axis '{}'."_el}.build(base.group, name));
             }
@@ -190,12 +193,12 @@ auto ConfigurationLoader::parseDocument(
                 case ParameterType::Boolean:
                     selection.value = entry->getBooleanOrThrow(parameter.configurationName);
                     break;
-                case ParameterType::ByteLength: {
+                case ParameterType::ByteCount: {
                     const auto value = entry->getIntegerOrThrow(parameter.configurationName);
                     if (value < 1) {
                         configurationError(StringFormat{"Parameter '{}' must be positive."_el}.build(parameter.id));
                     }
-                    selection.value = ByteLength{static_cast<std::uint64_t>(value)};
+                    selection.value = ByteCount::fromInteger(static_cast<std::uint64_t>(value));
                     break;
                 }
                 case ParameterType::TimeDelta:
@@ -207,7 +210,7 @@ auto ConfigurationLoader::parseDocument(
                 }
                 scenario.parameters.append(std::move(selection));
             }
-            scenario.id = String{id};
+            scenario.id = id;
             if (!definition.isCompatible(scenario)) {
                 configurationError(StringFormat{"Incompatible profiling scenario '{}'."_el}.build(scenario.id));
             }
@@ -245,7 +248,7 @@ auto ConfigurationLoader::configurationDigest(const ProfilingConfiguration &conf
         }
     }
     auto hasher = cryptology::Hasher{cryptology::HashAlgorithm::Md5};
-    hasher.update(String{source});
+    hasher.update(source);
     return hasher.finalize();
 }
 
@@ -333,9 +336,9 @@ auto ConfigurationLoader::load(const ProfilingDefinition &definition, const std:
     if (result.scenarios.isEmpty()) {
         configurationError("The profiling configuration expands to no scenarios."_el);
     }
-    auto ids = std::set<String>{};
+    auto ids = StringSet{};
     for (const auto &scenario : result.scenarios) {
-        if (!ids.emplace(scenario.id).second) {
+        if (!ids.tryInsert(scenario.id)) {
             configurationError(StringFormat{"Duplicate expanded scenario ID '{}'."_el}.build(scenario.id));
         }
     }

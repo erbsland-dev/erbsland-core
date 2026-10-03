@@ -14,7 +14,7 @@
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
 #include "../../time/impl/WindowsTimeConverter.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <winioctl.h>
 
@@ -28,11 +28,13 @@
 
 namespace erbsland::path::impl {
 
+using namespace text;
+using text::impl::PlatformU16StringAccess;
 using namespace text::literals;
 
 auto WindowsPathBackend::directoryEntriesOrThrow(const Path &path, const Path &resolvedPath) const
     -> std::vector<Path> {
-    auto searchPath = text::StringConverter{pathTextOrThrow(resolvedPath)}.toStdWString();
+    auto searchPath = StringConverter{pathTextOrThrow(resolvedPath)}.toStdWString();
     if (!searchPath.empty() && searchPath.back() != L'\\') {
         searchPath.push_back(L'\\');
     }
@@ -55,7 +57,7 @@ auto WindowsPathBackend::directoryEntriesOrThrow(const Path &path, const Path &r
     while (true) {
         const auto name = std::wstring_view{findData.cFileName};
         if (name != L"." && name != L"..") {
-            const auto pathName = text::StringConverter{name}.toString();
+            const auto pathName = StringConverter{name}.toString();
             auto child = directoryEntryPath(path, pathName);
             if (child.isEmpty()) {
                 throw PathError{PathErrorContext{
@@ -73,7 +75,7 @@ auto WindowsPathBackend::directoryEntriesOrThrow(const Path &path, const Path &r
             const auto size = (static_cast<std::uint64_t>(findData.nFileSizeHigh) << 32U) |
                 static_cast<std::uint64_t>(findData.nFileSizeLow);
             if (info.type == PathType::RegularFile) {
-                info.fileSize = unit::ByteLength::fromSizeT(static_cast<std::size_t>(size));
+                info.fileSize = unit::ByteCount::fromSizeT(static_cast<std::size_t>(size));
             }
             info.loadedParts.set(PathInfoPart::Size);
             info.lastModified = time::impl::windows_time_converter::fromFileTime(findData.ftLastWriteTime);
@@ -113,7 +115,7 @@ auto WindowsPathBackend::directoryEntriesOrThrow(const Path &path, const Path &r
 
 void WindowsPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathAccessProfile profile) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathAccess = PlatformU16StringAccess{pathText};
     auto security = std::unique_ptr<WindowsAccessProfileSecurity>{};
     auto *securityAttributes = static_cast<SECURITY_ATTRIBUTES *>(nullptr);
     if (profile != PathAccessProfile::Default) {
@@ -132,7 +134,7 @@ void WindowsPathBackend::createDirectoryEntryOrThrow(const Path &path, const Pat
 
 void WindowsPathBackend::removeEntryOrThrow(const Path &path) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathAccess = PlatformU16StringAccess{pathText};
     const auto attributes = GetFileAttributesW(pathAccess.nullTerminatedWideCharPtr());
     if (attributes == INVALID_FILE_ATTRIBUTES) {
         throwSystemError(
@@ -154,8 +156,8 @@ void WindowsPathBackend::removeEntryOrThrow(const Path &path) const {
 void WindowsPathBackend::copyFileEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::PlatformU16StringAccess{sourceText};
-    const auto destinationAccess = text::impl::PlatformU16StringAccess{destinationText};
+    const auto sourceAccess = PlatformU16StringAccess{sourceText};
+    const auto destinationAccess = PlatformU16StringAccess{destinationText};
     if (CopyFileW(sourceAccess.nullTerminatedWideCharPtr(), destinationAccess.nullTerminatedWideCharPtr(), TRUE) == 0) {
         throwSystemError(
             "File could not be copied"_el,
@@ -170,8 +172,8 @@ void WindowsPathBackend::copyFileEntryOrThrow(const Path &source, const Path &de
 void WindowsPathBackend::moveEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::PlatformU16StringAccess{sourceText};
-    const auto destinationAccess = text::impl::PlatformU16StringAccess{destinationText};
+    const auto sourceAccess = PlatformU16StringAccess{sourceText};
+    const auto destinationAccess = PlatformU16StringAccess{destinationText};
     if (MoveFileExW(
             sourceAccess.nullTerminatedWideCharPtr(),
             destinationAccess.nullTerminatedWideCharPtr(),
@@ -189,7 +191,7 @@ void WindowsPathBackend::moveEntryOrThrow(const Path &source, const Path &destin
 
 auto WindowsPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathAccess = PlatformU16StringAccess{pathText};
     const auto handle = CreateFileW(
         pathAccess.nullTerminatedWideCharPtr(),
         0,
@@ -264,15 +266,15 @@ auto WindowsPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
             targetText.erase(0U, 4U);
         }
     }
-    return Path::fromWindowsOrThrow(text::StringConverter{targetText}.toString());
+    return Path::fromWindowsOrThrow(StringConverter{targetText}.toString());
 }
 
 void WindowsPathBackend::createSymlinkOrThrow(
     const Path &target, const Path &path, const bool targetIsDirectory) const {
     const auto targetText = pathTextOrThrow(target);
     const auto pathText = pathTextOrThrow(path);
-    const auto targetAccess = text::impl::PlatformU16StringAccess{targetText};
-    const auto pathAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto targetAccess = PlatformU16StringAccess{targetText};
+    const auto pathAccess = PlatformU16StringAccess{pathText};
     auto flags = DWORD{SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE};
     if (targetIsDirectory) {
         flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;

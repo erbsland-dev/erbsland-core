@@ -9,9 +9,9 @@
 #include "../ByteBlockEditor.hpp"
 #include "../ByteSpan.hpp"
 
-#include "../../err/OutOfRangeError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
 #include "../../text/Literals.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -33,12 +33,13 @@ public:
     /// Create an empty buffer.
     UnsafeByteBlockBuffer() = default;
     /// Create a buffer with the given usable capacity.
-    /// @throws err::OutOfRangeError If `capacity` exceeds the supported storage limit.
-    explicit UnsafeByteBlockBuffer(unit::ByteLength capacity, bool sensitive = false) : _sensitive{sensitive} {
+    /// @param capacity The usable capacity. Must not exceed the supported storage limit.
+    /// @param sensitive Whether to mark the new storage as sensitive.
+    explicit UnsafeByteBlockBuffer(unit::ByteCount capacity, bool sensitive = false) : _sensitive{sensitive} {
         const auto capacityValue = capacity.toSizeTOrThrow();
         if (capacityValue != 0U) {
             if (!ByteBlockData::canAllocateWithCapacity(capacityValue)) {
-                throw err::OutOfRangeError{"Byte block capacity exceeds the supported limit"_el};
+                throw err::OutOfRangeFailure{"Byte block capacity exceeds the supported limit"_el};
             }
             _data = ByteBlockDataPtr{ByteBlockData::create(
                 0U,
@@ -63,26 +64,25 @@ public:
         return ByteSpan{_data.get()->data(), _data.get()->capacity()};
     }
     /// Access the remaining data after a given index or length.
-    [[nodiscard]] auto remainingData(const unit::ByteLength initialLength) noexcept -> ByteSpan {
+    [[nodiscard]] auto remainingData(const unit::ByteCount initialLength) noexcept -> ByteSpan {
         if (initialLength > capacity()) {
             return {};
         }
         return data().subspan(initialLength.toSizeT());
     }
     /// Access the usable buffer capacity.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength {
-        return _data.isNull() ? unit::ByteLength::zero() : unit::ByteLength::fromSizeT(_data.constGet()->capacity());
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteCount {
+        return _data.isNull() ? unit::ByteCount::zero() : unit::ByteCount::fromSizeT(_data.constGet()->capacity());
     }
     /// Grow the buffer while preserving a written prefix.
-    /// @param minimumCapacity The minimum capacity after growth.
+    /// @param minimumCapacity The minimum capacity after growth. Must not exceed the supported storage limit.
     /// @param preservedLength The initialized prefix that must survive relocation.
-    /// @param maximumCapacity The hard upper bound for growth.
+    /// @param maximumCapacity The hard upper bound for growth. Must not exceed the supported storage limit.
     /// @return The complete writable buffer after any relocation.
-    /// @throws err::OutOfRangeError If the requested capacity exceeds the supported storage limit.
     auto grow(
-        unit::ByteLength minimumCapacity,
-        unit::ByteLength preservedLength,
-        unit::ByteLength maximumCapacity = unit::ByteLength::infinite()) -> ByteSpan {
+        unit::ByteCount minimumCapacity,
+        unit::ByteCount preservedLength,
+        unit::ByteCount maximumCapacity = unit::ByteCount::infinite()) -> ByteSpan {
         if (!minimumCapacity.isFinite() || !preservedLength.isFinite() || preservedLength > capacity() ||
             preservedLength > minimumCapacity || (maximumCapacity.isFinite() && minimumCapacity > maximumCapacity)) {
             std::terminate();
@@ -97,7 +97,7 @@ public:
             target = std::min(target, maximumCapacity.toSizeT());
         }
         if (!ByteBlockData::canAllocateWithCapacity(target)) {
-            throw err::OutOfRangeError{"Byte block capacity exceeds the supported limit"_el};
+            throw err::OutOfRangeFailure{"Byte block capacity exceeds the supported limit"_el};
         }
         const auto flags =
             _data.isNull() ? (_sensitive ? ByteBlockData::cSensitiveFlag : std::uint8_t{}) : _data.constGet()->flags();
@@ -112,7 +112,7 @@ public:
     /// Release all buffer storage.
     void reset() noexcept { _data.reset(); }
     /// Create a byte block from the buffer and release the buffer.
-    [[nodiscard]] auto take(unit::ByteLength length = unit::ByteLength::infinite()) -> ByteBlockEditor {
+    [[nodiscard]] auto take(unit::ByteCount length = unit::ByteCount::infinite()) -> ByteBlockEditor {
         const auto finalLength = checkedFinalLength(length);
         if (finalLength.isZero()) {
             _data.reset();
@@ -130,7 +130,7 @@ public:
 
 private:
     /// Validate the final byte length for take().
-    [[nodiscard]] auto checkedFinalLength(unit::ByteLength length) const -> unit::ByteLength {
+    [[nodiscard]] auto checkedFinalLength(unit::ByteCount length) const -> unit::ByteCount {
         if (length.isInfinite()) {
             return capacity();
         }

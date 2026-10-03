@@ -90,13 +90,13 @@ void DocumentBuilder::addSectionList(const NamePathLike &namePathLike, const Loc
 void DocumentBuilder::addValue(const NamePathLike &namePathLike, const ValuePtr &value, const Location &location) {
     auto namePath = toNamePath(namePathLike);
     if (value == nullptr) {
-        throw err::ParameterError{"value must not be null."_el, "value"_el};
+        throw err::ParameterFailure{"value must not be null."_el, "value"_el};
     }
     if (value->type().isUndefined()) {
-        throw err::LogicError{"Can not add an undefined value."};
+        throw err::LogicFailure{"Can not add an undefined value."};
     }
     if (value->type().isMap() || value->type() == ValueType::SectionList) {
-        throw err::LogicError{"Use the 'addSection...' methods for adding containers."};
+        throw err::LogicFailure{"Use the 'addSection...' methods for adding containers."};
     }
     const auto sectionValue = _storage.resolveForValue(namePath, location);
     if (value->name().empty()) {

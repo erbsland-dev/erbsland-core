@@ -14,9 +14,12 @@
 
 namespace erbsland::compression::zip::impl {
 
+using namespace mem;
+using namespace stream;
+using namespace unit;
 using namespace text::literals;
 
-auto ArchiveReader::parseCentralEntry(mem::ByteReader &reader) -> ZipEntryRecord {
+auto ArchiveReader::parseCentralEntry(ByteReader &reader) -> ZipEntryRecord {
     // APPNOTE 4.3.12: parse one complete central header in field order from the bounded directory block.
     if (!reader.canRead(46U) || reader.readUInt32OrThrow() != zipTools::cCentralHeaderSignature) {
         throwArchiveError(
@@ -57,17 +60,16 @@ auto ArchiveReader::parseCentralEntry(mem::ByteReader &reader) -> ZipEntryRecord
     record.dosTime = reader.readUInt16OrThrow();
     record.dosDate = reader.readUInt16OrThrow();
     record.crc32 = reader.readUInt32OrThrow();
-    auto compressed = unit::ByteLength{reader.readUInt32OrThrow()};
-    auto uncompressed = unit::ByteLength{reader.readUInt32OrThrow()};
-    const auto nameLength = reader.readUInt16OrThrow();
-    const auto extraLength = reader.readUInt16OrThrow();
-    const auto commentLength = reader.readUInt16OrThrow();
+    auto compressed = ByteCount{reader.readUInt32OrThrow(), ByteCount::Unchecked{}};
+    auto uncompressed = ByteCount{reader.readUInt32OrThrow(), ByteCount::Unchecked{}};
+    const auto nameLength = ByteCount{reader.readUInt16OrThrow(), ByteCount::Unchecked{}};
+    const auto extraLength = ByteCount{reader.readUInt16OrThrow(), ByteCount::Unchecked{}};
+    const auto commentLength = ByteCount{reader.readUInt16OrThrow(), ByteCount::Unchecked{}};
     auto diskStart = static_cast<uint32_t>(reader.readUInt16OrThrow());
     reader.advance(2U); // internal attributes
     const auto externalAttributes = reader.readUInt32OrThrow();
-    auto localOffset = unit::ByteIndex{reader.readUInt32OrThrow()};
-    const auto variableLength =
-        unit::ByteLength{static_cast<uint64_t>(nameLength) + static_cast<uint64_t>(extraLength) + commentLength};
+    auto localOffset = ByteIndex{reader.readUInt32OrThrow(), ByteIndex::Unchecked{}};
+    const auto variableLength = nameLength + extraLength + commentLength;
     if (!reader.canRead(variableLength)) {
         throwArchiveError(
             ZipErrorReason::MalformedArchive,
@@ -75,17 +77,15 @@ auto ArchiveReader::parseCentralEntry(mem::ByteReader &reader) -> ZipEntryRecord
             "ZIP central-directory entry is truncated"_el,
             "The declared name, extra field, and comment do not fit in the central directory."_el);
     }
-    record.name = reader.readBytesOrThrow(unit::ByteLength{nameLength});
-    const auto extra = reader.readBytesOrThrow(unit::ByteLength{extraLength});
-    record.comment = text::StringDecoder{reader.readBytesOrThrow(unit::ByteLength{commentLength})}.decode(
-        text::StringEncoding::Utf8);
-    record.directory = !record.name.isEmpty() &&
-        record.name.get(record.name.endIndex().retreated(unit::ByteLength::one())).toUInt8() == '/';
+    record.name = reader.readBytesOrThrow(nameLength);
+    const auto extra = reader.readBytesOrThrow(extraLength);
+    record.comment = text::StringDecoder{reader.readBytesOrThrow(commentLength)}.decode(text::StringEncoding::Utf8);
+    record.directory = !record.name.isEmpty() && record.name.get(record.name.lastIndex()).toUInt8() == '/';
     record.path = zipTools::normalizeEntryPath(record.name, record.directory);
 
-    const auto needUncompressed = uncompressed == unit::ByteLength{0xffffffffU};
-    const auto needCompressed = compressed == unit::ByteLength{0xffffffffU};
-    const auto needOffset = localOffset == unit::ByteIndex{0xffffffffU};
+    const auto needUncompressed = uncompressed == ByteCount{0xffffffffU};
+    const auto needCompressed = compressed == ByteCount{0xffffffffU};
+    const auto needOffset = localOffset == ByteIndex{0xffffffffU};
     const auto needDisk = diskStart == 0xffffU;
     if (needUncompressed || needCompressed || needOffset || needDisk) {
         const auto zip64 = parseZip64Extra(
@@ -116,7 +116,7 @@ auto ArchiveReader::parseCentralEntry(mem::ByteReader &reader) -> ZipEntryRecord
     record.compressedLength = compressed;
     record.uncompressedLength = uncompressed;
     record.localHeaderOffset = localOffset;
-    auto opaqueCentralExtra = mem::ByteWriter{};
+    auto opaqueCentralExtra = ByteWriter{};
     const auto dosModificationTime = zipTools::dateTimeFromDos(record.dosDate, record.dosTime);
     if (!dosModificationTime.isValid()) {
         throwArchiveError(
@@ -151,27 +151,27 @@ auto ArchiveReader::parseCentralEntry(mem::ByteReader &reader) -> ZipEntryRecord
 }
 
 auto ArchiveReader::readEntryData(const ZipEntryRecord &record, bool readPayload) const -> ZipEntryData {
-    const auto fixedRange = unit::ByteRange{record.localHeaderOffset, unit::ByteLength{30U}};
+    const auto fixedRange = ByteRange{record.localHeaderOffset, ByteCount{30U}};
     if (!fixedRange.isWithin(_centralDirectoryOffset.distanceFromZero())) {
         zipTools::throwMalformed("A ZIP local header exceeds the payload area."_el);
     }
     // APPNOTE 4.3.7: seek once, then consume the selected local record in its physical order.
-    if (_source->setPosition(record.localHeaderOffset) != stream::StreamPositionStatus::Success) {
+    if (_source->setPosition(record.localHeaderOffset) != StreamPositionStatus::Success) {
         throwArchiveError(
             ZipErrorReason::StreamFailure,
             ZipOperationPhase::LocalHeader,
             "ZIP local-header seek timed out"_el,
             "The input could not reach the selected local record."_el);
     }
-    const auto fixedResult = _source->readExact(unit::ByteLength{30U});
-    if (fixedResult != stream::StreamReadStatus::Data) {
+    const auto fixedResult = _source->readExact(ByteCount{30U});
+    if (fixedResult != StreamReadStatus::Data) {
         throwArchiveError(
             ZipErrorReason::StreamFailure,
             ZipOperationPhase::LocalHeader,
             "ZIP local header could not be read"_el,
             "The input ended inside the selected local file header."_el);
     }
-    auto fixed = mem::ByteReader{fixedResult.data()};
+    auto fixed = ByteReader{fixedResult.data()};
     if (fixed.readUInt32OrThrow() != zipTools::cLocalHeaderSignature) {
         throwArchiveError(
             ZipErrorReason::MalformedArchive,
@@ -185,10 +185,10 @@ auto ArchiveReader::readEntryData(const ZipEntryRecord &record, bool readPayload
     const auto localTime = fixed.readUInt16OrThrow();
     const auto localDate = fixed.readUInt16OrThrow();
     const auto localCrc = fixed.readUInt32OrThrow();
-    auto localCompressed = unit::ByteLength{fixed.readUInt32OrThrow()};
-    auto localUncompressed = unit::ByteLength{fixed.readUInt32OrThrow()};
-    const auto localNameLength = fixed.readUInt16OrThrow();
-    const auto localExtraLength = fixed.readUInt16OrThrow();
+    auto localCompressed = ByteCount{fixed.readUInt32OrThrow(), ByteCount::Unchecked{}};
+    auto localUncompressed = ByteCount{fixed.readUInt32OrThrow(), ByteCount::Unchecked{}};
+    const auto localNameLength = ByteCount{fixed.readUInt16OrThrow(), ByteCount::Unchecked{}};
+    const auto localExtraLength = ByteCount{fixed.readUInt16OrThrow(), ByteCount::Unchecked{}};
     if (localVersion != record.versionNeeded || localFlags != record.flags ||
         localMethod != static_cast<uint16_t>(record.compressionMethod) || localTime != record.dosTime ||
         localDate != record.dosDate) {
@@ -199,26 +199,26 @@ auto ArchiveReader::readEntryData(const ZipEntryRecord &record, bool readPayload
             "Version, flags, compression method, and timestamp fields must match."_el);
     }
 
-    const auto variableLength = unit::ByteLength{static_cast<uint64_t>(localNameLength) + localExtraLength};
-    const auto variableRange = unit::ByteRange{fixedRange.endIndex(), variableLength};
-    const auto payloadRange = unit::ByteRange{variableRange.endIndex(), record.compressedLength};
+    const auto variableLength = localNameLength + localExtraLength;
+    const auto variableRange = ByteRange{fixedRange.endIndex(), variableLength};
+    const auto payloadRange = ByteRange{variableRange.endIndex(), record.compressedLength};
     if (!variableRange.isWithin(_centralDirectoryOffset.distanceFromZero()) ||
         !payloadRange.isWithin(_centralDirectoryOffset.distanceFromZero())) {
         zipTools::throwMalformed("ZIP local metadata or payload exceeds the payload area."_el);
     }
-    const auto payloadOffset = payloadRange.index();
+    const auto payloadOffset = payloadRange.beginIndex();
     const auto payloadEnd = payloadRange.endIndex();
     const auto variableResult = _source->readExact(variableLength);
-    if (variableResult != stream::StreamReadStatus::Data) {
+    if (variableResult != StreamReadStatus::Data) {
         throwArchiveError(
             ZipErrorReason::StreamFailure,
             ZipOperationPhase::LocalHeader,
             "ZIP local metadata could not be read"_el,
             "The local name or extra field is truncated."_el);
     }
-    auto variable = mem::ByteReader{variableResult.data()};
-    const auto localName = variable.readBytesOrThrow(unit::ByteLength{localNameLength});
-    const auto localExtra = variable.readBytesOrThrow(unit::ByteLength{localExtraLength});
+    auto variable = ByteReader{variableResult.data()};
+    const auto localName = variable.readBytesOrThrow(localNameLength);
+    const auto localExtra = variable.readBytesOrThrow(localExtraLength);
     if (localName != record.name) {
         throwArchiveError(
             ZipErrorReason::MalformedArchive,
@@ -226,7 +226,7 @@ auto ArchiveReader::readEntryData(const ZipEntryRecord &record, bool readPayload
             "ZIP local and central names disagree"_el,
             "The local and central file names must match exactly."_el);
     }
-    auto opaqueLocalExtra = mem::ByteWriter{};
+    auto opaqueLocalExtra = ByteWriter{};
     const auto localModificationTime =
         zipTools::modificationTimeFromExtra(localExtra, record.modificationTime, &opaqueLocalExtra);
     if (localModificationTime != record.modificationTime) {
@@ -242,7 +242,7 @@ auto ArchiveReader::readEntryData(const ZipEntryRecord &record, bool readPayload
     auto result = ZipEntryData{{}, opaqueLocalExtra.toByteBlock(), payloadOffset};
     if (readPayload) {
         const auto payloadResult = _source->readExact(record.compressedLength);
-        if (payloadResult != stream::StreamReadStatus::Data) {
+        if (payloadResult != StreamReadStatus::Data) {
             throwArchiveError(
                 ZipErrorReason::StreamFailure,
                 ZipOperationPhase::Payload,
@@ -250,7 +250,7 @@ auto ArchiveReader::readEntryData(const ZipEntryRecord &record, bool readPayload
                 "Truncated or timed out input."_el);
         }
         result.payload = payloadResult.data();
-    } else if (_source->setPosition(payloadEnd) != stream::StreamPositionStatus::Success) {
+    } else if (_source->setPosition(payloadEnd) != StreamPositionStatus::Success) {
         throwArchiveError(
             ZipErrorReason::StreamFailure,
             ZipOperationPhase::Payload,
@@ -262,8 +262,8 @@ auto ArchiveReader::readEntryData(const ZipEntryRecord &record, bool readPayload
     }
 
     // APPNOTE 4.3.9: parse the optional descriptor immediately following the selected payload.
-    const auto zip64Descriptor = record.zip64Sizes || localCompressed == unit::ByteLength{0xffffffffU} ||
-        localUncompressed == unit::ByteLength{0xffffffffU} || record.compressedLength.toRawValue() >= 0xffffffffU ||
+    const auto zip64Descriptor = record.zip64Sizes || localCompressed == ByteCount{0xffffffffU} ||
+        localUncompressed == ByteCount{0xffffffffU} || record.compressedLength.toRawValue() >= 0xffffffffU ||
         record.uncompressedLength.toRawValue() >= 0xffffffffU;
     validateDataDescriptor(record, payloadEnd, zip64Descriptor);
     return result;
@@ -271,12 +271,12 @@ auto ArchiveReader::readEntryData(const ZipEntryRecord &record, bool readPayload
 
 void ArchiveReader::validateLocalSizes(
     const ZipEntryRecord &record,
-    const mem::ByteBlock &extra,
+    const ByteBlock &extra,
     const uint32_t crc,
-    unit::ByteLength compressed,
-    unit::ByteLength uncompressed) const {
-    const auto localHasZip64Compressed = compressed == unit::ByteLength{0xffffffffU};
-    const auto localHasZip64Uncompressed = uncompressed == unit::ByteLength{0xffffffffU};
+    ByteCount compressed,
+    ByteCount uncompressed) const {
+    const auto localHasZip64Compressed = compressed == ByteCount{0xffffffffU};
+    const auto localHasZip64Uncompressed = uncompressed == ByteCount{0xffffffffU};
     auto localZip64 = Zip64Values{};
     if (localHasZip64Compressed || localHasZip64Uncompressed) {
         localZip64 = parseZip64Extra(
@@ -302,9 +302,8 @@ void ArchiveReader::validateLocalSizes(
             localZip64.compressedLength != record.compressedLength) ||
         (localHasZip64Uncompressed && !localZip64.uncompressedLength.isZero() &&
             localZip64.uncompressedLength != record.uncompressedLength) ||
-        (compressed != unit::ByteLength{} && compressed != unit::ByteLength{0xffffffffU} &&
-            compressed != record.compressedLength) ||
-        (uncompressed != unit::ByteLength{} && uncompressed != unit::ByteLength{0xffffffffU} &&
+        (compressed != ByteCount{} && compressed != ByteCount{0xffffffffU} && compressed != record.compressedLength) ||
+        (uncompressed != ByteCount{} && uncompressed != ByteCount{0xffffffffU} &&
             uncompressed != record.uncompressedLength)) {
         throwArchiveError(
             ZipErrorReason::MalformedArchive,
@@ -315,15 +314,15 @@ void ArchiveReader::validateLocalSizes(
 }
 
 void ArchiveReader::validateDataDescriptor(
-    const ZipEntryRecord &record, const unit::ByteIndex payloadEnd, const bool zip64Descriptor) const {
-    const auto unsignedLength = unit::ByteLength{zip64Descriptor ? 20U : 12U};
-    const auto descriptorRange = unit::ByteRange{payloadEnd, unsignedLength};
+    const ZipEntryRecord &record, const ByteIndex payloadEnd, const bool zip64Descriptor) const {
+    const auto unsignedLength = ByteCount{zip64Descriptor ? 20U : 12U, ByteCount::Unchecked{}};
+    const auto descriptorRange = ByteRange{payloadEnd, unsignedLength};
     if (!descriptorRange.isWithin(_centralDirectoryOffset.distanceFromZero())) {
         zipTools::throwMalformed("A ZIP data descriptor exceeds the payload area."_el);
     }
     const auto descriptorEnd = descriptorRange.endIndex();
     const auto descriptorResult = _source->readExact(unsignedLength);
-    if (descriptorResult != stream::StreamReadStatus::Data) {
+    if (descriptorResult != StreamReadStatus::Data) {
         throwArchiveError(
             ZipErrorReason::StreamFailure,
             ZipOperationPhase::LocalHeader,
@@ -331,7 +330,7 @@ void ArchiveReader::validateDataDescriptor(
             "The input ended inside the selected data descriptor."_el);
     }
     auto descriptor = descriptorResult.data();
-    auto descriptorReader = mem::ByteReader{descriptor};
+    auto descriptorReader = ByteReader{descriptor};
     const auto firstValue = descriptorReader.readUInt32OrThrow();
     const auto unsignedCompressed =
         zip64Descriptor ? descriptorReader.readUInt64OrThrow() : descriptorReader.readUInt32OrThrow();
@@ -343,18 +342,18 @@ void ArchiveReader::validateDataDescriptor(
 
     auto signedMatches = false;
     if (firstValue == zipTools::cDataDescriptorSignature &&
-        unit::ByteRange{descriptorEnd, unit::ByteLength{4U}}.isWithin(_centralDirectoryOffset.distanceFromZero())) {
-        const auto suffixResult = _source->readExact(unit::ByteLength{4U});
-        if (suffixResult != stream::StreamReadStatus::Data) {
+        ByteRange{descriptorEnd, ByteCount{4U}}.isWithin(_centralDirectoryOffset.distanceFromZero())) {
+        const auto suffixResult = _source->readExact(ByteCount{4U});
+        if (suffixResult != StreamReadStatus::Data) {
             throwArchiveError(
                 ZipErrorReason::StreamFailure,
                 ZipOperationPhase::LocalHeader,
                 "ZIP signed data descriptor could not be read"_el,
                 "The input ended inside the selected signed data descriptor."_el);
         }
-        auto completeDescriptor = mem::ByteBlockEditor{descriptor};
+        auto completeDescriptor = ByteBlockEditor{descriptor};
         completeDescriptor.append(suffixResult.data());
-        descriptorReader = mem::ByteReader{completeDescriptor};
+        descriptorReader = ByteReader{completeDescriptor};
         descriptorReader.advance(4U);
         const auto signedCrc = descriptorReader.readUInt32OrThrow();
         const auto signedCompressed =
@@ -374,13 +373,13 @@ void ArchiveReader::validateDataDescriptor(
 }
 
 auto ArchiveReader::parseZip64Extra(
-    const mem::ByteBlock &extra,
+    const ByteBlock &extra,
     const bool needUncompressed,
     const bool needCompressed,
     const bool needOffset,
     const bool needDisk,
     const ZipOperationPhase phase) const -> Zip64Values {
-    auto reader = mem::ByteReader{extra};
+    auto reader = ByteReader{extra};
     while (!reader.isAtEnd()) {
         if (!reader.canRead(4U)) {
             throwArchiveError(
@@ -390,39 +389,52 @@ auto ArchiveReader::parseZip64Extra(
                 "Every extra field needs a complete identifier and length."_el);
         }
         const auto id = reader.readUInt16OrThrow();
-        const auto length = reader.readUInt16OrThrow();
-        if (!reader.canRead(unit::ByteLength{length})) {
+        const auto length = ByteCount{reader.readUInt16OrThrow(), ByteCount::Unchecked{}};
+        if (!reader.canRead(length)) {
             throwArchiveError(
                 ZipErrorReason::MalformedArchive,
                 phase,
                 "ZIP extra field is truncated"_el,
                 "An extra-field payload exceeds its containing record."_el);
         }
-        const auto field = reader.readBytesOrThrow(unit::ByteLength{length});
+        const auto field = reader.readBytesOrThrow(length);
         if (id != zipTools::cZip64ExtraId) {
             continue;
         }
         // APPNOTE 4.5.3: substitute sentinel fields in their fixed conditional order.
-        auto fieldReader = mem::ByteReader{field};
-        auto result = Zip64Values{};
+        auto requiredLength = uint16_t{};
         if (needUncompressed) {
-            result.uncompressedLength = unit::ByteLength{fieldReader.readUInt64OrThrow()};
+            requiredLength += 8U;
         }
         if (needCompressed) {
-            result.compressedLength = unit::ByteLength{fieldReader.readUInt64OrThrow()};
+            requiredLength += 8U;
         }
         if (needOffset) {
-            result.localHeaderOffset = unit::ByteIndex{fieldReader.readUInt64OrThrow()};
+            requiredLength += 8U;
         }
         if (needDisk) {
-            result.diskStart = fieldReader.readUInt32OrThrow();
+            requiredLength += 4U;
         }
-        if (!fieldReader.isAtEnd()) {
+        if (length != ByteCount{requiredLength, ByteCount::Unchecked{}}) {
             throwArchiveError(
                 ZipErrorReason::MalformedArchive,
                 phase,
-                "ZIP64 extra field has unexpected data"_el,
-                "Only values corresponding to sentinel fields are accepted."_el);
+                "ZIP64 extra field has an invalid length"_el,
+                "The replacement values must exactly match the classic sentinel fields."_el);
+        }
+        auto fieldReader = ByteReader{field};
+        auto result = Zip64Values{};
+        if (needUncompressed) {
+            result.uncompressedLength = ByteCount::fromIntegerOrThrow(fieldReader.readUInt64OrThrow());
+        }
+        if (needCompressed) {
+            result.compressedLength = ByteCount::fromIntegerOrThrow(fieldReader.readUInt64OrThrow());
+        }
+        if (needOffset) {
+            result.localHeaderOffset = ByteIndex::fromIntegerOrThrow(fieldReader.readUInt64OrThrow());
+        }
+        if (needDisk) {
+            result.diskStart = fieldReader.readUInt32OrThrow();
         }
         return result;
     }

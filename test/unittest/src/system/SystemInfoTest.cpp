@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/system/CpuArchitecture.hpp>
-#include <erbsland/system/OperatingSystem.hpp>
+#include <erbsland/CpuArchitecture.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OperatingSystem.hpp>
+#include <erbsland/String.hpp>
 #include <erbsland/system/SystemInfo.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;

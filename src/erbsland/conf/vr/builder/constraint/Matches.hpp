@@ -5,7 +5,7 @@
 #include "ConstraintAttribute.hpp"
 #include "ConstraintOptions.hpp"
 
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../re/RegEx_fwd.hpp"
 
 #include <utility>
@@ -28,7 +28,7 @@ public:
         _compiledPattern{std::move(pattern)}, _options{std::move(options)} {
         if (_compiledPattern == nullptr) {
             using namespace text::literals;
-            throw err::ParameterError{"The regular expression cannot be null."_el, "pattern"_el};
+            throw err::ParameterFailure{"The regular expression cannot be null."_el, "pattern"_el};
         }
     }
 

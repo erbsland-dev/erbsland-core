@@ -6,6 +6,7 @@
 #include "tz/impl/LocalTimeZoneBackend.hpp"
 
 #include "../err/ParseError.hpp"
+#include "../err/RuntimeError.hpp"
 #include "../text/Char.hpp"
 #include "../text/IntegerBase.hpp"
 #include "../text/IntegerParseFlag.hpp"
@@ -21,7 +22,7 @@ namespace erbsland::time {
 
 using namespace text::literals;
 using namespace text;
-using unit::CpLength;
+using unit::CpCount;
 using unit::Version;
 
 auto TimeZone::normalizeOffset(const Seconds seconds) noexcept -> Seconds {
@@ -35,7 +36,7 @@ auto TimeZone::database() noexcept -> const tz::impl::Database & {
 
 auto TimeZone::parseFixedOffsetText(const String &text, Seconds &offset) noexcept -> bool {
     auto reader = StringCharReader{text};
-    const auto readDecimal = [&reader](const CpLength minimum, const CpLength maximum, int &value) -> bool {
+    const auto readDecimal = [&reader](const CpCount minimum, const CpCount maximum, int &value) -> bool {
         auto options = IntegerParseOptions::parserDefault();
         options.setFixedBase(IntegerBase::Decimal)
             .setMinimumDigits(minimum)
@@ -59,21 +60,21 @@ auto TimeZone::parseFixedOffsetText(const String &text, Seconds &offset) noexcep
     auto hour = 0;
     auto minute = 0;
     auto second = 0;
-    if (!readDecimal(CpLength{1U}, CpLength{2U}, hour)) {
+    if (!readDecimal(CpCount{1U}, CpCount{2U}, hour)) {
         return false;
     }
     const auto extended = reader.advanceIf(U':');
     if (extended) {
-        if (!readDecimal(CpLength{2U}, CpLength{2U}, minute)) {
+        if (!readDecimal(CpCount{2U}, CpCount{2U}, minute)) {
             return false;
         }
         if (reader.advanceIf(U':')) {
-            if (!readDecimal(CpLength{2U}, CpLength{2U}, second)) {
+            if (!readDecimal(CpCount{2U}, CpCount{2U}, second)) {
                 return false;
             }
         }
     } else if (reader.peek().isAsciiDigit()) {
-        if (!readDecimal(CpLength{2U}, CpLength{2U}, minute)) {
+        if (!readDecimal(CpCount{2U}, CpCount{2U}, minute)) {
             return false;
         }
     }
@@ -197,7 +198,7 @@ auto TimeZone::local() noexcept -> TimeZone {
             if (auto backend = tz::impl::createLocalTimeZoneBackend(); backend != nullptr) {
                 return backend->localTimeZone();
             }
-        } catch (...) {}
+        } catch (const err::RuntimeError &) {}
         auto fallback = TimeZone{};
         fallback.markAsLocalTime();
         return fallback;

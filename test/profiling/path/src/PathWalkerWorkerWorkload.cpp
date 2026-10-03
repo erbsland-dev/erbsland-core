@@ -1,11 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "PathWalkerWorkerWorkload.hpp"
 
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/path/PathWalker.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathType.hpp>
+#include <erbsland/PathWalker.hpp>
+#include <erbsland/PathWalkOptions.hpp>
+#include <erbsland/PathWalkStatus.hpp>
 #include <erbsland/profiling/WorkerExecutionContext.hpp>
+#include <erbsland/SymlinkMode.hpp>
 
 #include <filesystem>
 #include <utility>
@@ -37,7 +43,7 @@ auto PathWalkerWorkerWorkload::execute(const pf::WorkerExecutionContext &context
         }
     }
     return pf::WorkerMeasurement{
-        .operations = operations, .metrics = el::List<std::uint64_t>{entries}, .sink = entries};
+        .operations = operations, .metrics = el::List<std::uint64_t>{entries, 0U, 0U}, .sink = entries};
 }
 
 auto PathWalkerWorkerWorkload::walkPathCallback() const -> std::uint64_t {

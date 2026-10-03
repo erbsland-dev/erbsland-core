@@ -4,8 +4,7 @@
 
 #include "StreamError.hpp"
 
-#include "impl/IoService.hpp"
-
+#include "../path/impl/FileCommit.hpp"
 #include "../path/PathError.hpp"
 #include "../path/PathOperations.hpp"
 #include "../text/Literals.hpp"
@@ -15,9 +14,12 @@
 
 namespace erbsland::stream {
 
+using namespace path;
 using namespace text::literals;
 
-TempByteOutputStream::TempByteOutputStream(path::Path path, ByteOutputStreamPtr stream, const bool removeOnClose) :
+TempByteOutputStream::TempByteOutputStream(
+    Path path, ByteOutputStreamPtr stream, const bool removeOnClose, util::impl::WorkerReservation cleanup) :
+    _cleanup{std::move(cleanup)},
     _path{std::move(path)},
     _stream{std::move(stream)},
     _settings{_stream->outputSettings()},
@@ -32,7 +34,7 @@ auto TempByteOutputStream::isEmpty() const noexcept -> bool {
     return _path.isEmpty();
 }
 
-auto TempByteOutputStream::path() const noexcept -> const path::Path & {
+auto TempByteOutputStream::path() const noexcept -> const Path & {
     return _path;
 }
 
@@ -44,7 +46,7 @@ void TempByteOutputStream::setRemoveOnClose(const bool value) noexcept {
     _removeOnClose = value;
 }
 
-auto TempByteOutputStream::release() noexcept -> path::Path {
+auto TempByteOutputStream::release() noexcept -> Path {
     auto result = _path;
     _path = {};
     _removeOnClose = false;
@@ -84,6 +86,23 @@ void TempByteOutputStream::throwError(
     throw StreamError{std::move(context)};
 }
 
+auto TempByteOutputStream::commitTo(const Path &destination, PathCommitOptions options) noexcept -> util::Result {
+    try {
+        commitToOrThrow(destination, std::move(options));
+        return util::Result::Success;
+    } catch (const PathError &) {
+        return util::Result::Failure;
+    }
+}
+
+void TempByteOutputStream::commitToOrThrow(const Path &destination, PathCommitOptions options) {
+    auto operation = path::impl::FileCommit{_path, destination, std::move(options), _settings};
+    operation.commit(_stream.get());
+    _stream.reset();
+    _path = {};
+    _removeOnClose = false;
+}
+
 auto TempByteOutputStream::flush() -> StreamWriteStatus {
     if (_stream == nullptr) {
         throwError(
@@ -105,7 +124,7 @@ auto TempByteOutputStream::close() -> StreamCloseStatus {
             _path.operations().removeOrThrow();
             _path = {};
             _removeOnClose = false;
-        } catch (const path::PathError &error) {
+        } catch (const PathError &error) {
             throwError(
                 "Failed to remove the temporary file."_el,
                 "The temporary output file could not be removed after closing the stream."_el,
@@ -124,10 +143,10 @@ void TempByteOutputStream::abort() noexcept {
         auto path = _path;
         _path = {};
         _removeOnClose = false;
-        impl::IoService::submitIoWork([path = std::move(path)]() -> void {
+        _cleanup.submit([path = std::move(path)]() -> void {
             try {
                 path.operations().removeOrThrow();
-            } catch (...) {}
+            } catch (const PathError &) {}
         });
     }
 }

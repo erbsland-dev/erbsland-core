@@ -10,11 +10,12 @@
 
 #include "../../mem/SharedData.hpp"
 #include "../../mem/SharedDataPointer.hpp"
+#include "../../text/CharCompareFn.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringEditor_fwd.hpp"
 #include "../../text/StringList.hpp"
-#include "../../unit/ByteLength.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/ByteCount.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 #include <atomic>
@@ -31,7 +32,7 @@ public:
     PathData() = default;
 
     /// Create shared path data from its normalized components.
-    PathData(PathFormat format, text::String root, text::StringList elements, unit::CpLength characterLength);
+    PathData(PathFormat format, text::String root, text::StringList elements, unit::CpCount characterLength);
 
     /// Replace this data with a copy of another path data object.
     /// This resets the info cache.
@@ -50,6 +51,12 @@ public:
     [[nodiscard]] auto infoCache() const -> PathInfoCache *;
 
 public:
+    /// Compare stored roots and components without allocating or accessing filesystem metadata.
+    /// @param other The normalized path data to compare.
+    /// @param compareFn The optional character comparator within each root or component.
+    /// @return The root-first lexicographic component ordering, with prefixes before descendants.
+    [[nodiscard]] auto compare(const PathData &other, text::CharCompareFn compareFn = {}) const noexcept
+        -> std::strong_ordering;
     /// Test if this path has an absolute root.
     [[nodiscard]] auto isAbsolute() const noexcept -> bool;
     /// Test if this path is its root.
@@ -100,7 +107,7 @@ private:
     /// Recalculate the cached character length.
     void updateCharacterLength() noexcept;
     /// Get the byte length of the Windows root representation.
-    [[nodiscard]] auto windowsRootLength(PathWindowsFormat format) const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto windowsRootLength(PathWindowsFormat format) const noexcept -> unit::ByteCount;
     /// Append the Windows root representation to a string editor.
     void appendWindowsRoot(text::StringEditor &result, PathWindowsFormat format) const;
     /// Append a root with Windows separators to a string editor.
@@ -111,7 +118,7 @@ private:
     PathFormat _format = PathFormat::Generic;          ///< The determined path format.
     text::String _root;                                ///< The normalized root element, if any.
     text::StringList _elements;                        ///< The path elements without the root.
-    unit::CpLength _characterLength;                   ///< Cached character length of the normalized path.
+    unit::CpCount _characterLength;                    ///< Cached character length of the normalized path.
     mutable std::atomic<PathInfoCache *> _infoCache{}; ///< Lazily allocated path-information cache owned by this data.
 };
 

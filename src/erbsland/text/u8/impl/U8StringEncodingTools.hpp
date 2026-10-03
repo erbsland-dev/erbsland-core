@@ -13,7 +13,7 @@
 #include "../../../mem/ByteWriter_fwd.hpp"
 #include "../../../mem/Endianness.hpp"
 #include "../../../mem/RingBuffer_fwd.hpp"
-#include "../../../unit/ByteLength_fwd.hpp"
+#include "../../../unit/ByteCount_fwd.hpp"
 #include "../../../util/Result.hpp"
 #include "../../EncodingMode.hpp"
 #include "../../StringBomMode.hpp"
@@ -45,7 +45,7 @@ public:
     /// Encode the visible UTF-8 data into the requested byte encoding.
     [[nodiscard]] auto encode(StringEncoding encoding, StringBomMode bomMode) const -> mem::ByteBlock;
     /// Calculate the exact byte length produced by `encode()`.
-    [[nodiscard]] auto encodedLength(StringEncoding encoding, StringBomMode bomMode) const -> unit::ByteLength;
+    [[nodiscard]] auto encodedLength(StringEncoding encoding, StringBomMode bomMode) const -> unit::ByteCount;
     /// Atomically encode the visible UTF-8 data directly into a ring buffer.
     [[nodiscard]] auto encodeTo(mem::RingBuffer &buffer, StringEncoding encoding, StringBomMode bomMode) const
         -> util::Result;
@@ -68,7 +68,7 @@ public: // helpers
     /// Resolve the byte layout after applying BOM rules.
     [[nodiscard]] static auto resolveBomLayout(
         const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode) -> DecodeLayout;
-    /// Decode characters to UTF-8 string storage using a two-pass algorithm.
+    /// Decode characters supplied by a callback into a UTF-8 editor using a two-pass algorithm.
     template <typename Function>
     [[nodiscard]] static auto decodeFromCharacters(Function function) -> U8StringEditor;
     /// Decode byte data as UTF-8.
@@ -85,10 +85,9 @@ private:
     U8StringDataView _data;
 };
 
-/// Decode characters supplied by a callback into a UTF-8 editor.
 template <typename Function>
 auto U8StringEncodingTools::decodeFromCharacters(Function function) -> U8StringEditor {
-    auto reservedSize = unit::ByteLength::zero();
+    auto reservedSize = unit::ByteCount::zero();
     function([&](const Char character) -> void { reservedSize += utf8::encodedLength(character); });
     if (reservedSize.isZero()) {
         return U8StringEditor{};

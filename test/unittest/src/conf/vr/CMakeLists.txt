@@ -12,6 +12,7 @@ target_sources(erbsland-core-unittest PRIVATE
         VrAlternativesTest.cpp
         VrBase.hpp
         VrBuilderApiTest.cpp
+        VrBuilderBranchTest.cpp
         VrBuilderParityTest.cpp
         VrCharsTest.cpp
         VrContainsTest.cpp
@@ -19,6 +20,7 @@ target_sources(erbsland-core-unittest PRIVATE
         VrDependenciesTest.cpp
         VrDocumentModelTest.cpp
         VrEndsTest.cpp
+        VrEntryTypeTest.cpp
         VrEqualsTest.cpp
         VrEvaluationOrderTest.cpp
         VrInTest.cpp

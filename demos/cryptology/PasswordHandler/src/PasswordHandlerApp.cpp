@@ -1,24 +1,28 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "PasswordHandlerApp.hpp"
+
 #include "PepperStore.hpp"
 #include "UserDatabase.hpp"
 
-#include <erbsland/core/ApplicationError.hpp>
-#include <erbsland/core/ApplicationErrorContext.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ApplicationErrorContext.hpp>
 #include <erbsland/cterm/Terminal.hpp>
-#include <erbsland/options/OptionModule.hpp>
-#include <erbsland/options/Options.hpp>
-#include <erbsland/options/OptionType.hpp>
-#include <erbsland/options/OptionValues.hpp>
-#include <erbsland/path/PathCollisionMode.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/path/PathResolveMode.hpp>
-#include <erbsland/text/EscapeAmount.hpp>
-#include <erbsland/text/EscapeFormat.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/Version.hpp>
+#include <erbsland/EscapeAmount.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathCollisionMode.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathResolveMode.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -29,7 +33,7 @@ void PasswordHandlerApp::initialize() {
     info().setApplicationVersion(el::Version{0, 1, 0});
     info().setAuthorName("Erbsland DEV"_el);
     info().setLicenseText("Apache-2.0"_el);
-    enableTerminal();
+    DemoTerminal::enable(*this);
 }
 
 void PasswordHandlerApp::registerCommandLineOptions(const el::OptionsPtr &options) {
@@ -41,39 +45,39 @@ void PasswordHandlerApp::registerCommandLineOptions(const el::OptionsPtr &option
         "Use a production secret manager instead of the demo's local pepper file."_el);
     options->addOption({"-p"_el, "--pepper"_el, "pepper"_el})
         .setType(el::OptionType::Text)
-        .setHelpDescription("Path to the separate ELCL pepper file."_el);
+        .setHelpTitle("Path to the separate ELCL pepper file."_el);
     options->addOption({"-d"_el, "--database"_el, "database"_el})
         .setType(el::OptionType::Text)
-        .setHelpDescription("Path to the ELCL user database."_el);
+        .setHelpTitle("Path to the ELCL user database."_el);
 
     auto listUsersModule = el::OptionModule::create("list-users"_el);
-    listUsersModule->setHelpDescription("List every stored username."_el);
+    listUsersModule->setHelpTitle("List every stored username."_el);
     listUsersModule->setMainFn([this](const el::OptionValuesPtr &values) -> el::ExitCode { return listUsers(values); });
     options->addModule(listUsersModule);
 
     auto addUserModule = el::OptionModule::create("add-user"_el);
-    addUserModule->setHelpDescription("Add a user and prompt for a new password."_el);
-    addUserModule->addOption("username"_el).setRequired().setHelpDescription("Exact username to add."_el);
+    addUserModule->setHelpTitle("Add a user and prompt for a new password."_el);
+    addUserModule->addOption("username"_el).setRequired().setHelpTitle("Exact username to add."_el);
     addUserModule->setMainFn([this](const el::OptionValuesPtr &values) -> el::ExitCode { return addUser(values); });
     options->addModule(addUserModule);
 
     auto removeUserModule = el::OptionModule::create("remove-user"_el);
-    removeUserModule->setHelpDescription("Remove a user record."_el);
-    removeUserModule->addOption("username"_el).setRequired().setHelpDescription("Exact username to remove."_el);
+    removeUserModule->setHelpTitle("Remove a user record."_el);
+    removeUserModule->addOption("username"_el).setRequired().setHelpTitle("Exact username to remove."_el);
     removeUserModule->setMainFn(
         [this](const el::OptionValuesPtr &values) -> el::ExitCode { return removeUser(values); });
     options->addModule(removeUserModule);
 
     auto setPasswordModule = el::OptionModule::create("set-password"_el);
-    setPasswordModule->setHelpDescription("Replace an existing user's password."_el);
-    setPasswordModule->addOption("username"_el).setRequired().setHelpDescription("Exact username to update."_el);
+    setPasswordModule->setHelpTitle("Replace an existing user's password."_el);
+    setPasswordModule->addOption("username"_el).setRequired().setHelpTitle("Exact username to update."_el);
     setPasswordModule->setMainFn(
         [this](const el::OptionValuesPtr &values) -> el::ExitCode { return setPassword(values); });
     options->addModule(setPasswordModule);
 
     auto loginModule = el::OptionModule::create("login"_el);
-    loginModule->setHelpDescription("Verify one password without revealing account state."_el);
-    loginModule->addOption("username"_el).setRequired().setHelpDescription("Exact username to verify."_el);
+    loginModule->setHelpTitle("Verify one password without revealing account state."_el);
+    loginModule->addOption("username"_el).setRequired().setHelpTitle("Exact username to verify."_el);
     loginModule->setMainFn([this](const el::OptionValuesPtr &values) -> el::ExitCode { return login(values); });
     options->addModule(loginModule);
 }

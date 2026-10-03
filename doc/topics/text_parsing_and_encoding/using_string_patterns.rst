@@ -32,17 +32,27 @@ A fixed prefix remains clearer as ``startsWith()``, and a sequential grammar wit
 rich diagnostics belongs in :cpp:class:`StringCharReader <erbsland::text::StringCharReader>`.
 ``StringPattern`` is at its best when the complete small shape remains easy to see.
 
-Describe a Small Shape in One Pattern
-=====================================
+For full-string globs, use ``StringPattern::fromGlob()``.
+This factory supports multiple stars with the same caret-negated bracket sets and escapes as Divider patterns.
+Its typed overload accepts repeated ``Star`` elements instead of ``Divider``.
+Use ``StringPattern::fromPosixGlob()`` for the preserved Python-style bracket syntax, including ``!`` negation and
+literal backslashes.
+Both glob kinds match the complete candidate, including directory separators.
+The parsed and typed ``fromDivider()`` overloads below select prefix/divider semantics.
+See :doc:`/reference/text/matching_and_splitting` for the glob syntax and matching boundaries.
 
-The parsed constructor accepts the same string-view types as the rest of the text module.
+Constructing a StringPattern from Parsed Syntax
+===============================================
+
+Each parsed factory accepts ``AnyString``, including implicit conversions from UTF-8, UTF-16, and UTF-32 strings and
+literals.
 For the common UTF-8 case, construct a pattern from a ``""_el`` literal:
 
 .. code-block:: cpp
 
-    const auto pattern = el::StringPattern{"probe-??[0-9]*"_el};
+    const auto pattern = el::StringPattern::fromDivider("probe-??[0-9]*"_el);
 
-The pattern is parsed and validated during construction.
+The factory parses and validates the pattern before returning it.
 Invalid syntax throws
 :cpp:class:`ParseError <erbsland::err::ParseError>`.
 
@@ -52,7 +62,7 @@ an equivalent sequence of typed elements.
 .. erbsland-demo::
     :source: text/StringPattern/PatternConstruction.cpp
     :exec: text/string_pattern --demo PatternConstruction
-    :source-sha256: b7ecf2aa54075fc206fa7d6c458d7bef823fd2c9fc1aa2758be0a02152dd7ba7
+    :sha256: 9732bfb4375188c6651edc420647468fc3c1d0d7b116182669684593441cdbf0
 
 .. code-block:: cpp
 
@@ -63,7 +73,7 @@ an equivalent sequence of typed elements.
     /// literal when they are part of the text format itself.
     void patternConstruction() {
         // A pattern can describe the small fixed shell around a laboratory record.
-        const auto probeRecord = el::StringPattern{"probe-??[0-9]*"_el};
+        const auto probeRecord = el::StringPattern::fromDivider("probe-??[0-9]*"_el);
 
         const auto probeLines = el::StringList{{
             "probe-AB7 temperatur=21.4C"_el,
@@ -75,16 +85,18 @@ an equivalent sequence of typed elements.
         }
 
         // Escapes make the pattern syntax available for literal diagnostic markers.
-        const auto marker = el::StringPattern{"messung\\[\\?\\]\\*"_el};
+        const auto marker = el::StringPattern::fromDivider("messung\\[\\?\\]\\*"_el);
         el::io::printLine("escaped marker                : "_el, marker.matches("messung[?]* archiviert"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    probe-AB7 temperatur=21.4C    : true
-    probe-A7 temperatur=21.4C     : false
-    escaped marker                : true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mprobe-AB7 temperatur=21.4C    : true
+        probe-A7 temperatur=21.4C     : false
+        escaped marker                : true␛[0m
 
 .. erbsland-demo-end::
 
@@ -156,17 +168,17 @@ A pattern may contain only one divider.
 The pattern ``*`` is invalid.
 Patterns containing more than one divider, such as ``a*b*c``, are also invalid.
 
-Build the Same Shape from Typed Elements
-========================================
+Constructing a StringPattern from Typed Elements
+================================================
 
-For library-internal patterns, the typed element constructor avoids the parsed syntax entirely.
+For library-internal patterns, the typed ``fromDivider()`` overload avoids the parsed syntax entirely.
 It builds immutable compiled pattern data directly, stores literal text as UTF-32, and makes each pattern element
 explicit.
 
 .. erbsland-demo::
     :source: text/StringPattern/StaticConstruction.cpp
     :exec: text/string_pattern --demo StaticConstruction
-    :source-sha256: b88ae32d6a926b559824a0fd62fea3595604e02aa15d09d61b2f7ee27830c9c3
+    :sha256: fd42e61008aaead814f429205c7a9924a96743dbb6d9a4de63abe77f786330ce
 
 .. code-block:: cpp
 
@@ -178,14 +190,8 @@ explicit.
     void staticConstruction() {
         using namespace el::pattern;
 
-        static const auto acceptedRecord = el::StringPattern{
-            Text{U"probe-"},
-            Range{U'A', U'Z'},
-            Set{{U'0', U'9'}},
-            OneChar{},
-            Divider{},
-            Text{U";ok"},
-        };
+        static const auto acceptedRecord = el::StringPattern::fromDivider(
+            Text{U"probe-"}, Range{U'A', U'Z'}, Set{{U'0', U'9'}}, OneChar{}, Divider{}, Text{U";ok"});
 
         const auto probeLines = el::StringList{{
             "probe-A7b wert=0.42;ok"_el,
@@ -198,12 +204,14 @@ explicit.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    probe-A7b wert=0.42;ok        : true
-    probe-a7b wert=0.42;ok        : false
-    probe-A7b wert=0.42;prüfen    : false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mprobe-A7b wert=0.42;ok        : true
+        probe-a7b wert=0.42;ok        : false
+        probe-A7b wert=0.42;prüfen    : false␛[0m
 
 .. erbsland-demo-end::
 
@@ -247,8 +255,8 @@ Most static patterns begin with:
 The number of pattern elements and character ranges is intentionally limited.
 A string pattern is designed to describe a small boundary shape rather than a general-purpose grammar.
 
-Ask Whether the Boundary Matches
-================================
+Matching String Prefixes and Suffixes
+=====================================
 
 ``matches()`` answers the most common question: does this text have the expected shape?
 
@@ -257,7 +265,7 @@ Use it whenever the surrounding code only needs a yes/no decision.
 .. erbsland-demo::
     :source: text/StringPattern/Matches.cpp
     :exec: text/string_pattern --demo Matches
-    :source-sha256: da9cd7770bbf1d1ca5d9c7aa97a26012095358d793fcd2c44fd663321585584c
+    :sha256: 75a6b87df6eff772b53cefa29f6c602dd5d274a7fa4411e61916ad0ce4f4d894
 
 .. code-block:: cpp
 
@@ -267,9 +275,9 @@ Use it whenever the surrounding code only needs a yes/no decision.
     /// A leading `*` checks the end. A pattern with text on both sides of `*` requires both the prefix and suffix without
     /// overlap.
     void matches() {
-        const auto nameOnly = el::StringPattern{"messung:"_el};
-        const auto withUnit = el::StringPattern{"messung:*;C"_el};
-        const auto finished = el::StringPattern{"*;fertig"_el};
+        const auto nameOnly = el::StringPattern::fromDivider("messung:"_el);
+        const auto withUnit = el::StringPattern::fromDivider("messung:*;C"_el);
+        const auto finished = el::StringPattern::fromDivider("*;fertig"_el);
 
         const auto temperature = el::String{"messung:temperatur=21.4;C"_el};
         const auto completed = el::String{"messung:leitwert=0.42;fertig"_el};
@@ -281,14 +289,16 @@ Use it whenever the surrounding code only needs a yes/no decision.
         el::io::printLine("missing suffix ..........: "_el, withUnit.matches("messung:temperatur=21.4"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    front only ..............: true
-    front and back ..........: true
-    suffix only .............: true
-    wrong suffix ............: false
-    missing suffix ..........: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mfront only ..............: true
+        front and back ..........: true
+        suffix only .............: true
+        wrong suffix ............: false
+        missing suffix ..........: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -298,13 +308,13 @@ If you need diagnostics or want to parse several fields after validating the bou
 :cpp:class:`StringCharReader <erbsland::text::StringCharReader>` or use the
 reader directly.
 
-Remove a Recognized Boundary
-============================
+Removing Matching Prefixes and Suffixes
+=======================================
 
 ``trimmed()`` returns a view with the matching shell removed.
 
-``trim()`` narrows an owning read-only string to the same range and reports whether the operation succeeded.
-It changes only the visible range; it does not modify character data.
+``trim()`` removes the matching shell from a string editor and reports whether any text was removed.
+Read-only strings remain unchanged; assign the result of ``trimmed()`` when replacing a read-only string value.
 
 For a prefix pattern, the prefix is removed.
 For a suffix pattern, the suffix is removed.
@@ -315,7 +325,7 @@ This provides a compact way to unwrap small protocol-like envelopes.
 .. erbsland-demo::
     :source: text/StringPattern/TrimAndTrimmed.cpp
     :exec: text/string_pattern --demo TrimAndTrimmed
-    :source-sha256: 4640b457858e3cd35d936da8f54b8cab8fadd29d383604020ce7620800a1c7c6
+    :sha256: a5dfc2773313fe160df66798c8e21ffbe925680133970fa1b452b7755b745477
 
 .. code-block:: cpp
 
@@ -324,30 +334,32 @@ This provides a compact way to unwrap small protocol-like envelopes.
     /// For a pattern with text on both sides of the divider, the divider represents the part that stays. This is useful
     /// when a protocol-like string wraps the meaningful value in a predictable prefix and suffix.
     void trimAndTrimmed() {
-        const auto envelope = el::StringPattern{"messung:*;ok"_el};
+        const auto envelope = el::StringPattern::fromDivider("messung:*;ok"_el);
         const auto original = el::String{"messung:temperatur=21.4C;ok"_el};
 
         el::io::printLine("original ................: "_el, original);
         el::io::printLine("trimmed .................: "_el, envelope.trimmed(original));
 
-        auto narrowed = el::String{"messung:ph=7.1;ok"_el};
+        auto narrowed = el::StringEditor{"messung:ph=7.1;ok"_el};
         if (envelope.trim(narrowed)) {
             el::io::printLine("narrowed ................: "_el, narrowed);
         }
 
-        auto unchanged = el::String{"messung:ph=7.1;prüfen"_el};
+        auto unchanged = el::StringEditor{"messung:ph=7.1;prüfen"_el};
         el::io::printLine("changed .................: "_el, envelope.trim(unchanged));
         el::io::printLine("kept ....................: "_el, unchanged);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    original ................: messung:temperatur=21.4C;ok
-    trimmed .................: temperatur=21.4C
-    narrowed ................: ph=7.1
-    changed .................: false
-    kept ....................: messung:ph=7.1;prüfen
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0moriginal ................: messung:temperatur=21.4C;ok
+        trimmed .................: temperatur=21.4C
+        narrowed ................: ph=7.1
+        changed .................: false
+        kept ....................: messung:ph=7.1;prüfen␛[0m
 
 .. erbsland-demo-end::
 
@@ -358,8 +370,8 @@ If the pattern does not match, the original text remains unchanged and ``trim()`
 These methods are intended for removing a single matching shell.
 To remove repeated occurrences throughout a string, use the normal string editing and search functions instead.
 
-Split Where the Pattern Places Its Divider
-==========================================
+Splitting Text at Pattern Match Positions
+=========================================
 
 ``split()`` returns two views.
 
@@ -373,7 +385,7 @@ A pattern such as ``probe-??`` may consume different numbers of bytes depending 
 .. erbsland-demo::
     :source: text/StringPattern/Split.cpp
     :exec: text/string_pattern --demo Split
-    :source-sha256: 849c15527027c147f0db09d40a804d5e10a1c4d49683bddc2d15d23fbd16da0b
+    :sha256: 90c9582aca74bed09ba0abc7a4e5adc0634e1ded5cf13bad59e21248125731fa
 
 .. code-block:: cpp
 
@@ -382,26 +394,28 @@ A pattern such as ``probe-??`` may consume different numbers of bytes depending 
     /// The method is especially handy when `?` or bracket sets make the matched prefix variable in bytes. For a pattern
     /// with both a prefix and suffix, the suffix is validated and then dropped from the second result.
     void split() {
-        const auto recordPattern = el::StringPattern{"probe-??*;ok"_el};
+        const auto recordPattern = el::StringPattern::fromDivider("probe-??*;ok"_el);
         const auto record = el::String{"probe-A7 temperatur=21.4C;ok"_el};
 
         const auto [recordId, valueText] = recordPattern.split(record);
         el::io::printLine("record id ...............: "_el, recordId);
         el::io::printLine("value ...................: "_el, valueText);
 
-        const auto suffixPattern = el::StringPattern{"*;fehler"_el};
+        const auto suffixPattern = el::StringPattern::fromDivider("*;fehler"_el);
         const auto [payload, suffix] = suffixPattern.split("probe-B8 leitwert=0.41;fehler"_el);
         el::io::printLine("payload .................: "_el, payload);
         el::io::printLine("suffix ..................: "_el, suffix);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    record id ...............: probe-A7
-    value ...................:  temperatur=21.4C
-    payload .................: probe-B8 leitwert=0.41
-    suffix ..................: ;fehler
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mrecord id ...............: probe-A7
+        value ...................:  temperatur=21.4C
+        payload .................: probe-B8 leitwert=0.41
+        suffix ..................: ;fehler␛[0m
 
 .. erbsland-demo-end::
 
@@ -413,13 +427,13 @@ useful middle part.
 
 If the pattern does not match, the first result is empty and the second result contains the original text.
 
-Reuse the Native Match Position
-===============================
+Match Lengths and Native String Indexes
+=======================================
 
 ``length()`` and ``index()`` expose the native boundary position found by the matcher.
 
 For UTF-8 strings, the result is a
-:cpp:type:`ByteLength <erbsland::unit::ByteLength>` or
+:cpp:type:`ByteCount <erbsland::unit::ByteCount>` or
 :cpp:type:`ByteIndex <erbsland::unit::ByteIndex>`.
 
 For UTF-16 strings, the values are UTF-16 code-unit positions.
@@ -429,7 +443,7 @@ For UTF-32 strings, they are code-point positions.
 .. erbsland-demo::
     :source: text/StringPattern/LengthAndIndex.cpp
     :exec: text/string_pattern --demo LengthAndIndex
-    :source-sha256: 1681622778250b30616c905e14cde36572e74b1d0ac79e9d87844c7532250deb
+    :sha256: a9f08b836df253585c1d7c1a4973972684f306e060de9dfccf4deb5ba1d4d594
 
 .. code-block:: cpp
 
@@ -439,26 +453,28 @@ For UTF-32 strings, they are code-point positions.
     /// code-point positions. The values are meant for slicing and diagnostics near string boundaries, not for scanning an
     /// entire grammar.
     void lengthAndIndex() {
-        const auto microSensor = el::StringPattern{u8"µ?*"_el};
+        const auto microSensor = el::StringPattern::fromDivider(u8"µ?*"_el);
         const auto u8Measurement = el::String{u8"µA=0.42"_el};
 
         el::io::printLine("UTF-8 split index .......: "_el, microSensor.index(u8Measurement));
         el::io::printLine("UTF-8 match bytes .......: "_el, microSensor.length(u8Measurement));
 
-        const auto suffix = el::StringPattern{"*;ok"_el};
+        const auto suffix = el::StringPattern::fromDivider("*;ok"_el);
         const auto accepted = el::String{"temperatur=21.4;ok"_el};
 
         el::io::printLine("suffix index ............: "_el, suffix.index(accepted));
         el::io::printLine("suffix length ...........: "_el, suffix.length(accepted));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    UTF-8 split index .......: 3
-    UTF-8 match bytes .......: 3
-    suffix index ............: 15
-    suffix length ...........: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUTF-8 split index .......: 3
+        UTF-8 match bytes .......: 3
+        suffix index ............: 15
+        suffix length ...........: 3␛[0m
 
 .. erbsland-demo-end::
 

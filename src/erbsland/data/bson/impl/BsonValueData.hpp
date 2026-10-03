@@ -7,6 +7,7 @@
 #include <variant>
 
 namespace erbsland::data::bson::impl {
+
 /// Shared storage for one BSON value.
 /// @tested{BsonValueTest}
 class BsonValueData final {
@@ -31,4 +32,5 @@ public:
     explicit BsonValueData(T value) : value{std::move(value)} {}
     Value value; ///< Stored value.
 };
+
 }

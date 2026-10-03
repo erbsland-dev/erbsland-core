@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ErrorDocumentBuilder.hpp"
 
-#include "../i18n/DisplayTextMap.hpp"
+#include "../i18n/DisplayText.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringEditor.hpp"
 #include "../text/TextNode.hpp"
@@ -15,13 +15,11 @@ using text::TextDocument;
 using text::TextNodePtr;
 using text::TextNodeType;
 
-ErrorDocumentBuilder::ErrorDocumentBuilder(
-    String title, String description, const i18n::DisplayTextMapConstPtr &displayText) :
-    _displayText{displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap()} {
+ErrorDocumentBuilder::ErrorDocumentBuilder(String title, String description) {
     _document.root()->setStyle("error"_el);
     auto titleNode = _document.addHeading(1);
     titleNode->setStyle("diagnostic-title error"_el);
-    titleNode->addText(title.isEmpty() ? _displayText->text("UnknownError"_el) : std::move(title));
+    titleNode->addText(title.isEmpty() ? i18n::displayText("unknown_error"_el) : std::move(title));
     if (!description.isEmpty()) {
         _document.addParagraph()->setStyle("diagnostic-description"_el).addText(std::move(description));
     }
@@ -40,7 +38,7 @@ void ErrorDocumentBuilder::addSource(
         location.position().isNoIndex()) {
         return;
     }
-    addSection(_displayText->text("ErrorSourceHeading"_el));
+    addSection(i18n::displayText("error_source_heading"_el));
     auto list = _document.root()->add(TextNodeType::FieldList);
     const auto addField = [&](const String &label, String value, const String &style) -> void {
         auto item = list->add(TextNodeType::FieldItem);
@@ -49,26 +47,26 @@ void ErrorDocumentBuilder::addSource(
         item->add(TextNodeType::FieldContent)->addText(std::move(value));
     };
     if (!sourceName.isEmpty()) {
-        addField(_displayText->text("SourceNameLabel"_el), sourceName, "diagnostic-source-name"_el);
+        addField(i18n::displayText("source_name_label"_el), sourceName, "diagnostic-source-name"_el);
     }
     if (!sourcePath.isEmpty()) {
-        addField(_displayText->text("SourcePathLabel"_el), sourcePath, "diagnostic-source-name"_el);
+        addField(i18n::displayText("source_path_label"_el), sourcePath, "diagnostic-source-name"_el);
     }
     if (!location.line().isNoIndex()) {
         addField(
-            _displayText->text("LineLabel"_el),
+            i18n::displayText("line_label"_el),
             String::fromInteger(location.line().toSizeT() + 1U),
             "diagnostic-source-location"_el);
     }
     if (!location.column().isNoIndex()) {
         addField(
-            _displayText->text("ColumnLabel"_el),
+            i18n::displayText("column_label"_el),
             String::fromInteger(location.column().toSizeT() + 1U),
             "diagnostic-source-location"_el);
     }
     if (!location.position().isNoIndex()) {
         addField(
-            _displayText->text("PositionLabel"_el),
+            i18n::displayText("position_label"_el),
             String::fromInteger(location.position().toSizeT() + 1U),
             "diagnostic-source-location"_el);
     }

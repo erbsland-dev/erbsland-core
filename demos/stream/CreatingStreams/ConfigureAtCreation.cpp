@@ -1,6 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/OutputStreamSettings.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathCreateMode.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamBuffering.hpp>
+#include <erbsland/StringBomMode.hpp>
+#include <erbsland/StringEncoding.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -12,7 +22,7 @@ void configureAtCreation() {
     auto streamSettings = el::OutputStreamSettings{};
     streamSettings.setTimeout(el::TimeDelta::milliseconds(250))
         .setBuffering(el::StreamBuffering::Throughput)
-        .setBackBufferLimit(el::ByteLength{128U * 1024U});
+        .setBackBufferLimit(el::ByteCount{128U * 1024U});
 
     auto options = el::PathWriteTextOptions{el::StringEncoding::Utf16LittleEndian};
     options.setCreationMode(el::PathCreateMode::CreateOrOverwrite)

@@ -36,7 +36,7 @@ The same layout produces two different plain text practice notes.
 .. erbsland-demo::
     :source: text/RenderLayouts/Introduction.cpp
     :exec: text/render_layouts --demo Introduction
-    :source-sha256: 231eb9443b9cb6ed7ef5304270437dca492c79f219b312958256f9e046c55d6e
+    :sha256: 02fb97871deeacff577ef491c3a176998e4a231de37777da7edc11fc01ddb862
 
 .. code-block:: cpp
 
@@ -64,13 +64,15 @@ The same layout produces two different plain text practice notes.
         el::io::print(environment->render("practice.txt"_el, context));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Esercizio: ta-ta-TUM
-    Ripeti 4 volte.
-    Esercizio: TUM-ta
-    Una volta.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mEsercizio: ta-ta-TUM
+        Ripeti 4 volte.
+        Esercizio: TUM-ta
+        Una volta.␛[0m
 
 .. erbsland-demo-end::
 
@@ -97,8 +99,8 @@ The supported forms and their exact behavior are listed in the
 :doc:`rendering reference </reference/text/documents_and_rendering>`.
 For a compact list of the supported forms, keep the :doc:`template_feature_cheat_sheet` beside your layout.
 
-The Main Pieces
-===============
+Render Environments, Layouts, and Contexts
+==========================================
 
 The :cpp:class:`Environment <erbsland::text::render::Environment>` is the configured renderer.
 It owns the layout loaders and filters and provides ``render()``.
@@ -114,8 +116,8 @@ Its values can be text, numbers, booleans, lists, maps, or null, so a layout can
 If a name is missing, it resolves to null; null inserts empty text and is false in a condition.
 Supplying each document's values in a local context makes it clear which data belongs to that document.
 
-Where to Go Next
-================
+Render Workflow, StringFormat, and Placeholder Alternatives
+===========================================================
 
 :doc:`using_the_render_engine` shows how to configure an environment, register a loader, prepare a context, and
 handle a rendering failure.

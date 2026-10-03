@@ -9,7 +9,7 @@
 #include "../error/InternalError.hpp"
 #include "../Limits.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/NotFoundError.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringCharReader.hpp"
 #include "../../../text/StringEditor.hpp"
@@ -179,7 +179,7 @@ private: // token-level
         text::StringEditor result;
         readNext(); // consume `"`
         while (_character != U'"') {
-            if (result.length() > unit::ByteLength{2000U}) {
+            if (result.length() > unit::ByteCount{2000U}) {
                 throwError("Text literal too long"_el);
             }
             if (_character.isEndOfData()) {
@@ -339,7 +339,7 @@ private: // token-level
         try {
             const auto operation = baseOperationForString(keyword);
             return createToken(AssemblerToken::Operation, operation);
-        } catch (const err::ParameterError &) {
+        } catch (const err::NotFoundError &) {
             throwError(text::StringFormat{"Unknown keyword '{}'"}.build(keyword));
         }
     }
@@ -371,7 +371,7 @@ private: // token-level
         readNext(); // consume `$`
         text::StringEditor offset;
         while (_character.isDigitValue(text::IntegerBase::Hexadecimal)) {
-            if (offset.length() >= unit::ByteLength{8U}) {
+            if (offset.length() >= unit::ByteCount{8U}) {
                 throwError("Offset has too many digits"_el);
             }
             offset.append(_character);

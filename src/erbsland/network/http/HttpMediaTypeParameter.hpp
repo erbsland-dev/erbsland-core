@@ -16,7 +16,8 @@ namespace erbsland::network {
 class HttpMediaTypeParameter final {
 public:
     /// Create a validated media-type parameter.
-    /// @throws err::ParameterError If the name or value is invalid.
+    /// @param name The parameter name. Must be a non-empty ASCII token.
+    /// @param value The parameter value. Must be valid UTF-8 without prohibited HTTP control bytes.
     HttpMediaTypeParameter(text::String name, text::String value);
 
     // defaults

@@ -5,7 +5,8 @@
 #include "Scenario.hpp"
 #include "SuiteDefinition_fwd.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/String.hpp>
 
 namespace erbsland::profiling {
 

@@ -4,8 +4,7 @@
 
 #include "StreamError.hpp"
 
-#include "impl/IoService.hpp"
-
+#include "../path/impl/FileCommit.hpp"
 #include "../path/PathError.hpp"
 #include "../path/PathOperations.hpp"
 #include "../text/Literals.hpp"
@@ -15,9 +14,13 @@
 
 namespace erbsland::stream {
 
+using namespace path;
+using namespace text;
 using namespace text::literals;
 
-TempTextOutputStream::TempTextOutputStream(path::Path path, TextOutputStreamPtr stream, const bool removeOnClose) :
+TempTextOutputStream::TempTextOutputStream(
+    Path path, TextOutputStreamPtr stream, const bool removeOnClose, util::impl::WorkerReservation cleanup) :
+    _cleanup{std::move(cleanup)},
     _path{std::move(path)},
     _stream{std::move(stream)},
     _settings{_stream->outputSettings()},
@@ -32,7 +35,7 @@ auto TempTextOutputStream::isEmpty() const noexcept -> bool {
     return _path.isEmpty();
 }
 
-auto TempTextOutputStream::path() const noexcept -> const path::Path & {
+auto TempTextOutputStream::path() const noexcept -> const Path & {
     return _path;
 }
 
@@ -44,7 +47,7 @@ void TempTextOutputStream::setRemoveOnClose(const bool value) noexcept {
     _removeOnClose = value;
 }
 
-auto TempTextOutputStream::release() noexcept -> path::Path {
+auto TempTextOutputStream::release() noexcept -> Path {
     auto result = _path;
     _path = {};
     _removeOnClose = false;
@@ -76,12 +79,29 @@ auto TempTextOutputStream::createErrorContext() const noexcept -> StreamErrorCon
 }
 
 void TempTextOutputStream::throwError(
-    text::String title, text::String description, system::PlatformErrorContextConstPtr platformContext) const {
+    String title, String description, system::PlatformErrorContextConstPtr platformContext) const {
     auto context = createErrorContext();
     context.setTitle(std::move(title))
         .setDescription(std::move(description))
         .setPlatformContext(std::move(platformContext));
     throw StreamError{std::move(context)};
+}
+
+auto TempTextOutputStream::commitTo(const Path &destination, PathCommitOptions options) noexcept -> util::Result {
+    try {
+        commitToOrThrow(destination, std::move(options));
+        return util::Result::Success;
+    } catch (const PathError &) {
+        return util::Result::Failure;
+    }
+}
+
+void TempTextOutputStream::commitToOrThrow(const Path &destination, PathCommitOptions options) {
+    auto operation = path::impl::FileCommit{_path, destination, std::move(options), _settings};
+    operation.commit(_stream.get());
+    _stream.reset();
+    _path = {};
+    _removeOnClose = false;
 }
 
 auto TempTextOutputStream::flush() -> StreamWriteStatus {
@@ -105,7 +125,7 @@ auto TempTextOutputStream::close() -> StreamCloseStatus {
             _path.operations().removeOrThrow();
             _path = {};
             _removeOnClose = false;
-        } catch (const path::PathError &error) {
+        } catch (const PathError &error) {
             throwError(
                 "Failed to remove the temporary file."_el,
                 "The temporary output file could not be removed after closing the stream."_el,
@@ -124,23 +144,23 @@ void TempTextOutputStream::abort() noexcept {
         auto path = _path;
         _path = {};
         _removeOnClose = false;
-        impl::IoService::submitIoWork([path = std::move(path)]() -> void {
+        _cleanup.submit([path = std::move(path)]() -> void {
             try {
                 path.operations().removeOrThrow();
-            } catch (...) {}
+            } catch (const PathError &) {}
         });
     }
 }
 
-auto TempTextOutputStream::encoding() const noexcept -> text::StringEncoding {
-    return _stream != nullptr ? _stream->encoding() : text::StringEncoding::Utf8;
+auto TempTextOutputStream::encoding() const noexcept -> StringEncoding {
+    return _stream != nullptr ? _stream->encoding() : StringEncoding::Utf8;
 }
 
-auto TempTextOutputStream::effectiveEncoding() const noexcept -> text::StringEncoding {
-    return _stream != nullptr ? _stream->effectiveEncoding() : text::StringEncoding::Utf8;
+auto TempTextOutputStream::effectiveEncoding() const noexcept -> StringEncoding {
+    return _stream != nullptr ? _stream->effectiveEncoding() : StringEncoding::Utf8;
 }
 
-auto TempTextOutputStream::write(const text::Char character) -> StreamWriteStatus {
+auto TempTextOutputStream::write(const Char character) -> StreamWriteStatus {
     if (_stream == nullptr) {
         throwError(
             "Failed to write to the temporary output stream."_el, "The temporary text output stream is not open."_el);
@@ -148,7 +168,7 @@ auto TempTextOutputStream::write(const text::Char character) -> StreamWriteStatu
     return _stream->write(character);
 }
 
-auto TempTextOutputStream::write(const text::String &text) -> StreamWriteStatus {
+auto TempTextOutputStream::write(const String &text) -> StreamWriteStatus {
     if (_stream == nullptr) {
         throwError(
             "Failed to write to the temporary output stream."_el, "The temporary text output stream is not open."_el);
@@ -164,7 +184,7 @@ auto TempTextOutputStream::writeLine() -> StreamWriteStatus {
     return _stream->writeLine();
 }
 
-auto TempTextOutputStream::writeLine(const text::String &text) -> StreamWriteStatus {
+auto TempTextOutputStream::writeLine(const String &text) -> StreamWriteStatus {
     if (_stream == nullptr) {
         throwError(
             "Failed to write to the temporary output stream."_el, "The temporary text output stream is not open."_el);

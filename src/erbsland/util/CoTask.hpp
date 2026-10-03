@@ -8,7 +8,7 @@
 #include "impl/CoTaskPromise_fwd.hpp"
 #include "impl/CoWorkAwaiter.hpp"
 
-#include "../err/LogicError.hpp"
+#include "../err/LogicFailure.hpp"
 
 #include <concepts>
 #include <coroutine>
@@ -85,42 +85,42 @@ public:
         return _state->complete;
     }
     /// Access the completed result.
+    /// This task must be non-empty and complete, and its result must not have been consumed.
     /// @return A reference to the stored result without consuming it.
-    /// @throws err::LogicError If the task is empty, incomplete, or its result was consumed.
     /// @throws Any exception produced by the coroutine.
     [[nodiscard]] auto result() const -> const tValue & {
         if (!_state) {
-            throw err::LogicError{"An empty CoTask has no result."};
+            throw err::LogicFailure{"An empty CoTask has no result."};
         }
         const auto lock = std::scoped_lock{_state->mutex};
         if (!_state->complete) {
-            throw err::LogicError{"The CoTask result is not ready."};
+            throw err::LogicFailure{"The CoTask result is not ready."};
         }
         if (_state->exception) {
             std::rethrow_exception(_state->exception);
         }
         if (_state->consumed) {
-            throw err::LogicError{"The CoTask result was already consumed."};
+            throw err::LogicFailure{"The CoTask result was already consumed."};
         }
         return *_state->value;
     }
     /// Take the completed result.
+    /// This task must be non-empty and complete, and its result must not have been consumed.
     /// @return The moved task result.
-    /// @throws err::LogicError If the task is empty, incomplete, or its result was consumed.
     /// @throws Any exception produced by the coroutine.
     [[nodiscard]] auto takeResult() -> tValue {
         if (!_state) {
-            throw err::LogicError{"An empty CoTask has no result."};
+            throw err::LogicFailure{"An empty CoTask has no result."};
         }
         const auto lock = std::scoped_lock{_state->mutex};
         if (!_state->complete) {
-            throw err::LogicError{"The CoTask result is not ready."};
+            throw err::LogicFailure{"The CoTask result is not ready."};
         }
         if (_state->exception) {
             std::rethrow_exception(_state->exception);
         }
         if (_state->consumed) {
-            throw err::LogicError{"The CoTask result was already consumed."};
+            throw err::LogicFailure{"The CoTask result was already consumed."};
         }
         _state->consumed = true;
         return std::move(*_state->value);
@@ -134,11 +134,11 @@ public:
         }
     }
     /// Await and consume this task result.
+    /// This task must not be empty.
     /// @return An awaiter for the result.
-    /// @throws err::LogicError If this task is empty.
     [[nodiscard]] auto operator co_await() && -> impl::CoTaskAwaiter<tValue> {
         if (!_state) {
-            throw err::LogicError{"An empty CoTask cannot be awaited."};
+            throw err::LogicFailure{"An empty CoTask cannot be awaited."};
         }
         return impl::CoTaskAwaiter<tValue>{std::exchange(_state, {})};
     }
@@ -208,15 +208,15 @@ public:
         return _state->complete;
     }
     /// Observe completion and rethrow a stored exception.
-    /// @throws err::LogicError If the task is empty or incomplete.
+    /// This task must be non-empty and complete.
     /// @throws Any exception produced by the coroutine.
     void result() const {
         if (!_state) {
-            throw err::LogicError{"An empty CoTask has no result."};
+            throw err::LogicFailure{"An empty CoTask has no result."};
         }
         const auto lock = std::scoped_lock{_state->mutex};
         if (!_state->complete) {
-            throw err::LogicError{"The CoTask result is not ready."};
+            throw err::LogicFailure{"The CoTask result is not ready."};
         }
         if (_state->exception) {
             std::rethrow_exception(_state->exception);
@@ -231,11 +231,11 @@ public:
         }
     }
     /// Await this task's completion.
+    /// This task must not be empty.
     /// @return An awaiter for completion.
-    /// @throws err::LogicError If this task is empty.
     [[nodiscard]] auto operator co_await() && -> impl::CoTaskAwaiter<void> {
         if (!_state) {
-            throw err::LogicError{"An empty CoTask cannot be awaited."};
+            throw err::LogicFailure{"An empty CoTask cannot be awaited."};
         }
         return impl::CoTaskAwaiter<void>{std::exchange(_state, {})};
     }
@@ -253,14 +253,10 @@ private:
 };
 
 template <typename tValue>
-/// Create the public task connected to this promise.
-/// @return The eagerly started task.
 auto impl::CoTaskPromise<tValue>::get_return_object() -> CoTask<tValue> {
     return CoTask<tValue>{_state};
 }
 
-/// Create the public task connected to this void promise.
-/// @return The eagerly started task.
 inline auto impl::CoTaskPromise<void>::get_return_object() -> CoTask<void> {
     return CoTask<void>{_state};
 }

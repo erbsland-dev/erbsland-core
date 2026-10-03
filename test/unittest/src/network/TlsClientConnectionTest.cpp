@@ -3,16 +3,13 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementPrivateKey.hpp>
-#include <erbsland/cryptology/tls/TlsConfiguration.hpp>
-#include <erbsland/cryptology/tls_record/TlsRecordContentType.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
-#include <erbsland/cryptology/x509/X509ServerCertificatePolicy.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/EventLoopDriver.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/cryptology/impl/system_trust/SystemTrustBackend.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventLoopDriver.hpp>
+#include <erbsland/KeyAgreementPrivateKey.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/host/HostResolver.hpp>
 #include <erbsland/network/impl/tcp/TcpAcceptedSocket.hpp>
 #include <erbsland/network/impl/tcp/TcpConnection.hpp>
@@ -20,12 +17,17 @@
 #include <erbsland/network/impl/tls/client/TlsClientConnection.hpp>
 #include <erbsland/network/impl/tls/client/TlsClientProtocolTestAccess.hpp>
 #include <erbsland/network/impl/tls/TlsWireWriter.hpp>
-#include <erbsland/network/tls/TlsClientConnection.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/TlsClientConnection.hpp>
+#include <erbsland/TlsConfiguration.hpp>
+#include <erbsland/TlsRecordContentType.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/X509CertificateBundle.hpp>
+#include <erbsland/X509TlsCertificatePolicy.hpp>
 
 #include <chrono>
 #include <functional>
+#include <future>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -54,6 +56,45 @@ class TlsClientConnectionTest final : public el::UnitTest {
     using TlsWireWriter = el::network::impl::TlsWireWriter;
 
 private:
+    struct TrustState final {
+        std::atomic<bool> started{};
+        std::atomic<bool> finished{};
+        std::promise<void> release;
+        std::shared_future<void> gate{release.get_future().share()};
+    };
+    class BlockingTrust final : public el::cryptology::impl::SystemTrustBackend {
+    public:
+        explicit BlockingTrust(std::shared_ptr<TrustState> state) : _state{std::move(state)} {}
+        auto validate(
+            const X509TlsCertificatePolicy &,
+            const X509CertificateBundle &,
+            const std::optional<Host> &,
+            el::time::Timestamp) const -> X509CertificateValidation override {
+            _state->started.store(true);
+            static_cast<void>(_state->gate.wait_for(std::chrono::seconds{2}));
+            _state->finished.store(true);
+            return reject(X509CertificateValidationFailureCategory::NativeFailure, "Test native failure"_el);
+        }
+
+    private:
+        std::shared_ptr<TrustState> _state;
+    };
+    inline static std::shared_ptr<TrustState> _trustState;
+    static auto createBlockingTrust() -> std::unique_ptr<el::cryptology::impl::SystemTrustBackend> {
+        return std::make_unique<BlockingTrust>(_trustState);
+    }
+    struct TrustFixture final {
+        TrustFixture() {
+            _trustState = std::make_shared<TrustState>();
+            el::cryptology::impl::SystemTrustBackend::setTestFactory(&createBlockingTrust);
+        }
+        ~TrustFixture() {
+            el::cryptology::impl::SystemTrustBackend::setTestFactory(nullptr);
+            _trustState->release.set_value();
+            _trustState.reset();
+        }
+    };
+
     class FakeResolver final : public HostResolver {
     public:
         auto resolve(const HostName &) -> el::util::List<IpAddress> override {
@@ -78,7 +119,7 @@ private:
             _state->sends.emplace_back(std::move(data));
             return TcpConnectionDeviceSendStatus::Complete;
         }
-        void setReceiving(unit::ByteLength) override {}
+        void setReceiving(unit::ByteCount) override {}
         void close() noexcept override { _state->closed = true; }
         void abort() noexcept override { _state->aborted = true; }
 
@@ -97,7 +138,7 @@ private:
 
     [[nodiscard]] static auto privateKey(const uint8_t value) -> KeyAgreementPrivateKey {
         return KeyAgreementPrivateKey::fromBytes(
-            KeyAgreementAlgorithm::X25519, mem::ByteBlock{unit::ByteLength{32U}, value}.span());
+            KeyAgreementAlgorithm::X25519, mem::ByteBlock{unit::ByteCount{32U}, value}.span());
     }
 
     [[nodiscard]] static auto handshake(const uint8_t type, const mem::ByteBlock &body) -> mem::ByteBlock {
@@ -123,7 +164,7 @@ private:
 
         auto body = TlsWireWriter{};
         body.writeU16(0x0303U);
-        body.writeBytes(mem::ByteBlock{unit::ByteLength{32U}, 0x33U}.span());
+        body.writeBytes(mem::ByteBlock{unit::ByteCount{32U}, 0x33U}.span());
         body.writeVector8(sessionId.span());
         body.writeU16(0x1301U);
         body.writeU8(0U);
@@ -137,10 +178,10 @@ private:
         return record.finish();
     }
 
-    [[nodiscard]] static auto makeHarness() -> Harness {
+    [[nodiscard]] static auto makeHarness(EventLoopOptions options = {}) -> Harness {
         auto result = Harness{};
         result.driver = EventLoopDriver::createDefault();
-        result.loop = EventLoop::create(result.driver);
+        result.loop = EventLoop::create(result.driver, std::move(options));
         result.device = std::make_shared<FakeState>();
         result.protocol = std::make_shared<TlsClientProtocol *>(nullptr);
         const auto device = result.device;
@@ -148,17 +189,17 @@ private:
             result.loop,
             result.driver,
             std::make_shared<FakeResolver>(),
-            [device](EventLoopDriverPtr, unit::ByteLength, TcpConnectionDeviceCallbacks callbacks) {
+            [device](EventLoopDriverPtr, unit::ByteCount, TcpConnectionDeviceCallbacks callbacks) {
                 device->callbacks = std::move(callbacks);
                 return std::make_unique<FakeDevice>(device);
             });
-        const auto sessionId = mem::ByteBlock{unit::ByteLength{32U}, 0x22U};
+        const auto sessionId = mem::ByteBlock{unit::ByteCount{32U}, 0x22U};
         const auto protocol = result.protocol;
         result.implementation = std::make_shared<el::network::impl::TlsClientConnection>(
             result.loop, tcp, [protocol, sessionId](TlsClientProtocol &clientProtocol) -> void {
                 *protocol = &clientProtocol;
                 TlsClientProtocolTestAccess{clientProtocol}.start(
-                    mem::ByteBlock{unit::ByteLength{32U}, 0x11U}, sessionId, privateKey(0x44U));
+                    mem::ByteBlock{unit::ByteCount{32U}, 0x11U}, sessionId, privateKey(0x44U));
             });
         result.connection = result.implementation;
         return result;
@@ -166,7 +207,32 @@ private:
 
     static void registerPolicy(const el::text::String &label) {
         el::core::application().cryptologyConfiguration().setTlsConfiguration(
-            label, TlsConfiguration{X509ServerCertificatePolicy{X509CertificateBundle{}}});
+            label, TlsConfiguration{TlsClientConfiguration{}});
+    }
+
+    static void sendCertificate(Harness &harness) {
+        const auto sessionId = mem::ByteBlock{unit::ByteCount{32U}, 0x22U};
+        auto serverPrivate = privateKey(0x55U);
+        const auto helloRecord = serverHello(sessionId, serverPrivate);
+        run(harness, [&]() -> void { harness.device->callbacks.data(helloRecord); });
+        auto sender = TlsClientProtocolTestAccess{**harness.protocol}.serverHandshakeEncryptor();
+        const auto extensions = handshake(8U, mem::ByteBlock({0U, 0U}));
+        const auto extensionRecord = sender.protect(TlsRecordContentType::Handshake, extensions.span());
+        const auto bundle = X509CertificateBundle::fromPemOrThrow(
+            el::text::String{el::unittest::fh::readDataText("data/cryptology/x509/server_authentication.pem")});
+        auto entries = TlsWireWriter{};
+        entries.writeVector24(bundle.certificates().toRawValue()[2U].toDer().span());
+        entries.writeVector16(mem::ConstByteSpan{});
+        const auto entryBytes = entries.finish();
+        auto body = TlsWireWriter{};
+        body.writeVector8(mem::ConstByteSpan{});
+        body.writeVector24(entryBytes.span());
+        const auto certificate = handshake(11U, body.finish());
+        const auto certificateRecord = sender.protect(TlsRecordContentType::Handshake, certificate.span());
+        run(harness, [&]() -> void {
+            harness.device->callbacks.data(extensionRecord);
+            harness.device->callbacks.data(certificateRecord);
+        });
     }
 
     static void run(Harness &harness, std::function<void()> callback) {
@@ -184,18 +250,75 @@ private:
     }
 
 public:
-    void testDefaultLabelFallbackAndSynchronousConfigurationFailure() {
+    void testInactiveAbortSurvivesFullOwnerQueue() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        auto harness = makeHarness(
+            EventLoopOptions{}.setMaximumQueuedEvents(1U).setQueueOverflowAction(EventQueueOverflowAction::Ignore));
+        auto finalCount = std::size_t{};
+        run(harness, [&]() -> void {
+            harness.connection->events().onFinal([&]() -> void { ++finalCount; });
+            harness.loop->invoke([]() -> void {});
+            harness.connection->abort();
+        });
+        REQUIRE_EQUAL(finalCount, std::size_t{1U});
+    }
+
+    void testAutomaticSystemTrustWithoutRegistration() {
         const auto applicationScope = ApplicationTestScope<>{};
         auto harness = makeHarness();
         run(harness, [&]() -> void {
-            REQUIRE_THROWS_AS(
-                el::err::RuntimeError, harness.connection->connect(HostEndpoint{IpAddress::loopbackV4(), Port{9443U}}));
-            REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Inactive);
+            harness.connection->connect(HostEndpoint{IpAddress::loopbackV4(), Port{9443U}});
+            REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Connecting);
+            REQUIRE(harness.connection->matchedConfigurationLabel().isEmpty());
+            harness.connection->abort();
         });
+        static_cast<void>(harness.loop->runUntilIdle());
+    }
+
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
+    void testBlockedTrustTimesOutAndLateResultCannotFinalizeAgain() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        auto harness = makeHarness();
+        auto finalCount = std::size_t{};
+        auto reason = NetworkErrorReason::Unknown;
+        auto state = std::shared_ptr<TrustState>{};
+        {
+            const auto fixture = TrustFixture{};
+            state = _trustState;
+            run(harness, [&]() -> void {
+                harness.connection->events()
+                    .onError([&](const NetworkErrorContext &context) -> void { reason = context.reason(); })
+                    .onFinal([&]() -> void { ++finalCount; });
+                harness.connection->connect(
+                    HostEndpoint{IpAddress::loopbackV4(), Port{9443U}},
+                    TlsClientConnectOptions{}.setHandshakeTimeout(el::time::Milliseconds{200}));
+            });
+            runUntil(harness.loop, [&]() -> bool { return static_cast<bool>(harness.device->callbacks.connected); });
+            run(harness, [&]() -> void {
+                harness.device->callbacks.connected(
+                    IpEndpoint{IpAddress::loopbackV4(), Port{49152U}},
+                    IpEndpoint{IpAddress::loopbackV4(), Port{9443U}});
+            });
+            sendCertificate(harness);
+            runUntil(harness.loop, [&]() -> bool { return state->started.load(); });
+            runUntil(harness.loop, [&]() -> bool { return finalCount == 1U; });
+            REQUIRE_EQUAL(reason, NetworkErrorReason::Timeout);
+            REQUIRE_FALSE(state->finished.load());
+        }
+        runUntil(harness.loop, [&]() -> bool { return state->finished.load(); });
+        static_cast<void>(harness.loop->runUntilIdle());
+        REQUIRE_EQUAL(finalCount, std::size_t{1U});
+        REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Failed);
+    }
+
+    void testDefaultLabelFallbackAndSynchronousConfigurationFailure() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        auto harness = makeHarness();
         registerPolicy("tls"_el);
         run(harness, [&]() -> void {
             harness.connection->connect(HostEndpoint{IpAddress::loopbackV4(), Port{9443U}});
-            REQUIRE_EQUAL(harness.connection->requestedConfigurationLabel(), "tls/client"_el);
+            REQUIRE_EQUAL(harness.connection->requestedConfigurationLabel(), "tls"_el);
             REQUIRE_EQUAL(harness.connection->matchedConfigurationLabel(), "tls"_el);
             REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Connecting);
         });
@@ -203,10 +326,13 @@ public:
         static_cast<void>(harness.loop->runUntilIdle());
     }
 
-    void testMissingPolicySelectsCompleteEntryAndLeavesInactive() {
+    void testDisabledGlobalTrustLeavesConnectionInactive() {
         const auto applicationScope = ApplicationTestScope<>{};
-        registerPolicy("tls"_el);
-        el::core::application().cryptologyConfiguration().setTlsConfiguration("tls/client"_el, TlsConfiguration{});
+        auto configurations = TlsConfigurationSet{};
+        auto settings = TlsSettings{};
+        settings.setSystemTrust(false);
+        configurations.setSettings(settings);
+        el::core::application().cryptologyConfiguration().replaceTlsConfigurations(configurations);
         auto harness = makeHarness();
         run(harness, [&]() -> void {
             REQUIRE_THROWS_AS(
@@ -217,7 +343,7 @@ public:
 
     void testDeterministicLifecycleApplicationDataAndOrderlyClose() {
         const auto applicationScope = ApplicationTestScope<>{};
-        registerPolicy("tls/client"_el);
+        registerPolicy("tls"_el);
         auto harness = makeHarness();
         auto events = std::vector<int>{};
         auto received = mem::ByteBlock{};
@@ -251,7 +377,7 @@ public:
         REQUIRE(*harness.protocol != nullptr);
         REQUIRE_EQUAL(harness.device->sends.size(), std::size_t{1U});
 
-        const auto sessionId = mem::ByteBlock{unit::ByteLength{32U}, 0x22U};
+        const auto sessionId = mem::ByteBlock{unit::ByteCount{32U}, 0x22U};
         auto serverPrivate = privateKey(0x55U);
         run(harness, [&]() -> void { harness.device->callbacks.data(serverHello(sessionId, serverPrivate)); });
         auto access = TlsClientProtocolTestAccess{**harness.protocol};
@@ -298,7 +424,7 @@ public:
 
     void testHandshakeTimeoutReportsPhaseAndFinalizesOnce() {
         const auto applicationScope = ApplicationTestScope<>{};
-        registerPolicy("tls/client"_el);
+        registerPolicy("tls"_el);
         auto harness = makeHarness();
         auto finalCount = std::size_t{};
         auto reason = NetworkErrorReason::Unknown;
@@ -328,7 +454,7 @@ public:
 
     void testAbortAtCheckpointPreventsNextTransitionAndEmitsOnlyFinal() {
         const auto applicationScope = ApplicationTestScope<>{};
-        registerPolicy("tls/client"_el);
+        registerPolicy("tls"_el);
         auto harness = makeHarness();
         auto events = std::vector<int>{};
         run(harness, [&]() -> void {
@@ -349,7 +475,7 @@ public:
             harness.device->callbacks.connected(
                 IpEndpoint{IpAddress::loopbackV4(), Port{49152U}}, IpEndpoint{IpAddress::loopbackV4(), Port{9443U}});
         });
-        const auto sessionId = mem::ByteBlock{unit::ByteLength{32U}, 0x22U};
+        const auto sessionId = mem::ByteBlock{unit::ByteCount{32U}, 0x22U};
         auto serverPrivate = privateKey(0x55U);
         run(harness, [&]() -> void { harness.device->callbacks.data(serverHello(sessionId, serverPrivate)); });
         auto access = TlsClientProtocolTestAccess{**harness.protocol};

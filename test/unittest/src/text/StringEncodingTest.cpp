@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringEncoding.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringEncoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -12,7 +12,7 @@
 using el::mem::Byte;
 using el::text::StringBomMode;
 using el::text::StringEncoding;
-using el::unit::ByteLength;
+using el::unit::ByteCount;
 
 TESTED_TARGETS(StringEncoding)
 class StringEncodingTest final : public el::UnitTest {
@@ -90,12 +90,12 @@ public:
             toBytes(StringEncoding{StringEncoding::Utf32BigEndian}.bomBytes(StringBomMode::Require)),
             std::vector<uint8_t>({0x00U, 0x00U, 0xfeU, 0xffU}));
 
-        REQUIRE_EQUAL(StringEncoding{StringEncoding::Utf8}.bomLength(StringBomMode::Automatic), ByteLength::zero());
-        REQUIRE_EQUAL(StringEncoding{StringEncoding::Utf8}.bomLength(StringBomMode::Require), ByteLength{3U});
+        REQUIRE_EQUAL(StringEncoding{StringEncoding::Utf8}.bomLength(StringBomMode::Automatic), ByteCount::zero());
+        REQUIRE_EQUAL(StringEncoding{StringEncoding::Utf8}.bomLength(StringBomMode::Require), ByteCount{3U});
         REQUIRE_EQUAL(
-            StringEncoding{StringEncoding::Utf16LittleEndian}.bomLength(StringBomMode::Require), ByteLength{2U});
+            StringEncoding{StringEncoding::Utf16LittleEndian}.bomLength(StringBomMode::Require), ByteCount{2U});
         REQUIRE_EQUAL(
-            StringEncoding{StringEncoding::Utf32LittleEndian}.bomLength(StringBomMode::Require), ByteLength{4U});
+            StringEncoding{StringEncoding::Utf32LittleEndian}.bomLength(StringBomMode::Require), ByteCount{4U});
         REQUIRE(StringEncoding{StringEncoding::Utf32}.bomBytes(StringBomMode::Reject).empty());
     }
 };

@@ -43,7 +43,7 @@ public:
 
 public:
     /// Bind the socket to a local endpoint.
-    [[nodiscard]] auto bind(IpEndpoint localEndpoint, unit::ByteLength maximumDatagramSize) -> IpEndpoint;
+    [[nodiscard]] auto bind(IpEndpoint localEndpoint, unit::ByteCount maximumDatagramSize) -> IpEndpoint;
     /// Submit a datagram for sending.
     [[nodiscard]] auto send(const UdpDatagram &datagram) -> UdpSocketDeviceSendStatus;
     /// Enable or disable pending receive operations.
@@ -89,7 +89,7 @@ private:
     std::unique_ptr<WindowsUdpSocketOperation> _receiveOperation; ///< Stable pending receive record.
     std::unique_ptr<WindowsUdpSocketOperation> _sendOperation;    ///< Stable pending send record.
     std::optional<IpEndpoint> _localEndpoint;                     ///< Actual bound endpoint.
-    unit::ByteLength _maximumDatagramSize;                        ///< Configured receive size.
+    unit::ByteCount _maximumDatagramSize;                         ///< Configured receive size.
     std::uint64_t _generation{1U};                                ///< Current operation generation.
     bool _receiving{false};                                       ///< Whether receive operations are enabled.
     bool _closed{false};                                          ///< Whether native shutdown started.

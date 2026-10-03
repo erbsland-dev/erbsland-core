@@ -10,8 +10,8 @@
 #include "../ByteTextOptions_fwd.hpp"
 
 #include "../../text/String_fwd.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 
 #include <cstdint>
 
@@ -26,24 +26,24 @@ public:
 
 public:
     /// Transactionally read structured text.
+    /// The complete frame selected by `options` must be available.
     /// @param options The text framing options.
     /// @return The decoded text.
-    /// @throws err::OutOfRangeError If the complete frame is unavailable.
     /// @throws err::ParseError If the frame is invalid.
     [[nodiscard]] auto readTextOrThrow(const ByteTextOptions &options) -> text::String;
 
 private:
     /// Decode text from a field with a known byte length.
     [[nodiscard]] auto readTextFromFieldOrThrow(
-        const ByteTextOptions &options, unit::ByteLength fieldLength, unit::ByteIndex &cursor) -> text::String;
+        const ByteTextOptions &options, unit::ByteCount fieldLength, unit::ByteIndex &cursor) -> text::String;
     /// Decode text whose byte length is encoded in the stream.
     [[nodiscard]] auto readDynamicTextOrThrow(const ByteTextOptions &options, unit::ByteIndex &cursor) -> text::String;
     /// Decode an integer count and advance the temporary cursor.
     [[nodiscard]] auto readCountOrThrow(ByteIntegerFormat format, unit::ByteIndex &cursor) const -> uint64_t;
     /// Copy a byte range from the temporary cursor.
-    [[nodiscard]] auto readBytesOrThrow(unit::ByteLength length, unit::ByteIndex &cursor) const -> ByteBlock;
+    [[nodiscard]] auto readBytesOrThrow(unit::ByteCount length, unit::ByteIndex &cursor) const -> ByteBlock;
     /// Test whether a byte range is available from the temporary cursor.
-    [[nodiscard]] auto canRead(unit::ByteIndex cursor, unit::ByteLength length) const noexcept -> bool;
+    [[nodiscard]] auto canRead(unit::ByteIndex cursor, unit::ByteCount length) const noexcept -> bool;
 
 private:
     ByteReader &_reader; ///< The sequential reader whose position is committed after successful parsing.

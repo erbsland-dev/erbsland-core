@@ -3,8 +3,10 @@
 #include "ReadLineBase.hpp"
 
 #include "../Terminal.hpp"
+#include "../TerminalError.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../text/Literals.hpp"
 #include "../../time/Literals.hpp"
@@ -16,6 +18,7 @@
 
 namespace erbsland::cterm::impl {
 
+using namespace err;
 using namespace text::literals;
 using namespace unit;
 using namespace time::literals;
@@ -29,10 +32,10 @@ ReadLineBase::ReadLineBase(TerminalPtr terminal, ReadLineOptions options) :
 ReadLineBase::ReadLineBase(TerminalPtr terminal, ReadLineOptions options, NowFn nowFn) :
     _terminal{std::move(terminal)}, _options{std::move(options)}, _nowFn{std::move(nowFn)} {
     if (_terminal == nullptr) {
-        throw err::ParameterError{"The line-editor terminal must not be null."_el, "terminal"_el};
+        throw ParameterFailure{"The line-editor terminal must not be null."_el, "terminal"_el};
     }
     if (!_nowFn) {
-        throw err::ParameterError{"The line-editor clock function must not be empty."_el, "nowFn"_el};
+        throw ParameterFailure{"The line-editor clock function must not be empty."_el, "nowFn"_el};
     }
     validateOptions();
 }
@@ -45,21 +48,21 @@ void ReadLineBase::validateOptions() const {
     case ReadLineDisplayStyle::Frame:
         break;
     default:
-        throw err::ParameterError{"The read-line display style is invalid."_el, "displayStyle"_el};
+        throw ParameterFailure{"The read-line display style is invalid."_el, "displayStyle"_el};
     }
     if (!_options.commitKey().valid() || !_options.newLineKey().valid() || !_options.cancelKey().valid()) {
-        throw err::ParameterError{"Read-line key bindings must contain valid keys."_el, "keyBindings"_el};
+        throw ParameterFailure{"Read-line key bindings must contain valid keys."_el, "keyBindings"_el};
     }
     if (_options.commitKey() == _options.newLineKey() || _options.commitKey() == _options.cancelKey() ||
         _options.newLineKey() == _options.cancelKey()) {
-        throw err::ParameterError{"Read-line key bindings must be distinct."_el, "keyBindings"_el};
+        throw ParameterFailure{"Read-line key bindings must be distinct."_el, "keyBindings"_el};
     }
     if (_options.maximumLines().isZero() || _options.maximumDisplayLines().isZero()) {
-        throw err::ParameterError{"Read-line line limits must be at least one."_el, "lineLimits"_el};
+        throw ParameterFailure{"Read-line line limits must be at least one."_el, "lineLimits"_el};
     }
     if (_options.timeout().isNegative() || _options.timeoutDisplayThreshold().isNegative() ||
         !_options.blinkInterval().isPositive()) {
-        throw err::ParameterError{"Read-line timing values are invalid."_el, "timing"_el};
+        throw ParameterFailure{"Read-line timing values are invalid."_el, "timing"_el};
     }
 }
 
@@ -79,10 +82,10 @@ void ReadLineBase::resetOperation() {
 
 void ReadLineBase::startBase() {
     if (_active) {
-        throw err::RuntimeError{"The line-editor operation is already active."};
+        throw LogicFailure{"The line-editor operation is already active."};
     }
     if (!_terminal->isInteractive() || _terminal->outputMode() != Terminal::OutputMode::FullControl) {
-        throw err::RuntimeError{"Line-editor input requires an interactive full-control terminal."};
+        throw TerminalError{"Line-editor input requires an interactive full-control terminal."};
     }
     resetOperation();
     _previousInputMode = _terminal->input().mode();
@@ -100,7 +103,7 @@ void ReadLineBase::startBase() {
 
 auto ReadLineBase::updateBase() -> ReadLineStatus {
     if (!_active) {
-        throw err::RuntimeError{"The line-editor operation is not active."};
+        throw LogicFailure{"The line-editor operation is not active."};
     }
     return process(0_ms);
 }
@@ -125,19 +128,16 @@ void ReadLineBase::stopBase() noexcept {
     if (!_active) {
         return;
     }
-    try {
-        if (_options.cleanupEnabled()) {
-            clearRenderedArea();
-        } else {
-            renderFinal();
-        }
-        _terminal->input().setMode(_previousInputMode);
-        _terminal->flush();
-    } catch (...) {
-        try {
-            _terminal->input().setMode(_previousInputMode);
-        } catch (...) {}
+    if (_options.cleanupEnabled()) {
+        clearRenderedArea();
+    } else {
+        renderFinal();
     }
+    try {
+        _terminal->input().setMode(_previousInputMode);
+    } catch (const RuntimeError &) { // Input-mode restoration may fail during terminal cleanup.
+    }
+    _terminal->flush();
     _active = false;
     discardText();
     _renderedHeight = 0;

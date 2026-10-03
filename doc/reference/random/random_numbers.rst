@@ -16,6 +16,10 @@ See :ref:`random-overview` for generator selection and :ref:`random-working-with
 ``buildByteBlock()`` select sensitive storage before generated data is written.
 Non-secure generators return ordinary strings and byte storage through the same APIs.
 
+``selectElement()`` derives the result type from the choice container.
+Its empty-container fallback accepts implicit conversions to that element type, so a string list can use a Core string
+literal or editor directly.
+
 Interface
 =========
 
@@ -23,7 +27,7 @@ Interface
     :members:
 .. doxygenclass:: erbsland::random::Random
     :members:
-.. doxygenclass:: erbsland::random::RandomError
+.. doxygenclass:: erbsland::random::RandomFailure
     :members:
 .. doxygenclass:: erbsland::random::SecureRandom
     :members:

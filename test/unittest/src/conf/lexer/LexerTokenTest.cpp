@@ -3,13 +3,13 @@
 
 #include "../ConfTestHelper.hpp"
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/CodeLocation.hpp>
 #include <erbsland/conf/impl/lexer/LexerToken.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/time/Date.hpp>
-#include <erbsland/time/DateTime.hpp>
-#include <erbsland/time/Time.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/unit/CodeLocation.hpp>
+#include <erbsland/Date.hpp>
+#include <erbsland/DateTime.hpp>
+#include <erbsland/Time.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::conf;
@@ -25,7 +25,7 @@ public:
     void verifyToken(TokenType type, const el::text::String &rawText, const ValueType &expectedValue) {
         const el::unit::CodeLocation begin{el::unit::LineIndex::zero(), el::unit::ColumnIndex::zero()};
         const el::unit::CodeLocation end{
-            el::unit::LineIndex::zero(), el::unit::ColumnIndex{rawText.characterLength().toRawValue()}};
+            el::unit::LineIndex::zero(), el::unit::ColumnIndex::fromInteger(rawText.characterLength().toRawValue())};
         LexerToken token{type, begin, end, rawText, expectedValue};
         REQUIRE_EQUAL(token.type(), type);
         REQUIRE_EQUAL(token.begin(), begin);

@@ -4,8 +4,7 @@
 
 #include "../line/LogLine.hpp"
 
-#include "../../err/ParameterError.hpp"
-#include "../../err/RuntimeError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../path/PathCollisionMode.hpp"
 #include "../../path/PathContent.hpp"
 #include "../../path/PathCreateMode.hpp"
@@ -13,9 +12,11 @@
 #include "../../path/PathMoveOptions.hpp"
 #include "../../path/PathOperations.hpp"
 #include "../../path/PathWriteTextOptions.hpp"
+#include "../../stream/StreamError.hpp"
 #include "../../stream/TextOutputStream.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
+#include "../../text/StringJoins.hpp"
 #include "../../text/StringSide.hpp"
 #include "../../time/DayOfWeek.hpp"
 
@@ -24,15 +25,18 @@
 
 namespace erbsland::log::impl {
 
+using namespace path;
+using namespace stream;
+using namespace text;
 using namespace text::literals;
 using namespace unit;
 
 FileLogWriter::FileLogWriter(FileLogWriterOptions options) : _options{std::move(options)} {
     if (_options.path().isEmpty()) {
-        throw err::ParameterError{"A file log writer requires a path."_el, "path"_el};
+        throw err::ParameterFailure{"A file log writer requires a path."_el, "path"_el};
     }
     if (_options.rotation() == LogFileRotation::Size && _options.maximumSize().isZero()) {
-        throw err::ParameterError{"Size rotation requires a nonzero maximum size."_el, "maximumSize"_el};
+        throw err::ParameterFailure{"Size rotation requires a nonzero maximum size."_el, "maximumSize"_el};
     }
 }
 
@@ -57,19 +61,23 @@ void FileLogWriter::writeBatch(const Batch batch) {
                     _options.rotation() == LogFileRotation::Weekly)) {
                 _rotationKey = rotationKey(*entry);
             }
-            const auto writeSize = line->text().length() + ByteLength::one();
+            const auto writeSize = line->text().length() + ByteCount::one();
             if (shouldRotate(*entry, writeSize)) {
                 rotate(*entry);
                 ensureOpen();
             }
-            if (_stream->writeLine(line->text()) != stream::StreamWriteStatus::Success) {
-                throw err::RuntimeError{"Timed out while writing a log file."_el};
+            if (_stream->writeLine(line->text()) != StreamWriteStatus::Success) {
+                throw StreamError{
+                    StreamErrorContext{"Log file output failed"_el, "Timed out while writing a log file."_el}.setPath(
+                        _options.path().toString())};
             }
             _currentSize += writeSize;
         }
         _retryStep = 0U;
         _nextRetry = {};
     } catch (...) {
+        // Cleanup only: the noexcept helpers restore state, then the original exception (including fatal errors)
+        // is rethrown unchanged. This catch neither suppresses a failure nor converts it into a runtime error.
         closeStream();
         scheduleRetry();
         throw;
@@ -78,10 +86,14 @@ void FileLogWriter::writeBatch(const Batch batch) {
 
 void FileLogWriter::flush() {
     try {
-        if (_stream && _stream->flush() != stream::StreamWriteStatus::Success) {
-            throw err::RuntimeError{"Timed out while flushing a log file."_el};
+        if (_stream && _stream->flush() != StreamWriteStatus::Success) {
+            throw StreamError{
+                StreamErrorContext{"Log file output failed"_el, "Timed out while flushing a log file."_el}.setPath(
+                    _options.path().toString())};
         }
     } catch (...) {
+        // Cleanup only: the noexcept helpers restore state, then the original exception (including fatal errors)
+        // is rethrown unchanged. This catch neither suppresses a failure nor converts it into a runtime error.
         closeStream();
         scheduleRetry();
         throw;
@@ -97,15 +109,17 @@ void FileLogWriter::ensureOpen() {
         return;
     }
     if (_nextRetry != time::TimePoint{} && time::TimePoint::now() < _nextRetry) {
-        throw err::RuntimeError{"The log file is waiting for its next recovery attempt."_el};
+        throw StreamError{
+            StreamErrorContext{"Log file output failed"_el, "The log file is waiting for its next recovery attempt."_el}
+                .setPath(_options.path().toString())};
     }
-    auto options = path::PathWriteTextOptions{};
+    auto options = PathWriteTextOptions{};
     options.setCreateParents(true);
     const auto append = _openedOnce || _options.mode() == LogFileMode::Append;
-    options.setCreationMode(append ? path::PathCreateMode::CreateOrAppend : path::PathCreateMode::CreateOrOverwrite);
+    options.setCreationMode(append ? PathCreateMode::CreateOrAppend : PathCreateMode::CreateOrOverwrite);
     _stream = _options.path().content().openTextOutputStream(options);
     _identity = _stream->fileIdentity();
-    auto info = _options.path().info(path::PathInfoParts{path::PathInfoPart::Size, path::PathInfoPart::FileIdentity});
+    auto info = _options.path().info(PathInfoParts{PathInfoPart::Size, PathInfoPart::FileIdentity});
     _currentSize = info.fileSize();
     _openedOnce = true;
     _nextIdentityCheck = time::TimePoint::inFuture(time::TimeDelta::seconds(1));
@@ -115,15 +129,15 @@ void FileLogWriter::verifyIdentity() {
     if (!_stream || time::TimePoint::now() < _nextIdentityCheck) {
         return;
     }
-    auto info = _options.path().info(path::PathInfoPart::FileIdentity);
-    info.reload(path::PathInfoPart::FileIdentity);
+    auto info = _options.path().info(PathInfoPart::FileIdentity);
+    info.reload(PathInfoPart::FileIdentity);
     _nextIdentityCheck = time::TimePoint::inFuture(time::TimeDelta::seconds(1));
     if (!info.fileIdentity().isValid() || info.fileIdentity() != _identity) {
         closeStream();
     }
 }
 
-auto FileLogWriter::shouldRotate(const LogEntry &entry, const ByteLength writeSize) const -> bool {
+auto FileLogWriter::shouldRotate(const LogEntry &entry, const ByteCount writeSize) const -> bool {
     switch (_options.rotation().toRawValue()) {
     case LogFileRotation::None:
         return false;
@@ -153,12 +167,12 @@ void FileLogWriter::rotateBySize() {
         _options.path().operations().removeOrThrow();
         return;
     }
-    auto moveOptions = path::PathMoveOptions{};
-    moveOptions.setCollisionMode(path::PathCollisionMode::Overwrite);
+    auto moveOptions = PathMoveOptions{};
+    moveOptions.setCollisionMode(PathCollisionMode::Overwrite);
     for (auto index = _options.retention(); index > 1U; --index) {
-        const auto source = archivePath(text::String::fromInteger(index - 1U));
+        const auto source = archivePath(String::fromInteger(index - 1U));
         if (source.info().exists()) {
-            source.operations().moveToOrThrow(archivePath(text::String::fromInteger(index)), moveOptions);
+            source.operations().moveToOrThrow(archivePath(String::fromInteger(index)), moveOptions);
         }
     }
     if (_options.path().info().exists()) {
@@ -172,8 +186,8 @@ void FileLogWriter::rotateByTime() {
         return;
     }
     const auto archive = archivePath(_rotationKey);
-    auto options = path::PathMoveOptions{};
-    options.setCollisionMode(path::PathCollisionMode::Overwrite);
+    auto options = PathMoveOptions{};
+    options.setCollisionMode(PathCollisionMode::Overwrite);
     _options.path().operations().moveToOrThrow(archive, options);
     _archives.push_back(archive);
     while (_archives.size() > _options.retention()) {
@@ -182,18 +196,16 @@ void FileLogWriter::rotateByTime() {
     }
 }
 
-auto FileLogWriter::archivePath(const text::String &key) const -> path::Path {
-    return _options.path().withStem(text::String::fromJoined({_options.path().stem(), "."_el, key}));
+auto FileLogWriter::archivePath(const String &key) const -> Path {
+    return _options.path().withStem(text::join(_options.path().stem(), "."_el, key));
 }
 
-auto FileLogWriter::rotationKey(const LogEntry &entry) const -> text::String {
+auto FileLogWriter::rotationKey(const LogEntry &entry) const -> String {
     const auto date = entry.timestamp().date();
     switch (_options.rotation().toRawValue()) {
     case LogFileRotation::Hourly:
-        return text::String::fromJoined(
-            {date.toString(),
-                "-"_el,
-                entry.timestamp().time().toString().slice(text::StringSide::Front, unit::ByteLength{2U})});
+        return text::join(
+            date.toString(), "-"_el, entry.timestamp().time().toString().slice(StringSide::Front, unit::ByteCount{2U}));
     case LogFileRotation::Daily:
         return date.toString();
     case LogFileRotation::Weekly:
@@ -209,7 +221,7 @@ void FileLogWriter::closeStream() noexcept {
     if (!_stream) {
         return;
     }
-    if (_stream->close() != stream::StreamCloseStatus::Closed) {
+    if (_stream->close() != StreamCloseStatus::Closed) {
         _stream->abort();
     }
     _stream.reset();

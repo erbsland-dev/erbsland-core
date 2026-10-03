@@ -5,7 +5,8 @@
 #include "AxisDefinition_fwd.hpp"
 #include "AxisValue.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/String.hpp>
 
 namespace erbsland::profiling {
 

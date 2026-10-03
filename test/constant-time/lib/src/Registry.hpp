@@ -4,10 +4,9 @@
 
 #include "Registration.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace app::constant_time {
 
@@ -46,4 +45,5 @@ private:
 private:
     el::List<Registration> _entries; ///< Explicit ordered registrations.
 };
+
 }

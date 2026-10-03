@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/time/all.hpp>
+#include <erbsland/all_time.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <charconv>

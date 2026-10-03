@@ -10,10 +10,11 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
-auto expectedRuleTypesText(const std::vector<vr::RuleType> &ruleTypes) -> text::String {
-    text::StringEditor result;
+auto expectedRuleTypesText(const std::vector<vr::RuleType> &ruleTypes) -> String {
+    StringEditor result;
     for (std::size_t i = 0; i != ruleTypes.size(); ++i) {
         result.append(ruleTypes[i].expectedValueTypeText());
         if (i < ruleTypes.size() - 1) {
@@ -27,8 +28,8 @@ auto expectedRuleTypesText(const std::vector<vr::RuleType> &ruleTypes) -> text::
     return result;
 }
 
-auto expectedValueTypeText(const RulePtr &rule, const Integer version) -> text::String {
-    text::String result;
+auto expectedValueTypeText(const RulePtr &rule, const Integer version) -> String {
+    String result;
     if (rule->type() == vr::RuleType::Alternatives) {
         std::vector<vr::RuleType> expectedRuleTypes;
         for (const auto &alternativeRule : rule->childrenImpl()) {
@@ -47,7 +48,7 @@ auto expectedValueTypeText(const RulePtr &rule, const Integer version) -> text::
 
 void throwExpectedVsActual(const RulePtr &rule, const ValuePtr &value, const Integer version) {
     throwValidationError(
-        text::StringFormat{"Expected {} but got {}"_el}.build(
+        StringFormat{"Expected {} but got {}"_el}.build(
             expectedValueTypeText(rule, version), value->type().toValueDescription(true)),
         value->namePath(),
         value->location());

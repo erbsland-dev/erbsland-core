@@ -4,6 +4,8 @@
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/vr/RulesBuilder.hpp>
+#include <erbsland/conf/vr/RuleType.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

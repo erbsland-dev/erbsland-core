@@ -10,6 +10,7 @@
 #include "../../../text/StringCharReader.hpp"
 #include "../../../text/StringEditor.hpp"
 #include "../../../text/StringFormat.hpp"
+#include "../../../text/StringJoins.hpp"
 #include "../../TestFormat.hpp"
 #include "../../Value.hpp"
 
@@ -89,7 +90,7 @@ template <>
 [[nodiscard]] inline auto toTestText(const time::TimeWithZone &value, [[maybe_unused]] TestFormat format) noexcept
     -> text::String {
     if (!value.timeZone().isLocalTime() && value.timeZone().isUtc()) {
-        return text::String::fromJoined({value.time().toString(), "z"_el});
+        return text::join(value.time().toString(), "z"_el);
     }
     return value.toString();
 }
@@ -102,7 +103,7 @@ template <>
 [[nodiscard]] inline auto toTestText(const time::DateTime &value, [[maybe_unused]] TestFormat format) noexcept
     -> text::String {
     if (!value.isLocalTime() && value.isUtc()) {
-        return text::String::fromJoined({value.date().toString(), " "_el, value.time().toString(), "z"_el});
+        return text::join(value.date().toString(), " "_el, value.time().toString(), "z"_el);
     }
     return value.toString();
 }

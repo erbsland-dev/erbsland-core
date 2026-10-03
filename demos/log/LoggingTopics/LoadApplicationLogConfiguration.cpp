@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/conf/all.hpp>
+#include <erbsland/all_conf.hpp>
+#include <erbsland/all_log.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/LogConfigurationParser.hpp>
+#include <erbsland/Path.hpp>
 
 #include <utility>
 

@@ -9,6 +9,7 @@
 
 namespace erbsland::compression::impl {
 
+using namespace mem;
 using namespace text::literals;
 
 void ZstandardReverseBitWriter::append(const uint32_t value, const uint8_t count) {
@@ -19,29 +20,29 @@ void ZstandardReverseBitWriter::append(const uint32_t value, const uint8_t count
     while (remaining != 0U) {
         const auto bitOffset = _bitCount % 8U;
         if (bitOffset == 0U) {
-            _bytes.append(mem::Byte{});
+            _bytes.append(Byte{});
         }
         const auto chunk = std::min(remaining, 8U - bitOffset);
         const auto valueShift = remaining - chunk;
         const auto mask = static_cast<uint8_t>((uint32_t{1U} << chunk) - uint32_t{1U});
         const auto byteShift = 8U - bitOffset - chunk;
         const auto bits = static_cast<uint8_t>((value >> valueShift) & mask);
-        const auto index = unit::ByteIndex{_bytes.length().toRawValue() - 1U};
-        _bytes.setOrThrow(index, _bytes.getOrThrow(index) | mem::Byte{static_cast<uint8_t>(bits << byteShift)});
+        const auto index = _bytes.lastIndex();
+        _bytes.setOrThrow(index, _bytes.getOrThrow(index) | Byte{static_cast<uint8_t>(bits << byteShift)});
         _bitCount += chunk;
         remaining -= chunk;
     }
 }
 
-auto ZstandardReverseBitWriter::takeBytes() -> mem::ByteBuffer {
+auto ZstandardReverseBitWriter::takeBytes() -> ByteBuffer {
     const auto firstCount = _bitCount % 8U;
     const auto groupCount = (_bitCount - firstCount) / 8U;
-    auto output = mem::ByteBuffer{};
-    output.reserve(unit::ByteLength::fromSizeT(groupCount + 1U));
+    auto output = ByteBuffer{};
+    output.reserve(unit::ByteCount::fromSizeT(groupCount + 1U));
     for (auto group = groupCount; group > 0U; --group) {
-        output.append(mem::Byte{read(firstCount + (group - 1U) * 8U, 8U)});
+        output.append(Byte{read(firstCount + (group - 1U) * 8U, 8U)});
     }
-    output.append(mem::Byte{static_cast<uint8_t>((uint32_t{1U} << firstCount) | read(0U, firstCount))});
+    output.append(Byte{static_cast<uint8_t>((uint32_t{1U} << firstCount) | read(0U, firstCount))});
     _bytes.clear();
     _bitCount = 0U;
     return output;

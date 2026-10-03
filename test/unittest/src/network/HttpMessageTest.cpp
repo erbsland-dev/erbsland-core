@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/network/http/HttpRequestHead.hpp>
-#include <erbsland/network/http/HttpResponseHead.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/HttpRequestHead.hpp>
+#include <erbsland/HttpResponseHead.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -26,9 +26,9 @@ public:
         REQUIRE_EQUAL(head.headers(), headers);
 
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, HttpRequestHead(HttpMethodType::Get, "contains space"_el, HttpVersion::Http11));
+            el::err::ParameterFailure, HttpRequestHead(HttpMethodType::Get, "contains space"_el, HttpVersion::Http11));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, HttpRequestHead(HttpMethodType::Get, u8"/non-ascii-é"_el, HttpVersion::Http11));
+            el::err::ParameterFailure, HttpRequestHead(HttpMethodType::Get, u8"/non-ascii-é"_el, HttpVersion::Http11));
     }
 
     void testResponseHeadAndRawReason() {
@@ -37,16 +37,16 @@ public:
         const auto head = HttpResponseHead{HttpVersion::Http11, HttpStatus::Ok, malformed};
         REQUIRE(head.isValid());
         REQUIRE_EQUAL(head.status(), HttpStatus::Ok);
-        REQUIRE_EQUAL(head.reasonPhrase().length(), el::unit::ByteLength{4U});
-        REQUIRE_FALSE(head.reasonPhrase().isValidUtf8());
+        REQUIRE_EQUAL(head.reasonPhrase().length(), el::unit::ByteCount{4U});
+        REQUIRE_FALSE(head.reasonPhrase().isEncodingValid());
 
         const auto control = el::text::String{el::unittest::th::stdStringFromHex("42 61 64 0A")};
-        REQUIRE_THROWS_AS(el::err::ParameterError, HttpResponseHead(HttpVersion::Http11, HttpStatus::Ok, control));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, HttpResponseHead(HttpVersion::Http11, HttpStatus::Ok, control));
     }
 
     void testFieldEdgeWhitespacePolicy() {
-        REQUIRE_THROWS_AS(el::err::ParameterError, HttpField("X-Test"_el, " leading"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, HttpField("X-Test"_el, "trailing\t"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, HttpField("X-Test"_el, " leading"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, HttpField("X-Test"_el, "trailing\t"_el));
         REQUIRE_NOTHROW(HttpField("X-Test"_el, "interior\tvalue"_el));
     }
 };

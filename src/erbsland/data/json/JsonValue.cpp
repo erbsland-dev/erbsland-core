@@ -6,8 +6,9 @@
 #include "impl/JsonValueData.hpp"
 #include "impl/JsonWriter.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/OutOfRangeError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/NotFoundError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../text/Literals.hpp"
 
@@ -16,6 +17,9 @@
 
 namespace erbsland::data::json {
 
+using namespace err;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 JsonValue::JsonValue(const bool value) : _data{std::make_shared<impl::JsonValueData>(value)} {
@@ -26,12 +30,12 @@ JsonValue::JsonValue(const int64_t value) : _data{std::make_shared<impl::JsonVal
 
 JsonValue::JsonValue(const double value) {
     if (!std::isfinite(value)) {
-        throw err::ParameterError{"A JSON number must be finite."_el, "value"_el};
+        throw ParameterFailure{"A JSON number must be finite."_el, "value"_el};
     }
     _data = std::make_shared<impl::JsonValueData>(value);
 }
 
-JsonValue::JsonValue(text::String value) : _data{std::make_shared<impl::JsonValueData>(std::move(value))} {
+JsonValue::JsonValue(String value) : _data{std::make_shared<impl::JsonValueData>(std::move(value))} {
 }
 
 JsonValue::JsonValue(JsonArray value) : _data{std::make_shared<impl::JsonValueData>(std::move(value))} {
@@ -50,7 +54,7 @@ auto JsonValue::type() const noexcept -> JsonType {
     if (std::holds_alternative<int64_t>(_data->value) || std::holds_alternative<double>(_data->value)) {
         return JsonType::Number;
     }
-    if (std::holds_alternative<text::String>(_data->value)) {
+    if (std::holds_alternative<String>(_data->value)) {
         return JsonType::Text;
     }
     if (std::holds_alternative<JsonArray>(_data->value)) {
@@ -67,7 +71,7 @@ auto JsonValue::isPrimitive() const noexcept -> bool {
     return type() != JsonType::Array && type() != JsonType::Object;
 }
 
-auto JsonValue::itemCount() const noexcept -> unit::ItemCount {
+auto JsonValue::itemCount() const noexcept -> ItemCount {
     if (const auto value = getArray(); value.has_value()) {
         return value->count();
     }
@@ -77,20 +81,20 @@ auto JsonValue::itemCount() const noexcept -> unit::ItemCount {
     return {};
 }
 
-auto JsonValue::get(const unit::ItemIndex index) const -> JsonValue {
+auto JsonValue::get(const ItemIndex index) const -> JsonValue {
     const auto array = getArray();
     return array.has_value() ? array->get(index) : JsonValue{};
 }
 
-auto JsonValue::getOrThrow(const unit::ItemIndex index) const -> JsonValue {
+auto JsonValue::getOrThrow(const ItemIndex index) const -> JsonValue {
     const auto array = getArray();
     if (!array.has_value()) {
-        throw err::LogicError{"The JSON value is not an array."_el};
+        throw LogicFailure{"The JSON value is not an array."_el};
     }
     return array->getRefOrThrow(index);
 }
 
-auto JsonValue::get(const text::String &key) const -> JsonValue {
+auto JsonValue::get(const String &key) const -> JsonValue {
     const auto object = getObject();
     if (!object.has_value()) {
         return {};
@@ -98,14 +102,14 @@ auto JsonValue::get(const text::String &key) const -> JsonValue {
     return object->get(key).value_or(JsonValue{});
 }
 
-auto JsonValue::getOrThrow(const text::String &key) const -> JsonValue {
+auto JsonValue::getOrThrow(const String &key) const -> JsonValue {
     const auto object = getObject();
     if (!object.has_value()) {
-        throw err::LogicError{"The JSON value is not an object."_el};
+        throw LogicFailure{"The JSON value is not an object."_el};
     }
     const auto result = object->get(key);
     if (!result.has_value()) {
-        throw err::OutOfRangeError{"The JSON object key does not exist."_el};
+        throw NotFoundError{"The JSON object key does not exist."_el};
     }
     return *result;
 }
@@ -127,7 +131,7 @@ auto JsonValue::getBool(const bool fallback) const noexcept -> bool {
 auto JsonValue::getBoolOrThrow() const -> bool {
     const auto result = getBool();
     if (!result.has_value()) {
-        throwTypeError();
+        throwTypeFailure();
     }
     return *result;
 }
@@ -152,36 +156,36 @@ auto JsonValue::getNumber(const double fallback) const noexcept -> double {
 auto JsonValue::getNumberOrThrow() const -> double {
     const auto result = getNumber();
     if (!result.has_value()) {
-        throwTypeError();
+        throwTypeFailure();
     }
     return *result;
 }
 
-auto JsonValue::getText() const noexcept -> std::optional<text::String> {
+auto JsonValue::getText() const noexcept -> std::optional<String> {
     if (_data == nullptr) {
         return {};
     }
-    if (const auto value = std::get_if<text::String>(&_data->value)) {
+    if (const auto value = std::get_if<String>(&_data->value)) {
         return *value;
     }
     return {};
 }
 
-auto JsonValue::getText(text::String fallback) const noexcept -> text::String {
+auto JsonValue::getText(String fallback) const noexcept -> String {
     return getText().value_or(std::move(fallback));
 }
 
-auto JsonValue::getTextOrThrow() const -> text::String {
+auto JsonValue::getTextOrThrow() const -> String {
     const auto result = getText();
     if (!result.has_value()) {
-        throwTypeError();
+        throwTypeFailure();
     }
     return *result;
 }
 
-auto JsonValue::set(const unit::ItemIndex index, JsonValue value) -> JsonValue & {
+auto JsonValue::set(const ItemIndex index, JsonValue value) -> JsonValue & {
     if (type() != JsonType::Array) {
-        throw err::LogicError{"The JSON value is not an array."_el};
+        throw LogicFailure{"The JSON value is not an array."_el};
     }
     detach();
     auto &array = std::get<JsonArray>(_data->value);
@@ -190,14 +194,14 @@ auto JsonValue::set(const unit::ItemIndex index, JsonValue value) -> JsonValue &
     } else if (index.isWithin(array.count())) {
         array.set(index, std::move(value));
     } else {
-        throw err::OutOfRangeError{"The JSON array index exceeds the append position."_el};
+        throw OutOfRangeFailure{"The JSON array index exceeds the append position."_el};
     }
     return *this;
 }
 
-auto JsonValue::set(const text::String &key, JsonValue value) -> JsonValue & {
+auto JsonValue::set(const String &key, JsonValue value) -> JsonValue & {
     if (type() != JsonType::Object) {
-        throw err::LogicError{"The JSON value is not an object."_el};
+        throw LogicFailure{"The JSON value is not an object."_el};
     }
     detach();
     std::get<JsonObject>(_data->value).set(key, std::move(value));
@@ -205,23 +209,22 @@ auto JsonValue::set(const text::String &key, JsonValue value) -> JsonValue & {
 }
 
 auto JsonValue::append(JsonValue value) -> JsonValue & {
-    return set(unit::ItemIndex{itemCount().toRawValue()}, std::move(value));
+    return set(ItemIndex::end(itemCount()), std::move(value));
 }
 
-auto JsonValue::toString(const JsonFormatOptions options) const -> text::String {
+auto JsonValue::toString(const JsonFormatOptions options) const -> String {
     return impl::JsonWriter{*this, options}.write();
 }
 
-auto JsonValue::fromString(const text::String &text, const JsonParseOptions options) noexcept
-    -> std::optional<JsonValue> {
+auto JsonValue::fromString(const String &text, const JsonParseOptions options) noexcept -> std::optional<JsonValue> {
     try {
         return fromStringOrThrow(text, options);
-    } catch (const err::ParseError &) {
+    } catch (const ParseError &) {
         return {};
     }
 }
 
-auto JsonValue::fromStringOrThrow(const text::String &text, const JsonParseOptions options) -> JsonValue {
+auto JsonValue::fromStringOrThrow(const String &text, const JsonParseOptions options) -> JsonValue {
     return impl::JsonParser{text, options}.parse();
 }
 
@@ -260,8 +263,8 @@ auto JsonValue::getObject() const noexcept -> std::optional<JsonObject> {
     return {};
 }
 
-void JsonValue::throwTypeError() {
-    throw err::LogicError{"The JSON value has an incompatible type."_el};
+void JsonValue::throwTypeFailure() {
+    throw LogicFailure{"The JSON value has an incompatible type."_el};
 }
 
 void JsonValue::detach() {

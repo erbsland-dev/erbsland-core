@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/math/IntegerConversion.hpp>
-#include <erbsland/math/IntegerTraits.hpp>
+#include <erbsland/IntegerConversion.hpp>
+#include <erbsland/IntegerTraits.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <concepts>

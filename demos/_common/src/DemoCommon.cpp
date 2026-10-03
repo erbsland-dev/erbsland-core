@@ -1,11 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "DemoCommon.hpp"
+
+#include "DemoTerminal.hpp"
 
 #include <erbsland/core/impl/application_data/ApplicationRandomData.hpp>
 #include <erbsland/core/impl/ApplicationData.hpp>
-#include <erbsland/event/Events.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/FastRandom.hpp>
+#include <erbsland/LoopStatus.hpp>
+#include <erbsland/OptionChoices.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace demo {
 
@@ -34,7 +45,7 @@ auto DemoApplication::main() -> el::ExitCode {
         _demoFunctions.forEach([&](const el::String &name, const Demo &demo) -> el::LoopStatus {
             el::io::printLine();
             el::io::printLine("Running demo: "_el, name);
-            el::io::printLine(el::String{el::String::fromCharacter(U'=', el::CpLength{78})});
+            el::io::printLine(el::String{el::String::fromCharacter(U'=', el::CpCount{78})});
             demo.demoFn();
             if (demo.mode == Mode::EventLoop) {
                 runDemoEventLoop();
@@ -59,6 +70,11 @@ auto DemoApplication::main() -> el::ExitCode {
 void DemoApplication::runDemoEventLoop() {
     events()->invokeAfter(el::Seconds{10}, [this]() -> void { eventLoop().stop(); });
     eventLoop().run();
+}
+
+auto DemoApplication::createAndInitializeTerminal(const el::block::Size size, const el::cterm::TerminalFlags flags)
+    -> el::cterm::TerminalPtr {
+    return DemoTerminal::create(size, flags);
 }
 
 }

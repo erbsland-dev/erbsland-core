@@ -1,16 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "PasswordVerifierFixture.hpp"
 
-#include <erbsland/cryptology/PasswordHashKey.hpp>
-#include <erbsland/cryptology/PasswordHashPolicy.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/PasswordHashKey.hpp>
+#include <erbsland/PasswordHashPolicy.hpp>
+#include <erbsland/Random.hpp>
 
 namespace app::constant_time {
 
@@ -18,13 +17,17 @@ using namespace el::text::literals;
 
 PasswordVerifierFixture::PasswordVerifierFixture(
     [[maybe_unused]] el::Random &random, const bool population, bool keyed) {
-    auto raw = el::ByteBuffer{el::ByteLength{32}, el::Byte{0x55U}};
-    const auto salt = el::ByteBuffer{el::ByteLength{16}};
+    auto raw = el::ByteBuffer{el::ByteCount{32}, el::Byte{0x55U}};
+    const auto salt = el::ByteBuffer{el::ByteCount{16}};
     auto key = keyed ? std::make_unique<el::PasswordHashKey>(el::ByteBlock::fromSpan(raw.span())) : nullptr;
     auto record =
         ci::PasswordHashData::create(el::PasswordHashPolicy::recommended(), key.get(), salt.span(), raw.span());
     require(record->matchesVerifier(raw.span(), key.get()));
-    raw.set(el::ByteIndex{population ? 31U : 0U}, el::Byte{0x54U});
+    auto changedIndex = el::ByteIndex::zero();
+    if (population) {
+        changedIndex = el::ByteIndex{31U};
+    }
+    raw.set(changedIndex, el::Byte{0x54U});
     require(!record->matchesVerifier(raw.span(), key.get()));
     _raw = std::move(raw);
     _key = std::move(key);

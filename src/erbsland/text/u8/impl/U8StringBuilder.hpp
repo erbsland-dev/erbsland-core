@@ -15,7 +15,7 @@ namespace erbsland::text::impl {
 class U8StringBuilder final : public AnyStringBuilderBase {
 public:
     /// Create a builder with initial `capacity` and optional sensitive storage.
-    explicit U8StringBuilder(unit::ByteLength capacity, bool sensitive = false);
+    explicit U8StringBuilder(unit::ByteCount capacity, bool sensitive = false);
 
     // defaults
     U8StringBuilder() = default;
@@ -28,16 +28,16 @@ public:
 public:
     [[nodiscard]] auto clone() const -> U8StringBuilder * override;
     [[nodiscard]] auto kind() const noexcept -> StringKind override;
-    [[nodiscard]] auto length() const noexcept -> unit::CpLength override;
+    [[nodiscard]] auto length() const noexcept -> unit::CpCount override;
     [[nodiscard]] auto isEmpty() const noexcept -> bool override;
     void clear() noexcept override;
-    auto append(Char character) -> unit::CpLength override;
-    void append(Char character, unit::CpLength count) override;
-    auto append(const U8String &text) -> unit::CpLength override;
+    auto append(Char character) -> unit::CpCount override;
+    void append(Char character, unit::CpCount count) override;
+    auto append(const U8String &text) -> unit::CpCount override;
     void append(const U8String &text, unit::ItemCount count) override;
-    auto append(const U16String &text) -> unit::CpLength override;
+    auto append(const U16String &text) -> unit::CpCount override;
     void append(const U16String &text, unit::ItemCount count) override;
-    auto append(const U32String &text) -> unit::CpLength override;
+    auto append(const U32String &text) -> unit::CpCount override;
     void append(const U32String &text, unit::ItemCount count) override;
     void appendByteBlock(const mem::ByteBlock &bytes, const ByteFormat &format) override;
     [[nodiscard]] auto toU8StringEditor() const -> U8StringEditor override;
@@ -54,9 +54,9 @@ private:
     void resetAfterTake();
 
 private:
-    U8StringEditor _text;                           ///< The built string.
-    unit::CpLength _length{unit::CpLength::zero()}; ///< The cached decoded code-point length.
-    bool _sensitive{false};                         ///< Whether newly built UTF-8 text uses sensitive storage.
+    U8StringEditor _text;                         ///< The built string.
+    unit::CpCount _length{unit::CpCount::zero()}; ///< The cached decoded code-point length.
+    bool _sensitive{false};                       ///< Whether newly built UTF-8 text uses sensitive storage.
 };
 
 }

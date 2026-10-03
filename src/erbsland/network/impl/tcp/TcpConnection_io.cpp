@@ -4,8 +4,10 @@
 
 #include "../host/HostLookup.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
+#include "../../../err/RuntimeError.hpp"
 #include "../../../event/Events.hpp"
+#include "../../../event/impl/EventContinuation.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../source/NetworkError.hpp"
 
@@ -24,7 +26,7 @@ auto TcpConnection::send(const mem::ByteBlock &data) -> NetworkSendStatus {
         return NetworkSendStatus::Closed;
     }
     if (data.length() > _bufferLimits.send()) {
-        throw err::ParameterError{"The TCP output block exceeds the configured send queue limit."_el, "data"_el};
+        throw err::ParameterFailure{"The TCP output block exceeds the configured send queue limit."_el, "data"_el};
     }
     if (data.isEmpty()) {
         return NetworkSendStatus::Accepted;
@@ -97,24 +99,20 @@ void TcpConnection::abort() noexcept {
         return;
     }
     const auto generation = _generation.fetch_add(1U) + 1U;
-    try {
-        if (_lookup != nullptr) {
-            _lookup->cancel();
-        }
-    } catch (...) {}
+    if (_lookup != nullptr) {
+        _lookup->cancel();
+    }
     cleanupDevice(true);
-    try {
-        const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
-        ownerEvents()->invoke([weakSelf, generation]() -> void {
-            if (const auto self = weakSelf.lock(); self != nullptr) {
-                self->_sendQueue.clear();
-                self->_sendQueueSize = {};
-                self->_receiveQueue.clear();
-                self->_receiveQueueSize = {};
-                self->postFinal(generation);
-            }
-        });
-    } catch (...) {}
+    const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
+    _abortContinuation->invoke([weakSelf, generation]() -> void {
+        if (const auto self = weakSelf.lock(); self != nullptr) {
+            self->_sendQueue.clear();
+            self->_sendQueueSize = {};
+            self->_receiveQueue.clear();
+            self->_receiveQueueSize = {};
+            self->postFinal(generation);
+        }
+    });
 }
 
 void TcpConnection::postConnected(const std::uint64_t generation, IpEndpoint localEndpoint, IpEndpoint remoteEndpoint) {
@@ -279,7 +277,7 @@ void TcpConnection::notifyWritableIfReady() {
 }
 
 void TcpConnection::updateReceiving() {
-    auto maximumBytes = unit::ByteLength{};
+    auto maximumBytes = unit::ByteCount{};
     if (_state.load() == ConnectionState::Active && !_receivePaused && _receiveQueueSize < _bufferLimits.receive()) {
         maximumBytes = _bufferLimits.receive() - _receiveQueueSize;
     }
@@ -366,7 +364,7 @@ void TcpConnection::postClosedAndFinal(const std::uint64_t generation, const Con
             if (callback) {
                 callback();
             }
-        } catch (...) {
+        } catch (const err::RuntimeError &) {
             if (firstException == nullptr) {
                 throw;
             }
@@ -399,7 +397,7 @@ void TcpConnection::postErrorAndFinal(std::uint64_t generation, NetworkErrorCont
             if (callback) {
                 callback();
             }
-        } catch (...) {
+        } catch (const err::RuntimeError &) {
             if (firstException == nullptr) {
                 throw;
             }
@@ -415,6 +413,7 @@ void TcpConnection::postFinal(const std::uint64_t generation) {
         return;
     }
     _quotaLease.release();
+    _abortContinuation.reset();
     const auto callback = _onFinal;
     if (callback) {
         callback();

@@ -18,11 +18,12 @@
 #include "TextValue.hpp"
 #include "TimeValue.hpp"
 #include "TimeWithZoneValue.hpp"
+#include "ValueDigest.hpp"
 #include "ValueList.hpp"
 
 #include "../vr/Rule.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringFormat.hpp"
 
@@ -32,7 +33,13 @@
 
 namespace erbsland::conf::impl {
 
+using namespace mem;
+using namespace text;
 using namespace text::literals;
+
+auto Value::digest(const cryptology::HashAlgorithm algorithm) const -> mem::ByteBlock {
+    return ValueDigest{algorithm}.calculate(*this);
+}
 
 auto Value::name() const noexcept -> Name {
     return _name;
@@ -100,7 +107,7 @@ auto Value::asFloat() const noexcept -> double {
     return 0.0;
 }
 
-auto Value::asText() const noexcept -> text::String {
+auto Value::asText() const noexcept -> String {
     return {};
 }
 
@@ -120,7 +127,7 @@ auto Value::asDateTime() const noexcept -> time::DateTime {
     return {};
 }
 
-auto Value::asBytes() const noexcept -> mem::ByteBlock {
+auto Value::asBytes() const noexcept -> ByteBlock {
     return {};
 }
 
@@ -148,7 +155,7 @@ auto Value::asFloatOrThrow() const -> double {
     throwAsTypeMismatch(*this, ValueType::Float);
 }
 
-auto Value::asTextOrThrow() const -> text::String {
+auto Value::asTextOrThrow() const -> String {
     throwAsTypeMismatch(*this, ValueType::Text);
 }
 
@@ -168,7 +175,7 @@ auto Value::asDateTimeOrThrow() const -> time::DateTime {
     throwAsTypeMismatch(*this, ValueType::DateTime);
 }
 
-auto Value::asBytesOrThrow() const -> mem::ByteBlock {
+auto Value::asBytesOrThrow() const -> ByteBlock {
     throwAsTypeMismatch(*this, ValueType::Bytes);
 }
 
@@ -184,7 +191,7 @@ auto Value::asValueListOrThrow() const -> conf::ValueList {
     throwAsTypeMismatch(*this, ValueType::ValueList);
 }
 
-auto Value::toTextRepresentation() const noexcept -> text::String {
+auto Value::toTextRepresentation() const noexcept -> String {
     return {};
 }
 
@@ -217,7 +224,7 @@ void Value::setParent(const conf::ValuePtr &parent) {
 }
 
 void Value::addValue(const ValuePtr &) {
-    throw err::LogicError("Child values are not supported for this type."_el);
+    throw err::LogicFailure("Child values are not supported for this type."_el);
 }
 
 auto Value::childrenImpl() const noexcept -> const std::vector<ValuePtr> & {
@@ -232,7 +239,7 @@ auto Value::valueImpl([[maybe_unused]] const Name &name) const noexcept -> Value
 void Value::throwAsTypeMismatch(const conf::Value &thisValue, ValueType expectedType) {
     auto error = ConfError(
         ConfErrorCategory::TypeMismatch,
-        text::StringFormat{"A value has not the required type. Expected '{}' but got '{}'."_el}.build(
+        StringFormat{"A value has not the required type. Expected '{}' but got '{}'."_el}.build(
             expectedType.toText(), thisValue.type().toText()),
         thisValue.location(),
         thisValue.namePath());
@@ -259,7 +266,7 @@ auto Value::createFloat(Float value) noexcept -> ValuePtr {
     return std::make_shared<FloatValue>(value);
 }
 
-auto Value::createText(text::String value) noexcept -> ValuePtr {
+auto Value::createText(String value) noexcept -> ValuePtr {
     return std::make_shared<TextValue>(std::move(value));
 }
 
@@ -279,7 +286,7 @@ auto Value::createDateTime(const time::DateTime &value) noexcept -> ValuePtr {
     return std::make_shared<DateTimeValue>(value);
 }
 
-auto Value::createBytes(const mem::ByteBlock &value) noexcept -> ValuePtr {
+auto Value::createBytes(const ByteBlock &value) noexcept -> ValuePtr {
     return std::make_shared<BytesValue>(value);
 }
 
@@ -289,7 +296,7 @@ auto Value::createCalendarDelta(const time::CalendarDelta &value) noexcept -> Va
 
 auto Value::createRegEx(const re::RegExPtr &value) -> ValuePtr {
     if (value == nullptr) {
-        throw err::ParameterError("The regular expression must not be a nullptr"_el, "value"_el);
+        throw err::ParameterFailure("The regular expression must not be a nullptr"_el, "value"_el);
     }
     return std::make_shared<RegExValue>(value);
 }
@@ -328,7 +335,7 @@ auto Value::createFromValue(Float value) noexcept -> ValuePtr {
     return createFloat(value);
 }
 
-auto Value::createFromValue(text::String value) noexcept -> ValuePtr {
+auto Value::createFromValue(String value) noexcept -> ValuePtr {
     return createText(std::move(value));
 }
 
@@ -348,7 +355,7 @@ auto Value::createFromValue(const time::DateTime &value) noexcept -> ValuePtr {
     return createDateTime(value);
 }
 
-auto Value::createFromValue(const mem::ByteBlock &value) noexcept -> ValuePtr {
+auto Value::createFromValue(const ByteBlock &value) noexcept -> ValuePtr {
     return createBytes(value);
 }
 

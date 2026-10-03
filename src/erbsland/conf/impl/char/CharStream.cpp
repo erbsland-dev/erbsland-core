@@ -16,6 +16,8 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 auto CharStream::create(SourcePtr source) noexcept -> CharStreamPtr {
@@ -27,7 +29,7 @@ CharStream::CharStream(SourcePtr source) noexcept : _source{std::move(source)} {
     assert(_source != nullptr);
 }
 
-auto CharStream::captureTo(const unit::ByteIndex endPosition) -> text::String {
+auto CharStream::captureTo(const ByteIndex endPosition) -> String {
     if (endPosition > _lineCharacterStartIndex) {
         throwInternalError("Invalid capture position. End after actual read position."_el);
     }
@@ -35,25 +37,29 @@ auto CharStream::captureTo(const unit::ByteIndex endPosition) -> text::String {
         throwInternalError("Invalid capture position. End before start index."_el);
     }
     const auto startPosition = std::exchange(_captureStartIndex, endPosition);
-    return _line.slice(unit::ByteRange{startPosition, endPosition});
+    return _line.slice(ByteRange{startPosition, endPosition});
 }
 
-auto CharStream::captureToEndOfLine() noexcept -> text::String {
+auto CharStream::captureToEndOfLine() noexcept -> String {
     const auto startPosition = std::exchange(_captureStartIndex, _lineEndIndex);
-    return _line.slice(unit::ByteRange{startPosition, _lineEndIndex});
+    return _line.slice(ByteRange{startPosition, _lineEndIndex});
 }
 
-auto CharStream::captureRange(const unit::ByteIndex startPosition, const unit::ByteIndex endPosition) const noexcept
-    -> text::String {
+auto CharStream::recoverLine() noexcept -> String {
+    auto result = captureToEndOfLine();
+    _lineReadIndex = _lineEndIndex;
+    _lineCharacterStartIndex = _lineEndIndex;
+    return result;
+}
+
+auto CharStream::captureRange(const ByteIndex startPosition, const ByteIndex endPosition) const noexcept -> String {
     assert(startPosition <= endPosition);
     assert(endPosition <= _lineEndIndex);
-    return _line.slice(unit::ByteRange{startPosition, endPosition});
+    return _line.slice(ByteRange{startPosition, endPosition});
 }
 
 void CharStream::restore(
-    const unit::ByteIndex nextReadIndex,
-    const unit::ByteIndex characterStartIndex,
-    const unit::CodeLocation position) noexcept {
+    const ByteIndex nextReadIndex, const ByteIndex characterStartIndex, const CodeLocation position) noexcept {
     assert(nextReadIndex <= _lineEndIndex);
     assert(characterStartIndex <= nextReadIndex);
     _lineReadIndex = nextReadIndex;
@@ -98,7 +104,7 @@ auto CharStream::readNextLine() -> bool {
     }
     _line = std::move(line);
     _lineBytes = text::impl::UnsafeU8StringAccess{_line}.dataSpan();
-    _lineEndIndex = unit::ByteIndex::fromSizeT(_lineBytes.size());
+    _lineEndIndex = ByteIndex::fromSizeT(_lineBytes.size());
     _lineReadIndex = {};
     // Important: As the char stream is not only used to verify, but also to create document signatures,
     // `_hashEnabled` can be set manually. In these cases, when re-signing a document that already has a
@@ -112,8 +118,7 @@ auto CharStream::readNextLine() -> bool {
         _hash.update(mem::toConstByteSpan(_lineBytes));
     }
     _lineCharacterStartIndex = {};
-    _captureStartLine =
-        _position.line().isNoIndex() ? unit::LineIndex::zero() : _position.line().advanced(unit::LineCount::one());
+    _captureStartLine = _position.line().isNoIndex() ? LineIndex::zero() : _position.line().advanced(LineCount::one());
     _captureStartIndex = {}; // Reset the capture start.
     return true;
 }
@@ -123,7 +128,7 @@ auto CharStream::decodeNext() -> DecodedChar {
     try {
         const auto character = text::impl::utf8::decodeCharOrThrow(_lineBytes, _lineReadIndex);
         return DecodedChar{character, _lineCharacterStartIndex, _position};
-    } catch (const text::EncodingError &error) {
+    } catch (const EncodingError &error) {
         throw ConfError{
             ConfErrorCategory::Encoding,
             "Decoding the Configuration Document Failed"_el,
@@ -138,7 +143,7 @@ auto CharStream::createEndOfData() -> DecodedChar {
     if (!_endOfData) {
         // Fix the file position when returning the end of data mark for the first time.
         if (_position.isUndefined()) {
-            _position = unit::CodeLocation{unit::LineIndex::zero(), unit::ColumnIndex::zero(), unit::CpIndex::zero()};
+            _position = CodeLocation{LineIndex::zero(), ColumnIndex::zero(), CpIndex::zero()};
         } else {
             _position.nextColumn();
         }
@@ -148,15 +153,15 @@ auto CharStream::createEndOfData() -> DecodedChar {
             _hashFinalized = true;
         }
     }
-    return DecodedChar{text::Char::endOfData(), _lineEndIndex, _position};
+    return DecodedChar{Char::endOfData(), _lineEndIndex, _position};
 }
 
-void CharStream::throwCharacterError(text::String message) const {
+void CharStream::throwCharacterError(String message) const {
     throw ConfError{
         ConfErrorCategory::Character, std::move(message), _source, Location{_source->identifier(), _position}};
 }
 
-void CharStream::throwInternalError(text::String message) const {
+void CharStream::throwInternalError(String message) const {
     throw ConfError{
         ConfErrorCategory::Internal, std::move(message), _source, Location{_source->identifier(), _position}};
 }
@@ -166,7 +171,7 @@ auto CharStream::isSignatureLine() const noexcept -> bool {
     // If a document has no signature, it makes no sense to calculate a hash for it.
     // The timing of handling this in the parser is not optimal: While the initial implementation would allow it,
     // it is possible that the lexer could read-ahead in a later version of the parser.
-    return _line.startsWith("@signature"_el, text::Char::compareAsciiFolded);
+    return _line.startsWith("@signature"_el, Char::compareAsciiFolded);
 }
 
 #ifdef ERBSLAND_CORE_CONF_INTERNAL_VIEWS
@@ -183,6 +188,7 @@ auto internalView(const CharStream &object) -> InternalViewPtr {
     result->setValue("location", object._position.toString());
     return result;
 }
+
 #endif
 
 }

@@ -18,7 +18,7 @@ auto ByteCompressor::compress(const mem::ByteBlock &data) const -> mem::ByteBloc
     return _codec->compress(data, _options);
 }
 
-auto ByteCompressor::maximumCompressedLength(const unit::ByteLength length) const -> unit::ByteLength {
+auto ByteCompressor::maximumCompressedLength(const unit::ByteCount length) const -> unit::ByteCount {
     return _codec->maximumCompressedLength(length);
 }
 

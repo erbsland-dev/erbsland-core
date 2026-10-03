@@ -1,13 +1,16 @@
 // Copyright (c) 2024-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "../../core/ApplicationTestScope.hpp"
+
 #include <erbsland/conf/ConfError.hpp>
+#include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/Source.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/err/DiagnosticHelper.hpp>
-#include <erbsland/err/Exception.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/TextDocument.hpp>
+#include <erbsland/DiagnosticHelper.hpp>
+#include <erbsland/Exception.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/TextDocument.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <exception>
@@ -20,7 +23,21 @@ using namespace el::text::literals;
 TESTED_TARGETS(ConfError ConfErrorContext ConfErrorCategory)
 class ConfErrorTest final : public el::UnitTest {
 public:
+    void testValueConstructorsRetainNameAndLocation() {
+        auto applicationScope = ApplicationTestScope<>{};
+        const auto document = Parser{}.parseTextOrThrow("[main]\nvalue: 42\n"_el);
+        const auto value = document->valueOrThrow("main.value"_el);
+        for (
+            const auto &error :
+            {ConfError{value, "Invalid Setting"_el, "Out of range."_el}, ConfError{value, "Out of range."_el}}) {
+            REQUIRE_EQUAL(error.namePath(), value->namePath());
+            REQUIRE_EQUAL(error.location(), value->location().codeLocation());
+            REQUIRE_FALSE(error.title().isEmpty());
+        }
+    }
+
     void testContextAccessorsAndOptionalFields() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto context = ConfErrorContext{
             ConfErrorCategory::Syntax, "Parsing the Configuration Failed"_el, "An unexpected token was found."_el};
         REQUIRE_EQUAL(context.title(), "Parsing the Configuration Failed"_el);
@@ -42,6 +59,7 @@ public:
     }
 
     void testCopyEnrichmentDoesNotMutateTheOriginal() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto sourceIdentifier = SourceIdentifier::createForFile("example.elcl"_el);
         const auto location = Location{
             sourceIdentifier,
@@ -62,6 +80,7 @@ public:
     }
 
     void testCodeSnippetEnrichmentAndCausePreservation() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto lines = el::text::StringList{};
         lines.append("value: 1"_el);
         auto snippet = el::text::CodeSnippet{std::move(lines), el::unit::LineIndex{4U}, "elcl"_el};
@@ -82,6 +101,7 @@ public:
     }
 
     void testSourceAwareContextCapturesTheLocationAndSnippet() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto source = Source::fromString("zero\none\ntwo\nthree\n"_el);
         const auto location =
             Location{source->identifier(), el::unit::CodeLocation{el::unit::LineIndex{1U}, el::unit::ColumnIndex{1U}}};
@@ -95,6 +115,7 @@ public:
     }
 
     void testExceptionUsesTheTitleAsItsReason() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto error = ConfError{ConfErrorContext{
             ConfErrorCategory::LimitExceeded,
             "A Configuration Limit Was Exceeded"_el,
@@ -106,6 +127,7 @@ public:
     }
 
     void testPlainTextDiagnosticContainsAllContext() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto lines = el::text::StringList{};
         lines.append("[main]"_el);
         lines.append("value: ???"_el);
@@ -135,6 +157,7 @@ public:
     }
 
     void testDiagnosticClipsTheMarkerToTheAvailableLine() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto lines = el::text::StringList{};
         lines.append("abc"_el);
         auto context = ConfErrorContext{ConfErrorCategory::Syntax, "Parsing Failed"_el, "Invalid input."_el};
@@ -147,6 +170,7 @@ public:
     }
 
     void testGenericDiagnosticHelperAppendsTheCause() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto cause = std::make_exception_ptr(el::err::Exception{"The source stream failed."_el});
         const auto error = ConfError{
             ConfErrorContext{ConfErrorCategory::IO, "Reading the Configuration Failed"_el, "Input failed."_el}, cause};

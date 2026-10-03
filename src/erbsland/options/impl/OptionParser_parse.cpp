@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "OptionParser.hpp"
 
+#include "AsciiOptionText.hpp"
+#include "OptionLiterals.hpp"
+
 #include "../Option.hpp"
 #include "../OptionFlag.hpp"
 #include "../OptionModule.hpp"
@@ -9,6 +12,7 @@
 #include "../Options.hpp"
 #include "../OptionType.hpp"
 
+#include "../../i18n/DisplayText.hpp"
 #include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringFormat.hpp"
@@ -23,8 +27,8 @@ using text::String;
 using text::StringFormat;
 using text::StringSide;
 using unit::ArgumentIndex;
+using unit::ByteCount;
 using unit::ByteIndex;
-using unit::ByteLength;
 using unit::CpIndex;
 
 auto OptionParser::prepareModuleParsing() -> bool {
@@ -32,8 +36,8 @@ auto OptionParser::prepareModuleParsing() -> bool {
     if (!isIndexInArgs(_argumentIndex)) {
         return makeError(
             OptionErrorReason::SyntaxError,
-            "Module name is missing"_el,
-            "Specify a module before any module options."_el,
+            i18n::displayText("options.module_name_is_missing_title"_el),
+            i18n::displayText("options.module_name_is_missing_description"_el),
             _argumentIndex);
     }
 
@@ -42,33 +46,33 @@ auto OptionParser::prepareModuleParsing() -> bool {
     if (builtInFlag.has_value() && builtInFlag->validValue) {
         return true;
     }
-    if (argument.startsWith("-"_el)) {
+    if (argument.startsWith(option_literal::cShortNamePrefix)) {
         return makeError(
             OptionErrorReason::SyntaxError,
-            "Module name must come first"_el,
-            "Specify a module before any command-line options."_el,
+            i18n::displayText("options.module_name_must_come_first_title"_el),
+            i18n::displayText("options.module_name_must_come_first_description"_el),
             _argumentIndex);
     }
     if (!OptionModule::isValidName(argument)) {
         makeError(
             OptionErrorReason::UnknownName,
-            "Unknown module"_el,
-            StringFormat{"\"{}\" is not an available module. Choose one of the modules listed below."}.build(
-                argument.toEscaped(EscapeFormat::Display)),
+            i18n::displayText("options.unknown_module_title"_el),
+            i18n::displayFormat("options.unknown_module_description"_el)
+                .build(argument.toEscaped(EscapeFormat::Display)),
             _argumentIndex);
-        _error->setSuggestions(suggestModules(argument));
+        _error->setSuggestions(suggestModules(normalizeOptionName(argument)));
         return false;
     }
 
-    _selectedModule = findModule(argument);
+    _selectedModule = findModule(normalizeOptionName(argument));
     if (_selectedModule == nullptr) {
         makeError(
             OptionErrorReason::UnknownName,
-            "Unknown module"_el,
-            StringFormat{"\"{}\" is not an available module. Choose one of the modules listed below."}.build(
-                argument.toEscaped(EscapeFormat::Display)),
+            i18n::displayText("options.unknown_module_title"_el),
+            i18n::displayFormat("options.unknown_module_description"_el)
+                .build(argument.toEscaped(EscapeFormat::Display)),
             _argumentIndex);
-        _error->setSuggestions(suggestModules(argument));
+        _error->setSuggestions(suggestModules(normalizeOptionName(argument)));
         return false;
     }
     _moduleName = _selectedModule->name();
@@ -80,7 +84,7 @@ auto OptionParser::prepareModuleParsing() -> bool {
 auto OptionParser::parseActiveOptions() -> bool {
     while (isIndexInArgs(_argumentIndex)) {
         const auto &argument = getArgAt(_argumentIndex);
-        if (argument == "--"_el) {
+        if (argument == option_literal::cEndOfOptions) {
             ++_argumentIndex;
             while (isIndexInArgs(_argumentIndex)) {
                 if (!collectPositionalArgument(getArgAt(_argumentIndex), _argumentIndex)) {
@@ -90,11 +94,11 @@ auto OptionParser::parseActiveOptions() -> bool {
             }
             return true;
         }
-        if (argument.startsWith("--"_el)) {
+        if (argument.startsWith(option_literal::cLongNamePrefix)) {
             if (!parseLongOption(argument, _argumentIndex)) {
                 return false;
             }
-        } else if (argument.startsWith("-"_el)) {
+        } else if (argument.startsWith(option_literal::cShortNamePrefix)) {
             if (!parseShortOption(argument, _argumentIndex)) {
                 return false;
             }
@@ -107,37 +111,41 @@ auto OptionParser::parseActiveOptions() -> bool {
 }
 
 auto OptionParser::parseLongOption(const String &argument, const ArgumentIndex index) -> bool {
-    const auto equalsIndex = argument.find("="_el);
-    const auto name = argument.slice({ByteIndex::zero(), equalsIndex});
-    if (!Option::isValidLongName(name)) {
+    const auto parts = argument.splitAtFirst(option_literal::cValueSeparator);
+    auto rawName = argument;
+    if (parts) {
+        rawName = parts->first;
+    }
+    if (!Option::isValidLongName(rawName)) {
         return makeError(
             OptionErrorReason::SyntaxError,
-            "Malformed long option"_el,
-            StringFormat{"\"{}\" is not a valid long option. Use two dashes followed by an option name."}.build(
-                argument.toEscaped(EscapeFormat::Display)),
+            i18n::displayText("options.malformed_long_option_title"_el),
+            i18n::displayFormat("options.malformed_long_option_description"_el)
+                .build(argument.toEscaped(EscapeFormat::Display)),
             index);
     }
+    const auto name = normalizeOptionName(rawName);
     const auto match = findLongOption(name);
     if (match.option == nullptr || match.disabled) {
         makeError(
             OptionErrorReason::UnknownName,
-            "Unknown option"_el,
-            StringFormat{"\"{}\" is not available for this command."}.build(name.toEscaped(EscapeFormat::Display)),
+            i18n::displayText("options.unknown_option_title"_el),
+            i18n::displayFormat("options.unknown_option_description"_el).build(name.toEscaped(EscapeFormat::Display)),
             index);
         _error->setSuggestions(suggestLongOptions(name));
         return false;
     }
 
-    const auto builtInHelpIsFlag =
-        match.option->hasLongName("--help"_el) && _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails);
+    const auto builtInHelpIsFlag = match.option->hasLongName(option_literal::cHelpLongName) &&
+        _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails);
     const auto optionType = builtInHelpIsFlag ? OptionType{OptionType::Flag} : match.option->type();
     if (optionType == OptionType::Flag) {
-        if (!equalsIndex.isNoIndex()) {
+        if (parts) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
-                "Flag does not accept a value"_el,
-                StringFormat{"\"{}\" is a flag and must be specified without a value."}.build(
-                    name.toEscaped(EscapeFormat::Display)),
+                i18n::displayText("options.flag_does_not_accept_a_value_title"_el),
+                i18n::displayFormat("options.named_flag_value_description"_el)
+                    .build(name.toEscaped(EscapeFormat::Display)),
                 index,
                 match.option);
         }
@@ -147,13 +155,14 @@ auto OptionParser::parseLongOption(const String &argument, const ArgumentIndex i
     auto value = String{};
     auto valueIndex = index;
     auto valueStartIndex = ByteIndex::zero();
-    if (!equalsIndex.isNoIndex()) {
-        valueStartIndex = equalsIndex.incremented();
-        value = argument.slice({valueStartIndex, ByteLength::infinite()});
+    if (parts) {
+        value = parts->second;
+        valueStartIndex = ByteIndex::end(argument.length() - value.length());
     } else {
         const auto nextIndex = _argumentIndex.incremented();
         const auto acceptAsFlag = match.option->flags().isSet(OptionFlag::AcceptAsFlag);
-        if (acceptAsFlag && (!isIndexInArgs(nextIndex) || getArgAt(nextIndex).startsWith("-"_el))) {
+        if (acceptAsFlag &&
+            (!isIndexInArgs(nextIndex) || getArgAt(nextIndex).startsWith(option_literal::cShortNamePrefix))) {
             return acceptStorageResult(_storage.storeFlag(match.option, index));
         }
         if (acceptAsFlag && optionType == OptionType::Boolean) {
@@ -171,15 +180,14 @@ auto OptionParser::parseLongOption(const String &argument, const ArgumentIndex i
 }
 
 auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex index) -> bool {
-    const auto equalsIndex = argument.find("="_el);
-    if (!equalsIndex.isNoIndex()) {
-        const auto name = argument.slice(StringSide::Front, equalsIndex.distanceFromZero());
+    if (const auto parts = argument.splitAtFirst(option_literal::cValueSeparator)) {
+        const auto &name = parts->first;
         if (!Option::isValidShortName(name)) {
             return makeError(
                 OptionErrorReason::SyntaxError,
-                "Malformed short option"_el,
-                StringFormat{"\"{}\" is not a valid short option. Use one dash followed by an option letter."}.build(
-                    argument.toEscaped(EscapeFormat::Display)),
+                i18n::displayText("options.malformed_short_option_title"_el),
+                i18n::displayFormat("options.malformed_short_option_description"_el)
+                    .build(argument.toEscaped(EscapeFormat::Display)),
                 index);
         }
         const auto shortName = name.charAt(CpIndex::one());
@@ -187,75 +195,74 @@ auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex 
         if (match.option == nullptr || match.disabled) {
             return makeError(
                 OptionErrorReason::UnknownName,
-                "Unknown option"_el,
-                StringFormat{"\"{}\" is not available for this command."}.build(name.toEscaped(EscapeFormat::Display)),
+                i18n::displayText("options.unknown_option_title"_el),
+                i18n::displayFormat("options.unknown_option_description"_el)
+                    .build(name.toEscaped(EscapeFormat::Display)),
                 index);
         }
-        if (match.option->hasLongName("--help"_el)) {
+        if (match.option->hasLongName(option_literal::cHelpLongName)) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
-                "Short help does not accept a value"_el,
-                "Use the attached --help=<name> syntax to request detailed help."_el,
+                i18n::displayText("options.short_help_does_not_accept_a_value_title"_el),
+                i18n::displayFormat("options.short_help_value_description"_el).build(option_literal::cHelpLongName),
                 index,
                 match.option);
         }
         const auto isFlag = match.option->type() == OptionType::Flag ||
-            (match.option->hasLongName("--help"_el) && _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails));
+            (match.option->hasLongName(option_literal::cHelpLongName) &&
+                _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails));
         if (isFlag) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
-                "Flag does not accept a value"_el,
-                StringFormat{"\"{}\" is a flag and must be specified without a value."}.build(
-                    name.toEscaped(EscapeFormat::Display)),
+                i18n::displayText("options.flag_does_not_accept_a_value_title"_el),
+                i18n::displayFormat("options.named_flag_value_description"_el)
+                    .build(name.toEscaped(EscapeFormat::Display)),
                 index,
                 match.option);
         }
         return storeValue(
-            match.option,
-            argument.slice({equalsIndex.incremented(), ByteLength::infinite()}),
-            index,
-            equalsIndex.incremented());
+            match.option, parts->second, index, ByteIndex::end(argument.length() - parts->second.length()));
     }
 
-    if (!argument.startsWith("-"_el)) {
+    if (!argument.startsWith(option_literal::cShortNamePrefix)) {
         return makeError(
             OptionErrorReason::SyntaxError,
-            "Malformed short option"_el,
-            StringFormat{"\"{}\" is not a valid short option. Use one dash followed by an option letter."}.build(
-                argument.toEscaped(EscapeFormat::Display)),
+            i18n::displayText("options.malformed_short_option_title"_el),
+            i18n::displayFormat("options.malformed_short_option_description"_el)
+                .build(argument.toEscaped(EscapeFormat::Display)),
             index);
     }
 
-    const auto shortNames = argument.slice({ByteIndex::one(), ByteLength::infinite()});
+    const auto shortNames = argument.slice({ByteIndex::one(), ByteCount::infinite()});
     const auto firstCharacter = shortNames.charAt(StringSide::Front);
-    const auto remainingNames = shortNames.slice({shortNames.indexAt(CpIndex::one()), ByteLength::infinite()});
+    const auto remainingNames = shortNames.slice({shortNames.indexAt(CpIndex::one()), ByteCount::infinite()});
     if (firstCharacter.isNull()) {
         return makeError(
             OptionErrorReason::SyntaxError,
-            "Malformed short option"_el,
-            StringFormat{"\"{}\" is not a valid short option. Use one dash followed by an option letter."}.build(
-                argument.toEscaped(EscapeFormat::Display)),
+            i18n::displayText("options.malformed_short_option_title"_el),
+            i18n::displayFormat("options.malformed_short_option_description"_el)
+                .build(argument.toEscaped(EscapeFormat::Display)),
             index);
     }
     const auto firstMatch = findShortOption(firstCharacter);
     if (firstMatch.option == nullptr || firstMatch.disabled) {
         return makeError(
             OptionErrorReason::UnknownName,
-            "Unknown option"_el,
-            StringFormat{"\"-{}\" is not available for this command."}.build(
-                String::fromCharacter(firstCharacter).toEscaped(EscapeFormat::Display)),
+            i18n::displayText("options.unknown_option_title"_el),
+            i18n::displayFormat("options.unknown_short_option_description"_el)
+                .build(String::fromCharacter(firstCharacter).toEscaped(EscapeFormat::Display)),
             index);
     }
     if (remainingNames.isEmpty()) {
         const auto isFlag = firstMatch.option->type() == OptionType::Flag ||
-            (firstMatch.option->hasLongName("--help"_el) &&
+            (firstMatch.option->hasLongName(option_literal::cHelpLongName) &&
                 _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails));
         if (isFlag) {
             return acceptStorageResult(_storage.storeFlag(firstMatch.option, index));
         }
         const auto nextIndex = _argumentIndex.incremented();
         if (firstMatch.option->flags().isSet(OptionFlag::AcceptAsFlag) &&
-            (!isIndexInArgs(nextIndex) || getArgAt(nextIndex).startsWith("-"_el))) {
+            (!isIndexInArgs(nextIndex) || getArgAt(nextIndex).startsWith(option_literal::cShortNamePrefix))) {
             return acceptStorageResult(_storage.storeFlag(firstMatch.option, index));
         }
         if (firstMatch.option->flags().isSet(OptionFlag::AcceptAsFlag) &&
@@ -274,8 +281,8 @@ auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex 
     if (firstMatch.option->type() != OptionType::Flag) {
         return makeError(
             OptionErrorReason::UnexpectedValueType,
-            "Option cannot be grouped"_el,
-            StringFormat{"\"-{}\" requires a value and must be specified separately."}.build(firstCharacter),
+            i18n::displayText("options.option_cannot_be_grouped_title"_el),
+            i18n::displayFormat("options.grouped_short_option_requires_value_description"_el).build(firstCharacter),
             index,
             firstMatch.option);
     }
@@ -287,16 +294,16 @@ auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex 
         if (match.option == nullptr || match.disabled) {
             return makeError(
                 OptionErrorReason::UnknownName,
-                "Unknown option"_el,
-                StringFormat{"\"-{}\" is not available for this command."}.build(
-                    String::fromCharacter(character).toEscaped(EscapeFormat::Display)),
+                i18n::displayText("options.unknown_option_title"_el),
+                i18n::displayFormat("options.unknown_short_option_description"_el)
+                    .build(String::fromCharacter(character).toEscaped(EscapeFormat::Display)),
                 index);
         }
         if (match.option->type() != OptionType::Flag) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
-                "Option cannot be grouped"_el,
-                StringFormat{"\"-{}\" requires a value and must be specified separately."}.build(character),
+                i18n::displayText("options.option_cannot_be_grouped_title"_el),
+                i18n::displayFormat("options.grouped_short_option_requires_value_description"_el).build(character),
                 index,
                 match.option);
         }
@@ -309,22 +316,22 @@ auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex 
 
 auto OptionParser::consumeFollowingValue(String &value, const ArgumentIndex optionIndex, const OptionPtr &option)
     -> bool {
-    const auto optionName = option == nullptr || option->names().empty() ? String{} : option->names().front();
+    const auto optionName = option == nullptr || option->names().isEmpty() ? String{} : option->names().first();
     const auto valueIndex = _argumentIndex.incremented();
     if (!isIndexInArgs(valueIndex)) {
         return makeError(
             OptionErrorReason::UnexpectedValueType,
-            "Option value is missing"_el,
-            StringFormat{"\"{}\" requires a value."}.build(optionName),
+            i18n::displayText("options.option_value_is_missing_title"_el),
+            i18n::displayFormat("options.missing_option_value_description"_el).build(optionName),
             optionIndex,
             option);
     }
     const auto &candidate = getArgAt(valueIndex);
-    if (candidate.startsWith("-"_el)) {
+    if (candidate.startsWith(option_literal::cShortNamePrefix)) {
         return makeError(
             OptionErrorReason::UnexpectedValueType,
-            "Option value is missing"_el,
-            StringFormat{"\"{}\" requires a value before the next option."}.build(optionName),
+            i18n::displayText("options.option_value_is_missing_title"_el),
+            i18n::displayFormat("options.option_value_before_next_option_description"_el).build(optionName),
             optionIndex,
             option);
     }

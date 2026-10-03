@@ -12,6 +12,7 @@
 
 namespace erbsland::math {
 
+using namespace text;
 using namespace text::literals;
 
 BigInteger::BigInteger(BigUnsignedInteger magnitude) noexcept : _magnitude{std::move(magnitude)} {
@@ -117,28 +118,28 @@ auto BigInteger::magnitude() const noexcept -> const BigUnsignedInteger & {
     return _magnitude;
 }
 
-auto BigInteger::toString() const -> text::String {
+auto BigInteger::toString() const -> String {
     if (!_negative) {
         return _magnitude.toString();
     }
-    auto result = text::StringEditor{"-"_el};
+    auto result = StringEditor{"-"_el};
     result.append(_magnitude.toString());
     return result;
 }
 
-auto BigInteger::fromString(const text::String &text) -> std::optional<BigInteger> {
+auto BigInteger::fromString(const String &text) -> std::optional<BigInteger> {
     auto magnitude = BigUnsignedInteger{};
     auto negative = false;
     auto isFirst = true;
     auto hasDigit = false;
-    const auto loopResult = text.forEach([&](text::Char character) -> util::LoopStatus {
+    const auto loopResult = text.forEach([&](Char character) -> util::LoopStatus {
         if (isFirst && (character == U'+' || character == U'-')) {
             negative = character == U'-';
             isFirst = false;
             return util::LoopStatus::Continue;
         }
         isFirst = false;
-        const auto digitValue = character.digitValue(text::IntegerBase::Decimal);
+        const auto digitValue = character.digitValue(IntegerBase::Decimal);
         if (!digitValue.has_value()) {
             return util::LoopStatus::Error;
         }
@@ -153,7 +154,7 @@ auto BigInteger::fromString(const text::String &text) -> std::optional<BigIntege
     return fromSignAndMagnitude(negative, std::move(magnitude));
 }
 
-auto BigInteger::fromStringOrThrow(const text::String &text) -> BigInteger {
+auto BigInteger::fromStringOrThrow(const String &text) -> BigInteger {
     auto result = fromString(text);
     if (!result.has_value()) {
         throw err::ParseError{"Invalid signed decimal big integer."};

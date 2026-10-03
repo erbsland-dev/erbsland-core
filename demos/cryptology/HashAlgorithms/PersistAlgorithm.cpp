@@ -2,9 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/cryptology/Hasher.hpp>
-#include <erbsland/cryptology/HashSelector.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/HashSelector.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace demo {
 
@@ -24,13 +30,13 @@ void persistAlgorithm() {
                                    .build(algorithm.toString(), digest);
     const auto document = el::conf::Parser{}.parseTextOrThrow(configuration);
 
-    const auto algorithmText = document->getTextOrThrow(el::String{"canopy_record.algorithm"_el});
+    const auto algorithmText = document->getTextOrThrow("canopy_record.algorithm"_el);
     const auto storedAlgorithm = el::HashAlgorithm::fromString(algorithmText);
     if (!storedAlgorithm.has_value() || !el::HashSelector{}.isSafe(storedAlgorithm.value())) {
         throw el::RuntimeError{"The stored hash algorithm is unknown or no longer acceptable."_el};
     }
 
-    const auto storedDigest = document->getBytesOrThrow(el::String{"canopy_record.digest"_el});
+    const auto storedDigest = document->getBytesOrThrow("canopy_record.digest"_el);
     if (storedDigest.length() != storedAlgorithm->digestSize()) {
         throw el::RuntimeError{"The digest size does not match the stored hash algorithm."_el};
     }

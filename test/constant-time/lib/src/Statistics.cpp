@@ -1,13 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "Statistics.hpp"
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/unit/ItemIndex.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -19,7 +18,7 @@ using namespace el::text::literals;
 
 void Statistics::initialize(el::List<double> pilot) {
     if (pilot.isEmpty()) {
-        throw el::ParameterError{"Empty timing pilot."_el, "pilot"_el};
+        throw el::ParameterFailure{"Empty timing pilot."_el, "pilot"_el};
     }
     pilot.sort();
     for (auto index = std::size_t{}; index < _thresholds.size(); ++index) {
@@ -27,7 +26,7 @@ void Statistics::initialize(el::List<double> pilot) {
         const auto position = std::min(
             static_cast<std::size_t>(static_cast<double>(pilot.count().toSizeT()) * percentile),
             pilot.count().toSizeT() - 1);
-        _thresholds[index] = pilot.getRefOrThrow(el::ItemIndex{position});
+        _thresholds[index] = pilot.getRefOrThrow(el::ItemIndex::fromInteger(position));
     }
 }
 
@@ -70,4 +69,5 @@ auto Statistics::evidence() const -> Evidence {
 auto Statistics::hasEnoughEvidence() const noexcept -> bool {
     return _tests[0].isEligible() && _tests[101].isEligible();
 }
+
 }

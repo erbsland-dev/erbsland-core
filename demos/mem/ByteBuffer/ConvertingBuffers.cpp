@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <array>
 #include <cstddef>

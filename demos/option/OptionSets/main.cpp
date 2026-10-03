@@ -1,7 +1,27 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationInfo.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/CommandLineArguments.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/conf/Name.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionSet.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/Version.hpp>
 
 #include <initializer_list>
 
@@ -20,7 +40,7 @@ LaboratorySettings appSettings;
 
 [[nodiscard]] auto makeArgs(std::initializer_list<el::String> args) -> el::CommandLineArguments {
     auto result = el::CommandLineArguments{};
-    result.reserve(el::ItemCount{args.size()});
+    result.reserve(el::ItemCount::fromInteger(args.size()));
     for (const auto &arg : args) {
         result.append(arg.copy());
     }
@@ -36,11 +56,11 @@ auto createInstrumentSet() -> el::OptionSetPtr {
     auto instrumentSet = el::OptionSet::create();
     instrumentSet->setHelpTitle("Instrument"_el);
     instrumentSet->setHelpDescription("Options for the component that selects the instrument."_el);
-    instrumentSet->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpDescription("Reduces progress output."_el);
+    instrumentSet->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpTitle("Reduces progress output."_el);
     instrumentSet->addOption({"-i"_el, "--instrument"_el, "instrument"_el})
         .setType(el::OptionType::Text)
         .setRequired()
-        .setHelpDescription("Name of the laboratory instrument."_el);
+        .setHelpTitle("Name of the laboratory instrument."_el);
     instrumentSet->setPostParsingFn([](const el::OptionValuesPtr &values) -> void {
         appSettings.quiet = values->getFlag("quiet"_el);
         appSettings.instrument = values->getText("instrument"_el);
@@ -55,11 +75,11 @@ auto createReportSet() -> el::OptionSetPtr {
     reportSet->addOption({"-t"_el, "--title"_el, "title"_el})
         .setType(el::OptionType::Text)
         .setDefaultValue("Calibration report"_el)
-        .setHelpDescription("Title of the generated report."_el);
+        .setHelpTitle("Title of the generated report."_el);
     reportSet->addOption({"-s"_el, "--samples"_el, "samples"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{4})
-        .setHelpDescription("Number of samples to include."_el);
+        .setHelpTitle("Number of samples to include."_el);
     reportSet->setPostParsingFn([](const el::OptionValuesPtr &values) -> void {
         appSettings.reportTitle = values->getText("title"_el);
         appSettings.sampleCount = values->getInteger("samples"_el);
@@ -97,7 +117,7 @@ auto optionSets() -> el::ExitCode {
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     app.setMainFn(demo::optionSets);
     return app.run();
 }

@@ -5,7 +5,8 @@
 #include "../server/HttpServer.hpp"
 #include "../server/HttpServerRequest.hpp"
 
-#include "../../../../err/LogicError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../stream/ByteInputStream.hpp"
 #include "../../../../stream/StreamReadStatus.hpp"
@@ -23,12 +24,13 @@
 #include "../../../http_server/HttpStaticContentHandler.hpp"
 #include "../../../source/Connection.hpp"
 #include "../../../source/NetworkErrorContext.hpp"
-#include "../../ResolverService.hpp"
 
 #include <algorithm>
 #include <utility>
 
 namespace erbsland::network::impl {
+
+using namespace err;
 using namespace text;
 using namespace text::literals;
 
@@ -45,24 +47,24 @@ void HttpStaticContentOperation::obtainContent() {
     _workerPending = true;
     const auto weakSelf = std::weak_ptr<HttpStaticContentOperation>{shared_from_this()};
     const auto weakServer = std::weak_ptr<HttpServer>{server};
-    const auto ownerEvents = server->ownerEvents();
+    const auto continuation = _completion;
     const auto handler = _selected->handler;
     const auto path = _selected->path;
     auto contentUse = _contentUse;
     try {
-        ResolverService::submit([weakSelf, weakServer, ownerEvents, handler, path, contentUse]() mutable -> void {
+        _work.submit([weakSelf, weakServer, continuation, handler, path, contentUse]() mutable -> void {
             auto content = HttpStaticContentPtr{};
             auto failure = std::exception_ptr{};
             try {
                 if (contentUse == nullptr) {
-                    throw err::LogicError{"Static-content configuration is no longer frozen."_el};
+                    throw LogicFailure{"Static-content configuration is no longer frozen."_el};
                 }
                 content = handler->getContent(path);
-            } catch (...) {
+            } catch (const RuntimeError &) {
                 failure = std::current_exception();
             }
             contentUse.reset();
-            ownerEvents->invoke([weakSelf, weakServer, content = std::move(content), failure]() mutable -> void {
+            continuation->invoke([weakSelf, weakServer, content = std::move(content), failure]() mutable -> void {
                 if (const auto target = weakServer.lock()) {
                     target->releaseStaticOperation();
                 }
@@ -71,7 +73,7 @@ void HttpStaticContentOperation::obtainContent() {
                 }
             });
         });
-    } catch (...) {
+    } catch (const RuntimeError &) {
         _workerPending = false;
         server->releaseStaticOperation();
         sendError(HttpStatus::ServiceUnavailable);
@@ -127,23 +129,23 @@ void HttpStaticContentOperation::openContent() {
     _workerPending = true;
     const auto weakSelf = std::weak_ptr<HttpStaticContentOperation>{shared_from_this()};
     const auto weakServer = std::weak_ptr<HttpServer>{server};
-    const auto ownerEvents = server->ownerEvents();
+    const auto continuation = _completion;
     const auto content = _content;
     auto contentUse = _contentUse;
     try {
-        ResolverService::submit([weakSelf, weakServer, ownerEvents, content, contentUse]() mutable -> void {
+        _work.submit([weakSelf, weakServer, continuation, content, contentUse]() mutable -> void {
             auto stream = stream::ByteInputStreamPtr{};
             auto failure = std::exception_ptr{};
             try {
                 if (contentUse == nullptr) {
-                    throw err::LogicError{"Static-content configuration is no longer frozen."_el};
+                    throw LogicFailure{"Static-content configuration is no longer frozen."_el};
                 }
                 stream = content->open();
-            } catch (...) {
+            } catch (const RuntimeError &) {
                 failure = std::current_exception();
             }
             contentUse.reset();
-            ownerEvents->invoke([weakSelf, weakServer, stream = std::move(stream), failure]() mutable -> void {
+            continuation->invoke([weakSelf, weakServer, stream = std::move(stream), failure]() mutable -> void {
                 if (const auto target = weakServer.lock()) {
                     target->releaseStaticOperation();
                 }
@@ -152,7 +154,7 @@ void HttpStaticContentOperation::openContent() {
                 }
             });
         });
-    } catch (...) {
+    } catch (const RuntimeError &) {
         _workerPending = false;
         server->releaseStaticOperation();
         sendError(HttpStatus::ServiceUnavailable);
@@ -224,36 +226,35 @@ void HttpStaticContentOperation::pump() {
     _workerPending = true;
     const auto weakSelf = std::weak_ptr<HttpStaticContentOperation>{shared_from_this()};
     const auto weakServer = std::weak_ptr<HttpServer>{server};
-    const auto ownerEvents = server->ownerEvents();
+    const auto continuation = _completion;
     const auto stream = _stream;
     auto contentUse = _contentUse;
     try {
-        ResolverService::submit(
-            [weakSelf, weakServer, ownerEvents, stream, requestedLength, contentUse]() mutable -> void {
-                auto data = std::optional<mem::ByteBlock>{};
-                auto failure = std::exception_ptr{};
-                try {
-                    if (contentUse == nullptr) {
-                        throw err::LogicError{"Static-content configuration is no longer frozen."_el};
-                    }
-                    auto result = stream->read(requestedLength);
-                    if (result == stream::StreamReadStatus::Data) {
-                        data = result.takeData();
-                    }
-                } catch (...) {
-                    failure = std::current_exception();
+        _work.submit([weakSelf, weakServer, continuation, stream, requestedLength, contentUse]() mutable -> void {
+            auto data = std::optional<mem::ByteBlock>{};
+            auto failure = std::exception_ptr{};
+            try {
+                if (contentUse == nullptr) {
+                    throw LogicFailure{"Static-content configuration is no longer frozen."_el};
                 }
-                contentUse.reset();
-                ownerEvents->invoke([weakSelf, weakServer, data = std::move(data), failure]() mutable -> void {
-                    if (const auto target = weakServer.lock()) {
-                        target->releaseStaticOperation();
-                    }
-                    if (const auto self = weakSelf.lock()) {
-                        self->streamRead(std::move(data), failure);
-                    }
-                });
+                auto result = stream->read(requestedLength);
+                if (result == stream::StreamReadStatus::Data) {
+                    data = result.takeData();
+                }
+            } catch (const RuntimeError &) {
+                failure = std::current_exception();
+            }
+            contentUse.reset();
+            continuation->invoke([weakSelf, weakServer, data = std::move(data), failure]() mutable -> void {
+                if (const auto target = weakServer.lock()) {
+                    target->releaseStaticOperation();
+                }
+                if (const auto self = weakSelf.lock()) {
+                    self->streamRead(std::move(data), failure);
+                }
             });
-    } catch (...) {
+        });
+    } catch (const RuntimeError &) {
         _workerPending = false;
         server->releaseStaticOperation();
         server->releaseStaticQueue(_reservedQueueLength);

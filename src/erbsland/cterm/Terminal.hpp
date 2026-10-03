@@ -102,7 +102,7 @@ public: // implements CursorWriter
     void writeLineBreak() noexcept override;
 
 public: // settings
-    /// Modify the size of the terminal.
+    /// Set the full usable screen size without resizing the native terminal window.
     /// The size is automatically bounded to the minimum and maximum supported sizes.
     /// If size detection is enabled, the terminal size will be automatically detected and updated.
     /// @param size The new terminal size.
@@ -132,14 +132,6 @@ public: // settings
     /// Line buffering can only be enabled if the backend supports both color and cursor ANSI codes.
     /// @param enabled `true` to enable buffered writes.
     void setLineBufferEnabled(bool enabled) noexcept;
-    /// Check whether the compatibility safe margin is enabled.
-    /// @return `true` if one column and one row are reserved from the detected terminal size.
-    [[nodiscard]] auto safeMarginEnabled() const noexcept -> bool;
-    /// Enable or disable the compatibility safe margin.
-    /// When enabled, the reported drawable size is reduced by one column and one row.
-    /// Disable this only when the terminal should use its full detected size and newline-free screen updates.
-    /// @param enabled `true` to reserve one column and one row from the terminal size.
-    void setSafeMarginEnabled(bool enabled) noexcept;
     /// Check whether the optional back buffer is enabled for smart overwrite updates.
     /// @return `true` if `updateScreen()` keeps the previous rendered frame for diff-based updates.
     [[nodiscard]] auto backBufferEnabled() const noexcept -> bool;
@@ -165,10 +157,10 @@ public: // initialization
     void initializeScreen() noexcept;
     /// Check whether an interactive terminal is attached to the process.
     /// Call this after `initializeScreen()` to see if screen-size detection and terminal control features are active.
-    /// @return `true` if the backend detected an interactive terminal.
+    /// @return `true` if the backend detected an interactive terminal or virtual mode is initialized.
     [[nodiscard]] auto isInteractive() const noexcept -> bool;
     /// Detect terminal resize changes.
-    /// After calling this method, `size()` returns a safe size for the terminal.
+    /// Native detection updates `size()`; virtual terminals retain the explicitly supplied size.
     void testScreenSize() noexcept;
     /// Restore terminal settings when the application is quit.
     /// Call this at the end of your application.
@@ -247,28 +239,24 @@ private:
     /// @return The total number of paragraph lines written.
     [[nodiscard]] auto finishParagraphWithExplicitLineBreaks(
         int renderedLines, ParagraphSpacing paragraphSpacing) noexcept -> int;
-    /// Get the safety margins applied to the terminal size.
-    [[nodiscard]] auto applySafeMargin(block::Size terminalSize) const noexcept -> block::Size;
 
 private:
     TerminalFlags _flags;                             ///< Flags for the terminal behaviour.
     BackendPtr _backend;                              ///< The backend that is used by the terminal.
     OutputMode _outputMode{OutputMode::FullControl};  ///< The current output mode.
     bool _sizeDetectionEnabled{true};                 ///< If size detection is enabled.
-    bool _safeMarginEnabled{true};                    ///< If the compatibility safe margin is enabled.
     bool _afterResize{false};                         ///< If the screen should be cleared after a resize.
     RefreshMode _refreshMode{RefreshMode::Overwrite}; ///< The refresh mode to use.
-    block::Size _size;                                ///< The configured size of the terminal that is safe to use.
-    block::Size _terminalSize;                     ///< block::Size of the terminal. Zero if we have no detected size.
-    BlockStyle _style{BlockStyle::reset()};        ///< The current 'cursor' style.
-    bool _backBufferEnabled{false};                ///< If the back buffer feature is enabled.
-    bool _isAlternateScreenActive{false};          ///< If the alternate screen is active or not.
-    WritableBufferPtr _sizeTooSmallBuffer;         ///< Buffer for size too small message.
-    WritableBufferPtr _backBuffer;                 ///< The back buffer.
-    impl::InputBackend _input;                     ///< The input backend.
-    impl::LineBuffer _lineBuffer;                  ///< The line buffer.
+    block::Size _size;                                ///< The full usable terminal size.
+    BlockStyle _style{BlockStyle::reset()};           ///< The current 'cursor' style.
+    bool _backBufferEnabled{false};                   ///< If the back buffer feature is enabled.
+    bool _isAlternateScreenActive{false};             ///< If the alternate screen is active or not.
+    WritableBufferPtr _sizeTooSmallBuffer;            ///< Buffer for size too small message.
+    WritableBufferPtr _backBuffer;                    ///< The back buffer.
+    impl::InputBackend _input;                        ///< The input backend.
+    impl::LineBuffer _lineBuffer;                     ///< The line buffer.
     std::shared_ptr<std::recursive_mutex> _outputMutex{
-        std::make_shared<std::recursive_mutex>()}; ///< Output guard mutex.
+        std::make_shared<std::recursive_mutex>()};    ///< Output guard mutex.
 };
 
 }

@@ -45,8 +45,8 @@ public:
 public: // input
     /// Replace consumed input while retaining up to 64 unread bits without allocating.
     /// The cursor becomes relative to the retained tail followed by `data`; its bit alignment is preserved.
+    /// At most 64 bits may remain unread.
     /// @param data The next byte block in the same continuous bit representation.
-    /// @throws err::OutOfRangeError If more than 64 bits remain unread.
     void refill(ByteBlock data);
 
 public: // accessors
@@ -87,24 +87,26 @@ public: // read
     /// Read up to 64 bits, or return `defaultOnError` without advancing if unavailable.
     [[nodiscard]] auto readBits(std::size_t bitCount, uint64_t defaultOnError = 0U) noexcept -> uint64_t;
     /// Read up to 64 bits.
-    /// @throws err::OutOfRangeError If `bitCount` exceeds 64 or the field is unavailable.
+    /// @param bitCount The number of bits to read. Must be at most 64.
+    /// @throws err::OutOfRangeError If fewer bits or bytes remain than requested.
     [[nodiscard]] auto readBitsOrThrow(std::size_t bitCount) -> uint64_t;
     /// Read one bit as a boolean, or return `false` at end.
     [[nodiscard]] auto readBool() noexcept -> bool;
     /// Read one bit as a boolean.
-    /// @throws err::OutOfRangeError If the bit is unavailable.
+    /// @throws err::OutOfRangeError If fewer bits or bytes remain than requested.
     [[nodiscard]] auto readBoolOrThrow() -> bool;
     /// Read eight consecutive bits as a byte, or return `defaultOnError` without advancing if unavailable.
     [[nodiscard]] auto readByte(Byte defaultOnError = Byte{}) noexcept -> Byte;
     /// Read eight consecutive bits as a byte.
-    /// @throws err::OutOfRangeError If the byte is unavailable.
+    /// @throws err::OutOfRangeError If fewer bits or bytes remain than requested.
     [[nodiscard]] auto readByteOrThrow() -> Byte;
 
     /// Read an exact byte-aligned field, sharing input storage when possible.
-    /// @param length The finite number of bytes to read.
+    /// The current bit position must be byte-aligned.
+    /// @param length The number of bytes to read. Must be finite.
     /// @return The field; a field including a refill tail is copied into sensitive storage.
-    /// @throws err::OutOfRangeError If unaligned, non-finite, or insufficient bytes are available.
-    [[nodiscard]] auto readBytesOrThrow(unit::ByteLength length) -> ByteBlock;
+    /// @throws err::OutOfRangeError If fewer bits or bytes remain than requested.
+    [[nodiscard]] auto readBytesOrThrow(unit::ByteCount length) -> ByteBlock;
 
 private:
     std::unique_ptr<impl::BitReaderImpl> _impl; ///< Order-specialized implementation.

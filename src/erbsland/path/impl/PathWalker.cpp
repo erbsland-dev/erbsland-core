@@ -41,7 +41,11 @@ auto PathWalker::walkImpl(const WalkFn &walkFn, const PathWalkOptions &options) 
     auto visitedDirectories = text::StringSet{};
     auto hadErrors = false;
     const auto cacheTrust = std::make_shared<PathInfoCacheTrust>();
-    const auto result = visit(_path, walkFn, options, visitedDirectories, hadErrors, false, cacheTrust);
+    auto relativeRoot = Path{};
+    if (options.globPattern() != nullptr) {
+        relativeRoot = Path{"/"_el};
+    }
+    const auto result = visit(_path, relativeRoot, walkFn, options, visitedDirectories, hadErrors, false, cacheTrust);
     if (result == VisitResult::Stop) {
         return PathWalkResult::Stopped;
     }
@@ -53,6 +57,7 @@ auto PathWalker::walkImpl(const WalkFn &walkFn, const PathWalkOptions &options) 
 
 auto PathWalker::visit(
     const Path &path,
+    const Path &relativePath,
     const WalkFn &walkFn,
     const PathWalkOptions &options,
     text::StringSet &visitedDirectories,
@@ -60,8 +65,17 @@ auto PathWalker::visit(
     const bool trustCache,
     const PathInfoCacheTrustPtr &cacheTrust) const -> VisitResult {
     try {
-        auto info = trustCache ? PathInfo::fromDirectoryScan(path, options.infoParts() | PathInfoPart::Type, cacheTrust)
-                               : path.info(options.infoParts() | PathInfoPart::Type);
+        auto globReport = true;
+        auto globDescend = true;
+        if (options.globPattern() != nullptr) {
+            globReport = options.globPattern()->match(relativePath, options.globMatchMode());
+            globDescend = options.globPattern()->mayMatchDescendant(relativePath, options.globMatchMode());
+            if (!globReport && !globDescend && !relativePath.isRoot()) {
+                return VisitResult::Continue;
+            }
+        }
+        auto info = trustCache ? PathInfo::fromDirectoryScan(path, PathInfoPart::Type, cacheTrust)
+                               : path.info(PathInfoPart::Type);
         if (!info.exists()) {
             throw PathError{
                 PathErrorContext{"Path could not be walked"_el, "Information for the path is unavailable."_el}
@@ -76,7 +90,7 @@ auto PathWalker::visit(
             }
             if (options.symlinkMode() == SymlinkMode::Follow) {
                 const auto resolvedPath = path.resolveOrThrow(PathResolveMode::Physical);
-                info = resolvedPath.info(options.infoParts() | PathInfoPart::Type);
+                info = resolvedPath.info(PathInfoPart::Type);
                 if (!info.exists()) {
                     throw PathError{PathErrorContext{
                         "Symbolic link could not be followed"_el, "The symbolic-link target is unavailable."_el}
@@ -87,13 +101,23 @@ auto PathWalker::visit(
             }
         }
 
-        if (isDirectory && options.symlinkMode() == SymlinkMode::Follow) {
+        if (isDirectory && globDescend && options.symlinkMode() == SymlinkMode::Follow) {
             if (!visitedDirectories.tryInsert(info.resolvedPath().toString())) {
                 return VisitResult::Continue;
             }
         }
 
-        const auto shouldReport = options.types().isSet(type);
+        const auto shouldReport =
+            globReport && options.types().isSet(type) && (!options.filter() || options.filter()(path, type));
+        const auto shouldDescend =
+            isDirectory && globDescend && (!options.descendFilter() || options.descendFilter()(path, type));
+        auto additionalParts = options.infoParts();
+        additionalParts.clear(PathInfoPart::Type);
+        if (shouldReport && additionalParts.hasAny()) {
+            info = trustCache
+                ? PathInfo::fromDirectoryScan(info.path(), options.infoParts() | PathInfoPart::Type, cacheTrust)
+                : info.path().info(options.infoParts() | PathInfoPart::Type);
+        }
         if (options.direction() == PathWalkDirection::RootToLeaf && shouldReport) {
             const auto callbackStatus = callbackResult(walkFn(path, info));
             if (callbackStatus != VisitResult::Continue) {
@@ -101,12 +125,17 @@ auto PathWalker::visit(
             }
         }
 
-        if (isDirectory) {
+        if (shouldDescend) {
+            auto relativeChild = Path{};
             auto entries = pathBackend().directoryEntriesOrThrow(path, info.resolvedPath());
             std::ranges::sort(
                 entries, [](const Path &left, const Path &right) -> bool { return left.name() < right.name(); });
             for (const auto &entry : entries) {
-                const auto childResult = visit(entry, walkFn, options, visitedDirectories, hadErrors, true, cacheTrust);
+                if (options.globPattern() != nullptr) {
+                    relativeChild = relativePath.joinedNative(entry.name());
+                }
+                const auto childResult =
+                    visit(entry, relativeChild, walkFn, options, visitedDirectories, hadErrors, true, cacheTrust);
                 if (childResult == VisitResult::Stop || childResult == VisitResult::Failure) {
                     return childResult;
                 }

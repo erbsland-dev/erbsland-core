@@ -5,8 +5,10 @@
 #include "LayoutGraphCompiler.hpp"
 #include "ValidationDigest.hpp"
 
+#include <erbsland/List.hpp>
 #include <erbsland/profiling/AllocationScope.hpp>
 #include <erbsland/profiling/WorkerExecutionContext.hpp>
+#include <erbsland/StringMap.hpp>
 #include <erbsland/text/render/impl/CompiledLayout.hpp>
 #include <erbsland/text/render/impl/Engine.hpp>
 #include <erbsland/text/render/impl/Tokenizer.hpp>
@@ -99,7 +101,7 @@ auto RenderWorkerWorkload::tokenize() const -> std::uint64_t {
             auto tokenizer = ri::Tokenizer{name, source->origin(), source->text(), layout.options};
             do {
                 tokenizer.advance();
-                sink = ValidationDigest::token(sink, tokenizer.current());
+                sink = validation_digest::token(sink, tokenizer.current());
             } while (tokenizer.current().kind != ri::TokenKind::End);
         }
     }

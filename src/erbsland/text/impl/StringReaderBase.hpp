@@ -12,8 +12,10 @@
 #include "../StringCharReaderState.hpp"
 
 #include "../../mem/SharedVirtualData.hpp"
+#include "../../unit/ByteIndex.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/CpIndex.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/U16Index.hpp"
 #include "../../util/LoopResult.hpp"
 #include "../../util/LoopStatus.hpp"
 
@@ -24,14 +26,14 @@
 namespace erbsland::text::impl {
 
 /// Abstract base class for string reader backends.
-/// @tested{StringReaderTest}
+/// @tested{StringCharReaderTest}
 class StringReaderBase : public mem::SharedVirtualData {
 public:
     using ReadFn = std::function<util::LoopStatus(Char)>;
 
 protected:
     /// The status and consumed-character count from a decoded-character loop.
-    using ReadLoopOutcome = std::pair<util::LoopResult, unit::CpLength>;
+    using ReadLoopOutcome = std::pair<util::LoopResult, unit::CpCount>;
 
 public:
     // defaults
@@ -47,6 +49,16 @@ public:
     [[nodiscard]] auto clone() const -> StringReaderBase * override = 0;
     /// Get the current decoded code-point position.
     [[nodiscard]] virtual auto position() const noexcept -> unit::CpIndex = 0;
+    /// Get the native UTF-8 byte position; other backends report a logic failure.
+    [[nodiscard]] virtual auto u8Position() const -> unit::ByteIndex;
+    /// Get the native 16-bit code-unit position of a UTF-16 reader in constant time.
+    /// The position is relative to the visible input string; other encodings cause a logic failure.
+    /// @return The next code-unit index, or the input code-unit length at end of data.
+    [[nodiscard]] virtual auto u16Position() const -> unit::U16Index;
+    /// Get the native 32-bit code-unit position of a UTF-32 reader in constant time.
+    /// The position is relative to the visible input string; other encodings cause a logic failure.
+    /// @return The next code-unit index, or the input code-unit length at end of data.
+    [[nodiscard]] virtual auto u32Position() const -> unit::CpIndex;
     /// Save the current reader state.
     [[nodiscard]] virtual auto save() const noexcept -> StringCharReaderState = 0;
     /// Restore a previous reader state.
@@ -64,9 +76,9 @@ public:
     /// Test if the reader is at the end of data.
     [[nodiscard]] virtual auto isAtEnd() const noexcept -> bool = 0;
     /// Test if at least `count` decoded characters are available.
-    [[nodiscard]] virtual auto canRead(unit::CpLength count) const noexcept -> bool = 0;
+    [[nodiscard]] virtual auto canRead(unit::CpCount count) const noexcept -> bool = 0;
     /// Advance the reader.
-    virtual auto advance(unit::CpLength count) noexcept -> bool = 0;
+    virtual auto advance(unit::CpCount count) noexcept -> bool = 0;
     /// Advance by one tolerant character only if it matches the expected character.
     virtual auto advanceIf(Char expected) noexcept -> bool = 0;
     /// Advance by one tolerant character only if it matches the expected character set.
@@ -74,25 +86,25 @@ public:
 
 public: // read loops
     /// Read while expected characters are found.
-    virtual auto readWhile(const ReadFn &readFn, const CharSet &expected, unit::CpLength maximum) noexcept
+    virtual auto readWhile(const ReadFn &readFn, const CharSet &expected, unit::CpCount maximum) noexcept
         -> util::LoopResult = 0;
     /// Read while characters from an ASCII category are found.
-    virtual auto readWhile(const ReadFn &readFn, AsciiCategory expected, unit::CpLength maximum) noexcept
+    virtual auto readWhile(const ReadFn &readFn, AsciiCategory expected, unit::CpCount maximum) noexcept
         -> util::LoopResult = 0;
     /// Read until stop characters are found.
-    virtual auto readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
+    virtual auto readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpCount maximum) noexcept
         -> util::LoopResult = 0;
     /// Read until a character from an ASCII category is found.
-    virtual auto readUntil(const ReadFn &readFn, AsciiCategory stopCategory, unit::CpLength maximum) noexcept
+    virtual auto readUntil(const ReadFn &readFn, AsciiCategory stopCategory, unit::CpCount maximum) noexcept
         -> util::LoopResult = 0;
     /// Advance while expected characters are found.
-    virtual auto advanceWhile(const CharSet &expected, unit::CpLength maximum) noexcept -> unit::CpLength = 0;
+    virtual auto advanceWhile(const CharSet &expected, unit::CpCount maximum) noexcept -> unit::CpCount = 0;
     /// Advance while characters from an ASCII category are found.
-    virtual auto advanceWhile(AsciiCategory expected, unit::CpLength maximum) noexcept -> unit::CpLength = 0;
+    virtual auto advanceWhile(AsciiCategory expected, unit::CpCount maximum) noexcept -> unit::CpCount = 0;
     /// Advance until a stop character is found.
-    virtual auto advanceUntil(const CharSet &stopSet, unit::CpLength maximum) noexcept -> unit::CpLength = 0;
+    virtual auto advanceUntil(const CharSet &stopSet, unit::CpCount maximum) noexcept -> unit::CpCount = 0;
     /// Advance until a character from an ASCII category is found.
-    virtual auto advanceUntil(AsciiCategory stopCategory, unit::CpLength maximum) noexcept -> unit::CpLength = 0;
+    virtual auto advanceUntil(AsciiCategory stopCategory, unit::CpCount maximum) noexcept -> unit::CpCount = 0;
 
 public: // capture
     /// Set the capture start position.
@@ -108,7 +120,7 @@ public: // buffer
     /// Create a view to the current buffer content.
     [[nodiscard]] virtual auto bufferView() const noexcept -> AnyString = 0;
     /// Get the current decoded code-point length of the buffer.
-    [[nodiscard]] virtual auto bufferCharacterLength() const noexcept -> unit::CpLength = 0;
+    [[nodiscard]] virtual auto bufferCharacterLength() const noexcept -> unit::CpCount = 0;
     /// Test if the buffer is empty.
     [[nodiscard]] virtual auto isBufferEmpty() const noexcept -> bool = 0;
     /// Replace the buffer with text.
@@ -126,16 +138,14 @@ public: // buffer
     /// Read one tolerant character if it matches and append it to the buffer.
     [[nodiscard]] virtual auto readToBufferIf(const CharSet &expected) -> std::optional<Char> = 0;
     /// Read while expected characters are found and append them to the buffer.
-    [[nodiscard]] virtual auto readToBufferWhile(const CharSet &expected, unit::CpLength maximum)
+    [[nodiscard]] virtual auto readToBufferWhile(const CharSet &expected, unit::CpCount maximum)
         -> util::LoopResult = 0;
     /// Read characters from an ASCII category into the buffer.
-    [[nodiscard]] virtual auto readToBufferWhile(AsciiCategory expected, unit::CpLength maximum)
-        -> util::LoopResult = 0;
+    [[nodiscard]] virtual auto readToBufferWhile(AsciiCategory expected, unit::CpCount maximum) -> util::LoopResult = 0;
     /// Read until stop characters are found and append read characters to the buffer.
-    [[nodiscard]] virtual auto readToBufferUntil(const CharSet &stopSet, unit::CpLength maximum)
-        -> util::LoopResult = 0;
+    [[nodiscard]] virtual auto readToBufferUntil(const CharSet &stopSet, unit::CpCount maximum) -> util::LoopResult = 0;
     /// Read into the buffer until a character from an ASCII category is found.
-    [[nodiscard]] virtual auto readToBufferUntil(AsciiCategory stopCategory, unit::CpLength maximum)
+    [[nodiscard]] virtual auto readToBufferUntil(AsciiCategory stopCategory, unit::CpCount maximum)
         -> util::LoopResult = 0;
 
 protected:

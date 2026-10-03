@@ -4,7 +4,8 @@
 
 #include "ApplicationTerminalData.hpp"
 
-#include "../../../i18n/DisplayTextMap.hpp"
+#include "../../../err/RuntimeError.hpp"
+#include "../../../i18n/DisplayText.hpp"
 #include "../../../log/impl/ConsoleLogWriter.hpp"
 #include "../../../log/impl/LastErrorsLogWriter.hpp"
 #include "../../../log/impl/LogLineFormatter.hpp"
@@ -30,8 +31,8 @@ auto ApplicationLogData::manager(const cterm::TerminalPtr &terminal) -> log::Log
             _consoleWriter = std::make_shared<log::impl::ConsoleLogWriter>(terminal);
             configuration.addWriter(
                 _consoleWriter,
-                log::LogWriterFilter{
-                    log::LogLevels{log::LogLevel::Information, log::LogLevel::Warning, log::LogLevel::Error}});
+                log::LogWriterFilter{}.setAcceptedLevels(
+                    log::LogLevels{log::LogLevel::Information, log::LogLevel::Warning, log::LogLevel::Error}));
         }
         _manager->setConfiguration(std::move(configuration));
     }
@@ -45,12 +46,12 @@ void ApplicationLogData::enableLastErrorDump(log::LogManager &manager, const Las
         return;
     }
     _lastErrorsWriter = std::make_shared<log::impl::LastErrorsLogWriter>();
-    manager.addPersistentWriter(_lastErrorsWriter, log::LogWriterFilter{log::LogLevel::Error});
+    manager.addPersistentWriter(_lastErrorsWriter, log::LogWriterFilter{}.setAcceptedLevels(log::LogLevel::Error));
 }
 
 void ApplicationLogData::cleanup(
     const unit::ExitCode exitCode,
-    const i18n::DisplayTextMapConstPtr &displayText,
+    const i18n::DisplayTextPtr &displayText,
     ApplicationTerminalData *terminalData) noexcept {
     try {
         const auto lock = std::scoped_lock{_mutex};
@@ -64,10 +65,11 @@ void ApplicationLogData::cleanup(
             const auto entries = _lastErrorsWriter->snapshot();
             if (!entries.empty()) {
                 auto title = text::TextDocument{};
-                title.addHeading(2)->addText(displayText->text("log.LastErrorDumpTitle"_el));
+                title.addHeading(2)->addText(displayText->text("log.last_error_dump_title"_el));
                 terminalData->renderSystemOutput(title);
+                const auto formatter = log::impl::LogLineFormatter{lineFormat};
                 for (const auto &entry : entries) {
-                    _consoleWriter->write(entry, log::impl::LogLineFormatter{*entry, lineFormat}.format());
+                    _consoleWriter->write(entry, formatter.format(*entry));
                 }
                 _consoleWriter->flush();
             }
@@ -75,7 +77,7 @@ void ApplicationLogData::cleanup(
         _lastErrorsWriter.reset();
         _consoleWriter.reset();
         _manager.reset();
-    } catch (...) {}
+    } catch (const err::RuntimeError &) {}
 }
 
 }

@@ -2,6 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteReader.hpp>
+#include <erbsland/ByteTextFormat.hpp>
+#include <erbsland/ByteTextOptions.hpp>
+#include <erbsland/ByteWriter.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -11,7 +20,7 @@ namespace demo {
 /// consumes the complete field, including padding, before reading the next value.
 void usePadding() {
     auto options = el::ByteTextOptions{el::ByteTextFormat::PaddedField};
-    options.clearCountFormat().setEndMark(U'|').setLength(el::ByteLength{12U}).setPadding(el::Byte{0x2eU});
+    options.clearCountFormat().setEndMark(U'|').setLength(el::ByteCount{12U}).setPadding(el::Byte{0x2eU});
     auto writer = el::ByteWriter{};
 
     // Store one phase in a twelve-byte, dot-padded field.

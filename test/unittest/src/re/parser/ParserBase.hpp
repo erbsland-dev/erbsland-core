@@ -6,7 +6,7 @@
 #include "../TestHelper.hpp"
 
 #include <erbsland/re/impl/parser/Parser.hpp>
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <regex>
@@ -37,7 +37,7 @@ public:
         std::string msg;
         try {
             if (!lastPattern.isEmpty()) {
-                msg += std::format("pattern: \"{}\"\n", lastPattern.toSafeString(el::unit::CpLength{200U}));
+                msg += std::format("pattern: \"{}\"\n", lastPattern.toSafeString(el::unit::CpCount{200U}));
             }
             if (!tree.isEmpty()) {
                 msg += "parse tree:\n";
@@ -139,7 +139,7 @@ public:
                 [&] { parseAndTest(pattern, expected); },
                 [&]() -> std::string {
                     std::string message;
-                    message += std::format("Failed at pattern \"{}\"", pattern.toSafeString(el::unit::CpLength{200U}));
+                    message += std::format("Failed at pattern \"{}\"", pattern.toSafeString(el::unit::CpCount{200U}));
                     return message;
                 });
         }

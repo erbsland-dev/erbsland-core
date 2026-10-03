@@ -8,8 +8,8 @@
 #include "U32StringSharedStorage_fwd.hpp"
 
 #include "../../../mem/StorageIdentifier.hpp"
-#include "../../../unit/ByteLength.hpp"
-#include "../../../unit/CpLength.hpp"
+#include "../../../unit/ByteCount.hpp"
+#include "../../../unit/CpCount.hpp"
 #include "../../../unit/CpRange.hpp"
 
 #include <span>
@@ -18,7 +18,7 @@
 namespace erbsland::text::impl {
 
 /// Storage for shared UTF-32 string data.
-/// @tested{U32StringTest}
+/// @tested{U32StringTest StringStorageBoundsTest}
 class U32StringSharedStorage final {
 public:
     /// Create empty shared storage.
@@ -69,13 +69,18 @@ public:
     /// Create uninitialized string storage for the given UTF-32 code-unit size.
     [[nodiscard]] static auto forSize(std::size_t size) -> U32StringSharedStorage;
     /// Throw if a size cannot be represented by the UTF-32 data length type.
+    /// @param size A finite size representable by the string length type.
     static void validateSize(std::size_t size);
     /// Add two sizes and validate the result as a string UTF-32 data length.
-    [[nodiscard]] static auto checkedAddSize(std::size_t first, std::size_t second, std::string_view reason)
-        -> std::size_t;
+    /// @param first The first size.
+    /// @param second The second size.
+    /// @return The sum, which must fit the finite string length range.
+    [[nodiscard]] static auto checkedAddSize(std::size_t first, std::size_t second) -> std::size_t;
     /// Multiply two sizes and validate the result as a string UTF-32 data length.
-    [[nodiscard]] static auto checkedMultiplySize(std::size_t first, std::size_t second, std::string_view reason)
-        -> std::size_t;
+    /// @param first The first size.
+    /// @param second The second size.
+    /// @return The product, which must fit the finite string length range.
+    [[nodiscard]] static auto checkedMultiplySize(std::size_t first, std::size_t second) -> std::size_t;
 
 public:
     /// Clear the storage.
@@ -85,13 +90,13 @@ public:
     /// Resize the visible string data and write the trailing null byte.
     void resize(std::size_t size) noexcept;
     /// Reserve usable capacity for the current string value.
-    void reserve(unit::CpLength capacity);
+    void reserve(unit::CpCount capacity);
     /// Shrink storage to the exact size of the visible string value.
     void shrinkToFit();
     /// Get the usable capacity for the current string value.
-    [[nodiscard]] auto capacity() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto capacity() const noexcept -> unit::CpCount;
     /// Get the estimated retained heap memory usage.
-    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteCount;
     /// Detach shared data and materialize sliced data when necessary.
     void detach();
     /// Get a view to this storage.

@@ -6,8 +6,8 @@
 
 #include "impl/TextParameters.hpp"
 
-#include "../Char.hpp"
 #include "../Literals.hpp"
+#include "../StringTransformations.hpp"
 
 namespace erbsland::text::placeholder {
 
@@ -38,7 +38,7 @@ auto TextFilter::validate(const String &filterName, const String &parameter) -> 
             return parameter.isEmpty();
         }
         if (filterName == "lower"_el || filterName == "upper"_el) {
-            const auto mode = parameter.transformed(Char::toAsciiLowercase);
+            const auto mode = toAsciiLowercase(parameter);
             return mode.isEmpty() || mode == "ascii"_el || mode == "unicode"_el;
         }
         impl::TextParameters::parse(parameter).validateFor(filterName);
@@ -49,6 +49,14 @@ auto TextFilter::validate(const String &filterName, const String &parameter) -> 
 }
 
 auto TextFilter::apply(const String &filterName, const String &parameter, const String &value) -> String {
+    auto result = applyValue(filterName, parameter, value);
+    if (value.isSensitive()) {
+        result.markAsSensitive();
+    }
+    return result;
+}
+
+auto TextFilter::applyValue(const String &filterName, const String &parameter, const String &value) -> String {
     if (filterName == "default"_el) {
         return value.isEmpty() ? parameter : value;
     }
@@ -93,21 +101,20 @@ auto TextFilter::apply(const String &filterName, const String &parameter, const 
 }
 
 auto TextFilter::applyCase(const String &filterName, const String &parameter, const String &value) -> String {
-    const auto mode = parameter.transformed(Char::toAsciiLowercase);
+    const auto mode = toAsciiLowercase(parameter);
     if (!mode.isEmpty() && mode != "ascii"_el && mode != "unicode"_el) {
         throw ReplacerError{ReplacerErrorCategory::Syntax, "The case-conversion mode must be 'ascii' or 'unicode'."_el};
     }
     if (filterName == "lower"_el) {
         if (mode == "ascii"_el) {
-            return value.transformed(
-                [](const Char character) noexcept -> Char { return character.toAsciiLowercase(); });
+            return toAsciiLowercase(value);
         }
-        return value.transformed([](const Char character) noexcept -> Char { return character.toLowercase(); });
+        return toLowercase(value);
     }
     if (mode == "ascii"_el) {
-        return value.transformed([](const Char character) noexcept -> Char { return character.toAsciiUppercase(); });
+        return toAsciiUppercase(value);
     }
-    return value.transformed([](const Char character) noexcept -> Char { return character.toUppercase(); });
+    return toUppercase(value);
 }
 
 }

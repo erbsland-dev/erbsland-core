@@ -23,7 +23,7 @@ namespace erbsland::log::impl {
 class SyslogLogWriter final : public LogWriter, public std::enable_shared_from_this<SyslogLogWriter> {
 private:
     /// Maximum payload accepted by the UDP socket abstraction.
-    static constexpr auto cMaximumUdpMessageBytes = unit::ByteLength{65'507U};
+    static constexpr auto cMaximumUdpMessageBytes = unit::ByteCount{65'507U};
 
 public:
     /// Create a syslog writer with the given network settings.
@@ -62,7 +62,7 @@ private:
     /// @param value The header-field text to validate.
     /// @param maximum The maximum permitted code-point count.
     /// @return `true` if the value is valid for an RFC 5424 header field.
-    [[nodiscard]] static auto isHeaderField(const text::String &value, unit::CpLength maximum) noexcept -> bool;
+    [[nodiscard]] static auto isHeaderField(const text::String &value, unit::CpCount maximum) noexcept -> bool;
     /// Add encoded data to the bounded pending queue.
     /// @param data The complete encoded transport payload to enqueue.
     void enqueue(mem::ByteBlock data);
@@ -84,7 +84,7 @@ private:
 private:
     SyslogLogWriterOptions _options;          ///< Transport and RFC 5424 settings.
     std::deque<mem::ByteBlock> _pending;      ///< Encoded payloads awaiting transmission.
-    unit::ByteLength _pendingBytes;           ///< Total bytes charged to the pending queue.
+    unit::ByteCount _pendingBytes;            ///< Total bytes charged to the pending queue.
     network::UdpSocketPtr _udpSocket;         ///< Active UDP socket, when selected.
     network::ConnectionPtr _connection;       ///< Active or connecting TCP/TLS transport.
     bool _active{};                           ///< Whether the selected transport can currently send.

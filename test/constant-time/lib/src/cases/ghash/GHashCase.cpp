@@ -1,14 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "GHashCase.hpp"
 
 #include "../../BackendInfo.hpp"
 
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/GaloisMultiplierFactory.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
@@ -24,7 +23,7 @@ GHashCase::GHashCase(bool accumulate, bool automatic) : _accumulate{accumulate},
             "fixed-vs-random-hash-subkey"_el,
             BackendInfo{*probe, !probe->isHardwareAccelerated()}.name(),
             true},
-        el::ByteLength{2048});
+        el::ByteCount{2048});
 }
 
 auto GHashCase::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {

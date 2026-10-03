@@ -21,7 +21,7 @@ auto PortableChaCha20Backend::generateBlocks(const uint32_t firstCounter, const 
     auto result = Batch{};
     for (auto blockIndex = std::size_t{}; blockIndex < blockCount; ++blockIndex) {
         auto keyStream = chacha20::block(_key.span(), _nonce.span(), firstCounter + static_cast<uint32_t>(blockIndex));
-        result.overwrite(unit::ByteIndex{blockIndex * 64U}, keyStream.span());
+        result.overwrite(unit::ByteIndex{blockIndex * 64U, unit::ByteIndex::Unchecked{}}, keyStream.span());
         keyStream.secureErase();
     }
     return result;

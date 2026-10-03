@@ -5,17 +5,23 @@
 #include "PackageConfig.hpp"
 #include "PackageTarget.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
 
 #include <vector>
 
 namespace erbsland::package {
 
+using namespace text::literals;
+
 /// Creates one release ZIP from CMake-built targets.
 /// @notest{Covered by package integration tests.}
 class PackageApplication final : public core::Application {
+    static constexpr auto cProjectNameOption = "project-name"_el;
+    static constexpr auto cProjectVersionOption = "project-version"_el;
+
 public:
     /// Create the package application from a narrow command line.
     PackageApplication(int argc, char *argv[]) : Application{argc, argv} {}

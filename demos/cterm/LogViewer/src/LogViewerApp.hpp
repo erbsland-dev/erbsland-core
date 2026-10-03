@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include <erbsland/String.hpp>
+#include <erbsland/StringLiteral.hpp>
 #include <TerminalApplication.hpp>
 
 #include <chrono>

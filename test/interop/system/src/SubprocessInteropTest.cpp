@@ -1,14 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/path/Path.hpp>
-#include <erbsland/system/ProcessInfo.hpp>
-#include <erbsland/system/Subprocess.hpp>
-#include <erbsland/system/SubprocessOptions.hpp>
-#include <erbsland/system/SubprocessOutputMode.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/time/TimeDelta.hpp>
+#include <erbsland/DetachedSubprocess.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/ProcessInfo.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/Subprocess.hpp>
+#include <erbsland/SubprocessOptions.hpp>
+#include <erbsland/SubprocessOutputMode.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -54,56 +55,72 @@ private:
 
 public:
     void testExitAndSeparateCapture() {
-        auto process = el::system::Subprocess::start(
+        auto process = el::system::Subprocess::create(
             executablePath(),
             el::text::StringList{"--subprocess-helper"_el, "output"_el, "hello out"_el, "hello err"_el, "7"_el},
             captureOptions());
-        const auto status = process.wait();
+        process->start();
+        const auto status = process->wait();
         REQUIRE(status.hasExited());
         REQUIRE_FALSE(status.isSuccess());
         REQUIRE_EQUAL(status.exitCode(), std::optional<std::int32_t>{7});
-        REQUIRE_EQUAL(process.standardOutput(), "hello out"_el);
-        REQUIRE_EQUAL(process.standardError(), "hello err"_el);
-        REQUIRE_FALSE(process.wasStandardOutputTruncated());
-        REQUIRE_FALSE(process.wasStandardErrorTruncated());
+        REQUIRE_EQUAL(process->standardOutput(), "hello out"_el);
+        REQUIRE_EQUAL(process->standardError(), "hello err"_el);
+        REQUIRE_FALSE(process->wasStandardOutputTruncated());
+        REQUIRE_FALSE(process->wasStandardErrorTruncated());
     }
 
     void testMergedCapture() {
         auto options = captureOptions();
         options.setMergeStandardError(true);
-        auto process = el::system::Subprocess::start(
+        auto process = el::system::Subprocess::create(
             executablePath(),
             el::text::StringList{"--subprocess-helper"_el, "output"_el, "first"_el, "second"_el},
             options);
-        REQUIRE(process.wait().isSuccess());
-        REQUIRE_EQUAL(process.standardOutput(), "firstsecond"_el);
-        REQUIRE(process.standardError().isEmpty());
+        process->start();
+        REQUIRE(process->wait().isSuccess());
+        REQUIRE_EQUAL(process->standardOutput(), "firstsecond"_el);
+        REQUIRE(process->standardError().isEmpty());
+    }
+
+    void testCaptureRemovesInitialUtf8Bom() {
+        auto process = el::system::Subprocess::create(
+            executablePath(), el::text::StringList{"--subprocess-helper"_el, "utf8-output"_el}, captureOptions());
+        process->start();
+        REQUIRE(process->wait().isSuccess());
+        const auto expected =
+            el::text::StringConverter{el::unittest::th::stdStringFromHex("61f09f92a1ff0062e282ace2")}.toString();
+        REQUIRE_EQUAL(process->standardOutput(), expected);
+        REQUIRE_FALSE(process->wasStandardOutputTruncated());
     }
 
     void testCaptureLimitContinuesDraining() {
         auto options = captureOptions();
-        options.setCaptureLimit(el::unit::ByteLength{4096U});
-        auto process = el::system::Subprocess::start(
+        options.setCaptureLimit(el::unit::ByteCount{4096U});
+        auto process = el::system::Subprocess::create(
             executablePath(), el::text::StringList{"--subprocess-helper"_el, "large-output"_el, "1048576"_el}, options);
-        REQUIRE(process.wait().isSuccess());
-        REQUIRE_EQUAL(process.standardOutput().length(), el::unit::ByteLength{4096U});
-        REQUIRE(process.wasStandardOutputTruncated());
+        process->start();
+        REQUIRE(process->wait().isSuccess());
+        REQUIRE_EQUAL(process->standardOutput().length(), el::unit::ByteCount{4096U});
+        REQUIRE(process->wasStandardOutputTruncated());
     }
 
     void testTimedWaitAndTermination() {
-        auto process = el::system::Subprocess::start(
+        auto process = el::system::Subprocess::create(
             executablePath(), el::text::StringList{"--subprocess-helper"_el, "sleep"_el, "5000"_el}, captureOptions());
-        REQUIRE_FALSE(process.wait(el::time::TimeDelta::milliseconds(20)).has_value());
-        REQUIRE(process.isRunning());
-        process.terminate();
-        REQUIRE(process.wait(el::time::TimeDelta::seconds(2)).has_value());
-        REQUIRE_FALSE(process.isRunning());
+        process->start();
+        REQUIRE_FALSE(process->wait(el::time::TimeDelta::milliseconds(20)).has_value());
+        REQUIRE(process->isRunning());
+        process->terminate();
+        REQUIRE(process->wait(el::time::TimeDelta::seconds(2)).has_value());
+        REQUIRE_FALSE(process->isRunning());
     }
 
     void testProcessIdentifierAndInformation() {
-        auto process = el::system::Subprocess::start(
+        auto process = el::system::Subprocess::create(
             executablePath(), el::text::StringList{"--subprocess-helper"_el, "sleep"_el, "5000"_el}, captureOptions());
-        const auto processId = process.processId();
+        process->start();
+        const auto processId = process->processId();
         REQUIRE(processId.isValid());
 
         auto info = el::system::ProcessInfo{processId};
@@ -113,53 +130,61 @@ public:
         REQUIRE(info.startTime().isValid());
         REQUIRE_FALSE(info.ownerId().isEmpty());
 
-        process.terminate();
-        REQUIRE(process.wait(el::time::TimeDelta::seconds(2)).has_value());
-        REQUIRE(process.processId() == processId);
+        process->terminate();
+        REQUIRE(process->wait(el::time::TimeDelta::seconds(2)).has_value());
+        REQUIRE(process->processId() == processId);
         info.reload();
         REQUIRE_FALSE(info.exists());
 
-        auto moved = std::move(process);
-        REQUIRE_FALSE(process.processId().isValid());
-        REQUIRE(moved.processId() == processId);
+        auto moved = process;
+        process.reset();
+        REQUIRE_FALSE(process);
+        REQUIRE(moved->processId() == processId);
     }
 
     void testEnvironmentAndWorkingDirectory() {
         auto options = captureOptions();
-        options.setEnvironmentVariable("ERBSLAND_SUBPROCESS_TEST"_el, "value with spaces"_el);
-        auto process = el::system::Subprocess::start(
+        options.environmentChanges().setVariable("ERBSLAND_SUBPROCESS_TEST"_el, "value with spaces"_el);
+        auto process = el::system::Subprocess::create(
             executablePath(),
             el::text::StringList{"--subprocess-helper"_el, "environment"_el, "ERBSLAND_SUBPROCESS_TEST"_el},
             options);
-        REQUIRE(process.wait().isSuccess());
-        REQUIRE_EQUAL(process.standardOutput(), "value with spaces"_el);
+        process->start();
+        REQUIRE(process->wait().isSuccess());
+        REQUIRE_EQUAL(process->standardOutput(), "value with spaces"_el);
 
         const auto temporary = std::filesystem::temp_directory_path();
         options.setWorkingDirectory(el::path::Path{temporary});
-        process = el::system::Subprocess::start(
+        process = el::system::Subprocess::create(
             executablePath(), el::text::StringList{"--subprocess-helper"_el, "working-directory"_el}, options);
-        REQUIRE(process.wait().isSuccess());
+        process->start();
+        REQUIRE(process->wait().isSuccess());
         REQUIRE_EQUAL(
-            std::filesystem::weakly_canonical(el::text::StringConverter{process.standardOutput()}.toStdString()),
+            std::filesystem::weakly_canonical(el::text::StringConverter{process->standardOutput()}.toStdString()),
             std::filesystem::weakly_canonical(temporary));
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testOwnedDestructionTerminatesChild() {
         const auto marker = markerPath("owned");
         {
-            auto process = el::system::Subprocess::start(
+            auto process = el::system::Subprocess::create(
                 executablePath(),
                 el::text::StringList{"--subprocess-helper"_el, "marker-after"_el, "500"_el, toString(marker)},
                 discardOptions());
-            REQUIRE(process.isRunning());
+            process->start();
+            REQUIRE(process->isRunning());
         }
         std::this_thread::sleep_for(std::chrono::milliseconds{600});
         REQUIRE_FALSE(std::filesystem::exists(marker));
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testDetachedChildCompletesIndependently() {
         const auto marker = markerPath("detached");
-        el::system::Subprocess::startDetached(
+        const auto detached = el::system::DetachedSubprocess::start(
             executablePath(),
             el::text::StringList{"--subprocess-helper"_el, "marker-after"_el, "20"_el, toString(marker)},
             discardOptions());

@@ -4,7 +4,7 @@
 
 #include "WindowsUdpSocketOperation.hpp"
 
-#include "../../../../err/RuntimeError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../mem/impl/UnsafeByteBlockAccess.hpp"
 #include "../../../../system/impl/WindowsErrorContext.hpp"
 #include "../../../../text/Literals.hpp"
@@ -15,6 +15,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace text;
 using namespace text::literals;
 
 WindowsUdpSocketState::WindowsUdpSocketState(event::EventLoopDriverPtr driver, UdpSocketDeviceCallbacks callbacks) :
@@ -25,7 +26,7 @@ WindowsUdpSocketState::WindowsUdpSocketState(event::EventLoopDriverPtr driver, U
 
 WindowsUdpSocketState::~WindowsUdpSocketState() = default;
 
-auto WindowsUdpSocketState::bind(IpEndpoint localEndpoint, const unit::ByteLength maximumDatagramSize) -> IpEndpoint {
+auto WindowsUdpSocketState::bind(IpEndpoint localEndpoint, const unit::ByteCount maximumDatagramSize) -> IpEndpoint {
     const auto lock = std::scoped_lock{_operationMutex};
     const auto family = localEndpoint.address().isV4() ? AF_INET : AF_INET6;
     const auto socket = ::WSASocketW(family, SOCK_DGRAM, IPPROTO_UDP, nullptr, 0, WSA_FLAG_OVERLAPPED);
@@ -156,7 +157,8 @@ auto WindowsUdpSocketState::requireDriver(event::EventLoopDriverPtr driver)
     -> std::shared_ptr<event::impl::WindowsEventLoopDriver> {
     auto result = std::dynamic_pointer_cast<event::impl::WindowsEventLoopDriver>(std::move(driver));
     if (result == nullptr) {
-        throw err::RuntimeError{"The UDP socket requires the platform's default native event-loop driver."_el};
+        throw err::ParameterFailure{
+            "The UDP socket requires the platform's default native event-loop driver."_el, "driver"_el};
     }
     return result;
 }
@@ -243,7 +245,7 @@ void WindowsUdpSocketState::completeReceive(const DWORD transferred, const DWORD
     }
     auto datagram = UdpDatagram{
         *remoteEndpoint,
-        operation->receiveBuffer.take(unit::ByteLength::fromSizeT(static_cast<std::size_t>(transferred)))};
+        operation->receiveBuffer.take(unit::ByteCount::fromSizeT(static_cast<std::size_t>(transferred)))};
     submitReceiveSafely();
     if (_callbacks.datagram) {
         _callbacks.datagram(std::move(datagram));
@@ -276,7 +278,7 @@ void WindowsUdpSocketState::submitReceiveSafely() {
     }
 }
 
-void WindowsUdpSocketState::reportError(const int errorCode, text::String title, text::String description) {
+void WindowsUdpSocketState::reportError(const int errorCode, String title, String description) {
     if (_callbacks.error) {
         _callbacks.error(createContext(errorCode, std::move(title), std::move(description)));
     }
@@ -288,12 +290,11 @@ void WindowsUdpSocketState::releaseRegistrationIfIdle() noexcept {
     }
 }
 
-auto WindowsUdpSocketState::createError(const int errorCode, text::String title, text::String description) const
-    -> NetworkError {
+auto WindowsUdpSocketState::createError(const int errorCode, String title, String description) const -> NetworkError {
     return NetworkError{createContext(errorCode, std::move(title), std::move(description))};
 }
 
-auto WindowsUdpSocketState::createContext(const int errorCode, text::String title, text::String description) const
+auto WindowsUdpSocketState::createContext(const int errorCode, String title, String description) const
     -> NetworkErrorContext {
     auto context = NetworkErrorContext{std::move(title), std::move(description)};
     context.setReason(errorReason(errorCode))

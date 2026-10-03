@@ -59,9 +59,9 @@ public: // implement TextInputStream
     [[nodiscard]] auto encoding() const noexcept -> text::StringEncoding override;
     [[nodiscard]] auto effectiveEncoding() const noexcept -> text::StringEncoding override;
     [[nodiscard]] auto readChar() -> StreamReadResult<text::Char> override;
-    [[nodiscard]] auto read(unit::CpLength maximum) -> StreamReadResult<text::String> override;
-    [[nodiscard]] auto readLine(unit::CpLength maximum) -> StreamReadResult<text::String> override;
-    [[nodiscard]] auto readAll(unit::CpLength maximum) -> StreamReadResult<text::String> override;
+    [[nodiscard]] auto read(unit::CpCount maximum) -> StreamReadResult<text::String> override;
+    [[nodiscard]] auto readLine(unit::CpCount maximum) -> StreamReadResult<text::String> override;
+    [[nodiscard]] auto readAll(unit::CpCount maximum) -> StreamReadResult<text::String> override;
 
 public: // implement StreamPositioning
     [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
@@ -83,13 +83,13 @@ private:
     /// Get the read deadline derived from the stream settings.
     [[nodiscard]] auto deadlineFromNow() const -> ReadDeadline;
     /// Prepare decoded input up to a maximum character count.
-    [[nodiscard]] auto prepareChunk(unit::CpLength maximum, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto prepareChunk(unit::CpCount maximum, ReadDeadline deadline) -> StreamReadStatus;
     /// Prepare decoded input through one line ending.
-    [[nodiscard]] auto prepareLine(unit::CpLength maximum, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto prepareLine(unit::CpCount maximum, ReadDeadline deadline) -> StreamReadStatus;
     /// Prepare all remaining decoded input.
-    [[nodiscard]] auto prepareAll(unit::CpLength maximum, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto prepareAll(unit::CpCount maximum, ReadDeadline deadline) -> StreamReadStatus;
     /// Decode and append one source chunk.
-    [[nodiscard]] auto appendDecoded(unit::CpLength maximum, bool stopAtLineEnd) -> bool;
+    [[nodiscard]] auto appendDecoded(unit::CpCount maximum, bool stopAtLineEnd) -> bool;
     /// Fill the decoder from the byte stream before a deadline.
     [[nodiscard]] auto fillDecodeBuffer(ReadDeadline deadline) -> StreamReadStatus;
     /// Test whether the decoder contains no input.
@@ -107,7 +107,7 @@ private:
     /// Reset decoding state after setting a byte position.
     void resetAfterPositioning(unit::ByteIndex position, text::StringEncoding effectiveEncoding);
     /// Return a read result from retained decoded text.
-    [[nodiscard]] auto takeResult(StreamReadStatus status, unit::CpLength maximum, bool line)
+    [[nodiscard]] auto takeResult(StreamReadStatus status, unit::CpCount maximum, bool line)
         -> StreamReadResult<text::String>;
 
 private:

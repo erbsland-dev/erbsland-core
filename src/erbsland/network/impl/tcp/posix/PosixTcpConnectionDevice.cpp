@@ -4,7 +4,8 @@
 
 #include "PosixTcpSocket.hpp"
 
-#include "../../../../err/RuntimeError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../source/NetworkError.hpp"
 #include "../../platform/SocketAddress.hpp"
 
@@ -28,12 +29,11 @@
 
 namespace erbsland::network::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 PosixTcpConnectionDevice::PosixTcpConnectionDevice(
-    event::EventLoopDriverPtr driver,
-    const unit::ByteLength receiveChunkLimit,
-    TcpConnectionDeviceCallbacks callbacks) :
+    event::EventLoopDriverPtr driver, const ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks) :
     _register{createRegisterFn(std::move(driver))},
     _callbacks{std::move(callbacks)},
     _receiveChunkLimit{receiveChunkLimit} {
@@ -80,7 +80,8 @@ void PosixTcpConnectionDevice::connect(IpEndpoint remoteEndpoint) {
 void PosixTcpConnectionDevice::accept(TcpAcceptedSocketPtr socket) {
     auto *posixSocket = dynamic_cast<PosixTcpSocket *>(socket.get());
     if (posixSocket == nullptr) {
-        throw err::RuntimeError{"The accepted TCP socket is incompatible with the POSIX connection device."_el};
+        throw err::ParameterFailure{
+            "The accepted TCP socket is incompatible with the POSIX connection device."_el, "socket"_el};
     }
     _localEndpoint = posixSocket->localEndpoint();
     _remoteEndpoint = posixSocket->remoteEndpoint();
@@ -98,7 +99,7 @@ auto PosixTcpConnectionDevice::canAccept(const TcpAcceptedSocket &socket) const 
 
 auto PosixTcpConnectionDevice::send(mem::ByteBlock data) -> TcpConnectionDeviceSendStatus {
     if (_sendPending) {
-        throw err::RuntimeError{"The native TCP device already retains an output block."_el};
+        throw err::LogicFailure{"The native TCP device already retains an output block."_el};
     }
     _sendData = std::move(data);
     _sendOffset = 0U;
@@ -111,7 +112,7 @@ auto PosixTcpConnectionDevice::send(mem::ByteBlock data) -> TcpConnectionDeviceS
     return TcpConnectionDeviceSendStatus::Pending;
 }
 
-void PosixTcpConnectionDevice::setReceiving(const unit::ByteLength maximumBytes) {
+void PosixTcpConnectionDevice::setReceiving(const ByteCount maximumBytes) {
     _maximumReceiveSize = std::min(maximumBytes, _receiveChunkLimit);
     updateRegistration();
 }
@@ -136,7 +137,8 @@ auto PosixTcpConnectionDevice::createRegisterFn(event::EventLoopDriverPtr driver
     const auto nativeDriver = std::dynamic_pointer_cast<event::impl::EpollEventLoopDriver>(std::move(driver));
 #endif
     if (nativeDriver == nullptr) {
-        throw err::RuntimeError{"TCP sockets require the platform's default native event-loop driver."_el};
+        throw err::ParameterFailure{
+            "TCP sockets require the platform's default native event-loop driver."_el, "driver"_el};
     }
     return [nativeDriver](const int descriptor, const bool read, const bool write, auto callback) {
         return nativeDriver->registerDescriptor(descriptor, read, write, std::move(callback));
@@ -146,12 +148,20 @@ auto PosixTcpConnectionDevice::createRegisterFn(event::EventLoopDriverPtr driver
 void PosixTcpConnectionDevice::configureDescriptor(const int descriptor) {
     if (::fcntl(descriptor, F_SETFL, ::fcntl(descriptor, F_GETFL, 0) | O_NONBLOCK) < 0 ||
         ::fcntl(descriptor, F_SETFD, ::fcntl(descriptor, F_GETFD, 0) | FD_CLOEXEC) < 0) {
-        throw err::RuntimeError{"The native TCP socket could not be configured as non-blocking."_el};
+        const auto context = system::impl::PosixErrorContext::fromErrno();
+        throw NetworkError{NetworkErrorContext{
+            "TCP socket configuration failed"_el, "The native TCP socket could not be configured as non-blocking."_el}
+                .setReason(NetworkErrorReason::SocketOperationFailed)
+                .setPlatformContext(context)};
     }
 #ifdef SO_NOSIGPIPE
     constexpr auto enabled = int{1};
     if (::setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &enabled, sizeof(enabled)) < 0) {
-        throw err::RuntimeError{"SIGPIPE suppression could not be enabled for the TCP socket."_el};
+        const auto context = system::impl::PosixErrorContext::fromErrno();
+        throw NetworkError{NetworkErrorContext{
+            "TCP socket configuration failed"_el, "SIGPIPE suppression could not be enabled for the TCP socket."_el}
+                .setReason(NetworkErrorReason::SocketOperationFailed)
+                .setPlatformContext(context)};
     }
 #endif
 }
@@ -275,7 +285,7 @@ void PosixTcpConnectionDevice::receiveOne() {
     const auto result = ::recv(descriptor, bytes.data(), bytes.size(), 0);
     if (result > 0) {
         if (_callbacks.data) {
-            _callbacks.data(buffer.take(unit::ByteLength::fromSizeT(static_cast<std::size_t>(result))));
+            _callbacks.data(buffer.take(ByteCount::fromSizeT(static_cast<std::size_t>(result))));
         }
         return;
     }
@@ -351,7 +361,7 @@ auto PosixTcpConnectionDevice::errorReason(const int errorCode) noexcept -> Netw
 }
 
 auto TcpConnectionDevice::create(
-    event::EventLoopDriverPtr driver, const unit::ByteLength receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
+    event::EventLoopDriverPtr driver, const ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
     -> TcpConnectionDevicePtr {
     return std::make_unique<PosixTcpConnectionDevice>(std::move(driver), receiveChunkLimit, std::move(callbacks));
 }

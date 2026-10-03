@@ -23,6 +23,7 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
@@ -51,15 +52,15 @@ void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
                 const auto entryIndex = key.find(Name::vrName(Name::VR::ReservedEntry));
                 if (entryIndex == NamePath::npos) {
                     throwValidationError(
-                        text::StringFormat{"Keys must point to values inside a section list. "
-                                           "The 'vr_entry' is missing in the key path '{}'"_el}
+                        StringFormat{"Keys must point to values inside a section list. "
+                                     "The 'vr_entry' is missing in the key path '{}'"_el}
                             .build(key.toText()));
                 }
                 const auto newListPath = key.subPath(0, entryIndex);
                 if (newListPath.empty()) {
                     throwValidationError(
-                        text::StringFormat{"The key '{}' does not point to a section list. "
-                                           "No list named in from of the 'vr_entry'"_el}
+                        StringFormat{"The key '{}' does not point to a section list. "
+                                     "No list named in from of the 'vr_entry'"_el}
                             .build(key.toText()));
                 }
                 if (firstListPath.empty()) {
@@ -67,12 +68,12 @@ void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
                     firstListRule = rule->child(firstListPath);
                     if (firstListRule == nullptr || firstListRule->type() != vr::RuleType::SectionList) {
                         throwValidationError(
-                            text::StringFormat{"The initial path '{}' in a key does not point to a section list"_el}
-                                .build(firstListPath.toText()));
+                            StringFormat{"The initial path '{}' in a key does not point to a section list"_el}.build(
+                                firstListPath.toText()));
                     }
                 } else if (firstListPath != newListPath) {
                     throwValidationError(
-                        text::StringFormat{
+                        StringFormat{
                             "All keys in a `vr_key` definition must point to the same section list. "
                             "The key '{}' points to a different list as previous keys in the same definition"_el}
                             .build(key.toText()));
@@ -80,24 +81,23 @@ void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
                 const auto valuePath = key.subPath(entryIndex + 1);
                 if (valuePath.empty()) {
                     throwValidationError(
-                        text::StringFormat{"The key '{}' has no value path after 'vr_entry'"_el}.build(key.toText()));
+                        StringFormat{"The key '{}' has no value path after 'vr_entry'"_el}.build(key.toText()));
                 }
                 if (valuePath.find(Name::vrName(Name::VR::ReservedEntry)) != NamePath::npos) {
                     throwValidationError(
-                        text::StringFormat{"The key '{}' points to a value in a nested section list"_el}.build(
-                            key.toText()));
+                        StringFormat{"The key '{}' points to a value in a nested section list"_el}.build(key.toText()));
                 }
                 const auto entryRule = firstListRule->child(Name::vrName(Name::VR::ReservedEntry));
                 if (entryRule == nullptr || entryRule->type() != vr::RuleType::Section) {
                     throwValidationError(
-                        text::StringFormat{
+                        StringFormat{
                             "The 'vr_entry' in the key path '{}' does not point to a section in a section list"_el}
                             .build(key.toText()));
                 }
                 const auto valueRule = entryRule->child(valuePath);
                 if (valueRule == nullptr) {
                     throwValidationError(
-                        text::StringFormat{"The value path '{}' in the key '{}' does not point to a validated value"_el}
+                        StringFormat{"The value path '{}' in the key '{}' does not point to a validated value"_el}
                             .build(valuePath.toText(), key.toText()));
                 }
                 if (valueRule->type() == vr::RuleType::Alternatives) {
@@ -110,15 +110,13 @@ void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
                     }
                     if (!hasIntegerOrText) {
                         throwValidationError(
-                            text::StringFormat{
-                                "The value path '{}' in the key '{}' points to a value with alternatives, "
-                                "but none of the alternatives contain a text or integer value"_el}
+                            StringFormat{"The value path '{}' in the key '{}' points to a value with alternatives, "
+                                         "but none of the alternatives contain a text or integer value"_el}
                                 .build(valuePath.toText(), key.toText()));
                     }
                 } else if (valueRule->type() != vr::RuleType::Text && valueRule->type() != vr::RuleType::Integer) {
                     throwValidationError(
-                        text::StringFormat{
-                            "The value path '{}' in the key '{}' does not point to a text or integer value"_el}
+                        StringFormat{"The value path '{}' in the key '{}' does not point to a text or integer value"_el}
                             .build(valuePath.toText(), key.toText()));
                 }
             }
@@ -165,7 +163,7 @@ void RulesDefinitionValidator::validateKeyReference(const RulePtr &rule, const N
     }
     if (foundKeyDefinition == nullptr) {
         throwValidationError(
-            text::StringFormat{
+            StringFormat{
                 "The 'vr_key' definition for the reference '{}' was not found in the scope of the constraint"_el}
                 .build(keyReference.toText()));
     }
@@ -176,7 +174,7 @@ void RulesDefinitionValidator::validateKeyReference(const RulePtr &rule, const N
         index = keyReference.at(1).asIndex();
         if (index >= foundKeyDefinition->keys().size()) {
             throwValidationError(
-                text::StringFormat{"The key index in the key reference '{}' is out of bounds"_el}.build(
+                StringFormat{"The key index in the key reference '{}' is out of bounds"_el}.build(
                     keyReference.toText()));
         }
     }
@@ -193,7 +191,7 @@ void RulesDefinitionValidator::validateKeyReference(const RulePtr &rule, const N
     const auto keyTypes = resolveKeyDefinitionType(ruleInPath, foundKeyDefinition, index);
     if (std::ranges::find(keyTypes, rule->type()) == keyTypes.end()) {
         throwValidationError(
-            text::StringFormat{"A key referencing {} index must be of of the same type"_el}.build(
+            StringFormat{"A key referencing {} index must be of of the same type"_el}.build(
                 expectedRuleTypesText(keyTypes)));
     }
     // success
@@ -286,13 +284,13 @@ void RulesDefinitionValidator::validateDependencyPath(const RulePtr &rule, const
     }
     if (dependencyPath.find(Name::vrName(Name::VR::ReservedEntry)) != NamePath::npos) {
         throwValidationError(
-            text::StringFormat{"The dependency path '{}' points to a value in a section list"_el}.build(
+            StringFormat{"The dependency path '{}' points to a value in a section list"_el}.build(
                 dependencyPath.toText()));
     }
     auto targetRule = rule->child(dependencyPath);
     if (targetRule == nullptr) {
         throwValidationError(
-            text::StringFormat{"The dependency path '{}' does not point to a validated value"_el}.build(
+            StringFormat{"The dependency path '{}' does not point to a validated value"_el}.build(
                 dependencyPath.toText()));
     }
     // Test all rules in the branch if they are optional
@@ -309,8 +307,7 @@ void RulesDefinitionValidator::validateDependencyPath(const RulePtr &rule, const
         testedRule = rule->child(testedPath);
     }
     throwValidationError(
-        text::StringFormat{
-            "The dependency path '{}' points to a value that is neither optional nor has a default value"_el}
+        StringFormat{"The dependency path '{}' points to a value that is neither optional nor has a default value"_el}
             .build(dependencyPath.toText()));
 }
 

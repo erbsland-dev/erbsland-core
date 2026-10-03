@@ -33,9 +33,9 @@ public: // implement TextInputStream
     auto close() -> StreamCloseStatus override;
     void abort() noexcept override;
     [[nodiscard]] auto readChar() -> StreamReadResult<text::Char> override;
-    [[nodiscard]] auto read(unit::CpLength maximum) -> StreamReadResult<text::String> override;
-    [[nodiscard]] auto readLine(unit::CpLength maximum) -> StreamReadResult<text::String> override;
-    [[nodiscard]] auto readAll(unit::CpLength maximum) -> StreamReadResult<text::String> override;
+    [[nodiscard]] auto read(unit::CpCount maximum) -> StreamReadResult<text::String> override;
+    [[nodiscard]] auto readLine(unit::CpCount maximum) -> StreamReadResult<text::String> override;
+    [[nodiscard]] auto readAll(unit::CpCount maximum) -> StreamReadResult<text::String> override;
 
 public:
     using TextInputStream::read;

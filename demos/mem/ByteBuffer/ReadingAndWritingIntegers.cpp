@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/Endianness.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <cstdint>
 
@@ -13,7 +21,7 @@ namespace demo {
 /// report an invalid range without changing the buffer, while `OrThrow` methods
 /// make a required binary layout easy to enforce.
 void readingAndWritingIntegers() {
-    auto observation = el::ByteBuffer{el::ByteLength{8U}};
+    auto observation = el::ByteBuffer{el::ByteCount{8U}};
 
     // Store a big-endian plot identifier and a little-endian tree count.
     observation.setIntegerOrThrow<uint32_t>(el::ByteIndex{0U}, 0x464f5245U, el::Endianness::Big);

@@ -21,19 +21,18 @@ class UnsafeCustomPasswordHashParameters final {
 
 public:
     /// Create checked custom Argon2id parameters.
-    /// @param memoryKiB The memory cost in kibibytes.
-    /// @param passes The pass count.
-    /// @param lanes The parallel lane count.
+    /// @param memoryKiB The memory cost in kibibytes. Must be from `8 * lanes` through 1,048,576.
+    /// @param passes The pass count. Must be between 1 and 10.
+    /// @param lanes The parallel lane count. Must be between 1 and 16.
     /// @return The validated custom parameters.
-    /// @throws err::ParameterError If a value is outside the implementation's safety limits.
     [[nodiscard]] static auto argon2id(uint32_t memoryKiB, uint32_t passes, uint32_t lanes)
         -> UnsafeCustomPasswordHashParameters;
     /// Create checked custom scrypt parameters.
-    /// @param cost The CPU/memory cost parameter, which must be a power of two.
-    /// @param blockSize The block-size parameter.
-    /// @param parallelization The parallelization parameter.
+    /// @param cost The CPU/memory cost. Must be a power of two greater than one, with `cost * blockSize <= 1,048,576`
+    /// and `cost * blockSize * parallelization <= 10,485,760`.
+    /// @param blockSize The positive block-size parameter. Must be at most `UINT32_MAX / 128`.
+    /// @param parallelization The parallelization parameter. Must be between 1 and 16.
     /// @return The validated custom parameters.
-    /// @throws err::ParameterError If a value is outside the implementation's safety limits.
     [[nodiscard]] static auto scrypt(uint64_t cost, uint32_t blockSize, uint32_t parallelization)
         -> UnsafeCustomPasswordHashParameters;
 

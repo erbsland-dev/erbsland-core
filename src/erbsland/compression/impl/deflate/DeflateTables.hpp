@@ -106,4 +106,5 @@ inline constexpr auto cDistanceExtra = std::array<uint8_t, 30U>{
     12U,
     13U,
     13U};
+
 }

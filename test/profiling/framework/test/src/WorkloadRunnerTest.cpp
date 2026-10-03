@@ -4,7 +4,10 @@
 #include "FakeScenarioWorkload.hpp"
 #include "FakeTimeSource.hpp"
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ExitCode.hpp>
 #include <erbsland/profiling/WorkloadRunner.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>

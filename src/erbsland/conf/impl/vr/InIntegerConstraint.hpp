@@ -11,7 +11,7 @@ class InIntegerConstraint final : public InConstraint<Integer> {
 public:
     /// Creates an integer membership constraint.
     /// @param values The allowed integer values.
-    explicit InIntegerConstraint(std::vector<Integer> values) : InConstraint(std::move(values)) {}
+    explicit InIntegerConstraint(util::List<Integer> values) : InConstraint(std::move(values)) {}
 
 protected:
     void validateInteger(const ValidationContext &context, Integer value) const override;

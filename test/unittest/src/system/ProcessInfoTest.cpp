@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathError.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PlatformError.hpp>
+#include <erbsland/ProcessInfo.hpp>
 #include <erbsland/system/impl/ProcessIdAccess.hpp>
 #include <erbsland/system/impl/SystemInfoBackend.hpp>
-#include <erbsland/system/PlatformError.hpp>
-#include <erbsland/system/ProcessInfo.hpp>
 #include <erbsland/system/SystemInfo.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/TimeEpoch.hpp>
+#include <erbsland/TimeEpoch.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>

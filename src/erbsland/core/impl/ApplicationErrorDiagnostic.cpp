@@ -26,9 +26,8 @@ auto ApplicationErrorDiagnostic::location() const noexcept -> unit::CodeLocation
     return _context.codeLocation();
 }
 
-auto ApplicationErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
-    -> text::TextDocument {
-    return ApplicationErrorDocumentBuilder{_context, displayText}.build();
+auto ApplicationErrorDiagnostic::toTextDocument() const -> text::TextDocument {
+    return ApplicationErrorDocumentBuilder{_context}.build();
 }
 
 }

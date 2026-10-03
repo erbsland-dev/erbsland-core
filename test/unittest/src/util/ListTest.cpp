@@ -3,13 +3,13 @@
 
 #include "MoveAwareTestValue.hpp"
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/unit/ItemCount.hpp>
-#include <erbsland/unit/ItemIndex.hpp>
-#include <erbsland/unit/ItemRange.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/ItemRange.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/LoopStatus.hpp>
+#include <erbsland/OutOfRangeError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/List.hpp>
-#include <erbsland/util/LoopStatus.hpp>
 
 #include <compare>
 #include <concepts>

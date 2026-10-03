@@ -60,7 +60,7 @@ the reading.
 .. erbsland-demo::
     :source: time/TimePoint/Checkpoints.cpp
     :exec: time/time_point --demo Checkpoints
-    :source-sha256: a42fffe1ecf6acbc606af002a98bcbf5747c20fc632bb6918951450ab67cc473
+    :sha256: b368e7f9317f4b05f4b56f334738921a0176ff189c61df0d2829f19105983801
 
 .. code-block:: cpp
 
@@ -85,13 +85,15 @@ the reading.
             el::StringFormat{"Imported checkpoint is at least the earlier reading: {}"_el}.build(imported >= checkpoint));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Teleskop: checkpoint recorded
-    Default point is the steady-clock epoch: true
-    Imported point preserves its value: true
-    Imported checkpoint is at least the earlier reading: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTeleskop: checkpoint recorded
+        Default point is the steady-clock epoch: true
+        Imported point preserves its value: true
+        Imported checkpoint is at least the earlier reading: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -120,7 +122,7 @@ It is taken after printing the planned intervals, so this particular elapsed mea
 .. erbsland-demo::
     :source: time/TimePoint/Intervals.cpp
     :exec: time/time_point --demo Intervals
-    :source-sha256: 594f721b3ccc727f4308f82c6d3c7ab8e7ffd690a15b2c0a88e8cee33f62c0c4
+    :sha256: c8acf2d112b7b9ae1dabe17ebb8778b0f2e159fb3705b506770d19c4583ae8c9
 
 .. code-block:: cpp
 
@@ -148,13 +150,15 @@ It is taken after printing the planned intervals, so this particular elapsed mea
         el::io::printLine(el::StringFormat{"Elapsed since the checkpoint: {}"_el}.build(elapsed.toString()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Forward: 25 ms; reverse: -25 ms
-    Subtraction and timeDeltaTo agree: true; points ordered: true
-    Planned interval in whole milliseconds: 25
-    Elapsed since the checkpoint: 352 us 41 ns
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mForward: 25 ms; reverse: -25 ms
+        Subtraction and timeDeltaTo agree: true; points ordered: true
+        Planned interval in whole milliseconds: 25
+        Elapsed since the checkpoint: 222 us 41 ns␛[0m
 
 .. erbsland-demo-end::
 
@@ -185,7 +189,7 @@ new timeout at a later stage of the operation.
 .. erbsland-demo::
     :source: time/TimePoint/Deadline.cpp
     :exec: time/time_point --demo Deadline
-    :source-sha256: 82ab9ea3a145637de1aed1d592d776eaa20420774e5d9348981bce3bcaebe38c
+    :sha256: 86e75a5f40152343b782fe8bf4129151fa81c523bb4bc30cd4945acc11cda084
 
 .. code-block:: cpp
 
@@ -219,12 +223,14 @@ new timeout at a later stage of the operation.
                 now >= expiredDeadline, (expiredDeadline - now).toString()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Teleskop: deadline reached: false; remaining: 28 ms 999 us 375 ns
-    Preparation before capture: true; extension after capture: true
-    Expired deadline reached: true; remaining: -2 ms
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTeleskop: deadline reached: false; remaining: 28 ms 998 us 334 ns
+        Preparation before capture: true; extension after capture: true
+        Expired deadline reached: true; remaining: -2 ms␛[0m
 
 .. erbsland-demo-end::
 
@@ -259,7 +265,7 @@ Construction from the same standard type preserves its value, so a round trip ke
 .. erbsland-demo::
     :source: time/TimePoint/Interop.cpp
     :exec: time/time_point --demo Interop
-    :source-sha256: 69042f7007956a2353ef2eaec59b83a8bd6be4a88810a698d4a4acc9c2b63f88
+    :sha256: e2b51843003b31374c4783ea953e9077f35bd29db4e64cc286555de5821cbca3
 
 .. code-block:: cpp
 
@@ -286,11 +292,13 @@ Construction from the same standard type preserves its value, so a round trip ke
                 (finished - start).toString(), finished >= captureDeadline));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Teleskop: deadline round trip preserved: true
-    Elapsed after waiting: 2 ms 508 us 42 ns; deadline reached: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTeleskop: deadline round trip preserved: true
+        Elapsed after waiting: 3 ms 5 us 167 ns; deadline reached: true␛[0m
 
 .. erbsland-demo-end::
 

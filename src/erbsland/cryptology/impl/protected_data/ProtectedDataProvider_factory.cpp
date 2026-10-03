@@ -39,6 +39,7 @@ auto ProtectedDataProvider::createPlatform() -> ProtectedDataProviderPtr {
 void ProtectedDataProvider::setTestPlatformFactory(const TestPlatformFactory factory) noexcept {
     _testPlatformFactory.store(factory, std::memory_order_release);
 }
+
 #endif
 
 }

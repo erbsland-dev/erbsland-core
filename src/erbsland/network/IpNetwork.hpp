@@ -18,8 +18,7 @@ public:
     IpNetwork() noexcept = default;
     /// Create and normalize a network.
     /// @param address An address within the network.
-    /// @param prefixLength The number of fixed leading address bits.
-    /// @throws err::ParameterError If the prefix length is invalid for the address version.
+    /// @param prefixLength The number of fixed leading address bits. Must be at most 32 for IPv4 or 128 for IPv6.
     IpNetwork(IpAddress address, uint8_t prefixLength);
 
 public: // operators

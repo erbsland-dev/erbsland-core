@@ -18,8 +18,7 @@ public:
 
 public: // implement Diagnostic
     [[nodiscard]] auto toString() const noexcept -> text::String override;
-    [[nodiscard]] auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
-        -> text::TextDocument override;
+    [[nodiscard]] auto toTextDocument() const -> text::TextDocument override;
 
 private:
     text::String _title;

@@ -5,7 +5,7 @@
 
 #include <erbsland/conf/SourceIdentifier.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/err/ParameterError.hpp>
+#include <erbsland/ParameterFailure.hpp>
 
 using namespace el::text::literals;
 
@@ -48,8 +48,8 @@ public:
 
     void testNullSource() {
         parser = std::make_shared<Parser>();
-        REQUIRE_THROWS_AS(el::err::ParameterError, doc = parser->parseOrThrow({}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, doc = parser->parse({}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, doc = parser->parseOrThrow({}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, doc = parser->parse({}));
     }
 
     void testEmptyDocument() {

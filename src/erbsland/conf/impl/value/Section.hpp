@@ -20,14 +20,14 @@ public:
     void transform(const ValueType targetType) override {
         if (_valueType == ValueType::IntermediateSection) {
             if (targetType != ValueType::SectionWithNames && targetType != ValueType::SectionWithTexts) {
-                throw err::LogicError{"Cannot convert intermediate section into the chosen type."};
+                throw err::LogicFailure{"Cannot convert intermediate section into the chosen type."};
             }
         } else if (_valueType == ValueType::SectionWithNames) {
             if (targetType != ValueType::SectionWithTexts) {
-                throw err::LogicError{"Cannot convert section with names into the chosen type."};
+                throw err::LogicFailure{"Cannot convert section with names into the chosen type."};
             }
         } else {
-            throw err::LogicError{"Cannot convert section into the chosen type."};
+            throw err::LogicFailure{"Cannot convert section into the chosen type."};
         }
         _valueType = targetType;
         if (targetType == ValueType::SectionWithTexts) {

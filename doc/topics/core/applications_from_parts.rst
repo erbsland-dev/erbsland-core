@@ -15,6 +15,9 @@ Application parts divide a process into services with explicit dependencies and 
 :cpp:class:`Application <erbsland::core::Application>` can own their manager, connect their command-line hooks, and
 coordinate startup and shutdown with its main event loop.
 
+:doc:`/topics/event/using_event_loops_in_application_parts` follows event-source setup, callback execution, and
+asynchronous shutdown on a part's dedicated loop.
+
 Registering the Service Graph
 =============================
 
@@ -29,7 +32,7 @@ the remaining managed event system.
 .. erbsland-demo::
     :source: core/ApplicationParts/ApplicationMain.cpp
     :exec: core/core_part_application
-    :source-sha256: f64f51596a88f04da7c579ba40013403e0123bede310a397aba960fecd6074a0
+    :sha256: 660f827597f71289d1282b9e48acdfd5729c8ff04f5e7e2a7f500bc6af2558dd
 
 .. code-block:: cpp
 
@@ -42,24 +45,26 @@ the remaining managed event system.
         app.info().setApplicationName("Catalog Service"_el);
         app.registerPart<CatalogStoragePart>();
         app.registerPart<CatalogServerPart>();
-        [[maybe_unused]] auto stateSubscription =
+        auto stateSubscription = // Normally kept in the object that handles the event
             app.partManager()->events().addStateChanged([&app](const el::ApplicationPartManagerState state) -> void {
-            if (state == el::ApplicationPartManagerState::Running) {
-                el::io::printLine("all application parts are running"_el);
-                app.quit();
-            }
+                if (state == el::ApplicationPartManagerState::Running) {
+                    el::io::printLine("all application parts are running"_el);
+                    app.quit();
+                }
             });
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    catalog storage initialized
-    catalog server initialized; catalog storage is ready
-    all application parts are running
-    catalog server cleaned up
-    catalog storage cleaned up
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mcatalog storage initialized
+        catalog server initialized; catalog storage is ready
+        all application parts are running
+        catalog server cleaned up
+        catalog storage cleaned up␛[0m
 
 .. erbsland-demo-end::
 

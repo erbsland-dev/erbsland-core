@@ -1,16 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
 #include <erbsland/debug/impl/StringDebugAccess.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/http/codec/Http1ProtocolError.hpp>
 #include <erbsland/network/impl/http/codec/Http1RequestDecoder.hpp>
 #include <erbsland/network/impl/http/codec/Http1RequestEncoder.hpp>
 #include <erbsland/network/impl/http/codec/Http1ResponseDecoder.hpp>
 #include <erbsland/network/impl/http/codec/Http1ResponseEncoder.hpp>
 #include <erbsland/text/impl/UnsafeU8StringAccess.hpp>
-#include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 
@@ -52,7 +52,7 @@ private:
     [[nodiscard]] static auto drain(Encoder &encoder) -> std::string {
         auto result = std::string{};
         while (!encoder.queuedOutputLength().isZero()) {
-            result += raw(encoder.takeOutput(el::unit::ByteLength{7U}));
+            result += raw(encoder.takeOutput(el::unit::ByteCount{7U}));
         }
         return result;
     }
@@ -82,7 +82,7 @@ public:
         REQUIRE_EQUAL(head->kind(), Http1DecodeEvent::Kind::RequestHead);
         REQUIRE_EQUAL(head->request().target(), "/one"_el);
         REQUIRE_EQUAL(head->framing(), Http1BodyFraming::FixedLength);
-        REQUIRE_EQUAL(head->contentLength().value(), el::unit::ByteLength{5U});
+        REQUIRE_EQUAL(head->contentLength().value(), el::unit::ByteCount{5U});
         REQUIRE_EQUAL(raw(decoder.next()->data()), "hello");
         REQUIRE_EQUAL(decoder.next()->kind(), Http1DecodeEvent::Kind::Complete);
         decoder.reset();
@@ -102,9 +102,9 @@ public:
         const auto head = decoder.next();
         REQUIRE_EQUAL(head->framing(), Http1BodyFraming::Chunked);
         const auto authorization = head->request().headers().getFirst(HttpFieldType::Authorization);
-        REQUIRE_FALSE(authorization.isValidUtf8());
-        REQUIRE_EQUAL(authorization.length(), el::unit::ByteLength{8U});
-        REQUIRE_FALSE(head->request().headers().getFirst(HttpFieldType::Cookie).isValidUtf8());
+        REQUIRE_FALSE(authorization.isEncodingValid());
+        REQUIRE_EQUAL(authorization.length(), el::unit::ByteCount{8U});
+        REQUIRE_FALSE(head->request().headers().getFirst(HttpFieldType::Cookie).isEncodingValid());
         REQUIRE_EQUAL(head->request().headers().getFirst("X-Raw"_el), "in  terior"_el);
         REQUIRE_EQUAL(raw(decoder.next()->data()), "body");
         const auto trailers = decoder.next();
@@ -125,7 +125,7 @@ public:
         REQUIRE(headDecoder.feed(bytes("HTTP/1.1 200 OK\r\nContent-Length: 99\r\n\r\nnext").span()).isAccepted());
         REQUIRE_EQUAL(headDecoder.next()->framing(), Http1BodyFraming::None);
         REQUIRE_EQUAL(headDecoder.next()->kind(), Http1DecodeEvent::Kind::Complete);
-        REQUIRE_EQUAL(headDecoder.retainedInputLength(), el::unit::ByteLength{4U});
+        REQUIRE_EQUAL(headDecoder.retainedInputLength(), el::unit::ByteCount{4U});
 
         auto connectDecoder = Http1ResponseDecoder{HttpMethodType::Connect};
         auto connectWire = std::string{"HTTP/1.1 200 Connected\r\n\r\nopaque"};
@@ -178,8 +178,8 @@ public:
         auto responseDecoder = Http1ResponseDecoder{};
         REQUIRE(responseDecoder.feed(bytes(responseWire).span()).isAccepted());
         const auto decodedResponse = responseDecoder.next()->response();
-        REQUIRE_FALSE(decodedResponse.reasonPhrase().isValidUtf8());
-        REQUIRE_FALSE(decodedResponse.headers().getFirst(HttpFieldType::SetCookie).isValidUtf8());
+        REQUIRE_FALSE(decodedResponse.reasonPhrase().isEncodingValid());
+        REQUIRE_FALSE(decodedResponse.headers().getFirst(HttpFieldType::SetCookie).isEncodingValid());
         REQUIRE_EQUAL(raw(responseDecoder.next()->data()), "ok");
     }
 
@@ -224,6 +224,36 @@ public:
             static_cast<void>(decoder.next());
             static_cast<void>(decoder.next());
         });
+    }
+
+    void testSeparatorBoundaryValidation() {
+        for (
+            const auto wire :
+            {"GET/HTTP/1.1\r\n\r\n",
+                "GET /\r\n\r\n",
+                "GET  HTTP/1.1\r\n\r\n",
+                "GET / \r\n\r\n",
+                "GET / HTTP/1.1 extra\r\n\r\n"}) {
+            WITH_CONTEXT(requireFailure(Http1FailureReason::MalformedStartLine, [&] {
+                auto decoder = Http1RequestDecoder{};
+                static_cast<void>(decoder.feed(bytes(wire).span()));
+                static_cast<void>(decoder.next());
+            }));
+        }
+        for (
+            const auto wire :
+            {"GET / HTTP/1.1\r\nMissingColon\r\n\r\n",
+                "GET / HTTP/1.1\r\n: value\r\n\r\n",
+                "GET / HTTP/1.1\r\nBad\t: value\r\n\r\n"}) {
+            WITH_CONTEXT(requireFailure(Http1FailureReason::MalformedField, [&] {
+                auto decoder = Http1RequestDecoder{};
+                static_cast<void>(decoder.feed(bytes(wire).span()));
+                static_cast<void>(decoder.next());
+            }));
+        }
+        auto decoder = Http1RequestDecoder{};
+        REQUIRE(decoder.feed(bytes("GET / HTTP/1.1\r\nX-Empty:\r\nX-Value: a:b\r\n\r\n").span()).isAccepted());
+        REQUIRE_EQUAL(decoder.next()->kind(), Http1DecodeEvent::Kind::RequestHead);
     }
 
     void testStrictSyntaxAndChunkFailures() {
@@ -324,12 +354,12 @@ public:
             static_cast<void>(decoder.next());
         });
         requireFailure(Http1FailureReason::StartLineTooLong, [&] {
-            auto limits = Http1CodecLimits{}.setMaximumStartLineLength(el::unit::ByteLength{4U});
+            auto limits = Http1CodecLimits{}.setMaximumStartLineLength(el::unit::ByteCount{4U});
             auto decoder = Http1RequestDecoder{limits};
             static_cast<void>(decoder.feed(bytes("GET / HTTP/1.1\r\n").span()));
             static_cast<void>(decoder.next());
         });
-        auto limited = Http1RequestDecoder{Http1CodecLimits{}.setMaximumInputLength(el::unit::ByteLength{4U})};
+        auto limited = Http1RequestDecoder{Http1CodecLimits{}.setMaximumInputLength(el::unit::ByteCount{4U})};
         REQUIRE(limited.feed(bytes("12345").span()).wouldBlock());
         REQUIRE(limited.retainedInputLength().isZero());
 
@@ -337,7 +367,7 @@ public:
         headers.addField(HttpFieldType::ContentLength, "4"_el);
         auto encoder = Http1RequestEncoder{
             HttpRequestHead{HttpMethodType::Post, "/"_el, HttpVersion::Http11, headers},
-            Http1CodecLimits{}.setMaximumOutputLength(el::unit::ByteLength{128U})};
+            Http1CodecLimits{}.setMaximumOutputLength(el::unit::ByteCount{128U})};
         const auto before = encoder.queuedOutputLength();
         requireFailure(
             Http1FailureReason::InvalidState, [&] { static_cast<void>(encoder.writeBody(bytes("12345").span())); });
@@ -349,14 +379,14 @@ public:
         firstInput.append(29U, 'x');
         firstInput.push_back('\r');
         REQUIRE_EQUAL(firstInput.size(), std::size_t{64U});
-        auto decoder = Http1RequestDecoder{Http1CodecLimits{}.setMaximumInputLength(el::unit::ByteLength{64U})};
+        auto decoder = Http1RequestDecoder{Http1CodecLimits{}.setMaximumInputLength(el::unit::ByteCount{64U})};
         REQUIRE(decoder.feed(bytes(firstInput).span()).isAccepted());
         REQUIRE_FALSE(decoder.next().has_value());
         REQUIRE(decoder.feed(bytes("\n\r\n").span()).isAccepted());
         const auto head = decoder.next();
         REQUIRE(head.has_value());
         REQUIRE_EQUAL(head->request().headers().getFirst("X-One"_el), "a"_el);
-        REQUIRE_EQUAL(head->request().headers().getFirst("X-Wrap"_el).length(), el::unit::ByteLength{29U});
+        REQUIRE_EQUAL(head->request().headers().getFirst("X-Wrap"_el).length(), el::unit::ByteCount{29U});
         const auto firstField = head->request().headers().field(el::unit::ItemIndex::zero());
         REQUIRE_EQUAL(
             el::debug::impl::StringDebugAccess{firstField.name().text()}.backingStorageId(),
@@ -370,8 +400,8 @@ public:
         headers.addField(HttpFieldType::ContentLength, "40"_el);
         auto encoder = Http1RequestEncoder{
             HttpRequestHead{HttpMethodType::Post, "/"_el, HttpVersion::Http11, headers},
-            Http1CodecLimits{}.setMaximumOutputLength(el::unit::ByteLength{64U})};
-        auto wire = raw(encoder.takeOutput(el::unit::ByteLength{30U}));
+            Http1CodecLimits{}.setMaximumOutputLength(el::unit::ByteCount{64U})};
+        auto wire = raw(encoder.takeOutput(el::unit::ByteCount{30U}));
         const auto body = std::string(40U, 'b');
         REQUIRE(encoder.writeBody(bytes(body).span()).isAccepted());
         REQUIRE(encoder.finish().isAccepted());
@@ -383,7 +413,7 @@ public:
         auto identical = Http1RequestDecoder{};
         REQUIRE(identical.feed(bytes("POST / HTTP/1.1\r\nContent-Length: 3, 3\r\nContent-Length: 3\r\n\r\nabc").span())
                 .isAccepted());
-        REQUIRE_EQUAL(identical.next()->contentLength().value(), el::unit::ByteLength{3U});
+        REQUIRE_EQUAL(identical.next()->contentLength().value(), el::unit::ByteCount{3U});
         REQUIRE_EQUAL(raw(identical.next()->data()), "abc");
 
         auto notModified = Http1ResponseDecoder{};
@@ -402,25 +432,25 @@ public:
             static_cast<void>(decoder.next());
         });
         requireFailure(Http1FailureReason::HeaderLimitExceeded, [&] {
-            auto headerLimits = HttpHeaderLimits{}.setMaximumNameLength(el::unit::ByteLength{1U});
+            auto headerLimits = HttpHeaderLimits{}.setMaximumNameLength(el::unit::ByteCount{1U});
             auto decoder = Http1RequestDecoder{Http1CodecLimits{}.setHeaderLimits(headerLimits)};
             static_cast<void>(decoder.feed(bytes("GET / HTTP/1.1\r\nXX: y\r\n\r\n").span()));
             static_cast<void>(decoder.next());
         });
         requireFailure(Http1FailureReason::HeaderLimitExceeded, [&] {
-            auto headerLimits = HttpHeaderLimits{}.setMaximumValueLength(el::unit::ByteLength{1U});
+            auto headerLimits = HttpHeaderLimits{}.setMaximumValueLength(el::unit::ByteCount{1U});
             auto decoder = Http1RequestDecoder{Http1CodecLimits{}.setHeaderLimits(headerLimits)};
             static_cast<void>(decoder.feed(bytes("GET / HTTP/1.1\r\nX: yy\r\n\r\n").span()));
             static_cast<void>(decoder.next());
         });
         requireFailure(Http1FailureReason::HeaderLimitExceeded, [&] {
-            auto headerLimits = HttpHeaderLimits{}.setMaximumAggregateLength(el::unit::ByteLength{4U});
+            auto headerLimits = HttpHeaderLimits{}.setMaximumAggregateLength(el::unit::ByteCount{4U});
             auto decoder = Http1RequestDecoder{Http1CodecLimits{}.setHeaderLimits(headerLimits)};
             static_cast<void>(decoder.feed(bytes("GET / HTTP/1.1\r\nX: y\r\n\r\n").span()));
             static_cast<void>(decoder.next());
         });
         requireFailure(Http1FailureReason::ChunkMetadataTooLong, [&] {
-            auto limits = Http1CodecLimits{}.setMaximumChunkMetadataLength(el::unit::ByteLength{1U});
+            auto limits = Http1CodecLimits{}.setMaximumChunkMetadataLength(el::unit::ByteCount{1U});
             auto decoder = Http1RequestDecoder{limits};
             static_cast<void>(
                 decoder.feed(bytes("POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n10\r\n").span()));
@@ -428,7 +458,7 @@ public:
             static_cast<void>(decoder.next());
         });
         requireFailure(Http1FailureReason::BodyLimitExceeded, [&] {
-            auto limits = Http1CodecLimits{}.setMaximumBodyLength(el::unit::ByteLength{2U});
+            auto limits = Http1CodecLimits{}.setMaximumBodyLength(el::unit::ByteCount{2U});
             auto decoder = Http1RequestDecoder{limits};
             static_cast<void>(decoder.feed(bytes("POST / HTTP/1.1\r\nContent-Length: 3\r\n\r\n").span()));
             static_cast<void>(decoder.next());
@@ -442,7 +472,7 @@ public:
             static_cast<void>(decoder.next());
         });
         requireFailure(Http1FailureReason::TrailerLimitExceeded, [&] {
-            auto trailerLimits = HttpHeaderLimits{}.setMaximumNameLength(el::unit::ByteLength{1U});
+            auto trailerLimits = HttpHeaderLimits{}.setMaximumNameLength(el::unit::ByteCount{1U});
             auto decoder = Http1RequestDecoder{Http1CodecLimits{}.setTrailerLimits(trailerLimits)};
             static_cast<void>(
                 decoder.feed(bytes("POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nXX: y\r\n\r\n").span()));
@@ -450,7 +480,7 @@ public:
             static_cast<void>(decoder.next());
         });
         requireFailure(Http1FailureReason::TrailerLimitExceeded, [&] {
-            auto trailerLimits = HttpHeaderLimits{}.setMaximumValueLength(el::unit::ByteLength{1U});
+            auto trailerLimits = HttpHeaderLimits{}.setMaximumValueLength(el::unit::ByteCount{1U});
             auto decoder = Http1RequestDecoder{Http1CodecLimits{}.setTrailerLimits(trailerLimits)};
             static_cast<void>(
                 decoder.feed(bytes("POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nX: yy\r\n\r\n").span()));
@@ -458,7 +488,7 @@ public:
             static_cast<void>(decoder.next());
         });
         requireFailure(Http1FailureReason::TrailerLimitExceeded, [&] {
-            auto trailerLimits = HttpHeaderLimits{}.setMaximumAggregateLength(el::unit::ByteLength{4U});
+            auto trailerLimits = HttpHeaderLimits{}.setMaximumAggregateLength(el::unit::ByteCount{4U});
             auto decoder = Http1RequestDecoder{Http1CodecLimits{}.setTrailerLimits(trailerLimits)};
             static_cast<void>(
                 decoder.feed(bytes("POST / HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nX: y\r\n\r\n").span()));
@@ -470,7 +500,7 @@ public:
         fixedHeaders.addField(HttpFieldType::ContentLength, "6"_el);
         auto boundedEncoder = Http1RequestEncoder{
             HttpRequestHead{HttpMethodType::Post, "/"_el, HttpVersion::Http11, fixedHeaders},
-            Http1CodecLimits{}.setMaximumOutputLength(el::unit::ByteLength{42U})};
+            Http1CodecLimits{}.setMaximumOutputLength(el::unit::ByteCount{42U})};
         REQUIRE(boundedEncoder.writeBody(bytes("123456").span()).wouldBlock());
         static_cast<void>(boundedEncoder.takeOutput());
         REQUIRE(boundedEncoder.writeBody(bytes("123456").span()).isAccepted());

@@ -6,7 +6,9 @@
 #include "Statistics_fwd.hpp"
 #include "WorkerMeasurement_fwd.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/TimeDelta.hpp>
 
 namespace erbsland::profiling {
 

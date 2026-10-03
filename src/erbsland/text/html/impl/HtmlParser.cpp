@@ -5,6 +5,7 @@
 #include "../../impl/LinkData.hpp"
 #include "../../Literals.hpp"
 #include "../../StringCharReader.hpp"
+#include "../../StringTransformations.hpp"
 
 #include <memory>
 #include <utility>
@@ -37,10 +38,10 @@ auto HtmlParser::parse() -> TextDocument {
             handleText(std::move(_currentToken.value));
             break;
         case HtmlTokenType::TagOpen: {
-            auto tagName = toLowerAscii(_currentToken.value);
+            auto tagName = toAsciiLowercase(_currentToken.value);
             auto attributes = std::move(_currentToken.attributes);
             for (auto &attribute : attributes) {
-                attribute.setName(toLowerAscii(attribute.name()));
+                attribute.setName(toAsciiLowercase(attribute.name()));
             }
             const auto selfClosing = _currentToken.selfClosing;
             if (selfClosing) {
@@ -53,7 +54,7 @@ auto HtmlParser::parse() -> TextDocument {
             break;
         }
         case HtmlTokenType::TagClose:
-            handleCloseTag(toLowerAscii(_currentToken.value));
+            handleCloseTag(toAsciiLowercase(_currentToken.value));
             break;
         case HtmlTokenType::End:
         case HtmlTokenType::Comment:
@@ -100,7 +101,7 @@ void HtmlParser::handleText(String text) {
                 return;
             }
             const auto *nextTagInfo =
-                _nextToken.type == HtmlTokenType::TagOpen ? findTagInfo(toLowerAscii(_nextToken.value)) : nullptr;
+                _nextToken.type == HtmlTokenType::TagOpen ? findTagInfo(toAsciiLowercase(_nextToken.value)) : nullptr;
             if (nextTagInfo != nullptr && nextTagInfo->isBlock()) {
                 return;
             }

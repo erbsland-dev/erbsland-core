@@ -74,6 +74,7 @@ Positioning Patterns
 
 .. code-block:: text
 
+    o.initialFileSize() -> unit::ByteCount // captured regular-file size hint, infinity if unavailable
     o.supportsPositioning() -> bool // test the optional capability
     o.position() -> unit::ByteIndex // get the logical encoded-byte position
     o.setPosition(position) -> StreamPositionStatus // set an absolute position
@@ -105,6 +106,14 @@ Write Patterns
     o.print/printLine(arguments) -> StreamWriteStatus // atomically accept formatted output
     o.endianness()/setEndianness(value) // inspect or configure integer byte order
     o.encoding() -> text::StringEncoding // inspect output encoding
+
+Temporary File Commit Patterns
+==============================
+
+.. code-block:: text
+
+    o.commitTo(destination[, options]) -> Result // finalize and commit a temporary output lease
+    o.commitToOrThrow(destination[, options]) // finalize and commit or throw PathError with nested causes
 
 Coroutine Patterns
 ==================

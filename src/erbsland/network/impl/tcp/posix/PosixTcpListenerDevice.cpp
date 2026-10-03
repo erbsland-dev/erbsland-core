@@ -5,7 +5,7 @@
 #include "PosixTcpConnectionDevice.hpp"
 #include "PosixTcpSocket.hpp"
 
-#include "../../../../err/RuntimeError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../source/NetworkError.hpp"
 #include "../../platform/SocketAddress.hpp"
 
@@ -127,7 +127,8 @@ auto PosixTcpListenerDevice::createRegisterFn(event::EventLoopDriverPtr driver) 
     const auto nativeDriver = std::dynamic_pointer_cast<event::impl::EpollEventLoopDriver>(std::move(driver));
 #endif
     if (nativeDriver == nullptr) {
-        throw err::RuntimeError{"TCP listeners require the platform's default native event-loop driver."_el};
+        throw err::ParameterFailure{
+            "TCP listeners require the platform's default native event-loop driver."_el, "driver"_el};
     }
     return [nativeDriver](const int descriptor, const bool read, const bool write, auto callback) {
         return nativeDriver->registerDescriptor(descriptor, read, write, std::move(callback));
@@ -137,12 +138,20 @@ auto PosixTcpListenerDevice::createRegisterFn(event::EventLoopDriverPtr driver) 
 void PosixTcpListenerDevice::configureDescriptor(const int descriptor) {
     if (::fcntl(descriptor, F_SETFL, ::fcntl(descriptor, F_GETFL, 0) | O_NONBLOCK) < 0 ||
         ::fcntl(descriptor, F_SETFD, ::fcntl(descriptor, F_GETFD, 0) | FD_CLOEXEC) < 0) {
-        throw err::RuntimeError{"The native TCP socket could not be configured as non-blocking."_el};
+        const auto context = system::impl::PosixErrorContext::fromErrno();
+        throw NetworkError{NetworkErrorContext{
+            "TCP socket configuration failed"_el, "The native TCP socket could not be configured as non-blocking."_el}
+                .setReason(NetworkErrorReason::SocketOperationFailed)
+                .setPlatformContext(context)};
     }
 #ifdef SO_NOSIGPIPE
     constexpr auto enabled = int{1};
     if (::setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &enabled, sizeof(enabled)) < 0) {
-        throw err::RuntimeError{"SIGPIPE suppression could not be enabled for the TCP socket."_el};
+        const auto context = system::impl::PosixErrorContext::fromErrno();
+        throw NetworkError{NetworkErrorContext{
+            "TCP socket configuration failed"_el, "SIGPIPE suppression could not be enabled for the TCP socket."_el}
+                .setReason(NetworkErrorReason::SocketOperationFailed)
+                .setPlatformContext(context)};
     }
 #endif
 }

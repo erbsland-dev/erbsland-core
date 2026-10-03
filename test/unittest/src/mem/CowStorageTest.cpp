@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/CowManualStorage.hpp>
-#include <erbsland/mem/CowStorage.hpp>
+#include <erbsland/CowManualStorage.hpp>
+#include <erbsland/CowStorage.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>

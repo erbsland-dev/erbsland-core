@@ -3,10 +3,9 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/event/EventRegistry.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/EventRegistry.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-
 // notes:
 // The event registry is a singleton managed by the `Application` framework.
 // Therefore, we use `ApplicationTestScope` to get a fresh singleton for each test.

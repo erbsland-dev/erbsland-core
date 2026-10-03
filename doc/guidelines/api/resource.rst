@@ -45,7 +45,7 @@ Metadata Patterns
 
 .. code-block:: text
 
-    o.originalSize()/storedSize() -> unit::ByteLength // inspect logical and embedded sizes
+    o.originalSize()/storedSize() -> unit::ByteCount // inspect logical and embedded sizes
     o.isCompressed()/compressionAlgorithm() -> T // inspect compression state and algorithm
     o.hasHash()/hashAlgorithm()/hash() -> T // inspect optional logical-data integrity metadata
     o.isEncrypted() -> bool // inspect reserved encryption state

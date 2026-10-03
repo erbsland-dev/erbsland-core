@@ -15,7 +15,7 @@ namespace erbsland::text::impl {
 class U16StringBuilder final : public AnyStringBuilderBase {
 public:
     /// Create a builder with initial `capacity`.
-    explicit U16StringBuilder(unit::U16DataLength capacity);
+    explicit U16StringBuilder(unit::U16Count capacity);
 
     // defaults
     U16StringBuilder() = default;
@@ -28,16 +28,16 @@ public:
 public:
     [[nodiscard]] auto clone() const -> U16StringBuilder * override;
     [[nodiscard]] auto kind() const noexcept -> StringKind override;
-    [[nodiscard]] auto length() const noexcept -> unit::CpLength override;
+    [[nodiscard]] auto length() const noexcept -> unit::CpCount override;
     [[nodiscard]] auto isEmpty() const noexcept -> bool override;
     void clear() noexcept override;
-    auto append(Char character) -> unit::CpLength override;
-    void append(Char character, unit::CpLength count) override;
-    auto append(const U8String &text) -> unit::CpLength override;
+    auto append(Char character) -> unit::CpCount override;
+    void append(Char character, unit::CpCount count) override;
+    auto append(const U8String &text) -> unit::CpCount override;
     void append(const U8String &text, unit::ItemCount count) override;
-    auto append(const U16String &text) -> unit::CpLength override;
+    auto append(const U16String &text) -> unit::CpCount override;
     void append(const U16String &text, unit::ItemCount count) override;
-    auto append(const U32String &text) -> unit::CpLength override;
+    auto append(const U32String &text) -> unit::CpCount override;
     void append(const U32String &text, unit::ItemCount count) override;
     void appendByteBlock(const mem::ByteBlock &bytes, const ByteFormat &format) override;
     [[nodiscard]] auto toU8StringEditor() const -> U8StringEditor override;
@@ -50,8 +50,8 @@ public:
     [[nodiscard]] auto takeAnyStringEditor() -> AnyStringEditor override;
 
 private:
-    U16StringEditor _text;                          ///< The built string.
-    unit::CpLength _length{unit::CpLength::zero()}; ///< The cached decoded code-point length.
+    U16StringEditor _text;                        ///< The built string.
+    unit::CpCount _length{unit::CpCount::zero()}; ///< The cached decoded code-point length.
 };
 
 }

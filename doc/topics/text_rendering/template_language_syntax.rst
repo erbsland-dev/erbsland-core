@@ -8,16 +8,16 @@
     single: Layouts; Conditions
     single: Layouts; Iteration
 
-*****************************
-Writing the Template Language
-*****************************
+************************
+Template Language Syntax
+************************
 
 A layout can do more than insert names into fixed text.
 It can calculate a small value, choose a passage, or repeat a passage for each item in a collection.
 This page shows how to write those parts of a layout and what values they expect from the render context.
 
-Read the Markers in a Layout
-============================
+Expression, Statement, and Comment Delimiters
+=============================================
 
 The examples on this page use the default syntax.
 Text outside a marker is copied to the result as written.
@@ -36,10 +36,9 @@ The layout uses those markers throughout, including the ``if`` statement around 
 
 .. erbsland-demo::
     :source: text/RenderLayouts/EnvironmentExamples.cpp
-    :function-blocks: customSyntax
-    :function-blocks-sha256: f0cda2c83cef245427c7c5e07e4f3b819383c0a23d4a7990ec503d5b4e5f2d6f
+    :show: f:customSyntax
     :exec: text/render_layouts --demo CustomSyntax
-    :source-sha256: 3ffc62e74c29eec2e183be0aa4d4b10a1d11a55e493e328fef7144f6f6fb82da
+    :sha256: 24c250517bd27cb6592d96d19004bc4b083970016c59ea5383da3ef406ae0910
 
 .. code-block:: cpp
 
@@ -59,10 +58,12 @@ The layout uses those markers throughout, including the ``if`` statement around 
             "current.txt"_el, el::render::Context{}.set("active"_el, true).set("current"_el, "Ligure"_el)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Ligure
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLigure␛[0m
 
 .. erbsland-demo-end::
 
@@ -72,8 +73,8 @@ Do not assume that an arbitrary Jinja template will work unchanged: this rendere
 statements, and value rules.
 The :doc:`rendering reference </reference/text/documents_and_rendering>` gives the exact language boundary.
 
-Insert Values and Apply Filters
-===============================
+Value Expressions and Filters
+=============================
 
 An expression can read a name from the context, then follow map members with dots.
 In the next example, ``quest.title`` reads ``title`` from the ``quest`` map.
@@ -84,7 +85,7 @@ one line.
 .. erbsland-demo::
     :source: text/RenderLayouts/LanguageExpressions.cpp
     :exec: text/render_layouts --demo LanguageExpressions
-    :source-sha256: c12e8ae1aeb8d3b8f9d0f776d8f1ebac00ca66828795a65d960dda9d1d28d994
+    :sha256: 9c0d469e0fa69f147b9ea7d5b48ebb01272083d2fc19fb4aa6bb1837064cd041
 
 .. code-block:: cpp
 
@@ -118,13 +119,15 @@ one line.
         el::io::print(environment->render("quest.txt"_el, context));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    依頼: 星空を調べる
-    次の段階: 2 / 3
-    手順: 望遠鏡を準備 → 月を観察 → 星図を記録
-    担当: 未定
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m依頼: 星空を調べる
+        次の段階: 2 / 3
+        手順: 望遠鏡を準備 → 月を観察 → 星図を記録
+        担当: 未定␛[0m
 
 .. erbsland-demo-end::
 
@@ -142,8 +145,8 @@ The :doc:`template_feature_cheat_sheet` lists every supported operator, test, an
 example.
 The :doc:`rendering reference </reference/text/documents_and_rendering>` supplies their exact value rules.
 
-Choose a Passage with a Condition
-=================================
+Conditional Branches and Local Assignments
+==========================================
 
 When only one passage belongs in the result, keep the choice in the layout.
 An ``if`` tests an expression; optional ``elif`` branches test further cases, and ``else`` provides a final case.
@@ -152,7 +155,7 @@ The first matching branch is rendered, and ``endif`` closes the statement.
 .. erbsland-demo::
     :source: text/RenderLayouts/LanguageConditions.cpp
     :exec: text/render_layouts --demo LanguageConditions
-    :source-sha256: 2d33fbef93496d09d65607060fe7a12f671447fb89fc0e1ba78431c0ba7a55f3
+    :sha256: 078e0485e62840d2fd38957d788ab12252d9053068f1b9f1940fe7df88d4712b
 
 .. code-block:: cpp
 
@@ -179,12 +182,14 @@ The first matching branch is rendered, and ``endif`` closes the statement.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    未着手
-    進行中
-    達成
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m未着手
+        進行中
+        達成␛[0m
 
 .. erbsland-demo-end::
 
@@ -200,18 +205,21 @@ It does not change the caller's :cpp:class:`Context <erbsland::text::render::Con
 An assignment inside a branch runs only when that branch runs.
 For exact assignment and scope rules, see the :doc:`rendering reference </reference/text/documents_and_rendering>`.
 
-Repeat a Passage for a Collection
-=================================
+Loops over Lists and Maps
+=========================
 
 A list loop gives one name to each item.
 Here ``step`` is a text value, and ``loop.index`` numbers the lines starting at one.
 The optional ``else`` passage runs when the list is empty.
 The second layout shows the two-name form for an ordered map: one name receives the key, the other its value.
+To print a fixed number of list items per line, loop over ``numbers | batch(10)`` and join each row with
+``{{ row | join(' ') }}``.
+The final row can contain fewer than ten items.
 
 .. erbsland-demo::
     :source: text/RenderLayouts/LanguageIterations.cpp
     :exec: text/render_layouts --demo LanguageIterations
-    :source-sha256: 30d646a5e8875065a4412e5551dfd53af31a62b3591b11f5471028a9a29389bf
+    :sha256: ba17bea939e577cc2a81c7c57bdc323580cb1f4d55ad10ecb6f3a4e0a1c36642
 
 .. code-block:: cpp
 
@@ -249,14 +257,16 @@ The second layout shows the two-name form for an ordered map: one name receives 
         el::io::print(environment->render("rewards.txt"_el, el::render::Context{}.set("rewards"_el, rewards)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    1. 望遠鏡を準備
-    2. 月を観察
-    手順なし
-    星図: 1
-    観測記録: 2
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m1. 望遠鏡を準備
+        2. 月を観察
+        手順なし
+        星図: 1
+        観測記録: 2␛[0m
 
 .. erbsland-demo-end::
 
@@ -268,8 +278,8 @@ caller's context or leak into the next pass.
 If a value might be null, prepare a list or map in the context before iterating: ``for`` expects the collection type
 that matches its target names.
 
-Keep Layouts Readable
-=====================
+Whitespace Control in Templates
+===============================
 
 Statements and expressions affect only the text they surround; ordinary spaces and line breaks in the source are
 preserved.

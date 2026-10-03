@@ -19,6 +19,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace text;
 using namespace text::literals;
 
 WindowsHostResolver::WindowsHostResolver() : _runtime{WindowsNetworkRuntime::shared()} {
@@ -27,7 +28,7 @@ WindowsHostResolver::WindowsHostResolver() : _runtime{WindowsNetworkRuntime::sha
 auto WindowsHostResolver::resolve(const HostName &hostName) -> util::List<IpAddress> {
     auto hints = ADDRINFOW{};
     hints.ai_family = AF_UNSPEC;
-    const auto hostText = text::StringConverter{hostName.toString(HostNameFormat::IdnaAscii)}.toStdWString();
+    const auto hostText = StringConverter{hostName.toString(HostNameFormat::IdnaAscii)}.toStdWString();
     auto nativeResult = static_cast<PADDRINFOW>(nullptr);
     const auto errorCode = ::GetAddrInfoW(hostText.c_str(), nullptr, &hints, &nativeResult);
     if (errorCode != 0) {
@@ -82,7 +83,7 @@ auto WindowsHostResolver::isTemporaryError(const int errorCode) noexcept -> bool
     return errorCode == WSATRY_AGAIN;
 }
 
-auto WindowsHostResolver::errorMessage(const int errorCode) -> text::String {
+auto WindowsHostResolver::errorMessage(const int errorCode) -> String {
     auto buffer = static_cast<wchar_t *>(nullptr);
     const auto length = ::FormatMessageW(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -93,10 +94,10 @@ auto WindowsHostResolver::errorMessage(const int errorCode) -> text::String {
         0,
         nullptr);
     if (length == 0 || buffer == nullptr) {
-        return text::StringFormat{"Windows resolver error {}"_el}.build(errorCode);
+        return StringFormat{"Windows resolver error {}"_el}.build(errorCode);
     }
     const auto owner = std::unique_ptr<wchar_t, decltype(&::LocalFree)>{buffer, &::LocalFree};
-    return text::StringConverter{std::wstring_view{buffer, static_cast<std::size_t>(length)}}.toString().trimmed();
+    return StringConverter{std::wstring_view{buffer, static_cast<std::size_t>(length)}}.toString().trimmed();
 }
 
 auto createHostResolver() -> HostResolverPtr {

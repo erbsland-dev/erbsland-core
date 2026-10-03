@@ -55,12 +55,13 @@ protected: // implement CompressionCodec
         const CodecOutput::Write &output,
         const CompressionTransferOptions &transfer,
         const DecompressionOptions &options) const override;
-    [[nodiscard]] auto maximumPayloadLength(unit::ByteLength length) const -> unit::ByteLength override;
+    [[nodiscard]] auto maximumPayloadLength(unit::ByteCount length) const -> unit::ByteCount override;
 
 private:
     /// Compress one buffered LZ4 block.
     [[nodiscard]] auto compressBlock(const mem::ByteBlock &data) const -> mem::ByteBlock;
     /// Decode and validate one buffered LZ4 block.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     [[nodiscard]] auto decompressBlock(const mem::ByteBlock &data, const DecompressionOptions &options) const
         -> mem::ByteBlock;
     /// Find a match at a position with at least twelve input bytes remaining.

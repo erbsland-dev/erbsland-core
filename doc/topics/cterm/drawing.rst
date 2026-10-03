@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-**********************
-Frames, Borders, Tiles
-**********************
+*******************************************
+Drawing Terminal Frames, Borders, and Tiles
+*******************************************
 
 The drawing types define how frames, borders, filled areas, and character combinations are rendered into writable
 buffers.
@@ -19,11 +19,9 @@ layouts.
     70 terminal columns. This makes it easy to regenerate the visual output
     together with the code snippets.
 
-Usage
-=====
 
 Filling Panels and Drawing Simple Frames
-----------------------------------------
+========================================
 
 ``WritableBuffer`` provides convenient functions to fill rectangles and draw frames.
 The drawing types on this page determine how those operations appear.
@@ -77,7 +75,7 @@ You can restyle the same layout code simply by changing the enum value:
     ␛[97;40m                                                                      ␛[39;49m
 
 Combining Frames Automatically
-------------------------------
+==============================
 
 When multiple frames intersect, drawing them directly on top of each other would produce broken or overlapping
 characters.
@@ -95,7 +93,7 @@ characters.
 This ensures that intersecting lines produce consistent box-drawing characters instead of visual artifacts.
 
 Drawing Grid Layouts
---------------------
+====================
 
 Use ``GridLayout`` when you want a stable table-like layout where content cells keep their own rectangles and the frame
 lines are drawn around them.
@@ -176,7 +174,7 @@ To define your own combination behavior, use ``SimpleBlockCombinationStyle`` for
 ``MatrixCombinationStyle`` for full control over all combinations.
 
 Repeating 9-Tile Styles
------------------------
+=======================
 
 ``Tile9Style`` fills or frames a rectangle using a repeating 3×3 tile layout.
 
@@ -229,7 +227,7 @@ The right side uses letter-coded 16-tile input so the special degenerate tiles a
     ␛[97;40m                                                                      ␛[39;49m
 
 Configuring Reusable Frame Presets
-----------------------------------
+==================================
 
 When a frame configuration goes beyond a simple style and color, ``FrameDrawOptions`` lets you bundle all settings into
 a reusable object.
@@ -306,8 +304,8 @@ presets:
     ␛[97;40m      ␛[90mfixed colors␛[97m           ␛[90mstripe modes␛[97m            ␛[90mcycle = 3␛[97m        ␛[39;49m
     ␛[97;40m                                                                      ␛[39;49m
 
-Choosing the Right Style
-------------------------
+Choosing FrameStyle, Block16Style, or Tile9Style
+================================================
 
 Each drawing style has a slightly different purpose:
 

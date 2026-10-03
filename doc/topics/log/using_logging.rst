@@ -34,7 +34,7 @@ Keep that pointer in the main function and write the few milestones that are use
 .. erbsland-demo::
     :source: log/LoggingSetups/MinimalLogging.cpp
     :exec: log/logging_setups minimal
-    :source-sha256: 843202281ce553e650015c6f011471204241fa6838c351f6f23da670670925bf
+    :sha256: 5466d0cbbb1ae4b7b89b28e19790898550987bb67dc03ddd7ae59cff640b7adf
 
 .. code-block:: cpp
 
@@ -53,11 +53,13 @@ Keep that pointer in the main function and write the few milestones that are use
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[96m2026-09-01 14:01:31Z␛[97m INF - Explorer registry opened.
-    ␛[96m2026-09-01 14:01:31Z␛[93m WRN - The route notes for 'Revontuli' are incomplete.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m2026-11-06 10:32:20Z INF - Explorer registry opened.
+        2026-11-06 10:32:20Z WRN - The route notes for 'Revontuli' are incomplete.␛[0m
 
 .. erbsland-demo-end::
 
@@ -83,7 +85,7 @@ logging policy.
 .. erbsland-demo::
     :source: log/LoggingSetups/MediumLogging.cpp
     :exec: log/logging_setups medium
-    :source-sha256: 4d659571cf0f7341c3467279e01e58c237212982159636d11f9a24ba6ace67b7
+    :sha256: c002dd1d2393cca32d7e0be7cf21dc6f027d902ccd655b63d26f4b4eadc668c5
 
 .. code-block:: cpp
 
@@ -143,11 +145,13 @@ logging policy.
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mguild/routes␛[97m] Loaded the route catalog for 'Revontuli'.
-    ␛[93mWRN [␛[95mguild/supplies␛[93m] Two lanterns still need fresh oil.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mINF [guild/routes] Loaded the route catalog for 'Revontuli'.
+        WRN [guild/supplies] Two lanterns still need fresh oil.␛[0m
 
 .. erbsland-demo-end::
 
@@ -174,7 +178,7 @@ The detailed trace and normal milestones stay in the operational log instead of 
     :source: log/LoggingSetups/LargeLogging.cpp
     :exec: log/logging_setups large
     :exec-exit-code: 2
-    :source-sha256: fa8829fb9fb8444dfa689cff855696b756b413ed53b7811e220ccdc4dedef673
+    :sha256: a54e4287b135b92ea930cc760ee64cd29c9a6ccacbda67037f44163d2091568d
 
 .. code-block:: cpp
 
@@ -190,7 +194,7 @@ The detailed trace and normal milestones stay in the operational log instead of 
     protected:
         void initialize() override {
             auto temporaryOptions = el::PathTempDirectoryOptions{};
-            temporaryOptions.setPrefix("explorer-guild-"_el).setRandomLength(el::CpLength{8U});
+            temporaryOptions.setPrefix("explorer-guild-"_el).setRandomLength(el::CpCount{8U});
             _temporary = el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
 
             auto lineFormat = el::LogLineFormat{};
@@ -229,13 +233,13 @@ The detailed trace and normal milestones stay in the operational log instead of 
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[1mRecent␛[22m ␛[1mError␛[22m ␛[1mLog␛[22m ␛[1mEntries
-
-    ␛[22;91mERR [␛[95mguild/expedition␛[91m] The northern checkpoint did not answer.␛[0m
+        ␛[0mRecent Error Log Entries
+        ERR [guild/expedition] The northern checkpoint did not answer.␛[0m
 
 .. erbsland-demo-end::
 
@@ -250,7 +254,7 @@ A successful service shutdown stays quiet.
 Pass :cpp:enumerator:`LastErrorDumpMode::Always <erbsland::core::LastErrorDumpMode::Always>` when an application
 intentionally wants the snapshot after successful runs as well.
 The heading comes from the application's
-:cpp:class:`DisplayTextMap <erbsland::i18n::DisplayTextMap>` entry ``log.LastErrorDumpTitle``, so localized applications
+:cpp:class:`DisplayText <erbsland::i18n::DisplayText>` entry ``log.last_error_dump_title``, so localized applications
 can replace it together with their other display text.
 
 This is the point where :doc:`configuring_logging` and :doc:`using_writers` become useful: the application has a real
@@ -259,8 +263,8 @@ If deployments must choose destinations or trace sections themselves, the same s
 :doc:`reading_configuration`.
 That is a deployment decision inside the large setup, not a separate logging architecture.
 
-Choose the Boundary the Application Already Has
-===============================================
+Choosing a Logging Setup for Application Requirements
+=====================================================
 
 Prefer the root stream while every message genuinely comes from one operation.
 Introduce component-owned streams when names help a reader locate responsibility.

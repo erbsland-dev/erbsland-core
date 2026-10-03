@@ -7,7 +7,7 @@
 namespace erbsland::core::impl {
 
 auto ApplicationErrorDocumentBuilder::build() const -> text::TextDocument {
-    auto builder = err::ErrorDocumentBuilder{_context.title(), _context.description(), _displayText};
+    auto builder = err::ErrorDocumentBuilder{_context.title(), _context.description()};
     builder.addSource(_context.sourceName(), _context.sourcePath(), _context.codeLocation());
     return builder.takeDocument();
 }

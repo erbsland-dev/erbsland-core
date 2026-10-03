@@ -8,8 +8,8 @@
 #include "impl/RingBufferStorageTraits.hpp"
 #include "impl/UnsafeByteBlockBuffer.hpp"
 
-#include "../err/LogicError.hpp"
-#include "../err/ParameterError.hpp"
+#include "../err/LogicFailure.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <algorithm>
@@ -19,22 +19,22 @@
 
 namespace erbsland::mem {
 
+using namespace err;
 using namespace text::literals;
+using unit::ByteCount;
 
-using unit::ByteLength;
-
-RingBuffer::RingBuffer(const ByteLength capacity) : RingBuffer{capacity, capacity} {
+RingBuffer::RingBuffer(const ByteCount capacity) : RingBuffer{capacity, capacity} {
 }
 
-RingBuffer::RingBuffer(const ByteLength initialCapacity, const ByteLength maximumCapacity) :
+RingBuffer::RingBuffer(const ByteCount initialCapacity, const ByteCount maximumCapacity) :
     _storage(initialCapacity.toSizeTOrThrow()),
     _initialCapacity{initialCapacity.toSizeTOrThrow()},
     _maximumCapacity{maximumCapacity.toSizeTOrThrow()} {
     if (_initialCapacity == 0U) {
-        throw err::ParameterError{"Ring buffer capacity must not be zero."_el, "initialCapacity"_el};
+        throw ParameterFailure{"Ring buffer capacity must not be zero."_el, "initialCapacity"_el};
     }
     if (_maximumCapacity < _initialCapacity) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "Ring buffer maximum capacity is smaller than its initial capacity."_el, "maximumCapacity"_el};
     }
 }
@@ -45,23 +45,23 @@ RingBuffer::~RingBuffer() {
     }
 }
 
-auto RingBuffer::capacity() const noexcept -> ByteLength {
-    return ByteLength::fromSizeT(_storage.size());
+auto RingBuffer::capacity() const noexcept -> ByteCount {
+    return ByteCount::fromSizeT(_storage.size());
 }
 
-auto RingBuffer::maximumCapacity() const noexcept -> ByteLength {
-    return ByteLength::fromSizeT(_maximumCapacity);
+auto RingBuffer::maximumCapacity() const noexcept -> ByteCount {
+    return ByteCount::fromSizeT(_maximumCapacity);
 }
 
-auto RingBuffer::length() const noexcept -> ByteLength {
-    return ByteLength::fromSizeT(_length);
+auto RingBuffer::length() const noexcept -> ByteCount {
+    return ByteCount::fromSizeT(_length);
 }
 
-auto RingBuffer::available() const noexcept -> ByteLength {
-    return ByteLength::fromSizeT(_storage.size() - _length);
+auto RingBuffer::available() const noexcept -> ByteCount {
+    return ByteCount::fromSizeT(_storage.size() - _length);
 }
 
-auto RingBuffer::canWrite(const ByteLength length) const noexcept -> bool {
+auto RingBuffer::canWrite(const ByteCount length) const noexcept -> bool {
     return !length.isInfinite() && length.toSizeT() <= _maximumCapacity - _length;
 }
 
@@ -75,7 +75,7 @@ void RingBuffer::setSensitive(const bool sensitive) noexcept {
     _sensitive = sensitive;
 }
 
-auto RingBuffer::reserveAdditional(const ByteLength length) -> util::Result {
+auto RingBuffer::reserveAdditional(const ByteCount length) -> util::Result {
     verifySafeAccess();
     if (!canWrite(length)) {
         return util::Result::Failure;
@@ -105,11 +105,11 @@ auto RingBuffer::reserveAdditional(const ByteLength length) -> util::Result {
     return util::Result::Success;
 }
 
-auto RingBuffer::write(const ConstByteSpan bytes) -> ByteLength {
+auto RingBuffer::write(const ConstByteSpan bytes) -> ByteCount {
     verifySafeAccess();
     const auto maximumWrite = std::min(bytes.size(), _maximumCapacity - _length);
-    if (isFailure(reserveAdditional(ByteLength::fromSizeT(maximumWrite)))) {
-        return ByteLength::zero();
+    if (isFailure(reserveAdditional(ByteCount::fromSizeT(maximumWrite)))) {
+        return ByteCount::zero();
     }
     auto remaining = maximumWrite;
     auto sourceOffset = std::size_t{0};
@@ -122,18 +122,18 @@ auto RingBuffer::write(const ConstByteSpan bytes) -> ByteLength {
         }
     }
     commitWritten(maximumWrite);
-    return ByteLength::fromSizeT(maximumWrite);
+    return ByteCount::fromSizeT(maximumWrite);
 }
 
 auto RingBuffer::writeExact(const ConstByteSpan bytes) -> util::Result {
     verifySafeAccess();
-    if (isFailure(reserveAdditional(ByteLength::fromSizeT(bytes.size())))) {
+    if (isFailure(reserveAdditional(ByteCount::fromSizeT(bytes.size())))) {
         return util::Result::Failure;
     }
-    return write(bytes) == ByteLength::fromSizeT(bytes.size()) ? util::Result::Success : util::Result::Failure;
+    return write(bytes) == ByteCount::fromSizeT(bytes.size()) ? util::Result::Success : util::Result::Failure;
 }
 
-auto RingBuffer::read(const ByteSpan destination) -> ByteLength {
+auto RingBuffer::read(const ByteSpan destination) -> ByteCount {
     verifySafeAccess();
     const auto maximumRead = std::min(destination.size(), _length);
     auto remaining = maximumRead;
@@ -147,17 +147,17 @@ auto RingBuffer::read(const ByteSpan destination) -> ByteLength {
         }
     }
     consumeRead(maximumRead);
-    return ByteLength::fromSizeT(maximumRead);
+    return ByteCount::fromSizeT(maximumRead);
 }
 
-auto RingBuffer::read(const ByteLength maximum) -> ByteBlock {
+auto RingBuffer::read(const ByteCount maximum) -> ByteBlock {
     verifySafeAccess();
     const auto readLength = maximum.isInfinite() ? _length : std::min(maximum.toSizeT(), _length);
-    auto buffer = impl::UnsafeByteBlockBuffer{ByteLength::fromSizeT(readLength), _sensitive};
-    if (read(buffer.data()) != ByteLength::fromSizeT(readLength)) {
+    auto buffer = impl::UnsafeByteBlockBuffer{ByteCount::fromSizeT(readLength), _sensitive};
+    if (read(buffer.data()) != ByteCount::fromSizeT(readLength)) {
         std::terminate();
     }
-    return buffer.take(ByteLength::fromSizeT(readLength));
+    return buffer.take(ByteCount::fromSizeT(readLength));
 }
 
 void RingBuffer::clear() noexcept {
@@ -229,14 +229,14 @@ auto RingBuffer::writableSpans() noexcept -> std::array<ByteSpan, 2> {
 
 void RingBuffer::commitWritten(const std::size_t length) {
     if (length > _storage.size() - _length) {
-        throw err::ParameterError{"Committed byte count exceeds ring buffer space."_el, "length"_el};
+        throw ParameterFailure{"Committed byte count exceeds ring buffer space."_el, "length"_el};
     }
     _length += length;
 }
 
 void RingBuffer::consumeRead(const std::size_t length) {
     if (length > _length) {
-        throw err::ParameterError{"Consumed byte count exceeds readable ring buffer data."_el, "length"_el};
+        throw ParameterFailure{"Consumed byte count exceeds readable ring buffer data."_el, "length"_el};
     }
     if (_sensitive) {
         eraseReadablePrefix(length);
@@ -263,7 +263,7 @@ void RingBuffer::eraseReadablePrefix(const std::size_t length) noexcept {
 
 void RingBuffer::beginUnsafeAccess() {
     if (_unsafeAccessActive) {
-        throw err::LogicError{"Ring buffer already has an active unsafe access lease."_el};
+        throw LogicFailure{"Ring buffer already has an active unsafe access lease."_el};
     }
     _unsafeAccessActive = true;
 }
@@ -274,7 +274,7 @@ void RingBuffer::endUnsafeAccess() noexcept {
 
 void RingBuffer::verifySafeAccess() const {
     if (_unsafeAccessActive) {
-        throw err::LogicError{"Safe ring buffer access is not allowed while an unsafe access lease is active."_el};
+        throw LogicFailure{"Safe ring buffer access is not allowed while an unsafe access lease is active."_el};
     }
 }
 

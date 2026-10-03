@@ -4,7 +4,7 @@
 
 #include "TimeSource_fwd.hpp"
 
-#include <erbsland/time/TimePoint.hpp>
+#include <erbsland/TimePoint.hpp>
 
 namespace erbsland::profiling {
 

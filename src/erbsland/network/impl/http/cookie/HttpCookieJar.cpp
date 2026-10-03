@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HttpCookieJar.hpp"
 
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/CurrentEvents.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/CharSet.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringCharReader.hpp"
 #include "../../../../text/StringEditor.hpp"
+#include "../../../../text/StringTransformations.hpp"
 #include "../../../../time/Date.hpp"
 #include "../../../../time/Time.hpp"
 #include "../../../HostName.hpp"
@@ -22,6 +24,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text;
 using namespace text::literals;
 
@@ -61,12 +64,11 @@ auto HttpCookieJar::cookies() -> std::vector<HttpCookie> {
     return result;
 }
 
-void HttpCookieJar::setCookie(
-    const Url &url, text::String name, text::String value, HttpCookieInsertionOptions options) {
+void HttpCookieJar::setCookie(const Url &url, String name, String value, HttpCookieInsertionOptions options) {
     verifyOwner();
     if (!url.isValid() || (url.scheme() != UrlScheme::Http && url.scheme() != UrlScheme::Https) ||
         !isCookieToken(name) || !isCookieValue(value)) {
-        throw err::ParameterError{"A valid HTTP URL, cookie name, and cookie value are required."_el, "cookie"_el};
+        throw ParameterFailure{"A valid HTTP URL, cookie name, and cookie value are required."_el, "cookie"_el};
     }
     auto entry = HttpCookieJarEntry{};
     entry.name = std::move(name);
@@ -80,7 +82,7 @@ void HttpCookieJar::setCookie(
     entry.sameSite = options.sameSite();
     if (options.domain()) {
         if (url.endpoint().host().isAddress()) {
-            throw err::ParameterError{"IP-address cookies cannot use a Domain attribute."_el, "domain"_el};
+            throw ParameterFailure{"IP-address cookies cannot use a Domain attribute."_el, "domain"_el};
         }
         auto domain = options.domain()->trimmed();
         if (domain.startsWith("."_el)) {
@@ -88,31 +90,30 @@ void HttpCookieJar::setCookie(
         }
         const auto domainName = HostName::fromString(domain);
         if (!domainName) {
-            throw err::ParameterError{"The cookie Domain is not a valid host name."_el, "domain"_el};
+            throw ParameterFailure{"The cookie Domain is not a valid host name."_el, "domain"_el};
         }
         domain = domainName->toString(HostNameFormat::IdnaAscii);
         if (!domainMatches(entry.domain, domain) || public_suffix::isPublicSuffix(domain)) {
-            throw err::ParameterError{"The cookie Domain is not valid for the URL."_el, "domain"_el};
+            throw ParameterFailure{"The cookie Domain is not valid for the URL."_el, "domain"_el};
         }
         entry.domain = std::move(domain);
         entry.hostOnly = false;
     }
     if (options.path()) {
         if (!options.path()->startsWith("/"_el)) {
-            throw err::ParameterError{"A cookie Path must start with '/'."_el, "path"_el};
+            throw ParameterFailure{"A cookie Path must start with '/'."_el, "path"_el};
         }
         entry.path = *options.path();
     }
     if (!validPrefix(entry, url.scheme() == UrlScheme::Https)) {
-        throw err::ParameterError{"The cookie violates a __Secure- or __Host- prefix rule."_el, "name"_el};
+        throw ParameterFailure{"The cookie violates a __Secure- or __Host- prefix rule."_el, "name"_el};
     }
     insert(std::move(entry), false);
 }
 
-auto HttpCookieJar::removeCookie(const text::String &name, const text::String &domain, const text::String &path)
-    -> bool {
+auto HttpCookieJar::removeCookie(const String &name, const String &domain, const String &path) -> bool {
     verifyOwner();
-    const auto canonicalDomain = lowerAscii(domain);
+    const auto canonicalDomain = text::toAsciiLowercase(domain);
     const auto previous = _entries.size();
     std::erase_if(_entries, [&](const HttpCookieJarEntry &entry) -> bool {
         return entry.name == name && entry.domain == canonicalDomain && entry.path == path;
@@ -125,17 +126,13 @@ void HttpCookieJar::clear() noexcept {
 }
 
 void HttpCookieJar::storeResponseCookies(const Url &url, const HttpHeaders &headers) noexcept {
-    try {
-        verifyOwner();
-    } catch (...) {
-        return;
-    }
+    verifyOwner();
     for (const auto &field : headers.getAll(HttpFieldType::SetCookie)) {
         storeResponseCookie(url, field);
     }
 }
 
-auto HttpCookieJar::storeResponseCookie(const Url &url, const text::String &field) noexcept -> bool {
+auto HttpCookieJar::storeResponseCookie(const Url &url, const String &field) noexcept -> bool {
     try {
         verifyOwner();
         if (field.length() > _options.maximumCookieLength()) {
@@ -145,13 +142,13 @@ auto HttpCookieJar::storeResponseCookie(const Url &url, const text::String &fiel
             insert(std::move(*entry), true);
             return true;
         }
-    } catch (const err::Exception &) {
+    } catch (const RuntimeError &) {
         return false;
     }
     return false;
 }
 
-auto HttpCookieJar::requestCookieHeader(const Url &url) -> text::String {
+auto HttpCookieJar::requestCookieHeader(const Url &url) -> String {
     verifyOwner();
     purgeExpired();
     const auto host = hostText(url);
@@ -180,12 +177,12 @@ auto HttpCookieJar::requestCookieHeader(const Url &url) -> text::String {
         }
         result.append(entry->name).append("="_el).append(entry->value);
     }
-    return String{result};
+    return result;
 }
 
 void HttpCookieJar::verifyOwner() const {
     if (event::currentEvents() != _ownerEvents) {
-        throw err::LogicError{"HTTP cookie jars are owned by their session event loop."_el};
+        throw LogicFailure{"HTTP cookie jars are owned by their session event loop."_el};
     }
 }
 
@@ -194,7 +191,7 @@ void HttpCookieJar::validateOptions(const HttpCookieJarOptions &options) const {
         options.maximumCookiesPerRegistrableDomain().isZero() ||
         options.maximumCookiesPerRegistrableDomain().isInfinite() || options.maximumCookies().isZero() ||
         options.maximumCookies().isInfinite()) {
-        throw err::ParameterError{"Cookie jar limits must be positive and finite."_el, "options"_el};
+        throw ParameterFailure{"Cookie jar limits must be positive and finite."_el, "options"_el};
     }
 }
 
@@ -205,7 +202,7 @@ void HttpCookieJar::insert(HttpCookieJarEntry entry, const bool peerInput) {
         if (peerInput) {
             return;
         }
-        throw err::ParameterError{"The cookie exceeds the configured limit."_el, "cookie"_el};
+        throw ParameterFailure{"The cookie exceeds the configured limit."_el, "cookie"_el};
     }
     entry.registrableDomain =
         Host::fromString(entry.domain)->isAddress() ? entry.domain : public_suffix::registrableDomain(entry.domain);
@@ -240,7 +237,7 @@ void HttpCookieJar::purgeExpired() {
 void HttpCookieJar::enforceLimits() {
     purgeExpired();
     for (;;) {
-        auto overDomain = std::optional<text::String>{};
+        auto overDomain = std::optional<String>{};
         for (const auto &entry : _entries) {
             const auto count = static_cast<std::size_t>(
                 std::ranges::count(_entries, entry.registrableDomain, &HttpCookieJarEntry::registrableDomain));
@@ -259,7 +256,7 @@ void HttpCookieJar::enforceLimits() {
     }
 }
 
-void HttpCookieJar::evictOne(const std::optional<text::String> &registrableDomain) {
+void HttpCookieJar::evictOne(const std::optional<String> &registrableDomain) {
     auto oldest = _entries.end();
     for (auto it = _entries.begin(); it != _entries.end(); ++it) {
         if (registrableDomain && it->registrableDomain != *registrableDomain) {

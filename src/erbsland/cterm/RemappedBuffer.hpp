@@ -50,10 +50,9 @@ public:
     RemappedBuffer();
 
     /// Construct a buffer with the given size and fill it with an initial block.
-    /// @param size The dimensions of the buffer. block::Size must be at least 1x1.
+    /// @param size The buffer dimensions. Must be at least 1x1 and not exceed `cMaximumSize` (10,000x10,000).
     /// @param orientation The orientation of the buffer. Cannot be changed after creation.
     /// @param fillChar The optional fill character for the buffer.
-    /// @throws err::ParameterError if size is invalid.
     explicit RemappedBuffer(
         block::Size size,
         geometry::Orientation orientation = geometry::Orientation::Vertical,
@@ -87,18 +86,16 @@ public: // implement WritableBuffer
     /// This is the fast resize path. The internal mapping is rebuilt and the visible content order is undefined after
     /// the operation. Use `resize(size, BufferResizeMode::PreserveContent, fillChar)` if you need to preserve the
     /// visible order.
-    /// @param newSize The new size of the buffer.
-    /// @throws err::ParameterError if `newSize` is invalid.
+    /// @param newSize The new buffer size. Must be at least 1x1 and not exceed `cMaximumSize` (10,000x10,000).
     void resize(block::Size newSize) override;
     /// Resize this buffer and optionally keep the visible content order.
     /// A preserve-content resize is fast when only the primary orientation axis changes.
     /// If the secondary axis changes, preserving content requires rebuilding the logical content and is expensive.
-    /// @param size The new size.
+    /// @param size The new buffer size. Must be at least 1x1 and not exceed `cMaximumSize` (10,000x10,000).
     /// @param mode `BufferResizeMode::PreserveContent` keeps the visible order and fills new cells with `fillChar`.
     ///   `BufferResizeMode::Fast` resizes using the fastest path and leaves the visible order undefined.
     /// @param fillChar The fill character for newly created cells in preserve-content mode. In fast mode it is only
     ///   used to initialize newly appended storage cells.
-    /// @throws err::ParameterError if `size` is invalid.
     void resize(block::Size size, BufferResizeMode mode, Block fillChar) override;
     /// Write a block at the given logical position.
     /// This mirrors the wide-character handling from `Buffer`: zero-width blocks are ignored, width-2 blocks occupy
@@ -116,24 +113,22 @@ public: // manipulate the buffer
     /// Shift the buffer in the given direction, fill new cells with a given character.
     /// @param direction The direction of the shift.
     /// @param fillChar The character to fill new cells with.
-    /// @param count The number of cells to shift.
-    /// @throws err::ParameterError if `count` is negative or exceeds buffer size.
+    /// @param count The number of cells to shift. Must be non-negative and not exceed the addressed buffer axis.
     void shift(block::Direction direction, Block fillChar, int count = 1);
     /// @overload
     void shift(const block::Direction direction, const int count = 1) { shift(direction, Block::space(), count); }
     /// Rotate the buffer in the given direction.
     /// Cells are shifted in a circular manner, wrapping around to the other end of the buffer.
     /// @param direction The direction in which to rotate.
-    /// @param count The number of cells to rotate.
-    /// @throws err::ParameterError if `count` is negative or exceeds buffer size.
+    /// @param count The number of cells to rotate. Must be non-negative and not exceed the addressed buffer axis.
     void rotate(block::Direction direction, int count = 1);
     /// Erase rows in the buffer.
     /// This will erase `count` rows, starting from `startRow`, and insert empty ones at the end.
     /// If you like to actually shrink the buffer, use `resize` *after* this call.
-    /// @param startRow The first row to delete.
+    /// @param startRow The first row to modify. Must be inside the buffer, or at its end when `count` is zero.
     /// @param fillChar The character to fill new cells with.
-    /// @param count The number of rows to delete.
-    /// @throws err::ParameterError if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
+    /// @param count The number of rows to modify. Must be non-negative and fit from `startRow` through the buffer
+    /// height.
     void eraseRows(block::Coordinate startRow, Block fillChar, int count = 1);
     /// @overload
     void eraseRows(const block::Coordinate startRow, const int count = 1) {
@@ -142,10 +137,10 @@ public: // manipulate the buffer
     /// Erase columns in the buffer.
     /// This will erase `count` columns, starting from `startColumn`, and insert empty ones at the end.
     /// If you like to actually shrink the buffer, use `resize` *after* this call.
-    /// @param startColumn The first column to delete.
+    /// @param startColumn The first column to modify. Must be inside the buffer, or at its end when `count` is zero.
     /// @param fillChar The character to fill new cells with.
-    /// @param count The number of columns to delete.
-    /// @throws err::ParameterError if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
+    /// @param count The number of columns to modify. Must be non-negative and fit from `startColumn` through the buffer
+    /// width.
     void eraseColumns(block::Coordinate startColumn, Block fillChar, int count = 1);
     /// @overload
     void eraseColumns(const block::Coordinate startColumn, const int count = 1) {
@@ -154,10 +149,10 @@ public: // manipulate the buffer
     /// Insert rows in the buffer.
     /// The rows at the bottom of the buffer will be erased to make room for the new rows.
     /// If you like to actually grow the buffer, use `resize` *before* this call.
-    /// @param startRow The first row to insert.
+    /// @param startRow The first row to modify. Must be inside the buffer, or at its end when `count` is zero.
     /// @param fillChar The character to fill the new rows with.
-    /// @param count The number of rows to insert.
-    /// @throws err::ParameterError if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
+    /// @param count The number of rows to modify. Must be non-negative and fit from `startRow` through the buffer
+    /// height.
     void insertRows(block::Coordinate startRow, Block fillChar, int count = 1);
     /// @overload
     void insertRows(const block::Coordinate startRow, const int count = 1) {
@@ -166,10 +161,10 @@ public: // manipulate the buffer
     /// Insert columns in the buffer.
     /// The columns on the right side of the buffer will be erased to make room for the new columns.
     /// If you like to actually grow the buffer, use `resize` *before* this call.
-    /// @param startColumn The first column to insert.
+    /// @param startColumn The first column to modify. Must be inside the buffer, or at its end when `count` is zero.
     /// @param fillChar The character to fill the new columns with.
-    /// @param count The number of columns to insert.
-    /// @throws err::ParameterError if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
+    /// @param count The number of columns to modify. Must be non-negative and fit from `startColumn` through the buffer
+    /// width.
     void insertColumns(block::Coordinate startColumn, Block fillChar, int count = 1);
     /// @overload
     void insertColumns(const block::Coordinate startColumn, const int count = 1) {
@@ -179,11 +174,11 @@ public: // manipulate the buffer
     /// A positive delta moves rows down, a negative delta moves rows up.
     /// This reshuffles the moved rows, but rows that get moved out of the buffer area are deleted and
     /// replaced by empty cells using the `fillChar`.
-    /// @param startRow The first row to move.
-    /// @param count The number of rows to move.
+    /// @param startRow The first row to modify. Must be inside the buffer, or at its end when `count` is zero.
+    /// @param count The number of rows to modify. Must be non-negative and fit from `startRow` through the buffer
+    /// height.
     /// @param delta The number of positions to move (positive = down, negative = up).
     /// @param fillChar The character to fill vacated cells with.
-    /// @throws err::ParameterError if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
     void moveRows(block::Coordinate startRow, int count, block::Coordinate delta, Block fillChar);
     /// @overload
     void moveRows(const block::Coordinate startRow, const int count, const block::Coordinate delta) {
@@ -193,11 +188,11 @@ public: // manipulate the buffer
     /// A positive delta moves columns right, a negative delta moves columns left.
     /// This reshuffles the moved columns, but columns that get moved out of the buffer area are deleted and
     /// replaced by empty cells using the `fillChar`.
-    /// @param startColumn The first column to move.
-    /// @param count The number of columns to move.
+    /// @param startColumn The first column to modify. Must be inside the buffer, or at its end when `count` is zero.
+    /// @param count The number of columns to modify. Must be non-negative and fit from `startColumn` through the buffer
+    /// width.
     /// @param delta The number of positions to move (positive = right, negative = left).
     /// @param fillChar The character to fill vacated cells with.
-    /// @throws err::ParameterError if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
     void moveColumns(block::Coordinate startColumn, int count, block::Coordinate delta, Block fillChar);
     /// @overload
     void moveColumns(const block::Coordinate startColumn, const int count, const block::Coordinate delta) {
@@ -212,25 +207,23 @@ public:
 
 private:
     /// Validate the buffer size.
-    /// @throws err::ParameterError if size is invalid.
+    /// @param size The buffer size to validate. Must be at least 1x1 and not exceed `cMaximumSize` (10,000x10,000).
     [[nodiscard]] static auto validatedBufferSize(block::Size size) -> block::Size;
     /// Create a linear index map for the given size.
     /// @param size The size of the buffer.
     /// @return The linear index map.
     [[nodiscard]] static auto linearIndex(std::size_t size) -> CoordinateMap;
     /// Validate a count-only argument.
-    /// @param count The count to validate.
+    /// @param count The count to validate. Must be between zero and `maximum`, inclusive.
     /// @param maximum The maximum accepted count.
     /// @param parameterName The parameter name for error reporting.
-    /// @throws err::ParameterError if the count is invalid.
     static void validateCount(int count, int maximum, const text::StringLiteral &parameterName);
     /// Validate a span inside the currently visible range.
-    /// @param start The first coordinate in the span.
-    /// @param count The number of elements in the span.
+    /// @param start The first coordinate. Must be in `[0, limit)`; `limit` is allowed only when `count` is zero.
+    /// @param count The number of elements. Must be non-negative, and `start + count` must not exceed `limit`.
     /// @param limit The size of the addressable axis.
     /// @param startName The parameter name for the start coordinate.
     /// @param countName The parameter name for the count.
-    /// @throws err::ParameterError if the span is invalid.
     static void validateExistingSpan(
         block::Coordinate start,
         int count,
@@ -238,12 +231,11 @@ private:
         const text::StringLiteral &startName,
         const text::StringLiteral &countName);
     /// Validate an insert-style operation on an axis.
-    /// @param start The insertion coordinate.
-    /// @param count The number of inserted elements.
+    /// @param start The insertion coordinate. Must be inside the axis or at its end for an empty insertion.
+    /// @param count The inserted element count. Must be non-negative, with `start + count <= limit`.
     /// @param limit The size of the addressable axis.
     /// @param startName The parameter name for the start coordinate.
     /// @param countName The parameter name for the count.
-    /// @throws err::ParameterError if the arguments are invalid.
     static void validateInsertArguments(
         block::Coordinate start,
         int count,
@@ -252,8 +244,7 @@ private:
         const text::StringLiteral &countName);
     /// Validate a directional count for shift and rotate.
     /// @param direction The direction to validate.
-    /// @param count The number of cells to move.
-    /// @throws err::ParameterError if the count does not fit the addressed axis.
+    /// @param count The number of cells to move. Must be non-negative and not exceed the addressed buffer axis.
     void validateDirectionalCount(block::Direction direction, int count) const;
     /// Remap the position.
     /// @param pos The position to remap.
@@ -353,6 +344,12 @@ private:
     /// @param source The stored source row/column coordinate.
     /// @param destination The stored destination row/column coordinate.
     void copyStoredPrimaryLine(block::Coordinate source, block::Coordinate destination) noexcept;
+
+protected: // scrolling notifications
+    /// Notify derived buffers before a validated, nonempty directional shift.
+    /// @param direction Shift direction.
+    /// @param count Number of cells shifted on each selected axis.
+    virtual void onScroll([[maybe_unused]] block::Direction direction, [[maybe_unused]] int count) noexcept {}
 
 protected:
     block::Size _size;                  ///< The current size of the buffer.

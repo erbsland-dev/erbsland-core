@@ -208,9 +208,9 @@ public:
     /// Create a date from raw integer parts or throw.
     /// @param year The year (0-9999).
     /// @param month The month (1-12).
-    /// @param day The day (1-31).
+    /// @param day The day (1-31). Must form a valid calendar date with `year` and `month`.
     /// @return A valid date.
-    /// @throws err::OutOfRangeError if the parts do not form a valid date.
+    /// @throws err::OutOfRangeError If the parts do not form a supported calendar date.
     [[nodiscard]] static auto fromYearMonthDayOrThrow(int year, int month, int day) -> Date;
     /// Create a date from typed parts.
     /// @param year The year.
@@ -221,9 +221,9 @@ public:
     /// Create a date from typed parts or throw.
     /// @param year The year.
     /// @param month The month, defaults to January.
-    /// @param day The day, defaults to the first.
+    /// @param day The day, defaulting to the first. Must form a valid calendar date with `year` and `month`.
     /// @return A valid date.
-    /// @throws err::OutOfRangeError if the parts do not form a valid date.
+    /// @throws err::OutOfRangeError If the parts do not form a supported calendar date.
     [[nodiscard]] static auto fromPartsOrThrow(Year year, Month month = Month{}, Day day = Day{}) -> Date;
     /// Create a date from days since epoch.
     /// @param days The number of days since epoch.

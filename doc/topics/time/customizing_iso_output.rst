@@ -20,8 +20,8 @@ This page explains the formatting flags shared by :cpp:class:`Date <erbsland::ti
 :cpp:class:`Time <erbsland::time::Time>`, and :cpp:class:`DateTime <erbsland::time::DateTime>`, then shows how to choose
 which fields and fractional digits reach the text.
 
-Starting with a Clear Text Contract
-===================================
+ISO 8601 Representations and Output Requirements
+================================================
 
 ISO 8601 describes date and time representations that put the larger calendar fields first.
 An extended date such as ``2028-02-29`` uses separators; its basic counterpart is ``20280229``.
@@ -51,7 +51,7 @@ provided by :doc:`working_with_timestamps`.
 .. erbsland-demo::
     :source: time/IsoTimeOutput/Defaults.cpp
     :exec: time/iso_time_output --demo Defaults
-    :source-sha256: ee9e523a2abd2632f29574206e160d2786e2dc0bd5c3520a1130f2ad67f3f432
+    :sha256: 2b9a282203c5a1539bfad087d3f4468cde607806ecc6d93c6d8a705d4cede6be
 
 .. code-block:: cpp
 
@@ -79,14 +79,16 @@ provided by :doc:`working_with_timestamps`.
                 el::Date{}.toIsoString(), el::DateTime{}.toIsoString()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    試作センサー: 2028-02-29 14:30:45
-    Date: 2028-02-29; time: 14:30:45
-    Exchange text: 2028-02-29T14:30:45.123456789+01:30
-    Readable display: 2028-02-29 14:30:45.123456789+01:30
-    Invalid date: []; invalid date/time: []
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m試作センサー: 2028-02-29 14:30:45
+        Date: 2028-02-29; time: 14:30:45
+        Exchange text: 2028-02-29T14:30:45.123456789+01:30
+        Readable display: 2028-02-29 14:30:45.123456789+01:30
+        Invalid date: []; invalid date/time: []␛[0m
 
 .. erbsland-demo-end::
 
@@ -124,7 +126,7 @@ The ``T`` separator and the fraction separator have their own flags; changing ``
 .. erbsland-demo::
     :source: time/IsoTimeOutput/Extended.cpp
     :exec: time/iso_time_output --demo Extended
-    :source-sha256: 86265d11ad58f07c17d983822dd3f82087ef65c338a3945512346e0e948a59b0
+    :sha256: 8467621a8132f627d9277a1403895278b5a49ad9afcc122841b2ec4405363573
 
 .. code-block:: cpp
 
@@ -144,11 +146,13 @@ The ``T`` separator and the fraction separator have their own flags; changing ``
                 date.toIsoString(format), time.toIsoString(format), reading.toIsoString(format)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Basic date: 20280229; time: T143045; date/time: 20280229T143045+0130
-    Extended date: 2028-02-29; time: T14:30:45; date/time: 2028-02-29T14:30:45+01:30
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBasic date: 20280229; time: T143045; date/time: 20280229T143045+0130
+        Extended date: 2028-02-29; time: T14:30:45; date/time: 2028-02-29T14:30:45+01:30␛[0m
 
 .. erbsland-demo-end::
 
@@ -163,7 +167,7 @@ When your text contract calls for the familiar ``dateTtime`` spelling, set this 
 .. erbsland-demo::
     :source: time/IsoTimeOutput/TimePrefix.cpp
     :exec: time/iso_time_output --demo TimePrefix
-    :source-sha256: 5e7fb8efcd6df75cea81cad3ee76fc9524cd407835bf0856d312e6cc4bc48f3d
+    :sha256: ed46a4904c8a3ecdc7ef7a38430b7656535c4f2dc7a1c3ae8f07a17dfcdea950
 
 .. code-block:: cpp
 
@@ -182,12 +186,14 @@ When your text contract calls for the familiar ``dateTtime`` spelling, set this 
         el::io::printLine(el::StringFormat{"Date stays: {}"_el}.build(date.toIsoString(format)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Without prefix: 14:30:45; 2028-02-29 14:30:45
-    With prefix: T14:30:45; 2028-02-29T14:30:45
-    Date stays: 2028-02-29
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWithout prefix: 14:30:45; 2028-02-29 14:30:45
+        With prefix: T14:30:45; 2028-02-29T14:30:45
+        Date stays: 2028-02-29␛[0m
 
 .. erbsland-demo-end::
 
@@ -208,7 +214,7 @@ Neither a standalone date nor a standalone time contains an offset, so this flag
 .. erbsland-demo::
     :source: time/IsoTimeOutput/TimeShift.cpp
     :exec: time/iso_time_output --demo TimeShift
-    :source-sha256: 8b7f4dd33fbae41b00385f7ce1446c1c72dce6c768de4e37281b6728aa696ed6
+    :sha256: 38c762abb917496c649ac6dc96385e9b398e2671b17af42282e61448650fe575
 
 .. code-block:: cpp
 
@@ -228,13 +234,15 @@ Neither a standalone date nor a standalone time contains an offset, so this flag
             el::StringFormat{"Standalone fields: {}; {}"_el}.build(date.toIsoString(format), time.toIsoString(format)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Offset omitted: 2028-02-29T14:30:45
-    Offset included: 2028-02-29T14:30:45+01:30
-    Same instant in UTC: 2028-02-29T13:00:45Z
-    Standalone fields: 2028-02-29; T14:30:45
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOffset omitted: 2028-02-29T14:30:45
+        Offset included: 2028-02-29T14:30:45+01:30
+        Same instant in UTC: 2028-02-29T13:00:45Z
+        Standalone fields: 2028-02-29; T14:30:45␛[0m
 
 .. erbsland-demo-end::
 
@@ -250,7 +258,7 @@ When combined with ``TimeShiftUpToSeconds``, it additionally forces the offset s
 .. erbsland-demo::
     :source: time/IsoTimeOutput/CompleteOffset.cpp
     :exec: time/iso_time_output --demo CompleteOffset
-    :source-sha256: 97c618db73aa415f65202de1662f17937c5e057334d4fd931eb2be49ce2698fb
+    :sha256: 125fb67849c7733cbb9dcbfd58d1656a81a91f05e79f208ab3751fd4fa005392
 
 .. code-block:: cpp
 
@@ -271,13 +279,15 @@ When combined with ``TimeShiftUpToSeconds``, it additionally forces the offset s
         el::io::printLine(el::StringFormat{"Without TimeShift: {}"_el}.build(utc.toIsoString(format)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    UTC designator: 2028-02-29T14:30:45Z
-    Numeric UTC offset: 2028-02-29T14:30:45+00:00
-    Basic numeric offset: 20280229T143045+0000
-    Without TimeShift: 20280229T143045
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUTC designator: 2028-02-29T14:30:45Z
+        Numeric UTC offset: 2028-02-29T14:30:45+00:00
+        Basic numeric offset: 20280229T143045+0000
+        Without TimeShift: 20280229T143045␛[0m
 
 .. erbsland-demo-end::
 
@@ -300,7 +310,7 @@ Both flags require ``TimeShift`` and a precision that includes the time.
 .. erbsland-demo::
     :source: time/IsoTimeOutput/OffsetSeconds.cpp
     :exec: time/iso_time_output --demo OffsetSeconds
-    :source-sha256: 0faa43ac456ae8a51ace155adec6776f34900a54391696e829c85d58e1c09fcd
+    :sha256: 2c08743f703739e985bd6d9be3e181bc18b7100691220a63646a9207c653c9b9
 
 .. code-block:: cpp
 
@@ -326,15 +336,17 @@ Both flags require ``TimeShift`` and a precision that includes the time.
             el::StringFormat{"All flags: {}"_el}.build(secondOffset.toIsoString(all, el::DateTimePrecision::Nanosecond)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Offset seconds omitted: 2028-02-29T14:30:45+01:30
-    Offset seconds retained: 2028-02-29T14:30:45+01:30:17
-    Whole-minute offset: 2028-02-29T14:30:45+01:30
-    Complete whole-minute offset: 2028-02-29T14:30:45+01:30:00
-    Complete UTC offset: 2028-02-29T14:30:45+00:00:00
-    All flags: 2028-02-29T14:30:45.123456789+01:30:17
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOffset seconds omitted: 2028-02-29T14:30:45+01:30
+        Offset seconds retained: 2028-02-29T14:30:45+01:30:17
+        Whole-minute offset: 2028-02-29T14:30:45+01:30
+        Complete whole-minute offset: 2028-02-29T14:30:45+01:30:00
+        Complete UTC offset: 2028-02-29T14:30:45+00:00:00
+        All flags: 2028-02-29T14:30:45.123456789+01:30:17␛[0m
 
 .. erbsland-demo-end::
 
@@ -360,7 +372,7 @@ The precision argument, rather than the separator flag, chooses how many digits 
 .. erbsland-demo::
     :source: time/IsoTimeOutput/Fractions.cpp
     :exec: time/iso_time_output --demo Fractions
-    :source-sha256: b580c8a0f3ffe07e460dbc3a94705ed2fda7651cf70243cadfca8db0769d02d5
+    :sha256: b118a187ed6f7b577b3aadacfae8acf4db74cfd90828c645b5ae8941ca31ebd0
 
 .. code-block:: cpp
 
@@ -388,13 +400,15 @@ The precision argument, rather than the separator flag, chooses how many digits 
             el::StringFormat{"Second precision: {}"_el}.build(time.toIsoString(format, el::DateTimePrecision::Second)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Comma: T14:30:45,123; 2028-02-29T14:30:45,123
-    Dot: T14:30:45.123; 2028-02-29T14:30:45.123
-    Zero fraction: T14:30:45.000; trailing zeros: T14:30:45.120
-    Second precision: T14:30:45
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mComma: T14:30:45,123; 2028-02-29T14:30:45,123
+        Dot: T14:30:45.123; 2028-02-29T14:30:45.123
+        Zero fraction: T14:30:45.000; trailing zeros: T14:30:45.120
+        Second precision: T14:30:45␛[0m
 
 .. erbsland-demo-end::
 
@@ -457,7 +471,7 @@ The dot, ``T``, and offset remain enabled throughout, making it easier to see wh
 .. erbsland-demo::
     :source: time/IsoTimeOutput/Precision.cpp
     :exec: time/iso_time_output --demo Precision
-    :source-sha256: d04140117f3fa10a90c640e419c086fdd99b721a758737e7ca12b2f6e423a422
+    :sha256: 9b986ba581144c2c3fdd0d51fb97fe098be44646492ffa8e9542c343e1b2fcb8
 
 .. code-block:: cpp
 
@@ -490,50 +504,52 @@ The dot, ``T``, and offset remain enabled throughout, making it easier to see wh
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Year:
-      Date: 2028
-      Time: T14
-      Date/time: 2028
-    Month:
-      Date: 2028-02
-      Time: T14
-      Date/time: 2028-02
-    Day:
-      Date: 2028-02-29
-      Time: T14
-      Date/time: 2028-02-29
-    Hour:
-      Date: 2028-02-29
-      Time: T14
-      Date/time: 2028-02-29T14+01:30
-    Minute:
-      Date: 2028-02-29
-      Time: T14:30
-      Date/time: 2028-02-29T14:30+01:30
-    Second:
-      Date: 2028-02-29
-      Time: T14:30:45
-      Date/time: 2028-02-29T14:30:45+01:30
-    Millisecond:
-      Date: 2028-02-29
-      Time: T14:30:45.123
-      Date/time: 2028-02-29T14:30:45.123+01:30
-    Microsecond:
-      Date: 2028-02-29
-      Time: T14:30:45.123456
-      Date/time: 2028-02-29T14:30:45.123456+01:30
-    Nanosecond:
-      Date: 2028-02-29
-      Time: T14:30:45.123456789
-      Date/time: 2028-02-29T14:30:45.123456789+01:30
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mYear:
+          Date: 2028
+          Time: T14
+          Date/time: 2028
+        Month:
+          Date: 2028-02
+          Time: T14
+          Date/time: 2028-02
+        Day:
+          Date: 2028-02-29
+          Time: T14
+          Date/time: 2028-02-29
+        Hour:
+          Date: 2028-02-29
+          Time: T14
+          Date/time: 2028-02-29T14+01:30
+        Minute:
+          Date: 2028-02-29
+          Time: T14:30
+          Date/time: 2028-02-29T14:30+01:30
+        Second:
+          Date: 2028-02-29
+          Time: T14:30:45
+          Date/time: 2028-02-29T14:30:45+01:30
+        Millisecond:
+          Date: 2028-02-29
+          Time: T14:30:45.123
+          Date/time: 2028-02-29T14:30:45.123+01:30
+        Microsecond:
+          Date: 2028-02-29
+          Time: T14:30:45.123456
+          Date/time: 2028-02-29T14:30:45.123456+01:30
+        Nanosecond:
+          Date: 2028-02-29
+          Time: T14:30:45.123456789
+          Date/time: 2028-02-29T14:30:45.123456789+01:30␛[0m
 
 .. erbsland-demo-end::
 
-Choosing the Next Step
-======================
+Related Date, Time, Timestamp, and Interval Topics
+==================================================
 
 :doc:`working_with_dates` and :doc:`working_with_times` explain how to construct and inspect the fields being formatted.
 :doc:`working_with_datetime` covers display zones and reading date/time text back into a value, including the separate

@@ -1,19 +1,21 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/Connection.hpp>
+#include <erbsland/ConnectionCloseContext.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
 #include <erbsland/network/impl/http/codec/Http1Transaction.hpp>
-#include <erbsland/network/source/Connection.hpp>
-#include <erbsland/network/source/ConnectionCloseContext.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StringDecoder.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <deque>
 #include <memory>
 #include <span>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -109,7 +111,14 @@ class Http1TransactionTest final : public el::UnitTest {
             return result;
         }
         void pauseReceiving() override { _paused = true; }
-        void resumeReceiving() override { _paused = false; }
+        void resumeReceiving() override {
+            _paused = false;
+            if (_onResume) {
+                auto callback = std::exchange(_onResume, {});
+                callback();
+            }
+        }
+        NetworkEventFn _onResume; ///< Buffered transport delivery when receiving resumes.
         void close() override {
             _closeCalled = true;
             _state = ConnectionState::Closing;
@@ -202,6 +211,64 @@ private:
     }
 
 public:
+    void testSynchronousTransportResumeAfterBodySelection() {
+        for (const auto aggregate : {false, true}) {
+            auto harness = Harness{};
+            const auto request = HttpRequestHead{HttpMethodType::Get, "/"_el, HttpVersion::Http11};
+            const auto transaction = Http1Transaction::createClient(harness.connection, request);
+            auto body = el::StringEditor{};
+            auto failures = 0;
+            run(harness.loop, [&] {
+                transaction->callbacks().responseHead = [&](const Http1DecodeEvent &) {
+                    // TLS may synchronously deliver several already-decrypted records on resume.
+                    harness.connection->_onResume = [&] {
+                        harness.connection->emitData(bytes("ab"));
+                        harness.connection->emitData(bytes("cd"));
+                    };
+                    if (aggregate) {
+                        transaction->aggregateBody(unit::ByteCount{4});
+                    } else {
+                        transaction->streamBody();
+                    }
+                };
+                const auto appendBody = [&](mem::ByteBlock data) {
+                    body.append(el::StringDecoder{data}.decode(el::StringEncoding::Utf8));
+                };
+                transaction->callbacks().bodyData = appendBody;
+                transaction->callbacks().aggregatedBody = appendBody;
+                transaction->callbacks().failure = [&](const Http1TransactionFailure &) { ++failures; };
+                transaction->start();
+                REQUIRE(transaction->finishBody().isAccepted());
+                harness.connection->emitData(bytes("HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\n"));
+            });
+            REQUIRE_EQUAL(failures, 0);
+            REQUIRE_EQUAL(el::String{body}, "abcd"_el);
+            REQUIRE_FALSE(harness.connection->_aborted);
+        }
+    }
+
+    void testReusedConnectionResumesAfterBufferedBodyCompletion() {
+        auto harness = Harness{};
+        const auto request = HttpRequestHead{HttpMethodType::Get, "/"_el, HttpVersion::Http11};
+        run(harness.loop, [&] {
+            for (auto index = 0; index < 2; ++index) {
+                const auto transaction = Http1Transaction::createClient(harness.connection, request);
+                auto completed = false;
+                transaction->callbacks().responseHead = [&](const Http1DecodeEvent &) {
+                    transaction->aggregateBody(unit::ByteCount{4});
+                };
+                transaction->callbacks().complete = [&](const bool reusable) { completed = reusable; };
+                transaction->start();
+                REQUIRE_FALSE(harness.connection->_paused);
+                REQUIRE(transaction->finishBody().isAccepted());
+                // The complete body shares the header buffer; no later receive event resumes the connection.
+                harness.connection->emitData(bytes("HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nabcd"));
+                REQUIRE(completed);
+                REQUIRE_FALSE(harness.connection->_aborted);
+            }
+        });
+    }
+
     void testServerAggregationAndSequentialPipelineHandoff() {
         auto harness = Harness{};
         auto aggregate = std::string{};
@@ -212,7 +279,7 @@ public:
             transaction->callbacks().requestHead = [&](const Http1DecodeEvent &event) -> void {
                 REQUIRE_EQUAL(event.request().target(), "/one"_el);
                 REQUIRE(harness.connection->_paused);
-                transaction->aggregateBody(unit::ByteLength{8U});
+                transaction->aggregateBody(unit::ByteCount{8U});
             };
             transaction->callbacks().aggregatedBody = [&](mem::ByteBlock data) -> void { aggregate = raw(data); };
             transaction->callbacks().complete = [&](const bool reusable) -> void {
@@ -281,7 +348,7 @@ public:
             transaction->callbacks().writable = [&]() -> void { ++writable; };
             transaction->start();
             const auto competing = Http1Transaction::createServer(harness.connection);
-            REQUIRE_THROWS_AS(el::err::LogicError, competing->start());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, competing->start());
             REQUIRE(harness.connection->_sent.empty());
             harness.connection->emitWritable();
             REQUIRE_EQUAL(writable, 0);
@@ -297,7 +364,7 @@ public:
         auto headers = HttpHeaders{};
         headers.addField(HttpFieldType::TransferEncoding, "chunked"_el);
         auto limits = Http1CodecLimits{};
-        limits.setMaximumOutputLength(unit::ByteLength{80U});
+        limits.setMaximumOutputLength(unit::ByteCount{80U});
         const auto options = Http1TransactionOptions{}.setCodecLimits(limits);
         auto transaction = Http1Transaction::createClient(
             harness.connection, HttpRequestHead{HttpMethodType::Post, "/"_el, HttpVersion::Http11, headers}, options);
@@ -305,7 +372,7 @@ public:
         run(harness.loop, [&]() -> void {
             transaction->callbacks().writable = [&]() -> void { ++writable; };
             transaction->start();
-            const auto body = mem::ByteBlock{unit::ByteLength{16U}, mem::Byte{0x61U}};
+            const auto body = mem::ByteBlock{unit::ByteCount{16U}, mem::Byte{0x61U}};
             while (transaction->sendBody(body).isAccepted()) {}
             REQUIRE_EQUAL(writable, 0);
             harness.connection->_alwaysBlock = false;
@@ -513,7 +580,7 @@ public:
         auto failures = 0;
         run(harness.loop, [&]() -> void {
             transaction->callbacks().requestHead = [&](const Http1DecodeEvent &) -> void {
-                transaction->aggregateBody(unit::ByteLength{3U});
+                transaction->aggregateBody(unit::ByteCount{3U});
             };
             transaction->callbacks().failure = [&](const Http1TransactionFailure &failure) -> void {
                 REQUIRE_EQUAL(failure.kind(), Http1TransactionFailure::Kind::ResourceLimit);
@@ -538,7 +605,7 @@ public:
         auto chunkedTransaction = Http1Transaction::createServer(chunkedHarness.connection);
         run(chunkedHarness.loop, [&]() -> void {
             chunkedTransaction->callbacks().requestHead = [&](const Http1DecodeEvent &) -> void {
-                chunkedTransaction->aggregateBody(unit::ByteLength{3U});
+                chunkedTransaction->aggregateBody(unit::ByteCount{3U});
             };
             chunkedTransaction->callbacks().failure = [&](const Http1TransactionFailure &failure) -> void {
                 REQUIRE_EQUAL(failure.kind(), Http1TransactionFailure::Kind::ResourceLimit);
@@ -565,7 +632,7 @@ public:
         auto finals = 0;
         run(harness.loop, [&]() -> void {
             transaction->callbacks().requestHead = [&](const Http1DecodeEvent &) -> void {
-                throw std::runtime_error{"application"};
+                throw el::err::RuntimeError{"application"};
             };
             transaction->callbacks().failure = [&](const Http1TransactionFailure &) -> void { ++failures; };
             transaction->callbacks().final = [&]() -> void { ++finals; };

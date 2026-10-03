@@ -2,8 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/profiling/Definitions.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/re/Settings.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -47,6 +53,7 @@ enum class UseCase : std::uint8_t {
     CowStress,
     EditStress,
     SensitiveStorage,
+    SeparatorSplit,
 };
 /// A deterministic source-text profile.
 enum class ContentProfile : std::uint8_t { Ascii, Mixed, Supplementary, MalformedSparse, MalformedDense };
@@ -65,7 +72,7 @@ struct UseCaseDescriptor {
     StringType type{};                       ///< The string value category.
     UseCase useCase{};                       ///< The use case.
     el::String variant;                      ///< The implementation-path variant.
-    std::vector<el::String> apiFamilies{};   ///< Public API families represented by this path.
+    el::StringList apiFamilies{};            ///< Public API families represented by this path.
     WorkUnit workUnit{WorkUnit::CodePoints}; ///< The normalization unit.
     bool u8Only{};                           ///< Whether this path is available only for UTF-8.
 };

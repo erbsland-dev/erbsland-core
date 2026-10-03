@@ -20,8 +20,8 @@ public:
 
 public: // implement EntropySource
     /// Fill the destination with entropy bytes.
+    /// The entropy source must be able to supply all requested bytes.
     /// @param destination The bytes to fill.
-    /// @throws random::RandomError If the system RNG cannot provide the requested bytes.
     void fillBytes(std::span<std::byte> destination) override;
 };
 

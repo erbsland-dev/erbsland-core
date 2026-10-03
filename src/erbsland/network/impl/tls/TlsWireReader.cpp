@@ -8,6 +8,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace mem;
 using namespace text::literals;
 
 auto TlsWireReader::readU8() -> uint8_t {
@@ -45,22 +46,22 @@ auto TlsWireReader::readU32() -> uint32_t {
     return result;
 }
 
-auto TlsWireReader::readBytes(const std::size_t length) -> mem::ConstByteSpan {
+auto TlsWireReader::readBytes(const std::size_t length) -> ConstByteSpan {
     require(length);
     const auto result = _data.subspan(_offset, length);
     _offset += length;
     return result;
 }
 
-auto TlsWireReader::readVector8() -> mem::ConstByteSpan {
+auto TlsWireReader::readVector8() -> ConstByteSpan {
     return readBytes(readU8());
 }
 
-auto TlsWireReader::readVector16() -> mem::ConstByteSpan {
+auto TlsWireReader::readVector16() -> ConstByteSpan {
     return readBytes(readU16());
 }
 
-auto TlsWireReader::readVector24() -> mem::ConstByteSpan {
+auto TlsWireReader::readVector24() -> ConstByteSpan {
     return readBytes(readU24());
 }
 

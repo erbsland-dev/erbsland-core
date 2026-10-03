@@ -9,6 +9,8 @@
 
 namespace erbsland::options {
 
+using namespace text;
+
 OptionEditor::OptionEditor(OptionPtr option) noexcept : _option{std::move(option)} {
 }
 
@@ -16,9 +18,9 @@ auto OptionEditor::isValid() const noexcept -> bool {
     return _option != nullptr;
 }
 
-auto OptionEditor::setHelp(text::String description) -> OptionEditor & {
+auto OptionEditor::setHelp(String title) -> OptionEditor & {
     if (_option != nullptr) {
-        _option->setHelp(OptionHelp{std::move(description)});
+        _option->setHelp(OptionHelp{std::move(title)});
     }
     return *this;
 }
@@ -30,28 +32,28 @@ auto OptionEditor::setHelp(OptionHelp help) -> OptionEditor & {
     return *this;
 }
 
-auto OptionEditor::setHelpTitle(text::String title) -> OptionEditor & {
+auto OptionEditor::setHelpTitle(String title) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setHelpTitle(std::move(title));
     }
     return *this;
 }
 
-auto OptionEditor::setHelpDescription(text::String description) -> OptionEditor & {
+auto OptionEditor::setHelpDescription(String description) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setHelpDescription(std::move(description));
     }
     return *this;
 }
 
-auto OptionEditor::setHelpEpilog(text::String epilog) -> OptionEditor & {
+auto OptionEditor::setHelpEpilog(String epilog) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setHelpEpilog(std::move(epilog));
     }
     return *this;
 }
 
-auto OptionEditor::setHelpExample(text::String example) -> OptionEditor & {
+auto OptionEditor::setHelpExample(String example) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setHelpExample(std::move(example));
     }
@@ -65,7 +67,7 @@ auto OptionEditor::setHelpVisibility(const OptionHelpVisibility visibility) -> O
     return *this;
 }
 
-auto OptionEditor::setValueName(text::String valueName) -> OptionEditor & {
+auto OptionEditor::setValueName(String valueName) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setValueName(std::move(valueName));
     }
@@ -118,7 +120,7 @@ auto OptionEditor::setChoices(OptionChoicesPtr choices) -> OptionEditor & {
     return *this;
 }
 
-auto OptionEditor::addChoice(text::String text) -> OptionEditor & {
+auto OptionEditor::addChoice(String text) -> OptionEditor & {
     if (_option == nullptr) {
         return *this;
     }

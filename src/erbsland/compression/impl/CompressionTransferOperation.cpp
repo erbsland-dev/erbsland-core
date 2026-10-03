@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CompressionTransferOperation.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../mem/ByteWriter.hpp"
 #include "../../text/Literals.hpp"
 
@@ -11,6 +11,8 @@
 
 namespace erbsland::compression::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
 CompressionTransferOperation::CompressionTransferOperation(
@@ -30,7 +32,7 @@ CompressionTransferOperation::CompressionTransferOperation(
     _encode{encode},
     _coreEnvelope{codec.format() == CompressionFormat::Core},
     _source{[this] { return readInput(); }},
-    _target{[this](mem::ConstByteSpan bytes) { writeOutput(bytes); }} {
+    _target{[this](ConstByteSpan bytes) { writeOutput(bytes); }} {
 }
 
 auto CompressionTransferOperation::run() -> CompressionTransferResult {
@@ -38,7 +40,7 @@ auto CompressionTransferOperation::run() -> CompressionTransferResult {
         !_transfer.maximumBufferedLength().isFinite() ||
         (_transfer.inputLength() && !_transfer.inputLength()->isFinite()) ||
         _transfer.fallbackPolicy() > CompressionFallbackPolicy::RequireStreaming) {
-        throw err::ParameterError{"Invalid compression transfer limits."_el, "transfer"_el};
+        throw err::ParameterFailure{"Invalid compression transfer limits."_el, "transfer"_el};
     }
     if (_transfer.fallbackPolicy() == CompressionFallbackPolicy::RequireStreaming && !_codec.supportsStreaming()) {
         throw CompressionError{
@@ -80,7 +82,7 @@ void CompressionTransferOperation::notify() {
     }
 }
 
-auto CompressionTransferOperation::readInput() -> mem::ByteBlock {
+auto CompressionTransferOperation::readInput() -> ByteBlock {
     auto data = _read();
     _progress.transferred.inputLength = _progress.transferred.inputLength.addedOrThrow(data.length());
     if (!_decompress && _coreEnvelope) {
@@ -90,13 +92,13 @@ auto CompressionTransferOperation::readInput() -> mem::ByteBlock {
     return data;
 }
 
-void CompressionTransferOperation::writeOutput(mem::ConstByteSpan bytes) {
+void CompressionTransferOperation::writeOutput(ConstByteSpan bytes) {
     if (_decompress) {
-        const auto next = unit::ByteLength{_uncompressed}.addedOrThrow(unit::ByteLength::fromSizeT(bytes.size()));
+        const auto next = _uncompressed.addedOrThrow(ByteCount::fromSizeT(bytes.size()));
         if (next > _decode.maximumOutputLength()) {
             throw err::OutOfRangeError{"Decompressed output limit exceeded."_el};
         }
-        _uncompressed = next.toRawValue();
+        _uncompressed = next;
         if (_coreEnvelope) {
             _crc.update(bytes);
         }
@@ -108,23 +110,23 @@ void CompressionTransferOperation::writeOutput(mem::ConstByteSpan bytes) {
         _write(part);
         position += part.size();
         _progress.transferred.outputLength =
-            _progress.transferred.outputLength.addedOrThrow(unit::ByteLength::fromSizeT(part.size()));
+            _progress.transferred.outputLength.addedOrThrow(ByteCount::fromSizeT(part.size()));
         notify();
     }
 }
 
 void CompressionTransferOperation::compressCore() {
-    auto header = mem::ByteWriter{};
+    auto header = ByteWriter{};
     header.writeUInt32(0x43424c45U)
         .writeUInt8(2U)
         .writeUInt8(static_cast<uint8_t>(_codec.algorithm().toRawValue()))
         .writeUInt16(0U);
     _target(header.toByteBlock().span());
-    mem::ByteBlockEditor pending;
-    pending.reserve(unit::ByteLength{65536U});
-    uint64_t payloadLength{};
+    ByteBlockEditor pending;
+    pending.reserve(ByteCount{65536U});
+    ByteCount payloadLength{};
     const auto chunk = [&]() {
-        auto length = mem::ByteWriter{};
+        auto length = ByteWriter{};
         length.writeUInt32(static_cast<uint32_t>(pending.length().toRawValue()));
         _target(length.toByteBlock().span());
         _target(pending.span());
@@ -132,9 +134,8 @@ void CompressionTransferOperation::compressCore() {
     };
     _codec.compressPayload(
         _source,
-        [&](mem::ConstByteSpan bytes) -> void {
-            payloadLength =
-                unit::ByteLength{payloadLength}.addedOrThrow(unit::ByteLength::fromSizeT(bytes.size())).toRawValue();
+        [&](ConstByteSpan bytes) -> void {
+            payloadLength = payloadLength.addedOrThrow(ByteCount::fromSizeT(bytes.size()));
             while (!bytes.empty()) {
                 const auto count = std::min(bytes.size(), 65536U - pending.length().toSizeT());
                 pending.append(bytes.first(count));
@@ -151,10 +152,10 @@ void CompressionTransferOperation::compressCore() {
     }
     _progress.phase = CompressionPhase::Finalizing;
     notify();
-    auto trailer = mem::ByteWriter{};
+    auto trailer = ByteWriter{};
     trailer.writeUInt32(0U)
         .writeUInt64(_progress.transferred.inputLength.toRawValue())
-        .writeUInt64(payloadLength)
+        .writeUInt64(payloadLength.toRawValue())
         .writeUInt32(_crc.value());
     _target(trailer.toByteBlock().span());
 }
@@ -172,9 +173,9 @@ void CompressionTransferOperation::decompressCore() {
     if (_source.little(2U) != 0U) {
         throw CompressionError{CompressionErrorReason::UnsupportedFeature, "Unsupported Core flags."_el};
     }
-    uint64_t payloadLength{};
+    ByteCount payloadLength{};
     bool ended{};
-    auto framed = CodecReader{[&]() -> mem::ByteBlock {
+    auto framed = CodecReader{[&]() -> ByteBlock {
         if (ended) {
             return {};
         }
@@ -190,12 +191,12 @@ void CompressionTransferOperation::decompressCore() {
         if (block.length().toRawValue() != length) {
             throw CompressionError{CompressionErrorReason::MalformedData, "Truncated Core chunk."_el};
         }
-        payloadLength = unit::ByteLength{payloadLength}.addedOrThrow(block.length()).toRawValue();
+        payloadLength = payloadLength.addedOrThrow(block.length());
         return block;
     }};
-    mem::ByteBlock buffered;
+    ByteBlock buffered;
     if (!_codec.supportsStreaming()) {
-        auto bytes = mem::ByteBlockEditor{};
+        auto bytes = ByteBlockEditor{};
         while (!framed.atEnd()) {
             auto block = framed.block(65536U);
             if (bytes.length().addedOrThrow(block.length()) > _transfer.maximumBufferedLength()) {
@@ -208,14 +209,14 @@ void CompressionTransferOperation::decompressCore() {
         _codec.decompressPayload(framed, _target, _transfer, _decode);
     }
     framed.requireEnd();
-    const auto originalLength = _source.little(8U);
-    const auto encodedLength = _source.little(8U);
+    const auto originalLength = ByteCount::fromInteger(_source.little(8U));
+    const auto encodedLength = ByteCount::fromInteger(_source.little(8U));
     const auto expectedCrc = _source.little(4U);
     if (!_codec.supportsStreaming()) {
         auto options = _decode;
-        options.setExpectedOutputLength(unit::ByteLength{originalLength});
+        options.setExpectedOutputLength(originalLength);
         bool readOnce{};
-        auto memory = CodecReader{[&]() -> mem::ByteBlock {
+        auto memory = CodecReader{[&]() -> ByteBlock {
             if (readOnce) {
                 return {};
             }

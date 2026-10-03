@@ -1,0 +1,24 @@
+# Reference-document groups for the util domain.
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "util/utilities.rst"
+Title                        : "General Utilities"
+Header Globs                 :
+    * "util/*.hpp"
+Excluded Header Globs        :
+    * "util/Stop*.hpp"
+    * "util/Worker*.hpp"
+    * "util/Utilities.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "util/cooperative_stopping.rst"
+Title                        : "Cooperative Stopping"
+Header Globs                 :
+    * "util/Stop*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "util/worker_pool.rst"
+Title                        : "Worker Pools"
+Header Globs                 :
+    * "util/Worker*.hpp"
+    * "util/Utilities.hpp"

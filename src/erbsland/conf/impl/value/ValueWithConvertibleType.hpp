@@ -3,12 +3,14 @@
 #pragma once
 
 #include "Value.hpp"
+#include "ValueDigest.hpp"
 
 #include "../../../re/RegEx.hpp"
 
 namespace erbsland::conf::impl {
 
 /// A generic base class for Core scalar types with configuration text rendering.
+/// @tested{ValueDigestTest ValueAsMethodsTest}
 template <typename StorageType, ValueType::Enum tValueType>
 class ValueWithConvertibleType : public Value {
 public:
@@ -30,6 +32,7 @@ public:
     [[nodiscard]] auto deepCopy() const -> ValuePtr override {
         return std::make_shared<ValueWithConvertibleType<StorageType, tValueType>>(_value);
     }
+    void updateDigestValue(ValueDigest &digest) const override { digest.update(_value); }
     /// Access the stored value without conversion or copying.
     [[nodiscard]] auto rawStorage() const noexcept -> const StorageType & { return _value; }
 

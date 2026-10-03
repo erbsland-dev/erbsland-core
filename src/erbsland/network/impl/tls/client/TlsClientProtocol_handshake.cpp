@@ -3,6 +3,8 @@
 #include "TlsClientProtocol.hpp"
 
 #include "../TlsAlpnProtocol.hpp"
+#include "../TlsExtensionRules.hpp"
+#include "../TlsKeyShare.hpp"
 #include "../TlsProtocolError.hpp"
 #include "../TlsWireReader.hpp"
 #include "../TlsWireWriter.hpp"
@@ -18,9 +20,10 @@
 #include "../../../../mem/ByteArray.hpp"
 #include "../../../../mem/ByteBlockEditor.hpp"
 #include "../../../../mem/ByteSpan.hpp"
+#include "../../../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../../../text/Literals.hpp"
+#include "../../../../unit/ByteCount.hpp"
 #include "../../../../unit/ByteIndex.hpp"
-#include "../../../../unit/ByteLength.hpp"
 
 #include <array>
 #include <cstddef>
@@ -32,9 +35,10 @@
 
 namespace erbsland::network::impl {
 
+using namespace mem;
 using namespace text::literals;
 
-void TlsClientProtocol::processHandshake(const mem::ByteBlock &message) {
+void TlsClientProtocol::processHandshake(const ByteBlock &message) {
     const auto type = message.getOrThrow(unit::ByteIndex::zero()).toUInt8();
     switch (_handshakeStep) {
     case HandshakeStep::ServerHello:
@@ -83,41 +87,7 @@ void TlsClientProtocol::processHandshake(const mem::ByteBlock &message) {
     }
 }
 
-void TlsClientProtocol::processServerHello(const mem::ByteBlock &message) {
-    static constexpr auto cHelloRetryRequestRandom = mem::ByteArray<32U>{
-        mem::Byte{0xcfU},
-        mem::Byte{0x21U},
-        mem::Byte{0xadU},
-        mem::Byte{0x74U},
-        mem::Byte{0xe5U},
-        mem::Byte{0x9aU},
-        mem::Byte{0x61U},
-        mem::Byte{0x11U},
-        mem::Byte{0xbeU},
-        mem::Byte{0x1dU},
-        mem::Byte{0x8cU},
-        mem::Byte{0x02U},
-        mem::Byte{0x1eU},
-        mem::Byte{0x65U},
-        mem::Byte{0xb8U},
-        mem::Byte{0x91U},
-        mem::Byte{0xc2U},
-        mem::Byte{0xa2U},
-        mem::Byte{0x11U},
-        mem::Byte{0x16U},
-        mem::Byte{0x7aU},
-        mem::Byte{0xbbU},
-        mem::Byte{0x8cU},
-        mem::Byte{0x5eU},
-        mem::Byte{0x07U},
-        mem::Byte{0x9eU},
-        mem::Byte{0x09U},
-        mem::Byte{0xe2U},
-        mem::Byte{0xc8U},
-        mem::Byte{0xa8U},
-        mem::Byte{0x33U},
-        mem::Byte{0x9cU}};
-
+void TlsClientProtocol::processServerHello(const ByteBlock &message) {
     auto reader = TlsWireReader{message.span().subspan(4U)};
 
     // RFC 8446 section 4.1.3: legacy_version remains 0x0303 and random distinguishes ServerHello from HRR.
@@ -125,14 +95,10 @@ void TlsClientProtocol::processServerHello(const mem::ByteBlock &message) {
         throw TlsProtocolError{TlsAlertDescription::ProtocolVersion, "ServerHello legacy_version is invalid."_el};
     }
     const auto serverRandom = reader.readBytes(32U);
-    if (mem::ByteBlock::fromSpan(serverRandom) == mem::ByteBlock{cHelloRetryRequestRandom}) {
-        // The client already offered its only supported group and initial share; accepting HRR would add no compatible
-        // transition and is deliberately deferred with multi-group support.
-        throw TlsProtocolError{TlsAlertDescription::UnexpectedMessage, "HelloRetryRequest is not supported."_el};
-    }
+    const auto isRetry = ByteBlock::fromSpan(serverRandom) == tls_key_share::helloRetryRequestRandom();
 
     // RFC 8446 appendix D.4: compatibility mode requires the exact legacy session ID echo.
-    if (mem::ByteBlock::fromSpan(reader.readVector8()) != _legacySessionId) {
+    if (ByteBlock::fromSpan(reader.readVector8()) != _legacySessionId) {
         throw TlsProtocolError{TlsAlertDescription::IllegalParameter, "ServerHello did not echo the session ID."_el};
     }
 
@@ -147,6 +113,13 @@ void TlsClientProtocol::processServerHello(const mem::ByteBlock &message) {
 
     const auto extensionBytes = reader.readVector16();
     reader.requireEnd();
+    if (_retryReceived && selectedSuite != _cipherSuite) {
+        throw TlsProtocolError{TlsAlertDescription::IllegalParameter, "ServerHello changed the retry cipher suite."_el};
+    }
+    if (isRetry) {
+        processHelloRetryRequest(message, *selectedSuite, extensionBytes);
+        return;
+    }
     auto hasSupportedVersion = false;
     auto hasKeyShare = false;
     auto serverKey = cryptology::KeyAgreementPublicKey{};
@@ -162,16 +135,19 @@ void TlsClientProtocol::processServerHello(const mem::ByteBlock &message) {
         }
         if (extension.type == 51U) {
             auto extensionReader = TlsWireReader{extension.data};
-            if (extensionReader.readU16() != 0x001dU) {
-                throw TlsProtocolError{TlsAlertDescription::IllegalParameter, "ServerHello did not select X25519."_el};
+            const auto algorithm = tls_key_share::algorithm(extensionReader.readU16());
+            if (!algorithm.has_value() || *algorithm != _privateKey.algorithm()) {
+                throw TlsProtocolError{
+                    TlsAlertDescription::IllegalParameter, "ServerHello selected an unoffered key share."_el};
             }
             const auto keyBytes = extensionReader.readVector16();
             extensionReader.requireEnd();
-            if (keyBytes.size() != 32U) {
+            try {
+                serverKey = cryptology::KeyAgreementPublicKey{*algorithm, keyBytes};
+            } catch (const err::Exception &) {
                 throw TlsProtocolError{
-                    TlsAlertDescription::IllegalParameter, "ServerHello X25519 share has the wrong length."_el};
+                    TlsAlertDescription::IllegalParameter, "ServerHello contains an invalid key share."_el};
             }
-            serverKey = cryptology::KeyAgreementPublicKey{cryptology::KeyAgreementAlgorithm::X25519, keyBytes};
             hasKeyShare = true;
             return;
         }
@@ -192,13 +168,15 @@ void TlsClientProtocol::processServerHello(const mem::ByteBlock &message) {
 
     // RFC 8446 sections 4.4.1 and 7.1: select the suite hash, then hash the exact ClientHello and ServerHello.
     _cipherSuite = *selectedSuite;
-    _transcript = std::make_unique<cryptology::impl::Tls13Transcript>(_cipherSuite->hashAlgorithm());
-    _transcript->update(_clientHello.span());
+    if (!_retryReceived) {
+        _transcript = std::make_unique<cryptology::impl::Tls13Transcript>(_cipherSuite->hashAlgorithm());
+        _transcript->update(_clientHello.span());
+    }
     _transcript->update(message.span());
     _clientHello = {};
     _legacySessionId = {};
 
-    // RFC 8446 section 7.1: consume X25519 and install both handshake traffic directions. Erase the ephemeral private
+    // RFC 8446 section 7.1: consume ECDHE and install both handshake traffic directions. Erase the ephemeral private
     // key immediately after agreement; the schedule consumes and erases the protected shared secret.
     auto sharedSecret = _privateKey.agree(serverKey);
     _privateKey.secureErase();
@@ -210,7 +188,7 @@ void TlsClientProtocol::processServerHello(const mem::ByteBlock &message) {
     _handshakeStep = HandshakeStep::EncryptedExtensions;
 }
 
-void TlsClientProtocol::processEncryptedExtensions(const mem::ByteBlock &message) {
+void TlsClientProtocol::processEncryptedExtensions(const ByteBlock &message) {
     auto reader = TlsWireReader{message.span().subspan(4U)};
     const auto extensionBytes = reader.readVector16();
     reader.requireEnd();
@@ -235,7 +213,7 @@ void TlsClientProtocol::processEncryptedExtensions(const mem::ByteBlock &message
             return;
         }
         if (extension.type == 16U) {
-            if (_options.alpnProtocols().empty()) {
+            if (_options.alpnProtocols().isEmpty()) {
                 throw TlsProtocolError{
                     TlsAlertDescription::UnsupportedExtension, "The server selected unoffered ALPN."_el};
             }
@@ -247,10 +225,10 @@ void TlsClientProtocol::processEncryptedExtensions(const mem::ByteBlock &message
                 throw TlsProtocolError{
                     TlsAlertDescription::DecodeError, "The ALPN response must select exactly one protocol."_el};
             }
-            const auto selectedProtocol = TlsAlpnProtocol::fromBytes(selected);
+            const auto selectedProtocol = text::impl::UnsafeU8StringBuffer{selected}.takeString();
             auto wasOffered = false;
             for (const auto &offered : _options.alpnProtocols()) {
-                if (TlsAlpnProtocol::equal(offered, selectedProtocol)) {
+                if (tls_alpn_protocol::equal(offered, selectedProtocol)) {
                     wasOffered = true;
                     break;
                 }
@@ -272,7 +250,7 @@ void TlsClientProtocol::processEncryptedExtensions(const mem::ByteBlock &message
     _checkpoint = TlsClientProtocolCheckpoint::PeerHello;
 }
 
-void TlsClientProtocol::processCertificateRequest(const mem::ByteBlock &message) {
+void TlsClientProtocol::processCertificateRequest(const ByteBlock &message) {
     auto reader = TlsWireReader{message.span().subspan(4U)};
 
     // RFC 8446 section 4.4.2.1: a main-handshake CertificateRequest has an empty certificate_request_context.
@@ -283,6 +261,7 @@ void TlsClientProtocol::processCertificateRequest(const mem::ByteBlock &message)
     const auto extensionBytes = reader.readVector16();
     reader.requireEnd();
     auto hasSignatureAlgorithms = false;
+    auto hasCertificateSignatureAlgorithms = false;
     forEachExtension(extensionBytes, [&](const ExtensionView &extension) -> void {
         if (extension.type == 13U || extension.type == 50U) {
             auto extensionReader = TlsWireReader{extension.data};
@@ -292,12 +271,26 @@ void TlsClientProtocol::processCertificateRequest(const mem::ByteBlock &message)
                 throw TlsProtocolError{
                     TlsAlertDescription::DecodeError, "CertificateRequest signature schemes are malformed."_el};
             }
+            auto selected = std::vector<cryptology::TlsSignatureScheme>{};
+            auto schemesReader = TlsWireReader{schemes};
+            while (!schemesReader.isAtEnd()) {
+                const auto scheme = cryptology::TlsSignatureScheme::fromRawValue(schemesReader.readU16());
+                if (scheme.has_value()) {
+                    selected.push_back(*scheme);
+                }
+            }
+            if (extension.type == 13U) {
+                _requestedSignatureSchemes = util::List<cryptology::TlsSignatureScheme>{std::move(selected)};
+            } else {
+                hasCertificateSignatureAlgorithms = true;
+                _requestedCertificateSchemes = util::List<cryptology::TlsSignatureScheme>{std::move(selected)};
+            }
             hasSignatureAlgorithms = hasSignatureAlgorithms || extension.type == 13U;
             return;
         }
         if (extension.type == 47U) {
-            // RFC 8446 section 4.2.4: parse the complete non-empty DistinguishedName vector even though this client
-            // has no configured identity and therefore does not use the authorities for certificate selection.
+            // RFC 8446 section 4.2.4: retain the complete non-empty DistinguishedName vector for exact issuer
+            // constraints before any configured client identity can be disclosed.
             auto extensionReader = TlsWireReader{extension.data};
             const auto authorities = extensionReader.readVector16();
             extensionReader.requireEnd();
@@ -307,7 +300,9 @@ void TlsClientProtocol::processCertificateRequest(const mem::ByteBlock &message)
             }
             auto authoritiesReader = TlsWireReader{authorities};
             while (!authoritiesReader.isAtEnd()) {
-                if (authoritiesReader.readVector16().empty()) {
+                const auto authority = authoritiesReader.readVector16();
+                _requestedAuthorities.push_back(ByteBlock::fromSpan(authority));
+                if (authority.empty()) {
                     throw TlsProtocolError{
                         TlsAlertDescription::DecodeError, "CertificateRequest contains an empty authority name."_el};
                 }
@@ -315,11 +310,12 @@ void TlsClientProtocol::processCertificateRequest(const mem::ByteBlock &message)
             return;
         }
         if (extension.type == 48U) {
-            // RFC 8446 section 4.2.5: parse each OIDFilter representation exactly. Its selection semantics are
-            // intentionally unused because the initial client always returns an empty certificate list.
+            // RFC 8446 section 4.2.5: parse each OIDFilter exactly; unsupported nonempty constraints suppress
+            // client identity disclosure rather than silently broadening the server's accepted identity set.
             auto extensionReader = TlsWireReader{extension.data};
             auto filtersReader = TlsWireReader{extensionReader.readVector16()};
             extensionReader.requireEnd();
+            _hasUnsupportedOidFilters = !filtersReader.isAtEnd();
             while (!filtersReader.isAtEnd()) {
                 if (filtersReader.readVector8().empty()) {
                     throw TlsProtocolError{
@@ -329,14 +325,16 @@ void TlsClientProtocol::processCertificateRequest(const mem::ByteBlock &message)
             }
             return;
         }
-        throw TlsProtocolError{
-            TlsAlertDescription::UnsupportedExtension, "CertificateRequest contains an unsupported extension."_el};
+        tls_extension_rules::requireIgnorableCertificateRequest(extension.type);
     });
     if (!hasSignatureAlgorithms) {
         throw TlsProtocolError{
             TlsAlertDescription::MissingExtension, "CertificateRequest is missing signature_algorithms."_el};
     }
 
+    if (!hasCertificateSignatureAlgorithms) {
+        _requestedCertificateSchemes = _requestedSignatureSchemes;
+    }
     _transcript->update(message.span());
     _certificateRequested = true;
     _handshakeStep = HandshakeStep::Certificate;

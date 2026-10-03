@@ -19,8 +19,8 @@
 #include "impl/ByteWriteTools.hpp"
 #include "impl/UnsafeByteBlockBuffer_fwd.hpp"
 
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 #include "../unit/ByteRange.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 #include "../util/LoopResult.hpp"
@@ -38,7 +38,7 @@ namespace erbsland::mem {
 /// An owning mutable byte block editor with copy-on-write storage.
 /// Use this type to create and modify byte sequences.
 /// Constructing an editor from a read-only `ByteBlock` always copies its visible bytes.
-/// @tested{ByteBlockTest}
+/// @tested{ByteBlockTest LastIndexTest}
 class ByteBlockEditor final {
     friend class ByteBlock;
     friend class impl::BitWriterImpl;
@@ -48,7 +48,7 @@ public:
     /// Create a byte block filled with the given byte value.
     /// @param length The number of bytes.
     /// @param value The byte value used to fill the block.
-    explicit ByteBlockEditor(unit::ByteLength length, Byte value = Byte{});
+    explicit ByteBlockEditor(unit::ByteCount length, Byte value = Byte{});
     /// Create a byte block by copying explicit byte values.
     explicit ByteBlockEditor(std::initializer_list<Byte> bytes);
     /// Create a byte block from a fixed byte array.
@@ -81,7 +81,7 @@ public: // main operations
     /// Return a slice from the given start to the given end.
     [[nodiscard]] auto slice(unit::ByteIndex begin, unit::ByteIndex end) const noexcept -> ByteBlock;
     /// Return a slice from the given start with the given length.
-    [[nodiscard]] auto slice(unit::ByteIndex begin, unit::ByteLength length) const noexcept -> ByteBlock;
+    [[nodiscard]] auto slice(unit::ByteIndex begin, unit::ByteCount length) const noexcept -> ByteBlock;
     /// Remove all bytes while preserving capacity.
     auto clear() noexcept -> ByteBlockEditor &;
     /// Reset this byte block and release all storage.
@@ -89,7 +89,7 @@ public: // main operations
     /// Securely erase this editor while preserving length and capacity.
     void secureErase();
     /// Resize the block, zero-filling growth.
-    auto resize(unit::ByteLength length) -> ByteBlockEditor &;
+    auto resize(unit::ByteCount length) -> ByteBlockEditor &;
     /// Remove a range of bytes.
     auto remove(unit::ByteRange range) -> ByteBlockEditor &;
     /// Keep only a range of bytes.
@@ -115,7 +115,7 @@ public: // main operations
     /// Append one or more bytes.
     /// @param value The byte value to append.
     /// @param length The number of times to append the value.
-    auto append(Byte value, unit::ByteLength length = unit::ByteLength::one()) -> ByteBlockEditor &;
+    auto append(Byte value, unit::ByteCount length = unit::ByteCount::one()) -> ByteBlockEditor &;
     /// Append a byte sequence.
     auto append(const ByteBlock &bytes) -> ByteBlockEditor &;
     /// Append a borrowed byte span.
@@ -129,8 +129,7 @@ public: // main operations
     /// @param sourceRange A non-empty range completely within the current editor.
     /// @param outputLength The number of bytes to append.
     /// @return This editor.
-    /// @throws err::OutOfRangeError If a non-empty output is requested from an invalid source range.
-    auto appendRepeated(unit::ByteRange sourceRange, unit::ByteLength outputLength) -> ByteBlockEditor &;
+    auto appendRepeated(unit::ByteRange sourceRange, unit::ByteCount outputLength) -> ByteBlockEditor &;
     /// Append an integer using the selected byte order.
     /// @tparam T A non-boolean native integer type.
     /// @param value The integer value.
@@ -139,7 +138,7 @@ public: // main operations
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     auto appendInteger(const T value, const Endianness endianness = Endianness::Little) -> ByteBlockEditor & {
-        const auto offset = appendZeroed(unit::ByteLength{sizeof(T)});
+        const auto offset = appendZeroed(unit::ByteCount{sizeof(T)});
         impl::ByteWriteTools{writableSpan()}.setIntegerOrThrow(offset, value, endianness);
         return *this;
     }
@@ -159,12 +158,12 @@ public: // main operations
     /// @return `false` without changing this editor if the lengths differ.
     [[nodiscard]] auto xorWith(const ByteBlock &bytes) -> bool;
     /// XOR every byte with an equally sized block.
-    /// @throws err::ParameterError If the lengths differ.
+    /// @param bytes The bytes to XOR. Must have the same length as this editor.
     auto xorWithOrThrow(const ByteBlock &bytes) -> ByteBlockEditor &;
     /// XOR every byte with an equally sized borrowed source.
     [[nodiscard]] auto xorWith(ConstByteSpan bytes) -> bool;
     /// XOR every byte with an equally sized borrowed source.
-    /// @throws err::ParameterError If the lengths differ.
+    /// @param bytes The bytes to XOR. Must have the same length as this editor.
     auto xorWithOrThrow(ConstByteSpan bytes) -> ByteBlockEditor &;
     /// XOR a clamped destination range with as many source bytes as fit.
     auto xorWith(unit::ByteRange range, ConstByteSpan bytes) -> ByteBlockEditor &;
@@ -233,13 +232,16 @@ public: // tests
 
 public: // read
     /// Get the length of this byte block.
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto length() const noexcept -> unit::ByteCount;
     /// Get the index after the last byte.
     [[nodiscard]] auto endIndex() const noexcept -> unit::ByteIndex { return unit::ByteIndex::end(length()); }
+    /// Get the final byte index, or noIndex() if this block is empty.
+    [[nodiscard]] auto lastIndex() const noexcept -> unit::ByteIndex { return unit::ByteIndex::last(length()); }
     /// Get a byte or return a default value when the index is out of range.
     [[nodiscard]] auto get(unit::ByteIndex index, Byte defaultValue = Byte{}) const noexcept -> Byte;
     /// Get a byte or throw when the index is out of range.
-    /// @throws err::OutOfRangeError If the index is out of range.
+    /// @param index The byte index. Must identify an existing byte.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     [[nodiscard]] auto getOrThrow(unit::ByteIndex index) const -> Byte;
     /// Access all visible bytes through a read-only borrowed span.
     [[nodiscard]] auto span() const noexcept -> ConstByteSpan { return dataView().dataSpan(); }
@@ -248,7 +250,7 @@ public: // read
         return impl::ByteReadTools{dataView()}.span(range);
     }
     /// Access a clamped visible range through a read-only borrowed span.
-    [[nodiscard]] auto span(unit::ByteIndex index, unit::ByteLength lengthValue) const noexcept -> ConstByteSpan {
+    [[nodiscard]] auto span(unit::ByteIndex index, unit::ByteCount lengthValue) const noexcept -> ConstByteSpan {
         return span(unit::ByteRange{index, lengthValue});
     }
     /// Invoke a callback for every visible byte and its optional index.
@@ -274,10 +276,10 @@ public: // integers
     }
     /// Get an integer or throw if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
-    /// @param offset The first byte index.
+    /// @param offset The first byte index. The complete `sizeof(T)`-byte integer must fit at this position.
     /// @param endianness The byte order.
     /// @return The decoded value.
-    /// @throws err::OutOfRangeError If the integer does not fit at `offset`.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     [[nodiscard]] auto getIntegerOrThrow(
@@ -302,12 +304,16 @@ public: // write
     /// Set a byte value, ignoring out-of-range indexes.
     void set(unit::ByteIndex index, Byte value);
     /// Set a byte value or throw when the index is out of range.
-    /// @throws err::OutOfRangeError If the index is out of range.
+    /// @param index The byte index. Must identify an existing byte.
+    /// @param value The replacement byte value.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     void setOrThrow(unit::ByteIndex index, Byte value);
     /// XOR a byte value at an index, ignoring out-of-range indexes.
     void xorAt(unit::ByteIndex index, Byte value);
     /// XOR a byte value at an index or throw when the index is out of range.
-    /// @throws err::OutOfRangeError If the index is out of range.
+    /// @param index The byte index. Must identify an existing byte.
+    /// @param value The byte value to XOR with the existing byte.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     void xorAtOrThrow(unit::ByteIndex index, Byte value);
     /// Store an integer, leaving the block unchanged if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
@@ -326,10 +332,10 @@ public: // write
     }
     /// Store an integer or throw if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
-    /// @param offset The first byte index.
+    /// @param offset The first byte index. The complete `sizeof(T)`-byte integer must fit at this position.
     /// @param value The integer value.
     /// @param endianness The byte order.
-    /// @throws err::OutOfRangeError If the integer does not fit at `offset`.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     void setIntegerOrThrow(
@@ -380,9 +386,9 @@ public: // memory
     /// Detach shared storage.
     void detach();
     /// Get the current capacity.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteCount;
     /// Reserve capacity.
-    void reserve(unit::ByteLength capacity);
+    void reserve(unit::ByteCount capacity);
     /// Shrink storage to the current length.
     void shrinkToFit();
 
@@ -420,7 +426,7 @@ private:
     /// Access the visible bytes for internal writes after detaching.
     [[nodiscard]] auto writableSpan() -> ByteSpan;
     /// Append zero-filled bytes and return the index of the first appended byte.
-    [[nodiscard]] auto appendZeroed(unit::ByteLength length) -> unit::ByteIndex;
+    [[nodiscard]] auto appendZeroed(unit::ByteCount length) -> unit::ByteIndex;
 
 private:
     impl::ByteBlockDataPtr _data; ///< Shared byte storage.

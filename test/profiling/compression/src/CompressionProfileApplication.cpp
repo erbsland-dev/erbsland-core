@@ -6,11 +6,17 @@
 #include "Corpus.hpp"
 #include "DefaultConfiguration.hpp"
 
-#include <erbsland/compression/CompressionAlgorithm.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/List.hpp>
 #include <erbsland/profiling/AxisSelection.hpp>
 #include <erbsland/profiling/ParameterSelection.hpp>
 #include <erbsland/profiling/Scenario.hpp>
-#include <erbsland/text/StringFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Version.hpp>
 
 #include <array>
 #include <memory>
@@ -44,8 +50,8 @@ void CompressionProfileApplication::configureProfiling(pf::ProfilingDefinition &
         corpusAxis.addValue({.id = entry.id, .description = entry.description});
     }
 
-    constexpr auto cSnapshotSize = el::ByteLength{1024U * 1024U};
-    constexpr auto cSmokeSize = el::ByteLength{16U * 1024U};
+    constexpr auto cSnapshotSize = el::ByteCount{1024U * 1024U};
+    constexpr auto cSmokeSize = el::ByteCount{16U * 1024U};
     auto snapshot = el::List<pf::Scenario>{};
     auto levels = el::List<pf::Scenario>{};
     auto formats = el::List<pf::Scenario>{};
@@ -59,7 +65,7 @@ void CompressionProfileApplication::configureProfiling(pf::ProfilingDefinition &
                                     const el::String &format,
                                     const el::String &level,
                                     const el::String &corpus,
-                                    const el::ByteLength size) -> void {
+                                    const el::ByteCount size) -> void {
         suite.append(
             pf::Scenario{
                 .id = el::StringFormat{"{}:{}:{}:{}:{}:{}"_el}.build(
@@ -116,7 +122,7 @@ void CompressionProfileApplication::configureProfiling(pf::ProfilingDefinition &
                             "raw"_el,
                             level,
                             corpusId,
-                            el::ByteLength{mebibytes * 1024U * 1024U});
+                            el::ByteCount::fromInteger(mebibytes * 1024U * 1024U));
                     }
                     ++levelIndex;
                 }
@@ -170,7 +176,7 @@ void CompressionProfileApplication::configureProfiling(pf::ProfilingDefinition &
             el::Version{1, 0, 0},
             "Compression Algorithm Profiler and Benchmark"_el,
             "Profiles deterministic one-shot compression and decompression workloads."_el)
-        .setDefaultConfiguration(el::String{cDefaultConfigurationText})
+        .setDefaultConfiguration(cDefaultConfigurationText)
         .addAxis(std::move(algorithmAxis))
         .addAxis(std::move(formatAxis))
         .addAxis(std::move(levelAxis))
@@ -178,7 +184,7 @@ void CompressionProfileApplication::configureProfiling(pf::ProfilingDefinition &
         .addParameter(
             {.id = "input-size"_el,
                 .configurationName = "input_size"_el,
-                .type = pf::ParameterType::ByteLength,
+                .type = pf::ParameterType::ByteCount,
                 .defaultValue = cSnapshotSize})
         .addMetric({.id = "uncompressed-bytes"_el, .unit = "bytes"_el, .reportRate = true})
         .addMetric({.id = "compressed-bytes"_el, .unit = "bytes"_el, .reportRate = true})

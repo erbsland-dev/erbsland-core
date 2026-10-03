@@ -62,7 +62,7 @@ public:
     /// If this method returns `false`, `Terminal` *only* calls `setAlternateScreenBuffer()` instead.
     [[nodiscard]] virtual auto supportsAlternateScreenBufferCodes() const noexcept -> bool { return true; }
 
-    /// Check if an interactive terminal is attached to the process.
+    /// Check if native or virtual interactive rendering is active.
     /// This state is typically established during `Terminal::initializeScreen()`.
     /// @return `true` if interactive terminal features such as resize and cursor control are available.
     [[nodiscard]] virtual auto isInteractive() const noexcept -> bool = 0;
@@ -75,7 +75,7 @@ public:
     /// asynchronously in the background.
     ///
     /// The returned size should represent the visible terminal area available for output.
-    /// A safety margin of one column and one row is applied by `Terminal` automatically.
+    /// `Terminal` uses the full returned area.
     ///
     /// @return The detected screen size, or `std::nullopt` if detection failed.
     [[nodiscard]] virtual auto detectScreenSize() -> std::optional<block::Size> = 0;
@@ -156,7 +156,9 @@ public: // input handling.
     virtual void purgePendingInput() noexcept {}
 
 public:
-    /// Create the default backend for this platform.
+    /// Create an independent virtual backend or the shared native backend for this platform.
+    /// @param terminalFlags The requested terminal features.
+    /// @return The selected backend.
     [[nodiscard]] static auto createPlatformDefault(TerminalFlags terminalFlags) -> BackendPtr;
 };
 

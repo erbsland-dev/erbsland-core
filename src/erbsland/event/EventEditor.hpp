@@ -24,8 +24,8 @@ public:
 
 public: // interface
     /// Retain and access the source that owns this editor.
+    /// Source ownership must remain valid for the editor's lifetime.
     /// @return The owning event source.
-    /// @throws err::LogicError If the editor cannot provide its source because of an internal lifetime error.
     [[nodiscard]] virtual auto source() const -> EventSourcePtr = 0;
     /// Retain and access the target on which callbacks are executed.
     /// @return The callback target.

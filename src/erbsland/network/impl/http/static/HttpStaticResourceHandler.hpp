@@ -12,8 +12,6 @@ class HttpStaticResourceHandler final : public network::HttpStaticResourceHandle
 public:
     /// Create a retained-provider implementation.
     HttpStaticResourceHandler(resource::ResourcesConstPtr resources, text::String identifier, text::String urlPrefix);
-    /// Create an application-provider implementation.
-    HttpStaticResourceHandler(const resource::Resources &resources, text::String identifier, text::String urlPrefix);
 
     // defaults
     ~HttpStaticResourceHandler() override = default;

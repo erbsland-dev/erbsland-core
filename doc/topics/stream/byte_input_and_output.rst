@@ -124,7 +124,7 @@ In a larger application, the timeout branch could schedule another attempt inste
 .. erbsland-demo::
     :source: stream/ByteInputAndOutput/ReadBinaryHeader.cpp
     :exec: stream/byte_input_and_output --demo ReadBinaryHeader
-    :source-sha256: c94c4e69965255cc5175dd02f03f718c110fcc113b6b2c37dc34ef1851a903dc
+    :sha256: dbed163fdd5810a90403d6bc86e0d4d9edca60ade7a7602a972389c6d8bfa4f1
 
 .. code-block:: cpp
 
@@ -132,7 +132,7 @@ In a larger application, the timeout branch could schedule another attempt inste
     /// `Data`, `Finished`, and `Timeout` are expected result states, while a `StreamError` reports a failed source.
     void inspectBinaryHeader(el::ByteInputStream &input) {
         try {
-            const auto result = input.readExact(el::ByteLength{4U});
+            const auto result = input.readExact(el::ByteCount{4U});
 
             if (result.isTimeout()) {
                 el::io::printLine("The geometry-file header is temporarily unavailable."_el);
@@ -144,16 +144,19 @@ In a larger application, the timeout branch could schedule another attempt inste
             }
 
             const auto &header = result.data();
-            el::io::printLine("Geometry-file marker: "_el, el::String::fromByteBlock(header, el::ByteFormat::separated()));
+            el::io::printLine(
+                "Geometry-file marker: "_el, el::String{el::String::fromByteBlock(header, el::ByteFormat::separated())});
         } catch (const el::StreamError &) {
             throw el::RuntimeError{"The geometry-file header could not be read."_el, std::current_exception()};
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Geometry-file marker: 47 45 4f 31
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mGeometry-file marker: 47 45 4f 31␛[0m
 
 .. erbsland-demo-end::
 
@@ -195,7 +198,7 @@ It also treats premature end, repeated timeouts, and ``StreamError`` as distinct
 .. erbsland-demo::
     :source: stream/ByteInputAndOutput/ResumeExactRead.cpp
     :exec: stream/byte_input_and_output --demo ResumeExactRead
-    :source-sha256: 19d09c85473d251e5beda0e9bc1c00a02b850331b30136a4ccff6aa4c6815489
+    :sha256: 1dde1c44b0f353c32b2ea9a34f6120294330a73520f1888ec1df75b25ea17dd5
 
 .. code-block:: cpp
 
@@ -206,7 +209,7 @@ It also treats premature end, repeated timeouts, and ``StreamError`` as distinct
 
         try {
             for (auto attempt = 0U; attempt < cMaximumAttempts; ++attempt) {
-                auto result = input.readExact(el::ByteLength{4U});
+                auto result = input.readExact(el::ByteCount{4U});
                 if (result.hasData()) {
                     return result.takeData();
                 }
@@ -222,11 +225,13 @@ It also treats premature end, repeated timeouts, and ``StreamError`` as distinct
         throw el::RuntimeError{"Waiting for the geometry record took too long."_el};
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Reading timed out; retrying the complete record.
-    Complete record bytes: 4
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mReading timed out; retrying the complete record.
+        Complete record bytes: 4␛[0m
 
 .. erbsland-demo-end::
 
@@ -304,7 +309,7 @@ length.
 .. erbsland-demo::
     :source: stream/ByteInputAndOutput/WriteAtomicRecord.cpp
     :exec: stream/byte_input_and_output --demo WriteAtomicRecord
-    :source-sha256: f21b09d5cc7a1b4b84f448a2cab8ed3eaba0d2821db2ce3490daf3ca99a623f1
+    :sha256: 6ef4090461520630ccef86fd6f450ca773013bcf64c0d2c153bda363b472f588
 
 .. code-block:: cpp
 
@@ -323,7 +328,7 @@ length.
                 if (!output->isReady()) {
                     el::io::printLine("The output is still processing earlier data."_el);
                 }
-                if (output->write(el::ByteBlock{record}).isSuccess()) {
+                if (output->write(record).isSuccess()) {
                     if (output->close().isTimeout()) {
                         output->abort();
                         throw el::RuntimeError{"Closing the geometry-record file timed out."_el};
@@ -340,10 +345,12 @@ length.
         throw el::RuntimeError{"Waiting for the geometry-record output took longer than one minute."_el};
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Written bytes: 6
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWritten bytes: 6␛[0m
 
 .. erbsland-demo-end::
 
@@ -382,7 +389,7 @@ were accepted.
 .. erbsland-demo::
     :source: stream/ByteInputAndOutput/ReadAndWriteIntegers.cpp
     :exec: stream/byte_input_and_output --demo ReadAndWriteIntegers
-    :source-sha256: 0b50b4621041c909164d43561948b0b328c57084a9cd851c43c8471c443b9abf
+    :sha256: cc703c28ff9d109479a056aa4243cff8f8e389f836f06ec6eeb91a36dbc75e6c
 
 .. code-block:: cpp
 
@@ -430,13 +437,15 @@ were accepted.
         throw el::RuntimeError{"Waiting for the geometry offset output took too long."_el};
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Reading the angle timed out; retrying.
-    Writing the offset timed out; retrying.
-    Angle units: 300
-    Coordinate offset: -720
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mReading the angle timed out; retrying.
+        Writing the offset timed out; retrying.
+        Angle units: 300
+        Coordinate offset: -720␛[0m
 
 .. erbsland-demo-end::
 
@@ -467,7 +476,7 @@ A source failure is rethrown with context.
 .. erbsland-demo::
     :source: stream/ByteInputAndOutput/ProcessPayloadInChunks.cpp
     :exec: stream/byte_input_and_output --demo ProcessPayloadInChunks
-    :source-sha256: 23da4ff22afa8c6388b97df310fdd82f9c546b0ba7151efaaa016dafb624e8dc
+    :sha256: 269752fbf44f1a9958fb059432bdde49d85517b54bdfef1dc45e22808662cf5f
 
 .. code-block:: cpp
 
@@ -500,9 +509,11 @@ A source failure is rethrown with context.
         compressor.finish();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Compressed input: 7 bytes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCompressed input: 7 bytes␛[0m
 
 .. erbsland-demo-end::

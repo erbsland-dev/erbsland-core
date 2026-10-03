@@ -12,7 +12,7 @@
 #include "../../event/EventSource.hpp"
 #include "../../path/Path_fwd.hpp"
 #include "../../stream/ByteOutputStream_fwd.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 #include <utility>
@@ -41,11 +41,11 @@ public: // incoming body policy
     /// Select incremental body delivery through `onBodyData`.
     virtual void streamBody() = 0;
     /// Select bounded byte aggregation through `onBody`.
-    virtual void aggregateBody(unit::ByteLength maximumLength) = 0;
+    virtual void aggregateBody(unit::ByteCount maximumLength) = 0;
     /// Select bounded strict UTF-8 aggregation through `onText`.
-    virtual void aggregateText(unit::ByteLength maximumLength) = 0;
+    virtual void aggregateText(unit::ByteCount maximumLength) = 0;
     /// Select bounded JSON aggregation through `onJson`.
-    virtual void aggregateJson(unit::ByteLength maximumLength) = 0;
+    virtual void aggregateJson(unit::ByteCount maximumLength) = 0;
     /// Pump body blocks into a byte output stream away from the event loop.
     virtual void writeBodyTo(stream::ByteOutputStreamPtr output) = 0;
     /// Atomically replace a destination path only after the complete response succeeds.

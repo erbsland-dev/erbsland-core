@@ -1,6 +1,5 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "SelfTest.hpp"
 
 #include "Registry.hpp"
@@ -8,10 +7,10 @@
 
 #include "cases/control/LeakyCase.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/unit/ItemCount.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <cmath>
 
@@ -47,7 +46,7 @@ auto SelfTest::runControl(Runner &runner) const -> Result {
 
 void SelfTest::require(const bool condition) {
     if (!condition) {
-        throw el::LogicError{"Deterministic harness check failed."_el};
+        throw el::LogicFailure{"Deterministic harness check failed."_el};
     }
 }
 

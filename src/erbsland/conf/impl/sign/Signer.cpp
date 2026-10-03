@@ -7,7 +7,7 @@
 #include "../constants/Defaults.hpp"
 #include "../constants/Limits.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../path/PathContent.hpp"
 #include "../../../path/PathError.hpp"
 #include "../../../path/PathInfo.hpp"
@@ -15,6 +15,7 @@
 #include "../../../text/EscapeFormat.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringEditor.hpp"
+#include "../../../text/StringJoins.hpp"
 #include "../../ConfError.hpp"
 #include "../../SignatureSigner.hpp"
 #include "../../SignatureSignerData.hpp"
@@ -22,15 +23,17 @@
 
 namespace erbsland::conf::impl {
 
+using namespace path;
+using namespace text;
 using namespace text::literals;
 
 Signer::Signer(SignatureSignerPtr signatureSigner) : _signatureSigner{std::move(signatureSigner)} {
     if (_signatureSigner == nullptr) {
-        throw err::ParameterError("Signature signer must not be null"_el, "signatureSigner"_el);
+        throw err::ParameterFailure("Signature signer must not be null"_el, "signatureSigner"_el);
     }
 }
 
-void Signer::sign(path::Path sourcePath, path::Path destinationPath, text::String signingPersonText) {
+void Signer::sign(Path sourcePath, Path destinationPath, String signingPersonText) {
     auto source = validateAndCreateSource(sourcePath);
     auto [digestText, digest, hasWindowsLineBreaks] = buildDigest(source);
     const SignatureSignerData data{
@@ -43,18 +46,18 @@ void Signer::sign(path::Path sourcePath, path::Path destinationPath, text::Strin
     writeSignedFile(sourcePath, destinationPath, signatureText, digest, hasWindowsLineBreaks);
 }
 
-auto Signer::validateAndCreateSource(path::Path sourcePath) -> SourcePtr {
+auto Signer::validateAndCreateSource(Path sourcePath) -> SourcePtr {
     try {
-        sourcePath = sourcePath.resolveOrThrow(path::PathResolveMode::Physical);
+        sourcePath = sourcePath.resolveOrThrow(PathResolveMode::Physical);
         auto sourceInfo = sourcePath.info();
-        sourceInfo.reload(path::PathInfoParts{path::PathInfoPart::Type, path::PathInfoPart::Size});
+        sourceInfo.reload(PathInfoParts{PathInfoPart::Type, PathInfoPart::Size});
         if (!sourceInfo.isRegularFile()) {
             throw ConfError{ConfErrorCategory::IO, "The source path is no existing regular file."_el, sourcePath};
         }
         if (sourceInfo.fileSize().toSizeT() > limits::maxDocumentSize) {
             throw ConfError{ConfErrorCategory::LimitExceeded, "The source file is too large."_el, sourcePath};
         }
-    } catch (const path::PathError &) {
+    } catch (const PathError &) {
         throw ConfError{
             ConfErrorCategory::IO,
             "Validating the Configuration Source Failed"_el,
@@ -79,11 +82,8 @@ auto Signer::buildDigest(const SourcePtr &source) -> DigestResult {
         }
     }
     auto digest = charStream.digest();
-    auto digestText = text::String::fromJoined({
-        defaults::documentHashAlgorithm.toString(),
-        " "_el,
-        text::String::fromByteBlock(digest, text::ByteFormat::compact()),
-    });
+    auto digestText = text::join(
+        defaults::documentHashAlgorithm.toString(), " "_el, String::fromByteBlock(digest, ByteFormat::compact()));
     source->close();
     return {
         .digestText = std::move(digestText),
@@ -91,25 +91,25 @@ auto Signer::buildDigest(const SourcePtr &source) -> DigestResult {
         .hasWindowsLineEndings = hasWindowsLineEndings};
 }
 
-void Signer::validateAndEscapeSignatureText(text::String &signatureText) {
+void Signer::validateAndEscapeSignatureText(String &signatureText) {
     if (signatureText.isEmpty()) {
         throw ConfError{ConfErrorCategory::Signature, "The signature text is empty."_el};
     }
-    signatureText = signatureText.toEscaped(text::EscapeFormat::Config, text::EscapeAmount::Required);
+    signatureText = signatureText.toEscaped(EscapeFormat::Config, EscapeAmount::Required);
     if (signatureText.length().toSizeT() > limits::maxLineLength - 20) {
         throw ConfError{ConfErrorCategory::LimitExceeded, "The signature text is too long."_el};
     }
 }
 
 void Signer::writeSignedFile(
-    const path::Path &sourcePath,
-    const path::Path &destinationPath,
-    const text::String &digestText,
+    const Path &sourcePath,
+    const Path &destinationPath,
+    const String &digestText,
     const mem::ByteBlock &digest,
     bool hasWindowsLineBreaks) {
     try {
-        auto output = text::StringEditor{};
-        output.reserve(unit::ByteLength{limits::maxLineLength + 50U});
+        auto output = StringEditor{};
+        output.reserve(unit::ByteCount{limits::maxLineLength + 50U});
         output.append("@signature: \""_el).append(digestText).append(U'"');
         output.append(hasWindowsLineBreaks ? "\r\n"_el : "\n"_el);
         const auto digestAfterWrite = writeConfiguration(output, sourcePath);
@@ -117,11 +117,10 @@ void Signer::writeSignedFile(
             throw ConfError{
                 ConfErrorCategory::Signature, "The source file has been modified while writing the signed version."_el};
         }
-        destinationPath.content().writeTextOrThrow(
-            text::String{output}, path::PathWriteTextOptions{text::StringEncoding::Utf8});
+        destinationPath.content().writeTextOrThrow(output, PathWriteTextOptions{StringEncoding::Utf8});
     } catch (const ConfError &) {
         throw;
-    } catch (const path::PathError &) {
+    } catch (const PathError &) {
         throw ConfError{
             ConfErrorCategory::IO,
             "Writing the Signed Configuration Failed"_el,
@@ -131,7 +130,7 @@ void Signer::writeSignedFile(
     }
 }
 
-auto Signer::writeConfiguration(text::StringEditor &output, const path::Path &sourcePath) -> mem::ByteBlock {
+auto Signer::writeConfiguration(StringEditor &output, const Path &sourcePath) -> mem::ByteBlock {
     // Reopen the source.
     auto source = Source::fromFile(sourcePath);
     source->open();

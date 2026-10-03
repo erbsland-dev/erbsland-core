@@ -177,8 +177,8 @@ The page title uses matching ``*`` adornments above and below it.
 Structural Validation
 =====================
 
-Run ``.venv/bin/python3 utilities/run.py api_guidelines`` to validate all domain-specific pages.
-The same check runs as part of ``pre_commit``.
+Run ``./erbsland-core-tool doc-api-guidelines`` to validate all domain-specific pages.
+The same check runs as part of ``pre-commit``.
 Each domain-specific page is limited to 500 lines so it remains an at-a-glance overview rather than an API reference.
 
 Anti-Patterns

@@ -66,10 +66,9 @@ public:
     /// Access one character without bounds checking.
     [[nodiscard]] auto operator[](BlockIndex index) const noexcept -> Block;
     /// Access one character with bounds checking.
-    /// @param index The local character index.
+    /// @param index The local character index. Must be inside the visible range.
     /// @param typeName The public type name to use in the exception message.
     /// @return A copy of the character at `index`.
-    /// @throws err::OutOfRangeError If `index` is outside the visible range.
     [[nodiscard]] auto at(BlockIndex index, const text::StringLiteral &typeName) const -> Block;
     /// Count fully styled character matches.
     [[nodiscard]] auto count(const Block &character) const noexcept -> BlockCount;

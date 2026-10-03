@@ -6,13 +6,18 @@
 
 #include "../ManagedEventThread.hpp"
 
+#include <utility>
+
 namespace erbsland::event::impl {
 
 /// Managed event-thread implementation backed by an event-thread base.
 class ManagedEventThread final : public event::ManagedEventThread, private EventThreadBase {
 public:
     /// Create an inactive managed event thread.
-    ManagedEventThread() = default;
+    /// @param options Copied capacity and error policies. Policies must be valid and supported by the failure handler.
+    /// @param failureHandler Weak managed-application failure delivery.
+    explicit ManagedEventThread(const EventLoopOptions &options = {}, EventLoop::FailureHandler failureHandler = {}) :
+        EventThreadBase{options, std::move(failureHandler)} {}
     /// Stop and release the managed event thread.
     ~ManagedEventThread() noexcept override;
 

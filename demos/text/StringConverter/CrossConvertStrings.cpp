@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/U8String.hpp>
 
 #include <string>
 #include <string_view>

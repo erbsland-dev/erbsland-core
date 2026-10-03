@@ -4,7 +4,7 @@
 
 #include "HostLookup.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 namespace erbsland::network::impl {
@@ -29,7 +29,7 @@ auto HostLookupEventEditor::onFinal(NetworkEventFn callback) -> network::HostLoo
 auto HostLookupEventEditor::lookup() const -> std::shared_ptr<HostLookup> {
     const auto result = std::dynamic_pointer_cast<HostLookup>(source());
     if (result == nullptr) {
-        throw err::LogicError{"The event editor source is not a host lookup."_el};
+        throw err::LogicFailure{"The event editor source is not a host lookup."_el};
     }
     return result;
 }

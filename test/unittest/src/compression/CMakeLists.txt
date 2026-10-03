@@ -12,6 +12,7 @@ target_sources(erbsland-core-unittest PRIVATE
         CompressionRatioTest.cpp
         CompressionStreamingTest.cpp
         ZipArchiveIoTest.cpp
+        ZipArchiveMalformedTest.cpp
         ZipArchiveTest.cpp
         ZipTestStreams.hpp
         ZstandardInternalTest.cpp

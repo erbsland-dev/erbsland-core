@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
+#include <erbsland/EncodingError.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/re/Match.hpp>
-#include <erbsland/re/RegEx.hpp>
 #include <erbsland/re/StdFormat.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/stream/TextInputStream.hpp>
-#include <erbsland/text/EncodingError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/RegEx.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/TextInputStream.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>
@@ -74,7 +74,7 @@ private:
             _readCount += 1U;
             return {el::stream::StreamReadStatus::Data, _text.readCharAndAdvance(_position)};
         }
-        [[nodiscard]] auto read(const el::unit::CpLength maximum)
+        [[nodiscard]] auto read(const el::unit::CpCount maximum)
             -> el::stream::StreamReadResult<el::text::String> override {
             auto result = el::text::StringEditor{};
             while (result.characterLength() < maximum) {
@@ -92,11 +92,11 @@ private:
             }
             return {el::stream::StreamReadStatus::Data, std::move(result)};
         }
-        [[nodiscard]] auto readLine(const el::unit::CpLength maximum)
+        [[nodiscard]] auto readLine(const el::unit::CpCount maximum)
             -> el::stream::StreamReadResult<el::text::String> override {
             return read(maximum);
         }
-        [[nodiscard]] auto readAll(const el::unit::CpLength maximum)
+        [[nodiscard]] auto readAll(const el::unit::CpCount maximum)
             -> el::stream::StreamReadResult<el::text::String> override {
             return read(maximum);
         }
@@ -182,8 +182,8 @@ public:
     void testInvalidAndTimeoutStreamsFailExplicitly() {
         const auto expression = RegEx::compile("a"_el);
         const auto nullStream = el::stream::TextInputStreamPtr{};
-        REQUIRE_THROWS_AS(el::err::ParameterError, expression->match(nullStream));
-        REQUIRE_THROWS_AS(el::err::ParameterError, expression->match(createStream("a"_el, false)));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, expression->match(nullStream));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, expression->match(createStream("a"_el, false)));
         REQUIRE_THROWS_AS(el::stream::StreamError, expression->match(createStream("a"_el, true, true)));
     }
 

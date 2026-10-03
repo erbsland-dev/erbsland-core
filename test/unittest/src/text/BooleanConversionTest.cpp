@@ -1,14 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -96,7 +97,7 @@ public:
     }
 
     void testInvalidBooleanLiterals() {
-        const auto cases = std::vector<String>{
+        const auto cases = StringList{
             {},
             "oo"_el,
             "yep"_el,
@@ -121,14 +122,13 @@ public:
     }
 
     void testBooleanLiteralsInSlices() {
-        WITH_CONTEXT(requireValue(String{"--TrUe++"_el}.slice(ByteRange{ByteIndex{2U}, ByteLength{4U}}), true));
-        WITH_CONTEXT(requireValue(StringEditor{"--FaLsE++"_el}.slice(ByteRange{ByteIndex{2U}, ByteLength{5U}}), false));
+        WITH_CONTEXT(requireValue(String{"--TrUe++"_el}.slice({ByteIndex{2U}, ByteCount{4U}}), true));
+        WITH_CONTEXT(requireValue(StringEditor{"--FaLsE++"_el}.slice({ByteIndex{2U}, ByteCount{5U}}), false));
+        WITH_CONTEXT(requireValue(U16String{u"--EnAbLeD++"_el}.slice(U16Range{U16Index{2U}, U16Count{7U}}), true));
         WITH_CONTEXT(
-            requireValue(U16String{u"--EnAbLeD++"_el}.slice(U16DataRange{U16DataIndex{2U}, U16DataLength{7U}}), true));
-        WITH_CONTEXT(requireValue(
-            U16StringEditor{u"--DiSaBlEd++"_el}.slice(U16DataRange{U16DataIndex{2U}, U16DataLength{8U}}), false));
-        WITH_CONTEXT(requireValue(U32String{U"--YeS++"_el}.slice(CpRange{CpIndex{2U}, CpLength{3U}}), true));
-        WITH_CONTEXT(requireValue(U32StringEditor{U"--OfF++"_el}.slice(CpRange{CpIndex{2U}, CpLength{3U}}), false));
+            requireValue(U16StringEditor{u"--DiSaBlEd++"_el}.slice(U16Range{U16Index{2U}, U16Count{8U}}), false));
+        WITH_CONTEXT(requireValue(U32String{U"--YeS++"_el}.slice(CpRange{CpIndex{2U}, CpCount{3U}}), true));
+        WITH_CONTEXT(requireValue(U32StringEditor{U"--OfF++"_el}.slice(CpRange{CpIndex{2U}, CpCount{3U}}), false));
     }
 
     void testMalformedEncodingIsInvalid() {

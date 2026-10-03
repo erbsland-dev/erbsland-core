@@ -9,12 +9,14 @@
 
 #include <cstddef>
 #include <exception>
+#include <optional>
+#include <utility>
 #include <vector>
 
 namespace erbsland::text::impl {
 
 /// A preprocessed decoded-character pattern for linear-time string searches.
-/// @tested{U8StringReadToolsTest U16StringTest U32StringTest}
+/// @tested{U8StringReadToolsTest U16StringTest U32StringTest StringSeparatorSplitTest}
 class DecodedStringSearch final {
 private:
     /// One decoded pattern character and its longest matching prefix length.
@@ -25,11 +27,15 @@ private:
 
 public:
     /// Decode and preprocess a search pattern.
+    /// @tparam tIndex The index type used in native text indices.
+    /// @tparam tReadNext The type for the decode function.
     /// @param maximumLength Upper bound for the number of decoded characters.
     /// @param start The native index at which the pattern starts.
     /// @param readNext A function that decodes one character and advances its native index, or returns end-of-data.
+    /// @param compareFn An optional comparison function for decoded characters (defaults to equality).
     template <typename tIndex, typename tReadNext>
-    DecodedStringSearch(std::size_t maximumLength, tIndex start, tReadNext readNext, CharCompareFn compareFn) :
+    DecodedStringSearch(
+        const std::size_t maximumLength, tIndex start, tReadNext readNext, const CharCompareFn compareFn) :
         _compareFn{compareFn} {
         _pattern.reserve(maximumLength);
         while (true) {
@@ -92,6 +98,44 @@ public:
         }
     }
 
+    /// Find both native boundaries without decoding the source prefix again.
+    /// The reader may advance or retreat; returned boundaries follow that traversal order.
+    /// @tparam tIndex The native index type.
+    /// @tparam tReadNext The decoded reader function type.
+    /// @param start The initial stream boundary.
+    /// @param readNext Read one character and move its index, or return end-of-data.
+    /// @return The entry and exit boundaries of the first match, or no value.
+    template <typename tIndex, typename tReadNext>
+    [[nodiscard]] auto findRange(const tIndex start, tReadNext readNext) const
+        -> std::optional<std::pair<tIndex, tIndex>> {
+        if (_pattern.empty()) {
+            return std::pair{start, start};
+        }
+        auto boundaries = std::vector<tIndex>(_pattern.size());
+        auto nextBoundary = std::size_t{};
+        auto matchedLength = std::size_t{};
+        auto position = start;
+        while (true) {
+            boundaries[nextBoundary] = position;
+            const auto character = readNext(position);
+            if (character.isEndOfData()) {
+                return std::nullopt;
+            }
+            if (++nextBoundary == boundaries.size()) {
+                nextBoundary = 0U;
+            }
+            while (matchedLength > 0U && !charactersEqual(character, _pattern[matchedLength].character)) {
+                matchedLength = _pattern[matchedLength - 1U].prefixLength;
+            }
+            if (charactersEqual(character, _pattern[matchedLength].character)) {
+                ++matchedLength;
+            }
+            if (matchedLength == _pattern.size()) {
+                return std::pair{boundaries[nextBoundary], position};
+            }
+        }
+    }
+
     /// Count non-overlapping pattern occurrences in a decoded character stream.
     /// @param start The native stream index at which to start searching.
     /// @param readNext A function that decodes one character and advances its native index, or returns end-of-data.
@@ -125,7 +169,7 @@ public:
 
 private:
     /// Test if two characters compare as equal.
-    [[nodiscard]] auto charactersEqual(Char left, Char right) const noexcept -> bool {
+    [[nodiscard]] auto charactersEqual(const Char left, const Char right) const noexcept -> bool {
         return _compareFn == nullptr ? left == right : _compareFn(left, right) == std::strong_ordering::equal;
     }
 

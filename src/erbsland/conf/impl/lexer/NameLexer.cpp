@@ -16,6 +16,7 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 void NameLexer::initialize() {
@@ -26,7 +27,7 @@ void NameLexer::initialize() {
 }
 
 auto NameLexer::next() -> Name {
-    _decoder.advanceWhile(text::AsciiCategory::Blank);
+    _decoder.advanceWhile(AsciiCategory::Blank);
     bool readSeparator = false;
     if (_decoder.character().isEndOfData()) {
         return {}; // Coverage: This prevents misuse and is not used for correct operation.
@@ -36,7 +37,7 @@ auto NameLexer::next() -> Name {
             _decoder.throwSyntaxError("The name path must not start with a separator."_el);
         }
         _decoder.next();
-        _decoder.advanceWhile(text::AsciiCategory::Blank); // Ignore spacing after the separator.
+        _decoder.advanceWhile(AsciiCategory::Blank); // Ignore spacing after the separator.
         if (_decoder.character().isEndOfData()) {
             _decoder.throwUnexpectedEndOfDataError("Name path must not end with a separator."_el);
         }
@@ -67,7 +68,7 @@ auto NameLexer::next() -> Name {
 }
 
 void NameLexer::expectNameSeparatorOrEnd() {
-    _decoder.advanceWhile(text::AsciiCategory::Blank);
+    _decoder.advanceWhile(AsciiCategory::Blank);
     if (!(_decoder.character() == nc::namePathSeparator || _decoder.character().isEndOfData())) {
         _decoder.throwSyntaxError(
             "Unexpected character after the last element. Expected name separator or the end of the path."_el);
@@ -75,7 +76,7 @@ void NameLexer::expectNameSeparatorOrEnd() {
 }
 
 void NameLexer::expectNameSeparatorIndexOrEnd() {
-    _decoder.advanceWhile(text::AsciiCategory::Blank);
+    _decoder.advanceWhile(AsciiCategory::Blank);
     if (!(_decoder.character() == nc::namePathSeparator || _decoder.character() == nc::openingSquareBracket ||
             _decoder.character().isEndOfData())) {
         _decoder.throwSyntaxError(
@@ -85,10 +86,10 @@ void NameLexer::expectNameSeparatorIndexOrEnd() {
 
 auto NameLexer::expectGenericIndex() -> std::size_t {
     _decoder.next(); // Skip the opening bracket.
-    _decoder.advanceWhile(text::AsciiCategory::Blank);
+    _decoder.advanceWhile(AsciiCategory::Blank);
     auto result =
-        lexer::parseNumber(_decoder, text::IntegerBase::Decimal, lexer::Sign::Positive, lexer::NumberSeparators::Yes);
-    _decoder.advanceWhile(text::AsciiCategory::Blank);
+        lexer::parseNumber(_decoder, IntegerBase::Decimal, lexer::Sign::Positive, lexer::NumberSeparators::Yes);
+    _decoder.advanceWhile(AsciiCategory::Blank);
     if (_decoder.character() != nc::closingSquareBracket) {
         _decoder.throwSyntaxError("An index must end with a closing bracket."_el);
     }
@@ -112,7 +113,7 @@ auto NameLexer::expectRegularName() -> Name {
 
 auto NameLexer::expectTextNameOrIndex() -> Name {
     _decoder.next(); // Skip the opening quote.
-    text::StringEditor text;
+    StringEditor text;
     lexer::parseText(_decoder, text);
     if (text.isEmpty()) { // empty string? must be a text index.
         if (_decoder.character() != nc::openingSquareBracket) {

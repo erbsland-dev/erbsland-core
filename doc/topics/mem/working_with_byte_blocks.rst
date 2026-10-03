@@ -13,8 +13,8 @@ Most binary data in an application needs a stable owner, but it does not need to
 This page explains how the two types work together, how copy-on-write affects their cost, and how to read, edit, retain,
 and compare byte data without giving up clear ownership.
 
-One Storage, Several Values
-===========================
+Shared ByteBlock Storage and Copy-on-Write
+==========================================
 
 Copying a :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` copies a small value that shares the underlying storage.
 The bytes themselves are not copied.
@@ -44,7 +44,7 @@ allocation from remaining alive.
 .. erbsland-demo::
     :source: mem/ByteBlock/SlicingBlocks.cpp
     :exec: mem/byte_block --demo SlicingBlocks
-    :source-sha256: a20e4b20e86db6182590b37929fb0eedc038f18ff292ad6c70150b6e3c02622c
+    :sha256: c7c5303c1e9fea82bef9e6e04cb7669f1290d40005d1bf6ff001f55e513417b4
 
 .. code-block:: cpp
 
@@ -56,7 +56,7 @@ allocation from remaining alive.
     void slicingBlocks() {
         const auto completeTree = el::ByteBlock{
             el::Byte{1U}, el::Byte{2U}, el::Byte{3U}, el::Byte{5U}, el::Byte{8U}, el::Byte{13U}, el::Byte{21U}};
-        const auto branchRange = el::ByteRange{el::ByteIndex{2U}, el::ByteLength{3U}};
+        const auto branchRange = el::ByteRange{el::ByteIndex{2U}, el::ByteCount{3U}};
 
         // Share the original allocation when the source and branch have similar lifetimes.
         const auto sharedBranch = completeTree.slice(branchRange);
@@ -72,19 +72,21 @@ allocation from remaining alive.
         el::io::printLine("Explicit copy      : "_el, el::ByteFormat::separated(), explicitCopy);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill tree         : Arbre du veilleur
-    Complete tree      : 01 02 03 05 08 0d 15
-    Shared branch      : 03 05 08
-    Compact branch     : 03 05 08
-    Explicit copy      : 03 05 08
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill tree         : Arbre du veilleur
+        Complete tree      : 01 02 03 05 08 0d 15
+        Shared branch      : 03 05 08
+        Compact branch     : 03 05 08
+        Explicit copy      : 03 05 08␛[0m
 
 .. erbsland-demo-end::
 
-Choosing the Right Owner
-========================
+ByteBlock Ownership and Other Byte Containers
+=============================================
 
 A :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` is the usual application-level byte value.
 It is immutable from the holder's perspective, easy to share, and well suited to parameters, return values, stored
@@ -131,7 +133,7 @@ Converting either form to ``ByteBlock`` is implicit and does not copy its bytes.
 .. erbsland-demo::
     :source: mem/ByteBlock/CreatingBlocks.cpp
     :exec: mem/byte_block --demo CreatingBlocks
-    :source-sha256: c230b0f44830c4fdcad6ba5c46e78034cf20ee24524422615cce1fa428ecd853
+    :sha256: 76fd9dd4d63830881ed3226c17af283a670334f6edceacb2f85e6fe10f96ee05
 
 .. code-block:: cpp
 
@@ -144,7 +146,7 @@ Converting either form to ``ByteBlock`` is implicit and does not copy its bytes.
         static constexpr auto compiledSkills = el::ByteBlockLiteral::fromValues<34U, 55U, 89U>();
 
         // Create blocks with a repeated value and with individual skill bytes.
-        const auto emptySlots = el::ByteBlock{el::ByteLength{4U}, el::Byte{0U}};
+        const auto emptySlots = el::ByteBlock{el::ByteCount{4U}, el::Byte{0U}};
         const auto learnedSkills = el::ByteBlock{el::Byte{1U}, el::Byte{3U}, el::Byte{8U}};
 
         // Copy fixed arrays, borrowed spans, and standard vectors into owned blocks.
@@ -171,22 +173,24 @@ Converting either form to ``ByteBlock`` is implicit and does not copy its bytes.
         el::io::printLine("Editor as block    : "_el, el::ByteFormat::separated(), immutableSkills);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Character          : Gardienne des brumes
-    Empty slots        : 00 00 00 00
-    Learned skills     : 01 03 08
-    From fixed array   : 02 05 0d
-    From borrowed span : 15 22 37
-    From vector        : 59 90
-    From static literal: 22 37 59
-    Editor as block    : 01 02 03
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCharacter          : Gardienne des brumes
+        Empty slots        : 00 00 00 00
+        Learned skills     : 01 03 08
+        From fixed array   : 02 05 0d
+        From borrowed span : 15 22 37
+        From vector        : 59 90
+        From static literal: 22 37 59
+        Editor as block    : 01 02 03␛[0m
 
 .. erbsland-demo-end::
 
-Recognizing Binary Structure
-============================
+Byte Prefix, Suffix, Containment, and Search Operations
+=======================================================
 
 Binary formats often begin with a marker, end with a trailer, or contain a delimiter.
 :cpp:func:`startsWith() <erbsland::mem::ByteBlock::startsWith>`,
@@ -204,7 +208,7 @@ object.
 .. erbsland-demo::
     :source: mem/ByteBlock/InspectingContents.cpp
     :exec: mem/byte_block --demo InspectingContents
-    :source-sha256: fde66db0d0c29b6087b1fed9e809797a05f6767fcb7b5e497ff8be4a36324442
+    :sha256: bb7b6a8f0eaf06cf1eb5e192c59ad135c498264b9a8dc0003fd538e91a9acd60
 
 .. code-block:: cpp
 
@@ -234,17 +238,19 @@ object.
         el::io::printLine("Last unlock index  : "_el, lastUnlock.toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill path         : Voie des brumes
-    Byte count         : 4
-    Path is empty      : no
-    Expected root      : yes
-    Mastery ending     : yes
-    Contains unlock    : yes
-    First unlock index : 1
-    Last unlock index  : 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill path         : Voie des brumes
+        Byte count         : 4
+        Path is empty      : no
+        Expected root      : yes
+        Mastery ending     : yes
+        Contains unlock    : yes
+        First unlock index : 1
+        Last unlock index  : 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -255,7 +261,7 @@ Choose tolerant or strict access according to the meaning of a missing byte.
 :cpp:func:`get() <erbsland::mem::ByteBlock::get>` returns a chosen fallback when the index is invalid or beyond the end.
 That is convenient for an optional field.
 :cpp:func:`getOrThrow() <erbsland::mem::ByteBlock::getOrThrow>` raises
-:cpp:class:`OutOfRangeError <erbsland::err::OutOfRangeError>` when a required layout invariant is broken.
+:cpp:class:`OutOfRangeError <erbsland::err::OutOfRangeError>` when the requested byte is absent, allowing callers to handle incomplete input.
 
 :cpp:func:`endIndex() <erbsland::mem::ByteBlock::endIndex>` names the position immediately after the final byte.
 For complete traversal, :cpp:func:`forEach() <erbsland::mem::ByteBlock::forEach>` invokes a callback with each byte and,
@@ -265,7 +271,7 @@ The returned :cpp:enum:`LoopResult <erbsland::util::LoopResult>` also allows cal
 .. erbsland-demo::
     :source: mem/ByteBlock/AccessingBytes.cpp
     :exec: mem/byte_block --demo AccessingBytes
-    :source-sha256: 688c2bbdfbca115966acb21ba8b4133d2370e58c78dd4075b1f1404c0cef2868
+    :sha256: 4ae316a8d1802d94c2764e953ca8dc72a1a0888b9495807ce3d7c41fde64127a
 
 .. code-block:: cpp
 
@@ -294,15 +300,17 @@ The returned :cpp:enum:`LoopResult <erbsland::util::LoopResult>` also allows cal
         el::io::printLine("Visited all bytes  : "_el, el::BooleanFormat::yesNo(), visitResult == el::LoopResult::Success);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill tree         : Sentier du lynx
-    End index          : 4
-    Missing fallback   : 255
-    Mastery cost       : 13
-    Total cost         : 29
-    Visited all bytes  : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill tree         : Sentier du lynx
+        End index          : 4
+        Missing fallback   : 255
+        Mastery cost       : 13
+        Total cost         : 29
+        Visited all bytes  : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -323,7 +331,7 @@ For wire formats whose signedness or encoded width differs from a native type, i
 .. erbsland-demo::
     :source: mem/ByteBlock/ReadingIntegers.cpp
     :exec: mem/byte_block --demo ReadingIntegers
-    :source-sha256: 4e2d240eb3e1ed163d149dc43c3566038c6d02e4bccb4f9cffe546d87d43b5d7
+    :sha256: e9d7956128f74428cdc83dbc3dec7499059066254ad541e198f33535599f76e3
 
 .. code-block:: cpp
 
@@ -360,20 +368,22 @@ For wire formats whose signedness or encoded width differs from a native type, i
         el::io::printLine("Fallback prestige  : "_el, fallback);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Character          : Éclaireuse lunaire
-    Rank               : 4660
-    Experience         : 300
-    Prestige available : no
-    Preserved prestige : 7
-    Fallback prestige  : 99
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCharacter          : Éclaireuse lunaire
+        Rank               : 4660
+        Experience         : 300
+        Prestige available : no
+        Preserved prestige : 7
+        Fallback prestige  : 99␛[0m
 
 .. erbsland-demo-end::
 
-Crossing Container Boundaries
-=============================
+Converting ByteBlocks to Buffers, Vectors, and Spans
+====================================================
 
 Keep a block as a block while data remains inside APIs that understand Erbsland Core byte types.
 At a boundary that specifically requires another owner,
@@ -389,7 +399,7 @@ the lower-cost boundary, provided the block outlives the span.
 .. erbsland-demo::
     :source: mem/ByteBlock/ConvertingBlocks.cpp
     :exec: mem/byte_block --demo ConvertingBlocks
-    :source-sha256: 5afa11cbf46728a3c4b01a42b788f36f83ee8a31b29fa9787a4108fb84f50d5f
+    :sha256: fe5511ee0e63ada24fb5794a07a7a72598b1023cee17c20bd1cb30b78f31205f
 
 .. code-block:: cpp
 
@@ -415,14 +425,16 @@ the lower-cost boundary, provided the block outlives the span.
         el::io::printLine("Character vector len: "_el, characterBytes.size());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill branch       : Arc ancien
-    Original block     : 41 72 63
-    Mutable buffer     : 61 72 63
-    Unsigned vector len: 3
-    Character vector len: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill branch       : Arc ancien
+        Original block     : 41 72 63
+        Mutable buffer     : 61 72 63
+        Unsigned vector len: 3
+        Character vector len: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -453,7 +465,7 @@ The ranged XOR overload remains a clamped, partial operation.
 .. erbsland-demo::
     :source: mem/ByteBlock/EditingBlocks.cpp
     :exec: mem/byte_block --demo EditingBlocks
-    :source-sha256: de9b923324f05c649d19490a89cf1fe7ac38eb627f83e788fa46ac065433a62d
+    :sha256: 18387678cbef4086ec9ad32f122ac2a26d696562b6a1cc8835f4cbf57469bc6a
 
 .. code-block:: cpp
 
@@ -472,24 +484,26 @@ The ranged XOR overload remains a clamped, partial operation.
             .appendInteger(uint16_t{0x1234U}, el::Endianness::Big);
 
         // Adjust selected fields without changing the overall size.
-        build.replace(el::ByteRange{el::ByteIndex{2U}, el::ByteLength{1U}}, el::ByteBlock{el::Byte{0x22U}});
+        build.replace(el::ByteRange{el::ByteIndex{2U}, el::ByteCount{1U}}, el::ByteBlock{el::Byte{0x22U}});
         build.overwrite(el::ByteIndex{3U}, el::ByteArray{el::Byte{0x33U}, el::Byte{0x44U}}.span());
-        build.fill(el::ByteRange{el::ByteIndex{5U}, el::ByteLength{1U}}, el::Byte{0x55U});
+        build.fill(el::ByteRange{el::ByteIndex{5U}, el::ByteCount{1U}}, el::Byte{0x55U});
 
         // Remove a retired node, keep the record payload, and apply an equal-size mask.
-        build.remove(el::ByteRange{el::ByteIndex{1U}, el::ByteLength{1U}});
-        build.keep(el::ByteRange{el::ByteIndex{0U}, el::ByteLength{6U}});
-        build.xorWithOrThrow(el::ByteBlock{el::ByteLength{6U}, el::Byte{0x0fU}});
+        build.remove(el::ByteRange{el::ByteIndex{1U}, el::ByteCount{1U}});
+        build.keep(el::ByteRange{el::ByteIndex{0U}, el::ByteCount{6U}});
+        build.xorWithOrThrow(el::ByteBlock{el::ByteCount{6U}, el::Byte{0x0fU}});
 
         el::io::printLine("Skill build        : Gardien des étoiles"_el);
         el::io::printLine("Encoded build      : "_el, el::ByteFormat::separated(), el::ByteBlock{build});
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill build        : Gardien des étoiles
-    Encoded build      : 1f 2d 3c 4b 5a 1d
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill build        : Gardien des étoiles
+        Encoded build      : 1f 2d 3c 4b 5a 1d␛[0m
 
 .. erbsland-demo-end::
 
@@ -512,7 +526,7 @@ series of changes.
 .. erbsland-demo::
     :source: mem/ByteBlock/ManagingStorage.cpp
     :exec: mem/byte_block --demo ManagingStorage
-    :source-sha256: cb835b833a224d7f11e74dc88c03a6771fb4ee739a348017487808b6dbc5794f
+    :sha256: daa96ce1f23aa6db2a8e8de99e115c057d40e2f3ed77e1e75bfb246f478ea825
 
 .. code-block:: cpp
 
@@ -525,14 +539,14 @@ series of changes.
         auto path = el::ByteBlockEditor{el::Byte{1U}, el::Byte{2U}, el::Byte{3U}};
 
         // Reserve working room and grow the visible block with zero-filled bytes.
-        path.reserve(el::ByteLength{32U});
+        path.reserve(el::ByteCount{32U});
         const auto reservedCapacity = path.capacity();
-        path.resize(el::ByteLength{6U});
+        path.resize(el::ByteCount{6U});
 
         // Preserve a read-only snapshot and detach before a sequence of edits.
         const auto snapshot = el::ByteBlock{path};
         path.detach();
-        path.fill(el::ByteRange{el::ByteIndex{3U}, el::ByteLength{3U}}, el::Byte{9U});
+        path.fill(el::ByteRange{el::ByteIndex{3U}, el::ByteCount{3U}}, el::Byte{9U});
         path.shrinkToFit();
 
         el::io::printLine("Skill path         : Discipline astrale"_el);
@@ -548,16 +562,18 @@ series of changes.
         el::io::printLine("Capacity after reset: "_el, path.capacity().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill path         : Discipline astrale
-    Reserved capacity  : 48
-    Edited bytes       : 01 02 03 09 09 09
-    Snapshot bytes     : 01 02 03 00 00 00
-    Tight capacity     : 6
-    Capacity after clear: 6
-    Capacity after reset: 0
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill path         : Discipline astrale
+        Reserved capacity  : 48
+        Edited bytes       : 01 02 03 09 09 09
+        Snapshot bytes     : 01 02 03 00 00 00
+        Tight capacity     : 6
+        Capacity after clear: 6
+        Capacity after reset: 0␛[0m
 
 .. erbsland-demo-end::
 
@@ -576,7 +592,7 @@ already validated length.
 .. erbsland-demo::
     :source: mem/ByteBlock/ComparingBlocks.cpp
     :exec: mem/byte_block --demo ComparingBlocks
-    :source-sha256: 3da1a046ab7aa8fc611695c357ec65f75af081f87813edbb26bb33309a1cd150
+    :sha256: 13ace7066aa18c45f229e3c8b2e86b4ec2a362d3123f9b6d3739b2c13a76e90d
 
 .. code-block:: cpp
 
@@ -605,13 +621,15 @@ already validated length.
         el::io::printLine("Different token    : "_el, el::BooleanFormat::yesNo(), differentToken);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Build              : Apprentie des runes
-    Same build         : yes
-    Sorts before adept : yes
-    Matching token     : yes
-    Different token    : no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBuild              : Apprentie des runes
+        Same build         : yes
+        Sorts before adept : yes
+        Matching token     : yes
+        Different token    : no␛[0m
 
 .. erbsland-demo-end::

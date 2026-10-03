@@ -17,13 +17,14 @@ This is especially important when throwing exceptions or comparing against stati
 Scope and Exceptions
 ====================
 
-In headers and templates, a ``throw...Error(std::string_view text)`` wrapper is accepted if using the Erbsland Core string
-types would add an unnecessary include dependency to the public API.
-Files with ``Windows`` or ``Posix`` in their names are centrally excluded from this rule because they primarily contain
-native API integration code where narrow C strings are expected.
-These files still require manual inspection.
-Plain narrow literals are also correct inside ``static_assert`` and ``assert`` expressions and as messages in the
-standard ``deprecated`` attribute.
+* In headers and templates, ``throw...Error`` and ``throw...Failure`` wrappers taking ``std::string_view`` are
+  accepted inside the ``erbsland::text`` namespace for string methods that would create a circular dependency.
+  Both the reason and parameter-name literals are accepted for ``throwParameterFailure(reason, parameterName)``
+  and ``ParameterFailure{reason, parameterName}``.
+* Files with ``Windows`` or ``Posix`` in their names are centrally excluded from this rule because they primarily
+  contain native API integration code where narrow C strings are expected. These files still require manual inspection.
+* Plain narrow literals are also correct inside ``static_assert`` and ``assert`` expressions and as messages in the
+  standard ``deprecated`` attribute.
 
 Correct Solution
 ================

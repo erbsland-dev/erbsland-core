@@ -7,3 +7,5 @@ erbsland_core_add_demo(option_help_documents)
 target_sources(option_help_documents PRIVATE
         main.cpp
 )
+
+erbsland_core_display_text(TARGET option_help_documents FILE DisplayTextDemo.elcl NAMESPACE demo)

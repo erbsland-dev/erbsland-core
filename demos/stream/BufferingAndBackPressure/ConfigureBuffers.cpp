@@ -1,6 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/InputStreamSettings.hpp>
+#include <erbsland/OutputStreamSettings.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathReadTextOptions.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamBuffering.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -25,7 +34,7 @@ void openCellImagingStreams(const el::Path &sourcePath, const el::Path &targetPa
     const auto input = sourcePath.content().openTextInputStream(readOptions);
 
     auto outputSettings = el::OutputStreamSettings{};
-    outputSettings.setBuffering(el::StreamBuffering::Throughput).setBackBufferLimit(el::ByteLength{32U * 1024U});
+    outputSettings.setBuffering(el::StreamBuffering::Throughput).setBackBufferLimit(el::ByteCount{32U * 1024U});
     auto writeOptions = el::PathWriteTextOptions{};
     writeOptions.setStreamSettings(outputSettings);
     const auto output = targetPath.content().openTextOutputStream(writeOptions);

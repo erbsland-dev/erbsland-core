@@ -4,7 +4,9 @@
 #include <DemoCommon.hpp>
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/cterm/TerminalDocumentRenderer.hpp>
-#include <erbsland/text/html/HtmlParser.hpp>
+#include <erbsland/cterm/TerminalDocumentStyle.hpp>
+#include <erbsland/html/HtmlParser.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

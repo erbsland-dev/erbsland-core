@@ -64,13 +64,22 @@ Setup and Thread Safety
 Create an ``Environment``, add one or more loaders, and optionally enable automatic reload before the first render.
 Loader, filter, and syntax setup is not thread-safe and becomes immutable at the first render.
 ``render()`` and ``setGlobalContext()`` are thread-safe.
+Each render retains its compiled layout generation and global context snapshot before executing the layout.
+Replacing the global context does not change renders that already captured the previous context.
+Value and filter callbacks execute without an environment lock held.
 
 Register application filters with ``addFilter()`` before the first render.
 A ``FilterFn`` receives one immutable ``ValueList`` and returns one ``Value``.
 Item zero is the resolved piped value; items one and two, when present, are the optional positional arguments in source
 order.
-The compiler evaluates those arguments once from left to right, while each application callback validates the list size
-and all value types it accepts.
+Arguments are evaluated once from left to right during rendering, and each application callback validates the list size
+and all value types it accepts before using typed accessors.
+Prefer ``RenderError`` with category ``Runtime`` when a filter rejects template arguments.
+Supply a short title and explanatory description through ``RenderErrorContext``; leave layout, origin, and location
+unset so the renderer can attach the callback's template location.
+``err::ParseError`` is a suitable fallback for malformed input; the renderer wraps it in ``RenderError`` with category
+``Runtime`` and preserves it as the cause.
+Argument validation can depend on render context values, so it does not run during template parsing.
 Filter callbacks can run concurrently and must provide their own synchronization for captured mutable state.
 Filter names are ASCII identifiers.
 Application filters can replace ordinary built-ins, but duplicate application registrations are rejected.
@@ -79,6 +88,21 @@ The names ``escape``, ``e``, and ``safe`` are reserved output modifiers.
 The local ``Context`` supplied to ``render()`` takes precedence over the current global context snapshot.
 Missing names and missing dotted members become null; null renders as empty text and is false.
 Rendering a list or map directly is an error.
+
+String Collections
+------------------
+
+``Value`` accepts a ``StringList`` or ``StringSet`` directly, including implicit conversion in ``Context::set()``.
+Both constructors create a list of text values: a ``StringList`` retains its order, empty strings, and duplicates; a
+``StringSet`` follows its ordered iteration and contains unique entries.
+An empty collection creates an empty list value.
+Later changes to the source collection do not affect the render value.
+
+.. code-block:: cpp
+
+    auto context = el::render::Context{};
+    context.set("steps"_el, el::StringList{"prepare"_el, "observe"_el, "record"_el});
+    context.set("labels"_el, el::StringSet{"valley"_el, "ridge"_el});
 
 Loader Contract
 ---------------
@@ -100,8 +124,9 @@ The optional prefix is empty or a normalized relative UTF-8 path with ``/`` sepa
 components.
 
 An explicit resource provider is retained through its shared pointer.
-The convenience factory, or a null explicit provider, follows ``core::application().resources()`` and therefore the
-application lifetime.
+The convenience factory, or a null explicit provider, retains the application's resource component without retaining
+unrelated application services.
+The provider remains available until the loader releases it, even if the original application has been destroyed.
 Do not create such an application-backed loader during unsafe static initialization.
 Missing keys return ``std::nullopt`` so later loaders can participate.
 Present data is transparently decompressed, must be valid UTF-8, and reports an error rather than being treated as
@@ -116,6 +141,10 @@ Loader priority applies independently to the root and every included or inherite
 parent can override its embedded counterpart.
 
 Without automatic reload, a layout is loaded and compiled once.
+Cached renders share read access to the cache and global context; they do not repeat layout validation or dependency
+traversal.
+Loading and compilation are serialized separately, so loading another layout does not block cached renders or global
+context replacement.
 With reload enabled, every render recursively checks the current origin, revision, and dependency generations.
 A successfully compiled source or dependency change replaces the affected cache generations.
 An optional dependency appearing or disappearing also republishes its parents.
@@ -127,6 +156,11 @@ Supported Syntax
 Raw text, comments, whitespace markers, and expression, statement, and comment delimiters retain the behavior described
 for the running framework.
 Closing delimiters inside quoted expression strings are treated as literal text.
+An optional third ``Delimiters`` argument enables line tags, for example ``Delimiters{"{%", "%}", "//%"}`` for
+statements.
+A line tag begins after optional spaces or tabs at the start of a source line and ends at its newline or end of source.
+Its indentation and newline are omitted from rendered output; ordinary inline occurrences remain literal text.
+Expression and comment delimiters can also define a line prefix.
 
 Expressions
 ~~~~~~~~~~~
@@ -266,12 +300,16 @@ A third argument is rejected while compiling.
 The ordinary built-ins are:
 
 - text: ``capitalize``, ``lower``, ``upper``, ``trim([characters])``, and ``replace(old, new)``;
-- collections: ``first``, ``last``, ``join([separator [, member]])``, ``length``/``count``, ``reverse``,
+- collections: ``first``, ``last``, ``join([separator [, member]])``, ``batch(size [, fill])``, ``length``/``count``, ``reverse``,
   ``sort([reverse [, case_sensitive]])``, ``keys``, ``values``, and ``items``;
 - numeric: ``abs``, ``round([precision [, common|ceil|floor]])``, ``sum([start])``, ``min``, and ``max``; and
 - general/output: ``default``/``d([replacement [, use_false]])`` and ``tojson([indent])``.
 
 Empty ``first``, ``last``, ``min``, and ``max`` produce null.
+``batch`` requires a list and a positive integer size.
+It returns a list of lists in input order; the final list is shorter when necessary, unless a non-null ``fill`` value
+pads it to the requested size.
+Empty input produces no batches.
 ``tojson`` accepts indentation from zero through 16 and returns ordinary unsafe text; use ``|tojson|safe`` for a raw
 JSON insertion.
 
@@ -316,6 +354,8 @@ A whitespace marker removes adjacent ASCII whitespace; no other source whitespac
 Layout names use lowercase ASCII letters, digits, ``-``, ``_``, ``.``, and ``/``.
 They are relative, contain no empty, ``.`` or ``..`` component, and contain at most 200 characters.
 
+.. _render-provider-errors:
+
 Errors
 ------
 
@@ -323,8 +363,38 @@ Errors
 snippet, and nested render frames.
 A nested failure preserves the leaf layout, origin, and location and records outer include or inheritance call sites in
 outermost-first order as one-based ``layout:line:column`` frames.
-Loading and callback exceptions are kept as nested causes.
+Loading and callback ``RuntimeError`` exceptions are kept as nested causes.
+Programming errors and resource-exhaustion exceptions propagate unchanged; they are not converted to ``RenderError``.
 Invalid supported operations are strict; only missing value lookup is silent.
+
+Recommendations for application providers:
+
+.. list-table::
+    :header-rows: 1
+    :widths: 30 70
+
+    * - Provider or condition
+      - Recommended result
+    * - Filter or lazy value callback rejects input or cannot produce a required value
+      - Throw ``RenderError`` with category ``Runtime``, a title, and a description.
+    * - Loader cannot find a layout
+      - Return ``std::nullopt`` so the next loader can try.
+    * - Loader encounters a loading failure
+      - Throw ``RenderError`` with category ``Load`` and the requested layout name.
+    * - Existing parsing, lookup, bounds, or I/O operation fails
+      - Allow its specific runtime exception to propagate, such as ``ParseError``, ``NotFoundError``,
+        ``OutOfRangeError``, or ``PathError``. The renderer wraps it and preserves the cause.
+
+For a direct ``RenderError`` from a filter or lazy value callback, the renderer preserves the category, title,
+description, and cause.
+If layout, origin, and location are all unset, it adds the callback's layout, origin, and location.
+An error that already identifies a source keeps that context.
+Use category ``Runtime`` for evaluated arguments and data, even when the callback rejects their syntax; category
+``Syntax`` describes the template language itself.
+Applications should catch ``RenderError`` at the rendering boundary.
+Use ``Failure`` only for programming bugs or fatal resource failures, never for rejected template or context data.
+The separate placeholder ``Source`` and ``Filter`` interfaces use ``ReplacerError`` instead; see
+:doc:`/topics/text_placeholders/extend_placeholders`.
 
 Interface
 =========

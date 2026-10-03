@@ -5,13 +5,15 @@
 #include "impl/hash/HashWorker.hpp"
 #include "impl/hash/HashWorkerFactory.hpp"
 
-#include "../err/LogicError.hpp"
+#include "../err/LogicFailure.hpp"
 #include "../mem/ByteBlock.hpp"
 #include "../text/impl/UnsafeU8StringAccess.hpp"
 
 #include <utility>
 
 namespace erbsland::cryptology {
+
+using namespace mem;
 
 Hasher::Hasher(const HashAlgorithm algorithm) : _worker{impl::createHashWorker(algorithm)} {
 }
@@ -46,20 +48,20 @@ void Hasher::secureErase() {
     _worker->secureErase();
 }
 
-void Hasher::update(const mem::ConstByteSpan data) {
+void Hasher::update(const ConstByteSpan data) {
     workerForWrite().update(data);
 }
 
-void Hasher::update(const mem::ByteBlock &data) {
+void Hasher::update(const ByteBlock &data) {
     workerForWrite().update(data.span());
 }
 
 void Hasher::update(const text::String &text) {
     const auto bytes = text::impl::UnsafeU8StringAccess{text}.dataSpan();
-    workerForWrite().update(mem::toConstByteSpan(bytes));
+    workerForWrite().update(toConstByteSpan(bytes));
 }
 
-auto Hasher::finalize() -> mem::ByteBlock {
+auto Hasher::finalize() -> ByteBlock {
     return workerForWrite().finalize();
 }
 
@@ -73,7 +75,7 @@ auto Hasher::workerForWrite() -> impl::HashWorker & {
 
 void Hasher::requireValid() const {
     if (!isValid()) {
-        throw err::LogicError{"Cannot use an invalid hasher."};
+        throw err::LogicFailure{"Cannot use an invalid hasher."};
     }
 }
 

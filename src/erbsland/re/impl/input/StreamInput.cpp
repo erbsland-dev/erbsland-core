@@ -6,9 +6,10 @@
 
 #include "../error/InternalError.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../stream/StreamReadStatus.hpp"
 #include "../../../text/Literals.hpp"
+#include "../../../text/StringList.hpp"
 #include "../../../unit/ByteIndex.hpp"
 #include "../../CaptureRange.hpp"
 
@@ -16,7 +17,9 @@
 
 namespace erbsland::re::impl {
 
-using namespace text::literals;
+using namespace unit;
+using namespace text;
+using namespace literals;
 
 auto StreamInput::create(const stream::TextInputStreamPtr &stream) -> InputPtr {
     return std::make_shared<StreamInput>(stream);
@@ -24,10 +27,10 @@ auto StreamInput::create(const stream::TextInputStreamPtr &stream) -> InputPtr {
 
 StreamInput::StreamInput(stream::TextInputStreamPtr stream) : _stream{std::move(stream)} {
     if (_stream == nullptr) {
-        throw err::ParameterError{"Input stream cannot be null."_el, "input"_el};
+        throw err::ParameterFailure{"Input stream cannot be null."_el, "input"_el};
     }
     if (!_stream->supportsPositioning()) {
-        throw err::ParameterError{
+        throw err::ParameterFailure{
             "Regular expression matching requires a text stream with positioning support."_el, "input"_el};
     }
 }
@@ -48,8 +51,8 @@ auto StreamInput::peek() -> CharAndPosition {
     return _peekedCharacter.value();
 }
 
-void StreamInput::skip(const unit::CpLength characterCount) {
-    for (auto index = unit::CpLength{}; index < characterCount; ++index) {
+void StreamInput::skip(const CpCount characterCount) {
+    for (auto index = CpCount{}; index < characterCount; ++index) {
         if (read().character.isEndOfData()) {
             return;
         }
@@ -60,11 +63,11 @@ auto StreamInput::createMatch(CaptureGroupList captureGroupList) -> MatchPtr {
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
         !captureGroupList.empty(), "Capture group list must contain at least one element (the whole string)"_el);
     const auto restorePosition = _stream->position();
-    auto content = std::vector<text::String>{};
-    content.reserve(captureGroupList.size());
+    auto content = StringList{};
+    content.reserve(ItemCount{captureGroupList.size(), ItemCount::Unchecked{}});
     try {
         for (const auto &group : captureGroupList) {
-            content.emplace_back(readCapture(group.range()));
+            content.append(readCapture(group.range()));
         }
     } catch (...) {
         setPosition(restorePosition);
@@ -83,17 +86,17 @@ auto StreamInput::readFromStream() -> CharAndPosition {
             "The text stream timed out before it could provide the next character."_el);
     }
     if (result.isFinished()) {
-        return {text::Char::endOfData(), position.toSizeT()};
+        return {Char::endOfData(), position.toSizeT()};
     }
     return {result.data(), position.toSizeT()};
 }
 
-auto StreamInput::readCapture(const CaptureRange &range) -> text::String {
-    const auto begin = unit::ByteIndex::fromSizeT(range.begin());
-    const auto end = unit::ByteIndex::fromSizeT(range.end());
+auto StreamInput::readCapture(const CaptureRange &range) -> String {
+    const auto begin = ByteIndex::fromSizeT(range.begin());
+    const auto end = ByteIndex::fromSizeT(range.end());
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(begin <= end, "Capture group begin index must not exceed end index"_el);
     setPosition(begin);
-    auto content = text::StringEditor{};
+    auto content = StringEditor{};
     while (_stream->position() < end) {
         const auto result = _stream->readChar();
         if (result.isTimeout()) {
@@ -113,7 +116,7 @@ auto StreamInput::readCapture(const CaptureRange &range) -> text::String {
     return content;
 }
 
-void StreamInput::setPosition(const unit::ByteIndex position) {
+void StreamInput::setPosition(const ByteIndex position) {
     if (_stream->setPosition(position).isTimeout()) {
         _stream->throwError(
             "Failed to position text for regular expression matching."_el,

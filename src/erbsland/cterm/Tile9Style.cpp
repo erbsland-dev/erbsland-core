@@ -2,13 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Tile9Style.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <algorithm>
 
 namespace erbsland::cterm {
 
+using namespace text;
 using namespace text::literals;
 
 Tile9Style::Tile9Style(const std::array<Block, 9> tiles) noexcept : Tile9Style(toParsedTiles(tiles)) {
@@ -17,17 +18,17 @@ Tile9Style::Tile9Style(const std::array<Block, 9> tiles) noexcept : Tile9Style(t
 Tile9Style::Tile9Style(const std::array<Block, 16> tiles) noexcept : Tile9Style(toParsedTiles(tiles)) {
 }
 
-Tile9Style::Tile9Style(const std::array<text::Char, 16> tiles, const BlockStyle style) noexcept {
+Tile9Style::Tile9Style(const std::array<Char, 16> tiles, const BlockStyle style) noexcept {
     for (auto index = std::size_t{0}; index < tiles.size(); ++index) {
         _tiles[index] = Block{tiles[index], style};
     }
     _hasExtendedTiles = true;
 }
 
-Tile9Style::Tile9Style(const text::String &tiles) : Tile9Style(parseTiles(BlockStringEditor{tiles})) {
+Tile9Style::Tile9Style(const String &tiles) : Tile9Style(parseTiles(BlockStringEditor{tiles})) {
 }
 
-Tile9Style::Tile9Style(const text::U32String &tiles) : Tile9Style(parseTiles(BlockStringEditor{tiles})) {
+Tile9Style::Tile9Style(const U32String &tiles) : Tile9Style(parseTiles(BlockStringEditor{tiles})) {
 }
 
 auto Tile9Style::block(const block::Rectangle rect, const block::Position pos) const noexcept -> Block {
@@ -101,11 +102,11 @@ auto Tile9Style::block(const Element element) const noexcept -> Block {
     }
 }
 
-auto Tile9Style::create(const text::String &tiles) -> Tile9StylePtr {
+auto Tile9Style::create(const String &tiles) -> Tile9StylePtr {
     return std::make_shared<Tile9Style>(tiles);
 }
 
-auto Tile9Style::create(const text::U32String &tiles) -> Tile9StylePtr {
+auto Tile9Style::create(const U32String &tiles) -> Tile9StylePtr {
     return std::make_shared<Tile9Style>(tiles);
 }
 
@@ -136,7 +137,7 @@ Tile9Style::Tile9Style(const ParsedTiles &parsed) noexcept :
 
 auto Tile9Style::parseTiles(const BlockString &tiles) -> ParsedTiles {
     if (tiles.length() != BlockCount{9U} && tiles.length() != BlockCount{16U}) {
-        throw err::ParameterError{"Tile9Style requires exactly 9 or 16 terminal characters."_el, "tiles"_el};
+        throw err::ParameterFailure{"Tile9Style requires exactly 9 or 16 terminal characters."_el, "tiles"_el};
     }
     auto result = ParsedTiles{};
     result.hasExtendedTiles = tiles.length() == BlockCount{16U};

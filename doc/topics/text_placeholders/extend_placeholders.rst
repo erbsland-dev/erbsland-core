@@ -21,8 +21,8 @@ application.
 This page builds one of each for gallery labels.
 For the basic expression form, start with :doc:`placeholders`.
 
-Give a Source a Clear Responsibility
-====================================
+Implementing a Custom Placeholder Source
+========================================
 
 A source publishes one or more names through ``sourceNames()``.
 For an expression such as ``${gallery:movement}``, the replacer finds the provider registered as ``gallery`` and calls
@@ -37,7 +37,7 @@ The provider also overrides ``validate()``: it checks the field name without que
 .. erbsland-demo::
     :source: text/Placeholders/CustomSource.cpp
     :exec: text/text_placeholders --demo UseCustomSource
-    :source-sha256: 1945ff260ca56a934eb4dd80e2807a161afc6991a5b804ae407eccf1f0e75146
+    :sha256: 660d82191223cf7f9f46c461d88f2bb95cd9a1e9ad51820674656e8d7dc1f097
 
 .. code-block:: cpp
 
@@ -73,11 +73,13 @@ The provider also overrides ``validate()``: it checks the field name without que
         el::io::printLine("Valid caption: "_el, replacer.validate("${gallery:movement}"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Featured movement: Συμβολισμός
-    Valid caption: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFeatured movement: Συμβολισμός
+        Valid caption: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -93,8 +95,8 @@ rejected at registration.
 ``source()`` finds a provider by name, and ``removeSource()`` removes all names of the *same provider instance*.
 Keep its shared pointer if you intend to remove it later.
 
-Transform a Value with a Filter
-===============================
+Implementing a Custom Placeholder Filter
+========================================
 
 Sometimes the source has the right data, but the destination needs one more step.
 The built-in ``trim`` and ``upper`` filters handle general text changes.
@@ -108,7 +110,7 @@ The following filter accepts ``room`` as its parameter and prefixes the trimmed 
 .. erbsland-demo::
     :source: text/Placeholders/CustomFilter.cpp
     :exec: text/text_placeholders --demo UseCustomFilter
-    :source-sha256: 6da03e36a875da998ef0134047ea48393263942570fda3ba46a7dcf481b435b2
+    :sha256: 50c6408273fa4505f1d470916a7b1849ca6fbd1fce7295cb4d83178bf923d527
 
 .. code-block:: cpp
 
@@ -144,6 +146,13 @@ The following filter accepts ``room`` as its parameter and prefixes the trimmed 
         el::io::printLine(replacer.replaceOrThrow("${var:movement|trim|gallery_label:room}"_el));
     }
 
+.. erbsland-demo-run::
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRoom: Φουτουρισμός␛[0m
+
 .. erbsland-demo-end::
 
 The expression ``${var:movement|trim|gallery_label:room}`` is read from left to right.
@@ -156,9 +165,10 @@ clearer.
 ``addFilter()``, ``filter()``, and ``removeFilter()`` follow the same naming and provider-identity rules as their source
 counterparts.
 
-Keep Failures Understandable
-============================
+Source and Filter Error Categories and Diagnostics
+==================================================
 
+Custom placeholder sources and filters should throw ``ReplacerError`` for recoverable provider errors.
 A source should report a missing requested value with ``ValueNotFound`` and a rejected access with ``Access``.
 A filter should report malformed parameters with ``Syntax`` and a value that fails a required condition with
 ``Validation``.
@@ -169,6 +179,11 @@ The replacer attaches the position of the expression in the original input when 
 ``replace()`` keeps the failed expression and continues, which is useful for a preview but can leave unresolved text in
 a final document.
 Exceptions of other types from a provider are not converted into tolerant replacement.
+
+In particular, a bare ``ParseError`` does not participate in the replacer's fallback behavior: translate expected
+parameter-parse failures into ``ReplacerError`` with category ``Syntax``.
+Translate other expected provider failures to the matching category when the replacer should handle them.
+Preserve a useful reason for the caller.
 
 Once your providers are in place, :doc:`customize_placeholder_syntax` explains how to choose delimiters that fit the
 text around them and how to avoid accidental second-stage interpretation.

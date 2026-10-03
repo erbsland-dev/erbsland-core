@@ -1,6 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/CpCount.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -22,7 +27,7 @@ void flushAcceptedOutput() {
 /// terminal, so the user can see the question before the program starts reading the answer.
 auto askForCellAtlas() -> el::String {
     constexpr auto cMaximumAttempts = 3U;
-    constexpr auto cMaximumAnswerLength = el::CpLength{80U};
+    constexpr auto cMaximumAnswerLength = el::CpCount{80U};
     const auto output = el::stdOut();
 
     if (output->write("Cell atlas name: "_el).isTimeout()) {

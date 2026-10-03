@@ -6,12 +6,11 @@
 
 #include "../../Fixture.hpp"
 
-#include <erbsland/core/Definitions.hpp>
+#include <erbsland/ByteBuffer.hpp>
 #include <erbsland/cryptology/impl/algorithm/ed25519_signature/Ed25519Signer.hpp>
 #include <erbsland/cryptology/impl/algorithm/ed25519_signature/FieldElement.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/Random.hpp>
 
 namespace app::constant_time {
 

@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-add_executable(erbsland-core-resource-compiler EXCLUDE_FROM_ALL
+add_executable(erbsland-core-resource-compiler
         src/ResourceCompiler.cpp
         src/ResourceCompiler.hpp
         src/main.cpp

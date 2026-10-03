@@ -3,12 +3,12 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/core/impl/application_data/ApplicationRandomData.hpp>
 #include <erbsland/core/impl/ApplicationData.hpp>
-#include <erbsland/random/FastRandom.hpp>
-#include <erbsland/random/SecureRandom.hpp>
-#include <erbsland/random/ThreadSafeFastRandom.hpp>
+#include <erbsland/FastRandom.hpp>
+#include <erbsland/SecureRandom.hpp>
+#include <erbsland/ThreadSafeFastRandom.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>

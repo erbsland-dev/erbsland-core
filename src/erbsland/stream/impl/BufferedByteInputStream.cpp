@@ -13,8 +13,8 @@
 namespace erbsland::stream::impl {
 
 using namespace text::literals;
+using unit::ByteCount;
 using unit::ByteIndex;
-using unit::ByteLength;
 using unit::ByteOffset;
 
 BufferedByteInputStream::BufferedByteInputStream(
@@ -26,6 +26,10 @@ BufferedByteInputStream::BufferedByteInputStream(
 
 BufferedByteInputStream::~BufferedByteInputStream() {
     abort();
+}
+
+auto BufferedByteInputStream::initialFileSize() const noexcept -> unit::ByteCount {
+    return _data->native->initialFileSize();
 }
 
 auto BufferedByteInputStream::inputSettings() const noexcept -> const InputStreamSettings & {
@@ -41,7 +45,7 @@ auto BufferedByteInputStream::isReady() const noexcept -> bool {
         return true;
     }
     const auto lock = std::scoped_lock{_data->mutex};
-    return !_data->front.isEmpty() || _data->finished || _data->error || state() != StreamState::Open;
+    return !_data->frontIsEmpty() || _data->finished || _data->error || state() != StreamState::Open;
 }
 
 auto BufferedByteInputStream::waitForReady() -> StreamWaitStatus {
@@ -50,7 +54,7 @@ auto BufferedByteInputStream::waitForReady() -> StreamWaitStatus {
     }
     auto lock = std::unique_lock{_data->mutex};
     const auto ready = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this]() -> bool {
-        return !_data->front.isEmpty() || _data->finished || _data->error || state() != StreamState::Open;
+        return !_data->frontIsEmpty() || _data->finished || _data->error || state() != StreamState::Open;
     });
     return ready ? StreamWaitStatus::Ready : StreamWaitStatus::Timeout;
 }
@@ -68,10 +72,12 @@ void BufferedByteInputStream::abort() noexcept {
         _data->native->abort();
     }
     if (_data->mutex.try_lock()) {
-        if (!_data->readInProgress) {
-            _data->back.secureErase();
+        if (!_data->readInProgress && _data->back) {
+            _data->back->secureErase();
         }
-        _data->front.secureErase();
+        if (_data->front) {
+            _data->front->secureErase();
+        }
         _data->mutex.unlock();
     }
     _data->condition.notify_all();
@@ -91,8 +97,12 @@ void BufferedByteInputStream::setSensitive(const bool sensitive) noexcept {
         return;
     }
     _data->sensitivityEpoch.fetch_add(1U);
-    _data->front.setSensitive(sensitive);
-    _data->back.setSensitive(sensitive);
+    if (_data->front) {
+        _data->front->setSensitive(sensitive);
+    }
+    if (_data->back) {
+        _data->back->setSensitive(sensitive);
+    }
     _data->settings.setSensitive(sensitive);
     _data->finished = false;
     _data->scheduleRead();
@@ -100,26 +110,26 @@ void BufferedByteInputStream::setSensitive(const bool sensitive) noexcept {
 }
 
 auto BufferedByteInputStream::readFromSource(const mem::ByteSpan destination, const ReadDeadline deadline)
-    -> StreamReadResult<ByteLength> {
+    -> StreamReadResult<ByteCount> {
     if (destination.empty()) {
-        return {StreamReadStatus::Data, ByteLength::zero()};
+        return {StreamReadStatus::Data, ByteCount::zero()};
     }
     auto lock = std::unique_lock{_data->mutex};
     const auto ready = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this]() -> bool {
-        return !_data->front.isEmpty() || _data->finished || _data->error || state() != StreamState::Open;
+        return !_data->frontIsEmpty() || _data->finished || _data->error || state() != StreamState::Open;
     });
     if (!ready) {
-        return {StreamReadStatus::Timeout, ByteLength::zero()};
+        return {StreamReadStatus::Timeout, ByteCount::zero()};
     }
     if (_data->error) {
         std::rethrow_exception(_data->error);
     }
-    if (_data->front.isEmpty()) {
-        return {StreamReadStatus::Finished, ByteLength::zero()};
+    if (_data->frontIsEmpty()) {
+        return {StreamReadStatus::Finished, ByteCount::zero()};
     }
-    const auto readLength = _data->front.read(destination);
+    const auto readLength = _data->front->read(destination);
     _data->logicalPosition.fetch_add(readLength.toRawValue());
-    if (_data->front.isEmpty() && !_data->back.isEmpty()) {
+    if (_data->frontIsEmpty() && !_data->backIsEmpty()) {
         _data->front.swap(_data->back);
     }
     _data->scheduleRead();
@@ -134,7 +144,7 @@ auto BufferedByteInputStream::sourcePosition() const -> ByteIndex {
     if (!sourceSupportsPositioning()) {
         return StreamPositioning::position();
     }
-    return ByteIndex{_data->logicalPosition.load()};
+    return ByteIndex::fromInteger(_data->logicalPosition.load());
 }
 
 auto BufferedByteInputStream::setSourcePosition(const ByteIndex position) -> StreamPositionStatus {
@@ -166,7 +176,7 @@ auto BufferedByteInputStream::moveSourcePosition(const StreamPositionOrigin orig
     try {
         auto result = ByteIndex{};
         if (origin == StreamPositionOrigin::Current) {
-            const auto current = ByteIndex{_data->logicalPosition.load()};
+            const auto current = ByteIndex::fromInteger(_data->logicalPosition.load());
             result = _data->native->setPosition(current.movedOrThrow(offset));
         } else {
             result = _data->native->movePosition(origin, offset);
@@ -201,8 +211,12 @@ auto BufferedByteInputStream::beginPositioning(std::unique_lock<std::mutex> &loc
 }
 
 void BufferedByteInputStream::completePositioning(const ByteIndex position) {
-    _data->front.secureErase();
-    _data->back.secureErase();
+    if (_data->front) {
+        _data->front->secureErase();
+    }
+    if (_data->back) {
+        _data->back->secureErase();
+    }
     _data->finished = false;
     _data->logicalPosition.store(position.toRawValue());
     _data->positioning = false;

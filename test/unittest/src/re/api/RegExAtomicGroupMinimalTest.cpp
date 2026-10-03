@@ -3,6 +3,8 @@
 
 #include "RegExBase.hpp"
 
+#include <erbsland/StringList.hpp>
+
 using namespace el::re;
 
 /// Test if atomic groups operations work at a minimal level.
@@ -39,7 +41,7 @@ public:
         };
         WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "b"_el,
             "xyz"_el,
@@ -49,10 +51,10 @@ public:
     TESTED_TARGETS(fullMatch)
     void testFullMatch() {
         compilePattern();
-        const auto matchCases = std::vector<String>{"a"_el};
+        const auto matchCases = StringList{"a"_el};
         WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "abc"_el,
             "b"_el,
@@ -69,7 +71,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(matchCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "xyz"_el,
         };

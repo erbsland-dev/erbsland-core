@@ -4,13 +4,15 @@
 
 #include "../Limits.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/NotFoundError.hpp"
 #include "../../../text/StringFormat.hpp"
 
 #include <algorithm>
 
 namespace erbsland::re::impl {
 
+using namespace err;
+using namespace text;
 using namespace text::literals;
 
 void Assembler::processOperationLine() {
@@ -19,8 +21,8 @@ void Assembler::processOperationLine() {
     if (!_modifiers.empty()) {
         try {
             operation = modifiedOperation(operation, _modifiers);
-        } catch (const err::ParameterError &) {
-            text::StringEditor modifierStr;
+        } catch (const NotFoundError &) {
+            StringEditor modifierStr;
             for (const auto &modifier : _modifiers) {
                 if (!modifierStr.isEmpty()) {
                     modifierStr.append(", "_el);
@@ -29,11 +31,11 @@ void Assembler::processOperationLine() {
             }
             if (_modifiers.size() == 1) {
                 throwAssemblerError(
-                    text::StringFormat{"Modifier '{}' is not valid for the operation '{}'"}.build(
+                    StringFormat{"Modifier '{}' is not valid for the operation '{}'"}.build(
                         modifierStr, toBaseName(baseOperation)));
             } else {
                 throwAssemblerError(
-                    text::StringFormat{"Modifiers '{}' are not valid for the operation '{}'"}.build(
+                    StringFormat{"Modifiers '{}' are not valid for the operation '{}'"}.build(
                         modifierStr, toBaseName(baseOperation)));
             }
         }
@@ -164,7 +166,7 @@ void Assembler::processOperation(const Operation operation, const AssemblerToken
         _writer.writeAny();
         break;
     default:
-        throwAssemblerError(text::StringFormat{"Operation '{}' is not supported"_el}.build(toString(operation)));
+        throwAssemblerError(StringFormat{"Operation '{}' is not supported"_el}.build(toString(operation)));
     }
 }
 
@@ -184,18 +186,18 @@ void Assembler::processAnchor(const AssemblerTokens &arguments) {
     try {
         const auto anchor = TextAnchor::fromString(anchorName);
         _writer.writeAnchor(anchor);
-    } catch (const err::ParameterError &) {
-        throwAssemblerError(text::StringFormat{"Invalid anchor '{}'"}.build(anchorName));
+    } catch (const NotFoundError &) {
+        throwAssemblerError(StringFormat{"Invalid anchor '{}'"}.build(anchorName));
     }
 }
 
 void Assembler::processCapture(const AssemblerTokens &arguments, const bool isNegated) {
     const auto captureGroup = expectCaptureGroup(arguments[0]);
-    if (captureGroup >= _captureGroupNames.size()) {
+    if (captureGroup >= _captureGroupNames.count().toSizeT()) {
         throwAssemblerError(
-            text::StringFormat{"The capture group {} exceeds the defined number of {} groups. "
-                               "Use '.groups' to increase the number of capture groups"}
-                .build(captureGroup, _captureGroupNames.size()));
+            StringFormat{"The capture group {} exceeds the defined number of {} groups. "
+                         "Use '.groups' to increase the number of capture groups"}
+                .build(captureGroup, _captureGroupNames.count().toSizeT()));
     }
     if (isNegated) {
         _writer.writeStopCapture(captureGroup);
@@ -285,8 +287,8 @@ void Assembler::processCategory(const AssemblerTokens &arguments, const bool isN
         } else {
             _writer.writeCategory(category);
         }
-    } catch (const err::ParameterError &) {
-        throwAssemblerError(text::StringFormat{"Invalid category '{}'"}.build(categoryName));
+    } catch (const NotFoundError &) {
+        throwAssemblerError(StringFormat{"Invalid category '{}'"}.build(categoryName));
     }
 }
 
@@ -299,8 +301,8 @@ void Assembler::processAssertCategory(const AssemblerTokens &arguments, const bo
         } else {
             _writer.writeAssertCategory(category);
         }
-    } catch (const err::ParameterError &) {
-        throwAssemblerError(text::StringFormat{"Invalid category '{}'"}.build(categoryName));
+    } catch (const NotFoundError &) {
+        throwAssemblerError(StringFormat{"Invalid category '{}'"}.build(categoryName));
     }
 }
 

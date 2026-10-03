@@ -44,15 +44,19 @@ public: // accessors
     /// Get the traffic-secret hash algorithm.
     [[nodiscard]] auto hashAlgorithm() const noexcept -> HashAlgorithm { return _hashAlgorithm; }
     /// Get the plaintext secret length without resolving it.
-    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteLength { return _data.byteLength(); }
+    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteCount { return _data.byteLength(); }
 
 public: // factories
     /// Protect a copy of RFC 8446 Sections 7.1--7.3 exact digest-sized traffic-secret bytes.
     /// The caller retains ownership and erasure responsibility for the borrowed bytes.
-    /// @throws err::ParameterError If the algorithm or length is unsupported.
+    /// @param algorithm The traffic-secret hash algorithm. Must be SHA-256 or SHA-384.
+    /// @param data The traffic-secret bytes. Length must equal the selected hash digest size.
+    /// @throws err::OutOfRangeError If the secret length does not match the selected hash digest size.
     [[nodiscard]] static auto fromBytes(HashAlgorithm algorithm, mem::ConstByteSpan data) -> TlsTrafficSecret;
     /// Protect and then erase an owning RFC 8446 Sections 7.1--7.3 exact digest-sized traffic-secret block.
-    /// @throws err::ParameterError If the algorithm or length is unsupported.
+    /// @param algorithm The traffic-secret hash algorithm. Must be SHA-256 or SHA-384.
+    /// @param data The traffic-secret block to erase after protection. Length must equal the selected hash digest size.
+    /// @throws err::OutOfRangeError If the secret length does not match the selected hash digest size.
     [[nodiscard]] static auto fromBytes(HashAlgorithm algorithm, mem::ByteBlock &&data) -> TlsTrafficSecret;
 
 private:

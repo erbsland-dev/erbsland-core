@@ -4,16 +4,18 @@
 
 #include "../ConfTestHelper.hpp"
 
+#include "../../core/ApplicationTestScope.hpp"
+
+#include <erbsland/CaseSensitivity.hpp>
 #include <erbsland/conf/Document.hpp>
 #include <erbsland/conf/impl/vr/Rules.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
-#include <erbsland/err/DiagnosticHelper.hpp>
-#include <erbsland/text/CaseSensitivity.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/TextDocument.hpp>
+#include <erbsland/DiagnosticHelper.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/TextDocument.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::conf;
@@ -34,12 +36,15 @@ public:
     void setLastError(const ConfError &error) { lastError = el::err::DiagnosticHelper{error}.toDocument().toString(); }
 
     void setUp() override {
+        _applicationScope = std::make_unique<ApplicationTestScope<>>();
         failedText = {};
         vrDocument = nullptr;
         rules = nullptr;
         document = nullptr;
         lastError = {};
     }
+
+    void tearDown() override { _applicationScope.reset(); }
 
     auto additionalErrorMessages() -> std::string override {
         try {
@@ -288,4 +293,7 @@ public:
             }
         }
     }
+
+private:
+    std::unique_ptr<ApplicationTestScope<>> _applicationScope; ///< Scoped display-text registry for diagnostics.
 };

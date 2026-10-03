@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "BitWriterImpl.hpp"
 
-#include "../../err/OutOfRangeError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
 
 #include <algorithm>
 #include <limits>
 #include <utility>
 
 namespace erbsland::mem::impl {
+
+using namespace unit;
 
 void BitWriterImpl::setBitPosition(const std::size_t bitPosition) noexcept {
     _bitPosition = std::min(bitPosition, _bitCount);
@@ -49,7 +51,7 @@ void BitWriterImpl::reserveBits(const std::size_t bitCapacity) {
 }
 
 void BitWriterImpl::reserveBytes(const std::size_t byteCapacity) {
-    _block.reserve(unit::ByteLength::fromSizeT(byteCapacity));
+    _block.reserve(ByteCount::fromSizeT(byteCapacity));
     if (_sensitive) {
         _block.markAsSensitive();
     }
@@ -57,11 +59,11 @@ void BitWriterImpl::reserveBytes(const std::size_t byteCapacity) {
 
 void BitWriterImpl::prepareWrite(const std::size_t bitCountValue) {
     if (bitCountValue > std::numeric_limits<std::size_t>::max() - _bitPosition) {
-        throw err::OutOfRangeError{"Bit write position overflow."};
+        throw err::OutOfRangeFailure{"Bit write position overflow."};
     }
     const auto requiredByteCount = byteCountForBits(_bitPosition + bitCountValue);
     if (requiredByteCount > _block.length().toSizeT()) {
-        _block.resize(unit::ByteLength::fromSizeT(requiredByteCount));
+        _block.resize(ByteCount::fromSizeT(requiredByteCount));
         if (_sensitive) {
             _block.markAsSensitive();
         }
@@ -70,7 +72,7 @@ void BitWriterImpl::prepareWrite(const std::size_t bitCountValue) {
 
 void BitWriterImpl::writeBits(const uint64_t value, const std::size_t bitCountValue) {
     if (bitCountValue > 64U) {
-        throw err::OutOfRangeError{"Bit write exceeds 64 bits."};
+        throw err::OutOfRangeFailure{"Bit write exceeds 64 bits."};
     }
     const auto endPosition = writeBitsUnchecked(value, bitCountValue);
     _bitPosition = endPosition;
@@ -79,10 +81,9 @@ void BitWriterImpl::writeBits(const uint64_t value, const std::size_t bitCountVa
 
 void BitWriterImpl::writeBytes(const ConstByteSpan bytes) {
     if (!isByteAligned() || bytes.size() > (std::numeric_limits<std::size_t>::max() - _bitPosition) / 8U) {
-        throw err::OutOfRangeError{"Byte write requires alignment and an addressable bit position."};
+        throw err::OutOfRangeFailure{"Byte write requires alignment and an addressable bit position."};
     }
-    _block.replace(
-        unit::ByteRange{unit::ByteIndex::fromSizeT(bytePosition()), unit::ByteLength::fromSizeT(bytes.size())}, bytes);
+    _block.replace(ByteRange{ByteIndex::fromSizeT(bytePosition()), ByteCount::fromSizeT(bytes.size())}, bytes);
     if (_sensitive) {
         _block.markAsSensitive();
     }

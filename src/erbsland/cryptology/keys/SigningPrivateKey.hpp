@@ -49,11 +49,10 @@ public:
 
 public:
     /// Sign exact TLS 1.3 `CertificateVerify` content.
+    /// This signing key must not be empty.
     /// @param scheme A compatible TLS 1.3 signature scheme.
     /// @param message The complete RFC 8446 section 4.4.3 signed content.
     /// @return The signature bytes used in `CertificateVerify`.
-    /// @throws err::LogicError If this key is empty.
-    /// @throws err::ParameterError If the scheme is incompatible with the key.
     /// @throws CryptologyError If protected storage, randomness, signing, or the RSA fault check fails.
     [[nodiscard]] auto signTlsCertificateVerify(TlsSignatureScheme scheme, mem::ConstByteSpan message) const
         -> mem::ByteBlock;
@@ -72,7 +71,7 @@ public: // accessors
     /// Get the signing-key algorithm, or `Unknown` for an empty key.
     [[nodiscard]] auto algorithm() const noexcept -> SigningKeyAlgorithm { return _algorithm; }
     /// Get the cached public key without decrypting private material.
-    /// @throws err::LogicError If this key is empty.
+    /// This signing key must not be empty.
     [[nodiscard]] auto publicKey() const -> PublicKey;
 
 public: // conversion
@@ -92,19 +91,22 @@ public: // conversion
 
 public: // factories
     /// Generate a signing key from application secure randomness.
+    /// EC generation silently rejects extreme scalars; exhausting 128 draws throws `random::RandomFailure`.
+    /// @seedoc{/reference/cryptology/key_management}
     [[nodiscard]] static auto generate(SigningKeyProfile profile = SigningKeyProfile::EcdsaP256) -> SigningPrivateKey;
     /// Parse one strict unencrypted PKCS#8 DER key, returning an empty key on any error.
     [[nodiscard]] static auto fromDer(const mem::ByteBlock &der) noexcept -> SigningPrivateKey;
     /// Parse one strict unencrypted PKCS#8 DER key.
-    /// @throws err::ParseError If DER, PKCS#8, or algorithm-specific key data is invalid.
-    /// @throws err::OutOfRangeError If a fixed resource bound is exceeded.
+    /// @param der The complete unencrypted PKCS#8 DER key. Must fit the fixed parser resource limits.
+    /// @throws err::ParseError If DER, PKCS#8, or algorithm-specific key data is invalid or rejected by key policy.
     /// @throws CryptologyError If private material cannot be protected.
     [[nodiscard]] static auto fromDerOrThrow(const mem::ByteBlock &der) -> SigningPrivateKey;
     /// Parse one strict unencrypted `PRIVATE KEY` PEM block, returning an empty key on any error.
     [[nodiscard]] static auto fromPem(const text::String &pem) noexcept -> SigningPrivateKey;
     /// Parse one strict unencrypted `PRIVATE KEY` PEM block.
+    /// @param pem The unencrypted PRIVATE KEY PEM block. Text and decoded key must fit the fixed parser resource
+    /// limits.
     /// @throws err::ParseError If PEM, DER, PKCS#8, or algorithm-specific key data is invalid.
-    /// @throws err::OutOfRangeError If a fixed resource bound is exceeded.
     /// @throws CryptologyError If private material cannot be protected.
     [[nodiscard]] static auto fromPemOrThrow(const text::String &pem) -> SigningPrivateKey;
     /// Read one unencrypted PKCS#8 key from a file, returning an empty key on error.
@@ -117,12 +119,14 @@ public: // factories
     [[nodiscard]] static auto fromEncryptedDer(const mem::ByteBlock &der, const text::String &password) noexcept
         -> SigningPrivateKey;
     /// Decrypt EncryptedPrivateKeyInfo DER.
+    /// @throws CryptologyError If decryption fails. Empty passwords are preserved for imported keys.
     [[nodiscard]] static auto fromEncryptedDerOrThrow(const mem::ByteBlock &der, const text::String &password)
         -> SigningPrivateKey;
     /// Decrypt one `ENCRYPTED PRIVATE KEY` PEM block, returning an empty key on failure.
     [[nodiscard]] static auto fromEncryptedPem(const text::String &pem, const text::String &password) noexcept
         -> SigningPrivateKey;
     /// Decrypt one `ENCRYPTED PRIVATE KEY` PEM block.
+    /// @throws CryptologyError If decryption fails. Empty passwords are preserved for imported keys.
     [[nodiscard]] static auto fromEncryptedPemOrThrow(const text::String &pem, const text::String &password)
         -> SigningPrivateKey;
     /// Read and decrypt one encrypted PKCS#8 key, returning an empty key on failure.
@@ -130,6 +134,7 @@ public: // factories
         const path::Path &path, const text::String &password, PemDerFormat format = PemDerFormat::Automatic) noexcept
         -> SigningPrivateKey;
     /// Read and decrypt one encrypted PKCS#8 key.
+    /// @throws CryptologyError If decryption fails. Empty passwords are preserved for imported keys.
     [[nodiscard]] static auto fromEncryptedFileOrThrow(
         const path::Path &path, const text::String &password, PemDerFormat format = PemDerFormat::Automatic)
         -> SigningPrivateKey;

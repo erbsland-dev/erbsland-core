@@ -11,6 +11,7 @@ add_subdirectory(lexer)
 add_subdirectory(parser)
 add_subdirectory(public_api)
 add_subdirectory(source)
+add_subdirectory(syntax)
 add_subdirectory(value)
 add_subdirectory(vr)
 

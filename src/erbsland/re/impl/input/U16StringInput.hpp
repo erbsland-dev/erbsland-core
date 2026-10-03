@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../../../text/u16/U16String.hpp"
-#include "../../../unit/U16DataIndex.hpp"
+#include "../../../unit/U16Index.hpp"
 #include "../../Input16.hpp"
 
 namespace erbsland::re::impl {
@@ -21,14 +21,14 @@ public:
 public: // implement InputBase
     [[nodiscard]] auto read() -> CharAndPosition override;
     [[nodiscard]] auto peek() -> CharAndPosition override;
-    void skip(unit::CpLength characterCount) override;
+    void skip(unit::CpCount characterCount) override;
 
 public: // implement Input16
     [[nodiscard]] auto createMatch(CaptureGroupList captureGroupList) -> Match16Ptr override;
 
 private:
     text::U16String _text;
-    unit::U16DataIndex _position;
+    unit::U16Index _position;
 };
 
 }

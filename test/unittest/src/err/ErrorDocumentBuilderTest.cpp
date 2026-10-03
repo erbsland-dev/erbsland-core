@@ -1,10 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ErrorDocumentBuilder.hpp>
-#include <erbsland/i18n/DisplayTextMap.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/TextNode.hpp>
+#include "../core/ApplicationTestScope.hpp"
+#include "../i18n/DisplayTextTestLayer.hpp"
+
+#include <erbsland/DisplayText.hpp>
+#include <erbsland/ErrorDocumentBuilder.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/TextNode.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
@@ -15,6 +18,7 @@ TESTED_TARGETS(ErrorDocumentBuilder)
 class ErrorDocumentBuilderTest final : public el::UnitTest {
 public:
     void testInitialDocumentAndRootAccess() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto builder = el::err::ErrorDocumentBuilder{"Failure"_el, "Detailed description."_el};
         builder.root()->addParagraph()->addText("Custom details."_el);
         auto document = builder.takeDocument();
@@ -28,9 +32,11 @@ public:
     }
 
     void testUnknownTitleAndSourceFields() {
-        auto map = el::i18n::DisplayTextMap::defaultMap()->clone();
-        map->set("UnknownError"_el, "Unspecified Failure"_el);
-        auto builder = el::err::ErrorDocumentBuilder{{}, {}, map};
+        auto applicationScope = ApplicationTestScope<>{};
+        auto map = DisplayTextTestLayer{
+            {""_el, "unknown_error"_el, "Unspecified Failure"_el},
+        };
+        auto builder = el::err::ErrorDocumentBuilder{{}, {}};
         builder.addSource(
             "configuration"_el,
             "/tmp/app.conf"_el,
@@ -49,6 +55,7 @@ public:
     }
 
     void testEmptySourceAddsNothing() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto builder = el::err::ErrorDocumentBuilder{"Failure"_el};
         builder.addSource({}, {}, {});
         REQUIRE_FALSE(builder.takeDocument().toString().contains("Error Source"_el));

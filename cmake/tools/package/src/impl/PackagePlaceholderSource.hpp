@@ -4,7 +4,7 @@
 
 #include "../PackageSettings.hpp"
 
-#include <erbsland/text/placeholder/Source.hpp>
+#include <erbsland/placeholder/Source.hpp>
 
 namespace erbsland::package::impl {
 
@@ -14,7 +14,9 @@ class PackagePlaceholderSource final : public text::placeholder::Source {
 public:
     /// Bind the effective package and current target context.
     PackagePlaceholderSource(
-        const PackageSettings &settings, const text::String &platform, const text::String &architecture,
+        const PackageSettings &settings,
+        const text::String &platform,
+        const text::String &architecture,
         const text::String &target);
     /// List supported placeholder sources.
     [[nodiscard]] auto sourceNames() const -> text::StringList override;
@@ -23,9 +25,9 @@ public:
 
 private:
     const PackageSettings &_settings; ///< Effective settings for this expansion.
-    text::String _platform;            ///< Platform selector.
-    text::String _architecture;        ///< Target architecture selector.
-    text::String _target;              ///< Optional CMake target name.
+    text::String _platform;           ///< Platform selector.
+    text::String _architecture;       ///< Target architecture selector.
+    text::String _target;             ///< Optional CMake target name.
 };
 
 }

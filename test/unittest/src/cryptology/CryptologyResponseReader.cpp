@@ -1,17 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "CryptologyResponseReader.hpp"
 
-#include <erbsland/err/Exception.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/text/CharSet.hpp>
-#include <erbsland/text/IntegerBase.hpp>
-#include <erbsland/text/IntegerParseOptions.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/IntegerBase.hpp>
+#include <erbsland/IntegerParseOptions.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 
 #include <algorithm>
@@ -75,7 +73,7 @@ auto CryptologyResponseReader::Record::unsignedInteger(const el::String &text) c
         auto options = el::IntegerParseOptions::parserDefault();
         options.setFixedBase(el::IntegerBase::Decimal);
         return text.toIntegerOrThrow<std::size_t>(options);
-    } catch (const el::Exception &) {
+    } catch (const el::RuntimeError &) {
         throw el::RuntimeError{el::StringFormat{"Invalid unsigned integer in {}."_el}.build(diagnostic())};
     }
 }
@@ -147,7 +145,7 @@ auto CryptologyResponseReader::read() const -> std::vector<Record> {
         }
         if (line.charAt(el::StringSide::Front) == U'[' && line.charAt(el::StringSide::Back) == U']') {
             finishRecord();
-            const auto groupLine = line.slice(el::ByteRange{el::ByteIndex{1U}, line.length() - el::ByteLength{2U}});
+            const auto groupLine = line.slice(el::ByteRange{el::ByteIndex{1U}, line.length() - el::ByteCount{2U}});
             const auto [name, value] = assignment(groupLine, lineNumber);
             group.set(name, value);
             continue;

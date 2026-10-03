@@ -13,8 +13,8 @@
 #include "UnicodeCategory.hpp"
 #include "UnicodeCategoryGroup.hpp"
 
-#include "../unit/ByteLength_fwd.hpp"
-#include "../unit/U16DataLength_fwd.hpp"
+#include "../unit/ByteCount_fwd.hpp"
+#include "../unit/U16Count_fwd.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <optional>
@@ -243,9 +243,9 @@ public: // encoding information.
     /// @usesunidb{Uses generated Unicode Character Database character metadata.}
     [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// Get the size of the character in UTF-8 bytes.
-    [[nodiscard]] auto utf8Size() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto utf8Size() const noexcept -> unit::ByteCount;
     /// Get the size of the character in UTF-16 units.
-    [[nodiscard]] auto utf16Size() const noexcept -> unit::U16DataLength;
+    [[nodiscard]] auto utf16Size() const noexcept -> unit::U16Count;
     /// The encoded size in the unit of the encoding.
     /// For UTF-8, this is bytes (uint8_t).
     /// For UTF-16, this is words (uint16_t).
@@ -256,7 +256,7 @@ public: // encoding information.
     /// Get the number of bytes required to encode this character.
     /// Invalid Unicode values and character signals have an encoded length of zero.
     /// @param encoding The target byte encoding.
-    [[nodiscard]] auto encodedBytes(StringEncoding encoding) const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto encodedBytes(StringEncoding encoding) const noexcept -> unit::ByteCount;
 
 public: // conversion
     /// Return the simple one-code-point case-folded form of this character.

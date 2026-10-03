@@ -53,23 +53,19 @@ auto U32StringComparisonTools::find(
     }
 
     if (DecodedStringSearch::isUsefulFor(needle.size())) {
-        try {
-            const auto readNeedle = [&needle](CpIndex &position) noexcept -> Char {
-                if (position.toSizeT() >= needle.size()) {
-                    return Char::endOfData();
-                }
-                return utf32::decodeCharOrReplace(needle, position);
-            };
-            const auto readData = [&data](CpIndex &position) noexcept -> Char {
-                if (position.toSizeT() >= data.size()) {
-                    return Char::endOfData();
-                }
-                return utf32::decodeCharOrReplace(data, position);
-            };
-            return DecodedStringSearch{needle.size(), CpIndex::zero(), readNeedle, compareFn}.find(start, readData);
-        } catch (...) {
-            // Preserve the noexcept search API by falling back to the allocation-free implementation.
-        }
+        const auto readNeedle = [&needle](CpIndex &position) noexcept -> Char {
+            if (position.toSizeT() >= needle.size()) {
+                return Char::endOfData();
+            }
+            return utf32::decodeCharOrReplace(needle, position);
+        };
+        const auto readData = [&data](CpIndex &position) noexcept -> Char {
+            if (position.toSizeT() >= data.size()) {
+                return Char::endOfData();
+            }
+            return utf32::decodeCharOrReplace(data, position);
+        };
+        return DecodedStringSearch{needle.size(), CpIndex::zero(), readNeedle, compareFn}.find(start, readData);
     }
 
     auto position = start;
@@ -124,24 +120,20 @@ auto U32StringComparisonTools::count(const U32StringDataView &other, const CharC
 
     const auto data = _data.dataSpan();
     if (DecodedStringSearch::isUsefulFor(needle.size())) {
-        try {
-            const auto readNeedle = [&needle](CpIndex &position) noexcept -> Char {
-                if (position.toSizeT() >= needle.size()) {
-                    return Char::endOfData();
-                }
-                return utf32::decodeCharOrReplace(needle, position);
-            };
-            const auto readData = [&data](CpIndex &position) noexcept -> Char {
-                if (position.toSizeT() >= data.size()) {
-                    return Char::endOfData();
-                }
-                return utf32::decodeCharOrReplace(data, position);
-            };
-            return DecodedStringSearch{needle.size(), CpIndex::zero(), readNeedle, compareFn}.count(
-                CpIndex::zero(), readData);
-        } catch (...) {
-            // Preserve the noexcept search API by falling back to the allocation-free implementation.
-        }
+        const auto readNeedle = [&needle](CpIndex &position) noexcept -> Char {
+            if (position.toSizeT() >= needle.size()) {
+                return Char::endOfData();
+            }
+            return utf32::decodeCharOrReplace(needle, position);
+        };
+        const auto readData = [&data](CpIndex &position) noexcept -> Char {
+            if (position.toSizeT() >= data.size()) {
+                return Char::endOfData();
+            }
+            return utf32::decodeCharOrReplace(data, position);
+        };
+        return DecodedStringSearch{needle.size(), CpIndex::zero(), readNeedle, compareFn}.count(
+            CpIndex::zero(), readData);
     }
 
     auto result = ItemCount{};
@@ -219,19 +211,7 @@ auto U32StringComparisonTools::matchesDecodedSpan(
     const CpIndex candidateStart,
     const std::span<const char32_t> needle,
     const CharCompareFn compareFn) noexcept -> bool {
-    auto haystackPosition = candidateStart;
-    auto needlePosition = CpIndex::zero();
-    while (needlePosition.toSizeT() < needle.size()) {
-        if (haystackPosition.toSizeT() >= haystack.size()) {
-            return false;
-        }
-        const auto haystackCharacter = utf32::decodeCharOrReplace(haystack, haystackPosition);
-        const auto needleCharacter = utf32::decodeCharOrReplace(needle, needlePosition);
-        if (!charactersEqual(haystackCharacter, needleCharacter, compareFn)) {
-            return false;
-        }
-    }
-    return true;
+    return !endOfTextMatch(haystack, candidateStart, needle, compareFn).isNoIndex();
 }
 
 auto U32StringComparisonTools::startsWithDecodedSpan(

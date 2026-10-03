@@ -3,13 +3,13 @@
 
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/Hasher.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteArray.hpp>
-#include <erbsland/mem/ByteSpan.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteSpan.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/String.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 
 #include <array>
@@ -37,10 +37,10 @@ public:
         REQUIRE_FALSE(hasher.isValid());
         hasher.secureErase();
         REQUIRE_FALSE(hasher.isValid());
-        REQUIRE_THROWS_AS(el::err::LogicError, hasher.algorithm());
-        REQUIRE_THROWS_AS(el::err::LogicError, hasher.reset());
-        REQUIRE_THROWS_AS(el::err::LogicError, hasher.update(el::mem::ConstByteSpan{}));
-        REQUIRE_THROWS_AS(el::err::LogicError, hasher.finalize());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hasher.algorithm());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hasher.reset());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hasher.update(el::mem::ConstByteSpan{}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hasher.finalize());
     }
 
     void testInputOverloads() {
@@ -83,8 +83,7 @@ public:
         requireSameFinalized(textHasher, byteHasher);
 
         const auto slicedSource = el::text::String{"xxhash meyy"_el};
-        const auto slicedText =
-            slicedSource.slice(el::unit::ByteRange{el::unit::ByteIndex{2U}, el::unit::ByteIndex{9U}});
+        const auto slicedText = slicedSource.slice({el::unit::ByteIndex{2U}, el::unit::ByteIndex{9U}});
         auto slicedHasher = Hasher{HashAlgorithm::Sha3_256};
         slicedHasher.update(slicedText);
         auto slicedBytesHasher = Hasher{HashAlgorithm::Sha3_256};
@@ -108,7 +107,7 @@ public:
         hasher.update(el::text::String{"test"_el});
         const auto digest = hasher.finalize();
         requireFinalizedEqual(hasher, digest);
-        REQUIRE_THROWS_AS(el::err::LogicError, hasher.update(el::text::String{"more"_el}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, hasher.update(el::text::String{"more"_el}));
         hasher.reset();
         hasher.update(el::text::String{"test"_el});
         requireFinalizedEqual(hasher, digest);
@@ -166,7 +165,7 @@ public:
             REQUIRE_EQUAL(firstDigest.length(), algorithm.digestSize());
             REQUIRE_EQUAL(secondDigest.length(), algorithm.digestSize());
             requireFinalizedEqual(first, firstDigest);
-            REQUIRE_THROWS_AS(el::err::LogicError, first.update(el::text::String{"more"_el}));
+            REQUIRE_THROWS_AS(el::err::LogicFailure, first.update(el::text::String{"more"_el}));
 
             first.reset();
             first.update(el::text::String{"shared-first"_el});

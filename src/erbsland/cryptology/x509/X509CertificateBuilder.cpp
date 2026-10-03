@@ -2,40 +2,42 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "X509CertificateBuilder.hpp"
 
+#include "../CryptologyError.hpp"
 #include "../impl/CryptologyOids.hpp"
 #include "../impl/X509ArtifactWriter.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::cryptology {
 
+using namespace text;
 using namespace text::literals;
 
-X509CertificateBuilder::X509CertificateBuilder(const X509CertificateProfile profile, text::String commonName) noexcept :
+X509CertificateBuilder::X509CertificateBuilder(const X509CertificateProfile profile, String commonName) noexcept :
     _profile{profile}, _commonName{std::move(commonName)} {
 }
 
-auto X509CertificateBuilder::certificateAuthority(text::String commonName) -> X509CertificateBuilder {
+auto X509CertificateBuilder::certificateAuthority(String commonName) -> X509CertificateBuilder {
     return X509CertificateBuilder{X509CertificateProfile::CertificateAuthority, std::move(commonName)};
 }
 
-auto X509CertificateBuilder::tlsServer(text::String commonName) -> X509CertificateBuilder {
+auto X509CertificateBuilder::tlsServer(String commonName) -> X509CertificateBuilder {
     return X509CertificateBuilder{X509CertificateProfile::TlsServer, std::move(commonName)};
 }
 
-auto X509CertificateBuilder::tlsClient(text::String commonName) -> X509CertificateBuilder {
+auto X509CertificateBuilder::tlsClient(String commonName) -> X509CertificateBuilder {
     return X509CertificateBuilder{X509CertificateProfile::TlsClient, std::move(commonName)};
 }
 
-auto X509CertificateBuilder::tlsServerAndClient(text::String commonName) -> X509CertificateBuilder {
+auto X509CertificateBuilder::tlsServerAndClient(String commonName) -> X509CertificateBuilder {
     return X509CertificateBuilder{X509CertificateProfile::TlsServerAndClient, std::move(commonName)};
 }
 
 auto X509CertificateBuilder::fromCertificate(const X509Certificate &certificate, const X509CertificateProfile profile)
     -> X509CertificateBuilder {
     if (certificate.isEmpty()) {
-        throw err::LogicError{"A source certificate is required for reissuance."_el};
+        throw err::LogicFailure{"A source certificate is required for reissuance."_el};
     }
     auto result = X509CertificateBuilder{profile, certificate.subject().commonNames().first()};
     result._sourceSubject = certificate.subject();
@@ -49,7 +51,7 @@ auto X509CertificateBuilder::fromCertificate(const X509Certificate &certificate,
             id == impl::cryptology_oids::extendedKeyUsage;
         if (!supported) {
             if (extension.isCritical()) {
-                throw err::LogicError{"Cannot reissue a certificate containing an unknown critical extension."_el};
+                throw CryptologyError{"Cannot reissue a certificate containing an unknown critical extension."_el};
             }
             result._preservedExtensions.append(extension);
         }
@@ -57,37 +59,37 @@ auto X509CertificateBuilder::fromCertificate(const X509Certificate &certificate,
     return result;
 }
 
-auto X509CertificateBuilder::setCommonName(text::String value) -> X509CertificateBuilder & {
+auto X509CertificateBuilder::setCommonName(String value) -> X509CertificateBuilder & {
     _commonName = std::move(value);
     return *this;
 }
 
-auto X509CertificateBuilder::setCountry(text::String value) -> X509CertificateBuilder & {
+auto X509CertificateBuilder::setCountry(String value) -> X509CertificateBuilder & {
     _country = std::move(value);
     return *this;
 }
 
-auto X509CertificateBuilder::setState(text::String value) -> X509CertificateBuilder & {
+auto X509CertificateBuilder::setState(String value) -> X509CertificateBuilder & {
     _state = std::move(value);
     return *this;
 }
 
-auto X509CertificateBuilder::setLocality(text::String value) -> X509CertificateBuilder & {
+auto X509CertificateBuilder::setLocality(String value) -> X509CertificateBuilder & {
     _locality = std::move(value);
     return *this;
 }
 
-auto X509CertificateBuilder::setOrganization(text::String value) -> X509CertificateBuilder & {
+auto X509CertificateBuilder::setOrganization(String value) -> X509CertificateBuilder & {
     _organization = std::move(value);
     return *this;
 }
 
-auto X509CertificateBuilder::setOrganizationalUnit(text::String value) -> X509CertificateBuilder & {
+auto X509CertificateBuilder::setOrganizationalUnit(String value) -> X509CertificateBuilder & {
     _organizationalUnit = std::move(value);
     return *this;
 }
 
-auto X509CertificateBuilder::addDnsName(text::String value) -> X509CertificateBuilder & {
+auto X509CertificateBuilder::addDnsName(String value) -> X509CertificateBuilder & {
     _dnsNames.append(std::move(value));
     return *this;
 }

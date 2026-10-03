@@ -7,6 +7,7 @@ target_sources(erbsland-core PRIVATE
         AsciiOptionText.hpp
         ExecutableName.cpp
         ExecutableName.hpp
+        HelpName.hpp
         OptionDisplayGroup.hpp
         OptionDisplayGroup_fwd.hpp
         OptionDisplayModel.cpp
@@ -16,9 +17,15 @@ target_sources(erbsland-core PRIVATE
         OptionDisplayRow_fwd.hpp
         OptionDocumentBuilder.cpp
         OptionDocumentBuilder.hpp
+        OptionDocumentBuilder_detail.cpp
         OptionDocumentBuilder_error.cpp
         OptionErrorDiagnostic.cpp
         OptionErrorDiagnostic.hpp
+        OptionHelpSearch.cpp
+        OptionHelpSearch.hpp
+        OptionHelpTarget.cpp
+        OptionHelpTarget.hpp
+        OptionLiterals.hpp
         OptionParsedValue.hpp
         OptionParsedValue_fwd.hpp
         OptionParser.cpp
@@ -30,6 +37,7 @@ target_sources(erbsland-core PRIVATE
         OptionParser_positionals.cpp
         OptionParserStorage.cpp
         OptionParserStorage.hpp
+        OptionParserStorage_error.cpp
         OptionSuggestion.cpp
         OptionSuggestion.hpp
 )

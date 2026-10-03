@@ -75,6 +75,17 @@ After moving an implementation out of a header, remove dependencies that were us
 Source files are reviewed independently for stale includes and direct dependency completeness; they must not rely on
 unrelated transitive includes.
 
+Consumers use canonical public wrappers from the generated header mapping.
+Prefer focused headers such as ``<erbsland/TlsClientConnection.hpp>``.
+Source subdirectories used only for organization do not become required public include components.
+Each configured directory has its own umbrella containing only that directory's selected public headers.
+Include subgroups explicitly, using either ``<erbsland/cryptology/asn1/all.hpp>`` or
+``<erbsland/all_cryptology_asn1.hpp>``.
+Parent umbrellas never collect child headers or umbrellas automatically.
+There is no universal ``<erbsland/all.hpp>``.
+Maintain the directory policy and regenerate wrappers with ``erbsland-core-tool update-public-headers``; see
+:doc:`/development/tool_reference/public_headers_reference`.
+
 Optional Standard-Library Formatters
 ====================================
 
@@ -92,12 +103,22 @@ standard-library interoperability code.
 Directories and Namespaces
 ==========================
 
+A logical unit groups a header with its associated declarations, implementation, and implementation parts.
+For example, ``Name.hpp``, ``Name_fwd.hpp``, ``Name.cpp``, ``Name.tpp``, and ``Name_*.hpp/.cpp/.tpp`` count as one unit
+when deciding the directory layout.
+
 1.  The ``src`` directory matches the global namespace.
-2.  For each used namespace, a subdirectory is created with the namespace name.
-    E.g. the class ``erbsland::math::Integer`` is located in ``src/erbsland/math/Integer.hpp``
+2.  Directories mirror domain namespaces and the ``impl`` boundary.
+    E.g. the class ``erbsland::math::Integer`` is located in ``src/erbsland/math/Integer.hpp``.
 3.  *Additional* directories are allowed, to further group files in the same namespace.
     So, ``math/additions`` and ``math/subtractions`` may exist to group files in the ``math`` namespace.
-    Such subgroupings make sense if a directory exceeds 30 files. 
+    Such subgroupings make sense in general, if a directory exceeds 30 files, or in public APIs to keep headers in
+    separate logical ``all.hpp`` groups.
+4.  Within ``impl``, namespaces may group related constants and helper functions without a matching subdirectory,
+    if the grouped helpers and constants stay in one logical unit.
+    For example, ``src/erbsland/foo/impl/Keys.hpp`` may own ``erbsland::foo::impl::key``, without introducing a
+    subdirectory ``key`` for this single header.
+5.  Within ``impl``, a namespace owning two or more independent logical units should normally have a matching directory.
 
 Separating Implementation Details from the Public API
 =====================================================

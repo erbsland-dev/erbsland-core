@@ -4,17 +4,19 @@
 #include "../../core/ApplicationTestScope.hpp"
 #include "../../path/PathTestFixture.hpp"
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/resource/ResourceError.hpp>
-#include <erbsland/resource/Resources.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Environment.hpp>
-#include <erbsland/text/render/FileSystemLoader.hpp>
-#include <erbsland/text/render/RenderError.hpp>
-#include <erbsland/text/render/ResourceLoader.hpp>
-#include <erbsland/text/StringMap.hpp>
+#include <erbsland/core/impl/application_data/ApplicationResourceData.hpp>
+#include <erbsland/core/impl/ApplicationDataAccess.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/render/FileSystemLoader.hpp>
+#include <erbsland/render/RenderError.hpp>
+#include <erbsland/render/ResourceLoader.hpp>
+#include <erbsland/ResourceError.hpp>
+#include <erbsland/Resources.hpp>
+#include <erbsland/StringMap.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -98,7 +100,7 @@ public: // implement Resources
         if (!text.has_value() && !_invalid.contains(resourceKey)) {
             return {};
         }
-        const auto length = text.has_value() ? text->length() : el::unit::ByteLength{};
+        const auto length = text.has_value() ? text->length() : el::unit::ByteCount{};
         return el::resource::ResourceInfo{length, length, {}, {}, {}, false};
     }
     [[nodiscard]] auto getInfoOrThrow(const el::text::String &identifier, const el::text::String &path) const
@@ -124,13 +126,16 @@ private:
 
 TESTED_TARGETS(ResourceLoader)
 class ResourceLoaderTest final : public el::UnitTest {
+private:
+    static constexpr auto cLayoutsStorage = "layouts"_el;
+
 public:
     void testPrefixMappingOriginAndRetention() {
         auto resources = std::make_shared<ResourceLoaderMemoryResources>();
-        resources->set("layouts"_el, "builtin/email/body.html"_el, "Hello {{ name }}"_el);
-        resources->set("layouts"_el, "builtin/empty"_el, {});
+        resources->set(cLayoutsStorage, "builtin/email/body.html"_el, "Hello {{ name }}"_el);
+        resources->set(cLayoutsStorage, "builtin/empty"_el, {});
         const auto weakResources = std::weak_ptr<ResourceLoaderMemoryResources>{resources};
-        const auto loader = ResourceLoader::create(resources, "layouts"_el, "builtin"_el);
+        const auto loader = ResourceLoader::create(resources, cLayoutsStorage, "builtin"_el);
         resources.reset();
 
         const auto source = loader->load("email/body.html"_el);
@@ -156,19 +161,19 @@ public:
         REQUIRE(source.has_value());
         REQUIRE_EQUAL(source->text(), "hello"_el);
 
-        REQUIRE_THROWS_AS(el::err::ParameterError, ResourceLoader::create(""_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, ResourceLoader::create("bad/id"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, ResourceLoader::create("test"_el, "/absolute"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, ResourceLoader::create("test"_el, "bad//prefix"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, ResourceLoader::create("test"_el, "bad/../prefix"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ResourceLoader::create(""_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ResourceLoader::create("bad/id"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ResourceLoader::create("test"_el, "/absolute"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ResourceLoader::create("test"_el, "bad//prefix"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, ResourceLoader::create("test"_el, "bad/../prefix"_el));
     }
 
     void testInvalidPresentResourceIsLoadFailure() {
         auto resources = std::make_shared<ResourceLoaderMemoryResources>();
-        resources->setInvalid("layouts"_el, "bad"_el);
-        resources->set("layouts"_el, "invalid-utf8"_el, el::text::String{th::stdStringFromHex("41 C0 42")});
+        resources->setInvalid(cLayoutsStorage, "bad"_el);
+        resources->set(cLayoutsStorage, "invalid-utf8"_el, el::text::String{th::stdStringFromHex("41 C0 42")});
         const auto environment = Environment::create();
-        environment->addLayoutLoader(ResourceLoader::create(resources, "layouts"_el));
+        environment->addLayoutLoader(ResourceLoader::create(resources, cLayoutsStorage));
         try {
             static_cast<void>(environment->render("bad"_el));
             REQUIRE(false);
@@ -178,16 +183,34 @@ public:
         REQUIRE_THROWS_AS(RenderError, environment->render("invalid-utf8"_el));
     }
 
+    void testApplicationProviderOutlivesItsApplicationData() {
+        auto loader = LoaderPtr{};
+        auto weakData = std::weak_ptr<el::core::impl::ApplicationData>{};
+        auto weakResources = std::weak_ptr<el::core::impl::ApplicationResourceData>{};
+        {
+            const auto scope = ApplicationTestScope<>{};
+            const auto data = el::core::impl::applicationData();
+            weakData = data;
+            weakResources = data->resources().get();
+            loader = ResourceLoader::create("test"_el);
+        }
+        REQUIRE(weakData.expired());
+        REQUIRE_FALSE(weakResources.expired());
+        REQUIRE_EQUAL(loader->load("plain.txt"_el)->text(), "hello"_el);
+        loader.reset();
+        REQUIRE(weakResources.expired());
+    }
+
     void testFilesystemOverrideOfResourceInclude() {
         auto resources = std::make_shared<ResourceLoaderMemoryResources>();
-        resources->set("layouts"_el, "page"_el, "A{% include \"partials/header\" %}B"_el);
-        resources->set("layouts"_el, "partials/header"_el, "built-in"_el);
+        resources->set(cLayoutsStorage, "page"_el, "A{% include \"partials/header\" %}B"_el);
+        resources->set(cLayoutsStorage, "partials/header"_el, "built-in"_el);
 
         const auto fixture = PathTestFixture{"render-resource-override"};
         fixture.child("partials").operations().createDirectoryOrThrow();
         fixture.child("partials/header").content().writeTextOrThrow("external"_el);
         const auto environment = Environment::create();
-        environment->addLayoutLoader(ResourceLoader::create(resources, "layouts"_el));
+        environment->addLayoutLoader(ResourceLoader::create(resources, cLayoutsStorage));
         environment->addLayoutLoader(FileSystemLoader::create(fixture.path()), 10);
 
         REQUIRE_EQUAL(environment->render("page"_el), "AexternalB"_el);
@@ -195,8 +218,8 @@ public:
 
     void testConcurrentReads() {
         auto resources = std::make_shared<ResourceLoaderMemoryResources>();
-        resources->set("layouts"_el, "page"_el, "Hello"_el);
-        const auto loader = ResourceLoader::create(resources, "layouts"_el);
+        resources->set(cLayoutsStorage, "page"_el, "Hello"_el);
+        const auto loader = ResourceLoader::create(resources, cLayoutsStorage);
         auto valid = std::array<bool, 8U>{};
         auto threads = std::vector<std::thread>{};
         for (auto index = std::size_t{}; index < valid.size(); ++index) {

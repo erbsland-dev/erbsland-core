@@ -6,7 +6,8 @@
 #include "ParameterSelection.hpp"
 #include "ParameterType.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/String.hpp>
 
 #include <optional>
 

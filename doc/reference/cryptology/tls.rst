@@ -9,7 +9,8 @@
     single: Application
     single: Signing Keys
     single: PKCS#8
-    single: TLS Server Identity
+    single: TLS Identity
+    single: System Identity Store
     single: TLS Record Protection
     single: TLS 1.3
 
@@ -20,57 +21,187 @@ TLS Support
 Configuration
 =============
 
-``setTlsConfiguration(label, configuration)`` stores one immutable copy of a ``TlsConfiguration`` under an
-application-wide label.
-Connections resolve and retain that copy when ``connect()`` starts, so replacement or clearing affects only later
-connections.
-``reset()`` and ``clearTlsConfigurations()`` remove every registered entry.
+:cpp:class:`TlsConfiguration <erbsland::cryptology::TlsConfiguration>` groups independent optional :cpp:class:`TlsClientConfiguration <erbsland::cryptology::TlsClientConfiguration>` and :cpp:class:`TlsServerConfiguration <erbsland::cryptology::TlsServerConfiguration>` parts.
+Each part holds its own trust selection and shares an immutable identity.
+:cpp:class:`TlsTrustConfiguration <erbsland::cryptology::TlsTrustConfiguration>` describes profile trust; :cpp:class:`TlsSettings <erbsland::cryptology::TlsSettings>` supplies application-wide defaults and native
+options.
+See :doc:`/topics/cryptology/configuring_tls` for configuring services, loading identities, and reloading profiles.
 
-Resolution first tries the exact label, then removes the final slash-delimited segment until it reaches the empty
-global-default label.
-For example, ``http/client/internal`` tries ``http/client/internal``, ``http/client``, ``http``, and ``""``.
-One complete entry is selected; fields are never merged between a child and its parent.
-An unresolved label or a selected entry without the policy required by a connection role fails synchronously before the
-one-shot connection is consumed.
+Registration and Replacement
+----------------------------
 
-Labels contain at most 16 non-empty slash-separated segments and 255 bytes.
-Segments use lowercase ASCII letters, digits, and interior hyphens.
-The registry contains at most 256 exact entries.
-``hasTlsConfiguration()`` tests only the exact label, while ``resolveTlsConfiguration()`` returns the requested label,
-matched label, and immutable entry as one coherent result.
+:cpp:func:`CryptologyConfiguration::setTlsConfiguration() <erbsland::cryptology::CryptologyConfiguration::setTlsConfiguration>` replaces each supplied role completely, preserving the other role
+already registered at that label.
+It validates supplied roles against the installed shared settings and does not merge fields within a role.
+:cpp:func:`CryptologyConfiguration::replaceTlsConfigurations() <erbsland::cryptology::CryptologyConfiguration::replaceTlsConfigurations>` validates an entire :cpp:class:`TlsConfigurationSet <erbsland::cryptology::TlsConfigurationSet>` before replacing its
+shared settings and named profiles atomically.
+A failed replacement leaves the installed set unchanged.
 
-``TlsConfiguration`` stores an optional explicit-anchor
-:cpp:class:`X509ServerCertificatePolicy <erbsland::cryptology::X509ServerCertificatePolicy>` and an optional immutable
-shared :cpp:class:`TlsServerIdentity <erbsland::cryptology::TlsServerIdentity>`.
-Copies and resolved snapshots share the identity without copying its move-only private key.
-Protected client identities remain deferred.
+:cpp:func:`CryptologyConfiguration::hasTlsConfiguration() <erbsland::cryptology::CryptologyConfiguration::hasTlsConfiguration>` tests exact presence for one role.
+:cpp:func:`CryptologyConfiguration::clearTlsConfiguration() <erbsland::cryptology::CryptologyConfiguration::clearTlsConfiguration>` removes one named role, or both when no role is specified.
+:cpp:func:`CryptologyConfiguration::clearTlsConfigurations() <erbsland::cryptology::CryptologyConfiguration::clearTlsConfigurations>` preserves shared settings and built-in defaults.
+:cpp:func:`CryptologyConfiguration::reset() <erbsland::cryptology::CryptologyConfiguration::reset>` also restores shared TLS defaults.
+Connections retain their selected immutable profiles and effective policies across registry changes.
 
-:cpp:class:`TlsConfigurationParser <erbsland::cryptology::TlsConfigurationParser>` turns one ELCL section-list entry
-into a labeled :cpp:class:`TlsConfigurationEntry <erbsland::cryptology::TlsConfigurationEntry>` without accessing the
-application singleton.
-See :doc:`/topics/cryptology/configuring_tls` for the configuration schema, relative-file behavior, and registration
-workflow.
+Label Resolution
+----------------
 
+:cpp:func:`CryptologyConfiguration::resolveTlsConfiguration() <erbsland::cryptology::CryptologyConfiguration::resolveTlsConfiguration>` searches only the requested :cpp:enum:`TlsRole <erbsland::cryptology::TlsRole>` at the exact label, its
+slash-delimited ancestors, and finally the reserved empty label.
+The returned :cpp:class:`TlsConfigurationResolution <erbsland::cryptology::TlsConfigurationResolution>` contains
+requested and matched labels, the role, the immutable configuration, and its effective certificate policy.
+Resolution performs no file access or native trust evaluation.
+An invalid selected role fails without trying an ancestor.
+:cpp:func:`CryptologyConfiguration::resolveTlsConfigurations() <erbsland::cryptology::CryptologyConfiguration::resolveTlsConfigurations>` captures multiple labels from one registry state, allowing a
+server to select its default and SNI profiles consistently.
 
-Erbsland Core does not automatically read environment variables or command-line options for this interface.
-The application decides how enterprise configuration is authenticated, parsed, and applied.
+Both built-in defaults always exist and cannot be registered, replaced, or individually cleared.
+The client default has no identity and selects system trust subject to shared settings; all unresolved client labels
+reach it.
+The server default has no identity and fails synchronously when resolved.
+Low-level TLS connections request ``tls`` and HTTP requests ``http`` in both roles.
 
-Server Identities
-=================
+Named labels contain at most 16 nonempty slash-separated segments and 255 bytes, using lowercase ASCII letters, digits,
+and interior hyphens.
+At most 256 named labels may be installed; a label containing both roles counts once and defaults consume no capacity.
 
-:cpp:class:`TlsServerIdentity <erbsland::cryptology::TlsServerIdentity>` combines a leaf-first ordered certificate
-chain with its move-only signing key.
-Construction rejects empty values, a leaf/key mismatch, or a key that supports no TLS 1.3 ``CertificateVerify`` scheme.
-Ed25519 points compare exactly, P-256/P-384 points compare after affine normalization so compressed certificate keys are
-accepted, and RSA matching includes modulus, exponent, key family, and PSS restrictions.
+Trust Selection and Shared Settings
+-----------------------------------
 
-``selectSignatureScheme()`` examines ClientHello schemes in peer order and returns the first compatible value.
-:cpp:class:`TlsConfiguration <erbsland::cryptology::TlsConfiguration>` stores an optional identity through immutable
-shared ownership.
-Configuration copies and application snapshots therefore remain copyable without copying private key material, and an
-existing snapshot retains its identity after a later configuration is replaced or cleared.
+:cpp:func:`TlsTrustConfiguration::resolve() <erbsland::cryptology::TlsTrustConfiguration::resolve>` applies trust selection in this order:
 
-Hardware-backed keys, multiple or SNI-selected identities, and the TLS server protocol are outside this interface.
+#. The profile's explicit ``System Trust`` value.
+#. Explicit anchors in the profile, which select explicit trust.
+#. The shared ``System Trust`` value, if specified.
+#. The role default: system trust for clients, explicit trust for servers.
+
+Profile system trust cannot be combined with explicit anchors, and intermediates require explicit anchors.
+Clients always require an effective trust source.
+Servers require one when :cpp:enum:`TlsClientAuthentication <erbsland::cryptology::TlsClientAuthentication>` is
+``Optional`` or ``Required``.
+Disabling shared system trust without supplying client anchors causes resolution to fail, never unverified acceptance.
+
+The following ELCL fields belong to ``[TLS]`` and map to :cpp:class:`TlsSettings <erbsland::cryptology::TlsSettings>`:
+
+.. list-table::
+    :header-rows: 1
+    :widths: 30 25 45
+
+    * - Field
+      - Default
+      - Effect
+    * - ``System Trust``
+      - Unspecified
+      - Override role defaults unless the profile selects its own trust source.
+    * - ``Trust Allow Network``
+      - ``true``
+      - Allow native trust evaluation to retrieve intermediate certificates and revocation information.
+    * - ``Trust Bundle File``
+      - Automatic discovery
+      - Override the Linux system CA bundle.
+    * - ``Identity Allow Interaction``
+      - ``false``
+      - Permit native identity providers to prompt during loading and signing.
+
+A bundle override on another platform fails when a system-trust policy is evaluated.
+Identity interaction permission is captured at loading and remains attached to the signer.
+Changing that permission requires reloading the identity.
+See :doc:`x509_certificates` for platform trust behavior and revocation handling.
+
+ELCL Parsing and Validation
+---------------------------
+
+:cpp:func:`TlsConfigurationParser::parse() <erbsland::cryptology::TlsConfigurationParser::parse>` parses the complete optional TLS section into an owned :cpp:class:`TlsConfigurationSet <erbsland::cryptology::TlsConfigurationSet>`.
+The schema has shared ``[TLS]`` settings and optional ``*[TLS . Client]*`` and ``*[TLS . Server]*`` section lists.
+A label may occur once per role; matching labels across the two lists combine into one configuration.
+An absent TLS section returns a default set.
+ELCL names are case-insensitive and treat spaces and underscores equivalently.
+
+:cpp:func:`TlsConfigurationParser::validationRules() <erbsland::cryptology::TlsConfigurationParser::validationRules>` and :cpp:func:`TlsConfigurationParser::version() <erbsland::cryptology::TlsConfigurationParser::version>` expose the compiled schema and
+its version for a separate validation pass.
+Parsing always repeats schema validation, then loads certificate and identity material and checks profile trust.
+Validation alone does not load files or verify certificate/key matches.
+Password fields receive secret annotations even when supplied as ordinary ELCL text.
+
+Relative material paths resolve from the file defining the field, including fields supplied by an included file.
+Absolute paths are accepted as written.
+Text and stream sources require absolute paths.
+Loading errors are reported as :cpp:class:`ConfError <erbsland::conf::ConfError>` with the responsible source location
+and the underlying error as a cause where available.
+
+TLS Identities
+==============
+
+:cpp:class:`TlsIdentity <erbsland::cryptology::TlsIdentity>` combines a leaf-first certificate chain with a signer backed by a software key or an operating-system
+provider.
+The software-key constructor takes a move-only :cpp:class:`SigningPrivateKey <erbsland::cryptology::SigningPrivateKey>`.
+Construction rejects an empty chain, a leaf/key mismatch, or a key with no supported TLS 1.3 signature scheme.
+Identity chains are limited to 16 certificates and a one-MiB encoded TLS Certificate message.
+Mismatches and unsupported schemes report ``CryptologyError``; empty components are caller precondition failures.
+
+:cpp:func:`TlsConfiguration::setServer() <erbsland::cryptology::TlsConfiguration::setServer>` and ``setClient()`` configure independent role parts.
+Their identities use immutable shared ownership.
+Configuration copies and connection snapshots share the identity without copying private key material.
+Replacing or clearing a registry entry does not invalidate existing snapshots.
+``selectSignatureScheme()`` examines the peer's offered schemes in order and returns the first compatible value.
+
+Client Certificate Authentication
+---------------------------------
+
+A client identity is sent only in response to an initial CertificateRequest, after the server's certificate,
+CertificateVerify, and Finished messages have authenticated it.
+The identity must satisfy certificate validity, digital-signature key usage, client-authentication purpose, requested
+issuer names, and signature-scheme requirements.
+Unsupported nonempty OID filters suppress identity disclosure.
+An absent or unsuitable identity produces an empty certificate list; the connection never searches a store for another
+identity.
+:cpp:func:`TlsServerConfiguration::setClientAuthentication() <erbsland::cryptology::TlsServerConfiguration::setClientAuthentication>` selects whether the server requests a client certificate during
+the initial handshake:
+
+.. list-table::
+    :header-rows: 1
+    :widths: 20 80
+
+    * - Mode
+      - Behavior
+    * - ``Disabled``
+      - Send no certificate request. This is the default.
+    * - ``Optional``
+      - Request a certificate and accept an empty certificate list as anonymous.
+    * - ``Required``
+      - Request a certificate and reject an empty certificate list with ``certificate_required``.
+
+Both enabled modes reject invalid presented certificates or proofs of private-key possession.
+CertificateRequest uses an empty context and supported signature algorithms without CA-name hints or OID filters.
+Client path validation, CertificateVerify, and Finished must all succeed before authenticated peer metadata is
+published.
+See :doc:`/reference/network/connections` for server connection metadata and its lifetime.
+Post-handshake authentication, PSK/resumption, and early data are not supported.
+
+Native Identity Stores
+----------------------
+
+:cpp:func:`SystemIdentityStore::list() <erbsland::cryptology::SystemIdentityStore::list>` returns public :cpp:struct:`SystemIdentityInfo <erbsland::cryptology::SystemIdentityInfo>` metadata.
+``load()`` selects an identity by its exact 32-byte SHA-256 leaf-certificate fingerprint and returns a
+:cpp:class:`TlsIdentity <erbsland::cryptology::TlsIdentity>` that retains the native signer without exporting the
+private key.
+Public intermediate certificates are collected from locally available material, within the identity chain limit.
+Enumeration is limited to 4,096 entries.
+
+macOS uses identities from the current user's Keychain.
+Windows uses the current-user personal certificate store with CNG private keys; legacy CAPI keys and machine stores are
+not supported.
+``isSupported()`` reports whether a native provider is available; Linux applications can use file-based identities.
+Provisioning certificates and private keys remains a deployment task.
+
+Store enumeration and identity loading are synchronous, so perform them during setup or on an appropriate worker.
+Connection-triggered signing runs on background workers as described in :doc:`/reference/network/connections`.
+``SystemIdentityStore{true}`` permits provider authorization dialogs; the default is silent access.
+On macOS, Keychain interaction policy is process-wide.
+The library serializes its own Keychain calls and restores the previous policy after each call; applications making
+independent Security.framework calls must coordinate their use of that policy.
+
+See :doc:`/topics/cryptology/configuring_tls` for configuring file-based and native identities in ELCL.
 
 TLS 1.3 Record Protection
 =========================
@@ -91,6 +222,7 @@ All supported constructions use a 96-bit nonce and a 128-bit authentication tag.
 
 Create a move-only ``TlsTrafficSecret`` from exact SHA-256- or SHA-384-sized bytes.
 The consuming factory erases its input allocation after copying the secret into ``ProtectedByteBlock``.
+An incorrect input length reports ``OutOfRangeError``.
 There is intentionally no plaintext accessor.
 Record state resolves the secret only inside an erased callback while deriving a key, IV, or next-generation secret.
 
@@ -176,10 +308,23 @@ Specifications
   <https://www.rfc-editor.org/rfc/rfc8446.html>`_
 * `RFC 8448: Example Handshake Traces for TLS 1.3 <https://www.rfc-editor.org/rfc/rfc8448.html>`_
 
+Programmatic TLS profile registration and resolution raise ``CryptologyError`` for unusable profiles, conflicting trust
+settings, duplicate roles, or registry capacity exhaustion.
+Invalid label syntax and role values are caller precondition failures.
+Linux trust-bundle discovery and unstable snapshots also raise ``CryptologyError``; file access and certificate parsing
+retain their documented path, stream, and parse errors.
+
 Interface
 =========
 
+.. doxygenstruct:: erbsland::cryptology::SystemIdentityInfo
+    :members:
+.. doxygenclass:: erbsland::cryptology::SystemIdentityStore
+    :members:
 .. doxygenclass:: erbsland::cryptology::TlsCipherSuite
+    :members:
+.. doxygenenum:: erbsland::cryptology::TlsClientAuthentication
+.. doxygenclass:: erbsland::cryptology::TlsClientConfiguration
     :members:
 .. doxygenclass:: erbsland::cryptology::TlsConfiguration
     :members:
@@ -189,9 +334,18 @@ Interface
     :members:
 .. doxygenclass:: erbsland::cryptology::TlsConfigurationResolution
     :members:
-.. doxygenclass:: erbsland::cryptology::TlsServerIdentity
+.. doxygenclass:: erbsland::cryptology::TlsConfigurationSet
+    :members:
+.. doxygenclass:: erbsland::cryptology::TlsIdentity
+    :members:
+.. doxygenenum:: erbsland::cryptology::TlsRole
+.. doxygenclass:: erbsland::cryptology::TlsServerConfiguration
+    :members:
+.. doxygenclass:: erbsland::cryptology::TlsSettings
     :members:
 .. doxygenclass:: erbsland::cryptology::TlsSignatureScheme
+    :members:
+.. doxygenclass:: erbsland::cryptology::TlsTrustConfiguration
     :members:
 .. doxygenenum:: erbsland::cryptology::TlsRecordContentType
 .. doxygenclass:: erbsland::cryptology::TlsRecordDecryptor

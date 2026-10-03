@@ -1,6 +1,5 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "Statistics.hpp"
 
 #include "SampleMeasurement.hpp"
@@ -35,9 +34,8 @@ Statistics::Statistics(const List<SampleMeasurement> &measurements) {
         values.append(
             static_cast<double>(measurement.wallTime.toNanoseconds().toRawValue()) / static_cast<double>(operations));
         _totalElapsed += measurement.wallTime;
-        for (auto index = std::size_t{}; index < metricCount.toSizeT(); ++index) {
-            _metricTotals.set(
-                ItemIndex{index}, _metricTotals.toRawValue()[index] + measurement.metrics.toRawValue()[index]);
+        for (auto index = ItemIndex::zero(); index.isWithin(metricCount); index.uncheckedIncrement()) {
+            _metricTotals.set(index, _metricTotals.get(index) + measurement.metrics.get(index));
         }
         for (const auto &worker : measurement.workers) {
             const auto rate = normalizedRate(worker.operations, worker.elapsed);

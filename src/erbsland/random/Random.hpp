@@ -11,8 +11,8 @@
 #include "../mem/ByteBuffer.hpp"
 #include "../text/CharSet.hpp"
 #include "../text/StringEditor.hpp"
-#include "../unit/ByteLength.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/ByteCount.hpp"
+#include "../unit/CpCount.hpp"
 #include "../unit/ItemCount.hpp"
 #include "../unit/ItemIndex.hpp"
 #include "../util/HashSet.hpp"
@@ -64,20 +64,20 @@ public:
     template <math::NativeInteger T>
     [[nodiscard]] auto buildIntegerList(unit::ItemCount count, T minimum, T maximum) -> util::List<T>;
     /// Create a random UTF-8 string with characters from the given set.
-    /// @param length The number of Unicode code points to build. Zero or infinite lengths return an empty string.
+    /// @param length The Unicode code-point count. Finite lengths must not exceed the maximum representable string
+    /// length; zero or infinite lengths return an empty string.
     /// @param characters The character choices. An empty set returns an empty string.
     /// @return A random UTF-8 string, or an empty string.
-    /// @throws err::OutOfRangeError If the length exceeds the maximum possible value.
-    [[nodiscard]] auto buildString(unit::CpLength length, const text::CharSet &characters) -> text::String;
+    [[nodiscard]] auto buildString(unit::CpCount length, const text::CharSet &characters) -> text::String;
     /// Create a block of random bytes.
     /// @param length The number of bytes to build. Zero or infinite lengths return an empty block.
     /// @return A block with random bytes, or an empty block.
-    [[nodiscard]] auto buildByteBlock(unit::ByteLength length) -> mem::ByteBlock;
+    [[nodiscard]] auto buildByteBlock(unit::ByteCount length) -> mem::ByteBlock;
     /// Create a deep-copying buffer of random bytes.
     /// @param length The number of bytes to build. Zero or infinite lengths return an empty buffer.
     /// Secure generators return a buffer with sensitive mode enabled.
     /// @return A buffer with random bytes, or an empty buffer.
-    [[nodiscard]] auto buildByteBuffer(unit::ByteLength length) -> mem::ByteBuffer;
+    [[nodiscard]] auto buildByteBuffer(unit::ByteCount length) -> mem::ByteBuffer;
     /// Select a valid element index for a container with `count` elements.
     /// @param count The number of available elements.
     /// @return A random index in `[0, count)`, or `ItemIndex::noIndex()` for zero or infinite counts.
@@ -90,21 +90,23 @@ public: // element selection
     /// @param valueIfEmpty The fallback value to return when `choices` is empty.
     /// @return A selected element, or `valueIfEmpty` for empty choices.
     template <typename T>
-    [[nodiscard]] auto selectElement(std::span<const T> choices, const T &valueIfEmpty = {}) -> T;
+    [[nodiscard]] auto selectElement(std::span<const T> choices, const std::type_identity_t<T> &valueIfEmpty = {}) -> T;
     /// Select one random element from the given choices.
     /// @tparam T The element type.
     /// @param choices The available choices. Must not be empty unless `valueIfEmpty` shall be returned.
     /// @param valueIfEmpty The fallback value to return when `choices` is empty.
     /// @return A selected element, or `valueIfEmpty` for empty choices.
     template <typename T>
-    [[nodiscard]] auto selectElement(const std::vector<T> &choices, const T &valueIfEmpty = {}) -> T;
+    [[nodiscard]] auto selectElement(const std::vector<T> &choices, const std::type_identity_t<T> &valueIfEmpty = {})
+        -> T;
     /// Select one random element from the given choices.
     /// @tparam T The element type.
     /// @param choices The available choices. Must not be empty unless `valueIfEmpty` shall be returned.
     /// @param valueIfEmpty The fallback value to return when `choices` is empty.
     /// @return A selected element, or `valueIfEmpty` for empty choices.
     template <typename T>
-    [[nodiscard]] auto selectElement(std::initializer_list<T> choices, const T &valueIfEmpty = {}) -> T;
+    [[nodiscard]] auto selectElement(std::initializer_list<T> choices, const std::type_identity_t<T> &valueIfEmpty = {})
+        -> T;
     /// Select one random element from the given choices.
     /// @tparam T The element type.
     /// @tparam Self The list CRTP type.
@@ -112,7 +114,8 @@ public: // element selection
     /// @param valueIfEmpty The fallback value to return when `choices` is empty.
     /// @return A selected element, or `valueIfEmpty` for empty choices.
     template <typename T, typename Self>
-    [[nodiscard]] auto selectElement(const util::List<T, Self> &choices, const T &valueIfEmpty = {}) -> T;
+    [[nodiscard]] auto selectElement(
+        const util::List<T, Self> &choices, const std::type_identity_t<T> &valueIfEmpty = {}) -> T;
     /// Select one random element from the given choices.
     /// @tparam T The element type.
     /// @tparam Compare The ordered-set comparison type.
@@ -121,7 +124,8 @@ public: // element selection
     /// @param valueIfEmpty The fallback value to return when `choices` is empty.
     /// @return A selected element, or `valueIfEmpty` for empty choices.
     template <typename T, typename Compare, typename Self>
-    [[nodiscard]] auto selectElement(const util::Set<T, Compare, Self> &choices, const T &valueIfEmpty = {}) -> T;
+    [[nodiscard]] auto selectElement(
+        const util::Set<T, Compare, Self> &choices, const std::type_identity_t<T> &valueIfEmpty = {}) -> T;
     /// Select one random element from the given choices.
     /// @tparam T The element type.
     /// @tparam Hash The hash-set hash type.
@@ -131,8 +135,8 @@ public: // element selection
     /// @param valueIfEmpty The fallback value to return when `choices` is empty.
     /// @return A selected element, or `valueIfEmpty` for empty choices.
     template <typename T, typename Hash, typename Equal, typename Self>
-    [[nodiscard]] auto selectElement(const util::HashSet<T, Hash, Equal, Self> &choices, const T &valueIfEmpty = {})
-        -> T;
+    [[nodiscard]] auto selectElement(
+        const util::HashSet<T, Hash, Equal, Self> &choices, const std::type_identity_t<T> &valueIfEmpty = {}) -> T;
     /// Build a list by sampling elements with replacement.
     /// @tparam T The element type.
     /// @param count The number of elements to build. Zero or infinite counts return an empty list.

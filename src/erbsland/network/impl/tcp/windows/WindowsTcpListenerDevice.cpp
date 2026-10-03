@@ -4,7 +4,7 @@
 
 #include "WindowsTcpSocket.hpp"
 
-#include "../../../../err/RuntimeError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../system/impl/WindowsErrorContext.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../source/NetworkError.hpp"
@@ -16,6 +16,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace text;
 using namespace text::literals;
 
 WindowsTcpAcceptOperation::~WindowsTcpAcceptOperation() {
@@ -128,7 +129,8 @@ auto WindowsTcpListenerState::requireDriver(event::EventLoopDriverPtr driver)
     -> std::shared_ptr<event::impl::WindowsEventLoopDriver> {
     auto result = std::dynamic_pointer_cast<event::impl::WindowsEventLoopDriver>(std::move(driver));
     if (result == nullptr) {
-        throw err::RuntimeError{"TCP listeners require the platform's default native event-loop driver."_el};
+        throw err::ParameterFailure{
+            "TCP listeners require the platform's default native event-loop driver."_el, "driver"_el};
     }
     return result;
 }
@@ -279,12 +281,11 @@ void WindowsTcpListenerState::releaseRegistrationIfIdle() noexcept {
     }
 }
 
-auto WindowsTcpListenerState::createError(const int errorCode, text::String title, text::String description) const
-    -> NetworkError {
+auto WindowsTcpListenerState::createError(const int errorCode, String title, String description) const -> NetworkError {
     return NetworkError{createContext(errorCode, std::move(title), std::move(description))};
 }
 
-auto WindowsTcpListenerState::createContext(const int errorCode, text::String title, text::String description) const
+auto WindowsTcpListenerState::createContext(const int errorCode, String title, String description) const
     -> NetworkErrorContext {
     auto context = NetworkErrorContext{std::move(title), std::move(description)};
     context.setReason(errorReason(errorCode))

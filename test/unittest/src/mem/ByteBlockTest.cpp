@@ -1,22 +1,23 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteArray.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/mem/ByteBlockLiteral.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/mem/ByteSpan.hpp>
-#include <erbsland/mem/Endianness.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteBlockLiteral.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/ByteSpan.hpp>
+#include <erbsland/Endianness.hpp>
 #include <erbsland/mem/impl/BestGrowth.hpp>
 #include <erbsland/mem/impl/ByteBlockData.hpp>
 #include <erbsland/mem/impl/SecureErase.hpp>
 #include <erbsland/mem/impl/UnsafeByteBlockAccess.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ByteRange.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/OutOfRangeFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>
@@ -36,8 +37,8 @@ using el::mem::ByteBlockEditor;
 using el::mem::ByteBuffer;
 using el::mem::ConstByteSpan;
 using el::mem::Endianness;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteRange;
 
 TESTED_TARGETS(Byte ByteBlock ByteBlockEditor)
@@ -130,7 +131,7 @@ public:
         REQUIRE(ByteBlock({}).isEmpty());
         REQUIRE_EQUAL(ByteBlockEditor({1U, 2U}).toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
 
-        const auto filled = ByteBlock{ByteLength{3U}, Byte{0xabu}};
+        const auto filled = ByteBlock{ByteCount{3U}, Byte{0xabu}};
         REQUIRE_EQUAL(filled.toUInt8Vector(), std::vector<uint8_t>({0xabU, 0xabU, 0xabU}));
 
         const auto fromBytes = ByteBlock::fromSpan(ByteBuffer{Byte{1U}, Byte{2U}}.span());
@@ -169,9 +170,9 @@ public:
         const auto literalPointer = el::mem::toConstByteSpan(std::span{cLiteralData}).data();
         const auto block = ByteBlock{literal};
         const auto alias = block;
-        const auto slice = block.slice(ByteIndex{1U}, ByteLength{2U});
+        const auto slice = block.slice(ByteIndex{1U}, ByteCount{2U});
         const auto independentCopy = block.copy();
-        const auto kept = block.kept(ByteRange{ByteIndex{1U}, ByteLength{2U}});
+        const auto kept = block.kept(ByteRange{ByteIndex{1U}, ByteCount{2U}});
 
         REQUIRE_EQUAL(block.span().data(), literalPointer);
         REQUIRE_EQUAL(alias.span().data(), literalPointer);
@@ -212,8 +213,7 @@ public:
         REQUIRE_EQUAL(block.toByteBuffer(), ByteBuffer({Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}}));
         REQUIRE_EQUAL(editor.toByteBuffer(), ByteBuffer({Byte{5U}, Byte{6U}}));
         REQUIRE_EQUAL(ByteBuffer{block.span()}, block.toByteBuffer());
-        REQUIRE_EQUAL(
-            ByteBuffer{block.span(ByteIndex{1U}, ByteLength{8U})}, ByteBuffer({Byte{2U}, Byte{3U}, Byte{4U}}));
+        REQUIRE_EQUAL(ByteBuffer{block.span(ByteIndex{1U}, ByteCount{8U})}, ByteBuffer({Byte{2U}, Byte{3U}, Byte{4U}}));
         auto visited = ByteBuffer{};
         static_cast<void>(block.forEach([&visited](const Byte byte, const ByteIndex) { visited.append(byte); }));
         REQUIRE_EQUAL(visited, block.toByteBuffer());
@@ -240,12 +240,12 @@ public:
 
     void testMemoryManagementAndCow() {
         auto editor = makeEditor({1U, 2U, 3U});
-        editor.reserve(ByteLength{10U});
+        editor.reserve(ByteCount{10U});
         const auto reservedCapacity = el::mem::impl::BestGrowth{3U, 10U}.bestGrowth<el::mem::impl::ByteBlockData>();
-        REQUIRE_EQUAL(editor.capacity(), ByteLength::fromSizeT(reservedCapacity));
-        editor.resize(ByteLength{5U});
+        REQUIRE_EQUAL(editor.capacity(), ByteCount::fromSizeT(reservedCapacity));
+        editor.resize(ByteCount{5U});
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 0U, 0U}));
-        editor.resize(ByteLength{3U});
+        editor.resize(ByteCount{3U});
 
         auto copy = editor;
         editor.set(ByteIndex{0U}, Byte{9U});
@@ -254,7 +254,7 @@ public:
 
         editor.clear();
         REQUIRE(editor.isEmpty());
-        REQUIRE_EQUAL(editor.capacity(), ByteLength::fromSizeT(reservedCapacity));
+        REQUIRE_EQUAL(editor.capacity(), ByteCount::fromSizeT(reservedCapacity));
 
         editor.reset();
         REQUIRE(editor.isEmpty());
@@ -267,7 +267,7 @@ public:
     void testSensitivityMarkAndAliases() {
         auto editor = makeEditor({1U, 2U, 3U, 4U});
         const auto block = ByteBlock{editor};
-        auto slice = block.slice(ByteIndex{1U}, ByteLength{2U});
+        auto slice = block.slice(ByteIndex{1U}, ByteCount{2U});
         REQUIRE_FALSE(editor.isSensitive());
         REQUIRE_FALSE(block.isSensitive());
 
@@ -279,7 +279,7 @@ public:
         editor.set(ByteIndex{0U}, Byte{9U});
         REQUIRE(editor.isSensitive());
         REQUIRE(block.isSensitive());
-        editor.reserve(ByteLength{64U});
+        editor.reserve(ByteCount{64U});
         REQUIRE(editor.isSensitive());
         editor.shrinkToFit();
         REQUIRE(editor.isSensitive());
@@ -292,7 +292,7 @@ public:
         emptyEditor.markAsSensitive();
         REQUIRE_FALSE(emptyBlock.isSensitive());
         REQUIRE_FALSE(emptyEditor.isSensitive());
-        emptyEditor.reserve(ByteLength{8U});
+        emptyEditor.reserve(ByteCount{8U});
         emptyEditor.markAsSensitive();
         REQUIRE(emptyEditor.isSensitive());
         emptyEditor.clear();
@@ -348,9 +348,9 @@ public:
     void testRejectsSizesBeyondSharedByteLimit() {
         if constexpr (sizeof(std::size_t) > sizeof(std::uint32_t)) {
             const auto tooLarge = static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()) + 1U;
-            REQUIRE_THROWS_AS(el::err::OutOfRangeError, ByteBlockEditor{ByteLength::fromSizeT(tooLarge)});
+            REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, ByteBlockEditor{ByteCount::fromSizeT(tooLarge)});
             auto editor = ByteBlockEditor{};
-            REQUIRE_THROWS_AS(el::err::OutOfRangeError, editor.reserve(ByteLength::fromSizeT(tooLarge)));
+            REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, editor.reserve(ByteCount::fromSizeT(tooLarge)));
         }
     }
 
@@ -361,15 +361,15 @@ public:
         {
             auto editor = makeEditor({1U, 2U, 3U, 4U});
             editor.markAsSensitive();
-            editor.resize(ByteLength{2U});
+            editor.resize(ByteCount{2U});
             editor.clear();
             REQUIRE(_eraseEvents.empty());
-            editor.resize(ByteLength{4U});
-            editor.reserve(ByteLength{128U});
+            editor.resize(ByteCount{4U});
+            editor.reserve(ByteCount{128U});
             REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
             REQUIRE(_eraseEvents.front().isZero);
             _eraseEvents.clear();
-            REQUIRE_EQUAL(editor.capacity(), ByteLength::fromSizeT(expectedCapacity));
+            REQUIRE_EQUAL(editor.capacity(), ByteCount::fromSizeT(expectedCapacity));
         }
         REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
         REQUIRE_EQUAL(
@@ -396,7 +396,7 @@ public:
     }
 
     void testIntegerAccess() {
-        auto editor = ByteBlockEditor{ByteLength{12U}};
+        auto editor = ByteBlockEditor{ByteCount{12U}};
 
         REQUIRE(editor.setInteger(ByteIndex{0U}, uint32_t{0x12345678U}));
         editor.setIntegerOrThrow(ByteIndex{4U}, int32_t{-0x1234567}, Endianness::Big);
@@ -444,8 +444,7 @@ public:
         const auto needle = makeBlock({2U, 3U});
         const auto empty = ByteBlock{};
 
-        REQUIRE_EQUAL(
-            block.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}}).toUInt8Vector(), std::vector<uint8_t>({2U, 3U, 2U}));
+        REQUIRE_EQUAL(block.slice({ByteIndex{1U}, ByteCount{3U}}).toUInt8Vector(), std::vector<uint8_t>({2U, 3U, 2U}));
         REQUIRE(block.slice(ByteRange::noRange()).isEmpty());
         REQUIRE(block.startsWith(makeBlock({1U, 2U})));
         REQUIRE(block.endsWith(makeBlock({3U, 4U})));
@@ -462,13 +461,13 @@ public:
     void testModification() {
         auto editor = makeEditor({1U, 2U, 3U, 4U});
 
-        editor.remove(ByteRange{ByteIndex{1U}, ByteLength{2U}});
+        editor.remove(ByteRange{ByteIndex{1U}, ByteCount{2U}});
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({1U, 4U}));
 
         editor.insert(ByteIndex{1U}, makeBlock({7U, 8U}));
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({1U, 7U, 8U, 4U}));
 
-        editor.replace(ByteRange{ByteIndex{1U}, ByteLength{2U}}, makeBlock({5U}));
+        editor.replace(ByteRange{ByteIndex{1U}, ByteCount{2U}}, makeBlock({5U}));
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({1U, 5U, 4U}));
 
         editor.replace(ByteRange::noRange(), makeBlock({6U}));
@@ -477,7 +476,7 @@ public:
         editor.append(Byte{9U}).append(makeBlock({10U, 11U}));
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({1U, 5U, 4U, 9U, 10U, 11U}));
 
-        editor.keep(ByteRange{ByteIndex{1U}, ByteLength{3U}});
+        editor.keep(ByteRange{ByteIndex{1U}, ByteCount{3U}});
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({5U, 4U, 9U}));
 
         editor.keep(ByteRange::noRange());
@@ -488,7 +487,7 @@ public:
         const auto dynamicSource = ConstByteSpan{dynamicSourceStorage.span()};
         editor.append(fixedSource.span());
         editor.insert(ByteIndex{1U}, dynamicSource);
-        editor.replace(ByteRange{ByteIndex{0U}, ByteLength{2U}}, fixedSource.span());
+        editor.replace(ByteRange{ByteIndex{0U}, ByteCount{2U}}, fixedSource.span());
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({7U, 8U, 10U, 11U, 8U}));
 
         auto aliasing = ByteBlockEditor({1U, 2U, 3U});
@@ -498,25 +497,25 @@ public:
         REQUIRE_EQUAL(aliasing.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 2U, 3U}));
 
         auto repeated = makeEditor({1U, 2U, 3U, 4U});
-        repeated.appendRepeated(ByteRange{ByteIndex{1U}, ByteLength{2U}}, ByteLength{7U});
+        repeated.appendRepeated(ByteRange{ByteIndex{1U}, ByteCount{2U}}, ByteCount{7U});
         REQUIRE_EQUAL(repeated.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 4U, 2U, 3U, 2U, 3U, 2U, 3U, 2U}));
-        repeated.appendRepeated(ByteRange::noRange(), ByteLength{});
+        repeated.appendRepeated(ByteRange::noRange(), ByteCount{});
         REQUIRE_THROWS_AS(
-            el::err::OutOfRangeError,
-            repeated.appendRepeated(ByteRange{ByteIndex{99U}, ByteLength{1U}}, ByteLength{1U}));
+            el::err::OutOfRangeFailure,
+            repeated.appendRepeated(ByteRange{ByteIndex{99U}, ByteCount{1U}}, ByteCount{1U}));
     }
 
     void testAppendOverwriteAndXor() {
         auto editor = makeEditor({0U, 1U, 2U, 3U, 4U, 5U});
         const auto firstSource = ByteArray{Byte{9U}, Byte{8U}};
-        const auto firstRange = ByteRange{ByteIndex{1U}, ByteLength{2U}};
+        const auto firstRange = ByteRange{ByteIndex{1U}, ByteCount{2U}};
         editor.overwrite(firstRange, ByteBlock{firstSource});
-        editor.overwrite({ByteIndex{3U}, ByteLength{2U}}, makeBlock({7U, 6U}));
+        editor.overwrite({ByteIndex{3U}, ByteCount{2U}}, makeBlock({7U, 6U}));
         editor.overwrite({ByteIndex{5U}, ByteIndex{6U}}, ByteBlock{ByteArray{Byte{4U}}});
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({0U, 9U, 8U, 7U, 6U, 4U}));
 
-        const auto aliased = ByteBlock{editor}.slice(ByteIndex{1U}, ByteLength{3U});
-        editor.overwrite({ByteIndex{0U}, ByteLength{3U}}, aliased);
+        const auto aliased = ByteBlock{editor}.slice(ByteIndex{1U}, ByteCount{3U});
+        editor.overwrite({ByteIndex{0U}, ByteCount{3U}}, aliased);
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({9U, 8U, 7U, 7U, 6U, 4U}));
 
         const auto shared = ByteBlock{editor};
@@ -533,12 +532,12 @@ public:
         editor.xorWith(ByteRange::noRange(), ByteArray{Byte{0xffU}}.span());
         editorData = editor.span().data();
         REQUIRE_EQUAL(editorData, sharedData);
-        editor.overwrite({ByteIndex{5U}, ByteLength{2U}}, ByteArray{Byte{1U}, Byte{2U}}.span());
+        editor.overwrite({ByteIndex{5U}, ByteCount{2U}}, ByteArray{Byte{1U}, Byte{2U}}.span());
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({9U, 8U, 7U, 7U, 6U, 1U}));
-        editor.overwrite({ByteIndex{0U}, ByteLength{2U}}, ByteArray{Byte{2U}}.span());
+        editor.overwrite({ByteIndex{0U}, ByteCount{2U}}, ByteArray{Byte{2U}}.span());
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({2U, 8U, 7U, 7U, 6U, 1U}));
-        editor.fill({ByteIndex{1U}, ByteLength{2U}}, Byte{0xaaU});
-        editor.xorWith({ByteIndex{1U}, ByteLength{2U}}, ByteArray{Byte{0xffU}, Byte{0x0fU}}.span());
+        editor.fill({ByteIndex{1U}, ByteCount{2U}}, Byte{0xaaU});
+        editor.xorWith({ByteIndex{1U}, ByteCount{2U}}, ByteArray{Byte{0xffU}, Byte{0x0fU}}.span());
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({2U, 0x55U, 0xa5U, 7U, 6U, 1U}));
 
         editor.append(ByteBlock{ByteArray{Byte{0xaaU}, Byte{0xbbU}}})
@@ -557,12 +556,12 @@ public:
         const auto xorBeforeFailure = xorEditor.toUInt8Vector();
         REQUIRE_FALSE(xorEditor.xorWith(makeBlock({1U})));
         REQUIRE_EQUAL(xorEditor.toUInt8Vector(), xorBeforeFailure);
-        REQUIRE_THROWS_AS(el::err::ParameterError, xorEditor.xorWithOrThrow(makeBlock({1U})));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, xorEditor.xorWithOrThrow(makeBlock({1U})));
         REQUIRE_EQUAL(xorEditor.toUInt8Vector(), xorBeforeFailure);
         xorEditor.xorWithOrThrow(ByteArray{Byte{0xaaU}, Byte{0x55U}}.span());
         REQUIRE_EQUAL(xorEditor.toUInt8Vector(), std::vector<uint8_t>({0xf0U, 0x0fU}));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, xorEditor.xorWithOrThrow(ByteArray{Byte{1U}, Byte{2U}, Byte{3U}}.span()));
+            el::err::ParameterFailure, xorEditor.xorWithOrThrow(ByteArray{Byte{1U}, Byte{2U}, Byte{3U}}.span()));
         REQUIRE_EQUAL(xorEditor.toUInt8Vector(), std::vector<uint8_t>({0xf0U, 0x0fU}));
     }
 
@@ -571,10 +570,10 @@ public:
         const auto editorCopy = editor.copy();
         const auto block = ByteBlock{editor};
         const auto blockCopy = block.copy();
-        const auto editorKept = editor.kept(ByteRange{ByteIndex{1U}, ByteLength{2U}});
-        const auto blockKept = block.kept(ByteRange{ByteIndex{1U}, ByteLength{2U}});
-        const auto removed = editor.removed(ByteRange{ByteIndex{1U}, ByteLength{2U}});
-        const auto replaced = editor.replaced(ByteRange{ByteIndex{1U}, ByteLength{2U}}, makeBlock({9U}));
+        const auto editorKept = editor.kept(ByteRange{ByteIndex{1U}, ByteCount{2U}});
+        const auto blockKept = block.kept(ByteRange{ByteIndex{1U}, ByteCount{2U}});
+        const auto removed = editor.removed(ByteRange{ByteIndex{1U}, ByteCount{2U}});
+        const auto replaced = editor.replaced(ByteRange{ByteIndex{1U}, ByteCount{2U}}, makeBlock({9U}));
 
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 4U}));
         REQUIRE_EQUAL(editorCopy.toUInt8Vector(), editor.toUInt8Vector());
@@ -606,11 +605,11 @@ public:
         auto sensitive = block;
         sensitive.markAsSensitive();
         REQUIRE(sensitive.copy().isSensitive());
-        REQUIRE(sensitive.kept(ByteRange{ByteIndex{1U}, ByteLength{2U}}).isSensitive());
+        REQUIRE(sensitive.kept(ByteRange{ByteIndex{1U}, ByteCount{2U}}).isSensitive());
         auto sensitiveEditor = editor;
         sensitiveEditor.markAsSensitive();
         REQUIRE(sensitiveEditor.copy().isSensitive());
-        REQUIRE(sensitiveEditor.kept(ByteRange{ByteIndex{1U}, ByteLength{2U}}).isSensitive());
+        REQUIRE(sensitiveEditor.kept(ByteRange{ByteIndex{1U}, ByteCount{2U}}).isSensitive());
     }
 
     void testConstantTimeEquality() {
@@ -656,7 +655,7 @@ public:
 
     void testEditorCopiesVisibleSlice() {
         const auto block = makeBlock({1U, 2U, 3U, 4U});
-        const auto slice = block.slice(ByteIndex{1U}, ByteLength{2U});
+        const auto slice = block.slice(ByteIndex{1U}, ByteCount{2U});
         auto editor = ByteBlockEditor{slice};
 
         editor.set(ByteIndex{0U}, Byte{9U});
@@ -672,7 +671,7 @@ public:
         const auto access = el::mem::impl::UnsafeByteBlockAccess{snapshot};
         const auto view = access.dataView();
         const auto readRange = view.dataSpan().subspan(1U, 2U);
-        REQUIRE_EQUAL(view.length(), ByteLength{4U});
+        REQUIRE_EQUAL(view.length(), ByteCount{4U});
         REQUIRE_EQUAL(readRange[0], Byte{2U});
         REQUIRE_EQUAL(readRange[1], Byte{3U});
 
@@ -686,13 +685,13 @@ public:
         const auto guard = ByteBlockEraseObserverGuard{};
 
         auto uniqueEditor = makeEditor({1U, 2U, 3U, 4U});
-        uniqueEditor.reserve(ByteLength{32U});
+        uniqueEditor.reserve(ByteCount{32U});
         const auto uniqueCapacity = uniqueEditor.capacity();
         auto uniqueBlock = ByteBlock{uniqueEditor};
         uniqueEditor.reset();
         _eraseEvents.clear();
         uniqueBlock.secureErase();
-        REQUIRE_EQUAL(uniqueBlock.length(), ByteLength{4U});
+        REQUIRE_EQUAL(uniqueBlock.length(), ByteCount{4U});
         REQUIRE_EQUAL(uniqueBlock.toUInt8Vector(), std::vector<uint8_t>({0U, 0U, 0U, 0U}));
         REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
         REQUIRE_EQUAL(_eraseEvents.front().size, uniqueCapacity.toSizeT());
@@ -700,7 +699,7 @@ public:
 
         auto sharedBlock = makeBlock({5U, 6U, 7U, 8U});
         const auto sharedAlias = sharedBlock;
-        const auto sharedSlice = sharedBlock.slice(ByteIndex{1U}, ByteLength{2U});
+        const auto sharedSlice = sharedBlock.slice(ByteIndex{1U}, ByteCount{2U});
         _eraseEvents.clear();
         sharedBlock.secureErase();
         REQUIRE_EQUAL(sharedBlock.toUInt8Vector(), std::vector<uint8_t>({0U, 0U, 0U, 0U}));
@@ -709,11 +708,11 @@ public:
         REQUIRE(_eraseEvents.empty());
 
         auto editor = makeEditor({9U, 10U, 11U});
-        editor.reserve(ByteLength{24U});
+        editor.reserve(ByteCount{24U});
         const auto capacity = editor.capacity();
         _eraseEvents.clear();
         editor.secureErase();
-        REQUIRE_EQUAL(editor.length(), ByteLength{3U});
+        REQUIRE_EQUAL(editor.length(), ByteCount{3U});
         REQUIRE_EQUAL(editor.capacity(), capacity);
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({0U, 0U, 0U}));
         REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
@@ -721,12 +720,12 @@ public:
         REQUIRE(_eraseEvents.front().isZero);
 
         auto sharedEditor = makeEditor({12U, 13U, 14U});
-        sharedEditor.reserve(ByteLength{20U});
+        sharedEditor.reserve(ByteCount{20U});
         const auto sharedCapacity = sharedEditor.capacity();
         const auto editorAlias = ByteBlock{sharedEditor};
         _eraseEvents.clear();
         sharedEditor.secureErase();
-        REQUIRE_EQUAL(sharedEditor.length(), ByteLength{3U});
+        REQUIRE_EQUAL(sharedEditor.length(), ByteCount{3U});
         REQUIRE_EQUAL(sharedEditor.capacity(), sharedCapacity);
         REQUIRE_EQUAL(sharedEditor.toUInt8Vector(), std::vector<uint8_t>({0U, 0U, 0U}));
         REQUIRE_EQUAL(editorAlias.toUInt8Vector(), std::vector<uint8_t>({12U, 13U, 14U}));
@@ -734,7 +733,7 @@ public:
 
         auto emptyBlock = ByteBlock{};
         auto emptyEditor = ByteBlockEditor{};
-        emptyEditor.reserve(ByteLength{16U});
+        emptyEditor.reserve(ByteCount{16U});
         const auto emptyCapacity = emptyEditor.capacity();
         emptyBlock.secureErase();
         emptyEditor.secureErase();

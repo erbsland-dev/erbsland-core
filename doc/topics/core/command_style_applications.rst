@@ -16,8 +16,8 @@ belong to that action.
 :cpp:class:`OptionModule <erbsland::options::OptionModule>` models this shape directly and lets the default application
 main dispatch the selected command.
 
-Giving Every Action Its Own Module
-==================================
+Defining Commands with Option Modules
+=====================================
 
 An action object can create its option module and connect the module's main function to its own behavior.
 The application owns the action objects and adds their modules during command-line registration.
@@ -28,7 +28,7 @@ This keeps option definitions, help text, and execution close together without b
     :exec: core/core_command_application add api
     :exec-2: core/core_command_application list
     :exec-3: core/core_command_application --help
-    :source-sha256: 5185c6c831c65747cf98839ddb0eb23402e226ffa78851f24d1cd816462fd7c9
+    :sha256: 73ed67fd9993867bdc75f9d6fabb759fb299f9014eea55ada24231be7ac44b11
 
 .. code-block:: cpp
 
@@ -37,7 +37,7 @@ This keeps option definitions, help text, and execution close together without b
     public:
         [[nodiscard]] auto module() -> el::OptionModulePtr {
             auto result = el::OptionModule::create("list"_el);
-            result->setHelpDescription("Lists the entries in the deployment catalog."_el);
+            result->setHelpTitle("Lists the entries in the deployment catalog."_el);
             result->setMainFn([this](el::OptionValuesPtr values) -> el::ExitCode { return main(std::move(values)); });
             return result;
         }
@@ -54,8 +54,8 @@ This keeps option definitions, help text, and execution close together without b
     public:
         [[nodiscard]] auto module() -> el::OptionModulePtr {
             auto result = el::OptionModule::create("add"_el);
-            result->setHelpDescription("Adds an entry to the deployment catalog."_el);
-            result->addOption("name"_el).setRequired().setHelpDescription("Name of the new catalog entry."_el);
+            result->setHelpTitle("Adds an entry to the deployment catalog."_el);
+            result->addOption("name"_el).setRequired().setHelpTitle("Name of the new catalog entry."_el);
             result->setMainFn([this](el::OptionValuesPtr values) -> el::ExitCode { return main(std::move(values)); });
             return result;
         }
@@ -72,8 +72,8 @@ This keeps option definitions, help text, and execution close together without b
     public:
         [[nodiscard]] auto module() -> el::OptionModulePtr {
             auto result = el::OptionModule::create("remove"_el);
-            result->setHelpDescription("Removes an entry from the deployment catalog."_el);
-            result->addOption("name"_el).setRequired().setHelpDescription("Name of the catalog entry to remove."_el);
+            result->setHelpTitle("Removes an entry from the deployment catalog."_el);
+            result->addOption("name"_el).setRequired().setHelpTitle("Name of the catalog entry to remove."_el);
             result->setMainFn([this](el::OptionValuesPtr values) -> el::ExitCode { return main(std::move(values)); });
             return result;
         }
@@ -117,35 +117,47 @@ This keeps option definitions, help text, and execution close together without b
         return app.run();
     }
 
-.. rubric:: ``$ core/core_command_application add api``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    adding catalog entry: api
+        $ core/core_command_application add api
 
-.. rubric:: ``$ core/core_command_application list``
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[0madding catalog entry: api␛[0m
 
-    catalog entries: api, worker
+.. erbsland-demo-run::
 
-.. rubric:: ``$ core/core_command_application --help``
+    .. code-block:: console
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        $ core/core_command_application list
 
-    Manages a small catalog of deployable services.
-    Usage:
-    core_command_application <module> [options]
-    Modules:
-    list        Lists the entries in the deployment catalog.
-    add         Adds an entry to the deployment catalog.
-    remove      Removes an entry from the deployment catalog.
-    Options:
-    -h, --help[=<boolean>]    Display this help.
-        --version[=<boolean>] Display version information.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mcatalog entries: api, worker␛[0m
+
+.. erbsland-demo-run::
+
+    .. code-block:: console
+
+        $ core/core_command_application --help
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mManages a small catalog of deployable services.
+        Usage:
+        core_command_application <module> [options]
+        Modules:
+        list        Lists the entries in the deployment catalog.
+        add         Adds an entry to the deployment catalog.
+        remove      Removes an entry from the deployment catalog.
+        Options:
+        -h, --help[=<keyword>]  Display this help.
+            --version           Display version information.␛[0m
 
 .. erbsland-demo-end::
 

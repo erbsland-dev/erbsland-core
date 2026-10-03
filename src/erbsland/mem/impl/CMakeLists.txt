@@ -4,19 +4,19 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
-        BitReaderImpl.cpp
-        BitReaderImpl.hpp
-        BitReaderImplFor.hpp
-        BitReader_fwd.hpp
-        BitWriterImpl.cpp
-        BitWriterImpl.hpp
-        BitWriterImplFor.hpp
-        BitWriter_fwd.hpp
-        ByteArrayErrors.cpp
-        ByteArrayErrors.hpp
         BestGrowth.cpp
         BestGrowth.hpp
         BestGrowthStrategy.hpp
+        BitReader_fwd.hpp
+        BitReaderImpl.cpp
+        BitReaderImpl.hpp
+        BitReaderImplFor.hpp
+        BitWriter_fwd.hpp
+        BitWriterImpl.cpp
+        BitWriterImpl.hpp
+        BitWriterImplFor.hpp
+        ByteArrayErrors.cpp
+        ByteArrayErrors.hpp
         ByteBlockData.hpp
         ByteBlockData_fwd.hpp
         ByteBlockLiteralFactory.cpp
@@ -30,17 +30,17 @@ target_sources(erbsland-core PRIVATE
         ByteIntegerAccess.hpp
         ByteIntegerTypes.hpp
         ByteModifyTools.hpp
-        ByteReadTools.cpp
-        ByteReadTools.hpp
         ByteReaderTools.cpp
         ByteReaderTools.hpp
         ByteReaderTools_fwd.hpp
+        ByteReadTools.cpp
+        ByteReadTools.hpp
         ByteTextTools.cpp
         ByteTextTools.hpp
-        ByteWriteTools.cpp
-        ByteWriteTools.hpp
         ByteWriterTools.cpp
         ByteWriterTools.hpp
+        ByteWriteTools.cpp
+        ByteWriteTools.hpp
         RingBufferStorageTraits.hpp
         RingBufferWriter.hpp
         SecureErase.cpp
@@ -49,10 +49,10 @@ target_sources(erbsland-core PRIVATE
         SharedArrayCapacity.hpp
         SharedArrayDataTraits.hpp
         SharedArrayDataTraits.tpp
-        SharedDataPointerTraits.hpp
-        SharedDataPointerTraits_fwd.hpp
         SharedByteDataWithFlag.hpp
         SharedByteDataWithFlag_fwd.hpp
+        SharedDataPointerTraits.hpp
+        SharedDataPointerTraits_fwd.hpp
         StorageIdentifierImpl.hpp
         Throw.cpp
         Throw.hpp

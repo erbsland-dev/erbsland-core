@@ -10,11 +10,12 @@
 #include "../../../geometry/Alignment.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringFormat.hpp"
+#include "../../../text/StringJoins.hpp"
 
 namespace erbsland::re::impl {
 
+using namespace unit;
 using namespace text::literals;
-
 using namespace text;
 
 void Disassembler::setLabel(const LabelTarget target, String label) {
@@ -113,8 +114,8 @@ void Disassembler::writeClasses() {
     CharClassIndex index = 0U;
     for (const auto &classData : _data->charClassData) {
         auto comment = StringEditor{StringFormat{"; [{}]"}.build(classData.toString())};
-        if (comment.characterLength() > unit::CpLength{40U}) {
-            comment = comment.slice(StringSide::Front, unit::CpLength{37U});
+        if (comment.characterLength() > CpCount{40U}) {
+            comment = comment.slice(StringSide::Front, CpCount{37U});
             comment.append("..."_el);
         }
         writeLineLayout(createTarget(LabelTarget{DataSection::Class, index}), {}, ".class"_el, comment);
@@ -180,7 +181,7 @@ void Disassembler::writeTitle(const String &title) {
         return;
     }
     _lines.append(StringFormat{"; {}"}.build(title));
-    _lines.append(String::fromJoined({"; "_el, String::fromCharacter(U'=', unit::CpLength{76U})}));
+    _lines.append(text::join("; "_el, String::fromCharacter(U'=', CpCount{76U})));
 }
 
 void Disassembler::writeLineLayout(
@@ -191,29 +192,25 @@ void Disassembler::writeLineLayout(
         return;
     }
     using geometry::Alignment;
-    const auto prefix = String::fromJoined(
-        {location.aligned(unit::CpLength{17U}, Alignment::Left),
-            " "_el,
-            code.aligned(unit::CpLength{21U}, Alignment::Left),
-            " "_el});
+    const auto prefix = text::join(
+        location.aligned(CpCount{17U}, Alignment::Left), " "_el, code.aligned(CpCount{21U}, Alignment::Left), " "_el);
     if (comment.isEmpty()) {
-        _lines.append(String::fromJoined({prefix, operation}));
+        _lines.append(text::join(prefix, operation));
         return;
     }
-    _lines.append(
-        String::fromJoined({prefix, operation.aligned(unit::CpLength{19U}, Alignment::Left), " "_el, comment}));
+    _lines.append(text::join(prefix, operation.aligned(CpCount{19U}, Alignment::Left), " "_el, comment));
 }
 
 auto Disassembler::createTarget(LabelTarget target) const -> String {
     if (_flags.isCleared(DisassemblerFlag::TestOutput) && _labels.contains(target)) {
-        return String::fromJoined({_labels.at(target), ":"_el});
+        return text::join(_labels.at(target), ":"_el);
     }
     return StringFormat{"${:04X}:"}.build(target.offset);
 }
 
 auto Disassembler::createLabel(LabelTarget target) const -> String {
     if (_flags.isCleared(DisassemblerFlag::TestOutput) && _labels.contains(target)) {
-        return String::fromJoined({"%"_el, _labels.at(target)});
+        return text::join("%"_el, _labels.at(target));
     }
     return StringFormat{"${:04X}"}.build(target.offset);
 }

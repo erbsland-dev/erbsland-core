@@ -126,8 +126,6 @@ private:
     handle_type _handle{};
 };
 
-/// Create the coroutine return object.
-/// @return The generator that owns this coroutine state.
 template <typename tValue>
 auto impl::CoGeneratorPromise<tValue>::get_return_object() -> CoGenerator<tValue> {
     return CoGenerator<tValue>{std::coroutine_handle<CoGeneratorPromise<tValue>>::from_promise(*this)};

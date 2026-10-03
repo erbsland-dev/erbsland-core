@@ -5,7 +5,8 @@
 #include "RegExBase.hpp"
 
 #include <erbsland/re/StdFormat.hpp>
-#include <erbsland/text/u8/U8StringConstIterator.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/U8StringConstIterator.hpp>
 
 /// Shared character-class matching test support.
 /// @notest{Used only by regular-expression API tests.}
@@ -18,7 +19,7 @@ public:
 
     auto additionalErrorMessages() -> std::string override {
         auto result = RegExBase::additionalErrorMessages();
-        constexpr auto maximumWidth = el::unit::CpLength{200U};
+        constexpr auto maximumWidth = el::unit::CpCount{200U};
         result += std::format("patternFormat: \"{}\"\n", patternFormat.toSafeString(maximumWidth));
         result += std::format("pattern: \"{}\"\n", pattern.toSafeString(maximumWidth));
         result += std::format("textFormat: \"{}\"\n", textFormat.toSafeString(maximumWidth));
@@ -85,7 +86,7 @@ public:
                             "00: {:04}-{:04} '{}'",
                             begin,
                             end,
-                            capturedText.toSafeString(el::unit::CpLength{200U}, el::text::SafeStringFlag::OnlyAscii)));
+                            capturedText.toSafeString(el::unit::CpCount{200U}, el::text::SafeStringFlag::OnlyAscii)));
                     capturedText.clear();
                     state = State::Outside;
                 } else if (c == U'●') {
@@ -112,18 +113,22 @@ public:
                 std::format(
                     "Sanity checks failed for buildPattern(patternFormatStr=\"{}\", patternStr=\"{}\","
                     "textFormatStr=\"{}\", testedChar={})",
-                    patternFormat.toSafeString(el::unit::CpLength{200U}),
-                    patternStr.toSafeString(el::unit::CpLength{200U}),
-                    textFormat.toSafeString(el::unit::CpLength{200U}),
-                    testedCharText.toSafeString(el::unit::CpLength{200U})));
+                    patternFormat.toSafeString(el::unit::CpCount{200U}),
+                    patternStr.toSafeString(el::unit::CpCount{200U}),
+                    textFormat.toSafeString(el::unit::CpCount{200U}),
+                    testedCharText.toSafeString(el::unit::CpCount{200U})));
             throw;
         }
     }
 
     /// A pattern format with its test text formats.
     struct PatternTestCase {
+        /// Construct one pattern and the expected text formats.
+        PatternTestCase(String pattern, std::initializer_list<String> formats) :
+            patternFormat{std::move(pattern)}, textFormats{formats} {}
+
         String patternFormat;
-        std::vector<String> textFormats;
+        StringList textFormats;
     };
     using PatternTestCases = std::vector<PatternTestCase>;
 

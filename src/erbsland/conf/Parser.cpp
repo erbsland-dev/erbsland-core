@@ -5,8 +5,8 @@
 #include "impl/parser/Parser.hpp"
 #include "impl/placeholder/ErrorAdapter.hpp"
 
-#include "../err/LogicError.hpp"
-#include "../err/ParameterError.hpp"
+#include "../err/LogicFailure.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/placeholder/EnvironmentSource.hpp"
 #include "../text/placeholder/impl/Name.hpp"
 #include "../text/placeholder/ReplacerError.hpp"
@@ -17,6 +17,7 @@
 
 namespace erbsland::conf {
 
+using namespace text;
 using namespace text::literals;
 
 void Parser::setSourceResolver(const SourceResolverPtr &sourceResolver) noexcept {
@@ -31,54 +32,54 @@ void Parser::setSignatureValidator(const SignatureValidatorPtr &signatureValidat
     _settings.signatureValidator = signatureValidator;
 }
 
-void Parser::addPlaceholderSource(const text::placeholder::SourcePtr &source) {
+void Parser::addPlaceholderSource(const placeholder::SourcePtr &source) {
     _settings.placeholderRegistry->addSource(source);
 }
 
-void Parser::removePlaceholderSource(const text::placeholder::SourcePtr &source) noexcept {
+void Parser::removePlaceholderSource(const placeholder::SourcePtr &source) noexcept {
     _settings.placeholderRegistry->removeSource(source);
 }
 
-void Parser::addPlaceholderFilter(const text::placeholder::FilterPtr &filter) {
+void Parser::addPlaceholderFilter(const placeholder::FilterPtr &filter) {
     _settings.placeholderRegistry->addFilter(filter);
 }
 
-void Parser::removePlaceholderFilter(const text::placeholder::FilterPtr &filter) noexcept {
+void Parser::removePlaceholderFilter(const placeholder::FilterPtr &filter) noexcept {
     _settings.placeholderRegistry->removeFilter(filter);
 }
 
-void Parser::addPlaceholderEnvironmentSource(const text::String &name) {
-    addPlaceholderSource(std::make_shared<text::placeholder::EnvironmentSource>(name));
+void Parser::addPlaceholderEnvironmentSource(const String &name) {
+    addPlaceholderSource(std::make_shared<placeholder::EnvironmentSource>(name));
 }
 
-void Parser::setPlaceholderVariableSource(text::StringMap<text::String> variables, const text::String &name) {
+void Parser::setPlaceholderVariableSource(StringMap<String> variables, const String &name) {
     try {
         const auto effectiveName = name.isEmpty() ? "var"_el : name;
-        const auto normalizedName = text::placeholder::impl::normalizeName(effectiveName);
+        const auto normalizedName = placeholder::impl::normalizeName(effectiveName);
         const auto source = _settings.placeholderRegistry->source(normalizedName);
         if (source != nullptr) {
-            const auto variableSource = std::dynamic_pointer_cast<text::placeholder::VariableSource>(source);
+            const auto variableSource = std::dynamic_pointer_cast<placeholder::VariableSource>(source);
             if (variableSource == nullptr) {
-                throw err::LogicError{"The placeholder source name belongs to another provider."_el};
+                throw err::LogicFailure{"The placeholder source name belongs to another provider."_el};
             }
             variableSource->setVariables(std::move(variables));
             return;
         }
-        addPlaceholderSource(std::make_shared<text::placeholder::VariableSource>(std::move(variables), effectiveName));
-    } catch (const text::placeholder::ReplacerError &error) {
+        addPlaceholderSource(std::make_shared<placeholder::VariableSource>(std::move(variables), effectiveName));
+    } catch (const placeholder::ReplacerError &error) {
         throw ConfError{
             impl::placeholder::toConfErrorCategory(error.category()), {}, error.reason(), std::current_exception()};
     }
 }
 
 void Parser::addPlaceholderTextFilters() {
-    addPlaceholderFilter(std::make_shared<text::placeholder::TextFilter>());
+    addPlaceholderFilter(std::make_shared<placeholder::TextFilter>());
 }
 
 auto Parser::parseOrThrow(const SourcePtr &source) -> DocumentPtr {
     _lastError = std::nullopt;
     if (source == nullptr) {
-        throw err::ParameterError{"Source cannot be null."_el, "source"_el};
+        throw err::ParameterFailure{"Source cannot be null."_el, "source"_el};
     }
     impl::Parser parserImplementation(source, _settings);
     return parserImplementation.parse();
@@ -88,7 +89,7 @@ auto Parser::parse(const SourcePtr &source) -> DocumentPtr {
     try {
         _lastError = std::nullopt;
         if (source == nullptr) {
-            throw err::ParameterError{"Source cannot be null."_el, "source"_el};
+            throw err::ParameterFailure{"Source cannot be null."_el, "source"_el};
         }
         impl::Parser parserImplementation(source, _settings);
         return parserImplementation.parse();

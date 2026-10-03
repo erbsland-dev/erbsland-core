@@ -24,6 +24,7 @@ public:
     using Value = tValue;
 
     /// Create the coroutine return object.
+    /// @return The generator that owns this coroutine state.
     [[nodiscard]] auto get_return_object() -> CoGenerator<tValue>;
     /// Suspend before the first coroutine statement.
     [[nodiscard]] auto initial_suspend() noexcept -> std::suspend_always { return {}; }

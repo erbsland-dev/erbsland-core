@@ -145,7 +145,7 @@ The actual compressed value is usually smaller than this bound.
 .. erbsland-demo::
     :source: compression/ByteCompression/CompressOneShot.cpp
     :exec: compression/byte_compression --demo CompressOneShot
-    :source-sha256: 230c01e77da79e5e3e3e4b4d33844883a4e3adae15e8dd9f333da0d80707b5ca
+    :sha256: 1778e67d3bfd594699b4efd6f4a856b11a283fda5e4ec82ec70bd8819b8e9e90
 
 .. code-block:: cpp
 
@@ -154,7 +154,7 @@ The actual compressed value is usually smaller than this bound.
     /// The configured compressor can be reused for independent values. Its maximum
     /// compressed length includes the framing overhead of the selected format.
     void compressOneShot() {
-        const auto samples = el::ByteBlock{el::ByteBlockEditor{el::ByteLength{96U}, el::Byte{0x2aU}}};
+        const auto samples = el::ByteBlock{el::ByteBlockEditor{el::ByteCount{96U}, el::Byte{0x2aU}}};
         const auto rawCompressor =
             el::ByteCompressor{el::CompressionAlgorithm::Deflate, el::CompressionFormat::Raw, el::CompressionLevel::High};
         const auto coreCompressor =
@@ -173,15 +173,17 @@ The actual compressed value is usually smaller than this bound.
         el::io::printLine("Core upper bound  : "_el, maximumEnvelopeLength.toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Instrument        : telescópio
-    Algorithm         : deflate
-    Original bytes    : 96
-    Raw stream bytes  : 5
-    Core bytes        : 41
-    Core upper bound  : 138
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInstrument        : telescópio
+        Algorithm         : deflate
+        Original bytes    : 96
+        Raw stream bytes  : 5
+        Core bytes        : 41
+        Core upper bound  : 138␛[0m
 
 .. erbsland-demo-end::
 
@@ -199,13 +201,13 @@ Borrowed streams remain open; the caller must flush or close the destination to 
 .. erbsland-demo::
     :source: compression/ByteCompression/CompressStreaming.cpp
     :exec: compression/byte_compression --demo CompressStreaming
-    :source-sha256: f3aca1474b5b2f37ef2d3a030775893da6f0b054015b7714d995a7f23a40d7f3
+    :sha256: 383ea8d6ec9fa593e4a85537869bf114e2749854aeb32ce8fdf8a547d3ecd480
 
 .. code-block:: cpp
 
     /// Compress instrument readings directly into a byte stream.
     void compressStreaming() {
-        const auto readings = el::ByteBlock{el::ByteBlockEditor{el::ByteLength{96U}, el::Byte{0x18U}}};
+        const auto readings = el::ByteBlock{el::ByteBlockEditor{el::ByteCount{96U}, el::Byte{0x18U}}};
         auto source = el::stream::ByteBlockInputStream{readings};
         auto destination = el::Path::systemTempDirectoryOrThrow().operations().openTempByteOutputStreamOrThrow();
         const auto compressor = el::ByteCompressor{el::CompressionAlgorithm::Deflate, el::CompressionFormat::Core};
@@ -219,13 +221,15 @@ Borrowed streams remain open; the caller must flush or close the destination to 
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Instrument        : espectrômetro
-    Input bytes       : 96
-    Core bytes        : 41
-    Native streaming  : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInstrument        : espectrômetro
+        Input bytes       : 96
+        Core bytes        : 41
+        Native streaming  : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -258,13 +262,13 @@ explanation, and ``diagnostic()`` renders these values as a human-readable error
 The same exception reports a Core algorithm mismatch or a recognized standard feature outside the accepted stream
 profile.
 Output and workspace policy limits raise :cpp:class:`OutOfRangeError <erbsland::err::OutOfRangeError>` instead, while an
-impossible constructor combination is a :cpp:class:`ParameterError <erbsland::err::ParameterError>`.
+impossible constructor combination is a :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>`.
 This distinction lets an application report corrupt data separately from a value it deliberately chose not to decode.
 
 .. erbsland-demo::
     :source: compression/ByteCompression/DecompressOneShot.cpp
     :exec: compression/byte_compression --demo DecompressOneShot
-    :source-sha256: 6cc1caaadaeebb41d27e45c0f3b5bb0674b1aa315a5401d0f3b48e528e89272c
+    :sha256: da97e70a9f3ef497a31e586a4482c9939046d7d3b656843ab77403416cdd7bdf
 
 .. code-block:: cpp
 
@@ -273,7 +277,7 @@ This distinction lets an application report corrupt data separately from a value
     /// Stored options validate an exact output length and place independent limits
     /// on returned bytes and codec workspace before decoding starts.
     void decompressOneShot() {
-        const auto samples = el::ByteBlock{el::ByteBlockEditor{el::ByteLength{96U}, el::Byte{0x2aU}}};
+        const auto samples = el::ByteBlock{el::ByteBlockEditor{el::ByteCount{96U}, el::Byte{0x2aU}}};
         const auto rawBlock =
             el::ByteCompressor{el::CompressionAlgorithm::Lz4Block, el::CompressionFormat::Raw}.compress(samples);
         const auto envelope =
@@ -282,13 +286,13 @@ This distinction lets an application report corrupt data separately from a value
         // Decode a raw block with external metadata and an envelope automatically.
         const auto rawOptions = el::DecompressionOptions{}
                                     .setExpectedOutputLength(samples.length())
-                                    .setMaximumOutputLength(el::ByteLength{1024U})
-                                    .setMaximumWorkspaceLength(el::ByteLength{4U * 1024U * 1024U});
+                                    .setMaximumOutputLength(el::ByteCount{1024U})
+                                    .setMaximumWorkspaceLength(el::ByteCount{4U * 1024U * 1024U});
         const auto rawDecompressor =
             el::ByteDecompressor{el::CompressionAlgorithm::Lz4Block, el::CompressionFormat::Raw, rawOptions};
         const auto coreOptions = el::DecompressionOptions{}
-                                     .setMaximumOutputLength(el::ByteLength{1024U})
-                                     .setMaximumWorkspaceLength(el::ByteLength{4U * 1024U * 1024U});
+                                     .setMaximumOutputLength(el::ByteCount{1024U})
+                                     .setMaximumWorkspaceLength(el::ByteCount{4U * 1024U * 1024U});
         const auto coreDecompressor =
             el::ByteDecompressor{el::CompressionAlgorithm::Lz4Block, el::CompressionFormat::Core, coreOptions};
         const auto fromRaw = rawDecompressor.decompress(rawBlock);
@@ -301,14 +305,16 @@ This distinction lets an application report corrupt data separately from a value
         el::io::printLine("Envelope restored : "_el, el::BooleanFormat::yesNo(), fromEnvelope == samples);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Instrument        : telescópio
-    Output limit      : 1024
-    Workspace limit   : 4194304
-    Raw restored      : yes
-    Envelope restored : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInstrument        : telescópio
+        Output limit      : 1024
+        Workspace limit   : 4194304
+        Raw restored      : yes
+        Envelope restored : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -327,18 +333,18 @@ Select ``RequireStreaming`` when fallback buffering is unacceptable.
 .. erbsland-demo::
     :source: compression/ByteCompression/DecompressStreaming.cpp
     :exec: compression/byte_compression --demo DecompressStreaming
-    :source-sha256: b71ea593174b833b98f52572d36b13cd5a4d85f0efbfbbe95e06675c70428926
+    :sha256: 667570652ff07ee548878fd5125b312ac72410a481101d603c65f49741f35949
 
 .. code-block:: cpp
 
     /// Decompress a framed instrument record directly into a byte stream.
     void decompressStreaming() {
-        const auto readings = el::ByteBlock{el::ByteBlockEditor{el::ByteLength{96U}, el::Byte{0x19U}}};
+        const auto readings = el::ByteBlock{el::ByteBlockEditor{el::ByteCount{96U}, el::Byte{0x19U}}};
         const auto encoded =
             el::ByteCompressor{el::CompressionAlgorithm::Deflate, el::CompressionFormat::Core}.compress(readings);
         auto source = el::stream::ByteBlockInputStream{encoded};
         auto destination = el::Path::systemTempDirectoryOrThrow().operations().openTempByteOutputStreamOrThrow();
-        const auto limits = el::DecompressionOptions{}.setMaximumOutputLength(el::ByteLength{1024U});
+        const auto limits = el::DecompressionOptions{}.setMaximumOutputLength(el::ByteCount{1024U});
         const auto decompressor =
             el::ByteDecompressor{el::CompressionAlgorithm::Deflate, el::CompressionFormat::Core, limits};
         const auto counts = decompressor.decompress(source, *destination);
@@ -351,18 +357,20 @@ Select ``RequireStreaming`` when fallback buffering is unacceptable.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Instrument        : espectrômetro
-    Core bytes        : 41
-    Restored bytes    : 96
-    Expected length   : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInstrument        : espectrômetro
+        Core bytes        : 41
+        Restored bytes    : 96
+        Expected length   : yes␛[0m
 
 .. erbsland-demo-end::
 
-Choosing a Practical Combination
-================================
+Choosing Compression Algorithms and Representations
+===================================================
 
 For short-lived application records where latency dominates, a raw LZ4 block inside a schema that already stores the
 original length is hard to beat for simplicity.

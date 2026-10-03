@@ -3,6 +3,9 @@
 
 #include "SkillTreeStreams.hpp"
 
+#include <erbsland/Endianness.hpp>
+#include <erbsland/StandardStreams.hpp>
+
 namespace demo {
 
 /// A custom output stream must accept each write completely or return timeout without accepting anything.

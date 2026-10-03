@@ -1,7 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "HtmlViewerApp.hpp"
+
+#include <erbsland/html/HtmlParser.hpp>
+#include <erbsland/OptionChoices.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringLiteral.hpp>
 
 #include <algorithm>
 

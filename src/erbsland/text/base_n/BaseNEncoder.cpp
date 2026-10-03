@@ -9,7 +9,7 @@
 #include "../u32/U32String.hpp"
 #include "../u8/U8String.hpp"
 
-#include "../../err/OutOfRangeError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
 
 #include <cstdint>
 #include <limits>
@@ -43,7 +43,7 @@ auto BaseNEncoder::build(const StringKind kind) const -> AnyString {
     const auto byteCount = _data.length().toSizeT();
     const auto maximumSize = std::numeric_limits<std::size_t>::max();
     if (byteCount > maximumSize / 8U) {
-        throw err::OutOfRangeError{"The Base-N output size cannot be represented."};
+        throw err::OutOfRangeFailure{"The Base-N output size cannot be represented."};
     }
     const auto bitCount = byteCount * 8U;
     const auto symbolCount = bitCount / bitsPerCharacter + (bitCount % bitsPerCharacter != 0U ? 1U : 0U);
@@ -52,7 +52,7 @@ auto BaseNEncoder::build(const StringKind kind) const -> AnyString {
     if (_format.hasFlag(BaseNFormatFlag::EmitPadding) && symbolCount % quantum != 0U) {
         const auto paddingCount = quantum - (symbolCount % quantum);
         if (symbolCount > maximumSize - paddingCount) {
-            throw err::OutOfRangeError{"The Base-N output size cannot be represented."};
+            throw err::OutOfRangeFailure{"The Base-N output size cannot be represented."};
         }
         paddedCount += paddingCount;
     }
@@ -61,13 +61,13 @@ auto BaseNEncoder::build(const StringKind kind) const -> AnyString {
         const auto lineBreakCount = (paddedCount - 1U) / _format.lineLength().toSizeTOrThrow();
         const auto separatorLength = _format.lineSeparator().length().toSizeT();
         if (separatorLength != 0U && lineBreakCount > (maximumSize - outputCharacterCount) / separatorLength) {
-            throw err::OutOfRangeError{"The wrapped Base-N output size cannot be represented."};
+            throw err::OutOfRangeFailure{"The wrapped Base-N output size cannot be represented."};
         }
         outputCharacterCount += lineBreakCount * separatorLength;
     }
     auto builder = kind == StringKind::U8
-        ? AnyStringBuilder::u8(unit::ByteLength::fromSizeTOrThrow(outputCharacterCount), _data.isSensitive())
-        : AnyStringBuilder::withCapacity(kind, unit::CpLength::fromSizeTOrThrow(outputCharacterCount));
+        ? AnyStringBuilder::u8(unit::ByteCount::fromSizeTOrThrow(outputCharacterCount), _data.isSensitive())
+        : AnyStringBuilder::withCapacity(kind, unit::CpCount::fromSizeTOrThrow(outputCharacterCount));
     auto linePosition = std::size_t{0};
     const auto appendCharacter = [&](const Char character) -> void {
         if (_format.hasFlag(BaseNFormatFlag::WrapLines) && linePosition == _format.lineLength().toSizeTOrThrow()) {

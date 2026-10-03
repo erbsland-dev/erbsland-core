@@ -1,0 +1,5 @@
+#
+# The configuration of the "public suffix" data source
+#
+----[ Public Suffix ]-------------------------------------------------------------------------------------------------
+Input File             : "tool/data/public_suffix/public_suffix_list.dat"

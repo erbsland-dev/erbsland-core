@@ -5,8 +5,8 @@
 #include "U32Encoding.hpp"
 #include "U32StringDataView.hpp"
 
+#include "../../../unit/CpCount.hpp"
 #include "../../../unit/CpIndex.hpp"
-#include "../../../unit/CpLength.hpp"
 #include "../../../unit/CpRange.hpp"
 #include "../../Char.hpp"
 #include "../../CharSet.hpp"
@@ -19,7 +19,7 @@ namespace erbsland::text::impl {
 /// A view into string data with a specific code-point range.
 /// This helper class provides all read-only algorithms on the string data, shared by `U32StringEditor` and `U32String`.
 /// It's meant to be used inline like `U32StringDataView{dataView()}.doSomething()`.
-/// @tested{U32StringTest}
+/// @tested{U32StringTest StringSeparatorSplitTest StringEncodingValidationTest}
 class U32StringReadTools final {
 public:
     /// A set of Unicode code-points for decoded character lookups.
@@ -39,7 +39,10 @@ public: // tests
     /// Test if the view is empty.
     [[nodiscard]] auto isEmpty() const noexcept -> bool { return _data.data().empty() || _data.range().isEmpty(); }
     /// Test if the view contains valid UTF-32.
-    [[nodiscard]] auto isValidUtf32() const noexcept -> bool;
+    [[nodiscard]] auto isEncodingValid() const noexcept -> bool;
+    /// Validate the selected span, reporting errors relative to its start.
+    /// @throws U32EncodingError If malformed UTF-32 is detected.
+    void encodingValidOrThrow() const;
 
 public: // find
     /// Find the first decoded character from the given character set.
@@ -59,9 +62,18 @@ public: // find
     /// Find the last decoded character not from the given character set before the given end UTF-32 data index.
     [[nodiscard]] auto findLastNotOf(const CharSet &characters, unit::CpIndex end) const noexcept -> unit::CpIndex;
 
+    /// Find the native range of the first matching decoded character.
+    /// @param characters The separator set.
+    /// @return The relative match range, or no-range if the set is empty or no character matches.
+    [[nodiscard]] auto findFirstRange(const CharSet &characters) const noexcept -> unit::CpRange;
+    /// Find the native range of the last matching decoded character.
+    /// @param characters The separator set.
+    /// @return The relative match range, or no-range if the set is empty or no character matches.
+    [[nodiscard]] auto findLastRange(const CharSet &characters) const noexcept -> unit::CpRange;
+
 public: // read
     /// Get the UTF-32 code-unit length of the view.
-    [[nodiscard]] auto length() const noexcept -> unit::CpLength;
+    [[nodiscard]] auto length() const noexcept -> unit::CpCount;
     /// Get the approximate display width of the decoded text.
     [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// Access the character at the given start UTF-32 code-unit position.
@@ -73,9 +85,9 @@ public: // read
     /// If the index is out of bounds, returns a signal character and does not retreat the index.
     [[nodiscard]] auto readAndRetreat(unit::CpIndex &index) const noexcept -> Char;
     /// Advance the given UTF-32 code-unit index to the start of the next character.
-    auto advance(unit::CpIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
+    auto advance(unit::CpIndex &index, unit::CpCount count = unit::CpCount::one()) const noexcept -> bool;
     /// Retreat the given UTF-32 code-unit index to the start of the previous character.
-    auto retreat(unit::CpIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
+    auto retreat(unit::CpIndex &index, unit::CpCount count = unit::CpCount::one()) const noexcept -> bool;
     /// Convert a relative UTF-32 code-unit range for this view into a bounded range for the backing data.
     [[nodiscard]] auto sliceRange(unit::CpRange range) const noexcept -> unit::CpRange;
 
@@ -94,10 +106,10 @@ public: // conversion
 private:
     /// Find the first decoded character that matches or does not match the character set.
     [[nodiscard]] auto findFirstOfCharacterSet(
-        const CharacterSet &characters, unit::CpIndex start, bool isMatching) const noexcept -> unit::CpIndex;
+        const CharacterSet &characters, unit::CpIndex start, bool isMatching) const noexcept -> unit::CpRange;
     /// Find the last decoded character that matches or does not match the character set.
     [[nodiscard]] auto findLastOfCharacterSet(
-        const CharacterSet &characters, unit::CpIndex end, bool isMatching) const noexcept -> unit::CpIndex;
+        const CharacterSet &characters, unit::CpIndex end, bool isMatching) const noexcept -> unit::CpRange;
 
 private:
     U32StringDataView _data;

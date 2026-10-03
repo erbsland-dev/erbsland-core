@@ -4,15 +4,17 @@
 
 #include "TestCase.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimePoint.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimePoint.hpp>
 
+#include <exception>
 #include <limits>
 
 using namespace el::text::literals;
@@ -24,23 +26,23 @@ public:
     el::TimePoint now;                               ///< Injected monotonic clock.
     uint64_t prepared{};                             ///< Current fixture count.
     uint64_t calls{};                                ///< Execution count.
-    el::ByteLength bytes{1024};                      ///< Injectable memory estimate.
+    el::ByteCount bytes{1024};                       ///< Injectable memory estimate.
     el::TimeDelta prepareDelay{el::Microseconds{1}}; ///< Synthetic cost controlling the pilot batch size.
     bool capture{};           ///< Record fixture bytes and population labels for deterministic reproduction checks.
     el::List<uint64_t> trace; ///< Executed fixture values, with the population encoded in the low bit.
-    bool fail{};              ///< Inject preparation failure.
+    std::exception_ptr preparationFailure; ///< Exception injected during preparation.
     app::constant_time::TestMetadata description{"probe"_el, "Deterministic probe"_el}; ///< Description.
     [[nodiscard]] auto metadata() const noexcept -> const app::constant_time::TestMetadata & override {
         return description;
     }
-    [[nodiscard]] auto fixtureBytes() const noexcept -> el::ByteLength override { return bytes; }
+    [[nodiscard]] auto fixtureBytes() const noexcept -> el::ByteCount override { return bytes; }
     void clear() override {
         prepared = 0;
         _values.clear();
     }
     void prepare(el::Random &random, const bool population) override {
-        if (fail) {
-            throw el::LogicError{"Fixture failure"_el};
+        if (preparationFailure) {
+            std::rethrow_exception(preparationFailure);
         }
         if (capture) {
             const auto value = random.getUInt64(0, std::numeric_limits<uint64_t>::max());
@@ -49,12 +51,12 @@ public:
         ++prepared;
         now += prepareDelay;
     }
-    [[nodiscard]] auto execute(std::size_t index, uint64_t repetitions) -> uint64_t override {
-        if (index >= prepared) {
-            throw el::LogicError{"Unprepared fixture"_el};
+    [[nodiscard]] auto execute(el::ItemIndex index, uint64_t repetitions) -> uint64_t override {
+        if (index.toRawValue() >= prepared) {
+            throw el::LogicFailure{"Unprepared fixture"_el};
         }
         if (capture) {
-            trace.append(_values.getRefOrThrow(el::ItemIndex{index}));
+            trace.append(_values.getRefOrThrow(index));
         }
         ++calls;
         now += el::TimeDelta{el::Microseconds{20}} * el::TimeDelta::IntegerValue{repetitions};

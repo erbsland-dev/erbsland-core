@@ -5,8 +5,8 @@
 
 #include <erbsland/cterm/TerminalDocumentStyle.hpp>
 #include <erbsland/cterm/TerminalDocumentStyleMarker.hpp>
-#include <erbsland/text/TextNodeType.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/TextNodeType.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>

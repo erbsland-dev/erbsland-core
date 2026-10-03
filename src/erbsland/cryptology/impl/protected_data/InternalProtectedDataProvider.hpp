@@ -18,7 +18,7 @@ namespace erbsland::cryptology::impl {
 /// private to this provider and consists of a 96-bit nonce, a 128-bit tag, and ciphertext.
 /// @tested{ProtectedByteBlockTest}
 class InternalProtectedDataProvider final : public ProtectedDataProvider {
-    friend class ProtectedDataTestAccess;
+    friend class ProtectedDataProviderTestAccess;
 
 public:
     /// Generate the application-local AES-256 key in sensitive storage.
@@ -33,14 +33,14 @@ public:
     auto operator=(InternalProtectedDataProvider &&) -> InternalProtectedDataProvider & = delete;
 
 public: // implement ProtectedDataProvider
-    [[nodiscard]] auto protect(mem::ConstByteSpan plaintext, unit::ByteLength plaintextLength)
+    [[nodiscard]] auto protect(mem::ConstByteSpan plaintext, unit::ByteCount plaintextLength)
         -> mem::ByteBlock override;
-    [[nodiscard]] auto unprotect(mem::ConstByteSpan envelope, unit::ByteLength plaintextLength)
+    [[nodiscard]] auto unprotect(mem::ConstByteSpan envelope, unit::ByteCount plaintextLength)
         -> mem::ByteBlock override;
 
 private:
     /// Encode the plaintext length as eight big-endian authenticated-data bytes.
-    [[nodiscard]] static auto lengthData(unit::ByteLength plaintextLength) -> mem::ByteBlock;
+    [[nodiscard]] static auto lengthData(unit::ByteCount plaintextLength) -> mem::ByteBlock;
     /// Create the next NIST SP 800-38D section 8.2.1 deterministic nonce for this key.
     [[nodiscard]] auto nextNonce() -> SymmetricNonce;
 

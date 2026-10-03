@@ -7,12 +7,14 @@
 #include "../Literals.hpp"
 #include "../named_key/Parser.hpp"
 #include "../StringEditor.hpp"
+#include "../StringTransformations.hpp"
 
 #include "../../err/ParseError.hpp"
 #include "../../util/Set.hpp"
 
 namespace erbsland::text::impl {
 
+using namespace unit;
 using namespace literals;
 
 NamedFormatParser::NamedFormatParser(StringCharReader &reader, const NamedFormatDomain domain) :
@@ -43,7 +45,7 @@ auto NamedFormatParser::tryReadDomain(StringCharReader &reader) -> std::optional
         reader.restore(state);
         return {};
     }
-    const auto domain = domainFromName(String{name});
+    const auto domain = domainFromName(name);
     if (!domain.has_value()) {
         throwFormatError("Named format selector is not supported");
     }
@@ -90,7 +92,15 @@ auto NamedFormatParser::namedKeyFormat() -> const named_key::Format & {
         {"escape-amount"_el, static_cast<int>(Option::EscapeAmount)},
         {"ea"_el, static_cast<int>(Option::EscapeAmount)},
         {"base"_el, static_cast<int>(Option::Base)},
-        {"bs"_el, static_cast<int>(Option::Base)},
+        {"b"_el, static_cast<int>(Option::Base)},
+        {"hex"_el, static_cast<int>(Option::Hexadecimal)},
+        {"hexadecimal"_el, static_cast<int>(Option::Hexadecimal)},
+        {"dec"_el, static_cast<int>(Option::Decimal)},
+        {"decimal"_el, static_cast<int>(Option::Decimal)},
+        {"oct"_el, static_cast<int>(Option::Octal)},
+        {"octal"_el, static_cast<int>(Option::Octal)},
+        {"bin"_el, static_cast<int>(Option::Binary)},
+        {"binary"_el, static_cast<int>(Option::Binary)},
         {"notation"_el, static_cast<int>(Option::Notation)},
         {"nt"_el, static_cast<int>(Option::Notation)},
         {"letter-case"_el, static_cast<int>(Option::LetterCase)},
@@ -99,8 +109,8 @@ auto NamedFormatParser::namedKeyFormat() -> const named_key::Format & {
         {"sg"_el, static_cast<int>(Option::Sign)},
         {"precision"_el, static_cast<int>(Option::Precision)},
         {"pr"_el, static_cast<int>(Option::Precision)},
-        {"alternate"_el, static_cast<int>(Option::Alternate)},
-        {"alt"_el, static_cast<int>(Option::Alternate)},
+        {"base-prefix"_el, static_cast<int>(Option::BasePrefix)},
+        {"bp"_el, static_cast<int>(Option::BasePrefix)},
         {"zero-fill"_el, static_cast<int>(Option::ZeroFill)},
         {"zf"_el, static_cast<int>(Option::ZeroFill)},
         {"style"_el, static_cast<int>(Option::Style)},
@@ -143,9 +153,10 @@ auto NamedFormatParser::isAllowed(const Option option, const NamedFormatDomain d
             option == Option::Maximum || option == Option::Escape || option == Option::EscapeAmount;
     case NamedFormatDomain::Number:
         return option == Option::Width || option == Option::Alignment || option == Option::Fill ||
-            option == Option::Base || option == Option::Notation || option == Option::LetterCase ||
-            option == Option::Sign || option == Option::Precision || option == Option::Alternate ||
-            option == Option::ZeroFill;
+            option == Option::Base || option == Option::Decimal || option == Option::Hexadecimal ||
+            option == Option::Octal || option == Option::Binary || option == Option::Notation ||
+            option == Option::LetterCase || option == Option::Sign || option == Option::Precision ||
+            option == Option::BasePrefix || option == Option::ZeroFill;
     case NamedFormatDomain::Boolean:
         return option == Option::Width || option == Option::Alignment || option == Option::Fill ||
             option == Option::Style || option == Option::Capitalization;
@@ -162,10 +173,10 @@ auto NamedFormatParser::readIdentifier() const -> String {
     if (!_entry->value().containsOnly(AsciiCategory::WordWithHyphen)) {
         throwFormatError("Named format option value is not an identifier");
     }
-    return _entry->value().transformed(Char::toAsciiLowercase);
+    return toAsciiLowercase(_entry->value());
 }
 
-auto NamedFormatParser::readNumber() -> unit::CpLength {
+auto NamedFormatParser::readNumber() -> CpCount {
     if (!_entry->isKeyWithValue()) {
         throwFormatError("Named numeric option value is missing");
     }
@@ -182,14 +193,14 @@ auto NamedFormatParser::readNumber() -> unit::CpLength {
         }
         result = result * 10U + digit;
     }
-    return unit::CpLength{result};
+    return CpCount{result, CpCount::Unchecked{}};
 }
 
 auto NamedFormatParser::readFill() const -> Char {
     if (!_entry->isKeyWithValue()) {
         throwFormatError("Named fill option is missing '='");
     }
-    if (_entry->value().characterLength() != unit::CpLength::one()) {
+    if (_entry->value().characterLength() != CpCount::one()) {
         throwFormatError("Named fill option requires exactly one character");
     }
     return _entry->value().charAt(StringSide::Front);
@@ -219,6 +230,18 @@ void NamedFormatParser::parseOption(const Option option, const named_key::Entry 
     case Option::Base:
         parseBase();
         break;
+    case Option::Decimal:
+        parseBaseShortcut(IntegerBase::Decimal);
+        break;
+    case Option::Hexadecimal:
+        parseBaseShortcut(IntegerBase::Hexadecimal);
+        break;
+    case Option::Octal:
+        parseBaseShortcut(IntegerBase::Octal);
+        break;
+    case Option::Binary:
+        parseBaseShortcut(IntegerBase::Binary);
+        break;
     case Option::Notation:
         parseNotation();
         break;
@@ -231,8 +254,8 @@ void NamedFormatParser::parseOption(const Option option, const named_key::Entry 
     case Option::Precision:
         parsePrecision();
         break;
-    case Option::Alternate:
-        parseAlternate();
+    case Option::BasePrefix:
+        parseBasePrefix();
         break;
     case Option::ZeroFill:
         parseZeroFill();
@@ -285,7 +308,7 @@ void NamedFormatParser::parseMaximum() {
     if (_domain == NamedFormatDomain::Text) {
         std::get<NamedTextFormatSpec>(_spec).maximum = value;
     } else {
-        std::get<NamedBytesFormatSpec>(_spec).maximum = unit::ByteLength{value.toRawValue()};
+        std::get<NamedBytesFormatSpec>(_spec).maximum = ByteCount{value.toRawValue(), ByteCount::Unchecked{}};
     }
 }
 
@@ -312,6 +335,14 @@ void NamedFormatParser::parseEscape() {
         spec.escapeFormat = EscapeFormat::ConfigTest;
     } else if (value == "markdown"_el || value == "md"_el) {
         spec.escapeFormat = EscapeFormat::Markdown;
+    } else if (value == "url"_el) {
+        spec.escapeFormat = EscapeFormat::Url;
+    } else if (value == "url_path"_el) {
+        spec.escapeFormat = EscapeFormat::UrlPath;
+    } else if (value == "url_query"_el) {
+        spec.escapeFormat = EscapeFormat::UrlQuery;
+    } else if (value == "url_user_info"_el) {
+        spec.escapeFormat = EscapeFormat::UrlUserInfo;
     } else {
         throwFormatError("Named escape value is not supported");
     }
@@ -334,80 +365,6 @@ void NamedFormatParser::parseEscapeAmount() {
     } else {
         throwFormatError("Named escape amount is not supported");
     }
-}
-
-void NamedFormatParser::parseBase() {
-    const auto value = readIdentifier();
-    auto &spec = std::get<NamedNumberFormatSpec>(_spec);
-    if (value == "decimal"_el || value == "d"_el) {
-        spec.base = IntegerBase::Decimal;
-    } else if (value == "hexadecimal"_el || value == "x"_el) {
-        spec.base = IntegerBase::Hexadecimal;
-    } else if (value == "binary"_el || value == "b"_el) {
-        spec.base = IntegerBase::Binary;
-    } else if (value == "octal"_el || value == "o"_el) {
-        spec.base = IntegerBase::Octal;
-    } else {
-        throwFormatError("Named integer base is not supported");
-    }
-}
-
-void NamedFormatParser::parseNotation() {
-    const auto value = readIdentifier();
-    auto &spec = std::get<NamedNumberFormatSpec>(_spec);
-    if (value == "default"_el || value == "d"_el) {
-        spec.notation = FloatFormat::Style::Default;
-    } else if (value == "fixed"_el || value == "f"_el) {
-        spec.notation = FloatFormat::Style::Fixed;
-    } else if (value == "scientific"_el || value == "s"_el) {
-        spec.notation = FloatFormat::Style::Scientific;
-    } else if (value == "general"_el || value == "g"_el) {
-        spec.notation = FloatFormat::Style::General;
-    } else if (value == "hexadecimal"_el || value == "x"_el) {
-        spec.notation = FloatFormat::Style::Hexadecimal;
-    } else {
-        throwFormatError("Named floating-point notation is not supported");
-    }
-}
-
-void NamedFormatParser::parseLetterCase() {
-    const auto value = readIdentifier();
-    auto &spec = std::get<NamedNumberFormatSpec>(_spec);
-    if (value == "lowercase"_el || value == "l"_el) {
-        spec.letterCase = LetterCase::Lowercase;
-    } else if (value == "uppercase"_el || value == "u"_el) {
-        spec.letterCase = LetterCase::Uppercase;
-    } else {
-        throwFormatError("Named letter case is not supported");
-    }
-}
-
-void NamedFormatParser::parseSign() {
-    const auto value = readIdentifier();
-    auto &spec = std::get<NamedNumberFormatSpec>(_spec);
-    if (value == "negative-only"_el || value == "n"_el) {
-        spec.signMode = IntegerSignMode::NegativeOnly;
-    } else if (value == "always"_el || value == "a"_el) {
-        spec.signMode = IntegerSignMode::Always;
-    } else if (value == "space"_el || value == "s"_el) {
-        spec.signMode = IntegerSignMode::Space;
-    } else {
-        throwFormatError("Named sign mode is not supported");
-    }
-}
-
-void NamedFormatParser::parsePrecision() {
-    std::get<NamedNumberFormatSpec>(_spec).precision = readNumber();
-}
-
-void NamedFormatParser::parseAlternate() {
-    requireKeyWithoutValue();
-    std::get<NamedNumberFormatSpec>(_spec).alternateForm = true;
-}
-
-void NamedFormatParser::parseZeroFill() {
-    requireKeyWithoutValue();
-    std::get<NamedNumberFormatSpec>(_spec).zeroFill = true;
 }
 
 void NamedFormatParser::parseStyle() {
@@ -433,8 +390,8 @@ void NamedFormatParser::parseCapitalization() {
         format.setCapitalization(Capitalization::Lowercase);
     } else if (value == "uppercase"_el || value == "u"_el) {
         format.setCapitalization(Capitalization::Uppercase);
-    } else if (value == "titlecase"_el || value == "t"_el) {
-        format.setCapitalization(Capitalization::Titlecase);
+    } else if (value == "capitalized"_el || value == "c"_el) {
+        format.setCapitalization(Capitalization::Capitalized);
     } else {
         throwFormatError("Named capitalization is not supported");
     }
@@ -485,8 +442,8 @@ void NamedFormatParser::validate() const {
         if (spec.base.has_value() && spec.notation.has_value()) {
             throwFormatError("Named number format cannot combine base and notation");
         }
-        if (spec.notation.has_value() && spec.alternateForm) {
-            throwFormatError("Named floating-point notation does not support alternate form");
+        if (spec.notation.has_value() && spec.basePrefix) {
+            throwFormatError("Named floating-point notation does not support a base prefix");
         }
         if (spec.zeroFill && spec.layout.fill != U' ') {
             throwFormatError("Named number format cannot combine zero-fill with a custom fill");

@@ -7,8 +7,8 @@
 #include <erbsland/conf/impl/char/NamedChars.hpp>
 #include <erbsland/conf/Source.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/StringEncoder.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/StringEncoder.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::conf;

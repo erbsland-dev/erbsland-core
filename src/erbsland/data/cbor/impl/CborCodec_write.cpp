@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CborCodec.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringConverter.hpp"
 
@@ -13,6 +13,7 @@
 
 namespace erbsland::data::cbor::impl {
 
+using namespace err;
 using namespace text::literals;
 
 void CborCodec::writeHead(uint8_t major, uint64_t value) {
@@ -40,8 +41,8 @@ void CborCodec::writeBytes(const mem::ByteBlock &value) {
 }
 
 void CborCodec::writeText(const text::String &value) {
-    if (_formatOptions.isDagCbor() && !value.isValidUtf8()) {
-        throw err::ParameterError{"DAG-CBOR requires valid UTF-8."_el, "value"_el};
+    if (_formatOptions.isDagCbor() && !value.isEncodingValid()) {
+        throw ParameterFailure{"DAG-CBOR requires valid UTF-8."_el, "value"_el};
     }
     const auto bytes = text::StringConverter{value}.toStdString();
     writeHead(3U, bytes.size());
@@ -71,7 +72,7 @@ void CborCodec::writeValue(const CborValue &value) {
     case CborType::Float: {
         auto number = value.getFloat().value();
         if (_formatOptions.isDagCbor() && !std::isfinite(number)) {
-            throw err::ParameterError{"DAG-CBOR requires a finite float."_el, "value"_el};
+            throw ParameterFailure{"DAG-CBOR requires a finite float."_el, "value"_el};
         }
         if (_formatOptions.isDagCbor() && number == 0.0) {
             number = 0.0;
@@ -123,11 +124,11 @@ void CborCodec::writeValue(const CborValue &value) {
     }
     case CborType::DateTime: {
         if (_formatOptions.isDagCbor()) {
-            throw err::ParameterError{"DAG-CBOR does not support date/time tags."_el, "value"_el};
+            throw ParameterFailure{"DAG-CBOR does not support date/time tags."_el, "value"_el};
         }
         const auto date = value.getTimestamp().value();
         if (!date.isValid()) {
-            throw err::ParameterError{"Invalid CBOR date/time."_el, "value"_el};
+            throw ParameterFailure{"Invalid CBOR date/time."_el, "value"_el};
         }
         writeHead(6U, 0U);
         writeText(
@@ -138,7 +139,7 @@ void CborCodec::writeValue(const CborValue &value) {
         const auto cid = value.getLinkBytes().value();
         // Validate the complete tag payload before writing a link supplied by the caller.
         if (!validCid(cid)) {
-            throw err::ParameterError{"A CID link must contain a valid binary CID."_el, "value"_el};
+            throw ParameterFailure{"A CID link must contain a valid binary CID."_el, "value"_el};
         }
         writeHead(6U, 42U);
         writeHead(2U, cid.length().toRawValue() + 1U);

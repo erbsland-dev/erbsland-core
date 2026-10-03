@@ -7,8 +7,20 @@
 #include "DefaultConfiguration.hpp"
 #include "Workload.hpp"
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
 #include <erbsland/profiling/AxisDefinition.hpp>
 #include <erbsland/profiling/ProfilingApplication.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/StringLiteral.hpp>
+#include <erbsland/Version.hpp>
 
 #include <algorithm>
 #include <optional>
@@ -34,7 +46,7 @@ protected: // implement pf::ProfilingApplication
                 "String Types Profiler and Benchmark"_el,
                 "Profiles deterministic U8, U16, and U32 String and StringEditor workloads. With no options, it "
                 "runs the four-thread snapshot benchmark."_el)
-            .setDefaultConfiguration(el::String{cDefaultConfigurationText});
+            .setDefaultConfiguration(cDefaultConfigurationText);
         auto widthAxis = pf::AxisDefinition{"width"_el, "widths"_el, "width"_el};
         for (const auto width : {StringWidth::U8, StringWidth::U16, StringWidth::U32}) {
             widthAxis.addValue({.id = toString(width)});

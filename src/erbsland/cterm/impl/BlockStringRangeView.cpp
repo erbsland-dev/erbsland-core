@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "BlockStringRangeView.hpp"
 
-#include "../../err/OutOfRangeError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringFormat.hpp"
 
@@ -17,7 +17,7 @@ using text::StringFormat;
 using namespace text::literals;
 
 auto BlockStringRangeView::storageIndex(const BlockIndex localIndex) const noexcept -> BlockIndex {
-    return _range.index() + localIndex.offsetFromZero();
+    return _range.beginIndex() + localIndex.offsetFromZero();
 }
 
 auto BlockStringRangeView::rawStorageIndex(const BlockIndex localIndex) const noexcept -> std::size_t {
@@ -29,7 +29,7 @@ auto BlockStringRangeView::characterAt(const BlockIndex localIndex) const noexce
 }
 
 auto BlockStringRangeView::begin() const noexcept -> const_iterator {
-    return _data.chars().cbegin() + static_cast<difference_type>(_range.index().toSizeT());
+    return _data.chars().cbegin() + static_cast<difference_type>(_range.beginIndex().toSizeT());
 }
 
 auto BlockStringRangeView::end() const noexcept -> const_iterator {
@@ -61,7 +61,7 @@ auto BlockStringRangeView::crend() const noexcept -> const_reverse_iterator {
 }
 
 auto BlockStringRangeView::displayWidth() const noexcept -> int {
-    if (_range.index().isZero() && length().toSizeT() == _data.size() && _data.hasDisplayWidthCache()) {
+    if (_range.beginIndex().isZero() && length().toSizeT() == _data.size() && _data.hasDisplayWidthCache()) {
         return _data.displayWidth();
     }
     auto result = 0;
@@ -80,7 +80,7 @@ auto BlockStringRangeView::operator[](const BlockIndex index) const noexcept -> 
 
 auto BlockStringRangeView::at(const BlockIndex index, const text::StringLiteral &typeName) const -> Block {
     if (!index.isWithin(length())) {
-        throw err::OutOfRangeError{StringFormat{"{} index out of range."_el}.build(typeName)};
+        throw err::OutOfRangeFailure{StringFormat{"{} index out of range."_el}.build(typeName)};
     }
     return characterAt(index);
 }
@@ -153,7 +153,7 @@ auto BlockStringRangeView::subRange(const BlockRange range) const noexcept -> Bl
     if (clampedRange.isEmpty()) {
         return {};
     }
-    return clampedRange.withOrigin(_range.index());
+    return clampedRange.toAbsolute(_range.beginIndex());
 }
 
 auto BlockStringRangeView::croppedRange(
@@ -188,7 +188,7 @@ auto BlockStringRangeView::croppedRange(
             currentDisplayWidth += characterDisplayWidth;
             index += 1;
         }
-        newBlockRange = BlockRange{_range.index(), BlockCount::fromSizeT(index)};
+        newBlockRange = BlockRange{_range.beginIndex(), BlockCount::fromSizeT(index)};
     }
     if (newBlockRange.isEmpty()) {
         return {};

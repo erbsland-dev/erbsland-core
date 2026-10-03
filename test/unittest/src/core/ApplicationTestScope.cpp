@@ -4,7 +4,7 @@
 #include "ApplicationTestScopeManager.hpp"
 #include "IllegalApplicationInstanceAccess.hpp"
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/core/impl/ApplicationInstanceManager.hpp>
 
 auto ApplicationTestScopeManager::instance() -> ApplicationTestScopeManager & {
@@ -53,6 +53,7 @@ auto ApplicationTestScopeManager::unregisterInstance(const erbsland::core::Appli
     }
     return ApplicationInstanceManager::unregisterInstance(appInstance);
 }
+
 void ApplicationTestScopeManager::linkWith(erbsland::core::Application &app) {
     if (!_isScopeOpen) {
         throw IllegalApplicationInstanceAccess{
@@ -60,6 +61,7 @@ void ApplicationTestScopeManager::linkWith(erbsland::core::Application &app) {
     }
     ApplicationInstanceManager::linkWith(app);
 }
+
 auto ApplicationTestScopeManager::application() -> erbsland::core::Application & {
     if (!_isScopeOpen) {
         throw IllegalApplicationInstanceAccess{
@@ -67,6 +69,15 @@ auto ApplicationTestScopeManager::application() -> erbsland::core::Application &
     }
     return ApplicationInstanceManager::application();
 }
+
+auto ApplicationTestScopeManager::retainGlobalData() -> erbsland::core::impl::ApplicationDataPtr {
+    if (!_isScopeOpen) {
+        throw IllegalApplicationInstanceAccess{
+            "ApplicationInstanceManager::retainGlobalData access outside of an open test scope"};
+    }
+    return ApplicationInstanceManager::retainGlobalData();
+}
+
 auto ApplicationTestScopeManager::createApplicationData() -> erbsland::core::impl::ApplicationDataPtr {
     if (!_isScopeOpen) {
         throw IllegalApplicationInstanceAccess{

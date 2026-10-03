@@ -9,7 +9,7 @@
 #include <erbsland/conf/impl/source/FileSource.hpp>
 #include <erbsland/conf/Source.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/text/placeholder/EnvironmentSource.hpp>
+#include <erbsland/placeholder/EnvironmentSource.hpp>
 #include <erbsland/text/placeholder/impl/Registry.hpp>
 
 #include <sstream>

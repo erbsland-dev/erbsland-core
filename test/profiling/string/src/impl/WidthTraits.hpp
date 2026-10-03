@@ -4,6 +4,22 @@
 
 #include "WidthTraits_fwd.hpp"
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/CpRange.hpp>
+#include <erbsland/U16Count.hpp>
+#include <erbsland/U16Index.hpp>
+#include <erbsland/U16Range.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
+#include <erbsland/U8String.hpp>
+#include <erbsland/U8StringEditor.hpp>
+
 namespace app::string::impl {
 
 /// Provide UTF-8 string operations for the profiler.
@@ -12,7 +28,7 @@ struct WidthTraits<StringWidth::U8> {
     using String = el::U8String;
     using Editor = el::U8StringEditor;
     using DataIndex = el::ByteIndex;
-    using DataLength = el::ByteLength;
+    using DataLength = el::ByteCount;
     using DataRange = el::ByteRange;
     static constexpr auto Width = StringWidth::U8;
     static constexpr auto UnitBytes = std::uint64_t{1U};
@@ -33,7 +49,7 @@ struct WidthTraits<StringWidth::U8> {
         return value.toCharIndex(index).toRawValue();
     }
     /// Test whether a UTF-8 value is valid.
-    [[nodiscard]] static auto isValid(const auto &value) noexcept -> bool { return value.isValidUtf8(); }
+    [[nodiscard]] static auto isValid(const auto &value) noexcept -> bool { return value.isEncodingValid(); }
 };
 
 /// Provide UTF-16 string operations for the profiler.
@@ -41,9 +57,9 @@ template <>
 struct WidthTraits<StringWidth::U16> {
     using String = el::U16String;
     using Editor = el::U16StringEditor;
-    using DataIndex = el::U16DataIndex;
-    using DataLength = el::U16DataLength;
-    using DataRange = el::U16DataRange;
+    using DataIndex = el::U16Index;
+    using DataLength = el::U16Count;
+    using DataRange = el::U16Range;
     static constexpr auto Width = StringWidth::U16;
     static constexpr auto UnitBytes = std::uint64_t{2U};
 
@@ -63,7 +79,7 @@ struct WidthTraits<StringWidth::U16> {
         return value.toCharIndex(index).toRawValue();
     }
     /// Test whether a UTF-16 value is valid.
-    [[nodiscard]] static auto isValid(const auto &value) noexcept -> bool { return value.isValidUtf16(); }
+    [[nodiscard]] static auto isValid(const auto &value) noexcept -> bool { return value.isEncodingValid(); }
 };
 
 /// Provide UTF-32 string operations for the profiler.
@@ -72,7 +88,7 @@ struct WidthTraits<StringWidth::U32> {
     using String = el::U32String;
     using Editor = el::U32StringEditor;
     using DataIndex = el::CpIndex;
-    using DataLength = el::CpLength;
+    using DataLength = el::CpCount;
     using DataRange = el::CpRange;
     static constexpr auto Width = StringWidth::U32;
     static constexpr auto UnitBytes = std::uint64_t{4U};
@@ -88,14 +104,14 @@ struct WidthTraits<StringWidth::U32> {
         -> DataRange {
         return DataRange{
             el::CpIndex::fromSizeT(static_cast<std::size_t>(cpStart)),
-            el::CpLength::fromSizeT(static_cast<std::size_t>(cpCount))};
+            el::CpCount::fromSizeT(static_cast<std::size_t>(cpCount))};
     }
     /// Convert a UTF-32 data index into a character index.
     [[nodiscard]] static auto characterIndex(const auto &, const DataIndex index) -> std::uint64_t {
         return index.toRawValue();
     }
     /// Test whether a UTF-32 value is valid.
-    [[nodiscard]] static auto isValid(const auto &value) noexcept -> bool { return value.isValidUtf32(); }
+    [[nodiscard]] static auto isValid(const auto &value) noexcept -> bool { return value.isEncodingValid(); }
 };
 
 }

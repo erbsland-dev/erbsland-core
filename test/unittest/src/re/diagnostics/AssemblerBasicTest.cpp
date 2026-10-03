@@ -59,9 +59,9 @@ public:
             ".group 1 \"first\"",
             "None",
         }));
-        REQUIRE_EQUAL(engineData->captureGroupNames.size(), 2U);
-        REQUIRE_EQUAL(engineData->captureGroupNames[0], StringEditor{"first"_el});
-        REQUIRE_EQUAL(engineData->captureGroupNames[1], StringEditor{});
+        REQUIRE_EQUAL(engineData->captureGroupNames.count().toSizeT(), 2U);
+        REQUIRE_EQUAL(engineData->captureGroupNames.getRef(el::ItemIndex{0}), StringEditor{"first"_el});
+        REQUIRE_EQUAL(engineData->captureGroupNames.getRef(el::ItemIndex{1}), StringEditor{});
     }
 
     void testInvalidCharactersAndLineLength() {

@@ -31,11 +31,14 @@ operations, whole-array and per-byte bit operations, and endian-aware integer ac
 :cpp:class:`ByteBuffer <erbsland::mem::ByteBuffer>` provides equivalent operations for compact, uniquely owned
 dynamic byte storage without copy-on-write.
 :cpp:type:`ByteIndex <erbsland::unit::ByteIndex>`,
-:cpp:type:`ByteLength <erbsland::unit::ByteLength>`, and
+:cpp:type:`ByteCount <erbsland::unit::ByteCount>`, and
 :cpp:type:`ByteRange <erbsland::unit::ByteRange>` describe all owning-container access.
 Range spans and mutations clamp to the owner; invalid ranges produce an empty view or a no-op, and infinite lengths
 extend to the end.
 The ``xorAt*()`` methods modify one indexed byte without a separate read, while ``xorWith*()`` combines byte ranges.
+``ByteArray``, ``ByteBuffer``, ``ByteBlock``, and ``ByteBlockEditor`` expose ``lastIndex()`` for the final visible byte.
+An empty sequence returns ``ByteIndex::noIndex()``.
+Like their other indexed reads, this index is relative to the visible sequence; a slice starts at index zero.
 ``ByteArray::secureErase()`` clears the complete fixed storage.
 ``ByteBuffer::secureErase()`` clears the complete allocated capacity while preserving its visible length and capacity.
 
@@ -69,7 +72,7 @@ Use :cpp:class:`ByteBlockEditor <erbsland::mem::ByteBlockEditor>` when the bytes
 .. code-block:: cpp
 
     const auto data = el::ByteBlock({0x01, 0x02, 0x03, 0x04});
-    auto header = data.slice(el::ByteIndex{0}, el::ByteLength{2});
+    auto header = data.slice(el::ByteIndex{0}, el::ByteCount{2});
 
     auto editor = el::ByteBlockEditor{data};
     editor.set(el::ByteIndex{1}, el::Byte{0xff});
@@ -117,7 +120,7 @@ range.
 Invalid, outside, or empty targets and empty sources are no-ops.
 It validates no-op cases before detaching and differs intentionally from the clamping, resizing ``replace()`` operation.
 The whole-sequence ``xorWith()`` methods return ``false`` without changing the destination when lengths differ.
-Use ``xorWithOrThrow()`` when equal lengths are an invariant and a mismatch must raise ``ParameterError``.
+Use ``xorWithOrThrow()`` when equal lengths are an invariant and a mismatch must raise ``ParameterFailure``.
 Range overloads remain clamped operations that combine as many source bytes as fit.
 
 Sensitive Storage ^^^^^^^^^^^^^^^^^
@@ -193,6 +196,11 @@ value has been validated and decoded.
 This includes readers positioned in the middle of a block.
 Strict reads leave the position unchanged on failure; optional reads report an incomplete or invalid frame without
 advancing.
+``readTextOrThrow()`` reports truncated frames, invalid count prefixes, and configured frame-limit failures as
+``ParseError``.
+Raw fixed-width throwing reads report insufficient input as ``OutOfRangeError``.
+Parsers can catch this runtime error or use optional/status-returning reads.
+Invalid format widths remain caller precondition violations.
 
 Bit Reader
 ~~~~~~~~~~
@@ -203,7 +211,8 @@ Its immutable ``BitOrder`` selects most- or least-significant-bit-first processi
 It exposes bit and byte positions, bounded movement, byte alignment, and transactional reads of booleans, bytes, and
 unsigned fields up to 64 bits.
 Tolerant reads return their fallback without advancing when the complete field is unavailable; strict variants throw an
-out-of-range error.
+``OutOfRangeError`` for insufficient input.
+Invalid bit widths or byte alignment raise ``OutOfRangeFailure``.
 
 ``refill()`` replaces consumed input with the next shared block while retaining at most 64 unread bits.
 It copies only the small unread tail, performs no allocation, and preserves byte alignment across chunks.

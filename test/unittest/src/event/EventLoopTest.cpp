@@ -1,19 +1,20 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/event/EventBackend.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/EventTimer.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimeUnitTags.hpp>
+#include <erbsland/CurrentEvents.hpp>
+#include <erbsland/EventBackend.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventTimer.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeUnitTags.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>
 #include <chrono>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <thread>
 #include <vector>
 
@@ -34,13 +35,51 @@ class EventLoopTest final : public el::UnitTest {
             if (event.identifier() != id::TimerEvent) {
                 return false;
             }
-            throw std::runtime_error{"backend"};
+            throw el::err::RuntimeError{"backend"};
         }
         [[nodiscard]] auto nextWakeTime() const -> std::optional<TimePoint> override { return std::nullopt; }
 
     private:
         EventBackendTargetWeakPtr _target;
     };
+
+    class PollFailureBackend final : public EventBackend {
+    public:
+        void setFailPolling(bool value) noexcept { _failPolling = value; }
+
+    public: // implement EventBackend
+        [[nodiscard]] auto backendId() const noexcept -> EventBackendId override { return id::SchedulerBackend; }
+        void attach(
+            [[maybe_unused]] EventBackendTargetWeakPtr target,
+            [[maybe_unused]] EventLoopDriverWeakPtr driver) override {}
+        void poll([[maybe_unused]] TimePoint now) override {
+            if (_failPolling) {
+                throw el::err::RuntimeError{"poll failure"};
+            }
+        }
+        [[nodiscard]] auto handleEvent([[maybe_unused]] const Event &event) -> bool override { return false; }
+        [[nodiscard]] auto nextWakeTime() const -> std::optional<TimePoint> override { return std::nullopt; }
+
+    private:
+        bool _failPolling{true};
+    };
+
+    void runVariant(const EventLoopPtr &loop, int variant) {
+        switch (variant) {
+        case 0:
+            loop->run();
+            break;
+        case 1:
+            static_cast<void>(loop->runOnce());
+            break;
+        case 2:
+            static_cast<void>(loop->runOnce(TimeDelta::zero()));
+            break;
+        case 3:
+            static_cast<void>(loop->runUntilIdle());
+            break;
+        }
+    }
 
 public:
     void testInvokeCallbacksRunInFifoOrder() {
@@ -121,7 +160,7 @@ public:
     void testCallbackExceptionIsCaptured() {
         const auto loop = EventLoop::create();
 
-        loop->invoke([]() -> void { throw std::runtime_error{"boom"}; });
+        loop->invoke([]() -> void { throw el::err::RuntimeError{"boom"}; });
 
         REQUIRE_EQUAL(loop->runUntilIdle(), std::size_t{1});
         REQUIRE(loop->hasError());
@@ -132,7 +171,7 @@ public:
         auto caught = false;
         try {
             std::rethrow_exception(error);
-        } catch (const std::runtime_error &) {
+        } catch (const el::err::RuntimeError &) {
             caught = true;
         }
         REQUIRE(caught);
@@ -142,7 +181,7 @@ public:
         const auto loop = EventLoop::create();
         auto calledAfterError = false;
 
-        loop->invoke([]() -> void { throw std::runtime_error{"boom"}; });
+        loop->invoke([]() -> void { throw el::err::RuntimeError{"boom"}; });
         loop->invoke([&calledAfterError]() -> void { calledAfterError = true; });
 
         REQUIRE_EQUAL(loop->runUntilIdle(), std::size_t{2});
@@ -159,7 +198,7 @@ public:
             handlerCalled = error != nullptr;
             return EventLoopErrorAction::Stop;
         });
-        loop->invoke([]() -> void { throw std::runtime_error{"boom"}; });
+        loop->invoke([]() -> void { throw el::err::RuntimeError{"boom"}; });
         loop->invoke([&calledAfterError]() -> void { calledAfterError = true; });
 
         REQUIRE(loop->runOnce(TimeDelta::zero()));
@@ -172,9 +211,9 @@ public:
         const auto loop = EventLoop::create();
 
         loop->setErrorHandler([]([[maybe_unused]] std::exception_ptr error) -> EventLoopErrorAction {
-            throw std::runtime_error{"handler"};
+            throw el::err::RuntimeError{"handler"};
         });
-        loop->invoke([]() -> void { throw std::runtime_error{"boom"}; });
+        loop->invoke([]() -> void { throw el::err::RuntimeError{"boom"}; });
 
         REQUIRE_EQUAL(loop->runUntilIdle(), std::size_t{1});
         REQUIRE(loop->takeError());
@@ -190,7 +229,7 @@ public:
             handlerCalled = error != nullptr;
             return EventLoopErrorAction::Stop;
         });
-        const auto timer = loop->createTimer([]() -> void { throw std::runtime_error{"timer"}; });
+        const auto timer = loop->createTimer([]() -> void { throw el::err::RuntimeError{"timer"}; });
         timer->startOnce(TimeDelta::zero());
 
         REQUIRE(loop->runOnce(TimeDelta{Seconds{1}}));
@@ -231,7 +270,7 @@ public:
             handlerCalled = error != nullptr;
             return EventLoopErrorAction::Stop;
         });
-        loop->invokeAfter(TimeDelta{Milliseconds{5}}, []() -> void { throw std::runtime_error{"delayed"}; });
+        loop->invokeAfter(TimeDelta{Milliseconds{5}}, []() -> void { throw el::err::RuntimeError{"delayed"}; });
 
         REQUIRE(loop->runOnce(TimeDelta{Seconds{1}}));
         REQUIRE(handlerCalled);
@@ -287,12 +326,44 @@ public:
         loop->invoke([loop, &rejected]() -> void {
             try {
                 static_cast<void>(loop->runOnce(TimeDelta::zero()));
-            } catch (const el::err::LogicError &) {
+            } catch (const el::err::LogicFailure &) {
                 rejected = true;
             }
         });
 
         REQUIRE(loop->runOnce(TimeDelta::zero()));
         REQUIRE(rejected);
+    }
+
+    void testRunVariantsRestoreStateAfterException() {
+        for (auto variant = 0; variant < 4; ++variant) {
+            auto backend = std::make_unique<PollFailureBackend>();
+            const auto backendPtr = backend.get();
+            const auto loop = EventLoop::create(std::move(backend));
+            REQUIRE_THROWS_AS(el::err::RuntimeError, runVariant(loop, variant));
+            REQUIRE_FALSE(loop->isRunning());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, currentEvents());
+            backendPtr->setFailPolling(false);
+            loop->invoke([loop]() -> void { loop->stop(); });
+            runVariant(loop, variant);
+            REQUIRE_FALSE(loop->isRunning());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, currentEvents());
+        }
+    }
+
+    void testNestedLoopFailureRestoresOuterEventContext() {
+        const auto outer = EventLoop::create();
+        const auto inner = EventLoop::create(std::make_unique<PollFailureBackend>());
+        auto restored = false;
+        outer->invoke([&]() -> void {
+            try {
+                static_cast<void>(inner->runOnce(TimeDelta::zero()));
+            } catch (const el::err::RuntimeError &) {
+                restored = currentEvents() == outer;
+            }
+        });
+        REQUIRE_EQUAL(outer->runUntilIdle(), std::size_t{1});
+        REQUIRE(restored);
+        REQUIRE_FALSE(outer->hasError());
     }
 };

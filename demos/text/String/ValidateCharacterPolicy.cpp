@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace demo {
 
@@ -20,8 +25,8 @@ void validateCharacterPolicy() {
 
     const auto yesNo = el::BooleanFormat::yesNo();
     userNames.forEach([&](const el::String &userName) -> void {
-        const auto isAccepted =
-            userName.isValidUtf8() && userName.containsOnly(userNameChars) && !userName.containsOneOf(forbiddenChars);
+        const auto isAccepted = userName.isEncodingValid() && userName.containsOnly(userNameChars) &&
+            !userName.containsOneOf(forbiddenChars);
         el::io::printLine(userName, " -> "_el, yesNo, isAccepted);
     });
 }

@@ -4,7 +4,10 @@
 
 #include "Operation.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace app::charset {
 

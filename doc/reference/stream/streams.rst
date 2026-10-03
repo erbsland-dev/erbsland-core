@@ -26,6 +26,17 @@ File Positioning
 Buffered byte and encoded text wrappers forward the same value, while non-file streams return an invalid identity.
 Comparing it with ``PathInfo::fileIdentity()`` detects replacement without exposing native handles.
 
+``ByteInputStream::initialFileSize()`` exposes the regular-file size captured from the opened native handle.
+It returns infinity for sources without this information and never performs another metadata query.
+The value is an allocation hint, not a live size or proof of EOF: files can change and virtual files can report zero
+while returning data.
+Whole-file ``PathContent`` reads use this hint instead of querying path metadata separately.
+
+Regular-file input fills one read buffer or confirms EOF within each background operation.
+A file smaller than one buffer therefore needs only one worker submission, including the EOF probe.
+Pipes and devices still publish each native read immediately, and all callers retain bounded waits.
+Read-ahead storage is allocated as needed; larger files keep the double-buffer pipeline.
+
 Streams opened for regular files support optional byte positioning unless the output file was opened in append mode.
 ``ByteBlockInputStream`` also supports positioning and exposes a retained copy-on-write byte block through immediate
 bounded reads.
@@ -47,7 +58,7 @@ current end.
 Positions beyond the end are allowed.
 A later write can therefore create a sparse file.
 Negative, invalid, overflowing, or non-native positions raise
-:cpp:class:`erbsland::err::ParameterError <erbsland::err::ParameterError>`.
+:cpp:class:`erbsland::err::ParameterFailure <erbsland::err::ParameterFailure>`.
 
 Position changes are bounded operations.
 A timeout leaves the logical position unchanged.
@@ -79,6 +90,28 @@ Selecting another read operation replays retained input in order.
 end-of-stream or its maximum.
 The no-argument byte and text ``readAll()`` methods have a 10 MiB default maximum.
 Process large inputs with repeated bounded chunk reads instead of collecting them with ``readAll()``.
+
+Text Decoding Mode
+==================
+
+:cpp:enum:`EncodingMode <erbsland::text::EncodingMode>` selects whether malformed text is replaced or rejected.
+``Tolerant`` is the default for encoded text input streams and replaces malformed sequences with Unicode replacement
+characters.
+``Strict`` raises :cpp:class:`EncodingError <erbsland::text::EncodingError>` when malformed input is encountered.
+For file streams, select the mode through
+:cpp:func:`PathReadTextOptions::setEncodingMode() <erbsland::path::PathReadTextOptions::setEncodingMode>` before opening
+the stream.
+
+Reserve ``Strict`` for boundaries where encoding validity **must be enforced**, such as security-sensitive processing or
+untrusted network input that must reject malformed encoding.
+At these boundaries, the validation requirement takes priority over decoding time; ordinary text reading should keep the
+tolerant default.
+Strict conversion and whole-file UTF-8 reading can be **much slower** because validation prevents sharing or copying
+compatible text without examining it; see :doc:`/reference/text/encoding`.
+Incremental streams already scan character boundaries in both modes, so the performance difference is not necessarily
+the same as for bulk conversion or whole-file reading.
+
+See :doc:`/topics/stream/text_input_and_output` for choosing the mode and handling malformed input.
 
 Sensitive Input
 ===============
@@ -133,7 +166,7 @@ Coroutine operations retain shared ownership of the stream until the bounded cal
 Library-provided concrete streams are therefore factory-created and shared-owned.
 Custom stream subclasses can still live on the stack for synchronous tests and algorithms, but invoking an inherited
 coroutine method without shared ownership throws
-:cpp:class:`LogicError <erbsland::err::LogicError>`.
+:cpp:class:`LogicFailure <erbsland::err::LogicFailure>`.
 
 ``coReadBlocks()`` generates owned byte or text blocks, while ``coReadLines()`` generates text lines.
 These lazy
@@ -166,6 +199,17 @@ Stream wrappers delegate error-context creation to their backing stream, so erro
 failure retain the path of the file-backed stream.
 Native operating-system details are embedded directly in the context, keeping diagnostics flat instead of creating a
 nested platform-error cause.
+
+Committing Temporary Files
+==========================
+
+Temporary byte and text output streams provide ``commitToOrThrow()`` for explicit file replacement.
+The operation finalizes output, prepares optional retained backups, and commits the owned temporary file through the
+shared path replacement engine.
+It retains cleanup ownership on failure and releases it only after a successful move.
+The existing ``close()`` behavior still removes the temporary file when automatic cleanup is enabled.
+For replacement policies, backup naming, pre-commit checks, and diagnostic behavior, see
+:doc:`/reference/path/file_system_paths`.
 
 Interface
 =========

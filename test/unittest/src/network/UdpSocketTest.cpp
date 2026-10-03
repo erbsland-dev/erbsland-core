@@ -1,22 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/EventLoopDriver.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventLoopDriver.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
 #include <erbsland/network/impl/udp/UdpSocket.hpp>
 #include <erbsland/network/impl/udp/UdpSocketDevice.hpp>
-#include <erbsland/network/source/NetworkError.hpp>
-#include <erbsland/network/udp/UdpSocket.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/NetworkError.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/UdpSocket.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <deque>
 #include <functional>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -42,7 +42,7 @@ class UdpSocketTest final : public el::UnitTest {
         UdpSocketDeviceCallbacks callbacks;
         std::optional<IpEndpoint> requestedEndpoint;
         std::optional<IpEndpoint> actualEndpoint;
-        unit::ByteLength maximumDatagramSize;
+        unit::ByteCount maximumDatagramSize;
         std::deque<UdpSocketDeviceSendStatus> sendResults;
         std::vector<UdpDatagram> sendAttempts;
         bool receiving{false};
@@ -55,7 +55,7 @@ class UdpSocketTest final : public el::UnitTest {
         explicit FakeDevice(std::shared_ptr<FakeState> state) : _state{std::move(state)} {}
 
     public: // implement UdpSocketDevice
-        auto bind(IpEndpoint localEndpoint, const unit::ByteLength maximumDatagramSize) -> IpEndpoint override {
+        auto bind(IpEndpoint localEndpoint, const unit::ByteCount maximumDatagramSize) -> IpEndpoint override {
             _state->requestedEndpoint = localEndpoint;
             _state->maximumDatagramSize = maximumDatagramSize;
             if (localEndpoint.port().isAutomatic()) {
@@ -100,11 +100,11 @@ class UdpSocketTest final : public el::UnitTest {
 public:
     void testOptionAndStatusValues() {
         auto options = UdpSocketOptions{};
-        REQUIRE_EQUAL(options.maximumDatagramSize(), unit::ByteLength{65'507U});
-        REQUIRE_EQUAL(options.sendQueueLimit(), unit::ByteLength{1024U * 1024U});
-        options.setMaximumDatagramSize(unit::ByteLength{1200U}).setSendQueueLimit(unit::ByteLength{8192U});
-        REQUIRE_EQUAL(options.maximumDatagramSize(), unit::ByteLength{1200U});
-        REQUIRE_EQUAL(options.sendQueueLimit(), unit::ByteLength{8192U});
+        REQUIRE_EQUAL(options.maximumDatagramSize(), unit::ByteCount{65'507U});
+        REQUIRE_EQUAL(options.sendQueueLimit(), unit::ByteCount{1024U * 1024U});
+        options.setMaximumDatagramSize(unit::ByteCount{1200U}).setSendQueueLimit(unit::ByteCount{8192U});
+        REQUIRE_EQUAL(options.maximumDatagramSize(), unit::ByteCount{1200U});
+        REQUIRE_EQUAL(options.sendQueueLimit(), unit::ByteCount{8192U});
 
         REQUIRE(NetworkSendStatus::Accepted.isAccepted());
         REQUIRE(NetworkSendStatus::WouldBlock.wouldBlock());
@@ -145,7 +145,7 @@ public:
         auto callbackState = NetworkSourceState::Inactive;
         auto beforeCallback = std::optional<IpEndpoint>{};
         auto options = UdpSocketOptions{};
-        options.setMaximumDatagramSize(unit::ByteLength{1400U}).setSendQueueLimit(unit::ByteLength{4000U});
+        options.setMaximumDatagramSize(unit::ByteCount{1400U}).setSendQueueLimit(unit::ByteCount{4000U});
 
         harness.loop->invoke([&]() -> void {
             REQUIRE_FALSE(harness.socket->localEndpoint().has_value());
@@ -166,25 +166,25 @@ public:
 
         REQUIRE(bound);
         REQUIRE_EQUAL(callbackState, NetworkSourceState::Active);
-        REQUIRE_EQUAL(harness.device->maximumDatagramSize, unit::ByteLength{1400U});
+        REQUIRE_EQUAL(harness.device->maximumDatagramSize, unit::ByteCount{1400U});
         REQUIRE(harness.device->receiving);
-        run(harness, [&]() -> void { REQUIRE_THROWS_AS(el::err::LogicError, harness.socket->start()); });
+        run(harness, [&]() -> void { REQUIRE_THROWS_AS(el::err::LogicFailure, harness.socket->start()); });
     }
 
     void testStartValidationDoesNotConsumeTheSocket() {
         auto harness = makeHarness();
         harness.loop->invoke([&]() -> void {
             auto options = UdpSocketOptions{};
-            options.setMaximumDatagramSize(unit::ByteLength{});
-            REQUIRE_THROWS_AS(el::err::ParameterError, harness.socket->start(options));
-            options.setMaximumDatagramSize(unit::ByteLength{65'508U});
-            REQUIRE_THROWS_AS(el::err::ParameterError, harness.socket->start(options));
-            options.setMaximumDatagramSize(unit::ByteLength{1000U}).setSendQueueLimit(unit::ByteLength{});
-            REQUIRE_THROWS_AS(el::err::ParameterError, harness.socket->start(options));
-            options.setSendQueueLimit(unit::ByteLength::infinite());
-            REQUIRE_THROWS_AS(el::err::ParameterError, harness.socket->start(options));
+            options.setMaximumDatagramSize(unit::ByteCount{});
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, harness.socket->start(options));
+            options.setMaximumDatagramSize(unit::ByteCount{65'508U});
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, harness.socket->start(options));
+            options.setMaximumDatagramSize(unit::ByteCount{1000U}).setSendQueueLimit(unit::ByteCount{});
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, harness.socket->start(options));
+            options.setSendQueueLimit(unit::ByteCount::infinite());
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, harness.socket->start(options));
             REQUIRE_THROWS_AS(
-                el::err::ParameterError,
+                el::err::ParameterFailure,
                 harness.socket->start(IpEndpoint{IpAddress::loopbackV4(), Port{}, ScopeId{3U}}));
             harness.socket->start(IpAddress::loopbackV4());
         });
@@ -197,10 +197,10 @@ public:
         harness.device->sendResults.push_back(UdpSocketDeviceSendStatus::Pending);
         auto writableCount = 0;
         auto options = UdpSocketOptions{};
-        options.setMaximumDatagramSize(unit::ByteLength{5U}).setSendQueueLimit(unit::ByteLength{6U});
+        options.setMaximumDatagramSize(unit::ByteCount{5U}).setSendQueueLimit(unit::ByteCount{6U});
         const auto destination = IpEndpoint{IpAddress::loopbackV4(), Port{9000U}};
-        const auto first = UdpDatagram{destination, mem::ByteBlock{unit::ByteLength{4U}, mem::Byte{0x31U}}};
-        const auto rejected = UdpDatagram{destination, mem::ByteBlock{unit::ByteLength{5U}, mem::Byte{0x52U}}};
+        const auto first = UdpDatagram{destination, mem::ByteBlock{unit::ByteCount{4U}, mem::Byte{0x31U}}};
+        const auto rejected = UdpDatagram{destination, mem::ByteBlock{unit::ByteCount{5U}, mem::Byte{0x52U}}};
 
         run(harness, [&]() -> void {
             harness.socket->events().onWritable([&]() -> void { writableCount += 1; });
@@ -209,15 +209,15 @@ public:
         run(harness, [&]() -> void {
             REQUIRE(harness.socket->send(first).isAccepted());
             REQUIRE(harness.socket->send(rejected).wouldBlock());
-            REQUIRE_EQUAL(rejected.data(), (mem::ByteBlock{unit::ByteLength{5U}, mem::Byte{0x52U}}));
+            REQUIRE_EQUAL(rejected.data(), (mem::ByteBlock{unit::ByteCount{5U}, mem::Byte{0x52U}}));
             REQUIRE_THROWS_AS(
-                el::err::ParameterError,
+                el::err::ParameterFailure,
                 harness.socket->send(IpEndpoint{IpAddress::loopbackV4(), Port{}}, mem::ByteBlock{}));
             REQUIRE_THROWS_AS(
-                el::err::ParameterError,
+                el::err::ParameterFailure,
                 harness.socket->send(IpEndpoint{IpAddress::loopbackV6(), Port{9000U}}, mem::ByteBlock{}));
             REQUIRE_THROWS_AS(
-                el::err::ParameterError, harness.socket->send(destination, mem::ByteBlock{unit::ByteLength{6U}}));
+                el::err::ParameterFailure, harness.socket->send(destination, mem::ByteBlock{unit::ByteCount{6U}}));
             harness.device->callbacks.sendCompleted();
             REQUIRE_EQUAL(writableCount, 0);
         });
@@ -231,7 +231,7 @@ public:
         auto harness = makeHarness();
         harness.device->sendResults.push_back(UdpSocketDeviceSendStatus::Pending);
         auto options = UdpSocketOptions{};
-        options.setSendQueueLimit(unit::ByteLength::one());
+        options.setSendQueueLimit(unit::ByteCount::one());
         const auto destination = IpEndpoint{IpAddress::loopbackV4(), Port{9000U}};
         run(harness, [&]() -> void { harness.socket->start(options); });
         run(harness, [&]() -> void {
@@ -245,7 +245,7 @@ public:
         auto oldHandlerCount = 0;
         auto newHandlerCount = 0;
         auto dropCount = 0;
-        auto dropSize = std::optional<unit::ByteLength>{};
+        auto dropSize = std::optional<unit::ByteCount>{};
         const auto remote = IpEndpoint{IpAddress::loopbackV4(), Port{9001U}};
         run(harness, [&]() -> void {
             harness.socket->events().onDatagram([&](UdpDatagram) -> void { oldHandlerCount += 1; });
@@ -253,7 +253,7 @@ public:
             harness.socket->events().onDatagramDropped([&](const UdpDatagramDropContext &context) -> void {
                 dropCount += 1;
                 REQUIRE_EQUAL(context.reason(), UdpDatagramDropReason::TooLarge);
-                REQUIRE_EQUAL(context.maximumSize(), unit::ByteLength{65'507U});
+                REQUIRE_EQUAL(context.maximumSize(), unit::ByteCount{65'507U});
                 REQUIRE_EQUAL(context.remoteEndpoint(), std::optional<IpEndpoint>{remote});
                 dropSize = context.datagramSize();
             });
@@ -262,21 +262,21 @@ public:
         run(harness, [&]() -> void {
             harness.socket->pauseReceiving();
             REQUIRE_FALSE(harness.device->receiving);
-            harness.device->callbacks.datagram(UdpDatagram{remote, mem::ByteBlock{unit::ByteLength{2U}}});
+            harness.device->callbacks.datagram(UdpDatagram{remote, mem::ByteBlock{unit::ByteCount{2U}}});
         });
         run(harness, [&]() -> void {
             harness.socket->resumeReceiving();
             REQUIRE(harness.device->receiving);
-            harness.device->callbacks.datagram(UdpDatagram{remote, mem::ByteBlock{unit::ByteLength{3U}}});
+            harness.device->callbacks.datagram(UdpDatagram{remote, mem::ByteBlock{unit::ByteCount{3U}}});
             harness.device->callbacks.datagramDropped(
                 UdpDatagramDropContext{
-                    UdpDatagramDropReason::TooLarge, unit::ByteLength{65'507U}, remote, unit::ByteLength{65'508U}});
+                    UdpDatagramDropReason::TooLarge, unit::ByteCount{65'507U}, remote, unit::ByteCount{65'508U}});
         });
         static_cast<void>(harness.loop->runUntilIdle());
         REQUIRE_EQUAL(oldHandlerCount, 0);
         REQUIRE_EQUAL(newHandlerCount, 1);
         REQUIRE_EQUAL(dropCount, 1);
-        REQUIRE_EQUAL(dropSize, std::optional<unit::ByteLength>{unit::ByteLength{65'508U}});
+        REQUIRE_EQUAL(dropSize, std::optional<unit::ByteCount>{unit::ByteCount{65'508U}});
     }
 
     void testGracefulCloseDrainsAndAbortSuppressesStaleCallbacks() {
@@ -292,7 +292,7 @@ public:
             closing.socket->start();
         });
         run(closing, [&]() -> void {
-            REQUIRE(closing.socket->send(destination, mem::ByteBlock{unit::ByteLength{2U}}).isAccepted());
+            REQUIRE(closing.socket->send(destination, mem::ByteBlock{unit::ByteCount{2U}}).isAccepted());
             closing.socket->close();
             REQUIRE_EQUAL(closing.socket->state(), NetworkSourceState::Closing);
             REQUIRE_FALSE(closing.device->receiving);
@@ -315,7 +315,7 @@ public:
         const auto callbacks = aborted.device->callbacks;
         auto abortThread = std::thread{[socket = aborted.socket]() -> void { socket->abort(); }};
         abortThread.join();
-        callbacks.datagram(UdpDatagram{destination, mem::ByteBlock{unit::ByteLength{1U}}});
+        callbacks.datagram(UdpDatagram{destination, mem::ByteBlock{unit::ByteCount{1U}}});
         callbacks.error(NetworkErrorContext{"stale"_el, "stale completion"_el});
         static_cast<void>(aborted.loop->runUntilIdle());
         REQUIRE_EQUAL(callbackCount, 0);
@@ -328,7 +328,7 @@ public:
         harness.socket->abort();
         REQUIRE_EQUAL(harness.socket->state(), NetworkSourceState::Closed);
         run(harness, [&]() -> void {
-            REQUIRE_THROWS_AS(el::err::LogicError, harness.socket->start());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, harness.socket->start());
             REQUIRE(
                 harness.socket->send(IpEndpoint{IpAddress::loopbackV4(), Port{9000U}}, mem::ByteBlock{}).isClosed());
         });
@@ -353,17 +353,17 @@ public:
         static_cast<void>(failed.loop->runUntilIdle());
         REQUIRE_EQUAL(errorCount, 1);
         REQUIRE_EQUAL(failed.socket->state(), NetworkSourceState::Failed);
-        run(failed, [&]() -> void { REQUIRE_THROWS_AS(el::err::LogicError, failed.socket->start()); });
+        run(failed, [&]() -> void { REQUIRE_THROWS_AS(el::err::LogicFailure, failed.socket->start()); });
 
         auto throwing = makeHarness();
         throwing.loop->invoke([&]() -> void {
-            throwing.socket->events().onBound([]() -> void { throw std::runtime_error{"handler failure"}; });
+            throwing.socket->events().onBound([]() -> void { throw el::err::RuntimeError{"handler failure"}; });
             throwing.socket->start();
         });
         static_cast<void>(throwing.loop->runUntilIdle());
         REQUIRE(throwing.loop->hasError());
         REQUIRE_EQUAL(throwing.socket->state(), NetworkSourceState::Active);
-        REQUIRE_THROWS_AS(std::runtime_error, std::rethrow_exception(throwing.loop->takeError()));
+        REQUIRE_THROWS_AS(el::err::RuntimeError, std::rethrow_exception(throwing.loop->takeError()));
     }
 
 private:

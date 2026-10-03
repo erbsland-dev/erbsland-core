@@ -22,8 +22,10 @@
 #include "../cryptology/configuration/CryptologyConfiguration.hpp"
 #include "../cterm/Terminal.hpp"
 #include "../err/DiagnosticHelper.hpp"
-#include "../err/LogicError.hpp"
+#include "../err/LogicFailure.hpp"
+#include "../err/RuntimeError.hpp"
 #include "../event/EventLoop.hpp"
+#include "../i18n/DisplayText.hpp"
 #include "../log/LogManager.hpp"
 #include "../log/LogStream.hpp"
 #include "../options/OptionError.hpp"
@@ -31,6 +33,8 @@
 #include "../options/OptionModule.hpp"
 #include "../random/SecureRandom.hpp"
 #include "../random/ThreadSafeFastRandom.hpp"
+#include "../stream/StandardStreams.hpp"
+#include "../stream/TextOutputStream.hpp"
 #include "../system/UserLookup.hpp"
 
 #include <exception>
@@ -39,6 +43,9 @@
 
 namespace erbsland::core {
 
+using namespace err;
+using namespace options;
+using namespace unit;
 using namespace text::literals;
 using namespace event;
 
@@ -75,7 +82,7 @@ auto Application::run() -> int {
 }
 
 auto Application::runApplicationLifecycle() -> int {
-    unit::ExitCode exitCode;
+    ExitCode exitCode;
     try {
         initialize();
         if (const auto partsData = _data->parts().getIfExists(); partsData != nullptr) {
@@ -92,8 +99,9 @@ auto Application::runApplicationLifecycle() -> int {
         }
         parseCommandLine();
         if (optionsData->optionValues() == nullptr) {
-            exitCode = unit::ExitCode::success();
+            exitCode = ExitCode::success();
         } else {
+            handleCommandLineOptions(optionsData->optionValues());
             const auto partsData = _data->parts().getIfExists();
             const auto manager = partsData != nullptr ? partsData->managerIfExists() : nullptr;
             if (manager != nullptr) {
@@ -109,32 +117,29 @@ auto Application::runApplicationLifecycle() -> int {
             exitCode = main();
         }
         stopPartManager();
+        finishEventThreads();
         cleanup();
-    } catch (const err::Exception &error) {
-        try {
-            stopPartManager();
-        } catch (...) { // NOLINT(*-empty-catch)
-            // Preserve the original application error.
-        }
+    } catch (const RuntimeError &error) {
+        shutdownPartsAndEventThreadsInErrorHandler();
         cleanup();
-        if (const auto applicationError = dynamic_cast<const core::ApplicationError *>(&error);
-            applicationError != nullptr) {
+        if (const auto applicationError = dynamic_cast<const ApplicationError *>(&error); applicationError != nullptr) {
             exitCode = applicationError->exitCode();
         } else {
-            exitCode = unit::ExitCode::failure();
+            exitCode = ExitCode::failure();
         }
-        _data->terminal().get()->renderSystemOutput(
-            err::DiagnosticHelper{error, _data->system().get()->displayText()}.toDocument());
-    } catch (...) {
-        const auto error = std::current_exception();
-        try {
-            stopPartManager();
-        } catch (...) { // NOLINT(*-empty-catch)
-            // Preserve the original foreign exception.
+        _data->terminal().get()->renderSystemOutput(DiagnosticHelper{error}.toDocument());
+    } catch ([[maybe_unused]] const LogicFailure &error) {
+        if (auto logging = _data->logging().getIfExists()) {
+            logStream()->error("LOGIC FAILURE: "_el, error.toString());
         }
+        shutdownPartsAndEventThreadsInErrorHandler();
         cleanup();
-        _exitCode = unit::ExitCode::failure();
-        std::rethrow_exception(error);
+        throw; // let the application crash with an unhandled exception.
+    } catch (...) {
+        shutdownPartsAndEventThreadsInErrorHandler();
+        cleanup();
+        _exitCode = ExitCode::failure();
+        throw; // let the application crash with an unhandled exception.
     }
     _exitCode = exitCode;
     return exitCode.toRawValue();
@@ -148,7 +153,7 @@ void Application::setMainFn(MainFn mainFn) {
     _data->runtime().get()->setMainFn(std::move(mainFn));
 }
 
-auto Application::options() const noexcept -> const options::OptionsPtr & {
+auto Application::options() const noexcept -> const OptionsPtr & {
     return _data->options().get()->options();
 }
 
@@ -168,7 +173,7 @@ auto Application::commandLineArguments() const noexcept -> const CommandLineArgu
     return _data->options().get()->commandLineArguments();
 }
 
-auto Application::optionValues() const noexcept -> const options::OptionValuesPtr & {
+auto Application::optionValues() const noexcept -> const OptionValuesPtr & {
     return _data->options().get()->optionValues();
 }
 
@@ -176,12 +181,16 @@ auto Application::partManager() -> ApplicationPartManagerPtr {
     return _data->parts().get()->manager(_data->events().get(), _data->lifecycle().getIfExists());
 }
 
-void Application::enableTerminal() {
+void Application::enableTerminal(const cterm::TerminalFlags flags) {
+    enableTerminal(block::Size{80, 25}, flags);
+}
+
+void Application::enableTerminal(const block::Size size, const cterm::TerminalFlags flags) {
     const auto terminalData = _data->terminal().get();
     if (terminalData->isEnabled()) {
         return;
     }
-    terminalData->enable(createAndInitializeTerminal());
+    terminalData->enable(createAndInitializeTerminal(size, flags));
 }
 
 void Application::initialize() {
@@ -191,7 +200,7 @@ void Application::initialize() {
     }
 }
 
-void Application::registerCommandLineOptions([[maybe_unused]] const options::OptionsPtr &options) {
+void Application::registerCommandLineOptions([[maybe_unused]] const OptionsPtr &options) {
     // empty by default
 }
 
@@ -202,15 +211,15 @@ void Application::parseCommandLine() {
     }
     optionsData->options()->setApplicationInfo(_data->runtime().get()->info());
 
-    auto manager = options::OptionManager{optionsData->options(), _data->system().get()->displayText()};
+    auto manager = OptionManager{optionsData->options()};
     const auto result = manager.parse(optionsData->commandLineArgumentsForParsing());
     optionsData->maskSensitiveCommandLineText(result.sensitiveTextLocations());
     const auto &values = result.values();
     switch (result.status()) {
-    case options::OptionResultStatus::Success:
+    case OptionResultStatus::Success:
         optionsData->setOptionValues(values);
         return;
-    case options::OptionResultStatus::DisplayHelp:
+    case OptionResultStatus::DisplayHelp:
         if (result.helpName().isEmpty()) {
             _data->terminal().get()->renderSystemOutput(manager.helpDocument(values->moduleName()));
         } else {
@@ -219,27 +228,31 @@ void Application::parseCommandLine() {
         }
         optionsData->setOptionValues(nullptr);
         return;
-    case options::OptionResultStatus::DisplayModuleOverview:
+    case OptionResultStatus::DisplayModuleOverview:
         _data->terminal().get()->renderSystemOutput(manager.moduleOverviewDocument());
         optionsData->setOptionValues(nullptr);
         return;
-    case options::OptionResultStatus::DisplayVersion:
+    case OptionResultStatus::DisplayVersion:
         _data->terminal().get()->renderSystemOutput(manager.versionDocument(values->moduleName()));
         optionsData->setOptionValues(nullptr);
         return;
-    case options::OptionResultStatus::Error:
+    case OptionResultStatus::Error:
         optionsData->setOptionValues(nullptr);
         if (result.errorContext().has_value()) {
-            throw options::OptionError{result.errorContext().value()};
+            throw OptionError{result.errorContext().value()};
         }
-        throw options::OptionError{};
+        throw OptionError{};
     }
 }
 
-auto Application::main() -> unit::ExitCode {
+void Application::handleCommandLineOptions([[maybe_unused]] const OptionValuesPtr &values) {
+    // do nothing
+}
+
+auto Application::main() -> ExitCode {
     const auto optionsData = _data->options().get();
     if (optionsData->optionValues() == nullptr) {
-        return unit::ExitCode::success();
+        return ExitCode::success();
     }
     // Check for a main function from a selected command line module.
     const auto &module = optionsData->optionValues()->module();
@@ -272,9 +285,9 @@ void Application::cleanup() noexcept {
     // empty by default.
 }
 
-auto Application::createAndInitializeTerminal() -> cterm::TerminalPtr {
-    auto result = std::make_shared<cterm::Terminal>();
-    result->setSafeMarginEnabled(false);
+auto Application::createAndInitializeTerminal(const block::Size size, const cterm::TerminalFlags flags)
+    -> cterm::TerminalPtr {
+    auto result = std::make_shared<cterm::Terminal>(size, flags);
     result->initializeScreen();
     return result;
 }
@@ -316,18 +329,14 @@ auto Application::userLookup() -> system::UserLookup & {
     return _data->system().get()->userLookup();
 }
 
-auto Application::displayText() const -> const i18n::DisplayTextMapConstPtr & {
+auto Application::displayText() const -> i18n::DisplayTextPtr {
     return _data->system().get()->displayText();
-}
-
-void Application::setDisplayTextMap(i18n::DisplayTextMapConstPtr displayText) {
-    _data->system().get()->setDisplayText(std::move(displayText));
 }
 
 auto Application::terminal() const -> const cterm::TerminalPtr & {
     const auto terminalData = _data->terminal().get();
     if (!terminalData->isEnabled() || terminalData->terminal() == nullptr) {
-        throw err::LogicError{"Terminal must be enabled before use."_el};
+        throw LogicFailure{"Terminal must be enabled before use."_el};
     }
     return terminalData->terminal();
 }
@@ -352,14 +361,42 @@ void Application::stopPartManager() {
     partsData->stop(*_data->events().get());
 }
 
+void Application::finishEventThreads() {
+    if (const auto eventData = _data->events().getIfExists(); eventData != nullptr) {
+        eventData->finishThreads();
+    }
+}
+
 void Application::cleanupBeforeAppExit() noexcept {
     const auto terminalData = _data->terminal().getIfExists();
     const auto logData = _data->logging().getIfExists();
     if (logData != nullptr) {
-        logData->cleanup(_exitCode, _data->system().get()->displayText(), terminalData.get());
+        // Retain this application's registry through cleanup after the user facade has been unregistered.
+        logData->cleanup(_exitCode, displayText(), terminalData.get());
     }
     if (terminalData != nullptr) {
         terminalData->cleanup();
+    }
+    // Standard streams queue writes on I/O workers, even without terminal redirection.
+    // Drain both streams before process teardown can abandon their pending output.
+    try {
+        stream::stdOut()->flush();
+    } catch (const RuntimeError &) {}
+    try {
+        stream::stdErr()->flush();
+    } catch (const RuntimeError &) {}
+}
+
+void Application::shutdownPartsAndEventThreadsInErrorHandler() noexcept {
+    try {
+        stopPartManager();
+    } catch (const RuntimeError &) { // NOLINT(*-empty-catch)
+        // Preserve the original application error.
+    }
+    try {
+        finishEventThreads();
+    } catch (const RuntimeError &) { // NOLINT(*-empty-catch)
+        // Preserve the original application error.
     }
 }
 

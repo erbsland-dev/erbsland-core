@@ -6,18 +6,18 @@
 
 namespace erbsland::text {
 
-auto StringEncoding::bomLength(const StringBomMode mode) const noexcept -> unit::ByteLength {
-    return unit::ByteLength::fromSizeT(bomBytes(mode).size());
+using namespace mem;
+
+auto StringEncoding::bomLength(const StringBomMode mode) const noexcept -> unit::ByteCount {
+    return unit::ByteCount::fromSizeT(bomBytes(mode).size());
 }
 
-auto StringEncoding::bomBytes(const StringBomMode mode) const noexcept -> mem::ConstByteSpan {
-    static constexpr auto cUtf8Bom = mem::ByteArray{mem::Byte{0xefU}, mem::Byte{0xbbU}, mem::Byte{0xbfU}};
-    static constexpr auto cUtf16LittleEndianBom = mem::ByteArray{mem::Byte{0xffU}, mem::Byte{0xfeU}};
-    static constexpr auto cUtf16BigEndianBom = mem::ByteArray{mem::Byte{0xfeU}, mem::Byte{0xffU}};
-    static constexpr auto cUtf32LittleEndianBom =
-        mem::ByteArray{mem::Byte{0xffU}, mem::Byte{0xfeU}, mem::Byte{0x00U}, mem::Byte{0x00U}};
-    static constexpr auto cUtf32BigEndianBom =
-        mem::ByteArray{mem::Byte{0x00U}, mem::Byte{0x00U}, mem::Byte{0xfeU}, mem::Byte{0xffU}};
+auto StringEncoding::bomBytes(const StringBomMode mode) const noexcept -> ConstByteSpan {
+    static constexpr auto cUtf8Bom = ByteArray{Byte{0xefU}, Byte{0xbbU}, Byte{0xbfU}};
+    static constexpr auto cUtf16LittleEndianBom = ByteArray{Byte{0xffU}, Byte{0xfeU}};
+    static constexpr auto cUtf16BigEndianBom = ByteArray{Byte{0xfeU}, Byte{0xffU}};
+    static constexpr auto cUtf32LittleEndianBom = ByteArray{Byte{0xffU}, Byte{0xfeU}, Byte{0x00U}, Byte{0x00U}};
+    static constexpr auto cUtf32BigEndianBom = ByteArray{Byte{0x00U}, Byte{0x00U}, Byte{0xfeU}, Byte{0xffU}};
 
     if (!writesBom(mode)) {
         return {};

@@ -5,7 +5,7 @@
 #include "../impl/protected_data/ProtectedDataAccess.hpp"
 #include "../impl/SecureEraseGuard.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 #include <utility>
@@ -13,8 +13,9 @@
 namespace erbsland::cryptology {
 
 using namespace text::literals;
+using namespace unit;
 
-ProtectedByteBlock::ProtectedByteBlock(const mem::ConstByteSpan data) : _byteLength{data.size()} {
+ProtectedByteBlock::ProtectedByteBlock(const mem::ConstByteSpan data) : _byteLength{ByteCount::fromSizeT(data.size())} {
     if (data.empty()) {
         return;
     }
@@ -28,7 +29,7 @@ ProtectedByteBlock::ProtectedByteBlock(const mem::ByteBlock &data) : ProtectedBy
 
 ProtectedByteBlock::ProtectedByteBlock(ProtectedByteBlock &&other) noexcept :
     _envelope{std::move(other._envelope)}, _byteLength{other._byteLength} {
-    other._byteLength = unit::ByteLength::zero();
+    other._byteLength = ByteCount::zero();
 }
 
 auto ProtectedByteBlock::operator=(ProtectedByteBlock &&other) noexcept -> ProtectedByteBlock & {
@@ -36,7 +37,7 @@ auto ProtectedByteBlock::operator=(ProtectedByteBlock &&other) noexcept -> Prote
         secureErase();
         _envelope = std::move(other._envelope);
         _byteLength = other._byteLength;
-        other._byteLength = unit::ByteLength::zero();
+        other._byteLength = ByteCount::zero();
     }
     return *this;
 }
@@ -44,7 +45,7 @@ auto ProtectedByteBlock::operator=(ProtectedByteBlock &&other) noexcept -> Prote
 void ProtectedByteBlock::secureErase() noexcept {
     _envelope.secureErase();
     _envelope = {};
-    _byteLength = unit::ByteLength::zero();
+    _byteLength = ByteCount::zero();
 }
 
 auto ProtectedByteBlock::unprotect() const -> mem::ByteBlock {
@@ -57,7 +58,7 @@ auto ProtectedByteBlock::unprotect() const -> mem::ByteBlock {
 
 void ProtectedByteBlock::withUnprotectedData(const UnprotectedDataFn &callback) const {
     if (!callback) {
-        throw err::ParameterError{"A protected-data callback is required."_el, "callback"_el};
+        throw err::ParameterFailure{"A protected-data callback is required."_el, "callback"_el};
     }
     // Keep the authenticated plaintext in sensitive owning storage while the callback borrows its view. The guard
     // erases that storage after callback success and while unwinding a callback exception.

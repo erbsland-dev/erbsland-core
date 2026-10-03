@@ -68,7 +68,7 @@ private:
     Block _chain;                            ///< Previous ciphertext block, initially the IV.
     Block _partial;                          ///< Partial plaintext or ciphertext block.
     Block _pendingCiphertext;                ///< Final ciphertext block retained for ISO validation.
-    std::size_t _partialLength{};            ///< Bytes stored in `_partial`.
+    unit::ByteCount _partialLength{};        ///< Bytes stored in `_partial`.
     bool _hasPendingCiphertext{};            ///< Whether `_pendingCiphertext` is occupied.
 };
 

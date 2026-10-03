@@ -10,7 +10,7 @@ Core Semantics
     match = test only at the start of the input
     full match = require the complete input
     group zero = complete match
-    capture position = native offset in the captured text
+    capture position = storage-unit offset in the captured text encoding
 
 Primary Types
 =============
@@ -27,7 +27,7 @@ Secondary Types
 
     Input, Input16, Input32 // custom input extension points for each text width
     InputBase, MatchBase // width-independent input and result interfaces
-    CaptureGroup, CaptureRange, CaptureGroupIndex, InputPosition // captured identity and native-unit bounds
+    CaptureGroup, CaptureRange, CaptureGroupIndex, InputPosition // captured identity and storage-unit bounds
     Settings // feature, complexity, and execution limits
     Flag, Flags // matching modes
     Feature, Features // optional syntax and compatibility features
@@ -57,6 +57,18 @@ Compilation and Matching Patterns
     o.findAll(input) -> util::CoGenerator❮Mp❯ // lazily scan all matches
     o.collectAll(input) -> util::List❮Mp❯ // materialize all matches
     o.replaceAll(text, replacement-or-callback) -> text::String // replace every UTF-8 match
+    o.validateReplacement(expression) // validate replacement syntax and capture references; throw on failure
+
+Cached Literal Patterns
+=======================
+
+.. code-block:: text
+
+    compile(pattern) -> ConstRegExPtr // cached immutable expression; StringLiteral pattern only
+    match/fullMatch/findFirst(pattern, text) -> Mp // match Core strings with existing operation semantics
+    findAll(pattern, text) -> CoGenerator❮Mp❯ // compile now; retain expression and subject during lazy matching
+    collectAll(pattern, text) -> List❮Mp❯ // eagerly collect matches from Core strings
+    replaceAll(pattern, text, replacement) -> String // UTF-8 subject; StringLiteral pattern and replacement
 
 Match Result Patterns
 =====================

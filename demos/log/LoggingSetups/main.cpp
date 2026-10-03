@@ -3,7 +3,9 @@
 
 #include "LoggingSetups.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/String.hpp>
 
 auto main(const int argc, char *argv[]) -> int {
     using namespace el::text::literals;

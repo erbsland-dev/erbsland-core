@@ -10,9 +10,9 @@
 #include <erbsland/conf/Source.hpp>
 #include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/String.hpp>
 
 #include <filesystem>
 

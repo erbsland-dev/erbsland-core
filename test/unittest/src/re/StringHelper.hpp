@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include <erbsland/Literals.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringList.hpp>
 #include <erbsland/text/impl/UnsafeU8StringBuffer.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringList.hpp>
 
 #include <cstdint>
 #include <initializer_list>
@@ -21,7 +21,7 @@ namespace re_test::string_helper {
 
 /// Build an Erbsland Core string editor from raw UTF-8 bytes.
 inline auto bytesToString(const std::initializer_list<std::uint8_t> bytes) -> StringEditor {
-    auto buffer = el::text::impl::UnsafeU8StringBuffer{el::unit::ByteLength::fromSizeT(bytes.size())};
+    auto buffer = el::text::impl::UnsafeU8StringBuffer{el::unit::ByteCount::fromSizeT(bytes.size())};
     auto index = std::size_t{};
     for (const auto byte : bytes) {
         buffer.data()[index] = static_cast<char>(byte);

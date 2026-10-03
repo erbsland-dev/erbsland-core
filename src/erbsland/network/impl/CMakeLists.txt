@@ -12,12 +12,11 @@ add_subdirectory(udp)
 add_subdirectory(url)
 
 target_sources(erbsland-core PRIVATE
+        ConnectionProtocolAccess.cpp
         ConnectionProtocolAccess.hpp
         ConnectionProtocolAccess_fwd.hpp
         NetworkBackend.cpp
         NetworkBackend.hpp
         NetworkErrorDiagnostic.cpp
         NetworkErrorDiagnostic.hpp
-        ResolverService.cpp
-        ResolverService.hpp
 )

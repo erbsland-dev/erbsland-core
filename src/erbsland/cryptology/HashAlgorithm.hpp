@@ -6,7 +6,7 @@
 #include "HashThroughput.hpp"
 
 #include "../text/String_fwd.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <cstdint>
@@ -57,7 +57,7 @@ public: // accessors
     /// Get the raw algorithm value.
     [[nodiscard]] constexpr auto toRawValue() const noexcept -> Value { return _value; }
     /// Get the length of the generated digest.
-    [[nodiscard]] auto digestSize() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto digestSize() const noexcept -> unit::ByteCount;
     /// Get the current coarse security level.
     [[nodiscard]] auto security() const noexcept -> CryptographicSecurity;
     /// Get the relative throughput of the bundled implementation.

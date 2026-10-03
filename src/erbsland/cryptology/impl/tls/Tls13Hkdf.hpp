@@ -4,7 +4,7 @@
 
 #include "../../../mem/ByteBlock_fwd.hpp"
 #include "../../../mem/ByteSpan.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 #include "../../HashAlgorithm.hpp"
 
 namespace erbsland::cryptology::impl {
@@ -29,29 +29,24 @@ public:
 
 public:
     /// Expand a TLS 1.3 secret with an exact label and context.
-    /// @param algorithm The SHA-256 or SHA-384 HKDF algorithm.
     /// @param secret The digest-sized HKDF pseudorandom key.
-    /// @param label The label without the mandatory `"tls13 "` prefix.
-    /// @param context The context encoded in `HkdfLabel`.
-    /// @param outputLength The requested output length.
+    /// @param label The label without the mandatory `"tls13 "` prefix. Must contain at most 249 bytes.
+    /// @param context The context encoded in `HkdfLabel`. Must contain at most 255 bytes.
+    /// @param outputLength The requested output length. Must fit in 16 bits and not exceed 255 times the digest size.
     /// @return Sensitive output keying material.
-    /// @throws err::ParameterError If a one-byte label or context bound, or the two-byte output bound, is exceeded.
     [[nodiscard]] auto expandLabel(
         mem::ConstByteSpan secret,
         mem::ConstByteSpan label,
         mem::ConstByteSpan context,
-        unit::ByteLength outputLength) const -> mem::ByteBlock;
+        unit::ByteCount outputLength) const -> mem::ByteBlock;
     /// Derive a digest-sized secret using a transcript hash as the context.
-    /// @param algorithm The SHA-256 or SHA-384 HKDF algorithm.
     /// @param secret The digest-sized HKDF pseudorandom key.
     /// @param label The label without the mandatory `"tls13 "` prefix.
     /// @param transcriptHash The exact digest-sized transcript hash.
     /// @return The derived secret in sensitive storage.
-    /// @throws err::ParameterError If the transcript hash has the wrong length.
     [[nodiscard]] auto deriveSecret(
         mem::ConstByteSpan secret, mem::ConstByteSpan label, mem::ConstByteSpan transcriptHash) const -> mem::ByteBlock;
     /// Calculate Hash("") for the selected transcript hash.
-    /// @param algorithm The SHA-256 or SHA-384 transcript hash.
     /// @return The digest of the empty string.
     [[nodiscard]] auto emptyHash() const -> mem::ByteBlock;
 

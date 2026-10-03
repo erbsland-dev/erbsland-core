@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../../util/impl/LoopControl.hpp"
+
 namespace erbsland::text::impl {
 
 template <typename tString>
@@ -16,13 +18,16 @@ StringSplitter<tString>::StringSplitter(String text, CharSet separators, const S
 
 template <typename tString>
 auto StringSplitter<tString>::remaining() const noexcept -> String {
+    if (isAtEnd()) {
+        return {};
+    }
     const auto textEnd = Index::end(_text.length());
     return _text.slice(Range{_position, textEnd});
 }
 
 template <typename tString>
 auto StringSplitter<tString>::next() noexcept -> String {
-    if (_isAtEnd) {
+    if (isAtEnd()) {
         return {};
     }
 
@@ -37,8 +42,39 @@ void StringSplitter<tString>::skip() noexcept {
 }
 
 template <typename tString>
+auto StringSplitter<tString>::forEach(const ProcessPartFn &function) -> util::LoopResult {
+    if (function == nullptr) {
+        return util::LoopResult::Success;
+    }
+    while (!isAtEnd()) {
+        const auto part = next();
+        const auto status = function(part);
+        if (status != util::LoopStatus::Continue) {
+            return util::impl::loopStatusToResult(status);
+        }
+    }
+    return util::LoopResult::Success;
+}
+
+template <typename tString>
+auto StringSplitter<tString>::forEach(const ProcessPartWithIndexFn &function) -> util::LoopResult {
+    if (function == nullptr) {
+        return util::LoopResult::Success;
+    }
+    while (!isAtEnd()) {
+        const auto index = splitIndex();
+        const auto part = next();
+        const auto status = function(part, index);
+        if (status != util::LoopStatus::Continue) {
+            return util::impl::loopStatusToResult(status);
+        }
+    }
+    return util::LoopResult::Success;
+}
+
+template <typename tString>
 void StringSplitter<tString>::advanceToNextPart(Range *const partRange) noexcept {
-    if (_isAtEnd) {
+    if (isAtEnd()) {
         return;
     }
 
@@ -46,19 +82,22 @@ void StringSplitter<tString>::advanceToNextPart(Range *const partRange) noexcept
     const auto textEnd = Index::end(_text.length());
     const auto separatorPosition = _text.findFirstOf(_separators, partStart);
     if (separatorPosition.isNoIndex()) {
-        _position = textEnd;
-        _isAtEnd = true;
+        _position = Index::noIndex();
         if (partRange != nullptr) {
             *partRange = Range{partStart, textEnd};
         }
+        ++_splitCount;
         return;
     }
 
     auto nextPosition = separatorPosition;
     _text.advance(nextPosition);
     _position = nextPosition;
+    ++_splitCount;
     if (_mode == StringSplitMode::KeepSeparator) {
-        _isAtEnd = nextPosition >= textEnd;
+        if (!nextPosition.isWithin(_text.length())) {
+            _position = Index::noIndex();
+        }
         if (partRange != nullptr) {
             *partRange = Range{partStart, nextPosition};
         }
@@ -72,7 +111,7 @@ void StringSplitter<tString>::advanceToNextPart(Range *const partRange) noexcept
 template <typename tString>
 void StringSplitter<tString>::reset() noexcept {
     _position = Index::zero();
-    _isAtEnd = false;
+    _splitCount = unit::ItemCount::zero();
 }
 
 }

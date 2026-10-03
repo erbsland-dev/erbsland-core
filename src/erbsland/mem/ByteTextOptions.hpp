@@ -9,7 +9,7 @@
 
 #include "../text/Char.hpp"
 #include "../text/StringEncoding.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 #include <optional>
 
@@ -55,9 +55,9 @@ public: // accessors
         return *this;
     }
     /// Get the maximum payload length or fixed field length.
-    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteLength { return _length; }
+    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteCount { return _length; }
     /// Set the maximum payload length or fixed field length.
-    constexpr auto setLength(unit::ByteLength value) noexcept -> ByteTextOptions & {
+    constexpr auto setLength(unit::ByteCount value) noexcept -> ByteTextOptions & {
         _length = value;
         return *this;
     }
@@ -106,7 +106,7 @@ public: // factories
 private:
     ByteTextFormat _format{ByteTextFormat::Dynamic};            ///< The byte-level framing mode.
     text::StringEncoding _encoding{text::StringEncoding::Utf8}; ///< The text encoding.
-    unit::ByteLength _length{unit::ByteLength::infinite()};     ///< The payload limit or fixed field length.
+    unit::ByteCount _length{unit::ByteCount::infinite()};       ///< The payload limit or fixed field length.
     std::optional<text::Char> _endMark;                         ///< The optional end-mark character.
     std::optional<ByteIntegerFormat> _countFormat{ByteIntegerFormat::UnsignedFixed32Bit}; ///< The count format.
     Byte _padding{}; ///< The fixed-field padding byte.

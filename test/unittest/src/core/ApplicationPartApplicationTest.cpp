@@ -3,18 +3,22 @@
 
 #include "ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/core/ApplicationPart.hpp>
-#include <erbsland/core/ApplicationPartIdentifier.hpp>
-#include <erbsland/core/ApplicationPartManager.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/options/OptionModule.hpp>
-#include <erbsland/options/Options.hpp>
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationPart.hpp>
+#include <erbsland/ApplicationPartIdentifier.hpp>
+#include <erbsland/ApplicationPartManager.hpp>
+#include <erbsland/ApplicationPartManagerEventEditor.hpp>
+#include <erbsland/EventLoopOptions.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ManagedEventThread.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
 #include <erbsland/options/OptionValues_fwd.hpp>
-#include <erbsland/stream/AnyStringBuilderStream.hpp>
-#include <erbsland/stream/StandardStreams.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/ExitCode.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>
@@ -79,11 +83,17 @@ public:
 
 class ApplicationPartOrderApplication final : public Application {
 protected:
+    void handleCommandLineOptions(const el::options::OptionValuesPtr &values) override {
+        optionsHandledBeforePartParsing = values != nullptr && ApplicationIntegratedPart::cRegisterCount.load() == 1 &&
+            ApplicationIntegratedPart::cParseCount.load() == 0 &&
+            partManager()->state() == ApplicationPartManagerState::Ready;
+    }
     void cleanup() noexcept override {
         cPartWasCleanBeforeApplication = ApplicationIntegratedPart::cCleanupCount.load() == 1;
     }
 
 public:
+    bool optionsHandledBeforePartParsing{false}; ///< Whether the hook preceded prepared-part option handling.
     inline static std::atomic<bool> cPartWasCleanBeforeApplication{false};
 };
 
@@ -120,6 +130,7 @@ public:
 
         REQUIRE_EQUAL(app.run(), 17);
         REQUIRE(ApplicationPartOrderApplication::cPartWasCleanBeforeApplication.load());
+        REQUIRE(app.optionsHandledBeforePartParsing);
     }
 
     void testCustomMainDoesNotAutomaticallyStartParts() {
@@ -177,6 +188,30 @@ public:
             REQUIRE_EQUAL(app.run(), 31);
             REQUIRE_EQUAL(ApplicationIntegratedPart::cInitializeCount.load(), 0);
         }
+    }
+
+    void testManagedFailureStopsPartsBeforeApplicationCleanup() {
+        ApplicationIntegratedPart::reset();
+        ApplicationPartOrderApplication::cPartWasCleanBeforeApplication = false;
+        auto scope = ApplicationTestScope<ApplicationPartOrderApplication>{};
+        auto &app = scope.app();
+        app.registerPart<ApplicationIntegratedPart>();
+        const auto worker = app.createEventThread(
+            el::event::EventLoopOptions{}.setErrorPolicy(el::event::EventLoopErrorPolicy::FailApplication));
+        worker->events()->invoke([]() -> void { throw el::err::RuntimeError{"managed failure"_el}; });
+        const auto subscription =
+            app.partManager()->events().addStateChanged([worker](ApplicationPartManagerState state) -> void {
+                if (state == ApplicationPartManagerState::Running) {
+                    worker->start();
+                }
+            });
+        const auto output = el::stream::AnyStringBuilderStream::create();
+        const auto redirect = el::stream::redirectStandardStreams(output, output);
+        REQUIRE_EQUAL(app.run(), el::unit::ExitCode::failure().toRawValue());
+        REQUIRE(ApplicationPartOrderApplication::cPartWasCleanBeforeApplication.load());
+        REQUIRE(app.optionsHandledBeforePartParsing);
+        REQUIRE_EQUAL(app.partManager()->state(), ApplicationPartManagerState::Stopped);
+        REQUIRE_FALSE(worker->isRunning());
     }
 
     void testManagerFailurePropagatesThroughApplicationRun() {

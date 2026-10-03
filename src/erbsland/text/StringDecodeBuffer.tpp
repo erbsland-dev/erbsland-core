@@ -9,11 +9,13 @@
 
 #include "../mem/impl/SecureErase.hpp"
 #include "../mem/impl/UnsafeByteBlockAccess.hpp"
+#include "../util/LoopResult.hpp"
+#include "../util/LoopStatus.hpp"
 
 namespace erbsland::text {
 
 inline StringDecodeBuffer::StringDecodeBuffer(
-    const unit::ByteLength bufferLength,
+    const unit::ByteCount bufferLength,
     const StringEncoding encoding,
     const StringBomMode bomMode,
     const EncodingMode mode) :
@@ -23,12 +25,12 @@ inline StringDecodeBuffer::StringDecodeBuffer(
     _bomMode{bomMode},
     _mode{mode} {
     using namespace literals;
-    if (bufferLength < unit::ByteLength{4U}) {
-        throw err::ParameterError{"Decode buffer must have at least four bytes."_el, "bufferLength"_el};
+    if (bufferLength < unit::ByteCount{4U}) {
+        throw err::ParameterFailure{"Decode buffer must have at least four bytes."_el, "bufferLength"_el};
     }
 }
 
-inline auto StringDecodeBuffer::decodableCharacters(const unit::CpLength maximum) -> unit::CpLength {
+inline auto StringDecodeBuffer::decodableCharacters(const unit::CpCount maximum) -> unit::CpCount {
     return decodedRange(maximum, false).characterLength;
 }
 
@@ -52,15 +54,15 @@ inline auto StringDecodeBuffer::codePointStatus() -> CodePointStatus {
 
 inline void StringDecodeBuffer::write(const mem::ConstByteSpan bytes) {
     using namespace literals;
-    const auto inputLength = unit::ByteLength::fromSizeT(bytes.size());
+    const auto inputLength = unit::ByteCount::fromSizeT(bytes.size());
     if (inputLength > availableSpace()) {
-        throw err::ParameterError{"Decode buffer has not enough available space."_el, "bytes"_el};
+        throw err::ParameterFailure{"Decode buffer has not enough available space."_el, "bytes"_el};
     }
     auto remaining = inputLength;
     auto sourceIndex = unit::ByteIndex{};
     while (!remaining.isZero()) {
         auto destination = writableSpan();
-        const auto count = std::min(unit::ByteLength::fromSizeT(destination.size()), remaining);
+        const auto count = std::min(unit::ByteCount::fromSizeT(destination.size()), remaining);
         std::memcpy(destination.data(), bytes.data() + sourceIndex.toSizeT(), count.toSizeT() * sizeof(mem::Byte));
         commitWritten(count);
         sourceIndex += count;
@@ -137,10 +139,10 @@ inline auto StringDecodeBuffer::writableSpan() noexcept -> mem::ByteSpan {
     return storageWritableSpan().subspan(index.toSizeT(), contiguousLength.toSizeT());
 }
 
-inline void StringDecodeBuffer::commitWritten(const unit::ByteLength length) {
+inline void StringDecodeBuffer::commitWritten(const unit::ByteCount length) {
     using namespace literals;
     if (length > availableSpace()) {
-        throw err::ParameterError{"Committed byte count exceeds available buffer space."_el, "length"_el};
+        throw err::ParameterFailure{"Committed byte count exceeds available buffer space."_el, "length"_el};
     }
     _byteLength += length;
 }
@@ -165,30 +167,33 @@ inline auto StringDecodeBuffer::byteAt(const unit::ByteIndex index) const noexce
 }
 
 inline auto StringDecodeBuffer::byteMatches(const mem::ConstByteSpan prefix) const noexcept -> bool {
-    const auto prefixLength = unit::ByteLength::fromSizeT(prefix.size());
+    const auto prefixLength = unit::ByteCount::fromSizeT(prefix.size());
     if (_byteLength < prefixLength) {
         return false;
     }
-    for (auto index = unit::ByteIndex{}; index.isWithin(prefixLength); ++index) {
+    return prefixLength.forEach([&](const unit::ByteIndex index) -> util::LoopStatus {
         if (byteAt(index) != prefix[index.toSizeT()]) {
-            return false;
+            return util::LoopStatus::Stop;
         }
-    }
-    return true;
+        return util::LoopStatus::Continue;
+    }) == util::LoopResult::Success;
 }
 
 inline auto StringDecodeBuffer::byteMatchesAvailable(const mem::ConstByteSpan prefix) const noexcept -> bool {
-    const auto prefixLength = unit::ByteLength::fromSizeT(prefix.size());
+    const auto prefixLength = unit::ByteCount::fromSizeT(prefix.size());
     const auto count = std::min(_byteLength, prefixLength);
-    for (auto index = unit::ByteIndex{}; index.isWithin(count); ++index) {
-        if (byteAt(index) != prefix[index.toSizeT()]) {
-            return false;
-        }
+    if (count.isZero() || count >= prefixLength) {
+        return false;
     }
-    return !count.isZero() && count < prefixLength;
+    return count.forEach([&](const unit::ByteIndex index) -> util::LoopStatus {
+        if (byteAt(index) != prefix[index.toSizeT()]) {
+            return util::LoopStatus::Stop;
+        }
+        return util::LoopStatus::Continue;
+    }) == util::LoopResult::Success;
 }
 
-inline void StringDecodeBuffer::consume(const unit::ByteLength length) noexcept {
+inline void StringDecodeBuffer::consume(const unit::ByteCount length) noexcept {
     const auto consumedLength = std::min(length, _byteLength);
     _consumedByteLength += consumedLength;
     if (isSensitive()) {
@@ -206,7 +211,7 @@ inline void StringDecodeBuffer::consume(const unit::ByteLength length) noexcept 
     _byteLength -= consumedLength;
 }
 
-inline void StringDecodeBuffer::erasePrefix(const unit::ByteLength length) noexcept {
+inline void StringDecodeBuffer::erasePrefix(const unit::ByteCount length) noexcept {
     auto remaining = length.toSizeT();
     auto index = _readIndex.toSizeT();
     auto storage = storageWritableSpan();
@@ -256,7 +261,7 @@ inline auto StringDecodeBuffer::ensureBomResolved() -> bool {
             if (byteMatchesAvailable(utf16BeBom) || byteMatchesAvailable(utf32LeBom)) {
                 return false;
             }
-            if (byteMatchesAvailable(utf16LeBom) && _byteLength < unit::ByteLength::fromSizeT(utf32LeBom.size())) {
+            if (byteMatchesAvailable(utf16LeBom) && _byteLength < unit::ByteCount::fromSizeT(utf32LeBom.size())) {
                 return false;
             }
         }
@@ -270,7 +275,7 @@ inline auto StringDecodeBuffer::ensureBomResolved() -> bool {
         }
     }
     auto bomEncoding = std::optional<StringEncoding>{};
-    auto bomLength = unit::ByteLength{};
+    auto bomLength = unit::ByteCount{};
     if (byteMatches(utf32LeBom)) {
         bomEncoding = StringEncoding::Utf32LittleEndian;
         bomLength = StringEncoding{StringEncoding::Utf32LittleEndian}.bomLength(StringBomMode::Require);
@@ -320,18 +325,18 @@ inline auto StringDecodeBuffer::ensureBomResolved() -> bool {
 }
 
 inline auto StringDecodeBuffer::decodableByteLength(
-    const unit::CpLength maximum, unit::CpLength *characterCount, bool *isValid) -> unit::ByteLength {
+    const unit::CpCount maximum, unit::CpCount *characterCount, bool *isValid) -> unit::ByteCount {
     if (characterCount != nullptr) {
-        *characterCount = unit::CpLength::zero();
+        *characterCount = unit::CpCount::zero();
     }
     if (isValid != nullptr) {
         *isValid = true;
     }
     if (maximum.isZero() || !ensureBomResolved() || _byteLength.isZero()) {
-        return unit::ByteLength::zero();
+        return unit::ByteCount::zero();
     }
     auto index = unit::ByteIndex{};
-    auto count = unit::CpLength::zero();
+    auto count = unit::CpCount::zero();
     while (index.isWithin(_byteLength) && (maximum.isInfinite() || count < maximum)) {
         const auto result = scanCodePoint(index);
         if (result.status == CodePointStatus::Complete) {
@@ -360,18 +365,18 @@ inline auto StringDecodeBuffer::decodableByteLength(
 }
 
 inline auto StringDecodeBuffer::lineByteLength(
-    const unit::CpLength maximum, unit::CpLength *characterCount, bool *isValid) -> unit::ByteLength {
+    const unit::CpCount maximum, unit::CpCount *characterCount, bool *isValid) -> unit::ByteCount {
     if (characterCount != nullptr) {
-        *characterCount = unit::CpLength::zero();
+        *characterCount = unit::CpCount::zero();
     }
     if (isValid != nullptr) {
         *isValid = true;
     }
     if (maximum.isZero() || !ensureBomResolved() || _byteLength.isZero()) {
-        return unit::ByteLength::zero();
+        return unit::ByteCount::zero();
     }
     auto index = unit::ByteIndex{};
-    auto count = unit::CpLength::zero();
+    auto count = unit::CpCount::zero();
     while (index.isWithin(_byteLength) && (maximum.isInfinite() || count < maximum)) {
         const auto result = scanCodePoint(index);
         if (result.status == CodePointStatus::Complete) {
@@ -403,8 +408,8 @@ inline auto StringDecodeBuffer::lineByteLength(
     return index.distanceFromZero();
 }
 
-inline auto StringDecodeBuffer::decodedRange(const unit::CpLength maximum, const bool stopAtLineEnd) -> DecodedRange {
-    auto characterLength = unit::CpLength{};
+inline auto StringDecodeBuffer::decodedRange(const unit::CpCount maximum, const bool stopAtLineEnd) -> DecodedRange {
+    auto characterLength = unit::CpCount{};
     auto isValid = true;
     const auto byteLength = stopAtLineEnd ? lineByteLength(maximum, &characterLength, &isValid)
                                           : decodableByteLength(maximum, &characterLength, &isValid);

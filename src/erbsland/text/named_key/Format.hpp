@@ -8,7 +8,7 @@
 #include "../CharSet.hpp"
 #include "../String.hpp"
 
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/ItemCount.hpp"
 #include "../../util/List.hpp"
 
@@ -55,7 +55,7 @@ public: // key table
     /// Find a semantic key identifier from any supported spelling.
     [[nodiscard]] auto keyIndex(const String &key) const -> std::optional<int>;
     /// Get the first registered normalized alias for a semantic key identifier.
-    /// @throws err::LogicError if the identifier is not registered.
+    /// @param keyIndex The semantic key identifier. Must be registered in this format.
     [[nodiscard]] auto keyName(int keyIndex) const -> const String &;
     /// Get all registered key aliases.
     [[nodiscard]] auto keys() const noexcept -> const util::List<Key> & { return _keys; }
@@ -82,9 +82,9 @@ public: // policy
     /// Get the maximum number of positional values.
     [[nodiscard]] auto maximumValues() const noexcept -> unit::ItemCount { return _maximumValues; }
     /// Set the maximum value length in code points.
-    auto setMaximumValueLength(unit::CpLength maximum) noexcept -> Format &;
+    auto setMaximumValueLength(unit::CpCount maximum) noexcept -> Format &;
     /// Get the maximum value length in code points.
-    [[nodiscard]] auto maximumValueLength() const noexcept -> unit::CpLength { return _maximumValueLength; }
+    [[nodiscard]] auto maximumValueLength() const noexcept -> unit::CpCount { return _maximumValueLength; }
 
 public: // syntax
     /// Set the entry-list separator.
@@ -116,7 +116,7 @@ public: // syntax
 
 public: // validation
     /// Validate this format before parsing.
-    /// @throws err::LogicError if the format is ambiguous or invalid.
+    /// The format must have valid, unambiguous key names and separators.
     void validate() const;
 
 private:
@@ -126,7 +126,7 @@ private:
     bool _valuesAllowed{true};                                   ///< Allow keyed values.
     bool _valueListAllowed{true};                                ///< Allow positional values.
     unit::ItemCount _maximumValues{unit::ItemCount::infinite()}; ///< Maximum positional value count.
-    unit::CpLength _maximumValueLength{200U};                    ///< Maximum value length.
+    unit::CpCount _maximumValueLength{200U};                     ///< Maximum value length.
     Char _listSeparator{U','};                                   ///< Entry-list separator.
     Char _valueSeparator{U'='};                                  ///< Key/value separator.
     Char _stopCharacter{Char::endOfData()};                      ///< Required stop character.

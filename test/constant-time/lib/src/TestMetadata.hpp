@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 

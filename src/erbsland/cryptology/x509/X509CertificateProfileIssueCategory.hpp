@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../../core/Definitions.hpp"
+
 #include <cstdint>
 
 namespace erbsland::cryptology {
@@ -12,6 +14,7 @@ enum class X509CertificateProfileIssueCategory : uint8_t {
     SignatureAlgorithmMismatch, ///< Inner and outer signature algorithms differ.
     VersionField,               ///< A field is inconsistent with the certificate version.
     ValidityRange,              ///< The not-after time precedes the not-before time.
+    ValidityEncoding,           ///< An unambiguous GeneralizedTime is used where UTCTime is required.
     ExtensionValue,             ///< A recognized extension has a malformed inner value.
     NameValue,                  ///< A name contains an unsupported or malformed value.
 };

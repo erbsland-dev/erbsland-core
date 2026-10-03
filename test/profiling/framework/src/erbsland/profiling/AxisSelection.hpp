@@ -4,7 +4,8 @@
 
 #include "AxisSelection_fwd.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/Axis.hpp>
+#include <erbsland/String.hpp>
 
 namespace erbsland::profiling {
 

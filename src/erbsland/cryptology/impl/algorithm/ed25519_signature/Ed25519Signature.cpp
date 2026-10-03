@@ -16,6 +16,7 @@
 
 namespace erbsland::cryptology::impl::ed25519_signature {
 
+using namespace mem;
 using namespace text::literals;
 using namespace unit;
 
@@ -26,11 +27,11 @@ auto isSignatureAlgorithm(const X509AlgorithmIdentifier &algorithm) noexcept -> 
 auto verify(
     const PublicKey &publicKey,
     const X509AlgorithmIdentifier &signatureAlgorithm,
-    const mem::ConstByteSpan message,
-    const mem::ConstByteSpan signature) -> bool {
+    const ConstByteSpan message,
+    const ConstByteSpan signature) -> bool {
     requireEd25519Algorithm(signatureAlgorithm, "signature"_el);
     requireEd25519Algorithm(publicKey.algorithm(), "public key"_el);
-    if (publicKey.unusedBitCount() != 0U || publicKey.keyData().length() != ByteLength{32U}) {
+    if (publicKey.unusedBitCount() != 0U || publicKey.keyData().length() != ByteCount{32U}) {
         throwParseError("An Ed25519 SubjectPublicKeyInfo must contain exactly 32 octets and no unused bits."_el);
     }
     if (signature.size() != 64U) {
@@ -73,7 +74,7 @@ auto verify(
     return equal(left, right);
 }
 
-auto decodePoint(const mem::ConstByteSpan bytes) noexcept -> std::optional<Point> {
+auto decodePoint(const ConstByteSpan bytes) noexcept -> std::optional<Point> {
     if (bytes.size() != 32U) {
         return std::nullopt;
     }
@@ -85,7 +86,7 @@ auto decodePoint(const mem::ConstByteSpan bytes) noexcept -> std::optional<Point
         yEncoding[i] = bytes[i].toUInt8();
     }
     yEncoding[31U] &= 0x7fU;
-    const auto y = FieldElement::fromCanonicalBytes(mem::toConstByteSpan(std::span{yEncoding}));
+    const auto y = FieldElement::fromCanonicalBytes(toConstByteSpan(std::span{yEncoding}));
     if (!y.has_value()) {
         return std::nullopt;
     }
@@ -192,7 +193,7 @@ auto basePoint() noexcept -> Point {
     auto encoding = std::array<uint8_t, 32U>{};
     encoding.fill(0x66U);
     encoding[0U] = 0x58U;
-    const auto point = decodePoint(mem::toConstByteSpan(std::span{encoding}));
+    const auto point = decodePoint(toConstByteSpan(std::span{encoding}));
     return point.has_value() ? *point : identity();
 }
 
@@ -268,7 +269,7 @@ auto doublePoint(const Point &point) noexcept -> Point {
         FieldElement::multiply(e, h)};
 }
 
-auto multiply(const Point &point, const mem::ConstByteSpan scalar) noexcept -> Point {
+auto multiply(const Point &point, const ConstByteSpan scalar) noexcept -> Point {
     auto result = identity();
     if (scalar.size() != 32U) {
         return result;
@@ -298,7 +299,7 @@ auto isPrimeOrderPoint(const Point &point) noexcept -> bool {
     return !equal(point, identity()) && equal(multiply(point, subgroupOrderBytes().span()), identity());
 }
 
-auto decodeScalar(const mem::ConstByteSpan bytes) noexcept -> std::optional<mem::ByteArray<32U>> {
+auto decodeScalar(const ConstByteSpan bytes) noexcept -> std::optional<ByteArray<32U>> {
     if (bytes.size() != 32U) {
         return std::nullopt;
     }
@@ -313,10 +314,10 @@ auto decodeScalar(const mem::ConstByteSpan bytes) noexcept -> std::optional<mem:
     if (comparison >= 0) {
         return std::nullopt;
     }
-    return mem::ByteArray<32U>::fromSpanOrThrow(bytes);
+    return ByteArray<32U>::fromSpanOrThrow(bytes);
 }
 
-auto reduceScalar(const mem::ConstByteSpan bytes) noexcept -> mem::ByteArray<32U> {
+auto reduceScalar(const ConstByteSpan bytes) noexcept -> ByteArray<32U> {
     auto remainder = Scalar{};
     if (bytes.size() != 64U) {
         return {};
@@ -337,12 +338,11 @@ auto reduceScalar(const mem::ConstByteSpan bytes) noexcept -> mem::ByteArray<32U
         }
     }
 
-    auto result = mem::ByteArray<32U>{};
+    auto result = ByteArray<32U>{};
     for (auto limb = std::size_t{0}; limb < remainder.size(); ++limb) {
         for (auto byte = std::size_t{0}; byte < 4U; ++byte) {
             result.set(
-                ByteIndex::fromSizeT((limb * 4U) + byte),
-                mem::Byte{static_cast<uint8_t>(remainder[limb] >> (byte * 8U))});
+                ByteIndex::fromSizeT((limb * 4U) + byte), Byte{static_cast<uint8_t>(remainder[limb] >> (byte * 8U))});
         }
     }
     return result;
@@ -367,13 +367,13 @@ void subtractScalar(Scalar &a, const Scalar &b) noexcept {
     }
 }
 
-auto subgroupOrderBytes() noexcept -> mem::ByteArray<32U> {
-    auto result = mem::ByteArray<32U>{};
+auto subgroupOrderBytes() noexcept -> ByteArray<32U> {
+    auto result = ByteArray<32U>{};
     const auto order = subgroupOrder();
     for (auto limb = std::size_t{0}; limb < order.size(); ++limb) {
         for (auto byte = std::size_t{0}; byte < 4U; ++byte) {
             result.set(
-                ByteIndex::fromSizeT((limb * 4U) + byte), mem::Byte{static_cast<uint8_t>(order[limb] >> (byte * 8U))});
+                ByteIndex::fromSizeT((limb * 4U) + byte), Byte{static_cast<uint8_t>(order[limb] >> (byte * 8U))});
         }
     }
     return result;

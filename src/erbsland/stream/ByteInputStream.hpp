@@ -14,8 +14,8 @@
 #include "../mem/Endianness.hpp"
 #include "../mem/RingBuffer.hpp"
 #include "../time/TimePoint.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 #include "../util/CoAsyncGenerator.hpp"
 #include "../util/CoTask.hpp"
 
@@ -41,13 +41,19 @@ protected:
 
 public:
     /// The default maximum for no-argument aggregate reads: 10 MiB.
-    static constexpr auto cDefaultByteReadMaximum = unit::ByteLength{10U * 1024U * 1024U};
+    static constexpr auto cDefaultByteReadMaximum = unit::ByteCount{10U * 1024U * 1024U};
 
 public:
     // defaults
     ~ByteInputStream() override = default;
 
 public: // accessors
+    /// Get the regular-file size captured when opening the source, without another metadata query.
+    /// This allocation hint may be stale and must never be used to infer end-of-stream.
+    /// @return The captured byte length, or infinity when no regular-file size is available.
+    [[nodiscard]] virtual auto initialFileSize() const noexcept -> unit::ByteCount {
+        return unit::ByteCount::infinite();
+    }
     /// Get the byte order used by integer convenience methods.
     [[nodiscard]] auto endianness() const noexcept -> mem::Endianness;
     /// Set the byte order used by integer convenience methods.
@@ -64,23 +70,21 @@ public: // core interface
     /// @param destination The destination bytes to fill.
     /// @return The status and number of bytes read.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
-    [[nodiscard]] auto read(mem::ByteSpan destination) -> StreamReadResult<unit::ByteLength>;
+    [[nodiscard]] auto read(mem::ByteSpan destination) -> StreamReadResult<unit::ByteCount>;
 
 public: // default interface
     /// Read up to `maximumLength` bytes and return them as a byte block.
-    /// @param maximumLength The maximum number of bytes to read.
+    /// @param maximumLength The maximum number of bytes to read. Must be finite.
     /// @return The status and bytes that were read.
-    /// @throws err::ParameterError If `maximumLength` is infinite.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
-    [[nodiscard]] auto read(unit::ByteLength maximumLength) -> StreamReadResult<mem::ByteBlock>;
+    [[nodiscard]] auto read(unit::ByteCount maximumLength) -> StreamReadResult<mem::ByteBlock>;
     /// Read exactly `length` bytes.
-    /// @param length The number of bytes to read.
     /// Partial bytes are retained by the stream after timeout or premature end-of-stream. Repeating this operation
     /// continues it; selecting another read operation makes retained bytes available to that operation in order.
+    /// @param length The number of bytes to read. Must be finite.
     /// @return `Data` with exactly `length` bytes, or an empty `Timeout`/`Finished` result.
-    /// @throws err::ParameterError If `length` is infinite.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
-    [[nodiscard]] auto readExact(unit::ByteLength length) -> StreamReadResult<mem::ByteBlock>;
+    [[nodiscard]] auto readExact(unit::ByteCount length) -> StreamReadResult<mem::ByteBlock>;
     /// Read one byte.
     /// @return The status and next byte.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
@@ -90,53 +94,48 @@ public: // default interface
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
     [[nodiscard]] auto readAll() -> StreamReadResult<mem::ByteBlock>;
     /// Read remaining bytes up to `maximumLength`.
-    /// @param maximumLength The maximum number of bytes to aggregate.
+    /// @param maximumLength The maximum number of bytes to aggregate. Must be finite.
     /// @return The status and bytes read before the limit, end, or timeout.
-    /// @throws err::ParameterError If `maximumLength` is infinite.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
-    [[nodiscard]] auto readAll(unit::ByteLength maximumLength) -> StreamReadResult<mem::ByteBlock>;
+    [[nodiscard]] auto readAll(unit::ByteCount maximumLength) -> StreamReadResult<mem::ByteBlock>;
 
 public: // coroutine interface
     /// Asynchronously read one owned byte block.
-    /// @param maximumLength The maximum number of bytes to read.
+    /// This stream must have shared ownership.
+    /// @param maximumLength The maximum number of bytes to read. Must be finite.
     /// @return A task with the same result as `read(maximumLength)`.
-    /// @throws err::LogicError If this stream is not shared-owned.
-    /// @throws err::ParameterError When the task result is observed if `maximumLength` is infinite.
     /// @throws stream::StreamError When the task result is observed if the stream or backing source fails.
-    [[nodiscard]] auto coRead(unit::ByteLength maximumLength) -> util::CoTask<StreamReadResult<mem::ByteBlock>>;
+    [[nodiscard]] auto coRead(unit::ByteCount maximumLength) -> util::CoTask<StreamReadResult<mem::ByteBlock>>;
     /// Asynchronously read exactly `length` bytes.
-    /// @param length The number of bytes to read.
+    /// This stream must have shared ownership.
+    /// @param length The number of bytes to read. Must be finite.
     /// @return A task with the same result as `readExact(length)`.
-    /// @throws err::LogicError If this stream is not shared-owned.
-    /// @throws err::ParameterError When the task result is observed if `length` is infinite.
     /// @throws stream::StreamError When the task result is observed if the stream or backing source fails.
-    [[nodiscard]] auto coReadExact(unit::ByteLength length) -> util::CoTask<StreamReadResult<mem::ByteBlock>>;
+    [[nodiscard]] auto coReadExact(unit::ByteCount length) -> util::CoTask<StreamReadResult<mem::ByteBlock>>;
     /// Asynchronously read remaining bytes up to `cDefaultByteReadMaximum`.
+    /// This stream must have shared ownership.
     /// @return A task with the same result as `readAll()`.
-    /// @throws err::LogicError If this stream is not shared-owned.
     /// @throws stream::StreamError When the task result is observed if the stream or backing source fails.
     [[nodiscard]] auto coReadAll() -> util::CoTask<StreamReadResult<mem::ByteBlock>>;
     /// Asynchronously read remaining bytes up to `maximumLength`.
-    /// @param maximumLength The maximum aggregate length.
+    /// This stream must have shared ownership.
+    /// @param maximumLength The maximum aggregate length. Must be finite.
     /// @return A task with the same result as `readAll(maximumLength)`.
-    /// @throws err::LogicError If this stream is not shared-owned.
-    /// @throws err::ParameterError When the task result is observed if `maximumLength` is infinite.
     /// @throws stream::StreamError When the task result is observed if the stream or backing source fails.
-    [[nodiscard]] auto coReadAll(unit::ByteLength maximumLength) -> util::CoTask<StreamReadResult<mem::ByteBlock>>;
+    [[nodiscard]] auto coReadAll(unit::ByteCount maximumLength) -> util::CoTask<StreamReadResult<mem::ByteBlock>>;
     /// Asynchronously generate byte blocks using the default maximum block length.
     /// Timeout results are yielded; end-of-stream completes the generator.
+    /// This stream must have shared ownership when the generator is first advanced.
     /// @return A lazy generator for bounded byte-block results.
-    /// @throws err::LogicError When first advanced if this stream is not shared-owned.
     /// @throws stream::StreamError When advancing if the stream or backing source fails.
     [[nodiscard]] auto coReadBlocks() -> util::CoAsyncGenerator<StreamReadResult<mem::ByteBlock>>;
     /// Asynchronously generate byte blocks.
+    /// This stream must have shared ownership when the generator is first advanced.
     /// @param maximumLength The positive finite maximum for each block.
     /// Timeout results are yielded; end-of-stream completes the generator.
     /// @return A lazy generator for bounded byte-block results.
-    /// @throws err::ParameterError When first advanced if `maximumLength` is zero or infinite.
-    /// @throws err::LogicError When first advanced if this stream is not shared-owned.
     /// @throws stream::StreamError When advancing if the stream or backing source fails.
-    [[nodiscard]] auto coReadBlocks(unit::ByteLength maximumLength)
+    [[nodiscard]] auto coReadBlocks(unit::ByteCount maximumLength)
         -> util::CoAsyncGenerator<StreamReadResult<mem::ByteBlock>>;
 
 public: // integer read
@@ -145,7 +144,7 @@ public: // integer read
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
     template <std::integral T>
     [[nodiscard]] auto readInteger() -> StreamReadResult<T> {
-        const auto data = readExact(unit::ByteLength::fromSizeT(sizeof(T)));
+        const auto data = readExact(unit::ByteCount::fromSizeT(sizeof(T)));
         if (data != StreamReadStatus::Data) {
             return {data, T{}};
         }
@@ -183,30 +182,29 @@ protected:
 
 protected:
     /// Read until the destination is full or the deadline is reached.
-    [[nodiscard]] auto readUntil(mem::ByteSpan destination, ReadDeadline deadline)
-        -> StreamReadResult<unit::ByteLength>;
+    [[nodiscard]] auto readUntil(mem::ByteSpan destination, ReadDeadline deadline) -> StreamReadResult<unit::ByteCount>;
 
 private:
     /// Read one source chunk while the logical-read lock is held.
     [[nodiscard]] auto readChunkLocked(mem::ByteSpan destination, ReadDeadline deadline)
-        -> StreamReadResult<unit::ByteLength>;
+        -> StreamReadResult<unit::ByteCount>;
     /// Read source bytes into retained storage.
-    [[nodiscard]] auto readIntoRetained(unit::ByteLength maximumLength, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto readIntoRetained(unit::ByteCount maximumLength, ReadDeadline deadline) -> StreamReadStatus;
     /// Prepare a bounded read from retained and source bytes.
-    [[nodiscard]] auto prepareRead(unit::ByteLength maximumLength, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto prepareRead(unit::ByteCount maximumLength, ReadDeadline deadline) -> StreamReadStatus;
     /// Prepare an exact-length read from retained and source bytes.
-    [[nodiscard]] auto prepareExact(unit::ByteLength length, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto prepareExact(unit::ByteCount length, ReadDeadline deadline) -> StreamReadStatus;
     /// Prepare an aggregate read from retained and source bytes.
-    [[nodiscard]] auto prepareAll(unit::ByteLength maximumLength, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto prepareAll(unit::ByteCount maximumLength, ReadDeadline deadline) -> StreamReadStatus;
     /// Get the retained-input buffer, creating it when necessary.
     [[nodiscard]] auto retainedBuffer() -> mem::RingBuffer &;
     /// Take a byte prefix from retained input.
-    [[nodiscard]] auto takeRetained(unit::ByteLength length) -> mem::ByteBlock;
+    [[nodiscard]] auto takeRetained(unit::ByteCount length) -> mem::ByteBlock;
 
 protected:
     /// Read the next source chunk using the remaining time before `deadline`.
     [[nodiscard]] virtual auto readFromSource(mem::ByteSpan destination, ReadDeadline deadline)
-        -> StreamReadResult<unit::ByteLength> = 0;
+        -> StreamReadResult<unit::ByteCount> = 0;
     /// Test if retained input can be returned without accessing the source.
     [[nodiscard]] auto hasRetainedInput() const noexcept -> bool;
     /// Discard pending and replay input during close or abort.

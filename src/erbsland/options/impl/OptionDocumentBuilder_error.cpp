@@ -4,13 +4,16 @@
 
 #include "OptionDisplayModel.hpp"
 #include "OptionDisplayRow.hpp"
+#include "OptionHelpSearch.hpp"
+#include "OptionLiterals.hpp"
 
 #include "../Option.hpp"
 #include "../OptionModule.hpp"
 #include "../Options.hpp"
 #include "../OptionSet.hpp"
+#include "../OptionType.hpp"
 
-#include "../../i18n/DisplayTextMap.hpp"
+#include "../../i18n/DisplayText.hpp"
 #include "../../text/CodeSnippetMarker.hpp"
 #include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
@@ -46,19 +49,19 @@ auto OptionDocumentBuilder::markerLength(const String &text) noexcept -> ColumnC
 auto OptionDocumentBuilder::defaultErrorTitle(const OptionErrorReason reason) const -> String {
     switch (reason) {
     case OptionErrorReason::SyntaxError:
-        return _displayText->text("options.SyntaxErrorTitle"_el);
+        return i18n::displayText("options.syntax_error_title"_el);
     case OptionErrorReason::UnknownName:
-        return _displayText->text("options.UnknownNameTitle"_el);
+        return i18n::displayText("options.unknown_name_title"_el);
     case OptionErrorReason::UnexpectedValueType:
-        return _displayText->text("options.UnexpectedValueTypeTitle"_el);
+        return i18n::displayText("options.unexpected_value_type_title"_el);
     case OptionErrorReason::ValidationError:
-        return _displayText->text("options.ValidationErrorTitle"_el);
+        return i18n::displayText("options.validation_error_title"_el);
     case OptionErrorReason::NotImplemented:
-        return _displayText->text("options.NotImplementedTitle"_el);
+        return i18n::displayText("options.not_implemented_title"_el);
     case OptionErrorReason::None:
-        return _displayText->text("options.GenericErrorMessage"_el);
+        return i18n::displayText("options.generic_error_message"_el);
     }
-    return _displayText->text("options.GenericErrorMessage"_el);
+    return i18n::displayText("options.generic_error_message"_el);
 }
 
 void OptionDocumentBuilder::appendErrorSource(TextDocument &document, const OptionErrorContext &context) const {
@@ -67,16 +70,16 @@ void OptionDocumentBuilder::appendErrorSource(TextDocument &document, const Opti
     }
     auto heading = document.addHeading(2);
     heading->setStyle("diagnostic-section"_el);
-    heading->addText(_displayText->text("options.ErrorSourceHeading"_el));
+    heading->addText(i18n::displayText("options.error_source_heading"_el));
     if (!context.arguments().isEmpty()) {
         auto paragraph = document.addParagraph();
         paragraph->setStyle("diagnostic-source-name"_el);
-        paragraph->addText(_displayText->text("options.CommandLineArgumentsHeading"_el));
+        paragraph->addText(i18n::displayText("options.command_line_arguments_heading"_el));
     }
     if (!context.argumentIndex().isNoIndex()) {
         auto paragraph = document.addParagraph();
         paragraph->setStyle("diagnostic-source-location"_el);
-        paragraph->addText(_displayText->text("options.ArgumentIndexLabel"_el));
+        paragraph->addText(i18n::displayText("options.argument_index_label"_el));
         paragraph->addText(": "_el);
         paragraph->addText(String::fromInteger(context.argumentIndex().toSizeT()));
     }
@@ -118,18 +121,18 @@ void OptionDocumentBuilder::appendCommandLineSnippet(TextDocument &document, con
 
     auto heading = document.addHeading(2);
     heading->setStyle("diagnostic-section"_el);
-    heading->addText(_displayText->text("options.CommandLineArgumentsHeading"_el));
+    heading->addText(i18n::displayText("options.command_line_arguments_heading"_el));
     document.addCodeSnippet(CodeSnippet{std::move(lines), firstLine, "command-line"_el}, std::move(markers));
 }
 
 auto OptionDocumentBuilder::appendContextHelp(TextDocument &document, const OptionErrorContext &context) const -> bool {
     if (const auto &option = context.option(); option != nullptr) {
-        appendHeading(document.root(), _displayText->text("options.OptionHelpHeading"_el));
+        appendHeading(document.root(), i18n::displayText("options.option_help_heading"_el));
         appendRowsAsTermList(
             document.root(),
             {OptionDisplayRow{
-                .title = OptionDisplayModel::optionTitle(option, _displayText),
-                .description = OptionDisplayModel::optionDescription(option, _displayText),
+                .title = OptionDisplayModel::optionTitle(option),
+                .description = OptionDisplayModel::optionBrief(option, _options),
                 .details = {},
                 .option = option}},
             true);
@@ -137,12 +140,12 @@ auto OptionDocumentBuilder::appendContextHelp(TextDocument &document, const Opti
     }
     if (const auto &optionSet = context.optionSet();
         optionSet != nullptr && (!optionSet->help().title().isEmpty() || !optionSet->help().description().isEmpty())) {
-        appendHeading(document.root(), _displayText->text("options.OptionGroupHelpHeading"_el));
+        appendHeading(document.root(), i18n::displayText("options.option_group_help_heading"_el));
         auto list = document.add(NodeType::TermList);
         auto item = list->add(NodeType::TermItem);
         item->add(NodeType::TermName)
             ->addText(
-                optionSet->help().title().isEmpty() ? _displayText->text("options.OptionsHeading"_el)
+                optionSet->help().title().isEmpty() ? i18n::displayText("options.options_heading"_el)
                                                     : optionSet->help().title());
         if (!optionSet->help().description().isEmpty()) {
             item->add(NodeType::TermDescription)->addText(optionSet->help().description());
@@ -150,7 +153,7 @@ auto OptionDocumentBuilder::appendContextHelp(TextDocument &document, const Opti
         return true;
     }
     if (const auto &module = context.module(); module != nullptr) {
-        appendHeading(document.root(), _displayText->text("options.ModuleHelpHeading"_el));
+        appendHeading(document.root(), i18n::displayText("options.module_help_heading"_el));
         auto list = document.add(NodeType::TermList);
         auto item = list->add(NodeType::TermItem);
         item->add(NodeType::TermName)->add(NodeType::OptionModule)->addText(module->name());
@@ -162,15 +165,45 @@ auto OptionDocumentBuilder::appendContextHelp(TextDocument &document, const Opti
         return true;
     }
     if (_options != nullptr && !_options->optionModules().empty()) {
-        const auto model = OptionDisplayModel{_options, {}, _displayText};
+        const auto model = OptionDisplayModel{_options, {}};
         const auto rows = model.moduleRows();
         if (!rows.empty()) {
-            appendHeading(document.root(), _displayText->text("options.ModulesHeading"_el));
+            appendHeading(document.root(), i18n::displayText("options.modules_heading"_el));
             appendRowsAsTermList(document.root(), rows, false);
             return true;
         }
     }
     return false;
+}
+
+void OptionDocumentBuilder::appendSuggestion(
+    const TextNodePtr &parent, const String &suggestion, const OptionErrorContext &context) const {
+    const auto &option = context.option();
+    if (context.reason() == OptionErrorReason::UnexpectedValueType && option != nullptr &&
+        option->type() == OptionType::Choice && option->matchingChoiceText(suggestion).has_value()) {
+        parent->add(NodeType::OptionValue)->addText(suggestion);
+        return;
+    }
+    if (const auto &options = context.options(); options != nullptr) {
+        for (const auto &module : options->optionModules()) {
+            if (module != nullptr && module->hasName(suggestion)) {
+                parent->add(NodeType::OptionModule)->addText(suggestion);
+                return;
+            }
+        }
+    }
+    const auto matches = OptionHelpSearch{_options, {}}.exactMatches(suggestion);
+    for (const auto &entry : matches) {
+        if (entry.option != nullptr) {
+            if (Option::isOptionName(suggestion)) {
+                appendOptionAlias(parent, suggestion);
+            } else {
+                parent->add(NodeType::OptionValue)->addText(suggestion);
+            }
+            return;
+        }
+    }
+    parent->addText(suggestion);
 }
 
 void OptionDocumentBuilder::appendFullHelpCommand(TextDocument &document, const OptionErrorContext &context) const {
@@ -180,20 +213,14 @@ void OptionDocumentBuilder::appendFullHelpCommand(TextDocument &document, const 
     auto heading = document.addHeading(2);
     heading->setStyle("option-section diagnostic-full-help"_el);
     heading->addText(
-        context.module() == nullptr ? _displayText->text("options.ViewFullHelpHeading"_el)
-                                    : _displayText->text("options.ViewFullModuleHelpHeading"_el));
+        context.module() == nullptr ? i18n::displayText("options.view_full_help_heading"_el)
+                                    : i18n::displayText("options.view_full_module_help_heading"_el));
     auto list = document.add(NodeType::TermList);
     auto item = list->add(NodeType::TermItem);
     auto name = item->add(NodeType::TermName);
-    const auto model =
-        OptionDisplayModel{_options, context.module() == nullptr ? String{} : context.module()->name(), _displayText};
-    name->add(NodeType::OptionExecutable)->addEscapedText(model.executableName(), EscapeFormat::Display);
-    if (context.module() != nullptr) {
-        name->addText(" "_el);
-        name->add(NodeType::OptionModule)->addText(context.module()->name());
-    }
+    appendCommandPrefix(name, context.module());
     name->addText(" "_el);
-    name->add(NodeType::OptionLong)->addText("--help"_el);
+    appendOptionAlias(name, option_literal::cHelpLongName);
 }
 
 }

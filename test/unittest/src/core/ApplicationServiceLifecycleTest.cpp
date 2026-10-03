@@ -3,14 +3,14 @@
 
 #include "ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/core/impl/application_data/ApplicationLifecycleData.hpp>
 #include <erbsland/core/impl/ApplicationData.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/system/impl/service/ServiceLifecycle.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/unit/ExitCode.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -107,18 +107,19 @@ public:
 
         REQUIRE_EQUAL(state->waitHints, (std::vector<std::int64_t>{20'000, 10'000}));
         REQUIRE_EQUAL(state->completeCount, 1U);
-        REQUIRE_THROWS_AS(el::err::LogicError, application.reportStartupPending(el::time::TimeDelta::seconds(1)));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, application.reportStartupPending(el::time::TimeDelta::seconds(1)));
     }
 
     void testStartupReportsRequireEnabledLifecycleAndPositiveTime() {
         auto scope = ApplicationTestScope<application_service_lifecycle_test::TestApplication>{};
         auto &application = scope.app();
-        REQUIRE_THROWS_AS(el::err::LogicError, application.reportStartupPending(el::time::TimeDelta::seconds(1)));
-        REQUIRE_THROWS_AS(el::err::LogicError, application.reportStartupComplete());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, application.reportStartupPending(el::time::TimeDelta::seconds(1)));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, application.reportStartupComplete());
 
         application.enableServiceLifecycle();
-        REQUIRE_THROWS_AS(el::err::ParameterError, application.reportStartupPending(el::time::TimeDelta::zero()));
-        REQUIRE_THROWS_AS(el::err::ParameterError, application.reportStartupPending(el::time::TimeDelta::seconds(-1)));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, application.reportStartupPending(el::time::TimeDelta::zero()));
+        REQUIRE_THROWS_AS(
+            el::err::ParameterFailure, application.reportStartupPending(el::time::TimeDelta::seconds(-1)));
     }
 
     void testPartsDelayAutomaticReadinessUntilRunning() {
@@ -160,7 +161,7 @@ public:
         auto &application = scope.app();
         application.setMainFn([]() -> el::unit::ExitCode { return el::unit::ExitCode::success(); });
         REQUIRE_EQUAL(application.run(), 0);
-        REQUIRE_THROWS_AS(el::err::LogicError, application.enableServiceLifecycle());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, application.enableServiceLifecycle());
     }
 
     void testLifecycleStateIsSharedBetweenApplicationInstances() {

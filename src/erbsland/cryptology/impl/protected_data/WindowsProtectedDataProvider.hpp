@@ -10,11 +10,11 @@
 #include "WindowsProtectedDataApi.hpp"
 
 #include "../../../mem/ByteBlock.hpp"
+#include "../../../unit/ByteCount.hpp"
+#include "../../../unit/ByteIndex.hpp"
 
 #include <ncrypt.h>
 #include <ncryptprotect.h>
-
-#include <cstddef>
 
 namespace erbsland::cryptology::impl {
 
@@ -37,17 +37,19 @@ public:
     auto operator=(WindowsProtectedDataProvider &&) -> WindowsProtectedDataProvider & = delete;
 
 public: // implement ProtectedDataProvider
-    [[nodiscard]] auto protect(mem::ConstByteSpan plaintext, unit::ByteLength plaintextLength)
+    [[nodiscard]] auto protect(mem::ConstByteSpan plaintext, unit::ByteCount plaintextLength)
         -> mem::ByteBlock override;
-    [[nodiscard]] auto unprotect(mem::ConstByteSpan envelope, unit::ByteLength plaintextLength)
+    [[nodiscard]] auto unprotect(mem::ConstByteSpan envelope, unit::ByteCount plaintextLength)
         -> mem::ByteBlock override;
 
 private:
-    static constexpr std::size_t cContextSize{32U}; ///< Application context identifier size.
+    static constexpr auto cContextLength = unit::ByteCount{32U}; ///< Application context identifier length.
+    static constexpr auto cContextOffset = unit::ByteIndex{8U};  ///< Context after the encoded length.
+    static constexpr auto cPlaintextOffset = cContextOffset + cContextLength; ///< Start of the plaintext payload.
 
-    WindowsProtectedDataApi _api;                   ///< Lazily loaded DPAPI-NG system entry points.
-    mem::ByteBlock _contextId;                      ///< Sensitive application-lifetime context identifier.
-    NCRYPT_DESCRIPTOR_HANDLE _descriptor{nullptr};  ///< Logon-local DPAPI-NG descriptor.
+    WindowsProtectedDataApi _api;                  ///< Lazily loaded DPAPI-NG system entry points.
+    mem::ByteBlock _contextId;                     ///< Sensitive application-lifetime context identifier.
+    NCRYPT_DESCRIPTOR_HANDLE _descriptor{nullptr}; ///< Logon-local DPAPI-NG descriptor.
 };
 
 }

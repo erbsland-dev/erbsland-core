@@ -35,7 +35,7 @@ sequence of fields.
 .. erbsland-demo::
     :source: mem/ByteStreams/ReadRecord.cpp
     :exec: mem/byte_streams --demo ReadRecord
-    :source-sha256: 376ce21cf011bfa5ebcafe5af64ce703e560c9ea2b5eb3513c8c4211eed9fef2
+    :sha256: 13956f6adabf042e45df6d6cbe148a1a43d6e10e80b9a7243df38535fe002630
 
 .. code-block:: cpp
 
@@ -68,12 +68,14 @@ sequence of fields.
         el::io::printLine("Calls / confidence: "_el, count, " / "_el, confidence);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Waarneming        : Bosuil
-    Marker            : 78
-    Calls / confidence: 12 / 94
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWaarneming        : Bosuil
+        Marker            : 78
+        Calls / confidence: 12 / 94␛[0m
 
 .. erbsland-demo-end::
 
@@ -96,7 +98,7 @@ them when an out-of-range value must be reported as malformed data.
 .. erbsland-demo::
     :source: mem/ByteStreams/NavigateReader.cpp
     :exec: mem/byte_streams --demo NavigateReader
-    :source-sha256: 499bbfed1d0b459240b5877747d5e613bc3401f23dd6d9b25ff05507a190f30b
+    :sha256: 699f32b9e3d669f047d2336424520e35953e021baff678eede229b8610aa4687
 
 .. code-block:: cpp
 
@@ -110,8 +112,8 @@ them when an out-of-range value must be reported as malformed data.
         auto reader = el::ByteReader{record};
 
         // Skip the marker after verifying that the complete header is present.
-        const auto hasHeader = reader.canRead(el::ByteLength{3U});
-        reader.advance(el::ByteLength{1U});
+        const auto hasHeader = reader.canRead(el::ByteCount{3U});
+        reader.advance(el::ByteCount{1U});
         const auto fieldPosition = reader.position();
 
         // A position beyond the input is safely clamped to its end.
@@ -122,13 +124,15 @@ them when an out-of-range value must be reported as malformed data.
         el::io::printLine("At end            : "_el, el::BooleanFormat::yesNo(), reader.isAtEnd());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Header available  : yes
-    Field position    : 1
-    Input length      : 4
-    At end            : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mHeader available  : yes
+        Field position    : 1
+        Input length      : 4
+        At end            : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -154,7 +158,7 @@ fragment—and a strict read after the enclosing record length has already promi
 .. erbsland-demo::
     :source: mem/ByteStreams/ReadBytes.cpp
     :exec: mem/byte_streams --demo ReadBytes
-    :source-sha256: b575029b436e3decc52dca6c2a91a2a47f069a2c059eae4d5665e952052213c2
+    :sha256: 5e9d2930bd1b586fa32e5a21c8819201b2e58137efa2e1004787d81e56f1e056
 
 .. code-block:: cpp
 
@@ -173,19 +177,21 @@ fragment—and a strict read after the enclosing record length has already promi
         const auto payloadLength = reader.readByteOrThrow().toUInt8();
 
         // Read the complete payload atomically.
-        const auto payload = reader.readBytes(el::ByteLength{payloadLength});
-        const auto extra = reader.readBytes(el::ByteLength{1U});
+        const auto payload = reader.readBytes(el::ByteCount::fromInteger(payloadLength));
+        const auto extra = reader.readBytes(el::ByteCount{1U});
         el::io::printLine("Marker            : "_el, marker.toUInt32());
         el::io::printLine("Payload           : "_el, el::ByteFormat::separated(), *payload);
         el::io::printLine("Extra byte        : "_el, el::BooleanFormat::yesNo(), extra.has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Marker            : 78
-    Payload           : a1 b2 c3
-    Extra byte        : no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMarker            : 78
+        Payload           : a1 b2 c3
+        Extra byte        : no␛[0m
 
 .. erbsland-demo-end::
 
@@ -212,7 +218,7 @@ alternative.
 .. erbsland-demo::
     :source: mem/ByteStreams/ReadIntegers.cpp
     :exec: mem/byte_streams --demo ReadIntegers
-    :source-sha256: 187daa2dc23263d985460b0f5b17fa8b135bff33b961e37c4ee0d2acfd9df1c7
+    :sha256: b92f084227705ef38e5c15610411e7bc97cad5869e79fc5fb38a188e1d2f5af4
 
 .. code-block:: cpp
 
@@ -236,12 +242,14 @@ alternative.
         el::io::printLine("Confidence        : "_el, confidence);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Roepjes gehoord   : 12
-    Flight seconds    : 300
-    Confidence        : 94
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRoepjes gehoord   : 12
+        Flight seconds    : 300
+        Confidence        : 94␛[0m
 
 .. erbsland-demo-end::
 
@@ -264,7 +272,7 @@ The framing choices are covered in detail in :doc:`text_byte_stream_options`.
 .. erbsland-demo::
     :source: mem/ByteStreams/ReadText.cpp
     :exec: mem/byte_streams --demo ReadText
-    :source-sha256: 0a56b02e61c2d365d89a9f7f33dba48c3715939289335fd45c7a43a169b17ff3
+    :sha256: fe32e719f5c25f46a172d4085ea9c860420071ee6fa1403e8bcc1f7459cdd724
 
 .. code-block:: cpp
 
@@ -294,16 +302,18 @@ The framing choices are covered in detail in :doc:`text_byte_stream_options`.
         el::io::printLine("Complete next field: "_el, el::BooleanFormat::yesNo(), missingField.has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Soort              : bosuil
-    Complete next field: no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSoort              : bosuil
+        Complete next field: no␛[0m
 
 .. erbsland-demo-end::
 
-Keeping the Tool Proportional to the Task
-=========================================
+Choosing ByteReader or Direct ByteBlock Access
+==============================================
 
 A reader earns its small amount of state when it turns a sequence of fields into a clear parsing flow or when helper
 functions need to share progress.

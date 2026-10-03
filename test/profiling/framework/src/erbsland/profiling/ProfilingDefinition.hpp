@@ -10,7 +10,11 @@
 #include "ProfilingDefinition_fwd.hpp"
 #include "SuiteDefinition.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Set.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/Version.hpp>
 
 #include <functional>
 

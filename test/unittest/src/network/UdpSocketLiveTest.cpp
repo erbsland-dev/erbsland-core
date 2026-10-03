@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/network/Network.hpp>
-#include <erbsland/network/source/NetworkErrorContext.hpp>
-#include <erbsland/network/udp/UdpDatagramDropContext.hpp>
-#include <erbsland/network/udp/UdpDatagramDropReason.hpp>
-#include <erbsland/network/udp/UdpSocket.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimeUnitTags.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeUnitTags.hpp>
+#include <erbsland/UdpDatagramDropContext.hpp>
+#include <erbsland/UdpDatagramDropReason.hpp>
+#include <erbsland/UdpSocket.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>
@@ -161,7 +161,7 @@ public:
                 .onBound([&]() -> void { boundCount += 1; })
                 .onError([&](const NetworkErrorContext &context) -> void { error = context; });
             auto options = UdpSocketOptions{};
-            options.setMaximumDatagramSize(el::unit::ByteLength{4U});
+            options.setMaximumDatagramSize(el::unit::ByteCount{4U});
             receiver->start(IpAddress::loopbackV4(), options);
             sender->start(IpAddress::loopbackV4());
         });
@@ -174,7 +174,7 @@ public:
         REQUIRE_EQUAL(deliveredCount, 0);
         REQUIRE_EQUAL(receiver->state(), NetworkSourceState::Active);
         REQUIRE_EQUAL(drop->reason(), UdpDatagramDropReason::TooLarge);
-        REQUIRE_EQUAL(drop->maximumSize(), el::unit::ByteLength{4U});
+        REQUIRE_EQUAL(drop->maximumSize(), el::unit::ByteCount{4U});
         REQUIRE(drop->remoteEndpoint().has_value());
         REQUIRE_EQUAL(*drop->remoteEndpoint(), *sender->localEndpoint());
         receiver->abort();
@@ -212,7 +212,7 @@ private:
     }
 
     [[nodiscard]] static auto block(const std::uint8_t value, const std::size_t length) -> el::mem::ByteBlock {
-        return el::mem::ByteBlock{el::unit::ByteLength::fromSizeT(length), el::mem::Byte{value}};
+        return el::mem::ByteBlock{el::unit::ByteCount::fromSizeT(length), el::mem::Byte{value}};
     }
 
     template <typename Predicate>

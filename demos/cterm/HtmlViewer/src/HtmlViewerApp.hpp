@@ -3,8 +3,11 @@
 #pragma once
 
 #include <erbsland/cterm/TerminalDocumentRenderer.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/html/HtmlParser.hpp>
+#include <erbsland/html/HtmlParser.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TextDocument.hpp>
 #include <TerminalApplication.hpp>
 
 #include <memory>

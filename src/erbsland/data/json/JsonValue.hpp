@@ -10,7 +10,7 @@
 #include "impl/JsonNativeType.hpp"
 #include "impl/JsonValueData_fwd.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringMap.hpp"
@@ -40,16 +40,21 @@ public:
     /// Create an integer number.
     JsonValue(int64_t value); // NOLINT(*-explicit-constructor)
     /// Create a floating-point number.
-    /// @throws err::ParameterError If `value` is not finite.
+    /// @param value The floating-point number to store. Must be finite.
     JsonValue(double value); // NOLINT(*-explicit-constructor)
     /// Create a text value.
     JsonValue(text::String value); // NOLINT(*-explicit-constructor)
+    /// Create a text value from an implicitly convertible string, editor, or literal.
+    /// @param value The text to store.
+    template <typename tText>
+        requires(!std::same_as<std::remove_cvref_t<tText>, text::String> && std::convertible_to<tText, text::String>)
+    JsonValue(tText &&value) : JsonValue{text::String{std::forward<tText>(value)}} {} // NOLINT(*-explicit-constructor)
     /// Create an array value.
     JsonValue(JsonArray value); // NOLINT(*-explicit-constructor)
     /// Create an object value.
     JsonValue(JsonObject value); // NOLINT(*-explicit-constructor)
     /// Create an integer number from another integral type.
-    /// @throws err::ParameterError If `value` does not fit into `int64_t`.
+    /// @param value The integer to store. Must fit in `int64_t`.
     template <std::integral T>
         requires(!std::same_as<std::remove_cv_t<T>, bool> && !std::same_as<std::remove_cv_t<T>, int64_t>)
     JsonValue(const T value) : JsonValue{checkedInteger(value)} {} // NOLINT(*-explicit-constructor)
@@ -75,14 +80,16 @@ public: // child values
     /// Get an array element, or null if this is not an array or the index is invalid.
     [[nodiscard]] auto get(unit::ItemIndex index) const -> JsonValue;
     /// Get an array element.
-    /// @throws err::LogicError If this is not an array.
-    /// @throws err::OutOfRangeError If the index is invalid.
+    /// This value must be an array.
+    /// @param index The array element index.
+    /// @throws err::OutOfRangeError If the index does not identify an array element.
     [[nodiscard]] auto getOrThrow(unit::ItemIndex index) const -> JsonValue;
     /// Get an object member, or null if this is not an object or the key is missing.
     [[nodiscard]] auto get(const text::String &key) const -> JsonValue;
     /// Get an object member.
-    /// @throws err::LogicError If this is not an object.
-    /// @throws err::OutOfRangeError If the key is missing.
+    /// This value must be an object.
+    /// @param key The member key.
+    /// @throws err::NotFoundError If the requested key is absent.
     [[nodiscard]] auto getOrThrow(const text::String &key) const -> JsonValue;
 
 public: // typed values
@@ -95,7 +102,7 @@ public: // typed values
         requires impl::JsonNativeType<T>
     [[nodiscard]] auto get(T fallback) const -> T;
     /// Get this value as a supported native type.
-    /// @throws err::LogicError If the value cannot be represented as `T`.
+    /// This value must be representable as `T`.
     template <typename T>
         requires impl::JsonNativeType<T>
     [[nodiscard]] auto getOrThrow() const -> T;
@@ -104,33 +111,34 @@ public: // typed values
     /// Get a boolean value or a fallback.
     [[nodiscard]] auto getBool(bool fallback) const noexcept -> bool;
     /// Get a boolean value.
-    /// @throws err::LogicError If this is not a boolean.
+    /// This value must be a boolean.
     [[nodiscard]] auto getBoolOrThrow() const -> bool;
     /// Get a number as a double.
     [[nodiscard]] auto getNumber() const noexcept -> std::optional<double>;
     /// Get a number as a double or a fallback.
     [[nodiscard]] auto getNumber(double fallback) const noexcept -> double;
     /// Get a number as a double.
-    /// @throws err::LogicError If this is not a number.
+    /// This value must be a number.
     [[nodiscard]] auto getNumberOrThrow() const -> double;
     /// Get a text value.
     [[nodiscard]] auto getText() const noexcept -> std::optional<text::String>;
     /// Get a text value or a fallback.
     [[nodiscard]] auto getText(text::String fallback) const noexcept -> text::String;
     /// Get a text value.
-    /// @throws err::LogicError If this is not text.
+    /// This value must be text.
     [[nodiscard]] auto getTextOrThrow() const -> text::String;
 
 public: // mutation
     /// Replace an array element, or append when `index == itemCount()`.
-    /// @throws err::LogicError If this is not an array.
-    /// @throws err::OutOfRangeError If `index > itemCount()`.
+    /// This value must be an array.
+    /// @param index The element position. Must be at most `itemCount()`. The end position appends a new element.
+    /// @param value The replacement or appended value.
     auto set(unit::ItemIndex index, JsonValue value) -> JsonValue &;
     /// Insert or replace an object member.
-    /// @throws err::LogicError If this is not an object.
+    /// This value must be an object.
     auto set(const text::String &key, JsonValue value) -> JsonValue &;
     /// Append an array element.
-    /// @throws err::LogicError If this is not an array.
+    /// This value must be an array.
     auto append(JsonValue value) -> JsonValue &;
 
 public: // conversion
@@ -151,7 +159,7 @@ private:
     [[nodiscard]] static auto checkedInteger(const T value) -> int64_t {
         using namespace text::literals;
         if (!std::in_range<int64_t>(value)) {
-            throw err::ParameterError{"The JSON integer is outside the signed 64-bit range."_el, "value"_el};
+            throw err::ParameterFailure{"The JSON integer is outside the signed 64-bit range."_el, "value"_el};
         }
         return static_cast<int64_t>(value);
     }
@@ -162,7 +170,7 @@ private:
     /// Get a copy of this object value.
     [[nodiscard]] auto getObject() const noexcept -> std::optional<JsonObject>;
     /// Throw the common wrong-type diagnostic.
-    [[noreturn]] static void throwTypeError();
+    [[noreturn]] static void throwTypeFailure();
     /// Detach shared storage before mutation.
     void detach();
 

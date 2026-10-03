@@ -5,15 +5,17 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/cryptology/impl/algorithm/rsa_signature/RsaSigner.hpp>
 #include <erbsland/cryptology/impl/DerEncoder.hpp>
 #include <erbsland/cryptology/impl/DerParser.hpp>
+#include <erbsland/cryptology/impl/EncryptedPrivateKeyCodec.hpp>
 #include <erbsland/cryptology/impl/PrivateKeyParser.hpp>
-#include <erbsland/cryptology/keys/SigningPrivateKey.hpp>
-#include <erbsland/cryptology/protected_data/ProtectedDataMode.hpp>
-#include <erbsland/err/ParseError.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/ProtectedDataMode.hpp>
+#include <erbsland/SigningPrivateKey.hpp>
+#include <erbsland/StringJoins.hpp>
 
 #include <type_traits>
 
@@ -22,6 +24,21 @@ using namespace el::cryptology;
 TESTED_TARGETS(SigningPrivateKey SigningKeyAlgorithm)
 class SigningPrivateKeyTest final : public UNITTEST_SUBCLASS(CryptologyTestHelper) {
 public:
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
+    void testImportedEncryptedKeyWithEmptyPassword() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        el::core::application().cryptologyConfiguration().setProtectedDataMode(ProtectedDataMode::InternalOnly);
+        const auto key = SigningPrivateKey::fromDerOrThrow(bytesFromHex(
+            "302e020100300506032b657004220420"
+            "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60"));
+        auto plaintext = key.toDer();
+        const auto encrypted = impl::encrypted_private_key_codec::encrypt(plaintext.span(), {});
+        plaintext.secureErase();
+        const auto imported = SigningPrivateKey::fromEncryptedDerOrThrow(encrypted, {});
+        REQUIRE(imported.matches(key.publicKey()));
+    }
+
     static_assert(!std::is_copy_constructible_v<SigningPrivateKey>);
     static_assert(!std::is_copy_assignable_v<SigningPrivateKey>);
     static_assert(std::is_move_constructible_v<SigningPrivateKey>);
@@ -73,7 +90,7 @@ public:
             el::err::ParseError,
             SigningPrivateKey::fromPemOrThrow(
                 el::String{"-----BEGIN ENCRYPTED PRIVATE KEY-----\nAA==\n-----END ENCRYPTED PRIVATE KEY-----\n"}));
-        REQUIRE_THROWS_AS(el::err::ParseError, SigningPrivateKey::fromPemOrThrow(el::String::fromJoined({pem, pem})));
+        REQUIRE_THROWS_AS(el::err::ParseError, SigningPrivateKey::fromPemOrThrow(el::join(pem, pem)));
     }
 
     void testEcdsaP256Rfc6979Vector() {
@@ -133,6 +150,7 @@ public:
         REQUIRE(key.algorithm() == SigningKeyAlgorithm::Rsa);
         REQUIRE(key.supports(TlsSignatureScheme::RsaPssRsaeSha256));
         REQUIRE(key.supports(TlsSignatureScheme::RsaPssRsaeSha384));
+        REQUIRE(key.supports(TlsSignatureScheme::RsaPssRsaeSha512));
         REQUIRE_FALSE(key.supports(TlsSignatureScheme::RsaPssPssSha256));
         REQUIRE_FALSE(key.supports(TlsSignatureScheme::RsaPkcs1Sha256));
 
@@ -143,7 +161,7 @@ public:
 
         // RFC 8017 appendix A.1.2: altering qInv must fail the mandatory CRT consistency validation.
         auto corruptedPrivateKey = el::ByteBlockEditor{privateKey};
-        const auto lastPrivateKeyByte = el::ByteIndex{corruptedPrivateKey.length().toSizeT() - 1U};
+        const auto lastPrivateKeyByte = corruptedPrivateKey.lastIndex();
         corruptedPrivateKey.set(lastPrivateKeyByte, corruptedPrivateKey.getOrThrow(lastPrivateKeyByte) ^ el::Byte{1U});
         auto corruptedEncoder = el::cryptology::impl::DerEncoder{};
         const auto corruptedRoot = corruptedEncoder.beginSequence();
@@ -168,7 +186,7 @@ public:
         REQUIRE_FALSE(pssKey.supports(TlsSignatureScheme::RsaPssPssSha384));
         REQUIRE_FALSE(pssKey.supports(TlsSignatureScheme::RsaPssRsaeSha256));
         const auto salt = bytesFromHex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
-        auto blindingFactor = el::ByteBlockEditor{el::ByteLength{256U}};
+        auto blindingFactor = el::ByteBlockEditor{el::ByteCount{256U}};
         blindingFactor.set(el::ByteIndex{255U}, el::Byte{2U});
         const auto signature = el::cryptology::impl::rsa_signer::signWithRandom(
             privateKey.span(),
@@ -187,5 +205,8 @@ public:
         REQUIRE_EQUAL(signature, repeatedSignature);
         REQUIRE(key.publicKey().verifyTlsCertificateVerifySignature(
             TlsSignatureScheme::RsaPssRsaeSha256, message.span(), signature.span()));
+        const auto signature512 = key.signTlsCertificateVerify(TlsSignatureScheme::RsaPssRsaeSha512, message.span());
+        REQUIRE(key.publicKey().verifyTlsCertificateVerifySignature(
+            TlsSignatureScheme::RsaPssRsaeSha512, message.span(), signature512.span()));
     }
 };

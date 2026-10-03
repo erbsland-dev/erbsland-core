@@ -5,6 +5,10 @@
 
 #include "impl/WorkloadTools.hpp"
 
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/StandardStreams.hpp>
+
 namespace app::byte {
 
 using namespace el::text::literals;
@@ -58,11 +62,13 @@ void WorkloadRunner::printCoverage() const {
             " variant="_el,
             descriptor.variant,
             " apis="_el);
-        for (auto index = std::size_t{}; index < descriptor.apiFamilies.size(); ++index) {
-            if (index != 0U) {
+        for (
+            auto index = el::ItemIndex::zero(); index.isWithin(descriptor.apiFamilies.count());
+            index.uncheckedIncrement()) {
+            if (index != el::ItemIndex::zero()) {
                 el::io::print(","_el);
             }
-            el::io::print(descriptor.apiFamilies[index]);
+            el::io::print(descriptor.apiFamilies.getRef(index));
         }
         el::io::printLine();
     }

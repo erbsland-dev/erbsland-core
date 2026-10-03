@@ -6,7 +6,7 @@
 
 #include "../../cterm/BlockStringEditor.hpp"
 #include "../../cterm/Terminal.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 #include <utility>
@@ -18,7 +18,7 @@ using namespace text::literals;
 ConsoleLogWriter::ConsoleLogWriter(cterm::TerminalPtr terminal, ConsoleLogWriterOptions options) :
     _terminal{std::move(terminal)}, _options{std::move(options)} {
     if (!_terminal) {
-        throw err::ParameterError{"A console log writer requires a terminal."_el, "terminal"_el};
+        throw err::ParameterFailure{"A console log writer requires a terminal."_el, "terminal"_el};
     }
     if (!_terminal->isInteractive()) {
         _terminal->setOutputMode(cterm::Terminal::OutputMode::BlockText);

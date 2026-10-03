@@ -3,7 +3,13 @@
 
 #include "CalendarPartsDemos.hpp"
 
-#include <erbsland/time/all.hpp>
+#include <erbsland/all_time.hpp>
+#include <erbsland/Day.hpp>
+#include <erbsland/DayOfYear.hpp>
+#include <erbsland/Month.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/Year.hpp>
 
 namespace demo {
 

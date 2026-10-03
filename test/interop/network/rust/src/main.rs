@@ -206,7 +206,7 @@ fn run() -> Result<(), String> {
                     )?;
                     continue;
                 }
-                match start_client_scenario(&request, Arc::clone(&trust_certificates)) {
+                match start_client_scenario(&request, Arc::clone(&trust_certificates), arguments.certificate.parent().unwrap_or(Path::new(".")).to_path_buf()) {
                     Ok(scenario) => {
                         scenarios.insert(request.id, scenario);
                         write_json(
@@ -370,6 +370,7 @@ fn hex(bytes: &[u8]) -> String {
 fn start_client_scenario(
     request: &Request,
     ca_certificates: Arc<Vec<CertificateDer<'static>>>,
+    fixture_directory: PathBuf,
 ) -> Result<Scenario, String> {
     if request.port == 0 {
         return Err("client scenario requires a nonzero server port".to_owned());
@@ -397,16 +398,23 @@ fn start_client_scenario(
                 .map_err(|error| format!("failed to clone scenario stream: {error}"))?,
         );
         match scenario.as_str() {
+            "tls_client_mtls" => run_tls_client_echo(
+                stream, build_client_config(&ca_certificates, &cipher, Some(&fixture_directory))?,
+                &server_name, payload_length, false),
+            "tls_client_mtls_reject" => run_tls_client_rejection(
+                stream, build_client_config(&ca_certificates, &cipher, Some(&fixture_directory))?, &server_name),
+            "tls_client_no_certificate_reject" => run_tls_client_rejection(
+                stream, build_client_config(&ca_certificates, &cipher, None)?, &server_name),
             "tls_client_echo" => run_tls_client_echo(
                 stream,
-                build_client_config(&ca_certificates, &cipher)?,
+                build_client_config(&ca_certificates, &cipher, None)?,
                 &server_name,
                 payload_length,
                 false,
             ),
             "tls_client_truncate" => run_tls_client_echo(
                 stream,
-                build_client_config(&ca_certificates, &cipher)?,
+                build_client_config(&ca_certificates, &cipher, None)?,
                 &server_name,
                 payload_length,
                 true,
@@ -455,21 +463,76 @@ fn start_scenario(
                 stream,
                 build_http_server_config(&certificates, &private_key_path)?,
             ),
-            "tls_echo" => run_tls_echo(
+            "tls_echo" | "tls_echo_p256" => run_tls_echo(
                 stream,
-                build_server_config(&certificates, &private_key_path, &cipher, false)?,
+                build_server_config(
+                    &certificates,
+                    &private_key_path,
+                    &cipher,
+                    false,
+                    scenario == "tls_echo_p256",
+                    None,
+                )?,
                 payload_length,
                 false,
             ),
+            "tls_mtls_required"
+            | "tls_mtls_empty"
+            | "tls_mtls_issuer_mismatch"
+            | "tls_mtls_untrusted_server" => {
+                let fixture_directory = private_key_path
+                    .parent()
+                    .ok_or_else(|| "private key has no fixture directory".to_owned())?;
+                let trust_name = if scenario == "tls_mtls_issuer_mismatch" {
+                    "ca.pem"
+                } else {
+                    "client-ca.pem"
+                };
+                let mut roots = RootCertStore::empty();
+                for certificate in load_certificates(&fixture_directory.join(trust_name))? {
+                    roots
+                        .add(certificate)
+                        .map_err(|error| format!("invalid client trust anchor: {error}"))?;
+                }
+                let mut verifier = rustls::server::WebPkiClientVerifier::builder(Arc::new(roots));
+                if scenario != "tls_mtls_required" {
+                    verifier = verifier.allow_unauthenticated();
+                }
+                let verifier = verifier
+                    .build()
+                    .map_err(|error| format!("invalid client verifier: {error}"))?;
+                let config = build_server_config(
+                    &certificates,
+                    &private_key_path,
+                    &cipher,
+                    false,
+                    false,
+                    Some(verifier),
+                )?;
+                run_mtls_echo(
+                    stream,
+                    config,
+                    payload_length,
+                    &scenario,
+                    load_certificates(&fixture_directory.join("client.pem"))?,
+                )
+            }
             "truncate_after_data" => run_tls_echo(
                 stream,
-                build_server_config(&certificates, &private_key_path, &cipher, false)?,
+                build_server_config(
+                    &certificates,
+                    &private_key_path,
+                    &cipher,
+                    false,
+                    false,
+                    None,
+                )?,
                 payload_length,
                 true,
             ),
             "tls12_only" => run_tls12_only(
                 stream,
-                build_server_config(&certificates, &private_key_path, "", true)?,
+                build_server_config(&certificates, &private_key_path, "", true, false, None)?,
             ),
             "disconnect_during_handshake" => {
                 let mut stream = stream;
@@ -504,8 +567,13 @@ fn build_server_config(
     private_key_path: &Path,
     cipher_name: &str,
     tls12_only: bool,
+    p256_only: bool,
+    client_verifier: Option<Arc<dyn rustls::server::danger::ClientCertVerifier>>,
 ) -> Result<Arc<ServerConfig>, String> {
     let mut provider = rustls::crypto::ring::default_provider();
+    if p256_only {
+        provider.kx_groups = vec![rustls::crypto::ring::kx_group::SECP256R1];
+    }
     if !cipher_name.is_empty() {
         provider
             .cipher_suites
@@ -524,10 +592,14 @@ fn build_server_config(
         &tls13_versions
     };
     let key = load_private_key(private_key_path)?;
-    let mut config = ServerConfig::builder_with_provider(Arc::new(provider))
+    let builder = ServerConfig::builder_with_provider(Arc::new(provider))
         .with_protocol_versions(versions)
-        .map_err(|error| format!("failed to select TLS versions: {error}"))?
-        .with_no_client_auth()
+        .map_err(|error| format!("failed to select TLS versions: {error}"))?;
+    let builder = match client_verifier {
+        Some(verifier) => builder.with_client_cert_verifier(verifier),
+        None => builder.with_no_client_auth(),
+    };
+    let mut config = builder
         .with_single_cert(certificates.to_vec(), key)
         .map_err(|error| format!("failed to configure certificate: {error}"))?;
     config.alpn_protocols = vec![b"erbsland-test".to_vec()];
@@ -553,6 +625,7 @@ fn build_http_server_config(
 fn build_client_config(
     ca_certificates: &[CertificateDer<'static>],
     cipher_name: &str,
+    identity_directory: Option<&Path>,
 ) -> Result<Arc<ClientConfig>, String> {
     let mut provider = rustls::crypto::ring::default_provider();
     if !cipher_name.is_empty() {
@@ -571,11 +644,15 @@ fn build_client_config(
             .add(certificate.clone())
             .map_err(|error| format!("failed to add root certificate: {error}"))?;
     }
-    let mut config = ClientConfig::builder_with_provider(Arc::new(provider))
+    let builder = ClientConfig::builder_with_provider(Arc::new(provider))
         .with_protocol_versions(&[&version::TLS13])
         .map_err(|error| format!("failed to select TLS 1.3: {error}"))?
-        .with_root_certificates(roots)
-        .with_no_client_auth();
+        .with_root_certificates(roots);
+    let mut config = if let Some(directory) = identity_directory {
+        builder.with_client_auth_cert(load_certificates(&directory.join("client.pem"))?,
+            load_private_key(&directory.join("client-key.pem"))?)
+            .map_err(|error| format!("failed to configure client identity: {error}"))?
+    } else { builder.with_no_client_auth() };
     config.alpn_protocols = vec![b"erbsland-test".to_vec()];
     Ok(Arc::new(config))
 }
@@ -597,7 +674,18 @@ fn run_tls_echo(
 ) -> Result<usize, String> {
     let connection = ServerConnection::new(config)
         .map_err(|error| format!("failed to create TLS server: {error}"))?;
-    let mut stream = StreamOwned::new(connection, stream);
+    echo_tls_stream(
+        StreamOwned::new(connection, stream),
+        expected_length,
+        truncate,
+    )
+}
+
+fn echo_tls_stream(
+    mut stream: StreamOwned<ServerConnection, TcpStream>,
+    expected_length: usize,
+    truncate: bool,
+) -> Result<usize, String> {
     let mut total = 0_usize;
     let mut buffer = [0_u8; 16 * 1024];
     while total < expected_length {
@@ -638,6 +726,38 @@ fn run_tls_echo(
         }
     }
     Ok(total)
+}
+
+fn run_mtls_echo(
+    mut stream: TcpStream,
+    config: Arc<ServerConfig>,
+    expected_length: usize,
+    scenario: &str,
+    expected_certificates: Vec<CertificateDer<'static>>,
+) -> Result<usize, String> {
+    let mut connection = ServerConnection::new(config)
+        .map_err(|error| format!("failed to create mTLS server: {error}"))?;
+    let handshake = connection.complete_io(&mut stream);
+    if scenario == "tls_mtls_untrusted_server" {
+        if handshake.is_ok() || connection.peer_certificates().is_some() {
+            return Err("client disclosed an identity before authenticating the server".to_owned());
+        }
+        return Ok(0);
+    }
+    handshake.map_err(|error| format!("mTLS handshake failed: {error}"))?;
+    if scenario == "tls_mtls_required" {
+        let received = connection
+            .peer_certificates()
+            .ok_or_else(|| "mTLS client supplied no certificate".to_owned())?;
+        if received.first() != expected_certificates.first() {
+            return Err("mTLS client disclosed an unexpected certificate".to_owned());
+        }
+    } else if connection.peer_certificates().is_some() {
+        return Err(
+            "mTLS client disclosed an identity despite absent or mismatched selection".to_owned(),
+        );
+    }
+    echo_tls_stream(StreamOwned::new(connection, stream), expected_length, false)
 }
 
 fn run_tls_http_server(stream: TcpStream, config: Arc<ServerConfig>) -> Result<usize, String> {
@@ -989,4 +1109,20 @@ fn write_json(stream: &mut TcpStream, value: &impl Serialize) -> Result<(), Stri
 
 fn io_error(action: &'static str) -> impl FnOnce(io::Error) -> String {
     move |error| format!("failed to {action}: {error}")
+}
+
+fn run_tls_client_rejection(mut stream: TcpStream, config: Arc<ClientConfig>, server_name: &str) -> Result<usize, String> {
+    let name = ServerName::try_from(server_name.to_owned()).map_err(|error| error.to_string())?;
+    let connection = ClientConnection::new(config, name).map_err(|error| error.to_string())?;
+    let mut tls = StreamOwned::new(connection, &mut stream);
+    tls.write_all(b"test").map_err(io_error("write rejected client probe"))?;
+    let mut output = [0u8; 4];
+    match tls.read(&mut output) {
+        Err(error) => match error.get_ref().and_then(|cause| cause.downcast_ref::<rustls::Error>()) {
+            Some(rustls::Error::AlertReceived(rustls::AlertDescription::CertificateRequired
+                | rustls::AlertDescription::UnknownCA | rustls::AlertDescription::BadCertificate)) => Ok(0),
+            _ => Err(format!("expected a certificate rejection alert: {error}")),
+        },
+        Ok(_) => Err("server accepted a client that should have been rejected".to_owned()),
+    }
 }

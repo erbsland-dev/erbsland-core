@@ -5,7 +5,7 @@
 #include "Coordinate.hpp"
 #include "Position_fwd.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../geometry/Axis.hpp"
 #include "../geometry/Dimensionality.hpp"
 #include "../geometry/Orientation.hpp"
@@ -104,9 +104,8 @@ public: // attributes
         return orientation == geometry::Orientation::Horizontal ? _x : _y;
     }
     /// Get the component for a physical axis.
-    /// @param axis The physical axis to select.
+    /// @param axis The physical axis to select. Must be X or Y.
     /// @return The selected coordinate.
-    /// @throws err::ParameterError if `axis` is Z.
     [[nodiscard]] constexpr auto component(const geometry::Axis axis) const -> Coordinate {
         using namespace text::literals;
         switch (axis) {
@@ -115,13 +114,12 @@ public: // attributes
         case geometry::Axis::Y:
             return _y;
         default:
-            throw err::ParameterError{"The axis is outside the position dimensionality."_el, "axis"_el};
+            throw err::ParameterFailure{"The axis is outside the position dimensionality."_el, "axis"_el};
         }
     }
     /// Get the component for a signed physical axis.
-    /// @param axis The signed physical axis to select.
+    /// @param axis The signed physical axis to select. Must select X or Y.
     /// @return The selected coordinate, negated for a reversed axis.
-    /// @throws err::ParameterError if `axis` selects Z.
     [[nodiscard]] constexpr auto component(const geometry::SignedAxis axis) const -> Coordinate {
         const auto result = component(axis.axis());
         return axis.isReversed() ? -result : result;

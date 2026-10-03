@@ -1,7 +1,29 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ArgumentCount.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/cterm/Color.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/named_key/Format.hpp>
+#include <erbsland/OptionChoice.hpp>
+#include <erbsland/OptionChoices.hpp>
+#include <erbsland/OptionFlag.hpp>
+#include <erbsland/OptionHelp.hpp>
+#include <erbsland/OptionHelpVisibility.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionSet.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/placeholder/Filter.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -32,18 +54,18 @@ using namespace el::text::literals;
     set->setHelpVisibility(el::OptionHelpVisibility::Overview);
     set->addOption({"-v"_el, "--verbose"_el, "verbose"_el})
         .setMaximum(el::ArgumentCount{4U})
-        .setHelpDescription("Increases diagnostic detail. Can be repeated."_el)
+        .setHelpTitle("Increases diagnostic detail. Can be repeated."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Usage);
     set->addOption({"--config"_el, "config"_el})
         .setType(el::OptionType::Text)
         .setValueName("file"_el)
-        .setHelpDescription("Main configuration file."_el)
+        .setHelpTitle("Main configuration file."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Overview);
     set->addOption({"--workspace"_el, "workspace"_el})
         .setType(el::OptionType::Text)
         .setValueName("directory"_el)
         .setDefaultValue("laboratory"_el)
-        .setHelpDescription("Working directory for instrument data."_el)
+        .setHelpTitle("Working directory for instrument data."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Overview);
     set->addOption({"--color"_el, "color"_el})
         .addChoice("auto"_el)
@@ -51,10 +73,10 @@ using namespace el::text::literals;
         .addChoice("never"_el)
         .setValueName("mode"_el)
         .setDefaultValue("auto"_el)
-        .setHelpDescription("Color control for compatible terminals."_el)
+        .setHelpTitle("Color control for compatible terminals."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Overview);
     set->addOption({"--trace-options"_el, "trace-options"_el})
-        .setHelpDescription("Traces option lookup and argument assignment."_el)
+        .setHelpTitle("Traces option lookup and argument assignment."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Hidden);
     return set;
 }
@@ -66,51 +88,51 @@ using namespace el::text::literals;
     set->addOption({"--region"_el, "region"_el})
         .setType(el::OptionType::Text)
         .setValueName("area"_el)
-        .setHelpDescription("Laboratory or measurement-campaign region."_el);
+        .setHelpTitle("Laboratory or measurement-campaign region."_el);
     set->addOption({"--label"_el, "label"_el})
         .setType(el::OptionType::Text)
         .setValueName("text"_el)
         .setMaximum(el::ArgumentCount{12U})
-        .setHelpDescription("Additional label for generated records. Can be repeated."_el);
+        .setHelpTitle("Additional label for generated records. Can be repeated."_el);
     set->addOption({"--note"_el, "note"_el})
         .setType(el::OptionType::Text)
-        .setHelpDescription("Short note printed on the report cover."_el);
+        .setHelpTitle("Short note printed on the report cover."_el);
     set->addOption({"--width"_el, "width"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{120})
-        .setHelpDescription("Preferred width of report pages."_el);
+        .setHelpTitle("Preferred width of report pages."_el);
     set->addOption({"--height"_el, "height"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{80})
-        .setHelpDescription("Preferred height of report pages."_el);
+        .setHelpTitle("Preferred height of report pages."_el);
     set->addOption({"--scale"_el, "scale"_el})
         .addChoice("small"_el)
         .addChoice("medium"_el)
         .addChoice("large"_el)
         .setValueName("size"_el)
         .setDefaultValue("medium"_el)
-        .setHelpDescription("Default visual scale for charts."_el);
+        .setHelpTitle("Default visual scale for charts."_el);
     set->addOption({"--order"_el, "order"_el})
         .addChoice("name"_el)
         .addChoice("date"_el)
         .addChoice("instrument"_el)
-        .setHelpDescription("Order of records in indexes."_el);
+        .setHelpTitle("Order of records in indexes."_el);
     set->addOption({"--filter"_el, "filter"_el})
         .setType(el::OptionType::Text)
         .setValueName("expression"_el)
         .setMaximum(el::ArgumentCount{6U})
-        .setHelpDescription(
+        .setHelpTitle(
             "Filter expression for records. Can be repeated to combine conditions on instrument, date, operator, "
             "and validation status."_el);
     set->addOption({"--experimental-summary-template"_el, "experimental-summary-template"_el})
         .setType(el::OptionType::Text)
         .setValueName("template"_el)
-        .setHelpDescription(
+        .setHelpTitle(
             "Long template for experimental-review reports; its deliberately wide name helps check how aligned "
             "descriptions wrap."_el);
-    set->addOption({"--index"_el, "index"_el}).setHelpDescription("Builds an index page."_el);
+    set->addOption({"--index"_el, "index"_el}).setHelpTitle("Builds an index page."_el);
     set->addOption({"--preview"_el, "preview"_el})
-        .setHelpDescription("Generates a preview instead of the complete result."_el);
+        .setHelpTitle("Generates a preview instead of the complete result."_el);
     return set;
 }
 
@@ -120,7 +142,7 @@ using namespace el::text::literals;
     set->setHelpDescription("Old options that must no longer appear or be parsed."_el);
     set->setFlags(el::OptionFlag::Disabled);
     set->addOption({"--old-mode"_el, "old-mode"_el})
-        .setHelpDescription("Retired option that must not exist for the parser."_el);
+        .setHelpTitle("Retired option that must not exist for the parser."_el);
     return set;
 }
 
@@ -134,19 +156,19 @@ void addCommonModuleOptions(const el::OptionModulePtr &module) {
         .addChoice("training"_el)
         .setValueName("profile"_el)
         .setDefaultValue("field"_el)
-        .setHelpDescription("Execution profile for this module."_el);
+        .setHelpTitle("Execution profile for this module."_el);
     commonSet->addOption({"--jobs"_el, "jobs"_el})
         .setType(el::OptionType::Integer)
         .setValueName("processes"_el)
         .setDefaultValue(el::OptionInteger{2})
-        .setHelpDescription("Number of parallel jobs."_el);
+        .setHelpTitle("Number of parallel jobs."_el);
     commonSet->addOption({"--tag"_el, "tag"_el})
         .setType(el::OptionType::Text)
         .setValueName("label"_el)
         .setMaximum(el::ArgumentCount{8U})
-        .setHelpDescription("Free-form label associated with generated records."_el);
-    commonSet->addOption({"--cache"_el, "cache"_el}).setHelpDescription("Uses cached data when possible."_el);
-    commonSet->addOption({"--no-cache"_el, "no-cache"_el}).setHelpDescription("Ignores cached data."_el);
+        .setHelpTitle("Free-form label associated with generated records."_el);
+    commonSet->addOption({"--cache"_el, "cache"_el}).setHelpTitle("Uses cached data when possible."_el);
+    commonSet->addOption({"--no-cache"_el, "no-cache"_el}).setHelpTitle("Ignores cached data."_el);
     module->addSet(commonSet);
 }
 
@@ -164,29 +186,29 @@ void addCommonModuleOptions(const el::OptionModulePtr &module) {
         .setType(el::OptionType::Text)
         .setValueName("sensor"_el)
         .setMaximum(el::ArgumentCount{12U})
-        .setHelpDescription(
+        .setHelpTitle(
             "Sensor to query. Can be repeated for campaigns with mixed benches where each instrument exposes "
             "reading families with different latency."_el);
     set->addOption({"--interval"_el, "interval"_el})
         .setType(el::OptionType::Integer)
         .setValueName("seconds"_el)
         .setDefaultValue(el::OptionInteger{30})
-        .setHelpDescription("Sampling interval in seconds."_el);
+        .setHelpTitle("Sampling interval in seconds."_el);
     set->addOption({"--until"_el, "until"_el})
         .setType(el::OptionType::Text)
         .setValueName("time"_el)
-        .setHelpDescription("Local time at which to stop acquisition."_el);
+        .setHelpTitle("Local time at which to stop acquisition."_el);
     set->addOption({"--sensor-stabilization-window"_el, "sensor-stabilization-window"_el})
         .setType(el::OptionType::Integer)
         .setValueName("seconds"_el)
-        .setHelpDescription(
+        .setHelpTitle(
             "Wait time after activating delicate sensors, before accepting readings that may enter automatic "
             "reports."_el);
-    set->addOption({"--complete"_el, "complete"_el}).setHelpDescription("Fails if any expected sensor is missing."_el);
+    set->addOption({"--complete"_el, "complete"_el}).setHelpTitle("Fails if any expected sensor is missing."_el);
     set->addOption("bench"_el)
         .setRequired()
         .setValueName("bench"_el)
-        .setHelpDescription("Instrument bench from which to take readings."_el)
+        .setHelpTitle("Instrument bench from which to take readings."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Usage);
     module->addSet(set);
     module->setMainFn([](el::OptionValuesPtr) -> el::ExitCode { return el::ExitCode::success(); });
@@ -207,18 +229,18 @@ void addCommonModuleOptions(const el::OptionModulePtr &module) {
         .addChoice("temperature"_el)
         .addChoice("humidity"_el)
         .addChoice("vibration"_el)
-        .setHelpDescription("Metric family to analyze."_el);
+        .setHelpTitle("Metric family to analyze."_el);
     set->addOption({"--baseline"_el, "baseline"_el})
         .setType(el::OptionType::Text)
-        .setHelpDescription("Baseline dataset identifier for comparison."_el);
+        .setHelpTitle("Baseline dataset identifier for comparison."_el);
     set->addOption({"--threshold"_el, "threshold"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{10})
-        .setHelpDescription("Alert threshold for the selected metric."_el);
-    set->addOption({"--explain"_el, "explain"_el}).setHelpDescription("Includes explanatory notes in the report."_el);
+        .setHelpTitle("Alert threshold for the selected metric."_el);
+    set->addOption({"--explain"_el, "explain"_el}).setHelpTitle("Includes explanatory notes in the report."_el);
     set->addOption("dataset"_el)
         .setRequired()
-        .setHelpDescription("Dataset to analyze."_el)
+        .setHelpTitle("Dataset to analyze."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Usage);
     module->addSet(set);
     module->setMainFn([](el::OptionValuesPtr) -> el::ExitCode { return el::ExitCode::success(); });
@@ -237,26 +259,26 @@ void addCommonModuleOptions(const el::OptionModulePtr &module) {
     set->addOption({"--format"_el, "format"_el})
         .setChoices(createExportChoices())
         .setDefaultValue("text"_el)
-        .setHelpDescription("Output format."_el);
+        .setHelpTitle("Output format."_el);
     set->addOption({"--language"_el, "language"_el})
         .addChoice("es"_el)
         .addChoice("en"_el)
         .addChoice("de"_el)
         .setDefaultValue("en"_el)
-        .setHelpDescription("Language for generated labels."_el);
+        .setHelpTitle("Language for generated labels."_el);
     set->addOption({"--audience"_el, "audience"_el})
         .addChoice("class"_el)
         .addChoice("technicians"_el)
         .addChoice("research"_el)
-        .setHelpDescription("Audience profile for the report."_el);
+        .setHelpTitle("Audience profile for the report."_el);
     set->addOption({"--output"_el, "output"_el})
         .setType(el::OptionType::Text)
         .setValueName("path"_el)
-        .setHelpDescription("Path to the output file."_el);
-    set->addOption({"--overwrite"_el, "overwrite"_el}).setHelpDescription("Overwrites an existing output file."_el);
+        .setHelpTitle("Path to the output file."_el);
+    set->addOption({"--overwrite"_el, "overwrite"_el}).setHelpTitle("Overwrites an existing output file."_el);
     set->addOption("report"_el)
         .setRequired()
-        .setHelpDescription("Identifier of the report to export."_el)
+        .setHelpTitle("Identifier of the report to export."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Usage);
     module->addSet(set);
     module->setMainFn([](el::OptionValuesPtr) -> el::ExitCode { return el::ExitCode::success(); });
@@ -270,7 +292,7 @@ public:
 
 protected:
     void initialize() override {
-        enableTerminal();
+        DemoTerminal::enable(*this);
         info().setApplicationName("Prism Atlas"_el);
         info().setApplicationVersion(el::Version{0, 8, 0});
         info().setAuthorName("Erbsland DEV"_el);

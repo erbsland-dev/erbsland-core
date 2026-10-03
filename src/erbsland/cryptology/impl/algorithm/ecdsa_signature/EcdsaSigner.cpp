@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "EcdsaSigner.hpp"
 
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../mem/Byte.hpp"
 #include "../../../../mem/ByteBlockEditor.hpp"
 #include "../../../../text/Literals.hpp"
-#include "../../../../unit/ByteLength.hpp"
+#include "../../../../unit/ByteCount.hpp"
 #include "../../../CryptologyError.hpp"
 #include "../../../HashAlgorithm.hpp"
 #include "../../../Hasher.hpp"
@@ -16,9 +16,10 @@
 
 namespace erbsland::cryptology::impl::ecdsa_signer {
 
+using namespace mem;
 using namespace text::literals;
 
-auto publicKey(const mem::ConstByteSpan privateScalar, const NistPrimeCurve::Name curveName) -> mem::ByteBlock {
+auto publicKey(const ConstByteSpan privateScalar, const NistPrimeCurve::Name curveName) -> ByteBlock {
     const auto curve = NistPrimeCurve{curveName};
     auto scalar = decodePrivateScalar(privateScalar, curveName);
     const auto scalarEraseGuard = SecureEraseGuard{scalar};
@@ -31,9 +32,8 @@ auto publicKey(const mem::ConstByteSpan privateScalar, const NistPrimeCurve::Nam
     return curve.pointToUncompressed(affinePoint);
 }
 
-auto sign(
-    const mem::ConstByteSpan privateScalar, const mem::ConstByteSpan message, const NistPrimeCurve::Name curveName)
-    -> mem::ByteBlock {
+auto sign(const ConstByteSpan privateScalar, const ConstByteSpan message, const NistPrimeCurve::Name curveName)
+    -> ByteBlock {
     const auto curve = NistPrimeCurve{curveName};
     const auto hashAlgorithm =
         curveName == NistPrimeCurve::Name::P256 ? HashAlgorithm::Sha2_256 : HashAlgorithm::Sha2_384;
@@ -84,20 +84,19 @@ auto sign(
     return encoder.encoded();
 }
 
-auto decodePrivateScalar(const mem::ConstByteSpan bytes, const NistPrimeCurve::Name curveName)
-    -> NistPrimeCurve::Number {
+auto decodePrivateScalar(const ConstByteSpan bytes, const NistPrimeCurve::Name curveName) -> NistPrimeCurve::Number {
     const auto curve = NistPrimeCurve{curveName};
     const auto scalar = curve.numberFromBigEndian(bytes);
-    if (bytes.size() != curve.byteLength() || !scalar.has_value() || curve.isZero(*scalar) ||
-        curve.compare(*scalar, curve.order()) >= 0) {
-        throw err::ParameterError{
+    if (unit::ByteCount::fromSizeT(bytes.size()) != curve.byteLength() || !scalar.has_value() ||
+        curve.isZero(*scalar) || curve.compare(*scalar, curve.order()) >= 0) {
+        throw err::ParameterFailure{
             "An EC private scalar must have the selected curve width and be in the range 1..n-1."_el,
             "privateScalar"_el};
     }
     return *scalar;
 }
 
-auto hashMessage(const mem::ConstByteSpan message, const HashAlgorithm hash) -> mem::ByteBlock {
+auto hashMessage(const ConstByteSpan message, const HashAlgorithm hash) -> ByteBlock {
     auto hasher = Hasher{hash};
     hasher.update(message);
     return hasher.finalize();
@@ -105,26 +104,26 @@ auto hashMessage(const mem::ConstByteSpan message, const HashAlgorithm hash) -> 
 
 auto deterministicNonce(
     const NistPrimeCurve::Number &privateScalar,
-    const mem::ConstByteSpan hash,
+    const ConstByteSpan hash,
     const NistPrimeCurve::Name curveName,
     const HashAlgorithm hashAlgorithm) -> NistPrimeCurve::Number {
     const auto curve = NistPrimeCurve{curveName};
-    auto x = curve.numberToBigEndian(privateScalar);
+    auto x = curve.numberToBigEndian(privateScalar, true);
     x.markAsSensitive();
     const auto xEraseGuard = SecureEraseGuard{x};
     const auto hashNumber = *curve.numberFromBigEndian(hash);
-    auto reducedHash = curve.numberToBigEndian(curve.reduceOrderSecret(hashNumber));
+    auto reducedHash = curve.numberToBigEndian(curve.reduceOrderSecret(hashNumber), true);
     reducedHash.markAsSensitive();
     const auto reducedHashEraseGuard = SecureEraseGuard{reducedHash};
     const auto digestLength = hashAlgorithm.digestSize();
-    auto k = mem::ByteBlock{digestLength, mem::Byte{}};
+    auto k = ByteBlock{digestLength, Byte{}};
     k.markAsSensitive();
     const auto kEraseGuard = SecureEraseGuard{k};
-    auto v = mem::ByteBlock{digestLength, mem::Byte{1U}};
+    auto v = ByteBlock{digestLength, Byte{1U}};
     v.markAsSensitive();
     const auto vEraseGuard = SecureEraseGuard{v};
-    const auto zero = mem::ByteBlock{{mem::Byte{}}};
-    const auto one = mem::ByteBlock{{mem::Byte{1U}}};
+    const auto zero = ByteBlock{{Byte{}}};
+    const auto one = ByteBlock{{Byte{1U}}};
 
     // RFC 6979 section 3.2 steps d-f: initialize K and V, then incorporate int2octets(x) and bits2octets(h1).
     k = hmac(hashAlgorithm, k.span(), v.span(), zero.span(), x.span(), reducedHash.span());
@@ -134,14 +133,14 @@ auto deterministicNonce(
 
     // RFC 6979 section 3.2 step h: generate one 256-bit candidate at a time until 1 <= k < n.
     for (auto attempt = 0U; attempt < 128U; ++attempt) {
-        auto candidateBytes = mem::ByteBlockEditor{};
-        while (candidateBytes.length().toSizeT() < curve.byteLength()) {
+        auto candidateBytes = ByteBlockEditor{};
+        while (candidateBytes.length() < curve.byteLength()) {
             v = hmac(hashAlgorithm, k.span(), v.span());
             candidateBytes.append(v);
         }
         candidateBytes.markAsSensitive();
         const auto candidateBytesEraseGuard = SecureEraseGuard{candidateBytes};
-        const auto candidate = curve.numberFromBigEndian(candidateBytes.span().first(curve.byteLength()));
+        const auto candidate = curve.numberFromBigEndian(candidateBytes.span().first(curve.byteLength().toSizeT()));
         if (candidate.has_value() && !curve.isZero(*candidate) && curve.compare(*candidate, curve.order()) < 0) {
             return *candidate;
         }
@@ -153,11 +152,11 @@ auto deterministicNonce(
 
 auto hmac(
     const HashAlgorithm hash,
-    const mem::ConstByteSpan key,
-    const mem::ConstByteSpan first,
-    const mem::ConstByteSpan second,
-    const mem::ConstByteSpan third,
-    const mem::ConstByteSpan fourth) -> mem::ByteBlock {
+    const ConstByteSpan key,
+    const ConstByteSpan first,
+    const ConstByteSpan second,
+    const ConstByteSpan third,
+    const ConstByteSpan fourth) -> ByteBlock {
     auto state = Hmac{hash, key};
     state.update(first);
     state.update(second);

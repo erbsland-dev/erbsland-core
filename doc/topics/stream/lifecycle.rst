@@ -21,8 +21,8 @@ This page explains who makes that decision, how to close output without waiting 
 failure.
 You will learn how to give every stream an explicit success path and a bounded cleanup path.
 
-Decide Who Finishes a Stream
-============================
+Stream Ownership and Close Responsibilities
+===========================================
 
 :cpp:class:`InputStream <erbsland::stream::InputStream>` and
 :cpp:class:`OutputStream <erbsland::stream::OutputStream>` define the lifecycle API inherited by byte and text streams.
@@ -107,8 +107,8 @@ Passing the shared pointer by ``const`` reference keeps the stream alive during 
 transfer of ownership.
 Shared ownership keeps the object alive; it does not decide when all users have finished with it.
 
-When Writing Is Finished, Close the Owned Output
-================================================
+Graceful Output Stream Close
+============================
 
 After the final successful write, call :cpp:func:`OutputStream::close() <erbsland::stream::OutputStream::close>` on the
 output stream you own.
@@ -136,7 +136,7 @@ to the caller instead.
 .. erbsland-demo::
     :source: stream/Lifecycle/CloseGracefully.cpp
     :exec: stream/lifecycle --demo CloseGracefully
-    :source-sha256: da2ef6d9c12a0b3343010c70972de9f28c90f0079dc6302951d9d8fbc389f17c
+    :sha256: 4d1c9b2fdc413ad0c14f1e77b3916395d476eae9c9e0dc707a3edde7d3044a69
 
 .. code-block:: cpp
 
@@ -167,16 +167,18 @@ to the caller instead.
         el::io::printLine("Final state Closed: "_el, output->state() == el::StreamState::Closed);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Orchestra score closed safely.
-    Final state Closed: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOrchestra score closed safely.
+        Final state Closed: true␛[0m
 
 .. erbsland-demo-end::
 
-Continue a Slow Close Within Your Application Deadline
-======================================================
+Close Timeouts, Retries, and Application Deadlines
+==================================================
 
 A :cpp:member:`Timeout <erbsland::stream::StreamCloseStatus::Timeout>` result means that this one bounded wait ended
 before graceful close completed.
@@ -202,7 +204,7 @@ The owning caller keeps the close alive for up to three attempts, then aborts on
 .. erbsland-demo::
     :source: stream/Lifecycle/ContinueCloseAfterTimeout.cpp
     :exec: stream/lifecycle --demo ContinueCloseAfterTimeout
-    :source-sha256: 5f18a0dc21b2523bb2192e8db4962b36c141fe79a338e5d1fc52fca86d24570c
+    :sha256: 527bf0d5e663a3f250ed9c7eff739ad37de480dad422851c1a949abab4fe5960
 
 .. code-block:: cpp
 
@@ -236,16 +238,18 @@ The owning caller keeps the close alive for up to three attempts, then aborts on
         throw el::RuntimeError{"The orchestra score remained in closing for too long."_el};
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Close is still in progress; check cancellation and progress.
-    Score closed after 2 attempts.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mClose is still in progress; check cancellation and progress.
+        Score closed after 2 attempts.␛[0m
 
 .. erbsland-demo-end::
 
-Abort Work That Must End Now
-============================
+Immediate Stream Abort and Discarded Data
+=========================================
 
 Call :cpp:func:`OutputStream::abort() <erbsland::stream::OutputStream::abort>` or
 :cpp:func:`InputStream::abort() <erbsland::stream::InputStream::abort>` when the work has been cancelled or its result
@@ -269,7 +273,7 @@ discards.
 .. erbsland-demo::
     :source: stream/Lifecycle/AbortPendingOutput.cpp
     :exec: stream/lifecycle --demo AbortPendingOutput
-    :source-sha256: 6bbf3f3aaf656e2f587c97f6b408b3249b11f52f7e3eb4a755c471c958a0258d
+    :sha256: 86663417db39356750a7a811682a21c2b74c4c2402180b24020a59890a527057
 
 .. code-block:: cpp
 
@@ -293,17 +297,19 @@ discards.
         el::io::printLine("Bytes after abort: "_el, scriptedOutput->bytes().size());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Bytes before abort: 4
-    Stream closed: true
-    Bytes after abort: 0
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBytes before abort: 4
+        Stream closed: true
+        Bytes after abort: 0␛[0m
 
 .. erbsland-demo-end::
 
-Discard a Stream After a Native Failure
-=======================================
+Native Stream Failures and Replacement
+======================================
 
 A timeout is expected bounded flow control and leaves a stream usable.
 A native read, write, flush, close, or positioning failure is different: the affected operation throws
@@ -329,7 +335,7 @@ It neither retries the write nor calls ``abort()``: after handling the error, it
 .. erbsland-demo::
     :source: stream/Lifecycle/ObserveFailedState.cpp
     :exec: stream/lifecycle --demo ObserveFailedState
-    :source-sha256: ef962be836d11e711cf9bcf7d9015fc50315de341320765ceb47a8e57859d471
+    :sha256: a3bcaf3597697f95e789628d7e711c2fadd118ac375278b5658e66a221676272
 
 .. code-block:: cpp
 
@@ -355,9 +361,12 @@ It neither retries the write nor calls ``abort()``: after handling the error, it
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Error: Failed to write the scripted stream.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mError: Failed to write the scripted stream.
+        State Failed: true␛[0m
 
 .. erbsland-demo-end::

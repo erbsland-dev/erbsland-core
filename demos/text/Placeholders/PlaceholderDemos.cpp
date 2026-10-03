@@ -1,11 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "PlaceholderDemos.hpp"
 
-#include <erbsland/system/EnvironmentVariables.hpp>
-#include <erbsland/text/placeholder/Replacer.hpp>
-#include <erbsland/text/placeholder/ReplacerError.hpp>
+#include <erbsland/EnvironmentVariables.hpp>
+#include <erbsland/placeholder/EscapeMode.hpp>
+#include <erbsland/placeholder/Replacer.hpp>
+#include <erbsland/placeholder/ReplacerError.hpp>
+#include <erbsland/placeholder/ReplacerOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

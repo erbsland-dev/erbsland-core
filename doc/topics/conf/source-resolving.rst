@@ -60,7 +60,7 @@ subdirectories.
 .. erbsland-demo::
     :source: conf/SourceResolving/DefaultFileResolver.cpp
     :exec: conf/source_resolving --demo DefaultFileResolver
-    :source-sha256: f816909ae784273b360e418f2cc652c3f87ee056ed51aa798f51b873a0ce7783
+    :sha256: 65335cfbe57c0f41f94c5fe6658a38bcb1fe6e715cbe798f9ae250dba9394851
 
 .. code-block:: cpp
 
@@ -70,7 +70,7 @@ subdirectories.
     /// several regular files; the resolver sorts them before the parser processes their contents.
     void defaultFileResolver() {
         auto temporaryOptions = el::PathTempDirectoryOptions{};
-        temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpLength{8U});
+        temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpCount{8U});
         const auto temporary =
             el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
         const auto root = temporary->path();
@@ -98,15 +98,17 @@ subdirectories.
         el::io::printLine("Observers: "_el, document->getIntegerOrThrow("team.observers"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Forest: Parque Nacional da Tijuca
-    Observers: 8
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mForest: Parque Nacional da Tijuca
+        Observers: 8␛[0m
 
 .. erbsland-demo-end::
 
-Wildcard results are sorted by resolved path before parsing.
+Wildcard results are sorted by resolved path before parsing, with files before subdirectories at each level.
 This makes a numbered layout such as ``01-base.elcl``, ``02-local.elcl`` predictable, although every included path must
 still contribute a valid part of the final ELCL document.
 An exact path must name a regular file; a wildcard that has no matches returns an empty list.
@@ -119,20 +121,18 @@ The supported file forms are:
 
     * - Feature
       - Accepted form
-    * - ``FilenameWildcard``
-      - One ``*`` in the filename, such as ``parts/*.elcl`` or ``node-*.elcl``.
+    * - ``Wildcards``
+      - ``*``, ``?``, and Core character sets in any component, such as ``parts/*/node-?.elcl``.
     * - ``RecursiveWildcard``
-      - One ``**`` directory element, such as ``profiles/**/*.elcl``.
+      - Whole-component ``**`` for zero or more directories, such as ``profiles/**/*.elcl``.
     * - ``AbsolutePaths``
       - A platform-native absolute include path.
     * - ``WindowsUNCPath``
-      - A Windows UNC path written with slash or backslash separators.
+      - A Windows UNC path written with slash separators, such as ``//server/share/config.elcl``.
     * - ``FileProtocol``
       - The optional ``file:`` prefix, as in ``file:defaults.elcl``.
 
 All five features are enabled on a newly created resolver.
-Path separators are normalized, but wildcard syntax is intentionally small: a filename accepts at most one ``*``, and
-``**`` must occupy a complete directory element.
 The access check remains the authority for whether a resolved path lies inside the allowed area.
 
 Restrict Accepted File Syntax
@@ -146,7 +146,7 @@ Create a shared ``FileSourceResolver``, disable every form the contract does not
 .. erbsland-demo::
     :source: conf/SourceResolving/ConfigureFileResolver.cpp
     :exec: conf/source_resolving --demo ConfigureFileResolver
-    :source-sha256: 370abf5304aaaf385033d4d768f75ce6e2c64a55c7c36d3a886185f0bd538cce
+    :sha256: d8bad0785585786d0d204738a4563bab7d8343e3e4d60b7ed94afab079c28427
 
 .. code-block:: cpp
 
@@ -157,7 +157,7 @@ Create a shared ``FileSourceResolver``, disable every form the contract does not
     /// features disabled.
     void configureFileResolver() {
         auto temporaryOptions = el::PathTempDirectoryOptions{};
-        temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpLength{8U});
+        temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpCount{8U});
         const auto temporary =
             el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
         const auto root = temporary->path();
@@ -172,7 +172,7 @@ Create a shared ``FileSourceResolver``, disable every form the contract does not
         // Accept only exact relative paths without protocol prefixes or wildcards.
         const auto resolver = el::conf::FileSourceResolver::create();
         resolver->disable(el::conf::FileSourceResolver::RecursiveWildcard);
-        resolver->disable(el::conf::FileSourceResolver::FilenameWildcard);
+        resolver->disable(el::conf::FileSourceResolver::Wildcards);
         resolver->disable(el::conf::FileSourceResolver::AbsolutePaths);
         resolver->disable(el::conf::FileSourceResolver::WindowsUNCPath);
         resolver->disable(el::conf::FileSourceResolver::FileProtocol);
@@ -183,10 +183,12 @@ Create a shared ``FileSourceResolver``, disable every form the contract does not
         el::io::printLine("Region: "_el, document->getTextOrThrow("survey.region"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Region: Mata Atlântica
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRegion: Mata Atlântica␛[0m
 
 .. erbsland-demo-end::
 
@@ -214,7 +216,7 @@ through this resolver.
 .. erbsland-demo::
     :source: conf/SourceResolving/CustomResolver.cpp
     :exec: conf/source_resolving --demo CustomResolver
-    :source-sha256: 299cd0985036e29499de6c92b19a2c596b2cc2deff722cc09bdb07137df40f44
+    :sha256: 5f6eac491ea7e0d5becf08f34b784038a83fe1ab8de1e0764616d6617c9c316f
 
 .. code-block:: cpp
 
@@ -245,7 +247,7 @@ through this resolver.
     /// Install a custom source resolver for application-specific include descriptors.
     void customResolver() {
         auto temporaryOptions = el::PathTempDirectoryOptions{};
-        temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpLength{8U});
+        temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpCount{8U});
         const auto temporary =
             el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
         const auto root = temporary->path();
@@ -263,10 +265,12 @@ through this resolver.
         el::io::printLine("Forest: "_el, document->getTextOrThrow("survey.forest"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Forest: Floresta Nacional de Ipanema
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mForest: Floresta Nacional de Ipanema␛[0m
 
 .. erbsland-demo-end::
 

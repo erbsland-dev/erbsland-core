@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteBlockLiteral.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <array>
 #include <cstddef>
@@ -19,7 +27,7 @@ void creatingBlocks() {
     static constexpr auto compiledSkills = el::ByteBlockLiteral::fromValues<34U, 55U, 89U>();
 
     // Create blocks with a repeated value and with individual skill bytes.
-    const auto emptySlots = el::ByteBlock{el::ByteLength{4U}, el::Byte{0U}};
+    const auto emptySlots = el::ByteBlock{el::ByteCount{4U}, el::Byte{0U}};
     const auto learnedSkills = el::ByteBlock{el::Byte{1U}, el::Byte{3U}, el::Byte{8U}};
 
     // Copy fixed arrays, borrowed spans, and standard vectors into owned blocks.

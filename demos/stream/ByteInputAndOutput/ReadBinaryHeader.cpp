@@ -1,6 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/String.hpp>
 #include <StreamDemoSupport.hpp>
 
 #include <exception>
@@ -18,7 +25,7 @@ void readBinaryHeader() {
 /// `Data`, `Finished`, and `Timeout` are expected result states, while a `StreamError` reports a failed source.
 void inspectBinaryHeader(el::ByteInputStream &input) {
     try {
-        const auto result = input.readExact(el::ByteLength{4U});
+        const auto result = input.readExact(el::ByteCount{4U});
 
         if (result.isTimeout()) {
             el::io::printLine("The geometry-file header is temporarily unavailable."_el);

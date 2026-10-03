@@ -20,8 +20,8 @@ This page introduces placeholder expressions, their sources and filters, and the
 The following pages show how to :doc:`extend_placeholders` with application providers and
 :doc:`customize_placeholder_syntax` for a particular text format.
 
-A Small Expression in Ordinary Text
-===================================
+Placeholder Expression Syntax
+=============================
 
 The default expression looks like ``${var:movement|upper}``.
 The ``${`` and ``}`` mark its boundaries.
@@ -43,8 +43,8 @@ The same expression style also appears in quoted ELCL configuration text.
 There, :doc:`/topics/conf/placeholders` explains when the configuration parser expands it and how ELCL escaping applies.
 The standalone replacer on this page works on an ordinary :cpp:type:`String <erbsland::text::String>`.
 
-Replace a Label
-===============
+Registering Sources and Replacing Placeholders
+==============================================
 
 Create a replacer, register at least one source, and pass it the text to complete.
 Here the application owns a small variable map and enables the built-in text filters.
@@ -52,10 +52,9 @@ The same replacer can process more than one related label.
 
 .. erbsland-demo::
     :source: text/Placeholders/PlaceholderDemos.cpp
-    :function-blocks: replaceGalleryLabel
-    :function-blocks-sha256: 6a2ac04f2bf96dddfe8bf42e1a447415ac7e78bc67a7b7c7c9aa6b686f7f9765
+    :show: f:replaceGalleryLabel
     :exec: text/text_placeholders --demo ReplaceGalleryLabel
-    :source-sha256: 16fb33a7e417b945628738d032f02b150acb8175e2921395aaa0bf4a98f324d0
+    :sha256: e87293452f472e1d338626a31065bee7acb46f917d1698dcbf1285f988984306
 
 .. code-block:: cpp
 
@@ -68,10 +67,12 @@ The same replacer can process more than one related label.
         el::io::printLine(label);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Gallery: Ιμπρεσιονισμός (ΙΜΠΡΕΣΙΟΝΙΣΜΌΣ)
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mGallery: Ιμπρεσιονισμός (ΙΜΠΡΕΣΙΟΝΙΣΜΌΣ)␛[0m
 
 .. erbsland-demo-end::
 
@@ -82,11 +83,11 @@ The error includes a category and, when available, a zero-based Unicode code-poi
 
 A newly constructed replacer has no sources or filters.
 Even ``validate()`` and ``replace()`` require at least one registered source; without one, they raise
-:cpp:class:`LogicError <erbsland::err::LogicError>`.
+:cpp:class:`LogicFailure <erbsland::err::LogicFailure>`.
 Registering a filter alone cannot make an expression useful because every expression starts with a source.
 
-Sources Answer Requests
-=======================
+Variable and Environment Placeholder Sources
+============================================
 
 A *source* decides where a value comes from.
 The built-in ``var`` source reads an application-supplied map.
@@ -105,10 +106,9 @@ Without the flag, a missing environment variable yields the literal text ``undef
 
 .. erbsland-demo::
     :source: text/Placeholders/PlaceholderDemos.cpp
-    :function-blocks: useBuiltInProviders
-    :function-blocks-sha256: 710fe262e1a54494c320d10bbc085071a37814924b1446b1d48cd367a8fb245a
+    :show: f:useBuiltInProviders
     :exec: text/text_placeholders --demo UseBuiltInProviders
-    :source-sha256: 16fb33a7e417b945628738d032f02b150acb8175e2921395aaa0bf4a98f324d0
+    :sha256: a14f08cd2c1f31091be8d7ee47a296e38a6e81d63cce0ed0774f837235428773
 
 .. code-block:: cpp
 
@@ -125,11 +125,13 @@ Without the flag, a missing environment variable yields the literal text ``undef
         environment.removeOrThrow("ERBSLAND_DEMO_ART_MOVEMENT"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Movement: Κυβισμός
-    Next movement: Ντανταϊσμός
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMovement: Κυβισμός
+        Next movement: Ντανταϊσμός␛[0m
 
 .. erbsland-demo-end::
 
@@ -137,8 +139,8 @@ The ``env`` source normally removes control and format characters other than tab
 Its ``,unsafe_raw`` flag returns the raw environment text when that is genuinely required.
 The built-in sources and their lookup rules are described in :doc:`built_in_sources`.
 
-Filters Shape the Result
-========================
+Filter Chains and Literal Replacement Values
+============================================
 
 A *filter* receives the source text and returns new text.
 In ``${var:movement|trim|upper}``, ``trim`` removes surrounding whitespace, then ``upper`` converts the trimmed result.
@@ -154,8 +156,8 @@ The replacement value is inserted literally.
 If a source returns ``${var:other}``, the replacer does not scan that returned text a second time.
 This makes the set of requested lookups visible in the original label.
 
-When an Expression Fails
-========================
+Strict and Tolerant Replacement and Validation
+==============================================
 
 While editing a draft, keeping an unresolved expression can be more useful than stopping at the first problem.
 ``replace()`` preserves a failed expression exactly as written and continues to later expressions.

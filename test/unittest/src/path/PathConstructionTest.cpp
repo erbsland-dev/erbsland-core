@@ -3,7 +3,7 @@
 
 #include "PathTestHelper.hpp"
 
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

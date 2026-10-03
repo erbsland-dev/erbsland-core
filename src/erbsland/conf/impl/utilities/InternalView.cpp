@@ -9,7 +9,9 @@
 
 namespace erbsland::conf::impl {
 
-InternalView::InternalView(const text::String &name, const Value &value, PrivateTag) noexcept {
+using namespace text;
+
+InternalView::InternalView(const String &name, const Value &value, PrivateTag) noexcept {
     _values.emplace_back(name, value);
 }
 
@@ -17,51 +19,51 @@ auto InternalView::create() noexcept -> InternalViewPtr {
     return std::make_shared<InternalView>(PrivateTag{});
 }
 
-auto InternalView::create(const text::String &name, const Value &value) noexcept -> InternalViewPtr {
+auto InternalView::create(const String &name, const Value &value) noexcept -> InternalViewPtr {
     return std::make_shared<InternalView>(name, value, PrivateTag{});
 }
 
-void InternalView::removeValue(const text::String &name) noexcept {
+void InternalView::removeValue(const String &name) noexcept {
     _values.erase(
         std::ranges::remove_if(_values, [&](const auto &pair) -> auto { return pair.first == name; }).begin(),
         _values.end());
 }
 
-void InternalView::setValue(const text::String &name, const Value &value) noexcept {
+void InternalView::setValue(const String &name, const Value &value) noexcept {
     removeValue(name);
     _values.emplace_back(name, value);
 }
 
-void InternalView::setValue(const text::String &name, const text::String &value) noexcept {
+void InternalView::setValue(const String &name, const String &value) noexcept {
     removeValue(name);
     _values.emplace_back(name, value);
 }
 
-void InternalView::setValue(const text::String &name, const InternalViewPtr &value) noexcept {
+void InternalView::setValue(const String &name, const InternalViewPtr &value) noexcept {
     removeValue(name);
     _values.emplace_back(name, value);
 }
 
-void InternalView::setUnsafeText(const text::String &name, const text::String &text, const text::String &textIfEmpty) {
+void InternalView::setUnsafeText(const String &name, const String &text, const String &textIfEmpty) {
     if (text.isEmpty()) {
         if (textIfEmpty.isEmpty()) {
-            setValue(name, text::String{"<empty>"_el});
+            setValue(name, "<empty>"_el);
             return;
         }
         setValue(name, textIfEmpty);
     } else {
-        const auto safeText = text.toEscaped(text::EscapeFormat::Display)
-                                  .truncated(unit::CpLength::fromSizeT(200), text::TruncateMode::Middle, "…"_el);
-        setValue(name, text::StringFormat{"\"{}\""_el}.build(safeText));
+        const auto safeText = text.toEscaped(EscapeFormat::Display)
+                                  .truncated(unit::CpCount::fromSizeT(200), TruncateMode::Middle, "…"_el);
+        setValue(name, StringFormat{"\"{}\""_el}.build(safeText));
     }
 }
 
-void InternalView::setValue(const text::String &name, const bool value) noexcept {
-    setValue(name, text::String{value ? "true"_el : "false"_el});
+void InternalView::setValue(const String &name, const bool value) noexcept {
+    setValue(name, String{value ? "true"_el : "false"_el});
 }
 
-auto InternalView::toString(const std::size_t indent) const noexcept -> text::String {
-    text::StringEditor result;
+auto InternalView::toString(const std::size_t indent) const noexcept -> String {
+    StringEditor result;
     for (auto const &line : toLines(indent)) {
         result.append(line);
         result.append("\n"_el);
@@ -69,23 +71,22 @@ auto InternalView::toString(const std::size_t indent) const noexcept -> text::St
     return result;
 }
 
-auto InternalView::toLines(const std::size_t indent) const noexcept -> text::StringList {
-    text::StringList lines;
+auto InternalView::toLines(const std::size_t indent) const noexcept -> StringList {
+    StringList lines;
     lines.reserve(unit::ItemCount::fromSizeT(_values.size()));
-    text::StringEditor indentEditor;
-    indentEditor.append(U' ', unit::CpLength::fromSizeT(indent));
-    const text::String indentString = indentEditor;
+    StringEditor indentEditor;
+    indentEditor.append(U' ', unit::CpCount::fromSizeT(indent));
+    const String indentString = indentEditor;
     for (auto const &[name, value] : _values) {
         std::visit(
             [&]<typename VisitedType>(VisitedType const &visitedValue) -> void {
                 using DecayType = std::decay_t<VisitedType>;
                 if constexpr (std::is_same_v<DecayType, InternalViewPtr>) {
-                    lines.append(text::StringFormat{"{}{}:"_el}.build(indentString, name)); // parent heading
-                    auto childLines = visitedValue->toLines(indent + 2);                    // recurse + flatten
+                    lines.append(StringFormat{"{}{}:"_el}.build(indentString, name)); // parent heading
+                    auto childLines = visitedValue->toLines(indent + 2);              // recurse + flatten
                     lines.append(childLines);
-                } else if constexpr (std::is_same_v<DecayType, text::String>) {
-                    lines.append(
-                        text::StringFormat{"{}{}: {}"_el}.build(indentString, name, visitedValue)); // leaf entry
+                } else if constexpr (std::is_same_v<DecayType, String>) {
+                    lines.append(StringFormat{"{}{}: {}"_el}.build(indentString, name, visitedValue)); // leaf entry
                 }
             },
             value);

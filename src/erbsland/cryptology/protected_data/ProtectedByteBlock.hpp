@@ -6,7 +6,7 @@
 
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteSpan.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <functional>
 
@@ -54,8 +54,7 @@ public:
     [[nodiscard]] auto unprotect() const -> mem::ByteBlock;
     /// Invoke a callback with an authenticated temporary plaintext view.
     /// The temporary is securely erased before this method returns or propagates an exception.
-    /// @param callback The callback to invoke exactly once.
-    /// @throws err::ParameterError If the callback is empty.
+    /// @param callback The callback to invoke exactly once. Must not be empty.
     /// @throws CryptologyError If the current application cannot authenticate or decrypt the envelope.
     void withUnprotectedData(const UnprotectedDataFn &callback) const;
 
@@ -65,11 +64,11 @@ public: // tests
 
 public: // accessors
     /// Get the plaintext byte length without decrypting the block.
-    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteLength { return _byteLength; }
+    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteCount { return _byteLength; }
 
 private:
-    mem::ByteBlock _envelope;                               ///< Provider-owned encrypted and authenticated envelope.
-    unit::ByteLength _byteLength{unit::ByteLength::zero()}; ///< Authenticated plaintext length metadata.
+    mem::ByteBlock _envelope;                             ///< Provider-owned encrypted and authenticated envelope.
+    unit::ByteCount _byteLength{unit::ByteCount::zero()}; ///< Authenticated plaintext length metadata.
 };
 
 }

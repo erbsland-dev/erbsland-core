@@ -4,7 +4,7 @@
 #include "../engine/MockStringMatch.hpp"
 #include "../StringHelper.hpp"
 
-#include <erbsland/err/ParameterError.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/re/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -133,15 +133,15 @@ public:
         groups.emplace_back(0, CaptureRange{0, 3}, String{});
         const auto match = std::make_shared<MockStringMatch>(std::move(groups), text);
 
-        REQUIRE_THROWS_AS(el::err::ParameterError, match->content(1));
-        REQUIRE_THROWS_AS(el::err::ParameterError, match->content("missing"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, match->begin(1));
-        REQUIRE_THROWS_AS(el::err::ParameterError, match->begin("missing"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, match->end(1));
-        REQUIRE_THROWS_AS(el::err::ParameterError, match->end("missing"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, match->range(1));
-        REQUIRE_THROWS_AS(el::err::ParameterError, match->group(1));
-        REQUIRE_THROWS_AS(el::err::ParameterError, match->range("missing"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, match->group("missing"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, match->content(1));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, match->content("missing"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, match->begin(1));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, match->begin("missing"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, match->end(1));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, match->end("missing"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, match->range(1));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, match->group(1));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, match->range("missing"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, match->group("missing"_el));
     }
 };

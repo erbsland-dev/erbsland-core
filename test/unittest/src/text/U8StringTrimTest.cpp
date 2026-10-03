@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/CharSet.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ByteRange.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -17,9 +17,8 @@
 #include <string_view>
 
 using namespace el::text::literals;
-
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteRange;
 using namespace el::text;
 
@@ -103,8 +102,8 @@ public:
     void testNestedViewTrimKeepsCorrectOrigin() {
 
         const auto text = StringEditor{"xx--value--yy"_el};
-        const auto first = String{text}.slice(ByteRange{ByteIndex{1U}, ByteLength{11U}});
-        const auto second = first.slice(ByteRange{ByteIndex{1U}, ByteLength{9U}});
+        const auto first = String{text}.slice({ByteIndex{1U}, ByteCount{11U}});
+        const auto second = first.slice({ByteIndex{1U}, ByteCount{9U}});
 
         REQUIRE_EQUAL(first, "x--value--y"_el);
         REQUIRE_EQUAL(second, "--value--"_el);

@@ -4,7 +4,11 @@
 #include "ManagerDemoWriters.hpp"
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogManagerOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <memory>
 #include <utility>

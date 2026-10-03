@@ -24,7 +24,7 @@ Code Style
 
 All example code must follow the Erbsland code style.
 
-Whenever possible, format code automatically using the ``pre_commit`` utility to ensure a consistent appearance across
+Whenever possible, format code automatically using the ``pre-commit`` utility to ensure a consistent appearance across
 the documentation.
 
 In General
@@ -39,8 +39,15 @@ For Demos
 ---------
 
 * Add an API documentation block (``///``) that describes the API, concept, or class being demonstrated.
+  Program entry points and their forwarding demo functions need no parameter or return-value documentation;
+  describe the demonstrated concept only when it adds useful context.
+* Do not use ``@tested``, ``@notest``, or ``@needtest`` in any demo or documentation example, including classes and
+  helper functions. These markers belong only to library sources in ``src/erbsland``; in examples they add maintenance
+  metadata that distracts readers from the demonstrated API.
 * Everything **before the first** ``///`` line gets cut-off in the documentation.
   Constants, functions, declarations that only add noise can be put in front to hide them.
+  Keep declarations essential to understanding ownership or execution after the first documentation line so readers
+  can see them.
 * Everything **after** the ``namespace demo { ... }`` block gets cut-off in the documentation.
 * This documentation is reused in the generated documentation and should be useful when read independently from
   the surrounding text.
@@ -114,3 +121,5 @@ Do not hesitate to use Unicode characters and emojis in example code when they i
 engaging.
 
 Well-placed Unicode text often makes examples feel more realistic and memorable.
+
+See :doc:`demo_integration` for synchronized source excerpts, selectors, captured output, and full-source views.

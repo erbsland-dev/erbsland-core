@@ -8,7 +8,7 @@
 
 #include "../utilities/InternalError.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../text/StringFormat.hpp"
 
 #include <algorithm>
@@ -44,20 +44,16 @@ auto Rules::isSecretErrorValue(const conf::ValuePtr &root, const ConfError &erro
     if (root == nullptr || !error.context().namePath().has_value()) {
         return false;
     }
-    try {
-        auto pending = std::vector<conf::ValuePtr>{root};
-        while (!pending.empty()) {
-            const auto value = pending.back();
-            pending.pop_back();
-            if (value->namePath() == *error.context().namePath()) {
-                return value->isSecret();
-            }
-            for (const auto &child : *value) {
-                pending.emplace_back(child);
-            }
+    auto pending = std::vector<conf::ValuePtr>{root};
+    while (!pending.empty()) {
+        const auto value = pending.back();
+        pending.pop_back();
+        if (value->namePath() == *error.context().namePath()) {
+            return value->isSecret();
         }
-    } catch (...) {
-        return false;
+        for (const auto &child : *value) {
+            pending.emplace_back(child);
+        }
     }
     return false;
 }
@@ -68,7 +64,7 @@ auto Rules::empty() const -> bool {
 
 auto Rules::addRule(const RulePtr &rule) -> void {
     if (rule == nullptr) {
-        throw err::ParameterError{"Cannot add a null rule"_el, "rule"_el};
+        throw err::ParameterFailure{"Cannot add a null rule"_el, "rule"_el};
     }
     auto parentRule = _root;                 // the parent rule where the given one should be added.
     const auto &path = rule->ruleNamePath(); // The original name path of the rule.
@@ -88,7 +84,7 @@ auto Rules::addRule(const RulePtr &rule) -> void {
 
 auto Rules::addAlternativeRule(const RulePtr &rule) -> void {
     if (rule == nullptr) {
-        throw err::ParameterError{"Cannot add a null rule"_el, "rule"_el};
+        throw err::ParameterFailure{"Cannot add a null rule"_el, "rule"_el};
     }
     auto parentRule = _root;                 // the parent rule where the given one should be added.
     const auto &path = rule->ruleNamePath(); // The original name path of the rule.
@@ -159,12 +155,14 @@ auto Rules::ruleForNamePath(const NamePath &path, std::size_t maxDepth) const ->
 auto internalView(const Rules &rule) -> InternalViewPtr {
     return internalView(rule._root);
 }
+
 auto internalView(const RulesPtr &rule) -> InternalViewPtr {
     if (rule == nullptr) {
         return InternalView::create();
     }
     return internalView(*rule);
 }
+
 #endif
 
 }

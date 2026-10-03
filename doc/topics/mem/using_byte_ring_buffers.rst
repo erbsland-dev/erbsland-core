@@ -53,7 +53,7 @@ integer fields.
 .. erbsland-demo::
     :source: mem/RingBuffer/CreatingBuffers.cpp
     :exec: mem/ring_buffer --demo CreatingBuffers
-    :source-sha256: b1c81e93004ba8bf28e58a22773998629a38a6fe8c137d0290c9a95bf059ba9d
+    :sha256: ca51f431fbf19195cb85a6d905015603a06736044f270e8d2cc9f5a6e9efee86
 
 .. code-block:: cpp
 
@@ -64,13 +64,13 @@ integer fields.
     /// a fixed ring; two capacities allow growth up to a hard limit.
     void creatingBuffers() {
         // Use a fixed ring when the queue must stay within a strict memory budget.
-        const auto fixedSamples = el::RingBuffer{el::ByteLength{8U}};
+        const auto fixedSamples = el::RingBuffer{el::ByteCount{8U}};
 
         // Give a growable ring a modest initial allocation and an explicit ceiling.
-        const auto growingSamples = el::RingBuffer{el::ByteLength{4U}, el::ByteLength{32U}};
+        const auto growingSamples = el::RingBuffer{el::ByteCount{4U}, el::ByteCount{32U}};
 
         // Choose ByteRingBuffer when the stream contains structured integer fields.
-        auto structuredSamples = el::ByteRingBuffer{el::ByteLength{8U}, el::ByteLength{32U}};
+        auto structuredSamples = el::ByteRingBuffer{el::ByteCount{8U}, el::ByteCount{32U}};
         structuredSamples.setEndianness(el::Endianness::Big);
 
         el::io::printLine("Barriera          : Secca azzurra"_el);
@@ -84,15 +84,17 @@ integer fields.
             structuredSamples.endianness() == el::Endianness::Big);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Barriera          : Secca azzurra
-    Fixed capacity    : 8
-    Fixed maximum     : 8
-    Growing capacity  : 4
-    Growing maximum   : 32
-    Structured big-endian: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBarriera          : Secca azzurra
+        Fixed capacity    : 8
+        Fixed maximum     : 8
+        Growing capacity  : 4
+        Growing maximum   : 32
+        Structured big-endian: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -115,7 +117,7 @@ Reading creates space for subsequent writes, which is the normal steady-state cy
 .. erbsland-demo::
     :source: mem/RingBuffer/UnderstandingGrowth.cpp
     :exec: mem/ring_buffer --demo UnderstandingGrowth
-    :source-sha256: 55611f5aea4e5ea54437318d3926a8ae5e6896859a6210b804095f04e55dafe0
+    :sha256: 292ea4d762738555069b7eb3337f66717d412b425a56fb2d70603059e38639f1
 
 .. code-block:: cpp
 
@@ -125,17 +127,17 @@ Reading creates space for subsequent writes, which is the normal steady-state cy
     /// a growable ring can reorganize that queued data into a larger allocation
     /// without changing the order observed by readers.
     void understandingGrowth() {
-        auto samples = el::RingBuffer{el::ByteLength{4U}, el::ByteLength{8U}};
+        auto samples = el::RingBuffer{el::ByteCount{4U}, el::ByteCount{8U}};
 
         // Fill most of the initial storage and consume the two oldest samples.
         const auto firstWrite = samples.write(el::ByteArray{el::Byte{1U}, el::Byte{2U}, el::Byte{3U}}.span());
-        const auto firstRead = samples.read(el::ByteLength{2U});
+        const auto firstRead = samples.read(el::ByteCount{2U});
 
         // This write wraps and then grows the ring, while preserving FIFO order.
         const auto secondWrite =
             samples.write(el::ByteArray{el::Byte{4U}, el::Byte{5U}, el::Byte{6U}, el::Byte{7U}}.span());
         const auto capacityAfterGrowth = samples.capacity();
-        const auto remaining = samples.read(el::ByteLength::infinite());
+        const auto remaining = samples.read(el::ByteCount::infinite());
 
         el::io::printLine("Comunità          : Coralli e castagnole"_el);
         el::io::printLine("First write/read  : "_el, firstWrite.toSizeT(), " / "_el, firstRead.length().toSizeT());
@@ -144,14 +146,16 @@ Reading creates space for subsequent writes, which is the normal steady-state cy
         el::io::printLine("FIFO result       : "_el, el::ByteFormat::separated(), remaining);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Comunità          : Coralli e castagnole
-    First write/read  : 3 / 2
-    Second write      : 4
-    Grown capacity    : 8
-    FIFO result       : 03 04 05 06 07
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mComunità          : Coralli e castagnole
+        First write/read  : 3 / 2
+        Second write      : 4
+        Grown capacity    : 8
+        FIFO result       : 03 04 05 06 07␛[0m
 
 .. erbsland-demo-end::
 
@@ -180,7 +184,7 @@ Calling it while data remains queued leaves the ring unchanged, avoiding an impl
 .. erbsland-demo::
     :source: mem/RingBuffer/ManagingCapacity.cpp
     :exec: mem/ring_buffer --demo ManagingCapacity
-    :source-sha256: cd8087bd85a9e1341271a8a0423f523ecc4614f00e527e6696443a7559597118
+    :sha256: 94585eef9b1a562111c4f1b9a6a532cf761869fc94f2c8752aaa51269b8a9c3d
 
 .. code-block:: cpp
 
@@ -190,13 +194,13 @@ Calling it while data remains queued leaves the ring unchanged, avoiding an impl
     /// the hard limit for atomic writes. Reserving prepares capacity without adding
     /// data; clearing makes data unreadable but keeps the allocation for reuse.
     void managingCapacity() {
-        auto observations = el::RingBuffer{el::ByteLength{4U}, el::ByteLength{12U}};
+        auto observations = el::RingBuffer{el::ByteCount{4U}, el::ByteCount{12U}};
 
         // Reserve enough current capacity for an upcoming atomic observation.
-        const auto reserved = observations.reserveAdditional(el::ByteLength{7U});
+        const auto reserved = observations.reserveAdditional(el::ByteCount{7U});
         const auto reservedCapacity = observations.capacity();
-        const auto canWriteTwelve = observations.canWrite(el::ByteLength{12U});
-        const auto canWriteThirteen = observations.canWrite(el::ByteLength{13U});
+        const auto canWriteTwelve = observations.canWrite(el::ByteCount{12U});
+        const auto canWriteThirteen = observations.canWrite(el::ByteCount{13U});
 
         // Queue data, inspect state, then reuse and finally release excess capacity.
         const auto queued = observations.write(el::ByteArray{el::Byte{2U}, el::Byte{3U}, el::Byte{5U}}.span());
@@ -222,16 +226,19 @@ Calling it while data remains queued leaves the ring unchanged, avoiding an impl
         el::io::printLine("Shrunk capacity   : "_el, observations.capacity().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Monitoraggio      : Laguna corallina
-    Reservation       : yes
-    Reserved capacity : 12
-    Readable/available: 3 / 9
-    Can write 12 / 13 : yes / no
-    Empty after clear : yes
-    Shrunk capacity   : 4
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMonitoraggio      : Laguna corallina
+        Reservation       : yes
+        Reserved capacity : 12
+        Queued bytes      : 3
+        Readable/available: 3 / 9
+        Can write 12 / 13 : yes / no
+        Empty after clear : yes
+        Shrunk capacity   : 4␛[0m
 
 .. erbsland-demo-end::
 
@@ -249,7 +256,7 @@ Reading into a :cpp:type:`ByteSpan <erbsland::mem::ByteSpan>` copies as many que
 returns the transferred length.
 The other :cpp:func:`read() <erbsland::mem::RingBuffer::read>` overload consumes up to a chosen maximum into a new
 :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>`.
-The ``infinite()`` value of :cpp:type:`ByteLength <erbsland::unit::ByteLength>` is useful when you deliberately want all
+The ``infinite()`` value of :cpp:type:`ByteCount <erbsland::unit::ByteCount>` is useful when you deliberately want all
 currently buffered data.
 
 Neither read waits for more input.
@@ -259,7 +266,7 @@ retry later, or treat the short record as an error.
 .. erbsland-demo::
     :source: mem/RingBuffer/ReadingAndWritingBytes.cpp
     :exec: mem/ring_buffer --demo ReadingAndWritingBytes
-    :source-sha256: 7ddfb65ba97aba00bd7cd6f95c2cc9d277542c63d8b16c740b3b8350a8ef3766
+    :sha256: d8aed7893ecd7b480d2d28fe4cae8aeee5ef78bbe525155d1b662c16b73a1834
 
 .. code-block:: cpp
 
@@ -269,7 +276,7 @@ retry later, or treat the short record as an error.
     /// either queues a complete sequence or leaves the ring unchanged. Reads likewise
     /// consume either into caller-owned storage or into a new `ByteBlock`.
     void readingAndWritingBytes() {
-        auto current = el::RingBuffer{el::ByteLength{4U}, el::ByteLength{6U}};
+        auto current = el::RingBuffer{el::ByteCount{4U}, el::ByteCount{6U}};
 
         // Queue a complete observation and reject an atomic record that cannot fit.
         const auto first = el::ByteArray{el::Byte{10U}, el::Byte{20U}, el::Byte{30U}, el::Byte{40U}};
@@ -281,7 +288,7 @@ retry later, or treat the short record as an error.
         const auto prefixLength = current.read(el::ByteSpan{prefixStorage});
         const auto partialWrite =
             current.write(el::ByteArray{el::Byte{50U}, el::Byte{60U}, el::Byte{70U}, el::Byte{80U}}.span());
-        const auto remaining = current.read(el::ByteLength::infinite());
+        const auto remaining = current.read(el::ByteCount::infinite());
 
         el::io::printLine("Corrente          : Canale della barriera"_el);
         el::io::printLine("First write       : "_el, firstWrite.toSizeT());
@@ -291,15 +298,17 @@ retry later, or treat the short record as an error.
         el::io::printLine("Remaining FIFO    : "_el, el::ByteFormat::separated(), remaining);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Corrente          : Canale della barriera
-    First write       : 4
-    Atomic write      : no
-    Consumed prefix   : 2 bytes
-    Partial write     : 4
-    Remaining FIFO    : 1e 28 32 3c 46 50
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCorrente          : Canale della barriera
+        First write       : 4
+        Atomic write      : no
+        Consumed prefix   : 2 bytes
+        Partial write     : 4
+        Remaining FIFO    : 1e 28 32 3c 46 50␛[0m
 
 .. erbsland-demo-end::
 
@@ -323,7 +332,7 @@ type tags or record boundaries of its own.
 .. erbsland-demo::
     :source: mem/RingBuffer/ReadingAndWritingIntegers.cpp
     :exec: mem/ring_buffer --demo ReadingAndWritingIntegers
-    :source-sha256: 8159f1bf19104bdce940f0d200c996eb9e63afd60bfbe4c18d110951bd30440e
+    :sha256: c53f73283d3176a4e534743a15c9cd2e6211169aa7204572ad71899406d36cb2
 
 .. code-block:: cpp
 
@@ -333,7 +342,7 @@ type tags or record boundaries of its own.
     /// Writes are atomic at the hard capacity limit, and reads return an empty
     /// optional without consuming data when a complete value is unavailable.
     void readingAndWritingIntegers() {
-        auto measurements = el::ByteRingBuffer{el::ByteLength{4U}, el::ByteLength{8U}};
+        auto measurements = el::ByteRingBuffer{el::ByteCount{4U}, el::ByteCount{8U}};
         measurements.setEndianness(el::Endianness::Big);
 
         // Queue two complete fields in their stream order.
@@ -355,14 +364,16 @@ type tags or record boundaries of its own.
         el::io::printLine("Extra field       : "_el, el::BooleanFormat::yesNo(), missingValue.has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Rilevamento       : Giardino di corallo
-    Fields written    : yes
-    Temperature       : 245
-    Colony size       : 120000
-    Extra field       : no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRilevamento       : Giardino di corallo
+        Fields written    : yes
+        Temperature       : 245
+        Colony size       : 120000
+        Extra field       : no␛[0m
 
 .. erbsland-demo-end::
 

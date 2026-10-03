@@ -5,5 +5,7 @@
 #include "../../core/Definitions.hpp"
 
 namespace erbsland::text {
+
 class U8String;
+
 }

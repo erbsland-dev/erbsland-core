@@ -52,7 +52,7 @@ Parsing then follows this sequence:
 
 :cpp:class:`Application <erbsland::core::Application>` wraps this flow for normal command-line tools.
 It calls ``registerCommandLineOptions()``, parses the command line, displays help/version/error output when needed, and
-then calls your application ``main()`` only after parsing succeeds.
+then calls ``handleCommandLineOptions(values)`` and your application ``main()`` only after parsing succeeds.
 Use :cpp:class:`OptionManager <erbsland::options::OptionManager>` directly when you need to handle the result yourself.
 
 Command Line Syntax
@@ -112,8 +112,10 @@ Using Application
 
 Use :cpp:class:`Application <erbsland::core::Application>` for regular executables.
 Override ``initialize()`` for application metadata and terminal setup, override ``registerCommandLineOptions()`` to
-register the command line interface, and read ``optionValues()`` in ``main()``.
-When the user asks for help or version information, ``main()`` is not called.
+register the command line interface, and use ``handleCommandLineOptions(values)`` for option-dependent validation and
+setup.
+A procedural ``main()`` can also read ``optionValues()`` while performing its synchronous work.
+Help, version output, module overview, and parsing errors skip ``handleCommandLineOptions(values)`` and ``main()``.
 When parsing fails, :cpp:class:`Application <erbsland::core::Application>` renders the diagnostic and exits with an
 error code.
 
@@ -122,7 +124,7 @@ error code.
     :exec: option/option_application --help
     :exec-2: option/option_application --version
     :exec-3: option/option_application --instrument Prisma-7 --gain 4 cristal-azul
-    :source-sha256: 24a5eade0a60fa7eb85d01eb1045c8d475014ee84fe8dab9ed13c286737ae901
+    :sha256: 09f253006db3e576f6ed0a717306f255e59330ed6cb3cc4a9e5866bad37fecbb
 
 .. code-block:: cpp
 
@@ -151,17 +153,15 @@ error code.
             options->addOption({"-i"_el, "--instrument"_el, "instrument"_el})
                 .setType(el::OptionType::Text)
                 .setRequired()
-                .setHelpDescription("Name of the instrument that will perform the measurement."_el);
+                .setHelpTitle("Name of the instrument that will perform the measurement."_el);
             options->addOption({"-g"_el, "--gain"_el, "gain"_el})
                 .setType(el::OptionType::Integer)
                 .setDefaultValue(el::OptionInteger{2})
-                .setHelpDescription("Detector gain between 1 and 9."_el);
+                .setHelpTitle("Detector gain between 1 and 9."_el);
             options->addOption({"-d"_el, "--dark-frame"_el, "dark-frame"_el})
                 .setType(el::OptionType::Flag)
-                .setHelpDescription("Captures a dark frame before measuring the sample."_el);
-            options->addOption("sample"_el)
-                .setRequired()
-                .setHelpDescription("Sample placed in front of the instrument."_el);
+                .setHelpTitle("Captures a dark frame before measuring the sample."_el);
+            options->addOption("sample"_el).setRequired().setHelpTitle("Sample placed in front of the instrument."_el);
         }
         [[nodiscard]] auto main() -> el::ExitCode override {
             const auto values = optionValues();
@@ -180,45 +180,57 @@ error code.
         return app.run();
     }
 
-.. rubric:: ``$ option/option_application --help``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    Configures a short measurement with a bench spectrometer.
+        $ option/option_application --help
 
-    ␛[1mUsage:
-      ␛[22;92moption_application␛[39m ␛[90m[␛[96moptions␛[90m]␛[39m ␛[90m<␛[95msample␛[90m>
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[39;1mOptions:
-      ␛[22;93m-d␛[39m, ␛[96m--dark-frame␛[39m          Captures a dark frame before measuring the sample.
-      ␛[93m-g␛[39m, ␛[96m--gain␛[39m ␛[90m<␛[92minteger␛[90m>␛[39m      Detector gain between 1 and 9.
-      ␛[93m-h␛[39m, ␛[96m--help␛[39m                Display this help.
-      ␛[93m-i␛[39m, ␛[96m--instrument␛[39m ␛[90m<␛[92mvalue␛[90m>␛[39m  Name of the instrument that will perform the measurement.
-          ␛[90m<␛[95msample␛[90m>␛[39m              Sample placed in front of the instrument.
-          ␛[96m--version␛[39m             Display version information.
+        ␛[0mConfigures a short measurement with a bench spectrometer.
 
-    Please use the correct names from the manual and the research datasheet to select the
-    instruments and samples with the command line options.
+        ␛[1mUsage:
+          ␛[92;49m␛[22moption_application␛[39;49m ␛[90;49m[␛[96;49moptions␛[90;49m]␛[39;49m ␛[90;49m<␛[95;49msample␛[90;49m>
 
-.. rubric:: ``$ option/option_application --version``
+        ␛[39;49m␛[1mOptions:
+          ␛[93;49m␛[22m-d␛[39;49m, ␛[96;49m--dark-frame␛[39;49m          Captures a dark frame before measuring the sample.
+          ␛[93;49m-g␛[39;49m, ␛[96;49m--gain␛[39;49m ␛[90;49m<␛[92;49minteger␛[90;49m>␛[39;49m      Detector gain between 1 and 9.
+          ␛[93;49m-h␛[39;49m, ␛[96;49m--help␛[39;49m[=␛[90;49m<␛[92;49mkeyword␛[90;49m>␛[39;49m]    Display this help.
+          ␛[93;49m-i␛[39;49m, ␛[96;49m--instrument␛[39;49m ␛[90;49m<␛[92;49mvalue␛[90;49m>␛[39;49m  Name of the instrument that will perform the measurement.
+              ␛[90;49m<␛[95;49msample␛[90;49m>␛[39;49m              Sample placed in front of the instrument.
+              ␛[96;49m--version␛[39;49m             Display version information.
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        Please use the correct names from the manual and the research datasheet to select the
+        instruments and samples with the command line options.␛[0m
 
-    ␛[92mPrism Laboratory␛[39m 0.8.0
-      Author:   Erbsland DEV
-      License:  Apache-2.0
+.. erbsland-demo-run::
 
-.. rubric:: ``$ option/option_application --instrument Prisma-7 --gain 4 cristal-azul``
+    .. code-block:: console
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        $ option/option_application --version
 
-    instrument: Prisma-7
-    sample: cristal-azul
-    gain: 4
-    dark frame: no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[92;49mPrism Laboratory␛[39;49m 0.8.0
+          Author:   Erbsland DEV
+          License:  Apache-2.0␛[0m
+
+.. erbsland-demo-run::
+
+    .. code-block:: console
+
+        $ option/option_application --instrument Prisma-7 --gain 4 cristal-azul
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0minstrument: Prisma-7
+        sample: cristal-azul
+        gain: 4
+        dark frame: no␛[0m
 
 .. erbsland-demo-end::
 
@@ -243,7 +255,7 @@ buffers in place without changing their length.
 .. erbsland-demo::
     :source: option/ManualParsing/main.cpp
     :exec: option/option_manual_parsing
-    :source-sha256: f4a4abaae277484d4c26b91c768a867a69a95c62c017ec20dc4fc3645874e8ef
+    :sha256: f31b5d753dd2d4195be27c2e339e9a4d090a0323e5ae3d76baba1e6bdb065e54
 
 .. code-block:: cpp
 
@@ -260,15 +272,15 @@ buffers in place without changing their length.
         options->setApplicationInfo(info);
         options->setHelpTitle("Photometry Notebook"_el);
         options->setHelpDescription("Records a short note from a photometer measurement."_el);
-        options->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpDescription("Reduces progress output."_el);
+        options->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpTitle("Reduces progress output."_el);
         options->addOption({"-n"_el, "--note"_el, "note"_el})
             .setType(el::OptionType::Text)
             .setRequired()
-            .setHelpDescription("Text of the laboratory note."_el);
+            .setHelpTitle("Text of the laboratory note."_el);
         options->addOption({"-r"_el, "--repeat"_el, "repeat"_el})
             .setType(el::OptionType::Integer)
             .setDefaultValue(el::OptionInteger{1})
-            .setHelpDescription("Number of times to repeat the note in the report."_el);
+            .setHelpTitle("Number of times to repeat the note in the report."_el);
         return options;
     }
 
@@ -295,12 +307,14 @@ buffers in place without changing their length.
         return el::ExitCode::success();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    note: Lectura estable en lámpara azul
-    repetitions: 2
-    quiet: no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mnote: Lectura estable en lámpara azul
+        repetitions: 2
+        quiet: no␛[0m
 
 .. erbsland-demo-end::
 

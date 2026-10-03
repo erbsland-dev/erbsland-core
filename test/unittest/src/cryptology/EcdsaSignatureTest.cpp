@@ -4,11 +4,12 @@
 #include "CryptologyResponseReader.hpp"
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/keys/PublicKey.hpp>
-#include <erbsland/cryptology/x509/X509AlgorithmIdentifier.hpp>
-#include <erbsland/cryptology/x509/X509Certificate.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/PublicKey.hpp>
+#include <erbsland/TlsSignatureScheme.hpp>
+#include <erbsland/X509AlgorithmIdentifier.hpp>
+#include <erbsland/X509Certificate.hpp>
 
 using namespace el::cryptology;
 using namespace el::text::literals;
@@ -80,7 +81,11 @@ iI0aFcRkAiAlmiyenEKam1whV8N+Bi/5TJJQbrKEV4eRFZJNhHmQ9Q==
             "29bdb76d5fa741bfd70233cb3a66cc7d44beb3b0663d92a8136650478bcefb61ef182e155a54345a5e8e5e88f064e5bc9"
             "a525ab7f764dad3dae1468c2b419f3b62b9ba917d5e8c4fb1ec47404a3fc76474b2713081be9db4c00e043ada9fc4a3"));
         const auto signature = bytesFromHex("3006020101020101");
-        REQUIRE_THROWS_AS(el::err::ParseError, p384Key.verifySignature(sha256, {}, signature.span()));
+        REQUIRE_FALSE(p384Key.verifySignature(sha256, {}, signature.span()));
+        REQUIRE_THROWS_AS(
+            el::err::ParseError,
+            p384Key.verifyTlsCertificateVerifySignature(
+                TlsSignatureScheme::EcdsaSecp256r1Sha256, {}, signature.span()));
 
         const auto p256Key = PublicKey::fromDerOrThrow(bytesFromHex(
             "3059301306072a8648ce3d020106082a8648ce3d03010703420004"
@@ -183,9 +188,7 @@ private:
         REQUIRE(publicKey.verifySignature(algorithm, message.span(), signature.span()));
 
         auto modified = el::ByteBlockEditor{signature};
-        modified.set(
-            el::ByteIndex{modified.length().toSizeT() - 1U},
-            modified.get(el::ByteIndex{modified.length().toSizeT() - 1U}) ^ el::Byte{1U});
+        modified.xorAt(modified.lastIndex(), el::Byte{1U});
         REQUIRE_FALSE(publicKey.verifySignature(
             algorithm, message.span(), modified.slice(el::ByteIndex::zero(), modified.length()).span()));
     }

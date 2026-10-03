@@ -2,6 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCompressor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/CompressionFormat.hpp>
+#include <erbsland/CompressionLevel.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -10,7 +19,7 @@ namespace demo {
 /// The configured compressor can be reused for independent values. Its maximum
 /// compressed length includes the framing overhead of the selected format.
 void compressOneShot() {
-    const auto samples = el::ByteBlock{el::ByteBlockEditor{el::ByteLength{96U}, el::Byte{0x2aU}}};
+    const auto samples = el::ByteBlock{el::ByteBlockEditor{el::ByteCount{96U}, el::Byte{0x2aU}}};
     const auto rawCompressor =
         el::ByteCompressor{el::CompressionAlgorithm::Deflate, el::CompressionFormat::Raw, el::CompressionLevel::High};
     const auto coreCompressor =

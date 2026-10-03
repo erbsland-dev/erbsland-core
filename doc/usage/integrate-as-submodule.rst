@@ -46,7 +46,7 @@ Initialize all recorded dependencies after cloning a project:
     $ git submodule update --init --recursive
 
 Aggregate Erbsland Core Libraries
-============================
+=================================
 
 The project root only needs to know about the ``erbsland`` directory and its own targets:
 
@@ -112,9 +112,6 @@ repository:
     $ git -C erbsland/core fetch
     $ git -C erbsland/core switch --detach <tested-revision>
     $ git add erbsland/core
-
-Erbsland Core is currently alpha and may introduce intentional breaking API changes.
-Review the :doc:`/addendum/changelog` and run your complete test suite before recording a new revision.
 
 .. seealso::
 

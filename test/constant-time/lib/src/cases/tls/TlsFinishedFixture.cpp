@@ -1,16 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "TlsFinishedFixture.hpp"
 
-#include <erbsland/cryptology/HashAlgorithm.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementAlgorithm.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementPrivateKey.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/KeyAgreementAlgorithm.hpp>
+#include <erbsland/KeyAgreementPrivateKey.hpp>
+#include <erbsland/Random.hpp>
 
 namespace app::constant_time {
 
@@ -19,15 +18,22 @@ using namespace el::text::literals;
 TlsFinishedFixture::TlsFinishedFixture(
     [[maybe_unused]] el::Random &random, const bool population, el::HashAlgorithm algorithm) {
     using namespace erbsland::cryptology;
-    const auto keyBytes = el::ByteBuffer{el::ByteLength{32}, el::Byte{0x55U}};
+    const auto keyBytes = el::ByteBuffer{el::ByteCount{32}, el::Byte{0x55U}};
     const auto key = el::KeyAgreementPrivateKey::fromBytes(el::KeyAgreementAlgorithm::X25519, keyBytes.span());
     auto schedule = std::make_unique<ci::Tls13KeySchedule>(algorithm);
-    auto transcript = el::ByteBuffer{el::ByteLength{algorithm == el::HashAlgorithm::Sha2_256 ? 32U : 48U}};
+    auto transcriptLength = el::ByteCount{48U};
+    if (algorithm == el::HashAlgorithm::Sha2_256) {
+        transcriptLength = el::ByteCount{32U};
+    }
+    auto transcript = el::ByteBuffer{transcriptLength};
     schedule->initializeHandshake(key.agree(key.publicKey()), transcript.span());
     auto expected = el::ByteBuffer{schedule->finishedVerifyData(true, transcript.span()).span()};
     require(schedule->verifyFinished(true, transcript.span(), expected.span()));
-    const auto index = population ? expected.length().toSizeT() - 1 : 0;
-    expected.set(el::ByteIndex{index}, expected.get(el::ByteIndex{index}) ^ el::Byte{1U});
+    auto index = el::ByteIndex::zero();
+    if (population) {
+        index = expected.lastIndex();
+    }
+    expected.set(index, expected.get(index) ^ el::Byte{1U});
     require(!schedule->verifyFinished(true, transcript.span(), expected.span()));
     _schedule = std::move(schedule);
     _transcript = std::move(transcript);

@@ -7,8 +7,8 @@ Logging Overview
 
 Erbsland Core logging moves formatting and destination work away from application threads while bounding the memory used
 in between.
-Producers write immutable entries through named streams; the manager applies one configuration snapshot on its worker
-and delivers each accepted entry to matching writers.
+Your components write messages through named streams.
+The logging configuration decides which messages reach each destination and how they appear there.
 
 Choose a Setup
 ==============
@@ -31,12 +31,12 @@ Configure the Manager in Code
 lifecycle.
 It treats a configuration as a complete snapshot so routes and operational settings remain predictable.
 
-:doc:`configuring_line_format` covers patterns, timestamps, level and stream-name representations, and every
-rendering-time truncation mode.
+:doc:`configuring_line_format` covers patterns, timestamps, level and stream-name representations, truncation, and
+different layouts for individual destinations.
 :doc:`configuring_manager_options` then explains the independent producer and queue limits, reserved warning and error
 capacity, shutdown deadlines, and statistics.
 
-:doc:`trace_sections` shows how to group detailed diagnostics by investigation, enable them with routes, and guard
+:doc:`trace_sections` shows how to group detailed diagnostics by investigation, enable their sections, and guard
 producer work while a section is inactive.
 
 Route Entries to Destinations

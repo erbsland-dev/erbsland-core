@@ -1,0 +1,14 @@
+# Integration fixture with normalized names, nested domains, and Unicode.
+[Root]
+Application Text = "catalog ready"
+
+[Options]
+Usage Label = "Custom Usage"
+
+[Sample.Deep]
+Unicode Label = "Grüße 😀"
+Pattern = "Value: {}"
+Multiline = """
+    one
+    two
+    """

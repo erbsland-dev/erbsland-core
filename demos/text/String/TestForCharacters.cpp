@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/Exception.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <numbers>
 
@@ -25,7 +35,7 @@ void validateEmailAddress(const el::String &emailAddress) {
         throw ValidationError{"Email address can only contain one '@' character."_el};
     }
     const auto indexOfAt = emailAddress.find(requiredAt);
-    const auto domain = emailAddress.slice(el::ByteRange{indexOfAt + requiredAt.length(), el::ByteLength::infinite()});
+    const auto domain = emailAddress.slice(el::ByteRange{indexOfAt + requiredAt.length(), el::ByteCount::infinite()});
     if (!domain.containsOnly(allowedDomainChars)) {
         throw ValidationError{"Email domain contains invalid characters."_el};
     }

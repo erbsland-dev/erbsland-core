@@ -9,6 +9,7 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 void DocumentValidator::validateNameConstraints(const RulePtr &rule, const ValuePtr &value) {
@@ -64,20 +65,20 @@ void DocumentValidator::validateConstraints(const RulePtr &rule, const Validatio
     }
 }
 
-auto DocumentValidator::expectedValueTypeText(const RulePtr &rule) const -> text::String {
+auto DocumentValidator::expectedValueTypeText(const RulePtr &rule) const -> String {
     return impl::expectedValueTypeText(rule, _version);
 }
 
-auto DocumentValidator::parentLocationText(const conf::ValuePtr &value) -> text::String {
+auto DocumentValidator::parentLocationText(const conf::ValuePtr &value) -> String {
     if (value == nullptr || value->isDocument()) {
         // Accept value == nullptr, when no parent indicates a note at the document root.
         return "the document root"_el;
     }
     if (value->type() == ValueType::SectionWithNames || value->type() == ValueType::IntermediateSection) {
-        return text::StringFormat{"the section '{}'"_el}.build(value->namePath().toText());
+        return StringFormat{"the section '{}'"_el}.build(value->namePath().toText());
     }
     if (value->type() == ValueType::SectionWithTexts) {
-        return text::StringFormat{"the section with texts '{}'"_el}.build(value->namePath().toText());
+        return StringFormat{"the section with texts '{}'"_el}.build(value->namePath().toText());
     }
     return {};
 }
@@ -86,9 +87,9 @@ void DocumentValidator::throwExpectedVsActual(const RulePtr &rule, const ValuePt
     impl::throwExpectedVsActual(rule, value, _version);
 }
 
-auto DocumentValidator::errorNamePathsOr(const NamePathList &paths, const bool forNegation) -> text::String {
+auto DocumentValidator::errorNamePathsOr(const NamePathList &paths, const bool forNegation) -> String {
 
-    text::StringEditor result;
+    StringEditor result;
     if (paths.size() > 1) {
         if (forNegation) {
             result.append("configure none of "_el);

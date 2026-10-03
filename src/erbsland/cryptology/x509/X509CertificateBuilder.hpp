@@ -44,10 +44,11 @@ public:
     /// @return A builder requiring at least one DNS name or IP address before creation.
     [[nodiscard]] static auto tlsServerAndClient(text::String commonName) -> X509CertificateBuilder;
     /// Initialize controlled reissuance from a parsed certificate.
-    /// @param certificate The source certificate whose supported identity information is copied.
+    /// @param certificate The source certificate whose supported identity information is copied. Must not be empty or
+    /// contain unknown critical extensions.
     /// @param profile The safe profile for the new certificate or request.
     /// @return A new independent builder.
-    /// @throws err::LogicError If the source is empty or has an unknown critical extension.
+    /// @throws CryptologyError If the certificate contains an unsupported critical extension.
     [[nodiscard]] static auto fromCertificate(const X509Certificate &certificate, X509CertificateProfile profile)
         -> X509CertificateBuilder;
 
@@ -83,19 +84,21 @@ public: // validity and constraints
 
 public: // creation
     /// Create a self-signed CA certificate.
-    /// @throws err::LogicError If this is not a CA profile or the key is empty.
-    /// @throws err::ParameterError If configured identity or validity data is invalid.
+    /// The builder must use a CA profile with valid configured identity and validity data.
+    /// @param key The signing key. Must not be empty.
     [[nodiscard]] auto createSelfSignedCertificate(const SigningPrivateKey &key) const -> X509Certificate;
     /// Create a certificate signed by an authorized issuer.
-    /// @throws err::LogicError If a required value is empty.
-    /// @throws err::ParameterError If the profile, validity, issuer, or key relationship is invalid.
+    /// The configured profile, validity, and issuer must allow issuance with the supplied key relationships.
+    /// @param subjectKey The subject signing key. Must not be empty.
+    /// @param issuerCertificate The authorized issuer certificate. Must not be empty and must match `issuerKey`.
+    /// @param issuerKey The issuer signing key. Must not be empty and must match `issuerCertificate`.
     [[nodiscard]] auto createCertificate(
         const SigningPrivateKey &subjectKey,
         const X509Certificate &issuerCertificate,
         const SigningPrivateKey &issuerKey) const -> X509Certificate;
     /// Create a signed PKCS#10 request from the same profile and identity configuration.
-    /// @throws err::LogicError If the key is empty.
-    /// @throws err::ParameterError If configured profile or identity data is invalid.
+    /// The configured profile and identity data must be valid.
+    /// @param subjectKey The subject signing key. Must not be empty.
     [[nodiscard]] auto createSigningRequest(const SigningPrivateKey &subjectKey) const -> X509CertificateSigningRequest;
 
 private:

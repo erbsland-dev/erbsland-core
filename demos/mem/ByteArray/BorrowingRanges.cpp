@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -16,9 +23,9 @@ void borrowingRanges() {
 
     // Borrow the whole fixed extent and two ranges selected at runtime.
     const auto completeWave = waveSamples.span();
-    const auto crest = waveSamples.span(el::ByteRange{el::ByteIndex{2U}, el::ByteLength{3U}});
-    const auto clampedTail = waveSamples.span(el::ByteIndex{4U}, el::ByteLength{99U});
-    const auto outside = waveSamples.span(el::ByteIndex{99U}, el::ByteLength{2U});
+    const auto crest = waveSamples.span(el::ByteRange{el::ByteIndex{2U}, el::ByteCount{3U}});
+    const auto clampedTail = waveSamples.span(el::ByteIndex{4U}, el::ByteCount{99U});
+    const auto outside = waveSamples.span(el::ByteIndex{99U}, el::ByteCount{2U});
     static_assert(decltype(completeWave)::extent == 6U);
 
     // A span observes later in-place changes because it still views the array.

@@ -4,18 +4,29 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
-        EventCallbackRegistration.hpp
-        EventCallbackList.hpp
+        BindEventTraits.hpp
+        BoundEvent.hpp
+        BoundEvent.tpp
         CallbackEventData.hpp
         CommonEventEditor.cpp
         CommonEventEditor.hpp
         CurrentEventsScope.cpp
         CurrentEventsScope.hpp
+        EventCallbackList.hpp
+        EventCallbackRegistration.hpp
+        EventContinuation.cpp
+        EventContinuation.hpp
+        EventContinuation_fwd.hpp
         EventLoop.cpp
         EventLoop.hpp
         EventLoop_fwd.hpp
+        EventLoop_queue.cpp
         EventLoopDriverRegistration.cpp
         EventLoopDriverRegistration.hpp
+        EventLoopRunScope.cpp
+        EventLoopRunScope.hpp
+        EventMethodHandler.hpp
+        EventMethodHandler.tpp
         EventSubscriptionControl.hpp
         EventThreadBase.cpp
         EventThreadBase.hpp
@@ -31,6 +42,8 @@ target_sources(erbsland-core PRIVATE
         TimerEventData_fwd.hpp
         UnmanagedEventThread.cpp
         UnmanagedEventThread.hpp
+        WeakEventMethodHandler.hpp
+        WeakEventMethodHandler.tpp
 )
 
 if(WIN32)

@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-*****************
-Strings and Chars
-*****************
+**************************************
+Terminal Text Blocks and Block Strings
+**************************************
 
 The string classes describe terminal text before it is rendered.
 They let you represent a single display character with color and character attributes, build styled text fragments,
@@ -13,16 +13,15 @@ measure Unicode-aware width, and split or wrap text without interacting with a b
 This page focuses on working with ``Block``, ``BlockStyle``, ``BlockString`` and ``BlockStringEditor`` as data types.
 For rendering text blocks into rectangles with ``BlockText``, see :doc:`drawing-text`.
 
-Usage
-=====
 
-Working with Block
-------------------
+Terminal Display Cells with Block
+=================================
 
 ``Block`` represents a single terminal display cell together with its foreground color, background color, and optional
 character attributes such as bold or underline.
 
-Constructing Characters ^^^^^^^^^^^^^^^^^^^^^^^
+Constructing Characters
+-----------------------
 
 Use a Unicode code point when you construct a regular character.
 This is the most explicit form when you already know the exact character.
@@ -55,7 +54,8 @@ To append a combining mark programmatically, use ``withCombining()``:
     const auto wideCells = wide.displayWidth();          // 2
     const auto combinedCells = combined.displayWidth();  // 1
 
-Testing and Comparing Characters ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Testing and Comparing Characters
+--------------------------------
 
 To compare only the character value and ignore color, compare against a Unicode code point:
 
@@ -83,7 +83,8 @@ colors like terminal defaults:
 
     const auto sameOnScreen = inherited.renderedEquals(defaults);
 
-Recoloring Characters ^^^^^^^^^^^^^^^^^^^^^
+Recoloring Characters
+---------------------
 
 To adjust the colors of an existing ``Block``, choose the method that matches your intent:
 
@@ -98,7 +99,8 @@ To adjust the colors of an existing ``Block``, choose the method that matches yo
 With ``withOverlay()``, any ``Inherited`` component keeps the existing color, while ``Default`` resets that component to
 the terminal default.
 
-Working with Character Attributes ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Working with Character Attributes
+---------------------------------
 
 Use ``BlockAttributes`` when you want a character or string fragment to explicitly enable, disable, or inherit ANSI text
 attributes.
@@ -115,7 +117,8 @@ attributes.
 Unspecified attributes inherit from the surrounding writer or string context, while specified bits overwrite that base
 state.
 
-Working with Character Styles ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Working with Character Styles
+-----------------------------
 
 Use ``BlockStyle`` when you want to bundle color and character attributes into one reusable value.
 
@@ -133,13 +136,14 @@ Use ``BlockStyle`` when you want to bundle color and character attributes into o
 ``withBase()`` resolves a style against an underlying base theme.
 
 Block Strings
--------------
+=============
 
 ``BlockString`` is the primary owning read-only sequence of ``Block`` values.
 Use it for status bars, prompts, labels, stored options, drawing inputs and completed lines.
 ``BlockStringEditor`` is the mutable counterpart used while a sequence is actively assembled or changed.
 
-Building Colored BlockText Fragments ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Building Colored BlockText Fragments
+------------------------------------
 
 Prefer ``append(...)`` when building mixed-style strings.
 It keeps colors, attributes, and text in a single readable sequence.
@@ -180,7 +184,7 @@ Completed text can be constructed directly as a ``BlockString`` from UTF-8 or UT
 Control codes are filtered out automatically, except for tab and newline, which are preserved for layout and splitting.
 
 Implicit Sharing and Ranges
----------------------------
+===========================
 
 ``BlockStringEditor`` is implicitly shared.
 Copying a string is cheap because the character storage is shared until one copy is modified through a mutable API.
@@ -210,7 +214,7 @@ A ``BlockStringEditor`` converts implicitly to ``BlockString``, so read-only API
     drawLabel(title);  // implicit BlockStringEditor -> BlockString
 
 Handling Invalid UTF-8 Input
-----------------------------
+============================
 
 UTF-8-based constructors are tolerant and replace malformed input.
 
@@ -220,10 +224,10 @@ UTF-8-based constructors are tolerant and replace malformed input.
     const auto displayText = BlockString{text}; // inserts U+FFFD
 
 Validate byte or standard-string input before constructing Erbsland Core text when invalid data should fail fast.
-For existing UTF-8 Erbsland Core strings, call ``isValidUtf8()`` explicitly when validation is required.
+For existing UTF-8 Erbsland Core strings, call ``isEncodingValid()`` explicitly when validation is required.
 
 Searching, Slicing, and Measuring
----------------------------------
+=================================
 
 Use ``size()`` to count stored characters and ``displayWidth()`` to measure terminal cell width.
 These differ for full-width and combining characters.
@@ -247,7 +251,7 @@ For content-aware processing, the following helpers are commonly useful:
 The ``char32_t`` overloads ignore color and match only the character.
 
 Splitting, Wrapping, and Lines
-------------------------------
+==============================
 
 ``splitWords()`` separates text at spaces, tabs, carriage returns, and newlines.
 ``splitLines()`` keeps empty lines and splits only at newline characters.

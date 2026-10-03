@@ -6,5 +6,4 @@ cmake_minimum_required(VERSION 3.28)
 target_sources(erbsland-core PRIVATE
         UnsafeCustomPasswordHashParameters.cpp
         UnsafeCustomPasswordHashParameters.hpp
-        UnsafeNoPasswordHashKey.hpp
 )

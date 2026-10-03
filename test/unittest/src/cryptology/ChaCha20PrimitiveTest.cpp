@@ -3,10 +3,10 @@
 
 #include "CryptologyTestHelper.hpp"
 
+#include <erbsland/ByteArray.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/ChaCha20Operations.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/PortableChaCha20Backend.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/PortablePoly1305.hpp>
-#include <erbsland/mem/ByteArray.hpp>
 
 #include <array>
 
@@ -50,7 +50,7 @@ public:
         auto backend = PortableChaCha20Backend{key.span(), nonce.span()};
         const auto batch = backend.generateBlocks(1U, 1U);
         REQUIRE_EQUAL(
-            el::mem::ByteBlock::fromSpan(batch.span(el::unit::ByteIndex{}, el::unit::ByteLength{64U})),
+            el::mem::ByteBlock::fromSpan(batch.span(el::unit::ByteIndex{}, el::unit::ByteCount{64U})),
             el::mem::ByteBlock{expected});
     }
 
@@ -61,9 +61,9 @@ public:
         auto poly1305 = PortablePoly1305{key.span()};
 
         // RFC 8439, Section 2.5.2: exercise full and partial block accumulation in separate updates.
-        poly1305.update(message.span(el::unit::ByteIndex{}, el::unit::ByteLength{16U}));
-        poly1305.update(message.span(el::unit::ByteIndex{16U}, el::unit::ByteLength{1U}));
-        poly1305.update(message.span(el::unit::ByteIndex{17U}, el::unit::ByteLength{17U}));
+        poly1305.update(message.span(el::unit::ByteIndex{}, el::unit::ByteCount{16U}));
+        poly1305.update(message.span(el::unit::ByteIndex{16U}, el::unit::ByteCount{1U}));
+        poly1305.update(message.span(el::unit::ByteIndex{17U}, el::unit::ByteCount{17U}));
         REQUIRE_EQUAL(poly1305.finalize(), expected);
     }
 
@@ -76,7 +76,7 @@ public:
         // RFC 8439, Section 2.6.2: counter zero supplies the first 256 bits of the one-time Poly1305 key.
         auto firstBlock = backend.generateBlocks(0U, 1U);
         REQUIRE_EQUAL(
-            el::mem::ByteArray<32>::fromSpanOrThrow(firstBlock.span(el::unit::ByteIndex{}, el::unit::ByteLength{32U})),
+            el::mem::ByteArray<32>::fromSpanOrThrow(firstBlock.span(el::unit::ByteIndex{}, el::unit::ByteCount{32U})),
             expected);
         firstBlock.secureErase();
     }

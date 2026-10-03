@@ -7,12 +7,12 @@
 
 #include "../../Fixture.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/mem/ByteArray.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/Random.hpp>
 
 namespace app::constant_time {
 
@@ -27,7 +27,7 @@ public:
     /// @param mode Equal content or targeted mismatch populations.
     /// @param container Core byte container path under measurement.
     ComparisonFixture(
-        el::Random &random, bool population, std::size_t size, ComparisonMode mode, ComparisonContainer container);
+        el::Random &random, bool population, el::ByteCount size, ComparisonMode mode, ComparisonContainer container);
 
 public: // implement Fixture
     [[nodiscard]] auto measure(uint64_t repetitions) -> uint64_t override;

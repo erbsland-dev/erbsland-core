@@ -1,15 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ByteOffset.hpp>
-#include <erbsland/unit/ByteRange.hpp>
-#include <erbsland/unit/ExitCode.hpp>
-#include <erbsland/unit/IntegerAmount.hpp>
-#include <erbsland/unit/StdFormat.hpp>
-#include <erbsland/unit/Version.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteOffset.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/IntegerAmount.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/Version.hpp>
 
 #include <format>
 #include <ratio>
@@ -38,7 +38,7 @@ public:
     void testIntegerUnitFormatting() {
 
         const auto index = std::format("{}", ByteIndex{12U});
-        const auto length = std::format("{:04}", ByteLength{7U});
+        const auto length = std::format("{:04}", ByteCount{7U});
         const auto offset = std::format("{:+}", ByteOffset{3});
         REQUIRE_EQUAL(index, std::string{"12"});
         REQUIRE_EQUAL(length, std::string{"0007"});
@@ -47,7 +47,7 @@ public:
 
     void testIntegerUnitRangeFormatting() {
 
-        const auto range = ByteRange{ByteIndex{2U}, ByteLength{5U}};
+        const auto range = ByteRange{ByteIndex{2U}, ByteCount{5U}};
         const auto formatted = std::format("{}", range);
         const auto aligned = std::format("{:>6}", range);
         REQUIRE_EQUAL(formatted, std::string{"2:5"});

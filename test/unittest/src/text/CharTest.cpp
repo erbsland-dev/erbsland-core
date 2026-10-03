@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/Char.hpp>
-#include <erbsland/text/CharSignal.hpp>
-#include <erbsland/text/IntegerBase.hpp>
-#include <erbsland/text/LetterCase.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringEncoding.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CharSignal.hpp>
+#include <erbsland/IntegerBase.hpp>
+#include <erbsland/LetterCase.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringEncoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>
@@ -344,21 +344,21 @@ public:
 
     void testEncodedBytes() {
         using el::text::StringEncoding;
-        using el::unit::ByteLength;
+        using el::unit::ByteCount;
 
-        REQUIRE_EQUAL(Char{U'A'}.encodedBytes(StringEncoding::Utf8), ByteLength{1U});
-        REQUIRE_EQUAL(Char{U'A'}.encodedBytes(StringEncoding::Utf16), ByteLength{2U});
-        REQUIRE_EQUAL(Char{U'A'}.encodedBytes(StringEncoding::Utf32), ByteLength{4U});
-        REQUIRE_EQUAL(Char{0x00A2U}.encodedBytes(StringEncoding::Utf8), ByteLength{2U});
-        REQUIRE_EQUAL(Char{0x00A2U}.encodedBytes(StringEncoding::Utf16BigEndian), ByteLength{2U});
-        REQUIRE_EQUAL(Char{0x1F600U}.encodedBytes(StringEncoding::Utf8), ByteLength{4U});
-        REQUIRE_EQUAL(Char{0x1F600U}.encodedBytes(StringEncoding::Utf16LittleEndian), ByteLength{4U});
-        REQUIRE_EQUAL(Char{0x1F600U}.encodedBytes(StringEncoding::Utf32BigEndian), ByteLength{4U});
-        REQUIRE_EQUAL(Char{0xD800U}.encodedBytes(StringEncoding::Utf8), ByteLength::zero());
-        REQUIRE_EQUAL(Char{0x110000U}.encodedBytes(StringEncoding::Utf16), ByteLength::zero());
-        REQUIRE_EQUAL(Char::endOfData().encodedBytes(StringEncoding::Utf32), ByteLength::zero());
+        REQUIRE_EQUAL(Char{U'A'}.encodedBytes(StringEncoding::Utf8), ByteCount{1U});
+        REQUIRE_EQUAL(Char{U'A'}.encodedBytes(StringEncoding::Utf16), ByteCount{2U});
+        REQUIRE_EQUAL(Char{U'A'}.encodedBytes(StringEncoding::Utf32), ByteCount{4U});
+        REQUIRE_EQUAL(Char{0x00A2U}.encodedBytes(StringEncoding::Utf8), ByteCount{2U});
+        REQUIRE_EQUAL(Char{0x00A2U}.encodedBytes(StringEncoding::Utf16BigEndian), ByteCount{2U});
+        REQUIRE_EQUAL(Char{0x1F600U}.encodedBytes(StringEncoding::Utf8), ByteCount{4U});
+        REQUIRE_EQUAL(Char{0x1F600U}.encodedBytes(StringEncoding::Utf16LittleEndian), ByteCount{4U});
+        REQUIRE_EQUAL(Char{0x1F600U}.encodedBytes(StringEncoding::Utf32BigEndian), ByteCount{4U});
+        REQUIRE_EQUAL(Char{0xD800U}.encodedBytes(StringEncoding::Utf8), ByteCount::zero());
+        REQUIRE_EQUAL(Char{0x110000U}.encodedBytes(StringEncoding::Utf16), ByteCount::zero());
+        REQUIRE_EQUAL(Char::endOfData().encodedBytes(StringEncoding::Utf32), ByteCount::zero());
         REQUIRE_EQUAL(
-            Char{U'A'}.encodedBytes(StringEncoding{static_cast<StringEncoding::Value>(0xffU)}), ByteLength::zero());
+            Char{U'A'}.encodedBytes(StringEncoding{static_cast<StringEncoding::Value>(0xffU)}), ByteCount::zero());
     }
 
     void testAsciiCaseMapping() {

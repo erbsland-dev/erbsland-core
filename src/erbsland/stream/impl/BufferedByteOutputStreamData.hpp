@@ -9,6 +9,7 @@
 #include "../StreamState.hpp"
 
 #include "../../mem/RingBuffer.hpp"
+#include "../../util/impl/worker_executor/WorkerServices.hpp"
 
 #include <atomic>
 #include <condition_variable>
@@ -26,7 +27,11 @@ public:
     /// Create the shared output state.
     /// @param nativeStream The synchronous native stream used for target operations.
     /// @param streamSettings The immutable settings for the buffered stream.
-    BufferedByteOutputStreamData(NativeByteStreamPtr nativeStream, OutputStreamSettings streamSettings);
+    /// @param admission Reserved before native acquisition, or acquired for a directly supplied native stream.
+    BufferedByteOutputStreamData(
+        NativeByteStreamPtr nativeStream,
+        OutputStreamSettings streamSettings,
+        util::impl::WorkerReservation admission = util::impl::worker_services::io().reserve());
 
 public:
     /// Schedule buffered output or a pending close on an I/O worker.
@@ -41,12 +46,13 @@ public:
     void performClose();
 
 public:
-    NativeByteStreamPtr native;        ///< Synchronous native target.
-    OutputStreamSettings settings;     ///< Immutable stream settings.
-    mutable std::mutex mutex;          ///< Protects rings and non-atomic state.
-    std::condition_variable condition; ///< Signals capacity, completion, failure, or state changes.
-    mem::RingBuffer front;             ///< Fixed buffer consumed by the current background write.
-    mem::RingBuffer back;              ///< Bounded growing queue for atomic byte and encoded-text writes.
+    util::impl::WorkerReservation work; ///< Lifetime I/O admission.
+    NativeByteStreamPtr native;         ///< Synchronous native target.
+    OutputStreamSettings settings;      ///< Immutable stream settings.
+    mutable std::mutex mutex;           ///< Protects rings and non-atomic state.
+    std::condition_variable condition;  ///< Signals capacity, completion, failure, or state changes.
+    mem::RingBuffer front;              ///< Fixed buffer consumed by the current background write.
+    mem::RingBuffer back;               ///< Bounded growing queue for atomic byte and encoded-text writes.
     std::atomic<StreamState> streamState{StreamState::Open}; ///< Current stream lifecycle state.
     std::atomic<bool> aborted{false};                        ///< Whether pending work must be abandoned.
     std::atomic<uint64_t> logicalPosition{0U};               ///< Logical byte position including accepted output.

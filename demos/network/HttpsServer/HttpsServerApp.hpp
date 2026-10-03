@@ -4,8 +4,14 @@
 
 #include "StreamedResponse.hpp"
 
-#include <erbsland/all.hpp>
-#include <erbsland/network/http_server/all.hpp>
+#include <erbsland/all_network_http_server.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/HttpServer.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/Port.hpp>
+#include <erbsland/TimeAmounts.hpp>
 
 #include <memory>
 #include <vector>

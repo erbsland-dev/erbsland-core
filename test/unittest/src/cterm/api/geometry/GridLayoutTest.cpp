@@ -61,17 +61,17 @@ public:
     }
 
     void testConstructorRejectsInvalidDimensions() {
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, gridLayout({}, {1}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, gridLayout({1}, {}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, gridLayout({1, 0}, {1}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, gridLayout({1}, {1, -1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, gridLayout({}, {1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, gridLayout({1}, {}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, gridLayout({1, 0}, {1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, gridLayout({1}, {1, -1}));
     }
 
     void testConstructorReportsTheParameterName() {
         try {
             static_cast<void>(gridLayout({}, {1}));
             REQUIRE(false);
-        } catch (const erbsland::err::ParameterError &error) {
+        } catch (const erbsland::err::ParameterFailure &error) {
             REQUIRE_EQUAL(error.toString(), "The size list must not be empty. (parameter: columnWidths)"_el);
         }
     }
@@ -80,7 +80,7 @@ public:
         const auto layout = gridLayout({2}, {1});
         const auto border = FrameBorder{};
 
-        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, layout.cellRect(1, 0, block::Position{}, border));
-        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, layout.cellRect(0, 1, block::Position{}, border));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeFailure, layout.cellRect(1, 0, block::Position{}, border));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeFailure, layout.cellRect(0, 1, block::Position{}, border));
     }
 };

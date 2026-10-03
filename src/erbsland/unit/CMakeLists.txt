@@ -6,11 +6,14 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
+        ArgumentCount.hpp
+        ArgumentIndex.hpp
         ArgumentUnit.hpp
+        BuildNumber.hpp
+        ByteCount.hpp
+        ByteCount_fwd.hpp
         ByteIndex.hpp
         ByteIndex_fwd.hpp
-        ByteLength.hpp
-        ByteLength_fwd.hpp
         ByteOffset.hpp
         ByteRange.hpp
         ByteRange_fwd.hpp
@@ -23,10 +26,10 @@ target_sources(erbsland-core PRIVATE
         ColumnOffset.hpp
         ColumnRange.hpp
         ColumnUnit.hpp
+        CpCount.hpp
+        CpCount_fwd.hpp
         CpIndex.hpp
         CpIndex_fwd.hpp
-        CpLength.hpp
-        CpLength_fwd.hpp
         CpOffset.hpp
         CpRange.hpp
         CpRange_fwd.hpp
@@ -36,8 +39,8 @@ target_sources(erbsland-core PRIVATE
         IntegerAmount_fwd.hpp
         IntegerUnit.hpp
         IntegerUnit_fwd.hpp
-        IntegerUnitAmount.hpp
-        IntegerUnitAmount_fwd.hpp
+        IntegerUnitCount.hpp
+        IntegerUnitCount_fwd.hpp
         IntegerUnitIndex.hpp
         IntegerUnitIndex_fwd.hpp
         IntegerUnitOffset.hpp
@@ -55,18 +58,21 @@ target_sources(erbsland-core PRIVATE
         LineOffset.hpp
         LineRange.hpp
         LineUnit.hpp
+        Major.hpp
+        Minor.hpp
+        Revision.hpp
         StdFormat.hpp
-        U16DataIndex.hpp
-        U16DataLength.hpp
-        U16DataLength_fwd.hpp
-        U16DataOffset.hpp
-        U16DataRange.hpp
-        U16DataUnit.hpp
+        U16Count.hpp
+        U16Count_fwd.hpp
+        U16Index.hpp
+        U16Offset.hpp
+        U16Range.hpp
+        U16Unit.hpp
         Version.cpp
         Version.hpp
+        VersionComponent.hpp
+        VersionComponent_fwd.hpp
         VersionPart.hpp
         VersionRange.hpp
         VersionRange_fwd.hpp
-        VersionUnit.hpp
-        VersionUnitTypes.hpp
 )

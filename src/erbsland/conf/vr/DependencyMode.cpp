@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "DependencyMode.hpp"
 
+#include "../../unit/ByteCount.hpp"
+
 namespace erbsland::conf::vr {
 
+using namespace text;
 using namespace text::literals;
 
 auto DependencyMode::isValid(const bool hasSource, const bool hasTarget) const noexcept -> bool {
@@ -19,22 +22,22 @@ auto DependencyMode::isValid(const bool hasSource, const bool hasTarget) const n
     return (_value & AllowBoth) != 0;
 }
 
-auto DependencyMode::toText() const noexcept -> const text::String & {
+auto DependencyMode::toText() const noexcept -> const String & {
     for (const auto &entry : textToValueMap()) {
         if (entry.second == _value) {
             return entry.first;
         }
     }
-    static const text::String undefinedText = "undefined"_el;
+    static const String undefinedText = "undefined"_el;
     return undefinedText;
 }
 
-auto DependencyMode::fromText(const text::String &text) noexcept -> DependencyMode {
-    if (text.isEmpty() || text.length().toSizeT() > 20) {
+auto DependencyMode::fromText(const String &text) noexcept -> DependencyMode {
+    if (text.isEmpty() || text.length() > unit::ByteCount{20}) {
         return Undefined;
     }
     for (const auto &entry : textToValueMap()) {
-        if (entry.first.compare(text, text::Char::compareIdentifier) == std::strong_ordering::equal) {
+        if (entry.first.compare(text, Char::compareIdentifier) == std::strong_ordering::equal) {
             return entry.second;
         }
     }

@@ -1,12 +1,23 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "CharSetScenarioWorkload.hpp"
 
 #include "CharSetWorkerWorkload.hpp"
 #include "OperationDescriptor.hpp"
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/AsciiCategory.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CharRange.hpp>
+#include <erbsland/CharSet.hpp>
 #include <erbsland/profiling/SampleMeasurement.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/U8String.hpp>
+#include <erbsland/U8StringConstIterator.hpp>
+#include <erbsland/UnicodeCategory.hpp>
+#include <erbsland/UnicodeCategoryGroup.hpp>
 
 #include <variant>
 

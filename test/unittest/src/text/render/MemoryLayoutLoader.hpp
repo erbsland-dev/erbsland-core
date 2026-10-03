@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Loader.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/text/StringMap.hpp>
-#include <erbsland/text/ToString.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/render/Loader.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringMap.hpp>
+#include <erbsland/ToString.hpp>
 
 #include <mutex>
 

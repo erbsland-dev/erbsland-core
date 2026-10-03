@@ -14,11 +14,15 @@
 
 namespace erbsland::resource::impl {
 
-auto ResourceStorageInfo::parse(const mem::ByteBlockLiteral storedData, const mem::ByteBlockLiteral infoBlock)
+using namespace mem;
+using namespace text;
+using namespace unit;
+
+auto ResourceStorageInfo::parse(const ByteBlockLiteral storedData, const ByteBlockLiteral infoBlock)
     -> std::optional<ResourceStorageInfo> {
     constexpr auto cHeaderSize = std::size_t{36U};
-    constexpr auto cMagic = std::array<mem::Byte, 4U>{
-        mem::Byte::fromChar('E'), mem::Byte::fromChar('L'), mem::Byte::fromChar('R'), mem::Byte::fromChar('I')};
+    constexpr auto cMagic =
+        std::array<Byte, 4U>{Byte::fromChar('E'), Byte::fromChar('L'), Byte::fromChar('R'), Byte::fromChar('I')};
     const auto storedBytes = storedData.span();
     const auto infoBytes = infoBlock.span();
     if (infoBytes.size() < cHeaderSize || !std::equal(cMagic.begin(), cMagic.end(), infoBytes.begin())) {
@@ -35,7 +39,7 @@ auto ResourceStorageInfo::parse(const mem::ByteBlockLiteral storedData, const me
     const auto hashSize = decodeInteger<std::uint16_t>(infoBytes, 32U);
     const auto reserved = decodeInteger<std::uint16_t>(infoBytes, 34U);
     if (version != 1U || encryptionId != 0U || reserved != 0U || identifierSize == 0U || pathSize == 0U ||
-        originalSize >= unit::ByteLength::cRawInfinite || declaredStoredSize != storedBytes.size()) {
+        originalSize >= ByteCount::cRawInfinite || declaredStoredSize != storedBytes.size()) {
         return std::nullopt;
     }
     auto compressionAlgorithm = std::optional<compression::CompressionAlgorithm>{};
@@ -76,20 +80,19 @@ auto ResourceStorageInfo::parse(const mem::ByteBlockLiteral storedData, const me
         auto result = ResourceStorageInfo{};
         result.identifier = decodeString(infoBytes.subspan(identifierOffset, identifierSize));
         result.path = decodeString(infoBytes.subspan(pathOffset, pathSize));
-        result.storedData = mem::ByteBlock{storedData};
-        result.originalSize = unit::ByteLength{originalSize};
+        result.storedData = ByteBlock{storedData};
+        result.originalSize = ByteCount::fromInteger(originalSize);
         result.compressionAlgorithm = compressionAlgorithm;
         result.hashAlgorithm = hashAlgorithm;
-        result.hash = mem::ByteBlock{infoBlock}.slice(
-            unit::ByteIndex::fromSizeT(hashOffset), unit::ByteLength::fromSizeT(hashSize));
+        result.hash = ByteBlock{infoBlock}.slice(ByteIndex::fromSizeT(hashOffset), ByteCount::fromSizeT(hashSize));
         return result;
-    } catch (const text::EncodingError &) {
+    } catch (const EncodingError &) {
         return std::nullopt;
     }
 }
 
 template <typename T>
-auto ResourceStorageInfo::decodeInteger(const mem::ConstByteSpan bytes, const std::size_t offset) noexcept -> T {
+auto ResourceStorageInfo::decodeInteger(const ConstByteSpan bytes, const std::size_t offset) noexcept -> T {
     static_assert(std::is_unsigned_v<T>);
     auto result = T{};
     for (auto index = std::size_t{}; index < sizeof(T); ++index) {
@@ -99,9 +102,9 @@ auto ResourceStorageInfo::decodeInteger(const mem::ConstByteSpan bytes, const st
     return result;
 }
 
-auto ResourceStorageInfo::decodeString(const mem::ConstByteSpan bytes) -> text::String {
-    return text::StringDecoder{mem::ByteBlock::fromSpan(bytes)}.decode(
-        text::StringEncoding::Utf8, text::StringBomMode::Reject, text::EncodingMode::Strict);
+auto ResourceStorageInfo::decodeString(const ConstByteSpan bytes) -> String {
+    return StringDecoder{ByteBlock::fromSpan(bytes)}.decode(
+        StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict);
 }
 
 }

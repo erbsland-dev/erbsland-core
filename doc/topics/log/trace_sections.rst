@@ -16,10 +16,10 @@ configuration.
 This page explains what a section controls, how to organize streams around investigations, how to avoid work while a
 section is inactive, and why the resulting policy should remain stable for the lifetime of the application.
 
-Understand What a Trace Section Controls
-========================================
+Trace-Section Filtering and Log Levels
+======================================
 
-A :cpp:class:`LogTraceSection <erbsland::log::LogTraceSection>` is a case-sensitive identifier attached to a
+A :cpp:class:`LogTraceSection <erbsland::log::LogTraceSection>` is an ASCII-case-insensitive identifier attached to a
 :cpp:class:`LogStream <erbsland::log::LogStream>` when that stream is created.
 It controls only calls to :cpp:func:`LogStream::trace <erbsland::log::LogStream::trace>`.
 Information, warning, and error messages on the same stream continue to be produced normally, whether the trace section
@@ -33,86 +33,13 @@ Keeping these responsibilities separate lets one investigation span several comp
 routing.
 
 A named section is inactive by default.
-A stream with a named section becomes trace-enabled only when both of these conditions are true:
+A stream with a named section becomes trace-enabled when an equivalent section is enabled in the configuration.
+A stream created without a trace section is always trace-enabled, regardless of its path.
+Attach an explicit section when you want to select its detailed output through configuration.
+Disabling the section avoids producing unwanted trace entries; filtering them out at a writer only prevents delivery.
 
-* its exact, case-sensitive section is enabled in the configuration, and
-* at least one configured writer accepts trace entries from the stream's path.
-
-An unnamed stream, created with the default empty section, has no named section gate.
-Its trace state depends only on whether a writer route accepts trace for its path.
-Attach an explicit section to every stream whose detailed output should remain selectable.
-
-Design Sections Around Investigations
-=====================================
-
-Choose section boundaries from the reader's question rather than from the source-tree layout.
-``route-search`` can include map lookup, weather constraints, and transport scheduling because those components all help
-explain why a route was selected.
-``radio-frames`` belongs in a separate section because it serves a different investigation, even if some of its code
-lives in the same module.
-
-This approach has two practical benefits.
-An application can enable enough context to follow one story without opening every trace source, and code in several
-modules can contribute to that story under one stable name.
-A stream carries one section for its lifetime, so create and store the stream that represents that diagnostic role
-instead of manufacturing temporary section names at each call site.
-
-Section identifiers follow configuration-identifier syntax: the first character is an ASCII letter or underscore, and
-the remaining characters may also contain digits and hyphens.
-Names are case-sensitive, so ``route-search`` and ``Route-Search`` are different sections.
-A consistent lower-case, hyphen-separated convention makes configuration files easier to read and avoids accidental
-duplicates.
-Invalid identifiers raise :cpp:class:`ParameterError <erbsland::err::ParameterError>` when
-:cpp:class:`LogTraceSection <erbsland::log::LogTraceSection>` is constructed.
-
-The demo enables one investigation across two unrelated stream paths.
-The radio stream has a different, inactive section, so its trace call remains silent even though the writer accepts
-trace from every path.
-
-.. erbsland-demo::
-    :source: log/LoggingTopics/TraceSectionGrouping.cpp
-    :exec: log/logging_topics --demo TraceSectionGrouping
-    :source-sha256: ae400b31a8e492bf4ec706f8a20d98bad76c1e86ba058a585bad84b57d3c4637
-
-.. code-block:: cpp
-
-    /// Group diagnostics by investigation rather than by stream path.
-    ///
-    /// The route-search section spans map and weather modules because both help explain route selection. Radio frames
-    /// answer a different question and remain silent even though the writer route accepts trace from every path.
-    void traceSectionGrouping() {
-        const auto routeSearch = el::LogTraceSection{"route-search"_el};
-        const auto radioFrames = el::LogTraceSection{"radio-frames"_el};
-        auto format = el::LogLineFormat{};
-        format.setPattern("{level} [{name}] {message}"_el);
-        auto configuration = el::LogConfiguration{};
-        configuration.setLineFormat(std::move(format))
-            .enableTraceSection(routeSearch)
-            .addWriter(
-                el::LogWriter::createForConsole(el::application().terminal()),
-                el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace}});
-
-        const auto manager = el::LogManager::create();
-        manager->setConfiguration(std::move(configuration));
-        const auto mapLog = manager->createStream("guild/map"_el, routeSearch);
-        const auto weatherLog = manager->createStream("guild/weather"_el, routeSearch);
-        const auto radioLog = manager->createStream("guild/radio"_el, radioFrames);
-        mapLog->trace("Candidate path crosses the eastern ridge."_el);
-        weatherLog->trace("The eastern ridge remains below the cloud line."_el);
-        radioLog->trace("Raw frame bytes are available."_el);
-        manager->shutdown();
-    }
-
-.. erbsland-ansi::
-    :escape-char: ␛
-
-    ␛[90mTRC [␛[95mguild/map␛[90m] Candidate path crosses the eastern ridge.
-    TRC [␛[95mguild/weather␛[90m] The eastern ridge remains below the cloud line.␛[0m
-
-.. erbsland-demo-end::
-
-Attach a Stable Section When Creating the Stream
-================================================
+Attaching Trace Sections to Log Streams
+=======================================
 
 The recommended pattern is to create one stable section value, use the same value while assembling the configuration,
 and attach it when the owning module creates its long-lived log stream.
@@ -128,7 +55,7 @@ Its detailed candidate route is conditional, while the final information message
 .. erbsland-demo::
     :source: log/LoggingTopics/TraceSections.cpp
     :exec: log/logging_topics --demo TraceSections
-    :source-sha256: 248b1822238911e1753301dc432f32c20299255bb3711ac9ce5cfea346e2e34b
+    :sha256: ca72ff7de8463670d694cc270ba58042c2f24747e2406e9275dfd90163a02125
 
 .. code-block:: cpp
 
@@ -137,7 +64,7 @@ Its detailed candidate route is conditional, while the final information message
     /// Create the section once, enable it in the complete configuration, and attach it when creating the stream. The same
     /// stream continues to carry information messages whether or not its trace section is enabled.
     void traceSections() {
-        const auto routeSearchTrace = el::LogTraceSection{"route-search"_el};
+        constexpr auto routeSearchTrace = el::LogTraceSection{"route-search"_el};
         auto format = el::LogLineFormat{};
         format.setPattern("{level} [{name}] {message}"_el);
 
@@ -146,7 +73,7 @@ Its detailed candidate route is conditional, while the final information message
             .enableTraceSection(routeSearchTrace)
             .addWriter(
                 el::LogWriter::createForConsole(el::application().terminal()),
-                el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace, el::LogLevel::Information}});
+                el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Trace, el::LogLevel::Information}));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -154,86 +81,24 @@ Its detailed candidate route is conditional, while the final information message
 
         // Only build a detailed route description when tracing is active.
         if (routeLog->traceEnabled()) {
-            const auto route = el::String::fromJoined({"Kallio"_el, " → "_el, "Jääjärvi"_el, " → "_el, "Majakka"_el});
+            const auto route = el::join("Kallio"_el, " → "_el, "Jääjärvi"_el, " → "_el, "Majakka"_el);
             routeLog->trace("Candidate route: "_el, route);
         }
         routeLog->info("The route search selected three waypoints."_el);
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[90mTRC [␛[95mguild/route-search␛[90m] Candidate route: Kallio → Jääjärvi → Majakka
-    ␛[97mINF [␛[95mguild/route-search␛[97m] The route search selected three waypoints.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. erbsland-demo-end::
-
-Enable the Section and a Matching Destination
-=============================================
-
-Call :cpp:func:`LogConfiguration::enableTraceSection <erbsland::log::LogConfiguration::enableTraceSection>` while
-building the complete startup configuration.
-Enabling a section says that its producers may create trace entries; it does not by itself give those entries a
-destination.
-At least one writer must also have a :cpp:class:`LogWriterFilter <erbsland::log::LogWriterFilter>` that accepts the
-trace level and contains the stream path.
-
-The reverse is equally important.
-A writer route that accepts trace does not activate a stream carrying an inactive named section.
-This allows the same broad file route to be ready for several investigations while the enabled-section list selects
-which producers actually do detailed work.
-The following demo uses separate managers to isolate the three possible configurations and show the two-part decision.
-
-.. erbsland-demo::
-    :source: log/LoggingTopics/TraceSectionActivation.cpp
-    :exec: log/logging_topics --demo TraceSectionActivation
-    :source-sha256: 32f5c7d5e0898591d408b0554721725279dc8473d6f03b18dd29145c7a0b5540
-
-.. code-block:: cpp
-
-    /// Require an enabled section and a matching trace route.
-    ///
-    /// These three independent managers show the two-part rule without changing configuration at runtime. A stream becomes
-    /// trace-enabled only when the section is listed and a writer accepts trace entries from its path.
-    void traceSectionActivation() {
-        const auto showState = [](const el::String &label, const bool enableSection, const bool acceptTrace) -> void {
-            const auto section = el::LogTraceSection{"route-search"_el};
-            auto configuration = el::LogConfiguration{};
-            if (enableSection) {
-                configuration.enableTraceSection(section);
-            }
-            const auto levels = acceptTrace ? el::LogLevels{el::LogLevel::Trace} : el::LogLevels{el::LogLevel::Information};
-            configuration.addWriter(
-                el::LogWriter::createForConsole(el::application().terminal()), el::LogWriterFilter{levels});
-
-            const auto manager = el::LogManager::create();
-            manager->setConfiguration(std::move(configuration));
-            const auto log = manager->createStream("guild/route-search"_el, section);
-            el::io::printLine(label, log->traceEnabled() ? "enabled"_el : "disabled"_el);
-            manager->shutdown();
-        };
-
-        showState("Section only : "_el, true, false);
-        showState("Route only   : "_el, false, true);
-        showState("Both together: "_el, true, true);
-    }
-
-.. erbsland-ansi::
-    :escape-char: ␛
-
-    Section only : disabled
-    Route only   : disabled
-    Both together: enabled
+        ␛[0m␛[90;49mTRC [␛[95;49mguild/route-search␛[90;49m] Candidate route: Kallio → Jääjärvi → Majakka
+        ␛[97;49mINF [␛[95;49mguild/route-search␛[97;49m] The route search selected three waypoints.␛[0m
 
 .. erbsland-demo-end::
 
-Calling ``enableTraceSection()`` more than once with the same value has no additional effect, and an empty section is
-not added to the named list.
-When logging configuration comes from ELCL, the ``trace_sections`` field supplies the same enabled list; see
-:doc:`elcl_configuration` for its syntax and :doc:`reading_configuration` for the startup sequence.
-
-Guard Preparation That Exists Only for Tracing
+Guarding Trace Preparation with traceEnabled()
 ==============================================
 
 :cpp:func:`LogStream::trace <erbsland::log::LogStream::trace>` checks the stream's trace state before it formats its own
@@ -255,7 +120,7 @@ entry is written.
 .. erbsland-demo::
     :source: log/LoggingTopics/TraceSectionGuard.cpp
     :exec: log/logging_topics --demo TraceSectionGuard
-    :source-sha256: 2fa60d99f3bc9bf52ac7ceeb2ea7785c0004aa9ddb7c83baf5e3fd79a495e37c
+    :sha256: 53756987721a5c15f1716c7e9f8e5d2055e3e5b509c85b0669277baadcd80ebb
 
 .. code-block:: cpp
 
@@ -265,14 +130,14 @@ entry is written.
     /// route search performed before the call, so the disabled manager performs no diagnostic preparation at all.
     void traceSectionGuard() {
         const auto runSearch = [](const bool enableSection) -> std::size_t {
-            const auto section = el::LogTraceSection{"route-search"_el};
+            constexpr auto section = el::LogTraceSection{"route-search"_el};
             auto format = el::LogLineFormat{};
             format.setPattern("{level}: {message}"_el);
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(format))
                 .addWriter(
                     el::LogWriter::createForConsole(el::application().terminal()),
-                    el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace}});
+                    el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Trace}));
             if (enableSection) {
                 configuration.enableTraceSection(section);
             }
@@ -283,7 +148,7 @@ entry is written.
             auto preparationCount = std::size_t{};
             if (log->traceEnabled()) {
                 ++preparationCount;
-                const auto route = el::String::fromJoined({"Kallio"_el, " → "_el, "Jääjärvi"_el, " → "_el, "Majakka"_el});
+                const auto route = el::join("Kallio"_el, " → "_el, "Jääjärvi"_el, " → "_el, "Majakka"_el);
                 log->trace("Candidate route: "_el, route);
             }
             manager->shutdown();
@@ -295,17 +160,160 @@ entry is written.
         el::io::printLine("Preparations while enabled : "_el, enabledCount);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Preparations while disabled: 0
-    ␛[90mTRC: Candidate route: Kallio → Jääjärvi → Majakka
-    ␛[39mPreparations while enabled : 1
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mPreparations while disabled: 0
+        ␛[90;49mTRC: Candidate route: Kallio → Jääjärvi → Majakka
+        ␛[39;49mPreparations while enabled : 1␛[0m
 
 .. erbsland-demo-end::
 
-Keep the Trace Policy Stable After Startup
-==========================================
+Naming and Grouping Trace Sections
+==================================
+
+Choose section boundaries from the reader's question rather than from the source-tree layout.
+``route-search`` can include map lookup, weather constraints, and transport scheduling because those components all help
+explain why a route was selected.
+``radio-frames`` belongs in a separate section because it serves a different investigation, even if some of its code
+lives in the same module.
+
+This approach has two practical benefits.
+An application can enable enough context to follow one story without opening every trace source, and code in several
+modules can contribute to that story under one stable name.
+A stream carries one section for its lifetime, so create and store the stream that represents that diagnostic role
+instead of manufacturing temporary section names at each call site.
+
+Section identifiers contain at most 100 ASCII characters.
+The first character must be an ASCII letter; the remaining characters may also contain digits, underscores, and hyphens.
+ASCII case is ignored and hyphens compare equal to underscores, so ``route-search``, ``Route-Search``, and
+``route_search`` select the same section.
+
+Application-created sections keep their spelling; choosing a consistent convention is up to your application.
+ELCL-loaded names become lowercase with underscores, and equivalent duplicates are rejected.
+Invalid identifiers raise :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` when
+:cpp:class:`LogTraceSection <erbsland::log::LogTraceSection>` is constructed.
+
+The demo enables one investigation across two unrelated stream paths.
+The radio stream has a different, inactive section, so its trace call remains silent even though the writer accepts
+trace from every path.
+
+.. erbsland-demo::
+    :source: log/LoggingTopics/TraceSectionGrouping.cpp
+    :exec: log/logging_topics --demo TraceSectionGrouping
+    :sha256: 0c8dabfd9cd0005f772fe8011f57617a1f860bb658e6bab6b283bee4de79a55c
+
+.. code-block:: cpp
+
+    /// Group diagnostics by investigation rather than by stream path.
+    ///
+    /// The route-search section spans map and weather modules because both help explain route selection. Radio frames
+    /// answer a different question and remain silent even though the writer route accepts trace from every path.
+    void traceSectionGrouping() {
+        constexpr auto routeSearch = el::LogTraceSection{"route-search"_el};
+        constexpr auto radioFrames = el::LogTraceSection{"radio-frames"_el};
+        auto format = el::LogLineFormat{};
+        format.setPattern("{level} [{name}] {message}"_el);
+        auto configuration = el::LogConfiguration{};
+        configuration.setLineFormat(std::move(format))
+            .enableTraceSection(routeSearch)
+            .addWriter(
+                el::LogWriter::createForConsole(el::application().terminal()),
+                el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Trace}));
+
+        const auto manager = el::LogManager::create();
+        manager->setConfiguration(std::move(configuration));
+        const auto mapLog = manager->createStream("guild/map"_el, routeSearch);
+        const auto weatherLog = manager->createStream("guild/weather"_el, routeSearch);
+        const auto radioLog = manager->createStream("guild/radio"_el, radioFrames);
+        mapLog->trace("Candidate path crosses the eastern ridge."_el);
+        weatherLog->trace("The eastern ridge remains below the cloud line."_el);
+        radioLog->trace("Raw frame bytes are available."_el);
+        manager->shutdown();
+    }
+
+.. erbsland-demo-run::
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[90;49mTRC [␛[95;49mguild/map␛[90;49m] Candidate path crosses the eastern ridge.
+        TRC [␛[95;49mguild/weather␛[90;49m] The eastern ridge remains below the cloud line.␛[0m
+
+.. erbsland-demo-end::
+
+Enabling Trace Sections and Matching Writer Routes
+==================================================
+
+Call :cpp:func:`LogConfiguration::enableTraceSection <erbsland::log::LogConfiguration::enableTraceSection>` while
+building the complete startup configuration.
+Enabling a section says that its producers may create trace entries; it does not by itself give those entries a
+destination.
+For delivery, at least one writer must have a :cpp:class:`LogWriterFilter <erbsland::log::LogWriterFilter>` that accepts
+the trace level and contains the stream path.
+
+The reverse is equally important.
+A writer route that accepts trace does not activate a stream carrying an inactive named section.
+This allows the same broad file route to be ready for several investigations while the enabled-section list selects
+which producers actually do detailed work.
+The following demo uses separate managers to isolate the three possible configurations and show the independent producer
+and delivery decisions.
+
+.. erbsland-demo::
+    :source: log/LoggingTopics/TraceSectionActivation.cpp
+    :exec: log/logging_topics --demo TraceSectionActivation
+    :sha256: eff35821585c3ea1dfcb6dec869e24eb97a8e4e5e235ca6630c64c762663cf1d
+
+.. code-block:: cpp
+
+    /// Separate producer trace activation from writer delivery.
+    ///
+    /// These three independent managers show that the section controls trace production. Writer filters independently
+    /// decide whether queued trace entries reach a destination.
+    void traceSectionActivation() {
+        const auto showState = [](const el::String &label, const bool enableSection, const bool acceptTrace) -> void {
+            constexpr auto section = el::LogTraceSection{"route-search"_el};
+            auto configuration = el::LogConfiguration{};
+            if (enableSection) {
+                configuration.enableTraceSection(section);
+            }
+            const auto levels = acceptTrace ? el::LogLevels{el::LogLevel::Trace} : el::LogLevels{el::LogLevel::Information};
+            configuration.addWriter(
+                el::LogWriter::createForConsole(el::application().terminal()),
+                el::LogWriterFilter{}.setAcceptedLevels(levels));
+
+            const auto manager = el::LogManager::create();
+            manager->setConfiguration(std::move(configuration));
+            const auto log = manager->createStream("guild/route-search"_el, section);
+            el::io::printLine(label, log->traceEnabled() ? "enabled"_el : "disabled"_el);
+            manager->shutdown();
+        };
+
+        showState("Section only : "_el, true, false);
+        showState("Route only   : "_el, false, true);
+        showState("Both together: "_el, true, true);
+    }
+
+.. erbsland-demo-run::
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSection only : enabled
+        Route only   : disabled
+        Both together: enabled␛[0m
+
+.. erbsland-demo-end::
+
+Calling ``enableTraceSection()`` more than once with the same value has no additional effect, and an empty section is
+not added to the named list.
+When logging configuration comes from ELCL, the ``trace_sections`` field supplies the same enabled list; see
+:doc:`elcl_configuration` for its syntax and :doc:`reading_configuration` for the startup sequence.
+
+Trace-Section Configuration at Startup
+======================================
 
 Treat trace sections as startup policy rather than as live switches.
 Read command-line and application configuration, decide which investigations are active, assemble the writer routes and
@@ -320,14 +328,15 @@ settings.
 When another set of traces is needed, change the startup configuration and begin a new run with a clear diagnostic
 scope.
 
-Understand What Runtime Replacement Would Do
-============================================
+Runtime Configuration Replacement and Trace Flags
+=================================================
 
 The API does permit runtime replacement because
 :cpp:func:`LogManager::setConfiguration <erbsland::log::LogManager::setConfiguration>` accepts a new complete snapshot.
 Installing one refreshes the cached trace flag of every existing stream synchronously.
 When the call returns, :cpp:func:`LogStream::traceEnabled <erbsland::log::LogStream::traceEnabled>` on those streams
-reflects the new enabled-section list and writer routes; streams created later start with the same active decision.
+reflects the new enabled-section list.
+Streams without a trace section remain trace-enabled, and streams created later follow the same policy.
 There is no separate disable method—omitting a section from the replacement snapshot disables its named gate.
 
 That mechanical possibility does not make runtime switching a recommended operating model.
@@ -345,17 +354,17 @@ Use it to understand configuration replacement, not as a pattern for repeatedly 
 .. erbsland-demo::
     :source: log/LoggingTopics/TraceSectionReplacement.cpp
     :exec: log/logging_topics --demo TraceSectionReplacement
-    :source-sha256: 9556dc07a7636e88a383c8fc43ae820ac3587645f4d83d52373c7efed58bf319
+    :sha256: d3423cfec18b8a57ac8a9333be4e8faec41603ba1374f2000a11d1cacebefc7d
 
 .. code-block:: cpp
 
     /// Show the synchronous flag refresh caused by configuration replacement.
     ///
     /// Runtime replacement is possible, but each call installs a complete manager policy. Immediately after
-    /// `setConfiguration()` returns, existing streams expose the new section-and-route decision through `traceEnabled()`.
+    /// `setConfiguration()` returns, existing streams expose the new section decision through `traceEnabled()`.
     void traceSectionReplacement() {
-        const auto section = el::LogTraceSection{"route-search"_el};
-        const auto traceFilter = el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace}};
+        constexpr auto section = el::LogTraceSection{"route-search"_el};
+        const auto traceFilter = el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Trace});
         const auto manager = el::LogManager::create();
 
         auto disabled = el::LogConfiguration{};
@@ -377,11 +386,13 @@ Use it to understand configuration replacement, not as a pattern for repeatedly 
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Initial state          : disabled
-    After enabling section : enabled
-    After replacing policy : disabled
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInitial state          : disabled
+        After enabling section : enabled
+        After replacing policy : disabled␛[0m
 
 .. erbsland-demo-end::

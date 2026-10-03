@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/CoTask.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/CoTask.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -12,7 +12,7 @@
 
 using el::util::CoTask;
 
-TESTED_TARGETS(CoTask CoWorkerService)
+TESTED_TARGETS(CoTask WorkerServices)
 class CoTaskTest final : public el::UnitTest {
 public:
     void testEagerRunAndResult() {
@@ -29,7 +29,7 @@ public:
         REQUIRE_EQUAL(result, 42);
         const auto takenResult = task.takeResult();
         REQUIRE_EQUAL(takenResult, 42);
-        REQUIRE_THROWS_AS(el::err::LogicError, task.result());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, task.result());
     }
 
     void testTaskChaining() {
@@ -89,7 +89,7 @@ public:
     void testEmptyAndIncompleteResults() {
         auto empty = CoTask<int>{};
         REQUIRE(empty.isComplete());
-        REQUIRE_THROWS_AS(el::err::LogicError, empty.result());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, empty.result());
 
         auto release = std::atomic<bool>{false};
         auto task = CoTask<int>::run([&release]() -> int {
@@ -98,7 +98,7 @@ public:
             }
             return 1;
         });
-        REQUIRE_THROWS_AS(el::err::LogicError, task.result());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, task.result());
         release.store(true);
         waitFor(task);
     }

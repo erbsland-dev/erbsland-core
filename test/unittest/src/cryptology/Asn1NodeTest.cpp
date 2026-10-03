@@ -3,14 +3,14 @@
 
 #include "X509TestData.hpp"
 
-#include <erbsland/cryptology/asn1/Asn1Node.hpp>
-#include <erbsland/cryptology/asn1/Asn1ObjectIdentifier.hpp>
+#include <erbsland/Asn1Node.hpp>
+#include <erbsland/Asn1ObjectIdentifier.hpp>
+#include <erbsland/ByteBlock.hpp>
 #include <erbsland/cryptology/impl/DerParser.hpp>
-#include <erbsland/cryptology/x509/X509Certificate.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/X509Certificate.hpp>
 
 #include <cstdint>
 #include <vector>

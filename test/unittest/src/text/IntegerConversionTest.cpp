@@ -1,23 +1,23 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OverflowError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/math/SaturatingInteger.hpp>
-#include <erbsland/text/AnyStringBuilder.hpp>
-#include <erbsland/text/IntegerFormat.hpp>
-#include <erbsland/text/IntegerParseOptions.hpp>
-#include <erbsland/text/IntegerSignMode.hpp>
-#include <erbsland/text/ParseNumberError.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/unit/CpLength.hpp>
+#include <erbsland/AnyStringBuilder.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/IntegerFormat.hpp>
+#include <erbsland/IntegerParseOptions.hpp>
+#include <erbsland/IntegerSignMode.hpp>
+#include <erbsland/OverflowError.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/ParseNumberError.hpp>
+#include <erbsland/SaturatingInteger.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -33,7 +33,7 @@ using el::math::AnyIntegerType;
 using el::math::SatInt16;
 using el::math::SatUInt16;
 using el::text::ParseNumberError;
-using el::unit::CpLength;
+using el::unit::CpCount;
 using namespace el::text;
 using namespace el::text::literals;
 
@@ -117,16 +117,16 @@ public:
         static_assert(constexprStringDefault.hasFlag(IntegerParseFlag::AcceptMinusSign));
         static_assert(constexprStringDefault.hasFlag(IntegerParseFlag::IgnorePlusSign));
 
-        static constexpr auto constexprFixedDecimal = IntegerParseOptions::fixedDecimal(CpLength{4U});
+        static constexpr auto constexprFixedDecimal = IntegerParseOptions::fixedDecimal(CpCount{4U});
         static_assert(constexprFixedDecimal.fixedBase() == IntegerBase::Decimal);
-        static_assert(constexprFixedDecimal.minimumDigits() == CpLength{4U});
-        static_assert(constexprFixedDecimal.maximumDigits() == CpLength{4U});
+        static_assert(constexprFixedDecimal.minimumDigits() == CpCount{4U});
+        static_assert(constexprFixedDecimal.maximumDigits() == CpCount{4U});
         static_assert(constexprFixedDecimal.hasFlag(IntegerParseFlag::StopAtMaximum));
 
-        static constexpr auto constexprFixedHex = IntegerParseOptions::fixedHex(CpLength{2U});
+        static constexpr auto constexprFixedHex = IntegerParseOptions::fixedHex(CpCount{2U});
         static_assert(constexprFixedHex.fixedBase() == IntegerBase::Hexadecimal);
-        static_assert(constexprFixedHex.minimumDigits() == CpLength{2U});
-        static_assert(constexprFixedHex.maximumDigits() == CpLength{2U});
+        static_assert(constexprFixedHex.minimumDigits() == CpCount{2U});
+        static_assert(constexprFixedHex.maximumDigits() == CpCount{2U});
         static_assert(constexprFixedHex.hasFlag(IntegerParseFlag::StopAtMaximum));
 
         const auto parserDefault = IntegerParseOptions::parserDefault();
@@ -146,16 +146,16 @@ public:
         REQUIRE(stringDefault.hasFlag(IntegerParseFlag::IgnorePlusSign));
         REQUIRE_FALSE(stringDefault.hasFlag(IntegerParseFlag::IgnoreTrailingChars));
 
-        const auto fixedDecimal = IntegerParseOptions::fixedDecimal(CpLength{3U});
+        const auto fixedDecimal = IntegerParseOptions::fixedDecimal(CpCount{3U});
         REQUIRE_EQUAL(fixedDecimal.fixedBase().value(), IntegerBase::Decimal);
-        REQUIRE_EQUAL(fixedDecimal.minimumDigits(), CpLength{3U});
-        REQUIRE_EQUAL(fixedDecimal.maximumDigits(), CpLength{3U});
+        REQUIRE_EQUAL(fixedDecimal.minimumDigits(), CpCount{3U});
+        REQUIRE_EQUAL(fixedDecimal.maximumDigits(), CpCount{3U});
         REQUIRE(fixedDecimal.hasFlag(IntegerParseFlag::StopAtMaximum));
 
-        const auto fixedHex = IntegerParseOptions::fixedHex(CpLength{2U});
+        const auto fixedHex = IntegerParseOptions::fixedHex(CpCount{2U});
         REQUIRE_EQUAL(fixedHex.fixedBase().value(), IntegerBase::Hexadecimal);
-        REQUIRE_EQUAL(fixedHex.minimumDigits(), CpLength{2U});
-        REQUIRE_EQUAL(fixedHex.maximumDigits(), CpLength{2U});
+        REQUIRE_EQUAL(fixedHex.minimumDigits(), CpCount{2U});
+        REQUIRE_EQUAL(fixedHex.maximumDigits(), CpCount{2U});
         REQUIRE(fixedHex.hasFlag(IntegerParseFlag::StopAtMaximum));
     }
 
@@ -219,12 +219,12 @@ public:
         auto hex = IntegerFormat::hexadecimal()
                        .setFlags(IntegerFormatFlag::BasePrefix | IntegerFormatFlag::ZeroFill)
                        .setLetterCase(LetterCase::Uppercase)
-                       .setFieldWidth(CpLength{8U});
+                       .setFieldWidth(CpCount{8U});
         REQUIRE_EQUAL(format(std::uint32_t{0x12AFU}, hex), std::string{"0X000012AF"});
 
         hex.setFlags(IntegerFormatFlag::BasePrefix | IntegerFormatFlag::Separator)
             .setLetterCase(LetterCase::Lowercase)
-            .setFieldWidth(CpLength::zero());
+            .setFieldWidth(CpCount::zero());
         REQUIRE_EQUAL(format(std::numeric_limits<std::uint64_t>::max(), hex), std::string{"0xffff'ffff'ffff'ffff"});
 
         auto binary = IntegerFormat::binary().setFlags(IntegerFormatFlag::BasePrefix | IntegerFormatFlag::Separator);
@@ -241,11 +241,11 @@ public:
         auto decimal = IntegerFormat::decimal().setFlags(IntegerFormatFlag::Separator);
         REQUIRE_EQUAL(format(std::int32_t{-1234567}, decimal), std::string{"-1'234'567"});
 
-        decimal.setFlags({}).setFieldWidth(CpLength{5U});
+        decimal.setFlags({}).setFieldWidth(CpCount{5U});
         REQUIRE_EQUAL(format(std::int32_t{42}, decimal), std::string{"   42"});
 
         auto prefixedWidth =
-            IntegerFormat::hexadecimal().setFlags(IntegerFormatFlag::BasePrefix).setFieldWidth(CpLength{4U});
+            IntegerFormat::hexadecimal().setFlags(IntegerFormatFlag::BasePrefix).setFieldWidth(CpCount{4U});
         REQUIRE_EQUAL(format(std::uint8_t{0xffU}, prefixedWidth), std::string{"  0xff"});
         prefixedWidth.addFlags(IntegerFormatFlag::ZeroFill);
         REQUIRE_EQUAL(format(std::uint8_t{0xffU}, prefixedWidth), std::string{"0x00ff"});
@@ -259,21 +259,20 @@ public:
         signFormat.setSignMode(IntegerSignMode::Space);
         REQUIRE_EQUAL(format(std::uint32_t{42U}, signFormat), std::string{" 42"});
 
-        auto precisionFormat = IntegerFormat::decimal().setPrecision(CpLength{5U});
+        auto precisionFormat = IntegerFormat::decimal().setPrecision(CpCount{5U});
         REQUIRE_EQUAL(format(std::int32_t{42}, precisionFormat), std::string{"00042"});
 
         precisionFormat.setSignMode(IntegerSignMode::Always);
         REQUIRE_EQUAL(format(std::int32_t{42}, precisionFormat), std::string{"+00042"});
 
-        auto hexFormat =
-            IntegerFormat::hexadecimal().setFlags(IntegerFormatFlag::BasePrefix).setPrecision(CpLength{4U});
+        auto hexFormat = IntegerFormat::hexadecimal().setFlags(IntegerFormatFlag::BasePrefix).setPrecision(CpCount{4U});
         REQUIRE_EQUAL(format(std::uint32_t{0xffU}, hexFormat), std::string{"0x00ff"});
 
         auto separatedFormat =
-            IntegerFormat::decimal().setFlags(IntegerFormatFlag::Separator).setPrecision(CpLength{7U});
+            IntegerFormat::decimal().setFlags(IntegerFormatFlag::Separator).setPrecision(CpCount{7U});
         REQUIRE_EQUAL(format(std::uint32_t{1234U}, separatedFormat), std::string{"0'001'234"});
 
-        auto widthAndPrecision = IntegerFormat::decimal().setFieldWidth(CpLength{6U}).setPrecision(CpLength{4U});
+        auto widthAndPrecision = IntegerFormat::decimal().setFieldWidth(CpCount{6U}).setPrecision(CpCount{4U});
         REQUIRE_EQUAL(format(std::uint32_t{42U}, widthAndPrecision), std::string{"  0042"});
     }
 
@@ -283,7 +282,7 @@ public:
         builder.append(char32_t{U'!'});
 
         REQUIRE_EQUAL(StringConverter{builder.toU8String()}.toStdString(), std::string{"[-ff]!"});
-        REQUIRE_EQUAL(builder.length(), CpLength{6U});
+        REQUIRE_EQUAL(builder.length(), CpCount{6U});
     }
 
     void testParseDecimalAndDetectedBases() {

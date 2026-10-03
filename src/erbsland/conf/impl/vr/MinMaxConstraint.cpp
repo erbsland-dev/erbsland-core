@@ -12,6 +12,7 @@
 
 #include "../../../math/SaturatingMath.hpp"
 #include "../../../text/StringFormat.hpp"
+#include "../../../unit/ItemCount.hpp"
 
 #include <cmath>
 #include <cstddef>
@@ -60,8 +61,9 @@ auto MinMaxConstraint::createForRule(const MinOrMax minOrMax, const RulePtr &rul
         }
         return std::make_shared<MinMaxDateTimeConstraint>(minOrMax, node->asDateTime());
     case vr::RuleType::ValueMatrix:
-        if (auto intList = node->asList<int>(); intList.size() == 2) {
-            return std::make_shared<MinMaxMatrixConstraint>(minOrMax, intList[0], intList[1]);
+        if (auto intList = node->asList<int>(); intList.count() == unit::ItemCount{2}) {
+            return std::make_shared<MinMaxMatrixConstraint>(
+                minOrMax, intList.get(unit::ItemIndex{0}), intList.get(unit::ItemIndex{1}));
         }
         throwValidationError(
             text::StringFormat{"The '{}' constraint for a value matrix must be a list with two integer values"_el}

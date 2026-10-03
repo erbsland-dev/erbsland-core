@@ -2,25 +2,29 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "LogLineFormatter_fwd.hpp"
+
 #include "../line/LogLine.hpp"
 #include "../LogEntry.hpp"
 #include "../LogLineFormat.hpp"
 
+#include <vector>
+
 namespace erbsland::log::impl {
 
 /// Formats immutable log entries on the manager worker.
-/// @tested{LogCoreTest}
+/// @tested{LogCoreTest LogLineFormatterTest}
 class LogLineFormatter final {
 public:
-    /// Create a formatter for one entry and format configuration.
-    /// @param entry The immutable entry to format.
-    /// @param settings The line-format settings to apply.
-    LogLineFormatter(const LogEntry &entry, const LogLineFormat &settings) noexcept :
-        _entry{entry}, _settings{settings} {}
+    /// Compile a pattern and retain an independent copy of its formatting settings.
+    /// @param settings The complete settings used for every entry formatted by this instance.
+    explicit LogLineFormatter(LogLineFormat settings);
 
-    /// Format the configured entry.
+public: // formatting
+    /// Format one immutable entry using the prepared pattern.
+    /// @param entry The immutable entry to format.
     /// @return A shared immutable complete line split into semantic segments for styled writers.
-    [[nodiscard]] auto format() const -> LogLineConstPtr;
+    [[nodiscard]] auto format(const LogEntry &entry) const -> LogLineConstPtr;
 
 private:
     /// Render a stream path using the configured name representation.
@@ -40,23 +44,25 @@ private:
     /// @return The message shortened so the complete line fits when possible.
     [[nodiscard]] static auto truncatedMessageForTotalLength(
         const LogLine &line, const text::String &message, const LogLineFormat &settings) -> text::String;
-    /// Expand the placeholder pattern into semantic line segments.
-    /// @param settings The placeholder pattern to expand.
+    /// Parse a validated pattern into literal text and placeholder segments.
+    /// @param pattern The validated pattern to compile.
+    /// @return Segments containing literal text or a placeholder with empty text.
+    [[nodiscard]] static auto compilePattern(const text::String &pattern) -> std::vector<LogLineSegment>;
+    /// Expand the compiled pattern into semantic line segments.
     /// @param time The rendered timestamp replacement.
     /// @param level The rendered severity replacement.
     /// @param name The rendered stream-name replacement.
     /// @param message The rendered message replacement.
     /// @return A shared immutable expanded line with semantic segment boundaries retained.
-    [[nodiscard]] static auto render(
-        const LogLineFormat &settings,
+    [[nodiscard]] auto render(
         const text::String &time,
         const text::String &level,
         const text::String &name,
-        const text::String &message) -> LogLineConstPtr;
+        const text::String &message) const -> LogLineConstPtr;
 
 private:
-    const LogEntry &_entry;         ///< Entry being formatted.
-    const LogLineFormat &_settings; ///< Formatting settings to apply.
+    LogLineFormat _settings;                      ///< Independently owned formatting settings.
+    std::vector<LogLineSegment> _patternSegments; ///< Compiled literals and placeholder identifiers.
 };
 
 }

@@ -3,6 +3,9 @@
 
 #include "StringFormatDemos.hpp"
 
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+
 namespace demo {
 
 /// Named number specifications use notation to select floating-point formatting.

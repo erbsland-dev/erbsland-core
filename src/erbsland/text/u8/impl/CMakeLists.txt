@@ -15,6 +15,7 @@ target_sources(erbsland-core PRIVATE
         U8StringCharReadTool.hpp
         U8StringComparisonTools.cpp
         U8StringComparisonTools.hpp
+        U8StringComparisonTools_search.cpp
         U8StringData.cpp
         U8StringData.hpp
         U8StringData_fwd.hpp

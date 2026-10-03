@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
 
 namespace demo {
 
@@ -16,8 +20,8 @@ void editingText() {
     const auto intro = el::String{"A short alpine field note:"_el};
 
     // Find the insertion position after the first sentence.
-    auto firstFullStopIndex = story.findFirstOf({U'.'});
-    story.advance(firstFullStopIndex, el::CpLength{2});
+    auto firstFullStopIndex = story.findFirstOf(el::CharSet{U'.'});
+    story.advance(firstFullStopIndex, el::CpCount{2});
 
     // Insert a new sentence after the first sentence.
     story.insert(firstFullStopIndex, "Sunlight reaches the wet limestone. "_el);

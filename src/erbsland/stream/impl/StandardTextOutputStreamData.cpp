@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StandardTextOutputStreamData.hpp"
 
-#include "IoService.hpp"
+#include "../../err/RuntimeError.hpp"
 
 #include <utility>
 
@@ -24,14 +24,14 @@ void StandardTextOutputStreamData::schedule() {
     workInProgress = true;
     auto self = shared_from_this();
     auto text = queue.front();
-    IoService::submitIoWork([self = std::move(self), text = std::move(text)]() -> void { self->performWrite(text); });
+    work.submit([self = std::move(self), text = std::move(text)]() -> void { self->performWrite(text); });
 }
 
 void StandardTextOutputStreamData::performWrite(const text::String &text) {
     auto failure = std::exception_ptr{};
     try {
         native->writeText(text);
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         failure = std::current_exception();
     }
     {
@@ -55,7 +55,7 @@ void StandardTextOutputStreamData::scheduleFlush(const bool closeAfterFlush, con
     }
     workInProgress = true;
     auto self = shared_from_this();
-    IoService::submitIoWork([self = std::move(self), closeAfterFlush, generation]() -> void {
+    work.submit([self = std::move(self), closeAfterFlush, generation]() -> void {
         self->performFlush(closeAfterFlush, generation);
     });
 }
@@ -64,7 +64,7 @@ void StandardTextOutputStreamData::performFlush(const bool closeAfterFlush, cons
     auto failure = std::exception_ptr{};
     try {
         native->flush();
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         failure = std::current_exception();
     }
     {

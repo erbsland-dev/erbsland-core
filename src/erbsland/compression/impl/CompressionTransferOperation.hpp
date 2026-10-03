@@ -28,6 +28,7 @@ public:
 
 public:
     /// Transfer and validate one complete representation.
+    /// @throws err::OutOfRangeError If processing exceeds the configured buffered-input or output limit.
     auto run() -> CompressionTransferResult;
 
 private:
@@ -53,7 +54,7 @@ private:
     bool _coreEnvelope;                          ///< Whether framing and CRC are required.
     CompressionProgress _progress;               ///< Current progress.
     CompressionCrc32 _crc;                       ///< Uncompressed payload checksum.
-    uint64_t _uncompressed{};                    ///< Total decoded length.
+    unit::ByteCount _uncompressed{};             ///< Total decoded length.
     CodecReader _source;                         ///< Input adapter.
     CodecOutput::Write _target;                  ///< Output adapter.
 };

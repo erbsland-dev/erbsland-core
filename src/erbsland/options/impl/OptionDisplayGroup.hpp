@@ -6,6 +6,7 @@
 #include "OptionDisplayRow.hpp"
 
 #include "../../text/String.hpp"
+#include "../../text/StringList.hpp"
 
 #include <vector>
 
@@ -15,6 +16,7 @@ namespace erbsland::options::impl {
 /// @tested{OptionDocumentTest}
 struct OptionDisplayGroup final {
     text::String title;                 ///< The group title shown as a heading.
+    text::StringList descriptions;      ///< Distinct introductions in registration order.
     std::vector<OptionDisplayRow> rows; ///< The sorted rows in this group.
 };
 

@@ -3,5 +3,7 @@
 #pragma once
 
 namespace erbsland::data::cbor::impl {
+
 class CborValueData;
+
 }

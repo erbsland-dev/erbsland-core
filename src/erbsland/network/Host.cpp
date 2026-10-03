@@ -57,7 +57,7 @@ auto Host::fromString(const String &text) noexcept -> std::optional<Host> {
 
 auto Host::fromStringOrThrow(const String &text) -> Host {
     impl::testCommonHostText(text, "host name or IP-address"_el);
-    if (text.slice(StringSide::Front, CpLength{5U}).contains(":"_el)) {
+    if (text.slice(StringSide::Front, CpCount{5U}).contains(":"_el)) {
         return Host{IpAddress::fromStringOrThrow(text)};
     }
     if (const auto address = IpAddress::fromString(text); address.has_value()) {

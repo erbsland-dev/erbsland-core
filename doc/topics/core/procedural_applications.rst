@@ -20,13 +20,14 @@ Separating Setup, Options, and Work
 
 Initialization establishes process-wide metadata and services.
 Command-line registration describes input without parsing it manually.
-The main method receives control only after parsing succeeds and returns the final ``ExitCode``.
+After parsing succeeds, ``handleCommandLineOptions(values)`` can validate inputs and store option-dependent settings.
+The main method then performs the synchronous work and returns the final ``ExitCode``.
 
 .. erbsland-demo::
     :source: core/ProceduralApplication/main.cpp
     :exec: core/core_procedural_application --dry-run staging
     :exec-2: core/core_procedural_application --help
-    :source-sha256: 205f8bf07df3e3c98ac8b7b99afef7b361439fb147b90cbd77699b219560d471
+    :sha256: 1c9d938bbf743f48ddd08ab365098e310544f13bc639d05c161d8b1110a5770f
 
 .. code-block:: cpp
 
@@ -44,11 +45,9 @@ The main method receives control only after parsing succeeds and returns the fin
             info().setApplicationVersion(el::Version{1, 0, 0});
         }
         void registerCommandLineOptions(const el::OptionsPtr &options) override {
-            options->addOption("environment"_el)
-                .setRequired()
-                .setHelpDescription("Environment summarized by the report."_el);
+            options->addOption("environment"_el).setRequired().setHelpTitle("Environment summarized by the report."_el);
             options->addOption({"-d"_el, "--dry-run"_el, "dry-run"_el})
-                .setHelpDescription("Marks the report as a simulation."_el);
+                .setHelpTitle("Marks the report as a simulation."_el);
         }
         [[nodiscard]] auto main() -> el::ExitCode override {
             el::io::printLine("environment: "_el, optionValues()->getText("environment"_el));
@@ -63,26 +62,34 @@ The main method receives control only after parsing succeeds and returns the fin
         return app.run();
     }
 
-.. rubric:: ``$ core/core_procedural_application --dry-run staging``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    environment: staging
-    mode: simulation
+        $ core/core_procedural_application --dry-run staging
 
-.. rubric:: ``$ core/core_procedural_application --help``
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[0menvironment: staging
+        mode: simulation␛[0m
 
-    Usage:
-    core_procedural_application [options] <environment>
-    Options:
-    -d, --dry-run[=<boolean>] Marks the report as a simulation.
-    <environment>             Environment summarized by the report.
-    -h, --help[=<boolean>]    Display this help.
-        --version[=<boolean>] Display version information.
+.. erbsland-demo-run::
+
+    .. code-block:: console
+
+        $ core/core_procedural_application --help
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUsage:
+        core_procedural_application [options] <environment>
+        Options:
+        -d, --dry-run           Marks the report as a simulation.
+        <environment>           Environment summarized by the report.
+        -h, --help[=<keyword>]  Display this help.
+            --version           Display version information.␛[0m
 
 .. erbsland-demo-end::
 
@@ -98,8 +105,8 @@ For a larger workflow, keep ``main()`` as the readable top-level sequence and mo
 methods or collaborating classes.
 This preserves the lifecycle boundary without turning the application subclass into every subsystem at once.
 
-Understanding the Override
-==========================
+Overriding Application Main Dispatch
+====================================
 
 The procedural override replaces the default main dispatch.
 It therefore does not automatically call a selected option-module main function, a function installed with

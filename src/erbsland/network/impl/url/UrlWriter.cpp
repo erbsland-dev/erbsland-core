@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "UrlWriter.hpp"
 
+#include "../../../text/EscapeFormat.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../text/StringCharReader.hpp"
-#include "../../../text/StringEncoder.hpp"
-#include "../../../text/StringEncoding.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 
 namespace erbsland::network::impl {
 
@@ -17,7 +15,7 @@ auto UrlWriter::write() -> String {
     if (_data.scheme == UrlScheme::Invalid) {
         return {};
     }
-    auto estimatedLength = unit::ByteLength{16U};
+    auto estimatedLength = unit::ByteCount{16U};
     estimatedLength += _data.schemeText.length();
     estimatedLength += _data.authorityText.length();
     estimatedLength += _data.username.length();
@@ -32,16 +30,16 @@ auto UrlWriter::write() -> String {
         _result.append("//"_el);
         writeAuthority();
     }
-    writeEncoded(_data.path, Component::Path);
+    _result.append(_data.path.toEscaped(EscapeFormat::UrlPath));
     if (_data.hasQuery) {
         _result.append(U'?');
-        writeEncoded(_data.query, Component::Query);
+        _result.append(_data.query.toEscaped(EscapeFormat::UrlQuery));
     }
     if (_options.includesFragment() && _data.hasFragment) {
         _result.append(U'#');
-        writeEncoded(_data.fragment, Component::Fragment);
+        _result.append(_data.fragment.toEscaped(EscapeFormat::UrlQuery));
     }
-    return String{_result};
+    return _result;
 }
 
 auto UrlWriter::writeRequestTarget() -> String {
@@ -51,13 +49,13 @@ auto UrlWriter::writeRequestTarget() -> String {
     if (_data.path.isEmpty()) {
         _result.append(U'/');
     } else {
-        writeEncoded(_data.path, Component::Path);
+        _result.append(_data.path.toEscaped(EscapeFormat::UrlPath));
     }
     if (_data.hasQuery) {
         _result.append(U'?');
-        writeEncoded(_data.query, Component::Query);
+        _result.append(_data.query.toEscaped(EscapeFormat::UrlQuery));
     }
-    return String{_result};
+    return _result;
 }
 
 auto UrlWriter::writeHostField() -> String {
@@ -68,7 +66,7 @@ auto UrlWriter::writeHostField() -> String {
     if (_data.endpoint.port() != defaultPort()) {
         _result.append(U':').append(_data.endpoint.port().toString());
     }
-    return String{_result};
+    return _result;
 }
 
 void UrlWriter::writeAuthority() {
@@ -81,13 +79,13 @@ void UrlWriter::writeAuthority() {
 
 void UrlWriter::writeParsedAuthority() {
     if (_data.hasUserInfo) {
-        writeEncoded(_data.username, Component::UserInfo);
+        _result.append(_data.username.toEscaped(EscapeFormat::UrlUserInfo));
         if (_data.hasPassword) {
             _result.append(U':');
             if (_options.redactsPassword()) {
                 _result.append("***"_el);
             } else {
-                writeEncoded(_data.password, Component::UserInfo);
+                _result.append(_data.password.toEscaped(EscapeFormat::UrlUserInfo));
             }
         }
         _result.append(U'@');
@@ -117,54 +115,6 @@ void UrlWriter::writeHost() {
         return;
     }
     _result.append(host.toString());
-}
-
-void UrlWriter::writeEncoded(const String &value, const Component component) {
-    auto reader = StringCharReader{value};
-    while (!reader.isAtEnd()) {
-        const auto character = reader.read();
-        if (isAllowed(character, component)) {
-            _result.append(character);
-            continue;
-        }
-        auto characterText = StringEditor{};
-        characterText.append(character);
-        const auto bytes = StringEncoder{characterText}.encode(StringEncoding::Utf8, StringBomMode::Reject);
-        auto index = unit::ByteIndex::zero();
-        while (index.isWithin(bytes.length())) {
-            writeEncodedByte(bytes.get(index).toUInt8());
-            ++index;
-        }
-    }
-}
-
-void UrlWriter::writeEncodedByte(const uint8_t value) {
-    constexpr char32_t digits[]{
-        U'0', U'1', U'2', U'3', U'4', U'5', U'6', U'7', U'8', U'9', U'A', U'B', U'C', U'D', U'E', U'F'};
-    _result.append(U'%').append(digits[(value >> 4U) & 0x0FU]).append(digits[value & 0x0FU]);
-}
-
-auto UrlWriter::isAllowed(const Char character, const Component component) const noexcept -> bool {
-    if (!character.isAscii()) {
-        return false;
-    }
-    if (character.isAsciiAlphanumeric() || character == U'-' || character == U'.' || character == U'_' ||
-        character == U'~') {
-        return true;
-    }
-    const auto isSubDelimiter = character == U'!' || character == U'$' || character == U'&' || character == U'\'' ||
-        character == U'(' || character == U')' || character == U'*' || character == U'+' || character == U',' ||
-        character == U';' || character == U'=';
-    if (isSubDelimiter) {
-        return true;
-    }
-    if (component == Component::UserInfo) {
-        return false;
-    }
-    if (character == U':' || character == U'@' || character == U'/') {
-        return true;
-    }
-    return (component == Component::Query || component == Component::Fragment) && character == U'?';
 }
 
 auto UrlWriter::defaultPort() const noexcept -> Port {

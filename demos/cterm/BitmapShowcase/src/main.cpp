@@ -3,6 +3,8 @@
 
 #include "BitmapShowcaseApp.hpp"
 
+#include <erbsland/Version.hpp>
+
 using namespace demo;
 
 auto main(const int argc, char **argv) -> int {

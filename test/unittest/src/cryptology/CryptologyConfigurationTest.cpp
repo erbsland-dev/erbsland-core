@@ -5,10 +5,7 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/Hasher.hpp>
-#include <erbsland/cryptology/HashSelector.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesBlockCipherFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/GaloisMultiplierFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/PortableAesBlockCipher.hpp>
@@ -17,13 +14,18 @@
 #include <erbsland/cryptology/impl/algorithm/chacha20/Poly1305Factory.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/PortableChaCha20Backend.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/PortablePoly1305.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricDecryptor.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricEncryptionSelector.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricEncryptor.hpp>
-#include <erbsland/cryptology/tls/TlsConfiguration.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/CryptologyError.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/HashSelector.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/SigningPrivateKey.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/SymmetricDecryptor.hpp>
+#include <erbsland/SymmetricEncryptionSelector.hpp>
+#include <erbsland/SymmetricEncryptor.hpp>
+#include <erbsland/TlsConfiguration.hpp>
 
 #if defined(ERBSLAND_CHACHA20_ARM_BACKEND)
 #include <erbsland/cryptology/impl/algorithm/chacha20/ArmChaCha20Backend.hpp>
@@ -81,145 +83,171 @@ public:
         const auto invalidType = SymmetricEncryptionType{};
         const auto invalidStatus = static_cast<CryptographicStatus>(0xffU);
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, configuration.setMaximumStatus(invalidHash, CryptographicStatus::Disallowed));
+            el::err::ParameterFailure, configuration.setMaximumStatus(invalidHash, CryptographicStatus::Disallowed));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, configuration.setMaximumStatus(invalidType, CryptographicStatus::Disallowed));
+            el::err::ParameterFailure, configuration.setMaximumStatus(invalidType, CryptographicStatus::Disallowed));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, configuration.setMaximumStatus(HashAlgorithm::Sha3_256, invalidStatus));
+            el::err::ParameterFailure, configuration.setMaximumStatus(HashAlgorithm::Sha3_256, invalidStatus));
         REQUIRE_EQUAL(HashSelector{}.status(invalidHash), CryptographicStatus::Disallowed);
         REQUIRE_FALSE(
             HashSelector{HashRequirements{.requiredStatus = CryptographicStatus::Disallowed}}.matches(invalidHash));
         REQUIRE_EQUAL(SymmetricEncryptionSelector{}.status(invalidType), CryptographicStatus::Disallowed);
     }
 
-    void testTlsConfigurationExactParentAndGlobalResolution() {
-        const auto applicationScope = ApplicationTestScope<>{};
-        auto &configuration = el::core::application().cryptologyConfiguration();
-        configuration.setTlsConfiguration(""_el, TlsConfiguration{});
-        configuration.setTlsConfiguration("http"_el, TlsConfiguration{});
-        configuration.setTlsConfiguration("http/client"_el, TlsConfiguration{});
-
-        const auto exact = configuration.resolveTlsConfiguration("http/client"_el);
-        REQUIRE_EQUAL(exact.requestedLabel(), "http/client"_el);
-        REQUIRE_EQUAL(exact.matchedLabel(), "http/client"_el);
-        REQUIRE(exact.configuration() != nullptr);
-        const auto parent = configuration.resolveTlsConfiguration("http/client/internal"_el);
-        REQUIRE_EQUAL(parent.requestedLabel(), "http/client/internal"_el);
-        REQUIRE_EQUAL(parent.matchedLabel(), "http/client"_el);
-        REQUIRE_EQUAL(parent.configuration(), exact.configuration());
-        const auto frameworkParent = configuration.resolveTlsConfiguration("http/server"_el);
-        REQUIRE_EQUAL(frameworkParent.matchedLabel(), "http"_el);
-        const auto global = configuration.resolveTlsConfiguration("tls/client"_el);
-        REQUIRE_EQUAL(global.matchedLabel(), ""_el);
-        REQUIRE(configuration.hasTlsConfiguration("http/client"_el));
-        REQUIRE_FALSE(configuration.hasTlsConfiguration("http/client/internal"_el));
-    }
-
-    void testTlsConfigurationResolutionSelectsCompleteEntry() {
-        const auto applicationScope = ApplicationTestScope<>{};
-        auto &configuration = el::core::application().cryptologyConfiguration();
-        configuration.setTlsConfiguration(
-            "tls"_el, TlsConfiguration{X509ServerCertificatePolicy{X509CertificateBundle{}}});
-        configuration.setTlsConfiguration("tls/client"_el, TlsConfiguration{});
-
-        const auto exact = configuration.resolveTlsConfiguration("tls/client/internal"_el);
-        REQUIRE_EQUAL(exact.matchedLabel(), "tls/client"_el);
-        REQUIRE_FALSE(exact.configuration()->hasServerCertificatePolicy());
-        configuration.clearTlsConfiguration("tls/client"_el);
-        const auto parent = configuration.resolveTlsConfiguration("tls/client/internal"_el);
-        REQUIRE_EQUAL(parent.matchedLabel(), "tls"_el);
-        REQUIRE(parent.configuration()->hasServerCertificatePolicy());
-    }
-
-    void testTlsConfigurationLabelsAreValidated() {
-        const auto applicationScope = ApplicationTestScope<>{};
-        auto &configuration = el::core::application().cryptologyConfiguration();
-        const auto invalidLabels = std::array{
-            "/tls"_el,
-            "tls/"_el,
-            "tls//client"_el,
-            "Tls/client"_el,
-            "tls_client"_el,
-            "-tls"_el,
-            "tls-/client"_el,
-            "a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a"_el};
-        for (const auto &label : invalidLabels) {
-            REQUIRE_THROWS_AS(el::err::ParameterError, configuration.setTlsConfiguration(label, TlsConfiguration{}));
-            REQUIRE_THROWS_AS(el::err::ParameterError, configuration.hasTlsConfiguration(label));
-            REQUIRE_THROWS_AS(el::err::ParameterError, configuration.resolveTlsConfiguration(label));
-            REQUIRE_THROWS_AS(el::err::ParameterError, configuration.clearTlsConfiguration(label));
+    void testTlsDefaultsAndReservedLabels() {
+        auto scope = ApplicationTestScope<>{};
+        auto &registry = scope.app().cryptologyConfiguration();
+        for (const auto label : {""_el, "http"_el, "custom/misspelled"_el}) {
+            const auto resolution = registry.resolveTlsConfiguration(label, TlsRole::Client);
+            REQUIRE_EQUAL(resolution.requestedLabel(), label);
+            REQUIRE(resolution.matchedLabel().isEmpty());
+            REQUIRE_EQUAL(resolution.role(), TlsRole::Client);
+            REQUIRE(resolution.certificatePolicy()->isSystemTrust());
+            REQUIRE_FALSE(resolution.configuration()->client()->identity());
         }
-        const auto tooLong = el::text::String::fromCharacter(U'a', el::unit::CpLength{256U});
-        REQUIRE_THROWS_AS(el::err::ParameterError, configuration.setTlsConfiguration(tooLong, TlsConfiguration{}));
-        configuration.setTlsConfiguration("a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a"_el, TlsConfiguration{});
-        REQUIRE(configuration.hasTlsConfiguration("a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a"_el));
-    }
-
-    void testTlsConfigurationCapacityReplacementClearingAndReset() {
-        const auto applicationScope = ApplicationTestScope<>{};
-        auto &configuration = el::core::application().cryptologyConfiguration();
-        for (auto index = std::size_t{}; index < CryptologyConfiguration::cMaximumTlsConfigurations; ++index) {
-            configuration.setTlsConfiguration(
-                el::text::String::fromJoined({"entry-"_el, el::text::String::fromInteger(index)}), TlsConfiguration{});
-        }
-        configuration.setTlsConfiguration("entry-0"_el, TlsConfiguration{});
+        REQUIRE(registry.hasTlsConfiguration(""_el, TlsRole::Client));
+        REQUIRE(registry.hasTlsConfiguration(""_el, TlsRole::Server));
+        REQUIRE_THROWS_AS(el::CryptologyError, registry.resolveTlsConfiguration("http"_el, TlsRole::Server));
         REQUIRE_THROWS_AS(
-            el::err::RuntimeError, configuration.setTlsConfiguration("one-too-many"_el, TlsConfiguration{}));
-        configuration.clearTlsConfiguration("entry-1"_el);
-        configuration.setTlsConfiguration("replacement"_el, TlsConfiguration{});
-        REQUIRE(configuration.hasTlsConfiguration("replacement"_el));
-        configuration.clearTlsConfigurations();
-        REQUIRE_FALSE(configuration.hasTlsConfiguration("replacement"_el));
-        configuration.setTlsConfiguration("tls"_el, TlsConfiguration{});
-        configuration.reset();
-        REQUIRE_FALSE(configuration.hasTlsConfiguration("tls"_el));
+            el::err::ParameterFailure, registry.setTlsConfiguration(""_el, TlsConfiguration{TlsClientConfiguration{}}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, registry.clearTlsConfiguration(""_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, registry.clearTlsConfiguration(""_el, TlsRole::Client));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, registry.setTlsConfiguration("empty"_el, TlsConfiguration{}));
     }
 
-    void testTlsConfigurationUnresolvedDiagnosticAndImmutableSnapshot() {
-        const auto applicationScope = ApplicationTestScope<>{};
-        auto &configuration = el::core::application().cryptologyConfiguration();
-        try {
-            static_cast<void>(configuration.resolveTlsConfiguration("http/client/internal"_el));
-            REQUIRE(false);
-        } catch (const el::err::RuntimeError &error) {
-            const auto diagnostic = error.toString();
-            REQUIRE(diagnostic.contains("http/client/internal -> http/client -> http -> \"\""_el));
+    void testTlsRolesParentsReplacementAndSnapshots() {
+        auto scope = ApplicationTestScope<>{};
+        auto &registry = scope.app().cryptologyConfiguration();
+        registry.setTlsConfiguration("http"_el, serverProfile());
+        registry.setTlsConfiguration("http"_el, TlsConfiguration{TlsClientConfiguration{}});
+        registry.setTlsConfiguration("http/internal"_el, serverProfile());
+        const auto client = registry.resolveTlsConfiguration("http/internal"_el, TlsRole::Client);
+        REQUIRE_EQUAL(client.matchedLabel(), "http"_el);
+        const auto server = registry.resolveTlsConfiguration("http/internal"_el, TlsRole::Server);
+        REQUIRE_EQUAL(server.matchedLabel(), "http/internal"_el);
+        REQUIRE_FALSE(server.certificatePolicy());
+        REQUIRE(registry.hasTlsConfiguration("http"_el, TlsRole::Server));
+        REQUIRE_FALSE(registry.hasTlsConfiguration("http/internal"_el, TlsRole::Client));
+        registry.clearTlsConfiguration("http"_el, TlsRole::Client);
+        REQUIRE(registry.hasTlsConfiguration("http"_el, TlsRole::Server));
+        REQUIRE(registry.resolveTlsConfiguration("http/internal"_el, TlsRole::Client).matchedLabel().isEmpty());
+        REQUIRE(client.configuration()->client().has_value());
+        registry.clearTlsConfigurations();
+        REQUIRE(server.configuration()->server()->identity());
+        REQUIRE_FALSE(registry.hasTlsConfiguration("http"_el, TlsRole::Server));
+    }
+
+    void testTlsTrustPrecedence() {
+        const auto anchors = X509CertificateBundle::fromPemOrThrow(
+            el::text::String{el::unittest::fh::readDataText("data/network/tls-interop/ca.pem")});
+        for (const auto global : {std::optional<bool>{}, std::optional<bool>{false}, std::optional<bool>{true}}) {
+            auto settings = TlsSettings{};
+            settings.setSystemTrust(global);
+            for (const auto role : {TlsRole::Client, TlsRole::Server}) {
+                auto trust = TlsTrustConfiguration{};
+                if (global.value_or(role == TlsRole::Client)) {
+                    REQUIRE(trust.resolve(settings, role)->isSystemTrust());
+                } else {
+                    REQUIRE_THROWS_AS(el::CryptologyError, trust.resolve(settings, role));
+                }
+                trust.setTrustAnchors(anchors);
+                REQUIRE_FALSE(trust.resolve(settings, role)->isSystemTrust());
+                trust.setSystemTrust(true);
+                REQUIRE_THROWS_AS(el::CryptologyError, trust.resolve(settings, role));
+                trust.setSystemTrust(false);
+                REQUIRE_FALSE(trust.resolve(settings, role)->isSystemTrust());
+            }
         }
-
-        configuration.setTlsConfiguration("tls/client"_el, TlsConfiguration{});
-        const auto first = configuration.resolveTlsConfiguration("tls/client"_el);
-        configuration.setTlsConfiguration(
-            "tls/client"_el, TlsConfiguration{X509ServerCertificatePolicy{X509CertificateBundle{}}});
-        const auto second = configuration.resolveTlsConfiguration("tls/client"_el);
-        REQUIRE(first.configuration() != second.configuration());
-        REQUIRE_FALSE(first.configuration()->hasServerCertificatePolicy());
-        REQUIRE(second.configuration()->hasServerCertificatePolicy());
+        auto trust = TlsTrustConfiguration{};
+        trust.setSystemTrust(false);
+        REQUIRE_THROWS_AS(el::CryptologyError, trust.resolve(TlsSettings{}, TlsRole::Client));
+        REQUIRE_FALSE(trust.resolve(TlsSettings{}, TlsRole::Server, false));
+        trust.setIntermediates(anchors);
+        REQUIRE_THROWS_AS(el::CryptologyError, trust.resolve(TlsSettings{}, TlsRole::Server, false));
     }
 
-    void testTlsConfigurationConcurrentResolutionIsCoherent() {
-        const auto applicationScope = ApplicationTestScope<>{};
-        auto &configuration = el::core::application().cryptologyConfiguration();
-        configuration.setTlsConfiguration("tls"_el, TlsConfiguration{});
-        auto stop = std::atomic<bool>{false};
-        auto writer = std::thread{[&]() -> void {
-            while (!stop.load(std::memory_order_relaxed)) {
-                configuration.setTlsConfiguration(
-                    "tls/client"_el, TlsConfiguration{X509ServerCertificatePolicy{X509CertificateBundle{}}});
-                configuration.clearTlsConfiguration("tls/client"_el);
+    void testTlsAtomicReplacementAndReset() {
+        auto scope = ApplicationTestScope<>{};
+        auto &registry = scope.app().cryptologyConfiguration();
+        registry.setTlsConfiguration("original"_el, TlsConfiguration{TlsClientConfiguration{}});
+        const auto original = registry.resolveTlsConfiguration("original"_el, TlsRole::Client);
+        auto settings = TlsSettings{};
+        settings.setSystemTrust(false);
+        auto replacement = TlsConfigurationSet{};
+        replacement.setSettings(settings);
+        replacement.add("invalid"_el, TlsConfiguration{TlsClientConfiguration{}});
+        REQUIRE_THROWS_AS(el::CryptologyError, registry.replaceTlsConfigurations(replacement));
+        REQUIRE(registry.hasTlsConfiguration("original"_el, TlsRole::Client));
+        REQUIRE_FALSE(registry.tlsSettings().systemTrust());
+        replacement = TlsConfigurationSet{};
+        replacement.add("duplicate"_el, TlsConfiguration{TlsClientConfiguration{}});
+        replacement.add("duplicate"_el, TlsConfiguration{TlsClientConfiguration{}});
+        REQUIRE_THROWS_AS(el::CryptologyError, registry.replaceTlsConfigurations(replacement));
+        replacement = TlsConfigurationSet{};
+        replacement.setSettings(settings);
+        registry.replaceTlsConfigurations(replacement);
+        REQUIRE_FALSE(registry.hasTlsConfiguration("original"_el, TlsRole::Client));
+        REQUIRE_THROWS_AS(el::CryptologyError, registry.resolveTlsConfiguration("unknown"_el, TlsRole::Client));
+        registry.clearTlsConfigurations();
+        REQUIRE_EQUAL(registry.tlsSettings().systemTrust(), std::optional<bool>{false});
+        REQUIRE(original.certificatePolicy()->isSystemTrust());
+        registry.reset();
+        REQUIRE(registry.resolveTlsConfiguration("unknown"_el, TlsRole::Client).certificatePolicy()->isSystemTrust());
+    }
+
+    void testTlsLabelsAndCapacity() {
+        auto scope = ApplicationTestScope<>{};
+        auto &registry = scope.app().cryptologyConfiguration();
+        for (
+            const auto label :
+            {"/tls"_el,
+                "tls/"_el,
+                "tls//client"_el,
+                "Tls"_el,
+                "tls_client"_el,
+                "-tls"_el,
+                "tls-"_el,
+                "a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a"_el}) {
+            REQUIRE_THROWS_AS(
+                el::err::ParameterFailure,
+                registry.setTlsConfiguration(label, TlsConfiguration{TlsClientConfiguration{}}));
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, registry.resolveTlsConfiguration(label, TlsRole::Client));
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, registry.hasTlsConfiguration(label, TlsRole::Server));
+            REQUIRE_THROWS_AS(el::err::ParameterFailure, registry.clearTlsConfiguration(label));
+        }
+        REQUIRE_THROWS_AS(
+            el::err::ParameterFailure, registry.resolveTlsConfiguration("tls"_el, static_cast<TlsRole>(255)));
+        for (auto i = std::size_t{}; i < CryptologyConfiguration::cMaximumTlsConfigurations; ++i) {
+            registry.setTlsConfiguration(
+                el::join("entry-"_el, el::text::String::fromInteger(i)), TlsConfiguration{TlsClientConfiguration{}});
+        }
+        registry.setTlsConfiguration("entry-0"_el, TlsConfiguration{TlsClientConfiguration{}});
+        REQUIRE_THROWS_AS(
+            el::CryptologyError,
+            registry.setTlsConfiguration("overflow"_el, TlsConfiguration{TlsClientConfiguration{}}));
+        registry.clearTlsConfiguration("entry-1"_el);
+        registry.setTlsConfiguration("replacement"_el, TlsConfiguration{TlsClientConfiguration{}});
+    }
+
+    void testTlsConcurrentBatchResolutionIsCoherent() {
+        auto scope = ApplicationTestScope<>{};
+        auto &registry = scope.app().cryptologyConfiguration();
+        auto first = TlsConfigurationSet{};
+        first.add("http"_el, TlsConfiguration{TlsClientConfiguration{}});
+        auto second = TlsConfigurationSet{};
+        second.add("http/internal"_el, TlsConfiguration{TlsClientConfiguration{}});
+        registry.replaceTlsConfigurations(first);
+        auto writer = std::jthread{[&](std::stop_token stop) -> void {
+            while (!stop.stop_requested()) {
+                registry.replaceTlsConfigurations(first);
+                registry.replaceTlsConfigurations(second);
             }
         }};
-        for (auto iteration = std::size_t{}; iteration < 1000U; ++iteration) {
-            const auto resolution = configuration.resolveTlsConfiguration("tls/client/internal"_el);
-            REQUIRE(resolution.configuration() != nullptr);
-            if (resolution.matchedLabel() == "tls/client"_el) {
-                REQUIRE(resolution.configuration()->hasServerCertificatePolicy());
-            } else {
-                REQUIRE_EQUAL(resolution.matchedLabel(), "tls"_el);
-                REQUIRE_FALSE(resolution.configuration()->hasServerCertificatePolicy());
-            }
+        for (auto i = 0; i < 100; ++i) {
+            const auto values = registry.resolveTlsConfigurations(
+                el::StringList{"http/internal/a"_el, "http/internal/b"_el}, TlsRole::Client);
+            REQUIRE_EQUAL(values[0].matchedLabel(), values[1].matchedLabel());
         }
-        stop.store(true, std::memory_order_relaxed);
-        writer.join();
     }
 
     void testApplicationDataSharesLazyConfiguration() {
@@ -278,7 +306,7 @@ public:
 
         auto hasher = Hasher{HashAlgorithm::Sha3_256};
         hasher.update(bytesFromHex("00"));
-        REQUIRE_EQUAL(hasher.finalize().length(), el::unit::ByteLength{32U});
+        REQUIRE_EQUAL(hasher.finalize().length(), el::unit::ByteCount{32U});
 
         configuration.setMaximumStatus(SymmetricEncryptionType::ChaCha20Poly1305, CryptographicStatus::Disallowed);
         const auto key = SymmetricKey{bytesFromHex("0000000000000000000000000000000000000000000000000000000000000000")};
@@ -315,5 +343,15 @@ public:
         }
         stop.store(true, std::memory_order_relaxed);
         writer.join();
+    }
+
+private:
+    static auto serverProfile() -> TlsConfiguration {
+        auto identity = TlsIdentity{
+            X509CertificateBundle::fromPemOrThrow(
+                el::text::String{el::unittest::fh::readDataText("data/network/tls-interop/server-ecdsa.pem")}),
+            SigningPrivateKey::fromPemOrThrow(
+                el::text::String{el::unittest::fh::readDataText("data/network/tls-interop/server-ecdsa-key.pem")})};
+        return TlsConfiguration{TlsServerConfiguration{std::move(identity)}};
     }
 };

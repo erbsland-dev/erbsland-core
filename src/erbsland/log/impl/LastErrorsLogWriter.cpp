@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "LastErrorsLogWriter.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::log::impl {
@@ -11,7 +11,7 @@ using namespace text::literals;
 
 LastErrorsLogWriter::LastErrorsLogWriter(const std::size_t capacity) : _capacity{capacity} {
     if (_capacity == 0U) {
-        throw err::ParameterError{"The last-errors capacity must be greater than zero."_el, "capacity"_el};
+        throw err::ParameterFailure{"The last-errors capacity must be greater than zero."_el, "capacity"_el};
     }
 }
 

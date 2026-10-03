@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-*******************
-BlockText Rendering
-*******************
+**********************************
+Rendering Text in Terminal Buffers
+**********************************
 
 The text rendering classes describe how terminal text is drawn into a writable buffer.
 They turn ``BlockString`` content into aligned labels, wrapped paragraphs, reusable text presets and animated
@@ -25,11 +25,9 @@ For the underlying ``Block``, ``BlockString`` and ``BlockStringEditor`` value ty
     of 72 terminal columns. This makes it easy to regenerate the visual
     output together with the code snippets.
 
-Usage
-=====
 
 Drawing Direct Strings and Aligned Labels
------------------------------------------
+=========================================
 
 ``WritableBuffer`` provides two main entry points for text that does not need paragraph formatting:
 
@@ -78,7 +76,7 @@ Use the rectangle overload for titles, centered labels, and other layout-driven 
     ␛[97;40m                                                                        ␛[39;49m
 
 BlockText Alignment Inside a Rectangle
--------------------------------------------
+======================================
 
 ``BlockText`` uses the same ``Alignment`` model as the geometry and bitmap helpers.
 This means you can place a text block inside its target rectangle without manual offset calculations.
@@ -105,7 +103,7 @@ The same content can be anchored to the top-left, center, or bottom-right simply
     ␛[97;40m                                                                        ␛[39;49m
 
 Rendering Wrapped Paragraphs
-----------------------------
+============================
 
 ``BlockText`` becomes especially useful when text needs wrapping, paragraph spacing, or paragraph-aware indentation.
 
@@ -143,7 +141,7 @@ For the full paragraph-formatting reference, continue with
     ␛[97;40m     ␛[90mText automatically wraps and keeps explicit paragraph breaks.␛[97m      ␛[39;49m
 
 Reusing BlockTextOptions and Animation
---------------------------------------
+======================================
 
 ``BlockTextOptions`` bundles color sequences, fonts, animation, and paragraph layout settings into one reusable preset.
 

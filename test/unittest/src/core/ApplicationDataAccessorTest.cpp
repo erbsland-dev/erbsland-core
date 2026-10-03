@@ -6,7 +6,7 @@
 #include <erbsland/core/impl/application_data/ApplicationLifecycleData.hpp>
 #include <erbsland/core/impl/application_data/ApplicationPartsData.hpp>
 #include <erbsland/core/impl/ApplicationDataImpl.hpp>
-#include <erbsland/err/LogicError.hpp>
+#include <erbsland/LogicFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>
@@ -86,7 +86,7 @@ public:
         auto accessor =
             el::core::impl::ApplicationDataAccessor<TestData>{[]() -> std::shared_ptr<TestData> { return nullptr; }};
 
-        REQUIRE_THROWS_AS(el::err::LogicError, accessor.get());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, accessor.get());
         REQUIRE(accessor.getIfExists() == nullptr);
     }
 
@@ -104,6 +104,7 @@ public:
         REQUIRE(data.cryptology().getIfExists() == nullptr);
         REQUIRE(data.resources().getIfExists() == nullptr);
         REQUIRE(data.system().getIfExists() == nullptr);
+        REQUIRE(data.regularExpressions().getIfExists() == nullptr);
 
         REQUIRE(data.runtime().get() != nullptr);
         REQUIRE(data.runtime().getIfExists() != nullptr);
@@ -117,6 +118,7 @@ public:
         REQUIRE(data.cryptology().getIfExists() == nullptr);
         REQUIRE(data.resources().getIfExists() == nullptr);
         REQUIRE(data.system().getIfExists() == nullptr);
+        REQUIRE(data.regularExpressions().getIfExists() == nullptr);
     }
 
     void testPartBindingsDoNotCreateOwnershipCycles() {

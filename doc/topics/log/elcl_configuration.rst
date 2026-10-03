@@ -26,8 +26,8 @@ the canonical lowercase spellings listed on this page.
 :doc:`reading_configuration` shows how an application selects this branch and turns it into a
 :cpp:class:`LogConfiguration <erbsland::log::LogConfiguration>` during startup.
 
-Start With One Useful Destination
-=================================
+Minimal Console Writer Configuration
+====================================
 
 A small command-line tool often needs only one decision: send its log entries to the terminal.
 The following complete configuration does exactly that.
@@ -42,8 +42,8 @@ without one, the parser cannot create the requested writer and reports an error.
 .. literalinclude:: ../../../demos/log/ConfiguredLogging/data/minimal.elcl
     :language: erbsland-conf
 
-Make Operational Choices Explicit
-=================================
+Queue Limits, Line Formats, and Log Routing
+===========================================
 
 Defaults are convenient while an application is young.
 In a deployed service or a tool shared across a team, explicit choices are often easier to review: operators can see the
@@ -51,8 +51,9 @@ queue budget, recognize the line format, and understand which streams reach each
 defaults.
 
 The following configuration makes those decisions visible.
-It selects a format that includes the full stream name, bounds the queue, routes the ``guild`` hierarchy to the console,
-and limits the amount of terminal wrapping.
+It bounds the queue and sends entries from the ``guild`` hierarchy to both the console and a file.
+The console shows just the message and limits wrapping; the file keeps a timestamp with each message.
+The top-level format remains the default for any writer without its own ``Format`` section.
 These numbers are an example rather than a universal production recipe; choose capacities that match the application's
 burst rate, message sizes, and destination speed.
 The configured-logging demo parses and executes this exact file, so the example remains synchronized with the
@@ -69,13 +70,12 @@ It also enables one trace section, showing that a nested branch loses none of th
 .. literalinclude:: ../../../demos/log/ConfiguredLogging/data/nested.elcl
     :language: erbsland-conf
 
-Shape Every Log Line
-====================
+Default Log Line Format
+=======================
 
 Each log entry carries a timestamp, level, stream path, and message.
-The ``Format`` section decides how writers combine those values into a line; it does not change the entry itself.
-That distinction allows the manager to retain timestamps in UTC and apply a local-time choice only when the line is
-rendered.
+The top-level ``Format`` section supplies the default line settings; it does not change the entry itself.
+For example, entries retain timestamps in UTC even when you choose to display local time.
 
 Omitting the section uses :cpp:class:`LogLineFormat <erbsland::log::LogLineFormat>` defaults.
 When you add it, begin with ``Pattern``: its placeholders decide which entry values readers can see.
@@ -120,8 +120,8 @@ For example, a service can accept a detailed message into the manager, keep it i
 bounded console layout where space is scarce.
 :doc:`configuring_line_format` demonstrates every representation and truncation mode in isolation.
 
-Give the Manager a Clear Resource Budget
-========================================
+Log Queue Limits, Reservations, and Shutdown Timeout
+====================================================
 
 Logging sits between producer threads and destinations that may briefly be slower.
 The ``Queue`` section defines how much memory and how many entries the manager may retain during that gap.
@@ -171,24 +171,28 @@ sanitized messages currently retained.
 application deliberately requires an immediate deadline.
 The consequences of each limit, including drop statistics, are developed in :doc:`configuring_manager_options`.
 
-Enable the Trace Detail You Need
-================================
+Enabled Trace Sections
+======================
 
 Trace sections let an application compile detailed diagnostic logging into normal code while keeping individual groups
 quiet until they are needed.
 The ``Trace Sections`` value list names the groups enabled by this startup configuration.
-Omit it to disable every group, which is the usual steady-state choice for a production service.
+Omit it to leave all named sections disabled, which is the usual steady-state choice for a production service.
+Streams created without a trace section remain trace-enabled; their entries still need a matching writer for delivery.
 
-Unlike ELCL field names, trace-section identifiers are case-sensitive application identifiers.
-Each may contain ASCII letters, digits, underscores, and hyphens, and must begin with a letter or underscore.
+Each trace-section name contains at most 100 ASCII characters and must begin with a letter.
+The remaining characters may also contain digits, underscores, and hyphens.
+Their comparison ignores ASCII case and treats hyphens as equivalent to underscores.
+Therefore, the trace-sections ``Server-Message`` and ``server_message`` are equivalent.
+
 Enabling a section permits its guarded code to produce trace entries; those entries become visible only when at least
 one writer route also accepts the trace level and the stream path.
 Keeping this configuration stable after startup avoids changing the meaning of cached trace guards while work is in
 flight.
 :doc:`trace_sections` explains the recommended grouping and guard pattern.
 
-Connect Entries to Their Destinations
-=====================================
+Writer Routes and Level/Path Filters
+====================================
 
 The ``Writers`` section is a section list because an application commonly needs more than one destination.
 Each entry creates one built-in writer together with a filter.
@@ -197,7 +201,7 @@ hierarchy belong there.
 Omitting either filter dimension accepts all values for that dimension.
 
 Routes may overlap.
-A warning from ``guild/routes`` can go to the console, a rotating file, and a last-error buffer at the same time when it
+A warning from ``guild/routes`` can go to the console, a rotating file, and a syslog collector at the same time when it
 matches all three definitions.
 Writer entries retain their document order, but routing is not a first-match decision: every matching writer receives
 the entry.
@@ -221,8 +225,28 @@ not accidentally accept ``guildhall``.
       - All paths
       - A list of lowercase log path roots matched on complete segments.
 
-Keep Terminal Output Comfortable to Read
-========================================
+Per-Writer Log Line Formats
+===========================
+
+A console is easier to scan when it shows concise messages, while a file benefits from timestamps for later review.
+The root-level example above expresses this by placing a ``Format`` section inside each writer entry.
+The relative heading ``[ . Format ]`` belongs to the preceding writer: the console chooses ``{message}``, and the file
+chooses ``{time} {message}``.
+Both sections accept the same fields described under “Default Log Line Format.”
+
+A writer without a nested ``Format`` section uses the top-level format.
+Adding the section gives that writer a complete, independent format: omitted fields take the library defaults listed in
+the table, rather than inheriting top-level values.
+For example, a writer with only ``Pattern`` specified uses UTC timestamps even if the top-level format selects local
+time.
+An empty nested section selects library defaults for every setting.
+
+This also lets you shorten console messages without removing detail from a file.
+Set truncation in the console's nested format and leave the file's messages untruncated.
+The original entry is shared by the destinations, but each layout affects only the line shown there.
+
+Console Paragraph Layout and Wrapping
+=====================================
 
 A console writer is the natural destination for interactive tools and foreground service runs.
 It understands the terminal width and lays each formatted source line out as a paragraph.
@@ -254,8 +278,8 @@ A zero wrap limit means unlimited wrapping rather than no wrapping.
 Choose a finite limit when untrusted or exceptionally long messages could otherwise dominate an interactive screen.
 :doc:`console_writers` shows the paragraph layout and styles in action.
 
-Preserve an Operational History in Files
-========================================
+File Paths, Rotation, and Archive Retention
+===========================================
 
 A file writer gives an application durable history that remains available after the terminal session has ended.
 Its configuration begins with the active ``Path``, then decides how the first open treats an existing file and when the
@@ -292,8 +316,8 @@ their boundaries.
 ``Retention`` counts rotated archives, not the active file, and zero removes archives once they are no longer active.
 :doc:`file_writers` covers archive names, external file replacement, retry behavior, and failure accounting.
 
-Send Service Logs to a Syslog Collector
-=======================================
+Syslog Transport, Collector, and Header Fields
+==============================================
 
 Syslog is useful when a service's logs must leave the local machine and join a central operational view.
 The writer encodes entries as RFC 5424 messages and delivers them over UDP, TCP, or TLS.

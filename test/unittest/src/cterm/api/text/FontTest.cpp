@@ -5,8 +5,8 @@
 
 #include <erbsland/block/StdFormat.hpp>
 #include <erbsland/cterm/Font.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>

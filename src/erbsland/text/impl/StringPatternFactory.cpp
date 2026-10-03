@@ -5,25 +5,19 @@
 #include "DynamicStringPatternData.hpp"
 
 #include "../StringCharReader.hpp"
-#include "../u16/U16String.hpp"
-#include "../u32/U32String.hpp"
-#include "../u8/U8String.hpp"
 
 namespace erbsland::text::impl {
 
-auto createStringPatternData(const U8String &pattern) -> StringPatternDataPtr {
+auto createStringPatternData(const AnyString &pattern, const StringPatternKind kind) -> StringPatternDataPtr {
     auto reader = StringCharReader{pattern};
-    return DynamicStringPatternData::parse(reader);
-}
-
-auto createStringPatternData(const U16String &pattern) -> StringPatternDataPtr {
-    auto reader = StringCharReader{pattern};
-    return DynamicStringPatternData::parse(reader);
-}
-
-auto createStringPatternData(const U32String &pattern) -> StringPatternDataPtr {
-    auto reader = StringCharReader{pattern};
-    return DynamicStringPatternData::parse(reader);
+    if (kind == StringPatternKind::PosixGlob) {
+        return DynamicStringPatternData::parsePosixGlob(reader);
+    }
+    auto mode = StringPatternParseMode::Divider;
+    if (kind == StringPatternKind::Glob) {
+        mode = StringPatternParseMode::Glob;
+    }
+    return DynamicStringPatternData::parse(reader, mode);
 }
 
 }

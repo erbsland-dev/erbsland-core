@@ -1,23 +1,23 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/AnyStringBuilder.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u16/U16StringLiteral.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u32/U32StringLiteral.hpp>
-#include <erbsland/text/u8/U8StringLiteral.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/ItemCount.hpp>
-#include <erbsland/unit/U16DataIndex.hpp>
-#include <erbsland/unit/U16DataLength.hpp>
+#include <erbsland/AnyStringBuilder.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/U16Count.hpp>
+#include <erbsland/U16Index.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U16StringLiteral.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
+#include <erbsland/U32StringLiteral.hpp>
+#include <erbsland/U8StringLiteral.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -27,12 +27,12 @@
 #include <type_traits>
 #include <utility>
 
-using el::unit::ByteLength;
+using el::unit::ByteCount;
+using el::unit::CpCount;
 using el::unit::CpIndex;
-using el::unit::CpLength;
 using el::unit::ItemCount;
-using el::unit::U16DataIndex;
-using el::unit::U16DataLength;
+using el::unit::U16Count;
+using el::unit::U16Index;
 using namespace el::text;
 using namespace el::text::literals;
 
@@ -57,9 +57,9 @@ public:
         const auto u8FactoryBuilder = AnyStringBuilder::u8();
         const auto u16FactoryBuilder = AnyStringBuilder::u16();
         const auto u32FactoryBuilder = AnyStringBuilder::u32();
-        const auto u8CapacityBuilder = AnyStringBuilder::withCapacity(StringKind::U8, CpLength{1U});
-        const auto u16CapacityBuilder = AnyStringBuilder::withCapacity(StringKind::U16, CpLength{1U});
-        const auto u32CapacityBuilder = AnyStringBuilder::withCapacity(StringKind::U32, CpLength{1U});
+        const auto u8CapacityBuilder = AnyStringBuilder::withCapacity(StringKind::U8, CpCount{1U});
+        const auto u16CapacityBuilder = AnyStringBuilder::withCapacity(StringKind::U16, CpCount{1U});
+        const auto u32CapacityBuilder = AnyStringBuilder::withCapacity(StringKind::U32, CpCount{1U});
 
         REQUIRE_EQUAL(defaultBuilder.kind(), StringKind::U8);
         REQUIRE(defaultBuilder.isEmpty());
@@ -76,9 +76,9 @@ public:
     }
 
     void testNativeCapacityFactories() {
-        const auto u8Capacity = ByteLength{12U};
-        const auto u16Capacity = U16DataLength{8U};
-        const auto u32Capacity = CpLength{6U};
+        const auto u8Capacity = ByteCount{12U};
+        const auto u16Capacity = U16Count{8U};
+        const auto u32Capacity = CpCount{6U};
 
         const auto u8Editor = AnyStringBuilder::u8(u8Capacity).takeU8StringEditor();
         const auto u16Editor = AnyStringBuilder::u16(u16Capacity).takeU16StringEditor();
@@ -89,7 +89,7 @@ public:
     }
 
     void testSensitiveUtf8Factory() {
-        auto builder = AnyStringBuilder::u8(ByteLength{}, true);
+        auto builder = AnyStringBuilder::u8(ByteCount{}, true);
         builder.append(U'a');
         const auto first = builder.takeString();
         REQUIRE_EQUAL(first, "a"_el);
@@ -102,14 +102,14 @@ public:
 
     void testGenericCapacityFactory() {
         REQUIRE(
-            AnyStringBuilder::withCapacity(StringKind::U8, CpLength{3U}).takeU8StringEditor().capacity() >=
-            ByteLength{12U});
+            AnyStringBuilder::withCapacity(StringKind::U8, CpCount{3U}).takeU8StringEditor().capacity() >=
+            ByteCount{12U});
         REQUIRE(
-            AnyStringBuilder::withCapacity(StringKind::U16, CpLength{3U}).takeU16StringEditor().capacity() >=
-            U16DataLength{6U});
+            AnyStringBuilder::withCapacity(StringKind::U16, CpCount{3U}).takeU16StringEditor().capacity() >=
+            U16Count{6U});
         REQUIRE(
-            AnyStringBuilder::withCapacity(StringKind::U32, CpLength{3U}).takeU32StringEditor().capacity() >=
-            CpLength{3U});
+            AnyStringBuilder::withCapacity(StringKind::U32, CpCount{3U}).takeU32StringEditor().capacity() >=
+            CpCount{3U});
     }
 
     void testBasedOnAndTemplateConversion() {
@@ -117,9 +117,9 @@ public:
         const auto u16Initial = U16StringEditor{std::u16string_view{u"β"}};
         const auto u32Initial = U32StringEditor{std::u32string_view{U"中"}};
 
-        auto u8Builder = AnyStringBuilder::basedOn(String{u8Initial}, ByteLength{8U});
-        auto u16Builder = AnyStringBuilder::basedOn(U16String{u16Initial}, U16DataLength{6U});
-        auto u32Builder = AnyStringBuilder::basedOn(U32String{u32Initial}, CpLength{4U});
+        auto u8Builder = AnyStringBuilder::basedOn(String{u8Initial}, ByteCount{8U});
+        auto u16Builder = AnyStringBuilder::basedOn(U16String{u16Initial}, U16Count{6U});
+        auto u32Builder = AnyStringBuilder::basedOn(U32String{u32Initial}, CpCount{4U});
 
         u8Builder.append(String{String{"!"_el}});
         u16Builder.append(U16String{U16StringEditor{std::u16string_view{u"!"}}});
@@ -131,21 +131,21 @@ public:
         const auto u8Editor = u8Builder.toEditor<StringEditor>();
         const auto u16Editor = u16Builder.toEditor<U16StringEditor>();
         const auto u32Editor = u32Builder.toEditor<U32StringEditor>();
-        REQUIRE_GREATER_EQUAL(u8Editor.capacity(), ByteLength{9U});
-        REQUIRE_GREATER_EQUAL(u16Editor.capacity(), U16DataLength{7U});
-        REQUIRE_GREATER_EQUAL(u32Editor.capacity(), CpLength{5U});
+        REQUIRE_GREATER_EQUAL(u8Editor.capacity(), ByteCount{9U});
+        REQUIRE_GREATER_EQUAL(u16Editor.capacity(), U16Count{7U});
+        REQUIRE_GREATER_EQUAL(u32Editor.capacity(), CpCount{5U});
     }
 
     void testAppendCharacters() {
         auto builder = AnyStringBuilder{StringKind::U8};
 
         builder.append(U'A').append(U'\u00E1').append(U'\U0001F600').append(Char::replacement());
-        REQUIRE_EQUAL(builder.length(), CpLength{4U});
+        REQUIRE_EQUAL(builder.length(), CpCount{4U});
         REQUIRE_EQUAL(
             StringConverter{builder.toU32String()}.toStdU32String(), std::u32string{U"A\u00E1\U0001F600\uFFFD"});
 
         builder.append(Char{char32_t{0x110000U}});
-        REQUIRE_EQUAL(builder.length(), CpLength{4U});
+        REQUIRE_EQUAL(builder.length(), CpCount{4U});
         REQUIRE_EQUAL(
             StringConverter{builder.toU32String()}.toStdU32String(), std::u32string{U"A\u00E1\U0001F600\uFFFD"});
     }
@@ -153,12 +153,12 @@ public:
     void testAppendRepeatedCharactersAndClear() {
         auto builder = AnyStringBuilder{StringKind::U16};
 
-        builder.append(Char{U'x'}, CpLength{3U});
-        REQUIRE_EQUAL(builder.length(), CpLength{3U});
+        builder.append(Char{U'x'}, CpCount{3U});
+        REQUIRE_EQUAL(builder.length(), CpCount{3U});
         REQUIRE_EQUAL(StringConverter{builder.toU16String()}.toStdU16String(), std::u16string{u"xxx"});
 
-        builder.append(Char{char32_t{0x110000U}}, CpLength{2U});
-        REQUIRE_EQUAL(builder.length(), CpLength{3U});
+        builder.append(Char{char32_t{0x110000U}}, CpCount{2U});
+        REQUIRE_EQUAL(builder.length(), CpCount{3U});
         REQUIRE_EQUAL(StringConverter{builder.toU16String()}.toStdU16String(), std::u16string{u"xxx"});
 
         builder.clear();
@@ -183,7 +183,7 @@ public:
             builder.append(U16String{u16Text}, ItemCount{2U});
             builder.append(U32String{u32Text}, ItemCount{2U});
 
-            REQUIRE_EQUAL(builder.length(), CpLength{15U});
+            REQUIRE_EQUAL(builder.length(), CpCount{15U});
             REQUIRE_EQUAL(
                 StringConverter{builder.toU32String()}.toStdU32String(), std::u32string{U"Aéβ😀中AéAéβ😀β😀中中"});
             REQUIRE_EQUAL(
@@ -202,7 +202,7 @@ public:
 
         builder.append(u8Literal).append(u8Literal8).append(u16Literal).append(u32Literal);
 
-        REQUIRE_EQUAL(builder.length(), CpLength{10U});
+        REQUIRE_EQUAL(builder.length(), CpCount{10U});
         REQUIRE_EQUAL(StringConverter{builder.toU32String()}.toStdU32String(), std::u32string{U"HolaÅbo東京λ"});
     }
 
@@ -212,7 +212,7 @@ public:
 
         u8Builder.append(String{invalidUtf8});
         const auto u8Result = u8Builder.takeU8String();
-        REQUIRE_EQUAL(u8Result.length(), ByteLength{3U});
+        REQUIRE_EQUAL(u8Result.length(), ByteCount{3U});
         REQUIRE_EQUAL(StringConverter{u8Result}.toStdU32String(), std::u32string{U"A\uFFFDB"});
 
         const auto invalidUtf16 = U16StringEditor{std::u16string{u'A', char16_t{0xD800U}, u'B'}};
@@ -221,14 +221,14 @@ public:
         u16Builder.append(U16String{invalidUtf16});
         const auto u16Result = u16Builder.takeU16String();
         REQUIRE_EQUAL(u16Result.length().toSizeT(), std::size_t{3U});
-        REQUIRE(u16Result.charAt(U16DataIndex{1U}).isReplacement());
+        REQUIRE(u16Result.charAt(U16Index{1U}).isReplacement());
 
         const auto invalidUtf32 = U32StringEditor{std::u32string{U'A', char32_t{0x110000U}, U'B'}};
         auto u32Builder = AnyStringBuilder{StringKind::U32};
 
         u32Builder.append(U32String{invalidUtf32});
         const auto u32Result = u32Builder.takeU32String();
-        REQUIRE_EQUAL(u32Result.length(), CpLength{3U});
+        REQUIRE_EQUAL(u32Result.length(), CpCount{3U});
         REQUIRE(u32Result.charAt(CpIndex{1U}).isReplacement());
     }
 
@@ -257,7 +257,7 @@ public:
 
         REQUIRE_EQUAL(StringConverter{first}.toStdString(), std::string{"a"});
         REQUIRE_EQUAL(StringConverter{builder.toU8String()}.toStdString(), std::string{"ab"});
-        REQUIRE_EQUAL(builder.length(), CpLength{2U});
+        REQUIRE_EQUAL(builder.length(), CpCount{2U});
     }
 
     void testTakeStringResetsBuilder() {
@@ -285,7 +285,7 @@ public:
 
         REQUIRE_EQUAL(StringConverter{first.toU8String()}.toStdString(), std::string{"ab!"});
         REQUIRE_EQUAL(StringConverter{second.toU8String()}.toStdString(), std::string{"abc"});
-        REQUIRE_EQUAL(first.length(), CpLength{3U});
-        REQUIRE_EQUAL(second.length(), CpLength{3U});
+        REQUIRE_EQUAL(first.length(), CpCount{3U});
+        REQUIRE_EQUAL(second.length(), CpCount{3U});
     }
 };

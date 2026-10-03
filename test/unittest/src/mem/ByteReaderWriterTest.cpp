@@ -1,16 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/mem/ByteIntegerFormat.hpp>
-#include <erbsland/mem/ByteReader.hpp>
-#include <erbsland/mem/ByteTextOptions.hpp>
-#include <erbsland/mem/ByteWriter.hpp>
-#include <erbsland/mem/Endianness.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringEncoding.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteIntegerFormat.hpp>
+#include <erbsland/ByteReader.hpp>
+#include <erbsland/ByteTextOptions.hpp>
+#include <erbsland/ByteWriter.hpp>
+#include <erbsland/Endianness.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/OutOfRangeFailure.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEncoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -29,8 +31,8 @@ using el::mem::ByteTextFormat;
 using el::mem::ByteTextOptions;
 using el::mem::ByteWriter;
 using el::mem::Endianness;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using namespace el::text::literals;
 
 template <typename T>
@@ -56,10 +58,22 @@ static_assert(*cCompactTextOptions.countFormat() == ByteIntegerFormat::UnsignedV
 TESTED_TARGETS(ByteReader ByteWriter ByteIntegerFormat ByteTextOptions Endianness)
 class ByteReaderWriterTest final : public el::UnitTest {
 public:
+    void testBoundsAndFallbackContracts() {
+        auto reader = ByteReader{makeBlock({1U})};
+        REQUIRE_FALSE(reader.readBytes(ByteCount{2U}).has_value());
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, reader.readBytesOrThrow(ByteCount{2U}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, reader.readBytesOrThrow(ByteCount::infinite()));
+        REQUIRE_EQUAL(reader.position(), ByteIndex{});
+        auto options = ByteTextOptions{ByteTextFormat::PaddedField};
+        options.setLength(ByteCount::infinite());
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, reader.readText(options));
+        REQUIRE_EQUAL(reader.position(), ByteIndex{});
+    }
+
     void testByteReaderBasics() {
         auto reader = ByteReader{makeBlock({1U, 2U})};
 
-        REQUIRE_EQUAL(reader.length(), ByteLength{2U});
+        REQUIRE_EQUAL(reader.length(), ByteCount{2U});
         REQUIRE_EQUAL(reader.position(), ByteIndex::zero());
         REQUIRE_FALSE(reader.isAtEnd());
         REQUIRE_EQUAL(reader.peekByte(), Byte{1U});
@@ -96,13 +110,13 @@ public:
     void testByteReaderReadsByteBlocks() {
         auto reader = ByteReader{makeBlock({1U, 2U, 3U})};
 
-        REQUIRE_EQUAL(reader.readBytes(ByteLength{2U}).value(), makeBlock({1U, 2U}));
+        REQUIRE_EQUAL(reader.readBytes(ByteCount{2U}).value(), makeBlock({1U, 2U}));
         REQUIRE_EQUAL(reader.position(), ByteIndex{2U});
-        REQUIRE_FALSE(reader.readBytes(ByteLength{2U}).has_value());
+        REQUIRE_FALSE(reader.readBytes(ByteCount{2U}).has_value());
         REQUIRE_EQUAL(reader.position(), ByteIndex{2U});
-        REQUIRE_EQUAL(reader.readBytesOrThrow(ByteLength{1U}), makeBlock({3U}));
+        REQUIRE_EQUAL(reader.readBytesOrThrow(ByteCount{1U}), makeBlock({3U}));
         REQUIRE(reader.isAtEnd());
-        REQUIRE_THROWS(reader.readBytesOrThrow(ByteLength{1U}));
+        REQUIRE_THROWS(reader.readBytesOrThrow(ByteCount{1U}));
     }
 
     void testReaderDefaultFailureDoesNotAdvance() {
@@ -140,7 +154,7 @@ public:
 
     void testWriterBasicsAndOverwrite() {
         auto writer = ByteWriter{};
-        writer.reserve(ByteLength{8U});
+        writer.reserve(ByteCount{8U});
         writer.writeByte(Byte{1U}).writeByte(Byte{2U});
         REQUIRE_EQUAL(writer.toByteBlock().toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
 
@@ -190,13 +204,13 @@ public:
 
         const auto taken = writer.takeByteBlockEditor();
         REQUIRE_EQUAL(taken.toUInt8Vector(), std::vector<uint8_t>({0x12U, 0x34U}));
-        REQUIRE_EQUAL(writer.length(), ByteLength::zero());
+        REQUIRE_EQUAL(writer.length(), ByteCount::zero());
         REQUIRE_EQUAL(writer.position(), ByteIndex::zero());
         REQUIRE_EQUAL(writer.endianness(), Endianness::Big);
 
         writer.writeUInt8(1U);
         writer.reset();
-        REQUIRE_EQUAL(writer.length(), ByteLength::zero());
+        REQUIRE_EQUAL(writer.length(), ByteCount::zero());
         REQUIRE_EQUAL(writer.position(), ByteIndex::zero());
         REQUIRE_EQUAL(writer.endianness(), Endianness::Big);
     }
@@ -241,8 +255,8 @@ public:
     }
 
     void testIntegerFormatsAndConversions() {
-        REQUIRE_EQUAL(ByteIntegerFormat{ByteIntegerFormat::UnsignedFixed16Bit}.byteCount(), ByteLength{2U});
-        REQUIRE_EQUAL(ByteIntegerFormat{ByteIntegerFormat::UnsignedFixed24Bit}.byteCount(), ByteLength{3U});
+        REQUIRE_EQUAL(ByteIntegerFormat{ByteIntegerFormat::UnsignedFixed16Bit}.byteCount(), ByteCount{2U});
+        REQUIRE_EQUAL(ByteIntegerFormat{ByteIntegerFormat::UnsignedFixed24Bit}.byteCount(), ByteCount{3U});
         REQUIRE(ByteIntegerFormat{ByteIntegerFormat::SignedVariableLength}.isSigned());
         REQUIRE_FALSE(ByteIntegerFormat{ByteIntegerFormat::UnsignedVariableLength}.isSigned());
         REQUIRE(ByteIntegerFormat{ByteIntegerFormat::UnsignedVariableLength}.byteCount().isInfinite());
@@ -462,7 +476,7 @@ public:
 
     void testTextEndMarksAndPaddedFields() {
         auto dynamic = ByteTextOptions{};
-        dynamic.clearCountFormat().setEndMark(U'|').setLength(ByteLength{8U});
+        dynamic.clearCountFormat().setEndMark(U'|').setLength(ByteCount{8U});
         auto writer = ByteWriter{};
         writer.writeTextOrThrow("A¢"_el, dynamic);
         REQUIRE_EQUAL(writer.toByteBlock().toUInt8Vector(), std::vector<uint8_t>({0x41U, 0xc2U, 0xa2U, 0x7cU}));
@@ -470,7 +484,7 @@ public:
         REQUIRE_EQUAL(reader.readText(dynamic).value(), "A¢"_el);
 
         auto bounded = ByteTextOptions{};
-        bounded.clearCountFormat().setEndMark(U'!').setLength(ByteLength{1U});
+        bounded.clearCountFormat().setEndMark(U'!').setLength(ByteCount{1U});
         writer.reset();
         writer.writeTextOrThrow("A"_el, bounded);
         auto boundedReader = ByteReader{writer.toByteBlock()};
@@ -481,7 +495,7 @@ public:
         REQUIRE_EQUAL(invalid.position(), ByteIndex::zero());
 
         auto padded = ByteTextOptions{ByteTextFormat::PaddedField};
-        padded.setLength(ByteLength{8U}).setPadding(Byte{0x20U}).setEndMark(U'!');
+        padded.setLength(ByteCount{8U}).setPadding(Byte{0x20U}).setEndMark(U'!');
         writer.reset();
         writer.writeTextOrThrow("A"_el, padded);
         auto paddedReader = ByteReader{writer.toByteBlock()};
@@ -492,7 +506,7 @@ public:
     void testTextUnicodeEncodingsAndTruncation() {
         const auto text = el::text::String{"A😀"_el};
         auto utf16 = ByteTextOptions{el::text::StringEncoding::Utf16BigEndian};
-        utf16.setLength(ByteLength{6U});
+        utf16.setLength(ByteCount{6U});
         auto writer = ByteWriter{};
         writer.writeTextOrThrow(text, utf16);
         auto reader = ByteReader{writer.toByteBlock()};
@@ -505,7 +519,7 @@ public:
         REQUIRE_EQUAL(reader.readTextOrThrow(utf32), text);
 
         auto truncated = ByteTextOptions{};
-        truncated.setLength(ByteLength{4U});
+        truncated.setLength(ByteCount{4U});
         writer.reset();
         writer.writeText(text, truncated);
         reader = ByteReader{writer.toByteBlock()};
@@ -515,7 +529,7 @@ public:
 
     void testTextReadsAreTransactionalAtNonzeroPositions() {
         auto terminated = ByteTextOptions{};
-        terminated.clearCountFormat().setEndMark(U'|').setLength(ByteLength{8U});
+        terminated.clearCountFormat().setEndMark(U'|').setLength(ByteCount{8U});
         auto reader = ByteReader{makeBlock({0xffU, 0x41U, 0x7cU, 0x42U})};
         reader.setPosition(ByteIndex{1U});
         REQUIRE_EQUAL(reader.readTextOrThrow(terminated), "A"_el);
@@ -532,14 +546,14 @@ public:
         REQUIRE_EQUAL(incompleteCount.position(), ByteIndex{1U});
 
         auto misaligned = ByteTextOptions{el::text::StringEncoding::Utf16LittleEndian};
-        misaligned.clearCountFormat().setEndMark(U'!').setLength(ByteLength{6U});
+        misaligned.clearCountFormat().setEndMark(U'!').setLength(ByteCount{6U});
         auto misalignedReader = ByteReader{makeBlock({0xffU, 0x41U, 0x00U, 0x00U, 0x21U, 0x00U})};
         misalignedReader.setPosition(ByteIndex{1U});
         REQUIRE_FALSE(misalignedReader.readText(misaligned).has_value());
         REQUIRE_EQUAL(misalignedReader.position(), ByteIndex{1U});
 
         auto padded = ByteTextOptions{ByteTextFormat::PaddedField};
-        padded.clearCountFormat().setEndMark(U'!').setLength(ByteLength{4U}).setPadding(Byte{0x20U});
+        padded.clearCountFormat().setEndMark(U'!').setLength(ByteCount{4U}).setPadding(Byte{0x20U});
         auto paddedReader = ByteReader{makeBlock({0xffU, 0x41U, 0x21U, 0x20U, 0x20U, 0xeeU})};
         paddedReader.setPosition(ByteIndex{1U});
         REQUIRE_EQUAL(paddedReader.readTextOrThrow(padded), "A"_el);

@@ -18,7 +18,7 @@ auto isToken(const String &value) noexcept -> bool {
 
 auto isFieldValue(const String &value) noexcept -> bool {
     static const auto cFieldValueCharacters = []() -> CharSet {
-        auto result = CharSet{Char{U'\t'}};
+        auto result = CharSet{U'\t'};
         result.add(CharRange{0x20U, 0x7eU});
         result.add(CharRange{0x80U, 0x10ffffU});
         result.add(Char::replacement());
@@ -37,7 +37,7 @@ auto isRequestTarget(const String &value) noexcept -> bool {
 
 auto isReasonPhrase(const String &value) noexcept -> bool {
     static const auto cReasonPhraseCharacters = []() -> CharSet {
-        auto result = CharSet{Char{U'\t'}};
+        auto result = CharSet{U'\t'};
         result.add(CharRange{0x20U, 0x7eU});
         result.add(CharRange{0x80U, 0x10ffffU});
         result.add(Char::replacement());

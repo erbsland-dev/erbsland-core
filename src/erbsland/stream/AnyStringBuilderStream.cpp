@@ -20,22 +20,27 @@ auto AnyStringBuilderStream::kind() const noexcept -> StringKind {
     const auto lock = std::scoped_lock{_mutex};
     return _builder.kind();
 }
-auto AnyStringBuilderStream::length() const noexcept -> unit::CpLength {
+
+auto AnyStringBuilderStream::length() const noexcept -> unit::CpCount {
     const auto lock = std::scoped_lock{_mutex};
     return _builder.length();
 }
+
 auto AnyStringBuilderStream::isEmpty() const noexcept -> bool {
     const auto lock = std::scoped_lock{_mutex};
     return _builder.isEmpty();
 }
+
 void AnyStringBuilderStream::clear() noexcept {
     const auto lock = std::scoped_lock{_mutex};
     _builder.clear();
 }
+
 auto AnyStringBuilderStream::toU8String() const -> U8String {
     const auto lock = std::scoped_lock{_mutex};
     return _builder.toU8String();
 }
+
 auto AnyStringBuilderStream::toString() const -> U8String {
     const auto lock = std::scoped_lock{_mutex};
     return _builder.toString();

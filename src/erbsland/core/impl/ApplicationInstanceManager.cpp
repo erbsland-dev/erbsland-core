@@ -3,11 +3,12 @@
 #include "ApplicationInstanceManager.hpp"
 
 #include "ApplicationDataImpl.hpp"
+#include "ApplicationExecutionContext.hpp"
 
 #include "../Application.hpp"
 
 #include <mutex>
-#include <thread>
+#include <utility>
 
 namespace erbsland::core::impl {
 
@@ -19,24 +20,16 @@ auto ApplicationInstanceManager::registerUserInstance(Application *appInstance) 
     ApplicationDataPtr data;
     {
         const auto lock = std::scoped_lock{_instanceMutex};
+        if (_data == nullptr) {
+            _data = createApplicationData();
+        }
         if (_tempInstance != nullptr) {
-            // Extract the data from the temporary instance and delete it after releasing the mutex.
-            data = _tempInstance->_data;
             tempInstance = std::move(_tempInstance);
         }
-        if (_userInstance != nullptr) {
-            // This is a conflict situation where the user creates a second instance.
-            // We handle it gracefully but return existing data.
-            // `Application` will terminate if also new command line arguments
-            data = _userInstance->_data;
-        } else {
-            // Only keep the first user registered instance.
+        if (_userInstance == nullptr) {
             _userInstance = appInstance;
         }
-        if (data == nullptr) {
-            // If this is the first instance, create a new data object.
-            data = createApplicationData();
-        }
+        data = _data;
     }
     tempInstance.reset();
     return data;
@@ -46,26 +39,49 @@ auto ApplicationInstanceManager::unregisterInstance(const Application *appInstan
     if (appInstance == nullptr) {
         std::terminate();
     }
-    const auto lock = std::scoped_lock{_instanceMutex};
-    if (_userInstance == appInstance) {
-        // In case of a conflict situation, make sure to only delete the original user instance.
+    ApplicationDataPtr releasedData;
+    {
+        const auto lock = std::scoped_lock{_instanceMutex};
+        if (_userInstance != appInstance) {
+            return false;
+        }
         _userInstance = nullptr;
-        return true;
+        releasedData = std::move(_data);
     }
-    return false;
+    return true;
 }
 
 void ApplicationInstanceManager::linkWith(Application &app) {
-    auto lock = std::scoped_lock{_instanceMutex};
-    if (_userInstance != nullptr) {
-        _userInstance->_data = app._data;
-        return;
+    ApplicationDataPtr releasedData;
+    ApplicationDataPtr releasedFacadeData;
+    {
+        const auto lock = std::scoped_lock{_instanceMutex};
+        auto data = app._data;
+        releasedData = std::move(_data);
+        _data = data;
+        if (_userInstance != nullptr) {
+            releasedFacadeData = std::move(_userInstance->_data);
+            _userInstance->_data = std::move(data);
+        } else if (_tempInstance != nullptr) {
+            releasedFacadeData = std::move(_tempInstance->_data);
+            _tempInstance->_data = std::move(data);
+        }
     }
-    if (_tempInstance != nullptr) {
-        _tempInstance->_data = app._data;
-        return;
+}
+
+auto ApplicationInstanceManager::retainData() -> ApplicationDataPtr {
+    if (auto data = ApplicationExecutionContext::current(); data != nullptr) {
+        return data;
     }
-    _tempInstance.reset(new Application(app._data));
+    return retainGlobalData();
+}
+
+auto ApplicationInstanceManager::retainGlobalData() -> ApplicationDataPtr {
+    const auto lock = std::scoped_lock{_instanceMutex};
+    if (_data == nullptr) {
+        _data = createApplicationData();
+    }
+    return _data;
 }
 
 auto ApplicationInstanceManager::application() -> Application & {
@@ -79,7 +95,10 @@ auto ApplicationInstanceManager::application() -> Application & {
     // Special case where no user instance was registered yet.
     // May happen if static initialization code is calling `application()` before `main()` is entered.
     // This instance is kept alive until the user instance is registered or the application terminates.
-    _tempInstance.reset(new Application(createApplicationData()));
+    if (_data == nullptr) {
+        _data = createApplicationData();
+    }
+    _tempInstance.reset(new Application(_data));
     return *_tempInstance;
 }
 
@@ -112,13 +131,16 @@ void ApplicationInstanceManager::setInstance(ApplicationInstanceManager *instanc
 
 void ApplicationInstanceManager::resetSimulatedMain() {
     std::unique_ptr<Application> tempInstance;
+    ApplicationDataPtr releasedData;
     {
         auto lock = std::scoped_lock{_instanceMutex};
         _userInstance = nullptr;
         tempInstance = std::move(_tempInstance);
+        releasedData = std::move(_data);
     }
     tempInstance.reset();
 }
+
 #endif
 
 }

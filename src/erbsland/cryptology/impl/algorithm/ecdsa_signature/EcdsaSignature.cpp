@@ -4,31 +4,34 @@
 
 #include "../../../../err/ParseError.hpp"
 #include "../../../../text/Literals.hpp"
+#include "../../../../unit/ByteCount.hpp"
 #include "../../../../unit/ByteIndex.hpp"
-#include "../../../../unit/ByteLength.hpp"
 #include "../../../../unit/ItemCount.hpp"
 #include "../../../../unit/ItemIndex.hpp"
 #include "../../../Hasher.hpp"
 #include "../../DerParser.hpp"
 
+#include <algorithm>
+
 namespace erbsland::cryptology::impl::ecdsa_signature {
 
+using namespace mem;
 using namespace text::literals;
 using namespace unit;
 
 auto isSignatureAlgorithm(const X509AlgorithmIdentifier &algorithm) noexcept -> bool {
     const auto oid = algorithm.oid().toString();
-    return oid == "1.2.840.10045.4.3.2"_el || oid == "1.2.840.10045.4.3.3"_el;
+    return oid == "1.2.840.10045.4.3.2"_el || oid == "1.2.840.10045.4.3.3"_el || oid == "1.2.840.10045.4.3.4"_el;
 }
 
 auto verify(
     const PublicKey &publicKey,
     const X509AlgorithmIdentifier &signatureAlgorithm,
-    const mem::ConstByteSpan message,
-    const mem::ConstByteSpan signature) -> bool {
-    const auto parameters = decodeParameters(signatureAlgorithm);
-    const auto curve = NistPrimeCurve{parameters.curve};
-    const auto publicPoint = decodePublicKey(publicKey, parameters);
+    const ConstByteSpan message,
+    const ConstByteSpan signature) -> bool {
+    const auto hash = decodeHash(signatureAlgorithm);
+    const auto curve = NistPrimeCurve{decodeCurve(publicKey)};
+    const auto publicPoint = decodePublicKey(publicKey, curve.name());
     const auto values = decodeSignature(signature, curve);
 
     // FIPS 186-5 section 6.4.2 step 1: reject r or s outside [1,n-1].
@@ -37,11 +40,12 @@ auto verify(
     }
 
     // FIPS 186-5 section 6.4.2 steps 2--3: hash M and interpret the leftmost min(bitlen(n), hashlen) bits as e.
-    // The selected pairings have equal order and digest widths, so the complete SHA-256 or SHA-384 digest is used.
-    auto hasher = Hasher{parameters.hash};
+    // Both supported subgroup orders have whole-byte bit lengths; longer digests are truncated, shorter ones retained.
+    auto hasher = Hasher{hash};
     hasher.update(message);
     const auto digest = hasher.finalize();
-    const auto e = curve.numberFromBigEndian(digest.span());
+    const auto e =
+        curve.numberFromBigEndian(digest.span().first(std::min(digest.span().size(), curve.byteLength().toSizeT())));
     if (!e.has_value()) {
         throwParseError("The ECDSA message digest exceeds the selected scalar width."_el);
     }
@@ -62,22 +66,25 @@ auto verify(
     return curve.compare(values->r, curve.reduceOrder(affine->x)) == 0;
 }
 
-auto decodeParameters(const X509AlgorithmIdentifier &algorithm) -> Parameters {
+auto decodeHash(const X509AlgorithmIdentifier &algorithm) -> HashAlgorithm {
     // RFC 5758 section 3.2 identifies ECDSA/SHA-2 by distinct OIDs and requires AlgorithmIdentifier parameters absent.
     if (!algorithm.parameters().isEmpty()) {
         throwParseError("ECDSA signature AlgorithmIdentifier parameters must be absent."_el);
     }
     const auto oid = algorithm.oid().toString();
     if (oid == "1.2.840.10045.4.3.2"_el) {
-        return {NistPrimeCurve::Name::P256, HashAlgorithm::Sha2_256};
+        return HashAlgorithm::Sha2_256;
     }
     if (oid == "1.2.840.10045.4.3.3"_el) {
-        return {NistPrimeCurve::Name::P384, HashAlgorithm::Sha2_384};
+        return HashAlgorithm::Sha2_384;
+    }
+    if (oid == "1.2.840.10045.4.3.4"_el) {
+        return HashAlgorithm::Sha2_512;
     }
     throwParseError("The X.509 signature algorithm is not a supported ECDSA SHA-2 algorithm."_el);
 }
 
-auto decodePublicKey(const PublicKey &publicKey, const Parameters &parameters) -> NistPrimeCurve::Point {
+auto decodeCurve(const PublicKey &publicKey) -> NistPrimeCurve::Name {
     const auto &keyAlgorithm = publicKey.algorithm();
 
     // RFC 5480 section 2.1 requires id-ecPublicKey for an unrestricted ECDSA verification key.
@@ -98,8 +105,13 @@ auto decodePublicKey(const PublicKey &publicKey, const Parameters &parameters) -
     } else {
         throwParseError("SubjectPublicKeyInfo uses an unsupported named curve."_el);
     }
-    if (keyCurve != parameters.curve) {
-        throwParseError("The ECDSA signature hash and public-key curve are not a supported matched pair."_el);
+    return keyCurve;
+}
+
+auto decodePublicKey(const PublicKey &publicKey, const NistPrimeCurve::Name expectedCurve) -> NistPrimeCurve::Point {
+    const auto keyCurve = decodeCurve(publicKey);
+    if (keyCurve != expectedCurve) {
+        throwParseError("The ECDSA public key does not use the required named curve."_el);
     }
     if (publicKey.unusedBitCount() != 0U) {
         throwParseError("An ECDSA public-key BIT STRING must not contain unused bits."_el);
@@ -114,8 +126,7 @@ auto decodePublicKey(const PublicKey &publicKey, const Parameters &parameters) -
     return *point;
 }
 
-auto decodeSignature(const mem::ConstByteSpan signature, const NistPrimeCurve &curve)
-    -> std::optional<SignatureValues> {
+auto decodeSignature(const ConstByteSpan signature, const NistPrimeCurve &curve) -> std::optional<SignatureValues> {
     // RFC 3279 section 2.2.3 bounds P-256/P-384 ECDSA-Sig-Value to 72/104 DER octets with canonical INTEGERs.
     const auto maximumLength = curve.name() == NistPrimeCurve::Name::P256 ? std::size_t{72U} : std::size_t{104U};
     if (signature.size() > maximumLength) {
@@ -123,7 +134,7 @@ auto decodeSignature(const mem::ConstByteSpan signature, const NistPrimeCurve &c
     }
 
     // RFC 3279 section 2.2.3: ECDSA-Sig-Value is exactly SEQUENCE { r INTEGER, s INTEGER } in canonical DER.
-    const auto root = DerParser{mem::ByteBlock::fromSpan(signature)}.parseDocument();
+    const auto root = DerParser{ByteBlock::fromSpan(signature)}.parseDocument();
     requireNode(
         root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "ECDSA-Sig-Value"_el);
     if (root.childCount() != ItemCount{2U}) {
@@ -148,8 +159,8 @@ auto decodeInteger(const Asn1Node &node, const NistPrimeCurve &curve) -> std::op
     if (contents.isEmpty() || (contents.span().front().toUInt8() & 0x80U) != 0U) {
         throwParseError("An ECDSA signature INTEGER must be nonnegative."_el);
     }
-    if (contents.span().front().toUInt8() == 0U && contents.length() > ByteLength::one()) {
-        contents = contents.slice(ByteIndex{1U}, contents.length() - ByteLength::one());
+    if (contents.span().front().toUInt8() == 0U && contents.length() > ByteCount::one()) {
+        contents = contents.slice(ByteIndex{1U}, contents.length() - ByteCount::one());
     }
     const auto value = curve.numberFromBigEndian(contents.span());
     if (!value.has_value()) {

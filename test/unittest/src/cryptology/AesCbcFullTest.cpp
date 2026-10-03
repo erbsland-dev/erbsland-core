@@ -1,16 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "CryptologyResponseKeys.hpp"
 #include "CryptologyResponseReader.hpp"
 #include "CryptologyTestHelper.hpp"
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricDecryptor.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricEncryptor.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/text/StringLiteral.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/StringLiteral.hpp>
+#include <erbsland/SymmetricDecryptor.hpp>
+#include <erbsland/SymmetricEncryptor.hpp>
 
 #include <algorithm>
 #include <array>
@@ -46,15 +47,25 @@ private:
     }
 
     [[nodiscard]] static auto ivFrom(const CryptologyResponseReader::Record &record) -> SymmetricIv {
-        return SymmetricIv{bytesFromHex(record.value("IV"_el))};
+        return SymmetricIv{bytesFromHex(record.value(response_key::cIvField))};
     }
 
     void verifyKnownAnswer(const CryptologyResponseReader::Record &record, const bool chunked) {
         record.requireAllowedSettings({});
-        record.requireAllowedValues({"COUNT"_el, "KEY"_el, "IV"_el, "PLAINTEXT"_el, "CIPHERTEXT"_el});
-        record.requireValues({"COUNT"_el, "KEY"_el, "IV"_el, "PLAINTEXT"_el, "CIPHERTEXT"_el});
-        const auto plaintext = bytesFromHex(record.value("PLAINTEXT"_el));
-        const auto ciphertext = bytesFromHex(record.value("CIPHERTEXT"_el));
+        record.requireAllowedValues(
+            {"COUNT"_el,
+                "KEY"_el,
+                response_key::cIvField,
+                response_key::cPlaintextField,
+                response_key::cCiphertextField});
+        record.requireValues(
+            {"COUNT"_el,
+                "KEY"_el,
+                response_key::cIvField,
+                response_key::cPlaintextField,
+                response_key::cCiphertextField});
+        const auto plaintext = bytesFromHex(record.value(response_key::cPlaintextField));
+        const auto ciphertext = bytesFromHex(record.value(response_key::cCiphertextField));
         REQUIRE_EQUAL(plaintext.length(), ciphertext.length());
         REQUIRE_EQUAL(plaintext.length().toSizeT() % 16U, 0U);
 
@@ -96,36 +107,46 @@ private:
 
     void verifyMonteCarlo(const CryptologyResponseReader::Record &record) {
         record.requireAllowedSettings({});
-        record.requireAllowedValues({"COUNT"_el, "KEY"_el, "IV"_el, "PLAINTEXT"_el, "CIPHERTEXT"_el});
-        record.requireValues({"COUNT"_el, "KEY"_el, "IV"_el, "PLAINTEXT"_el, "CIPHERTEXT"_el});
-        const auto initialIv = bytesFromHex(record.value("IV"_el));
+        record.requireAllowedValues(
+            {"COUNT"_el,
+                "KEY"_el,
+                response_key::cIvField,
+                response_key::cPlaintextField,
+                response_key::cCiphertextField});
+        record.requireValues(
+            {"COUNT"_el,
+                "KEY"_el,
+                response_key::cIvField,
+                response_key::cPlaintextField,
+                response_key::cCiphertextField});
+        const auto initialIv = bytesFromHex(record.value(response_key::cIvField));
         auto previous = ByteBlock{};
 
         if (record.direction == CryptologyResponseReader::Direction::Encrypt) {
-            auto input = bytesFromHex(record.value("PLAINTEXT"_el));
+            auto input = bytesFromHex(record.value(response_key::cPlaintextField));
             auto encryptor =
                 SymmetricEncryptor{SymmetricEncryptionType::Aes256CbcRandomFill, keyFrom(record), ivFrom(record)};
             for (auto iteration = std::size_t{}; iteration < 1000U; ++iteration) {
                 const auto output = encryptor.encrypt(input);
-                REQUIRE_EQUAL(output.length(), el::unit::ByteLength{16U});
+                REQUIRE_EQUAL(output.length(), el::unit::ByteCount{16U});
                 input = iteration == 0U ? initialIv : previous;
                 previous = output;
             }
             REQUIRE(encryptor.finalize().isEmpty());
-            REQUIRE_EQUAL(previous, bytesFromHex(record.value("CIPHERTEXT"_el)));
+            REQUIRE_EQUAL(previous, bytesFromHex(record.value(response_key::cCiphertextField)));
         } else {
             REQUIRE(record.direction == CryptologyResponseReader::Direction::Decrypt);
-            auto input = bytesFromHex(record.value("CIPHERTEXT"_el));
+            auto input = bytesFromHex(record.value(response_key::cCiphertextField));
             auto decryptor =
                 SymmetricDecryptor{SymmetricEncryptionType::Aes256CbcRandomFill, keyFrom(record), ivFrom(record)};
             for (auto iteration = std::size_t{}; iteration < 1000U; ++iteration) {
                 const auto output = decryptor.decrypt(input);
-                REQUIRE_EQUAL(output.length(), el::unit::ByteLength{16U});
+                REQUIRE_EQUAL(output.length(), el::unit::ByteCount{16U});
                 input = iteration == 0U ? initialIv : previous;
                 previous = output;
             }
             REQUIRE(decryptor.finalize().isEmpty());
-            REQUIRE_EQUAL(previous, bytesFromHex(record.value("PLAINTEXT"_el)));
+            REQUIRE_EQUAL(previous, bytesFromHex(record.value(response_key::cPlaintextField)));
         }
     }
 
@@ -175,7 +196,7 @@ public:
             "1f352c073b6108d72d9810a30914dff4"_el)};
         const auto testIv = SymmetricIv{bytesFromHex("000102030405060708090a0b0c0d0e0f"_el)};
         for (auto tailLength = std::size_t{}; tailLength < 16U; ++tailLength) {
-            auto plaintext = ByteBlockEditor{el::unit::ByteLength::fromSizeT(32U + tailLength)};
+            auto plaintext = ByteBlockEditor{el::unit::ByteCount::fromSizeT(32U + tailLength)};
             for (auto index = el::unit::ByteIndex{}; index < plaintext.endIndex(); ++index) {
                 plaintext.set(index, el::mem::Byte{static_cast<uint8_t>(index.toSizeT() * 37U + tailLength)});
             }
@@ -185,7 +206,7 @@ public:
                 ciphertext.append(encryptor.encrypt(el::mem::ConstByteSpan{&byte, 1U}));
             }
             ciphertext.append(encryptor.finalize());
-            REQUIRE_EQUAL(ciphertext.length(), el::unit::ByteLength::fromSizeT(48U));
+            REQUIRE_EQUAL(ciphertext.length(), el::unit::ByteCount::fromSizeT(48U));
 
             auto decryptor = SymmetricDecryptor{SymmetricEncryptionType::Aes256CbcIso9797Method2, testKey, testIv};
             auto recovered = ByteBlockEditor{};
@@ -209,8 +230,8 @@ public:
             if (record.direction != CryptologyResponseReader::Direction::Encrypt) {
                 continue;
             }
-            const auto plaintext = bytesFromHex(record.value("PLAINTEXT"_el));
-            const auto expectedPrefix = bytesFromHex(record.value("CIPHERTEXT"_el));
+            const auto plaintext = bytesFromHex(record.value(response_key::cPlaintextField));
+            const auto expectedPrefix = bytesFromHex(record.value(response_key::cCiphertextField));
             auto encryptor =
                 SymmetricEncryptor{SymmetricEncryptionType::Aes256CbcIso9797Method2, keyFrom(record), ivFrom(record)};
             auto ciphertext = ByteBlockEditor{encryptor.encrypt(plaintext)};

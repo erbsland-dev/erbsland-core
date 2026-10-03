@@ -3,6 +3,9 @@
 
 #include "StandardStreamsDemos.hpp"
 
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StreamError.hpp>
+
 #include <exception>
 
 namespace demo {

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "OptionDisplayModel.hpp"
 
+#include "OptionLiterals.hpp"
+
 #include "../Option.hpp"
 #include "../OptionChoice.hpp"
 #include "../OptionChoices.hpp"
@@ -13,8 +15,10 @@
 #include "../OptionSet.hpp"
 #include "../OptionType.hpp"
 
-#include "../../i18n/DisplayTextMap.hpp"
+#include "../../i18n/DisplayText.hpp"
+#include "../../i18n/impl/DisplayTextCore.hpp"
 #include "../../text/Literals.hpp"
+#include "../../text/StringTransformations.hpp"
 
 #include <algorithm>
 #include <compare>
@@ -32,23 +36,20 @@ void OptionDisplayModel::appendMetaPlaceholder(StringEditor &result, const Strin
     result.append(U'>');
 }
 
-auto OptionDisplayModel::optionSetTitle(const OptionSetPtr &optionSet, const i18n::DisplayTextMapConstPtr &displayText)
-    -> String {
+auto OptionDisplayModel::optionSetTitle(const OptionSetPtr &optionSet) -> String {
     if (optionSet != nullptr && !optionSet->help().title().isEmpty()) {
         return optionSet->help().title();
     }
-    return displayText->text("options.OptionsHeading"_el);
+    return i18n::displayText("options.options_heading"_el);
 }
 
-OptionDisplayModel::OptionDisplayModel(
-    OptionsPtr options, const String &moduleName, const i18n::DisplayTextMapConstPtr &displayText) :
-    _options{std::move(options)}, _displayText{resolveDisplayText(displayText)} {
+OptionDisplayModel::OptionDisplayModel(OptionsPtr options, const String &moduleName) : _options{std::move(options)} {
     _module = findModule(moduleName);
 }
 
 auto OptionDisplayModel::displayName() const -> String {
     if (_options == nullptr || _options->applicationInfo().applicationName().isEmpty()) {
-        return _displayText->text("options.ApplicationNameFallback"_el);
+        return i18n::displayText("options.application_name_fallback"_el);
     }
     return _options->applicationInfo().applicationName();
 }
@@ -63,7 +64,7 @@ auto OptionDisplayModel::executableName() const -> String {
 auto OptionDisplayModel::helpTitleText() const -> String {
     const auto version =
         _options == nullptr ? String{"0.0.0"_el} : _options->applicationInfo().applicationVersion().toString();
-    return String::fromJoined({"► "_el, displayName(), " "_el, version, " Help"_el});
+    return i18n::displayFormat("options.help_title"_el).build(displayName(), version);
 }
 
 auto OptionDisplayModel::titleText() const -> String {
@@ -125,24 +126,31 @@ auto OptionDisplayModel::optionGroups() const -> std::vector<OptionDisplayGroup>
     auto groups = std::vector<OptionDisplayGroup>{};
     for (const auto &optionSet : visibleOptionSets()) {
         const auto setVisibility = resolvedVisibility(optionSet->help());
-        auto title = optionSetTitle(optionSet, _displayText);
-        auto groupIterator = std::ranges::find_if(
-            groups, [&title](const OptionDisplayGroup &group) -> bool { return group.title == title; });
-        if (groupIterator == groups.end()) {
-            groups.emplace_back(OptionDisplayGroup{title, {}});
-            groupIterator = std::prev(groups.end());
-        }
+        auto rows = std::vector<OptionDisplayRow>{};
         for (const auto &option : optionSet->options()) {
             if (!enabledBuiltInOption(optionSet, option) || !visibleOption(option, setVisibility)) {
                 continue;
             }
-            groupIterator->rows.emplace_back(
-                OptionDisplayRow{
-                    optionTitle(option, _displayText),
-                    optionDescription(option, _displayText),
-                    choiceRows(option),
-                    option});
+            rows.emplace_back(
+                OptionDisplayRow{optionTitle(option), optionBrief(option, _options), choiceRows(option), option});
         }
+        if (rows.empty()) {
+            continue;
+        }
+        const auto title = optionSetTitle(optionSet);
+        auto groupIterator = std::ranges::find_if(
+            groups, [&title](const OptionDisplayGroup &group) -> bool { return group.title == title; });
+        if (groupIterator == groups.end()) {
+            groups.emplace_back(OptionDisplayGroup{title, {}, {}});
+            groupIterator = std::prev(groups.end());
+        }
+        const auto &description = optionSet->help().description();
+        if (!description.isEmpty() &&
+            std::ranges::find(groupIterator->descriptions, description) == groupIterator->descriptions.end()) {
+            groupIterator->descriptions.append(description);
+        }
+        groupIterator->rows.insert(
+            groupIterator->rows.end(), std::make_move_iterator(rows.begin()), std::make_move_iterator(rows.end()));
     }
     for (auto &group : groups) {
         std::ranges::stable_sort(
@@ -151,7 +159,6 @@ auto OptionDisplayModel::optionGroups() const -> std::vector<OptionDisplayGroup>
                     std::strong_ordering::less;
             });
     }
-    std::erase_if(groups, [](const OptionDisplayGroup &group) -> bool { return group.rows.empty(); });
     return groups;
 }
 
@@ -164,13 +171,7 @@ auto OptionDisplayModel::moduleRows() const -> std::vector<OptionDisplayRow> {
         if (module == nullptr || !visibleModule(module->help())) {
             continue;
         }
-        auto description = String{};
-        if (!module->help().description().isEmpty()) {
-            description = module->help().description();
-        } else if (!module->help().title().isEmpty()) {
-            description = module->help().title();
-        }
-        rows.emplace_back(OptionDisplayRow{module->name(), description, {}, {}});
+        rows.emplace_back(OptionDisplayRow{module->name(), module->help().title(), {}, {}});
     }
     return rows;
 }
@@ -208,8 +209,7 @@ auto OptionDisplayModel::usagePositionalOptions() const -> std::vector<OptionPtr
     return result;
 }
 
-auto OptionDisplayModel::optionTitle(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText)
-    -> String {
+auto OptionDisplayModel::optionTitle(const OptionPtr &option) -> String {
     auto result = StringEditor{};
     auto first = true;
     if (option->isRegularOption()) {
@@ -223,37 +223,52 @@ auto OptionDisplayModel::optionTitle(const OptionPtr &option, const i18n::Displa
             result.append(name);
             first = false;
         }
-        const auto valueName = optionValueName(option, displayText);
+        const auto valueName = optionValueName(option);
         if (!valueName.isEmpty()) {
             result.append(U' ');
             appendMetaPlaceholder(result, valueName);
         }
         return result;
     }
-    const auto valueName = positionalValueName(option, displayText);
+    const auto valueName = positionalValueName(option);
     if (!valueName.isEmpty()) {
         appendMetaPlaceholder(result, valueName);
     }
     return result;
 }
 
-auto OptionDisplayModel::optionDescription(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText)
-    -> String {
-    const auto resolvedDisplayText = resolveDisplayText(displayText);
-    if (isHelpOption(option)) {
-        return resolvedDisplayText->text("options.HelpOptionDescription"_el);
-    }
-    if (isVersionOption(option)) {
-        return resolvedDisplayText->text("options.VersionOptionDescription"_el);
-    }
-    if (!option->help().description().isEmpty()) {
-        return option->help().description();
-    }
-    return option->help().title();
+auto OptionDisplayModel::optionBrief(const OptionPtr &option, const OptionsPtr &options) -> String {
+    return optionHelpText(option, options, true);
 }
 
-auto OptionDisplayModel::optionDetails(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText)
+auto OptionDisplayModel::optionDescription(const OptionPtr &option, const OptionsPtr &options) -> String {
+    return optionHelpText(option, options, false);
+}
+
+auto OptionDisplayModel::optionHelpText(const OptionPtr &option, const OptionsPtr &options, const bool brief)
     -> String {
+    if (option == nullptr) {
+        return {};
+    }
+    const auto &authored = brief ? option->help().title() : option->help().description();
+    if (options == nullptr || options->builtInOptionSet() == nullptr ||
+        std::ranges::find(options->builtInOptionSet()->options(), option) ==
+            options->builtInOptionSet()->options().end()) {
+        return authored;
+    }
+    auto key = String{};
+    if (isHelpOption(option)) {
+        key = brief ? "options.help_option_description"_el : "options.help_option_details"_el;
+    } else if (isVersionOption(option)) {
+        key = brief ? "options.version_option_description"_el : "options.version_option_details"_el;
+    }
+    if (!key.isEmpty() && authored == i18n::impl::DisplayTextCore{}.findText(key).value()) {
+        return i18n::displayText(key);
+    }
+    return authored;
+}
+
+auto OptionDisplayModel::optionDetails(const OptionPtr &option) -> String {
     auto result = StringEditor{};
     if (option->choices() != nullptr) {
         auto first = true;
@@ -265,7 +280,7 @@ auto OptionDisplayModel::optionDetails(const OptionPtr &option, const i18n::Disp
                 if (!result.isEmpty()) {
                     result.append(U' ');
                 }
-                result.append(resolveDisplayText(displayText)->text("options.ChoicesLabel"_el));
+                result.append(i18n::displayText("options.choices_label"_el));
                 result.append(": "_el);
             } else {
                 result.append(", "_el);
@@ -280,42 +295,43 @@ auto OptionDisplayModel::optionDetails(const OptionPtr &option, const i18n::Disp
     return result;
 }
 
-auto OptionDisplayModel::optionValueName(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText)
-    -> String {
+auto OptionDisplayModel::optionValueName(const OptionPtr &option) -> String {
     if (option == nullptr || option->type() == OptionType::Flag) {
         return {};
     }
     if (!option->valueName().isEmpty()) {
         return option->valueName();
     }
-    const auto resolvedDisplayText = resolveDisplayText(displayText);
+
+    if (isHelpOption(option)) {
+        return i18n::displayText("options.help_keyword_placeholder"_el);
+    }
     if (option->type() == OptionType::Boolean) {
-        return resolvedDisplayText->text("options.BooleanPlaceholder"_el);
+        return i18n::displayText("options.boolean_placeholder"_el);
     }
     if (option->type() == OptionType::Integer) {
-        return resolvedDisplayText->text("options.IntegerPlaceholder"_el);
+        return i18n::displayText("options.integer_placeholder"_el);
     }
     if (option->type() == OptionType::Text || option->type() == OptionType::SensitiveText) {
-        return resolvedDisplayText->text("options.ValuePlaceholder"_el);
+        return i18n::displayText("options.value_placeholder"_el);
     }
     if (option->type() == OptionType::Choice || option->choices() != nullptr) {
-        return resolvedDisplayText->text("options.ChoicePlaceholder"_el);
+        return i18n::displayText("options.choice_placeholder"_el);
     }
     return {};
 }
 
-auto OptionDisplayModel::positionalValueName(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText)
-    -> String {
+auto OptionDisplayModel::positionalValueName(const OptionPtr &option) -> String {
     if (option == nullptr) {
         return {};
     }
     if (!option->valueName().isEmpty()) {
         return option->valueName();
     }
-    if (!option->names().empty()) {
-        return option->names().front();
+    if (!option->names().isEmpty()) {
+        return option->names().first();
     }
-    return resolveDisplayText(displayText)->text("options.ValuePlaceholder"_el);
+    return i18n::displayText("options.value_placeholder"_el);
 }
 
 auto OptionDisplayModel::resolvedVisibility(const OptionHelp &help, const OptionHelpVisibility inherited) noexcept
@@ -331,11 +347,12 @@ auto OptionDisplayModel::visibleHelp(const OptionHelp &help) noexcept -> bool {
 }
 
 auto OptionDisplayModel::isHelpOption(const OptionPtr &option) -> bool {
-    return option != nullptr && option->hasLongName("--help"_el);
+    return option != nullptr && option->hasLongName(option_literal::cHelpLongName);
 }
 
 auto OptionDisplayModel::isVersionOption(const OptionPtr &option) -> bool {
-    return option != nullptr && option->type() == OptionType::Flag && option->hasLongName("--version"_el);
+    return option != nullptr && option->type() == OptionType::Flag &&
+        option->hasLongName(option_literal::cVersionLongName);
 }
 
 auto OptionDisplayModel::findModule(const String &moduleName) const -> OptionModulePtr {
@@ -385,10 +402,10 @@ auto OptionDisplayModel::enabledBuiltInOption(const OptionSetPtr &optionSet, con
     if (option == nullptr || option->isDisabled()) {
         return false;
     }
-    if (option->hasLongName("--help"_el)) {
+    if (option->hasLongName(option_literal::cHelpLongName)) {
         return !_options->parserFlags().isSet(OptionParserFlag::DisableHelp);
     }
-    if (option->hasLongName("--version"_el)) {
+    if (option->hasLongName(option_literal::cVersionLongName)) {
         return !_options->parserFlags().isSet(OptionParserFlag::DisableVersion);
     }
     return true;
@@ -413,12 +430,7 @@ auto OptionDisplayModel::choiceRows(const OptionPtr &option) const -> std::vecto
         if (choice == nullptr || !visibleChoice(choice->help(), optionVisibility)) {
             continue;
         }
-        auto description = String{};
-        if (!choice->help().description().isEmpty()) {
-            description = choice->help().description();
-        } else if (!choice->help().title().isEmpty()) {
-            description = choice->help().title();
-        }
+        const auto &description = choice->help().title();
         if (!description.isEmpty()) {
             rows.emplace_back(OptionDisplayRow{choice->text(), description, {}, {}});
         }
@@ -433,7 +445,7 @@ auto OptionDisplayModel::optionSortKey(const OptionPtr &option) const -> String 
     auto result = String{};
     for (const auto &name : option->names()) {
         if (Option::isLongName(name)) {
-            result = name.slice({unit::CpIndex{2}, unit::CpLength::infinite()});
+            result = name.slice({unit::CpIndex{2}, unit::CpCount::infinite()});
             break;
         }
         if (result.isEmpty() && Option::isShortName(name)) {
@@ -442,15 +454,7 @@ auto OptionDisplayModel::optionSortKey(const OptionPtr &option) const -> String 
             result = name;
         }
     }
-    return result.transformed(Char::toAsciiLowercase);
-}
-
-auto OptionDisplayModel::resolveDisplayText(const i18n::DisplayTextMapConstPtr &displayText) noexcept
-    -> i18n::DisplayTextMapConstPtr {
-    if (displayText == nullptr) {
-        return i18n::DisplayTextMap::defaultMap();
-    }
-    return displayText;
+    return text::toAsciiLowercase(result);
 }
 
 }

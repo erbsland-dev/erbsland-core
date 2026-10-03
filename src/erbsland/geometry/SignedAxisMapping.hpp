@@ -5,7 +5,7 @@
 #include "AxisMapping.hpp"
 #include "SignedAxis.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <array>
@@ -20,25 +20,22 @@ namespace erbsland::geometry {
 class SignedAxisMapping final {
 public:
     /// Create a one-dimensional signed mapping.
-    /// @param x The signed source axis for destination X.
-    /// @throws err::ParameterError if `x` does not select X.
+    /// @param x The signed source axis for destination X. Must select X.
     constexpr explicit SignedAxisMapping(SignedAxis x) :
         _sources{x, SignedAxis::PositiveY, SignedAxis::PositiveZ}, _dimensionality{Dimensionality::One} {
         validate();
     }
     /// Create a two-dimensional signed mapping.
-    /// @param x The signed source axis for destination X.
+    /// @param x The signed source axis for destination X. Together with `y`, must select an X/Y permutation.
     /// @param y The signed source axis for destination Y.
-    /// @throws err::ParameterError if the axes are not an exact X/Y permutation.
     constexpr SignedAxisMapping(SignedAxis x, SignedAxis y) :
         _sources{x, y, SignedAxis::PositiveZ}, _dimensionality{Dimensionality::Two} {
         validate();
     }
     /// Create a three-dimensional signed mapping.
-    /// @param x The signed source axis for destination X.
+    /// @param x The signed source axis for destination X. Together with `y` and `z`, must select an X/Y/Z permutation.
     /// @param y The signed source axis for destination Y.
     /// @param z The signed source axis for destination Z.
-    /// @throws err::ParameterError if the axes are not an exact X/Y/Z permutation.
     constexpr SignedAxisMapping(SignedAxis x, SignedAxis y, SignedAxis z) :
         _sources{x, y, z}, _dimensionality{Dimensionality::Three} {
         validate();
@@ -74,14 +71,13 @@ public: // attributes
     /// Get the dimensionality declared by this mapping.
     [[nodiscard]] constexpr auto dimensionality() const noexcept -> Dimensionality { return _dimensionality; }
     /// Get the signed source axis used for a destination axis.
-    /// @param destination The destination axis to inspect.
+    /// @param destination The destination axis to inspect. Must be inside this mapping's dimensionality.
     /// @return The signed source axis for `destination`.
-    /// @throws err::ParameterError if `destination` is outside this mapping's dimensionality.
     [[nodiscard]] constexpr auto source(const Axis destination) const -> SignedAxis {
         using namespace text::literals;
         const auto index = static_cast<std::size_t>(destination);
         if (index >= static_cast<std::size_t>(_dimensionality)) {
-            throw err::ParameterError{
+            throw err::ParameterFailure{
                 "The destination axis is outside the mapping dimensionality."_el, "destination"_el};
         }
         return _sources[index];
@@ -89,17 +85,17 @@ public: // attributes
 
 private:
     /// Validate that the active sources form an exact signed permutation.
-    /// @throws err::ParameterError if the mapping is invalid.
+    /// The active sources must form an exact signed permutation of the axes in this dimensionality.
     constexpr void validate() const {
         using namespace text::literals;
         const auto count = static_cast<std::size_t>(_dimensionality);
         for (auto index = std::size_t{0}; index < count; ++index) {
             if (!_sources[index].isValid() || static_cast<std::size_t>(_sources[index].axis()) >= count) {
-                throw err::ParameterError{"A source axis is outside the mapping dimensionality."_el, "axes"_el};
+                throw err::ParameterFailure{"A source axis is outside the mapping dimensionality."_el, "axes"_el};
             }
             for (auto previous = std::size_t{0}; previous < index; ++previous) {
                 if (_sources[previous].axis() == _sources[index].axis()) {
-                    throw err::ParameterError{"Each source axis must occur exactly once."_el, "axes"_el};
+                    throw err::ParameterFailure{"Each source axis must occur exactly once."_el, "axes"_el};
                 }
             }
         }

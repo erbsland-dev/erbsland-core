@@ -3,98 +3,109 @@
 #include "TlsServerProtocolOptions.hpp"
 
 #include "../TlsAlpnProtocol.hpp"
+#include "../TlsKeyShare.hpp"
 
-#include "../../../../cryptology/tls/TlsServerIdentity.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../cryptology/tls/TlsIdentity.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../text/Literals.hpp"
+#include "../../../../text/StringList.hpp"
+#include "../../../../unit/ItemCount.hpp"
+#include "../../../../util/Set.hpp"
 
 #include <set>
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text::literals;
 
 TlsServerProtocolOptions::TlsServerProtocolOptions(
-    cryptology::TlsServerIdentityConstPtr identity,
-    std::vector<text::String> alpnProtocols,
+    TlsServerProtocolConfiguration configuration,
+    text::StringList alpnProtocols,
     std::vector<cryptology::TlsCipherSuite> cipherSuites,
-    const SocketBufferLimits bufferLimits) :
-    _defaultIdentity{std::move(identity)},
+    const SocketBufferLimits bufferLimits,
+    std::vector<cryptology::KeyAgreementAlgorithm> supportedGroups) :
+    _defaultConfiguration{std::move(configuration)},
     _alpnProtocols{std::move(alpnProtocols)},
     _cipherSuites{std::move(cipherSuites)},
+    _supportedGroups{std::move(supportedGroups)},
     _bufferLimits{bufferLimits} {
-    if (_defaultIdentity == nullptr) {
-        throw err::ParameterError{"TLS server protocol options require a server identity."_el, "identity"_el};
+    tls_key_share::validate(_supportedGroups);
+    if (_defaultConfiguration.identity == nullptr) {
+        throw ParameterFailure{"TLS server protocol options require a server identity."_el, "identity"_el};
     }
     if (_cipherSuites.empty()) {
-        throw err::ParameterError{
-            "TLS server protocol options require at least one cipher suite."_el, "cipherSuites"_el};
+        throw ParameterFailure{"TLS server protocol options require at least one cipher suite."_el, "cipherSuites"_el};
     }
     auto suiteValues = std::set<uint16_t>{};
     for (const auto suite : _cipherSuites) {
         if (!cryptology::TlsCipherSuite::fromRawValue(suite.toRawValue()).has_value() ||
             !suiteValues.insert(suite.toRawValue()).second) {
-            throw err::ParameterError{"TLS server cipher suites must be supported and unique."_el, "cipherSuites"_el};
+            throw ParameterFailure{"TLS server cipher suites must be supported and unique."_el, "cipherSuites"_el};
         }
     }
 
-    if (_alpnProtocols.size() > 64U) {
-        throw err::ParameterError{"TLS server ALPN configuration exceeds 64 protocols."_el, "alpnProtocols"_el};
+    if (_alpnProtocols.count() > unit::ItemCount{64U}) {
+        throw ParameterFailure{"TLS server ALPN configuration exceeds 64 protocols."_el, "alpnProtocols"_el};
     }
     auto encodedAlpnLength = std::size_t{0U};
-    auto uniqueAlpn = std::set<text::String, TlsAlpnProtocol::Less>{};
+    auto uniqueAlpn = util::Set<text::String, tls_alpn_protocol::Less>{};
     for (const auto &protocol : _alpnProtocols) {
-        const auto length = TlsAlpnProtocol::bytes(protocol).size();
-        if (length == 0U || length > 255U || !uniqueAlpn.insert(protocol).second) {
-            throw err::ParameterError{
+        const auto length = tls_alpn_protocol::bytes(protocol).size();
+        if (length == 0U || length > 255U || !uniqueAlpn.tryInsert(protocol)) {
+            throw ParameterFailure{
                 "TLS server ALPN identifiers must be unique and contain between 1 and 255 bytes."_el,
                 "alpnProtocols"_el};
         }
         encodedAlpnLength += 1U + length;
     }
     if (encodedAlpnLength > 4096U) {
-        throw err::ParameterError{"TLS server ALPN configuration exceeds 4096 encoded bytes."_el, "alpnProtocols"_el};
+        throw ParameterFailure{"TLS server ALPN configuration exceeds 4096 encoded bytes."_el, "alpnProtocols"_el};
     }
 
-    validateIdentity(_defaultIdentity);
+    validateConfiguration(_defaultConfiguration);
 }
 
-auto TlsServerProtocolOptions::withNamedIdentities(
-    cryptology::TlsServerIdentityConstPtr defaultIdentity,
-    std::vector<NamedIdentity> namedIdentities,
-    std::vector<text::String> alpnProtocols,
+auto TlsServerProtocolOptions::withNamedConfigurations(
+    TlsServerProtocolConfiguration defaultConfiguration,
+    std::vector<NamedConfiguration> namedConfigurations,
+    text::StringList alpnProtocols,
     std::vector<cryptology::TlsCipherSuite> cipherSuites,
-    const SocketBufferLimits bufferLimits) -> TlsServerProtocolOptions {
-    if (namedIdentities.size() > 64U) {
-        throw err::ParameterError{"TLS server protocol options exceed 64 named identities."_el, "namedIdentities"_el};
+    const SocketBufferLimits bufferLimits,
+    std::vector<cryptology::KeyAgreementAlgorithm> supportedGroups) -> TlsServerProtocolOptions {
+    if (namedConfigurations.size() > 64U) {
+        throw ParameterFailure{
+            "TLS server protocol options exceed 64 named configurations."_el, "namedConfigurations"_el};
     }
     auto serverNames = std::set<HostName>{};
-    for (const auto &namedIdentity : namedIdentities) {
+    for (const auto &namedIdentity : namedConfigurations) {
         if (!serverNames.insert(namedIdentity.serverName).second) {
-            throw err::ParameterError{"TLS server names must be unique."_el, "namedIdentities"_el};
+            throw ParameterFailure{"TLS server names must be unique."_el, "namedConfigurations"_el};
         }
-        validateIdentity(namedIdentity.identity);
+        validateConfiguration(namedIdentity.configuration);
     }
     auto result = TlsServerProtocolOptions{
-        std::move(defaultIdentity), std::move(alpnProtocols), std::move(cipherSuites), bufferLimits};
-    result._namedIdentities = std::move(namedIdentities);
+        std::move(defaultConfiguration),
+        std::move(alpnProtocols),
+        std::move(cipherSuites),
+        bufferLimits,
+        std::move(supportedGroups)};
+    result._namedConfigurations = std::move(namedConfigurations);
     return result;
 }
 
-void TlsServerProtocolOptions::validateIdentity(const cryptology::TlsServerIdentityConstPtr &identity) {
-    if (identity == nullptr) {
-        throw err::ParameterError{"TLS server identities must not be empty."_el, "identity"_el};
+void TlsServerProtocolOptions::validateConfiguration(const TlsServerProtocolConfiguration &configuration) {
+    const auto mode = configuration.clientAuthentication;
+    if (mode != cryptology::TlsClientAuthentication::Disabled &&
+        mode != cryptology::TlsClientAuthentication::Optional &&
+        mode != cryptology::TlsClientAuthentication::Required) {
+        throw ParameterFailure{"Invalid TLS client authentication mode."_el, "configuration"_el};
     }
-    const auto &certificates = identity->certificateChain().certificates();
-    if (certificates.count().toSizeT() > 16U) {
-        throw err::ParameterError{"TLS server identity exceeds the 16-certificate protocol bound."_el, "identity"_el};
+    if (mode != cryptology::TlsClientAuthentication::Disabled && !configuration.certificatePolicy) {
+        throw ParameterFailure{"TLS client authentication requires a certificate policy."_el, "configuration"_el};
     }
-    auto certificateBodyLength = std::size_t{1U + 3U};
-    for (const auto &certificate : certificates) {
-        certificateBodyLength += 3U + certificate.toDer().length().toSizeT() + 2U;
-    }
-    if (certificateBodyLength > 1024U * 1024U) {
-        throw err::ParameterError{"TLS server Certificate message exceeds one MiB."_el, "identity"_el};
+    if (configuration.identity == nullptr) {
+        throw ParameterFailure{"TLS server identities must not be empty."_el, "identity"_el};
     }
 }
 

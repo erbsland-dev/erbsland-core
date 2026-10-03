@@ -4,6 +4,9 @@
 #include "WorkingWithPathsDemos.hpp"
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

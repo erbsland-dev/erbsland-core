@@ -16,6 +16,10 @@ Introduction
 ``JsonParseOptions`` controls limits and ``JsonFormatOptions`` controls compact or indented output.
 See :doc:`/topics/data/parsing_and_rendering_json` for parsing, traversal, and serialization examples.
 
+Text arguments accept ``String``, ``StringEditor``, and Core string literals directly, including when passed to
+``set()`` or ``append()``.
+Stored text retains its value if the original editor is changed later.
+
 Interface
 =========
 

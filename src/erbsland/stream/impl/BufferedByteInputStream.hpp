@@ -31,6 +31,7 @@ public:
     auto operator=(BufferedByteInputStream &&) -> BufferedByteInputStream & = delete;
 
 public:
+    [[nodiscard]] auto initialFileSize() const noexcept -> unit::ByteCount override;
     [[nodiscard]] auto inputSettings() const noexcept -> const InputStreamSettings & override;
     [[nodiscard]] auto state() const noexcept -> StreamState override;
     [[nodiscard]] auto isReady() const noexcept -> bool override;
@@ -43,7 +44,7 @@ public:
 
 protected: // implement ByteInputStream
     [[nodiscard]] auto readFromSource(mem::ByteSpan destination, ReadDeadline deadline)
-        -> StreamReadResult<unit::ByteLength> override;
+        -> StreamReadResult<unit::ByteCount> override;
     [[nodiscard]] auto sourceSupportsPositioning() const noexcept -> bool override;
     [[nodiscard]] auto sourcePosition() const -> unit::ByteIndex override;
     auto setSourcePosition(unit::ByteIndex position) -> StreamPositionStatus override;
@@ -62,4 +63,5 @@ private:
 };
 
 }
+
 #include "../../mem/ByteSpan.hpp"

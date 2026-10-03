@@ -10,7 +10,7 @@
 #include <erbsland/re/impl/diagnostics/Assembler.hpp>
 #include <erbsland/re/impl/diagnostics/Disassembler.hpp>
 #include <erbsland/re/impl/engine/Engine.hpp>
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;
@@ -49,9 +49,9 @@ public:
                 group.begin() <= group.end()) {
 
                 const auto groupText = String{text}.slice(
-                    el::unit::ByteRange{el::unit::ByteIndex{group.begin()}, el::unit::ByteIndex{group.end()}});
+                    {el::unit::ByteIndex::fromInteger(group.begin()), el::unit::ByteIndex::fromInteger(group.end())});
                 line += re_test::string_helper::toStdString(
-                    groupText.toSafeString(el::unit::CpLength{200U}, el::text::SafeStringFlag::None));
+                    groupText.toSafeString(el::unit::CpCount{200U}, el::text::SafeStringFlag::None));
             } else {
                 line += "<invalid range>";
             }
@@ -64,7 +64,7 @@ public:
     auto additionalErrorMessages() -> std::string override {
         try {
             std::string msg;
-            msg += std::format("text = \"{}\"\n", text.toSafeString(el::unit::CpLength{200U}));
+            msg += std::format("text = \"{}\"\n", text.toSafeString(el::unit::CpCount{200U}));
             if (engineData != nullptr) {
                 msg += "engineData =\n";
                 Disassembler disassembler{engineData};

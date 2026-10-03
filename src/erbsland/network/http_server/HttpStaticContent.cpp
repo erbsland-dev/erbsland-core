@@ -4,7 +4,7 @@
 
 namespace erbsland::network {
 
-auto HttpStaticContent::retainedMemoryLength() const noexcept -> unit::ByteLength {
+auto HttpStaticContent::retainedMemoryLength() const noexcept -> unit::ByteCount {
     return length();
 }
 

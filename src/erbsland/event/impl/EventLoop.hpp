@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "CurrentEventsScope.hpp"
+#include "EventContinuation_fwd.hpp"
 #include "EventLoop_fwd.hpp"
 
 #include "../EventBackend.hpp"
@@ -10,26 +12,45 @@
 #include "../EventLoop.hpp"
 #include "../EventLoopDriver.hpp"
 
+#include <condition_variable>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <queue>
+#include <thread>
 #include <vector>
 
 namespace erbsland::event::impl {
 
 /// The implementation of the event loop.
+/// @tested{EventLoopTest EventLoopOptionsTest ApplicationEventTest}
 class EventLoop final : public event::EventLoop,
                         public event::EventBackendTarget,
                         public std::enable_shared_from_this<EventLoop> {
+    friend class EventLoopRunScope;
+    friend class EventContinuation;
+
+public:
+    /// Internal application-failure delivery callback.
+    using FailureHandler = std::function<void(std::exception_ptr)>;
+
 public:
     /// Create an event loop with the default driver.
-    EventLoop();
+    /// @param options Copied capacity and error policies. Policies must be valid.
+    /// @param failureHandler Optional managed-application failure delivery. Must be set if a policy requires
+    /// application delivery.
+    explicit EventLoop(const EventLoopOptions &options = {}, FailureHandler failureHandler = {});
     /// Create an event loop with a supplied driver.
-    /// @param driver The native wait and wake driver.
-    explicit EventLoop(EventLoopDriverPtr driver);
+    /// @param driver The non-null native wait and wake driver.
+    /// @param options Copied capacity and error policies. Policies must be valid and supported by the failure handler.
+    /// @param failureHandler Optional managed-application failure delivery.
+    explicit EventLoop(
+        EventLoopDriverPtr driver, const EventLoopOptions &options = {}, FailureHandler failureHandler = {});
+    /// Stop the current or next run for application failure without preventing later shutdown dispatch.
+    void stopForFailure() noexcept;
 
 public: // implement Events
     void post(Event event) override;
@@ -37,7 +58,7 @@ public: // implement Events
     void invokeAfter(time::TimeDelta delay, EventCallback callback) override;
 
 public: // implement EventBackendTarget
-    void postFromBackend(Event event) override;
+    auto postFromBackend(Event event) -> bool override;
     void wakeFromBackend() noexcept override;
 
 public: // implement EventLoop
@@ -49,6 +70,7 @@ public: // implement EventLoop
     void quit() noexcept override;
     [[nodiscard]] auto isRunning() const noexcept -> bool override;
     [[nodiscard]] auto isQuitRequested() const noexcept -> bool override;
+    [[nodiscard]] auto queuedEventCount() const noexcept -> std::size_t override;
     [[nodiscard]] auto hasError() const noexcept -> bool override;
     [[nodiscard]] auto takeError() noexcept -> std::exception_ptr override;
     void setErrorHandler(EventLoopErrorHandler handler) override;
@@ -64,8 +86,14 @@ private:
     [[nodiscard]] auto createFundamentalBackend(EventBackendId backendId) -> EventBackendPtr;
     /// Attach all registered backends to this event loop.
     void ensureBackendsAttached();
-    /// Queue an event, optionally after quit was requested.
-    void postInternal(Event event, bool allowAfterQuit);
+    /// Admit an ordinary event or reserved quit control according to the configured policy.
+    auto postInternal(Event event) -> bool;
+    /// Store and deliver an application failure, then quit this worker.
+    void failApplication(std::exception_ptr error) noexcept;
+    /// Enter dispatch and bind this loop to the calling thread.
+    [[nodiscard]] auto beginDispatch() -> CurrentEventsScope;
+    /// Finish dispatch and release the consumer identity.
+    void finishDispatch() noexcept;
     /// Process events and backends once with an optional wait limit.
     [[nodiscard]] auto runOnceImpl(std::optional<time::TimeDelta> maximumWait) -> bool;
     /// Take the next queued event, if any.
@@ -96,9 +124,18 @@ private:
     void waitForWake(time::TimeDelta waitTime);
 
 private:
+    EventLoopOptions _options;              ///< Installed options.
+    FailureHandler _failureHandler;         ///< Weak application failure delivery.
+    std::condition_variable _queueSpace;    ///< Producer wait notification.
+    std::thread::id _consumerThread;        ///< Active consumer identity.
+    std::size_t _stopGeneration{0};         ///< Detect stop even across a subsequent restart.
+    bool _failureStopRequested{false};      ///< Sticky stop for current or next run.
     mutable std::mutex _mutex;              ///< Protects loop state.
     EventLoopDriverPtr _driver;             ///< Native wait and wake driver.
     std::deque<Event> _queue;               ///< Immediate event queue.
+    std::deque<Event> _continuations;       ///< Separately admitted completions, bounded by reservation count.
+    std::size_t _continuationCount{};       ///< Live reserved slots, including native work not yet complete.
+    bool _preferContinuation{true};         ///< Fair alternation with ordinary queued work.
     std::queue<std::exception_ptr> _errors; ///< Captured callback errors.
     std::vector<EventBackendPtr> _backends; ///< Registered backends.
     EventLoopErrorHandler _errorHandler;    ///< Optional event-loop error handler.

@@ -1,24 +1,31 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <DemoTerminal.hpp>
 #include <erbsland/all_core.hpp>
 #include <erbsland/all_event.hpp>
 #include <erbsland/all_network.hpp>
+#include <erbsland/all_network_host_lookup.hpp>
+#include <erbsland/all_network_source.hpp>
 #include <erbsland/all_stream.hpp>
 #include <erbsland/all_text.hpp>
-#include <erbsland/network/host_lookup/all.hpp>
-#include <erbsland/network/host_lookup/HostLookup.hpp>
-#include <erbsland/network/source/all.hpp>
-#include <erbsland/network/source/NetworkErrorContext.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Host.hpp>
+#include <erbsland/HostLookup.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
 
 namespace demo {
 
 using namespace el::text::literals;
 
+/// Keep the lookup alive after its setup function returns.
 el::HostLookupPtr lookup;
 
 /// Resolve a public host name without blocking the event loop.
-/// Keep the lookup alive until the final event runs; the lookup owns its stable event editor.
 /// A host can resolve to several addresses, so successful code processes the complete result list.
 void resolveDocumentationHost() {
     const auto events = el::application().events();
@@ -40,7 +47,7 @@ void resolveDocumentationHost() {
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     app.events()->invoke(resolveDocumentationHost);
     return app.run();
 }

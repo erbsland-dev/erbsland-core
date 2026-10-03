@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-*******
-Backend
-*******
+******************************
+Implementing Terminal Backends
+******************************
 
 The backend classes connect ``Terminal`` to the actual console, host environment, or test harness that emits text and
 receives input.
@@ -13,11 +13,9 @@ Most applications should use the built-in platform backend.
 Reach for ``Backend`` only when you need to embed the library into another console abstraction, capture terminal output
 for tests, or adapt terminal behavior to a non-standard runtime.
 
-Usage
-=====
 
 Choosing When to Use a Custom Backend
--------------------------------------
+=====================================
 
 The default backend already handles normal terminal work on POSIX and Windows systems.
 A custom backend is usually only worth the extra code in three situations:
@@ -47,7 +45,7 @@ The built-in platform backends maintain shared process-wide state, so a single t
 design.
 
 How Terminal Uses Backend Capabilities
---------------------------------------
+======================================
 
 The backend API is capability-based.
 ``Terminal`` checks what the backend supports and then chooses between direct ANSI output and backend callbacks.
@@ -94,7 +92,7 @@ Two details are easy to overlook:
   disables that optimization automatically.
 
 Implementing a Recording Backend
---------------------------------
+================================
 
 This example shows a small backend that records emitted text and tracks the cursor through backend callbacks instead of
 ANSI cursor codes.
@@ -143,7 +141,7 @@ This style of backend is especially useful for integration tests that need to in
 emitted without depending on a real terminal session.
 
 Screen Size and Input Responsibilities
---------------------------------------
+======================================
 
 Backends are also responsible for the low-level parts of interactivity:
 
@@ -166,12 +164,12 @@ For backend authors, the important contract is:
 * In key mode, any timeout less than or equal to zero must be non-blocking.
 * ``waitForKey()`` is the dedicated blocking key-input path.
 
-The terminal applies its own one-column and one-row safe margin on top of the detected screen size.
+The terminal uses the full detected screen size, including the last column and row.
 Backend implementations should therefore return the real visible terminal dimensions instead of subtracting that margin
 themselves.
 
 Public API and Internal Implementations
----------------------------------------
+=======================================
 
 This page describes the stable public contract.
 The built-in backend implementations live in the Core source tree below :file:`src/erbsland/cterm/backend`.

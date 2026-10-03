@@ -5,7 +5,7 @@
 #include "impl/constants/Defaults.hpp"
 #include "impl/constants/Limits.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../path/PathError.hpp"
 #include "../path/PathInfo.hpp"
 #include "../text/CaseSensitivity.hpp"
@@ -13,25 +13,28 @@
 
 namespace erbsland::conf {
 
+using namespace err;
+using namespace path;
+using namespace text;
 using namespace text::literals;
 
 void FileAccessCheck::enable(const Feature feature) {
     if (feature >= _featureCount) {
-        throw err::ParameterError{"Invalid file access feature."_el, "feature"_el};
+        throw ParameterFailure{"Invalid file access feature."_el, "feature"_el};
     }
     _features.set(feature);
 }
 
 void FileAccessCheck::disable(const Feature feature) {
     if (feature >= _featureCount) {
-        throw err::ParameterError{"Invalid file access feature."_el, "feature"_el};
+        throw ParameterFailure{"Invalid file access feature."_el, "feature"_el};
     }
     _features.reset(feature);
 }
 
 auto FileAccessCheck::isEnabled(const Feature feature) const -> bool {
     if (feature >= _featureCount) {
-        throw err::ParameterError{"Invalid file access feature."_el, "feature"_el};
+        throw ParameterFailure{"Invalid file access feature."_el, "feature"_el};
     }
     return _features.test(feature);
 }
@@ -40,7 +43,7 @@ auto FileAccessCheck::check(const AccessSources &sources) -> AccessCheckResult {
     if (sources.source == nullptr || sources.root == nullptr) {
         throwAccessError("No document or root source given."_el);
     }
-    if (sources.source->name() != text::String{impl::defaults::fileSourceIdentifier}) {
+    if (sources.source->name() != String{impl::defaults::fileSourceIdentifier}) {
         if (isEnabled(OnlyFileSources)) {
             throwAccessError("Only file sources are permitted."_el);
         }
@@ -52,8 +55,8 @@ auto FileAccessCheck::check(const AccessSources &sources) -> AccessCheckResult {
 
 void FileAccessCheck::fileAccessCheck(const AccessSources &sources) const {
     // Sanity checks.
-    if (sources.source->name() != text::String{impl::defaults::fileSourceIdentifier}) {
-        throw err::LogicError("This function only checks file sources."_el);
+    if (sources.source->name() != String{impl::defaults::fileSourceIdentifier}) {
+        throw LogicFailure("This function only checks file sources."_el);
     }
     if (!(isEnabled(AnyDirectory) || isEnabled(SameDirectory) || isEnabled(Subdirectories))) {
         throwAccessError("No directory access policies are configured. All file access is currently blocked."_el);
@@ -69,11 +72,11 @@ void FileAccessCheck::fileAccessCheck(const AccessSources &sources) const {
     if (isEnabled(LimitSize)) {
         try {
             auto sourceInfo = sourcePath.info();
-            sourceInfo.reload(path::PathInfoParts{path::PathInfoPart::Type, path::PathInfoPart::Size});
+            sourceInfo.reload(PathInfoParts{PathInfoPart::Type, PathInfoPart::Size});
             if (sourceInfo.fileSize().toSizeT() > impl::limits::maxDocumentSize) {
                 throwAccessError("The included file exceeds the maximum allowed size of 100MB."_el, sourcePath);
             }
-        } catch (const path::PathError &) {
+        } catch (const PathError &) {
             throwAccessError(
                 "The size of the included file could not be read."_el, sourcePath, std::current_exception());
         }
@@ -91,7 +94,7 @@ void FileAccessCheck::fileAccessCheck(const AccessSources &sources) const {
     }
 }
 
-void FileAccessCheck::throwAccessError(text::String message, path::Path path, std::exception_ptr cause) {
+void FileAccessCheck::throwAccessError(String message, Path path, std::exception_ptr cause) {
     auto context = ConfErrorContext{ConfErrorCategory::Access, std::move(message)};
     if (!path.isEmpty()) {
         context.setFilePath(std::move(path));
@@ -99,11 +102,10 @@ void FileAccessCheck::throwAccessError(text::String message, path::Path path, st
     throw ConfError{std::move(context), std::move(cause)};
 }
 
-auto FileAccessCheck::extractSourcePath(const AccessSources &sources) const -> path::Path {
-    auto sourcePath = path::Path{sources.source->path()};
+auto FileAccessCheck::extractSourcePath(const AccessSources &sources) const -> Path {
+    auto sourcePath = Path{sources.source->path()};
     if (isEnabled(RequireSuffix)) {
-        if (sourcePath.suffix().compare(
-                text::String{impl::defaults::fileSuffix}, text::cCaseInsensitive.asciiComparisonFn()) !=
+        if (sourcePath.suffix().compare(String{impl::defaults::fileSuffix}, cCaseInsensitive.asciiComparisonFn()) !=
             std::strong_ordering::equal) {
             throwAccessError("The included file does not have the suffix \".elcl\"."_el, sourcePath);
         }
@@ -111,14 +113,14 @@ auto FileAccessCheck::extractSourcePath(const AccessSources &sources) const -> p
     return sourcePath;
 }
 
-auto FileAccessCheck::extractParentDirectory(const AccessSources &sources) const -> path::Path {
-    path::Path parentDirectory;
-    if (sources.parent == nullptr || sources.parent->name() != text::String{impl::defaults::fileSourceIdentifier}) {
+auto FileAccessCheck::extractParentDirectory(const AccessSources &sources) const -> Path {
+    Path parentDirectory;
+    if (sources.parent == nullptr || sources.parent->name() != String{impl::defaults::fileSourceIdentifier}) {
         if (!isEnabled(AnyDirectory)) {
             throwAccessError("Cannot verify the parent path because the including document it is not a local file."_el);
         }
     } else {
-        parentDirectory = path::Path{sources.parent->path()};
+        parentDirectory = Path{sources.parent->path()};
         if (parentDirectory.parent().isEmpty()) {
             throwAccessError("Could not determine the parent directory of the including file."_el);
         }
@@ -127,16 +129,16 @@ auto FileAccessCheck::extractParentDirectory(const AccessSources &sources) const
     return parentDirectory;
 }
 
-void FileAccessCheck::canonicalizePaths(path::Path &sourcePath, path::Path &parentDirectory) {
+void FileAccessCheck::canonicalizePaths(Path &sourcePath, Path &parentDirectory) {
     try {
-        sourcePath = sourcePath.resolveOrThrow(path::PathResolveMode::Physical);
-    } catch (const path::PathError &) {
+        sourcePath = sourcePath.resolveOrThrow(PathResolveMode::Physical);
+    } catch (const PathError &) {
         throwAccessError(
             "Failed to resolve the canonical path of the included file."_el, sourcePath, std::current_exception());
     }
     try {
-        parentDirectory = parentDirectory.resolveOrThrow(path::PathResolveMode::Physical);
-    } catch (const path::PathError &) {
+        parentDirectory = parentDirectory.resolveOrThrow(PathResolveMode::Physical);
+    } catch (const PathError &) {
         throwAccessError(
             "Failed to resolve the canonical path of the parent file's directory."_el,
             parentDirectory,
@@ -144,8 +146,7 @@ void FileAccessCheck::canonicalizePaths(path::Path &sourcePath, path::Path &pare
     }
 }
 
-auto FileAccessCheck::requireSourceInParentDirectory(const path::Path &sourcePath, const path::Path &parentDirectory)
-    -> bool {
+auto FileAccessCheck::requireSourceInParentDirectory(const Path &sourcePath, const Path &parentDirectory) -> bool {
 
     if (sourcePath.parent().isEmpty()) {
         throwAccessError("Could not determine the parent directory of the including file."_el, sourcePath);

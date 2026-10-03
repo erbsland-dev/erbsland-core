@@ -3,7 +3,8 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/system/EnvironmentVariables.hpp>
+#include <erbsland/EnvironmentVariables.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

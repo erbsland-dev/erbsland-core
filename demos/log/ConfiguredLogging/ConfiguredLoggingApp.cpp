@@ -1,11 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ConfiguredLoggingApp.hpp"
 
-#include <erbsland/conf/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/all_conf.hpp>
+#include <erbsland/all_log.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/LogConfigurationParser.hpp>
+#include <erbsland/LogTraceSection.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
 
 #include <utility>
 
@@ -18,30 +25,25 @@ namespace demo {
 /// code.
 void ConfiguredLoggingApp::initialize() {
     info().setApplicationName("Configured Explorer Guild"_el);
-    enableTerminal();
+    DemoTerminal::enable(*this);
 }
 
 void ConfiguredLoggingApp::registerCommandLineOptions(const el::OptionsPtr &options) {
     options->setHelpDescription("Load an application logging configuration from an ELCL file."_el);
     options->addOption("configuration"_el)
         .setRequired()
-        .setHelpDescription("ELCL file containing the logging configuration."_el);
+        .setHelpTitle("ELCL file containing the logging configuration."_el);
     options->addOption({"-b"_el, "--branch"_el, "branch"_el})
         .setType(el::OptionType::Text)
-        .setHelpDescription("Optional dot-separated branch containing the logging configuration."_el);
+        .setHelpTitle("Optional dot-separated branch containing the logging configuration."_el);
 }
 
-void ConfiguredLoggingApp::parseCommandLine() {
-    Application::parseCommandLine();
-    if (optionValues() == nullptr) {
-        return;
-    }
-
+void ConfiguredLoggingApp::handleCommandLineOptions(const el::OptionValuesPtr &values) {
     // Parse the application configuration file and select the requested branch.
-    const auto path = el::Path::fromNativeOrThrow(optionValues()->getText("configuration"_el));
+    const auto path = el::Path::fromNativeOrThrow(values->getText("configuration"_el));
     const auto document = el::conf::Parser{}.parseFileOrThrow(path);
     auto branch = el::conf::ValuePtr{document};
-    const auto branchName = optionValues()->getText("branch"_el);
+    const auto branchName = values->getText("branch"_el);
     if (!branchName.isEmpty()) {
         branch = document->valueOrThrow(branchName);
     }

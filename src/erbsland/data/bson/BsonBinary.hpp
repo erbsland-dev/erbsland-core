@@ -7,10 +7,12 @@
 #include <cstdint>
 
 namespace erbsland::data::bson {
+
 /// BSON binary payload and its subtype.
 /// @tested{BsonValueTest}
 struct BsonBinary final {
     mem::ByteBlock bytes; ///< Payload bytes.
     uint8_t subtype{};    ///< BSON binary subtype.
 };
+
 }

@@ -28,9 +28,9 @@ public:
 
 public:
     /// Agree with a peer public key.
+    /// This private key must not be empty.
+    /// @param peer The peer public key. Must not be empty and must use the same algorithm as this private key.
     /// @return The protected shared secret.
-    /// @throws err::LogicError If this private key or the peer key is empty.
-    /// @throws err::ParameterError If the algorithms do not match.
     /// @throws CryptologyError If agreement produces the forbidden all-zero result.
     [[nodiscard]] auto agree(const KeyAgreementPublicKey &peer) const -> KeyAgreementSharedSecret;
     /// Securely erase private material and restore the empty state.
@@ -44,16 +44,18 @@ public: // accessors
     /// Get the key-agreement algorithm.
     [[nodiscard]] auto algorithm() const noexcept -> KeyAgreementAlgorithm { return _algorithm; }
     /// Get the cached public key without decrypting private material.
-    /// @throws err::LogicError If this private key is empty.
+    /// This private key must not be empty.
     [[nodiscard]] auto publicKey() const -> KeyAgreementPublicKey;
 
 public: // factories
     /// Generate a private key with the application secure random source.
-    /// @throws err::ParameterError If the algorithm is invalid.
+    /// @param algorithm The key-agreement algorithm. Must be a valid supported algorithm.
     [[nodiscard]] static auto generate(KeyAgreementAlgorithm algorithm) -> KeyAgreementPrivateKey;
     /// Import exact private-key bytes into protected storage.
     /// The borrowed source remains owned by the caller and is not erased.
-    /// @throws err::ParameterError If the algorithm or private-key length is invalid.
+    /// @param algorithm The key-agreement algorithm. Must be a valid supported algorithm.
+    /// @param data The exact encoded private key. Its length must match the selected algorithm.
+    /// @throws err::OutOfRangeError If the input length does not match the selected algorithm.
     [[nodiscard]] static auto fromBytes(KeyAgreementAlgorithm algorithm, mem::ConstByteSpan data)
         -> KeyAgreementPrivateKey;
 

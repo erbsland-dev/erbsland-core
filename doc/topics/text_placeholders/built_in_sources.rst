@@ -34,10 +34,9 @@ An application would normally receive that variable from its parent process.
 
 .. erbsland-demo::
     :source: text/Placeholders/BuiltInSources.cpp
-    :function-blocks: readEnvironmentSource
-    :function-blocks-sha256: 138cd0409dc7a74f6f7e9778248b73c5e049e6f4918aea4d9247d39bc49955b6
+    :show: f:readEnvironmentSource
     :exec: text/text_placeholders --demo ReadEnvironmentSource
-    :source-sha256: 8bd2fb2e8344b19376d5802fe2fbc159a228980225acbe34ce483f004f28d413
+    :sha256: 8f19c050f009d961ee7eb95fa247095fd5abdcf9fc75d9303af162343071e994
 
 .. code-block:: cpp
 
@@ -54,11 +53,13 @@ An application would normally receive that variable from its parent process.
         el::io::printLine(replacer.replaceOrThrow("Unknown: ${env:ERBSLAND_DEMO_VOLCANO_REGION}"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Region: Vulkanområdet   Askja
-    Unknown: undefined
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRegion: Vulkanområdet   Askja
+        Unknown: undefined␛[0m
 
 .. erbsland-demo-end::
 
@@ -78,7 +79,7 @@ For portable settings, choose simple uppercase ASCII names containing letters, d
 The operating system determines whether environment names are case-sensitive.
 You may register the source under another name with ``addEnvironmentSource("process"_el)``; the expression then begins
 with ``${process:...}``.
-Registering a second source under an occupied name raises :cpp:class:`LogicError <erbsland::err::LogicError>`.
+Registering a second source under an occupied name raises :cpp:class:`LogicFailure <erbsland::err::LogicFailure>`.
 
 Supplying Application Values
 ============================
@@ -90,10 +91,9 @@ The map makes the available names explicit and keeps each request independent of
 
 .. erbsland-demo::
     :source: text/Placeholders/BuiltInSources.cpp
-    :function-blocks: readVariableSource
-    :function-blocks-sha256: deaba99f045b50c9fdd81dcdff11c8d301807e45b9604dcbec38fa8f75a583c2
+    :show: f:readVariableSource
     :exec: text/text_placeholders --demo ReadVariableSource
-    :source-sha256: 8bd2fb2e8344b19376d5802fe2fbc159a228980225acbe34ce483f004f28d413
+    :sha256: 4920f98731e8bb09b39bb1ceb9a2475d48ab6089c69813fdefbe94dea5cea78d
 
 .. code-block:: cpp
 
@@ -106,11 +106,13 @@ The map makes the available names explicit and keeps each request independent of
         el::io::printLine(replacer.replaceOrThrow("Next site: ${var:field site}"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Site: Askja; rock: Basalt
-    Next site: Hekla
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSite: Askja; rock: Basalt
+        Next site: Hekla␛[0m
 
 .. erbsland-demo-end::
 

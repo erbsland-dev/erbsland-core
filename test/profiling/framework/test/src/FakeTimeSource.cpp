@@ -1,7 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "FakeTimeSource.hpp"
+
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimePoint.hpp>
 
 FakeTimeSource::FakeTimeSource(const el::time::TimeDelta step) : _step{step} {
 }

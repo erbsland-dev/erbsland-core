@@ -4,6 +4,7 @@
 
 #include "Container.hpp"
 #include "Value_fwd.hpp"
+#include "ValueDigest_fwd.hpp"
 
 #include "../lexer/Content.hpp"
 #include "../vr/Rule_fwd.hpp"
@@ -18,7 +19,7 @@ namespace erbsland::conf::impl {
 /// Internal implementation of the public `conf::Value` interface.
 /// The parser creates instances of this class and its derived types while building the value tree for a
 /// configuration document.
-/// @tested{ValueAsMethodsTest ValueGetMethodsTest}
+/// @tested{ValueAsMethodsTest ValueGetMethodsTest ValueDigestTest}
 class Value : public conf::Value, public Container {
 public:
     // defaults
@@ -33,6 +34,7 @@ public:
 
 public:
     [[nodiscard]] auto name() const noexcept -> Name override;
+    [[nodiscard]] auto digest(cryptology::HashAlgorithm algorithm) const -> mem::ByteBlock override;
     [[nodiscard]] auto namePath() const noexcept -> NamePath override;
     [[nodiscard]] auto hasParent() const noexcept -> bool override;
     [[nodiscard]] auto parent() const noexcept -> conf::ValuePtr override;
@@ -93,7 +95,7 @@ public: // modification
     /// @param targetType The target type for the transformation.
     virtual void transform([[maybe_unused]] ValueType targetType) {
         using namespace text::literals;
-        throw err::LogicError("Conversion not possible."_el);
+        throw err::LogicFailure("Conversion not possible."_el);
     }
 
     /// Create a deep copy of this value.
@@ -165,6 +167,11 @@ public: // factory methods
 public: // implement `Container`
     void setParent(const conf::ValuePtr &parent) override;
     void addValue(const ValuePtr &childValue) override;
+
+public: // digest payload
+    /// Stream the stored scalar payload; containers have no scalar payload.
+    /// @param digest The digest stream receiving the value's initialized data.
+    virtual void updateDigestValue([[maybe_unused]] ValueDigest &digest) const {}
 
 public: // helper methods.
     /// Fast access to all child-values.

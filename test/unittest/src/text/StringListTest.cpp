@@ -1,18 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditorList.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/text/u16/U16StringEditorList.hpp>
-#include <erbsland/text/u16/U16StringList.hpp>
-#include <erbsland/text/u32/U32StringEditorList.hpp>
-#include <erbsland/text/u32/U32StringList.hpp>
-#include <erbsland/text/u8/U8StringEditorList.hpp>
-#include <erbsland/text/u8/U8StringList.hpp>
-#include <erbsland/unit/ItemIndex.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditorList.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/U16StringEditorList.hpp>
+#include <erbsland/U16StringList.hpp>
+#include <erbsland/U32StringEditorList.hpp>
+#include <erbsland/U32StringList.hpp>
+#include <erbsland/U8StringEditorList.hpp>
+#include <erbsland/U8StringList.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>
@@ -21,7 +21,6 @@
 #include <type_traits>
 
 using namespace el::text::literals;
-
 using el::unit::ItemCount;
 using el::unit::ItemIndex;
 using namespace el::text;
@@ -114,10 +113,10 @@ public:
         REQUIRE_EQUAL(StringConverter{common.first()}.toStdString(), std::string{"a"});
         REQUIRE_EQUAL(StringConverter{commonView.join("|"_el)}.toStdString(), std::string{"a|b"});
 
-        const auto u16Parts = U16StringList::fromSplit(u"A,B"_el, CharSet{Char{U','}});
+        const auto u16Parts = U16StringList::fromSplit(u"A,B"_el, CharSet{U','});
         REQUIRE_EQUAL(StringConverter{u16Parts.join(u"+"_el)}.toStdString(), std::string{"A+B"});
 
-        const auto u32Parts = U32StringList::fromSplit(U"A,B"_el, CharSet{Char{U','}});
+        const auto u32Parts = U32StringList::fromSplit(U"A,B"_el, CharSet{U','});
         REQUIRE_EQUAL(StringConverter{u32Parts.join(U"+"_el)}.toStdString(), std::string{"A+B"});
     }
 };

@@ -9,7 +9,7 @@
 #include "impl/input/U16StringInput.hpp"
 #include "impl/input/U32StringInput.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::re {
@@ -34,7 +34,7 @@ auto RegEx::match(const stream::TextInputStreamPtr &input) const -> MatchPtr {
 
 auto RegEx::match(const InputPtr &input) const -> MatchPtr {
     if (input == nullptr) {
-        throw err::ParameterError{"Input cannot be null."_el, "input"_el};
+        throw err::ParameterFailure{"Input cannot be null."_el, "input"_el};
     }
     const auto &engine = this->engine();
     auto state = engine->createState(input);
@@ -49,7 +49,7 @@ auto RegEx::match(const InputPtr &input) const -> MatchPtr {
 
 auto RegEx::match(const Input16Ptr &input) const -> Match16Ptr {
     if (input == nullptr) {
-        throw err::ParameterError{"Input cannot be null."_el, "input"_el};
+        throw err::ParameterFailure{"Input cannot be null."_el, "input"_el};
     }
     const auto &engine = this->engine();
     auto state = engine->createState(input);
@@ -64,7 +64,7 @@ auto RegEx::match(const Input16Ptr &input) const -> Match16Ptr {
 
 auto RegEx::match(const Input32Ptr &input) const -> Match32Ptr {
     if (input == nullptr) {
-        throw err::ParameterError{"Input cannot be null."_el, "input"_el};
+        throw err::ParameterFailure{"Input cannot be null."_el, "input"_el};
     }
     const auto &engine = this->engine();
     auto state = engine->createState(input);

@@ -5,28 +5,35 @@
 #include "StaticStringPatternData.hpp"
 #include "StringPatternData.hpp"
 
+#include "../AnyString_fwd.hpp"
 #include "../pattern/AnyElement.hpp"
 #include "../pattern/Limits.hpp"
-#include "../u16/U16String_fwd.hpp"
-#include "../u32/U32String_fwd.hpp"
-#include "../u8/U8String_fwd.hpp"
+#include "../StringPatternKind.hpp"
 
 #include <memory>
 
 namespace erbsland::text::impl {
 
-/// Create runtime pattern data from UTF-8 text.
-[[nodiscard]] auto createStringPatternData(const U8String &pattern) -> StringPatternDataPtr;
-/// Create runtime pattern data from UTF-16 text.
-[[nodiscard]] auto createStringPatternData(const U16String &pattern) -> StringPatternDataPtr;
-/// Create runtime pattern data from UTF-32 text.
-[[nodiscard]] auto createStringPatternData(const U32String &pattern) -> StringPatternDataPtr;
+/// Create runtime pattern data from text of any supported width.
+/// @param pattern The pattern text.
+/// @param kind The syntax and matching semantics.
+/// @return The compiled pattern data.
+/// @throws ParseError If the pattern is invalid or exceeds storage limits.
+/// @tested{StringPatternTest}
+[[nodiscard]] auto createStringPatternData(const AnyString &pattern, StringPatternKind kind) -> StringPatternDataPtr;
 
 /// Create static pattern data from pattern elements.
+/// @tparam Args The supported element types.
+/// @param kind Divider or Glob matching semantics.
+/// @param elements The pattern elements.
+/// @return The compiled pattern data.
+/// @throws ParseError If the pattern is invalid or exceeds storage limits.
+/// @tested{StringPatternTest}
 template <pattern::AnyElement... Args>
-[[nodiscard]] auto createStaticStringPatternData(const Args &...elements) -> StringPatternDataPtr {
+[[nodiscard]] auto createStaticStringPatternData(const StringPatternKind kind, const Args &...elements)
+    -> StringPatternDataPtr {
     using Data = StaticStringPatternData<pattern::cMaximumStaticElements, pattern::cMaximumStaticRanges>;
-    return std::make_shared<Data>(elements...);
+    return std::make_shared<Data>(kind, elements...);
 }
 
 }

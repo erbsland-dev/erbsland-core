@@ -27,16 +27,16 @@ public: // positioning
     /// @throws stream::StreamError If positioning is not supported.
     [[nodiscard]] virtual auto position() const -> unit::ByteIndex;
     /// Set the logical byte position.
-    /// @param position The absolute byte position. Positions beyond the current end are allowed.
+    /// @param position The absolute byte position. Must be valid and fit native file-offset bounds; positions beyond
+    /// the current end are allowed.
     /// @return `Success`, or `Timeout` if the operation could not be serialized before the deadline.
-    /// @throws err::ParameterError If `position` is invalid or outside native file-offset bounds.
     /// @throws stream::StreamError If positioning is unsupported or fails.
     virtual auto setPosition(unit::ByteIndex position) -> StreamPositionStatus;
     /// Move the logical byte position.
     /// @param origin The reference point for the movement.
-    /// @param offset The signed byte offset from `origin`.
+    /// @param offset The signed byte offset from `origin`. The resulting position must be non-negative and fit native
+    /// file-offset bounds.
     /// @return `Success`, or `Timeout` if the operation could not be serialized before the deadline.
-    /// @throws err::ParameterError If the result is negative or outside native file-offset bounds.
     /// @throws stream::StreamError If positioning is unsupported or fails.
     virtual auto movePosition(StreamPositionOrigin origin, unit::ByteOffset offset) -> StreamPositionStatus;
 };

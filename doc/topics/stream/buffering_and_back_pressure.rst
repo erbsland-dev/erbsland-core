@@ -174,7 +174,7 @@ The presets express the workload intent without exposing the different internal 
 .. erbsland-demo::
     :source: stream/BufferingAndBackPressure/ConfigureBuffers.cpp
     :exec: stream/buffering_and_back_pressure --demo ConfigureBuffers
-    :source-sha256: bf75cdddfc5a44699802344d47274e0f679507a0b52e2f0828e4fa95da5c2118
+    :sha256: d607902ff542cc3185d497d28748098727b8fabefb8775f541078754c45c31df
 
 .. code-block:: cpp
 
@@ -189,30 +189,27 @@ The presets express the workload intent without exposing the different internal 
         const auto input = sourcePath.content().openTextInputStream(readOptions);
 
         auto outputSettings = el::OutputStreamSettings{};
-        outputSettings.setBuffering(el::StreamBuffering::Throughput)
-            .setBackBufferLimit(el::ByteLength{32U * 1024U});
+        outputSettings.setBuffering(el::StreamBuffering::Throughput).setBackBufferLimit(el::ByteCount{32U * 1024U});
         auto writeOptions = el::PathWriteTextOptions{};
         writeOptions.setStreamSettings(outputSettings);
         const auto output = targetPath.content().openTextOutputStream(writeOptions);
 
-        el::io::printLine(
-            "Input buffering: interactive"_el);
+        el::io::printLine("Input buffering: interactive"_el);
         el::io::printLine("Output buffering: throughput"_el);
-        el::io::printLine(
-            "Output back buffer: "_el,
-            output->outputSettings().backBufferLimit().toSizeT(),
-            " bytes"_el);
+        el::io::printLine("Output back buffer: "_el, output->outputSettings().backBufferLimit().toSizeT(), " bytes"_el);
 
         input->close();
         output->close();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Input buffering: interactive
-    Output buffering: throughput
-    Output back buffer: 32768 bytes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInput buffering: interactive
+        Output buffering: throughput
+        Output back buffer: 32768 bytes␛[0m
 
 .. erbsland-demo-end::
 
@@ -259,7 +256,7 @@ keeping the workflow alive forever.
 .. erbsland-demo::
     :source: stream/BufferingAndBackPressure/ReadBoundedChunks.cpp
     :exec: stream/buffering_and_back_pressure --demo ReadBoundedChunks
-    :source-sha256: 1daf69ebc2369c8d20c8cd0f3ddecfffb87fffafb5ee33217646558111eec6f5
+    :sha256: 4bad723e5ec1d1b16a18a9669a7339f34bb119da0b44cb7a60af5ee9a6a93a4c
 
 .. code-block:: cpp
 
@@ -267,7 +264,7 @@ keeping the workflow alive forever.
     /// `readLine()` retains an incomplete line after a timeout. Retry the same call and the stream continues collecting the
     /// line until it can return it as one value.
     void readCellObservationLog(el::TextInputStream &input) {
-        constexpr auto cMaximumLineLength = el::CpLength{80U};
+        constexpr auto cMaximumLineLength = el::CpCount{80U};
         constexpr auto cMaximumTimeouts = 3U;
         auto consecutiveTimeouts = 0U;
 
@@ -287,12 +284,14 @@ keeping the workflow alive forever.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Δείγμα 1: πυρήνας ορατός
-    Δείγμα 2: κυτταρική διαίρεση
-    Δείγμα 3: μεμβράνη ακέραιη
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mΔείγμα 1: πυρήνας ορατός
+        Δείγμα 2: κυτταρική διαίρεση
+        Δείγμα 3: μεμβράνη ακέραιη␛[0m
 
 .. erbsland-demo-end::
 
@@ -331,7 +330,7 @@ Each line remains one atomic request, and both the readiness wait and the write 
 .. erbsland-demo::
     :source: stream/BufferingAndBackPressure/ApplyBackPressure.cpp
     :exec: stream/buffering_and_back_pressure --demo ApplyBackPressure
-    :source-sha256: f3fe3f30ed21e59c6bf2c637710a4465f66954972e1f2333c2b41f77bfffbfdf
+    :sha256: 0198e5cd4019646457f752177d5ed7c1745cd6df7b34a227b18a3cf3235b3f6c
 
 .. code-block:: cpp
 
@@ -353,10 +352,12 @@ Each line remains one atomic request, and both the readiness wait and the write 
         return cRecordCount;
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Log lines written: 25000
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLog lines written: 25000␛[0m
 
 .. erbsland-demo-end::
 
@@ -380,7 +381,7 @@ The stream rejects the request and the output shows the resulting error title an
 .. erbsland-demo::
     :source: stream/BufferingAndBackPressure/RejectOversizedRequest.cpp
     :exec: stream/buffering_and_back_pressure --demo RejectOversizedRequest
-    :source-sha256: c204efb913b3bb80fce7aa2b7a9e6fdfb1659d763e6a358f599757202022396f
+    :sha256: bb16b24a85912818950a4893b736b24e65c20b4cd75b07adc3b098bb864cf89a
 
 .. code-block:: cpp
 
@@ -389,20 +390,21 @@ The stream rejects the request and the output shows the resulting error title an
     /// buffer is empty.
     void writeOversizedCellNote(const el::Path &path) {
         auto settings = el::OutputStreamSettings{};
-        settings.setBuffering(el::StreamBuffering::MinimalMemory).setBackBufferLimit(el::ByteLength{16U});
+        settings.setBuffering(el::StreamBuffering::MinimalMemory).setBackBufferLimit(el::ByteCount{16U});
         auto options = el::PathWriteTextOptions{};
         options.setStreamSettings(settings);
         const auto output = path.content().openTextOutputStream(options);
 
-        output->writeLine(
-            "Παρατήρηση: η κυτταρική μεμβράνη παραμένει ακέραιη."_el);
+        output->writeLine("Παρατήρηση: η κυτταρική μεμβράνη παραμένει ακέραιη."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Failed to write text to the output stream.
-    The complete encoded text request exceeds the configured output buffer limit.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFailed to write text to the output stream.
+        The complete encoded text request exceeds the configured output buffer limit.␛[0m
 
 .. erbsland-demo-end::
 
@@ -435,7 +437,7 @@ Both flushing and reading use a finite attempt count, while the accepted prompt 
 .. erbsland-demo::
     :source: stream/BufferingAndBackPressure/FlushAcceptedOutput.cpp
     :exec: stream/buffering_and_back_pressure --demo FlushAcceptedOutput
-    :source-sha256: 64136be5aa35a8237737205b2a358d024901e0432ac53e4a10d2d44a220573ac
+    :sha256: 3c5a6df1d3fdec71cba54d9843d2b81d4fef45ac504fd15c85dca845967af80d
 
 .. code-block:: cpp
 
@@ -444,7 +446,7 @@ Both flushing and reading use a finite attempt count, while the accepted prompt 
     /// terminal, so the user can see the question before the program starts reading the answer.
     auto askForCellAtlas() -> el::String {
         constexpr auto cMaximumAttempts = 3U;
-        constexpr auto cMaximumAnswerLength = el::CpLength{80U};
+        constexpr auto cMaximumAnswerLength = el::CpCount{80U};
         const auto output = el::stdOut();
 
         if (output->write("Cell atlas name: "_el).isTimeout()) {
@@ -465,9 +467,11 @@ Both flushing and reading use a finite attempt count, while the accepted prompt 
         throw el::RuntimeError{"The interaction did not finish in time."_el};
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Cell atlas name: Άτλας βρύων
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCell atlas name: Άτλας βρύων␛[0m
 
 .. erbsland-demo-end::

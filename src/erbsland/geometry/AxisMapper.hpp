@@ -5,7 +5,7 @@
 #include "AxisMappable.hpp"
 #include "SignedAxisMapping.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::geometry {
@@ -34,14 +34,13 @@ public: // attributes
 public: // mapping
     /// Map the axes of a geometry value.
     /// @tparam T The geometry value type.
-    /// @param value The value to map.
+    /// @param value The value to map. Its dimensionality must match the mapping's dimensionality.
     /// @return The reconstructed mapped value.
-    /// @throws err::ParameterError if the value and mapping dimensionalities differ.
     template <AxisMappable T>
     [[nodiscard]] constexpr auto map(T value) const -> T {
         using namespace text::literals;
         if (T::cDimensionality != dimensionality()) {
-            throw err::ParameterError{
+            throw err::ParameterFailure{
                 "The geometry value and axis mapping have different dimensionalities."_el, "value"_el};
         }
         if (_mapping.isIdentity()) {

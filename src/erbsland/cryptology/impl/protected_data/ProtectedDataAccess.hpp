@@ -6,7 +6,7 @@
 
 #include "../../../mem/ByteBlock_fwd.hpp"
 #include "../../../mem/ByteSpan.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 
 #include <atomic>
 
@@ -29,10 +29,10 @@ public:
 
 public:
     /// Encrypt plaintext into a protected envelope.
-    [[nodiscard]] virtual auto protect(mem::ConstByteSpan plaintext, unit::ByteLength plaintextLength)
+    [[nodiscard]] virtual auto protect(mem::ConstByteSpan plaintext, unit::ByteCount plaintextLength)
         -> mem::ByteBlock = 0;
     /// Decrypt a protected envelope into plaintext.
-    [[nodiscard]] virtual auto unprotect(mem::ConstByteSpan envelope, unit::ByteLength plaintextLength)
+    [[nodiscard]] virtual auto unprotect(mem::ConstByteSpan envelope, unit::ByteCount plaintextLength)
         -> mem::ByteBlock = 0;
 
 private:

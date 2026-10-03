@@ -17,8 +17,8 @@ where to find them, which filters they may use, and how their syntax and output 
 Create and configure it once, then render many documents with separate local contexts.
 This page shows how shared values and local values meet, and how to choose the environment options for your layouts.
 
-Keep the Environment for Repeated Renders
-=========================================
+Environment Reuse, Concurrent Rendering, and Auto-Reload
+========================================================
 
 The environment is the entry point for :cpp:func:`render() <erbsland::text::render::Environment::render>`.
 It takes a *logical layout name*, finds the source through its registered loaders, and returns a complete
@@ -33,8 +33,8 @@ This is useful for a live editing cycle, although it costs extra lookup work.
 Enable it during setup; once enabled, it stays on for that environment.
 For a deployed set of stable layouts, the ordinary cached behavior avoids those checks.
 
-Share Values Across Documents
-=============================
+Global Render Context and Shared Values
+=======================================
 
 Suppose several observations share the same current and coastline.
 Place those values in a global :cpp:class:`Context <erbsland::text::render::Context>` and render without passing a local
@@ -44,10 +44,9 @@ values.
 
 .. erbsland-demo::
     :source: text/RenderLayouts/EnvironmentExamples.cpp
-    :function-blocks: sharedValues
-    :function-blocks-sha256: f8225b19856d9d554251b41a6d57df0e0ee890f08d5f24fb5d068c62310656a1
+    :show: f:sharedValues
     :exec: text/render_layouts --demo SharedValues
-    :source-sha256: 3ffc62e74c29eec2e183be0aa4d4b10a1d11a55e493e328fef7144f6f6fb82da
+    :sha256: 32728e0c6deebfdd67e1d7dd6ae81778aaea9684ce4647b5c40b0995938b81ef
 
 .. code-block:: cpp
 
@@ -66,11 +65,13 @@ values.
         el::io::print(environment->render("current.txt"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Corrente: Ligure; costa: Italia
-    Corrente: Adriatica; costa: Croazia
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCorrente: Ligure; costa: Italia
+        Corrente: Adriatica; costa: Croazia␛[0m
 
 .. erbsland-demo-end::
 
@@ -79,8 +80,8 @@ site title or a set of stable labels.
 Replacing the snapshot is also safe while other threads render: a render call uses one consistent snapshot.
 If a value differs for each document, pass it locally instead.
 
-Let One Document Override Shared Values
-=======================================
+Local Context Overrides of Global Values
+========================================
 
 A local context belongs to one ``render()`` call.
 A name found there wins over the same name in the global snapshot; names absent locally still come from the global
@@ -89,10 +90,9 @@ Here the local station replaces the shared station, while ``season`` remains sha
 
 .. erbsland-demo::
     :source: text/RenderLayouts/EnvironmentExamples.cpp
-    :function-blocks: localValues
-    :function-blocks-sha256: 33a05f2b70979ea18ca44a3a977d79a80ad8cbbc86375a48e63fd546b872676b
+    :show: f:localValues
     :exec: text/render_layouts --demo LocalValues
-    :source-sha256: 3ffc62e74c29eec2e183be0aa4d4b10a1d11a55e493e328fef7144f6f6fb82da
+    :sha256: fccdaaec6749421fb2d59ae6e61494b2776e165582ee25c0c1b43d6bd2b0fdb9
 
 .. code-block:: cpp
 
@@ -110,10 +110,12 @@ Here the local station replaces the shared station, while ``season`` remains sha
         el::io::print(environment->render("observation.txt"_el, local));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Punto sud: Ligure (estate)
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mPunto sud: Ligure (estate)␛[0m
 
 .. erbsland-demo-end::
 
@@ -121,8 +123,8 @@ This separation lets you keep broad defaults in one place without making one doc
 If a name is absent from both contexts, it resolves to null and inserts empty text.
 The :doc:`rendering reference </reference/text/documents_and_rendering>` lists the value types and lookup rules.
 
-Add a Filter for Application Vocabulary
-=======================================
+Registering Custom Render Filters
+=================================
 
 A layout may need a small transformation that belongs to your application rather than to the layout language.
 Register a named :cpp:type:`FilterFn <erbsland::text::render::FilterFn>` with ``addFilter()``.
@@ -131,10 +133,9 @@ up to two further elements are positional arguments from the layout.
 
 .. erbsland-demo::
     :source: text/RenderLayouts/EnvironmentExamples.cpp
-    :function-blocks: customFilter
-    :function-blocks-sha256: 1650f46ee1ecc932d3a802cd7eba48227f494666f067301b28bb314750eda76e
+    :show: f:customFilter
     :exec: text/render_layouts --demo CustomFilter
-    :source-sha256: 3ffc62e74c29eec2e183be0aa4d4b10a1d11a55e493e328fef7144f6f6fb82da
+    :sha256: 5e851746cb12e7a857fc89fd27f3a2ba6b5f1070052c82716787f6e8ab3f8157
 
 .. code-block:: cpp
 
@@ -145,33 +146,41 @@ up to two further elements are positional arguments from the layout.
         const auto environment = el::render::Environment::create();
         environment->addLayoutLoader(el::render::FileSystemLoader::create(directory->path()));
         environment->addFilter("label"_el, [](const el::render::ValueList &values) -> el::render::Value {
-            if (values.count() != el::unit::ItemCount{2U} || !values.getRef(el::unit::ItemIndex{0U}).isText() ||
-                !values.getRef(el::unit::ItemIndex{1U}).isText()) {
-                throw el::err::ParameterError{"The label filter needs text and one text prefix."_el, "values"_el};
+            if (values.count() != ItemCount{2U} || !values.getRef(ItemIndex{0U}).isText() ||
+                !values.getRef(ItemIndex{1U}).isText()) {
+                throw el::render::RenderError{el::render::RenderErrorContext{
+                    el::render::RenderErrorCategory::Runtime,
+                    "Invalid label filter arguments"_el,
+                    "The label filter needs text and one text prefix."_el}};
             }
-            return el::StringList{
-                values.getRef(el::unit::ItemIndex{1U}).asText(), values.getRef(el::unit::ItemIndex{0U}).asText()}
-                .join();
+            return el::StringList{values.getRef(ItemIndex{1U}).asText(), values.getRef(ItemIndex{0U}).asText()}.join();
         });
         el::io::print(environment->render("current.txt"_el, el::render::Context{}.set("current"_el, "Ligure"_el)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Corrente: Ligure
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCorrente: Ligure␛[0m
 
 .. erbsland-demo-end::
 
 Validate the count and types inside the callback, as the demo does, before using a value.
+
+These arguments can come from user-supplied layouts and context data; prefer ``RenderError`` with category ``Runtime``
+to reject invalid values.
+Supply a title and description and leave the source context unset, as the demo does.
+
 Filter names are ASCII identifiers, and each application filter name is registered once.
 The output modifiers ``escape``, ``e``, and ``safe`` have reserved names.
 A list of the built-in filters and output modifiers appears in the :doc:`template_feature_cheat_sheet`.
 A registered filter may run on several threads at the same time; any mutable state captured by its callback needs its
 own synchronization.
 
-Choose the Layout Syntax
-========================
+Configuring Layout Delimiters
+=============================
 
 :cpp:class:`EnvironmentOptions <erbsland::text::render::EnvironmentOptions>` is passed to
 ``Environment::create()``.
@@ -204,10 +213,9 @@ The three settings work together in one layout:
 
 .. erbsland-demo::
     :source: text/RenderLayouts/EnvironmentExamples.cpp
-    :function-blocks: customSyntax
-    :function-blocks-sha256: f0cda2c83cef245427c7c5e07e4f3b819383c0a23d4a7990ec503d5b4e5f2d6f
+    :show: f:customSyntax
     :exec: text/render_layouts --demo CustomSyntax
-    :source-sha256: 3ffc62e74c29eec2e183be0aa4d4b10a1d11a55e493e328fef7144f6f6fb82da
+    :sha256: 24c250517bd27cb6592d96d19004bc4b083970016c59ea5383da3ef406ae0910
 
 .. code-block:: cpp
 
@@ -227,10 +235,12 @@ The three settings work together in one layout:
             "current.txt"_el, el::render::Context{}.set("active"_el, true).set("current"_el, "Ligure"_el)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Ligure
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLigure␛[0m
 
 .. erbsland-demo-end::
 
@@ -238,8 +248,8 @@ Each setting takes a :cpp:class:`Delimiters <erbsland::text::render::Delimiters>
 A delimiter can also carry an optional line marker for line statements.
 Choose distinct markers that do not collide with ordinary source text or one another.
 
-Choose Escaping for the Output
-==============================
+Configuring Output Escaping
+===========================
 
 Automatic Escaping
 ------------------
@@ -264,10 +274,9 @@ The example keeps ordinary HTML escaping and gives one specially named layout an
 
 .. erbsland-demo::
     :source: text/RenderLayouts/EnvironmentExamples.cpp
-    :function-blocks: escapingOptions
-    :function-blocks-sha256: f7fa8a819423c4122f0ae779ebd9f2e4b9bad5b4cb5cd3cbb8ad39e40cfddbc0
+    :show: f:escapingOptions
     :exec: text/render_layouts --demo EscapingOptions
-    :source-sha256: 3ffc62e74c29eec2e183be0aa4d4b10a1d11a55e493e328fef7144f6f6fb82da
+    :sha256: 42422f4a57f0ce8958443981511382671e1717dfdd5c6551efe81e7485b7c326
 
 .. code-block:: cpp
 
@@ -291,12 +300,14 @@ The example keeps ordinary HTML escaping and gives one specially named layout an
         el::io::print(plainEnvironment->render("note.html"_el, context));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Mare &amp; vento
-    Mare & vento
-    Mare & vento
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMare &amp; vento
+        Mare & vento
+        Mare & vento␛[0m
 
 .. erbsland-demo-end::
 
@@ -306,8 +317,8 @@ including the defaults.
 A suffix begins with ``.`` and uses ASCII letters, digits, ``.``, ``_``, or ``-``.
 Keep ordinary automatic escaping in place for documents that may contain values from outside your application.
 
-Bound Rendering Work
-====================
+Rendering Work and Output Limits
+================================
 
 A layout can generate much more text than its source contains, especially with loops and includes.
 ``setRenderLimits()`` replaces the :cpp:class:`RenderLimits <erbsland::text::render::RenderLimits>` used by the
@@ -316,10 +327,9 @@ The following example sets a deliberately tiny output limit to show the resultin
 
 .. erbsland-demo::
     :source: text/RenderLayouts/EnvironmentExamples.cpp
-    :function-blocks: renderingLimit
-    :function-blocks-sha256: 4d57dbbd60cb7095d696753fddf02072f8491016463e45175c5c54521dda78c2
+    :show: f:renderingLimit
     :exec: text/render_layouts --demo RenderingLimit
-    :source-sha256: 3ffc62e74c29eec2e183be0aa4d4b10a1d11a55e493e328fef7144f6f6fb82da
+    :sha256: c2a26e9d544ddfb88cf2cf1f0648c6890091b57e9b019c869a4973d1f827877a
 
 .. code-block:: cpp
 
@@ -340,10 +350,12 @@ The following example sets a deliberately tiny output limit to show the resultin
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    The output limit was reached.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mThe output limit was reached.␛[0m
 
 .. erbsland-demo-end::
 

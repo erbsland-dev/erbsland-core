@@ -3,12 +3,12 @@
 
 #include "MemoryLayoutLoader.hpp"
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/math/SaturatingMath.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Environment.hpp>
-#include <erbsland/text/render/RenderError.hpp>
-#include <erbsland/text/StringFormat.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/render/RenderError.hpp>
+#include <erbsland/SaturatingMath.hpp>
+#include <erbsland/StringFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <limits>
@@ -18,6 +18,14 @@ using namespace el::text::render;
 
 TESTED_TARGETS(ExpressionCompiler Engine built_in_filters EnvironmentOptions RenderLimits)
 class RenderLanguageCompletionTest final : public el::UnitTest {
+private:
+    static constexpr auto cALayout = "a"_el;
+    static constexpr auto cBLayout = "b"_el;
+    static constexpr auto cAKey = "a"_el;
+    static constexpr auto cBKey = "b"_el;
+    static constexpr auto cNameKey = "name"_el;
+    static constexpr auto cValueKey = "value"_el;
+
 public:
     void testSaturatingArithmeticAndTypedDivision() {
         constexpr auto cMinimum = std::numeric_limits<int64_t>::min();
@@ -38,7 +46,7 @@ public:
         requireIntegerOperation("a / b"_el, cMinimum, -1, el::math::saturatingDivide(cMinimum, int64_t{-1}));
         requireIntegerOperation("a / b"_el, cMinimum, 1, el::math::saturatingDivide(cMinimum, int64_t{1}));
         requireIntegerOperation("a / b"_el, cMaximum, -1, el::math::saturatingDivide(cMaximum, int64_t{-1}));
-        REQUIRE_EQUAL(render("{{ -a }}"_el, Context{}.set("a"_el, cMinimum)), el::text::String::fromInteger(cMaximum));
+        REQUIRE_EQUAL(render("{{ -a }}"_el, Context{}.set(cAKey, cMinimum)), el::text::String::fromInteger(cMaximum));
     }
 
     void testCollectionsMembershipTestsAndConcatenation() {
@@ -71,15 +79,16 @@ public:
 
     void testEveryBuiltInFilter() {
         auto services = ValueList{};
-        services.append(ValueMap{}.set("name"_el, "API"_el));
-        services.append(ValueMap{}.set("name"_el, "Storage"_el));
+        services.append(ValueMap{}.set(cNameKey, "API"_el));
+        services.append(ValueMap{}.set(cNameKey, "Storage"_el));
         const auto context = Context{}.set("services"_el, services);
         REQUIRE_EQUAL(
             render(
                 "{{ 'hELLO world' | capitalize }}|{{ 'MiXeD' | lower }}|{{ 'MiXeD' | upper }}|"
                 "{{ '--x--' | trim('-') }}|{{ 'a-b-a' | replace('a', 'x') }}|"
                 "{{ [1, 2] | first }}|{{ [1, 2] | last }}|{{ [] | first is none }}|{{ [] | last is none }}|"
-                "{{ services | join(',', 'name') }}|{{ 'abc' | length }}|{{ [1, 2] | count }}|"
+                "{{ services | join(',', 'name') }}|{{ [1, 2, 3] | batch(2) | count }}|"
+                "{{ 'abc' | length }}|{{ [1, 2] | count }}|"
                 "{{ '' | reverse }}|{{ 'A€😀' | reverse }}|{{ [1, 2, 3] | reverse | join(',') }}|"
                 "{{ [1, 3, 2] | sort(true, true) | join(',') }}|"
                 "{{ {'b': 2, 'a': 1} | keys | join(',') }}|{{ {'b': 2, 'a': 1} | values | join(',') }}|"
@@ -88,8 +97,34 @@ public:
                 "{{ [3, 1, 2] | min }}|{{ [3, 1, 2] | max }}|{{ false | d('fallback', true) }}|"
                 "{{ {'a': 1} | tojson(0) | safe }}"_el,
                 context),
-            "Hello world|mixed|MIXED|x|x-b-x|1|2|true|true|API,Storage|3|2||😀€A|3,2,1|3,2,1|"
+            "Hello world|mixed|MIXED|x|x-b-x|1|2|true|true|API,Storage|2|3|2||😀€A|3,2,1|3,2,1|"
             "a,b|1,2|1|9223372036854775807|1.3|10|1|3|fallback|{\"a\":1}"_el);
+    }
+
+    void testBatchFilter() {
+        REQUIRE_EQUAL(
+            render(
+                "{% for row in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] | batch(10) %}"
+                "{{ row | join(' ') }}\n{% endfor %}"_el),
+            "1 2 3 4 5 6 7 8 9 10\n11 12\n"_el);
+        REQUIRE_EQUAL(
+            render("{% for row in [1, 2, 3, 4, 5] | batch(2) %}[{% for n in row %}{{ n }}{% endfor %}]{% endfor %}"_el),
+            "[12][34][5]"_el);
+        REQUIRE_EQUAL(
+            render("{% for row in [1, 2, 3, 4, 5] | batch(3, 0) %}[{{ row | join(',') }}]{% endfor %}"_el),
+            "[1,2,3][4,5,0]"_el);
+        REQUIRE_EQUAL(
+            render("{% for row in [1, 2, 3] | batch(2, none) %}[{{ row | join(',') }}]{% endfor %}"_el), "[1,2][3]"_el);
+        REQUIRE_EQUAL(render("{% for row in [] | batch(3, 0) %}bad{% else %}empty{% endfor %}"_el), "empty"_el);
+        REQUIRE_EQUAL(render("{% for row in [1, 2] | batch(1, 0) %}{{ row | join(',') }};{% endfor %}"_el), "1;2;"_el);
+
+        REQUIRE_THROWS_AS(RenderError, render("{{ [1, 2] | batch }}"_el));
+        REQUIRE_THROWS_AS(RenderError, render("{{ [1, 2] | batch(0) }}"_el));
+        REQUIRE_THROWS_AS(RenderError, render("{{ [1, 2] | batch(-1) }}"_el));
+        REQUIRE_THROWS_AS(RenderError, render("{{ [1, 2] | batch(1.5) }}"_el));
+        REQUIRE_THROWS_AS(RenderError, render("{{ [1, 2] | batch('2') }}"_el));
+        REQUIRE_THROWS_AS(RenderError, render("{{ 'abc' | batch(2) }}"_el));
+        REQUIRE_THROWS_AS(RenderError, render("{{ [1, 2] | batch(2, 0, 0) }}"_el));
     }
 
     void testLoopElseAndScopes() {
@@ -103,16 +138,16 @@ public:
 
     void testAutomaticAndExplicitEscaping() {
         REQUIRE_EQUAL(
-            render("{{ value }}"_el, Context{}.set("value"_el, "<&\""_el), "page.html"_el), "&lt;&amp;&quot;"_el);
-        REQUIRE_EQUAL(render("{{ value }}"_el, Context{}.set("value"_el, "a*b"_el), "page.md"_el), "a\\*b"_el);
-        REQUIRE_EQUAL(render("{{ value | safe }}"_el, Context{}.set("value"_el, "<&"_el), "page.html"_el), "<&"_el);
-        REQUIRE_EQUAL(render("{{ value | escape(json) }}"_el, Context{}.set("value"_el, "\"\n"_el)), "\\\"\\n"_el);
+            render("{{ value }}"_el, Context{}.set(cValueKey, "<&\""_el), "page.html"_el), "&lt;&amp;&quot;"_el);
+        REQUIRE_EQUAL(render("{{ value }}"_el, Context{}.set(cValueKey, "a*b"_el), "page.md"_el), "a\\*b"_el);
+        REQUIRE_EQUAL(render("{{ value | safe }}"_el, Context{}.set(cValueKey, "<&"_el), "page.html"_el), "<&"_el);
+        REQUIRE_EQUAL(render("{{ value | escape(json) }}"_el, Context{}.set(cValueKey, "\"\n"_el)), "\\\"\\n"_el);
 
         auto options = EnvironmentOptions{};
         options.setAutomaticEscapingEnabled(false);
-        REQUIRE_EQUAL(render("{{ value }}"_el, Context{}.set("value"_el, "<&"_el), "page.html"_el, options), "<&"_el);
+        REQUIRE_EQUAL(render("{{ value }}"_el, Context{}.set(cValueKey, "<&"_el), "page.html"_el, options), "<&"_el);
         REQUIRE_EQUAL(
-            render("{{ value | escape }}"_el, Context{}.set("value"_el, "<&"_el), "page.html"_el, options),
+            render("{{ value | escape }}"_el, Context{}.set(cValueKey, "<&"_el), "page.html"_el, options),
             "&lt;&amp;"_el);
     }
 
@@ -120,6 +155,10 @@ public:
         REQUIRE_THROWS_AS(RenderError, render("{{ [1] + [2] }}"_el));
         REQUIRE_THROWS_AS(RenderError, render("{{ {'a': 1, 'a': 2} }}"_el));
         REQUIRE_THROWS_AS(RenderError, render("{{ 1 in 2 }}"_el));
+        REQUIRE_THROWS_AS(RenderError, render("{{ 1 | lower }}"_el));
+        REQUIRE_THROWS_AS(RenderError, render("{{ 1.2 | round(17) }}"_el));
+        REQUIRE_THROWS_AS(RenderError, render("{{ 'x' | upper(1) }}"_el));
+        REQUIRE_THROWS_AS(RenderError, render("{{ [1, 'x'] | sort }}"_el));
         REQUIRE_THROWS_AS(RenderError, render("{% set x = 'a' | safe %}"_el));
         REQUIRE_THROWS_AS(RenderError, render("{{ 'x' | replace('x', 'y', 'z') }}"_el));
 
@@ -145,17 +184,17 @@ public:
         options.clearEscapeFormats();
         REQUIRE_EQUAL(options.escapeFormatForLayout("page.html"_el), el::text::EscapeFormat::None);
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, options.setEscapeFormatForSuffix("html"_el, el::text::EscapeFormat::Html));
+            el::err::ParameterFailure, options.setEscapeFormatForSuffix("html"_el, el::text::EscapeFormat::Html));
 
         auto limits = RenderLimits{};
-        REQUIRE_THROWS_AS(el::err::ParameterError, limits.setGeneratedOutputBytes(0U));
-        REQUIRE_THROWS_AS(el::err::ParameterError, limits.setExecutedInstructions(0U));
-        REQUIRE_THROWS_AS(el::err::ParameterError, limits.setNestingDepth(0U));
-        REQUIRE_THROWS_AS(el::err::ParameterError, limits.setCallbackDepth(0U));
-        REQUIRE_THROWS_AS(el::err::ParameterError, limits.setLexicalScopeDepth(0U));
-        REQUIRE_THROWS_AS(el::err::ParameterError, limits.setCallFrameDepth(0U));
-        REQUIRE_THROWS_AS(el::err::ParameterError, limits.setValueStackDepth(0U));
-        REQUIRE_THROWS_AS(el::err::ParameterError, limits.setStaticDependencyDepth(0U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, limits.setGeneratedOutputBytes(0U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, limits.setExecutedInstructions(0U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, limits.setNestingDepth(0U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, limits.setCallbackDepth(0U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, limits.setLexicalScopeDepth(0U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, limits.setCallFrameDepth(0U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, limits.setValueStackDepth(0U));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, limits.setStaticDependencyDepth(0U));
     }
 
     void testEveryRuntimeLimit() {
@@ -180,12 +219,12 @@ public:
             ValueCallbackFn{[]() -> Value { return ValueCallbackFn{[]() -> Value { return "done"_el; }}; }};
         options.setRenderLimits(RenderLimits{}.setCallbackDepth(1U));
         REQUIRE_THROWS_AS(
-            RenderError, render("{{ value }}"_el, Context{}.set("value"_el, callback), "page"_el, options));
+            RenderError, render("{{ value }}"_el, Context{}.set(cValueKey, callback), "page"_el, options));
 
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
         loader->set("root"_el, "{% include 'a' %}"_el);
-        loader->set("a"_el, "{% include 'b' %}"_el);
-        loader->set("b"_el, "x"_el);
+        loader->set(cALayout, "{% include 'b' %}"_el);
+        loader->set(cBLayout, "x"_el);
         options.setRenderLimits(RenderLimits{}.setStaticDependencyDepth(1U));
         const auto environment = Environment::create(options);
         environment->addLayoutLoader(loader);
@@ -203,10 +242,10 @@ public:
         const auto environment = Environment::create();
         environment->addLayoutLoader(loader);
         REQUIRE_EQUAL(
-            environment->render("page.html"_el, Context{}.set("value"_el, "<x>"_el)),
+            environment->render("page.html"_el, Context{}.set(cValueKey, "<x>"_el)),
             "<body>&lt;x&gt;|&lt;x&gt;|&amp;LT;X&amp;GT;</body>"_el);
         REQUIRE_EQUAL(
-            environment->render("include.html"_el, Context{}.set("value"_el, "a*b<&"_el)),
+            environment->render("include.html"_el, Context{}.set(cValueKey, "a*b<&"_el)),
             "a\\*b\\<\\&|a*b&lt;&amp;"_el);
     }
 
@@ -216,7 +255,7 @@ private:
         REQUIRE_EQUAL(
             render(
                 el::text::StringFormat{"{{{{ {} }}}}"_el}.build(expression),
-                Context{}.set("a"_el, left).set("b"_el, right)),
+                Context{}.set(cAKey, left).set(cBKey, right)),
             el::text::String::fromInteger(expected));
     }
 

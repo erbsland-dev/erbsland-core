@@ -4,7 +4,7 @@
 
 #include "line/LogLinePart.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/AnyString.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringCharReader.hpp"
@@ -13,24 +13,25 @@
 
 namespace erbsland::log {
 
+using namespace text;
 using namespace text::literals;
 
 LogLineFormat::LogLineFormat() : _pattern{"{time} {level} - {message}"_el}, _truncationMark{"…"_el} {
 }
 
-auto LogLineFormat::setPattern(text::String value) -> LogLineFormat & {
+auto LogLineFormat::setPattern(String value) -> LogLineFormat & {
     if (!isValidPattern(value)) {
-        throw err::ParameterError{"Invalid log-line pattern."_el, "value"_el};
+        throw err::ParameterFailure{"Invalid log-line pattern."_el, "value"_el};
     }
     _pattern = std::move(value);
     return *this;
 }
 
-auto LogLineFormat::isValidPattern(const text::String &value) noexcept -> bool {
+auto LogLineFormat::isValidPattern(const String &value) noexcept -> bool {
     if (value.isEmpty()) {
         return false;
     }
-    auto reader = text::StringCharReader{value};
+    auto reader = StringCharReader{value};
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
         if (character == U'}') {
@@ -43,7 +44,7 @@ auto LogLineFormat::isValidPattern(const text::String &value) noexcept -> bool {
             continue;
         }
         reader.startCapture();
-        reader.advanceUntil(text::CharSet{U'}'});
+        reader.advanceUntil(CharSet{U'}'});
         const auto key = reader.takeCapture().toString();
         if (!reader.advanceIf(U'}')) {
             return false;
@@ -70,7 +71,7 @@ auto LogLineFormat::setNameFormat(const LogNameFormat value) noexcept -> LogLine
     return *this;
 }
 
-auto LogLineFormat::setNameLimit(const unit::CpLength value) noexcept -> LogLineFormat & {
+auto LogLineFormat::setNameLimit(const unit::CpCount value) noexcept -> LogLineFormat & {
     _nameLimit = value;
     return *this;
 }
@@ -80,12 +81,12 @@ auto LogLineFormat::setMessageTruncation(const LogMessageTruncation value) noexc
     return *this;
 }
 
-auto LogLineFormat::setMessageLimit(const unit::CpLength value) noexcept -> LogLineFormat & {
+auto LogLineFormat::setMessageLimit(const unit::CpCount value) noexcept -> LogLineFormat & {
     _messageLimit = value;
     return *this;
 }
 
-auto LogLineFormat::setTruncationMark(text::String value) noexcept -> LogLineFormat & {
+auto LogLineFormat::setTruncationMark(String value) noexcept -> LogLineFormat & {
     _truncationMark = std::move(value);
     return *this;
 }

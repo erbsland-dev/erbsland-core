@@ -6,6 +6,8 @@
 #include "CharSetWorkerWorkload_fwd.hpp"
 #include "Operation.hpp"
 
+#include <erbsland/CharSet.hpp>
+#include <erbsland/List.hpp>
 #include <erbsland/profiling/AllocationScope.hpp>
 #include <erbsland/profiling/WorkerExecutionContext.hpp>
 #include <erbsland/profiling/WorkerWorkload.hpp>

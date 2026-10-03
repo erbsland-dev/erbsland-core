@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/math/SaturatingMath.hpp>
+#include <erbsland/SaturatingMath.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <charconv>

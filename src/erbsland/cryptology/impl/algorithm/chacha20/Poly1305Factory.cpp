@@ -4,7 +4,8 @@
 
 #include "PortablePoly1305.hpp"
 
-#include "../../../../core/Application.hpp"
+#include "../../../../core/impl/application_data/ApplicationCryptologyData.hpp"
+#include "../../../../core/impl/ApplicationDataAccess.hpp"
 #include "../../../configuration/CryptologyConfiguration.hpp"
 
 #if defined(ERBSLAND_CHACHA20_ARM_BACKEND)
@@ -17,7 +18,8 @@
 namespace erbsland::cryptology::impl {
 
 auto createPoly1305(const mem::ConstByteSpan key) -> std::unique_ptr<Poly1305> {
-    if (core::application().cryptologyConfiguration().hardwareAccelerationEnabled()) {
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    if (cryptologyData->configuration().hardwareAccelerationEnabled()) {
 #if defined(ERBSLAND_CHACHA20_ARM_BACKEND)
         return std::make_unique<ArmPoly1305>(key);
 #elif defined(ERBSLAND_CHACHA20_X86_BACKEND)

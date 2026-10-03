@@ -3,19 +3,18 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
+#include <erbsland/Application.hpp>
 #include <erbsland/conf/ConfError.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/Value.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
-#include <erbsland/core/Application.hpp>
-#include <erbsland/core/MakeOneNamespace.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/protected_data/ProtectedDataMode.hpp>
-#include <erbsland/cryptology/tls/TlsConfigurationParser.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringFormat.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/ProtectedDataMode.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/TlsConfigurationParser.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -27,15 +26,20 @@ TESTED_TARGETS(
     TlsConfigurationParser TlsConfigurationEntry TlsConfigurationLabel DocumentValidator MatchesConstraint RulesBuilder)
 class TlsConfigurationParserTest final : public el::UnitTest {
 private:
+    static constexpr auto cFirstProfileValue = "[0]"_el;
+    static constexpr auto cClientValue = "client"_el;
+    static constexpr auto cTlsValue = "tls"_el;
+
+private:
     [[nodiscard]] static auto parseEntry(const el::String &text) -> el::conf::ValuePtr {
         const auto document = el::conf::Parser{}.parseTextOrThrow(text);
-        return document->valueOrThrow("tls"_el)->valueOrThrow("[0]"_el);
+        return document->valueOrThrow(cTlsValue);
     }
 
     [[nodiscard]] static auto parseFixture(const std::string_view path) -> el::conf::ValuePtr {
         const auto fixturePath = el::path::Path{el::unittest::fh::resolveDataPath(path)};
         const auto document = el::conf::Parser{}.parseFileOrThrow(fixturePath);
-        return document->valueOrThrow("tls"_el);
+        return document->valueOrThrow(cTlsValue);
     }
 
     void requireRuleDocumentation(const el::conf::ValuePtr &value) {
@@ -50,93 +54,88 @@ private:
     }
 
 public:
-    void testCompiledRulesCoverCompleteSchema() {
-        const auto entry = parseEntry(
-            "*[tls]*\n"
-            "label: \"http/server\"\n"
-            "trust_anchors_file: \"roots.pem\"\n"
-            "intermediate_certificates_file: \"intermediates.pem\"\n"
-            "server_certificate_chain_file: \"server.pem\"\n"
-            "server_signing_key_file: \"server-key.pem\"\n"_el);
-
-        REQUIRE_EQUAL(el::cryptology::TlsConfigurationParser::version(), el::conf::Integer{1});
-        REQUIRE_NOTHROW(el::cryptology::TlsConfigurationParser::validationRules()->validate(entry, 1));
-        WITH_CONTEXT(requireRuleDocumentation(entry));
+    void testDefaultsSettingsAndSecretRules() {
+        using namespace el::cryptology;
+        REQUIRE(TlsConfigurationParser{}.parse({}).entries().empty());
+        const auto section = parseEntry(
+            "[TLS]\nsystem_trust: true\ntrust_allow_network: false\nidentity_allow_interaction: false\n*[TLS.Client]*\nlabel: \"http\"\n"_el);
+        const auto parsed = TlsConfigurationParser{}.parse(section);
+        REQUIRE_EQUAL(parsed.entries().size(), std::size_t{1U});
+        REQUIRE_FALSE(parsed.settings().allowsTrustNetwork());
+        REQUIRE_FALSE(parsed.settings().allowsIdentityInteraction());
+        const auto policy =
+            parsed.entries()[0].configuration().client()->trust().resolve(parsed.settings(), TlsRole::Client);
+        REQUIRE(policy->isSystemTrust());
+        REQUIRE_FALSE(policy->allowsNetworkRetrieval());
+        const auto password = parseEntry(
+            "*[TLS.Client]*\nlabel: \"http\"\ncertificate_chain_file: \"client.pem\"\nsigning_key_file: \"key.pem\"\nsigning_key_password: \"\"\n"_el);
+        TlsConfigurationParser::validationRules()->validate(password, 2);
+        const auto value = password->valueOrThrow(cClientValue)
+                               ->valueOrThrow(cFirstProfileValue)
+                               ->valueOrThrow("signing_key_password"_el);
+        requireRuleDocumentation(password);
+        REQUIRE(value->isSecret());
+        REQUIRE(value->asText().isEmpty());
+        REQUIRE_EQUAL(TlsConfigurationParser::version(), el::conf::Integer{2});
     }
 
-    void testRulesRejectInvalidLabelsUnknownValuesAndDependencies() {
-        const auto invalidEntries = std::array{
-            "*[tls]*\nlabel: \"Http/server\"\n"_el,
-            "*[tls]*\nlabel: \"http//server\"\n"_el,
-            "*[tls]*\nlabel: \"http/server-\"\n"_el,
-            "*[tls]*\nlabel: \"http/server\"\nunknown: \"value\"\n"_el,
-            "*[tls]*\nlabel: \"http/client\"\nintermediate_certificates_file: \"issuer.pem\"\n"_el,
-            "*[tls]*\nlabel: \"http/server\"\nserver_certificate_chain_file: \"server.pem\"\n"_el,
-            "*[tls]*\nlabel: \"http/server\"\nserver_signing_key_file: \"server-key.pem\"\n"_el,
-        };
-        for (const auto &text : invalidEntries) {
-            const auto entry = parseEntry(text);
-            REQUIRE_THROWS_AS(
-                el::conf::ConfError, el::cryptology::TlsConfigurationParser::validationRules()->validate(entry, 1));
+    void testRejectsOldSchemaReservedLabelsDuplicatesAndWrongRoleFields() {
+        const auto inputs = std::array{
+            "*[TLS]*\nlabel: \"http\"\n"_el,
+            "*[TLS.Client]*\nlabel: \"\"\n"_el,
+            "*[TLS.Client]*\nlabel: \"Http\"\n"_el,
+            "*[TLS.Client]*\nlabel: \"http//internal\"\n"_el,
+            "*[TLS.Client]*\nlabel: \"http\"\nunknown: true\n"_el,
+            "*[TLS.Client]*\nlabel: \"http\"\ntrust_allow_network: false\n"_el,
+            "*[TLS.Client]*\nlabel: \"http\"\nidentity_allow_interaction: false\n"_el,
+            "*[TLS.Client]*\nlabel: \"http\"\nclient_authentication: \"required\"\n"_el,
+            "*[TLS.Client]*\nlabel: \"http\"\n*[TLS.Client]*\nlabel: \"http\"\n"_el,
+            "*[TLS.Server]*\nlabel: \"http\"\n"_el,
+            "*[TLS.Client]*\nlabel: \"http\"\nsystem_trust: false\n"_el,
+            "*[TLS.Client]*\nlabel: \"http\"\nintermediate_certificates_file: \"issuer.pem\"\n"_el,
+            "*[TLS.Client]*\nlabel: \"http\"\nsigning_key_password: \"\"\n"_el,
+            "*[TLS.Server]*\nlabel: \"http\"\ncertificate_chain_file: \"server.pem\"\n"_el};
+        for (const auto input : inputs) {
+            REQUIRE_THROWS_AS(el::conf::ConfError, el::cryptology::TlsConfigurationParser{}.parse(parseEntry(input)));
         }
-        REQUIRE_THROWS_AS(el::err::ParameterError, el::cryptology::TlsConfigurationParser{}.parse({}));
-    }
-
-    void testParsesEmptyAndGlobalOverrides() {
-        auto entry = el::cryptology::TlsConfigurationParser{}.parse(parseEntry("*[tls]*\nlabel: \"\"\n"_el));
-        REQUIRE(entry.label().isEmpty());
-        REQUIRE_FALSE(entry.configuration().hasServerCertificatePolicy());
-        REQUIRE_FALSE(entry.configuration().hasServerIdentity());
-
-        const auto applicationScope = ApplicationTestScope<>{};
-        auto &configuration = el::core::application().cryptologyConfiguration();
-        configuration.setTlsConfiguration(entry.label(), entry.takeConfiguration());
-        REQUIRE(configuration.hasTlsConfiguration(""_el));
     }
 
     void testParsesRelativeServerClientAndCombinedProfiles() {
-        const auto applicationScope = ApplicationTestScope<>{};
-        el::core::application().cryptologyConfiguration().setProtectedDataMode(
-            el::cryptology::ProtectedDataMode::InternalOnly);
-        const auto entries = parseFixture("data/cryptology/tls_configuration/profiles.elcl");
-        REQUIRE_EQUAL(entries->size(), std::size_t{3U});
-
-        const auto server = el::cryptology::TlsConfigurationParser{}.parse(entries->valueOrThrow("[0]"_el));
-        REQUIRE_EQUAL(server.label(), "http/server"_el);
-        REQUIRE(server.configuration().hasServerIdentity());
-        REQUIRE_FALSE(server.configuration().hasServerCertificatePolicy());
-
-        const auto client = el::cryptology::TlsConfigurationParser{}.parse(entries->valueOrThrow("[1]"_el));
-        REQUIRE_EQUAL(client.label(), "http/client"_el);
-        REQUIRE(client.configuration().hasServerCertificatePolicy());
-        REQUIRE_FALSE(client.configuration().hasServerIdentity());
-        REQUIRE_EQUAL(
-            client.configuration().serverCertificatePolicy()->trustAnchors().certificates().count(), el::ItemCount{1U});
-        REQUIRE_EQUAL(
-            client.configuration().serverCertificatePolicy()->intermediates().certificates().count(),
-            el::ItemCount{1U});
-
-        const auto combined = el::cryptology::TlsConfigurationParser{}.parse(entries->valueOrThrow("[2]"_el));
-        REQUIRE(combined.configuration().hasServerCertificatePolicy());
-        REQUIRE(combined.configuration().hasServerIdentity());
+        using namespace el::cryptology;
+        auto scope = ApplicationTestScope<>{};
+        auto &registry = scope.app().cryptologyConfiguration();
+        registry.setProtectedDataMode(ProtectedDataMode::InternalOnly);
+        const auto section = parseFixture("data/cryptology/tls_configuration/profiles.elcl");
+        const auto parsed = TlsConfigurationParser{}.parse(section);
+        REQUIRE_EQUAL(parsed.entries().size(), std::size_t{3U});
+        registry.replaceTlsConfigurations(parsed);
+        REQUIRE(registry.hasTlsConfiguration("http/server"_el, TlsRole::Server));
+        REQUIRE_FALSE(registry.hasTlsConfiguration("http/server"_el, TlsRole::Client));
+        const auto client = registry.resolveTlsConfiguration("http/client"_el, TlsRole::Client);
+        REQUIRE_FALSE(client.certificatePolicy()->isSystemTrust());
+        REQUIRE_EQUAL(client.certificatePolicy()->trustAnchors().certificates().count(), el::ItemCount{1U});
+        REQUIRE_EQUAL(client.certificatePolicy()->intermediates().certificates().count(), el::ItemCount{1U});
+        REQUIRE(registry.hasTlsConfiguration("http/combined"_el, TlsRole::Client));
+        REQUIRE(registry.hasTlsConfiguration("http/combined"_el, TlsRole::Server));
     }
 
     void testIncludedProfileResolvesBesideIncludedSource() {
-        const auto applicationScope = ApplicationTestScope<>{};
-        el::core::application().cryptologyConfiguration().setProtectedDataMode(
-            el::cryptology::ProtectedDataMode::InternalOnly);
-        const auto entries = parseFixture("data/cryptology/tls_configuration/include-root.elcl");
-        const auto entry = el::cryptology::TlsConfigurationParser{}.parse(entries->valueOrThrow("[0]"_el));
-        REQUIRE_EQUAL(entry.label(), "included/server"_el);
-        REQUIRE(entry.configuration().hasServerIdentity());
+        auto scope = ApplicationTestScope<>{};
+        scope.app().cryptologyConfiguration().setProtectedDataMode(el::cryptology::ProtectedDataMode::InternalOnly);
+        const auto parsed = el::cryptology::TlsConfigurationParser{}.parse(
+            parseFixture("data/cryptology/tls_configuration/include-root.elcl"));
+        REQUIRE_EQUAL(parsed.entries().size(), std::size_t{1U});
+        REQUIRE_EQUAL(parsed.entries()[0].label(), "included/server"_el);
+        REQUIRE(parsed.entries()[0].configuration().server()->identity());
     }
 
     void testRelativeReferenceFromTextSourceIsRejectedAtValue() {
         const auto entry = parseEntry(
-            "*[tls]*\n"
+            "*[TLS.Client]*\n"
             "label: \"http/client\"\n"
             "trust_anchors_file: \"roots.pem\"\n"_el);
-        const auto responsibleValue = entry->valueOrThrow("trust_anchors_file"_el);
+        const auto responsibleValue =
+            entry->valueOrThrow(cClientValue)->valueOrThrow(cFirstProfileValue)->valueOrThrow("trust_anchors_file"_el);
         try {
             static_cast<void>(el::cryptology::TlsConfigurationParser{}.parse(entry));
         } catch (const el::conf::ConfError &error) {
@@ -155,13 +154,14 @@ public:
             el::path::Path{el::unittest::fh::resolveDataPath("data/network/tls-interop/server.pem")};
         const auto keyPath =
             el::path::Path{el::unittest::fh::resolveDataPath("data/network/tls-interop/server-ecdsa-key.pem")};
-        const auto text = el::text::StringFormat{"*[tls]*\n"
+        const auto text = el::text::StringFormat{"*[TLS.Server]*\n"
                                                  "label: \"http/server\"\n"
-                                                 "server_certificate_chain_file: \"{}\"\n"
-                                                 "server_signing_key_file: \"{}\"\n"_el}
+                                                 "certificate_chain_file: \"{}\"\n"
+                                                 "signing_key_file: \"{}\"\n"_el}
                               .build(certificatePath.toString(), keyPath.toString());
         const auto entry = parseEntry(text);
-        const auto responsibleValue = entry->valueOrThrow("server_signing_key_file"_el);
+        const auto responsibleValue =
+            entry->valueOrThrow("server"_el)->valueOrThrow(cFirstProfileValue)->valueOrThrow("signing_key_file"_el);
         try {
             static_cast<void>(el::cryptology::TlsConfigurationParser{}.parse(entry));
         } catch (const el::conf::ConfError &error) {
@@ -178,7 +178,7 @@ public:
         el::core::application().cryptologyConfiguration().setProtectedDataMode(
             el::cryptology::ProtectedDataMode::InternalOnly);
         const auto missing = parseEntry(
-            "*[tls]*\n"
+            "*[TLS.Client]*\n"
             "label: \"http/client\"\n"
             "trust_anchors_file: \"/this/path/does/not/exist.pem\"\n"_el);
         REQUIRE_THROWS_AS(el::conf::ConfError, el::cryptology::TlsConfigurationParser{}.parse(missing));
@@ -188,20 +188,20 @@ public:
         const auto malformedKeyPath =
             el::path::Path{el::unittest::fh::resolveDataPath("data/cryptology/x509/server_authentication.pem")};
         const auto malformed = parseEntry(
-            el::text::StringFormat{"*[tls]*\n"
+            el::text::StringFormat{"*[TLS.Server]*\n"
                                    "label: \"http/server\"\n"
-                                   "server_certificate_chain_file: \"{}\"\n"
-                                   "server_signing_key_file: \"{}\"\n"_el}
+                                   "certificate_chain_file: \"{}\"\n"
+                                   "signing_key_file: \"{}\"\n"_el}
                 .build(certificatePath.toString(), malformedKeyPath.toString()));
         REQUIRE_THROWS_AS(el::conf::ConfError, el::cryptology::TlsConfigurationParser{}.parse(malformed));
 
         const auto encryptedKeyPath =
             el::path::Path{el::unittest::fh::resolveDataPath("data/cryptology/tls_configuration/encrypted-key.pem")};
         const auto encrypted = parseEntry(
-            el::text::StringFormat{"*[tls]*\n"
+            el::text::StringFormat{"*[TLS.Server]*\n"
                                    "label: \"http/server\"\n"
-                                   "server_certificate_chain_file: \"{}\"\n"
-                                   "server_signing_key_file: \"{}\"\n"_el}
+                                   "certificate_chain_file: \"{}\"\n"
+                                   "signing_key_file: \"{}\"\n"_el}
                 .build(certificatePath.toString(), encryptedKeyPath.toString()));
         REQUIRE_THROWS_AS(el::conf::ConfError, el::cryptology::TlsConfigurationParser{}.parse(encrypted));
     }

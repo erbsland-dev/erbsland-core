@@ -16,6 +16,9 @@ An application part is a one-shot service with a stable identity, declared depen
 This page continues from :doc:`applications_from_parts` and explains how to design service interfaces and
 implementations that remain clear across lifecycle and thread boundaries.
 
+:doc:`/topics/event/using_event_loops_in_application_parts` follows event-source setup, callback execution, and
+asynchronous shutdown on a part's dedicated loop.
+
 Publishing a Stable Service Interface
 =====================================
 
@@ -29,7 +32,7 @@ Managers compare their names, so separately obtained identifier objects with the
 
 .. erbsland-demo::
     :source: core/ApplicationParts/CatalogStorage.hpp
-    :source-sha256: 64b912b47734c4f4e8cd07ab53cf3692960f8eacb2ec54aa54a7046fde58a926
+    :sha256: cfc03f8751498b88c224297bd9fc29d64be4666a44286e6bcbde2d15fe243908
 
 .. code-block:: cpp
 
@@ -65,7 +68,7 @@ dedicated part thread.
 
 .. erbsland-demo::
     :source: core/ApplicationParts/CatalogStoragePart.hpp
-    :source-sha256: 57fcbfa2feb22200ee6cf268d9f4509d50c105f80dd7f7ba16e7b0bb535c5927
+    :sha256: 79fd790d7e805d48aa361d2d51870dede9f8a43c1c2aa6fcb22c7c748c0bc674
 
 .. code-block:: cpp
 
@@ -101,7 +104,7 @@ The server part below can therefore resolve storage during initialization and re
 
 .. erbsland-demo::
     :source: core/ApplicationParts/CatalogServerPart.hpp
-    :source-sha256: 6af2deac53a18464e8fe2925dce9b4ab82da3f0049b031f315cec484527d9716
+    :sha256: bc1afb14879b1270369d013cb3f5f7a703b1d212fd44faea8c920181586911ce
 
 .. code-block:: cpp
 
@@ -152,6 +155,11 @@ those automatic-start choices.
 Lifecycles are one-shot.
 A part that has stopped or failed cannot be restarted in the same prepared manager.
 
+The manager also offers lifecycle observers through ``events().addStateChanged()`` and ``addPartStateChanged()``.
+They run on its control target and remain registered while their subscription handles are retained.
+See :doc:`/topics/event/using_event_apis` for a compiled application example and
+:doc:`/topics/event/callback_lifetimes` for transferring and cancelling observer handles.
+
 Sharing Command-Line Configuration
 ==================================
 
@@ -172,7 +180,7 @@ Operations that touch event-owned state should post a callback through the servi
 their own locking and completion model.
 
 Do not wait for a manager or part state from the manager control source or from any managed part thread.
-Such a wait would prevent the event that satisfies it from running and is rejected with ``LogicError``.
+Such a wait would prevent the event that satisfies it from running and is rejected with ``LogicFailure``.
 
 Handling Failures and Shutdown
 ==============================

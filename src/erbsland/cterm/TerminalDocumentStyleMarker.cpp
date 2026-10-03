@@ -9,6 +9,8 @@
 
 namespace erbsland::cterm {
 
+using namespace text;
+
 auto TerminalDocumentStyleMarker::clear() noexcept -> TerminalDocumentStyleMarker & {
     _kind = Kind::None;
     _literal = {};
@@ -30,18 +32,18 @@ auto TerminalDocumentStyleMarker::setLiteral(const BlockString literal, const Bl
     return *this;
 }
 
-auto TerminalDocumentStyleMarker::setLiteral(const text::U32String &literal, const BlockStyle style)
+auto TerminalDocumentStyleMarker::setLiteral(const U32String &literal, const BlockStyle style)
     -> TerminalDocumentStyleMarker & {
     return setLiteral(BlockString{literal}, style);
 }
 
-auto TerminalDocumentStyleMarker::setLiteral(const text::String &literal, const BlockStyle style)
+auto TerminalDocumentStyleMarker::setLiteral(const String &literal, const BlockStyle style)
     -> TerminalDocumentStyleMarker & {
     return setLiteral(BlockString{literal}, style);
 }
 
 auto TerminalDocumentStyleMarker::setOrdered() -> TerminalDocumentStyleMarker & {
-    return setOrdered(BlockString{text::U32String{text::U32StringLiteral{U".\t"}}});
+    return setOrdered(BlockString{U32String{U32StringLiteral{U".\t"}}});
 }
 
 auto TerminalDocumentStyleMarker::setOrdered(const BlockString suffix, const BlockStyle style)
@@ -52,7 +54,7 @@ auto TerminalDocumentStyleMarker::setOrdered(const BlockString suffix, const Blo
     return *this;
 }
 
-auto TerminalDocumentStyleMarker::setOrdered(const text::U32String &suffix, const BlockStyle style)
+auto TerminalDocumentStyleMarker::setOrdered(const U32String &suffix, const BlockStyle style)
     -> TerminalDocumentStyleMarker & {
     return setOrdered(BlockString{suffix}, style);
 }
@@ -67,7 +69,7 @@ auto TerminalDocumentStyleMarker::render(const std::size_t number, const BlockSt
     }
 
     auto builder = impl::BlockStringBuilder{};
-    builder.appendStyled(text::String::fromInteger(number), effectiveStyle);
+    builder.appendStyled(String::fromInteger(number), effectiveStyle);
     builder.appendWithBaseStyle(_suffix, effectiveStyle);
     return builder.takeString();
 }

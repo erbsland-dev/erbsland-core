@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/math/SaturatingInteger.hpp>
-#include <erbsland/math/SignedMagnitude.hpp>
+#include <erbsland/SaturatingInteger.hpp>
+#include <erbsland/SignedMagnitude.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>

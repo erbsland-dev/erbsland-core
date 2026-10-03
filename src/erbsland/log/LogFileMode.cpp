@@ -9,9 +9,10 @@
 
 namespace erbsland::log {
 
+using namespace text;
 using namespace text::literals;
 
-auto LogFileMode::toString() const -> text::String {
+auto LogFileMode::toString() const -> String {
     switch (_value) {
     case Overwrite:
         return "overwrite"_el;
@@ -21,11 +22,11 @@ auto LogFileMode::toString() const -> text::String {
     return {};
 }
 
-auto LogFileMode::allStrings() -> text::StringList {
-    return text::StringList{"overwrite"_el, "append"_el};
+auto LogFileMode::allStrings() -> StringList {
+    return StringList{"overwrite"_el, "append"_el};
 }
 
-auto LogFileMode::fromString(const text::String &text) noexcept -> std::optional<LogFileMode> {
+auto LogFileMode::fromString(const String &text) noexcept -> std::optional<LogFileMode> {
     const auto compare = ::erbsland::text::cCaseInsensitive.asciiComparisonFn();
     if (text.compare("overwrite"_el, compare) == std::strong_ordering::equal) {
         return Overwrite;
@@ -36,7 +37,7 @@ auto LogFileMode::fromString(const text::String &text) noexcept -> std::optional
     return std::nullopt;
 }
 
-auto LogFileMode::fromStringOrThrow(const text::String &text) -> LogFileMode {
+auto LogFileMode::fromStringOrThrow(const String &text) -> LogFileMode {
     if (const auto result = fromString(text); result.has_value()) {
         return *result;
     }

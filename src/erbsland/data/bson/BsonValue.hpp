@@ -23,6 +23,7 @@
 #include <optional>
 
 namespace erbsland::data::bson {
+
 /// A copy-on-write BSON value tree.
 /// @seedoc{/reference/data/bson}
 /// @tested{BsonValueTest}
@@ -57,8 +58,7 @@ public: // value constructors
     /// @param value The unsigned 32-bit integer to store.
     BsonValue(uint32_t value); // NOLINT(*-explicit-constructor)
     /// Create a BSON unsigned 64-bit integer value.
-    /// @param value The unsigned 64-bit integer to store.
-    /// @throws err::ParameterError If the integer exceeds the BSON signed range.
+    /// @param value The unsigned 64-bit integer to store. Must fit in the BSON signed 64-bit range.
     BsonValue(uint64_t value); // NOLINT(*-explicit-constructor)
     /// Create a BSON double-precision number value.
     /// @param value The double-precision number to store.
@@ -66,6 +66,11 @@ public: // value constructors
     /// Create a BSON text string value.
     /// @param value The text string to store.
     BsonValue(text::String value); // NOLINT(*-explicit-constructor)
+    /// Create a text value from an implicitly convertible string, editor, or literal.
+    /// @param value The text to store.
+    template <typename tText>
+        requires(!std::same_as<std::remove_cvref_t<tText>, text::String> && std::convertible_to<tText, text::String>)
+    BsonValue(tText &&value) : BsonValue{text::String{std::forward<tText>(value)}} {} // NOLINT(*-explicit-constructor)
     /// Create a BSON binary value with subtype value.
     /// @param value The binary value with subtype to store.
     BsonValue(BsonBinary value); // NOLINT(*-explicit-constructor)
@@ -104,8 +109,10 @@ public: // accessors
     /// Get a child or null when absent.
     [[nodiscard]] auto get(const text::String &key) const -> BsonValue;
     /// Get a child or throw.
+    /// @throws err::OutOfRangeError If the index does not identify an array element.
     [[nodiscard]] auto getOrThrow(unit::ItemIndex index) const -> BsonValue;
     /// Get a child or throw.
+    /// @throws err::NotFoundError If the requested key is absent.
     [[nodiscard]] auto getOrThrow(const text::String &key) const -> BsonValue;
     /// Get a Boolean value.
     [[nodiscard]] auto getBool() const noexcept -> std::optional<bool>;
@@ -136,7 +143,7 @@ public: // mutation
 
 public: // conversion
     /// Serialize a document root to BSON.
-    /// @throws err::ParameterError If this is not a document or a value cannot be encoded.
+    /// This value must be a document root, and every contained value must be encodable as BSON.
     [[nodiscard]] auto toByteBlock(BsonFormatOptions options = {}) const -> mem::ByteBlock;
     /// Parse one complete BSON document, returning no value on failure.
     [[nodiscard]] static auto fromByteBlock(const mem::ByteBlock &bytes, BsonParseOptions options = {}) noexcept
@@ -153,4 +160,5 @@ private: // mutation
 private:                                        // data
     std::shared_ptr<impl::BsonValueData> _data; ///< Shared value data; null denotes BSON null.
 };
+
 }

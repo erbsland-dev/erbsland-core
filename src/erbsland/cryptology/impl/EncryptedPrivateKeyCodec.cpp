@@ -15,19 +15,21 @@
 #include "../CryptologyError.hpp"
 #include "../symmetric/SymmetricEncryptionType.hpp"
 
-#include "../../core/Application.hpp"
+#include "../../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../../core/impl/ApplicationDataAccess.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../mem/Byte.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteBlockEditor.hpp"
 #include "../../random/Random.hpp"
 #include "../../text/Literals.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 #include "../../unit/ItemIndex.hpp"
 
 namespace erbsland::cryptology::impl::encrypted_private_key_codec {
 
+using namespace err;
 using namespace mem;
 using namespace text::literals;
 using namespace unit;
@@ -37,9 +39,10 @@ using namespace unit;
 
 auto encrypt(const ConstByteSpan plaintext, const ConstByteSpan password) -> ByteBlock {
     // RFC 8018 section 6.2.1: choose a salt, derive the encryption key, and encrypt under the selected scheme.
-    auto salt = core::application().secureRandom().buildByteBlock(ByteLength{16U});
+    const auto randomData = core::impl::applicationData()->random().get();
+    auto salt = randomData->secureRandom().buildByteBlock(ByteCount{16U});
     const auto saltEraseGuard = SecureEraseGuard{salt};
-    auto iv = core::application().secureRandom().buildByteBlock(ByteLength{16U});
+    auto iv = randomData->secureRandom().buildByteBlock(ByteCount{16U});
     const auto ivEraseGuard = SecureEraseGuard{iv};
     auto key = pbkdf2HmacSha256(password, salt.span(), cIterationCount, 32U);
     const auto keyEraseGuard = SecureEraseGuard{key};
@@ -78,7 +81,7 @@ auto decrypt(const ByteBlock &der, const ConstByteSpan password) -> ByteBlock {
     // RFC 8018 section 6.2.2: accept only the bounded profile written above before deriving any key material.
     const auto root = DerParser{der}.parseDocument();
     if (root.universalType() != Asn1UniversalType::Sequence || root.childCount() != ItemCount{2U}) {
-        throw err::ParseError{"Unsupported encrypted private key."_el};
+        throw ParseError{"Unsupported encrypted private key."_el};
     }
     const auto algorithm = root.child(ItemIndex{0U});
     const auto encryptedData = root.child(ItemIndex{1U});
@@ -86,11 +89,11 @@ auto decrypt(const ByteBlock &der, const ConstByteSpan password) -> ByteBlock {
         !algorithm.child(ItemIndex{0U}).toObjectIdentifier().has_value() ||
         algorithm.child(ItemIndex{0U}).toObjectIdentifier()->toString() != cryptology_oids::pbes2 ||
         encryptedData.universalType() != Asn1UniversalType::OctetString) {
-        throw err::ParseError{"Unsupported encrypted private key."_el};
+        throw ParseError{"Unsupported encrypted private key."_el};
     }
     const auto parameters = algorithm.child(ItemIndex{1U});
     if (parameters.universalType() != Asn1UniversalType::Sequence || parameters.childCount() != ItemCount{2U}) {
-        throw err::ParseError{"Unsupported encrypted private key."_el};
+        throw ParseError{"Unsupported encrypted private key."_el};
     }
     const auto kdf = parameters.child(ItemIndex{0U});
     const auto cipher = parameters.child(ItemIndex{1U});
@@ -100,28 +103,28 @@ auto decrypt(const ByteBlock &der, const ConstByteSpan password) -> ByteBlock {
         cipher.universalType() != Asn1UniversalType::Sequence || cipher.childCount() != ItemCount{2U} ||
         !cipher.child(ItemIndex{0U}).toObjectIdentifier().has_value() ||
         cipher.child(ItemIndex{0U}).toObjectIdentifier()->toString() != cryptology_oids::aes256Cbc) {
-        throw err::ParseError{"Unsupported encrypted private key."_el};
+        throw ParseError{"Unsupported encrypted private key."_el};
     }
     const auto kdfParameters = kdf.child(ItemIndex{1U});
     if (kdfParameters.universalType() != Asn1UniversalType::Sequence || kdfParameters.childCount() != ItemCount{3U}) {
-        throw err::ParseError{"Unsupported encrypted private key."_el};
+        throw ParseError{"Unsupported encrypted private key."_el};
     }
     const auto saltNode = kdfParameters.child(ItemIndex{0U});
     const auto iterationsNode = kdfParameters.child(ItemIndex{1U});
     const auto prf = kdfParameters.child(ItemIndex{2U});
     if (saltNode.universalType() != Asn1UniversalType::OctetString ||
-        saltNode.contentData().length() != ByteLength{16U} ||
+        saltNode.contentData().length() != ByteCount{16U} ||
         iterationsNode.universalType() != Asn1UniversalType::Integer ||
         prf.universalType() != Asn1UniversalType::Sequence || prf.childCount() != ItemCount{2U} ||
         !prf.child(ItemIndex{0U}).toObjectIdentifier().has_value() ||
         prf.child(ItemIndex{0U}).toObjectIdentifier()->toString() != cryptology_oids::hmacSha256 ||
         prf.child(ItemIndex{1U}).universalType() != Asn1UniversalType::Null) {
-        throw err::ParseError{"Unsupported encrypted private key."_el};
+        throw ParseError{"Unsupported encrypted private key."_el};
     }
     const auto iterationBytes = iterationsNode.contentData();
-    if (iterationBytes.isEmpty() || iterationBytes.length() > ByteLength{4U} ||
+    if (iterationBytes.isEmpty() || iterationBytes.length() > ByteCount{4U} ||
         (iterationBytes.span().front().toUInt8() & 0x80U) != 0U) {
-        throw err::ParseError{"Unsupported encrypted private key."_el};
+        throw ParseError{"Unsupported encrypted private key."_el};
     }
     auto iterations = uint32_t{};
     for (const auto byte : iterationBytes.span()) {
@@ -130,9 +133,9 @@ auto decrypt(const ByteBlock &der, const ConstByteSpan password) -> ByteBlock {
     const auto ivNode = cipher.child(ItemIndex{1U});
     const auto ciphertext = encryptedData.contentData();
     if (iterations == 0U || iterations > cMaximumIterationCount ||
-        ivNode.universalType() != Asn1UniversalType::OctetString || ivNode.contentData().length() != ByteLength{16U} ||
+        ivNode.universalType() != Asn1UniversalType::OctetString || ivNode.contentData().length() != ByteCount{16U} ||
         ciphertext.isEmpty() || ciphertext.length().toSizeT() % 16U != 0U) {
-        throw err::ParseError{"Unsupported encrypted private key."_el};
+        throw ParseError{"Unsupported encrypted private key."_el};
     }
     auto key = pbkdf2HmacSha256(password, saltNode.contentData().span(), iterations, 32U);
     const auto keyEraseGuard = SecureEraseGuard{key};
@@ -145,7 +148,7 @@ auto encryptCbc(const ConstByteSpan plaintext, const ConstByteSpan key, const Co
     padded.markAsSensitive();
     const auto paddedEraseGuard = SecureEraseGuard{padded};
     const auto paddingLength = 16U - plaintext.size() % 16U;
-    padded.append(Byte{static_cast<uint8_t>(paddingLength)}, ByteLength{paddingLength});
+    padded.append(Byte{static_cast<uint8_t>(paddingLength)}, ByteCount{paddingLength, ByteCount::Unchecked{}});
     auto state = AesCbcState{SymmetricEncryptionType::Aes256CbcRandomFill, key, iv};
     auto result = state.encrypt(padded.span());
     result.markAsSensitive();
@@ -170,7 +173,8 @@ auto decryptCbc(const ConstByteSpan ciphertext, const ConstByteSpan key, const C
     if (invalid != 0U) {
         throw CryptologyError{"Private-key decryption failed."_el};
     }
-    auto result = plaintext.slice(ByteIndex::zero(), ByteLength{plaintext.length().toSizeT() - paddingLength});
+    auto result =
+        plaintext.slice(ByteIndex::zero(), plaintext.length() - ByteCount{paddingLength, ByteCount::Unchecked{}});
     result.markAsSensitive();
     return result;
 }

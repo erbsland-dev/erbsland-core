@@ -14,8 +14,8 @@ matched substrings for later use.
 Use groups whenever you need to scope alternatives, apply quantifiers to a sub-expression,
 or extract parts of a match.
 
-:expression:`(...)`
-===================
+Capturing Group: :expression:`(...)`
+====================================
 
 Capturing groups collect the substring matched by the enclosed pattern and assign it a
 **group index**.
@@ -32,8 +32,8 @@ To keep patterns predictable and resource usage bounded, this engine enforces co
 limits on both the **number of capturing groups** and the **maximum nesting depth**. See
 :cpp:class:`erbsland::re::Settings` for details.
 
-:expression:`(?<<name>>...)`
-============================
+Named Capturing Group: :expression:`(?<<name>>...)`
+===================================================
 
 Named capturing groups behave like numbered capturing groups but also associate the captured
 substring with a **name**.
@@ -49,8 +49,8 @@ Group names must follow these rules:
 * Names must be unique within the pattern.
 * The maximum name length is 100 characters.
 
-:expression:`(?:...)`
-=====================
+Non-Capturing Group: :expression:`(?:...)`
+==========================================
 
 Non-capturing groups provide grouping and precedence without creating a capture group.
 
@@ -67,8 +67,8 @@ A flag-only group such as :expression:`(?i)` is only allowed at the **very start
 pattern. Elsewhere, the parser requires the scoped form :expression:`(?i:...)` to make the
 flag’s effect explicit.
 
-:expression:`(?>...)`
-=====================
+Atomic Group: :expression:`(?>...)`
+===================================
 
 Atomic groups match their content **without allowing backtracking** once a match has been
 found inside the group.
@@ -87,23 +87,23 @@ Legacy and Compatibility Syntax
 The following group syntaxes exist for compatibility with other regular expression engines.
 They are accepted for legacy patterns but are not recommended for new ones.
 
-:expression:`(?'<name>'...)`
-----------------------------
+Quoted-Name Capturing Group: :expression:`(?'<name>'...)`
+---------------------------------------------------------
 
 Alternative named capturing group syntax using single quotes.
 
 It behaves exactly like :expression:`(?<name>...)`.
 
-:expression:`(?P<<name>>...)`
------------------------------
+Python-Style Named Capturing Group: :expression:`(?P<<name>>...)`
+-----------------------------------------------------------------
 
 Python-style named capturing group syntax.
 
 Only the form :expression:`(?P<<name>>...)` is accepted. Backreference syntax such as
 :expression:`(?P=name)` is rejected because backreferences are not supported.
 
-:expression:`(?#...)`
----------------------
+Inline Comment: :expression:`(?#...)`
+-------------------------------------
 
 Inline comment. The content is ignored until the next closing parenthesis.
 

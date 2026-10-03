@@ -8,7 +8,7 @@
 #include "../block/Position.hpp"
 #include "../block/Rectangle.hpp"
 #include "../block/Size.hpp"
-#include "../err/OutOfRangeError.hpp"
+#include "../err/OutOfRangeFailure.hpp"
 #include "../text/String.hpp"
 #include "../text/StringEditor.hpp"
 
@@ -163,11 +163,10 @@ public: // conversion
 
 protected:
     /// Access one in-bounds pixel for modification.
-    /// @param pos The pixel position.
-    /// @throws err::OutOfRangeError if ``pos`` is outside the bitmap.
+    /// @param pos The pixel position. Must be inside the bitmap.
     [[nodiscard]] auto pixelRef(const block::Position pos) -> Data::reference {
         if (!_size.contains(pos)) {
-            throw err::OutOfRangeError{"block::Position out of bounds."};
+            throw err::OutOfRangeFailure{"block::Position out of bounds."};
         }
         return _data[_size.index(pos)];
     }
@@ -179,10 +178,6 @@ protected:
     Data _data;
 };
 
-/// Draw bit-mask rows at the given position.
-/// @tparam T The unsigned integer type storing each row.
-/// @param position The top-left corner where to draw.
-/// @param data The rows to draw.
 template <typename T>
     requires std::is_integral_v<T> && std::is_unsigned_v<T>
 void Bitmap::draw(const block::Position position, const std::vector<T> &data) noexcept {

@@ -11,10 +11,12 @@
 
 namespace erbsland::compression::impl {
 
-ZstandardHuffmanEncoder::ZstandardHuffmanEncoder(mem::ConstByteSpan literals) noexcept : _literals{literals} {
+using namespace mem;
+
+ZstandardHuffmanEncoder::ZstandardHuffmanEncoder(ConstByteSpan literals) noexcept : _literals{literals} {
 }
 
-auto ZstandardHuffmanEncoder::encode() const -> std::optional<mem::ByteBuffer> {
+auto ZstandardHuffmanEncoder::encode() const -> std::optional<ByteBuffer> {
     auto weights = std::array<uint8_t, 256U>{};
     auto codes = std::array<ZstandardHuffmanCode, 256U>{};
     auto tableBits = uint8_t{};
@@ -22,14 +24,14 @@ auto ZstandardHuffmanEncoder::encode() const -> std::optional<mem::ByteBuffer> {
     if (!highestSymbol.has_value()) {
         return std::nullopt;
     }
-    auto tree = mem::ByteBuffer{};
-    tree.reserve(unit::ByteLength::fromSizeT(1U + (*highestSymbol + 1U) / 2U));
-    tree.append(mem::Byte{static_cast<uint8_t>(127U + *highestSymbol)});
+    auto tree = ByteBuffer{};
+    tree.reserve(unit::ByteCount::fromSizeT(1U + (*highestSymbol + 1U) / 2U));
+    tree.append(Byte{static_cast<uint8_t>(127U + *highestSymbol)});
     for (auto symbol = std::size_t{}; symbol < *highestSymbol; symbol += 2U) {
-        tree.append(mem::Byte{static_cast<uint8_t>((weights[symbol] << 4U) | weights[symbol + 1U])});
+        tree.append(Byte{static_cast<uint8_t>((weights[symbol] << 4U) | weights[symbol + 1U])});
     }
     const auto fourStreams = _literals.size() >= 1024U;
-    auto streams = mem::ByteBuffer{};
+    auto streams = ByteBuffer{};
     if (fourStreams) {
         const auto streamRegeneratedSize = (_literals.size() + 3U) / 4U;
         const auto fourthSize = _literals.size() - streamRegeneratedSize * 3U;
@@ -42,7 +44,7 @@ auto ZstandardHuffmanEncoder::encode() const -> std::optional<mem::ByteBuffer> {
             return std::nullopt;
         }
         streams.reserve(
-            unit::ByteLength{6U}
+            unit::ByteCount{6U}
                 .addedOrThrow(stream1.length())
                 .addedOrThrow(stream2.length())
                 .addedOrThrow(stream3.length())
@@ -60,8 +62,8 @@ auto ZstandardHuffmanEncoder::encode() const -> std::optional<mem::ByteBuffer> {
     if (compressedSize > 0x3ffffU) {
         return std::nullopt;
     }
-    auto output = mem::ByteBuffer{};
-    output.reserve(unit::ByteLength::fromSizeT(5U + compressedSize));
+    auto output = ByteBuffer{};
+    output.reserve(unit::ByteCount::fromSizeT(5U + compressedSize));
     appendHeader(output, _literals.size(), compressedSize, fourStreams);
     output.append(tree.span());
     output.append(streams.span());
@@ -69,7 +71,7 @@ auto ZstandardHuffmanEncoder::encode() const -> std::optional<mem::ByteBuffer> {
 }
 
 auto ZstandardHuffmanEncoder::buildTree(
-    mem::ConstByteSpan literals,
+    ConstByteSpan literals,
     std::array<uint8_t, 256U> &weights,
     std::array<ZstandardHuffmanCode, 256U> &codes,
     uint8_t &tableBits) -> std::optional<std::size_t> {
@@ -122,10 +124,10 @@ auto ZstandardHuffmanEncoder::buildTree(
 }
 
 auto ZstandardHuffmanEncoder::encodeStream(
-    mem::ConstByteSpan literals,
+    ConstByteSpan literals,
     const std::size_t begin,
     const std::size_t size,
-    const std::array<ZstandardHuffmanCode, 256U> &codes) -> mem::ByteBuffer {
+    const std::array<ZstandardHuffmanCode, 256U> &codes) -> ByteBuffer {
     auto writer = ZstandardReverseBitWriter{};
     for (auto position = begin; position < begin + size; ++position) {
         const auto &code = codes[literals[position].toUInt8()];
@@ -135,36 +137,31 @@ auto ZstandardHuffmanEncoder::encodeStream(
 }
 
 void ZstandardHuffmanEncoder::appendHeader(
-    mem::ByteBuffer &output,
-    const std::size_t regeneratedSize,
-    const std::size_t compressedSize,
-    const bool fourStreams) {
+    ByteBuffer &output, const std::size_t regeneratedSize, const std::size_t compressedSize, const bool fourStreams) {
     if (regeneratedSize < 1024U && compressedSize < 1024U) {
         const auto format = fourStreams ? uint8_t{1U} : uint8_t{0U};
         output.append(
-            mem::Byte{static_cast<uint8_t>(
+            Byte{static_cast<uint8_t>(
                 std::size_t{2U} | (static_cast<std::size_t>(format) << 2U) | ((regeneratedSize & 0x0fU) << 4U))});
-        output.append(mem::Byte{static_cast<uint8_t>((regeneratedSize >> 4U) | ((compressedSize & 3U) << 6U))});
-        output.append(mem::Byte{static_cast<uint8_t>(compressedSize >> 2U)});
+        output.append(Byte{static_cast<uint8_t>((regeneratedSize >> 4U) | ((compressedSize & 3U) << 6U))});
+        output.append(Byte{static_cast<uint8_t>(compressedSize >> 2U)});
     } else if (regeneratedSize < 16'384U && compressedSize < 16'384U) {
-        output.append(mem::Byte{static_cast<uint8_t>(2U | (2U << 2U) | ((regeneratedSize & 0x0fU) << 4U))});
-        output.append(mem::Byte{static_cast<uint8_t>(regeneratedSize >> 4U)});
-        output.append(
-            mem::Byte{static_cast<uint8_t>(((regeneratedSize >> 12U) & 3U) | ((compressedSize & 0x3fU) << 2U))});
-        output.append(mem::Byte{static_cast<uint8_t>(compressedSize >> 6U)});
+        output.append(Byte{static_cast<uint8_t>(2U | (2U << 2U) | ((regeneratedSize & 0x0fU) << 4U))});
+        output.append(Byte{static_cast<uint8_t>(regeneratedSize >> 4U)});
+        output.append(Byte{static_cast<uint8_t>(((regeneratedSize >> 12U) & 3U) | ((compressedSize & 0x3fU) << 2U))});
+        output.append(Byte{static_cast<uint8_t>(compressedSize >> 6U)});
     } else {
-        output.append(mem::Byte{static_cast<uint8_t>(2U | (3U << 2U) | ((regeneratedSize & 0x0fU) << 4U))});
-        output.append(mem::Byte{static_cast<uint8_t>(regeneratedSize >> 4U)});
-        output.append(
-            mem::Byte{static_cast<uint8_t>(((regeneratedSize >> 12U) & 0x3fU) | ((compressedSize & 3U) << 6U))});
-        output.append(mem::Byte{static_cast<uint8_t>(compressedSize >> 2U)});
-        output.append(mem::Byte{static_cast<uint8_t>(compressedSize >> 10U)});
+        output.append(Byte{static_cast<uint8_t>(2U | (3U << 2U) | ((regeneratedSize & 0x0fU) << 4U))});
+        output.append(Byte{static_cast<uint8_t>(regeneratedSize >> 4U)});
+        output.append(Byte{static_cast<uint8_t>(((regeneratedSize >> 12U) & 0x3fU) | ((compressedSize & 3U) << 6U))});
+        output.append(Byte{static_cast<uint8_t>(compressedSize >> 2U)});
+        output.append(Byte{static_cast<uint8_t>(compressedSize >> 10U)});
     }
 }
 
-void ZstandardHuffmanEncoder::append16(mem::ByteBuffer &output, const std::size_t value) {
-    output.append(mem::Byte{static_cast<uint8_t>(value)});
-    output.append(mem::Byte{static_cast<uint8_t>(value >> 8U)});
+void ZstandardHuffmanEncoder::append16(ByteBuffer &output, const std::size_t value) {
+    output.append(Byte{static_cast<uint8_t>(value)});
+    output.append(Byte{static_cast<uint8_t>(value >> 8U)});
 }
 
 }

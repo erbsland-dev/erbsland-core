@@ -2,10 +2,39 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
+#include <erbsland/all_network_source.hpp>
+#include <erbsland/all_network_tcp.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteReader.hpp>
+#include <erbsland/ByteTextOptions.hpp>
+#include <erbsland/ByteWriter.hpp>
+#include <erbsland/ConnectionCloseContext.hpp>
+#include <erbsland/cterm/BlockAttributes.hpp>
+#include <erbsland/cterm/ColorPart.hpp>
 #include <erbsland/cterm/Terminal.hpp>
-#include <erbsland/network/source/all.hpp>
-#include <erbsland/network/tcp/all.hpp>
+#include <erbsland/Endianness.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/Host.hpp>
+#include <erbsland/HostEndpoint.hpp>
+#include <erbsland/IpEndpoint.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Map.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkError.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/Port.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TcpConnection.hpp>
 
 #include <utility>
 
@@ -26,27 +55,23 @@ protected: // implement Application
 
     void registerCommandLineOptions(const el::OptionsPtr &options) override {
         options->setHelpDescription("Looks up one text key on a TCP map server."_el);
-        options->addOption("key"_el).setRequired().setHelpDescription("Text key to look up."_el);
+        options->addOption("key"_el).setRequired().setHelpTitle("Text key to look up."_el);
         options->addOption({"--host"_el, "host"_el})
             .setType(el::OptionType::Text)
             .setDefaultValue("127.0.0.1"_el)
-            .setHelpDescription("Map server host name or IP address."_el)
+            .setHelpTitle("Map server host name or IP address."_el)
             .setValidateTextValue<el::Host>("The host is not a valid host name or IP address"_el);
         options->addOption({"-p"_el, "--port"_el, "port"_el})
             .setType(el::OptionType::Text)
             .setDefaultValue("45870"_el)
-            .setHelpDescription("Map server TCP port."_el)
+            .setHelpTitle("Map server TCP port."_el)
             .setValidateTextValue<el::Port>("The port is not valid"_el);
     }
 
-    void parseCommandLine() override {
-        Application::parseCommandLine();
-        if (optionValues() == nullptr) {
-            return;
-        }
-        _key = optionValues()->getText("key"_el);
-        _host = el::Host::fromStringOrThrow(optionValues()->getText("host"_el));
-        _port = el::Port::fromStringOrThrow(optionValues()->getText("port"_el));
+    void handleCommandLineOptions(const el::OptionValuesPtr &values) override {
+        _key = values->getText("key"_el);
+        _host = el::Host::fromStringOrThrow(values->getText("host"_el));
+        _port = el::Port::fromStringOrThrow(values->getText("port"_el));
         events()->invoke([this]() -> void { startClient(); });
     }
 
@@ -102,7 +127,7 @@ private:
     }
 
     [[nodiscard]] static auto textOptions() -> el::ByteTextOptions {
-        return el::ByteTextOptions{}.setLength(el::ByteLength{4096U});
+        return el::ByteTextOptions{}.setLength(el::ByteCount{4096U});
     }
 
 private:

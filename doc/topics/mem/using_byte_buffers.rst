@@ -45,7 +45,7 @@ Moving a buffer transfers its allocation and is the natural choice when a comple
 .. erbsland-demo::
     :source: mem/ByteBuffer/CreatingBuffers.cpp
     :exec: mem/byte_buffer --demo CreatingBuffers
-    :source-sha256: 448ce27c494cad0341f672512c1ecb5f4306bbe4562f63a10fdc88248e195bcd
+    :sha256: 7bf7c6b7b9dffce1bbb53cefebba6108983f8d327cfcfc1bc2f12854b7fa1e5d
 
 .. code-block:: cpp
 
@@ -57,7 +57,7 @@ Moving a buffer transfers its allocation and is the natural choice when a comple
     void creatingBuffers() {
         // Start with empty, repeated, and explicitly listed forest measurements.
         const auto emptySurvey = el::ByteBuffer{};
-        const auto clearings = el::ByteBuffer{el::ByteLength{4U}, el::Byte{0U}};
+        const auto clearings = el::ByteBuffer{el::ByteCount{4U}, el::Byte{0U}};
         const auto canopy = el::ByteBuffer{el::Byte{18U}, el::Byte{42U}, el::Byte{67U}};
 
         // Copy a borrowed span into a buffer with an independent lifetime.
@@ -79,15 +79,17 @@ Moving a buffer transfers its allocation and is the natural choice when a comple
             "Changed copy      : "_el, el::ByteFormat::separated(), el::ByteBlock::fromSpan(independentCopy.span()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Orman             : Karadeniz ormanı
-    Empty survey      : yes
-    Clearing samples  : 00 00 00 00
-    Canopy samples    : 12 2a 43
-    Original soil     : 07 0b 0f
-    Changed copy      : 63 0b 0f
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOrman             : Karadeniz ormanı
+        Empty survey      : yes
+        Clearing samples  : 00 00 00 00
+        Canopy samples    : 12 2a 43
+        Original soil     : 07 0b 0f
+        Changed copy      : 63 0b 0f␛[0m
 
 .. erbsland-demo-end::
 
@@ -118,7 +120,7 @@ the requested operation.
 .. erbsland-demo::
     :source: mem/ByteBuffer/ManagingStorage.cpp
     :exec: mem/byte_buffer --demo ManagingStorage
-    :source-sha256: 337d6014f3393c8ae4f8aee4580440aea3357a847aa7d55f850eea672a2d2a33
+    :sha256: 63011c3341f2ded7d5874e6a98b0848adfb755c34e5c72ea65cdfa1a42f5fe8a
 
 .. code-block:: cpp
 
@@ -131,11 +133,11 @@ the requested operation.
         auto samples = el::ByteBuffer{el::Byte{21U}, el::Byte{34U}};
 
         // Prepare room for a larger survey without adding visible bytes.
-        samples.reserve(el::ByteLength{16U});
+        samples.reserve(el::ByteCount{16U});
         const auto reservedCapacity = samples.capacity();
 
         // Extend the visible data; all new sample positions start at zero.
-        samples.resize(el::ByteLength{5U});
+        samples.resize(el::ByteCount{5U});
         const auto grownSamples = el::ByteBlock::fromSpan(samples.span());
 
         // Reuse the allocation for a new survey, then trim it to the final result.
@@ -151,15 +153,17 @@ the requested operation.
         el::io::printLine("Final capacity    : "_el, samples.capacity().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Gözlem            : Meşe yenilenmesi
-    Reserved capacity : 32
-    Grown samples     : 15 22 00 00 00
-    Length / end index: 2 / 2
-    Capacity after clear: 32
-    Final capacity    : 2
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mGözlem            : Meşe yenilenmesi
+        Reserved capacity : 32
+        Grown samples     : 15 22 00 00 00
+        Length / end index: 2 / 2
+        Capacity after clear: 32
+        Final capacity    : 2␛[0m
 
 .. erbsland-demo-end::
 
@@ -186,7 +190,7 @@ Its :cpp:enum:`LoopResult <erbsland::util::LoopResult>` also supports callbacks 
 .. erbsland-demo::
     :source: mem/ByteBuffer/AccessingBytes.cpp
     :exec: mem/byte_buffer --demo AccessingBytes
-    :source-sha256: dcf632001903ee67b9a7d83d8fdb53c0acda8a668dc3bb9491001fa0d37514b6
+    :sha256: 8600cc1589ee03a9ce463900f692e715fc9ca033739ee040af524989405aafd2
 
 .. code-block:: cpp
 
@@ -220,14 +224,16 @@ Its :cpp:enum:`LoopResult <erbsland::util::LoopResult>` also supports callbacks 
         el::io::printLine("Visited all bytes : "_el, el::BooleanFormat::yesNo(), visitResult == el::LoopResult::Success);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Alan              : Yaşlı meşeler
-    Recorded heights  : 0c 14 1b 22
-    Missing fallback  : 255
-    Tallest height    : 34
-    Visited all bytes : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAlan              : Yaşlı meşeler
+        Recorded heights  : 0c 14 1b 22
+        Missing fallback  : 255
+        Tallest height    : 34
+        Visited all bytes : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -254,7 +260,7 @@ For integer encodings whose width is not simply ``sizeof(T)``, see :doc:`byte_in
 .. erbsland-demo::
     :source: mem/ByteBuffer/ReadingAndWritingIntegers.cpp
     :exec: mem/byte_buffer --demo ReadingAndWritingIntegers
-    :source-sha256: 850b918ecf67c467b8b2895b41664170613561a40109de0be8efd2d0e92a5cdc
+    :sha256: 58595349e0cd2079ad3037957f4f979786de1b3793adb5d4a06e261d2ec3cb28
 
 .. code-block:: cpp
 
@@ -264,7 +270,7 @@ For integer encodings whose width is not simply ``sizeof(T)``, see :doc:`byte_in
     /// report an invalid range without changing the buffer, while `OrThrow` methods
     /// make a required binary layout easy to enforce.
     void readingAndWritingIntegers() {
-        auto observation = el::ByteBuffer{el::ByteLength{8U}};
+        auto observation = el::ByteBuffer{el::ByteCount{8U}};
 
         // Store a big-endian plot identifier and a little-endian tree count.
         observation.setIntegerOrThrow<uint32_t>(el::ByteIndex{0U}, 0x464f5245U, el::Endianness::Big);
@@ -285,15 +291,17 @@ For integer encodings whose width is not simply ``sizeof(T)``, see :doc:`byte_in
         el::io::printLine("Outside write     : "_el, el::BooleanFormat::yesNo(), outsideStored);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Kayıt             : Orman sayımı
-    Encoded record    : 46 4f 52 45 3d 01 00 00
-    Plot identifier   : 1179603525
-    Tree count        : 317
-    Count stored/read : yes
-    Outside write     : no
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mKayıt             : Orman sayımı
+        Encoded record    : 46 4f 52 45 3d 01 00 00
+        Plot identifier   : 1179603525
+        Tree count        : 317
+        Count stored/read : yes
+        Outside write     : no␛[0m
 
 .. erbsland-demo-end::
 
@@ -324,7 +332,7 @@ instead be rejected.
 .. erbsland-demo::
     :source: mem/ByteBuffer/ManipulatingRanges.cpp
     :exec: mem/byte_buffer --demo ManipulatingRanges
-    :source-sha256: 9e5cbaf5acf71d5e155ab821f96e0d256f13eb7af8213ff4fe508d53898630f4
+    :sha256: 89bca84a1f2c6a6beaea28e8666b31f7524b7ae9c201ed6d4d358c8b9f411e7c
 
 .. code-block:: cpp
 
@@ -334,35 +342,37 @@ instead be rejected.
     /// `insert()`, `replace()`, `remove()`, and `keep()` change the visible layout,
     /// making the buffer suitable for repeatedly building binary records.
     void manipulatingRanges() {
-        auto habitat = el::ByteBuffer{el::ByteLength{6U}, el::Byte{10U}};
+        auto habitat = el::ByteBuffer{el::ByteCount{6U}, el::Byte{10U}};
 
         // Modify existing survey fields without changing the length.
-        habitat.fill(el::ByteRange{el::ByteIndex{1U}, el::ByteLength{2U}}, el::Byte{20U});
+        habitat.fill(el::ByteRange{el::ByteIndex{1U}, el::ByteCount{2U}}, el::Byte{20U});
         habitat.overwrite(el::ByteIndex{3U}, el::ByteArray{el::Byte{30U}, el::Byte{40U}}.span());
         habitat.xorWith(
-            el::ByteRange{el::ByteIndex{0U}, el::ByteLength{3U}},
+            el::ByteRange{el::ByteIndex{0U}, el::ByteCount{3U}},
             el::ByteArray{el::Byte{1U}, el::Byte{2U}, el::Byte{4U}}.span());
 
         // Change the record structure, then retain only the useful payload.
         habitat.insert(el::ByteIndex{2U}, el::ByteArray{el::Byte{15U}}.span());
         habitat.replace(
-            el::ByteRange{el::ByteIndex{4U}, el::ByteLength{2U}},
+            el::ByteRange{el::ByteIndex{4U}, el::ByteCount{2U}},
             el::ByteArray{el::Byte{33U}, el::Byte{44U}, el::Byte{55U}}.span());
-        habitat.remove(el::ByteRange{el::ByteIndex{1U}, el::ByteLength{1U}});
+        habitat.remove(el::ByteRange{el::ByteIndex{1U}, el::ByteCount{1U}});
         habitat.append(el::Byte{99U});
-        habitat.keep(el::ByteRange{el::ByteIndex{1U}, el::ByteLength{6U}});
+        habitat.keep(el::ByteRange{el::ByteIndex{1U}, el::ByteCount{6U}});
 
         el::io::printLine("Habitat           : Kayın korusu"_el);
         el::io::printLine("Final record      : "_el, el::ByteFormat::separated(), el::ByteBlock::fromSpan(habitat.span()));
         el::io::printLine("Record length     : "_el, habitat.length().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Habitat           : Kayın korusu
-    Final record      : 0f 10 21 2c 37 0a
-    Record length     : 6
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mHabitat           : Kayın korusu
+        Final record      : 0f 10 21 2c 37 0a
+        Record length     : 6␛[0m
 
 .. erbsland-demo-end::
 
@@ -382,7 +392,7 @@ Remember that a span borrows the buffer: any operation that reallocates the buff
 .. erbsland-demo::
     :source: mem/ByteBuffer/ConvertingBuffers.cpp
     :exec: mem/byte_buffer --demo ConvertingBuffers
-    :source-sha256: a7b358a71576564515ce46ce2a6f0feaed622858ad6ea2bcb316ad3c9737ff62
+    :sha256: 3216ba18910462ada2357ec77ac0c16fd92730dbee2980b07b24b1d618f0df00
 
 .. code-block:: cpp
 
@@ -412,13 +422,15 @@ Remember that a span borrows the buffer: any operation that reallocates the buff
         el::io::printLine("Vector sizes      : "_el, sensorVector.size(), " / "_el, labelVector.size());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    İstasyon          : Orman sınırı
-    Sensor bytes      : 05 08 0d 15
-    Feature flags     : 01 04
-    Vector sizes      : 4 / 5
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mİstasyon          : Orman sınırı
+        Sensor bytes      : 05 08 0d 15
+        Feature flags     : 01 04
+        Vector sizes      : 4 / 5␛[0m
 
 .. erbsland-demo-end::
 

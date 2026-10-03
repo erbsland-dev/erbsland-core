@@ -1,11 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "PasswordVerifierCase.hpp"
 
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
@@ -17,7 +16,7 @@ PasswordVerifierCase::PasswordVerifierCase(bool keyed) : _keyed{keyed} {
     configure(
         TestMetadata{
             id, "Password verifier protection and comparison after derivation"_el, "first-vs-last-invalid-verifier"_el},
-        el::ByteLength{8192});
+        el::ByteCount{8192});
 }
 
 auto PasswordVerifierCase::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {

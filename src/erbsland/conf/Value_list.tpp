@@ -6,13 +6,14 @@ namespace erbsland::conf {
 
 using namespace text::literals;
 
-template <typename T>
-auto Value::asListOrThrow() const -> std::vector<T> {
+template <typename tList>
+auto Value::asUniformList() const -> tList {
+    using T = typename tList::Element;
     constexpr auto expectedType = ValueType::from<T>();
     static_assert(
         expectedType.raw() != ValueType::Undefined, "no type support available for the specified template argument.");
     if (type() == expectedType) { // convert a single value into a list.
-        return std::vector<T>{{asType<T>()}};
+        return tList{asType<T>()};
     }
     if (type() != ValueType::ValueList) {
         throw ConfError(
@@ -23,8 +24,8 @@ auto Value::asListOrThrow() const -> std::vector<T> {
             location());
     }
     const auto valueList = asValueList();
-    std::vector<T> result;
-    result.reserve(valueList.size());
+    auto result = tList{};
+    result.reserve(unit::ItemCount{valueList.size(), unit::ItemCount::Unchecked{}});
     for (const auto &value : valueList) {
         if (value->type() != expectedType) {
             throw ConfError(
@@ -35,13 +36,18 @@ auto Value::asListOrThrow() const -> std::vector<T> {
                 value->namePath(),
                 value->location());
         }
-        result.push_back(value->asType<T>());
+        result.append(value->asType<T>());
     }
     return result;
 }
 
 template <typename T>
-auto Value::getListOrThrow(const NamePathLike &namePath) const -> std::vector<T> {
+auto Value::asListOrThrow() const -> util::List<T> {
+    return asUniformList<util::List<T>>();
+}
+
+template <typename T>
+auto Value::getListOrThrow(const NamePathLike &namePath) const -> util::List<T> {
     auto valueAtPath = valueOrThrow(namePath);
     constexpr auto expectedType = ValueType::from<T>();
     static_assert(
@@ -50,16 +56,28 @@ auto Value::getListOrThrow(const NamePathLike &namePath) const -> std::vector<T>
 }
 
 template <typename T>
-auto Value::getList(const NamePathLike &namePath) const noexcept -> std::vector<T> {
+auto Value::getListOrThrow(const NamePathLike &namePath, const util::List<T> &defaultValue) const -> util::List<T> {
     try {
         return getListOrThrow<T>(namePath);
-    } catch (const ConfError &) {
-        return {};
+    } catch (const ConfError &error) {
+        if (error.category() == ConfErrorCategory::ValueNotFound) {
+            return defaultValue;
+        }
+        throw;
     }
 }
 
 template <typename T>
-auto Value::asList() const noexcept -> std::vector<T> {
+auto Value::getList(const NamePathLike &namePath, const util::List<T> &defaultValue) const noexcept -> util::List<T> {
+    try {
+        return getListOrThrow<T>(namePath);
+    } catch (const ConfError &) {
+        return defaultValue;
+    }
+}
+
+template <typename T>
+auto Value::asList() const noexcept -> util::List<T> {
     try {
         return asListOrThrow<T>();
     } catch (const ConfError &) {

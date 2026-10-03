@@ -12,7 +12,6 @@
 #include "../Options_fwd.hpp"
 #include "../OptionSet_fwd.hpp"
 
-#include "../../i18n/DisplayTextMap_fwd.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringEditor.hpp"
 
@@ -25,8 +24,7 @@ namespace erbsland::options::impl {
 class OptionDisplayModel final {
 public:
     /// Create a display model for the given options and module name.
-    OptionDisplayModel(
-        OptionsPtr options, const text::String &moduleName, const i18n::DisplayTextMapConstPtr &displayText = {});
+    OptionDisplayModel(OptionsPtr options, const text::String &moduleName);
 
     // defaults
     ~OptionDisplayModel() = default;
@@ -40,8 +38,6 @@ public:
     [[nodiscard]] auto options() const noexcept -> const OptionsPtr & { return _options; }
     /// Access the selected module, if any.
     [[nodiscard]] auto module() const noexcept -> const OptionModulePtr & { return _module; }
-    /// Access the display text used by the model.
-    [[nodiscard]] auto displayText() const noexcept -> const i18n::DisplayTextMapConstPtr & { return _displayText; }
     /// Get the application display name.
     [[nodiscard]] auto displayName() const -> text::String;
     /// Get the executable name for usage text.
@@ -65,20 +61,24 @@ public:
     /// Get positional arguments displayed in the usage line.
     [[nodiscard]] auto usagePositionalOptions() const -> std::vector<OptionPtr>;
     /// Create the display title for one option.
-    [[nodiscard]] static auto optionTitle(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText = {})
+    [[nodiscard]] static auto optionTitle(const OptionPtr &option) -> text::String;
+    /// Get the brief overview text for one option.
+    /// @param option Definition to display.
+    /// @param options Owning root, used to identify actual built-in definitions.
+    /// @return Authored brief text or the translated built-in default.
+    [[nodiscard]] static auto optionBrief(const OptionPtr &option, const OptionsPtr &options = {}) -> text::String;
+    /// Get the detailed description, translating the default built-in text when applicable.
+    /// @param option Definition to display.
+    /// @param options Owning root, used to identify actual built-in definitions.
+    /// @return Authored details or the translated built-in default.
+    [[nodiscard]] static auto optionDescription(const OptionPtr &option, const OptionsPtr &options = {})
         -> text::String;
-    /// Create the display description for one option.
-    [[nodiscard]] static auto optionDescription(
-        const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::String;
     /// Create inline detail text for one option.
-    [[nodiscard]] static auto optionDetails(
-        const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::String;
+    [[nodiscard]] static auto optionDetails(const OptionPtr &option) -> text::String;
     /// Resolve the displayed value name for one option.
-    [[nodiscard]] static auto optionValueName(
-        const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::String;
+    [[nodiscard]] static auto optionValueName(const OptionPtr &option) -> text::String;
     /// Resolve the displayed value name for one positional argument.
-    [[nodiscard]] static auto positionalValueName(
-        const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::String;
+    [[nodiscard]] static auto positionalValueName(const OptionPtr &option) -> text::String;
     /// Resolve inherited help visibility.
     [[nodiscard]] static auto resolvedVisibility(
         const OptionHelp &help, OptionHelpVisibility inherited = OptionHelpVisibility::Normal) noexcept
@@ -91,11 +91,13 @@ public:
     [[nodiscard]] static auto isVersionOption(const OptionPtr &option) -> bool;
 
 private:
+    /// Resolve one authored field or the translated default field of an actual built-in definition.
+    [[nodiscard]] static auto optionHelpText(const OptionPtr &option, const OptionsPtr &options, bool brief)
+        -> text::String;
     /// Append a formatted meta placeholder to text being built.
     static void appendMetaPlaceholder(text::StringEditor &result, const text::String &placeholder);
     /// Get the display title for an option set.
-    [[nodiscard]] static auto optionSetTitle(
-        const OptionSetPtr &optionSet, const i18n::DisplayTextMapConstPtr &displayText) -> text::String;
+    [[nodiscard]] static auto optionSetTitle(const OptionSetPtr &optionSet) -> text::String;
 
     /// Find a module by its command-line name.
     [[nodiscard]] auto findModule(const text::String &moduleName) const -> OptionModulePtr;
@@ -118,14 +120,10 @@ private:
     [[nodiscard]] auto choiceRows(const OptionPtr &option) const -> std::vector<OptionDisplayRow>;
     /// Create a sortable display key for an option.
     [[nodiscard]] auto optionSortKey(const OptionPtr &option) const -> text::String;
-    /// Resolve custom display text or the default wording.
-    [[nodiscard]] static auto resolveDisplayText(const i18n::DisplayTextMapConstPtr &displayText) noexcept
-        -> i18n::DisplayTextMapConstPtr;
 
 private:
-    OptionsPtr _options;                       ///< The options root to render.
-    OptionModulePtr _module;                   ///< The selected module, if any.
-    i18n::DisplayTextMapConstPtr _displayText; ///< Display text used by this model.
+    OptionsPtr _options;     ///< The options root to render.
+    OptionModulePtr _module; ///< The selected module, if any.
 };
 
 }

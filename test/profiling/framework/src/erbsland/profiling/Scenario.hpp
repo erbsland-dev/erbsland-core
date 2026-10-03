@@ -6,7 +6,8 @@
 #include "ParameterSelection.hpp"
 #include "Scenario_fwd.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/String.hpp>
 
 #include <cstdint>
 

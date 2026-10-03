@@ -8,6 +8,7 @@
 #include "../../../mem/ByteWriter.hpp"
 
 namespace erbsland::data::cbor::impl {
+
 /// Internal bounded CBOR parser and writer.
 /// @tested{CborValueTest}
 class CborCodec final {
@@ -33,6 +34,16 @@ private: // construction
     explicit CborCodec(CborFormatOptions options);
 
 private: // parsing
+    /// Decode a fixed-width wire integer, reporting truncated input as a parse failure.
+    template <mem::impl::NativeByteInteger T>
+    [[nodiscard]] auto readInteger() -> T {
+        auto value = T{};
+        if (!_reader.readIntegerInto(value)) {
+            fail();
+        }
+        return value;
+    }
+
     /// Read one top-level item and require the end of input.
     /// @return The decoded, encoded, or checked result.
     [[nodiscard]] auto parse() -> CborValue;
@@ -77,10 +88,6 @@ private: // parsing
     /// @param bits The binary16 bit pattern.
     /// @return The decoded, encoded, or checked result.
     [[nodiscard]] static auto halfToDouble(uint16_t bits) noexcept -> double;
-    /// Wrap byte-string content as tolerant Core text.
-    /// @param bytes The complete input bytes or byte sequence.
-    /// @return The decoded, encoded, or checked result.
-    [[nodiscard]] static auto bytesToText(const mem::ByteBlock &bytes) -> text::String;
     /// Validate raw CIDv0 or CIDv1 framing and digest length.
     /// @param bytes The complete input bytes or byte sequence.
     /// @return The decoded, encoded, or checked result.
@@ -112,4 +119,5 @@ private:                              // data
     CborFormatOptions _formatOptions; ///< Output profile.
     unit::ItemCount _valueCount;      ///< Number of decoded values.
 };
+
 }

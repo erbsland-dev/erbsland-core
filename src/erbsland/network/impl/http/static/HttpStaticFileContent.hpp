@@ -14,21 +14,21 @@ namespace erbsland::network::impl {
 class HttpStaticFileContent final : public HttpStaticContent {
 public:
     /// Capture one exact file and its probed length.
-    HttpStaticFileContent(path::Path path, unit::ByteLength length) noexcept;
+    HttpStaticFileContent(path::Path path, unit::ByteCount length) noexcept;
 
     // defaults
     ~HttpStaticFileContent() override = default;
 
 public:
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength override { return _length; }
-    [[nodiscard]] auto retainedMemoryLength() const noexcept -> unit::ByteLength override { return {}; }
+    [[nodiscard]] auto length() const noexcept -> unit::ByteCount override { return _length; }
+    [[nodiscard]] auto retainedMemoryLength() const noexcept -> unit::ByteCount override { return {}; }
     [[nodiscard]] auto open() -> stream::ByteInputStreamPtr override;
 
 private:
-    path::Path _path;         ///< Resolved file path captured by the probe.
-    unit::ByteLength _length; ///< Exact length captured by the probe.
-    std::mutex _mutex;        ///< Protects one-shot opening.
-    bool _opened{};           ///< Whether opening was already attempted.
+    path::Path _path;        ///< Resolved file path captured by the probe.
+    unit::ByteCount _length; ///< Exact length captured by the probe.
+    std::mutex _mutex;       ///< Protects one-shot opening.
+    bool _opened{};          ///< Whether opening was already attempted.
 };
 
 }

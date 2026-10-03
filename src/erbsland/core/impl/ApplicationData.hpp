@@ -12,6 +12,7 @@
 #include "application_data/ApplicationOptionsData_fwd.hpp"
 #include "application_data/ApplicationPartsData_fwd.hpp"
 #include "application_data/ApplicationRandomData_fwd.hpp"
+#include "application_data/ApplicationRegExData_fwd.hpp"
 #include "application_data/ApplicationResourceData_fwd.hpp"
 #include "application_data/ApplicationRuntimeData_fwd.hpp"
 #include "application_data/ApplicationSystemData_fwd.hpp"
@@ -44,6 +45,9 @@ using ApplicationResourceDataAccessor = ApplicationDataAccessor<ApplicationResou
 /// Lazy accessor for system-service data.
 using ApplicationSystemDataAccessor = ApplicationDataAccessor<ApplicationSystemData>;
 
+/// Lazy accessor for compiled regular-expression data.
+using ApplicationRegExDataAccessor = ApplicationDataAccessor<ApplicationRegExData>;
+
 /// Composition interface for the internal application data.
 /// This shared object is the actual application singleton and can outlive individual `Application` facades.
 /// @tested{ApplicationDataAccessorTest ApplicationTestScopeTest}
@@ -54,6 +58,8 @@ public:
     virtual ~ApplicationData() = default;
 
 public: // component accessors
+    /// Access lazy regular-expression data.
+    [[nodiscard]] virtual auto regularExpressions() const noexcept -> const ApplicationRegExDataAccessor & = 0;
     /// Access lazy runtime data.
     [[nodiscard]] virtual auto runtime() const noexcept -> const ApplicationRuntimeDataAccessor & = 0;
     /// Access lazy command-line option data.

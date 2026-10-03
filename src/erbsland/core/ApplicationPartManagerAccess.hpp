@@ -9,7 +9,7 @@
 #include "ApplicationPartState.hpp"
 #include "ApplicationPartTraits.hpp"
 
-#include "../err/LogicError.hpp"
+#include "../err/LogicFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <memory>
@@ -28,9 +28,9 @@ public: // state
     /// Get the manager lifecycle state.
     [[nodiscard]] virtual auto state() const noexcept -> ApplicationPartManagerState = 0;
     /// Get one part's lifecycle state.
-    /// @param identifier The part identifier to resolve by name.
+    /// The manager must be prepared.
+    /// @param identifier The part identifier to resolve by name. Must identify a registered part.
     /// @return The current part state.
-    /// @throws err::LogicError If the manager is not prepared or the identifier is unknown.
     [[nodiscard]] virtual auto partState(const ApplicationPartIdentifierPtr &identifier) const
         -> ApplicationPartState = 0;
     /// Wait until the manager runs or reaches a terminal state.
@@ -50,21 +50,20 @@ public: // state
 
 public: // lookup
     /// Access one prepared part by identifier.
-    /// @param identifier The part identifier to resolve by name.
+    /// The manager must be prepared.
+    /// @param identifier The part identifier to resolve by name. Must identify a registered part.
     /// @return The prepared application part.
-    /// @throws err::LogicError If the manager is not prepared or the identifier is unknown.
     [[nodiscard]] virtual auto part(const ApplicationPartIdentifierPtr &identifier) const -> ApplicationPartPtr = 0;
     /// Access one prepared part through its public interface.
+    /// The manager must be prepared, and the requested part must be registered and implement `T`.
     /// @tparam T The abstract part interface.
     /// @return The prepared part implementing `T`.
-    /// @throws err::LogicError If the manager is not prepared, the identifier is unknown, or the registered part does
-    /// not implement `T`.
     template <ApplicationPartInterface T>
     [[nodiscard]] auto part() const -> std::shared_ptr<T> {
         using namespace text::literals;
         const auto result = std::dynamic_pointer_cast<T>(part(T::partIdentifier()));
         if (result == nullptr) {
-            throw err::LogicError{"The registered application part does not implement the requested interface."_el};
+            throw err::LogicFailure{"The registered application part does not implement the requested interface."_el};
         }
         return result;
     }

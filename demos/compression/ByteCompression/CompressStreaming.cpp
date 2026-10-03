@@ -2,13 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/stream/ByteBlockInputStream.hpp>
-#include <erbsland/stream/TempByteOutputStream.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteBlockInputStream.hpp>
+#include <erbsland/ByteCompressor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/CompressionFormat.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TempByteOutputStream.hpp>
 
 namespace demo {
+
 /// Compress instrument readings directly into a byte stream.
 void compressStreaming() {
-    const auto readings = el::ByteBlock{el::ByteBlockEditor{el::ByteLength{96U}, el::Byte{0x18U}}};
+    const auto readings = el::ByteBlock{el::ByteBlockEditor{el::ByteCount{96U}, el::Byte{0x18U}}};
     auto source = el::stream::ByteBlockInputStream{readings};
     auto destination = el::Path::systemTempDirectoryOrThrow().operations().openTempByteOutputStreamOrThrow();
     const auto compressor = el::ByteCompressor{el::CompressionAlgorithm::Deflate, el::CompressionFormat::Core};
@@ -21,4 +33,5 @@ void compressStreaming() {
         destination->abort();
     }
 }
+
 }

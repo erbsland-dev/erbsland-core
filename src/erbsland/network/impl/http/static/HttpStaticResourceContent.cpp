@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HttpStaticResourceContent.hpp"
 
-#include "../../../../err/LogicError.hpp"
+#include "../../../../err/LogicFailure.hpp"
 #include "../../../../resource/ResourceError.hpp"
 #include "../../../../resource/ResourceErrorCategory.hpp"
 #include "../../../../resource/Resources.hpp"
@@ -17,12 +17,10 @@ using namespace text::literals;
 
 HttpStaticResourceContent::HttpStaticResourceContent(
     resource::ResourcesConstPtr retainedResources,
-    const resource::Resources &resources,
     text::String identifier,
     text::String path,
-    const unit::ByteLength length) noexcept :
-    _retainedResources{std::move(retainedResources)},
-    _resources{&resources},
+    const unit::ByteCount length) noexcept :
+    _resources{std::move(retainedResources)},
     _identifier{std::move(identifier)},
     _path{std::move(path)},
     _length{length} {
@@ -31,7 +29,7 @@ HttpStaticResourceContent::HttpStaticResourceContent(
 auto HttpStaticResourceContent::open() -> stream::ByteInputStreamPtr {
     const auto lock = std::scoped_lock{_mutex};
     if (_opened) {
-        throw err::LogicError{"Static resource content can only be opened once."_el};
+        throw err::LogicFailure{"Static resource content can only be opened once."_el};
     }
     _opened = true;
     auto data = _resources->getData(_identifier, _path);

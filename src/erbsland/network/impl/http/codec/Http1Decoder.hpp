@@ -52,7 +52,7 @@ public: // status
     /// Test whether transport EOF was signalled.
     [[nodiscard]] auto isEndOfInput() const noexcept -> bool { return _endOfInput; }
     /// Get the number of retained input bytes.
-    [[nodiscard]] auto retainedInputLength() const noexcept -> unit::ByteLength { return _input.length(); }
+    [[nodiscard]] auto retainedInputLength() const noexcept -> unit::ByteCount { return _input.length(); }
 
 private:
     /// Internal incremental parse states.
@@ -94,7 +94,7 @@ private: // polling
 
 private: // parsing
     /// Detach one strictly CRLF-terminated bounded line when available.
-    [[nodiscard]] auto takeLine(unit::ByteLength limit, Http1FailureReason limitReason) -> std::optional<text::String>;
+    [[nodiscard]] auto takeLine(unit::ByteCount limit, Http1FailureReason limitReason) -> std::optional<text::String>;
     /// Parse a strict request line.
     void parseRequestLine(const text::String &line);
     /// Parse a strict status line.
@@ -110,11 +110,11 @@ private: // parsing
     /// Select response body framing using status and method context.
     void selectResponseFraming();
     /// Add decoded body bytes under the configured aggregate bound.
-    void accountBody(unit::ByteLength length);
+    void accountBody(unit::ByteCount length);
     /// Remove bytes from the front of retained input.
-    void consumeInput(unit::ByteLength length);
+    void consumeInput(unit::ByteCount length);
     /// Detach bytes from the front of retained input.
-    [[nodiscard]] auto takeInput(unit::ByteLength length) -> mem::ByteBlock;
+    [[nodiscard]] auto takeInput(unit::ByteCount length) -> mem::ByteBlock;
     /// Enter the failed state and throw a categorized error.
     [[noreturn]] void fail(Http1FailureReason reason, const text::String &message);
 
@@ -131,12 +131,12 @@ private:
     HttpStatus _status;                                             ///< Parsed response status.
     text::String _reason;                                           ///< Parsed exact reason phrase.
     HttpFieldList _fields;                                          ///< Fields under construction.
-    unit::ByteLength _fieldBytes;                                   ///< Canonical aggregate field bytes.
+    unit::ByteCount _fieldBytes;                                    ///< Canonical aggregate field bytes.
     Http1BodyFraming _framing{Http1BodyFraming::None};              ///< Selected body framing.
     Http1TransferCoding _transferCoding{Http1TransferCoding::None}; ///< Parsed transfer coding.
-    std::optional<unit::ByteLength> _contentLength;                 ///< Validated fixed length.
-    unit::ByteLength _bodyRemaining;                                ///< Remaining fixed/chunk bytes.
-    unit::ByteLength _bodyDecoded;                                  ///< Total decoded body bytes.
+    std::optional<unit::ByteCount> _contentLength;                  ///< Validated fixed length.
+    unit::ByteCount _bodyRemaining;                                 ///< Remaining fixed/chunk bytes.
+    unit::ByteCount _bodyDecoded;                                   ///< Total decoded body bytes.
 };
 
 }

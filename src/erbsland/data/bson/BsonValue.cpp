@@ -5,13 +5,19 @@
 #include "impl/BsonCodec.hpp"
 #include "impl/BsonValueData.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/OutOfRangeError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/NotFoundError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
+#include "../../err/ParseError.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::data::bson {
 
+using namespace err;
+using namespace mem;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 BsonValue::BsonValue(bool value) : _data{std::make_shared<impl::BsonValueData>(value)} {
@@ -41,7 +47,7 @@ BsonValue::BsonValue(uint32_t value) : BsonValue{static_cast<int64_t>(value)} {
 BsonValue::BsonValue(uint64_t value) :
     BsonValue{[value]() -> int64_t {
         if (value > INT64_MAX) {
-            throw err::ParameterError{"BSON has no unsigned 64-bit integer type."_el, "value"_el};
+            throw ParameterFailure{"BSON has no unsigned 64-bit integer type."_el, "value"_el};
         }
         return static_cast<int64_t>(value);
     }()} {
@@ -50,13 +56,13 @@ BsonValue::BsonValue(uint64_t value) :
 BsonValue::BsonValue(double value) : _data{std::make_shared<impl::BsonValueData>(value)} {
 }
 
-BsonValue::BsonValue(text::String value) : _data{std::make_shared<impl::BsonValueData>(std::move(value))} {
+BsonValue::BsonValue(String value) : _data{std::make_shared<impl::BsonValueData>(std::move(value))} {
 }
 
 BsonValue::BsonValue(BsonBinary value) : _data{std::make_shared<impl::BsonValueData>(std::move(value))} {
 }
 
-BsonValue::BsonValue(mem::ByteBlock value) : BsonValue{BsonBinary{std::move(value), 0U}} {
+BsonValue::BsonValue(ByteBlock value) : BsonValue{BsonBinary{std::move(value), 0U}} {
 }
 
 BsonValue::BsonValue(time::Timestamp value) : _data{std::make_shared<impl::BsonValueData>(std::move(value))} {
@@ -101,7 +107,7 @@ auto BsonValue::type() const noexcept -> BsonType {
     }
 }
 
-auto BsonValue::itemCount() const noexcept -> unit::ItemCount {
+auto BsonValue::itemCount() const noexcept -> ItemCount {
     if (const auto value = getArray()) {
         return value->count();
     }
@@ -111,32 +117,32 @@ auto BsonValue::itemCount() const noexcept -> unit::ItemCount {
     return {};
 }
 
-auto BsonValue::get(unit::ItemIndex index) const -> BsonValue {
+auto BsonValue::get(ItemIndex index) const -> BsonValue {
     const auto value = getArray();
     return value ? value->get(index) : BsonValue{};
 }
 
-auto BsonValue::get(const text::String &key) const -> BsonValue {
+auto BsonValue::get(const String &key) const -> BsonValue {
     const auto value = getDocument();
     return value ? value->get(key).value_or(BsonValue{}) : BsonValue{};
 }
 
-auto BsonValue::getOrThrow(unit::ItemIndex index) const -> BsonValue {
+auto BsonValue::getOrThrow(ItemIndex index) const -> BsonValue {
     const auto value = getArray();
     if (!value) {
-        throw err::LogicError{"The BSON value is not an array."_el};
+        throw LogicFailure{"The BSON value is not an array."_el};
     }
     return value->getRefOrThrow(index);
 }
 
-auto BsonValue::getOrThrow(const text::String &key) const -> BsonValue {
+auto BsonValue::getOrThrow(const String &key) const -> BsonValue {
     const auto value = getDocument();
     if (!value) {
-        throw err::LogicError{"The BSON value is not a document."_el};
+        throw LogicFailure{"The BSON value is not a document."_el};
     }
     const auto result = value->get(key);
     if (!result) {
-        throw err::OutOfRangeError{"The BSON document key is absent."_el};
+        throw NotFoundError{"The BSON document key is absent."_el};
     }
     return *result;
 }
@@ -151,7 +157,7 @@ auto BsonValue::getOrThrow(const text::String &key) const -> BsonValue {
     }
 ERBSLAND_BSON_GETTER(getBool, bool)
 ERBSLAND_BSON_GETTER(getDouble, double)
-ERBSLAND_BSON_GETTER(getText, text::String)
+ERBSLAND_BSON_GETTER(getText, String)
 ERBSLAND_BSON_GETTER(getBinary, BsonBinary)
 ERBSLAND_BSON_GETTER(getTimestamp, time::Timestamp)
 ERBSLAND_BSON_GETTER(getArray, BsonArray)
@@ -178,9 +184,9 @@ void BsonValue::detach() {
     }
 }
 
-auto BsonValue::set(unit::ItemIndex index, BsonValue value) -> BsonValue & {
+auto BsonValue::set(ItemIndex index, BsonValue value) -> BsonValue & {
     if (!is(BsonType::Array)) {
-        throw err::LogicError{"The BSON value is not an array."_el};
+        throw LogicFailure{"The BSON value is not an array."_el};
     }
     detach();
     auto &array = std::get<BsonArray>(_data->value);
@@ -189,14 +195,14 @@ auto BsonValue::set(unit::ItemIndex index, BsonValue value) -> BsonValue & {
     } else if (index.isWithin(array.count())) {
         array.set(index, std::move(value));
     } else {
-        throw err::OutOfRangeError{"The BSON array index exceeds the append position."_el};
+        throw OutOfRangeFailure{"The BSON array index exceeds the append position."_el};
     }
     return *this;
 }
 
-auto BsonValue::set(const text::String &key, BsonValue value) -> BsonValue & {
+auto BsonValue::set(const String &key, BsonValue value) -> BsonValue & {
     if (!is(BsonType::Document)) {
-        throw err::LogicError{"The BSON value is not a document."_el};
+        throw LogicFailure{"The BSON value is not a document."_el};
     }
     detach();
     std::get<BsonDocument>(_data->value).set(key, std::move(value));
@@ -204,23 +210,22 @@ auto BsonValue::set(const text::String &key, BsonValue value) -> BsonValue & {
 }
 
 auto BsonValue::append(BsonValue value) -> BsonValue & {
-    return set(unit::ItemIndex{itemCount().toRawValue()}, std::move(value));
+    return set(ItemIndex::end(itemCount()), std::move(value));
 }
 
-auto BsonValue::toByteBlock(BsonFormatOptions options) const -> mem::ByteBlock {
+auto BsonValue::toByteBlock(BsonFormatOptions options) const -> ByteBlock {
     return impl::BsonCodec::encode(*this, options);
 }
 
-auto BsonValue::fromByteBlock(const mem::ByteBlock &bytes, BsonParseOptions options) noexcept
-    -> std::optional<BsonValue> {
+auto BsonValue::fromByteBlock(const ByteBlock &bytes, BsonParseOptions options) noexcept -> std::optional<BsonValue> {
     try {
         return fromByteBlockOrThrow(bytes, options);
-    } catch (...) {
+    } catch (const ParseError &) {
         return std::nullopt;
     }
 }
 
-auto BsonValue::fromByteBlockOrThrow(const mem::ByteBlock &bytes, BsonParseOptions options) -> BsonValue {
+auto BsonValue::fromByteBlockOrThrow(const ByteBlock &bytes, BsonParseOptions options) -> BsonValue {
     return impl::BsonCodec::decode(bytes, options);
 }
 

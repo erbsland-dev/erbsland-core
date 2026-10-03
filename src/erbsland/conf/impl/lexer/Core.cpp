@@ -6,9 +6,11 @@
 #include "../utilities/YieldMacros.hpp"
 
 #include "../../../text/AsciiCategory.hpp"
+#include "../../../unit/ByteCount.hpp"
 
 namespace erbsland::conf::impl::lexer {
 
+using namespace text;
 using namespace text::literals;
 
 auto expectEndOfLine(TokenDecoder &decoder, ExpectMore expectMore) -> TokenGenerator {
@@ -62,7 +64,7 @@ auto scanForSpacing(TokenDecoder &decoder) -> std::optional<LexerToken> {
 
 auto expectSpacing(TokenDecoder &decoder) -> LexerToken {
     decoder.expect(CharClass::Spacing, "Expected spacing, but got something else."_el);
-    decoder.advanceWhile(text::AsciiCategory::Blank);
+    decoder.advanceWhile(AsciiCategory::Blank);
     return decoder.createToken(TokenType::Spacing);
 }
 
@@ -84,7 +86,7 @@ auto expectAndCheckIndentation(TokenDecoder &decoder) -> LexerToken {
         return decoder.createToken(TokenType::Indentation);
     }
     // if no indentation pattern is defined, read and set one.
-    decoder.advanceWhile(text::AsciiCategory::Blank);
+    decoder.advanceWhile(AsciiCategory::Blank);
     decoder.checkForErrorAndThrowIt();
     auto token = decoder.createToken(TokenType::Indentation);
     decoder.setIndentationPattern(token.rawText());
@@ -101,15 +103,15 @@ auto expectComment(TokenDecoder &decoder) -> LexerToken {
     return decoder.createToken(TokenType::Comment);
 }
 
-auto scanFormatOrLanguageIdentifier(TokenDecoder &decoder, const bool throwOnLength) -> text::String {
+auto scanFormatOrLanguageIdentifier(TokenDecoder &decoder, const bool throwOnLength) -> String {
     if (decoder.character() != CharClass::Letter) {
         return {};
     }
-    text::StringEditor identifier;
+    StringEditor identifier;
     identifier.append(decoder.character().toAsciiLowercase());
     decoder.next();
     while (decoder.character() == CharClass::FormatIdentifierChar) {
-        if (identifier.length().toSizeT() >= 16) { // as we only capture 7-bit chars, we can rely on the size.
+        if (identifier.length() >= unit::ByteCount{16}) { // as we only capture 7-bit chars, we can rely on the size.
             if (throwOnLength) {
                 decoder.throwError(ConfErrorCategory::LimitExceeded, "Language or format identifier too long."_el);
             }

@@ -9,7 +9,8 @@
 
 #include "../text/String.hpp"
 #include "../text/StringList.hpp"
-#include "../unit/ArgumentUnit.hpp"
+#include "../unit/ArgumentCount.hpp"
+#include "../unit/ArgumentIndex.hpp"
 
 #include <utility>
 #include <vector>

@@ -20,8 +20,8 @@ the direct relationship between Erbsland Core's compression levels and bzip2's f
 Understanding bzip2
 ===================
 
-Making Similar Contexts Neighbours
-----------------------------------
+Burrows–Wheeler Transform and Byte Context Grouping
+---------------------------------------------------
 
 The heart of bzip2 is the Burrows-Wheeler transform, usually shortened to BWT.
 For an intuitive small example, consider the word ``BANANA`` with an end marker.
@@ -199,10 +199,9 @@ checks that each complete stream round-trips under explicit output and workspace
 
 .. erbsland-demo::
     :source: compression/ByteCompression/CompareCompressionLevels.cpp
-    :function-blocks: compareCompressionLevels compareBzip2Levels
-    :function-blocks-sha256: adf39f553e38a196ca697c4d02f11e6a48ad48e95000c2ae9b78463716b1b1cf
+    :show: f:compareCompressionLevels, f:compareBzip2Levels
     :exec: compression/byte_compression --demo CompareBzip2Levels
-    :source-sha256: b3c7307dcd75e59cb0081271e8b3969dddac878977706dc3b308f7400b5dfcb7
+    :sha256: 8c0447b772b339aba5ecbe8da065adaa40c2367251b31dd563d0f61c6d27efa6
 
 .. code-block:: cpp
 
@@ -213,8 +212,8 @@ checks that each complete stream round-trips under explicit output and workspace
         const auto readings = createObservatoryReadings();
         const auto options = el::DecompressionOptions{}
                                  .setExpectedOutputLength(readings.length())
-                                 .setMaximumOutputLength(el::ByteLength{16U * 1024U})
-                                 .setMaximumWorkspaceLength(el::ByteLength{64U * 1024U * 1024U});
+                                 .setMaximumOutputLength(el::ByteCount{16U * 1024U})
+                                 .setMaximumWorkspaceLength(el::ByteCount{64U * 1024U * 1024U});
 
         el::io::printLine("Instrument        : radiotelescópio"_el);
         el::io::printLine("Algorithm         : "_el, algorithmName);
@@ -240,16 +239,18 @@ checks that each complete stream round-trips under explicit output and workspace
         compareCompressionLevels(el::CompressionAlgorithm::Bzip2, el::CompressionFormat::Raw, "bzip2"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Instrument        : radiotelescópio
-    Algorithm         : bzip2
-    Original bytes    : 3584
-    Fastest bytes: 56, restored: yes
-    Fast bytes: 56, restored: yes
-    Default bytes: 56, restored: yes
-    High bytes: 56, restored: yes
-    Highest bytes: 56, restored: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInstrument        : radiotelescópio
+        Algorithm         : bzip2
+        Original bytes    : 3584
+        Fastest bytes: 56, restored: yes
+        Fast bytes: 56, restored: yes
+        Default bytes: 56, restored: yes
+        High bytes: 56, restored: yes
+        Highest bytes: 56, restored: yes␛[0m
 
 .. erbsland-demo-end::

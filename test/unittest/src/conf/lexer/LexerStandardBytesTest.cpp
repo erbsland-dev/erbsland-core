@@ -3,7 +3,7 @@
 
 #include "LexerValueTestHelper.hpp"
 
-#include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/ByteBlock.hpp>
 
 using namespace el::text::literals;
 

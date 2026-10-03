@@ -3,6 +3,8 @@
 
 #include "RegExBase.hpp"
 
+#include <erbsland/StringList.hpp>
+
 using namespace el::re;
 
 TESTED_TARGETS(RegEx)
@@ -28,7 +30,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "a"_el,
                 "ab"_el,
@@ -43,13 +45,13 @@ public:
     void testFullMatch() {
         WITH_CONTEXT(compileAmbiguousGroupPlusWithPrefixAndPostfix());
         {
-            const auto matchCases = std::vector<String>{
+            const auto matchCases = StringList{
                 "xabby"_el,
                 "xaabby"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<String>{
+            const auto noMatchCases = StringList{
                 ""_el,
                 "xaby"_el,
                 "xaaby"_el,
@@ -70,7 +72,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(testCases));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "xaby"_el,
             "zzxaby"_el,
@@ -94,7 +96,7 @@ public:
         WITH_CONTEXT(requireFindAll("xabby xaby xaabby"_el));
         WITH_CONTEXT(requireLines(matchLines, expectedLines));
 
-        const auto noMatchCases = std::vector<String>{
+        const auto noMatchCases = StringList{
             ""_el,
             "xaby"_el,
             "xabb"_el,

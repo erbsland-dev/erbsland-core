@@ -1,0 +1,5 @@
+#
+# The configuration for the box_frame data source.
+#
+----[ Box Frame ]----------------------------------------------------------------------------------------------------
+Input File                  : "tool/data/cterm/box_frame_characters.txt"

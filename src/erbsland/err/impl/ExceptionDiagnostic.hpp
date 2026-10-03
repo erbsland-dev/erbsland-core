@@ -4,7 +4,6 @@
 
 #include "../Diagnostic.hpp"
 
-#include "../../i18n/DisplayTextMap_fwd.hpp"
 #include "../../text/String.hpp"
 #include "../../util/List.hpp"
 
@@ -23,8 +22,7 @@ class ExceptionDiagnostic final : public Diagnostic {
 public:
     /// Create a diagnostic from a message.
     /// @param message The diagnostic message.
-    /// @param displayText The display text map to use, or nullptr for the default texts.
-    explicit ExceptionDiagnostic(text::String message, const i18n::DisplayTextMapConstPtr &displayText = {}) noexcept;
+    explicit ExceptionDiagnostic(text::String message) noexcept;
 
 public:
     /// Set a source name.
@@ -41,16 +39,14 @@ public: // implement Diagnostic
     [[nodiscard]] auto sourcePath() const noexcept -> text::String override;
     [[nodiscard]] auto location() const noexcept -> unit::CodeLocation override;
     [[nodiscard]] auto toString() const noexcept -> text::String override;
-    [[nodiscard]] auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
-        -> text::TextDocument override;
+    [[nodiscard]] auto toTextDocument() const -> text::TextDocument override;
 
 private:
-    text::String _message;                     ///< Diagnostic message.
-    text::String _sourceName;                  ///< Optional source name.
-    text::String _sourcePath;                  ///< Optional source path.
-    unit::CodeLocation _location;              ///< Optional source location.
-    util::List<Field> _fields;                 ///< Optional detail fields.
-    i18n::DisplayTextMapConstPtr _displayText; ///< Captured display texts, if supplied.
+    text::String _message;        ///< Diagnostic message.
+    text::String _sourceName;     ///< Optional source name.
+    text::String _sourcePath;     ///< Optional source path.
+    unit::CodeLocation _location; ///< Optional source location.
+    util::List<Field> _fields;    ///< Optional detail fields.
 };
 
 }

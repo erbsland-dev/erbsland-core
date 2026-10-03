@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/CharSet.hpp>
-#include <erbsland/text/named_key/Format.hpp>
-#include <erbsland/text/named_key/Parser.hpp>
-#include <erbsland/text/StringCharReader.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/named_key/Format.hpp>
+#include <erbsland/named_key/Parser.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringCharReader.hpp>
 
 namespace demo {
 
@@ -19,11 +21,11 @@ void restrictValueCharacters() {
                             .setKeys({{"answer"_el, 0}})
                             .setAllowedValueChars(el::CharSet::fromPattern("a-z0-9"_el))
                             .setValueListAllowed(false);
-    auto acceptedReader = el::StringCharReader{el::String{"answer=gezegen2"_el}};
+    auto acceptedReader = el::StringCharReader{"answer=gezegen2"_el};
     el::io::printLine("Answer: "_el, el::named_key::Parser{acceptedReader, format}.readEntry().value());
 
     // A localized answer with a non-ASCII letter needs a broader allowed set.
-    auto rejectedReader = el::StringCharReader{el::String{"answer=güneş"_el}};
+    auto rejectedReader = el::StringCharReader{"answer=güneş"_el};
     try {
         const auto entry = el::named_key::Parser{rejectedReader, format}.readEntry();
         el::io::printLine("Unexpected accepted answer: "_el, entry.value());

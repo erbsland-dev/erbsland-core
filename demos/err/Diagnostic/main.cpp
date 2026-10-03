@@ -4,12 +4,13 @@
 #include "DiagnosticDemos.hpp"
 
 #include <DemoCommon.hpp>
+#include <DemoTerminal.hpp>
 
 using namespace demo;
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
-    app.enableTerminal();
+    DemoTerminal::enable(app);
     app.registerDemo("BuildDiagnosticDocument"_el, buildDiagnosticDocument);
     app.registerDemo("InspectDiagnostic"_el, inspectDiagnostic);
     app.registerDemo("RenderDiagnosticDocument"_el, renderDiagnosticDocument);

@@ -35,9 +35,8 @@ public:
 
 public: // main operations
     /// Create one fresh challenge with a positive lifetime of at most 60 seconds.
-    /// @param lifetime The monotonic lifetime, defaulting to 60 seconds.
+    /// @param lifetime The monotonic lifetime. Must be positive and at most 60 seconds; defaults to 60 seconds.
     /// @return One-use pending verification state.
-    /// @throws err::ParameterError If the lifetime is outside the accepted range.
     [[nodiscard]] auto createChallenge(time::TimeDelta lifetime = time::Seconds{60}) const
         -> PendingAuthenticationChallenge;
     /// Check that this verifier matches a client credential, including its identifier.

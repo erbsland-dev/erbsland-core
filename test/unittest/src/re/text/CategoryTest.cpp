@@ -1,13 +1,18 @@
 // Copyright (c) 2025-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CharRange.hpp>
+#include <erbsland/LoopStatus.hpp>
+#include <erbsland/NotFoundError.hpp>
 #include <erbsland/re/impl/text/Category.hpp>
 #include <erbsland/re/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
+#include <barrier>
 #include <bit>
+#include <future>
 #include <string>
 #include <unordered_set>
 
@@ -70,12 +75,12 @@ public:
         REQUIRE_EQUAL(Category::fromUnprocessedString("uppercase_letter"_el).raw(), Category::UppercaseLetter);
 
         // Invalid characters (triggers line 47 in Category.cpp)
-        REQUIRE_THROWS_AS(el::err::ParameterError, Category::fromUnprocessedString("letter123"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Category::fromUnprocessedString("letter!"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Category::fromUnprocessedString("letter-name"_el));
+        REQUIRE_THROWS_AS(el::err::NotFoundError, Category::fromUnprocessedString("letter123"_el));
+        REQUIRE_THROWS_AS(el::err::NotFoundError, Category::fromUnprocessedString("letter!"_el));
+        REQUIRE_THROWS_AS(el::err::NotFoundError, Category::fromUnprocessedString("letter-name"_el));
 
         // Valid characters but unknown category name (triggers line 53 in Category.cpp)
-        REQUIRE_THROWS_AS(el::err::ParameterError, Category::fromUnprocessedString("unknown_category"_el));
+        REQUIRE_THROWS_AS(el::err::NotFoundError, Category::fromUnprocessedString("unknown_category"_el));
     }
 
     void testToLongAndShortStringMappedValues() {
@@ -148,6 +153,55 @@ public:
         const auto &shortName = none.toShortString();
         REQUIRE_EQUAL(longName, ""_el);
         REQUIRE_EQUAL(shortName, ""_el);
+    }
+
+    void testCharacterSetCopiesAcrossThreads() {
+        static constexpr auto cCategories = std::array{
+            Category::Letter,
+            Category::DecimalNumber,
+            Category::DigitUnicode,
+            Category::WordUnicode,
+            Category::WordAscii,
+            Category::SpaceUnicode,
+            Category::SpaceAscii,
+            Category::SpaceUnicodeDotAll,
+            Category::SpaceAsciiDotAll,
+            Category::HorizontalSpaceUnicode,
+            Category::HorizontalSpaceAscii,
+            Category::VerticalSpaceUnicode,
+            Category::Any};
+        auto start = std::barrier{4};
+        auto workers = std::array<std::future<bool>, 4>{};
+        for (auto &worker : workers) {
+            worker = std::async(std::launch::async, [&start]() -> bool {
+                start.arrive_and_wait();
+                for (const auto value : cCategories) {
+                    const auto category = Category{value};
+                    const auto original = category.characterSet();
+                    auto modified = category.characterSet();
+                    auto firstCharacter = el::Char{};
+                    original.forEach([&](const el::CharRange range) -> el::LoopStatus {
+                        firstCharacter = range.from();
+                        return el::LoopStatus::Stop;
+                    });
+                    modified.remove(firstCharacter);
+                    if (!original.contains(firstCharacter) || modified.contains(firstCharacter) ||
+                        category.characterSet() != original) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
+        for (auto &worker : workers) {
+            REQUIRE(worker.get());
+        }
+        REQUIRE_EQUAL(
+            Category{Category::DecimalNumber}.characterSet(), Category{Category::DigitUnicode}.characterSet());
+        REQUIRE_EQUAL(
+            Category{Category::SpaceUnicode}.characterSet(), Category{Category::HorizontalSpaceUnicode}.characterSet());
+        REQUIRE_EQUAL(
+            Category{Category::SpaceAscii}.characterSet(), Category{Category::HorizontalSpaceAscii}.characterSet());
     }
 
     void testIncludes() {

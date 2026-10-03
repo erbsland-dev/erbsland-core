@@ -13,7 +13,7 @@ namespace erbsland::cryptology::impl::authentication_codec {
 /// Encode bytes as canonical, unpadded Base64url text.
 [[nodiscard]] auto encodeBase64Url(mem::ConstByteSpan data, bool sensitive = false) -> text::String;
 /// Decode exactly `expectedLength` bytes of canonical, unpadded Base64url text.
-[[nodiscard]] auto decodeBase64Url(const text::String &text, std::size_t expectedLength, bool sensitive = false)
+[[nodiscard]] auto decodeBase64Url(const text::String &text, unit::ByteCount expectedLength, bool sensitive = false)
     -> mem::ByteBlock;
 /// Build one canonical text credential.
 [[nodiscard]] auto encodeToken(const text::String &identifier, char role, mem::ConstByteSpan keyData) -> text::String;

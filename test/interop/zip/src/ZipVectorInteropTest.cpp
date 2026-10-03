@@ -1,21 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/compression/zip/ArchiveItem.hpp>
-#include <erbsland/compression/zip/ArchiveReader.hpp>
-#include <erbsland/compression/zip/CompressionMethod.hpp>
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/CharSet.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEncoder.hpp>
-#include <erbsland/text/StringEncoding.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/time/DateTime.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/DateTime.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEncoder.hpp>
+#include <erbsland/StringEncoding.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Timestamp.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/zip/ArchiveItem.hpp>
+#include <erbsland/zip/ArchiveReader.hpp>
+#include <erbsland/zip/CompressionMethod.hpp>
 
 #include <algorithm>
 #include <array>
@@ -48,14 +49,13 @@ private:
     };
 
 private:
-    [[nodiscard]] static auto splitFields(const el::text::String &line, const std::size_t expectedCount)
+    [[nodiscard]] static auto splitFields(const el::text::String &line, const el::unit::ItemCount expectedCount)
         -> el::text::StringList {
-        const auto fields = el::text::StringList::fromSplit(
-            line, el::text::CharSet{U'\t'}, el::unit::ItemCount::infinite(), true);
-        if (fields.count() != el::unit::ItemCount{expectedCount}) {
-            throw el::err::RuntimeError{
-                el::text::StringFormat{"ZIP vector row has {} fields instead of {}."_el}.build(
-                    fields.count(), expectedCount)};
+        const auto fields =
+            el::text::StringList::fromSplit(line, el::text::CharSet{U'\t'}, el::unit::ItemCount::infinite(), true);
+        if (fields.count() != expectedCount) {
+            throw el::err::RuntimeError{el::text::StringFormat{"ZIP vector row has {} fields instead of {}."_el}.build(
+                fields.count(), expectedCount)};
         }
         return fields;
     }
@@ -80,8 +80,7 @@ private:
         throw el::err::RuntimeError{"ZIP vector boolean must be 'yes' or 'no'."_el};
     }
 
-    [[nodiscard]] static auto parseMethod(const el::text::String &value)
-        -> el::compression::zip::CompressionMethod {
+    [[nodiscard]] static auto parseMethod(const el::text::String &value) -> el::compression::zip::CompressionMethod {
         using Method = el::compression::zip::CompressionMethod;
         if (value == "stored"_el) {
             return Method::Stored;
@@ -112,7 +111,7 @@ private:
             if (line.isEmpty() || line.startsWith("#"_el)) {
                 continue;
             }
-            const auto fields = splitFields(line, 6U);
+            const auto fields = splitFields(line, el::unit::ItemCount{6U});
             result.push_back(
                 {.name = field(fields, 0U),
                     .producer = field(fields, 1U),
@@ -126,7 +125,7 @@ private:
             if (line.isEmpty() || line.startsWith("#"_el)) {
                 continue;
             }
-            const auto fields = splitFields(line, 7U);
+            const auto fields = splitFields(line, el::unit::ItemCount{7U});
             const auto archiveName = field(fields, 0U);
             const auto archive = std::ranges::find(result, archiveName, &ArchiveCase::name);
             if (archive == result.end()) {
@@ -210,14 +209,13 @@ private:
     }
 
     void verifyArchive(const ArchiveCase &archiveCase) {
-        _context = el::text::StringFormat{
-            "archive: {}\nproducer: {} {}\nvariant: {}"_el}
-                       .build(archiveCase.name, archiveCase.producer, archiveCase.version, archiveCase.variant);
+        _context = el::text::StringFormat{"archive: {}\nproducer: {} {}\nvariant: {}"_el}.build(
+            archiveCase.name, archiveCase.producer, archiveCase.version, archiveCase.variant);
         const auto path = el::path::Path{el::unittest::fh::resolveDataPath("vectors")} / archiveCase.name;
         const auto reader = el::compression::zip::ArchiveReader::create(path);
         REQUIRE_EQUAL(reader->comment(), archiveCase.comment);
         REQUIRE_EQUAL(reader->isZip64(), archiveCase.zip64);
-        REQUIRE_EQUAL(reader->itemCount(), el::unit::ItemCount{archiveCase.entries.size()});
+        REQUIRE_EQUAL(reader->itemCount(), el::unit::ItemCount::fromInteger(archiveCase.entries.size()));
         for (auto index = std::size_t{}; index < archiveCase.entries.size(); ++index) {
             runWithContext(
                 SOURCE_LOCATION(),
@@ -230,11 +228,12 @@ private:
                     REQUIRE_EQUAL(item->isDirectory(), entry.directory);
                     REQUIRE_EQUAL(item->compressionMethod(), entry.method);
                     REQUIRE_EQUAL(item->comment(), entry.comment);
-                    REQUIRE_EQUAL(item->lastModificationTime(), entry.timestamp);
+                    REQUIRE_EQUAL(
+                        item->lastModificationTime(), el::time::Timestamp::fromDateTimeOrThrow(entry.timestamp));
                     REQUIRE_EQUAL(item->uncompressedLength(), expectedPayload.length());
                     REQUIRE_EQUAL(item->crc32(), crc32(expectedPayload));
                     if (!entry.directory) {
-                        REQUIRE_EQUAL(item->extract(el::unit::ByteLength{16U * 1024U}), expectedPayload);
+                        REQUIRE_EQUAL(item->extract(el::unit::ByteCount{16U * 1024U}), expectedPayload);
                     }
                 },
                 [&]() -> std::string {

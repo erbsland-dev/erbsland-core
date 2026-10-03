@@ -1,7 +1,30 @@
 # Fuzzing
 
-Each fuzz target resides in a separate subdirectory. This keeps its source,
-build configuration, corpus, and launcher together as more targets are added.
+Each fuzz target resides in a separate subdirectory with its C++ sources in
+`src`, build configuration in `CMakeLists.txt`, checked-in seeds in `corpus`, and
+launcher in `run.sh`. The TLS targets share the fixture in `common/src`.
+
+## Persistent results
+
+Every launcher creates the following directories under the repository root:
+
+- `fuzzing/<tool>/corpus`: converted seeds and the mutable corpus discovered by libFuzzer.
+- `fuzzing/<tool>/artifacts`: crash, timeout, leak, and other failure inputs.
+
+The complete `/fuzzing/` tree is gitignored. Launchers run the fuzzer from
+`fuzzing/<tool>`, so libFuzzer worker logs also stay there. Build products remain
+in `cmake-build-fuzzing`, or in `ERBSLAND_CORE_FUZZ_BUILD_DIR` when overridden.
+Deleting or replacing a build directory therefore leaves fuzzing results intact.
+Subsequent launches reuse the corpus and refresh the checked-in seeds.
+
+Arguments are forwarded to libFuzzer after the default corpus and artifact-prefix
+arguments. Relative paths in those arguments are resolved from `fuzzing/<tool>`;
+use absolute paths to refer to inputs elsewhere. Console diagnostics remain on
+the terminal. Explicit libFuzzer output-path options can override these defaults.
+
+To retain corpus files from an older build, copy them once from
+`<old-build>/corpus/<tool>/` into `fuzzing/<tool>/corpus/` without overwriting
+existing files. Launchers do not import old build directories automatically.
 
 ## HTTP/1.x request and response codecs
 
@@ -36,9 +59,13 @@ From the repository root, start the bounded client state-machine fuzzer with:
 test/fuzzing/tls-client-protocol/run.sh -max_total_time=60
 ```
 
-Its first byte selects raw pre-handshake transport input, authenticated post-handshake messages, alerts, application
-data, or raw established-state transport input. The target establishes a deterministic valid TLS 1.3 core when needed,
-feeds bounded variable-size fragments, and exercises parser, state, key-transition, queue, alert, and erasure paths.
+Its first byte modulo seven selects raw pre-handshake transport input, authenticated post-handshake messages, alerts,
+application data, raw established-state transport input, encrypted Certificate-handshake input, or encrypted
+CertificateVerify-handshake input. The last two modes protect the mutated inner handshake with the actual negotiated
+handshake keys rather than bypassing AEAD. CertificateVerify mode first parses and validates a real Ed25519 certificate;
+the corpus includes that complete certificate and a correctly framed invalid signature. These modes do not bypass
+authentication. The older post-handshake modes deliberately bypass certificate authentication to reach later states.
+All modes feed bounded fragments and exercise parser, state, key-transition, queue, alert, and erasure paths.
 
 ## TLS 1.3 server protocol
 
@@ -50,7 +77,9 @@ test/fuzzing/tls-server-protocol/run.sh -max_total_time=60
 
 Its first byte selects raw pre-checkpoint ClientHello transport input, authenticated post-handshake messages, alerts,
 application data, or raw established-state transport input. The target embeds an Ed25519 test identity, establishes a
-real client/server core pair for authenticated modes, and feeds fragments under the 64-KiB input cap.
+real client/server core pair for authenticated modes, and feeds fragments under the 64-KiB input cap. Both protocol
+targets execute pending validation and signature requests explicitly before resuming. The shared public test identity
+uses a fixed validation instant, so certificate expiry does not silently disable those paths over time.
 
 ## ECDSA signature verification
 
@@ -80,7 +109,7 @@ test/fuzzing/x509-der/run.sh
 ```
 
 The launcher configures `cmake-build-fuzzing`, builds `x509-der-fuzz`, creates
-its corpus in `cmake-build-fuzzing/corpus/x509-der`, and begins fuzzing. It
+its corpus in `fuzzing/x509-der/corpus`, and begins fuzzing. It
 uses `/opt/local/bin/clang++-mp-22` by default. Override that compiler or the
 build directory when needed:
 
@@ -90,7 +119,7 @@ ERBSLAND_CORE_FUZZ_BUILD_DIR=/tmp/core-fuzz test/fuzzing/x509-der/run.sh -runs=1
 ```
 
 The launcher converts the checked-in `x509-der/corpus/example-certificate.pem`
-into DER and adds it to the mutable build corpus on every run. This provides a
+into DER and adds it to the persistent mutable corpus on every run. This provides a
 valid X.509 certificate from the first execution; add further PEM seed
 certificates in that directory when they exercise distinct parser paths.
 
@@ -101,5 +130,5 @@ smoke test. Press Ctrl-C to stop an unbounded run.
 To reproduce a crash, pass it directly to the built fuzzer executable:
 
 ```shell
-cmake-build-fuzzing/test/fuzzing/x509-der/x509-der-fuzz crash-<hash>
+cmake-build-fuzzing/test/fuzzing/x509-der/x509-der-fuzz fuzzing/x509-der/artifacts/crash-<hash>
 ```

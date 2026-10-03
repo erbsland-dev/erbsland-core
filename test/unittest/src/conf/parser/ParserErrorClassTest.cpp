@@ -321,13 +321,11 @@ public:
         DocumentPtr doc;
         REQUIRE_NOTHROW(doc = parser.parseOrThrow(source))
         // shift a control character through the test file.
-        for (std::size_t i = 0; i < testDocument.length().toRawValue() + 1; ++i) {
+        for (auto i = el::unit::ByteIndex::zero(); i <= el::unit::ByteIndex::end(testDocument.length()); ++i) {
             auto newDocument = el::text::StringEditor{};
-            newDocument.append(testDocument.slice(
-                el::unit::ByteRange{el::unit::ByteIndex{static_cast<uint32_t>(0)}, el::unit::ByteLength{i}}));
+            newDocument.append(testDocument.slice({el::unit::ByteIndex::zero(), i.distanceFromZero()}));
             newDocument.append("\b"_el);
-            newDocument.append(
-                testDocument.slice(el::unit::ByteRange{el::unit::ByteIndex{i}, el::unit::ByteLength::infinite()}));
+            newDocument.append(testDocument.slice(el::unit::ByteRange{i, el::unit::ByteCount::infinite()}));
             source = createTestMemorySource(el::text::String{newDocument});
             try {
                 parser.parseOrThrow(source);
@@ -341,15 +339,12 @@ public:
     void testCharacterVsSyntaxErrorLight() {
         const auto testDocument = el::text::String{"# Comment\n[main]\nv: true\n"_el};
         auto parser = Parser{};
-        for (
-            const auto index :
-            {std::size_t{0U}, testDocument.length().toSizeT() / 2U, testDocument.length().toSizeT()}) {
+        for (const auto index : {el::unit::ByteCount::zero(), testDocument.length() / 2U, testDocument.length()}) {
             auto document = el::text::StringEditor{};
-            document.append(
-                testDocument.slice(el::unit::ByteRange{el::unit::ByteIndex{}, el::unit::ByteLength{index}}));
+            document.append(testDocument.slice({el::unit::ByteIndex{}, index}));
             document.append("\b"_el);
-            document.append(
-                testDocument.slice(el::unit::ByteRange{el::unit::ByteIndex{index}, el::unit::ByteLength::infinite()}));
+            document.append(testDocument.slice(
+                el::unit::ByteRange{el::unit::ByteIndex::end(index), el::unit::ByteCount::infinite()}));
             try {
                 parser.parseOrThrow(createTestMemorySource(el::text::String{document}));
                 REQUIRE(false);
@@ -362,18 +357,18 @@ public:
     void testLimitExceededVsSyntaxError() {
         // An overlong line that contains syntax errors should report LimitExceeded first
         const el::text::String overlongLine1 =
-            el::text::StringEditor::fromCharacter(el::text::Char{U'0'}, el::unit::CpLength{4000U}).append("\n"_el);
+            el::text::StringEditor::fromCharacter(el::text::Char{U'0'}, el::unit::CpCount{4000U}).append("\n"_el);
         // If the line length is correct, it's just a syntax error.
         const el::text::String exact4000Line2 =
-            el::text::StringEditor::fromCharacter(el::text::Char{U'0'}, el::unit::CpLength{3999U}).append("\n"_el);
+            el::text::StringEditor::fromCharacter(el::text::Char{U'0'}, el::unit::CpCount{3999U}).append("\n"_el);
         // An overlong name should report LimitExceeded before a Syntax error.
         const el::text::String overLongName1 =
-            el::text::StringEditor{"["_el}.append(el::text::Char{U'a'}, el::unit::CpLength{101U}).append("_]\n"_el);
+            el::text::StringEditor{"["_el}.append(el::text::Char{U'a'}, el::unit::CpCount{101U}).append("_]\n"_el);
         const el::text::String overLongName2 =
-            el::text::StringEditor{"["_el}.append(el::text::Char{U'a'}, el::unit::CpLength{100U}).append("_]\n"_el);
+            el::text::StringEditor{"["_el}.append(el::text::Char{U'a'}, el::unit::CpCount{100U}).append("_]\n"_el);
         // With 100 characters, the ending `_` is just a syntax error.
         const el::text::String exact100Name =
-            el::text::StringEditor{"["_el}.append(el::text::Char{U'a'}, el::unit::CpLength{99U}).append("_]\n"_el);
+            el::text::StringEditor{"["_el}.append(el::text::Char{U'a'}, el::unit::CpCount{99U}).append("_]\n"_el);
         // Oversized name-path
         const el::text::String oversizedNamePath1 = el::text::String{"[a.b.c.d.e.f.g.h.i.j.k]\n"_el};
         // Oversized name-path with syntax error.

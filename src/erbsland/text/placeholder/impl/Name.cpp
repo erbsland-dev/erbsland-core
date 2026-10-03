@@ -4,10 +4,12 @@
 
 #include "../ReplacerError.hpp"
 
+#include "../../../unit/CpCount.hpp"
 #include "../../../util/LoopStatus.hpp"
 #include "../../Char.hpp"
 #include "../../Literals.hpp"
 #include "../../StringFormat.hpp"
+#include "../../StringTransformations.hpp"
 
 namespace erbsland::text::placeholder::impl {
 
@@ -17,10 +19,10 @@ auto normalizeName(const String &name) -> String {
     if (name.isEmpty()) {
         throw ReplacerError{ReplacerErrorCategory::Syntax, "Placeholder names must not be empty."_el};
     }
-    if (name.characterLength().toSizeT() > 100U) {
+    if (name.characterLength() > unit::CpCount{100U}) {
         throw ReplacerError{ReplacerErrorCategory::LimitExceeded, "A placeholder name is too long."_el};
     }
-    auto result = name.transformed(Char::toIdentifierNormalized);
+    auto result = toIdentifierNormalized(name);
     auto previous = Char{};
     result.forEach([&](const Char character, const unit::CpIndex index) -> util::LoopStatus {
         if (index.isZero() && (character == U'_' || character.isAsciiDigit())) {

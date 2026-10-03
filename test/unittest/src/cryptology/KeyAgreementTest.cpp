@@ -5,20 +5,20 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/CryptologyError.hpp>
-#include <erbsland/cryptology/Hkdf.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
 #include <erbsland/cryptology/impl/algorithm/x25519/X25519.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementAlgorithm.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementPrivateKey.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementPublicKey.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementSharedSecret.hpp>
-#include <erbsland/cryptology/protected_data/ProtectedDataMode.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/CryptologyError.hpp>
+#include <erbsland/Hkdf.hpp>
+#include <erbsland/KeyAgreementAlgorithm.hpp>
+#include <erbsland/KeyAgreementPrivateKey.hpp>
+#include <erbsland/KeyAgreementPublicKey.hpp>
+#include <erbsland/KeyAgreementSharedSecret.hpp>
+#include <erbsland/LogicFailure.hpp>
 #include <erbsland/mem/impl/SecureErase.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ProtectedDataMode.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -67,12 +67,12 @@ public:
     void testAlgorithmMetadataAndParsing() {
         using namespace el::text::literals;
         const auto algorithm = KeyAgreementAlgorithm{KeyAgreementAlgorithm::X25519};
-        REQUIRE_EQUAL(algorithm.publicKeySize(), el::ByteLength{32U});
-        REQUIRE_EQUAL(algorithm.privateKeySize(), el::ByteLength{32U});
-        REQUIRE_EQUAL(algorithm.sharedSecretSize(), el::ByteLength{32U});
+        REQUIRE_EQUAL(algorithm.publicKeySize(), el::ByteCount{32U});
+        REQUIRE_EQUAL(algorithm.privateKeySize(), el::ByteCount{32U});
+        REQUIRE_EQUAL(algorithm.sharedSecretSize(), el::ByteCount{32U});
         REQUIRE_EQUAL(algorithm.toString(), "x25519"_el);
         REQUIRE_EQUAL(KeyAgreementAlgorithm::fromStringOrThrow("x25519"_el), algorithm);
-        REQUIRE_EQUAL(KeyAgreementAlgorithm::all().size(), std::size_t{1U});
+        REQUIRE_EQUAL(KeyAgreementAlgorithm::all().size(), std::size_t{2U});
     }
 
     void testRfc7748AliceAndBob() {
@@ -102,13 +102,13 @@ public:
         const auto algorithm = KeyAgreementAlgorithm{KeyAgreementAlgorithm::X25519};
         const auto privateData = bytesFromHex("77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a");
         const auto privateKey = KeyAgreementPrivateKey::fromBytes(algorithm, privateData.span());
-        const auto zeroPeer = KeyAgreementPublicKey{algorithm, el::ByteBlock{el::ByteLength{32U}}.span()};
+        const auto zeroPeer = KeyAgreementPublicKey{algorithm, el::ByteBlock{el::ByteCount{32U}}.span()};
         REQUIRE_THROWS_AS(CryptologyError, privateKey.agree(zeroPeer));
-        REQUIRE_THROWS_AS(el::err::LogicError, KeyAgreementPrivateKey{}.publicKey());
-        REQUIRE_THROWS_AS(el::err::LogicError, KeyAgreementPrivateKey{}.agree(zeroPeer));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, KeyAgreementPrivateKey{}.publicKey());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, KeyAgreementPrivateKey{}.agree(zeroPeer));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, KeyAgreementPublicKey{algorithm, el::ByteBlock{el::ByteLength{31U}}.span()});
-        REQUIRE_THROWS_AS(el::err::LogicError, Hkdf{HashAlgorithm::Sha2_256}.extract(KeyAgreementSharedSecret{}));
+            el::err::ParameterFailure, KeyAgreementPublicKey{algorithm, el::ByteBlock{el::ByteCount{31U}}.span()});
+        REQUIRE_THROWS_AS(el::err::LogicFailure, Hkdf{HashAlgorithm::Sha2_256}.extract(KeyAgreementSharedSecret{}));
     }
 
     void testScalarClampingAndInputMasking() {

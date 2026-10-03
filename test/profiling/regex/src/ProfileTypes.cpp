@@ -1,7 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ProfileTypes.hpp"
+
+#include <erbsland/re/Flag.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEncoding.hpp>
 
 #include <algorithm>
 #include <array>

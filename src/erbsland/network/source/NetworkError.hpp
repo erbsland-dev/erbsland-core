@@ -9,12 +9,12 @@
 namespace erbsland::network {
 
 /// An asynchronous network operation error.
-/// @tested{HostLookupTest NetworkFacadeTest}
+/// @tested{HostLookupTest NetworkFacadeTest PathReplacementTest HttpClientTest}
 class NetworkError final : public err::RuntimeError {
 public:
     /// Create an asynchronous network error.
     /// @param context The structured operation context.
-    /// @param cause The optional platform or lower-level cause.
+    /// @param cause An explicit cause; when empty, use the cause captured in context.
     explicit NetworkError(NetworkErrorContext context, std::exception_ptr cause = {}) noexcept;
 
     // defaults

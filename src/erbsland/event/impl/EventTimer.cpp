@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "EventTimer.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/Literals.hpp"
 
 #include <utility>
@@ -25,14 +25,14 @@ void EventTimer::startOnce(const time::TimeDelta delay) {
 
 void EventTimer::startFixedDelay(const time::TimeDelta interval) {
     if (!interval.isPositive()) {
-        throw err::ParameterError{"The timer interval must be positive."_el, "interval"_el};
+        throw err::ParameterFailure{"The timer interval must be positive."_el, "interval"_el};
     }
     start(EventTimerMode::FixedDelay, interval);
 }
 
 void EventTimer::startFixedRate(const time::TimeDelta interval) {
     if (!interval.isPositive()) {
-        throw err::ParameterError{"The timer interval must be positive."_el, "interval"_el};
+        throw err::ParameterFailure{"The timer interval must be positive."_el, "interval"_el};
     }
     start(EventTimerMode::FixedRate, interval);
 }
@@ -100,6 +100,15 @@ auto EventTimer::prepareCallback(const time::TimePoint now) noexcept -> std::opt
 auto EventTimer::isCallbackPending(const CallbackExecution &execution) const noexcept -> bool {
     std::scoped_lock lock{_mutex};
     return _pending && _generation == execution.generation && _mode == execution.mode;
+}
+
+void EventTimer::discardCallback(const CallbackExecution &execution) noexcept {
+    std::scoped_lock lock{_mutex};
+    if (_pending && _generation == execution.generation && _mode == execution.mode) {
+        _pending = false;
+        _active = false;
+        _mode = EventTimerMode::Inactive;
+    }
 }
 
 void EventTimer::finishCallback(const CallbackExecution &execution, const time::TimePoint now) noexcept {

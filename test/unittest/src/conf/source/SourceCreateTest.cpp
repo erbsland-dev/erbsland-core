@@ -7,8 +7,8 @@
 #include <erbsland/conf/impl/source/StringSource.hpp>
 #include <erbsland/conf/Source.hpp>
 #include <erbsland/conf/StdFormat.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
 
 using namespace el::conf;
 using namespace el::text::literals;
@@ -24,7 +24,7 @@ public:
         REQUIRE_EQUAL(source->name(), "file"_el);
         REQUIRE_EQUAL(source->path(), el::path::Path{filePath}.toString());
         auto expectedIdentifier = el::text::StringEditor{"file:"_el};
-        expectedIdentifier.append(source->path().toSafeString(el::unit::CpLength{200}));
+        expectedIdentifier.append(source->path().toSafeString(el::unit::CpCount{200}));
         REQUIRE_EQUAL(source->identifier()->toText(), el::text::String{expectedIdentifier});
         REQUIRE_FALSE(source->isOpen());
         REQUIRE(dynamic_cast<el::conf::impl::FileSource *>(source.get()));

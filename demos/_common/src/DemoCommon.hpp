@@ -2,9 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
-#include <erbsland/core/MakeOneNamespace.hpp>
-#include <erbsland/stream/StandardStreams.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringMap.hpp>
 
 namespace demo {
 
@@ -43,6 +48,8 @@ public:
     void registerDemo(const el::String &name, const DemoFn &demoFn, Mode mode = Mode::Procedural);
 
 protected: // override Application
+    [[nodiscard]] auto createAndInitializeTerminal(el::block::Size size, el::cterm::TerminalFlags flags)
+        -> el::cterm::TerminalPtr override;
     void registerCommandLineOptions(const el::OptionsPtr &options) override;
     [[nodiscard]] auto main() -> el::ExitCode override;
 

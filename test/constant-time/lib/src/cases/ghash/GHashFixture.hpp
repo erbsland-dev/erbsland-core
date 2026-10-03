@@ -4,11 +4,10 @@
 
 #include "../../Fixture.hpp"
 
-#include <erbsland/core/Definitions.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/GaloisMultiplierFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/GHash.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/random/Random.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/Random.hpp>
 
 namespace app::constant_time {
 

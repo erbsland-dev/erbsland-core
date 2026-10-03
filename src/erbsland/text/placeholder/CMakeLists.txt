@@ -19,6 +19,8 @@ target_sources(erbsland-core PRIVATE
         ReplacerErrorCategory.hpp
         ReplacerOptions.cpp
         ReplacerOptions.hpp
+        SecureStorageSource.cpp
+        SecureStorageSource.hpp
         Source.cpp
         Source.hpp
         Source_fwd.hpp

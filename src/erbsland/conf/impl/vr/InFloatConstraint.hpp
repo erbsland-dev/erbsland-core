@@ -11,7 +11,7 @@ class InFloatConstraint final : public InConstraint<Float> {
 public:
     /// Creates a floating-point membership constraint.
     /// @param values The allowed floating-point values.
-    explicit InFloatConstraint(std::vector<Float> values) : InConstraint(std::move(values)) {}
+    explicit InFloatConstraint(util::List<Float> values) : InConstraint(std::move(values)) {}
 
 protected:
     void validateFloat(const ValidationContext &context, Float value) const override;

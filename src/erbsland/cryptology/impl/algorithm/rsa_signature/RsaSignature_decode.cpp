@@ -14,6 +14,7 @@
 
 namespace erbsland::cryptology::impl::rsa_signature {
 
+using namespace text;
 using namespace text::literals;
 using namespace unit;
 
@@ -27,6 +28,11 @@ auto decodeSignatureParameters(const X509AlgorithmIdentifier &algorithm) -> Sign
     if (oid == "1.2.840.113549.1.1.12"_el) {
         requireNullParameters(algorithm.parameters(), "sha384WithRSAEncryption"_el);
         return {Padding::Pkcs1V15, HashAlgorithm::Sha2_384, 0U};
+    }
+
+    if (oid == "1.2.840.113549.1.1.13"_el) {
+        requireNullParameters(algorithm.parameters(), "sha512WithRSAEncryption"_el);
+        return {Padding::Pkcs1V15, HashAlgorithm::Sha2_512, 0U};
     }
 
     // RFC 4055 section 3.1 and RFC 5756 require explicit RSASSA-PSS-params beside a certificate signature value.
@@ -98,7 +104,7 @@ auto decodePssParameters(const Asn1Node &parameters) -> SignatureParameters {
 
     // This milestone intentionally rejects RFC defaults to SHA-1 and mixed message/MGF hashes instead of guessing.
     if (!hash.has_value() || !mgfHash.has_value() || *hash != *mgfHash) {
-        throwParseError("RSA-PSS requires explicit matching SHA-256 or SHA-384 message and MGF1 hashes."_el);
+        throwParseError("RSA-PSS requires explicit matching SHA-256, SHA-384 or SHA-512 message and MGF1 hashes."_el);
     }
     if (trailerField != 1U) {
         throwParseError("RSA-PSS supports only the trailer field value 1 (0xbc)."_el);
@@ -111,22 +117,27 @@ auto decodePssParameters(const Asn1Node &parameters) -> SignatureParameters {
 }
 
 auto decodeHashAlgorithmIdentifier(const Asn1Node &node) -> HashAlgorithm {
-    // RFC 4055 section 2.1 represents each supported SHA-2 choice as an AlgorithmIdentifier with NULL parameters.
+    // RFC 4055 section 2.1 requires accepting both absent and NULL SHA-2 parameters.
     requireNode(
         node, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "HashAlgorithm"_el);
-    if (node.childCount() != ItemCount{2U}) {
-        throwParseError("An RSA-PSS hash AlgorithmIdentifier must contain an OID and NULL parameters."_el);
+    if (node.childCount() != ItemCount{1U} && node.childCount() != ItemCount{2U}) {
+        throwParseError("An RSA-PSS hash AlgorithmIdentifier must contain an OID and optional NULL parameters."_el);
     }
     const auto oid = node.child(ItemIndex{0U}).toObjectIdentifier();
     if (!oid.has_value()) {
         throwParseError("An RSA-PSS hash AlgorithmIdentifier contains no object identifier."_el);
     }
-    requireNullParameters(node.child(ItemIndex{1U}), "RSA-PSS hash"_el);
+    if (node.childCount() == ItemCount{2U}) {
+        requireNullParameters(node.child(ItemIndex{1U}), "RSA-PSS hash"_el);
+    }
     if (oid->toString() == "2.16.840.1.101.3.4.2.1"_el) {
         return HashAlgorithm::Sha2_256;
     }
     if (oid->toString() == "2.16.840.1.101.3.4.2.2"_el) {
         return HashAlgorithm::Sha2_384;
+    }
+    if (oid->toString() == "2.16.840.1.101.3.4.2.3"_el) {
+        return HashAlgorithm::Sha2_512;
     }
     throwParseError("RSA-PSS uses an unsupported hash algorithm."_el);
 }
@@ -186,7 +197,7 @@ auto decodePublicKey(const PublicKey &publicKey) -> PublicKeyData {
     return result;
 }
 
-auto decodeSmallInteger(const Asn1Node &node, const text::String &name) -> std::size_t {
+auto decodeSmallInteger(const Asn1Node &node, const String &name) -> std::size_t {
     // RFC 4055 section 3.1 permits a nonnegative saltLength, including zero; trailerField is checked separately.
     requireNode(node, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Integer), false, name);
     auto magnitude = node.contentData();
@@ -194,10 +205,10 @@ auto decodeSmallInteger(const Asn1Node &node, const text::String &name) -> std::
         throwParseError("An RSA-PSS INTEGER must be nonnegative."_el);
     }
     if (magnitude.span().front().toUInt8() == 0U) {
-        if (magnitude.length() == ByteLength::one()) {
+        if (magnitude.length() == ByteCount::one()) {
             return 0U;
         }
-        magnitude = magnitude.slice(ByteIndex{1U}, magnitude.length() - ByteLength::one());
+        magnitude = magnitude.slice(ByteIndex{1U}, magnitude.length() - ByteCount::one());
     }
     if (magnitude.span().size() > sizeof(std::size_t)) {
         throwParseError("An RSA-PSS integer exceeds the implementation bound."_el);
@@ -212,17 +223,17 @@ auto decodeSmallInteger(const Asn1Node &node, const text::String &name) -> std::
     return result;
 }
 
-auto decodePositiveInteger(const Asn1Node &node, [[maybe_unused]] const text::String &name) -> mem::ByteBlock {
+auto decodePositiveInteger(const Asn1Node &node, [[maybe_unused]] const String &name) -> mem::ByteBlock {
     requireNode(node, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Integer), false, name);
     auto contents = node.contentData();
     if (contents.isEmpty() || (contents.span().front().toUInt8() & 0x80U) != 0U) {
         throwParseError("An RSA INTEGER must be positive."_el);
     }
     if (contents.span().front().toUInt8() == 0U) {
-        if (contents.length() == ByteLength::one()) {
+        if (contents.length() == ByteCount::one()) {
             throwParseError("An RSA INTEGER must be greater than zero."_el);
         }
-        contents = contents.slice(ByteIndex{1U}, contents.length() - ByteLength::one());
+        contents = contents.slice(ByteIndex{1U}, contents.length() - ByteCount::one());
     }
     return contents;
 }
@@ -232,21 +243,21 @@ void requireNode(
     const Asn1TagClass tagClass,
     const uint32_t tagNumber,
     const bool constructed,
-    [[maybe_unused]] const text::String &name) {
+    [[maybe_unused]] const String &name) {
     if (node.isEmpty() || node.tagClass() != tagClass || node.tagNumber() != tagNumber ||
         node.isConstructed() != constructed) {
         throwParseError("An RSA ASN.1 value has an unexpected type or form."_el);
     }
 }
 
-void requireNullParameters(const Asn1Node &parameters, [[maybe_unused]] const text::String &name) {
+void requireNullParameters(const Asn1Node &parameters, [[maybe_unused]] const String &name) {
     requireNode(parameters, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Null), false, name);
     if (!parameters.contentData().isEmpty()) {
         throwParseError("An RSA AlgorithmIdentifier NULL parameter contains data."_el);
     }
 }
 
-void throwParseError(const text::String &reason) {
+void throwParseError(const String &reason) {
     throw err::ParseError{reason};
 }
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <cstdint>
@@ -56,36 +56,36 @@ public: // accessors
     /// Get the raw wire-format value.
     [[nodiscard]] constexpr auto toRawValue() const noexcept -> Value { return _value; }
     /// Get the fixed byte width, or infinite for variable-length formats.
-    [[nodiscard]] constexpr auto byteCount() const noexcept -> unit::ByteLength {
+    [[nodiscard]] constexpr auto byteCount() const noexcept -> unit::ByteCount {
         switch (_value) {
         case UnsignedFixed8Bit:
         case SignedFixed8Bit:
-            return unit::ByteLength{1U};
+            return unit::ByteCount{1U};
         case UnsignedFixed16Bit:
         case SignedFixed16Bit:
-            return unit::ByteLength{2U};
+            return unit::ByteCount{2U};
         case UnsignedFixed24Bit:
-            return unit::ByteLength{3U};
+            return unit::ByteCount{3U};
         case UnsignedFixed32Bit:
         case SignedFixed32Bit:
-            return unit::ByteLength{4U};
+            return unit::ByteCount{4U};
         case UnsignedFixed40Bit:
-            return unit::ByteLength{5U};
+            return unit::ByteCount{5U};
         case UnsignedFixed48Bit:
-            return unit::ByteLength{6U};
+            return unit::ByteCount{6U};
         case UnsignedFixed56Bit:
-            return unit::ByteLength{7U};
+            return unit::ByteCount{7U};
         case UnsignedFixed64Bit:
         case SignedFixed64Bit:
-            return unit::ByteLength{8U};
+            return unit::ByteCount{8U};
         case UnsignedVariableLength:
         case SignedVariableLength:
         case UnsignedBase128:
-            return unit::ByteLength::infinite();
+            return unit::ByteCount::infinite();
         case _valueCount:
-            return unit::ByteLength::zero();
+            return unit::ByteCount::zero();
         }
-        return unit::ByteLength::zero();
+        return unit::ByteCount::zero();
     }
     /// Test if the wire representation is signed.
     [[nodiscard]] constexpr auto isSigned() const noexcept -> bool {

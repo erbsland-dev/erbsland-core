@@ -1,7 +1,29 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ReadLineApp.hpp"
+
+#include <DemoTerminal.hpp>
+#include <erbsland/Alignment.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ApplicationErrorContext.hpp>
+#include <erbsland/block/Coordinate.hpp>
+#include <erbsland/block/Margins.hpp>
+#include <erbsland/block/Size.hpp>
+#include <erbsland/cterm/Block.hpp>
+#include <erbsland/cterm/BlockStyle.hpp>
+#include <erbsland/cterm/Buffer.hpp>
+#include <erbsland/cterm/ReadLine.hpp>
+#include <erbsland/cterm/ReadLineOptions.hpp>
+#include <erbsland/cterm/ReadLineResult.hpp>
+#include <erbsland/cterm/ReadLineStatus.hpp>
+#include <erbsland/DateTime.hpp>
+#include <erbsland/DateTimePrecision.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/TimeZone.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -12,7 +34,7 @@ void ReadLineApp::initialize() {
     info().setApplicationVersion(el::Version{0, 1, 0});
     info().setAuthorName("Erbsland DEV"_el);
     info().setLicenseText("Apache-2.0"_el);
-    enableTerminal();
+    DemoTerminal::enable(*this);
 }
 
 auto ReadLineApp::main() -> el::ExitCode {
@@ -72,7 +94,7 @@ void ReadLineApp::writeClock(const bool initial) {
     auto buffer = el::cterm::Buffer{
         el::block::Size{width, el::block::Coordinate{1}}, el::cterm::Block{U' ', el::cterm::BlockStyle::reset()}};
     buffer.drawBlockText(
-        el::String::fromJoined({"Event loop clock: "_el, clock}),
+        el::join("Event loop clock: "_el, clock),
         buffer.rect().insetBy(el::block::Margins{1, 0}),
         el::Alignment::CenterLeft,
         el::cterm::BlockStyle::reset());

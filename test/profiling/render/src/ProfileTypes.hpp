@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
-#include <erbsland/text/render/Context.hpp>
-#include <erbsland/text/render/EnvironmentOptions.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/render/Context.hpp>
+#include <erbsland/render/EnvironmentOptions.hpp>
+#include <erbsland/render/LayoutSource.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/StringMap.hpp>
 #include <erbsland/text/render/impl/CompiledLayout_fwd.hpp>
-#include <erbsland/text/render/LayoutSource.hpp>
 
 #include <cstdint>
 #include <memory>

@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/mem/UnsafeCharPtr.hpp>
-#include <erbsland/mem/UnsafeMemoryPtr.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/UnsafeCharPtr.hpp>
+#include <erbsland/UnsafeMemoryPtr.hpp>
 
 #include <array>
 #include <cstring>

@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Host.hpp>
+#include <erbsland/HostName.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

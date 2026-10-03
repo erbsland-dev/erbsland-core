@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteRingBuffer.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -11,7 +15,7 @@ namespace demo {
 /// `secureErase()` overwrites the complete ring allocation immediately and
 /// leaves the buffer empty without changing its capacity.
 void eraseRingBuffer() {
-    auto records = el::ByteRingBuffer{el::ByteLength{8U}};
+    auto records = el::ByteRingBuffer{el::ByteCount{8U}};
     records.setSensitive(true);
     const auto writeResult = records.writeInteger<uint32_t>(0x4e454f31U);
     const auto capacityBeforeErase = records.capacity();

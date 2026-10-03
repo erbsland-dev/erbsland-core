@@ -30,7 +30,7 @@ public: // body/output
     /// Finish the message with optional extension trailers.
     [[nodiscard]] auto finish(HttpHeaders trailers = {}) -> NetworkSendStatus;
     /// Detach a bounded wire-output block.
-    [[nodiscard]] auto takeOutput(unit::ByteLength maximumLength = Http1CodecLimits::cMaximumBodyChunkLength)
+    [[nodiscard]] auto takeOutput(unit::ByteCount maximumLength = Http1CodecLimits::cMaximumBodyChunkLength)
         -> mem::ByteBlock;
 
 public: // status
@@ -39,7 +39,7 @@ public: // status
     /// Test whether input for this message is complete.
     [[nodiscard]] auto isComplete() const noexcept -> bool { return _complete; }
     /// Get queued wire-output bytes.
-    [[nodiscard]] auto queuedOutputLength() const noexcept -> unit::ByteLength { return _output.length(); }
+    [[nodiscard]] auto queuedOutputLength() const noexcept -> unit::ByteCount { return _output.length(); }
 
 private: // initialization/framing
     /// Serialize a validated request head.
@@ -55,7 +55,7 @@ private: // initialization/framing
 
 private: // output helpers
     /// Test whether a complete operation fits into the output queue.
-    [[nodiscard]] auto canQueue(unit::ByteLength length) const noexcept -> bool;
+    [[nodiscard]] auto canQueue(unit::ByteCount length) const noexcept -> bool;
     /// Append exact native string bytes.
     void appendString(const text::String &value);
     /// Append an internal ASCII framing literal.
@@ -63,13 +63,13 @@ private: // output helpers
     /// Append canonical field lines.
     void appendHeaders(const HttpHeaders &headers);
     /// Append one lowercase hexadecimal chunk prefix.
-    void appendChunkPrefix(unit::ByteLength length);
+    void appendChunkPrefix(unit::ByteCount length);
     /// Calculate the complete wire length for one chunk body fragment.
-    [[nodiscard]] static auto chunkWireLength(unit::ByteLength length) noexcept -> unit::ByteLength;
+    [[nodiscard]] static auto chunkWireLength(unit::ByteCount length) noexcept -> unit::ByteCount;
     /// Validate a field collection against codec limits.
     void validateFields(const HttpHeaders &headers, HttpHeaderLimits limits) const;
     /// Validate trailers and calculate their serialized length.
-    [[nodiscard]] auto trailerWireLength(const HttpHeaders &trailers) const -> unit::ByteLength;
+    [[nodiscard]] auto trailerWireLength(const HttpHeaders &trailers) const -> unit::ByteCount;
     /// Throw a strong application-side misuse failure.
     [[noreturn]] static void misuse(const text::String &message);
 
@@ -78,9 +78,9 @@ private:
     mem::RingBuffer _output;                                        ///< Queued serialized output.
     Http1BodyFraming _framing{Http1BodyFraming::None};              ///< Selected framing.
     Http1TransferCoding _transferCoding{Http1TransferCoding::None}; ///< Parsed transfer coding.
-    std::optional<unit::ByteLength> _contentLength;                 ///< Validated fixed length.
-    unit::ByteLength _bodyWritten;                                  ///< Accepted semantic body bytes.
-    unit::ByteLength _bodyRemaining;                                ///< Remaining fixed-length bytes.
+    std::optional<unit::ByteCount> _contentLength;                  ///< Validated fixed length.
+    unit::ByteCount _bodyWritten;                                   ///< Accepted semantic body bytes.
+    unit::ByteCount _bodyRemaining;                                 ///< Remaining fixed-length bytes.
     bool _complete{};                                               ///< No more semantic input accepted.
 };
 

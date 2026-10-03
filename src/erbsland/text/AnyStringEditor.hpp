@@ -20,7 +20,7 @@ namespace erbsland::text {
 
 /// A wrapper that stores a mutable string editor of any supported width.
 /// Converts its contents to a requested read-only string width when needed.
-/// @tested{AnyStringTest}
+/// @tested{AnyStringTest StringBinaryComparisonTest StringEncodingValidationTest}
 class AnyStringEditor final {
     using Value = std::variant<std::monostate, U8StringEditor, U16StringEditor, U32StringEditor>;
 
@@ -72,6 +72,16 @@ public: // operators
         return *this;
     }
 
+public: // comparison
+    /// Compare empty contents first, then encoding (U8, U16, U32), then unsigned storage bytes.
+    /// This shares the editor storage without decoding, conversion, or allocation.
+    /// @param other The string to compare, potentially using a different encoding.
+    /// @return The same representation ordering as `AnyString::compareBinary()`.
+    /// @seedoc{/topics/text_strings/comparing_strings}
+    [[nodiscard]] auto compareBinary(const AnyString &other) const noexcept -> std::strong_ordering {
+        return toAnyString().compareBinary(other);
+    }
+
 public:
     /// Test if this string is empty.
     [[nodiscard]] auto isEmpty() const noexcept -> bool { return std::holds_alternative<std::monostate>(_value); }
@@ -102,9 +112,12 @@ public:
         }
     }
     /// Count the number of valid and replacement code points in the string.
-    [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength { return toAnyString().characterLength(); }
+    [[nodiscard]] auto characterLength() const noexcept -> unit::CpCount { return toAnyString().characterLength(); }
     /// Test if the underlying string contains only valid code points for its encoding.
     [[nodiscard]] auto isEncodingValid() const noexcept -> bool { return toAnyString().isEncodingValid(); }
+
+    /// @copydoc AnyString::encodingValidOrThrow() const
+    void encodingValidOrThrow() const { toAnyString().encodingValidOrThrow(); }
 
 public: // conversion
     /// Create an owning read-only value sharing the stored editor contents.

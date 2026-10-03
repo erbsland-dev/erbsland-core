@@ -1,40 +1,41 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "StreamCase.hpp"
 
 #include "../../BackendInfo.hpp"
 
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesBlockCipherFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/GaloisMultiplierFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/ChaCha20BackendFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/Poly1305Factory.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/PortableChaCha20Backend.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/PortablePoly1305.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace app::constant_time {
 
 using namespace el::text::literals;
 
-StreamCase::StreamCase(std::size_t size, StreamOperation operation, bool automatic) :
+StreamCase::StreamCase(el::ByteCount size, StreamOperation operation, bool automatic) :
     _size{size}, _operation{operation}, _automatic{automatic} {
 
-    const auto id = el::StringFormat{"{}/{}"_el}.build(operationName(), size);
-    const auto key = el::ByteBuffer{el::ByteLength{32}, el::Byte{0x55U}};
-    const auto nonce = el::ByteBuffer{el::ByteLength{12}};
+    const auto id = el::StringFormat{"{}/{}"_el}.build(operationName(), size.toRawValue());
+    const auto key = el::ByteBuffer{el::ByteCount{32}, el::Byte{0x55U}};
+    const auto nonce = el::ByteBuffer{el::ByteCount{12}};
     auto backend = el::String{"portable"_el};
     if (operation == StreamOperation::ChaCha20) {
         const auto worker = automatic ? ci::createChaCha20Backend(key.span(), nonce.span())
                                       : ci::createPortableChaCha20Backend(key.span(), nonce.span());
         backend =
-            BackendInfo{*worker, size < 256 || BackendInfo::isImplementation<ci::PortableChaCha20Backend>(*worker)}
+            BackendInfo{
+                *worker,
+                size < el::ByteCount{256U} || BackendInfo::isImplementation<ci::PortableChaCha20Backend>(*worker)}
                 .name();
     }
     if (operation == StreamOperation::Poly1305) {
@@ -52,14 +53,16 @@ StreamCase::StreamCase(std::size_t size, StreamOperation operation, bool automat
         const auto chacha = ci::createChaCha20Backend(key.span(), nonce.span());
         const auto poly = ci::createPoly1305(key.span());
         backend = el::StringFormat{"chacha20:{}+poly1305:{}"_el}.build(
-            BackendInfo{*chacha, size < 256 || BackendInfo::isImplementation<ci::PortableChaCha20Backend>(*chacha)}
+            BackendInfo{
+                *chacha,
+                size < el::ByteCount{256U} || BackendInfo::isImplementation<ci::PortableChaCha20Backend>(*chacha)}
                 .name(),
             BackendInfo{*poly, BackendInfo::isImplementation<ci::PortablePoly1305>(*poly)}.name());
     }
     configure(
         TestMetadata{
             id, "Symmetric primitive and authenticated tag generation"_el, "fixed-vs-random-key"_el, backend, true},
-        el::ByteLength{8192 + size * 2});
+        el::ByteCount{8192U} + size * 2U);
 }
 
 auto StreamCase::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {
@@ -81,7 +84,7 @@ auto StreamCase::operationName() const -> el::String {
     case StreamOperation::ChaCha20Poly1305:
         return "chacha20-poly1305/tag"_el;
     }
-    throw el::LogicError{"Unknown scenario operation."_el};
+    throw el::LogicFailure{"Unknown scenario operation."_el};
 }
 
 }

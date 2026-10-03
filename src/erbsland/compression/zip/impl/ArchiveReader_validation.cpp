@@ -42,7 +42,7 @@ void ArchiveReader::validateDirectoryEntries() const {
     }
     for (auto index = std::size_t{}; index < ordered.size(); ++index) {
         const auto *record = ordered[index];
-        const auto fixedRange = unit::ByteRange{record->localHeaderOffset, unit::ByteLength{30U}};
+        const auto fixedRange = unit::ByteRange{record->localHeaderOffset, unit::ByteCount{30U}};
         const auto payloadRange = unit::ByteRange{fixedRange.endIndex(), record->compressedLength};
         if (!fixedRange.isWithin(_centralDirectoryOffset.distanceFromZero()) ||
             !payloadRange.isWithin(_centralDirectoryOffset.distanceFromZero())) {

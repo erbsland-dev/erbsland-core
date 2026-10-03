@@ -7,7 +7,7 @@
 #include "HttpMediaType.hpp"
 
 #include "../../text/StringList.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ItemCount.hpp"
 #include "../../unit/ItemIndex.hpp"
 #include "../../util/List.hpp"
@@ -31,7 +31,9 @@ public:
     /// Create an empty collection with captured limits.
     explicit HttpHeaders(HttpHeaderLimits limits) noexcept : _limits{limits} {}
     /// Create a validated collection from fields and captured limits.
-    /// @throws err::ParameterError If a field or aggregate limit is exceeded.
+    /// @param fields The validated fields. Individual fields and the aggregate collection must fit the captured
+    /// `limits`.
+    /// @param limits The header limits captured by this collection.
     explicit HttpHeaders(HttpFieldList fields, HttpHeaderLimits limits = {});
 
     // defaults
@@ -51,7 +53,7 @@ public: // accessors
     /// Get the field count.
     [[nodiscard]] auto fieldCount() const noexcept -> unit::ItemCount { return _fields.count(); }
     /// Get the serialized byte length using `name: value` plus CRLF for each field.
-    [[nodiscard]] auto serializedLength() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto serializedLength() const noexcept -> unit::ByteCount;
     /// Get a copy-on-write copy of all ordered fields.
     [[nodiscard]] auto fields() const noexcept -> HttpFieldList { return _fields; }
     /// Get a field by index, or an invalid field if the index is outside the list.
@@ -79,22 +81,30 @@ public: // lookup
 
 public: // modifiers
     /// Append a field.
-    /// @throws err::ParameterError If the resulting collection exceeds captured limits.
+    /// @param field The field to store. The resulting collection must fit the captured header limits.
     auto addField(HttpField field) -> HttpHeaders &;
     /// Append a recognized field.
-    /// @throws err::ParameterError If the field or resulting collection is invalid.
+    /// @param type A valid recognized HTTP field type.
+    /// @param value The field value. Must be valid for an HTTP field and keep the resulting collection within the
+    /// captured limits.
     auto addField(HttpFieldType type, text::String value) -> HttpHeaders &;
     /// Append a field from text.
-    /// @throws err::ParameterError If the field or resulting collection is invalid.
+    /// @param name The field name. Must be a non-empty ASCII token.
+    /// @param value The field value. Must be valid for an HTTP field and keep the resulting collection within the
+    /// captured limits.
     auto addField(text::String name, text::String value) -> HttpHeaders &;
     /// Replace all matching fields with one field at the first matching position, or append it.
-    /// @throws err::ParameterError If the resulting collection exceeds captured limits.
+    /// @param field The field to store. The resulting collection must fit the captured header limits.
     auto setField(HttpField field) -> HttpHeaders &;
     /// Replace a recognized field.
-    /// @throws err::ParameterError If the field or resulting collection is invalid.
+    /// @param type A valid recognized HTTP field type.
+    /// @param value The field value. Must be valid for an HTTP field and keep the resulting collection within the
+    /// captured limits.
     auto setField(HttpFieldType type, text::String value) -> HttpHeaders &;
     /// Replace a field from text.
-    /// @throws err::ParameterError If the field or resulting collection is invalid.
+    /// @param name The field name. Must be a non-empty ASCII token.
+    /// @param value The field value. Must be valid for an HTTP field and keep the resulting collection within the
+    /// captured limits.
     auto setField(text::String name, text::String value) -> HttpHeaders &;
     /// Remove all fields with a matching name and return the number removed.
     auto removeAllFields(const HttpFieldName &name) -> unit::ItemCount;
@@ -107,7 +117,7 @@ public: // convenience
     /// Parse the first Content-Type field, or return no value if absent or invalid.
     [[nodiscard]] auto contentType() const noexcept -> std::optional<HttpMediaType>;
     /// Set one canonical Content-Type field.
-    /// @throws err::ParameterError If the media type is invalid or limits are exceeded.
+    /// @param mediaType The canonical media type. Must be valid and fit the captured header limits.
     auto setContentType(const HttpMediaType &mediaType) -> HttpHeaders &;
 
 private:

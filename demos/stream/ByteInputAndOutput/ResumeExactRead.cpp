@@ -1,6 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteInputStream.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamError.hpp>
 #include <StreamDemoSupport.hpp>
 
 #include <exception>
@@ -22,7 +28,7 @@ auto readRecordWithTimeouts(el::ByteInputStream &input) -> el::ByteBlock {
 
     try {
         for (auto attempt = 0U; attempt < cMaximumAttempts; ++attempt) {
-            auto result = input.readExact(el::ByteLength{4U});
+            auto result = input.readExact(el::ByteCount{4U});
             if (result.hasData()) {
                 return result.takeData();
             }

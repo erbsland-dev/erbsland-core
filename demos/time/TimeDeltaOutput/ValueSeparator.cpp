@@ -3,7 +3,10 @@
 
 #include "TimeDeltaOutputDemos.hpp"
 
-#include <erbsland/time/all.hpp>
+#include <erbsland/all_time.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeDeltaFormat.hpp>
 
 #include <initializer_list>
 

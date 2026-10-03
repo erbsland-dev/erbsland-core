@@ -26,7 +26,7 @@
 #include "../../text/StringEditor.hpp"
 #include "../../time/TimeEpoch.hpp"
 #include "../../time/Timestamp.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -51,13 +51,16 @@
 #include <vector>
 
 namespace erbsland::path::impl {
+
+using namespace text;
+using text::impl::PlatformU8StringAccess;
 using namespace text::literals;
 
 void PosixPathBackend::setAccessProfileOrThrow(
     const Path &path, const PathAccessProfile profile, [[maybe_unused]] const PathChangeOptions options) const {
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     struct stat info{};
     if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) != 0) {
         throwSystemError(
@@ -98,7 +101,7 @@ void PosixPathBackend::setLastModifiedOrThrow(
         options.symlinkMode() == SymlinkMode::Follow ? PathResolveMode::Physical
                                                      : PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     if (options.symlinkMode() == SymlinkMode::Skip) {
         struct stat info{};
         if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) != 0) {
@@ -142,6 +145,7 @@ void PosixPathBackend::clearAttributesOrThrow(
 
 auto PosixPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     const Path &path, const PathWriteDataOptions options) const -> PathByteOutputStreamOpenResult {
+    auto admission = util::impl::worker_services::io().reserve();
     if (options.createParents()) {
         createParentDirectoriesOrThrow(path);
     }
@@ -160,7 +164,7 @@ auto PosixPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     }
 
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     const auto existed = existingPath(path);
     const auto fileDescriptor =
         ::open(pathAccess.nullTerminatedCharPtr(), flags, profileMode(options.accessProfile(), PathType::RegularFile));
@@ -180,7 +184,8 @@ auto PosixPathBackend::openByteOutputStreamWithExistingContentOrThrow(
             std::make_shared<stream::impl::BufferedByteOutputStream>(
                 std::make_shared<stream::impl::PosixNativeStream>(
                     fileDescriptor, stream::impl::NativeStreamOwnership::Owned, path.toString()),
-                options.streamSettings()),
+                options.streamSettings(),
+                std::move(admission)),
             hasExistingContent,
         };
     } catch (...) {
@@ -190,7 +195,7 @@ auto PosixPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     }
 }
 
-auto PosixPathBackend::pathTextOrThrow(const Path &path) -> text::String {
+auto PosixPathBackend::pathTextOrThrow(const Path &path) -> String {
     const auto pathText = path.toPosix();
     if (pathText.isEmpty()) {
         throw PathError{PathErrorContext{
@@ -215,7 +220,7 @@ void PosixPathBackend::createParentDirectoriesOrThrow(const Path &path) {
             continue;
         }
         const auto directoryText = pathTextOrThrow(directory);
-        const auto directoryAccess = text::impl::PlatformU8StringAccess{directoryText};
+        const auto directoryAccess = PlatformU8StringAccess{directoryText};
         if (::mkdir(directoryAccess.nullTerminatedCharPtr(), static_cast<mode_t>(0777)) == 0) {
             continue;
         }
@@ -388,7 +393,7 @@ void PosixPathBackend::applyAttributesOrThrow(const Path &path, const PathAttrib
                 .setHelp("Request only attributes supported by this operating system."_el)};
     }
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     struct stat info{};
     if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) != 0) {
         throwSystemError(
@@ -430,7 +435,7 @@ void PosixPathBackend::applyAttributesOrThrow(const Path &path, const PathAttrib
                 .setHelp("Request only attributes supported by this operating system."_el)};
     }
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto pathAccess = PlatformU8StringAccess{pathText};
     const auto fileDescriptor = ::open(pathAccess.nullTerminatedCharPtr(), O_RDONLY | O_NONBLOCK);
     if (fileDescriptor < 0) {
         throwSystemError(
@@ -472,4 +477,5 @@ void PosixPathBackend::applyAttributesOrThrow(const Path &path, const PathAttrib
     }
 #endif
 }
+
 }

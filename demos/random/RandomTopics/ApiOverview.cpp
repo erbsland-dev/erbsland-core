@@ -2,6 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/FastRandom.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace demo {
 
@@ -23,7 +32,7 @@ auto buildMapRows(el::Random &random) -> el::StringList {
             }
             row.append(random.selectElement(terrain));
         }
-        rows.append(el::String{row});
+        rows.append(row);
     }
     return rows;
 }
@@ -42,7 +51,7 @@ void apiOverview() {
 
     // Secure randomness is used when a generated value protects something.
     const auto tokenAlphabet = el::CharSet::fromPattern("A-Za-z0-9"_el);
-    const auto token = el::application().secureRandom().buildString(el::CpLength{16U}, tokenAlphabet);
+    const auto token = el::application().secureRandom().buildString(el::CpCount{16U}, tokenAlphabet);
     el::io::printLine("Secure token length: "_el, token.characterLength().toSizeT());
 
     // WARNING: Use explicit seeds only when reproducibility is the purpose.

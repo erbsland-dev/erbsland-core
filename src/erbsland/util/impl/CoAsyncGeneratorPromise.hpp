@@ -29,6 +29,7 @@ public:
     using TransferAwaiter = CoAsyncGeneratorTransferAwaiter<tValue>;
 
     /// Create the public generator connected to this promise.
+    /// @return The lazy generator.
     [[nodiscard]] auto get_return_object() -> CoAsyncGenerator<tValue>;
     /// Keep the producer lazy until the first `next()` operation.
     [[nodiscard]] auto initial_suspend() noexcept -> std::suspend_always { return {}; }

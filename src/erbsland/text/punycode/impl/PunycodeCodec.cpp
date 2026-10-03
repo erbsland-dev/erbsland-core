@@ -13,6 +13,8 @@
 
 namespace erbsland::text::punycode::impl {
 
+using namespace err;
+
 constexpr auto cBase = uint64_t{36U};
 constexpr auto cTMin = uint64_t{1U};
 constexpr auto cTMax = uint64_t{26U};
@@ -63,8 +65,8 @@ auto decodeDigit(const Char character) noexcept -> std::optional<uint64_t> {
 }
 
 auto readCodePoints(const String &text) -> std::vector<char32_t> {
-    if (!text.isValidUtf8()) {
-        throw err::ParseError{"The Punycode input is not valid UTF-8."};
+    if (!text.isEncodingValid()) {
+        throw ParseError{"The Punycode input is not valid UTF-8."};
     }
     auto result = std::vector<char32_t>{};
     result.reserve(text.characterLength().toSizeT());
@@ -72,7 +74,7 @@ auto readCodePoints(const String &text) -> std::vector<char32_t> {
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
         if (!character.isValidUnicode()) {
-            throw err::ParseError{"The Punycode input contains an invalid Unicode character."};
+            throw ParseError{"The Punycode input contains an invalid Unicode character."};
         }
         result.push_back(character.toRawValue());
     }
@@ -106,11 +108,11 @@ auto encodePunycodePayload(const String &text) -> String {
             }
         }
         if (minimum == std::numeric_limits<uint64_t>::max()) {
-            throw err::ParseError{"The Punycode encoder could not select the next code point."};
+            throw ParseError{"The Punycode encoder could not select the next code point."};
         }
         const auto step = minimum - n;
         if (step != 0U && handledCount + 1U > (std::numeric_limits<uint64_t>::max() - delta) / step) {
-            throw err::ParseError{"The Punycode input exceeds the arithmetic limits."};
+            throw ParseError{"The Punycode input exceeds the arithmetic limits."};
         }
         delta += step * (handledCount + 1U);
         n = minimum;
@@ -118,7 +120,7 @@ auto encodePunycodePayload(const String &text) -> String {
             const auto value = static_cast<uint64_t>(codePoint);
             if (value < n) {
                 if (delta == std::numeric_limits<uint64_t>::max()) {
-                    throw err::ParseError{"The Punycode input exceeds the arithmetic limits."};
+                    throw ParseError{"The Punycode input exceeds the arithmetic limits."};
                 }
                 ++delta;
             }
@@ -140,7 +142,7 @@ auto encodePunycodePayload(const String &text) -> String {
             ++handledCount;
         }
         if (delta == std::numeric_limits<uint64_t>::max() || n == cMaximumCodePoint) {
-            throw err::ParseError{"The Punycode input exceeds the Unicode or arithmetic limits."};
+            throw ParseError{"The Punycode input exceeds the Unicode or arithmetic limits."};
         }
         ++delta;
         ++n;
@@ -149,8 +151,8 @@ auto encodePunycodePayload(const String &text) -> String {
 }
 
 auto decodePunycodePayload(const String &text) -> String {
-    if (!text.isValidUtf8()) {
-        throw err::ParseError{"The Punycode input is not valid UTF-8."};
+    if (!text.isEncodingValid()) {
+        throw ParseError{"The Punycode input is not valid UTF-8."};
     }
     auto encoded = std::vector<Char>{};
     encoded.reserve(text.characterLength().toSizeT());
@@ -159,7 +161,7 @@ auto decodePunycodePayload(const String &text) -> String {
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
         if (!character.isAscii()) {
-            throw err::ParseError{"A Punycode payload must contain ASCII characters only."};
+            throw ParseError{"A Punycode payload must contain ASCII characters only."};
         }
         if (character == cDelimiter) {
             delimiterIndex = encoded.size();
@@ -172,7 +174,7 @@ auto decodePunycodePayload(const String &text) -> String {
         for (; inputIndex < delimiterIndex.value(); ++inputIndex) {
             const auto character = encoded[inputIndex];
             if (!character.isAscii()) {
-                throw err::ParseError{"The basic Punycode prefix is not ASCII."};
+                throw ParseError{"The basic Punycode prefix is not ASCII."};
             }
             output.push_back(character.toRawValue());
         }
@@ -186,14 +188,14 @@ auto decodePunycodePayload(const String &text) -> String {
         auto weight = uint64_t{1U};
         for (auto digitIndex = cBase;; digitIndex += cBase) {
             if (inputIndex >= encoded.size()) {
-                throw err::ParseError{"The Punycode payload ends inside a variable-length integer."};
+                throw ParseError{"The Punycode payload ends inside a variable-length integer."};
             }
             const auto digit = decodeDigit(encoded[inputIndex++]);
             if (!digit.has_value()) {
-                throw err::ParseError{"The Punycode payload contains an invalid digit."};
+                throw ParseError{"The Punycode payload contains an invalid digit."};
             }
             if (digit.value() > (std::numeric_limits<uint64_t>::max() - index) / weight) {
-                throw err::ParseError{"The Punycode payload exceeds the arithmetic limits."};
+                throw ParseError{"The Punycode payload exceeds the arithmetic limits."};
             }
             index += digit.value() * weight;
             const auto t = threshold(digitIndex, bias);
@@ -201,7 +203,7 @@ auto decodePunycodePayload(const String &text) -> String {
                 break;
             }
             if (weight > std::numeric_limits<uint64_t>::max() / (cBase - t)) {
-                throw err::ParseError{"The Punycode payload exceeds the arithmetic limits."};
+                throw ParseError{"The Punycode payload exceeds the arithmetic limits."};
             }
             weight *= cBase - t;
         }
@@ -209,12 +211,12 @@ auto decodePunycodePayload(const String &text) -> String {
         bias = adapt(index - oldIndex, outputCount, oldIndex == 0U);
         const auto increment = index / outputCount;
         if (increment > cMaximumCodePoint - n) {
-            throw err::ParseError{"The Punycode payload decodes outside Unicode."};
+            throw ParseError{"The Punycode payload decodes outside Unicode."};
         }
         n += increment;
         index %= outputCount;
         if (n >= 0xD800U && n <= 0xDFFFU) {
-            throw err::ParseError{"The Punycode payload decodes to a Unicode surrogate."};
+            throw ParseError{"The Punycode payload decodes to a Unicode surrogate."};
         }
         output.insert(output.begin() + static_cast<std::ptrdiff_t>(index), static_cast<char32_t>(n));
         ++index;

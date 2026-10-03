@@ -6,7 +6,7 @@ namespace erbsland::text {
 
 U16StringConstIterator::U16StringConstIterator() = default;
 
-U16StringConstIterator::U16StringConstIterator(const U16String &string, const unit::U16DataIndex index) :
+U16StringConstIterator::U16StringConstIterator(const U16String &string, const unit::U16Index index) :
     _string{string}, _index{index} {
 }
 

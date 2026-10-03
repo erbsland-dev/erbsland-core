@@ -6,10 +6,10 @@
 
 #include "../../PreparedCase.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
@@ -21,7 +21,7 @@ public:
     /// @param keySize AES key length in bytes.
     /// @param operation One fixed operation selected before repetitions.
     /// @param automatic Allow factory selection of an accelerated backend.
-    explicit AesCase(std::size_t keySize, AesOperation operation, bool automatic);
+    explicit AesCase(el::ByteCount keySize, AesOperation operation, bool automatic);
 
 public: // implement TestCase
     [[nodiscard]] auto create(bool automatic) const -> std::unique_ptr<TestCase> override;
@@ -34,7 +34,7 @@ private:
     [[nodiscard]] auto operationName() const -> el::String;
 
 private:
-    std::size_t _keySize;    ///< Scenario configuration.
+    el::ByteCount _keySize;  ///< Scenario configuration.
     AesOperation _operation; ///< Scenario configuration.
     bool _automatic;         ///< Scenario configuration.
 };

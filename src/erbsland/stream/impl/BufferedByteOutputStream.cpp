@@ -3,8 +3,8 @@
 #include "BufferedByteOutputStream.hpp"
 
 #include "BufferedByteOutputStreamData.hpp"
-#include "IoService.hpp"
 
+#include "../../err/RuntimeError.hpp"
 #include "../../mem/impl/RingBufferWriter.hpp"
 #include "../../text/impl/StringEncodingWriter.hpp"
 #include "../../text/Literals.hpp"
@@ -19,10 +19,14 @@
 
 namespace erbsland::stream::impl {
 
+using namespace mem;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-BufferedByteOutputStream::BufferedByteOutputStream(NativeByteStreamPtr nativeStream, OutputStreamSettings settings) :
-    _data{std::make_shared<BufferedByteOutputStreamData>(std::move(nativeStream), settings)} {
+BufferedByteOutputStream::BufferedByteOutputStream(
+    NativeByteStreamPtr nativeStream, OutputStreamSettings settings, util::impl::WorkerReservation admission) :
+    _data{std::make_shared<BufferedByteOutputStreamData>(std::move(nativeStream), settings, std::move(admission))} {
 }
 
 BufferedByteOutputStream::~BufferedByteOutputStream() {
@@ -73,11 +77,11 @@ auto BufferedByteOutputStream::flush() -> StreamWriteStatus {
     _data->workInProgress = true;
     const auto generation = ++_data->flushGeneration;
     const auto data = _data;
-    IoService::submitIoWork([data, generation]() -> void {
+    _data->work.submit([data, generation]() -> void {
         auto failure = std::exception_ptr{};
         try {
             data->native->flush();
-        } catch (...) {
+        } catch (const err::RuntimeError &) {
             failure = std::current_exception();
         }
         {
@@ -143,7 +147,7 @@ auto BufferedByteOutputStream::createErrorContext() const noexcept -> StreamErro
     return _data->native->createErrorContext();
 }
 
-auto BufferedByteOutputStream::write(const mem::ConstByteSpan bytes) -> StreamWriteStatus {
+auto BufferedByteOutputStream::write(const ConstByteSpan bytes) -> StreamWriteStatus {
     if (bytes.empty()) {
         return StreamWriteStatus::Success;
     }
@@ -173,14 +177,12 @@ auto BufferedByteOutputStream::write(const mem::ConstByteSpan bytes) -> StreamWr
         if (!_data->workInProgress && _data->front.isEmpty() && _data->back.isEmpty()) {
             const auto frontCount = std::min(bytes.size(), _data->front.capacity().toSizeT());
             const auto backCount = bytes.size() - frontCount;
-            if (isSuccessful(_data->back.reserveAdditional(unit::ByteLength::fromSizeT(backCount)))) {
-                if (_data->front.write(mem::ConstByteSpan{bytes.data(), frontCount}) !=
-                    unit::ByteLength::fromSizeT(frontCount)) {
+            if (isSuccessful(_data->back.reserveAdditional(ByteCount::fromSizeT(backCount)))) {
+                if (_data->front.write(ConstByteSpan{bytes.data(), frontCount}) != ByteCount::fromSizeT(frontCount)) {
                     std::terminate();
                 }
                 if (backCount > 0U) {
-                    const auto result =
-                        _data->back.writeExact(mem::ConstByteSpan{bytes.data() + frontCount, backCount});
+                    const auto result = _data->back.writeExact(ConstByteSpan{bytes.data() + frontCount, backCount});
                     if (isFailure(result)) {
                         std::terminate();
                     }
@@ -202,8 +204,8 @@ auto BufferedByteOutputStream::write(const mem::ConstByteSpan bytes) -> StreamWr
 }
 
 template <typename T>
-auto BufferedByteOutputStream::writeEncoded(
-    const T &source, const text::StringEncoding encoding, const text::StringBomMode bomMode) -> StreamWriteStatus {
+auto BufferedByteOutputStream::writeEncoded(const T &source, const StringEncoding encoding, const StringBomMode bomMode)
+    -> StreamWriteStatus {
     auto lock = std::unique_lock{_data->mutex};
     const auto deadline = time::TimePoint::inFuture(_data->settings.timeout());
     while (true) {
@@ -221,10 +223,10 @@ auto BufferedByteOutputStream::writeEncoded(
         }
         const auto previousLength = _data->back.length();
         const auto result = [&]() -> util::Result {
-            if constexpr (std::same_as<T, text::Char>) {
+            if constexpr (std::same_as<T, Char>) {
                 return encodeCharacterToBack(source, encoding, bomMode);
             } else {
-                return text::StringEncoder{source}.encodeTo(_data->back, encoding, bomMode);
+                return StringEncoder{source}.encodeTo(_data->back, encoding, bomMode);
             }
         }();
         if (isSuccessful(result)) {
@@ -244,8 +246,7 @@ auto BufferedByteOutputStream::writeEncoded(
 }
 
 auto BufferedByteOutputStream::encodeCharacterToBack(
-    const text::Char character, const text::StringEncoding encoding, const text::StringBomMode bomMode)
-    -> util::Result {
+    const Char character, const StringEncoding encoding, const StringBomMode bomMode) -> util::Result {
     auto length = encoding.bomLength(bomMode);
     length.addOrThrow(character.encodedBytes(encoding));
     if (isFailure(_data->back.reserveAdditional(length))) {
@@ -262,15 +263,13 @@ auto BufferedByteOutputStream::encodeCharacterToBack(
 }
 
 auto BufferedByteOutputStream::writeEncodedText(
-    const text::String &source, const text::StringEncoding encoding, const text::StringBomMode bomMode)
-    -> StreamWriteStatus {
+    const String &source, const StringEncoding encoding, const StringBomMode bomMode) -> StreamWriteStatus {
     return writeEncoded(source, encoding, bomMode);
 }
 
 auto BufferedByteOutputStream::writeEncodedCharacter(
-    const text::Char character, const text::StringEncoding encoding, const text::StringBomMode bomMode)
-    -> StreamWriteStatus {
-    const auto normalized = character.isValidUnicode() ? character : text::Char::replacement();
+    const Char character, const StringEncoding encoding, const StringBomMode bomMode) -> StreamWriteStatus {
+    const auto normalized = character.isValidUnicode() ? character : Char::replacement();
     return writeEncoded(normalized, encoding, bomMode);
 }
 
@@ -278,14 +277,14 @@ auto BufferedByteOutputStream::supportsPositioning() const noexcept -> bool {
     return _data->native->supportsPositioning();
 }
 
-auto BufferedByteOutputStream::position() const -> unit::ByteIndex {
+auto BufferedByteOutputStream::position() const -> ByteIndex {
     if (!supportsPositioning()) {
         return StreamPositioning::position();
     }
-    return unit::ByteIndex{_data->logicalPosition.load()};
+    return ByteIndex::fromInteger(_data->logicalPosition.load());
 }
 
-auto BufferedByteOutputStream::setPosition(const unit::ByteIndex position) -> StreamPositionStatus {
+auto BufferedByteOutputStream::setPosition(const ByteIndex position) -> StreamPositionStatus {
     if (!supportsPositioning()) {
         return StreamPositioning::setPosition(position);
     }
@@ -303,7 +302,7 @@ auto BufferedByteOutputStream::setPosition(const unit::ByteIndex position) -> St
     return StreamPositionStatus::Success;
 }
 
-auto BufferedByteOutputStream::movePosition(const StreamPositionOrigin origin, const unit::ByteOffset offset)
+auto BufferedByteOutputStream::movePosition(const StreamPositionOrigin origin, const ByteOffset offset)
     -> StreamPositionStatus {
     if (!supportsPositioning()) {
         return StreamPositioning::movePosition(origin, offset);
@@ -314,9 +313,9 @@ auto BufferedByteOutputStream::movePosition(const StreamPositionOrigin origin, c
         return StreamPositionStatus::Timeout;
     }
     try {
-        auto result = unit::ByteIndex{};
+        auto result = ByteIndex{};
         if (origin == StreamPositionOrigin::Current) {
-            const auto current = unit::ByteIndex{_data->logicalPosition.load()};
+            const auto current = ByteIndex::fromInteger(_data->logicalPosition.load());
             result = _data->native->setPosition(current.movedOrThrow(offset));
         } else {
             result = _data->native->movePosition(origin, offset);
@@ -351,7 +350,7 @@ auto BufferedByteOutputStream::beginPositioning(std::unique_lock<std::mutex> &lo
     return true;
 }
 
-void BufferedByteOutputStream::completePositioning(const unit::ByteIndex position) {
+void BufferedByteOutputStream::completePositioning(const ByteIndex position) {
     _data->logicalPosition.store(position.toRawValue());
     cancelPositioning();
 }

@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/cterm/impl/PosixBackend.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <sys/select.h>
 #include <unistd.h>
 
 #include <array>
+#include <memory>
 #include <stdexcept>
 #include <thread>
 
@@ -37,26 +40,14 @@ class PosixBackendTest final : public el::UnitTest {
         std::array<int, 2> _descriptors{-1, -1};
     };
 
-    /// Redirect standard input to a bounded test pipe and restore its original mode.
+    /// Supply a private input pipe without replacing the process-wide standard input.
     /// @notest{Test-local native input fixture.}
     class InputPipe final {
     public:
-        InputPipe() :
-            _savedInput{::dup(STDIN_FILENO)},
-            _backend{el::cterm::impl::PosixBackend::getOrCreate(el::cterm::TerminalFlag::NoSignalHandling)},
-            _originalMode{_backend->inputMode()} {
-            if (_savedInput < 0 || ::dup2(_pipe.readDescriptor(), STDIN_FILENO) < 0) {
-                throw std::runtime_error{"Failed to redirect test input."};
-            }
-            _backend->purgePendingInput();
+        InputPipe() : _backend{std::make_shared<el::cterm::impl::PosixBackend>(_pipe.readDescriptor())} {
             _backend->setInputMode(el::cterm::Input::Mode::Key);
         }
-        ~InputPipe() {
-            _backend->setInputMode(_originalMode);
-            _backend->purgePendingInput();
-            static_cast<void>(::dup2(_savedInput, STDIN_FILENO));
-            static_cast<void>(::close(_savedInput));
-        }
+        ~InputPipe() = default;
         InputPipe(const InputPipe &) = delete;
         InputPipe(InputPipe &&) = delete;
         auto operator=(const InputPipe &) -> InputPipe & = delete;
@@ -68,12 +59,27 @@ class PosixBackendTest final : public el::UnitTest {
 
     private:
         Pipe _pipe;
-        int _savedInput;
         el::cterm::BackendPtr _backend;
-        el::cterm::Input::Mode _originalMode;
     };
 
 public:
+    void testIsolatedInputKeepsGlobalBackend() {
+        const auto global = el::cterm::impl::PosixBackend::getOrCreate(el::cterm::TerminalFlag::NoSignalHandling);
+        {
+            const auto first = InputPipe{};
+            const auto second = InputPipe{};
+            REQUIRE_EQUAL(el::cterm::impl::PosixBackend::instance(), global.get());
+            first.write("a", 1U);
+            second.write("b", 1U);
+            REQUIRE_EQUAL(first.backend()->readKey(el::time::Milliseconds{}), el::cterm::Key{U'a'});
+            REQUIRE_EQUAL(second.backend()->readKey(el::time::Milliseconds{}), el::cterm::Key{U'b'});
+        }
+        REQUIRE_EQUAL(el::cterm::impl::PosixBackend::instance(), global.get());
+    }
+    void testInvalidInputDescriptor() {
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::cterm::impl::PosixBackend{-1});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, el::cterm::impl::PosixBackend{FD_SETSIZE});
+    }
     void testPipeIsNotInteractiveOutput() {
         const auto pipe = Pipe{};
 

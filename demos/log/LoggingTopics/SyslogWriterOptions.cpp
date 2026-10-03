@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/HostEndpoint.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/SyslogLogWriterOptions.hpp>
+#include <erbsland/SyslogTransport.hpp>
 
 #include <memory>
 #include <vector>
@@ -129,7 +136,7 @@ void syslogTlsLabel() {
 /// causing unbounded memory growth in the application.
 void syslogMaximumPendingBytes() {
     auto options = el::SyslogLogWriterOptions{};
-    options.setMaximumPendingBytes(el::ByteLength{32U});
+    options.setMaximumPendingBytes(el::ByteCount{32U});
     auto configuration = el::LogConfiguration{};
     configuration.addWriter(el::LogWriter::createForSyslog(options));
     el::io::printLine("Maximum pending bytes: "_el, options.maximumPendingBytes());

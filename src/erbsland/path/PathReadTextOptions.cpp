@@ -4,36 +4,39 @@
 
 namespace erbsland::path {
 
-PathReadTextOptions::PathReadTextOptions(unit::ByteLength maximumByteLength) : _maximumByteLength{maximumByteLength} {
+using namespace text;
+using namespace unit;
+
+PathReadTextOptions::PathReadTextOptions(ByteCount maximumByteLength) : _maximumByteLength{maximumByteLength} {
 }
 
-PathReadTextOptions::PathReadTextOptions(unit::CpLength maximumCpLength) : _maximumCpLength{maximumCpLength} {
+PathReadTextOptions::PathReadTextOptions(CpCount maximumCpLength) : _maximumCpLength{maximumCpLength} {
 }
 
-PathReadTextOptions::PathReadTextOptions(text::StringEncoding encoding) : _encoding{encoding} {
+PathReadTextOptions::PathReadTextOptions(StringEncoding encoding) : _encoding{encoding} {
 }
 
-auto PathReadTextOptions::setEncoding(text::StringEncoding value) -> PathReadTextOptions & {
+auto PathReadTextOptions::setEncoding(StringEncoding value) -> PathReadTextOptions & {
     _encoding = value;
     return *this;
 }
 
-auto PathReadTextOptions::setBomMode(text::StringBomMode value) -> PathReadTextOptions & {
+auto PathReadTextOptions::setBomMode(StringBomMode value) -> PathReadTextOptions & {
     _bomMode = value;
     return *this;
 }
 
-auto PathReadTextOptions::setEncodingMode(text::EncodingMode value) -> PathReadTextOptions & {
+auto PathReadTextOptions::setEncodingMode(EncodingMode value) -> PathReadTextOptions & {
     _encodingMode = value;
     return *this;
 }
 
-auto PathReadTextOptions::setMaximumByteLength(unit::ByteLength value) -> PathReadTextOptions & {
+auto PathReadTextOptions::setMaximumByteLength(ByteCount value) -> PathReadTextOptions & {
     _maximumByteLength = value;
     return *this;
 }
 
-auto PathReadTextOptions::setMaximumCpLength(unit::CpLength value) -> PathReadTextOptions & {
+auto PathReadTextOptions::setMaximumCpLength(CpCount value) -> PathReadTextOptions & {
     _maximumCpLength = value;
     return *this;
 }

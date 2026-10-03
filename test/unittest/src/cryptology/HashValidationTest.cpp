@@ -3,7 +3,7 @@
 
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/Hasher.hpp>
+#include <erbsland/Hasher.hpp>
 
 #include <array>
 #include <span>
@@ -48,8 +48,17 @@ public:
                 HashAlgorithm::Sha2_384,
                 HashAlgorithm::Sha2_512,
                 HashAlgorithm::Md5}) {
-            for (const auto length : {55U, 56U, 63U, 64U, 111U, 112U, 127U, 128U}) {
-                const auto message = el::mem::ByteBlock{el::unit::ByteLength{length}, el::mem::Byte{0xa5U}};
+            for (
+                const auto length :
+                {el::unit::ByteCount{55U},
+                    el::unit::ByteCount{56U},
+                    el::unit::ByteCount{63U},
+                    el::unit::ByteCount{64U},
+                    el::unit::ByteCount{111U},
+                    el::unit::ByteCount{112U},
+                    el::unit::ByteCount{127U},
+                    el::unit::ByteCount{128U}}) {
+                const auto message = el::mem::ByteBlock{length, el::mem::Byte{0xa5U}};
                 auto whole = Hasher{algorithm};
                 whole.update(message);
                 const auto expected = whole.finalize();

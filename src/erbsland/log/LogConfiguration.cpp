@@ -4,7 +4,7 @@
 
 #include "LogWriter.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <utility>
@@ -20,22 +20,23 @@ auto LogConfiguration::setLineFormat(LogLineFormat value) noexcept -> LogConfigu
 
 auto LogConfiguration::setManagerOptions(LogManagerOptions value) -> LogConfiguration & {
     if (value.reservedErrorEntries() > value.maximumEntries()) {
-        throw err::ParameterError{
+        throw err::ParameterFailure{
             "The reserved log entry count must not exceed the queue limit."_el, "reservedErrorEntries"_el};
     }
     if (value.reservedErrorBytes() > value.maximumBytes()) {
-        throw err::ParameterError{
+        throw err::ParameterFailure{
             "The reserved log byte count must not exceed the queue limit."_el, "reservedErrorBytes"_el};
     }
     _managerOptions = std::move(value);
     return *this;
 }
 
-auto LogConfiguration::addWriter(LogWriterPtr writer, LogWriterFilter filter) -> LogConfiguration & {
+auto LogConfiguration::addWriter(LogWriterPtr writer, LogWriterFilter filter, std::optional<LogLineFormat> lineFormat)
+    -> LogConfiguration & {
     if (!writer) {
-        throw err::ParameterError{"A log writer must not be empty."_el, "writer"_el};
+        throw err::ParameterFailure{"A log writer must not be empty."_el, "writer"_el};
     }
-    _writers.push_back(impl::LogWriterBinding{std::move(writer), std::move(filter)});
+    _writers.push_back(impl::LogWriterBinding{std::move(writer), std::move(filter), std::move(lineFormat)});
     return *this;
 }
 
@@ -52,18 +53,6 @@ auto LogConfiguration::isTraceSectionEnabled(const LogTraceSection &section) con
     }
     for (const auto &enabled : _traceSections) {
         if (enabled == section) {
-            return true;
-        }
-    }
-    return false;
-}
-
-auto LogConfiguration::acceptsTrace(const LogPath &path, const LogTraceSection &section) const noexcept -> bool {
-    if (!isTraceSectionEnabled(section)) {
-        return false;
-    }
-    for (const auto &binding : _writers) {
-        if (binding.filter.accepts(LogLevel::Trace, path)) {
             return true;
         }
     }

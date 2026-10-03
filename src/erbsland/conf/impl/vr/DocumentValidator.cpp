@@ -19,6 +19,7 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 DocumentValidator::DocumentValidator(RulePtr root, conf::ValuePtr value, const Integer version) :
@@ -201,7 +202,7 @@ auto DocumentValidator::buildKeyIndexAndValidateUniqueness(
     }
     // add all values for each entry to the index and check for uniqueness.
     for (const auto &entry : *listValue) {
-        text::StringList keyElements;
+        StringList keyElements;
         bool atLeastOneValueExists = false;
         for (const auto &valuePath : valuePaths) {
             const auto entryValue = entry->value(valuePath);
@@ -210,7 +211,7 @@ auto DocumentValidator::buildKeyIndexAndValidateUniqueness(
                 keyElements.append(entryValue->toTextRepresentation());
                 atLeastOneValueExists = true;
             } else {
-                keyElements.append(text::String{});
+                keyElements.append(String{});
             }
         }
         if (!atLeastOneValueExists) {
@@ -220,18 +221,18 @@ auto DocumentValidator::buildKeyIndexAndValidateUniqueness(
         if (!success) {
             if (valuePaths.size() == 1) {
                 throwValidationError(
-                    text::StringFormat{"The key '{}' is not unique in the list '{}'. Found a duplicate"_el}.build(
+                    StringFormat{"The key '{}' is not unique in the list '{}'. Found a duplicate"_el}.build(
                         valuePaths.front().toText(), listValue->namePath().toText()),
                     entry->namePath(),
                     entry->location());
             }
-            text::StringList keyNamePathsForError;
+            StringList keyNamePathsForError;
             for (const auto &valuePath : valuePaths) {
                 keyNamePathsForError.append(valuePath.toText());
             }
             throwValidationError(
-                text::StringFormat{"The combines keys '{}' are not unique in the list '{}'. Found a duplicate"_el}
-                    .build(keyNamePathsForError.join("', '"_el), listValue->namePath().toText()),
+                StringFormat{"The combines keys '{}' are not unique in the list '{}'. Found a duplicate"_el}.build(
+                    keyNamePathsForError.join("', '"_el), listValue->namePath().toText()),
                 entry->namePath(),
                 entry->location());
         }
@@ -321,28 +322,28 @@ void DocumentValidator::validateDependencies(const conf::ValuePtr &value, const 
                 throwValidationError(dependency->errorMessage(), value->namePath(), value->location());
             }
 
-            text::String message;
+            String message;
             switch (dependency->mode().raw()) {
             case vr::DependencyMode::If:
-                message = text::StringFormat{"If {} is configured, you must also configure {}"_el}.build(
+                message = StringFormat{"If {} is configured, you must also configure {}"_el}.build(
                     errorNamePathsOr(dependency->sources(), false), errorNamePathsOr(dependency->targets(), false));
                 break;
             case vr::DependencyMode::IfNot:
-                message = text::StringFormat{"If {} is configured, you must {}"_el}.build(
+                message = StringFormat{"If {} is configured, you must {}"_el}.build(
                     errorNamePathsOr(dependency->sources(), false), errorNamePathsOr(dependency->targets(), true));
                 break;
             case vr::DependencyMode::OR: {
                 auto allNamePaths = dependency->sources();
                 allNamePaths.insert(allNamePaths.end(), dependency->targets().begin(), dependency->targets().end());
-                message = text::StringFormat{"You must configure {}"_el}.build(errorNamePathsOr(allNamePaths, false));
+                message = StringFormat{"You must configure {}"_el}.build(errorNamePathsOr(allNamePaths, false));
                 break;
             }
             case vr::DependencyMode::XOR:
-                message = text::StringFormat{"You must either configure {} or configure {}"_el}.build(
+                message = StringFormat{"You must either configure {} or configure {}"_el}.build(
                     errorNamePathsOr(dependency->sources(), false), errorNamePathsOr(dependency->targets(), false));
                 break;
             case vr::DependencyMode::XNOR:
-                message = text::StringFormat{"You must configure {} and configure {}, or none of them"_el}.build(
+                message = StringFormat{"You must configure {} and configure {}, or none of them"_el}.build(
                     errorNamePathsOr(dependency->sources(), false), errorNamePathsOr(dependency->targets(), false));
                 break;
             default:

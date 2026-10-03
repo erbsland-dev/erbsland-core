@@ -9,17 +9,18 @@
 
 namespace erbsland::log {
 
+using namespace text;
 using namespace text::literals;
 
-auto LogTimestampZone::toString() const -> text::String {
-    return _value == Local ? text::String{"local"_el} : text::String{"utc"_el};
+auto LogTimestampZone::toString() const -> String {
+    return _value == Local ? String{"local"_el} : String{"utc"_el};
 }
 
-auto LogTimestampZone::allStrings() -> text::StringList {
-    return text::StringList{"utc"_el, "local"_el};
+auto LogTimestampZone::allStrings() -> StringList {
+    return StringList{"utc"_el, "local"_el};
 }
 
-auto LogTimestampZone::fromString(const text::String &text) noexcept -> std::optional<LogTimestampZone> {
+auto LogTimestampZone::fromString(const String &text) noexcept -> std::optional<LogTimestampZone> {
     const auto compare = ::erbsland::text::cCaseInsensitive.asciiComparisonFn();
     if (text.compare("utc"_el, compare) == std::strong_ordering::equal) {
         return Utc;
@@ -30,7 +31,7 @@ auto LogTimestampZone::fromString(const text::String &text) noexcept -> std::opt
     return std::nullopt;
 }
 
-auto LogTimestampZone::fromStringOrThrow(const text::String &text) -> LogTimestampZone {
+auto LogTimestampZone::fromStringOrThrow(const String &text) -> LogTimestampZone {
     if (const auto result = fromString(text); result.has_value()) {
         return *result;
     }

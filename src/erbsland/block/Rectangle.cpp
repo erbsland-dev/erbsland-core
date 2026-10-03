@@ -4,11 +4,12 @@
 
 #include "AlignedSource.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::block {
 
+using namespace err;
 using namespace text::literals;
 
 auto Rectangle::operator|(const Rectangle &other) const noexcept -> Rectangle {
@@ -186,19 +187,19 @@ auto Rectangle::gridCells(
     const int rows, const int columns, const Coordinate horizontalSpacing, const Coordinate verticalSpacing) const
     -> std::vector<Rectangle> {
     if (rows < 1) {
-        throw err::ParameterError{"BlockRect::gridCells() requires at least one row."_el, "rows"_el};
+        throw ParameterFailure{"BlockRect::gridCells() requires at least one row."_el, "rows"_el};
     }
     if (columns < 1) {
-        throw err::ParameterError{"BlockRect::gridCells() requires at least one column."_el, "columns"_el};
+        throw ParameterFailure{"BlockRect::gridCells() requires at least one column."_el, "columns"_el};
     }
     if (horizontalSpacing < 0 || verticalSpacing < 0) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "BlockRect::gridCells() spacing must not be negative."_el, "horizontalSpacing/verticalSpacing"_el};
     }
     const auto usableWidth = width() - horizontalSpacing * Coordinate{columns - 1};
     const auto usableHeight = height() - verticalSpacing * Coordinate{rows - 1};
     if (usableWidth < columns || usableHeight < rows) {
-        throw err::ParameterError{"BlockRect::gridCells() cannot create cells of at least 1x1."_el, "rows/columns"_el};
+        throw ParameterFailure{"BlockRect::gridCells() cannot create cells of at least 1x1."_el, "rows/columns"_el};
     }
     const auto baseCellWidth = usableWidth / columns;
     const auto extraWidthCells = usableWidth % columns;

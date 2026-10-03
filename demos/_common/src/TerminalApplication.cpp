@@ -1,12 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "TerminalApplication.hpp"
+
+#include "DemoTerminal.hpp"
+
+#include <erbsland/ExitCode.hpp>
 
 namespace demo {
 
 void TerminalApplication::initialize() {
-    enableTerminal();
+    DemoTerminal::enable(*this);
     terminal()->input().setMode(Input::Mode::Key);
     _updateSettings.setMinimumSize(Size{Coordinate{60}, Coordinate{20}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
@@ -17,6 +20,9 @@ void TerminalApplication::initialize() {
 
 auto TerminalApplication::main() -> erbsland::ExitCode {
     if (auto exitCode = beforeMain(); exitCode != 0) {
+        if (exitCode == -1) {
+            return el::ExitCode::success();
+        }
         return el::ExitCode{exitCode};
     }
     while (!_quitRequested) {
@@ -70,6 +76,11 @@ void TerminalApplication::onKey(const Key &key) {
 
 auto TerminalApplication::loopInterval() const noexcept -> std::chrono::milliseconds {
     return std::chrono::milliseconds{90};
+}
+
+auto TerminalApplication::createAndInitializeTerminal(const el::block::Size size, const el::cterm::TerminalFlags flags)
+    -> el::cterm::TerminalPtr {
+    return DemoTerminal::create(size, flags);
 }
 
 }

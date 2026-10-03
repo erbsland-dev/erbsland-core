@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/text/u8/impl/U8StringData.hpp>
 #include <erbsland/text/u8/impl/U8StringLiteralStorage.hpp>
 #include <erbsland/text/u8/impl/U8StringReadTools.hpp>
 #include <erbsland/text/u8/impl/U8StringSharedStorage.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstring>
@@ -16,8 +16,8 @@
 #include <string>
 #include <string_view>
 
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteRange;
 
 TESTED_TARGETS(U8StringSharedStorage)
@@ -45,7 +45,7 @@ public:
         REQUIRE_EQUAL(storage.range(), ByteRange::fromSizeT(5U));
         REQUIRE_EQUAL(toString(storage.dataView()), std::string{"Hello"});
         REQUIRE_EQUAL(storage.data()[5], '\0');
-        REQUIRE_EQUAL(storage.capacity(), ByteLength{5U});
+        REQUIRE_EQUAL(storage.capacity(), ByteCount{5U});
         REQUIRE_EQUAL(storage.memoryUsage(), expectedMemoryUsage(5U));
     }
 
@@ -65,7 +65,7 @@ public:
 
     void testStorageFromDataViewCopiesSelectedRange() {
         const auto source = el::text::impl::U8StringLiteralStorage{"abcdef", 6U};
-        const auto range = ByteRange{ByteIndex{2U}, ByteLength{3U}};
+        const auto range = ByteRange{ByteIndex{2U}, ByteCount{3U}};
         const auto storage = el::text::impl::U8StringSharedStorage{source.dataView(range)};
 
         REQUIRE_EQUAL(toString(storage.dataView()), std::string{"cde"});
@@ -96,7 +96,7 @@ public:
 
     void testStorageFromExistingSharedDataAndRange() {
         auto data = el::text::impl::createU8StringData(std::string_view{"abcdef"});
-        const auto range = ByteRange{ByteIndex{1U}, ByteLength{3U}};
+        const auto range = ByteRange{ByteIndex{1U}, ByteCount{3U}};
         const auto storage = el::text::impl::U8StringSharedStorage{data, range};
 
         REQUIRE_EQUAL(toString(storage.dataView()), std::string{"bcd"});
@@ -106,7 +106,7 @@ public:
 
     void testClearKeepsReservedCapacity() {
         auto storage = el::text::impl::U8StringSharedStorage{std::string_view{"Hello"}};
-        storage.reserve(ByteLength{9U});
+        storage.reserve(ByteCount{9U});
 
         storage.clear();
 
@@ -114,7 +114,7 @@ public:
         REQUIRE_FALSE(storage.sharedData().isNull());
         REQUIRE_NOT_EQUAL(storage.data(), nullptr);
         REQUIRE(storage.range().isEmpty());
-        REQUIRE_EQUAL(storage.capacity(), ByteLength{9U});
+        REQUIRE_EQUAL(storage.capacity(), ByteCount{9U});
         REQUIRE_EQUAL(storage.memoryUsage(), expectedMemoryUsage(9U));
     }
 
@@ -153,7 +153,7 @@ public:
 
     void testDetachPartialRangeMaterializesSelectedBytes() {
         auto data = el::text::impl::createU8StringData(std::string_view{"abcdef"});
-        const auto range = ByteRange{ByteIndex{2U}, ByteLength{2U}};
+        const auto range = ByteRange{ByteIndex{2U}, ByteCount{2U}};
         auto storage = el::text::impl::U8StringSharedStorage{data, range};
         const auto *oldData = storage.sharedData().constGet();
 
@@ -168,24 +168,24 @@ public:
     void testReserveEmptyStorageCreatesReservedCapacity() {
         auto storage = el::text::impl::U8StringSharedStorage{};
 
-        storage.reserve(ByteLength{8U});
+        storage.reserve(ByteCount{8U});
 
         REQUIRE(storage.isEmpty());
         REQUIRE_FALSE(storage.sharedData().isNull());
         REQUIRE(storage.range().isEmpty());
-        REQUIRE_EQUAL(storage.capacity(), ByteLength{8U});
+        REQUIRE_EQUAL(storage.capacity(), ByteCount{8U});
         REQUIRE_EQUAL(storage.memoryUsage(), expectedMemoryUsage(8U));
     }
 
     void testReservePartialRangeMaterializesSelectedBytes() {
         auto data = el::text::impl::createU8StringData(std::string_view{"abcdef"});
-        auto storage = el::text::impl::U8StringSharedStorage{data, ByteRange{ByteIndex{2U}, ByteLength{2U}}};
+        auto storage = el::text::impl::U8StringSharedStorage{data, ByteRange{ByteIndex{2U}, ByteCount{2U}}};
 
-        storage.reserve(ByteLength{6U});
+        storage.reserve(ByteCount{6U});
 
         REQUIRE_EQUAL(toString(storage.dataView()), std::string{"cd"});
         REQUIRE_EQUAL(storage.range(), ByteRange::fromSizeT(2U));
-        REQUIRE_EQUAL(storage.capacity(), ByteLength{6U});
+        REQUIRE_EQUAL(storage.capacity(), ByteCount{6U});
         REQUIRE_EQUAL(storage.sharedData().constGet()->size(), 3U);
         REQUIRE_EQUAL(storage.sharedData().constGet()->capacity(), 7U);
         REQUIRE_EQUAL(storage.data()[2], '\0');
@@ -193,7 +193,7 @@ public:
 
     void testEnsureMutableCapacityKeepsUniqueFullRangeWhenLargeEnough() {
         auto storage = el::text::impl::U8StringSharedStorage{std::string_view{"abc"}};
-        storage.reserve(ByteLength{8U});
+        storage.reserve(ByteCount{8U});
         const auto *oldData = storage.sharedData().constGet();
 
         storage.ensureMutableCapacity(6U);
@@ -201,7 +201,7 @@ public:
         REQUIRE_EQUAL(storage.sharedData().constGet(), oldData);
         REQUIRE_EQUAL(toString(storage.dataView()), std::string{"abc"});
         REQUIRE_EQUAL(storage.range(), ByteRange::fromSizeT(3U));
-        REQUIRE_EQUAL(storage.capacity(), ByteLength{8U});
+        REQUIRE_EQUAL(storage.capacity(), ByteCount{8U});
         REQUIRE_EQUAL(storage.data()[3], '\0');
     }
 
@@ -221,7 +221,7 @@ public:
 
     void testEnsureMutableCapacityMaterializesPartialRangeAndResizeMaintainsNullTerminator() {
         auto data = el::text::impl::createU8StringData(std::string_view{"abcdef"});
-        auto storage = el::text::impl::U8StringSharedStorage{data, ByteRange{ByteIndex{2U}, ByteLength{2U}}};
+        auto storage = el::text::impl::U8StringSharedStorage{data, ByteRange{ByteIndex{2U}, ByteCount{2U}}};
 
         storage.ensureMutableCapacity(8U);
         storage.dataForWrite()[2] = '!';
@@ -229,13 +229,13 @@ public:
 
         REQUIRE_EQUAL(toString(storage.dataView()), std::string{"cd!"});
         REQUIRE_EQUAL(storage.range(), ByteRange::fromSizeT(3U));
-        REQUIRE_GREATER_EQUAL(storage.capacity(), ByteLength{8U});
+        REQUIRE_GREATER_EQUAL(storage.capacity(), ByteCount{8U});
         REQUIRE_EQUAL(storage.data()[3], '\0');
     }
 
     void testShrinkToFitResetsEmptyStorage() {
         auto storage = el::text::impl::U8StringSharedStorage{};
-        storage.reserve(ByteLength{8U});
+        storage.reserve(ByteCount{8U});
 
         storage.shrinkToFit();
 
@@ -247,27 +247,27 @@ public:
 
     void testShrinkToFitMaterializesExactVisibleSize() {
         auto storage = el::text::impl::U8StringSharedStorage{std::string_view{"Hello"}};
-        storage.reserve(ByteLength{9U});
+        storage.reserve(ByteCount{9U});
 
         storage.shrinkToFit();
 
         REQUIRE_EQUAL(toString(storage.dataView()), std::string{"Hello"});
         REQUIRE_EQUAL(storage.range(), ByteRange::fromSizeT(5U));
-        REQUIRE_EQUAL(storage.capacity(), ByteLength{5U});
+        REQUIRE_EQUAL(storage.capacity(), ByteCount{5U});
         REQUIRE_EQUAL(storage.memoryUsage(), expectedMemoryUsage(5U));
     }
 
     void testDataViewWithCustomRange() {
         const auto storage = el::text::impl::U8StringSharedStorage{std::string_view{"abcdef"}};
-        const auto range = ByteRange{ByteIndex{3U}, ByteLength{2U}};
+        const auto range = ByteRange{ByteIndex{3U}, ByteCount{2U}};
 
         REQUIRE_EQUAL(toString(storage.dataView(range)), std::string{"de"});
         REQUIRE_EQUAL(storage.range(), ByteRange::fromSizeT(6U));
     }
 
 private:
-    [[nodiscard]] static auto expectedMemoryUsage(const std::size_t capacity) -> ByteLength {
-        return ByteLength::fromSizeT(sizeof(el::text::impl::U8StringData) + capacity + 1U);
+    [[nodiscard]] static auto expectedMemoryUsage(const std::size_t capacity) -> ByteCount {
+        return ByteCount::fromSizeT(sizeof(el::text::impl::U8StringData) + capacity + 1U);
     }
 
     [[nodiscard]] static auto toString(const el::text::impl::U8StringDataView &view) noexcept -> std::string {

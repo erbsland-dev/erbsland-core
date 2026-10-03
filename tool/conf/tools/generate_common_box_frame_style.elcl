@@ -1,0 +1,5 @@
+#
+# The configuration for the `generate_common_box_style` generator.
+#
+----[ Generate Common Box Frame Style ]-------------------------------------------------------------------------------
+Output File                 : "src/erbsland/cterm/impl/CommonBoxFrameBlockCombinationStyle_data.cpp"

@@ -96,11 +96,108 @@ Recommended Workflow to Create the Content
 * Next, create a logical sequence of sections that answer these questions.
   These sections don't need to have the questions in its titles, they just need to answer them and
   provide a title a reader immediately understands that this section will answer their question.
-* Each section that describes how to use an API must have a demo that demonstrates what it describes.
+* Support API usage with compiled demos.
+  A section can explain the preceding demo or show a focused excerpt instead of introducing another complete program.
   Creating these demos before writing the content can help to find more questions a developer will have.
 * Next, write the sections as described in "Page Structure".
 * After writing the topic page, review it, unbiased and don't be shy to remove/rewrite content if you
   think it does not match our guidelines.
+
+Teach Concepts Through Working Examples
+=======================================
+
+Before drafting, write down the practical question this page answers and what the reader should be able to do after
+reading it.
+Choose an example that demonstrates that outcome, and decide which related questions belong on other pages.
+The example supports the explanation; its execution order does not have to determine the page's structure.
+A topic page does not need to cover every API involved in its example.
+
+Introduce the underlying concept before walking through the demo
+----------------------------------------------------------------
+
+Explain what the relevant API does, why the reader would choose it, and which ownership or execution rules apply.
+Then use focused excerpts to make those rules concrete.
+Connect the example back to the reader's own code: distinguish API requirements from choices made for that demo, and
+explain how common alternatives change the design.
+This is a teaching progression, not a mandatory set of headings for every section.
+
+Introduce the purpose of each operation before its architectural classification
+-------------------------------------------------------------------------------
+
+For example, explain that a method queues work on a loop before introducing the target interface and its type aliases.
+Use concrete object names consistently until the reader has enough context to understand the general terminology.
+
+Explain the normal execution path before discussing variations
+--------------------------------------------------------------
+
+When work is deferred, show what runs now, what runs later, and what keeps the required state alive between them.
+Place prerequisites beside the first code that depends on them: a required execution context or stored owner should
+never be a surprise several sections later.
+Keep rules necessary for safe use of the shown example there, even when more advanced lifetime details belong elsewhere.
+
+Give each example one teaching purpose
+--------------------------------------
+
+Do not add unrelated accessors, scheduling, output, or framework features merely because they are available.
+Use a consistent scenario where it helps readers connect the concepts.
+Do not turn the page into a commentary on every function in the demo.
+If a variation requires a second framework and several new concepts, consider a separate page or a link to an existing
+example instead.
+
+Keep declarations that explain ownership and execution visible
+--------------------------------------------------------------
+
+Includes and unrelated scaffolding may be omitted, but hiding the stored pointer or state that makes an example work
+prevents readers from understanding it.
+Make clear when an example is an excerpt; only call it complete when the displayed code supports that claim.
+A demo block already lets readers expand its referenced source file, so avoid separate full listings or directions whose
+only purpose is to show the rest of that file.
+There is no need to repeatedly describe omitted boilerplate; see :doc:`demo_integration` for choosing and presenting
+excerpts.
+
+Explain details in proportion to their role in the task
+-------------------------------------------------------
+
+After the working pattern is established, cover common variations and the relevant error paths.
+Put exhaustive contracts, uncommon exceptions, and implementation details in the appropriate reference or advanced page.
+Keep the learning path within topic pages: link to the relevant advanced topic when readers need a deeper explanation.
+API symbol links still provide access to individual reference entries.
+Avoid qualifying every sentence with exceptions from other APIs.
+
+Section Titles That Help Readers Navigate
+=========================================
+
+A section title should identify its subject even when read without the surrounding text.
+Readers scan headings to find a concept, API operation, or problem; name that subject directly.
+For example, "Callback Execution and Responsiveness" is more useful than "Give Each Callback Time to Finish", and
+"Result Ownership and Synchronization" is clearer than "Decide Who Owns the Work and Results".
+
+Both descriptive titles and titles with verbs can work.
+"Cancelling a Timer" names a concrete operation; "Choose Whether You Need a Handle" leaves the reader guessing which
+handle and why it matters.
+Avoid metaphors, generic advice, and a repeated imperative formula.
+
+Read the headings alone and check that they describe the content and fulfill the promise of the page title.
+The tree of headings, with the page title at its root should allow the reader to navigate to the section of
+a page their are interested in.
+
+Review the Reader's Path
+========================
+
+Review the displayed page, including the code selected by demo directives, rather than only the source demo.
+Before considering the page finished, check:
+
+* Can the reader identify the task and the expected result before learning several unfamiliar type names?
+* Can they find a particular subject by scanning the headings alone?
+* Can they explain how to use the concepts and APIs in their own code, beyond reproducing the demo?
+* Can they follow the first example's execution and locate the state that must survive between calls?
+* Is each non-obvious prerequisite explained when it first matters?
+* Does every substantial part of an example help answer its section's question?
+* Do later sections build on the established example, or repeatedly require a new mental model?
+* Can a detail be moved to an existing page without making the demonstrated pattern unsafe or misleading?
+
+When the answer exposes a structural problem, revise the example or section order first.
+Adding more explanatory paragraphs to an overloaded example usually increases the reader's work.
 
 Recommended Writing Style
 =========================
@@ -108,7 +205,7 @@ Recommended Writing Style
 Additionally to the writing style guidelines, topic pages shall follow these writing style rules:
 
 * Write in the style of a high-quality technical introduction aimed at intelligent readers who may be new to the topic.
-* Use clear, direct, and approachable language.
+* Use clear, direct, and approachable language that is also well understood by non-native English speakers.
 * Introduce concepts from the reader's perspective by explaining why they matter before discussing how they work.
 * Build ideas incrementally, using concrete examples and realistic scenarios rather than abstract definitions.
 * Maintain a conversational but professional tone, avoiding marketing language, unnecessary enthusiasm,
@@ -139,3 +236,5 @@ Related Guidelines
 *   Read :doc:`writing_style` about the tone, vocabulary and style how our documentation shall be written.
 *   Read :doc:`demo` how to write demos and integrate them into documentation pages.
 *   Read :doc:`examples` for guidelines how to write example and demos code.
+
+See :doc:`demo_integration` for synchronized source excerpts, selectors, captured output, and full-source views.

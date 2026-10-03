@@ -19,7 +19,7 @@ public:
 public: // implement InputBase
     [[nodiscard]] auto read() -> CharAndPosition override;
     [[nodiscard]] auto peek() -> CharAndPosition override;
-    void skip(unit::CpLength characterCount) override;
+    void skip(unit::CpCount characterCount) override;
 
 private:
     /// Reject a decoded null character in an input result.

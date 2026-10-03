@@ -4,8 +4,8 @@
 
 #include "../SecureEraseGuard.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../mem/ByteArray.hpp"
 #include "../../../mem/ByteSpan.hpp"
 #include "../../../text/Literals.hpp"
@@ -64,17 +64,17 @@ public:
         _isFinalized = false;
     }
     /// Add exact message bytes.
-    /// @param data The next bytes of the authenticated message.
-    /// @throws err::LogicError If this state is already finalized.
-    /// @throws err::ParameterError If the hash message-length limit would be exceeded.
+    /// This state must not have been finalized.
+    /// @param data The next bytes of the authenticated message. Their addition must not exceed the hash message-length
+    /// limit.
     void update(mem::ConstByteSpan data) {
         using namespace text::literals;
         if (_isFinalized) {
-            throw err::LogicError{"Cannot add HMAC data after finalization."_el};
+            throw err::LogicFailure{"Cannot add HMAC data after finalization."_el};
         }
         const auto dataLength = static_cast<uint64_t>(data.size());
         if (dataLength > tMaximumMessageLength - _messageLength) {
-            throw err::ParameterError{"The HMAC message is too long."_el, "data"_el};
+            throw err::ParameterFailure{"The HMAC message is too long."_el, "data"_el};
         }
         // RFC 2104 calls this input `text`; it follows the already processed `K0 xor ipad` block.
         _inner.update(data);

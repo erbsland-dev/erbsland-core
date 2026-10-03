@@ -42,7 +42,7 @@ stable verifier.
 .. erbsland-demo::
     :source: cryptology/SignedByteBlocks/CreateKeys.cpp
     :exec: cryptology/signed_byte_blocks --demo CreateKeys
-    :source-sha256: 60ee0c7ff7a9b066e100aca15ec190398e76b81c4b8b00bd322b917a36ddd10b
+    :sha256: c9449e1453c4c6f352755f292d3466dfc40bdc2a678a289433f7b2f953f4e0f7
 
 .. code-block:: cpp
 
@@ -63,10 +63,12 @@ stable verifier.
         el::io::printLine("Publisher and reader keys match: "_el, publisherKey.matches(readerKey));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Publisher and reader keys match: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mPublisher and reader keys match: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -88,7 +90,7 @@ After signing, ``toByteBlock()`` returns the exact binary record to store or tra
 .. erbsland-demo::
     :source: cryptology/SignedByteBlocks/SignAndVerify.cpp
     :exec: cryptology/signed_byte_blocks --demo SignAndVerify
-    :source-sha256: 1324fff93b5069e4a34f907f68a77520ff25f0fcb82099f39709810217499350
+    :sha256: c06b8c36672f16ed1a567fda9169c74dfe77a4f7d11fdb6971dbad80bbfb976a
 
 .. code-block:: cpp
 
@@ -111,11 +113,13 @@ After signing, ``toByteBlock()`` returns the exact binary record to store or tra
             signedScore.verify(signingKey.publicKey(), "puzzle.score/v1"_el).has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Serialized signed score bytes: 124
-    Publisher verifies its copy: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSerialized signed score bytes: 124
+        Publisher verifies its copy: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -139,7 +143,7 @@ provisioned public key.
 .. erbsland-demo::
     :source: cryptology/SignedByteBlocks/VerifyRecord.cpp
     :exec: cryptology/signed_byte_blocks --demo VerifyRecord
-    :source-sha256: 756116f0867e0e7d2655cda8eda16dac7a4c3ab9626152e2533aa8ace37fa268
+    :sha256: ac0f1e5a691f9e792293767fd378faa8f85b50805c88a94e1020689c9a19651d
 
 .. code-block:: cpp
 
@@ -157,7 +161,7 @@ provisioned public key.
 
         // Treat bytes from storage or a peer as untrusted, even if the record parses.
         const auto record =
-            el::cryptology::SignedByteBlock::fromByteBlockOrThrow(receivedBytes.span(), el::ByteLength{256U});
+            el::cryptology::SignedByteBlock::fromByteBlockOrThrow(receivedBytes.span(), el::ByteCount{256U});
         // The hint selects a candidate from a trusted local key registry; it is not proof by itself.
         if (!record.untrustedKeyIdHint().has_value() || *record.untrustedKeyIdHint() != "score_2026"_el) {
             throw el::ApplicationError{"Unknown score publisher key."_el};
@@ -168,11 +172,13 @@ provisioned public key.
         el::io::printLine("Wrong purpose accepted: "_el, record.verify(candidateKey, "puzzle.level/v1"_el).has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Verified score matches source: true
-    Wrong purpose accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mVerified score matches source: true
+        Wrong purpose accepted: false␛[0m
 
 .. erbsland-demo-end::
 

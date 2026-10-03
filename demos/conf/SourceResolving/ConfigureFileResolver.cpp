@@ -2,9 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/all_path.hpp>
 #include <erbsland/conf/FileSourceResolver.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/path/all.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -15,7 +21,7 @@ namespace demo {
 /// features disabled.
 void configureFileResolver() {
     auto temporaryOptions = el::PathTempDirectoryOptions{};
-    temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpLength{8U});
+    temporaryOptions.setPrefix("levantamento-"_el).setRandomLength(el::CpCount{8U});
     const auto temporary =
         el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
     const auto root = temporary->path();
@@ -30,7 +36,7 @@ void configureFileResolver() {
     // Accept only exact relative paths without protocol prefixes or wildcards.
     const auto resolver = el::conf::FileSourceResolver::create();
     resolver->disable(el::conf::FileSourceResolver::RecursiveWildcard);
-    resolver->disable(el::conf::FileSourceResolver::FilenameWildcard);
+    resolver->disable(el::conf::FileSourceResolver::Wildcards);
     resolver->disable(el::conf::FileSourceResolver::AbsolutePaths);
     resolver->disable(el::conf::FileSourceResolver::WindowsUNCPath);
     resolver->disable(el::conf::FileSourceResolver::FileProtocol);

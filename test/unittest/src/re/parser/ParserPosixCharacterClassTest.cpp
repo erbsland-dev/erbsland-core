@@ -4,6 +4,7 @@
 #include "ParserBase.hpp"
 
 #include <erbsland/re/StdFormat.hpp>
+#include <erbsland/StringList.hpp>
 
 TESTED_TARGETS(Parser)
 TAGS(Parsing)
@@ -12,7 +13,7 @@ public:
     void testAllNamesUnicode() {
         // All supported names in Unicode mode (default). We do not validate exact set definitions.
         // We only assert that a character class/category node is created and parsing succeeds.
-        const std::vector<String> patterns = {
+        const el::StringList patterns{
             "[[:alnum:]]"_el,
             "[[:alpha:]]"_el,
             "[[:ascii:]]"_el,
@@ -45,7 +46,7 @@ public:
                         });
                 },
                 [&]() -> std::string {
-                    return std::format("Failed at pattern \"{}\"", pat.toSafeString(el::unit::CpLength{200U}));
+                    return std::format("Failed at pattern \"{}\"", pat.toSafeString(el::unit::CpCount{200U}));
                 });
         }
     }
@@ -53,7 +54,7 @@ public:
     void testAllNamesAscii() {
         // Same patterns, but in ASCII mode. Ensure they still parse to a range/category node.
         const GroupFlags ascii{GroupFlag::Ascii};
-        const std::vector<String> patterns = {
+        const el::StringList patterns{
             "[[:alnum:]]"_el,
             "[[:alpha:]]"_el,
             "[[:ascii:]]"_el,
@@ -87,7 +88,7 @@ public:
                         ascii);
                 },
                 [&]() -> std::string {
-                    return std::format("Failed at pattern \"{}\"", pat.toSafeString(el::unit::CpLength{200U}));
+                    return std::format("Failed at pattern \"{}\"", pat.toSafeString(el::unit::CpCount{200U}));
                 });
         }
     }

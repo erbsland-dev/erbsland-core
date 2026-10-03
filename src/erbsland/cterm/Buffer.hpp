@@ -40,9 +40,8 @@ public:
     Buffer();
 
     /// Construct a buffer with the given size and fill it with an initial block.
-    /// @param size The dimensions of the buffer. block::Size must be at least 1x1.
+    /// @param size The buffer dimensions. Must be at least 1x1 and not exceed `cMaximumSize` (10,000x10,000).
     /// @param fillChar The optional fill character for the buffer.
-    /// @throws err::ParameterError if size is invalid.
     explicit Buffer(block::Size size, Block fillChar = Block::space());
 
     // defaults
@@ -74,11 +73,13 @@ public: // builders
     /// This function splits the given string into lines and creates a buffer with a matching size.
     /// @param text The string to split into lines and create a buffer from. Must not be empty.
     /// @return A buffer containing the lines from the input string.
+    /// @throws err::OutOfRangeError If the source contains no text or lines.
     [[nodiscard]] static auto fromLinesInString(const BlockString &text) -> Buffer;
 
     /// Creates a buffer from the lines in a string.
     /// @param lines The lines to create the buffer from. Must not be empty.
     /// @return A buffer containing the lines from the input string.
+    /// @throws err::OutOfRangeError If the source contains no text or lines.
     [[nodiscard]] static auto fromLines(const BlockStringLines &lines) -> Buffer;
 
 public: // compatibility

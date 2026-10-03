@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-************
-Buffer Views
-************
+**************************************
+Viewing and Scrolling Terminal Buffers
+**************************************
 
 Buffer views expose a rectangular window onto a larger readable buffer.
 
@@ -14,11 +14,9 @@ panels, editors, minimaps, or diagnostic tools.
 ``BufferViewBase`` provides the shared view behavior, ``BufferView`` owns a shared pointer to the underlying content,
 and ``BufferConstRefView`` is the lightweight, stack-friendly variant for temporary rendering.
 
-Usage
-=====
 
 Viewing a Portion of a Larger Buffer
-------------------------------------
+====================================
 
 Use a buffer view when you want to render only a specific region of a larger logical canvas.
 
@@ -38,7 +36,7 @@ The view translates its local coordinates into the corresponding positions of th
 This allows you to render just the visible portion without copying or modifying the original content.
 
 Scrolling by Moving the View Rectangle
--------------------------------------------
+======================================
 
 ``BufferViewBase`` stores the currently visible rectangle, which you can update as the user scrolls or pans through the
 content.
@@ -55,7 +53,7 @@ By moving the view rectangle, you change which part of the content is visible—
 redrawing the underlying buffer.
 
 Choosing Between Shared and Referenced Views
---------------------------------------------
+============================================
 
 Choose ``BufferView`` when the view needs to outlive the current scope or be stored as part of a larger object.
 
@@ -73,7 +71,7 @@ Both variants implement ``ReadableBuffer``, so the rest of your rendering pipeli
 source of terminal cells.
 
 Showing Cropped Edges Explicitly
---------------------------------
+================================
 
 ``CropEdges`` describes which sides of a view are clipped by the available content.
 

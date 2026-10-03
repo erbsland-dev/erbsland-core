@@ -10,6 +10,7 @@ target_sources(erbsland-core-unittest PRIVATE
         BitmapTestSupport.hpp
         BufferConvenienceTest.cpp
         BufferDrawOptionsTest.cpp
+        BufferRenderTest.cpp
         BufferTest.cpp
         BufferViewTest.cpp
         CursorBufferTest.cpp
@@ -18,5 +19,6 @@ target_sources(erbsland-core-unittest PRIVATE
         ReferenceBuffer.hpp
         RemappedBufferTest.cpp
         RemappedBufferTestSupport.hpp
+        TerminalEmulationTest.cpp
         WriteClippedBufferTest.cpp
 )

@@ -4,6 +4,7 @@
 
 #include "Bitmap_fwd.hpp"
 #include "Block.hpp"
+#include "BufferRenderOptions.hpp"
 #include "ReadableBuffer_fwd.hpp"
 #include "WritableBuffer_fwd.hpp"
 
@@ -33,6 +34,13 @@ public: // API
     /// Create a writeable copy of this buffer.
     /// This will copy every block from this buffer into a new independent instance.
     [[nodiscard]] virtual auto clone() const -> WritableBufferPtr = 0;
+
+public: // conversion
+    /// Render logical rows as plain text or ANSI text, without a final newline.
+    /// @param options Output format and trimming policies.
+    /// @return The rendered buffer; ANSI output resets presentation at its boundaries.
+    /// @seedoc{/reference/cterm/buffer_rendering}
+    [[nodiscard]] auto toString(const BufferRenderOptions &options = {}) const -> text::String;
 
 public: // convenience methods
     /// Count the differences from this to another buffer.

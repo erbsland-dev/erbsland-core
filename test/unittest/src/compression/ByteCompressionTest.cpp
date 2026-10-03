@@ -1,18 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/compression/ByteCompressor.hpp>
-#include <erbsland/compression/ByteDecompressor.hpp>
-#include <erbsland/compression/CompressionAlgorithm.hpp>
-#include <erbsland/compression/CompressionError.hpp>
-#include <erbsland/compression/CompressionFormat.hpp>
-#include <erbsland/compression/CompressionLevel.hpp>
-#include <erbsland/compression/DecompressionOptions.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/ByteCompressor.hpp>
+#include <erbsland/ByteDecompressor.hpp>
+#include <erbsland/CompressionAlgorithm.hpp>
+#include <erbsland/CompressionError.hpp>
+#include <erbsland/CompressionFormat.hpp>
+#include <erbsland/CompressionLevel.hpp>
+#include <erbsland/DecompressionOptions.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ParseError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -40,8 +40,8 @@ public:
     void testOptionsDefaults() {
         const auto options = el::compression::DecompressionOptions{};
         REQUIRE_FALSE(options.expectedOutputLength().has_value());
-        REQUIRE_EQUAL(options.maximumOutputLength(), el::unit::ByteLength{256U * 1024U * 1024U});
-        REQUIRE_EQUAL(options.maximumWorkspaceLength(), el::unit::ByteLength{64U * 1024U * 1024U});
+        REQUIRE_EQUAL(options.maximumOutputLength(), el::unit::ByteCount{256U * 1024U * 1024U});
+        REQUIRE_EQUAL(options.maximumWorkspaceLength(), el::unit::ByteCount{64U * 1024U * 1024U});
     }
 
     void testLz4RoundTrip() {
@@ -114,8 +114,7 @@ public:
                 0xafU,
                 0x06U});
         REQUIRE_EQUAL(
-            decompress(el::compression::CompressionAlgorithm::Deflate, dynamic).length(),
-            el::unit::ByteLength{23'664U});
+            decompress(el::compression::CompressionAlgorithm::Deflate, dynamic).length(), el::unit::ByteCount{23'664U});
     }
 
     void testBzip2RoundTrip() {
@@ -303,7 +302,7 @@ public:
             }
         }
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             (el::compression::ByteCompressor{
                 el::compression::CompressionAlgorithm::Lz4Block, el::compression::CompressionFormat::Zip}));
     }
@@ -328,19 +327,19 @@ public:
             el::compression::ByteCompressor{
                 el::compression::CompressionAlgorithm::Deflate, el::compression::CompressionFormat::Raw}
                 .compress(source);
-        auto options = el::compression::DecompressionOptions{}.setMaximumOutputLength(el::unit::ByteLength{2U});
+        auto options = el::compression::DecompressionOptions{}.setMaximumOutputLength(el::unit::ByteCount{2U});
         REQUIRE_THROWS_AS(
             el::err::OutOfRangeError,
             el::compression::ByteDecompressor{
                 el::compression::CompressionAlgorithm::Deflate, el::compression::CompressionFormat::Raw, options}
                 .decompress(compressed));
-        options = el::compression::DecompressionOptions{}.setExpectedOutputLength(el::unit::ByteLength{4U});
+        options = el::compression::DecompressionOptions{}.setExpectedOutputLength(el::unit::ByteCount{4U});
         REQUIRE_THROWS_AS(
             el::compression::CompressionError,
             el::compression::ByteDecompressor{
                 el::compression::CompressionAlgorithm::Deflate, el::compression::CompressionFormat::Raw, options}
                 .decompress(compressed));
-        options = el::compression::DecompressionOptions{}.setMaximumWorkspaceLength(el::unit::ByteLength{1U});
+        options = el::compression::DecompressionOptions{}.setMaximumWorkspaceLength(el::unit::ByteCount{1U});
         REQUIRE_THROWS_AS(
             el::err::OutOfRangeError,
             el::compression::ByteDecompressor{
@@ -366,7 +365,7 @@ public:
             const auto compressed =
                 el::compression::ByteCompressor{algorithm, el::compression::CompressionFormat::Raw}.compress(source);
             const auto truncated =
-                compressed.slice(el::unit::ByteIndex{0U}, compressed.length() - el::unit::ByteLength{1U});
+                compressed.slice(el::unit::ByteIndex{0U}, compressed.length() - el::unit::ByteCount{1U});
             WITH_CONTEXT(requireMalformed(algorithm, truncated));
         }
 
@@ -392,7 +391,7 @@ public:
                 0x05U});
         REQUIRE_EQUAL(
             decompress(el::compression::CompressionAlgorithm::Zstandard, entropyZstandard),
-            el::mem::ByteBlock(el::unit::ByteLength{1000U}, el::mem::Byte{'A'}));
+            el::mem::ByteBlock(el::unit::ByteCount{1000U}, el::mem::Byte{'A'}));
 
         const auto lzma =
             el::compression::ByteCompressor{
@@ -401,7 +400,7 @@ public:
                 el::compression::CompressionLevel::Fastest}
                 .compress(source);
         const auto options =
-            el::compression::DecompressionOptions{}.setMaximumWorkspaceLength(el::unit::ByteLength{256U * 1024U});
+            el::compression::DecompressionOptions{}.setMaximumWorkspaceLength(el::unit::ByteCount{256U * 1024U});
         REQUIRE_THROWS_AS(
             el::err::OutOfRangeError,
             (el::compression::ByteDecompressor{

@@ -4,7 +4,6 @@
 
 namespace erbsland::mem::impl {
 
-/// Access the mutable reference counter of shared array data.
 template <
     typename tDataType,
     typename tSizeType,
@@ -15,7 +14,6 @@ auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMet
     return data->_referenceCount;
 }
 
-/// Access the immutable reference counter of shared array data.
 template <
     typename tDataType,
     typename tSizeType,
@@ -26,7 +24,6 @@ auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMet
     return data->_referenceCount;
 }
 
-/// Clone shared array data into a separate allocation.
 template <
     typename tDataType,
     typename tSizeType,
@@ -37,7 +34,6 @@ auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMet
     return data->clone();
 }
 
-/// Destroy a shared array-data allocation.
 template <
     typename tDataType,
     typename tSizeType,

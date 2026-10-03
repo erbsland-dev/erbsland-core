@@ -1,9 +1,19 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ConfigurationTools.hpp"
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/conf/ConfError.hpp>
+#include <erbsland/conf/ConfErrorCategory.hpp>
+#include <erbsland/conf/Integer.hpp>
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/profiling/ConfigurationKeys.hpp>
+#include <erbsland/StreamBuffering.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/StringLiteral.hpp>
+#include <erbsland/StringSet.hpp>
 
 #include <algorithm>
 #include <array>
@@ -16,6 +26,8 @@ namespace app::stream::impl {
 
 using namespace el::text::literals;
 
+namespace configuration_key = el::profiling::configuration_key;
+
 using ValuePtr = el::conf::ValuePtr;
 
 [[noreturn]] void configError(const el::String &message) {
@@ -24,14 +36,6 @@ using ValuePtr = el::conf::ValuePtr;
 
 [[noreturn]] void configError(const el::String &message, const ValuePtr &value) {
     throw el::conf::ConfError{el::conf::ConfErrorCategory::Validation, message, value->namePath(), value->location()};
-}
-
-[[nodiscard]] auto textList(const ValuePtr &value, const el::String &name, std::vector<el::String> defaults)
-    -> std::vector<el::String> {
-    if (!value->hasValue(name)) {
-        return defaults;
-    }
-    return value->valueOrThrow(name)->asListOrThrow<el::String>();
 }
 
 [[nodiscard]] auto integerValue(const ValuePtr &value, const el::String &name, const std::uint64_t defaultValue)
@@ -49,8 +53,8 @@ using ValuePtr = el::conf::ValuePtr;
 void requireKnownKeys(const ValuePtr &value, const std::span<const el::StringLiteral> known) {
     for (const auto &child : *value) {
         const auto childName = child->name().asText();
-        const auto found = std::ranges::any_of(
-            known, [&](const auto knownName) -> bool { return childName == el::String{knownName}; });
+        const auto found =
+            std::ranges::any_of(known, [&](const auto knownName) -> bool { return childName == knownName; });
         if (!found) {
             configError(el::StringFormat{"Unknown configuration key '{}'."_el}.build(childName), child);
         }
@@ -67,7 +71,7 @@ void requireKnownKeys(const ValuePtr &value, const std::span<const el::StringLit
     configError(el::StringFormat{"Unsupported run mode '{}'."_el}.build(text));
 }
 
-[[nodiscard]] auto parseDirections(const std::vector<el::String> &values) -> std::vector<Direction> {
+[[nodiscard]] auto parseDirections(const el::StringList &values) -> std::vector<Direction> {
     auto result = std::vector<Direction>{};
     for (const auto &value : values) {
         if (value == "all"_el) {
@@ -83,7 +87,7 @@ void requireKnownKeys(const ValuePtr &value, const std::span<const el::StringLit
     return result;
 }
 
-[[nodiscard]] auto parseFileTypes(const std::vector<el::String> &values) -> std::vector<FileType> {
+[[nodiscard]] auto parseFileTypes(const el::StringList &values) -> std::vector<FileType> {
     auto result = std::vector<FileType>{};
     for (const auto &value : values) {
         if (value == "all"_el) {
@@ -129,7 +133,7 @@ void requireKnownKeys(const ValuePtr &value, const std::span<const el::StringLit
     return std::nullopt;
 }
 
-[[nodiscard]] auto parseChunkModes(const std::vector<el::String> &values) -> std::vector<ChunkMode> {
+[[nodiscard]] auto parseChunkModes(const el::StringList &values) -> std::vector<ChunkMode> {
     auto result = std::vector<ChunkMode>{};
     for (const auto &value : values) {
         if (value == "all"_el) {
@@ -147,7 +151,7 @@ void requireKnownKeys(const ValuePtr &value, const std::span<const el::StringLit
     return result;
 }
 
-[[nodiscard]] auto parseLocalities(const std::vector<el::String> &values) -> std::vector<Locality> {
+[[nodiscard]] auto parseLocalities(const el::StringList &values) -> std::vector<Locality> {
     auto result = std::vector<Locality>{};
     for (const auto &value : values) {
         if (value == "all"_el) {
@@ -163,7 +167,7 @@ void requireKnownKeys(const ValuePtr &value, const std::span<const el::StringLit
     return result;
 }
 
-[[nodiscard]] auto parseBuffering(const std::vector<el::String> &values) -> std::vector<el::StreamBuffering> {
+[[nodiscard]] auto parseBuffering(const el::StringList &values) -> std::vector<el::StreamBuffering> {
     auto result = std::vector<el::StreamBuffering>{};
     for (const auto &value : values) {
         if (value == "all"_el) {
@@ -269,10 +273,10 @@ void appendExpanded(const ScenarioTemplate &source, std::vector<Scenario> &targe
 
 [[nodiscard]] auto parseScenario(const ValuePtr &value) -> ScenarioTemplate {
     constexpr auto known = std::array{
-        "name"_el,
+        configuration_key::cNameValue,
         "direction"_el,
         "file_type"_el,
-        "methods"_el,
+        configuration_key::cMethodsValue,
         "file_size_min"_el,
         "file_size_max"_el,
         "chunk_modes"_el,
@@ -285,18 +289,19 @@ void appendExpanded(const ScenarioTemplate &source, std::vector<Scenario> &targe
     };
     requireKnownKeys(value, known);
     auto result = ScenarioTemplate{};
-    result.name = value->getTextOrThrow("name"_el);
+    result.name = value->getTextOrThrow(configuration_key::cNameValue);
     if (result.name.isEmpty()) {
-        configError("Scenario names must not be empty."_el, value->valueOrThrow("name"_el));
+        configError("Scenario names must not be empty."_el, value->valueOrThrow(configuration_key::cNameValue));
     }
-    result.directions = parseDirections(textList(value, "direction"_el, {"read"_el}));
-    result.fileTypes = parseFileTypes(textList(value, "file_type"_el, {"binary"_el}));
-    const auto methodTexts = textList(value, "methods"_el, {"all"_el});
+    result.directions = parseDirections(value->getStringListOrThrow("direction"_el, el::StringList{"read"_el}));
+    result.fileTypes = parseFileTypes(value->getStringListOrThrow("file_type"_el, el::StringList{"binary"_el}));
+    const auto methodTexts = value->getStringListOrThrow(configuration_key::cMethodsValue, el::StringList{"all"_el});
     result.allMethods =
         std::ranges::any_of(methodTexts, [](const el::String &value) -> bool { return value == "all"_el; });
-    if (result.allMethods && methodTexts.size() != 1U) {
+    if (result.allMethods && methodTexts.count() != el::ItemCount{1}) {
         configError(
-            "The method 'all' cannot be combined with explicit method names."_el, value->valueOrThrow("methods"_el));
+            "The method 'all' cannot be combined with explicit method names."_el,
+            value->valueOrThrow(configuration_key::cMethodsValue));
     }
     if (!result.allMethods) {
         for (const auto &methodText : methodTexts) {
@@ -319,24 +324,26 @@ void appendExpanded(const ScenarioTemplate &source, std::vector<Scenario> &targe
     }
     result.fileSizeMinimum = integerValue(value, "file_size_min"_el, result.fileSizeMinimum);
     result.fileSizeMaximum = integerValue(value, "file_size_max"_el, result.fileSizeMaximum);
-    result.chunkModes = parseChunkModes(textList(value, "chunk_modes"_el, {"fixed"_el}));
+    result.chunkModes = parseChunkModes(value->getStringListOrThrow("chunk_modes"_el, el::StringList{"fixed"_el}));
     result.chunkSizeMinimum = integerValue(value, "chunk_size_min"_el, result.chunkSizeMinimum);
     result.chunkSizeMaximum = integerValue(value, "chunk_size_max"_el, result.chunkSizeMaximum);
-    result.buffering = parseBuffering(textList(value, "buffering"_el, {"balanced"_el}));
+    result.buffering = parseBuffering(value->getStringListOrThrow("buffering"_el, el::StringList{"balanced"_el}));
     if (value->hasValue("back_buffer_limit"_el)) {
-        result.backBufferLimit = integerValue(value, "back_buffer_limit"_el, result.backBufferLimit);
+        result.backBufferLimit = el::ByteCount::fromInteger(
+            integerValue(value, "back_buffer_limit"_el, result.backBufferLimit.toRawValue()));
     }
     const auto weight = integerValue(value, "weight"_el, result.weight);
     if (weight > std::numeric_limits<std::uint32_t>::max()) {
         configError("Scenario weight is too large."_el);
     }
     result.weight = static_cast<std::uint32_t>(weight);
-    result.localities = parseLocalities(textList(value, "localities"_el, {"hot"_el}));
+    result.localities = parseLocalities(value->getStringListOrThrow("localities"_el, el::StringList{"hot"_el}));
     if (result.fileSizeMinimum > result.fileSizeMaximum || result.chunkSizeMinimum > result.chunkSizeMaximum) {
         configError(
             el::StringFormat{"Scenario '{}' has a minimum larger than its maximum."_el}.build(result.name), value);
     }
-    if (result.backBufferLimit != 0U && result.backBufferLimit < result.chunkSizeMaximum) {
+    if (!result.backBufferLimit.isZero() &&
+        result.backBufferLimit < el::ByteCount::fromInteger(result.chunkSizeMaximum)) {
         configError(
             el::StringFormat{"Scenario '{}' has a back-buffer limit smaller than its largest chunk."_el}.build(
                 result.name),
@@ -382,7 +389,7 @@ void appendExpanded(const ScenarioTemplate &source, std::vector<Scenario> &targe
                 .chunkSizeMinimum = 1ULL,
                 .chunkSizeMaximum = chunkMaximum,
                 .buffering = buffering,
-                .backBufferLimit = backBufferLimit,
+                .backBufferLimit = el::ByteCount::fromInteger(backBufferLimit),
                 .weight = locality == Locality::Hot ? 3U : 1U,
             });
     };
@@ -468,8 +475,8 @@ auto parseConfigurationDocument(const ValuePtr &document, const Configuration *d
             "mode"_el,
             "suite"_el,
             "duration"_el,
-            "threads"_el,
-            "seed"_el,
+            configuration_key::cThreadsValue,
+            configuration_key::cSeedValue,
             "corpus_limit"_el,
             "progress_interval"_el,
             "workspace"_el,
@@ -481,14 +488,17 @@ auto parseConfigurationDocument(const ValuePtr &document, const Configuration *d
         if (run->hasValue("duration"_el)) {
             result.run.duration = run->getCalendarDeltaOrThrow("duration"_el).toTimeDeltaOrThrow().toStdNanoseconds();
         }
-        const auto threads = run->getInteger("threads"_el, result.run.threadCount);
+        const auto threads = run->getInteger(configuration_key::cThreadsValue, result.run.threadCount);
         if (threads < 1 || threads > 256) {
-            configError("The workload thread count must be in the range 1-256."_el, run->valueOrThrow("threads"_el));
+            configError(
+                "The workload thread count must be in the range 1-256."_el,
+                run->valueOrThrow(configuration_key::cThreadsValue));
         }
         result.run.threadCount = static_cast<std::uint32_t>(threads);
-        const auto seed = run->getInteger("seed"_el, static_cast<el::conf::Integer>(result.run.seed));
+        const auto seed =
+            run->getInteger(configuration_key::cSeedValue, static_cast<el::conf::Integer>(result.run.seed));
         if (seed < 0) {
-            configError("The global seed must not be negative."_el, run->valueOrThrow("seed"_el));
+            configError("The global seed must not be negative."_el, run->valueOrThrow(configuration_key::cSeedValue));
         }
         result.run.seed = static_cast<std::uint64_t>(seed);
         result.run.corpusLimit = integerValue(run, "corpus_limit"_el, result.run.corpusLimit);
@@ -521,9 +531,9 @@ auto parseConfigurationDocument(const ValuePtr &document, const Configuration *d
     if (result.scenarios.empty()) {
         configError("The configuration expands to no scenarios."_el);
     }
-    auto ids = std::set<el::String>{};
+    auto ids = el::StringSet{};
     for (const auto &scenario : result.scenarios) {
-        if (!ids.emplace(scenario.id).second) {
+        if (!ids.tryInsert(scenario.id)) {
             configError(el::StringFormat{"Duplicate expanded scenario ID '{}'."_el}.build(scenario.id));
         }
     }

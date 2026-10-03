@@ -37,7 +37,7 @@ public: // tests
 
 public: // accessors
     /// Get the stored algorithm.
-    /// @throws err::LogicError If this is the invalid sentinel.
+    /// This password hash must not be the invalid sentinel.
     [[nodiscard]] auto algorithm() const -> PasswordHashAlgorithm;
     /// Get the public key identifier, if the keyed record has one.
     [[nodiscard]] auto keyIdentifier() const noexcept -> std::optional<text::String>;

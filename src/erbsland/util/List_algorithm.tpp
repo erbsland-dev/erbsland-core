@@ -17,7 +17,7 @@ auto List<tElement, tSelf>::forEach(Function function) const -> LoopResult {
     for (const auto &value : raw()) {
         const auto status = [&]() -> LoopStatus {
             if constexpr (std::invocable<Function &, const Element &, Index>) {
-                return impl::invokeLoopFunction(function, value, Index{rawIndex});
+                return impl::invokeLoopFunction(function, value, Index{rawIndex, typename Index::Unchecked{}});
             } else {
                 return impl::invokeLoopFunction(function, value);
             }
@@ -39,7 +39,7 @@ auto List<tElement, tSelf>::forEachReverse(Function function) const -> LoopResul
         --rawIndex;
         const auto status = [&]() -> LoopStatus {
             if constexpr (std::invocable<Function &, const Element &, Index>) {
-                return impl::invokeLoopFunction(function, *iterator, Index{rawIndex});
+                return impl::invokeLoopFunction(function, *iterator, Index{rawIndex, typename Index::Unchecked{}});
             } else {
                 return impl::invokeLoopFunction(function, *iterator);
             }

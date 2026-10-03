@@ -15,6 +15,8 @@ Correct Placement
 For example, ``erbsland::example::impl`` belongs below ``src/erbsland/example/impl``.
 Conversely, ``erbsland::example`` must not be declared below that ``impl`` directory.
 Additional directories may group related files without introducing another namespace.
+Conversely, a helper namespace below ``impl`` may group constants and functions in one logical unit without a matching
+subdirectory; see :doc:`../cpp_files` for the unit definition and directory-layout rules.
 
 Mechanical Detection
 ====================

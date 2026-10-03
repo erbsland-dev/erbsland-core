@@ -8,6 +8,8 @@
 
 namespace erbsland::text::named_key {
 
+using namespace unit;
+
 Parser::Parser(StringCharReader &reader, const Format &format) : _reader{reader}, _format{format} {
     _format.validate();
 }
@@ -91,7 +93,7 @@ auto Parser::captureRawEntry() -> String {
     return result;
 }
 
-auto Parser::parseRawEntry(const String &raw, const unit::CpIndex position) -> Entry {
+auto Parser::parseRawEntry(const String &raw, const CpIndex position) -> Entry {
     if (_mode == Mode::Values) {
         return parsePositionalValue(raw, position);
     }
@@ -130,8 +132,8 @@ auto Parser::parseRawEntry(const String &raw, const unit::CpIndex position) -> E
     return parsePositionalValue(raw, position);
 }
 
-auto Parser::parseKeyEntry(
-    StringCharReader &reader, const Char prefix, const int keyIndex, const unit::CpIndex position) -> Entry {
+auto Parser::parseKeyEntry(StringCharReader &reader, const Char prefix, const int keyIndex, const CpIndex position)
+    -> Entry {
     if (reader.isAtEnd()) {
         if (!_format.keysWithoutValuesAllowed()) {
             throwError("Named-key entry is missing a value", position);
@@ -156,7 +158,7 @@ auto Parser::parseKeyEntry(
     return {EntryKind::KeyWithValue, prefix, keyIndex, std::move(value)};
 }
 
-auto Parser::parsePositionalValue(const String &raw, const unit::CpIndex position) -> Entry {
+auto Parser::parsePositionalValue(const String &raw, const CpIndex position) -> Entry {
     _mode = Mode::Values;
     ++_valueCount;
     if (_valueCount > _format.maximumValues()) {
@@ -166,7 +168,7 @@ auto Parser::parsePositionalValue(const String &raw, const unit::CpIndex positio
     return {EntryKind::Value, Char::noCodePoint(), -1, raw};
 }
 
-void Parser::validateValue(const String &value, const unit::CpIndex position) const {
+void Parser::validateValue(const String &value, const CpIndex position) const {
     if (value.characterLength() > _format.maximumValueLength()) {
         throwError("Named-key value exceeds the configured length limit", position);
     }
@@ -181,7 +183,7 @@ void Parser::validateValue(const String &value, const unit::CpIndex position) co
     }
 }
 
-void Parser::markKeySeen(const int keyIndex, const unit::CpIndex position) {
+void Parser::markKeySeen(const int keyIndex, const CpIndex position) {
     if (!_format.uniqueKeysRequired()) {
         return;
     }
@@ -191,7 +193,7 @@ void Parser::markKeySeen(const int keyIndex, const unit::CpIndex position) {
     _seenKeys.insert(keyIndex);
 }
 
-void Parser::throwError(const std::string_view reason, const unit::CpIndex position) {
+void Parser::throwError(const std::string_view reason, const CpIndex position) {
     throw err::ParseError{reason, position};
 }
 

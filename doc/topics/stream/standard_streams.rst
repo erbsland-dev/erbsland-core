@@ -29,7 +29,7 @@ develops safe patterns for input replacement, output capture, and nested redirec
 It also explains where operation timeouts, stream failures, process-wide state, and output delivery require an explicit
 application policy.
 
-Overview: Follow the Stable Proxy Model
+Standard Stream Proxies and Redirection
 =======================================
 
 :cpp:func:`stdIn() <erbsland::stream::stdIn>` returns a shared
@@ -96,8 +96,8 @@ Passing an empty replacement or trying to use a standard proxy as its own replac
 :cpp:class:`StreamError <erbsland::stream::StreamError>` because either case would leave the proxy without a valid
 forwarding target.
 
-Choose Concise Helpers for Everyday Output
-==========================================
+Standard Output and Error Helpers in stream::io
+===============================================
 
 The functions in ``stream::io`` are the shortest way to write to the currently active standard output or error target.
 Use :cpp:func:`io::write() <erbsland::stream::io::write>` and
@@ -130,7 +130,7 @@ A ``StreamError`` is translated where the rehearsal context can be added without
 .. erbsland-demo::
     :source: stream/StandardStreams/EasyOutput.cpp
     :exec: stream/standard_streams --demo WriteStandardOutput
-    :source-sha256: 74e7f2de13ef06340474cd42565191276b0c0f45913ed460594ed315b118c090
+    :sha256: 4d35db4359b4e0de8c612dc01142bcbfc2fe27dc7d46cb24a712ed51dee2aaad
 
 .. code-block:: cpp
 
@@ -151,11 +151,13 @@ A ``StreamError`` is translated where the rehearsal context can be added without
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Prova d'orchestra — tempo iniziale: 88 bpm
-    Accelerando dalla battuta 17.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mProva d'orchestra — tempo iniziale: 88 bpm
+        Accelerando dalla battuta 17.␛[0m
 
 .. erbsland-demo-end::
 
@@ -190,7 +192,7 @@ the context of publishing the rehearsal result.
 .. erbsland-demo::
     :source: stream/StandardStreams/StandardOutputAndError.cpp
     :exec: stream/standard_streams --demo WriteStandardError
-    :source-sha256: f53905a668a907dd63431f8c3160bf9e7691f6ce795602e94ba47a617e4fdbf4
+    :sha256: d8a96cef3f8888f23dd2cda4501cc85f59e5dcc4460852ab12f08feb2665a1fe
 
 .. code-block:: cpp
 
@@ -214,11 +216,13 @@ the context of publishing the rehearsal result.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    tempo_bpm=88
-    Warning: measure 24 has no dynamic marking.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mtempo_bpm=88
+        Warning: measure 24 has no dynamic marking.␛[0m
 
 .. erbsland-demo-end::
 
@@ -252,7 +256,7 @@ and relies on the guard destructor to restore the original standard input on eve
 .. erbsland-demo::
     :source: stream/StandardStreams/IntegerFormatting.cpp
     :exec: stream/standard_streams --demo ReadRedirectedInput
-    :source-sha256: 853ffb88bac81693dbe3ef932cf679c5147829a03cb0b455b20e29f18cea8dff
+    :sha256: 73ab41c4e0af17f9d9fcfc5a1d74448271d8162c453acfbc4f1854176ff262d1
 
 .. code-block:: cpp
 
@@ -260,7 +264,7 @@ and relies on the guard destructor to restore the original standard input on eve
     /// A stable proxy follows the replacement even when obtained before the redirect.
     /// A finite line length and attempt count bound both memory use and time spent on a source that repeatedly stalls.
     auto readTempoFrom(el::TextInputStreamPtr input) -> el::String {
-        constexpr auto cMaximumLineLength = el::CpLength{40U};
+        constexpr auto cMaximumLineLength = el::CpCount{40U};
         constexpr auto cMaximumAttempts = 3U;
         const auto standardInput = el::stdIn();
 
@@ -281,10 +285,12 @@ and relies on the guard destructor to restore the original standard input on eve
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Read tempo: Andante
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRead tempo: Andante␛[0m
 
 .. erbsland-demo-end::
 
@@ -303,7 +309,7 @@ An epoch-checked protected transfer prevents a native read that crossed the fina
     auto outer = el::stream::io::SensitiveInputScope{};
     {
         auto inner = el::stream::io::SensitiveInputScope{};
-        const auto result = el::stdIn()->readLine(el::CpLength{1024U});
+        const auto result = el::stdIn()->readLine(el::CpCount{1024U});
         consumeSecret(result.data());
     }
     outer.reset();
@@ -318,7 +324,7 @@ Manual lifetimes can stop out of nesting order:
     el::stream::io::stopSensitiveInput(std::move(second));
 
 The token identifier and source location are diagnostic aids.
-Invalid, moved-from, or already stopped tokens raise ``LogicError``.
+Invalid, moved-from, or already stopped tokens raise ``LogicFailure``.
 These scopes affect only the process-native pipeline; a third-party stream installed with ``redirectStdIn()`` retains
 its own buffering policy.
 
@@ -346,7 +352,7 @@ Automatic guard destruction also restores standard output when producing the reh
 .. erbsland-demo::
     :source: stream/StandardStreams/FloatFormatting.cpp
     :exec: stream/standard_streams --demo CaptureOutput
-    :source-sha256: 20e188ad71c6eebef1c370d169cbf15478a3ef8b68d3b2954d16d06a11e862a3
+    :sha256: aaf3a167a55920ca170853cc04afa29236ba12da5e6dd39e5f941a0ceaa7e463
 
 .. code-block:: cpp
 
@@ -359,18 +365,20 @@ Automatic guard destruction also restores standard output when producing the reh
             auto redirect = el::redirectStdOut(capture);
             if (el::io::printLine("Moderato, 96 bpm"_el).isTimeout() ||
                 el::io::printLine("Rallentando nelle ultime quattro battute"_el).isTimeout()) {
-                throw el::LogicError{"An in-memory standard-output capture unexpectedly timed out."};
+                throw el::LogicFailure{"An in-memory standard-output capture unexpectedly timed out."};
             }
         }
         return capture->takeString();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Captured output:
-    Moderato, 96 bpm
-    Rallentando nelle ultime quattro battute
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCaptured output:
+        Moderato, 96 bpm
+        Rallentando nelle ultime quattro battute␛[0m
 
 .. erbsland-demo-end::
 
@@ -396,7 +404,7 @@ The hidden wrapper supplies two in-memory destinations and displays their conten
 .. erbsland-demo::
     :source: stream/StandardStreams/LowLevelWrite.cpp
     :exec: stream/standard_streams --demo UseNestedRedirects
-    :source-sha256: 26e6214dd05d026ff8189fc47d9909ffc17aea8b8c020aa962ecde2b48b66dc6
+    :sha256: 70d371df1aec79e2439a8727c6d867868601ec066d8b61ab5a7026a237259b7e
 
 .. code-block:: cpp
 
@@ -423,14 +431,16 @@ The hidden wrapper supplies two in-memory destinations and displays their conten
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Outer:
-    Tema principale
-    Ripresa del tema
-    Inner:
-    Variazione veloce
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOuter:
+        Tema principale
+        Ripresa del tema
+        Inner:
+        Variazione veloce␛[0m
 
 .. erbsland-demo-end::
 

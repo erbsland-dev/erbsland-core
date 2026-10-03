@@ -1,9 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/List.hpp>
 #include <erbsland/profiling/SampleMeasurement.hpp>
 #include <erbsland/profiling/Statistics.hpp>
 #include <erbsland/profiling/WorkerMeasurement.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 namespace pf = erbsland::profiling;

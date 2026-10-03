@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -11,7 +18,7 @@ namespace demo {
 /// final cleanup. An explicit erase zeros the invoking value immediately, but a
 /// shared alias remains readable until it is erased or released.
 void eraseSharedBlocks() {
-    auto workingKey = el::ByteBlockEditor{el::ByteLength{6U}};
+    auto workingKey = el::ByteBlockEditor{el::ByteCount{6U}};
     workingKey.markAsSensitive();
 
     // Mark allocated storage before writing the sensitive value.

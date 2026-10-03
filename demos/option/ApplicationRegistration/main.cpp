@@ -1,7 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/conf/Name.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/re/Flag.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -32,17 +47,15 @@ protected:
         options->addOption({"-i"_el, "--instrument"_el, "instrument"_el})
             .setType(el::OptionType::Text)
             .setRequired()
-            .setHelpDescription("Name of the instrument that will perform the measurement."_el);
+            .setHelpTitle("Name of the instrument that will perform the measurement."_el);
         options->addOption({"-g"_el, "--gain"_el, "gain"_el})
             .setType(el::OptionType::Integer)
             .setDefaultValue(el::OptionInteger{2})
-            .setHelpDescription("Detector gain between 1 and 9."_el);
+            .setHelpTitle("Detector gain between 1 and 9."_el);
         options->addOption({"-d"_el, "--dark-frame"_el, "dark-frame"_el})
             .setType(el::OptionType::Flag)
-            .setHelpDescription("Captures a dark frame before measuring the sample."_el);
-        options->addOption("sample"_el)
-            .setRequired()
-            .setHelpDescription("Sample placed in front of the instrument."_el);
+            .setHelpTitle("Captures a dark frame before measuring the sample."_el);
+        options->addOption("sample"_el).setRequired().setHelpTitle("Sample placed in front of the instrument."_el);
     }
     [[nodiscard]] auto main() -> el::ExitCode override {
         const auto values = optionValues();
@@ -57,7 +70,7 @@ protected:
 /// This simple main method creates the application and lets it run the full lifecycle.
 auto main(const int argc, char *argv[]) -> int {
     auto app = SpectrometerApp{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     return app.run();
 }
 

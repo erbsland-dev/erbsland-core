@@ -1,0 +1,8 @@
+#
+# The configuration for the Unicode source data.
+#
+----[ Unicode ]-------------------------------------------------------------------------------------------------------
+# Change the version pin only when adopting a reviewed source snapshot.
+
+UCD Directory          : "tool/data/ucd"
+Unicode Version        : "17.0.0"

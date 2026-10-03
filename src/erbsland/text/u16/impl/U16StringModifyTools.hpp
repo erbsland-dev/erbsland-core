@@ -8,19 +8,22 @@
 
 #include "../../../unit/CpIndex.hpp"
 #include "../../../unit/CpRange.hpp"
-#include "../../../unit/U16DataIndex.hpp"
-#include "../../../unit/U16DataRange.hpp"
+#include "../../../unit/U16Index.hpp"
+#include "../../../unit/U16Range.hpp"
 #include "../../CharCompareFn.hpp"
 #include "../../CharSet.hpp"
 
 #include <array>
 #include <cstring>
+#include <optional>
 #include <span>
+#include <utility>
 
 namespace erbsland::text::impl {
 
-/// Copy-modify algorithms for UTF-16 strings.
-/// @tested{U16StringTest}
+/// Modification algorithms for UTF-16 strings.
+/// Change-aware replacement and removal preserve unchanged storage; kept ranges deliberately create pruned copies.
+/// @tested{StringReplacementTest U16StringTest StringUnchangedResultTest}
 class U16StringModifyTools final {
 public:
     /// Create modification tools for the given UTF-16 data.
@@ -28,7 +31,7 @@ public:
 
 public:
     /// Remove a UTF-16 data range from mutable storage, reusing unique full-range storage when possible.
-    static auto remove(U16StringSharedStorage &storage, unit::U16DataRange range) -> U16StringSharedStorage &;
+    static auto remove(U16StringSharedStorage &storage, unit::U16Range range) -> U16StringSharedStorage &;
     /// Remove a character range from mutable storage, reusing unique full-range storage when possible.
     static auto remove(U16StringSharedStorage &storage, unit::CpRange range) -> U16StringSharedStorage &;
     /// Remove all characters from a set from mutable storage, reusing unique full-range storage when possible.
@@ -37,17 +40,17 @@ public:
     static auto remove(U16StringSharedStorage &storage, const U16StringDataView &text, CharCompareFn compareFn = {})
         -> U16StringSharedStorage &;
     /// Keep a UTF-16 data range in mutable storage, reusing unique full-range storage when possible.
-    static auto keep(U16StringSharedStorage &storage, unit::U16DataRange range) -> U16StringSharedStorage &;
+    static auto keep(U16StringSharedStorage &storage, unit::U16Range range) -> U16StringSharedStorage &;
     /// Keep a character range in mutable storage, reusing unique full-range storage when possible.
     static auto keep(U16StringSharedStorage &storage, unit::CpRange range) -> U16StringSharedStorage &;
     /// Insert text at a UTF-16 data index in mutable storage.
-    static auto insert(U16StringSharedStorage &storage, unit::U16DataIndex index, const U16StringDataView &text)
+    static auto insert(U16StringSharedStorage &storage, unit::U16Index index, const U16StringDataView &text)
         -> U16StringSharedStorage &;
     /// Insert text at a character index in mutable storage.
     static auto insert(U16StringSharedStorage &storage, unit::CpIndex index, const U16StringDataView &text)
         -> U16StringSharedStorage &;
     /// Replace a UTF-16 data range in mutable storage.
-    static auto replace(U16StringSharedStorage &storage, unit::U16DataRange range, const U16StringDataView &text)
+    static auto replace(U16StringSharedStorage &storage, unit::U16Range range, const U16StringDataView &text)
         -> U16StringSharedStorage &;
     /// Replace a character range in mutable storage.
     static auto replace(U16StringSharedStorage &storage, unit::CpRange range, const U16StringDataView &text)
@@ -78,46 +81,76 @@ public:
 
 public:
     /// Return storage with a UTF-16 data range removed.
-    [[nodiscard]] auto removed(unit::U16DataRange range) const -> U16StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto removedIfChanged(unit::U16Range range) const -> std::optional<U16StringSharedStorage>;
     /// Return storage with a character-based range removed.
-    [[nodiscard]] auto removed(unit::CpRange range) const -> U16StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto removedIfChanged(unit::CpRange range) const -> std::optional<U16StringSharedStorage>;
     /// Return storage with all characters from the set removed.
-    [[nodiscard]] auto removedAll(const CharSet &characters) const -> U16StringSharedStorage;
+    /// @param characters The characters to remove.
+    /// @return Modified storage, or `std::nullopt` if no match is found.
+    [[nodiscard]] auto removedAllIfChanged(const CharSet &characters) const -> std::optional<U16StringSharedStorage>;
     /// Return storage with all occurrences of decoded UTF-16 text removed.
-    [[nodiscard]] auto removed(const U16StringDataView &text, CharCompareFn compareFn = {}) const
-        -> U16StringSharedStorage;
+    /// @param text The decoded text to remove.
+    /// @param compareFn The optional character comparison function.
+    /// @return Modified storage, or `std::nullopt` if no match is found.
+    [[nodiscard]] auto removedAllIfChanged(const U16StringDataView &text, CharCompareFn compareFn = {}) const
+        -> std::optional<U16StringSharedStorage>;
     /// Return storage keeping only a UTF-16 data range.
-    [[nodiscard]] auto kept(unit::U16DataRange range) const -> U16StringSharedStorage;
+    [[nodiscard]] auto kept(unit::U16Range range) const -> U16StringSharedStorage;
     /// Return storage keeping only a character-based range.
     [[nodiscard]] auto kept(unit::CpRange range) const -> U16StringSharedStorage;
     /// Return storage with text inserted at a UTF-16 data index.
-    [[nodiscard]] auto inserted(unit::U16DataIndex index, const U16StringDataView &text) const
-        -> U16StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto insertedIfChanged(unit::U16Index index, const U16StringDataView &text) const
+        -> std::optional<U16StringSharedStorage>;
     /// Return storage with text inserted at a character index.
-    [[nodiscard]] auto inserted(unit::CpIndex index, const U16StringDataView &text) const -> U16StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto insertedIfChanged(unit::CpIndex index, const U16StringDataView &text) const
+        -> std::optional<U16StringSharedStorage>;
     /// Return storage with a UTF-16 data range replaced by text.
-    [[nodiscard]] auto replaced(unit::U16DataRange range, const U16StringDataView &text) const
-        -> U16StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto replacedIfChanged(unit::U16Range range, const U16StringDataView &text) const
+        -> std::optional<U16StringSharedStorage>;
     /// Return storage with a character range replaced by text.
-    [[nodiscard]] auto replaced(unit::CpRange range, const U16StringDataView &text) const -> U16StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto replacedIfChanged(unit::CpRange range, const U16StringDataView &text) const
+        -> std::optional<U16StringSharedStorage>;
     /// Return storage with the first occurrence of decoded UTF-16 text removed.
-    [[nodiscard]] auto removedFirst(const U16StringDataView &text, CharCompareFn compareFn = {}) const
-        -> U16StringSharedStorage;
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto removedFirstIfChanged(const U16StringDataView &text, CharCompareFn compareFn = {}) const
+        -> std::optional<U16StringSharedStorage>;
     /// Return storage with the first occurrence of decoded UTF-16 text replaced.
-    [[nodiscard]] auto replacedFirst(
+    /// @return Changed storage, or `std::nullopt` if the native data is unchanged.
+    [[nodiscard]] auto replacedFirstIfChanged(
         const U16StringDataView &text, const U16StringDataView &replacement, CharCompareFn compareFn = {}) const
-        -> U16StringSharedStorage;
+        -> std::optional<U16StringSharedStorage>;
     /// Return storage with all characters from the set replaced by one character.
-    [[nodiscard]] auto replacedAll(const CharSet &characters, Char replacement) const -> U16StringSharedStorage;
+    /// @param characters The characters to replace.
+    /// @param replacement The replacement character or text.
+    /// @return Modified storage, or `std::nullopt` if the original data is unchanged.
+    [[nodiscard]] auto replacedAllIfChanged(const CharSet &characters, Char replacement) const
+        -> std::optional<U16StringSharedStorage>;
     /// Return storage with all characters from the set replaced by text.
-    [[nodiscard]] auto replacedAll(const CharSet &characters, const U16StringDataView &replacement) const
-        -> U16StringSharedStorage;
+    /// @param characters The characters to replace.
+    /// @param replacement The replacement character or text.
+    /// @return Modified storage, or `std::nullopt` if the original data is unchanged.
+    [[nodiscard]] auto replacedAllIfChanged(const CharSet &characters, const U16StringDataView &replacement) const
+        -> std::optional<U16StringSharedStorage>;
     /// Return storage with all occurrences of decoded UTF-16 text replaced.
-    [[nodiscard]] auto replacedAll(
+    /// @param text The decoded text to replace.
+    /// @param replacement The replacement character or text.
+    /// @param compareFn The optional character comparison function.
+    /// @return Modified storage, or `std::nullopt` if the original data is unchanged.
+    [[nodiscard]] auto replacedAllIfChanged(
         const U16StringDataView &text, const U16StringDataView &replacement, CharCompareFn compareFn = {}) const
-        -> U16StringSharedStorage;
+        -> std::optional<U16StringSharedStorage>;
 
 private:
+    /// Append native data units without decoding or modifying their representation.
+    /// @param storage The destination storage.
+    /// @param data The native data units to append.
+    static void appendData(U16StringSharedStorage &storage, std::span<const char16_t> data);
     template <typename T>
     /// Test whether two spans overlap in memory.
     [[nodiscard]] static auto spansOverlap(std::span<const T> first, std::span<const T> second) noexcept -> bool;
@@ -128,15 +161,15 @@ private:
         -> std::span<const char16_t>;
 
     template <typename Predicate>
-    /// Return storage with matching characters replaced.
-    [[nodiscard]] auto replacedCharacters(Predicate predicate, std::span<const char16_t> replacement) const
-        -> U16StringSharedStorage;
+    /// Return storage with characters selected by a predicate replaced with UTF-16 text.
+    [[nodiscard]] auto replacedCharactersIfChanged(Predicate predicate, std::span<const char16_t> replacement) const
+        -> std::optional<U16StringSharedStorage>;
     /// Return storage with matching text replaced.
-    [[nodiscard]] auto replacedText(
+    [[nodiscard]] auto replacedTextIfChanged(
         const U16StringDataView &text, std::span<const char16_t> replacement, CharCompareFn compareFn) const
-        -> U16StringSharedStorage;
+        -> std::optional<U16StringSharedStorage>;
     template <typename Predicate>
-    /// Replace matching characters in existing storage.
+    /// Replace characters selected by a predicate directly in the shared storage with UTF-16 text.
     static auto replaceCharactersInStorage(
         U16StringSharedStorage &storage, Predicate predicate, std::span<const char16_t> replacement)
         -> U16StringSharedStorage &;
@@ -148,82 +181,52 @@ private:
         CharCompareFn compareFn) -> U16StringSharedStorage &;
     /// Convert a character range into a UTF-16 data range.
     [[nodiscard]] static auto dataRangeForCharacterRange(const U16StringDataView &data, unit::CpRange range) noexcept
-        -> unit::U16DataRange;
+        -> unit::U16Range;
     /// Convert a character index into a UTF-16 data index.
     [[nodiscard]] static auto dataIndexForCharacterIndex(const U16StringDataView &data, unit::CpIndex index) noexcept
-        -> unit::U16DataIndex;
-    /// Find the first UTF-16 data range matching text.
-    [[nodiscard]] static auto findFirstTextRange(
-        const U16StringDataView &data, const U16StringDataView &text, CharCompareFn compareFn) noexcept
-        -> unit::U16DataRange;
-    /// Test whether UTF-16 data matches text at an index.
-    [[nodiscard]] static auto matchesText(
-        std::span<const char16_t> data,
-        unit::U16DataIndex start,
-        std::span<const char16_t> text,
-        CharCompareFn compareFn) noexcept -> bool;
-    /// Compare two characters using an optional comparison function.
-    [[nodiscard]] static auto charactersEqual(Char left, Char right, CharCompareFn compareFn) noexcept -> bool;
-    /// Get the data index immediately after a text match.
-    [[nodiscard]] static auto endOfMatch(
-        std::span<const char16_t> data, unit::U16DataIndex start, std::span<const char16_t> text) noexcept
-        -> unit::U16DataIndex;
+        -> unit::U16Index;
 
 private:
     U16StringDataView _data;
 };
 
 template <typename Predicate>
-/// Replace characters selected by a predicate with UTF-16 text.
-auto U16StringModifyTools::replacedCharacters(Predicate predicate, const std::span<const char16_t> replacement) const
-    -> U16StringSharedStorage {
+auto U16StringModifyTools::replacedCharactersIfChanged(
+    Predicate predicate, const std::span<const char16_t> replacement) const -> std::optional<U16StringSharedStorage> {
     const auto data = _data.dataSpan();
-    if (data.empty()) {
-        return {};
-    }
-
-    auto newSize = std::size_t{0};
-    auto position = unit::U16DataIndex::zero();
+    auto result = std::optional<U16StringSharedStorage>{};
+    auto copyStart = std::size_t{0};
+    auto position = unit::U16Index::zero();
     while (position.toSizeT() < data.size()) {
-        const auto characterStart = position;
+        const auto begin = position.toSizeT();
         const auto character = utf16::decodeCharOrReplace(data, position);
-        if (predicate(character)) {
-            newSize = U16StringSharedStorage::checkedAddSize(
-                newSize, replacement.size(), "Modified string exceeds size bounds");
-        } else {
-            newSize = U16StringSharedStorage::checkedAddSize(
-                newSize, position.toSizeT() - characterStart.toSizeT(), "Modified string exceeds size bounds");
+        if (!predicate(character)) {
+            continue;
         }
-    }
-    U16StringSharedStorage::validateSize(newSize);
-    auto storage = U16StringSharedStorage::forSize(newSize);
-    auto writePosition = std::size_t{0};
-    position = unit::U16DataIndex::zero();
-    while (position.toSizeT() < data.size()) {
-        const auto characterStart = position;
-        const auto character = utf16::decodeCharOrReplace(data, position);
-        if (predicate(character)) {
-            if (!replacement.empty()) {
-                std::memcpy(
-                    storage.dataForWrite() + writePosition, replacement.data(), replacement.size() * sizeof(char16_t));
-                writePosition = U16StringSharedStorage::checkedAddSize(
-                    writePosition, replacement.size(), "Modified string write exceeds size bounds");
+        const auto matchSize = position.toSizeT() - begin;
+        if (matchSize == replacement.size() &&
+            std::memcmp(data.data() + begin, replacement.data(), matchSize * sizeof(char16_t)) == 0) {
+            continue;
+        }
+        if (!result) {
+            result.emplace();
+            const auto initialCapacity =
+                U16StringSharedStorage::checkedAddSize(data.size() - matchSize, replacement.size());
+            if (initialCapacity > 0U) {
+                result->ensureMutableCapacity(initialCapacity);
             }
-        } else {
-            const auto characterSize = position.toSizeT() - characterStart.toSizeT();
-            std::memcpy(
-                storage.dataForWrite() + writePosition,
-                data.data() + characterStart.toSizeT(),
-                characterSize * sizeof(char16_t));
-            writePosition = U16StringSharedStorage::checkedAddSize(
-                writePosition, characterSize, "Modified string write exceeds size bounds");
         }
+        appendData(result.value(), data.subspan(copyStart, begin - copyStart));
+        appendData(result.value(), replacement);
+        copyStart = position.toSizeT();
     }
-    return storage;
+    if (result) {
+        appendData(result.value(), data.subspan(copyStart));
+    }
+    return result;
 }
 
 template <typename Predicate>
-/// Replace characters selected by a predicate directly in the shared storage.
 auto U16StringModifyTools::replaceCharactersInStorage(
     U16StringSharedStorage &storage, Predicate predicate, const std::span<const char16_t> replacement)
     -> U16StringSharedStorage & {
@@ -236,30 +239,30 @@ auto U16StringModifyTools::replaceCharactersInStorage(
     auto newSize = std::size_t{0};
     auto hasMatch = false;
     auto canWriteInPlace = storage.isUniqueFullRange() && replacement.empty();
-    auto position = unit::U16DataIndex::zero();
+    auto position = unit::U16Index::zero();
     while (position.toSizeT() < data.size()) {
         const auto characterStart = position;
         const auto character = utf16::decodeCharOrReplace(data, position);
         const auto characterSize = position.toSizeT() - characterStart.toSizeT();
         if (predicate(character)) {
             hasMatch = true;
-            newSize = U16StringSharedStorage::checkedAddSize(
-                newSize, replacement.size(), "Modified string exceeds size bounds");
+            newSize = U16StringSharedStorage::checkedAddSize(newSize, replacement.size());
         } else {
-            newSize =
-                U16StringSharedStorage::checkedAddSize(newSize, characterSize, "Modified string exceeds size bounds");
+            newSize = U16StringSharedStorage::checkedAddSize(newSize, characterSize);
         }
     }
     if (!hasMatch) {
         return storage;
     }
     if (!canWriteInPlace) {
-        storage = U16StringModifyTools{dataView}.replacedCharacters(predicate, replacement);
+        if (auto result = U16StringModifyTools{dataView}.replacedCharactersIfChanged(predicate, replacement)) {
+            storage = std::move(result.value());
+        }
         return storage;
     }
 
     auto writePosition = std::size_t{0};
-    position = unit::U16DataIndex::zero();
+    position = unit::U16Index::zero();
     while (position.toSizeT() < data.size()) {
         const auto characterStart = position;
         const auto character = utf16::decodeCharOrReplace(data, position);
@@ -271,8 +274,7 @@ auto U16StringModifyTools::replaceCharactersInStorage(
                     data.data() + characterStart.toSizeT(),
                     characterSize * sizeof(char16_t));
             }
-            writePosition = U16StringSharedStorage::checkedAddSize(
-                writePosition, characterSize, "Modified string write exceeds size bounds");
+            writePosition = U16StringSharedStorage::checkedAddSize(writePosition, characterSize);
         }
     }
     storage.resize(newSize);

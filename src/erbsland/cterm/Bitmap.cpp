@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Bitmap.hpp"
 
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 
 #include <algorithm>
 
@@ -32,7 +32,7 @@ auto Bitmap::fromPattern(const std::initializer_list<text::String> rows) -> Bitm
 
 auto Bitmap::toPattern() const -> text::String {
     auto result = text::StringEditor{};
-    result.reserve(unit::ByteLength::fromSizeT((_size.area() + _size.height()).toSizeT()));
+    result.reserve(unit::ByteCount::fromSizeT((_size.area() + _size.height()).toSizeT()));
     for (auto y = Coordinate{0}; y < _size.height(); ++y) {
         for (auto x = Coordinate{0}; x < _size.width(); ++x) {
             result.append(pixel(Position{x, y}) ? U'#' : U'.');

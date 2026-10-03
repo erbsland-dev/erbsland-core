@@ -39,8 +39,8 @@ an incoming
 cases, configure all callbacks before starting the operation.
 The event loop then delivers every later state change and data chunk on the connection's owner loop.
 
-Prepare the Map Data
-====================
+Configuring the Example TCP Lookup Service
+==========================================
 
 The server takes the path to an ELCL document as its required positional argument.
 Its ``map`` section uses text names, which makes keys exact text instead of normalized ELCL identifiers.
@@ -60,20 +60,30 @@ A bad map file therefore fails early, before a client can receive a partial or s
 
 .. erbsland-demo::
     :source: network/TcpMapServer/TcpMapServerApp.hpp
-    :function-blocks: parseCommandLine loadMap
-    :function-blocks-sha256: 8c2af62ed5cb86450afd51cd63be07473dc0d51ce911aebff928cb1dcedbb360
-    :source-sha256: 256973fc95b7bbbec438545d06561a5488b5b37bfc443834e93c220b2756f638
+    :show: f:registerCommandLineOptions, f:handleCommandLineOptions, f:loadMap
+    :sha256: ceaf825d09da941e01e8ea8e770709855a106457df6810706df8f2a79ca478d0
 
 .. code-block:: cpp
 
-    void parseCommandLine() override {
-        Application::parseCommandLine();
-        if (optionValues() == nullptr) {
-            return;
-        }
-        _address = el::IpAddress::fromStringOrThrow(optionValues()->getText("address"_el));
-        _port = el::Port::fromStringOrThrow(optionValues()->getText("port"_el));
-        _map = loadMap(el::Path::fromNativeOrThrow(optionValues()->getText("map-file"_el)));
+    void registerCommandLineOptions(const el::OptionsPtr &options) override {
+        options->setHelpDescription("Serves text values from an ELCL map over TCP."_el);
+        options->addOption("map-file"_el).setRequired().setHelpTitle("ELCL document containing the map section."_el);
+        options->addOption({"-a"_el, "--address"_el, "address"_el})
+            .setType(el::OptionType::Text)
+            .setDefaultValue("127.0.0.1"_el)
+            .setHelpTitle("Local IP address to bind."_el)
+            .setValidateTextValue<el::IpAddress>("The address is not a valid IP address"_el);
+        options->addOption({"-p"_el, "--port"_el, "port"_el})
+            .setType(el::OptionType::Text)
+            .setDefaultValue("45870"_el)
+            .setHelpTitle("Local TCP port to bind."_el)
+            .setValidateTextValue<el::Port>("The port is not valid"_el);
+    }
+
+    void handleCommandLineOptions(const el::OptionValuesPtr &values) override {
+        _address = el::IpAddress::fromStringOrThrow(values->getText("address"_el));
+        _port = el::Port::fromStringOrThrow(values->getText("port"_el));
+        _map = loadMap(el::Path::fromNativeOrThrow(values->getText("map-file"_el)));
         events()->invoke([this]() -> void { startServer(); });
     }
 
@@ -112,9 +122,8 @@ you experiment with the client.
 
 .. erbsland-demo::
     :source: network/TcpMapServer/TcpMapServerApp.hpp
-    :function-blocks: startServer startSession removeSession
-    :function-blocks-sha256: 31f35cce027ff0fb05a37ce325a6f54920a8fee26cb9f0da8084b20276e914dc
-    :source-sha256: 256973fc95b7bbbec438545d06561a5488b5b37bfc443834e93c220b2756f638
+    :show: f:startServer, f:startSession, f:removeSession
+    :sha256: 31478d2096bdb5095c1699cb75a9d04909078e1c7d102e4730100e4ff39c4b91
 
 .. code-block:: cpp
 
@@ -164,8 +173,8 @@ Keeping a session object in ``_sessions`` gives that connection an explicit owne
 removes the session.
 This lets the listener continue accepting new clients while earlier clients are still being handled.
 
-Frame, Look Up, and Reply
-=========================
+Server-Side TCP Message Framing and Responses
+=============================================
 
 ``onData()`` receives arbitrary byte chunks.
 The session appends each chunk to its input buffer and returns until the length prefix and all payload bytes are
@@ -181,9 +190,8 @@ retain the block and retry it from ``onWritable()``.
 
 .. erbsland-demo::
     :source: network/TcpMapServer/TcpMapServerApp.hpp
-    :function-blocks: start onData sendAnswer
-    :function-blocks-sha256: 05e153f7dc4611d52567dcb009ed0b183cc087d8bc40b75ed5df7ae4a67b34d4
-    :source-sha256: 256973fc95b7bbbec438545d06561a5488b5b37bfc443834e93c220b2756f638
+    :show: f:start, f:onData, f:sendAnswer
+    :sha256: 8f630d216409afd3e74a6413dc13e8286955f2c7ecfdb998be75891e4607e0b6
 
 .. code-block:: cpp
 
@@ -194,7 +202,7 @@ retain the block and retry it from ``onWritable()``.
             .onError([](const el::NetworkErrorContext &error) -> void { throw el::NetworkError{error}; })
             .onFinal([this]() -> void { _done(this); });
         auto options = el::TcpAcceptOptions{};
-        options.setBufferLimits(el::SocketBufferLimits{el::ByteLength{8192U}, el::ByteLength{8192U}});
+        options.setBufferLimits(el::SocketBufferLimits{el::ByteCount{8192U}, el::ByteCount{8192U}});
         _connection->accept(std::move(_request), options);
     }
 
@@ -202,27 +210,18 @@ retain the block and retry it from ``onWritable()``.
         _input.append(data);
         auto reader = el::ByteReader{_input};
         reader.setEndianness(el::Endianness::Big);
-        if (!reader.canRead(sizeof(std::uint32_t))) {
+        const auto key = reader.readText(textOptions());
+        if (!key.has_value()) {
             return;
         }
-        const auto payloadLength = el::ByteLength{reader.readUInt32()};
-        if (payloadLength > el::ByteLength{4096U}) {
-            _connection->abort();
-            return;
-        }
-        reader.setPosition(el::ByteIndex::zero());
-        const auto key = reader.readText();
-        if (reader.position().isZero()) {
-            return;
-        }
-        _requestFn(_connection->remoteEndpoint().value(), key);
-        sendAnswer(_map->get(key, "Key not found"_el));
+        _requestFn(_connection->remoteEndpoint().value(), *key);
+        sendAnswer(_map->get(*key, "Key not found"_el));
     }
 
     void sendAnswer(const el::String &answer) {
         auto writer = el::ByteWriter{};
         writer.setEndianness(el::Endianness::Big);
-        writer.writeText(answer);
+        writer.writeTextOrThrow(answer, textOptions());
         if (!_connection->send(writer.toByteBlock()).isAccepted()) {
             _connection->abort();
             return;
@@ -252,20 +251,30 @@ demo rejects unspecified addresses.
 
 .. erbsland-demo::
     :source: network/TcpMapClient/TcpMapClientApp.hpp
-    :function-blocks: parseCommandLine startClient validateResolvedEndpoints
-    :function-blocks-sha256: 8981e3ee9c72b30a75a773c130e9efa29c6716d0cbdfa1fa93d75499193559cd
-    :source-sha256: d0308540a3aac26aba3194b953b67df248cfc6d09de55c4895ff14e4dddc8f24
+    :show: f:registerCommandLineOptions, f:handleCommandLineOptions, f:startClient, f:validateResolvedEndpoints
+    :sha256: b1a23f6c453c98e27ee3c5f6c231335610fcdcf3d8f73be0ffbf1e9aeca16ef7
 
 .. code-block:: cpp
 
-    void parseCommandLine() override {
-        Application::parseCommandLine();
-        if (optionValues() == nullptr) {
-            return;
-        }
-        _key = optionValues()->getText("key"_el);
-        _host = el::Host::fromStringOrThrow(optionValues()->getText("host"_el));
-        _port = el::Port::fromStringOrThrow(optionValues()->getText("port"_el));
+    void registerCommandLineOptions(const el::OptionsPtr &options) override {
+        options->setHelpDescription("Looks up one text key on a TCP map server."_el);
+        options->addOption("key"_el).setRequired().setHelpTitle("Text key to look up."_el);
+        options->addOption({"--host"_el, "host"_el})
+            .setType(el::OptionType::Text)
+            .setDefaultValue("127.0.0.1"_el)
+            .setHelpTitle("Map server host name or IP address."_el)
+            .setValidateTextValue<el::Host>("The host is not a valid host name or IP address"_el);
+        options->addOption({"-p"_el, "--port"_el, "port"_el})
+            .setType(el::OptionType::Text)
+            .setDefaultValue("45870"_el)
+            .setHelpTitle("Map server TCP port."_el)
+            .setValidateTextValue<el::Port>("The port is not valid"_el);
+    }
+
+    void handleCommandLineOptions(const el::OptionValuesPtr &values) override {
+        _key = values->getText("key"_el);
+        _host = el::Host::fromStringOrThrow(values->getText("host"_el));
+        _port = el::Port::fromStringOrThrow(values->getText("port"_el));
         events()->invoke([this]() -> void { startClient(); });
     }
 
@@ -309,16 +318,15 @@ The server then closes the connection, and ``onFinal()`` ends this one-shot clie
 
 .. erbsland-demo::
     :source: network/TcpMapClient/TcpMapClientApp.hpp
-    :function-blocks: sendQuery onData
-    :function-blocks-sha256: 8cd71932cee8373c7aab4a2c5dd28909cf68d6e810fc1794e9c117950dce091a
-    :source-sha256: d0308540a3aac26aba3194b953b67df248cfc6d09de55c4895ff14e4dddc8f24
+    :show: f:sendQuery, f:onData
+    :sha256: aa0864e2e6f62357a4140b57a7bd43ad90c5ee195bdd1221ed6f3dde15e11a7e
 
 .. code-block:: cpp
 
     void sendQuery() {
         auto writer = el::ByteWriter{};
         writer.setEndianness(el::Endianness::Big);
-        writer.writeText(_key);
+        writer.writeTextOrThrow(_key, textOptions());
         if (!_connection->send(writer.toByteBlock()).isAccepted()) {
             throw el::ApplicationError{"The map query did not fit in the connection output queue."_el};
         }
@@ -329,19 +337,11 @@ The server then closes the connection, and ``onFinal()`` ends this one-shot clie
         _input.append(data);
         auto reader = el::ByteReader{_input};
         reader.setEndianness(el::Endianness::Big);
-        if (!reader.canRead(sizeof(std::uint32_t))) {
+        const auto answer = reader.readText(textOptions());
+        if (!answer.has_value()) {
             return;
         }
-        const auto payloadLength = el::ByteLength{reader.readUInt32()};
-        if (payloadLength > el::ByteLength{4096U}) {
-            throw el::ApplicationError{"The map response exceeds the protocol limit."_el};
-        }
-        reader.setPosition(el::ByteIndex::zero());
-        const auto answer = reader.readText();
-        if (reader.position().isZero()) {
-            return;
-        }
-        terminal()->printLine(fg::BrightGreen, "Map value: "_el, answer);
+        terminal()->printLine(fg::BrightGreen, "Map value: "_el, *answer);
         _receivedAnswer = true;
     }
 

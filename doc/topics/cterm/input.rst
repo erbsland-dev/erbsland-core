@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-*****
-Input
-*****
+****************************************
+Keyboard Input and Terminal Text Editing
+****************************************
 
 The input classes provide access to keyboard input from the terminal.
 They are designed for interactive applications such as dashboards, tools, and terminal games that need immediate key
@@ -12,11 +12,9 @@ handling.
 For text prompts that still need cursor movement, editing, history, or masked input,
 :cpp:class:`cterm::ReadLine <erbsland::cterm::ReadLine>` provides a complete interactive editor.
 
-Usage
-=====
 
 Polling for Keys in a Redraw Loop
----------------------------------
+=================================
 
 For interactive applications, switch the input backend to key mode and poll for input with a timeout.
 This allows your application to update the screen regularly while still reacting to keyboard events.
@@ -44,7 +42,7 @@ Use ``waitForKey()`` when you intentionally want to block until the next key arr
 The older ``read()`` wrapper is deprecated and now forwards to either ``readKey()`` or ``waitForKey()``.
 
 Switching Between Key and Line Input
-------------------------------------
+====================================
 
 ``Input::Mode`` controls whether the terminal reads raw key presses or full lines of text.
 ``Mode::Key`` is the right choice for interactive applications with a redraw loop, while ``Mode::ReadLine`` fits
@@ -63,7 +61,7 @@ prompts, configuration tools, and simple command-driven interfaces.
 Switching modes on the same terminal makes it easy to combine menu-driven screens with occasional free-form text input.
 
 Reading Editable Text
----------------------
+=====================
 
 Create :cpp:class:`cterm::ReadLine <erbsland::cterm::ReadLine>` with a shared terminal and a copy of
 :cpp:class:`cterm::ReadLineOptions <erbsland::cterm::ReadLineOptions>`.
@@ -74,7 +72,7 @@ The blocking interface starts the editor, waits for a terminal result, restores 
     auto options = ReadLineOptions{}
         .setTitle("Enter your name:")
         .setPadding(block::MarginPair{1, 2})
-        .setMaximumLength(CpLength{100})
+        .setMaximumLength(CpCount{100})
         .setPlaceholder("Your Name");
     auto readLine = ReadLine::create(terminal, options);
 
@@ -92,8 +90,8 @@ Pressing :cpp:enumerator:`cterm::Key::Enter` commits the text, while
 Only a committed result is successful and contains text.
 Cancellation, timeout, and idle results always contain an empty string.
 
-Polling an Editor
------------------
+Polling the ReadLine Text Editor
+================================
 
 Use ``start()``, ``update()``, and ``stop()`` when the surrounding application has its own update loop.
 An idle result means that the editor remains active but no terminal result is available yet.
@@ -119,12 +117,12 @@ Committed, cancelled, and timeout results remain latched until ``stop()``.
     readLine->stop();
 
 ``ReadLine`` requires an interactive terminal in full-control output mode.
-Starting an editor on an unsupported terminal raises :cpp:class:`err::RuntimeError <erbsland::err::RuntimeError>`.
+Starting an editor on an unsupported terminal raises :cpp:class:`TerminalError <erbsland::cterm::TerminalError>`.
 The editor saves the previous input mode, switches to key mode, and restores the saved mode when it stops.
 While active, it exclusively owns the terminal output area; do not print unrelated terminal output from the application.
 
 Editing and Multiple Lines
---------------------------
+==========================
 
 Text is inserted at the rendered cursor.
 The arrow keys move through wrapped and explicit lines, Home and End move within the current visual row, Backspace
@@ -151,7 +149,7 @@ When the editor grows beyond ``maximumDisplayLines``, it scrolls its edit rows t
 The layout is recalculated after a terminal resize.
 
 History and Draft Text
-----------------------
+======================
 
 Pass a :cpp:type:`text::StringList <erbsland::text::StringList>` to ``setHistory()`` to provide earlier values.
 Up selects older history at the first visual row and Down selects newer history at the last visual row.
@@ -162,8 +160,8 @@ Non-empty committed text is appended to the editor's reusable history, except fo
 Current text and history are copied by ``ReadLine::create()`` and truncated to the earliest configured code-point or
 logical-line limit, independent of the order in which the option setters were called.
 
-Secrets and Placeholders
-------------------------
+Masked Secret Input and Empty-Input Placeholders
+================================================
 
 A placeholder is visible only while the edit buffer is empty.
 Use :cpp:class:`ReadSecret <erbsland::cterm::ReadSecret>` for passwords or tokens.
@@ -193,8 +191,8 @@ Entering and leaving the editor purges pending backend key state.
 The fixed application buffer and protected result reduce recoverable process-memory remnants, but do not erase kernel or
 terminal-driver queues and do not prevent swapping, crash dumps, register remnants, or process compromise.
 
-Layouts and Cleanup
--------------------
+Text Editor Layouts and Terminal-State Cleanup
+==============================================
 
 :cpp:enum:`cterm::ReadLineDisplayStyle <erbsland::cterm::ReadLineDisplayStyle>` provides four adaptive layouts:
 
@@ -224,7 +222,7 @@ beginning of the next line.
 ``stop()`` is idempotent, and destruction safely stops an active editor.
 
 Inactivity Timeout
-------------------
+==================
 
 Set a positive timeout to end the operation after that many seconds without recognized editing or navigation input.
 Recognized edit, navigation, and history keys reset the timer even when the cursor or a configured limit prevents a
@@ -242,7 +240,7 @@ If the title is empty, the countdown is displayed on its own.
 The blocking editor waits only until the next input, blink, countdown, or timeout event, so it does not busy-wait.
 
 Describing Key Bindings
------------------------
+=======================
 
 ``InputDefinition`` represents a key binding together with the input mode it applies to.
 It is useful when describing configurable shortcuts or when displaying the currently active bindings.
@@ -268,7 +266,7 @@ Printable text input remains text input: pressing Shift with a letter produces t
 ``Q``.
 
 Matching Decoded Key Types
---------------------------
+==========================
 
 When you only care about the general kind of a key event, inspect ``Key::Type`` instead of comparing against a long list
 of individual keys.

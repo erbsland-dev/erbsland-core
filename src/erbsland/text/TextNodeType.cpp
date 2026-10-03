@@ -90,6 +90,8 @@ auto TextNodeType::toString() const noexcept -> String {
         return "OptionShort"_el;
     case OptionLong:
         return "OptionLong"_el;
+    case OptionValue:
+        return "OptionValue"_el;
     case OptionMeta:
         return "OptionMeta"_el;
     case OptionOptional:
@@ -157,6 +159,7 @@ auto TextNodeType::renderClass() const noexcept -> RenderClass {
     case OptionName:
     case OptionShort:
     case OptionLong:
+    case OptionValue:
     case OptionMeta:
     case OptionOptional:
     case OptionDetails:

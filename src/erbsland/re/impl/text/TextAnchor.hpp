@@ -48,9 +48,9 @@ public:
     [[nodiscard]] auto raw() const noexcept -> Value { return _value; }
 
     /// Create a new text anchor from the given string.
-    /// @param str The string representation of the anchor.
-    /// @return The created text anchor or None if the string is invalid.
-    /// @throws err::ParameterError if the string is invalid.
+    /// @param str The string representation of a supported text anchor.
+    /// @return The created text anchor.
+    /// @throws err::NotFoundError If the anchor name is unknown.
     [[nodiscard]] static auto fromString(const text::String &str) -> TextAnchor;
 
 private:

@@ -3,6 +3,10 @@
 
 #include "StringDemos.hpp"
 
+#include <erbsland/NormalizationForm.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+
 namespace demo {
 
 /// Select canonical or compatibility normalization according to the purpose of the text.

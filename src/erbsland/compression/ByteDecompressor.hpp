@@ -23,7 +23,10 @@ namespace erbsland::compression {
 class ByteDecompressor final {
 public:
     /// Create a configured byte decompressor.
-    /// @throws err::ParameterError If the options or algorithm and format combination are invalid.
+    /// @param algorithm The compression algorithm. Must support the selected `format`.
+    /// @param format The representation format. Must be supported by the selected `algorithm`.
+    /// @param options The decompression limits. Output and workspace limits must be finite; any expected output length
+    /// must be finite and within the output limit. Raw LZ4 requires an expected output length.
     ByteDecompressor(CompressionAlgorithm algorithm, CompressionFormat format, DecompressionOptions options = {});
 
     // defaults
@@ -35,13 +38,15 @@ public:
 
 public: // one-shot decompression
     /// Decompress a byte block using the configured representation and limits.
-    /// @throws err::OutOfRangeError If an output or workspace limit would be exceeded.
+    /// @param data The compressed bytes. Decompression must fit within the configured output and workspace limits.
     /// @throws CompressionError If the compressed representation is invalid.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     [[nodiscard]] auto decompress(const mem::ByteBlock &data) const -> mem::ByteBlock;
 
 public: // stream transfer
     /// Transform one source prefix into a borrowed destination; neither stream is closed or flushed.
     /// @throws CompressionError On invalid data, cancellation, or timeout. Output may be partial.
+    /// @throws err::OutOfRangeError If processing exceeds a configured workspace, buffered-input, or output limit.
     auto decompress(
         stream::ByteInputStream &source,
         stream::ByteOutputStream &destination,

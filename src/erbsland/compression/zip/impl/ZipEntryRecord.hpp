@@ -8,8 +8,8 @@
 #include "../../../path/Path.hpp"
 #include "../../../text/String.hpp"
 #include "../../../time/Timestamp.hpp"
+#include "../../../unit/ByteCount.hpp"
 #include "../../../unit/ByteIndex.hpp"
-#include "../../../unit/ByteLength.hpp"
 
 #include <cstdint>
 
@@ -28,8 +28,8 @@ struct ZipEntryRecord final {
     uint16_t dosTime{};
     uint16_t dosDate{};
     uint32_t crc32{};
-    unit::ByteLength compressedLength;
-    unit::ByteLength uncompressedLength;
+    unit::ByteCount compressedLength;
+    unit::ByteCount uncompressedLength;
     unit::ByteIndex localHeaderOffset;
     bool directory{};
     bool zip64{};

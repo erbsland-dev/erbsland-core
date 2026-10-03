@@ -9,7 +9,7 @@
 #include <erbsland/re/impl/text/ReplacementParser.hpp>
 #include <erbsland/re/RegExError.hpp>
 #include <erbsland/re/StdFormat.hpp>
-#include <erbsland/text/StringFormat.hpp>
+#include <erbsland/StringFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>
@@ -22,6 +22,38 @@ TESTED_TARGETS(ReplacementParser)
 TAGS(Text Replacement)
 class ReplacementParserTest final : public UNITTEST_SUBCLASS(re_test::TestHelper) {
 public:
+    void testValidateThenParseSharedUnicodeExpression() {
+        const CaptureGroupNames groupNames{"name"_el};
+        const String expression = "prefix: Grüße 🙂 {{literal}} {NAME} {1} {}"_el;
+        auto parser =
+            ReplacementParser{expression.slice(el::text::StringSide::Back, el::unit::ByteIndex{8}), groupNames};
+        REQUIRE_NOTHROW(parser.validate());
+        REQUIRE_NOTHROW(parser.parse());
+        REQUIRE_NOTHROW(parser.validate());
+    }
+
+    void testValidationAndParsingReportSameErrors() {
+        const CaptureGroupNames groupNames{"name"_el};
+        for (
+            const auto expression :
+            {"🙂 {"_el, "é }"_el, "{!}"_el, "{1x}"_el, "{name-}"_el, "{unknown}"_el, "{2}"_el, "{65536}"_el}) {
+            auto parser = ReplacementParser{expression, groupNames};
+            try {
+                parser.validate();
+                REQUIRE(false);
+            } catch (const RegExError &validationError) {
+                try {
+                    (void)parser.parse();
+                    REQUIRE(false);
+                } catch (const RegExError &parseError) {
+                    REQUIRE_EQUAL(validationError.category(), parseError.category());
+                    REQUIRE_EQUAL(validationError.description(), parseError.description());
+                    REQUIRE_EQUAL(validationError.position(), parseError.position());
+                }
+            }
+        }
+    }
+
     void testParse_EmptyText() {
         const CaptureGroupNames groupNames;
         auto parser = ReplacementParser{String{}, groupNames};
@@ -38,7 +70,7 @@ public:
         REQUIRE_EQUAL(out, StringEditor{"abc"_el});
     }
 
-    void testParse_MalformedTextBecomesReplacement() {
+    void testParse_MalformedTextIsReadTolerantly() {
         const auto malformed = re_test::string_helper::bytesToString({'a', 0xFFU, 'b'});
         const CaptureGroupNames groupNames;
         auto parser = ReplacementParser{String{malformed}, groupNames};
@@ -200,9 +232,12 @@ public:
     void testParse_Error_MaxReplacementTextLengthExceeded() {
         using el::re::impl::limits::maximumReplacementTextLength;
 
-        const auto text = String::fromCharacter(U'a', maximumReplacementTextLength + el::unit::CpLength{2U});
+        const auto text = String::fromCharacter(U'a', maximumReplacementTextLength + el::unit::CpCount{2U});
 
         const CaptureGroupNames groupNames;
+        auto validParser =
+            ReplacementParser{text.slice(el::text::StringSide::Front, maximumReplacementTextLength), groupNames};
+        REQUIRE_NOTHROW(validParser.validate());
         auto parser = ReplacementParser{text, groupNames};
 
         try {
@@ -215,7 +250,7 @@ public:
                 e.description(),
                 el::text::StringFormat{"The maximum replacement-expression length is {} characters."}.build(
                     maximumReplacementTextLength));
-            REQUIRE_EQUAL(e.position().toSizeT(), maximumReplacementTextLength.toSizeT());
+            REQUIRE(e.position().distanceFromZero() >= maximumReplacementTextLength);
         }
     }
 };

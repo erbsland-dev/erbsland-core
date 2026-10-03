@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TextInputStream.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::stream {
 
+using namespace unit;
 using namespace text::literals;
 using text::String;
 using util::CoAsyncGenerator;
@@ -28,7 +29,7 @@ auto TextInputStream::coRead() -> CoTask<StreamReadResult<String>> {
     return coRead(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coRead(const unit::CpLength maximum) -> CoTask<StreamReadResult<String>> {
+auto TextInputStream::coRead(const CpCount maximum) -> CoTask<StreamReadResult<String>> {
     auto self = std::static_pointer_cast<TextInputStream>(sharedInputStream());
     return CoTask<StreamReadResult<String>>::run(
         [self = std::move(self), maximum]() -> StreamReadResult<String> { return self->read(maximum); });
@@ -38,7 +39,7 @@ auto TextInputStream::coReadLine() -> CoTask<StreamReadResult<String>> {
     return coReadLine(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coReadLine(const unit::CpLength maximum) -> CoTask<StreamReadResult<String>> {
+auto TextInputStream::coReadLine(const CpCount maximum) -> CoTask<StreamReadResult<String>> {
     auto self = std::static_pointer_cast<TextInputStream>(sharedInputStream());
     return CoTask<StreamReadResult<String>>::run(
         [self = std::move(self), maximum]() -> StreamReadResult<String> { return self->readLine(maximum); });
@@ -48,7 +49,7 @@ auto TextInputStream::coReadAll() -> CoTask<StreamReadResult<String>> {
     return coReadAll(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coReadAll(const unit::CpLength maximum) -> CoTask<StreamReadResult<String>> {
+auto TextInputStream::coReadAll(const CpCount maximum) -> CoTask<StreamReadResult<String>> {
     auto self = std::static_pointer_cast<TextInputStream>(sharedInputStream());
     return CoTask<StreamReadResult<String>>::run(
         [self = std::move(self), maximum]() -> StreamReadResult<String> { return self->readAll(maximum); });
@@ -58,9 +59,9 @@ auto TextInputStream::coReadBlocks() -> CoAsyncGenerator<StreamReadResult<String
     return coReadBlocks(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coReadBlocks(const unit::CpLength maximum) -> CoAsyncGenerator<StreamReadResult<String>> {
+auto TextInputStream::coReadBlocks(const CpCount maximum) -> CoAsyncGenerator<StreamReadResult<String>> {
     if (maximum.isInfinite() || maximum.isZero()) {
-        throw err::ParameterError{"The coroutine text-block length must be positive and finite."_el, "maximum"_el};
+        throw err::ParameterFailure{"The coroutine text-block length must be positive and finite."_el, "maximum"_el};
     }
     while (true) {
         auto result = co_await coRead(maximum);
@@ -78,9 +79,9 @@ auto TextInputStream::coReadLines() -> CoAsyncGenerator<StreamReadResult<String>
     return coReadLines(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coReadLines(const unit::CpLength maximum) -> CoAsyncGenerator<StreamReadResult<String>> {
+auto TextInputStream::coReadLines(const CpCount maximum) -> CoAsyncGenerator<StreamReadResult<String>> {
     if (maximum.isInfinite() || maximum.isZero()) {
-        throw err::ParameterError{"The coroutine line length must be positive and finite."_el, "maximum"_el};
+        throw err::ParameterFailure{"The coroutine line length must be positive and finite."_el, "maximum"_el};
     }
     while (true) {
         auto result = co_await coReadLine(maximum);

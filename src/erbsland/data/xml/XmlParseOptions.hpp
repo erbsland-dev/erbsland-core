@@ -2,23 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 namespace erbsland::data::xml {
+
 /// Safety limits for parsing XML.
 /// @tested{XmlDocumentTest}
 class XmlParseOptions final {
 public:
-    static constexpr auto cDefaultMaximumInputLength = unit::ByteLength{16U * 1024U * 1024U}; ///< Input limit.
-    static constexpr auto cDefaultMaximumNesting = unit::ItemCount{64U};                      ///< Element depth limit.
-    static constexpr auto cDefaultMaximumNodeCount = unit::ItemCount{1'000'000U};             ///< Node limit.
-    static constexpr auto cDefaultMaximumStringLength = unit::ByteLength{8U * 1024U * 1024U}; ///< Text byte limit.
+    static constexpr auto cDefaultMaximumInputLength = unit::ByteCount{16U * 1024U * 1024U}; ///< Input limit.
+    static constexpr auto cDefaultMaximumNesting = unit::ItemCount{64U};                     ///< Element depth limit.
+    static constexpr auto cDefaultMaximumNodeCount = unit::ItemCount{1'000'000U};            ///< Node limit.
+    static constexpr auto cDefaultMaximumStringLength = unit::ByteCount{8U * 1024U * 1024U}; ///< Text byte limit.
 public:
     /// Get the input byte limit.
-    [[nodiscard]] constexpr auto maximumInputLength() const noexcept -> unit::ByteLength { return _maximumInputLength; }
+    [[nodiscard]] constexpr auto maximumInputLength() const noexcept -> unit::ByteCount { return _maximumInputLength; }
     /// Set the input byte limit.
-    constexpr auto setMaximumInputLength(unit::ByteLength value) noexcept -> XmlParseOptions & {
+    constexpr auto setMaximumInputLength(unit::ByteCount value) noexcept -> XmlParseOptions & {
         _maximumInputLength = value;
         return *this;
     }
@@ -37,19 +38,20 @@ public:
         return *this;
     }
     /// Get the maximum byte length of one text or attribute value.
-    [[nodiscard]] constexpr auto maximumStringLength() const noexcept -> unit::ByteLength {
+    [[nodiscard]] constexpr auto maximumStringLength() const noexcept -> unit::ByteCount {
         return _maximumStringLength;
     }
     /// Set the maximum byte length of one text or attribute value.
-    constexpr auto setMaximumStringLength(unit::ByteLength value) noexcept -> XmlParseOptions & {
+    constexpr auto setMaximumStringLength(unit::ByteCount value) noexcept -> XmlParseOptions & {
         _maximumStringLength = value;
         return *this;
     }
 
 private:
-    unit::ByteLength _maximumInputLength{cDefaultMaximumInputLength};   ///< Source bytes.
-    unit::ItemCount _maximumNesting{cDefaultMaximumNesting};            ///< Element depth.
-    unit::ItemCount _maximumNodeCount{cDefaultMaximumNodeCount};        ///< Nodes.
-    unit::ByteLength _maximumStringLength{cDefaultMaximumStringLength}; ///< Text bytes.
+    unit::ByteCount _maximumInputLength{cDefaultMaximumInputLength};   ///< Source bytes.
+    unit::ItemCount _maximumNesting{cDefaultMaximumNesting};           ///< Element depth.
+    unit::ItemCount _maximumNodeCount{cDefaultMaximumNodeCount};       ///< Nodes.
+    unit::ByteCount _maximumStringLength{cDefaultMaximumStringLength}; ///< Text bytes.
 };
+
 }

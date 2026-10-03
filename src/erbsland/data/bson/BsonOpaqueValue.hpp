@@ -9,6 +9,7 @@
 #include <cstdint>
 
 namespace erbsland::data::bson {
+
 /// Known BSON wire value preserved without executing or interpreting it.
 /// @tested{BsonValueTest}
 class BsonOpaqueValue final {
@@ -33,4 +34,5 @@ private:
     uint8_t _typeCode;       ///< BSON wire type.
     mem::ByteBlock _payload; ///< Framed wire payload.
 };
+
 }

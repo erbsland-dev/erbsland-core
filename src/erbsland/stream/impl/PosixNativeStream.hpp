@@ -43,6 +43,7 @@ public: // implements NativeOutputStream
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
 
 public: // implements NativeByteStream
+    [[nodiscard]] auto initialFileSize() const noexcept -> unit::ByteCount override;
     [[nodiscard]] auto fileIdentity() const noexcept -> system::FileIdentity override;
     [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
     [[nodiscard]] auto position() const -> unit::ByteIndex override;
@@ -50,7 +51,7 @@ public: // implements NativeByteStream
     auto movePosition(StreamPositionOrigin origin, unit::ByteOffset offset) -> unit::ByteIndex override;
     void close() override;
     void abort() noexcept override;
-    [[nodiscard]] auto read(mem::ByteSpan destination) -> unit::ByteLength override;
+    [[nodiscard]] auto read(mem::ByteSpan destination) -> unit::ByteCount override;
     void write(mem::ConstByteSpan bytes) override;
 
 public:
@@ -61,7 +62,7 @@ public:
     /// Get the current file size if this stream references a regular file.
     /// @return The file size in bytes, or zero for non-file streams.
     /// @throws stream::StreamError If the stream is closed or size lookup fails.
-    [[nodiscard]] auto fileSize() const -> unit::ByteLength;
+    [[nodiscard]] auto fileSize() const -> unit::ByteCount;
 
 private:
     /// Throw a stream error with a POSIX error code.
@@ -77,6 +78,7 @@ private:
     NativeStreamOwnership _ownership{NativeStreamOwnership::Borrowed}; ///< Descriptor ownership mode.
     text::String _path;                                                ///< Stream path, when available.
     system::FileIdentity _fileIdentity;                                ///< Identity captured from the descriptor.
+    unit::ByteCount _initialFileSize{unit::ByteCount::infinite()};     ///< Regular-file size captured at construction.
     bool _supportsPositioning{false};                                  ///< Whether this descriptor can be positioned.
     mutable std::mutex _operationMutex;                                ///< Protects operation and deferred close state.
     mutable unsigned int _operationCount{0U};                          ///< Number of native calls using the descriptor.
@@ -84,4 +86,5 @@ private:
 };
 
 }
+
 #include "../../mem/ByteSpan.hpp"

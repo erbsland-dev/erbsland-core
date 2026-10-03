@@ -27,7 +27,7 @@
 #include "../../text/StringEditor.hpp"
 #include "../../text/u16/U16StringEditor.hpp"
 #include "../../time/impl/WindowsTimeConverter.hpp"
-#include "../../unit/U16DataLength.hpp"
+#include "../../unit/U16Count.hpp"
 
 #include <aclapi.h>
 #include <sddl.h>
@@ -41,20 +41,27 @@
 #include <vector>
 
 namespace erbsland::path::impl {
+
+using namespace stream;
+using stream::impl::BufferedByteOutputStream;
+using stream::impl::createBufferedByteInputStream;
+using stream::impl::NativeStreamOwnership;
+using stream::impl::WindowsNativeStream;
+using namespace text;
+using text::impl::PlatformU16StringAccess;
 using namespace text::literals;
 
 auto WindowsPathBackend::openByteInputStreamOrThrow(const Path &path, const PathReadDataOptions options) const
-    -> stream::ByteInputStreamPtr {
+    -> ByteInputStreamPtr {
     const auto handle = openInputHandleOrThrow(path, options.symlinkMode());
-    auto native = std::make_shared<stream::impl::WindowsNativeStream>(
-        handle, stream::impl::NativeStreamOwnership::Owned, path.toString());
-    return stream::impl::createBufferedByteInputStream(std::move(native), options.streamSettings());
+    auto native = std::make_shared<WindowsNativeStream>(handle, NativeStreamOwnership::Owned, path.toString());
+    return createBufferedByteInputStream(std::move(native), options.streamSettings());
 }
 
 auto WindowsPathBackend::openInputHandleOrThrow(const Path &path, const SymlinkMode symlinkMode) -> void * {
     if (symlinkMode == SymlinkMode::Follow) {
         const auto pathText = pathTextOrThrow(path);
-        const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+        const auto pathTextAccess = PlatformU16StringAccess{pathText};
         const auto handle = CreateFileW(
             pathTextAccess.nullTerminatedWideCharPtr(),
             GENERIC_READ,
@@ -80,7 +87,7 @@ auto WindowsPathBackend::openInputHandleOrThrow(const Path &path, const SymlinkM
     for (auto index = unit::ItemIndex::one(); index.isWithin(elements.count()); ++index) {
         currentPath /= elements.get(index);
         const auto pathText = pathTextOrThrow(currentPath);
-        const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+        const auto pathTextAccess = PlatformU16StringAccess{pathText};
         const auto isFinal = !index.advanced(unit::ItemCount::one()).isWithin(elements.count());
         handle = CreateFileW(
             pathTextAccess.nullTerminatedWideCharPtr(),
@@ -145,7 +152,7 @@ void WindowsPathBackend::setAccessProfileOrThrow(
     }
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathTextAccess = PlatformU16StringAccess{pathText};
     auto security = WindowsAccessProfileSecurity{resolvedPath, profile};
     const auto securityStatus = SetNamedSecurityInfoW(
         const_cast<LPWSTR>(pathTextAccess.nullTerminatedWideCharPtr()),
@@ -179,7 +186,7 @@ void WindowsPathBackend::setLastModifiedOrThrow(
         options.symlinkMode() == SymlinkMode::Follow ? PathResolveMode::Physical
                                                      : PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathTextAccess = PlatformU16StringAccess{pathText};
     if (options.symlinkMode() == SymlinkMode::Skip) {
         const auto attributes = GetFileAttributesW(pathTextAccess.nullTerminatedWideCharPtr());
         if (attributes == INVALID_FILE_ATTRIBUTES) {
@@ -227,7 +234,7 @@ void WindowsPathBackend::addAttributesOrThrow(
     const Path &path, const PathAttributes attributes, [[maybe_unused]] const PathChangeOptions options) const {
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathTextAccess = PlatformU16StringAccess{pathText};
     const auto currentAttributes = GetFileAttributesW(pathTextAccess.nullTerminatedWideCharPtr());
     if (currentAttributes == INVALID_FILE_ATTRIBUTES) {
         throwSystemError(
@@ -251,7 +258,7 @@ void WindowsPathBackend::clearAttributesOrThrow(
     const Path &path, const PathAttributes attributes, [[maybe_unused]] const PathChangeOptions options) const {
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathTextAccess = PlatformU16StringAccess{pathText};
     const auto currentAttributes = GetFileAttributesW(pathTextAccess.nullTerminatedWideCharPtr());
     if (currentAttributes == INVALID_FILE_ATTRIBUTES) {
         throwSystemError(
@@ -273,6 +280,7 @@ void WindowsPathBackend::clearAttributesOrThrow(
 
 auto WindowsPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     const Path &path, const PathWriteDataOptions options) const -> PathByteOutputStreamOpenResult {
+    auto admission = util::impl::worker_services::io().reserve();
     if (options.createParents()) {
         createParentDirectoriesOrThrow(path);
     }
@@ -293,7 +301,7 @@ auto WindowsPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     }
 
     const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathTextAccess = PlatformU16StringAccess{pathText};
     auto security = std::unique_ptr<WindowsAccessProfileSecurity>{};
     auto *securityAttributes = static_cast<SECURITY_ATTRIBUTES *>(nullptr);
     if (options.accessProfile() != PathAccessProfile::Default) {
@@ -318,13 +326,14 @@ auto WindowsPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     try {
         const auto hasExistingContent = handleHasContentOrThrow(handle, path);
         return {
-            std::make_shared<stream::impl::BufferedByteOutputStream>(
-                std::make_shared<stream::impl::WindowsNativeStream>(
+            std::make_shared<BufferedByteOutputStream>(
+                std::make_shared<WindowsNativeStream>(
                     handle,
-                    stream::impl::NativeStreamOwnership::Owned,
+                    NativeStreamOwnership::Owned,
                     path.toString(),
                     options.creationMode() != PathCreateMode::CreateOrAppend),
-                options.streamSettings()),
+                options.streamSettings(),
+                std::move(admission)),
             hasExistingContent,
         };
     } catch (...) {

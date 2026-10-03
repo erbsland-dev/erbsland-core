@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteRingBuffer.hpp>
+#include <erbsland/Endianness.hpp>
+#include <erbsland/RingBuffer.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -12,13 +18,13 @@ namespace demo {
 /// a fixed ring; two capacities allow growth up to a hard limit.
 void creatingBuffers() {
     // Use a fixed ring when the queue must stay within a strict memory budget.
-    const auto fixedSamples = el::RingBuffer{el::ByteLength{8U}};
+    const auto fixedSamples = el::RingBuffer{el::ByteCount{8U}};
 
     // Give a growable ring a modest initial allocation and an explicit ceiling.
-    const auto growingSamples = el::RingBuffer{el::ByteLength{4U}, el::ByteLength{32U}};
+    const auto growingSamples = el::RingBuffer{el::ByteCount{4U}, el::ByteCount{32U}};
 
     // Choose ByteRingBuffer when the stream contains structured integer fields.
-    auto structuredSamples = el::ByteRingBuffer{el::ByteLength{8U}, el::ByteLength{32U}};
+    auto structuredSamples = el::ByteRingBuffer{el::ByteCount{8U}, el::ByteCount{32U}};
     structuredSamples.setEndianness(el::Endianness::Big);
 
     el::io::printLine("Barriera          : Secca azzurra"_el);

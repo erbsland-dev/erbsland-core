@@ -9,7 +9,7 @@
 
 namespace erbsland::event {
 
-/// A callback that decides how an event loop reacts to an exception.
+/// A callback that decides how an event loop reacts to an `err::RuntimeError` exception.
 using EventLoopErrorHandler = std::function<EventLoopErrorAction(std::exception_ptr error)>;
 
 }

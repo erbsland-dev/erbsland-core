@@ -2,7 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogLevel.hpp>
+#include <erbsland/LogLineFormat.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogTraceSection.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/LogWriterFilter.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringJoins.hpp>
 
 #include <cstddef>
 #include <memory>
@@ -16,14 +26,14 @@ namespace demo {
 /// route search performed before the call, so the disabled manager performs no diagnostic preparation at all.
 void traceSectionGuard() {
     const auto runSearch = [](const bool enableSection) -> std::size_t {
-        const auto section = el::LogTraceSection{"route-search"_el};
+        constexpr auto section = el::LogTraceSection{"route-search"_el};
         auto format = el::LogLineFormat{};
         format.setPattern("{level}: {message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
             .addWriter(
                 el::LogWriter::createForConsole(el::application().terminal()),
-                el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace}});
+                el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Trace}));
         if (enableSection) {
             configuration.enableTraceSection(section);
         }
@@ -34,7 +44,7 @@ void traceSectionGuard() {
         auto preparationCount = std::size_t{};
         if (log->traceEnabled()) {
             ++preparationCount;
-            const auto route = el::String::fromJoined({"Kallio"_el, " → "_el, "Jääjärvi"_el, " → "_el, "Majakka"_el});
+            const auto route = el::join("Kallio"_el, " → "_el, "Jääjärvi"_el, " → "_el, "Majakka"_el);
             log->trace("Candidate route: "_el, route);
         }
         manager->shutdown();

@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteReader.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -20,8 +27,8 @@ void readBytes() {
     const auto payloadLength = reader.readByteOrThrow().toUInt8();
 
     // Read the complete payload atomically.
-    const auto payload = reader.readBytes(el::ByteLength{payloadLength});
-    const auto extra = reader.readBytes(el::ByteLength{1U});
+    const auto payload = reader.readBytes(el::ByteCount::fromInteger(payloadLength));
+    const auto extra = reader.readBytes(el::ByteCount{1U});
     el::io::printLine("Marker            : "_el, marker.toUInt32());
     el::io::printLine("Payload           : "_el, el::ByteFormat::separated(), *payload);
     el::io::printLine("Extra byte        : "_el, el::BooleanFormat::yesNo(), extra.has_value());

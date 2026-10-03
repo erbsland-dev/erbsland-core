@@ -9,6 +9,7 @@
 #include "../../path/Path.hpp"
 
 namespace erbsland::compression::zip {
+
 /// Progress of one ZIP entry operation.
 /// @tested{CompressionStreamingTest ZipArchiveTest}
 struct ZipProgress final {
@@ -18,4 +19,5 @@ struct ZipProgress final {
 };
 /// Synchronous entry observer with cancellation support.
 using ZipProgressFn = std::function<CompressionProgressAction(const ZipProgress &)>;
+
 }

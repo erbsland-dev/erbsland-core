@@ -5,7 +5,7 @@
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../mem/ByteSpan.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 
 #include <cstdint>
 
@@ -32,18 +32,18 @@ public:
     /// Append one network-order uint16.
     void writeU16(uint16_t value);
     /// Append one network-order uint24.
-    /// @throws err::ParameterError If `value` exceeds 24 bits.
+    /// @param value The unsigned integer. Must fit in 24 bits.
     void writeU24(uint32_t value);
     /// Append exact opaque bytes without a length prefix.
     void writeBytes(mem::ConstByteSpan value);
     /// Append an opaque vector with a uint8 length.
-    /// @throws err::ParameterError If the value exceeds 255 bytes.
+    /// @param value The opaque bytes. Must contain at most 255 bytes.
     void writeVector8(mem::ConstByteSpan value);
     /// Append an opaque vector with a uint16 length.
-    /// @throws err::ParameterError If the value exceeds 65535 bytes.
+    /// @param value The opaque bytes. Must contain at most 65,535 bytes.
     void writeVector16(mem::ConstByteSpan value);
     /// Append an opaque vector with a uint24 length.
-    /// @throws err::ParameterError If the value exceeds 16777215 bytes.
+    /// @param value The opaque bytes. Must contain at most 16,777,215 bytes.
     void writeVector24(mem::ConstByteSpan value);
     /// Finish the writer and transfer its exact bytes.
     /// @return The complete bytes accumulated so far.
@@ -51,7 +51,7 @@ public:
 
 public: // accessors
     /// Get the current encoded length.
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength { return _data.length(); }
+    [[nodiscard]] auto length() const noexcept -> unit::ByteCount { return _data.length(); }
     /// Borrow the current encoded bytes.
     [[nodiscard]] auto span() const noexcept -> mem::ConstByteSpan { return _data.span(); }
 

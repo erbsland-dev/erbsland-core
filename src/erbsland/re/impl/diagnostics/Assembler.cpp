@@ -10,11 +10,13 @@
 
 namespace erbsland::re::impl {
 
+using namespace text;
+
 Assembler::Assembler() : _data{std::make_shared<EngineData>()}, _writer{_data->program, _programCounter} {
     _data->counterCount = 0U;
 }
 
-auto Assembler::compile(const text::StringList &lines) -> EngineDataPtr {
+auto Assembler::compile(const StringList &lines) -> EngineDataPtr {
     _lineIndex = unit::LineIndex::zero();
     for (const auto &line : lines) {
         processLine(line);
@@ -29,13 +31,13 @@ void Assembler::patchLabelOffsets() {
     for (const auto &patch : _patches) {
         if (!_labels.contains(patch.label)) {
             _lineIndex = patch.sourceLine;
-            throwAssemblerError(text::StringFormat{"Label '{}' not found"}.build(patch.label));
+            throwAssemblerError(StringFormat{"Label '{}' not found"}.build(patch.label));
         }
         const auto labelTarget = _labels.get(patch.label).value();
         if (labelTarget.section != patch.section) {
             _lineIndex = patch.sourceLine;
             throwAssemblerError(
-                text::StringFormat{"Label '{}' points to a '{}' section. The operation requires a '{}' location"}.build(
+                StringFormat{"Label '{}' points to a '{}' section. The operation requires a '{}' location"}.build(
                     patch.label, toString(labelTarget.section), toString(patch.section)));
         }
         _writer.setProgramCounter(patch.operationPosition);
@@ -43,7 +45,7 @@ void Assembler::patchLabelOffsets() {
     }
 }
 
-void Assembler::processLine(const text::String &line) {
+void Assembler::processLine(const String &line) {
     _currentLabel = {};
     _modifiers.clear();
     tokenizeLine(line);
@@ -66,14 +68,12 @@ void Assembler::processLine(const text::String &line) {
         const auto modifier = currentToken().getModifier();
         if (_currentSection != DataSection::Program) {
             throwAssemblerError(
-                text::StringFormat{"The modifier '{}' can only be used in the program section"}.build(
-                    toString(modifier)),
+                StringFormat{"The modifier '{}' can only be used in the program section"}.build(toString(modifier)),
                 currentToken().column());
         }
         if (_modifiers.contains(modifier)) {
             throwAssemblerError(
-                text::StringFormat{"Modifier '{}' is already defined"}.build(toString(modifier)),
-                currentToken().column());
+                StringFormat{"Modifier '{}' is already defined"}.build(toString(modifier)), currentToken().column());
         }
         _modifiers.insert(modifier);
         nextToken();
@@ -97,7 +97,7 @@ void Assembler::processLine(const text::String &line) {
     }
 }
 
-void Assembler::tokenizeLine(const text::String &line) {
+void Assembler::tokenizeLine(const String &line) {
     try {
         _tokens = AssemblerTokenizer{line}.tokens();
         _tokenIndex = 0;

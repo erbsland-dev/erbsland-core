@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "EventLoopOptions.hpp"
 #include "EventThread.hpp"
 
 namespace erbsland::event {
@@ -16,7 +17,10 @@ public:
 
 public:
     /// Create an unmanaged event thread.
-    [[nodiscard]] static auto create() -> UnmanagedEventThreadPtr;
+    /// @param options Capacity and default error policies, copied into the loop. Must be valid and must not require
+    /// managed-application delivery.
+    /// @return The new, unstarted event thread.
+    [[nodiscard]] static auto create(const EventLoopOptions &options = {}) -> UnmanagedEventThreadPtr;
 };
 
 }

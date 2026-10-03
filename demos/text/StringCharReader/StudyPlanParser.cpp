@@ -2,11 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/AnyString.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/IntegerBase.hpp>
+#include <erbsland/IntegerParseOptions.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringCharReader.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U32String.hpp>
 
 namespace demo {
 
 constexpr auto decMax3Digits =
-    el::IntegerParseOptions::parserDefault().setFixedBase(el::IntegerBase::Decimal).setMaximumDigits(el::CpLength{3U});
+    el::IntegerParseOptions::parserDefault().setFixedBase(el::IntegerBase::Decimal).setMaximumDigits(el::CpCount{3U});
 
 auto readLessonName(el::StringCharReader &reader) -> el::String;
 auto readOptionalMinutes(el::StringCharReader &reader, int &minutes) -> bool;
@@ -77,7 +88,7 @@ auto readOptionalMinutes(el::StringCharReader &reader, int &minutes) -> bool {
     try {
         minutes = reader.readIntegerOrThrow<int>(decMax3Digits);
         return true;
-    } catch (const el::Exception &) {
+    } catch (const el::ParseError &) {
         return false;
     }
 }

@@ -4,7 +4,7 @@
 
 #include "UdpSocketOptions_fwd.hpp"
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::network {
 
@@ -13,33 +13,33 @@ namespace erbsland::network {
 class UdpSocketOptions final {
 public:
     /// The largest portable UDP payload size.
-    inline static constexpr auto cMaximumPortableDatagramSize = unit::ByteLength{65'507U};
+    inline static constexpr auto cMaximumPortableDatagramSize = unit::ByteCount{65'507U};
     /// The default maximum accepted datagram size.
     inline static constexpr auto cDefaultMaximumDatagramSize = cMaximumPortableDatagramSize;
     /// The default queued output limit.
-    inline static constexpr auto cDefaultSendQueueLimit = unit::ByteLength{1024U * 1024U};
+    inline static constexpr auto cDefaultSendQueueLimit = unit::ByteCount{1024U * 1024U};
 
 public: // accessors
     /// Get the largest accepted incoming or outgoing datagram payload.
-    [[nodiscard]] constexpr auto maximumDatagramSize() const noexcept -> unit::ByteLength {
+    [[nodiscard]] constexpr auto maximumDatagramSize() const noexcept -> unit::ByteCount {
         return _maximumDatagramSize;
     }
     /// Set the largest accepted incoming or outgoing datagram payload.
-    auto setMaximumDatagramSize(const unit::ByteLength value) noexcept -> UdpSocketOptions & {
+    auto setMaximumDatagramSize(const unit::ByteCount value) noexcept -> UdpSocketOptions & {
         _maximumDatagramSize = value;
         return *this;
     }
     /// Get the maximum amount of queued outgoing payload data.
-    [[nodiscard]] constexpr auto sendQueueLimit() const noexcept -> unit::ByteLength { return _sendQueueLimit; }
+    [[nodiscard]] constexpr auto sendQueueLimit() const noexcept -> unit::ByteCount { return _sendQueueLimit; }
     /// Set the maximum amount of queued outgoing payload data.
-    auto setSendQueueLimit(const unit::ByteLength value) noexcept -> UdpSocketOptions & {
+    auto setSendQueueLimit(const unit::ByteCount value) noexcept -> UdpSocketOptions & {
         _sendQueueLimit = value;
         return *this;
     }
 
 private:
-    unit::ByteLength _maximumDatagramSize{cDefaultMaximumDatagramSize}; ///< Largest accepted datagram payload.
-    unit::ByteLength _sendQueueLimit{cDefaultSendQueueLimit};           ///< Maximum queued outgoing payload data.
+    unit::ByteCount _maximumDatagramSize{cDefaultMaximumDatagramSize}; ///< Largest accepted datagram payload.
+    unit::ByteCount _sendQueueLimit{cDefaultSendQueueLimit};           ///< Maximum queued outgoing payload data.
 };
 
 }

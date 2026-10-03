@@ -4,8 +4,8 @@
 
 #include "TextParameterKey.hpp"
 
+#include "../../../unit/CpCount.hpp"
 #include "../../../unit/CpIndex.hpp"
-#include "../../../unit/CpLength.hpp"
 #include "../../CharSet.hpp"
 #include "../../EscapeAmount.hpp"
 #include "../../EscapeFormat.hpp"
@@ -48,7 +48,7 @@ public:
     /// Access the optional named start index.
     [[nodiscard]] auto start() const -> std::optional<unit::CpIndex> { return value<unit::CpIndex>(Key::Start); }
     /// Access the optional named length.
-    [[nodiscard]] auto length() const -> std::optional<unit::CpLength> { return value<unit::CpLength>(Key::Length); }
+    [[nodiscard]] auto length() const -> std::optional<unit::CpCount> { return value<unit::CpCount>(Key::Length); }
     /// Access the optional side.
     [[nodiscard]] auto side() const -> std::optional<Side> { return value<Side>(Key::Side); }
     /// Access the optional character set.
@@ -64,16 +64,16 @@ public:
     /// Access the optional contains condition.
     [[nodiscard]] auto containsText() const -> std::optional<String> { return value<String>(Key::Contains); }
     /// Access the optional equal-length condition.
-    [[nodiscard]] auto lengthEqual() const -> std::optional<unit::CpLength> {
-        return value<unit::CpLength>(Key::LengthEqual);
+    [[nodiscard]] auto lengthEqual() const -> std::optional<unit::CpCount> {
+        return value<unit::CpCount>(Key::LengthEqual);
     }
     /// Access the optional greater-length condition.
-    [[nodiscard]] auto lengthGreater() const -> std::optional<unit::CpLength> {
-        return value<unit::CpLength>(Key::LengthGreater);
+    [[nodiscard]] auto lengthGreater() const -> std::optional<unit::CpCount> {
+        return value<unit::CpCount>(Key::LengthGreater);
     }
     /// Access the optional less-length condition.
-    [[nodiscard]] auto lengthLess() const -> std::optional<unit::CpLength> {
-        return value<unit::CpLength>(Key::LengthLess);
+    [[nodiscard]] auto lengthLess() const -> std::optional<unit::CpCount> {
+        return value<unit::CpCount>(Key::LengthLess);
     }
     /// Test if the empty condition is present.
     [[nodiscard]] auto empty() const noexcept -> bool { return has(Key::Empty); }
@@ -102,7 +102,7 @@ public:
     [[nodiscard]] auto applyErrorIf(const String &input) const -> String;
 
 private:
-    using Value = std::variant<unit::CpIndex, unit::CpLength, Side, CharSet, String, EscapeFormat, EscapeAmount, bool>;
+    using Value = std::variant<unit::CpIndex, unit::CpCount, Side, CharSet, String, EscapeFormat, EscapeAmount, bool>;
     using ValueMap = std::map<Key, Value>;
 
     /// Store a parsed parameter value.
@@ -130,7 +130,7 @@ private:
     /// Parse a code-point index.
     [[nodiscard]] static auto parseIndex(const String &value) -> unit::CpIndex;
     /// Parse a code-point length.
-    [[nodiscard]] static auto parseLength(const String &value) -> unit::CpLength;
+    [[nodiscard]] static auto parseLength(const String &value) -> unit::CpCount;
     /// Parse a string side.
     [[nodiscard]] static auto parseSide(const String &value) -> Side;
     /// Convert a side into the string API representation.

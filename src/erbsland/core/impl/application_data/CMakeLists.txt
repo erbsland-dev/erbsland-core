@@ -25,6 +25,8 @@ target_sources(erbsland-core PRIVATE
         ApplicationRandomData.cpp
         ApplicationRandomData.hpp
         ApplicationRandomData_fwd.hpp
+        ApplicationRegExData.hpp
+        ApplicationRegExData_fwd.hpp
         ApplicationResourceData.hpp
         ApplicationResourceData_fwd.hpp
         ApplicationRuntimeData.hpp

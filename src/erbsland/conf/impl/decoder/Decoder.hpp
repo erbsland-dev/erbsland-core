@@ -10,7 +10,7 @@
 #include "../char/NamedChars.hpp"
 
 #include "../../../text/AsciiCategory.hpp"
-#include "../../../unit/CpLength.hpp"
+#include "../../../unit/CpCount.hpp"
 #include "../../ConfError.hpp"
 #include "../../Location.hpp"
 
@@ -62,8 +62,7 @@ public:
     /// @param category The ASCII category to consume.
     /// @param maximum The maximum number of characters to consume.
     /// @return The number of consumed characters.
-    auto advanceWhile(text::AsciiCategory category, unit::CpLength maximum = unit::CpLength::infinite())
-        -> unit::CpLength;
+    auto advanceWhile(text::AsciiCategory category, unit::CpCount maximum = unit::CpCount::infinite()) -> unit::CpCount;
 
 protected:
     /// Test if speculative parsing is currently active.

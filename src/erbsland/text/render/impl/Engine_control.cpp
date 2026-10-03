@@ -13,8 +13,8 @@
 #include "ValueTest.hpp"
 
 #include "../../../math/SaturatingMath.hpp"
-#include "../../../text/Literals.hpp"
-#include "../../../text/StringFormat.hpp"
+#include "../../Literals.hpp"
+#include "../../StringFormat.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -22,9 +22,10 @@
 
 namespace erbsland::text::render::impl {
 
+using namespace unit;
 using namespace text::literals;
 
-void Engine::beginIteration(ExecutionFrame &frame, const bool expectMap, const unit::CodeLocation location) {
+void Engine::beginIteration(ExecutionFrame &frame, const bool expectMap, const CodeLocation location) {
     if (_loops.size() >= _limits.nestingDepth()) {
         throw error(
             RenderErrorCategory::Limit,
@@ -53,7 +54,7 @@ void Engine::beginIteration(ExecutionFrame &frame, const bool expectMap, const u
     _loops.emplace_back(std::move(iterable));
 }
 
-void Engine::nextIteration(ExecutionFrame &frame, const uint64_t exitTarget, const unit::CodeLocation location) {
+void Engine::nextIteration(ExecutionFrame &frame, const uint64_t exitTarget, const CodeLocation location) {
     if (_loops.size() <= frame.loopBase) {
         throw ProgramError{"An iteration advance has no active iteration frame in this program."_el};
     }
@@ -103,7 +104,7 @@ void Engine::removeIterationScope(LoopState &loop, const ExecutionFrame &frame) 
     loop.setActiveScope(false);
 }
 
-void Engine::executeInclude(ExecutionFrame &frame, const uint64_t index, const unit::CodeLocation location) {
+void Engine::executeInclude(ExecutionFrame &frame, const uint64_t index, const CodeLocation location) {
     if (_counters != nullptr) {
         ++_counters->includeExecutions;
     }
@@ -142,7 +143,7 @@ void Engine::executeInclude(ExecutionFrame &frame, const uint64_t index, const u
     }
 }
 
-void Engine::executeBlock(ExecutionFrame &frame, const String &name, const unit::CodeLocation location) {
+void Engine::executeBlock(ExecutionFrame &frame, const String &name, const CodeLocation location) {
     const auto chain = _rootLayout->blockChain(name);
     if (chain == nullptr) {
         throw ProgramError{"A block dispatch references an unknown implementation."_el};
@@ -154,7 +155,7 @@ void Engine::executeSuper(
     ExecutionFrame &frame,
     const std::size_t depth,
     StringList &output,
-    const unit::CodeLocation location,
+    const CodeLocation location,
     const bool captured) {
     if (!frame.blockCall.has_value()) {
         throw ProgramError{"A super request occurred outside a block program."_el};
@@ -183,7 +184,7 @@ void Engine::executeBlockImplementation(
     const CompiledLayout::ConstBlockChainPtr &chain,
     const std::size_t chainIndex,
     StringList &output,
-    const unit::CodeLocation location) {
+    const CodeLocation location) {
     if (chain == nullptr || chainIndex >= chain->size()) {
         throw ProgramError{"A block dispatch references an unknown implementation."_el};
     }

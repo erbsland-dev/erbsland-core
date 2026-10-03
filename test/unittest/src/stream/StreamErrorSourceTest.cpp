@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/stream/StreamErrorSource.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/StreamErrorSource.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <utility>

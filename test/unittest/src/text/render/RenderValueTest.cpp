@@ -1,17 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Value.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/render/Value.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/StringSet.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/List.hpp>
 
 using namespace el::text::literals;
 using namespace el::text::render;
 
 TESTED_TARGETS(Value ValueType)
 class RenderValueTest final : public el::UnitTest {
+private:
+    static constexpr auto cNameKey = "name"_el;
+
 public:
     void testScalars() {
         const auto nullValue = Value{};
@@ -37,13 +42,13 @@ public:
         REQUIRE_EQUAL(integer.toString(), "42"_el);
         REQUIRE_EQUAL(floatingPoint.toString(), "2.5"_el);
         REQUIRE_EQUAL(text.toString(), "hello"_el);
-        REQUIRE_THROWS_AS(el::err::LogicError, text.asInteger());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, text.asInteger());
     }
 
     void testCollectionsAndLookup() {
         const auto list = Value{ValueList{Value{"first"_el}, Value{int64_t{2}}}};
         auto values = ValueMap{};
-        values.set("name"_el, "Ada"_el);
+        values.set(cNameKey, "Ada"_el);
         const auto map = Value{values};
 
         REQUIRE(list.isList());
@@ -54,10 +59,53 @@ public:
         REQUIRE(map.isMap());
         REQUIRE_EQUAL(map.itemCount(), el::unit::ItemCount{1U});
         REQUIRE_EQUAL(map.asMap().count(), el::unit::ItemCount{1U});
-        REQUIRE_EQUAL(map.get("name"_el).asText(), "Ada"_el);
+        REQUIRE_EQUAL(map.get(cNameKey).asText(), "Ada"_el);
         REQUIRE(map.get("missing"_el).isNull());
-        REQUIRE_THROWS_AS(el::err::LogicError, list.asMap());
-        REQUIRE_THROWS_AS(el::err::LogicError, map.asList());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, list.asMap());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, map.asList());
+    }
+
+    void testStringListConstruction() {
+        auto strings = el::StringList{"beta"_el, ""_el, u8"Grüezi"_el, "beta"_el};
+        const auto value = Value{strings};
+        strings.set(el::ItemIndex{0}, "changed"_el).clear();
+
+        REQUIRE(value.isList());
+        REQUIRE(value.isTruthy());
+        REQUIRE_EQUAL(value.itemCount(), el::ItemCount{4});
+        REQUIRE_EQUAL(value.get(el::ItemIndex{0}).asText(), "beta"_el);
+        REQUIRE_EQUAL(value.get(el::ItemIndex{1}).asText(), ""_el);
+        REQUIRE_EQUAL(value.get(el::ItemIndex{2}).asText(), u8"Grüezi"_el);
+        REQUIRE_EQUAL(value.get(el::ItemIndex{3}).asText(), "beta"_el);
+    }
+
+    void testStringSetConstruction() {
+        auto strings = el::StringSet{"beta"_el, "alpha"_el, "beta"_el, ""_el};
+        const auto value = Value{strings};
+        strings.remove("alpha"_el).insert("changed"_el);
+
+        REQUIRE(value.isList());
+        REQUIRE(value.isTruthy());
+        REQUIRE_EQUAL(value.itemCount(), el::ItemCount{3});
+        REQUIRE_EQUAL(value.get(el::ItemIndex{0}).asText(), ""_el);
+        REQUIRE_EQUAL(value.get(el::ItemIndex{1}).asText(), "alpha"_el);
+        REQUIRE_EQUAL(value.get(el::ItemIndex{2}).asText(), "beta"_el);
+    }
+
+    void testEmptyStringCollections() {
+        const auto list = Value{el::StringList{}};
+        const auto set = Value{el::StringSet{}};
+
+        REQUIRE(list.isList());
+        REQUIRE_FALSE(list.isNull());
+        REQUIRE_FALSE(list.isTruthy());
+        REQUIRE(list.asList().isEmpty());
+        REQUIRE_EQUAL(list.itemCount(), el::ItemCount{0});
+        REQUIRE(set.isList());
+        REQUIRE_FALSE(set.isNull());
+        REQUIRE_FALSE(set.isTruthy());
+        REQUIRE(set.asList().isEmpty());
+        REQUIRE_EQUAL(set.itemCount(), el::ItemCount{0});
     }
 
     void testTruthAndCallback() {

@@ -22,7 +22,7 @@ public:
     /// Start the event loop on a new worker thread.
     /// The call returns after creating the worker; the event loop may not yet report itself as running. After a
     /// successful call, `isStarted()` remains `true` for the lifetime of this object.
-    /// @throws err::LogicError If this thread was started before, including after it was joined.
+    /// Must not be called more than once, including after the thread has been joined.
     /// @throws std::system_error If the native worker thread cannot be created.
     virtual void start() = 0;
     /// Request graceful termination of the event loop.
@@ -33,7 +33,7 @@ public:
     /// This operation does not request termination. It blocks while the worker is running, returns immediately if the
     /// thread was never started or was already joined, and leaves `isStarted()` unchanged. Exceptions escaping the
     /// worker are not transported through this call and terminate the process instead.
-    /// @throws err::LogicError If called from this event thread.
+    /// Must not be called from this event thread.
     /// @throws std::system_error If the native join operation fails.
     virtual void join() = 0;
     /// Test whether `start()` completed successfully at least once.

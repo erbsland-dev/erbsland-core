@@ -5,15 +5,15 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/cryptology/Hasher.hpp>
+#include <erbsland/ByteBlock.hpp>
 #include <erbsland/cryptology/impl/tls/Tls13KeySchedule.hpp>
 #include <erbsland/cryptology/impl/tls/Tls13KeyScheduleTestAccess.hpp>
 #include <erbsland/cryptology/impl/tls/Tls13Transcript.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementAlgorithm.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementPrivateKey.hpp>
-#include <erbsland/cryptology/keys/KeyAgreementPublicKey.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/Hasher.hpp>
+#include <erbsland/KeyAgreementAlgorithm.hpp>
+#include <erbsland/KeyAgreementPrivateKey.hpp>
+#include <erbsland/KeyAgreementPublicKey.hpp>
+#include <erbsland/ParameterFailure.hpp>
 
 using namespace el::cryptology;
 using el::cryptology::impl::Tls13KeySchedule;
@@ -24,6 +24,28 @@ using el::mem::ByteBlock;
 TESTED_TARGETS(Tls13Hkdf Tls13KeySchedule Tls13Transcript)
 class Tls13KeyScheduleTest final : public UNITTEST_SUBCLASS(CryptologyTestHelper) {
 public:
+    void testRetryTranscriptUsesSyntheticMessageHash() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        for (const auto algorithm : {HashAlgorithm::Sha2_256, HashAlgorithm::Sha2_384}) {
+            const auto firstHello = bytesFromHex("010000020304");
+            const auto retry = bytesFromHex("020000020304");
+            const auto secondHello = bytesFromHex("01000003030405");
+            auto transcript = Tls13Transcript{algorithm};
+            transcript.update(firstHello.span());
+            transcript.retry(retry.span());
+            transcript.update(secondHello.span());
+            auto firstHasher = Hasher{algorithm};
+            firstHasher.update(firstHello.span());
+            const auto firstHash = firstHasher.finalize();
+            auto expected = Hasher{algorithm};
+            expected.update(ByteBlock({254U, 0U, 0U, static_cast<uint8_t>(firstHash.length().toSizeT())}).span());
+            expected.update(firstHash.span());
+            expected.update(retry.span());
+            expected.update(secondHello.span());
+            REQUIRE_EQUAL(transcript.hash(), expected.finalize());
+        }
+    }
+
     void testRfc8448SimpleHandshakeSchedule() {
         const auto applicationScope = ApplicationTestScope<>{};
         const auto clientPrivateBytes =
@@ -150,7 +172,7 @@ public:
         const auto exporterLabel = ByteBlock({'t', 'e', 's', 't', ' ', 'e', 'x', 'p', 'o', 'r', 't', 'e', 'r'});
         const auto exporterContext = ByteBlock({'c', 'o', 'n', 't', 'e', 'x', 't'});
         REQUIRE_EQUAL(
-            schedule.exportKey(exporterLabel.span(), exporterContext.span(), el::unit::ByteLength{42U}),
+            schedule.exportKey(exporterLabel.span(), exporterContext.span(), el::unit::ByteCount{42U}),
             bytesFromHex(
                 "f1617adc5f0b78d29346f1854e6e3b735dce028a7a0fb54b0c321b9a313e5c54"
                 "b2502a87f9f6a7e0deee"));
@@ -171,7 +193,7 @@ public:
         direct.update(first);
         direct.update(second);
         REQUIRE_EQUAL(transcript.hash(), direct.finalize());
-        REQUIRE_THROWS_AS(el::err::ParameterError, transcript.update(bytesFromHex("0100000201").span()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, transcript.update(bytesFromHex("0100000201").span()));
         transcript.secureErase();
         REQUIRE_EQUAL(transcript.hash(), Hasher{HashAlgorithm::Sha2_256}.finalize());
     }

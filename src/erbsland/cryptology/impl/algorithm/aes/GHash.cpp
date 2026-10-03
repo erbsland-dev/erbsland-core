@@ -9,6 +9,10 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace unit;
+
+using namespace mem;
+
 GHash::GHash(const GaloisMultiplier::Block &hashSubkey, std::unique_ptr<GaloisMultiplier> multiplier) noexcept :
     _hashSubkey{hashSubkey}, _multiplier{std::move(multiplier)} {
 }
@@ -17,12 +21,12 @@ GHash::~GHash() noexcept {
     secureErase();
 }
 
-void GHash::addAuthenticatedData(const mem::ConstByteSpan data) noexcept {
+void GHash::addAuthenticatedData(const ConstByteSpan data) noexcept {
     _authenticatedDataLength += static_cast<uint64_t>(data.size());
     add(data);
 }
 
-void GHash::addCiphertext(const mem::ConstByteSpan data) noexcept {
+void GHash::addCiphertext(const ConstByteSpan data) noexcept {
     if (!_ciphertextStarted) {
         // SP 800-38D, Section 7.1: AAD and ciphertext are independently zero-padded before concatenation.
         finishPartialBlock();
@@ -44,8 +48,8 @@ auto GHash::finalize() noexcept -> GaloisMultiplier::Block {
 
     // SP 800-38D, Section 7.1: append 64-bit big-endian AAD and ciphertext lengths measured in bits.
     auto lengthBlock = GaloisMultiplier::Block{};
-    lengthBlock.setIntegerOrThrow(unit::ByteIndex{}, _authenticatedDataLength * 8U, mem::Endianness::Big);
-    lengthBlock.setIntegerOrThrow(unit::ByteIndex{8U}, _ciphertextLength * 8U, mem::Endianness::Big);
+    lengthBlock.setIntegerOrThrow(ByteIndex{}, _authenticatedDataLength * 8U, Endianness::Big);
+    lengthBlock.setIntegerOrThrow(ByteIndex{8U}, _ciphertextLength * 8U, Endianness::Big);
     processBlock(lengthBlock);
     lengthBlock.secureErase();
     _finalized = true;
@@ -56,34 +60,34 @@ void GHash::secureErase() noexcept {
     _hashSubkey.secureErase();
     _accumulator.secureErase();
     _partial.secureErase();
-    _partialLength = 0U;
+    _partialLength = ByteCount{0U};
     _authenticatedDataLength = 0U;
     _ciphertextLength = 0U;
     _ciphertextStarted = false;
     _finalized = true;
 }
 
-void GHash::add(mem::ConstByteSpan data) noexcept {
+void GHash::add(ConstByteSpan data) noexcept {
     auto offset = std::size_t{};
     while (offset < data.size()) {
-        const auto available = 16U - _partialLength;
-        const auto count = std::min(available, data.size() - offset);
-        _partial.overwrite(unit::ByteIndex{_partialLength}, mem::ConstByteSpan{data.data() + offset, count});
+        const auto available = ByteCount{16U} - _partialLength;
+        const auto count = std::min(available, ByteCount::fromSizeT(data.size() - offset));
+        _partial.overwrite(ByteIndex::end(_partialLength), ConstByteSpan{data.data() + offset, count.toSizeT()});
         _partialLength += count;
-        offset += count;
-        if (_partialLength == 16U) {
+        offset += count.toSizeT();
+        if (_partialLength == ByteCount{16U}) {
             processBlock(_partial);
             _partial.fill({});
-            _partialLength = 0U;
+            _partialLength = ByteCount::zero();
         }
     }
 }
 
 void GHash::finishPartialBlock() noexcept {
-    if (_partialLength != 0U) {
+    if (!_partialLength.isZero()) {
         processBlock(_partial);
         _partial.fill({});
-        _partialLength = 0U;
+        _partialLength = ByteCount{0U};
     }
 }
 

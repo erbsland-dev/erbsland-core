@@ -5,10 +5,8 @@
 #include "HostLookupEventEditor.hpp"
 #include "HostResolverErrorContext.hpp"
 
-#include "../ResolverService.hpp"
-
-#include "../../../err/LogicError.hpp"
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../../err/ParameterFailure.hpp"
 #include "../../../event/Events.hpp"
 #include "../../../system/PlatformError.hpp"
 #include "../../../system/PlatformErrorContext.hpp"
@@ -19,6 +17,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text::literals;
 
 HostLookup::HostLookup(event::EventsPtr ownerEvents, HostResolverPtr resolver) :
@@ -41,23 +40,23 @@ auto HostLookup::state() const noexcept -> NetworkSourceState {
 void HostLookup::start(Host host, HostLookupOptions options) {
     verifyCurrentOwnerEvents();
     if (!options.timeout().isPositive()) {
-        throw err::ParameterError{"The host lookup timeout must be positive."_el, "options.timeout"_el};
+        throw ParameterFailure{"The host lookup timeout must be positive."_el, "options.timeout"_el};
     }
     if (options.maximumAttempts().isZero() || options.maximumAttempts().isInfinite()) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "The maximum host lookup attempt count must be finite and positive."_el, "options.maximumAttempts"_el};
     }
     if (options.retryDelay().isNegative()) {
-        throw err::ParameterError{"The host lookup retry delay must not be negative."_el, "options.retryDelay"_el};
+        throw ParameterFailure{"The host lookup retry delay must not be negative."_el, "options.retryDelay"_el};
     }
 
     auto operation = HostLookupOperationPtr{};
     {
         const auto lock = std::scoped_lock{_operationMutex};
         if (_operation != nullptr) {
-            throw err::LogicError{"A host lookup operation is already active."_el};
+            throw LogicFailure{"A host lookup operation is already active."_el};
         }
-        operation = std::make_shared<HostLookupOperation>(std::move(host), options);
+        operation = std::make_shared<HostLookupOperation>(std::move(host), options, ownerEvents());
         _host = operation->host;
         _operation = operation;
         _state.store(NetworkSourceState::Starting);
@@ -65,9 +64,12 @@ void HostLookup::start(Host host, HostLookupOptions options) {
 
     try {
         const auto weakSelf = std::weak_ptr<HostLookup>{std::static_pointer_cast<HostLookup>(shared_from_this())};
-        ownerEvents()->invokeAfter(options.timeout(), [weakSelf, operation]() -> void {
+        const auto weakOperation = std::weak_ptr<HostLookupOperation>{operation};
+        operation->deadlineCompletion->invokeAfter(options.timeout(), [weakSelf, weakOperation]() -> void {
             if (const auto self = weakSelf.lock(); self != nullptr) {
-                self->deliverTimeout(operation);
+                if (const auto operation = weakOperation.lock(); operation != nullptr) {
+                    self->deliverTimeout(operation);
+                }
             }
         });
         if (const auto address = operation->host.address(); address.has_value()) {
@@ -93,16 +95,18 @@ void HostLookup::cancel() noexcept {
         _host.reset();
         _state.store(NetworkSourceState::Closed);
     }
-    try {
-        const auto weakSelf = std::weak_ptr<HostLookup>{std::static_pointer_cast<HostLookup>(shared_from_this())};
-        ownerEvents()->invoke([weakSelf, operation]() -> void {
-            if (const auto self = weakSelf.lock(); self != nullptr) {
-                self->deliverCancelled(operation);
-            }
-        });
-    } catch (...) { // NOLINT(*-empty-catch)
+    const auto source = std::static_pointer_cast<HostLookup>(weak_from_this().lock());
+    if (source == nullptr) {
+        // Destruction cancels the operation without scheduling callbacks for a source that no longer exists.
         finishOperation(operation);
+        return;
     }
+    const auto weakSelf = std::weak_ptr<HostLookup>{source};
+    operation->cancellationCompletion->invoke([weakSelf, operation]() -> void {
+        if (const auto self = weakSelf.lock(); self != nullptr) {
+            self->deliverCancelled(operation);
+        }
+    });
 }
 
 auto HostLookup::events() -> network::HostLookupEventEditor & {
@@ -125,7 +129,7 @@ void HostLookup::submitNamedAttempt(const HostLookupOperationPtr &operation, con
     const auto weakSelf = std::weak_ptr<HostLookup>{std::static_pointer_cast<HostLookup>(shared_from_this())};
     const auto resolver = _resolver;
     operation->attemptCount.fetch_add(1U);
-    ResolverService::submit([weakSelf, operation, resolver, hostName]() -> void {
+    operation->work.submit([weakSelf, operation, resolver, hostName]() -> void {
         if (operation->completionClaimed.load()) {
             return;
         }
@@ -166,8 +170,13 @@ void HostLookup::submitNamedAttempt(const HostLookupOperationPtr &operation, con
 
 void HostLookup::scheduleNamedRetry(const HostLookupOperationPtr &operation, HostName hostName) {
     const auto weakSelf = std::weak_ptr<HostLookup>{std::static_pointer_cast<HostLookup>(shared_from_this())};
-    ownerEvents()->invokeAfter(
-        operation->options.retryDelay(), [weakSelf, operation, hostName = std::move(hostName)]() {
+    const auto weakOperation = std::weak_ptr<HostLookupOperation>{operation};
+    operation->resultCompletion->invokeAfter(
+        operation->options.retryDelay(), [weakSelf, weakOperation, hostName = std::move(hostName)]() {
+            const auto operation = weakOperation.lock();
+            if (operation == nullptr) {
+                return;
+            }
             if (operation->completionClaimed.load() || time::TimePoint::now() >= operation->deadline) {
                 return;
             }
@@ -179,7 +188,7 @@ void HostLookup::scheduleNamedRetry(const HostLookupOperationPtr &operation, Hos
 
 void HostLookup::postResolved(const HostLookupOperationPtr &operation, util::List<IpAddress> addresses) {
     const auto weakSelf = std::weak_ptr<HostLookup>{std::static_pointer_cast<HostLookup>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, operation, addresses = std::move(addresses)]() mutable -> void {
+    operation->resultCompletion->invoke([weakSelf, operation, addresses = std::move(addresses)]() mutable -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverResolved(operation, std::move(addresses));
         }
@@ -197,7 +206,7 @@ void HostLookup::postError(
         context.setPlatformContext(std::move(platformContext));
     }
     const auto weakSelf = std::weak_ptr<HostLookup>{std::static_pointer_cast<HostLookup>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, operation, context = std::move(context)]() mutable -> void {
+    operation->resultCompletion->invoke([weakSelf, operation, context = std::move(context)]() mutable -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverError(operation, std::move(context));
         }
@@ -270,6 +279,9 @@ auto HostLookup::finishOperation(const HostLookupOperationPtr &operation) noexce
     if (_operation != operation) {
         return false;
     }
+    operation->deadlineCompletion->cancel();
+    operation->resultCompletion->cancel();
+    operation->cancellationCompletion->cancel();
     _operation.reset();
     _host.reset();
     _state.store(NetworkSourceState::Inactive);

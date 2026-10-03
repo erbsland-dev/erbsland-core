@@ -6,6 +6,13 @@
 
 #include "../ProfileTypes.hpp"
 
+#include <erbsland/AnyString.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/RegEx.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U32String.hpp>
+
 #include <regex>
 
 namespace app::regex::impl {

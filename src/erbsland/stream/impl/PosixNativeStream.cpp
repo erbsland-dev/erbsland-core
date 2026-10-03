@@ -7,7 +7,7 @@
 
 #include "../StreamError.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../system/impl/PosixErrorContext.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
@@ -24,11 +24,16 @@
 
 namespace erbsland::stream::impl {
 
+using namespace text;
 using ErrorContext = system::impl::PosixErrorContext;
 using namespace text::literals;
+using unit::ByteCount;
 using unit::ByteIndex;
-using unit::ByteLength;
 using unit::ByteOffset;
+
+auto PosixNativeStream::initialFileSize() const noexcept -> unit::ByteCount {
+    return _initialFileSize;
+}
 
 auto PosixNativeStream::createErrorContext() const noexcept -> StreamErrorContext {
     auto context = StreamErrorSource::createErrorContext();
@@ -36,8 +41,7 @@ auto PosixNativeStream::createErrorContext() const noexcept -> StreamErrorContex
     return context;
 }
 
-void PosixNativeStream::throwError(
-    text::String title, text::String description, const ErrorContext::ErrorCode errorCode) const {
+void PosixNativeStream::throwError(String title, String description, const ErrorContext::ErrorCode errorCode) const {
     auto context = createErrorContext();
     context.setTitle(std::move(title))
         .setDescription(std::move(description))
@@ -45,7 +49,7 @@ void PosixNativeStream::throwError(
     throw StreamError{std::move(context)};
 }
 
-void PosixNativeStream::throwErrorFromErrno(text::String title, text::String description) const {
+void PosixNativeStream::throwErrorFromErrno(String title, String description) const {
     auto context = createErrorContext();
     context.setTitle(std::move(title))
         .setDescription(std::move(description))
@@ -53,8 +57,7 @@ void PosixNativeStream::throwErrorFromErrno(text::String title, text::String des
     throw StreamError{std::move(context)};
 }
 
-PosixNativeStream::PosixNativeStream(
-    const int fileDescriptor, const NativeStreamOwnership ownership, text::String path) :
+PosixNativeStream::PosixNativeStream(const int fileDescriptor, const NativeStreamOwnership ownership, String path) :
     _fileDescriptor{fileDescriptor}, _ownership{ownership}, _path{std::move(path)} {
     if (_fileDescriptor < 0) {
         throwError(
@@ -64,6 +67,9 @@ PosixNativeStream::PosixNativeStream(
     const auto flags = ::fcntl(_fileDescriptor.load(), F_GETFL);
     const auto hasInfo = ::fstat(_fileDescriptor.load(), &info) == 0;
     _supportsPositioning = flags >= 0 && (flags & O_APPEND) == 0 && hasInfo && S_ISREG(info.st_mode);
+    if (hasInfo && S_ISREG(info.st_mode) && info.st_size >= 0) {
+        _initialFileSize = ByteCount::fromInteger(static_cast<uint64_t>(info.st_size));
+    }
     if (hasInfo) {
         _fileIdentity = system::FileIdentity::fromNativeValues(
             static_cast<uint64_t>(info.st_dev), static_cast<uint64_t>(info.st_ino));
@@ -122,7 +128,7 @@ auto PosixNativeStream::position() const -> ByteIndex {
     if (result < 0) {
         throwErrorFromErrno("Failed to get the native stream position."_el, "The POSIX position lookup failed."_el);
     }
-    return ByteIndex{static_cast<ByteIndex::Value>(result)};
+    return ByteIndex::fromInteger(static_cast<ByteIndex::Value>(result));
 }
 
 auto PosixNativeStream::setPosition(const ByteIndex position) -> ByteIndex {
@@ -132,7 +138,7 @@ auto PosixNativeStream::setPosition(const ByteIndex position) -> ByteIndex {
     }
     if (position.isNoIndex() ||
         position.toRawValue() > static_cast<ByteIndex::Value>(std::numeric_limits<off_t>::max())) {
-        throw err::ParameterError{"Stream position is outside POSIX file-offset bounds.", "position"};
+        throw err::ParameterFailure{"Stream position is outside POSIX file-offset bounds.", "position"};
     }
     const auto operation = PosixNativeOperation{*this};
     const auto result = ::lseek(operation.fileDescriptor(), static_cast<off_t>(position.toRawValue()), SEEK_SET);
@@ -140,7 +146,7 @@ auto PosixNativeStream::setPosition(const ByteIndex position) -> ByteIndex {
         throwErrorFromErrno(
             "Failed to set the native stream position."_el, "The POSIX positioning operation failed."_el);
     }
-    return ByteIndex{static_cast<ByteIndex::Value>(result)};
+    return ByteIndex::fromInteger(static_cast<ByteIndex::Value>(result));
 }
 
 auto PosixNativeStream::movePosition(const StreamPositionOrigin origin, const ByteOffset offset) -> ByteIndex {
@@ -166,12 +172,12 @@ auto PosixNativeStream::movePosition(const StreamPositionOrigin origin, const By
     if (result < 0) {
         const auto error = errno;
         if (error == EINVAL) {
-            throw err::ParameterError{"Resulting stream position is outside POSIX file-offset bounds.", "offset"};
+            throw err::ParameterFailure{"Resulting stream position is outside POSIX file-offset bounds.", "offset"};
         }
         throwError(
             "Failed to move the native stream position."_el, "The POSIX positioning operation failed."_el, error);
     }
-    return ByteIndex{static_cast<ByteIndex::Value>(result)};
+    return ByteIndex::fromInteger(static_cast<ByteIndex::Value>(result));
 }
 
 void PosixNativeStream::close() {
@@ -205,10 +211,10 @@ void PosixNativeStream::abort() noexcept {
     }
 }
 
-auto PosixNativeStream::read(const mem::ByteSpan destination) -> ByteLength {
+auto PosixNativeStream::read(const mem::ByteSpan destination) -> ByteCount {
     const auto operation = PosixNativeOperation{*this};
     if (destination.empty()) {
-        return ByteLength::zero();
+        return ByteCount::zero();
     }
     while (true) {
         const auto result = ::read(operation.fileDescriptor(), destination.data(), destination.size());
@@ -218,7 +224,7 @@ auto PosixNativeStream::read(const mem::ByteSpan destination) -> ByteLength {
             }
             throwErrorFromErrno("Failed to read from the native stream."_el, "The POSIX read operation failed."_el);
         }
-        return ByteLength::fromSizeT(static_cast<std::size_t>(result));
+        return ByteCount::fromSizeT(static_cast<std::size_t>(result));
     }
 }
 
@@ -226,16 +232,16 @@ void PosixNativeStream::write(const mem::ConstByteSpan bytes) {
     writeBytes(std::span<const char>{reinterpret_cast<const char *>(bytes.data()), bytes.size()});
 }
 
-auto PosixNativeStream::fileSize() const -> ByteLength {
+auto PosixNativeStream::fileSize() const -> ByteCount {
     const auto operation = PosixNativeOperation{*this};
     struct stat info{};
     if (::fstat(operation.fileDescriptor(), &info) != 0) {
         throwErrorFromErrno("Failed to get the native stream size."_el, "The POSIX file-size lookup failed."_el);
     }
     if (!S_ISREG(info.st_mode) || info.st_size <= 0) {
-        return ByteLength::zero();
+        return ByteCount::zero();
     }
-    return ByteLength::fromSizeT(static_cast<std::size_t>(info.st_size));
+    return ByteCount::fromSizeT(static_cast<std::size_t>(info.st_size));
 }
 
 void PosixNativeStream::finishOperation() const noexcept {

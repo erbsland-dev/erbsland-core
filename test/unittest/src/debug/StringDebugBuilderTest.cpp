@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/debug/impl/StringDebugBuilder.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/text/impl/StringStorageKind.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>

@@ -12,6 +12,7 @@ target_sources(erbsland-core-unittest PRIVATE
         LexerCoreIntegerTest.cpp
         LexerCoreMetaTest.cpp
         LexerCoreTextTest.cpp
+        LexerRecoveryTest.cpp
         LexerStandardByteCountTest.cpp
         LexerStandardBytesTest.cpp
         LexerStandardCodeTest.cpp

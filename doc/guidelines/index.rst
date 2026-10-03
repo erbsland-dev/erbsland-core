@@ -33,8 +33,10 @@ project.
     rst_style
     topic_page
     reference_page
+    development_tool_pages
     writing_style
     demo
+    demo_integration
     examples
     example_themes
     anti_patterns/index

@@ -5,6 +5,10 @@
 
 #include "impl/WorkloadTools.hpp"
 
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/StandardStreams.hpp>
+
 namespace app::string {
 
 using namespace el::text::literals;
@@ -66,11 +70,13 @@ void WorkloadRunner::printCoverage() const {
             " widths="_el,
             descriptor.u8Only ? "u8"_el : "u8,u16,u32"_el,
             " apis="_el);
-        for (auto index = std::size_t{}; index < descriptor.apiFamilies.size(); ++index) {
-            if (index != 0U) {
+        for (
+            auto index = el::ItemIndex::zero(); index.isWithin(descriptor.apiFamilies.count());
+            index.uncheckedIncrement()) {
+            if (index != el::ItemIndex::zero()) {
                 el::io::print(","_el);
             }
-            el::io::print(descriptor.apiFamilies[index]);
+            el::io::print(descriptor.apiFamilies.getRef(index));
         }
         el::io::printLine();
     }

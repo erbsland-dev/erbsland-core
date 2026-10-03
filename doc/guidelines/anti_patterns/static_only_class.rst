@@ -30,3 +30,5 @@ Mechanical Detection
 ====================
 
 The scanner reports namespace-scope classes with static members but no instance state or non-static behavior.
+Inline static method definitions count as static members, including constrained function templates.
+Instance members with brace initializers still prevent a class from being classified as static-only.

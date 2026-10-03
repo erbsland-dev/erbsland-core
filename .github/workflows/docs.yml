@@ -4,12 +4,15 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v[0-9]*'
+      - '[0-9]*'
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
@@ -23,34 +26,42 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       # actions/setup-python@v7.0.0
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
-          python-version: '3.13'
+          python-version: '3.14'
 
-      - name: Install Python dependencies from requirements.txt
+      - name: Install documentation Python dependencies
         run: pip install -r doc/requirements-doc.txt
 
       - name: Install Doxygen
         run: sudo apt-get install doxygen -y
         shell: bash
 
+      - name: Build documentation maintenance tool
+        run: |
+          cmake -S . -B cmake-build-doc -G Ninja -DCMAKE_BUILD_TYPE=Release -DERBSLAND_CORE_ENABLE_TESTS=OFF -DERBSLAND_CORE_ENABLE_TOOLS=ON
+          cmake --build cmake-build-doc --target erbsland-core-tool -j 2
+
       - name: Prepare Doxygen input
-        run: python3 doc/_tools/preprocess_sources.py
+        run: cmake-build-doc/tool/erbsland-core-tool doc-preprocess-sources
 
       - name: Build documentation
         run: sphinx-build doc _build
+        env:
+          ERBSLAND_CORE_TOOL: ${{ github.workspace }}/cmake-build-doc/tool/erbsland-core-tool
 
       - name: Upload Pages artifact
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' }}
         # actions/upload-pages-artifact@v5.0.0
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9
         with:
           path: _build
 
   deploy:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    if: ${{ github.event_name == 'push' }}
     needs: build
     runs-on: ubuntu-latest
     permissions:

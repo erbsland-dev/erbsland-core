@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TlsServerConnection.hpp"
 
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/Literals.hpp"
 
@@ -9,7 +10,15 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text::literals;
+
+void TlsServerConnection::cancelHandshakeTimer() noexcept {
+    if (_handshakeTimer != nullptr) {
+        _handshakeTimer->cancel();
+        _handshakeTimer.reset();
+    }
+}
 
 void TlsServerConnection::recordApplicationActivity() {
     _idleDeadline = time::TimePoint::now() + _options.idleTimeout();
@@ -112,6 +121,14 @@ auto TlsServerConnection::protocolErrorContext() const -> NetworkErrorContext {
     if (_protocol->failureAlert().has_value()) {
         context.setTlsAlert(*_protocol->failureAlert());
     }
+    if (_protocol->certificateFailureCategory() ==
+        cryptology::X509CertificateValidationFailureCategory::TrustUnavailable) {
+        return context.setReason(NetworkErrorReason::TlsTrustUnavailable);
+    }
+    if (_protocol->certificateFailureCategory() ==
+        cryptology::X509CertificateValidationFailureCategory::NativeFailure) {
+        return context.setReason(NetworkErrorReason::TlsNativeFailure);
+    }
     if (_protocol->failureWasTruncation()) {
         return context.setReason(NetworkErrorReason::TlsTruncation);
     }
@@ -122,6 +139,15 @@ auto TlsServerConnection::protocolErrorContext() const -> NetworkErrorContext {
         return context.setReason(NetworkErrorReason::TlsInternalFailure);
     }
     switch (*_protocol->failureAlert()) {
+    case TlsAlertDescription::BadCertificate:
+    case TlsAlertDescription::UnsupportedCertificate:
+    case TlsAlertDescription::CertificateRevoked:
+    case TlsAlertDescription::CertificateExpired:
+    case TlsAlertDescription::CertificateUnknown:
+    case TlsAlertDescription::UnknownCa:
+    case TlsAlertDescription::DecryptError:
+    case TlsAlertDescription::CertificateRequired:
+        return context.setReason(NetworkErrorReason::TlsAuthenticationFailure);
     case TlsAlertDescription::AccessDenied:
     case TlsAlertDescription::InsufficientSecurity:
     case TlsAlertDescription::NoApplicationProtocol:
@@ -177,6 +203,9 @@ void TlsServerConnection::finishFailed(NetworkErrorContext context) {
         return;
     }
     _state.store(ConnectionState::Failed);
+    _backgroundOperation.cancel();
+    cancelHandshakeTimer();
+    ++_backgroundGeneration;
     ++_handshakeTimerGeneration;
     ++_idleTimerGeneration;
     ++_closeTimerGeneration;
@@ -187,7 +216,7 @@ void TlsServerConnection::finishFailed(NetworkErrorContext context) {
     }
     try {
         _tcpConnection->abort();
-    } catch (...) {}
+    } catch (const RuntimeError &) {}
     auto firstException = std::exception_ptr{};
     try {
         const auto callback = _onError;
@@ -199,7 +228,7 @@ void TlsServerConnection::finishFailed(NetworkErrorContext context) {
     }
     try {
         finishFinal();
-    } catch (...) {
+    } catch (const RuntimeError &) {
         if (firstException == nullptr) {
             throw;
         }
@@ -227,7 +256,7 @@ void TlsServerConnection::finishClosed() {
     }
     try {
         finishFinal();
-    } catch (...) {
+    } catch (const RuntimeError &) {
         if (firstException == nullptr) {
             throw;
         }
@@ -238,9 +267,13 @@ void TlsServerConnection::finishClosed() {
 }
 
 void TlsServerConnection::finishFinal() {
+    _backgroundOperation.cancel();
+    cancelHandshakeTimer();
+    ++_backgroundGeneration;
     if (_finalized.exchange(true)) {
         return;
     }
+    _finalContinuation.reset();
     _handshakeLease.release();
     const auto callback = _onFinal;
     if (callback) {
@@ -252,19 +285,19 @@ void TlsServerConnection::postAbortFinal() {
     const auto weakSelf =
         std::weak_ptr<TlsServerConnection>{std::static_pointer_cast<TlsServerConnection>(shared_from_this())};
     try {
-        ownerEvents()->invoke([weakSelf]() -> void {
+        _finalContinuation->invoke([weakSelf]() -> void {
             if (const auto self = weakSelf.lock(); self != nullptr) {
                 const auto lock = std::scoped_lock{self->_mutex};
                 self->finishFinal();
             }
         });
-    } catch (...) {}
+    } catch (const RuntimeError &) {}
 }
 
 void TlsServerConnection::postAdmissionFailure(NetworkErrorContext context) {
     const auto weakSelf =
         std::weak_ptr<TlsServerConnection>{std::static_pointer_cast<TlsServerConnection>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, context = std::move(context)]() -> void {
+    _finalContinuation->invoke([weakSelf, context = std::move(context)]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             const auto lock = std::scoped_lock{self->_mutex};
             if (self->_finalized.load()) {
@@ -281,7 +314,7 @@ void TlsServerConnection::postAdmissionFailure(NetworkErrorContext context) {
             }
             try {
                 self->finishFinal();
-            } catch (...) {
+            } catch (const RuntimeError &) {
                 if (firstException == nullptr) {
                     throw;
                 }

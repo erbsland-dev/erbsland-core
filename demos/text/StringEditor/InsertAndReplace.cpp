@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/CpRange.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringEditor.hpp>
 
 namespace demo {
 
@@ -30,7 +37,7 @@ void insertAndReplace() {
     report.replaceAll(el::CharSet{"|="_el}, U'·');
 
     auto token = el::StringEditor{"AβC"_el};
-    token.replace(el::CpRange{el::CpIndex{1U}, el::CpLength{1U}}, "beta"_el);
+    token.replace(el::CpRange{el::CpIndex{1U}, el::CpCount{1U}}, "beta"_el);
 
     el::io::printLine("Edited report: "_el, report);
     el::io::printLine("Edited token: "_el, token);

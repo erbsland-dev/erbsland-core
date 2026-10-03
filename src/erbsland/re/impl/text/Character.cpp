@@ -9,11 +9,12 @@
 
 namespace erbsland::re::impl {
 
+using namespace text;
 using namespace text::literals;
 
-void appendAsHexEscape(text::StringEditor &str, const text::Char character) {
-    static const auto shortEscapeFormat = text::StringFormat{"\\u{:04X}"};
-    static const auto longEscapeFormat = text::StringFormat{"\\u{{{:X}}}"};
+void appendAsHexEscape(StringEditor &str, const Char character) {
+    static const auto shortEscapeFormat = StringFormat{"\\u{:04X}"};
+    static const auto longEscapeFormat = StringFormat{"\\u{{{:X}}}"};
     if (!character.isValidUnicode()) {
         return;
     }
@@ -25,7 +26,7 @@ void appendAsHexEscape(text::StringEditor &str, const text::Char character) {
     }
 }
 
-void appendToSafeString(text::StringEditor &str, const text::Char character) {
+void appendToSafeString(StringEditor &str, const Char character) {
     if (character == U'"' || character == U'\\') {
         str.append("\\"_el);
         str.append(character);
@@ -36,7 +37,7 @@ void appendToSafeString(text::StringEditor &str, const text::Char character) {
     }
 }
 
-void appendToCharRangeString(text::StringEditor &str, const text::Char character) {
+void appendToCharRangeString(StringEditor &str, const Char character) {
     if (!character.isValidUnicode()) {
         return;
     }
@@ -63,8 +64,7 @@ void appendToCharRangeString(text::StringEditor &str, const text::Char character
     str.append(character);
 }
 
-auto compareCharacters(const text::Char left, const text::Char right, const bool caseInsensitive) noexcept
-    -> std::strong_ordering {
+auto compareCharacters(const Char left, const Char right, const bool caseInsensitive) noexcept -> std::strong_ordering {
     if (!caseInsensitive) {
         return left <=> right;
     }

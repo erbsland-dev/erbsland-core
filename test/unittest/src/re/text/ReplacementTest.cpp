@@ -27,7 +27,7 @@ public:
         replacement.addStaticText(StringEditor{"abc"_el});
         replacement.addStaticText(StringEditor{"def"_el});
 
-        REQUIRE_EQUAL(replacement.length(nullptr), el::unit::ByteLength{6U});
+        REQUIRE_EQUAL(replacement.length(nullptr), el::unit::ByteCount{6U});
 
         StringEditor out;
         replacement.appendTo(out, nullptr);
@@ -52,7 +52,7 @@ public:
         replacement.addCaptureGroup(0);
 
         const auto replacementLength = replacement.length(match);
-        REQUIRE_EQUAL(replacementLength, el::unit::ByteLength{1U + 2U + 2U + 2U + 1U + 4U});
+        REQUIRE_EQUAL(replacementLength, el::unit::ByteCount{1U + 2U + 2U + 2U + 1U + 4U});
 
         StringEditor out;
         replacement.appendTo(out, match);

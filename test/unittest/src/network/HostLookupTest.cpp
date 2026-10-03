@@ -1,23 +1,27 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/network/host_lookup/HostLookup.hpp>
-#include <erbsland/network/host_lookup/HostLookupEventEditor.hpp>
-#include <erbsland/network/host_lookup/HostLookupOptions.hpp>
+#include "../core/ApplicationTestScope.hpp"
+
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventLoopDriver.hpp>
+#include <erbsland/HostLookup.hpp>
+#include <erbsland/HostLookupEventEditor.hpp>
+#include <erbsland/HostLookupOptions.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Network.hpp>
 #include <erbsland/network/impl/host/HostResolver.hpp>
 #include <erbsland/network/impl/host/HostResolverErrorContext.hpp>
 #include <erbsland/network/impl/NetworkBackend.hpp>
-#include <erbsland/network/Network.hpp>
-#include <erbsland/network/source/NetworkError.hpp>
-#include <erbsland/network/source/NetworkErrorReason.hpp>
-#include <erbsland/system/PlatformError.hpp>
-#include <erbsland/system/PlatformErrorCategory.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/TimeDelta.hpp>
-#include <erbsland/time/TimeUnitTags.hpp>
+#include <erbsland/NetworkError.hpp>
+#include <erbsland/NetworkErrorReason.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/PlatformError.hpp>
+#include <erbsland/PlatformErrorCategory.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/TimeDelta.hpp>
+#include <erbsland/TimeUnitTags.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>
@@ -26,7 +30,6 @@
 #include <functional>
 #include <memory>
 #include <mutex>
-#include <stdexcept>
 #include <thread>
 #include <vector>
 
@@ -57,7 +60,54 @@ class HostLookupTest final : public el::UnitTest {
     };
 
 public:
+    void testReservedCompletionAndCancellationUnderQueueSaturation() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        const auto loop = EventLoop::create(
+            EventLoopDriver::createDefault(),
+            EventLoopOptions{}.setMaximumQueuedEvents(1U).setQueueOverflowAction(EventQueueOverflowAction::Ignore));
+        loop->registerBackend(
+            std::make_unique<el::network::impl::NetworkBackend>(resolverReturning({IpAddress::loopbackV4()})));
+        auto lookup = HostLookupPtr{};
+        auto resolved = false;
+        auto finalized = false;
+        auto ordinary = false;
+        loop->invoke([&]() -> void {
+            lookup = loop->get<Network>().createHostLookup();
+            lookup->events()
+                .onResolved([&](const el::util::List<IpAddress> &) -> void { resolved = true; })
+                .onFinal([&]() -> void { finalized = true; });
+            loop->invoke([&]() -> void { ordinary = true; });
+            lookup->start(IpAddress::loopbackV4());
+            lookup->cancel();
+        });
+        runUntil(loop, [&]() -> bool { return finalized; });
+        REQUIRE_FALSE(resolved);
+        static_cast<void>(loop->runUntilIdle());
+        REQUIRE(ordinary);
+    }
+
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
+    void testCompletedLookupsReleaseDeadlineAdmissionPromptly() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        const auto loop = loopWithResolver(resolverReturning({IpAddress::loopbackV4()}));
+        auto lookup = HostLookupPtr{};
+        auto completed = std::size_t{};
+        loop->invoke([&]() -> void {
+            lookup = loop->get<Network>().createHostLookup();
+            lookup->events().onFinal([&]() -> void {
+                if (++completed < 1100U) {
+                    lookup->start(IpAddress::loopbackV4(), HostLookupOptions{}.setTimeout(Seconds{60}));
+                }
+            });
+            lookup->start(IpAddress::loopbackV4(), HostLookupOptions{}.setTimeout(Seconds{60}));
+        });
+        runUntil(loop, [&]() -> bool { return completed == 1100U; });
+        REQUIRE_FALSE(loop->hasError());
+    }
+
     void testOptionDefaultsAndSetters() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = HostLookupOptions{};
         REQUIRE_EQUAL(options.timeout(), TimeDelta::seconds(10));
         REQUIRE_EQUAL(options.maximumAttempts(), el::unit::ItemCount{2U});
@@ -70,6 +120,7 @@ public:
     }
 
     void testNumericLookupIsAsynchronousAndFinalized() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto resolver = resolverReturning({IpAddress::loopbackV6()});
         const auto loop = loopWithResolver(resolver);
         auto lookup = HostLookupPtr{};
@@ -106,6 +157,7 @@ public:
     }
 
     void testLookupCanBeReusedFromFinal() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto resolvedAddress = IpAddress::fromStringOrThrow("192.0.2.10"_el);
         const auto resolver = resolverReturning({resolvedAddress});
         const auto loop = loopWithResolver(resolver);
@@ -135,6 +187,7 @@ public:
     }
 
     void testNamedLookupPreservesOrderAndRemovesDuplicates() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto first = IpAddress::fromStringOrThrow("2001:db8::10"_el);
         const auto second = IpAddress::fromStringOrThrow("192.0.2.10"_el);
         const auto resolver = resolverReturning({first, second, first, second});
@@ -158,6 +211,7 @@ public:
     }
 
     void testNotFoundProducesStructuredContextWithoutRetry() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto resolver = resolverThrowing(el::system::PlatformErrorCategory::NotFound, false, "host not found"_el);
         const auto loop = loopWithResolver(resolver);
         auto lookup = HostLookupPtr{};
@@ -188,6 +242,7 @@ public:
     }
 
     void testEmptyResultHasNoAddressesReason() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto resolver = resolverReturning({});
         const auto loop = loopWithResolver(resolver);
         auto lookup = HostLookupPtr{};
@@ -208,6 +263,7 @@ public:
     }
 
     void testTransientFailureRetriesAfterDelay() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto address = IpAddress::fromStringOrThrow("192.0.2.21"_el);
         auto resolver =
             std::make_shared<FakeResolver>([address, call = 0](const HostName &) mutable -> el::util::List<IpAddress> {
@@ -239,6 +295,7 @@ public:
     }
 
     void testTransientFailureStopsAtMaximumAttempts() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto resolver = std::make_shared<FakeResolver>(
             [](const HostName &) -> el::util::List<IpAddress> { throwTemporaryResolverError(); });
         const auto loop = loopWithResolver(resolver);
@@ -266,6 +323,7 @@ public:
     }
 
     void testTimeoutWinsDuringRetryDelay() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto resolver = std::make_shared<FakeResolver>(
             [](const HostName &) -> el::util::List<IpAddress> { throwTemporaryResolverError(); });
         const auto loop = loopWithResolver(resolver);
@@ -293,6 +351,7 @@ public:
     }
 
     void testTimeoutSuppressesLateResolverResult() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto entered = false;
         auto release = false;
         auto finished = std::atomic<bool>{false};
@@ -343,6 +402,7 @@ public:
     }
 
     void testCancellationEmitsOnlyFinalAndAllowsReuse() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto resolver = resolverReturning({IpAddress::loopbackV4()});
         const auto loop = loopWithResolver(resolver);
         auto lookup = HostLookupPtr{};
@@ -375,6 +435,7 @@ public:
     }
 
     void testCancellationIsThreadSafe() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = loopWithResolver(resolverReturning({IpAddress::loopbackV4()}));
         auto lookup = HostLookupPtr{};
         auto resolvedCount = 0;
@@ -402,6 +463,7 @@ public:
     }
 
     void testHandlerExceptionSkipsFinalAndRestoresInactiveState() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto resolver = resolverReturning({});
         const auto loop = loopWithResolver(resolver);
         auto lookup = HostLookupPtr{};
@@ -410,7 +472,7 @@ public:
         loop->invoke([&]() -> void {
             lookup = loop->get<Network>().createHostLookup();
             lookup->events()
-                .onResolved([](const el::util::List<IpAddress> &) -> void { throw std::runtime_error{"callback"}; })
+                .onResolved([](const el::util::List<IpAddress> &) -> void { throw el::err::RuntimeError{"callback"}; })
                 .onFinal([&]() -> void { finalCalled = true; });
             lookup->start(IpAddress::loopbackV4());
         });
@@ -423,6 +485,7 @@ public:
     }
 
     void testErrorContextCanBeThrownAsNetworkError() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto resolver = resolverReturning({});
         const auto loop = loopWithResolver(resolver);
         auto lookup = HostLookupPtr{};
@@ -448,12 +511,13 @@ public:
     }
 
     void testFinalExceptionPropagatesAfterFinalization() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = loopWithResolver(resolverReturning({IpAddress::loopbackV4()}));
         auto lookup = HostLookupPtr{};
 
         loop->invoke([&]() -> void {
             lookup = loop->get<Network>().createHostLookup();
-            lookup->events().onFinal([]() -> void { throw std::runtime_error{"final callback"}; });
+            lookup->events().onFinal([]() -> void { throw el::err::RuntimeError{"final callback"}; });
             lookup->start(IpAddress::loopbackV4());
         });
         REQUIRE(loop->runOnce());
@@ -461,46 +525,49 @@ public:
         REQUIRE(loop->hasError());
         REQUIRE_EQUAL(lookup->state(), NetworkSourceState::Inactive);
         REQUIRE_FALSE(lookup->host().has_value());
-        REQUIRE_THROWS_AS(std::runtime_error, std::rethrow_exception(loop->takeError()));
+        REQUIRE_THROWS_AS(el::err::RuntimeError, std::rethrow_exception(loop->takeError()));
     }
 
     void testStartAndEditorRequireOwnerLoop() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto resolver = resolverReturning({IpAddress::loopbackV4()});
         const auto ownerLoop = loopWithResolver(resolver);
         const auto otherLoop = EventLoop::create();
         auto lookup = HostLookupPtr{};
         ownerLoop->invoke([&]() -> void { lookup = ownerLoop->get<Network>().createHostLookup(); });
         REQUIRE(ownerLoop->runOnce());
-        REQUIRE_THROWS_AS(el::err::LogicError, lookup->start(IpAddress::loopbackV4()));
-        REQUIRE_THROWS_AS(el::err::LogicError, lookup->events());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, lookup->start(IpAddress::loopbackV4()));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, lookup->events());
         otherLoop->invoke([&]() -> void {
-            REQUIRE_THROWS_AS(el::err::LogicError, lookup->start(IpAddress::loopbackV4()));
-            REQUIRE_THROWS_AS(el::err::LogicError, lookup->events());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, lookup->start(IpAddress::loopbackV4()));
+            REQUIRE_THROWS_AS(el::err::LogicFailure, lookup->events());
         });
         REQUIRE(otherLoop->runOnce());
     }
 
     void testCreationRequiresCurrentOwnerLoop() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = loopWithResolver(resolverReturning({IpAddress::loopbackV4()}));
-        REQUIRE_THROWS_AS(el::err::LogicError, loop->get<Network>().createHostLookup());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, loop->get<Network>().createHostLookup());
     }
 
     void testInvalidOptionsAndConcurrentStartAreRejected() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = loopWithResolver(resolverReturning({IpAddress::loopbackV4()}));
         auto checked = false;
         loop->invoke([&]() -> void {
             const auto lookup = loop->get<Network>().createHostLookup();
             REQUIRE_THROWS_AS(
-                el::err::ParameterError,
+                el::err::ParameterFailure,
                 lookup->start(IpAddress::loopbackV4(), HostLookupOptions{}.setTimeout(TimeDelta::zero())));
             REQUIRE_THROWS_AS(
-                el::err::ParameterError,
+                el::err::ParameterFailure,
                 lookup->start(IpAddress::loopbackV4(), HostLookupOptions{}.setMaximumAttempts(el::unit::ItemCount{})));
             REQUIRE_THROWS_AS(
-                el::err::ParameterError,
+                el::err::ParameterFailure,
                 lookup->start(IpAddress::loopbackV4(), HostLookupOptions{}.setRetryDelay(TimeDelta::milliseconds(-1))));
             lookup->start(IpAddress::loopbackV4());
-            REQUIRE_THROWS_AS(el::err::LogicError, lookup->start(IpAddress::loopbackV6()));
+            REQUIRE_THROWS_AS(el::err::LogicFailure, lookup->start(IpAddress::loopbackV6()));
             checked = true;
         });
         REQUIRE(loop->runOnce());
@@ -508,6 +575,7 @@ public:
     }
 
     void testEditorIsStableAndHandlersAreReplaceable() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = loopWithResolver(resolverReturning({IpAddress::loopbackV4()}));
         auto lookup = HostLookupPtr{};
         auto calls = 0;
@@ -529,6 +597,7 @@ public:
     }
 
     void testDestructionSuppressesQueuedCompletion() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto loop = loopWithResolver(resolverReturning({IpAddress::loopbackV4()}));
         auto callbackCalled = false;
         loop->invoke([&]() -> void {

@@ -4,13 +4,15 @@
 
 #include "ProcessId.hpp"
 #include "Subprocess_fwd.hpp"
+#include "SubprocessEventEditor.hpp"
 #include "SubprocessExitStatus.hpp"
 #include "SubprocessOptions.hpp"
 
-#include "impl/SubprocessBackend_fwd.hpp"
+#include "impl/subprocess/SubprocessState_fwd.hpp"
+#include "impl/SystemBackend_fwd.hpp"
 
+#include "../event/EventSource.hpp"
 #include "../path/Path.hpp"
-#include "../text/String.hpp"
 #include "../text/StringList.hpp"
 #include "../time/TimeDelta.hpp"
 
@@ -18,95 +20,85 @@
 
 namespace erbsland::system {
 
-/// Owns and controls one directly launched operating-system child process.
-/// No method invokes a command shell. Destruction of a running owned process requests termination, waits briefly, then
-/// forcefully terminates and reaps it. Use `startDetached()` for deliberate launch-and-forget behavior.
+/// Shared owner of one directly launched child with optional owner-loop events.
+/// Releasing the last owner terminates and reaps a running child. Event handlers must not strongly capture their
+/// source.
 /// @seedoc{/reference/system/system_services}
-/// @tested{SubprocessInteropTest}
-class Subprocess final {
-public:
-    /// Destroy the subprocess owner and ensure a running child is terminated and reaped.
-    ~Subprocess();
-    /// Move ownership of a subprocess.
-    Subprocess(Subprocess &&other) noexcept;
-    /// Replace this subprocess owner by moving another owner into it.
-    auto operator=(Subprocess &&other) noexcept -> Subprocess &;
+/// @tested{SubprocessInteropTest SubprocessEventTest}
+class Subprocess final : public event::EventSource {
+    friend class impl::SystemBackend;
 
-    // defaults/deletions
-    Subprocess() = delete;
-    Subprocess(const Subprocess &) = delete;
-    auto operator=(const Subprocess &) -> Subprocess & = delete;
+public:
+    ~Subprocess() override;
 
 public: // factories
-    /// Launch an owned subprocess.
-    /// @param executable A non-empty valid executable path. No `PATH` lookup or shell interpretation is performed.
-    /// @param arguments Arguments following `argv[0]` in the child command line.
-    /// @param options Child environment and standard-stream options.
-    /// @return The owning subprocess object.
-    /// @throws err::ParameterError If a path, argument, environment entry, or option is invalid.
-    /// @throws PlatformError If native process creation fails.
-    [[nodiscard]] static auto start(
+    /// Prepare a one-shot child without launching it or requiring an event loop.
+    /// @param executable Direct executable path; no shell interpretation or PATH lookup.
+    /// @param arguments Arguments following argv[0], valid UTF-8 without null bytes.
+    /// @param options Validated environment, capture, and output settings.
+    /// @return The inactive shared owner.
+    [[nodiscard]] static auto create(
         const path::Path &executable, const text::StringList &arguments = {}, const SubprocessOptions &options = {})
-        -> Subprocess;
-    /// Launch a subprocess without retaining ownership or process control.
-    /// Output capture is not permitted for detached children. An internal waiter prevents POSIX zombies.
-    /// @param executable A non-empty valid executable path. No `PATH` lookup or shell interpretation is performed.
-    /// @param arguments Arguments following `argv[0]` in the child command line.
-    /// @param options Child environment and standard-stream options.
-    /// @throws err::ParameterError If a path, argument, environment entry, or option is invalid.
-    /// @throws PlatformError If native process creation fails.
-    static void startDetached(
-        const path::Path &executable, const text::StringList &arguments = {}, const SubprocessOptions &options = {});
+        -> SubprocessPtr;
 
 public: // lifecycle
-    /// Get the identifier assigned to the child process.
-    /// The identifier remains valid after exit; a moved-from subprocess returns an invalid identifier.
+    /// Launch this prepared child once.
+    /// @throws PlatformError If native launch fails; event users also receive onError then onFinal.
+    void start();
+    /// Get the native identifier, invalid before launch and retained after exit.
     [[nodiscard]] auto processId() const noexcept -> ProcessId;
-    /// Test if the child is still running and update cached exit state.
+    /// Test whether the launched child is still running.
     [[nodiscard]] auto isRunning() -> bool;
-    /// Get the cached child exit status, if it has been observed.
-    [[nodiscard]] auto exitStatus() const noexcept -> const std::optional<SubprocessExitStatus> &;
-    /// Wait until the child exits and return its status.
-    /// @throws PlatformError If the native wait operation fails.
+    /// Get a synchronized exit-status snapshot.
+    [[nodiscard]] auto exitStatus() const -> std::optional<SubprocessExitStatus>;
+    /// Wait for workflow completion without pumping or waiting for event delivery.
+    /// @return The native exit status.
+    /// @throws PlatformError If a native launch, read, or wait operation failed.
+    /// @throws LogicFailure If start() has not been called.
     [[nodiscard]] auto wait() -> SubprocessExitStatus;
-    /// Wait up to the given timeout for the child to exit.
-    /// @param timeout A non-negative timeout.
-    /// @return The exit status, or no value if the timeout expired.
-    /// @throws err::ParameterError If `timeout` is negative.
-    /// @throws PlatformError If the native wait operation fails.
+    /// Wait until completion or a non-negative timeout.
+    /// @param timeout Non-negative duration to wait for native exit and output drainage. Zero polls the
+    /// synchronized workflow once. Expiry does not terminate the child or discard output.
+    /// This wait neither pumps the owner loop nor waits for callback delivery.
+    /// @return Exit status, or no value on timeout.
+    /// @throws PlatformError If a native operation failed.
+    /// @throws LogicFailure If start() has not been called.
+    /// @throws ParameterFailure If timeout is negative.
     [[nodiscard]] auto wait(time::TimeDelta timeout) -> std::optional<SubprocessExitStatus>;
-    /// Request child termination using the platform's regular termination mechanism.
-    /// @throws PlatformError If the native operation fails.
+    /// Request native termination.
+    /// @throws PlatformError If termination fails.
     void terminate();
-    /// Force the child to terminate.
-    /// @throws PlatformError If the native operation fails.
+    /// Force native termination.
+    /// @throws PlatformError If termination fails.
     void kill();
 
-public: // captured output
-    /// Get the currently captured standard output prefix.
+public: // output
+    /// Get the retained stdout prefix; event-routed bytes are not retained.
+    /// One initial UTF-8 BOM is removed before capture unless disabled in SubprocessOptions.
     [[nodiscard]] auto standardOutput() const -> text::String;
-    /// Get the currently captured standard error prefix.
-    /// This is empty when standard error was merged into standard output.
+    /// Get the retained stderr prefix, empty when stderr is merged.
+    /// One initial UTF-8 BOM is removed before capture unless disabled in SubprocessOptions.
     [[nodiscard]] auto standardError() const -> text::String;
-    /// Test if captured standard output exceeded its configured limit.
+    /// Test whether stdout capture or event output overflowed.
     [[nodiscard]] auto wasStandardOutputTruncated() const noexcept -> bool;
-    /// Test if captured standard error exceeded its configured limit.
+    /// Test whether stderr capture or event output overflowed.
     [[nodiscard]] auto wasStandardErrorTruncated() const noexcept -> bool;
 
-private:
-    /// Create an owner around a newly launched native backend.
-    explicit Subprocess(impl::SubprocessBackendPtr backend) noexcept;
-    /// Terminate and reap the owned child without throwing.
-    void cleanup() noexcept;
-    /// Validate portable launch inputs before entering a native backend.
-    static void validate(
-        const path::Path &executable,
-        const text::StringList &arguments,
-        const SubprocessOptions &options,
-        bool detached);
+public: // implement EventSource
+    /// Access the stable editor, lazily binding the current loop on first use.
+    /// Must run on the owner loop. Past events are not replayed.
+    /// @return The source-owned editor.
+    [[nodiscard]] auto events() -> SubprocessEventEditor & override;
 
 private:
-    impl::SubprocessBackendPtr _backend; ///< Owned native process backend.
+    /// Prepare the internal workflow.
+    explicit Subprocess(std::shared_ptr<impl::SubprocessState> state);
+    /// Bind events and register backend polling.
+    void bindEvents(const event::EventsPtr &owner);
+
+private:
+    std::shared_ptr<impl::SubprocessState> _state;  ///< Synchronized process workflow.
+    std::unique_ptr<SubprocessEventEditor> _editor; ///< Lazily constructed handler editor.
 };
 
 }

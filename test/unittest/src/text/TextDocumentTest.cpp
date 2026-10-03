@@ -1,26 +1,26 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/text/AnyStringBuilder.hpp>
-#include <erbsland/text/CodeSnippet.hpp>
+#include <erbsland/AnyStringBuilder.hpp>
+#include <erbsland/CodeSnippet.hpp>
+#include <erbsland/ColumnCount.hpp>
+#include <erbsland/ColumnIndex.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/LineIndex.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/PlainTextRenderer.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/text/impl/CodeBlockData.hpp>
 #include <erbsland/text/impl/CodeSnippetData.hpp>
 #include <erbsland/text/impl/LinkData.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/PlainTextRenderer.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/TextDocument.hpp>
-#include <erbsland/text/TextNode.hpp>
-#include <erbsland/text/TextNodeData.hpp>
-#include <erbsland/text/TextNodeType.hpp>
-#include <erbsland/text/TextWalkResult.hpp>
-#include <erbsland/text/TextWalkStatus.hpp>
-#include <erbsland/unit/ColumnCount.hpp>
-#include <erbsland/unit/ColumnIndex.hpp>
-#include <erbsland/unit/ItemIndex.hpp>
-#include <erbsland/unit/LineIndex.hpp>
+#include <erbsland/TextDocument.hpp>
+#include <erbsland/TextNode.hpp>
+#include <erbsland/TextNodeData.hpp>
+#include <erbsland/TextNodeType.hpp>
+#include <erbsland/TextWalkResult.hpp>
+#include <erbsland/TextWalkStatus.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -153,7 +153,7 @@ public:
     void testNullChildIsRejected() {
         auto paragraph = TextNode::createParagraph();
 
-        REQUIRE_THROWS_AS(el::err::ParameterError, paragraph->add(el::text::TextNodePtr{}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, paragraph->add(el::text::TextNodePtr{}));
         REQUIRE(!paragraph->hasChildren());
     }
 
@@ -197,6 +197,9 @@ public:
         REQUIRE_EQUAL(TextNodeType{TextNodeType::CodeSnippet}.renderClass(), TextNodeType::RenderClass::Structure);
         REQUIRE(TextNodeType{TextNodeType::Strong}.isInline());
         REQUIRE(TextNodeType{TextNodeType::OptionMeta}.isInline());
+        REQUIRE(TextNodeType{TextNodeType::OptionValue}.isInline());
+        REQUIRE(TextNodeType{TextNodeType::OptionValue}.isTextContainer());
+        REQUIRE_EQUAL(TextNodeType{TextNodeType::OptionValue}.toString(), "OptionValue"_el);
         REQUIRE(TextNodeType{TextNodeType::Paragraph}.isTextContainer());
         REQUIRE(TextNodeType{TextNodeType::BulletListItem}.isTextContainer());
         REQUIRE(TextNodeType{TextNodeType::TermDescription}.isTextContainer());
@@ -329,6 +332,18 @@ public:
         REQUIRE_EQUAL(StringConverter{document.toString()}.toStdString(), expected);
     }
 
+    void testPlainLongTermNameIsNotRepeated() {
+        auto document = TextDocument{};
+        auto item = document.add(TextNodeType::TermList)->add(TextNodeType::TermItem);
+        const auto name = "A descriptive term name longer than the description column"_el;
+        item->add(TextNodeType::TermName)->addText(name);
+        item->add(TextNodeType::TermDescription)->addText("A description that follows the long term."_el);
+        const auto text = document.toString();
+        REQUIRE_EQUAL(text.count(name), el::unit::ItemCount::one());
+        REQUIRE(text.contains("A description that follows the long term."_el));
+        REQUIRE(text.startsWith(name));
+    }
+
     void testPlainCodeSnippetRendering() {
 
         auto document = TextDocument{};
@@ -340,8 +355,9 @@ public:
         markers.append(
             el::text::CodeSnippetMarker{
                 el::unit::LineIndex{8U}, el::unit::ColumnIndex::zero(), el::unit::ColumnCount{5U}, {}, "error"_el});
-        auto snippet = document.addCodeSnippet(
-            el::text::CodeSnippet{std::move(lines), el::unit::LineIndex{7U}, "cli"_el}, std::move(markers));
+        constexpr auto firstLine = el::unit::LineIndex{7U};
+        auto snippet =
+            document.addCodeSnippet(el::text::CodeSnippet{std::move(lines), firstLine, "cli"_el}, std::move(markers));
 
         REQUIRE_EQUAL(snippet->type(), TextNodeType::CodeSnippet);
         REQUIRE(snippet->data());

@@ -19,8 +19,8 @@ auto U32StringInput::peek() -> CharAndPosition {
     return {_text.charAt(_position), _position.toSizeT()};
 }
 
-void U32StringInput::skip(const unit::CpLength characterCount) {
-    for (auto i = unit::CpLength{}; i < characterCount; ++i) {
+void U32StringInput::skip(const unit::CpCount characterCount) {
+    for (auto i = unit::CpCount{}; i < characterCount; ++i) {
         if (_text.readCharAndAdvance(_position).isEndOfData()) {
             break;
         }

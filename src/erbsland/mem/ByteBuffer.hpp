@@ -13,8 +13,8 @@
 #include "impl/ByteWriteTools.hpp"
 #include "impl/UnsafeByteBufferAccess_fwd.hpp"
 
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 #include "../unit/ByteRange.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 #include "../util/LoopResult.hpp"
@@ -33,7 +33,7 @@ namespace erbsland::mem {
 /// A dynamic, deep-copying buffer of explicit byte values.
 /// The object uniquely owns a compact byte allocation and never shares storage through copy-on-write.
 /// @seedoc{/reference/mem/memory_and_byte_data}
-/// @tested{ByteBufferTest}
+/// @tested{ByteBufferTest LastIndexTest}
 class ByteBuffer final {
     friend class impl::UnsafeByteBufferAccess;
 
@@ -41,7 +41,7 @@ public:
     /// Create an empty buffer.
     ByteBuffer() = default;
     /// Create a buffer filled with a byte value.
-    explicit ByteBuffer(unit::ByteLength length, Byte value = Byte{});
+    explicit ByteBuffer(unit::ByteCount length, Byte value = Byte{});
     /// Create a buffer by copying explicit byte values.
     ByteBuffer(std::initializer_list<Byte> bytes);
     /// Create a buffer by copying a borrowed byte span.
@@ -74,11 +74,13 @@ public: // accessors
     /// Test if this buffer contains no bytes.
     [[nodiscard]] auto isEmpty() const noexcept -> bool;
     /// Get the visible byte length.
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto length() const noexcept -> unit::ByteCount;
     /// Get the index after the final byte.
     [[nodiscard]] auto endIndex() const noexcept -> unit::ByteIndex { return unit::ByteIndex::end(length()); }
+    /// Get the final byte index, or noIndex() if this buffer is empty.
+    [[nodiscard]] auto lastIndex() const noexcept -> unit::ByteIndex { return unit::ByteIndex::last(length()); }
     /// Get the allocated capacity.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteCount;
     /// Test if discarded storage is securely erased.
     [[nodiscard]] auto isSensitive() const noexcept -> bool { return _data.isSensitive(); }
     /// Enable or disable secure erasure for discarded storage.
@@ -91,13 +93,14 @@ public: // accessors
         return impl::ByteReadTools{dataView()}.span(range);
     }
     /// Access a clamped range through a read-only borrowed span.
-    [[nodiscard]] auto span(unit::ByteIndex index, unit::ByteLength lengthValue) const noexcept -> ConstByteSpan {
+    [[nodiscard]] auto span(unit::ByteIndex index, unit::ByteCount lengthValue) const noexcept -> ConstByteSpan {
         return span(unit::ByteRange{index, lengthValue});
     }
     /// Get a byte or a default value if its index is invalid.
     [[nodiscard]] auto get(unit::ByteIndex index, Byte defaultValue = Byte{}) const noexcept -> Byte;
     /// Get a byte or throw if its index is invalid.
-    /// @throws err::OutOfRangeError If `index` is invalid or outside this buffer.
+    /// @param index The byte index. Must identify an existing byte.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     [[nodiscard]] auto getOrThrow(unit::ByteIndex index) const -> Byte;
     /// Invoke a callback for every byte and its optional index.
     template <typename Function>
@@ -116,6 +119,7 @@ public: // integers
         return impl::ByteReadTools{dataView()}.getInteger<T>(offset, endianness, defaultOnError);
     }
     /// Read an integer or throw if its range is invalid.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     [[nodiscard]] auto getIntegerOrThrow(
@@ -135,11 +139,14 @@ public: // write
     /// Set a byte, ignoring invalid indexes.
     void set(unit::ByteIndex index, Byte value) noexcept;
     /// Set a byte or throw for an invalid index.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     void setOrThrow(unit::ByteIndex index, Byte value);
     /// XOR a byte value at an index, ignoring invalid indexes.
     void xorAt(unit::ByteIndex index, Byte value) noexcept;
     /// XOR a byte value at an index or throw if its index is invalid.
-    /// @throws err::OutOfRangeError If `index` is invalid or outside this buffer.
+    /// @param index The byte index. Must identify an existing byte.
+    /// @param value The byte value to XOR with the existing byte.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     void xorAtOrThrow(unit::ByteIndex index, Byte value);
     /// Store an integer, leaving this buffer unchanged if its range is invalid.
     template <typename T>
@@ -150,6 +157,7 @@ public: // write
         return impl::ByteWriteTools{writableSpan()}.setInteger(offset, value, endianness);
     }
     /// Store an integer or throw if its range is invalid.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     void setIntegerOrThrow(
@@ -172,7 +180,7 @@ public: // write
     /// @return `false` without changing the buffer if the lengths differ.
     auto xorWith(ConstByteSpan source) -> bool;
     /// XOR every byte with an equally sized source or throw if the lengths differ.
-    /// @throws err::ParameterError If the lengths differ.
+    /// @param source The bytes to XOR. Must have the same length as this buffer.
     void xorWithOrThrow(ConstByteSpan source);
     /// XOR a clamped target range with as many source bytes as fit.
     void xorWith(unit::ByteRange targetRange, ConstByteSpan source);
@@ -181,9 +189,9 @@ public: // write
 
 public: // storage
     /// Resize visible storage, zero-filling growth.
-    auto resize(unit::ByteLength lengthValue) -> ByteBuffer &;
+    auto resize(unit::ByteCount lengthValue) -> ByteBuffer &;
     /// Reserve at least the requested capacity.
-    void reserve(unit::ByteLength capacityValue);
+    void reserve(unit::ByteCount capacityValue);
     /// Reduce capacity to the visible length.
     void shrinkToFit();
     /// Remove all visible bytes while preserving capacity.
@@ -193,7 +201,7 @@ public: // storage
     /// Append one or more bytes.
     /// @param value The byte value to append.
     /// @param length The number of times to append the value.
-    auto append(Byte value, unit::ByteLength length = unit::ByteLength::one()) -> ByteBuffer &;
+    auto append(Byte value, unit::ByteCount length = unit::ByteCount::one()) -> ByteBuffer &;
     /// Append borrowed bytes.
     auto append(ConstByteSpan bytes) -> ByteBuffer &;
     /// Insert borrowed bytes, clamping out-of-range indexes to the end.

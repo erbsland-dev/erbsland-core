@@ -6,7 +6,7 @@
 
 #include "../../path/PathCollisionMode.hpp"
 #include "../../stream/OutputStreamSettings.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::compression::zip {
 
@@ -51,9 +51,9 @@ public:
         return *this;
     }
     /// Get the maximum uncompressed length for this extraction.
-    [[nodiscard]] auto maximumLength() const noexcept -> unit::ByteLength { return _maximumLength; }
+    [[nodiscard]] auto maximumLength() const noexcept -> unit::ByteCount { return _maximumLength; }
     /// Set the maximum uncompressed length for this extraction.
-    auto setMaximumLength(unit::ByteLength value) noexcept -> ArchiveExtractionOptions & {
+    auto setMaximumLength(unit::ByteCount value) noexcept -> ArchiveExtractionOptions & {
         _maximumLength = value;
         return *this;
     }
@@ -65,7 +65,7 @@ private:
     path::PathCollisionMode _collisionMode{path::PathCollisionMode::Stop};
     bool _preserveModificationTime{true};
     bool _useAtomicFiles{true};
-    unit::ByteLength _maximumLength{unit::ByteLength{256U * 1024U * 1024U}};
+    unit::ByteCount _maximumLength{unit::ByteCount{256U * 1024U * 1024U}};
 };
 
 }

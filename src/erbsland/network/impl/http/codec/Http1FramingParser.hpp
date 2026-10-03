@@ -4,6 +4,7 @@
 
 #include "Http1TransferCoding.hpp"
 
+#include "../../../../unit/ByteCount.hpp"
 #include "../../../http/HttpHeaders.hpp"
 
 #include <cstddef>
@@ -22,14 +23,14 @@ public:
 
 public: // accessors
     /// Get the parsed Content-Length value.
-    [[nodiscard]] auto contentLength() const noexcept -> std::optional<std::uint64_t> { return _contentLength; }
+    [[nodiscard]] auto contentLength() const noexcept -> std::optional<unit::ByteCount> { return _contentLength; }
     /// Get the parsed transfer coding classification.
     [[nodiscard]] auto transferCoding() const noexcept -> Http1TransferCoding { return _transferCoding; }
 
 public: // chunk metadata
     /// Parse a hexadecimal chunk size and validate any discarded extensions.
     /// @throws err::ParseError if the chunk metadata is malformed or overflows.
-    [[nodiscard]] static auto chunkSize(const text::String &line) -> std::uint64_t;
+    [[nodiscard]] static auto chunkSize(const text::String &line) -> unit::ByteCount;
 
 private:
     /// Parse one Content-Length field value into the aggregate result.
@@ -38,7 +39,7 @@ private:
     void parseTransferEncoding(const text::String &text);
 
 private:
-    std::optional<std::uint64_t> _contentLength;                    ///< Agreed Content-Length value.
+    std::optional<unit::ByteCount> _contentLength;                  ///< Agreed Content-Length value.
     Http1TransferCoding _transferCoding{Http1TransferCoding::None}; ///< Parsed coding classification.
     std::size_t _codingCount{};                                     ///< Number of transfer codings.
 };

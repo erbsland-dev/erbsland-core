@@ -1,17 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/text/u8/impl/U8StringDataView.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
 #include <span>
 
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteRange;
 
 TESTED_TARGETS(U8StringDataView)
@@ -19,7 +19,7 @@ class U8StringDataViewTest final : public el::UnitTest {
 public:
     void testStoresDataAndRange() {
         const auto text = std::array<char, 5>{'H', 'e', 'l', 'l', 'o'};
-        const auto range = ByteRange{ByteIndex{1U}, ByteLength{3U}};
+        const auto range = ByteRange{ByteIndex{1U}, ByteCount{3U}};
 
         const auto view = el::text::impl::U8StringDataView{std::span<const char>{text}, range};
 
@@ -30,7 +30,7 @@ public:
 
     void testDataSpanReturnsSelectedRange() {
         const auto text = std::array<char, 5>{'H', 'e', 'l', 'l', 'o'};
-        const auto range = ByteRange{ByteIndex{1U}, ByteLength{3U}};
+        const auto range = ByteRange{ByteIndex{1U}, ByteCount{3U}};
 
         const auto span = el::text::impl::U8StringDataView{std::span<const char>{text}, range}.dataSpan();
 
@@ -41,7 +41,7 @@ public:
 
     void testDataSpanClampsToAvailableData() {
         const auto text = std::array<char, 5>{'H', 'e', 'l', 'l', 'o'};
-        const auto range = ByteRange{ByteIndex{3U}, ByteLength{5U}};
+        const auto range = ByteRange{ByteIndex{3U}, ByteCount{5U}};
 
         const auto span = el::text::impl::U8StringDataView{std::span<const char>{text}, range}.dataSpan();
 
@@ -52,10 +52,10 @@ public:
 
     void testRelativeRangeForAbsolute() {
         const auto text = std::array<char, 5>{'H', 'e', 'l', 'l', 'o'};
-        const auto range = ByteRange{ByteIndex{1U}, ByteLength{4U}};
+        const auto range = ByteRange{ByteIndex{1U}, ByteCount{4U}};
         const auto view = el::text::impl::U8StringDataView{std::span<const char>{text}, range};
-        const auto absoluteRange = ByteRange{ByteIndex{3U}, ByteLength{3U}};
-        const auto expectedRange = ByteRange{ByteIndex{2U}, ByteLength{2U}};
+        const auto absoluteRange = ByteRange{ByteIndex{3U}, ByteCount{3U}};
+        const auto expectedRange = ByteRange{ByteIndex{2U}, ByteCount{2U}};
 
         const auto relativeRange = view.relativeRangeForAbsolute(absoluteRange);
 

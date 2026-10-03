@@ -24,7 +24,7 @@ public:
     /// Maximum decoded DER length across a bundle.
     static constexpr auto cMaximumBundleDerLength = std::size_t{16U * 1024U * 1024U};
     /// Maximum number of certificates in a bundle.
-    static constexpr auto cMaximumCertificates = std::size_t{256U};
+    static constexpr auto cMaximumCertificates = std::size_t{4096U};
 
 public:
     /// Create a decoder for PEM source text.
@@ -36,8 +36,8 @@ public:
 
 public:
     /// Decode one or more CERTIFICATE blocks.
+    /// The input and decoded bundle must stay within the fixed text-length, DER-length, and certificate-count limits.
     /// @throws err::ParseError If the textual structure or Base64 is malformed.
-    /// @throws err::OutOfRangeError If a fixed resource limit is exceeded.
     [[nodiscard]] auto decode() const -> util::List<mem::ByteBlock>;
     /// Encode the configured certificate data as canonical PEM.
     [[nodiscard]] auto encode() const -> text::String;

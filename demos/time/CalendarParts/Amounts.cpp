@@ -3,8 +3,13 @@
 
 #include "CalendarPartsDemos.hpp"
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/time/all.hpp>
+#include <erbsland/all_time.hpp>
+#include <erbsland/Day.hpp>
+#include <erbsland/Hour.hpp>
+#include <erbsland/Month.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace demo {
 

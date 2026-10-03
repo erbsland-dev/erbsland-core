@@ -6,17 +6,19 @@
 
 #include "impl/source/FileSource.hpp"
 
+#include "../err/RuntimeError.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringFormat.hpp"
 
 namespace erbsland::conf {
 
+using namespace text;
 using namespace text::literals;
 
 ConfErrorContext::ConfErrorContext(
     const ConfErrorCategory category,
-    text::String title,
-    text::String description,
+    String title,
+    String description,
     const SourcePtr &source,
     const Location &location) :
     ConfErrorContext{category, std::move(title), std::move(description)} {
@@ -27,11 +29,11 @@ ConfErrorContext::ConfErrorContext(
 }
 
 ConfErrorContext::ConfErrorContext(
-    const ConfErrorCategory category, text::String description, const SourcePtr &source, const Location &location) :
+    const ConfErrorCategory category, String description, const SourcePtr &source, const Location &location) :
     ConfErrorContext{category, defaultTitle(category), std::move(description), source, location} {
 }
 
-auto ConfErrorContext::defaultTitle(const ConfErrorCategory category) noexcept -> text::String {
+auto ConfErrorContext::defaultTitle(const ConfErrorCategory category) noexcept -> String {
     switch (static_cast<ConfErrorCategory::Enum>(category)) {
     case ConfErrorCategory::IO:
         return "Reading the Configuration Failed"_el;
@@ -79,7 +81,7 @@ void ConfErrorContext::assignOptional(const Location &location) noexcept {
         try {
             const auto source = std::make_shared<impl::FileSource>(*_filePath);
             _codeSnippet = source->codeSnippet(*_location);
-        } catch (...) {
+        } catch (const err::RuntimeError &) {
             _codeSnippet = std::nullopt;
         }
     }
@@ -98,19 +100,19 @@ auto ConfErrorContext::withNamePathAndLocation(const NamePath &namePath, const L
     return result;
 }
 
-auto ConfErrorContext::withDescriptionPrefix(const text::String &prefix) const -> ConfErrorContext {
+auto ConfErrorContext::withDescriptionPrefix(const String &prefix) const -> ConfErrorContext {
     auto result = *this;
-    result._description = text::StringFormat{"{}{}"_el}.build(prefix, _description);
+    result._description = StringFormat{"{}{}"_el}.build(prefix, _description);
     return result;
 }
 
-auto ConfErrorContext::withDescription(text::String description) const -> ConfErrorContext {
+auto ConfErrorContext::withDescription(String description) const -> ConfErrorContext {
     auto result = *this;
     result._description = std::move(description);
     return result;
 }
 
-auto ConfErrorContext::withCodeSnippet(const std::optional<text::CodeSnippet> &codeSnippet) const -> ConfErrorContext {
+auto ConfErrorContext::withCodeSnippet(const std::optional<CodeSnippet> &codeSnippet) const -> ConfErrorContext {
     if (!codeSnippet.has_value()) {
         return *this;
     }

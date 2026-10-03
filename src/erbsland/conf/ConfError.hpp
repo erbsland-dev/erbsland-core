@@ -108,7 +108,7 @@ public:
     auto operator=(const ConfError &) -> ConfError & = default;
     auto operator=(ConfError &&) noexcept -> ConfError & = default;
 
-public: // implement LogicError
+public: // implement LogicFailure
     [[nodiscard]] auto diagnostic() const -> err::DiagnosticConstPtr override;
 
 public: // accessors

@@ -13,8 +13,8 @@
 #include "../LayoutSource.hpp"
 #include "../Value_fwd.hpp"
 
-#include "../../../text/StringList.hpp"
-#include "../../../text/StringMap.hpp"
+#include "../../StringList.hpp"
+#include "../../StringMap.hpp"
 
 #include <functional>
 #include <optional>

@@ -4,7 +4,7 @@
 
 #include "DeterministicSecureRandom.hpp"
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/core/impl/application_data/ApplicationRandomData.hpp>
 #include <erbsland/core/impl/ApplicationData.hpp>
 

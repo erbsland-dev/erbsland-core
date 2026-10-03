@@ -11,8 +11,7 @@ namespace erbsland::random::impl {
 class PosixFileDescriptor final {
 public:
     /// Open a file descriptor for reading.
-    /// @param path The path to open.
-    /// @throws random::RandomError If the path cannot be opened.
+    /// @param path The source path. Must identify a file that can be opened for reading.
     explicit PosixFileDescriptor(const std::string &path);
 
     /// Close the descriptor.

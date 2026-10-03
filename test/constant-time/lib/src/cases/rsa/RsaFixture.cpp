@@ -1,17 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "RsaFixture.hpp"
 
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
 #include <erbsland/cryptology/impl/algorithm/rsa_signature/RsaSigner.hpp>
-#include <erbsland/cryptology/tls/TlsSignatureScheme.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TlsSignatureScheme.hpp>
 
 namespace app::constant_time {
 
@@ -20,14 +19,14 @@ using namespace el::text::literals;
 RsaFixture::RsaFixture(
     el::Random &random, const bool population, std::shared_ptr<RsaContext> context, RsaOperation operation) :
     _context{context}, _operation{operation} {
-    auto bytes = input(random, population, 256);
+    auto bytes = input(random, population, el::ByteCount{256});
     bytes.set(el::ByteIndex{}, el::Byte{});
-    auto exponent = input(random, population, 256);
+    auto exponent = input(random, population, el::ByteCount{256});
     _value = ci::rsa_signature::Number::fromBigEndian(bytes.span(), 64);
     _exponent = ci::rsa_signature::Number::fromBigEndian(exponent.span(), 64);
-    _message = input(random, population, 32);
-    _salt = input(random, population, 48);
-    _blinding = el::ByteBuffer{el::ByteLength{256}};
+    _message = input(random, population, el::ByteCount{32});
+    _salt = input(random, population, el::ByteCount{48});
+    _blinding = el::ByteBuffer{el::ByteCount{256}};
     _blinding.set(el::ByteIndex{255}, el::Byte{2U});
     require(_value.compare(context->components().modulus) < 0);
     if (operation >= RsaOperation::SignSha256) {
@@ -86,7 +85,7 @@ auto RsaFixture::measure(const uint64_t repetitions) -> uint64_t {
     case RsaOperation::SignSha384:
         return repeat(repetitions, [this]() -> uint64_t { return sample<RsaOperation::SignSha384>(); });
     }
-    throw el::LogicError{"Unknown sample operation."_el};
+    throw el::LogicFailure{"Unknown sample operation."_el};
 }
 
 }

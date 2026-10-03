@@ -1,6 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/OutputStreamSettings.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamBuffering.hpp>
+#include <erbsland/StreamError.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {
@@ -23,7 +31,7 @@ void rejectOversizedRequest() {
 /// buffer is empty.
 void writeOversizedCellNote(const el::Path &path) {
     auto settings = el::OutputStreamSettings{};
-    settings.setBuffering(el::StreamBuffering::MinimalMemory).setBackBufferLimit(el::ByteLength{16U});
+    settings.setBuffering(el::StreamBuffering::MinimalMemory).setBackBufferLimit(el::ByteCount{16U});
     auto options = el::PathWriteTextOptions{};
     options.setStreamSettings(settings);
     const auto output = path.content().openTextOutputStream(options);

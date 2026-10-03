@@ -17,8 +17,8 @@ Positioning provides optional random access in encoded bytes.
 This page explains capability checks, logical positions, absolute and relative movement, sparse output, decoder resets,
 text alignment, append mode, and timeout-safe changes.
 
-Check the Capability
-====================
+Checking Stream Positioning Support
+===================================
 
 Call :cpp:func:`supportsPositioning() <erbsland::stream::StreamPositioning::supportsPositioning>` before any position
 operation.
@@ -29,7 +29,7 @@ Calling a positioning method when unsupported throws ``StreamError``.
 .. erbsland-demo::
     :source: stream/Positioning/CheckPositioning.cpp
     :exec: stream/positioning --demo CheckPositioning
-    :source-sha256: cfaa50f6437c79e608e0e2ab06ccd5710d9131b86444120378a21f2463b13758
+    :sha256: 9155fe7c9f2710c9d1af6b32058846fb33e6ff6b5b13ad01f69caa104a3692bf
 
 .. code-block:: cpp
 
@@ -49,11 +49,13 @@ Calling a positioning method when unsupported throws ``StreamError``.
         append->close();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Regular file supports positioning: true
-    Append stream supports positioning: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRegular file supports positioning: true
+        Append stream supports positioning: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -70,7 +72,7 @@ The next read begins from the requested location.
 .. erbsland-demo::
     :source: stream/Positioning/ReadRecordAtOffset.cpp
     :exec: stream/positioning --demo ReadRecordAtOffset
-    :source-sha256: 4ca0e4a5c5a812ab525a7f05f892a599fc03df361d952dc71f981b0f1d3c81c4
+    :sha256: 15c452d006903bf39db3a24094f42d0675f6083746f15d1738b63caf590fac48
 
 .. code-block:: cpp
 
@@ -83,14 +85,16 @@ The next read begins from the requested location.
         const auto input = path.content().openByteInputStream();
 
         input->setPosition(el::ByteIndex{3U});
-        const auto record = input->readExact(el::ByteLength{3U});
+        const auto record = input->readExact(el::ByteCount{3U});
         el::io::printLine("First byte of the second record: "_el, record.data().get(el::ByteIndex{0U}).toUInt8());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    First byte of the second record: 20
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFirst byte of the second record: 20␛[0m
 
 .. erbsland-demo-end::
 
@@ -100,12 +104,12 @@ Move Relative to a Reference Point
 Use ``setPosition()`` for an absolute byte index.
 Use ``movePosition()`` with :cpp:enum:`StreamPositionOrigin <erbsland::stream::StreamPositionOrigin>` to move relative
 to the start, logical current position, or current end.
-Negative, overflowing, invalid, or non-native positions throw ``ParameterError``.
+Negative, overflowing, invalid, or non-native positions throw ``ParameterFailure``.
 
 .. erbsland-demo::
     :source: stream/Positioning/MoveRelativeToEnd.cpp
     :exec: stream/positioning --demo MoveRelativeToEnd
-    :source-sha256: bf04f50b6f92e3cbaa93636ef756b51262dfcfefedab394f5c1409e9b35386a6
+    :sha256: 65ee59d35c516fb6c8a535ccb98d8c5cfa4b541d82949e47646802151ef2581e
 
 .. code-block:: cpp
 
@@ -118,15 +122,20 @@ Negative, overflowing, invalid, or non-native positions throw ``ParameterError``
         const auto input = path.content().openByteInputStream();
 
         input->movePosition(el::StreamPositionOrigin::End, el::ByteOffset{-2});
-        const auto trailer = input->readExact(el::ByteLength{2U});
-        el::io::printLine("Trailer marker: "_el, trailer.data().get(el::ByteIndex{0U}).toUInt8(), " / "_el,
+        const auto trailer = input->readExact(el::ByteCount{2U});
+        el::io::printLine(
+            "Trailer marker: "_el,
+            trailer.data().get(el::ByteIndex{0U}).toUInt8(),
+            " / "_el,
             trailer.data().get(el::ByteIndex{1U}).toUInt8());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Trailer marker: 90 / 91
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTrailer marker: 90 / 91␛[0m
 
 .. erbsland-demo-end::
 
@@ -141,7 +150,7 @@ explicit flush durability boundary.
 .. erbsland-demo::
     :source: stream/Positioning/CreateSparseRecord.cpp
     :exec: stream/positioning --demo CreateSparseRecord
-    :source-sha256: d07478ea1f305bf2455afe7d09a594ed2a5b8bef3a9031aa1663c3c6616e7d7a
+    :sha256: dde72cb698830673e1a2e17426bb7f254bf7dc7948ed2b6391b4a5b32dfe9f37
 
 .. code-block:: cpp
 
@@ -158,11 +167,13 @@ explicit flush durability boundary.
         el::io::printLine("File length: "_el, path.content().readDataOrThrow().length().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Logical position after acceptance: 9
-    File length: 9
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLogical position after acceptance: 9
+        File length: 9␛[0m
 
 .. erbsland-demo-end::
 
@@ -180,7 +191,7 @@ Moving to a nonzero location never consumes or writes an interior BOM.
 .. erbsland-demo::
     :source: stream/Positioning/PositionEncodedText.cpp
     :exec: stream/positioning --demo PositionEncodedText
-    :source-sha256: 7138c654ed23776657d4fb7fea6c752243689a666bf6c07ab68276f6c0e56a4a
+    :sha256: b109a3aa3f962d4cea192e5f5ece7eae3b0011ab899ede05bb4217fa2287c2e2
 
 .. code-block:: cpp
 
@@ -202,10 +213,12 @@ Moving to a nonzero location never consumes or writes an interior BOM.
         el::io::printLine("Second character: "_el, input->readChar().data());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Second character: 狐
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSecond character: 狐␛[0m
 
 .. erbsland-demo-end::
 
@@ -219,7 +232,7 @@ Retry the complete request rather than adjusting from an assumed partial movemen
 .. erbsland-demo::
     :source: stream/Positioning/HandlePositionTimeout.cpp
     :exec: stream/positioning --demo HandlePositionTimeout
-    :source-sha256: 37ad4fca677c3d6c85ad9a4650b3449719f342ea17ecabc3b9928eb6e8a74cdb
+    :sha256: 1251e444de87f040fb62b13a9b026366207364d6d6a788e252c4e72966587ab6
 
 .. code-block:: cpp
 
@@ -236,11 +249,13 @@ Retry the complete request rather than adjusting from an assumed partial movemen
         el::io::printLine("Position after retry: "_el, output.position().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    First positioning attempt timed out: true
-    Position is unchanged: true
-    Position after retry: 12
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFirst positioning attempt timed out: true
+        Position is unchanged: true
+        Position after retry: 12␛[0m
 
 .. erbsland-demo-end::

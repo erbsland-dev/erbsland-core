@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/Byte.hpp>
+#include <erbsland/Byte.hpp>
 #include <erbsland/mem/impl/SecureErase.hpp>
 #include <erbsland/mem/impl/SharedByteDataWithFlag.hpp>
 #include <erbsland/unittest/UnitTest.hpp>

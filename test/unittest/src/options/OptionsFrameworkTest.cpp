@@ -1,19 +1,24 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/core/CommandLineArguments.hpp>
-#include <erbsland/options/Option.hpp>
-#include <erbsland/options/OptionChoice.hpp>
-#include <erbsland/options/OptionChoiceEditor.hpp>
-#include <erbsland/options/OptionChoices.hpp>
-#include <erbsland/options/OptionError.hpp>
-#include <erbsland/options/OptionManager.hpp>
-#include <erbsland/options/OptionModule.hpp>
-#include <erbsland/options/Options.hpp>
-#include <erbsland/options/OptionSet.hpp>
-#include <erbsland/options/OptionValue.hpp>
-#include <erbsland/options/OptionValues.hpp>
-#include <erbsland/text/Literals.hpp>
+#include "../core/ApplicationTestScope.hpp"
+
+#include <erbsland/CommandLineArguments.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Option.hpp>
+#include <erbsland/OptionChoice.hpp>
+#include <erbsland/OptionChoiceEditor.hpp>
+#include <erbsland/OptionChoices.hpp>
+#include <erbsland/OptionError.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionSet.hpp>
+#include <erbsland/OptionValue.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/StringList.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <vector>
@@ -33,13 +38,135 @@ TESTED_TARGETS(
     Application Option OptionChoice OptionChoiceEditor OptionChoices OptionEditor OptionManager OptionModule
         OptionResult OptionSet OptionValue OptionValues Options)
 class OptionsFrameworkTest final : public el::UnitTest {
+private:
+    static constexpr auto cCountOption = "--count"_el;
+    static constexpr auto cEnabledOption = "--enabled"_el;
+    static constexpr auto cVerboseOption = "--verbose"_el;
+    static constexpr auto cAOption = "-A"_el;
+    static constexpr auto cVeryVerboseShortOption = "-V"_el;
+    static constexpr auto cVerboseShortOption = "-v"_el;
+    static constexpr auto cCountsOption = "counts"_el;
+    static constexpr auto cIndexedOption = "indexed"_el;
+    static constexpr auto cMissingOption = "missing"_el;
+    static constexpr auto cNameOption = "name"_el;
+    static constexpr auto cNamesOption = "names"_el;
+    static constexpr auto cOriginalOption = "original"_el;
+
 public:
+    void testCanonicalNamesAndDeveloperLookups() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        const auto option = options->addOption({cAOption, "--One_Two_3"_el, "One_Two_3"_el}).option();
+        REQUIRE_EQUAL(option->names().getRefOrThrow(el::ItemIndex{0}), cAOption);
+        REQUIRE_EQUAL(option->names().getRefOrThrow(el::ItemIndex{1}), "--one-two-3"_el);
+        REQUIRE_EQUAL(option->names().getRefOrThrow(el::ItemIndex{2}), "one-two-3"_el);
+        REQUIRE(option->hasLongName("--ONE_TWO_3"_el));
+        REQUIRE(option->hasPositionalName("ONE_TWO_3"_el));
+        REQUIRE(option->hasShortName(U'A'));
+        REQUIRE_FALSE(option->hasShortName(U'a'));
+        REQUIRE(options->editOption("--ONE_TWO_3"_el).option() == option);
+        REQUIRE(options->editOption("ONE_TWO_3"_el).option() == option);
+        REQUIRE(option->hasConflictingOptionName(*Option::create({"--one-two-3"_el})));
+        auto module = OptionModule::create("Run_One_2"_el);
+        REQUIRE_EQUAL(module->name(), "run-one-2"_el);
+        REQUIRE(module->hasName("RUN_ONE_2"_el));
+        auto values = OptionValues::create();
+        const auto value = OptionValue::create(OptionInteger{42});
+        values->setValue({cAOption, "--ONE_TWO_3"_el, "One_Two_3"_el}, value);
+        REQUIRE(values->value("--one-two-3"_el) == value);
+        REQUIRE(values->value("ONE_TWO_3"_el) == value);
+        REQUIRE(values->value(cAOption) == value);
+        REQUIRE_FALSE(values->value("-a"_el));
+        REQUIRE_EQUAL(values->valueCount("--ONE_TWO_3"_el), ArgumentCount::one());
+        values->setModuleName("Run_One_2"_el);
+        REQUIRE_EQUAL(values->moduleName(), "run-one-2"_el);
+        values->setModuleName({});
+        REQUIRE(values->moduleName().isEmpty());
+    }
+
+    void testInvalidNamesFailImmediatelyAndPreserveState() {
+        auto applicationScope = ApplicationTestScope<>{};
+        const auto option = Option::create({"--original"_el});
+        const auto module = OptionModule::create(cOriginalOption);
+        auto values = OptionValues::create();
+        const auto originalValue = OptionValue::create(OptionInteger{42});
+        values->setValue(cOriginalOption, originalValue);
+        for (
+            const auto &name : el::text::StringList{
+                ""_el,
+                "-"_el,
+                "--"_el,
+                "_a"_el,
+                "__name"_el,
+                "-_"_el,
+                "-_a"_el,
+                "--one__two"_el,
+                "--one_-two"_el,
+                "--one-"_el,
+                "--1name"_el,
+                "one--two"_el,
+                "one_"_el,
+                "a/b"_el,
+                "über"_el}) {
+            runWithContext(SOURCE_LOCATION(), [&]() -> void {
+                REQUIRE_THROWS_AS(el::err::ParameterFailure, Option::create({name}));
+                REQUIRE_THROWS_AS(el::err::ParameterFailure, option->addName(name));
+                REQUIRE_THROWS_AS(el::err::ParameterFailure, option->setNames({"--replacement"_el, name}));
+                REQUIRE_EQUAL(option->names().count().toSizeT(), 1U);
+                REQUIRE_EQUAL(option->names().first(), "--original"_el);
+                REQUIRE_EQUAL(option->type(), OptionType::Flag);
+                REQUIRE_THROWS_AS(el::err::ParameterFailure, OptionModule::create(name));
+                REQUIRE_THROWS_AS(el::err::ParameterFailure, module->setName(name));
+                REQUIRE_EQUAL(module->name(), cOriginalOption);
+                REQUIRE_THROWS_AS(el::err::ParameterFailure, values->setValue(name, originalValue));
+                REQUIRE_THROWS_AS(
+                    el::err::ParameterFailure,
+                    values->setValue({cOriginalOption, name}, OptionValue::create(OptionInteger{99})));
+                REQUIRE(values->value(cOriginalOption) == originalValue);
+                REQUIRE_FALSE(values->value(name));
+            });
+        }
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, module->setName("--valid-option"_el));
+        values->setModuleName(cOriginalOption);
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, values->setModuleName("--invalid-module"_el));
+        REQUIRE_EQUAL(values->moduleName(), cOriginalOption);
+        option->setNames({});
+        REQUIRE(option->names().isEmpty());
+        REQUIRE(Option::create()->names().isEmpty());
+        REQUIRE(OptionModule::create()->name().isEmpty());
+    }
+
+    void testNameGrammarAndLengthBoundaries() {
+        auto applicationScope = ApplicationTestScope<>{};
+        const auto maximum = String{StringEditor{}.append(U'a', el::unit::CpCount{100U})};
+        const auto excessive = el::join(maximum, "a"_el);
+        REQUIRE(OptionModule::isValidName(maximum));
+        REQUIRE(Option::isValidPositionalName(maximum));
+        REQUIRE(Option::isValidLongName(el::join("--"_el, maximum)));
+        REQUIRE_FALSE(OptionModule::isValidName(excessive));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, Option::create({excessive}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, OptionModule::create(excessive));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, Option::create({el::join("--"_el, excessive)}));
+        for (const auto &name : el::text::StringList{"a"_el, "a1"_el, "a-1"_el, "One_Two_3"_el}) {
+            REQUIRE(Option::isValidPositionalName(name));
+            REQUIRE(OptionModule::isValidName(name));
+        }
+        REQUIRE(Option::isValidShortName(cAOption));
+        REQUIRE(Option::isValidShortName("-1"_el));
+        REQUIRE_FALSE(Option::isValidShortName("-_"_el));
+        REQUIRE_FALSE(Option::isValidLongName("__name"_el));
+        REQUIRE_FALSE(Option::isValidLongName("--one__two"_el));
+        REQUIRE_FALSE(Option::isValidPositionalName("one-_two"_el));
+    }
+
     void testOptionEditing() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
 
-        auto editor = options->addOption({"-v"_el, "--Verbose"_el, "Verbose"_el})
+        auto editor = options->addOption({cVerboseShortOption, "--Verbose"_el, "Verbose"_el})
                           .setHelp("Enable verbose output"_el)
                           .setHelpTitle("Verbosity"_el)
+                          .setHelpDescription("Enable verbose output"_el)
                           .setHelpEpilog("Use twice for trace output."_el)
                           .setHelpVisibility(OptionHelpVisibility::Usage)
                           .setValueName("level"_el)
@@ -54,10 +181,10 @@ public:
 
         const auto option = editor.option();
         REQUIRE(option);
-        REQUIRE_EQUAL(option->names().size(), 3U);
-        REQUIRE(option->names().at(0) == "-v"_el);
-        REQUIRE(option->names().at(1) == "--verbose"_el);
-        REQUIRE(option->names().at(2) == "verbose"_el);
+        REQUIRE_EQUAL(option->names().count().toSizeT(), 3U);
+        REQUIRE(option->names().getRefOrThrow(el::ItemIndex{0}) == cVerboseShortOption);
+        REQUIRE(option->names().getRefOrThrow(el::ItemIndex{1}) == cVerboseOption);
+        REQUIRE(option->names().getRefOrThrow(el::ItemIndex{2}) == "verbose"_el);
         REQUIRE(option->help().description() == "Enable verbose output"_el);
         REQUIRE(option->help().title() == "Verbosity"_el);
         REQUIRE(option->help().epilog() == "Use twice for trace output."_el);
@@ -65,15 +192,15 @@ public:
         REQUIRE(option->valueName() == "level"_el);
         option->setValueName("trace-level"_el);
         REQUIRE(option->valueName() == "trace-level"_el);
-        options->editOption("--verbose"_el).setValueName({});
+        options->editOption(cVerboseOption).setValueName({});
         REQUIRE(option->valueName().isEmpty());
         REQUIRE(option->type() == OptionType::Flag);
         REQUIRE(option->type().toString() == "flag"_el);
         REQUIRE(option->flags().isSet(OptionFlag::Required));
         REQUIRE(option->maximum() == ArgumentCount{3U});
-        REQUIRE(Option::isValidShortName("-v"_el));
-        REQUIRE(Option::isValidLongName("--verbose"_el));
-        REQUIRE(Option::isValidOptionName("--verbose"_el));
+        REQUIRE(Option::isValidShortName(cVerboseShortOption));
+        REQUIRE(Option::isValidLongName(cVerboseOption));
+        REQUIRE(Option::isValidOptionName(cVerboseOption));
         REQUIRE_FALSE(Option::isValidLongName("--1invalid"_el));
         REQUIRE(Option::isValidPositionalName("verbose"_el));
         REQUIRE_FALSE(Option::isValidPositionalName("1invalid"_el));
@@ -94,20 +221,20 @@ public:
         REQUIRE_FALSE(positionalOption->isRegularOption());
         REQUIRE(positionalOption->isPositionalArgument());
         REQUIRE(positionalOption->type() == OptionType::Text);
-        REQUIRE(positionalOption->names().at(0) == "path"_el);
+        REQUIRE(positionalOption->names().getRefOrThrow(el::ItemIndex{0}) == "path"_el);
 
-        options->editOption("--verbose"_el).setFlag(OptionFlag::Disabled).setFlag(OptionFlag::Greedy);
+        options->editOption(cVerboseOption).setFlag(OptionFlag::Disabled).setFlag(OptionFlag::Greedy);
         REQUIRE(option->flags().isSet(OptionFlag::Disabled));
         REQUIRE(option->flags().isSet(OptionFlag::Greedy));
         REQUIRE(option->isDisabled());
 
-        options->editOption("--verbose"_el).setDefaultValue(true);
+        options->editOption(cVerboseOption).setDefaultValue(true);
         REQUIRE(option->hasDefaultValue());
-        options->editOption("--verbose"_el).clearDefaultValue();
+        options->editOption(cVerboseOption).clearDefaultValue();
         REQUIRE_FALSE(option->hasDefaultValue());
 
         auto validatorCalled = false;
-        options->editOption("--verbose"_el).setValidateFn([&validatorCalled](OptionValuePtr, OptionValuesPtr) -> void {
+        options->editOption(cVerboseOption).setValidateFn([&validatorCalled](OptionValuePtr, OptionValuesPtr) -> void {
             validatorCalled = true;
         });
         REQUIRE(option->validateFn());
@@ -117,6 +244,7 @@ public:
     }
 
     void testChoices() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto invalidEditor = OptionChoiceEditor{};
         REQUIRE_FALSE(invalidEditor.isValid());
         REQUIRE_FALSE(invalidEditor.choice());
@@ -133,7 +261,7 @@ public:
         REQUIRE(fastEditor.isValid());
         REQUIRE(fastEditor.choice() == choices->choices().at(0));
         fastEditor.setHelp("Prefer speed"_el);
-        REQUIRE(fastEditor.choice()->help().description() == "Prefer speed"_el);
+        REQUIRE(fastEditor.choice()->help().title() == "Prefer speed"_el);
         fastEditor.setHelpTitle("Performance"_el)
             .setHelpDescription("Fast mode"_el)
             .setHelpEpilog("Use for quick runs"_el)
@@ -143,6 +271,7 @@ public:
         auto choiceHelp = OptionHelp{"Safer mode"_el};
         choiceHelp.setVisibility(OptionHelpVisibility::Normal);
         choiceHelp.setTitle("Safety"_el);
+        choiceHelp.setDescription("Safer mode"_el);
         choiceHelp.setEpilog("Use for protected runs"_el);
         auto safeEditor = choices->addChoice(OptionChoice::create("SafeMode"_el));
         safeEditor.setHelp(choiceHelp);
@@ -171,10 +300,11 @@ public:
         REQUIRE(choiceText.has_value());
         REQUIRE(choiceText.value() == "SafeMode"_el);
         REQUIRE_FALSE(editor.option()->matchingChoiceText(u8"ä"_el).has_value());
-        REQUIRE_FALSE(editor.option()->matchingChoiceText("missing"_el).has_value());
+        REQUIRE_FALSE(editor.option()->matchingChoiceText(cMissingOption).has_value());
     }
 
     void testSetsAndModules() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto preSetCalled = false;
         auto postSetCalled = false;
         auto preModuleCalled = false;
@@ -254,15 +384,16 @@ public:
     }
 
     void testValuesAndTypedGetters() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto values = OptionValues::create();
-        auto sourceOption = Option::create({"-v"_el, "--verbose"_el});
-        values->setValue({"-v"_el, "--verbose"_el}, OptionValue::create(sourceOption, std::monostate{}));
-        values->setValue("--enabled"_el, OptionValue::create(true));
-        values->setValue("--count"_el, OptionValue::create(OptionInteger{42}));
-        values->setValue("name"_el, OptionValue::create(StringEditor{"Ada"_el}));
-        values->setValue("names"_el, OptionValue::create(el::text::StringList{"Ada"_el, "Bjarne"_el}));
+        auto sourceOption = Option::create({cVerboseShortOption, cVerboseOption});
+        values->setValue({cVerboseShortOption, cVerboseOption}, OptionValue::create(sourceOption, std::monostate{}));
+        values->setValue(cEnabledOption, OptionValue::create(true));
+        values->setValue(cCountOption, OptionValue::create(OptionInteger{42}));
+        values->setValue(cNameOption, OptionValue::create(StringEditor{"Ada"_el}));
+        values->setValue(cNamesOption, OptionValue::create(el::text::StringList{"Ada"_el, "Bjarne"_el}));
         values->setValue(
-            "counts"_el, OptionValue::create(std::vector<OptionInteger>{OptionInteger{1}, OptionInteger{2}}));
+            cCountsOption, OptionValue::create(std::vector<OptionInteger>{OptionInteger{1}, OptionInteger{2}}));
         auto indexedValue = OptionValue::create(
             StringEditor{"Indexed"_el}, std::vector<ArgumentIndex>{ArgumentIndex{3U}, ArgumentIndex{5U}});
         auto indexedSourceValue =
@@ -273,46 +404,46 @@ public:
         mutableIndexesValue->setArgumentIndexes(std::vector<ArgumentIndex>{ArgumentIndex{11U}});
         auto mutableFlagIndexesValue = OptionValue::create(std::monostate{});
         mutableFlagIndexesValue->setArgumentIndexes(std::vector<ArgumentIndex>{ArgumentIndex{13U}, ArgumentIndex{17U}});
-        values->setValue({"indexed"_el, "INDEXED"_el}, indexedValue);
-        values->setValue({"-V"_el, "--very-verbose"_el}, countedFlagValue);
+        values->setValue({cIndexedOption, "INDEXED"_el}, indexedValue);
+        values->setValue({cVeryVerboseShortOption, "--very-verbose"_el}, countedFlagValue);
 
-        REQUIRE(values->getFlag("--verbose"_el));
-        REQUIRE(values->value("--verbose"_el)->option().lock() == sourceOption);
-        REQUIRE(values->value("--verbose"_el)->type() == OptionValueType::Flag);
-        REQUIRE(values->value("--verbose"_el)->getFlag());
-        REQUIRE(values->value("--enabled"_el)->type() == OptionValueType::Boolean);
-        REQUIRE(values->getBoolean("--enabled"_el));
-        REQUIRE(values->value("--count"_el)->type() == OptionValueType::Integer);
-        REQUIRE_EQUAL(values->value("--count"_el)->getInteger(), OptionInteger{42});
-        REQUIRE(values->value("--count"_el)->getFlag(true));
-        REQUIRE(values->value("name"_el)->type() == OptionValueType::Text);
-        REQUIRE(values->value("name"_el)->getText() == "Ada"_el);
-        REQUIRE(values->value("names"_el)->type() == OptionValueType::TextList);
-        REQUIRE(values->value("counts"_el)->type() == OptionValueType::IntegerList);
-        REQUIRE_EQUAL(values->valueCount("--verbose"_el), ArgumentCount::one());
-        REQUIRE_EQUAL(values->getFlagCount("--verbose"_el), ArgumentCount::zero());
+        REQUIRE(values->getFlag(cVerboseOption));
+        REQUIRE(values->value(cVerboseOption)->option().lock() == sourceOption);
+        REQUIRE(values->value(cVerboseOption)->type() == OptionValueType::Flag);
+        REQUIRE(values->value(cVerboseOption)->getFlag());
+        REQUIRE(values->value(cEnabledOption)->type() == OptionValueType::Boolean);
+        REQUIRE(values->getBoolean(cEnabledOption));
+        REQUIRE(values->value(cCountOption)->type() == OptionValueType::Integer);
+        REQUIRE_EQUAL(values->value(cCountOption)->getInteger(), OptionInteger{42});
+        REQUIRE(values->value(cCountOption)->getFlag(true));
+        REQUIRE(values->value(cNameOption)->type() == OptionValueType::Text);
+        REQUIRE(values->value(cNameOption)->getText() == "Ada"_el);
+        REQUIRE(values->value(cNamesOption)->type() == OptionValueType::TextList);
+        REQUIRE(values->value(cCountsOption)->type() == OptionValueType::IntegerList);
+        REQUIRE_EQUAL(values->valueCount(cVerboseOption), ArgumentCount::one());
+        REQUIRE_EQUAL(values->getFlagCount(cVerboseOption), ArgumentCount::zero());
         REQUIRE_EQUAL(values->getFlagCount("--very-verbose"_el), ArgumentCount{2U});
-        REQUIRE_EQUAL(values->getFlagCount("-V"_el), ArgumentCount{2U});
-        REQUIRE_EQUAL(values->getFlagCount("missing"_el), ArgumentCount::zero());
-        REQUIRE_EQUAL(values->getFlagCount("missing"_el, ArgumentCount{9U}), ArgumentCount{9U});
-        REQUIRE_EQUAL(values->getFlagCount("name"_el), ArgumentCount::zero());
-        REQUIRE_EQUAL(values->getInteger("--count"_el), OptionInteger{42});
-        REQUIRE(values->getText("name"_el) == "Ada"_el);
-        REQUIRE(values->getText("missing"_el, "fallback"_el) == "fallback"_el);
+        REQUIRE_EQUAL(values->getFlagCount(cVeryVerboseShortOption), ArgumentCount{2U});
+        REQUIRE_EQUAL(values->getFlagCount(cMissingOption), ArgumentCount::zero());
+        REQUIRE_EQUAL(values->getFlagCount(cMissingOption, ArgumentCount{9U}), ArgumentCount{9U});
+        REQUIRE_EQUAL(values->getFlagCount(cNameOption), ArgumentCount::zero());
+        REQUIRE_EQUAL(values->getInteger(cCountOption), OptionInteger{42});
+        REQUIRE(values->getText(cNameOption) == "Ada"_el);
+        REQUIRE(values->getText(cMissingOption, "fallback"_el) == "fallback"_el);
 
-        const auto textList = values->getTextList("names"_el);
+        const auto textList = values->getTextList(cNamesOption);
         REQUIRE_EQUAL(textList.count(), el::unit::ItemCount{2U});
         REQUIRE(textList.get(el::unit::ItemIndex::zero()) == "Ada"_el);
         REQUIRE(textList.get(el::unit::ItemIndex{1U}) == "Bjarne"_el);
-        const auto singleTextList = values->value("name"_el)->getTextList();
+        const auto singleTextList = values->value(cNameOption)->getTextList();
         REQUIRE_EQUAL(singleTextList.count(), el::unit::ItemCount::one());
         REQUIRE(singleTextList.get(el::unit::ItemIndex::zero()) == "Ada"_el);
 
-        const auto integerList = values->getIntegerList("counts"_el);
+        const auto integerList = values->getIntegerList(cCountsOption);
         REQUIRE_EQUAL(integerList.size(), 2U);
         REQUIRE_EQUAL(integerList.at(0), OptionInteger{1});
         REQUIRE_EQUAL(integerList.at(1), OptionInteger{2});
-        const auto singleIntegerList = values->value("--count"_el)->getIntegerList();
+        const auto singleIntegerList = values->value(cCountOption)->getIntegerList();
         REQUIRE_EQUAL(singleIntegerList.size(), 1U);
         REQUIRE_EQUAL(singleIntegerList.at(0), OptionInteger{42});
 
@@ -329,11 +460,12 @@ public:
         REQUIRE_EQUAL(mutableFlagIndexesValue->flagCount(), ArgumentCount{2U});
         REQUIRE(mutableIndexesValue->argumentIndex() == ArgumentIndex{11U});
         REQUIRE_EQUAL(mutableIndexesValue->flagCount(), ArgumentCount::zero());
-        REQUIRE(values->value("indexed"_el) == values->value("INDEXED"_el));
-        REQUIRE(values->value("indexed"_el)->argumentIndexes().at(0) == ArgumentIndex{3U});
+        REQUIRE(values->value(cIndexedOption) == values->value("INDEXED"_el));
+        REQUIRE(values->value(cIndexedOption)->argumentIndexes().at(0) == ArgumentIndex{3U});
     }
 
     void testManagerPlaceholderAndDocuments() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         auto manager = OptionManager{options};
 

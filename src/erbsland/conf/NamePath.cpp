@@ -11,6 +11,7 @@
 
 namespace erbsland::conf {
 
+using namespace text;
 using namespace text::literals;
 
 auto NamePath::empty() const noexcept -> bool {
@@ -108,8 +109,8 @@ void NamePath::clear() noexcept {
     _names.clear();
 }
 
-auto NamePath::toText() const noexcept -> text::String {
-    text::StringEditor result;
+auto NamePath::toText() const noexcept -> String {
+    StringEditor result;
     bool first = true;
     for (const auto &name : _names) {
         if (!first && !name.isIndex()) {
@@ -121,7 +122,7 @@ auto NamePath::toText() const noexcept -> text::String {
     return result;
 }
 
-auto NamePath::fromText(const text::String &text) -> NamePath {
+auto NamePath::fromText(const String &text) -> NamePath {
     impl::NameLexer lexer(text);
     lexer.initialize();
     NameList names;
@@ -138,7 +139,7 @@ auto toNamePath(const NamePathLike &namePathLike) -> NamePath {
     if (const auto *name = std::get_if<Name>(&namePathLike)) {
         return {*name};
     }
-    if (const auto *text = std::get_if<text::String>(&namePathLike)) {
+    if (const auto *text = std::get_if<String>(&namePathLike)) {
         return NamePath::fromText(*text);
     }
     return NamePath{Name::createIndex(std::get<std::size_t>(namePathLike))};
@@ -150,6 +151,7 @@ auto internalView(const NamePath &object) -> impl::InternalViewPtr {
     result->setValue("names", impl::InternalView::createList(0, object._names.begin(), object._names.end()));
     return result;
 }
+
 #endif
 
 }

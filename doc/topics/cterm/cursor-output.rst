@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-*************
-Cursor Output
-*************
+****************************
+Cursor-Based Terminal Output
+****************************
 
 Cursor output is the shared streaming API used by ``Terminal`` and ``CursorBuffer``.
 
@@ -19,11 +19,9 @@ This page documents the shared output model only.
 Screen lifecycle, full-screen rendering, refresh settings, and backend ownership remain on
 :doc:`terminal`.
 
-Usage
-=====
 
 Printing Mixed Arguments
-------------------------
+========================
 
 ``CursorWriter`` is designed for fluent, terminal-style output.
 
@@ -65,7 +63,7 @@ Use ``CursorWriter::style()`` and ``CursorWriter::setStyle()`` when you want to 
 step.
 
 Moving the Cursor Explicitly
-----------------------------
+============================
 
 Use ``MoveMode`` when you need to control whether a movement is relative to the current cursor position or absolute
 within the writable area.
@@ -82,7 +80,7 @@ All convenience functions—such as ``moveLeft()``, ``moveRight()``, ``moveUp()`
 ``moveHome()`` —are built on top of this same distinction.
 
 VT100-Compatible Line Wrapping
-------------------------------
+==============================
 
 The cursor writer follows a wrapping model compatible with traditional VT100-style terminals.
 This behavior is slightly different from a naïve “wrap immediately at the edge” approach.
@@ -119,7 +117,7 @@ This behavior ensures compatibility with terminal output expectations and avoids
 mixing manual positioning and streaming text.
 
 Printing Wrapped Paragraphs
----------------------------
+===========================
 
 Both ``Terminal`` and ``CursorBuffer`` implement the same paragraph-printing workflow via ``CursorWriter``.
 
@@ -145,7 +143,7 @@ materialized as spaces.
 If the wrapped paragraph should visually sit on a colored panel, set the writer background before printing.
 
 Choosing Between Terminal and CursorBuffer
-------------------------------------------
+==========================================
 
 Use ``Terminal`` when output should be written directly to the real console.
 
@@ -153,4 +151,3 @@ Use ``CursorBuffer`` when you want to keep the same streaming API, but retain th
 copying, or re-rendering.
 
 In practice, ``CursorWriter`` acts as the bridge between immediate output and retained, in-memory rendering.
-

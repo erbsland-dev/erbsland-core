@@ -25,10 +25,10 @@ public:
     /// Get the full content of the match.
     [[nodiscard]] auto content() const -> text::U16String;
     /// Get the content of the specified group.
-    /// @throws err::ParameterError if the group index is invalid.
+    /// @param groupIndex The capture-group index. Must identify a group in this match.
     [[nodiscard]] auto content(CaptureGroupIndex groupIndex) const -> text::U16String;
     /// Get the content of the specified group.
-    /// @throws err::ParameterError if the group name is invalid.
+    /// @param groupName The capture-group name. Must identify a named group in this match.
     [[nodiscard]] auto content(const text::String &groupName) const -> text::U16String;
 
 protected:

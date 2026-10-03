@@ -8,10 +8,13 @@ target_sources(erbsland-core PRIVATE
         Content.hpp
         Core.cpp
         Core.hpp
+        DocumentPart.cpp
+        DocumentPart.hpp
         Lexer.cpp
         Lexer.hpp
         Lexer_fwd.hpp
         LexerToken.hpp
+        LiteralTables.cpp
         LiteralTables.hpp
         MultiLineAllowed.hpp
         Name.cpp
@@ -24,6 +27,8 @@ target_sources(erbsland-core PRIVATE
         Number.hpp
         NumberSeparators.hpp
         ParseDecimalDigitsResult.hpp
+        Recovery.cpp
+        Recovery.hpp
         Section.cpp
         Section.hpp
         Sign.hpp

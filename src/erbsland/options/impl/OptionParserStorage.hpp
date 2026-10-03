@@ -11,7 +11,7 @@
 #include "../OptionValues_fwd.hpp"
 #include "../OptionValueStorage.hpp"
 
-#include "../../unit/ArgumentUnit.hpp"
+#include "../../unit/ArgumentIndex.hpp"
 
 #include <optional>
 #include <vector>
@@ -22,8 +22,10 @@ namespace erbsland::options::impl {
 /// @tested{OptionsParserTest}
 class OptionParserStorage final {
 public:
+    /// Create value storage using the supplied wording or the English defaults.
+    explicit OptionParserStorage();
+
     // defaults
-    OptionParserStorage() = default;
     ~OptionParserStorage() = default;
 
 public:
@@ -48,7 +50,7 @@ public:
 
 private:
     /// Create a display title for an option-related error.
-    [[nodiscard]] static auto optionTitleForError(const OptionPtr &option) -> text::String;
+    [[nodiscard]] auto optionTitleForError(const OptionPtr &option) const -> text::String;
     /// Find mutable parsed storage for an option.
     [[nodiscard]] auto findParsedValue(const OptionPtr &option) -> OptionParsedValuePtr;
     /// Store a parsed integer option value.

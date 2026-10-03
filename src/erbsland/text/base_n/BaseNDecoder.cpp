@@ -5,7 +5,6 @@
 #include "../StringCharReader.hpp"
 
 #include "../../err/Exception.hpp"
-#include "../../err/OutOfRangeError.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/impl/UnsafeByteBlockBuffer.hpp"
@@ -17,19 +16,22 @@
 
 namespace erbsland::text::base_n {
 
+using namespace mem;
+using namespace unit;
+
 BaseNDecoder::BaseNDecoder(AnyString text, BaseNFormat format) : _text{std::move(text)}, _format{std::move(format)} {
 }
 
-auto BaseNDecoder::toData(const unit::ByteLength maximum) const -> std::optional<mem::ByteBlock> {
+auto BaseNDecoder::toData(const ByteCount maximum) const -> std::optional<ByteBlock> {
     try {
         return toDataOrThrow(maximum);
-    } catch (const err::Exception &) {
+    } catch (const err::ParseError &) {
         return {};
     }
 }
 
-auto BaseNDecoder::toDataOrThrow(const unit::ByteLength maximum) const -> mem::ByteBlock {
-    const auto throwAt = [](const std::string_view message, const unit::CpIndex position) -> void {
+auto BaseNDecoder::toDataOrThrow(const ByteCount maximum) const -> ByteBlock {
+    const auto throwAt = [](const std::string_view message, const CpIndex position) -> void {
         throw err::ParseError{message, position};
     };
     auto reader = StringCharReader{_text};
@@ -76,9 +78,9 @@ auto BaseNDecoder::toDataOrThrow(const unit::ByteLength maximum) const -> mem::B
 
     const auto outputSize = (digitCount / 8U) * bitsPerCharacter + ((digitCount % 8U) * bitsPerCharacter) / 8U;
     if (maximum.isFinite() && outputSize > maximum.toSizeTOrThrow()) {
-        throw err::OutOfRangeError{"The decoded Base-N data exceeds the maximum byte length."};
+        throw err::ParseError{"The decoded Base-N data exceeds the maximum byte length."};
     }
-    auto output = mem::impl::UnsafeByteBlockBuffer{unit::ByteLength::fromSizeT(outputSize), _text.isSensitive()};
+    auto output = mem::impl::UnsafeByteBlockBuffer{ByteCount::fromSizeT(outputSize), _text.isSensitive()};
     auto outputBytes = output.data();
     auto outputIndex = std::size_t{0};
     reader.reset();
@@ -94,7 +96,7 @@ auto BaseNDecoder::toDataOrThrow(const unit::ByteLength maximum) const -> mem::B
         availableBits = static_cast<uint8_t>(availableBits + bitsPerCharacter);
         if (availableBits >= 8U) {
             availableBits = static_cast<uint8_t>(availableBits - 8U);
-            outputBytes[outputIndex++] = mem::Byte{static_cast<uint8_t>(accumulator >> availableBits)};
+            outputBytes[outputIndex++] = Byte{static_cast<uint8_t>(accumulator >> availableBits)};
         }
         if (availableBits == 0U) {
             accumulator = 0U;
@@ -105,7 +107,7 @@ auto BaseNDecoder::toDataOrThrow(const unit::ByteLength maximum) const -> mem::B
     if (availableBits != 0U && accumulator != 0U) {
         throwAt("The Base-N text has non-zero unused trailing bits.", reader.position());
     }
-    return output.take(unit::ByteLength::fromSizeT(outputIndex));
+    return output.take(ByteCount::fromSizeT(outputIndex));
 }
 
 }

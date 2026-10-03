@@ -3,7 +3,10 @@
 
 #include "CalendarDeltaDemos.hpp"
 
-#include <erbsland/time/all.hpp>
+#include <erbsland/all_time.hpp>
+#include <erbsland/CalendarDelta.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace demo {
 

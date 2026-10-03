@@ -1,12 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "HashScenarioWorkload.hpp"
 
 #include "HashWorkerWorkload.hpp"
 
-#include <erbsland/cryptology/Hasher.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/FastRandom.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hasher.hpp>
 #include <erbsland/profiling/Seed.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <memory>
 #include <variant>
@@ -19,7 +25,7 @@ using namespace el::text::literals;
 
 void HashScenarioWorkload::prepare(const pf::RunConfiguration &run, const pf::Scenario &scenario) {
     auto algorithmId = el::String{};
-    auto inputSize = el::ByteLength{};
+    auto inputSize = el::ByteCount{};
     _failWorker = false;
     for (const auto &axis : scenario.axes) {
         if (axis.axis == "algorithm"_el) {
@@ -28,7 +34,7 @@ void HashScenarioWorkload::prepare(const pf::RunConfiguration &run, const pf::Sc
     }
     for (const auto &parameter : scenario.parameters) {
         if (parameter.parameter == "input-size"_el) {
-            inputSize = std::get<el::ByteLength>(parameter.value);
+            inputSize = std::get<el::ByteCount>(parameter.value);
         } else if (parameter.parameter == "fail-worker"_el) {
             _failWorker = std::get<bool>(parameter.value);
         }

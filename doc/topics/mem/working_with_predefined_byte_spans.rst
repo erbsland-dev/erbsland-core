@@ -41,7 +41,7 @@ a read-only span.
 .. erbsland-demo::
     :source: mem/ByteSpan/BorrowedViews.cpp
     :exec: mem/byte_span --demo BorrowedViews
-    :source-sha256: b30cc7a0e4e3312af854987d572637eaf7558d69ff435271a304635570fcc029
+    :sha256: 7e7001980340afe3cb76cac3dd2d597b25c27c5376db3622e1b9cbfcf0b7cdd3
 
 .. code-block:: cpp
 
@@ -82,16 +82,20 @@ a read-only span.
         el::io::printLine("Average signal     : "_el, average);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Observation        : Νεφέλωμα του Ωρίωνα
-    Captured pixels    : 6
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mObservation        : Νεφέλωμα του Ωρίωνα
+        Captured pixels    : 6
+        Visible pixels     : 4
+        Average signal     : 31␛[0m
 
 .. erbsland-demo-end::
 
-The Lifetime Is Part of the Contract
-====================================
+Borrowed Byte-Span Lifetime
+===========================
 
 A span remains valid only while its referenced byte range remains valid at the same address.
 Returning a span into a local array, keeping one after its owner is destroyed, or retaining one while a resizable
@@ -123,7 +127,7 @@ flow explicit.
 .. erbsland-demo::
     :source: mem/ByteSpan/SpanConversions.cpp
     :exec: mem/byte_span --demo SpanConversions
-    :source-sha256: 9633462af3cd4b53152888e16b669386d695a4fc6e2f0f005c82f9935279ea6a
+    :sha256: 8128110f34125b71e4fb57ce2264a84148f93d63153644a9879d744cc78fcea2
 
 .. code-block:: cpp
 
@@ -163,13 +167,15 @@ flow explicit.
             readOnlyCatalog[2].toChar());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Observation        : Νεφέλωμα του Ωρίωνα
-    First filter       : 7
-    Last intensity     : 64
-    Catalog ID         : M42
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mObservation        : Νεφέλωμα του Ωρίωνα
+        First filter       : 7
+        Last intensity     : 64
+        Catalog ID         : M42␛[0m
 
 .. erbsland-demo-end::
 
@@ -197,7 +203,7 @@ All functions accept signed and unsigned native integer types except ``bool``.
 .. erbsland-demo::
     :source: mem/ByteSpan/IntegerAccess.cpp
     :exec: mem/byte_span --demo IntegerAccess
-    :source-sha256: db88c03f7071ad47820441f84b088e85465ad44a1c7dc5940b1c60387259c6f7
+    :sha256: 4d27e4af6fbc52615ca8f42b5cd9b472edb230a86464e27921aba3c1d85b3249
 
 .. code-block:: cpp
 
@@ -234,16 +240,18 @@ All functions accept signed and unsigned native integer types except ``bool``.
         el::io::printLine("Missing fallback   : "_el, unavailable);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Observation        : Νεφέλωμα του Ωρίωνα
-    Wavelength stored  : yes
-    Temperature read   : yes
-    Wavelength (nm)    : 656
-    Temperature (C)    : -18
-    Exposure (us)      : 1350000
-    Missing fallback   : 999
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mObservation        : Νεφέλωμα του Ωρίωνα
+        Wavelength stored  : yes
+        Temperature read   : yes
+        Wavelength (nm)    : 656
+        Temperature (C)    : -18
+        Exposure (us)      : 1350000
+        Missing fallback   : 999␛[0m
 
 .. erbsland-demo-end::
 

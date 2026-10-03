@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteTextFormat.hpp>
+#include <erbsland/ByteTextOptions.hpp>
+#include <erbsland/ByteWriter.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -13,7 +21,7 @@ namespace demo {
 void selectFormat() {
     auto dynamicOptions = el::ByteTextOptions::compact();
     auto paddedOptions = dynamicOptions;
-    paddedOptions.setFormat(el::ByteTextFormat::PaddedField).setLength(el::ByteLength{12U}).setPadding(el::Byte{0x20U});
+    paddedOptions.setFormat(el::ByteTextFormat::PaddedField).setLength(el::ByteCount{12U}).setPadding(el::Byte{0x20U});
 
     // Encode the same moon phase using dynamic and fixed-field framing.
     auto dynamicWriter = el::ByteWriter{};

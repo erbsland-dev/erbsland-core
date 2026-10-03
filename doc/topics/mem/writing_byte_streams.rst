@@ -33,7 +33,7 @@ This is usually the final step before handing the record to a stream, socket, or
 .. erbsland-demo::
     :source: mem/ByteStreams/BuildRecord.cpp
     :exec: mem/byte_streams --demo BuildRecord
-    :source-sha256: 68e67b9467cc63bfdbb3d1be570b67c071e797022a5a109142abab92aa1cd51d
+    :sha256: 6ba7d8a52f095481a5722c76abbe949bd385a92c1021325c1e2c20d2d540a489
 
 .. code-block:: cpp
 
@@ -62,16 +62,18 @@ This is usually the final step before handing the record to a stream, socket, or
         el::io::printLine("Encoded record    : "_el, el::ByteFormat::separated(), record);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Waarneming        : Bosuil
-    Encoded record    : 4e 00 0c 5e
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWaarneming        : Bosuil
+        Encoded record    : 4e 00 0c 5e␛[0m
 
 .. erbsland-demo-end::
 
-Revisiting a Field
-==================
+Backpatching Previously Written Fields
+======================================
 
 :cpp:func:`ByteWriter::position() <erbsland::mem::ByteWriter::position>` reports where the next write begins and
 :cpp:func:`ByteWriter::length() <erbsland::mem::ByteWriter::length>` reports the complete constructed size.
@@ -86,7 +88,7 @@ When you return to the end, subsequent writes append as usual.
 .. erbsland-demo::
     :source: mem/ByteStreams/PositionWriter.cpp
     :exec: mem/byte_streams --demo PositionWriter
-    :source-sha256: 983c0f0beb45e511ad591356f67958954f9c3c668d6f4b392eba4b875873c388
+    :sha256: 7cbf63b78ef632ee89727070c46d92b81f0887a8e5924bb4088efd2519ac4a87
 
 .. code-block:: cpp
 
@@ -109,12 +111,14 @@ When you return to the end, subsequent writes append as usual.
         el::io::printLine("Encoded record     : "_el, el::ByteFormat::separated(), writer.toByteBlock());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Final position     : 4
-    Record length      : 4
-    Encoded record     : 02 31 32 ff
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFinal position     : 4
+        Record length      : 4
+        Encoded record     : 02 31 32 ff␛[0m
 
 .. erbsland-demo-end::
 
@@ -136,7 +140,7 @@ writer to its initial position for reuse.
 .. erbsland-demo::
     :source: mem/ByteStreams/StorageManagement.cpp
     :exec: mem/byte_streams --demo StorageManagement
-    :source-sha256: 72f989da0be83dd4c157547d3c7f7f3737e9d63600da7474e5f58a417334af53
+    :sha256: 38ef77109f354f37f80d480bdea862974d1fd604adcf6f7d55aaf8d756060115
 
 .. code-block:: cpp
 
@@ -148,7 +152,7 @@ writer to its initial position for reuse.
         auto writer = el::ByteWriter{};
 
         // Reserve once for the expected record, then transfer the finished editor.
-        writer.reserve(el::ByteLength{64U});
+        writer.reserve(el::ByteCount{64U});
         writer.writeByte(el::Byte{0x4eU}).writeByte(el::Byte{0x01U});
         auto editableRecord = writer.takeByteBlockEditor();
 
@@ -159,11 +163,13 @@ writer to its initial position for reuse.
         el::io::printLine("Writer is empty   : "_el, el::BooleanFormat::yesNo(), writer.length().isZero());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Transferred bytes : 2
-    Writer is empty   : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTransferred bytes : 2
+        Writer is empty   : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -184,7 +190,7 @@ often easier to review than one enormous expression.
 .. erbsland-demo::
     :source: mem/ByteStreams/WriteBytes.cpp
     :exec: mem/byte_streams --demo WriteBytes
-    :source-sha256: e263720bd243388d2e2cc51634a058b130604aba62f1dd0d2d7b5e30cef77f29
+    :sha256: 95242fec332f5ba931ce2e215439149536a267875a646e70cf87053d0dae632f
 
 .. code-block:: cpp
 
@@ -205,11 +211,13 @@ often easier to review than one enormous expression.
         el::io::printLine("Encoded record    : "_el, el::ByteFormat::separated(), writer.toByteBlock());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Nachtmeting       : Vleermuis
-    Encoded record    : 4e 03 a1 b2 c3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mNachtmeting       : Vleermuis
+        Encoded record    : 4e 03 a1 b2 c3␛[0m
 
 .. erbsland-demo-end::
 
@@ -236,7 +244,7 @@ The complete format selection guide is in :doc:`byte_integer_formats`.
 .. erbsland-demo::
     :source: mem/ByteStreams/WriteIntegers.cpp
     :exec: mem/byte_streams --demo WriteIntegers
-    :source-sha256: 2738cc9ea4ba9ec74488ca0a363959773728bded3c1f9fc472f89a74a7adb9cb
+    :sha256: 190db48f37b62b8231d91a9f11b6b611cbef01f5abd05831da50c940bbd5f099
 
 .. code-block:: cpp
 
@@ -258,11 +266,13 @@ The complete format selection guide is in :doc:`byte_integer_formats`.
         el::io::printLine("Encoded fields    : "_el, el::ByteFormat::separated(), writer.toByteBlock());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Integer byte order: Big endian
-    Encoded fields    : 00 0c 81 2c 5e
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInteger byte order: Big endian
+        Encoded fields    : 00 0c 81 2c 5e␛[0m
 
 .. erbsland-demo-end::
 
@@ -284,7 +294,7 @@ See :doc:`text_byte_stream_options` for byte layouts, format selection, and secu
 .. erbsland-demo::
     :source: mem/ByteStreams/WriteText.cpp
     :exec: mem/byte_streams --demo WriteText
-    :source-sha256: 7c8c16aeb3498085d98bb5cb3c3e00f4a65c0b9da0bd9ac7f6d5419febbc0646
+    :sha256: 827c246267bb28ae8409e4d001dc93021d289454f8f9bd0c4e07f218c528a24d
 
 .. code-block:: cpp
 
@@ -295,7 +305,7 @@ See :doc:`text_byte_stream_options` for byte layouts, format selection, and secu
     /// `writeTextOrThrow()` requires an exact representation.
     void writeText() {
         auto options = el::ByteTextOptions::compact();
-        options.setLength(el::ByteLength{16U});
+        options.setLength(el::ByteCount{16U});
         auto writer = el::ByteWriter{};
 
         // Encode two compact UTF-8 fields using identical framing.
@@ -309,17 +319,19 @@ See :doc:`text_byte_stream_options` for byte layouts, format selection, and secu
         el::io::printLine("Encoded fields    : "_el, el::ByteFormat::separated(), record);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Soort             : bosuil
-    Omgeving          : maanlicht
-    Encoded fields    : 06 62 6f 73 75 69 6c 09 6d 61 61 6e 6c 69 63 68 74
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSoort             : bosuil
+        Omgeving          : maanlicht
+        Encoded fields    : 06 62 6f 73 75 69 6c 09 6d 61 61 6e 6c 69 63 68 74␛[0m
 
 .. erbsland-demo-end::
 
-Choosing the Smallest Suitable Abstraction
-==========================================
+Choosing ByteWriter or Direct Byte Container Editing
+====================================================
 
 Use a writer when multiple typed fields form one sequential binary record or several serializer functions must share
 progress.

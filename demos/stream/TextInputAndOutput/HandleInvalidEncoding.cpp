@@ -1,6 +1,19 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/EncodingError.hpp>
+#include <erbsland/EncodingMode.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathReadTextOptions.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/StringEncoding.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <StreamDemoSupport.hpp>
 
 #include <exception>
@@ -27,7 +40,7 @@ void rejectInvalidEncoding(const el::Path &path) {
     try {
         const auto input = path.content().openTextInputStream(options);
         for (auto attempt = 0U; attempt < cMaximumAttempts; ++attempt) {
-            if (!input->readAll(el::CpLength{100U}).isTimeout()) {
+            if (!input->readAll(el::CpCount{100U}).isTimeout()) {
                 throw el::RuntimeError{"The damaged text was unexpectedly accepted."_el};
             }
         }

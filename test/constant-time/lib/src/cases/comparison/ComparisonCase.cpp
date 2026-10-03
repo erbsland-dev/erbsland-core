@@ -1,25 +1,24 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ComparisonCase.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace app::constant_time {
 
 using namespace el::text::literals;
 
-ComparisonCase::ComparisonCase(std::size_t size, ComparisonMode mode, ComparisonContainer container) :
+ComparisonCase::ComparisonCase(el::ByteCount size, ComparisonMode mode, ComparisonContainer container) :
     _size{size}, _mode{mode}, _container{container} {
-    const auto id = el::StringFormat{"compare/{}/{}/{}"_el}.build(containerName(), size, modeName());
+    const auto id = el::StringFormat{"compare/{}/{}/{}"_el}.build(containerName(), size.toRawValue(), modeName());
 
     configure(
         TestMetadata{id, "Constant-time equal-length byte comparison"_el, populationName()},
-        el::ByteLength{size * 4U + 1024U});
+        size * 4U + el::ByteCount{1024U});
 }
 
 auto ComparisonCase::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {
@@ -39,7 +38,7 @@ auto ComparisonCase::containerName() const -> el::String {
     case ComparisonContainer::Array:
         return "array"_el;
     }
-    throw el::LogicError{"Unknown comparison configuration."_el};
+    throw el::LogicFailure{"Unknown comparison configuration."_el};
 }
 
 auto ComparisonCase::modeName() const -> el::String {
@@ -51,7 +50,7 @@ auto ComparisonCase::modeName() const -> el::String {
     case ComparisonMode::FixedRandom:
         return "fixed-random"_el;
     }
-    throw el::LogicError{"Unknown comparison configuration."_el};
+    throw el::LogicFailure{"Unknown comparison configuration."_el};
 }
 
 auto ComparisonCase::populationName() const -> el::String {
@@ -63,7 +62,7 @@ auto ComparisonCase::populationName() const -> el::String {
     case ComparisonMode::FixedRandom:
         return "fixed-vs-random-equal-content"_el;
     }
-    throw el::LogicError{"Unknown comparison configuration."_el};
+    throw el::LogicFailure{"Unknown comparison configuration."_el};
 }
 
 }

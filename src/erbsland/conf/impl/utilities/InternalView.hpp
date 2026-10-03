@@ -4,7 +4,7 @@
 
 #include "InternalView_fwd.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringEditor.hpp"
 #include "../../../text/StringFormat.hpp"
@@ -24,7 +24,7 @@ template <typename T>
 auto internalView(const T & /*object*/) -> InternalViewPtr {
     // uncomment for active development:
     static_assert(false, "missing specialization");
-    throw err::LogicError("Not implemented"_el);
+    throw err::LogicFailure("Not implemented"_el);
 }
 
 /// The internal view structure for testing and debugging.
@@ -126,6 +126,14 @@ public:
     /// Store raw text under a UTF-8 literal name.
     void setUnsafeText(const char8_t (&name)[N], const text::String &value) noexcept {
         setUnsafeText(text::String{text::impl::createU8StringLiteral(name, N - 1)}, value);
+    }
+    /// Store text from a Core string editor or literal.
+    /// @param name The entry name.
+    /// @param value The text to store.
+    template <typename tText>
+        requires(!std::same_as<std::remove_cvref_t<tText>, text::String> && std::convertible_to<tText, text::String>)
+    void setValue(const text::String &name, tText &&value) noexcept {
+        setValue(name, text::String{std::forward<tText>(value)});
     }
     /// Store a Boolean value under `name`.
     void setValue(const text::String &name, const bool value) noexcept;

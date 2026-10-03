@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlockLiteral.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ByteBlockLiteral.hpp>
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -14,7 +14,7 @@
 
 using el::mem::Byte;
 using el::mem::ByteBlockLiteral;
-using el::unit::ByteLength;
+using el::unit::ByteCount;
 
 TESTED_TARGETS(ByteBlockLiteral unsafeCreateByteBlockLiteral)
 class ByteBlockLiteralTest final : public el::UnitTest {
@@ -26,7 +26,7 @@ public:
         static_assert(std::is_nothrow_copy_constructible_v<ByteBlockLiteral>);
         static_assert(std::is_nothrow_move_constructible_v<ByteBlockLiteral>);
         static_assert(literal.isEmpty());
-        static_assert(literal.length() == ByteLength{});
+        static_assert(literal.length() == ByteCount{});
         REQUIRE(literal.span().empty());
     }
 
@@ -38,9 +38,9 @@ public:
         constexpr auto stdByteLiteral = ByteBlockLiteral{cStdByteData};
         constexpr auto byteLiteral = ByteBlockLiteral{cByteData};
 
-        static_assert(uint8Literal.length() == ByteLength{3U});
-        static_assert(stdByteLiteral.length() == ByteLength{2U});
-        static_assert(byteLiteral.length() == ByteLength{4U});
+        static_assert(uint8Literal.length() == ByteCount{3U});
+        static_assert(stdByteLiteral.length() == ByteCount{2U});
+        static_assert(byteLiteral.length() == ByteCount{4U});
         REQUIRE_EQUAL(toValues(uint8Literal), std::vector<std::uint8_t>({1U, 2U, 3U}));
         REQUIRE_EQUAL(toValues(stdByteLiteral), std::vector<std::uint8_t>({4U, 5U}));
         REQUIRE_EQUAL(toValues(byteLiteral), std::vector<std::uint8_t>({6U, 7U, 8U, 9U}));
@@ -64,7 +64,7 @@ public:
         constexpr auto sameLiteral = ByteBlockLiteral::fromValues<1U, 2U, 4U, 5U>();
 
         static_assert(!literal.isEmpty());
-        static_assert(literal.length() == ByteLength{4U});
+        static_assert(literal.length() == ByteCount{4U});
         REQUIRE_EQUAL(toValues(literal), std::vector<std::uint8_t>({1U, 2U, 4U, 5U}));
         REQUIRE_EQUAL(literal.span().data(), sameLiteral.span().data());
     }

@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/AnyStringBuilder.hpp>
-#include <erbsland/text/FormatError.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/u16/U16Format.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
+#include <erbsland/AnyStringBuilder.hpp>
+#include <erbsland/FormatError.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/U16Format.hpp>
+#include <erbsland/U16StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
@@ -56,6 +56,11 @@ public:
         const auto format = U16Format{u"{:text:max3,w5,al=c,fl=·}"};
 
         REQUIRE_EQUAL(StringConverter{format.build(u"abcdef")}.toStdU16String(), std::u16string{u"·abc·"});
+    }
+
+    void testNamedIntegerBaseAndPrefix() {
+        const auto format = U16Format{u"{:number:hex,bp,lc=u}|{:number:b=oct}"};
+        REQUIRE_EQUAL(StringConverter{format.build(42, 42)}.toStdU16String(), std::u16string{u"0X2A|52"});
     }
 
     void testInvalidPatternSyntax() {

@@ -4,15 +4,15 @@
 #include "../StringHelper.hpp"
 #include "../TestHelper.hpp"
 
+#include <erbsland/EncodingError.hpp>
 #include <erbsland/re/Match.hpp>
 #include <erbsland/re/Match16.hpp>
 #include <erbsland/re/Match32.hpp>
-#include <erbsland/re/RegEx.hpp>
 #include <erbsland/re/RegExError.hpp>
 #include <erbsland/re/StdFormat.hpp>
-#include <erbsland/text/EncodingError.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/RegEx.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;

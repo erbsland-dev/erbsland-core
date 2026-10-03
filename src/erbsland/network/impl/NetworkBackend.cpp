@@ -11,7 +11,7 @@
 #include "tls/server/TlsServerConnection.hpp"
 #include "udp/UdpSocket.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../event/CurrentEvents.hpp"
 #include "../../event/EventBackendTarget.hpp"
 #include "../../event/EventRegistry.hpp"
@@ -22,6 +22,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text::literals;
 
 NetworkBackend::NetworkBackend() : NetworkBackend{createHostResolver()} {
@@ -29,7 +30,7 @@ NetworkBackend::NetworkBackend() : NetworkBackend{createHostResolver()} {
 
 NetworkBackend::NetworkBackend(HostResolverPtr resolver) : _resolver{std::move(resolver)} {
     if (_resolver == nullptr) {
-        throw err::LogicError{"The network backend requires a host resolver."_el};
+        throw LogicFailure{"The network backend requires a host resolver."_el};
     }
 }
 
@@ -56,7 +57,7 @@ auto NetworkBackend::nextWakeTime() const -> std::optional<time::TimePoint> {
 auto NetworkBackend::createHostLookup() -> HostLookupPtr {
     const auto owner = ownerEvents();
     if (event::currentEvents() != owner) {
-        throw err::LogicError{"Host lookups must be created on their owner event loop."_el};
+        throw LogicFailure{"Host lookups must be created on their owner event loop."_el};
     }
     return std::make_shared<impl::HostLookup>(owner, _resolver);
 }
@@ -64,7 +65,7 @@ auto NetworkBackend::createHostLookup() -> HostLookupPtr {
 auto NetworkBackend::createHttpClientSession() -> HttpClientSessionPtr {
     const auto owner = ownerEvents();
     if (event::currentEvents() != owner) {
-        throw err::LogicError{"HTTP client sessions must be created on their owner event loop."_el};
+        throw LogicFailure{"HTTP client sessions must be created on their owner event loop."_el};
     }
     return std::make_shared<impl::HttpClientSession>(owner);
 }
@@ -72,7 +73,7 @@ auto NetworkBackend::createHttpClientSession() -> HttpClientSessionPtr {
 auto NetworkBackend::createHttpServer() -> HttpServerPtr {
     const auto owner = ownerEvents();
     if (event::currentEvents() != owner) {
-        throw err::LogicError{"HTTP servers must be created on their owner event loop."_el};
+        throw LogicFailure{"HTTP servers must be created on their owner event loop."_el};
     }
     return std::make_shared<impl::HttpServer>(owner);
 }
@@ -80,11 +81,11 @@ auto NetworkBackend::createHttpServer() -> HttpServerPtr {
 auto NetworkBackend::createTcpListener() -> network::TcpListenerPtr {
     const auto owner = ownerEvents();
     if (event::currentEvents() != owner) {
-        throw err::LogicError{"TCP listeners must be created on their owner event loop."_el};
+        throw LogicFailure{"TCP listeners must be created on their owner event loop."_el};
     }
     const auto driver = _driver.lock();
     if (driver == nullptr) {
-        throw err::LogicError{"The network backend is not attached to an event-loop driver."_el};
+        throw LogicFailure{"The network backend is not attached to an event-loop driver."_el};
     }
     return std::make_shared<impl::TcpListener>(owner, driver);
 }
@@ -92,11 +93,11 @@ auto NetworkBackend::createTcpListener() -> network::TcpListenerPtr {
 auto NetworkBackend::createTcpConnection() -> network::TcpConnectionPtr {
     const auto owner = ownerEvents();
     if (event::currentEvents() != owner) {
-        throw err::LogicError{"TCP connections must be created on their owner event loop."_el};
+        throw LogicFailure{"TCP connections must be created on their owner event loop."_el};
     }
     const auto driver = _driver.lock();
     if (driver == nullptr) {
-        throw err::LogicError{"The network backend is not attached to an event-loop driver."_el};
+        throw LogicFailure{"The network backend is not attached to an event-loop driver."_el};
     }
     return std::make_shared<impl::TcpConnection>(owner, driver, _resolver);
 }
@@ -104,11 +105,11 @@ auto NetworkBackend::createTcpConnection() -> network::TcpConnectionPtr {
 auto NetworkBackend::createTlsClientConnection() -> network::TlsClientConnectionPtr {
     const auto owner = ownerEvents();
     if (event::currentEvents() != owner) {
-        throw err::LogicError{"TLS client connections must be created on their owner event loop."_el};
+        throw LogicFailure{"TLS client connections must be created on their owner event loop."_el};
     }
     const auto driver = _driver.lock();
     if (driver == nullptr) {
-        throw err::LogicError{"The network backend is not attached to an event-loop driver."_el};
+        throw LogicFailure{"The network backend is not attached to an event-loop driver."_el};
     }
     auto tcpConnection = std::make_shared<impl::TcpConnection>(owner, driver, _resolver);
     return std::make_shared<impl::TlsClientConnection>(owner, std::move(tcpConnection));
@@ -117,11 +118,11 @@ auto NetworkBackend::createTlsClientConnection() -> network::TlsClientConnection
 auto NetworkBackend::createTlsServerConnection() -> network::TlsServerConnectionPtr {
     const auto owner = ownerEvents();
     if (event::currentEvents() != owner) {
-        throw err::LogicError{"TLS server connections must be created on their owner event loop."_el};
+        throw LogicFailure{"TLS server connections must be created on their owner event loop."_el};
     }
     const auto driver = _driver.lock();
     if (driver == nullptr) {
-        throw err::LogicError{"The network backend is not attached to an event-loop driver."_el};
+        throw LogicFailure{"The network backend is not attached to an event-loop driver."_el};
     }
     auto tcpConnection = std::make_shared<impl::TcpConnection>(owner, driver, _resolver);
     return std::make_shared<impl::TlsServerConnection>(owner, std::move(tcpConnection));
@@ -130,11 +131,11 @@ auto NetworkBackend::createTlsServerConnection() -> network::TlsServerConnection
 auto NetworkBackend::createUdpSocket() -> UdpSocketPtr {
     const auto owner = ownerEvents();
     if (event::currentEvents() != owner) {
-        throw err::LogicError{"UDP sockets must be created on their owner event loop."_el};
+        throw LogicFailure{"UDP sockets must be created on their owner event loop."_el};
     }
     const auto driver = _driver.lock();
     if (driver == nullptr) {
-        throw err::LogicError{"The network backend is not attached to an event-loop driver."_el};
+        throw LogicFailure{"The network backend is not attached to an event-loop driver."_el};
     }
     return std::make_shared<impl::UdpSocket>(owner, driver);
 }
@@ -143,7 +144,7 @@ auto NetworkBackend::ownerEvents() const -> event::EventsPtr {
     const auto target = _target.lock();
     const auto result = std::dynamic_pointer_cast<event::Events>(target);
     if (result == nullptr) {
-        throw err::LogicError{"The network backend is not attached to an event loop."_el};
+        throw LogicFailure{"The network backend is not attached to an event loop."_el};
     }
     return result;
 }

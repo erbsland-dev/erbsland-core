@@ -4,7 +4,9 @@
 
 #include "ZipTools.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/ParameterFailure.hpp"
+#include "../../../err/RuntimeError.hpp"
+#include "../../../path/PathCommitOptions.hpp"
 #include "../../../path/PathContent.hpp"
 #include "../../../path/PathCreateDirectoryOptions.hpp"
 #include "../../../path/PathCreateMode.hpp"
@@ -23,13 +25,15 @@
 
 namespace erbsland::compression::zip::impl {
 
+using namespace err;
+using namespace path;
 using namespace text::literals;
 
 ArchiveItem::ArchiveItem(std::weak_ptr<ArchiveReader> reader, ZipEntryRecord record) :
     _reader{std::move(reader)}, _record{std::move(record)} {
 }
 
-auto ArchiveItem::path() const noexcept -> const path::Path & {
+auto ArchiveItem::path() const noexcept -> const Path & {
     return _record.path;
 }
 
@@ -49,11 +53,11 @@ auto ArchiveItem::crc32() const noexcept -> uint32_t {
     return _record.crc32;
 }
 
-auto ArchiveItem::compressedLength() const noexcept -> unit::ByteLength {
+auto ArchiveItem::compressedLength() const noexcept -> unit::ByteCount {
     return _record.compressedLength;
 }
 
-auto ArchiveItem::uncompressedLength() const noexcept -> unit::ByteLength {
+auto ArchiveItem::uncompressedLength() const noexcept -> unit::ByteCount {
     return _record.uncompressedLength;
 }
 
@@ -61,7 +65,7 @@ auto ArchiveItem::comment() const noexcept -> const text::String & {
     return _record.comment;
 }
 
-auto ArchiveItem::extract(const unit::ByteLength maximumLength) const -> mem::ByteBlock {
+auto ArchiveItem::extract(const unit::ByteCount maximumLength) const -> mem::ByteBlock {
     return requireReader()->extract(_record, maximumLength);
 }
 
@@ -90,16 +94,16 @@ void ArchiveItem::copyPayload(const compression::impl::CodecOutput::Write &outpu
     requireReader()->copyPayload(_record, output);
 }
 
-void ArchiveItem::extractToFile(const path::Path &destination, ArchiveExtractionOptions options) const {
+void ArchiveItem::extractToFile(const Path &destination, ArchiveExtractionOptions options) const {
     if (_record.directory) {
-        throw err::ParameterError{"A ZIP directory entry cannot be extracted to a file."_el, "destination"_el};
+        throw ParameterFailure{"A ZIP directory entry cannot be extracted to a file."_el, "destination"_el};
     }
     writeExtracted(destination, options, destination.toAbsoluteOrThrow().parent());
 }
 
-void ArchiveItem::extractToDirectory(const path::Path &root, ArchiveExtractionOptions options) const {
+void ArchiveItem::extractToDirectory(const Path &root, ArchiveExtractionOptions options) const {
     if (root.isEmpty()) {
-        throw err::ParameterError{"The ZIP extraction root must not be empty."_el, "root"_el};
+        throw ParameterFailure{"The ZIP extraction root must not be empty."_el, "root"_el};
     }
     if (_record.directory) {
         if (prepareDirectory(root, options)) {
@@ -114,7 +118,7 @@ auto ArchiveItem::entryData() const -> ZipEntryData {
     return requireReader()->entryData(_record, false);
 }
 
-auto ArchiveItem::prepareDirectory(const path::Path &root, const ArchiveExtractionOptions &options) const -> bool {
+auto ArchiveItem::prepareDirectory(const Path &root, const ArchiveExtractionOptions &options) const -> bool {
     const auto destination = root / _record.path;
     verifySafeParent(destination, root);
     const auto existing = destination.info();
@@ -128,10 +132,10 @@ auto ArchiveItem::prepareDirectory(const path::Path &root, const ArchiveExtracti
                     .setDestinationPath(destination)
                     .setItemPath(_record.path)};
         }
-        if (options.collisionMode() == path::PathCollisionMode::Skip) {
+        if (options.collisionMode() == PathCollisionMode::Skip) {
             return false;
         }
-        if (options.collisionMode() == path::PathCollisionMode::Stop || !existing.isDirectory()) {
+        if (options.collisionMode() == PathCollisionMode::Stop || !existing.isDirectory()) {
             throw ZipError{ZipErrorContext{
                 ZipErrorReason::PathFailure,
                 ZipOperationPhase::Extraction,
@@ -143,9 +147,9 @@ auto ArchiveItem::prepareDirectory(const path::Path &root, const ArchiveExtracti
     }
     try {
         destination.operations().createDirectoryOrThrow(
-            path::PathCreateDirectoryOptions{}.setCreateParents(true).setCreationMode(path::PathCreateMode::CreateNew));
+            PathCreateDirectoryOptions{}.setCreateParents(true).setCreationMode(PathCreateMode::CreateNew));
         verifySafeParent(destination, root);
-    } catch (const path::PathError &) {
+    } catch (const PathError &) {
         throw ZipError{
             ZipErrorContext{
                 ZipErrorReason::PathFailure, ZipOperationPhase::Extraction, "ZIP directory could not be created"_el}
@@ -156,20 +160,19 @@ auto ArchiveItem::prepareDirectory(const path::Path &root, const ArchiveExtracti
     return true;
 }
 
-void ArchiveItem::restoreDirectoryModificationTime(
-    const path::Path &root, const ArchiveExtractionOptions &options) const {
+void ArchiveItem::restoreDirectoryModificationTime(const Path &root, const ArchiveExtractionOptions &options) const {
     restoreModificationTime(root / _record.path, options);
 }
 
 auto ArchiveItem::requireReader() const -> std::shared_ptr<ArchiveReader> {
     const auto reader = _reader.lock();
     if (reader == nullptr || !reader->isOpen()) {
-        throw err::LogicError{"The ZIP item payload is unavailable because its reader is closed."_el};
+        throw LogicFailure{"The ZIP item payload is unavailable because its reader is closed."_el};
     }
     return reader;
 }
 
-void ArchiveItem::verifySafeParent(const path::Path &destination, const path::Path &trustedRoot) const {
+void ArchiveItem::verifySafeParent(const Path &destination, const Path &trustedRoot) const {
     const auto absoluteDestination = destination.toAbsoluteOrThrow();
     const auto absoluteRoot = trustedRoot.toAbsoluteOrThrow();
     auto reachedRoot = false;
@@ -200,14 +203,13 @@ void ArchiveItem::verifySafeParent(const path::Path &destination, const path::Pa
     }
 }
 
-void ArchiveItem::restoreModificationTime(
-    const path::Path &destination, const ArchiveExtractionOptions &options) const {
+void ArchiveItem::restoreModificationTime(const Path &destination, const ArchiveExtractionOptions &options) const {
     if (!options.preserveModificationTime() || !_record.modificationTime.isValid()) {
         return;
     }
     try {
         destination.operations().setLastModifiedOrThrow(_record.modificationTime);
-    } catch (const path::PathError &) {
+    } catch (const PathError &) {
         throw ZipError{
             ZipErrorContext{
                 ZipErrorReason::PathFailure,
@@ -220,7 +222,7 @@ void ArchiveItem::restoreModificationTime(
 }
 
 void ArchiveItem::writeExtracted(
-    const path::Path &destination, ArchiveExtractionOptions options, const path::Path &trustedRoot) const {
+    const Path &destination, ArchiveExtractionOptions options, const Path &trustedRoot) const {
     const auto existing = destination.info();
     if (existing.exists()) {
         if (existing.isSymlink() || existing.isReparsePoint()) {
@@ -232,10 +234,10 @@ void ArchiveItem::writeExtracted(
                     .setDestinationPath(destination)
                     .setItemPath(_record.path)};
         }
-        if (options.collisionMode() == path::PathCollisionMode::Skip) {
+        if (options.collisionMode() == PathCollisionMode::Skip) {
             return;
         }
-        if (options.collisionMode() == path::PathCollisionMode::Stop) {
+        if (options.collisionMode() == PathCollisionMode::Stop) {
             throw ZipError{ZipErrorContext{
                 ZipErrorReason::PathFailure,
                 ZipOperationPhase::Extraction,
@@ -248,60 +250,45 @@ void ArchiveItem::writeExtracted(
         // Security boundary: inspect every existing component through the caller's trusted extraction root.
         verifySafeParent(destination, trustedRoot);
         destination.parent().operations().createDirectoryOrThrow(
-            path::PathCreateDirectoryOptions{}.setCreateParents(true).setCreationMode(
-                path::PathCreateMode::CreateOrOverwrite));
+            PathCreateDirectoryOptions{}.setCreateParents(true).setCreationMode(PathCreateMode::CreateOrOverwrite));
         verifySafeParent(destination, trustedRoot);
         if (options.useAtomicFiles()) {
             auto temporary = destination.parent().operations().openTempByteOutputStreamOrThrow(
-                path::PathTempFileOptions{}
+                PathTempFileOptions{}
                     .setStreamSettings(options.outputStreamSettings())
                     .setPrefix(".zip-extract-"_el)
                     .setSuffix(".tmp"_el));
             try {
                 extractToStream(*temporary, options);
-            } catch (...) {
+            } catch (const RuntimeError &) {
                 // Complete normal cleanup within the owned stream timeout; abort remains the fallback.
                 try {
                     if (!temporary->close().isClosed()) {
                         temporary->abort();
                     }
-                } catch (...) {
+                } catch (const RuntimeError &) {
                     temporary->abort();
                 }
                 throw;
             }
-            const auto temporaryPath = temporary->path();
-            temporary->setRemoveOnClose(false);
-            try {
-                if (!temporary->close().isClosed()) {
-                    temporary->setRemoveOnClose(true);
-                    throw ZipError{ZipErrorContext{
-                        ZipErrorReason::StreamFailure,
-                        ZipOperationPhase::Extraction,
-                        "ZIP extracted file could not be closed"_el}
-                            .setDestinationPath(destination)
-                            .setItemPath(_record.path)};
-                }
-                temporaryPath.operations().moveToOrThrow(
-                    destination,
-                    path::PathMoveOptions{}.setCreateParents(true).setCollisionMode(
-                        options.collisionMode() == path::PathCollisionMode::Overwrite
-                            ? path::PathCollisionMode::Overwrite
-                            : path::PathCollisionMode::Stop));
-                temporary->setRemoveOnClose(false);
-            } catch (...) {
-                temporaryPath.operations().removeOrThrow();
-                throw;
+            auto commitOptions = PathCommitOptions{}.setCreateParents(true);
+            if (options.collisionMode() == PathCollisionMode::Overwrite) {
+                commitOptions.setCollisionMode(PathCollisionMode::Overwrite);
+            } else {
+                commitOptions.setCollisionMode(PathCollisionMode::Stop);
             }
+            commitOptions.setBeforeCommit([this, &trustedRoot](const Path &, const Path &target) -> void {
+                verifySafeParent(target, trustedRoot);
+            });
+            temporary->commitToOrThrow(destination, std::move(commitOptions));
         } else {
             auto output = destination.content().openByteOutputStream(
-                path::PathWriteDataOptions{}
+                PathWriteDataOptions{}
                     .setStreamSettings(options.outputStreamSettings())
                     .setCreateParents(true)
                     .setCreationMode(
-                        options.collisionMode() == path::PathCollisionMode::Overwrite
-                            ? path::PathCreateMode::CreateOrOverwrite
-                            : path::PathCreateMode::CreateNew));
+                        options.collisionMode() == PathCollisionMode::Overwrite ? PathCreateMode::CreateOrOverwrite
+                                                                                : PathCreateMode::CreateNew));
             extractToStream(*output, options);
             if (!output->close().isClosed()) {
                 throw ZipError{ZipErrorContext{
@@ -321,7 +308,7 @@ void ArchiveItem::writeExtracted(
                 .setDestinationPath(destination)
                 .setItemPath(_record.path),
             std::current_exception()};
-    } catch (const path::PathError &) {
+    } catch (const PathError &) {
         throw ZipError{
             ZipErrorContext{
                 ZipErrorReason::PathFailure,

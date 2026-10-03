@@ -3,15 +3,17 @@
 #pragma once
 
 #include <DemoCommon.hpp>
-#include <erbsland/text/base_n/BaseNDecoder.hpp>
-#include <erbsland/text/base_n/BaseNFormat.hpp>
+#include <erbsland/base_n/BaseNDecoder.hpp>
+#include <erbsland/base_n/BaseNFormat.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
 
 namespace demo {
 
 inline auto signatureDemoKey() -> el::ByteBlock {
     return el::base_n::BaseNDecoder{
         "WZ3RWS6xYdPNi2s8md8Gf3zkI41qfsRfIcK1QwC3u4A="_el, el::base_n::BaseNFormat::base64()}
-        .toDataOrThrow(el::ByteLength{32U});
+        .toDataOrThrow(el::ByteCount{32U});
 }
 
 }

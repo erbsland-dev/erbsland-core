@@ -61,6 +61,23 @@ is moved into place.
 ``abort()`` terminates output immediately.
 Cleanup is enabled by default; when disabled, ``temporaryPath()`` identifies retained incomplete output for recovery.
 
+Directory Pattern Filters
+=========================
+
+``ArchiveDirectoryOptions::includeGlobs()`` and ``excludeGlobs()`` use
+:doc:`/reference/path/path_glob_patterns` against the complete normalized archive path.
+The setters accept a compiled ``PathGlobPatternPtr``, a ``String``, or a ``StringList``.
+String setters compile immediately, enabling default trimming, recursive wildcards, and newline/semicolon alternatives.
+List setters join their elements with ``;`` and compile the resulting text with the same flags.
+Use ``\;`` or ``[;]`` to represent a literal semicolon.
+Malformed or empty pattern text raises ``ParseError`` in the setter and leaves the previous pattern intact.
+An empty list or null pointer clears the corresponding filter.
+A null include pattern accepts every entry, and exclusions take precedence over includes.
+The getters return the compiled pointers, which are shared when options are copied and reused without recompilation.
+Passing an already compiled pattern retains its selected compile flags.
+``**/*.txt`` includes both immediate and nested text files; ``*`` and ``?`` stay within one component.
+The source metadata callback runs only after the include/exclude decision accepts an entry.
+
 Security Limits and Validation
 ==============================
 
@@ -75,6 +92,12 @@ It validates end-record and central-directory boundaries with checked 64-bit ari
 offsets, duplicate or colliding normalized paths, ambiguous entry types, unsupported flags, and trailing data after the
 end record.
 It does not visit local headers or payloads.
+Arbitrary archive bytes are accepted as input to the reader factories.
+Malformed records, unsupported features, unsafe paths, and configured-limit violations are reported as ``ZipError``
+runtime failures.
+In particular, ZIP64 extra-field lengths are validated against the required replacement values before those values are
+read.
+Caller-precondition violations and exhausted system resources remain fatal failures.
 When an item is accessed, the reader validates its local metadata and optional descriptor against the central directory,
 then reads only the selected compressed payload in bounded chunks.
 Every extraction then verifies the exact uncompressed length and CRC-32 before committing a file.

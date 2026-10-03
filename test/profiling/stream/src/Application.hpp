@@ -7,7 +7,15 @@
 #include "DefaultConfiguration.hpp"
 #include "Workload.hpp"
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
 #include <erbsland/profiling/ProfilingApplication.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/Version.hpp>
 
 #include <algorithm>
 #include <optional>
@@ -33,7 +41,7 @@ protected: // implement pf::ProfilingApplication
                 "Concurrent File Stream Profiler and Benchmark"_el,
                 "Profiles deterministic binary and encoded-text file stream workloads with independent concurrent "
                 "callers. With no options, the four-thread cover-all profile runs for eight minutes."_el)
-            .setDefaultConfiguration(el::String{cDefaultConfigurationText});
+            .setDefaultConfiguration(cDefaultConfigurationText);
     }
 
     void registerProfilingOptions(const el::OptionsPtr &options) override {

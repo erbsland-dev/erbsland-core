@@ -7,9 +7,9 @@
     single: Text Suggestions
     single: Damerau-Levenshtein Distance
 
-*****************************
-Finding Similar Text by Edits
-*****************************
+*********************************
+Fuzzy Matching with Edit Distance
+*********************************
 
 A user remembers the name of a sound, but types ``kaik`` instead of ``kaiku``.
 An exact lookup finds nothing.
@@ -20,8 +20,8 @@ results by how many edits they need.
 This page shows what that distance means, how to keep the suggestions useful, and how to read each returned
 :cpp:class:`Match <erbsland::text::fuzzy::Match>`.
 
-What a Distance Means
-=====================
+Damerau-Levenshtein Edit Distance
+=================================
 
 The matcher uses a Damerau-Levenshtein edit distance.
 It counts changes to decoded Unicode code points, rather than changes to the bytes of a UTF-8 string.
@@ -36,8 +36,8 @@ It is not a probability, and a low distance does not prove that the candidate is
 Suggestions work best when you already have a known set of names, such as commands, option names, or short labels.
 For a very large collection, a search index may be a better first step than comparing every candidate.
 
-Offering Nearby Names
-=====================
+Finding Candidate Suggestions
+=============================
 
 Construct a matcher with the text the user typed.
 Pass the known names as a :cpp:type:`StringList <erbsland::text::StringList>` to ``findMatches()``.
@@ -48,25 +48,26 @@ The matcher looks through a short list of Finnish sound terms and accepts only n
 
 .. erbsland-demo::
     :source: text/FuzzyMatching/FuzzyMatchingDemos.cpp
-    :function-blocks: suggestSoundNames
-    :function-blocks-sha256: 17ce783d1f86a119e0d482ca7ee4dfaa1dad904f9102dcc262c958796ff74780
+    :show: f:suggestSoundNames
     :exec: text/fuzzy_matching --demo SuggestSoundNames
-    :source-sha256: 25d8d9fbc34d3bde7ee4f33c80f081b6e3f40c50dc7ab456f65a212164cea38a
+    :sha256: 5632ac3cedf7e0b8fcc96adb4c51b533efa466684fe5f35625aa11b77565bf31
 
 .. code-block:: cpp
 
     void suggestSoundNames() {
         const auto candidates = el::StringList{"kaiku"_el, "sointu"_el, "sävel"_el, "kaiut"_el};
-        const auto matches = el::fuzzy::Matcher{"kaik"_el}.setMaximumDistance(el::CpLength{1U}).findMatches(candidates);
+        const auto matches = el::fuzzy::Matcher{"kaik"_el}.setMaximumDistance(el::CpCount{1U}).findMatches(candidates);
         for (const auto &match : matches) {
             el::io::printLine(match.candidate(), " (edits: "_el, match.distance().toSizeT(), ")"_el);
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    kaiku (edits: 1)
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mkaiku (edits: 1)␛[0m
 
 .. erbsland-demo-end::
 
@@ -77,8 +78,8 @@ With a small limit, an empty result simply means that none of the supplied names
 You can also default-construct a matcher and call ``setPattern()`` later.
 That is useful when the application reuses one configured matcher for successive inputs.
 
-Tuning Which Suggestions Appear
-===============================
+Suggestion Thresholds, Result Limits, and Comparison Rules
+==========================================================
 
 The distance limit decides which candidates qualify.
 ``setMaximumResults()`` then limits how many of those ranked candidates are returned.
@@ -99,17 +100,16 @@ It also starts with a default-constructed matcher to show how its pattern can be
 
 .. erbsland-demo::
     :source: text/FuzzyMatching/FuzzyMatchingDemos.cpp
-    :function-blocks: tuneSuggestions
-    :function-blocks-sha256: fb535d34b0747b50a305a7ed4a68b589a6cc96dc2320e67010a3a786df2987dd
+    :show: f:tuneSuggestions
     :exec: text/fuzzy_matching --demo TuneSuggestions
-    :source-sha256: 25d8d9fbc34d3bde7ee4f33c80f081b6e3f40c50dc7ab456f65a212164cea38a
+    :sha256: b9f4c3db5d46904561fcbfe1085e3e5dba3fc2667c8e5f343577f616e3f99d11
 
 .. code-block:: cpp
 
     void tuneSuggestions() {
         auto matcher = el::fuzzy::Matcher{};
         matcher.setPattern("KAIKU"_el)
-            .setMaximumDistance(el::CpLength{1U})
+            .setMaximumDistance(el::CpCount{1U})
             .setMaximumResults(el::ItemCount{2U})
             .setComparisonFn(el::Char::compareAsciiFolded);
 
@@ -120,11 +120,13 @@ It also starts with a default-constructed matcher to show how its pattern can be
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    kaiku (edits: 0)
-    kaiuk (edits: 1)
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mkaiku (edits: 0)
+        kaiuk (edits: 1)␛[0m
 
 .. erbsland-demo-end::
 
@@ -136,8 +138,8 @@ If one spelling should be shown to the user, place it first in the input list.
 When a matcher is reused, ``pattern()``, ``maximumDistance()``, ``maximumResults()``, and ``comparisonFn()`` let you
 inspect its current settings.
 
-Reading Ranked Matches
-======================
+Reading Ranked Matches and Edit Distances
+=========================================
 
 Each result keeps the original candidate spelling.
 Read it through ``text()`` or ``candidate()``.
@@ -152,27 +154,29 @@ It lets you see an exact match, a replacement of ``ä``, an adjacent swap, and a
 
 .. erbsland-demo::
     :source: text/FuzzyMatching/FuzzyMatchingDemos.cpp
-    :function-blocks: inspectMatches
-    :function-blocks-sha256: 61ab35b7aa2507d09eb942c9cf121b1c6b77af51e7c5c9f0e81a212e72614e2c
+    :show: f:inspectMatches
     :exec: text/fuzzy_matching --demo InspectMatches
-    :source-sha256: 25d8d9fbc34d3bde7ee4f33c80f081b6e3f40c50dc7ab456f65a212164cea38a
+    :sha256: b164c4918e983b62c5603abc484cff3282d8fb0b8c3bdc832ff8ba1c209742ef
 
 .. code-block:: cpp
 
     void inspectMatches() {
         const auto candidates = el::StringList{u8"sävel"_el, u8"savel"_el, u8"säevl"_el, u8"säveli"_el};
-        const auto matches = el::fuzzy::Matcher{u8"sävel"_el}.setMaximumDistance(el::CpLength{1U}).findMatches(candidates);
+        const auto matches = el::fuzzy::Matcher{u8"sävel"_el}.setMaximumDistance(el::CpCount{1U}).findMatches(candidates);
         for (const auto &match : matches) {
             el::io::printLine("Candidate: "_el, match.text(), ", distance: "_el, match.distance().toSizeT());
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Candidate: sävel, distance: 0
-    Candidate: savel, distance: 1
-    Candidate: säevl, distance: 1
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCandidate: sävel, distance: 0
+        Candidate: savel, distance: 1
+        Candidate: säevl, distance: 1
+        Candidate: säveli, distance: 1␛[0m
 
 .. erbsland-demo-end::
 

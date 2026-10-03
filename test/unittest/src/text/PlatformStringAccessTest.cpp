@@ -1,20 +1,20 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/Exception.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/Exception.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/String.hpp>
 #include <erbsland/text/impl/PlatformU16StringAccess.hpp>
 #include <erbsland/text/impl/PlatformU8StringAccess.hpp>
 #include <erbsland/text/impl/UnsafeU16StringAccess.hpp>
 #include <erbsland/text/impl/UnsafeU8StringAccess.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ByteRange.hpp>
-#include <erbsland/unit/U16DataIndex.hpp>
-#include <erbsland/unit/U16DataLength.hpp>
-#include <erbsland/unit/U16DataRange.hpp>
+#include <erbsland/U16Count.hpp>
+#include <erbsland/U16Index.hpp>
+#include <erbsland/U16Range.hpp>
+#include <erbsland/U16String.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstring>
@@ -54,7 +54,7 @@ public:
 
     void testU8SliceIsMaterializedAndNullTerminated() {
         const auto source = el::text::String{"xplatform-tail"_el};
-        const auto slice = source.slice(el::unit::ByteRange{el::unit::ByteIndex{1U}, el::unit::ByteLength{8U}});
+        const auto slice = source.slice({el::unit::ByteIndex{1U}, el::unit::ByteCount{8U}});
         const auto access = el::text::impl::PlatformU8StringAccess{slice};
 
         REQUIRE(el::text::impl::UnsafeU8StringAccess{slice}.dataView().isSlice());
@@ -68,8 +68,7 @@ public:
 
     void testU16SliceIsMaterializedAndNullTerminated() {
         const auto source = el::text::U16String{std::u16string_view{u"xplatform-tail"}};
-        const auto slice =
-            source.slice(el::unit::U16DataRange{el::unit::U16DataIndex{1U}, el::unit::U16DataLength{8U}});
+        const auto slice = source.slice(el::unit::U16Range{el::unit::U16Index{1U}, el::unit::U16Count{8U}});
         const auto access = el::text::impl::PlatformU16StringAccess{slice};
 
         REQUIRE(el::text::impl::UnsafeU16StringAccess{slice}.dataView().isSlice());
@@ -83,7 +82,7 @@ public:
 
     void testExceptionMaterializesSlicedReason() {
         const auto source = el::text::String{"xreason-tail"_el};
-        const auto slice = source.slice(el::unit::ByteRange{el::unit::ByteIndex{1U}, el::unit::ByteLength{6U}});
+        const auto slice = source.slice({el::unit::ByteIndex{1U}, el::unit::ByteCount{6U}});
         const auto error = el::err::Exception{slice};
 
         REQUIRE_EQUAL(std::strcmp(error.what(), "reason"), 0);

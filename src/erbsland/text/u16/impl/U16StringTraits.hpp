@@ -5,12 +5,12 @@
 #include "U16StringData_fwd.hpp"
 #include "U16StringSharedStorage_fwd.hpp"
 
+#include "../../../unit/CpCount.hpp"
 #include "../../../unit/CpIndex.hpp"
-#include "../../../unit/CpLength.hpp"
 #include "../../../unit/CpRange.hpp"
-#include "../../../unit/U16DataIndex.hpp"
-#include "../../../unit/U16DataLength.hpp"
-#include "../../../unit/U16DataRange.hpp"
+#include "../../../unit/U16Count.hpp"
+#include "../../../unit/U16Index.hpp"
+#include "../../../unit/U16Range.hpp"
 #include "../../StringKind.hpp"
 
 #include <cstddef>
@@ -27,11 +27,11 @@ struct U16StringTraits final {
     using StoragePtr = U16StringDataPtr;
     using StandardView = std::u16string_view;
     using LiteralChar = char16_t;
-    using DataIndex = unit::U16DataIndex;
-    using DataLength = unit::U16DataLength;
-    using DataRange = unit::U16DataRange;
+    using DataIndex = unit::U16Index;
+    using DataLength = unit::U16Count;
+    using DataRange = unit::U16Range;
     using CharacterIndex = unit::CpIndex;
-    using CharacterLength = unit::CpLength;
+    using CharacterLength = unit::CpCount;
     using CharacterRange = unit::CpRange;
 
     static constexpr auto kind = StringKind::U16; ///< String encoding represented by these traits.

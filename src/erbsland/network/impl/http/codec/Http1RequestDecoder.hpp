@@ -27,7 +27,7 @@ public:
     /// Test whether the current request is complete.
     [[nodiscard]] auto isComplete() const noexcept -> bool { return _decoder.isComplete(); }
     /// Get retained unconsumed input bytes.
-    [[nodiscard]] auto retainedInputLength() const noexcept -> unit::ByteLength {
+    [[nodiscard]] auto retainedInputLength() const noexcept -> unit::ByteCount {
         return _decoder.retainedInputLength();
     }
 

@@ -9,8 +9,10 @@ Core Semantics
 
     exception = throwable failure with a human-readable local reason
     diagnostic = structured, renderable representation of one failure
+    error = recoverable runtime error
+    failure = fatal failure with no practical recovery
     cause = optional exception from a genuinely separate failure layer
-    platform context = native failure data owned by its domain diagnostic, not a cause
+    context = additional, optional error details owned by the exception for detailed diagnostics
 
 Primary Types
 =============
@@ -25,12 +27,14 @@ Secondary Types
 
 .. code-block:: text
 
-    LogicError, RuntimeError // programming and domain-neutral runtime failures
-    ParameterError, OutOfRangeError // invalid argument and bounds failures
+    LogicFailure, RuntimeError // programming and domain-neutral runtime failures
+    ParameterFailure, OutOfRangeFailure // caller precondition and system-capacity failures
+    OutOfRangeError, NotFoundError // recoverable numeric bounds and absent key/name errors
     OverflowError, ParseError // representation and text-parsing failures
     ErrorDocumentBuilder // shared builder for consistently styled error documents
     DiagnosticHelper // adapter from exceptions and cause chains to diagnostic documents
-    ❮domain❯::❮Type❯Error // domain specific error
+    ❮domain❯::❮Type❯Error // recoverable domain error, derived from RuntimeError
+    ❮domain❯::❮Type❯Failure // fatal domain failure, derived from LogicFailure
 
 Pattern Definitions
 ===================
@@ -53,7 +57,7 @@ Exception Patterns
     o.cause() -> std::exception_ptr // access the chained diagnostic cause
     o.toString() -> text::String // local display text for one exception
     o.diagnostic() -> DiagnosticConstPtr // abstract diagnostic for one exception
-    o.toTextDocument([displayText]) -> text::TextDocument // render one diagnostic with optional display text
+    o.toTextDocument() -> text::TextDocument // render one diagnostic using application display texts
 
 Error Context Patterns
 ======================

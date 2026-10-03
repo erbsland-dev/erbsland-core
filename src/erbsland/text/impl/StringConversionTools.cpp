@@ -29,6 +29,7 @@
 #include <span>
 
 namespace erbsland::text::impl {
+
 auto StringConversionTools::toU8StringEditor(const std::string_view str, const EncodingMode mode) -> U8StringEditor {
     return U8StringEncodingTools::decodeFromCharacters(
         [&](auto function) -> void { utf8::forEachDecodedCharacter(str, mode, function); });

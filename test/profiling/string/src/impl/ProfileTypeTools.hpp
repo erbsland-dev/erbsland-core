@@ -4,6 +4,9 @@
 
 #include "../ProfileTypes.hpp"
 
+#include <erbsland/String.hpp>
+#include <erbsland/StringLiteral.hpp>
+
 #include <initializer_list>
 
 namespace app::string::impl {
@@ -23,7 +26,7 @@ void addDescriptor(
         auto descriptor = UseCaseDescriptor{
             .type = type, .useCase = useCase, .variant = el::String{variant}, .workUnit = workUnit, .u8Only = u8Only};
         for (const auto api : apiFamilies) {
-            descriptor.apiFamilies.emplace_back(api);
+            descriptor.apiFamilies.append(el::String{api});
         }
         target.emplace_back(std::move(descriptor));
     }
@@ -57,6 +60,12 @@ void addReadableDescriptors(std::vector<UseCaseDescriptor> &target, const String
         UseCase::Compare,
         {"equal"_el, "different-front"_el, "different-back"_el, "case-folded"_el},
         {"compare"_el});
+    addDescriptor(
+        target,
+        type,
+        UseCase::Compare,
+        {"binary-equal"_el, "binary-different-front"_el, "binary-different-back"_el},
+        {"compareBinary"_el});
     addDescriptor(target, type, UseCase::Hash, {"normal"_el, "case-folded"_el}, {"toHash/toHashCI"_el});
     addDescriptor(
         target,
@@ -106,6 +115,28 @@ void addLifecycleDescriptors(std::vector<UseCaseDescriptor> &target, const Strin
         UseCase::SliceSplit,
         {"native-middle"_el, "code-point-middle"_el, "code-point-back"_el, "split-middle"_el},
         {"slice/splitAt"_el},
+        WorkUnit::Operations);
+    addDescriptor(
+        target,
+        type,
+        UseCase::SeparatorSplit,
+        {"first-text"_el,
+            "last-text"_el,
+            "first-set"_el,
+            "last-set"_el,
+            "first-text-miss"_el,
+            "last-text-miss"_el,
+            "first-set-miss"_el,
+            "last-set-miss"_el,
+            "manual-first-text"_el,
+            "manual-last-text"_el,
+            "manual-first-set"_el,
+            "manual-last-set"_el,
+            "manual-first-text-miss"_el,
+            "manual-last-text-miss"_el,
+            "manual-first-set-miss"_el,
+            "manual-last-set-miss"_el},
+        {"splitAtFirst/splitAtLast"_el},
         WorkUnit::Operations);
     addDescriptor(target, type, UseCase::Join, {"four-parts"_el}, {"fromJoined"_el});
 }

@@ -39,17 +39,17 @@ public:
     /// Create an empty placeholder.
     SymmetricDecryptor() noexcept = default;
     /// Create an AEAD decryptor.
-    /// @param type The authenticated encryption construction.
+    /// @param type The authenticated encryption construction. Must be a valid AEAD type matching the key and nonce
+    /// lengths.
     /// @param key The exact-size secret key.
     /// @param nonce The exact-size nonce.
-    /// @throws err::ParameterError If the type or data lengths do not match.
     /// @throws CryptologyError If no backend is available or backend initialization fails.
     SymmetricDecryptor(SymmetricEncryptionType type, const SymmetricKey &key, const SymmetricNonce &nonce);
     /// Create an IV-based decryptor.
-    /// @param type The unauthenticated encryption construction.
+    /// @param type The unauthenticated encryption construction. Must be a valid IV-based type matching the key and IV
+    /// lengths.
     /// @param key The exact-size secret key.
     /// @param iv The exact-size initialization vector.
-    /// @throws err::ParameterError If the type or data lengths do not match.
     /// @throws CryptologyError If no backend is available or backend initialization fails.
     SymmetricDecryptor(SymmetricEncryptionType type, const SymmetricKey &key, const SymmetricIv &iv);
 
@@ -70,40 +70,39 @@ public:
     void secureErase() noexcept;
     /// Add authenticated associated data.
     /// Empty spans are accepted and do not begin payload processing.
+    /// This decryptor must use AEAD and must not be empty, failed, finalized, or already processing payload.
     /// @param data The next associated-data bytes.
-    /// @throws err::LogicError If this decryptor is empty, unauthenticated, failed, finalized, or processing payload.
     void addAuthenticatedData(mem::ConstByteSpan data);
     /// Add authenticated associated data from an owning byte block.
+    /// This decryptor must use AEAD and must not be empty, failed, finalized, or already processing payload.
     /// @param data The next associated-data bytes.
-    /// @throws err::LogicError If this decryptor is empty, unauthenticated, failed, finalized, or processing payload.
     void addAuthenticatedData(const mem::ByteBlock &data);
     /// Decrypt payload bytes.
     /// For AEAD types, returned plaintext is unauthenticated until `finalize(tag)` succeeds.
+    /// This decryptor must not be empty, failed, or finalized.
     /// @param data The next encrypted bytes.
     /// @return The sensitive-marked plaintext currently available.
-    /// @throws err::LogicError If this decryptor is empty, failed, or finalized.
     /// @throws CryptologyError If the backend rejects malformed encrypted data or otherwise fails.
     [[nodiscard]] auto decrypt(mem::ConstByteSpan data) -> mem::ByteBlock;
     /// Decrypt payload bytes from an owning byte block.
     /// For AEAD types, returned plaintext is unauthenticated until `finalize(tag)` succeeds.
+    /// This decryptor must not be empty, failed, or finalized.
     /// @param data The next encrypted bytes.
     /// @return The sensitive-marked plaintext currently available.
-    /// @throws err::LogicError If this decryptor is empty, failed, or finalized.
     /// @throws CryptologyError If the backend rejects malformed encrypted data or otherwise fails.
     [[nodiscard]] auto decrypt(const mem::ByteBlock &data) -> mem::ByteBlock;
     /// Finalize and authenticate AEAD decryption.
     /// Previously returned plaintext becomes authenticated only when this call succeeds.
+    /// This decryptor must use AEAD and must not be empty, failed, or finalized.
     /// @param tag The exact-size expected authentication tag.
     /// @return Any sensitive-marked final plaintext output.
-    /// @throws err::ParameterError If the tag length does not match the selected type.
-    /// @throws err::LogicError If this decryptor is unauthenticated, empty, failed, or already finalized.
     /// @throws CryptologyError If authentication or the backend fails.
     [[nodiscard]] auto finalize(const SymmetricTag &tag) -> mem::ByteBlock;
     /// Finalize unauthenticated CBC decryption and remove padding when the selected mode defines it.
     /// Random-fill CBC cannot remove its final fill bytes; the caller must crop the output using the externally stored
     /// original length.
+    /// This decryptor must use an unauthenticated CBC type and must not be empty, failed, or finalized.
     /// @return Any sensitive-marked final plaintext output.
-    /// @throws err::LogicError If this decryptor is AEAD, empty, failed, or already finalized.
     /// @throws CryptologyError If ciphertext alignment, padding, or the backend is invalid.
     [[nodiscard]] auto finalize() -> mem::ByteBlock;
 
@@ -113,7 +112,7 @@ public: // tests
 
 public: // accessors
     /// Get the configured encryption type.
-    /// @throws err::LogicError If this decryptor is empty.
+    /// This decryptor must not be empty.
     [[nodiscard]] auto type() const -> SymmetricEncryptionType;
 
 private:

@@ -5,7 +5,8 @@
 #include "HardwareFeatures.hpp"
 #include "PortableAesBlockCipher.hpp"
 
-#include "../../../../core/Application.hpp"
+#include "../../../../core/impl/application_data/ApplicationCryptologyData.hpp"
+#include "../../../../core/impl/ApplicationDataAccess.hpp"
 #include "../../../configuration/CryptologyConfiguration.hpp"
 
 #if defined(ERBSLAND_AES_ARM_BACKEND)
@@ -18,7 +19,8 @@
 namespace erbsland::cryptology::impl {
 
 auto createAesBlockCipher(const mem::ConstByteSpan key) -> std::unique_ptr<AesBlockCipher> {
-    if (core::application().cryptologyConfiguration().hardwareAccelerationEnabled()) {
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    if (cryptologyData->configuration().hardwareAccelerationEnabled()) {
 #if defined(ERBSLAND_AES_ARM_BACKEND)
         if (hardware_features::hasArmAes()) {
             return std::make_unique<ArmAesBlockCipher>(key);

@@ -10,7 +10,7 @@
 #include "../../core/impl/WindowsApi.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <conio.h>
 #include <fcntl.h>
@@ -18,6 +18,9 @@
 #include <iostream>
 
 namespace erbsland::cterm::impl {
+
+using namespace mem;
+using mem::impl::secureErase;
 
 auto WindowsBackend::readKeyFromConsole(const OptionalTimeout timeout) -> Key {
     if (!_p->_pendingKeys.empty()) {
@@ -244,15 +247,15 @@ auto WindowsBackend::readLine() -> text::String {
 
 void WindowsBackend::purgePendingInput() noexcept {
     for (auto &key : _p->_pendingKeys) {
-        mem::impl::secureErase(std::as_writable_bytes(std::span{&key, 1U}));
+        secureErase(std::as_writable_bytes(std::span{&key, 1U}));
     }
     _p->_pendingKeys.clear();
     if (_p->_pendingTextInput.has_value()) {
-        mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingTextInput, 1U}));
+        secureErase(std::as_writable_bytes(std::span{&*_p->_pendingTextInput, 1U}));
         _p->_pendingTextInput.reset();
     }
     if (_p->_pendingHighSurrogate.has_value()) {
-        mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
+        secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
         _p->_pendingHighSurrogate.reset();
     }
 }
@@ -320,19 +323,19 @@ void WindowsBackend::flushPendingTextInput() {
     if (!_p->_pendingTextInput.has_value()) {
         return;
     }
-    if (_p->_pendingTextInput->characterCount() <= unit::CpLength::one()) {
+    if (_p->_pendingTextInput->characterCount() <= unit::CpCount::one()) {
         _p->_pendingKeys.emplace_back(Key::Character, _p->_pendingTextInput->first());
     } else {
         _p->_pendingKeys.emplace_back(Key::Combined, *_p->_pendingTextInput);
     }
-    mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingTextInput, 1U}));
+    secureErase(std::as_writable_bytes(std::span{&*_p->_pendingTextInput, 1U}));
     _p->_pendingTextInput.reset();
 }
 
 void WindowsBackend::appendTextCodePoint(const char32_t codePoint, const std::size_t repeatCount) {
     for (std::size_t index = 0; index < repeatCount; ++index) {
         const auto character = text::Char{codePoint};
-        if (character.isNull() || character.isControl()) {
+        if (character.isControl()) {
             continue;
         }
         if (character.displayWidth() == 0) {
@@ -354,7 +357,7 @@ auto WindowsBackend::decodeUtf16CodeUnit(const char16_t codeUnit) -> std::option
 
     if (codeUnit >= cHighSurrogateStart && codeUnit <= cHighSurrogateEnd) {
         if (_p->_pendingHighSurrogate.has_value()) {
-            mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
+            secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
         }
         _p->_pendingHighSurrogate = codeUnit;
         return std::nullopt;
@@ -365,12 +368,12 @@ auto WindowsBackend::decodeUtf16CodeUnit(const char16_t codeUnit) -> std::option
         }
         const auto high = static_cast<uint32_t>(*_p->_pendingHighSurrogate - cHighSurrogateStart);
         const auto low = static_cast<uint32_t>(codeUnit - cLowSurrogateStart);
-        mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
+        secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
         _p->_pendingHighSurrogate.reset();
         return static_cast<char32_t>(0x10000U + ((high << 10U) | low));
     }
     if (_p->_pendingHighSurrogate.has_value()) {
-        mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
+        secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
         _p->_pendingHighSurrogate.reset();
     }
     return static_cast<char32_t>(codeUnit);

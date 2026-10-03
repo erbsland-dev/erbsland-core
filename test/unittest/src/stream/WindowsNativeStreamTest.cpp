@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteArray.hpp>
 #include <erbsland/core/impl/WindowsApi.hpp>
-#include <erbsland/mem/ByteArray.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/stream/impl/WindowsNativeStream.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/StreamError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -18,8 +18,8 @@
 using el::mem::Byte;
 using el::stream::StreamError;
 using el::stream::StreamPositionOrigin;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteOffset;
 using namespace el::text::literals;
 
@@ -97,6 +97,7 @@ public:
         auto stream =
             el::stream::impl::WindowsNativeStream{pipe.readHandle(), el::stream::impl::NativeStreamOwnership::Borrowed};
         REQUIRE_FALSE(stream.supportsPositioning());
+        REQUIRE(stream.initialFileSize().isInfinite());
         const auto expected = std::string{"Read text"};
         auto writeCount = DWORD{};
         REQUIRE(
@@ -106,7 +107,7 @@ public:
 
         auto buffer = std::array<el::mem::Byte, 32>{};
         const auto readCount = stream.read(el::mem::ByteSpan{buffer});
-        REQUIRE_EQUAL(readCount, ByteLength::fromSizeT(expected.size()));
+        REQUIRE_EQUAL(readCount, ByteCount::fromSizeT(expected.size()));
 
         auto actual = std::string{};
         for (auto i = std::size_t{0}; i < readCount.toSizeT(); ++i) {
@@ -192,11 +193,13 @@ public:
 
         auto stream = el::stream::impl::WindowsNativeStream{handle, el::stream::impl::NativeStreamOwnership::Owned};
         REQUIRE(stream.fileSize().isZero());
+        REQUIRE(stream.initialFileSize().isZero());
 
         const auto text = std::string{"Size"};
         stream.writeBytes(std::span<const char>{text.data(), text.size()});
 
-        REQUIRE_EQUAL(stream.fileSize(), ByteLength::fromSizeT(text.size()));
+        REQUIRE_EQUAL(stream.fileSize(), ByteCount::fromSizeT(text.size()));
+        REQUIRE(stream.initialFileSize().isZero());
         stream.close();
         std::filesystem::remove(path);
     }
@@ -223,6 +226,7 @@ public:
         auto restricted = el::stream::impl::WindowsNativeStream{
             restrictedHandle, el::stream::impl::NativeStreamOwnership::Owned, {}, false};
         REQUIRE_FALSE(restricted.supportsPositioning());
+        REQUIRE_EQUAL(restricted.initialFileSize(), ByteCount{4U});
         REQUIRE_THROWS_AS(StreamError, restricted.position());
         restricted.close();
         std::filesystem::remove(path);

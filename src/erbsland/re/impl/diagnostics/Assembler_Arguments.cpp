@@ -8,19 +8,20 @@
 
 namespace erbsland::re::impl {
 
+using namespace text;
+
 void Assembler::validateArgumentTypes(const Operation operation, const AssemblerTokens &arguments) const {
     const auto &data = dataForOperation(operation);
     if (data.argumentCount() != arguments.size()) {
         throwAssemblerError(
-            text::StringFormat{"Operation '{}' requires {} arguments"}.build(
-                toString(operation), data.argumentCount()));
+            StringFormat{"Operation '{}' requires {} arguments"}.build(toString(operation), data.argumentCount()));
     }
     for (std::size_t i = 0; i < arguments.size(); ++i) {
         const auto &argument = arguments[i];
         const auto &definition = data.arguments[i];
         if (!doesArgumentMatch(argument, definition)) {
             throwAssemblerError(
-                text::StringFormat{"Argument {} of operation '{}' must be a {}."}.build(
+                StringFormat{"Argument {} of operation '{}' must be a {}."}.build(
                     i + 1, toString(operation), toString(definition.kind)));
         }
     }
@@ -57,7 +58,7 @@ auto Assembler::doesArgumentMatch(const AssemblerToken &argument, const Argument
     }
 }
 
-auto Assembler::expectIdentifier(const AssemblerToken &argument) const -> text::String {
+auto Assembler::expectIdentifier(const AssemblerToken &argument) const -> String {
     if (argument.isIdentifier()) {
         return argument.getText();
     }
@@ -86,9 +87,9 @@ auto Assembler::expectCounterValue(const AssemblerToken &argument) const -> uint
     throwAssemblerError("Expected a counter value as integer expression"_el);
 }
 
-auto Assembler::expectChar(const AssemblerToken &argument) const -> text::Char {
+auto Assembler::expectChar(const AssemblerToken &argument) const -> Char {
     if (argument.isInteger() || argument.isOffset() || argument.isChar()) {
-        const auto character = text::Char{static_cast<char32_t>(argument.getInteger())};
+        const auto character = Char{static_cast<char32_t>(argument.getInteger())};
         if (!character.isValidUnicode()) {
             throwAssemblerError("Character code is out of the valid Unicode range"_el);
         }
@@ -103,7 +104,7 @@ auto Assembler::expectCaptureGroup(const AssemblerToken &argument) const -> std:
     }
     const auto captureGroup = static_cast<std::size_t>(argument.getInteger());
     if (captureGroup > limits::maximumCaptureGroupCount) {
-        throwAssemblerError(text::StringFormat{"Capture group '{}' is out of range"}.build(captureGroup));
+        throwAssemblerError(StringFormat{"Capture group '{}' is out of range"}.build(captureGroup));
     }
     return captureGroup;
 }
@@ -114,7 +115,7 @@ auto Assembler::expectAtomicGroupId(const AssemblerToken &argument) const -> Ato
     }
     const auto atomicGroupId = static_cast<AtomicGroupId>(argument.getInteger());
     if (atomicGroupId > limits::maximumAtomicGroupCount) {
-        throwAssemblerError(text::StringFormat{"Atomic group ID '{}' is out of range"}.build(atomicGroupId));
+        throwAssemblerError(StringFormat{"Atomic group ID '{}' is out of range"}.build(atomicGroupId));
     }
     return atomicGroupId;
 }
@@ -132,7 +133,7 @@ auto Assembler::expectProgramCounter(const AssemblerToken &argument, ArgumentInd
         if (_labels.contains(label)) {
             const auto labelTarget = _labels.get(label).value();
             if (labelTarget.section != DataSection::Program) {
-                throwAssemblerError(text::StringFormat{"Label '{}' does not point to a program location"}.build(label));
+                throwAssemblerError(StringFormat{"Label '{}' does not point to a program location"}.build(label));
             }
             return static_cast<ProgramCounter>(labelTarget.offset);
         }
@@ -156,7 +157,7 @@ auto Assembler::expectCharClassIndex(const AssemblerToken &argument) -> CharClas
         if (_labels.contains(label)) {
             const auto labelTarget = _labels.get(label).value();
             if (labelTarget.section != DataSection::Class) {
-                throwAssemblerError(text::StringFormat{"Label '{}' does not point to a character class"}.build(label));
+                throwAssemblerError(StringFormat{"Label '{}' does not point to a character class"}.build(label));
             }
             return static_cast<CharClassIndex>(labelTarget.offset);
         }
@@ -179,8 +180,7 @@ auto Assembler::expectSequenceIndex(const AssemblerToken &argument) -> SequenceI
         if (_labels.contains(label)) {
             const auto labelTarget = _labels.get(label).value();
             if (labelTarget.section != DataSection::Sequence) {
-                throwAssemblerError(
-                    text::StringFormat{"Label '{}' does not point to a character sequence"}.build(label));
+                throwAssemblerError(StringFormat{"Label '{}' does not point to a character sequence"}.build(label));
             }
             return static_cast<SequenceIndex>(labelTarget.offset);
         }

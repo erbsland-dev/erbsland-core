@@ -87,7 +87,7 @@ public:
             result.append(text::StringFormat{",atomicGroupId={}"}.build(atomicGroupId));
         }
         if (!name.isEmpty()) {
-            const auto safeName = name.toSafeString(unit::CpLength{200U});
+            const auto safeName = name.toSafeString(unit::CpCount{200U});
             result.append(",name=\""_el);
             result.append(safeName);
             result.append(U'"');

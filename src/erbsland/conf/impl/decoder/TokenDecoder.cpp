@@ -7,17 +7,22 @@
 #include "../../../text/Literals.hpp"
 #include "../../../text/placeholder/impl/Registry.hpp"
 
+#include <utility>
+
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
-auto TokenDecoder::create(CharStreamPtr decoder, text::placeholder::impl::RegistryPtr placeholderRegistry) noexcept
+auto TokenDecoder::create(
+    CharStreamPtr decoder, placeholder::impl::RegistryPtr placeholderRegistry, const TokenDecoderMode mode) noexcept
     -> TokenDecoderPtr {
-    return std::make_shared<TokenDecoder>(std::move(decoder), std::move(placeholderRegistry));
+    return std::make_shared<TokenDecoder>(std::move(decoder), std::move(placeholderRegistry), mode);
 }
 
-TokenDecoder::TokenDecoder(CharStreamPtr decoder, text::placeholder::impl::RegistryPtr placeholderRegistry) noexcept :
-    _decoder{std::move(decoder)}, _placeholderRegistry{std::move(placeholderRegistry)} {
+TokenDecoder::TokenDecoder(
+    CharStreamPtr decoder, placeholder::impl::RegistryPtr placeholderRegistry, const TokenDecoderMode mode) noexcept :
+    _mode{mode}, _decoder{std::move(decoder)}, _placeholderRegistry{std::move(placeholderRegistry)} {
     assert(_decoder != nullptr);
 }
 
@@ -48,21 +53,21 @@ auto TokenDecoder::tokenSize() const noexcept -> int {
 }
 
 auto TokenDecoder::hasPlaceholders() const noexcept -> bool {
-    return _placeholderRegistry != nullptr && _placeholderRegistry->hasSources();
+    return !isSyntaxMode() && _placeholderRegistry != nullptr && _placeholderRegistry->hasSources();
 }
 
-auto TokenDecoder::resolvePlaceholder(const text::String &name, const text::String &parameter) const -> text::String {
+auto TokenDecoder::resolvePlaceholder(const String &name, const String &parameter) const -> String {
     assert(_placeholderRegistry != nullptr);
     return _placeholderRegistry->resolve(name, parameter);
 }
 
-auto TokenDecoder::applyPlaceholderFilter(
-    const text::String &name, const text::String &parameter, const text::String &value) const -> text::String {
+auto TokenDecoder::applyPlaceholderFilter(const String &name, const String &parameter, const String &value) const
+    -> String {
     assert(_placeholderRegistry != nullptr);
     return _placeholderRegistry->apply(name, parameter, value);
 }
 
-void TokenDecoder::expectMoreInLine(text::String message) const {
+void TokenDecoder::expectMoreInLine(String message) const {
     if (_currentCharacter.character() == CharClass::LineBreak) {
         throwSyntaxError(std::move(message));
     }
@@ -84,7 +89,7 @@ auto TokenDecoder::createEndOfDataToken() -> LexerToken {
 
 void TokenDecoder::next() {
     if (_currentCharacter.character().isError()) {
-        throw err::LogicError("TokenDecoder: An error was not correctly handled."_el);
+        throw err::LogicFailure("TokenDecoder: An error was not correctly handled."_el);
     }
     try {
         // Transactions store a checkpoint into this line instead of copying characters. Therefore they cannot cross
@@ -98,7 +103,7 @@ void TokenDecoder::next() {
             // Delay encoding and (control-)character errors by setting the current character to the error mark.
             _hasUpcomingError = true;
             _currentCharacter = DecodedChar{
-                text::Char::error(),
+                Char::error(),
                 _decoder->lastCharacterStartIndex(),
                 error.context().location().value_or(unit::CodeLocation{})};
             _currentError = error.context();
@@ -113,6 +118,45 @@ void TokenDecoder::checkForErrorAndThrowIt() const {
     if (_hasUpcomingError) {
         throw ConfError{_currentError};
     }
+}
+
+auto TokenDecoder::isAtStatementStart() const noexcept -> bool {
+    return characterPosition().column().isZero() &&
+        (character() == CharClass::NameStart || character() == CharClass::SectionStart);
+}
+
+auto TokenDecoder::takeDiagnostics() -> util::List<ConfErrorContext> {
+    return std::exchange(_diagnostics, {});
+}
+
+auto TokenDecoder::isRecoverable(const ConfErrorCategory category) noexcept -> bool {
+    return category == ConfErrorCategory::Syntax || category == ConfErrorCategory::Encoding ||
+        category == ConfErrorCategory::Character || category == ConfErrorCategory::UnexpectedEnd ||
+        category == ConfErrorCategory::Indentation || category == ConfErrorCategory::LimitExceeded ||
+        category == ConfErrorCategory::Unsupported;
+}
+
+auto TokenDecoder::recover(const ConfError &error, const unit::LineIndex initialLine) -> LexerToken {
+    if (!isSyntaxMode() || !isRecoverable(error.category())) {
+        throw error;
+    }
+    assert(!hasActiveTransaction());
+    _diagnostics.append(error.context());
+    if (characterPosition().line() != initialLine && isAtStatementStart()) {
+        return LexerToken{TokenType::Error};
+    }
+    return recoverLine();
+}
+
+auto TokenDecoder::recoverLine() -> LexerToken {
+    assert(!hasActiveTransaction());
+    auto token =
+        LexerToken{TokenType::Error, _tokenStartPosition, characterPosition(), _decoder->recoverLine(), NoContent{}};
+    _hasUpcomingError = false;
+    _currentError = {};
+    _currentCharacter = {};
+    nextToken();
+    return token;
 }
 
 auto TokenDecoder::decoderState() const noexcept -> DecoderState {
@@ -130,7 +174,7 @@ void TokenDecoder::restoreDecoderState(const DecoderState &state) noexcept {
     // checks made while replaying earlier characters still propagated the more precise encoding or character error.
 }
 
-auto TokenDecoder::captureFromDecoderState(const DecoderState &state) const noexcept -> text::String {
+auto TokenDecoder::captureFromDecoderState(const DecoderState &state) const noexcept -> String {
     assert(state.location().line() == _currentCharacter.codeLocation().line());
     return _decoder->captureRange(state.characterIndex(), _currentCharacter.index());
 }
@@ -149,6 +193,7 @@ auto internalView(const TokenDecoder &object) -> InternalViewPtr {
     result->setValue("currentError", currentError);
     return result;
 }
+
 #endif
 
 }

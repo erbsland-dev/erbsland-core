@@ -19,8 +19,8 @@ can either require signatures or deliberately admit unsigned development files.
 You will also see why the validator receives the document digest as text and how modified, malformed, and unsigned
 documents reach the same decision point.
 
-The Validator Is Your Trust Policy
-==================================
+SignatureValidator Inputs and Trust Decisions
+=============================================
 
 The parser understands where an ELCL signature belongs and which document bytes it covers, but it cannot know whom your
 application trusts.
@@ -69,7 +69,7 @@ certificate, public-key, hardware-token, or signing-service policy.
 
 .. erbsland-demo::
     :source: conf/ConfigurationSignatures/HmacSignatureValidator.hpp
-    :source-sha256: 636c9b55807dc240e819461072ed1b3f46389d67d17310ba11edbf70186d5ecb
+    :sha256: fbdf9ba482165005a65c18aa65c7538e2c9271fb28f1b19a89bfb21481b40890
 
 .. code-block:: cpp
 
@@ -102,25 +102,22 @@ certificate, public-key, hardware-token, or signing-service policy.
                 return _unsignedDocuments == UnsignedDocuments::Accept ? Result::Accept : Result::Reject;
             }
 
-            const auto algorithmSeparator = data.signatureText.find(";"_el);
-            if (algorithmSeparator.isNoIndex()) {
+            const auto first = data.signatureText.splitAtFirst(";"_el);
+            if (!first) {
                 return Result::Reject;
             }
-            auto [algorithm, payload] = data.signatureText.splitAt(algorithmSeparator);
-            payload = std::get<1>(payload.slice(el::StringSide::Front));
-
-            const auto signerSeparator = payload.find(";"_el);
-            if (signerSeparator.isNoIndex()) {
+            const auto &[algorithm, payload] = *first;
+            const auto second = payload.splitAtFirst(";"_el);
+            if (!second) {
                 return Result::Reject;
             }
-            auto [signer, authenticatorText] = payload.splitAt(signerSeparator);
-            authenticatorText = std::get<1>(authenticatorText.slice(el::StringSide::Front));
+            const auto &[signer, authenticatorText] = *second;
             if (algorithm != "hmac-sha256"_el || signer != _trustedSigner) {
                 return Result::Reject;
             }
 
             const auto expected =
-                el::base_n::BaseNDecoder{authenticatorText, el::base_n::BaseNFormat::base64()}.toData(el::ByteLength{32U});
+                el::base_n::BaseNDecoder{authenticatorText, el::base_n::BaseNFormat::base64()}.toData(el::ByteCount{32U});
             if (!expected.has_value()) {
                 return Result::Reject;
             }
@@ -161,7 +158,7 @@ The final parse uses an explicitly relaxed development policy for an unsigned fi
 .. erbsland-demo::
     :source: conf/ConfigurationSignatures/ValidateSignatures.cpp
     :exec: conf/configuration_signatures --demo ValidateSignatures
-    :source-sha256: 7eff652f3c4999d8e59542e81484379426dbebf7e3d77a0afbf50cc0c7f41960
+    :sha256: ce7b1778d99128a9f49eea787df2e11f5462cd33dbd49a1a8136fa91aaa34944
 
 .. code-block:: cpp
 
@@ -209,12 +206,14 @@ The final parse uses an explicitly relaxed development policy for an unsigned fi
         el::io::printLine("Unsigned development document: "_el, unsignedWasAccepted ? "accepted"_el : "rejected"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Signed document: accepted (和太鼓 星)
-    Changed document: rejected
-    Unsigned development document: accepted
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSigned document: accepted (和太鼓 星)
+        Changed document: rejected
+        Unsigned development document: accepted␛[0m
 
 .. erbsland-demo-end::
 
@@ -241,8 +240,8 @@ Keep the choice between strict and development policy outside the configuration 
 A protected application setting, deployment entitlement, or deliberate build mode can make that choice.
 An option inside the same document would allow an attacker to disable the condition that is meant to detect the edit.
 
-Failure Should Be Uneventful
-============================
+Signature Rejection and Trusted-Key Rotation
+============================================
 
 Signature text is untrusted input.
 Treat unknown algorithms, missing fields, invalid Base64, unexpected signer identities, wrong signature lengths, and

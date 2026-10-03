@@ -4,7 +4,7 @@
 
 #include "impl/CompressionCodec.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <utility>
@@ -17,17 +17,17 @@ ByteDecompressor::ByteDecompressor(
     const CompressionAlgorithm algorithm, const CompressionFormat format, DecompressionOptions options) :
     _codec{impl::CompressionCodec::create(algorithm, format)}, _options{std::move(options)} {
     if (!_options.maximumOutputLength().isFinite() || !_options.maximumWorkspaceLength().isFinite()) {
-        throw err::ParameterError{"Decompression limits must be finite."_el, "options"_el};
+        throw err::ParameterFailure{"Decompression limits must be finite."_el, "options"_el};
     }
     if (_options.expectedOutputLength().has_value() &&
         (!_options.expectedOutputLength()->isFinite() ||
             *_options.expectedOutputLength() > _options.maximumOutputLength())) {
-        throw err::ParameterError{
+        throw err::ParameterFailure{
             "Expected output length must be finite and within the output limit."_el, "options"_el};
     }
     if (format == CompressionFormat::Raw && algorithm == CompressionAlgorithm::Lz4Block &&
         !_options.expectedOutputLength().has_value()) {
-        throw err::ParameterError{"Raw LZ4 decompression requires an expected output length."_el, "options"_el};
+        throw err::ParameterFailure{"Raw LZ4 decompression requires an expected output length."_el, "options"_el};
     }
 }
 

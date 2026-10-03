@@ -5,7 +5,7 @@
 #include "ZstandardHuffmanEncoder.hpp"
 #include "ZstandardReverseBitWriter.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 #include <algorithm>
@@ -15,10 +15,11 @@
 
 namespace erbsland::compression::impl {
 
+using namespace mem;
 using namespace text::literals;
 
 ZstandardEncoder::ZstandardEncoder(
-    const mem::ConstByteSpan input, const CompressionLevel level, const std::size_t windowSize) :
+    const ConstByteSpan input, const CompressionLevel level, const std::size_t windowSize) :
     _input{input},
     _level{level},
     _windowSize{windowSize},
@@ -29,9 +30,9 @@ ZstandardEncoder::ZstandardEncoder(
     _previous.reserve(windowSize + 131072U);
 }
 
-void ZstandardEncoder::setInput(mem::ConstByteSpan input, std::size_t removed) {
+void ZstandardEncoder::setInput(ConstByteSpan input, std::size_t removed) {
     if (removed > _previous.size() || input.size() < _previous.size() - removed) {
-        throw err::LogicError{"Zstandard input does not retain its indexed history."_el};
+        throw err::LogicFailure{"Zstandard input does not retain its indexed history."_el};
     }
     const auto retained = _previous.size() - removed;
     if (removed) {
@@ -50,10 +51,9 @@ void ZstandardEncoder::setInput(mem::ConstByteSpan input, std::size_t removed) {
     _previous.resize(input.size(), cNoPosition);
 }
 
-auto ZstandardEncoder::encodeBlock(const std::size_t begin, const std::size_t size)
-    -> std::optional<mem::ConstByteSpan> {
+auto ZstandardEncoder::encodeBlock(const std::size_t begin, const std::size_t size) -> std::optional<ConstByteSpan> {
     if (begin > _input.size() || size > _input.size() - begin || size > 128U * 1024U) {
-        throw err::LogicError{"Zstandard encoder block is out of range."_el};
+        throw err::LogicFailure{"Zstandard encoder block is out of range."_el};
     }
     const auto end = begin + size;
     auto &sequences = _sequences;
@@ -66,7 +66,7 @@ auto ZstandardEncoder::encodeBlock(const std::size_t begin, const std::size_t si
     }
     auto &output = _output;
     output.clear();
-    output.reserve(unit::ByteLength::fromSizeT(size));
+    output.reserve(unit::ByteCount::fromSizeT(size));
     appendLiterals(output, literals);
     appendSequenceCount(output, sequences.size());
     auto &literalSymbols = _literalSymbols;
@@ -87,14 +87,14 @@ auto ZstandardEncoder::encodeBlock(const std::size_t begin, const std::size_t si
     auto literalTable = ZstandardSequenceTable{};
     auto offsetTable = ZstandardSequenceTable{};
     auto matchTable = ZstandardSequenceTable{};
-    auto literalDescription = std::optional<mem::Byte>{};
-    auto offsetDescription = std::optional<mem::Byte>{};
-    auto matchDescription = std::optional<mem::Byte>{};
+    auto literalDescription = std::optional<Byte>{};
+    auto offsetDescription = std::optional<Byte>{};
+    auto matchDescription = std::optional<Byte>{};
     const auto literalMode =
         selectTable(ZstandardSequenceCode::LiteralLength, literalSymbols, literalTable, literalDescription);
     const auto offsetMode = selectTable(ZstandardSequenceCode::Offset, offsetSymbols, offsetTable, offsetDescription);
     const auto matchMode = selectTable(ZstandardSequenceCode::MatchLength, matchSymbols, matchTable, matchDescription);
-    output.append(mem::Byte{static_cast<uint8_t>((literalMode << 6U) | (offsetMode << 4U) | (matchMode << 2U))});
+    output.append(Byte{static_cast<uint8_t>((literalMode << 6U) | (offsetMode << 4U) | (matchMode << 2U))});
     for (const auto description : {literalDescription, offsetDescription, matchDescription}) {
         if (description.has_value()) {
             output.append(*description);
@@ -179,10 +179,7 @@ auto ZstandardEncoder::hashAt(const std::size_t position) const noexcept -> std:
 }
 
 void ZstandardEncoder::parseBlock(
-    const std::size_t begin,
-    const std::size_t end,
-    std::vector<ZstandardSequence> &sequences,
-    mem::ByteBuffer &literals) {
+    const std::size_t begin, const std::size_t end, std::vector<ZstandardSequence> &sequences, ByteBuffer &literals) {
     insertUntil(begin);
     auto position = begin;
     auto anchor = begin;
@@ -274,11 +271,11 @@ void ZstandardEncoder::encodeLength(
     extra = value - bases[index];
 }
 
-void ZstandardEncoder::appendLiterals(mem::ByteBuffer &output, const mem::ByteBuffer &literals) const {
+void ZstandardEncoder::appendLiterals(ByteBuffer &output, const ByteBuffer &literals) const {
     const auto size = literals.length().toSizeTOrThrow();
     const auto repeated = size > 1U &&
         std::ranges::all_of(
-            literals.span(), [value = literals.get(unit::ByteIndex{})](const mem::Byte byte) { return byte == value; });
+            literals.span(), [value = literals.get(unit::ByteIndex{})](const Byte byte) { return byte == value; });
     const auto headerSize = size <= 31U ? std::size_t{1U} : (size <= 4095U ? std::size_t{2U} : std::size_t{3U});
     const auto rawSize = headerSize + (repeated ? 1U : size);
     if (_level != CompressionLevel::Fastest) {
@@ -291,19 +288,18 @@ void ZstandardEncoder::appendLiterals(mem::ByteBuffer &output, const mem::ByteBu
     appendRawLiterals(output, literals, repeated);
 }
 
-void ZstandardEncoder::appendRawLiterals(
-    mem::ByteBuffer &output, const mem::ByteBuffer &literals, const bool repeated) {
+void ZstandardEncoder::appendRawLiterals(ByteBuffer &output, const ByteBuffer &literals, const bool repeated) {
     const auto size = literals.length().toSizeTOrThrow();
     const auto type = repeated ? uint8_t{1U} : uint8_t{0U};
     if (size <= 31U) {
-        output.append(mem::Byte{static_cast<uint8_t>((size << 3U) | type)});
+        output.append(Byte{static_cast<uint8_t>((size << 3U) | type)});
     } else if (size <= 4095U) {
-        output.append(mem::Byte{static_cast<uint8_t>(((size & 0x0fU) << 4U) | 0x04U | type)});
-        output.append(mem::Byte{static_cast<uint8_t>(size >> 4U)});
+        output.append(Byte{static_cast<uint8_t>(((size & 0x0fU) << 4U) | 0x04U | type)});
+        output.append(Byte{static_cast<uint8_t>(size >> 4U)});
     } else {
-        output.append(mem::Byte{static_cast<uint8_t>(((size & 0x0fU) << 4U) | 0x0cU | type)});
-        output.append(mem::Byte{static_cast<uint8_t>(size >> 4U)});
-        output.append(mem::Byte{static_cast<uint8_t>(size >> 12U)});
+        output.append(Byte{static_cast<uint8_t>(((size & 0x0fU) << 4U) | 0x0cU | type)});
+        output.append(Byte{static_cast<uint8_t>(size >> 4U)});
+        output.append(Byte{static_cast<uint8_t>(size >> 12U)});
     }
     if (repeated) {
         output.append(literals.get(unit::ByteIndex{}));
@@ -312,17 +308,17 @@ void ZstandardEncoder::appendRawLiterals(
     }
 }
 
-void ZstandardEncoder::appendSequenceCount(mem::ByteBuffer &output, const std::size_t count) {
+void ZstandardEncoder::appendSequenceCount(ByteBuffer &output, const std::size_t count) {
     if (count < 128U) {
-        output.append(mem::Byte{static_cast<uint8_t>(count)});
+        output.append(Byte{static_cast<uint8_t>(count)});
     } else if (count < 0x7f00U) {
-        output.append(mem::Byte{static_cast<uint8_t>(128U + (count >> 8U))});
-        output.append(mem::Byte{static_cast<uint8_t>(count)});
+        output.append(Byte{static_cast<uint8_t>(128U + (count >> 8U))});
+        output.append(Byte{static_cast<uint8_t>(count)});
     } else {
         const auto value = count - 0x7f00U;
-        output.append(mem::Byte{uint8_t{255U}});
-        output.append(mem::Byte{static_cast<uint8_t>(value)});
-        output.append(mem::Byte{static_cast<uint8_t>(value >> 8U)});
+        output.append(Byte{uint8_t{255U}});
+        output.append(Byte{static_cast<uint8_t>(value)});
+        output.append(Byte{static_cast<uint8_t>(value >> 8U)});
     }
 }
 
@@ -330,10 +326,10 @@ auto ZstandardEncoder::selectTable(
     const ZstandardSequenceCode kind,
     const std::vector<uint8_t> &symbols,
     ZstandardSequenceTable &table,
-    std::optional<mem::Byte> &description) -> uint8_t {
+    std::optional<Byte> &description) -> uint8_t {
     if (std::ranges::all_of(symbols, [value = symbols.front()](const uint8_t symbol) { return symbol == value; })) {
         table.setRle(kind, symbols.front());
-        description = mem::Byte{symbols.front()};
+        description = Byte{symbols.front()};
         return 1U;
     }
     table.setPredefined(kind);

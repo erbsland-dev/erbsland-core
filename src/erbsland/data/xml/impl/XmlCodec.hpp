@@ -8,6 +8,7 @@
 #include "../../../text/StringCharReader.hpp"
 
 namespace erbsland::data::xml::impl {
+
 /// Internal XML parser and serializer.
 /// @tested{XmlDocumentTest}
 class XmlCodec final {
@@ -84,8 +85,7 @@ private: // serialization
     /// @param preserveReferences Whether references are already encoded.
     void writeEscaped(const text::String &value, bool attribute, bool preserveReferences = false);
     /// Reject XML 1.0 forbidden character code points before serialization.
-    /// @param value The text to validate.
-    /// @throws err::ParameterError If the text contains a forbidden code point.
+    /// @param value The text to validate. Must not contain XML 1.0 forbidden code points.
     static void validateXmlText(const text::String &value);
     /// Check XML 1.0 name syntax.
     /// @param value The value to read, write, or inspect.
@@ -111,4 +111,5 @@ private:                             // data
     XmlParseOptions _parseOptions;   ///< Parse limits.
     unit::ItemCount _nodeCount;      ///< Parsed nodes.
 };
+
 }

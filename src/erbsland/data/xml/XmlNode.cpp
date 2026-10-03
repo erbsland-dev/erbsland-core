@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "XmlNode.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/NotFoundError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/AnyString.hpp"
 #include "../../text/IntegerParseOptions.hpp"
 #include "../../text/Literals.hpp"
@@ -14,9 +15,10 @@
 
 namespace erbsland::data::xml {
 
+using namespace text;
 using namespace text::literals;
 
-auto XmlNode::createElement(text::String name, text::String text) -> XmlNodePtr {
+auto XmlNode::createElement(String name, String text) -> XmlNodePtr {
     auto result = XmlNodePtr{new XmlNode{XmlNodeType::Element, std::move(name), {}}};
     if (!text.isEmpty()) {
         result->addText(std::move(text));
@@ -24,35 +26,35 @@ auto XmlNode::createElement(text::String name, text::String text) -> XmlNodePtr 
     return result;
 }
 
-auto XmlNode::createText(text::String text) -> XmlNodePtr {
+auto XmlNode::createText(String text) -> XmlNodePtr {
     return XmlNodePtr{new XmlNode{XmlNodeType::Text, {}, std::move(text)}};
 }
 
-auto XmlNode::createCData(text::String text) -> XmlNodePtr {
+auto XmlNode::createCData(String text) -> XmlNodePtr {
     return XmlNodePtr{new XmlNode{XmlNodeType::CData, {}, std::move(text)}};
 }
 
-auto XmlNode::createComment(text::String text) -> XmlNodePtr {
+auto XmlNode::createComment(String text) -> XmlNodePtr {
     return XmlNodePtr{new XmlNode{XmlNodeType::Comment, {}, std::move(text)}};
 }
 
-auto XmlNode::createProcessingInstruction(text::String name, text::String text) -> XmlNodePtr {
+auto XmlNode::createProcessingInstruction(String name, String text) -> XmlNodePtr {
     return XmlNodePtr{new XmlNode{XmlNodeType::ProcessingInstruction, std::move(name), std::move(text)}};
 }
 
-auto XmlNode::createEntityReference(text::String name) -> XmlNodePtr {
+auto XmlNode::createEntityReference(String name) -> XmlNodePtr {
     return XmlNodePtr{new XmlNode{XmlNodeType::EntityReference, std::move(name), {}}};
 }
 
-auto XmlNode::createDocType(text::String raw) -> XmlNodePtr {
+auto XmlNode::createDocType(String raw) -> XmlNodePtr {
     return XmlNodePtr{new XmlNode{XmlNodeType::DocType, {}, std::move(raw)}};
 }
 
-auto XmlNode::createDeclaration(text::String raw) -> XmlNodePtr {
+auto XmlNode::createDeclaration(String raw) -> XmlNodePtr {
     return XmlNodePtr{new XmlNode{XmlNodeType::Declaration, {}, std::move(raw)}};
 }
 
-auto XmlNode::resolveReference(const text::String &name) -> std::optional<text::String> {
+auto XmlNode::resolveReference(const String &name) -> std::optional<String> {
     if (name == "amp"_el) {
         return "&"_el;
     }
@@ -90,17 +92,17 @@ auto XmlNode::resolveReference(const text::String &name) -> std::optional<text::
         (value < 0x20U && value != 0x09U && value != 0x0aU && value != 0x0dU)) {
         return std::nullopt;
     }
-    auto builder = text::AnyStringBuilder{};
+    auto builder = AnyStringBuilder{};
     builder.append(static_cast<char32_t>(value));
     return builder.takeString();
 }
 
-auto XmlNode::resolveAttribute(const XmlAttribute &attribute) -> std::optional<text::String> {
+auto XmlNode::resolveAttribute(const XmlAttribute &attribute) -> std::optional<String> {
     if (!attribute.hasReferences()) {
         return attribute.value();
     }
-    auto reader = text::StringCharReader{attribute.value()};
-    auto builder = text::AnyStringBuilder{};
+    auto reader = StringCharReader{attribute.value()};
+    auto builder = AnyStringBuilder{};
     while (!reader.isAtEnd()) {
         if (!reader.advanceIf(U'&')) {
             builder.append(reader.read());
@@ -122,7 +124,7 @@ auto XmlNode::resolveAttribute(const XmlAttribute &attribute) -> std::optional<t
     return builder.takeString();
 }
 
-auto XmlNode::getAttribute(const text::String &name) const -> std::optional<text::String> {
+auto XmlNode::getAttribute(const String &name) const -> std::optional<String> {
     for (const auto &attribute : _attributes) {
         if (attribute.name() == name) {
             return resolveAttribute(attribute);
@@ -131,7 +133,7 @@ auto XmlNode::getAttribute(const text::String &name) const -> std::optional<text
     return std::nullopt;
 }
 
-auto XmlNode::appendTextContent(text::AnyStringBuilder &builder) const -> bool {
+auto XmlNode::appendTextContent(AnyStringBuilder &builder) const -> bool {
     switch (_type) {
     case XmlNodeType::Text:
     case XmlNodeType::CData:
@@ -157,25 +159,25 @@ auto XmlNode::appendTextContent(text::AnyStringBuilder &builder) const -> bool {
     }
 }
 
-auto XmlNode::textContent() const -> std::optional<text::String> {
-    auto builder = text::AnyStringBuilder{};
+auto XmlNode::textContent() const -> std::optional<String> {
+    auto builder = AnyStringBuilder{};
     if (!appendTextContent(builder)) {
         return std::nullopt;
     }
     return builder.takeString();
 }
 
-auto XmlNode::textContentOrThrow() const -> text::String {
+auto XmlNode::textContentOrThrow() const -> String {
     const auto result = textContent();
     if (!result) {
-        throw err::LogicError{"XML text contains an unresolved entity reference."_el};
+        throw err::NotFoundError{"XML text contains an unresolved entity reference."_el};
     }
     return *result;
 }
 
-auto XmlNode::setAttribute(text::String name, text::String value) -> XmlNode & {
+auto XmlNode::setAttribute(String name, String value) -> XmlNode & {
     if (_type != XmlNodeType::Element) {
-        throw err::LogicError{"Only XML elements have attributes."_el};
+        throw err::LogicFailure{"Only XML elements have attributes."_el};
     }
     for (auto i = unit::ItemIndex{}; i.isWithin(_attributes.count()); ++i) {
         if (_attributes.getRefOrThrow(i).name() == name) {
@@ -189,17 +191,17 @@ auto XmlNode::setAttribute(text::String name, text::String value) -> XmlNode & {
 
 auto XmlNode::add(XmlNodePtr child) -> XmlNodePtr {
     if (_type != XmlNodeType::Element || !child) {
-        throw err::ParameterError{"Invalid XML child insertion."_el, "child"_el};
+        throw err::ParameterFailure{"Invalid XML child insertion."_el, "child"_el};
     }
     _children.append(child);
     return child;
 }
 
-auto XmlNode::addElement(text::String name, text::String text) -> XmlNodePtr {
+auto XmlNode::addElement(String name, String text) -> XmlNodePtr {
     return add(createElement(std::move(name), std::move(text)));
 }
 
-auto XmlNode::addText(text::String text) -> XmlNodePtr {
+auto XmlNode::addText(String text) -> XmlNodePtr {
     return add(createText(std::move(text)));
 }
 

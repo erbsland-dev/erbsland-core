@@ -1,7 +1,28 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/conf/Name.hpp>
+#include <erbsland/Duration.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Option.hpp>
+#include <erbsland/OptionError.hpp>
+#include <erbsland/OptionErrorContext.hpp>
+#include <erbsland/OptionHelpVisibility.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValue.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -22,10 +43,10 @@ ModuleSettings settings;
     module->addOption({"-d"_el, "--duration"_el, "duration"_el})
         .setType(el::OptionType::Integer)
         .setDefaultValue(el::OptionInteger{30})
-        .setHelpDescription("Duration of the round in minutes."_el);
+        .setHelpTitle("Duration of the round in minutes."_el);
     module->addOption("area"_el)
         .setRequired()
-        .setHelpDescription("Area to observe."_el)
+        .setHelpTitle("Area to observe."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Usage);
     module->setPreParsingFn([](const el::OptionModulePtr &selectedModule) -> void {
         selectedModule->editOption("duration"_el)
@@ -59,8 +80,8 @@ ModuleSettings settings;
         .addChoice("text"_el)
         .addChoice("table"_el)
         .setDefaultValue("text"_el)
-        .setHelpDescription("File format for the export."_el);
-    module->addOption("logbook"_el).setRequired().setHelpDescription("Name of the logbook."_el);
+        .setHelpTitle("File format for the export."_el);
+    module->addOption("logbook"_el).setRequired().setHelpTitle("Name of the logbook."_el);
     module->setMainFn([](const el::OptionValuesPtr &values) -> el::ExitCode {
         el::io::printLine("module: "_el, values->moduleName());
         el::io::printLine("logbook: "_el, values->getText("logbook"_el));
@@ -81,7 +102,7 @@ public:
 
 protected:
     void initialize() override {
-        enableTerminal();
+        DemoTerminal::enable(*this);
         info().setApplicationName("Night Watch Modules"_el);
         info().setApplicationVersion(el::Version{0, 8, 0});
     }
@@ -89,13 +110,13 @@ protected:
         options->setHelpTitle("Night Watch Modules"_el);
         options->setHelpDescription("Manages observation rounds through separate command modules."_el);
         options->addOption({"-l"_el, "--loud"_el, "loud"_el})
-            .setHelpDescription("Prints extra progress information."_el)
+            .setHelpTitle("Prints extra progress information."_el)
             .setHelpVisibility(el::OptionHelpVisibility::Overview);
         options->addModule(createObserveModule());
         options->addModule(createExportModule());
 
         auto debug = el::OptionModule::create("debug"_el);
-        debug->setHelpDescription("Hidden diagnostic module for developers."_el);
+        debug->setHelpTitle("Hidden diagnostic module for developers."_el);
         debug->setHelpVisibility(el::OptionHelpVisibility::Hidden);
         debug->setMainFn([](el::OptionValuesPtr) -> el::ExitCode {
             el::io::printLine("debug module"_el);

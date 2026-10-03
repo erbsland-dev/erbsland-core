@@ -34,11 +34,13 @@ public:
     /// @throws EncodingError If the byte order mark or encoded text is invalid.
     void validateOrThrow(StringEncoding encoding, StringBomMode bomMode = StringBomMode::Automatic) const;
     /// Decode to the default UTF-8 string type.
+    /// Tolerant UTF-8 input preserves the payload bytes after BOM handling.
     [[nodiscard]] auto decode(
         StringEncoding encoding,
         StringBomMode bomMode = StringBomMode::Automatic,
         EncodingMode mode = EncodingMode::Tolerant) const -> String;
     /// Decode to a UTF-8 string.
+    /// Tolerant UTF-8 input preserves the payload bytes after BOM handling.
     [[nodiscard]] auto toU8String(
         StringEncoding encoding,
         StringBomMode bomMode = StringBomMode::Automatic,

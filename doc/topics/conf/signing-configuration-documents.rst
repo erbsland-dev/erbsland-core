@@ -49,7 +49,7 @@ public-key workflow should keep the private key in protected storage or behind a
 
 .. erbsland-demo::
     :source: conf/ConfigurationSignatures/HmacSignatureSigner.hpp
-    :source-sha256: e0a3572b454fa7fecd579cbe38236bb40ea4e2792affec20456b49b00a502ecc
+    :sha256: 15645dd4cb7e95fab2b584cd3030a4d87441a6211c92a9e68ef3010c17b2ef4d
 
 .. code-block:: cpp
 
@@ -78,7 +78,7 @@ public-key workflow should keep the private key in protected storage or behind a
             authenticator.update(data.documentDigest);
             const auto encoded =
                 el::base_n::BaseNEncoder{authenticator.finalize(), el::base_n::BaseNFormat::base64()}.toString();
-            return el::String::fromJoined({"hmac-sha256;"_el, data.signingPersonText, ";"_el, encoded});
+            return el::join("hmac-sha256;"_el, data.signingPersonText, ";"_el, encoded);
         }
 
     private:
@@ -108,7 +108,7 @@ strict validator.
 .. erbsland-demo::
     :source: conf/ConfigurationSignatures/SignDocuments.cpp
     :exec: conf/configuration_signatures --demo SignDocuments
-    :source-sha256: 21adf518216abec1a693e463c93556b891db97db8e7210f8576aae1d490760e5
+    :sha256: ef9c24a954ec0e22dbea2c01a530feda1259bc9276e57a9d4c42757ca1282bd4
 
 .. code-block:: cpp
 
@@ -151,13 +151,15 @@ strict validator.
         el::io::printLine("Verified ensemble: "_el, document->getTextOrThrow("ensemble.name"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Signed file: ensemble.signed.elcl
-    Signer: 佐藤 美咲
-    Reviewed ensemble: 和太鼓 星
-    Verified ensemble: 和太鼓 星
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSigned file: ensemble.signed.elcl
+        Signer: 佐藤 美咲
+        Reviewed ensemble: 和太鼓 星
+        Verified ensemble: 和太鼓 星␛[0m
 
 .. erbsland-demo-end::
 
@@ -167,8 +169,8 @@ signature policy.
 Sign every file that will be deployed, and perform the final root parse only after all signed files are in their
 intended locations.
 
-Keep the Reviewed Bytes Stable
-==============================
+Signing the Exact Reviewed Document Bytes
+=========================================
 
 Every byte below the signature line contributes to the digest.
 Changing whitespace, comments, line endings, or the final newline invalidates the signature even when the resulting

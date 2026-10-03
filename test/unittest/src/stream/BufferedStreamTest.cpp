@@ -1,20 +1,20 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteArray.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/stream/impl/BufferedByteInputStream.hpp>
 #include <erbsland/stream/impl/BufferedByteInputStreamData.hpp>
 #include <erbsland/stream/impl/BufferedByteOutputStream.hpp>
 #include <erbsland/stream/impl/BufferedByteOutputStreamData.hpp>
 #include <erbsland/stream/impl/EncodedTextOutputStream.hpp>
 #include <erbsland/stream/impl/InputStreamFactory.hpp>
-#include <erbsland/stream/impl/IoService.hpp>
 #include <erbsland/stream/impl/NativeByteStream.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringBomMode.hpp>
-#include <erbsland/text/StringEncoding.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/StringBomMode.hpp>
+#include <erbsland/StringEncoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/util/impl/worker_executor/WorkerServices.hpp>
 
 #include <algorithm>
 #include <array>
@@ -34,17 +34,18 @@ using el::stream::StreamPositionOrigin;
 using el::stream::StreamReadStatus;
 using el::stream::StreamWaitStatus;
 using el::stream::StreamWriteStatus;
-using el::unit::ByteLength;
+using el::unit::ByteCount;
 using el::unit::ByteOffset;
 using namespace el::text::literals;
 
 TESTED_TARGETS(
-    BufferedByteInputStream BufferedByteInputStreamData BufferedByteOutputStream BufferedByteOutputStreamData IoService
-        StreamState StreamReadStatus StreamWriteStatus StreamCloseStatus StreamWaitStatus InputStreamSettings
-            OutputStreamSettings)
+    BufferedByteInputStream BufferedByteInputStreamData BufferedByteOutputStream BufferedByteOutputStreamData
+        WorkerServices StreamState StreamReadStatus StreamWriteStatus StreamCloseStatus StreamWaitStatus
+            InputStreamSettings OutputStreamSettings)
 class BufferedStreamTest final : public el::UnitTest {
     class NativeStream final : public el::stream::impl::NativeByteStream {
     public:
+        [[nodiscard]] auto initialFileSize() const noexcept -> ByteCount override { return capturedSize; }
         [[nodiscard]] auto supportsPositioning() const noexcept -> bool override { return positionable; }
         [[nodiscard]] auto position() const -> el::unit::ByteIndex override {
             if (!positionable) {
@@ -73,8 +74,9 @@ class BufferedStreamTest final : public el::UnitTest {
             return setPosition(target);
         }
 
-        [[nodiscard]] auto read(const el::mem::ByteSpan destination) -> ByteLength override {
+        [[nodiscard]] auto read(const el::mem::ByteSpan destination) -> ByteCount override {
             auto lock = std::unique_lock{mutex};
+            ++readCalls;
             readStarted.store(true);
             condition.notify_all();
             condition.wait(lock, [this] { return readAllowed || aborted.load(); });
@@ -84,17 +86,17 @@ class BufferedStreamTest final : public el::UnitTest {
                     throw el::stream::StreamError{el::stream::StreamErrorContext{
                         "Failed to read from the test stream."_el, "The native test read failed after aborting."_el}};
                 }
-                return ByteLength::zero();
+                return ByteCount::zero();
             }
             if (streamPosition >= input.size()) {
                 readFinished.store(true);
-                return ByteLength::zero();
+                return ByteCount::zero();
             }
-            const auto count = std::min(destination.size(), input.size() - streamPosition);
+            const auto count = std::min({destination.size(), input.size() - streamPosition, maximumRead});
             std::copy_n(input.data() + streamPosition, count, destination.data());
             streamPosition += count;
             readFinished.store(true);
-            return ByteLength::fromSizeT(count);
+            return ByteCount::fromSizeT(count);
         }
 
         void write(const el::mem::ConstByteSpan bytes) override {
@@ -145,6 +147,9 @@ class BufferedStreamTest final : public el::UnitTest {
         std::condition_variable condition;
         std::vector<Byte> input;
         std::vector<Byte> output;
+        ByteCount capturedSize{ByteCount::infinite()};
+        std::size_t maximumRead{65536U};
+        std::atomic<unsigned int> readCalls{0U};
         std::size_t streamPosition{0U};
         bool positionable{false};
         bool readAllowed{false};
@@ -168,7 +173,7 @@ class BufferedStreamTest final : public el::UnitTest {
         return el::stream::OutputStreamSettings{}
             .setTimeout(el::time::TimeDelta::milliseconds(20))
             .setBuffering(el::stream::StreamBuffering::MinimalMemory)
-            .setBackBufferLimit(ByteLength{8U});
+            .setBackBufferLimit(ByteCount{8U});
     }
 
     void requireEventually(const std::atomic<bool> &value) {
@@ -189,6 +194,65 @@ class BufferedStreamTest final : public el::UnitTest {
     }
 
 public:
+    void testSmallFileCompletesInOneWorkerOperation() {
+        constexpr auto sizeHints = std::array{ByteCount{0U}, ByteCount{1U}, ByteCount{20U}};
+        for (const auto sizeHint : sizeHints) {
+            for (const auto sensitive : {false, true}) {
+                const auto native = std::make_shared<NativeStream>();
+                native->capturedSize = sizeHint;
+                native->input = {Byte{1U}, Byte{2U}, Byte{3U}};
+                native->maximumRead = 2U;
+                native->allowReads();
+                const auto data = std::make_shared<el::stream::impl::BufferedByteInputStreamData>(
+                    native, inputSettings().setSensitive(sensitive));
+                data->back = std::make_unique<el::mem::RingBuffer>(ByteCount{4096U});
+                data->back->setSensitive(sensitive);
+                data->readInProgress = true;
+                // Exercise exactly one worker operation, independently of executor timing.
+                data->performRead();
+                REQUIRE(data->finished);
+                REQUIRE_FALSE(data->readInProgress);
+                REQUIRE_EQUAL(native->readCalls.load(), 3U);
+                REQUIRE_FALSE(data->back);
+                REQUIRE(data->front);
+                REQUIRE_EQUAL(data->front->length(), ByteCount{3U});
+                REQUIRE_EQUAL(data->front->isSensitive(), sensitive);
+                REQUIRE_EQUAL(data->front->read(ByteCount{3U}), el::mem::ByteBlock({1U, 2U, 3U}));
+            }
+        }
+    }
+
+    void testRegularFileReadKeepsTimeoutAndAbort() {
+        const auto native = std::make_shared<NativeStream>();
+        native->capturedSize = ByteCount{1U};
+        native->input = {Byte{42U}};
+        auto stream = el::stream::impl::BufferedByteInputStream{native, inputSettings()};
+        REQUIRE_EQUAL(stream.initialFileSize(), ByteCount{1U});
+        REQUIRE_EQUAL(stream.readByte().status(), StreamReadStatus::Timeout);
+        stream.abort();
+        requireEventually(native->readFinished);
+        REQUIRE_EQUAL(stream.state(), el::stream::StreamState::Closed);
+    }
+
+    void testRegularFileBufferBoundaryAndPositioning() {
+        for (const auto length : {0U, 4095U, 4096U, 4097U, 12000U}) {
+            const auto native = std::make_shared<NativeStream>();
+            native->capturedSize = ByteCount::fromInteger(length);
+            native->positionable = true;
+            native->input.resize(length, Byte{42U});
+            native->allowReads();
+            auto settings = inputSettings();
+            settings.setTimeout(el::time::TimeDelta::seconds(1));
+            auto stream = el::stream::impl::BufferedByteInputStream{native, settings};
+            const auto result = stream.readAll(ByteCount{12001U});
+            REQUIRE_EQUAL(result.data(), el::mem::ByteBlock::fromSpan(el::mem::ConstByteSpan{native->input}));
+            REQUIRE_EQUAL(stream.readByte().status(), StreamReadStatus::Finished);
+            REQUIRE_EQUAL(stream.position(), el::unit::ByteIndex::fromInteger(length));
+            REQUIRE(stream.setPosition(el::unit::ByteIndex{0U}).isSuccess());
+            REQUIRE_EQUAL(stream.readAll(ByteCount{12001U}).data(), result.data());
+        }
+    }
+
     void testInputFactorySelectsStoragePolicy() {
         const auto ordinaryNative = std::make_shared<NativeStream>();
         ordinaryNative->input = {Byte{1U}};
@@ -208,27 +272,27 @@ public:
         REQUIRE(sensitive->inputSettings().isSensitive());
         const auto sensitiveWait = sensitive->waitForReady();
         REQUIRE(sensitiveWait.isReady());
-        const auto sensitiveData = sensitive->read(ByteLength{1U}).data();
+        const auto sensitiveData = sensitive->read(ByteCount{1U}).data();
         REQUIRE_EQUAL(sensitiveData, el::mem::ByteBlock({2U}));
         REQUIRE(sensitiveData.isSensitive());
     }
 
-    void testDataTypesAndIoServiceAreAccessible() {
+    void testDataTypesAndWorkerServicesAreAccessible() {
         const auto native = std::make_shared<NativeStream>();
         const auto inputData = std::make_shared<el::stream::impl::BufferedByteInputStreamData>(native, inputSettings());
         const auto outputData =
             std::make_shared<el::stream::impl::BufferedByteOutputStreamData>(native, outputSettings());
 
         REQUIRE_EQUAL(inputData->native, native);
-        REQUIRE_EQUAL(inputData->front.capacity(), ByteLength{4U * 1024U});
+        REQUIRE_FALSE(inputData->front);
+        REQUIRE_FALSE(inputData->back);
         REQUIRE_EQUAL(outputData->native, native);
-        REQUIRE_EQUAL(outputData->front.capacity(), ByteLength{4U * 1024U});
-        REQUIRE_EQUAL(&el::stream::impl::IoService::service(), &el::stream::impl::IoService::service());
-        REQUIRE_EQUAL(el::stream::impl::IoService::cMaximumWorkerCount, 128U);
+        REQUIRE_EQUAL(outputData->front.capacity(), ByteCount{4U * 1024U});
+        REQUIRE_EQUAL(&el::util::impl::worker_services::io(), &el::util::impl::worker_services::io());
 
         const auto promise = std::make_shared<std::promise<void>>();
         auto future = promise->get_future();
-        el::stream::impl::IoService::submitIoWork([promise] { promise->set_value(); });
+        el::util::impl::worker_services::io().submit([promise] { promise->set_value(); });
         REQUIRE_EQUAL(future.wait_for(std::chrono::milliseconds{500}), std::future_status::ready);
     }
 
@@ -245,7 +309,7 @@ public:
         REQUIRE_EQUAL(wait, StreamWaitStatus::Ready);
         const auto result = stream.read(el::mem::ByteSpan{bytes});
         REQUIRE_EQUAL(result, StreamReadStatus::Data);
-        REQUIRE_EQUAL(result.data(), ByteLength{3U});
+        REQUIRE_EQUAL(result.data(), ByteCount{3U});
         REQUIRE_EQUAL(bytes[0], Byte{1U});
     }
 
@@ -325,7 +389,7 @@ public:
     void testBufferedCharacterCapacityFailureIsAtomic() {
         const auto native = std::make_shared<NativeStream>();
         auto settings = outputSettings();
-        settings.setBackBufferLimit(ByteLength{3U});
+        settings.setBackBufferLimit(ByteCount{3U});
         const auto byteStream = std::make_shared<el::stream::impl::BufferedByteOutputStream>(native, settings);
         auto stream = el::stream::impl::EncodedTextOutputStream{
             byteStream, el::text::StringEncoding::Utf32, el::text::StringBomMode::Reject};
@@ -346,7 +410,7 @@ public:
 
         REQUIRE(stream.waitForReady().isReady());
         REQUIRE_EQUAL(stream.position(), el::unit::ByteIndex{0U});
-        REQUIRE_EQUAL(stream.read(el::mem::ByteSpan{bytes}).data(), ByteLength{2U});
+        REQUIRE_EQUAL(stream.read(el::mem::ByteSpan{bytes}).data(), ByteCount{2U});
         REQUIRE_EQUAL(stream.position(), el::unit::ByteIndex{2U});
         REQUIRE(stream.movePosition(StreamPositionOrigin::Current, ByteOffset{-1}).isSuccess());
         REQUIRE_EQUAL(stream.position(), el::unit::ByteIndex{1U});
@@ -365,7 +429,7 @@ public:
         native->allowReads();
 
         REQUIRE(stream.waitForReady().isReady());
-        REQUIRE(stream.read(ByteLength{4U}).isFinished());
+        REQUIRE(stream.read(ByteCount{4U}).isFinished());
     }
 
     void testOutputPositionWaitsForAcceptedWrites() {

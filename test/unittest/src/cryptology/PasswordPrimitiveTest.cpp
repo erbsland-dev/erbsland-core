@@ -3,13 +3,13 @@
 
 #include "CryptologyTestHelper.hpp"
 
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
 #include <erbsland/cryptology/impl/algorithm/Argon2id.hpp>
 #include <erbsland/cryptology/impl/algorithm/Blake2b.hpp>
 #include <erbsland/cryptology/impl/algorithm/HmacSha256.hpp>
 #include <erbsland/cryptology/impl/algorithm/Scrypt.hpp>
-#include <erbsland/mem/ByteArray.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
 #include <erbsland/mem/impl/UnsafeByteArrayAccess.hpp>
 
 #include <span>
@@ -47,17 +47,17 @@ public:
         const auto secret = sensitiveBytes("secret-prefix");
         const auto message = sensitiveBytes("known-message");
 
-        auto erased = Blake2b{ByteLength{32U}};
+        auto erased = Blake2b{ByteCount{32U}};
         erased.update(raw(secret));
         erased.secureErase();
         erased.update(raw(message));
         const auto erasedDigest = ByteBlock{erased.digest()};
         REQUIRE(erasedDigest.isSensitive());
 
-        auto fresh = Blake2b{ByteLength{32U}};
+        auto fresh = Blake2b{ByteCount{32U}};
         fresh.update(raw(message));
         const auto freshDigest = ByteBlock{fresh.digest()};
-        REQUIRE_EQUAL(erasedDigest.length(), ByteLength{32U});
+        REQUIRE_EQUAL(erasedDigest.length(), ByteCount{32U});
         REQUIRE_EQUAL(erasedDigest, freshDigest);
 
         erased.secureErase();
@@ -67,7 +67,7 @@ public:
     }
 
     void testHmacSha256RfcVector() {
-        auto key = ByteBlockEditor{ByteLength{20U}};
+        auto key = ByteBlockEditor{ByteCount{20U}};
         for (auto index = ByteIndex::zero(); index < ByteIndex{20U}; ++index) {
             key.set(index, Byte{0x0bU});
         }
@@ -132,7 +132,7 @@ public:
 private:
     void requireBlake2b(const std::string_view message, const std::string_view expectedHex) {
         const auto input = sensitiveBytes(message);
-        const auto actual = ByteBlock{Blake2b{ByteLength{64U}}.digest(raw(input))};
+        const auto actual = ByteBlock{Blake2b{ByteCount{64U}}.digest(raw(input))};
         REQUIRE(actual.isSensitive());
         const auto expected = ByteBlock{bytesFromHex(expectedHex)};
         REQUIRE_EQUAL(actual, expected);
@@ -157,7 +157,7 @@ private:
     }
 
     [[nodiscard]] static auto repeatedBytes(const std::size_t size, const uint8_t value) -> ByteBlock {
-        auto result = ByteBlockEditor{ByteLength::fromSizeT(size)};
+        auto result = ByteBlockEditor{ByteCount::fromSizeT(size)};
         result.markAsSensitive();
         result.fill(Byte{value});
         return result;

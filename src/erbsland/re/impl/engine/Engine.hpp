@@ -102,8 +102,8 @@ public: // run the engine.
         if (_data->hasAtomicGroups) {
             flags.set(EngineFlag::AtomicGroups);
         }
-        auto state =
-            std::make_unique<EngineState>(std::move(input), captureGroupNames().size() + 1, flags, _data->counterCount);
+        auto state = std::make_unique<EngineState>(
+            std::move(input), captureGroupNames().count().toSizeT() + 1, flags, _data->counterCount);
         state->initialize();
         if (_settings.timeout() != std::chrono::milliseconds::zero()) {
             state->watchdog.setTimeout(_settings.timeout());

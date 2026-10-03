@@ -8,7 +8,7 @@
 #include "../source/SocketBufferLimits.hpp"
 
 #include "../../time/TimeDelta.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 namespace erbsland::network {
@@ -20,12 +20,10 @@ public:
     static constexpr auto cDefaultMaximumConcurrentRequests = unit::ItemCount{8U}; ///< Active requests.
     static constexpr auto cDefaultMaximumPendingRequests = unit::ItemCount{256U};  ///< Queued requests.
     static constexpr auto cDefaultMaximumRetainedRequestBodyLength =
-        unit::ByteLength{64U * 1024U * 1024U};                                     ///< Session fixed-body quota.
-    static constexpr auto cDefaultMaximumBodyLength =
-        unit::ByteLength{16U * 1024U * 1024U};                                     ///< Decoded response bound.
-    static constexpr auto cDefaultMaximumQueueLength =
-        unit::ByteLength{1024U * 1024U};                                           ///< Per-transaction queue bound.
-    static constexpr auto cDefaultMaximumStartLineLength = unit::ByteLength{8U * 1024U};     ///< Status-line bound.
+        unit::ByteCount{64U * 1024U * 1024U};                                      ///< Session fixed-body quota.
+    static constexpr auto cDefaultMaximumBodyLength = unit::ByteCount{16U * 1024U * 1024U}; ///< Decoded response bound.
+    static constexpr auto cDefaultMaximumQueueLength = unit::ByteCount{1024U * 1024U}; ///< Per-transaction queue bound.
+    static constexpr auto cDefaultMaximumStartLineLength = unit::ByteCount{8U * 1024U};      ///< Status-line bound.
     static constexpr auto cDefaultMaximumIdleConnections = unit::ItemCount{8U};              ///< Global idle cap.
     static constexpr auto cDefaultMaximumTransactionsPerConnection = unit::ItemCount{1000U}; ///< Reuse cap.
     inline static const auto cDefaultDnsTimeout = time::TimeDelta::seconds(10);              ///< DNS deadline.
@@ -52,32 +50,32 @@ public:                                                                         
         return *this;
     }
     /// Get the aggregate retained fixed-body quota.
-    [[nodiscard]] auto maximumRetainedRequestBodyLength() const noexcept -> unit::ByteLength {
+    [[nodiscard]] auto maximumRetainedRequestBodyLength() const noexcept -> unit::ByteCount {
         return _maximumRetainedBody;
     }
     /// Set the aggregate retained fixed-body quota.
-    auto setMaximumRetainedRequestBodyLength(unit::ByteLength value) noexcept -> HttpClientSessionOptions & {
+    auto setMaximumRetainedRequestBodyLength(unit::ByteCount value) noexcept -> HttpClientSessionOptions & {
         _maximumRetainedBody = value;
         return *this;
     }
     /// Get the decoded response hard maximum.
-    [[nodiscard]] auto maximumBodyLength() const noexcept -> unit::ByteLength { return _maximumBody; }
+    [[nodiscard]] auto maximumBodyLength() const noexcept -> unit::ByteCount { return _maximumBody; }
     /// Set the decoded response hard maximum.
-    auto setMaximumBodyLength(unit::ByteLength value) noexcept -> HttpClientSessionOptions & {
+    auto setMaximumBodyLength(unit::ByteCount value) noexcept -> HttpClientSessionOptions & {
         _maximumBody = value;
         return *this;
     }
     /// Get the transaction queue maximum.
-    [[nodiscard]] auto maximumQueueLength() const noexcept -> unit::ByteLength { return _maximumQueue; }
+    [[nodiscard]] auto maximumQueueLength() const noexcept -> unit::ByteCount { return _maximumQueue; }
     /// Set the transaction queue maximum.
-    auto setMaximumQueueLength(unit::ByteLength value) noexcept -> HttpClientSessionOptions & {
+    auto setMaximumQueueLength(unit::ByteCount value) noexcept -> HttpClientSessionOptions & {
         _maximumQueue = value;
         return *this;
     }
     /// Get the response status-line maximum.
-    [[nodiscard]] auto maximumStartLineLength() const noexcept -> unit::ByteLength { return _maximumStartLine; }
+    [[nodiscard]] auto maximumStartLineLength() const noexcept -> unit::ByteCount { return _maximumStartLine; }
     /// Set the response status-line maximum.
-    auto setMaximumStartLineLength(unit::ByteLength value) noexcept -> HttpClientSessionOptions & {
+    auto setMaximumStartLineLength(unit::ByteCount value) noexcept -> HttpClientSessionOptions & {
         _maximumStartLine = value;
         return *this;
     }
@@ -183,23 +181,23 @@ public:                                                                         
     }
 
 private:
-    unit::ItemCount _maximumConcurrent{cDefaultMaximumConcurrentRequests};           ///< Active request cap.
-    unit::ItemCount _maximumPending{cDefaultMaximumPendingRequests};                 ///< Pending request cap.
-    unit::ByteLength _maximumRetainedBody{cDefaultMaximumRetainedRequestBodyLength}; ///< Fixed-body quota.
-    unit::ByteLength _maximumBody{cDefaultMaximumBodyLength};                        ///< Response bound.
-    unit::ByteLength _maximumQueue{cDefaultMaximumQueueLength};                      ///< Codec queue bound.
-    unit::ByteLength _maximumStartLine{cDefaultMaximumStartLineLength};              ///< Status-line bound.
-    HttpHeaderLimits _headerLimits;                                                  ///< Header bounds.
-    SocketBufferLimits _socketBufferLimits;                                          ///< Socket queue bounds.
-    HttpCookieJarOptions _cookieJarOptions;                                          ///< Cookie storage bounds.
-    time::TimeDelta _dnsTimeout{cDefaultDnsTimeout};                                 ///< DNS deadline.
-    time::TimeDelta _connectTimeout{cDefaultConnectTimeout};                         ///< TCP deadline.
-    time::TimeDelta _headerTimeout{cDefaultHeaderTimeout};                           ///< Head deadline.
-    time::TimeDelta _bodyIdleTimeout{cDefaultBodyIdleTimeout};                       ///< Body idle deadline.
-    time::TimeDelta _overallTimeout{cDefaultOverallTimeout};                         ///< Overall deadline.
-    time::TimeDelta _closeTimeout{cDefaultCloseTimeout};                             ///< Close deadline.
-    time::TimeDelta _idleConnectionTimeout{cDefaultIdleConnectionTimeout};           ///< Idle reuse deadline.
-    unit::ItemCount _maximumIdleConnections{cDefaultMaximumIdleConnections};         ///< Global idle cap.
+    unit::ItemCount _maximumConcurrent{cDefaultMaximumConcurrentRequests};          ///< Active request cap.
+    unit::ItemCount _maximumPending{cDefaultMaximumPendingRequests};                ///< Pending request cap.
+    unit::ByteCount _maximumRetainedBody{cDefaultMaximumRetainedRequestBodyLength}; ///< Fixed-body quota.
+    unit::ByteCount _maximumBody{cDefaultMaximumBodyLength};                        ///< Response bound.
+    unit::ByteCount _maximumQueue{cDefaultMaximumQueueLength};                      ///< Codec queue bound.
+    unit::ByteCount _maximumStartLine{cDefaultMaximumStartLineLength};              ///< Status-line bound.
+    HttpHeaderLimits _headerLimits;                                                 ///< Header bounds.
+    SocketBufferLimits _socketBufferLimits;                                         ///< Socket queue bounds.
+    HttpCookieJarOptions _cookieJarOptions;                                         ///< Cookie storage bounds.
+    time::TimeDelta _dnsTimeout{cDefaultDnsTimeout};                                ///< DNS deadline.
+    time::TimeDelta _connectTimeout{cDefaultConnectTimeout};                        ///< TCP deadline.
+    time::TimeDelta _headerTimeout{cDefaultHeaderTimeout};                          ///< Head deadline.
+    time::TimeDelta _bodyIdleTimeout{cDefaultBodyIdleTimeout};                      ///< Body idle deadline.
+    time::TimeDelta _overallTimeout{cDefaultOverallTimeout};                        ///< Overall deadline.
+    time::TimeDelta _closeTimeout{cDefaultCloseTimeout};                            ///< Close deadline.
+    time::TimeDelta _idleConnectionTimeout{cDefaultIdleConnectionTimeout};          ///< Idle reuse deadline.
+    unit::ItemCount _maximumIdleConnections{cDefaultMaximumIdleConnections};        ///< Global idle cap.
     unit::ItemCount _maximumTransactionsPerConnection{cDefaultMaximumTransactionsPerConnection}; ///< Reuse cap.
     bool _automaticCookies{true};                                                                ///< Cookie automation.
     bool _connectionReuse{true};                                                                 ///< Sequential reuse.

@@ -6,6 +6,9 @@
 
 #include "../ProfileTypes.hpp"
 
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
+
 namespace app::string::impl {
 
 /// Unexpanded string-profiler scenario configuration.
@@ -15,7 +18,7 @@ struct ScenarioTemplate {
     std::vector<StringWidth> widths;
     std::vector<StringType> types;
     std::vector<UseCase> useCases;
-    std::vector<el::String> variants;
+    el::StringList variants;
     std::vector<ContentProfile> contentProfiles{ContentProfile::Mixed};
     std::vector<SizeMode> sizeModes{SizeMode::Fixed};
     std::uint64_t sizeMinimum{4096U};

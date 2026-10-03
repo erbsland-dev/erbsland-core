@@ -27,9 +27,6 @@ __pycache__
 # security/privacy
 .env
 .output*
-utilities/_conf
-utilities/_logs
-utilities/conf/reference_doc.draft.elcl
 /*.log
 
 # Hosting and building
@@ -38,9 +35,15 @@ utilities/conf/reference_doc.draft.elcl
 build
 _build
 _profile
+/fuzzing/
 _doxygen_input
 temporary_data
 
 # Common temporary development files
 TODO.md
 /tmp
+
+# Locally bootstrapped development tool.
+/erbsland-core-tool
+/tool/bin/*
+!/tool/bin/.gitkeep

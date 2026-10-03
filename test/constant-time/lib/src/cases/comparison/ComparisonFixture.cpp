@@ -1,23 +1,23 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ComparisonFixture.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteArray.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
 using namespace el::text::literals;
 
 ComparisonFixture::ComparisonFixture(
-    el::Random &random, const bool population, std::size_t size, ComparisonMode mode, ComparisonContainer container) :
+    el::Random &random, const bool population, el::ByteCount size, ComparisonMode mode, ComparisonContainer container) :
     _container{container} {
 
     auto left = input(random, mode == ComparisonMode::FixedRandom && population, size);
@@ -28,13 +28,14 @@ ComparisonFixture::ComparisonFixture(
     auto right = el::ByteBuffer{left.span()};
     require(left.span().data() != right.span().data());
     if (mode == ComparisonMode::MismatchPosition) {
-        right.set(el::ByteIndex{population ? size - 1 : 0}, el::Byte{0x54U});
+        right.set(
+            el::ByteIndex::end(population ? size - el::ByteCount::one() : el::ByteCount::zero()), el::Byte{0x54U});
     }
     _left = std::move(left);
     _right = std::move(right);
     _leftBlock = el::ByteBlock::fromSpan(_left.span());
     _rightBlock = el::ByteBlock::fromSpan(_right.span());
-    if (size == 32) {
+    if (size == el::ByteCount{32U}) {
         _leftArray = el::ByteArray<32>::fromSpanOrThrow(_left.span());
         _rightArray = el::ByteArray<32>::fromSpanOrThrow(_right.span());
     }
@@ -63,7 +64,7 @@ auto ComparisonFixture::measure(const uint64_t repetitions) -> uint64_t {
     case ComparisonContainer::Array:
         return repeat(repetitions, [this]() -> uint64_t { return sample<ComparisonContainer::Array>(); });
     }
-    throw el::LogicError{"Unknown sample operation."_el};
+    throw el::LogicFailure{"Unknown sample operation."_el};
 }
 
 }

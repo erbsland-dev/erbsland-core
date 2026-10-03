@@ -19,6 +19,10 @@
 namespace erbsland::log {
 
 /// Interface for background log targets.
+/// Implementations report expected delivery and flush failures with concrete `err::RuntimeError` subclasses.
+/// The manager contains and counts these failures; other exception types terminate the worker.
+/// Custom writers document their concrete error types alongside the implementation.
+/// @seedoc{/reference/log/logging}
 /// @tested{LogWriterTest}
 class LogWriter {
     friend class impl::LogManagerData;
@@ -76,19 +80,21 @@ public:
     // defaults
     virtual ~LogWriter() = default;
     /// Deliver one filtered entry and its formatted line.
-    /// The manager calls this method only on its private worker and contains any exception it propagates.
+    /// The manager calls this method only on its private worker and contains runtime failures as described above.
     /// @param entry The nonempty shared immutable producer-created entry accepted by the route.
     /// @param line The nonempty shared immutable line formatted from `entry` using the active configuration.
-    /// @throws Any implementation-specific delivery exception. The manager contains and counts it.
+    /// @throws stream::StreamError If delivery to an output stream fails.
+    /// @throws path::PathError If accessing a file destination fails.
     virtual void write(const LogEntryConstPtr &entry, const LogLineConstPtr &line) = 0;
     /// Deliver a batch of filtered entries and formatted lines.
     /// The default implementation calls `write()` for every item in order. Writers can override this method to
     /// amortize target checks and system calls over the batch.
     /// @param batch The ordered nonempty batch to deliver during the call.
-    /// @throws Any implementation-specific delivery exception. The manager contains and counts it.
+    /// @throws stream::StreamError If delivery to an output stream fails.
+    /// @throws path::PathError If accessing a file destination fails.
     virtual void writeBatch(Batch batch);
     /// Flush any buffered writer data.
-    /// @throws Any implementation-specific delivery exception. The manager contains and counts it.
+    /// @throws stream::StreamError If flushing an output stream fails.
     virtual void flush() {}
     /// Release writer resources before manager shutdown.
     virtual void close() noexcept {}

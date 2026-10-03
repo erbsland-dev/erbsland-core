@@ -62,6 +62,15 @@ The header also sets up the ``el`` short namespace alias for ``erbsland``.
 This can be disabled with ``ERBSLAND_NO_SHORT_NAMESPACE`` or customized with ``ERBSLAND_SHORT_NAMESPACE`` to use a
 different namespace name.
 
+Namespace View
+==============
+
+Public headers use ``Definitions.hpp`` to enable the :doc:`flattened namespace <make_one_namespace>` for consumers.
+Define ``ERBSLAND_CORE_DO_NOT_FLATTEN_NS`` on a consumer target to use explicit domain namespaces instead.
+This does not disable the short namespace alias.
+Core's private ``ERBSLAND_CORE_BUILDING_LIBRARY`` marker always prevents flattening during library compilation.
+Consumers must not define that internal marker or include the internal flattening headers directly.
+
 Interface
 =========
 

@@ -14,14 +14,17 @@
 #include "impl/ApplicationData_fwd.hpp"
 #include "impl/ApplicationInstanceManager_fwd.hpp"
 
+#include "../block/Size.hpp"
 #include "../cryptology/configuration/CryptologyConfiguration_fwd.hpp"
 #include "../cterm/Terminal_fwd.hpp"
 #include "../cterm/TerminalDocumentStyle.hpp"
+#include "../cterm/TerminalFlags.hpp"
 #include "../event/EventLoop_fwd.hpp"
+#include "../event/EventLoopOptions.hpp"
 #include "../event/EventRegistry_fwd.hpp"
 #include "../event/Events_fwd.hpp"
 #include "../event/EventThread_fwd.hpp"
-#include "../i18n/DisplayTextMap_fwd.hpp"
+#include "../i18n/DisplayText_fwd.hpp"
 #include "../log/LogManager_fwd.hpp"
 #include "../log/LogStream_fwd.hpp"
 #include "../options/Options_fwd.hpp"
@@ -49,7 +52,6 @@ namespace erbsland::core {
 /// @tested{ApplicationEventTest ApplicationLogTest ApplicationOptionsTest ApplicationServiceLifecycleTest}
 class Application {
     friend class impl::ApplicationInstanceManager;
-    friend auto application() -> Application &;
 
 public:
     /// Create an application without command line arguments.
@@ -72,18 +74,14 @@ public:
     auto operator=(Application &&) -> Application & = delete;
 
 public: // methods to enable features
-    /// Enable advanced terminal output.
-    /// Call this immediately after constructing the Application object.
-    /// Either from `main` or as one of the first lines in your custom `initialize()` method.
-    /// In this call, a terminal instance is created for the lifetime of this application.
-    /// The terminal is automatically shutdown when the program exits, do not call `initialize()` or
-    /// `shutdown()` from your user code.
-    /// If a tty is detected, `el::stdOut()` and `el::stdErr()` are redirected to the terminal.
-    /// Output from `el::stdOut()` always resets the color to the default color while output from
-    /// `el::stdErr()` is output in bright red. This is just for convenience to keep inferring output
-    /// from these channels readable.
-    /// The idea is that you use the terminal instance via `terminal()` for all your application output.
-    void enableTerminal();
+    /// Enable advanced terminal output with automatic lifecycle and standard-stream routing.
+    /// @seedoc{/reference/core/application_framework}
+    /// @param flags Terminal backend flags; ignored if the terminal is already enabled.
+    void enableTerminal(cterm::TerminalFlags flags = {});
+    /// Enable terminal output with an explicit initial screen size.
+    /// @param size Initial size, retained when native detection is unavailable or virtual mode is selected.
+    /// @param flags Terminal backend flags; repeated calls do not change an enabled terminal.
+    void enableTerminal(block::Size size, cterm::TerminalFlags flags = {});
     /// Enable foreground-daemon and Windows service lifecycle integration.
     /// Call this after construction and before `run()`. Repeated calls are ignored.
     void enableServiceLifecycle();
@@ -91,35 +89,54 @@ public: // methods to enable features
 public: // service startup feedback
     /// Report that startup is still in progress.
     /// This disables automatic readiness until `reportStartupComplete()` is called. Repeated calls report progress.
+    /// Requires enabled service lifecycle support and startup that has not yet completed.
     /// @param expectedRemainingTime Positive expected time until startup completes.
-    /// @throws err::LogicError If service lifecycle support is not enabled or startup already completed.
-    /// @throws err::ParameterError If `expectedRemainingTime` is not positive.
     void reportStartupPending(time::TimeDelta expectedRemainingTime);
     /// Report that application startup completed.
     /// This operation is idempotent.
-    /// @throws err::LogicError If service lifecycle support is not enabled.
+    /// Requires enabled service lifecycle support.
     void reportStartupComplete();
 
 protected: // customizable methods
     /// First initialization of the application.
     /// This method is called from `run()`, before any other methods are called.
-    /// @throws core::ApplicationError to exit the application with a message and exit code.
+    /// @throws ApplicationError to exit the application with a message and exit code.
     virtual void initialize();
     /// Register command line options.
     /// This method is called from `run()`, before `parseCommandLine()` is called.
-    /// @throws core::ApplicationError to exit the application with a message and exit code.
+    /// @throws ApplicationError to exit the application with a message and exit code.
     virtual void registerCommandLineOptions(const options::OptionsPtr &options);
     /// Parse all command line options.
+    /// Only override this method if you need to change the parsing of command line options!
+    /// Override `handleCommandLineOptions()` to handle parsed command line values.
+    /// This method is called from `run()`, before `handleCommandLineOptions()` is called.
+    /// @throws options::OptionError if command line parsing failed.
+    /// @throws ApplicationError to exit the application with a message and exit code.
     virtual void parseCommandLine();
+    /// Validate and handle parsed command line options.
+    /// Called after successful parsing, before application-part option handling and `main()`.
+    /// Skipped for help, version output, module overview, and parsing errors.
+    /// Does nothing by default.
+    /// @param values The parsed command line options.
+    /// @throws options::OptionError if validation of the parsed values fails.
+    /// @throws ApplicationError to exit the application with a message and exit code.
+    virtual void handleCommandLineOptions(const options::OptionValuesPtr &values);
     /// Execute the main functionality of the application.
     [[nodiscard]] virtual auto main() -> unit::ExitCode;
     /// Cleanup after the application has finished.
-    /// Must noch block or throw an exception.
+    /// This method is called after successful runs, but also *inside error handlers*.
+    /// It runs *outside the regular event loop* and should not block the application termination
+    /// longer than necessary to prevent deadlock situations.
+    /// Override this method if you require cleanup tasks that run just before `run()` returns.
     virtual void cleanup() noexcept;
     /// Create and initialize the terminal instance.
     /// This method is called from `enableTerminal()`.
     /// Only override this method if you need to customize the terminal instance.
-    [[nodiscard]] virtual auto createAndInitializeTerminal() -> cterm::TerminalPtr;
+    /// @param size The requested initial screen size.
+    /// @param flags The requested terminal backend flags.
+    /// @return The initialized terminal.
+    [[nodiscard]] virtual auto createAndInitializeTerminal(block::Size size, cterm::TerminalFlags flags)
+        -> cterm::TerminalPtr;
 
 public:
     /// Run the default application lifecycle.
@@ -127,7 +144,8 @@ public:
     /// - `initialize()`
     /// - `registerCommandLineOptions()`
     /// - `parseCommandLine()`
-    /// - `main()`
+    /// - `handleCommandLineOptions()` (only after successful parsing)
+    /// - `main()` (only after successful parsing)
     /// - `cleanup()`
     /// Exceptions thrown from callbacks in the automatically managed main event loop use the same boundary.
     /// If any `err::Exception` is thrown from one of these methods or callbacks, it will be handled by calling
@@ -201,9 +219,7 @@ public: // logging
 
 public: // system services
     /// Access the application display texts. The returned pointer is always non-null.
-    [[nodiscard]] auto displayText() const -> const i18n::DisplayTextMapConstPtr &;
-    /// Replace the application display texts. A null pointer restores the English defaults.
-    void setDisplayTextMap(i18n::DisplayTextMapConstPtr displayText);
+    [[nodiscard]] auto displayText() const -> i18n::DisplayTextPtr;
     /// Get the shared user and group lookup service.
     [[nodiscard]] auto userLookup() -> system::UserLookup &;
 
@@ -227,7 +243,9 @@ public: // event system
     /// Access the event registry.
     [[nodiscard]] auto eventRegistry() -> event::EventRegistry &;
     /// Create a managed event thread.
-    [[nodiscard]] auto createEventThread() -> event::ManagedEventThreadPtr;
+    /// @param options Capacity and default error policies, copied into the loop. The policies must be valid.
+    /// @return The new, unstarted event thread.
+    [[nodiscard]] auto createEventThread(const event::EventLoopOptions &options = {}) -> event::ManagedEventThreadPtr;
     /// Quit the main event loop, and the event loops of all registered threads.
     void quit(unit::ExitCode exitCode = unit::ExitCode::success()) noexcept;
 
@@ -255,17 +273,20 @@ public: // library version
     [[nodiscard]] static auto libraryVersionText() noexcept -> text::String;
 
 private:
-    /// Internal constructor.
-    /// Only used by the instance manager when creating a temporary application instance.
+    /// Create the temporary facade owned by the instance manager.
     explicit Application(impl::ApplicationDataPtr data);
     /// Execute initialization, main work, and cleanup inside the selected platform lifecycle.
     [[nodiscard]] auto runApplicationLifecycle() -> int;
     /// Bring a created part manager to a terminal state.
     void stopPartManager();
+    /// Quit and join managed event threads, then report a retained event failure.
+    void finishEventThreads();
     /// Request coordinated graceful shutdown through shared application data.
     static void requestQuit(const impl::ApplicationDataPtr &data, unit::ExitCode exitCode) noexcept;
     /// Release process integrations before the last application facade exits.
     void cleanupBeforeAppExit() noexcept;
+    /// Shutdown part manager and events threads in the case of an error.
+    void shutdownPartsAndEventThreadsInErrorHandler() noexcept;
 
 protected:
     impl::ApplicationDataPtr _data; ///< Shared internal application state.

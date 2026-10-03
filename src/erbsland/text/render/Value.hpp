@@ -8,10 +8,12 @@
 #include "impl/ValueData_fwd.hpp"
 
 #include "../String.hpp"
+#include "../StringList_fwd.hpp"
 #include "../StringLiteral.hpp"
 #include "../StringMap.hpp"
+#include "../StringSet_fwd.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../unit/ItemCount.hpp"
 #include "../../unit/ItemIndex.hpp"
 #include "../../util/List_fwd.hpp"
@@ -42,7 +44,7 @@ public:
     /// Create an integer value.
     Value(int64_t value); // NOLINT(*-explicit-constructor)
     /// Create an integer value from another integral type.
-    /// @throws err::ParameterError If `value` does not fit into `int64_t`.
+    /// @param value The integer to store. Must fit in `int64_t`.
     template <std::integral T>
         requires(!std::same_as<std::remove_cv_t<T>, bool> && !std::same_as<std::remove_cv_t<T>, int64_t>)
     Value(const T value) : Value{checkedInteger(value)} {} // NOLINT(*-explicit-constructor)
@@ -54,6 +56,12 @@ public:
     Value(const T value) : Value{static_cast<double>(value)} {} // NOLINT(*-explicit-constructor)
     /// Create a list value.
     Value(const util::List<Value> &value); // NOLINT(*-explicit-constructor)
+    /// Create a list of text values in string-list order, preserving empty strings and duplicates.
+    /// @param value The strings to copy. Later changes to the source list do not affect this value.
+    Value(const StringList &value); // NOLINT(*-explicit-constructor)
+    /// Create a list of text values in string-set iteration order.
+    /// @param value The strings to copy. Later changes to the source set do not affect this value.
+    Value(const StringSet &value); // NOLINT(*-explicit-constructor)
     /// Create a map value.
     Value(const StringMap<Value> &value); // NOLINT(*-explicit-constructor)
     /// Create a lazily evaluated callback value.
@@ -92,22 +100,22 @@ public: // tests and accessors
 
 public: // scalar access
     /// Get the stored boolean.
-    /// @throws err::LogicError If this is not a boolean value.
+    /// This value must be a boolean value.
     [[nodiscard]] auto asBoolean() const -> bool;
     /// Get the stored integer.
-    /// @throws err::LogicError If this is not an integer value.
+    /// This value must be an integer value.
     [[nodiscard]] auto asInteger() const -> int64_t;
     /// Get the stored floating-point number.
-    /// @throws err::LogicError If this is not a floating-point value.
+    /// This value must be a floating-point value.
     [[nodiscard]] auto asFloat() const -> double;
     /// Get the stored text.
-    /// @throws err::LogicError If this is not a text value.
+    /// This value must be a text value.
     [[nodiscard]] auto asText() const -> String;
     /// Get the stored list.
-    /// @throws err::LogicError If this is not a list value.
+    /// This value must be a list value.
     [[nodiscard]] auto asList() const -> const ValueList &;
     /// Get the stored map.
-    /// @throws err::LogicError If this is not a map value.
+    /// This value must be a map value.
     [[nodiscard]] auto asMap() const -> const ValueMap &;
 
 public: // child access
@@ -130,7 +138,7 @@ private:
     template <std::integral T>
     [[nodiscard]] static auto checkedInteger(const T value) -> int64_t {
         if (!std::in_range<int64_t>(value)) {
-            throw err::ParameterError{
+            throw err::ParameterFailure{
                 StringLiteral{"The render integer is outside the signed 64-bit range."}, StringLiteral{"value"}};
         }
         return static_cast<int64_t>(value);

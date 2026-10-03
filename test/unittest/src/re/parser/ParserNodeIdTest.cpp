@@ -4,15 +4,15 @@
 #include "ParserBase.hpp"
 
 #include <erbsland/re/StdFormat.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <unordered_map>
 #include <unordered_set>
 
-TESTED_TARGETS(Parser)
-TAGS(Parsing)
-
 using namespace impl::node_data;
 
+TESTED_TARGETS(Parser)
+TAGS(Parsing)
 class ParserNodeIdTest final : public UNITTEST_SUBCLASS(ParserBase) {
     using PatternNodeId = el::re::impl::PatternNodeId;
 
@@ -120,7 +120,7 @@ public:
     }
 
     void testParserIdTreeComplexPatterns() {
-        const std::vector<String> patterns = {
+        const el::StringList patterns{
             "a|b|c"_el,
             "(ab)c"_el,
             "(?:ab)+"_el,
@@ -138,7 +138,7 @@ public:
                     requireValidIdTree(node);
                 },
                 [&]() -> std::string {
-                    return std::format("pattern: \"{}\"", pattern.toSafeString(el::unit::CpLength{200U}));
+                    return std::format("pattern: \"{}\"", pattern.toSafeString(el::unit::CpCount{200U}));
                 });
         }
     }

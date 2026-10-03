@@ -5,10 +5,12 @@
 
 #include "impl/ConfigurationLoader.hpp"
 
+#include <erbsland/Path.hpp>
+
 namespace app::regex {
 
 auto Configuration::load(const std::optional<el::Path> &path) -> Configuration {
-    return impl::ConfigurationLoader::load(path);
+    return impl::ConfigurationLoader{path}.load();
 }
 
 void Configuration::writeTemplate(const el::Path &path) {

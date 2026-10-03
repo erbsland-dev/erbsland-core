@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
+#include <erbsland/all_log.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogLineFormat.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogMessageTruncation.hpp>
+#include <erbsland/LogWriter.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 #include <memory>
 #include <utility>
@@ -14,7 +22,7 @@ namespace demo {
 /// Select `CharacterCount` with `setMessageTruncation()`, then pass the code-point budget to `setMessageLimit()`. A
 /// zero message limit disables this shortening rule.
 void lineMessageLimits() {
-    const auto showLimit = [](const el::String &label, const el::CpLength limit) -> void {
+    const auto showLimit = [](const el::String &label, const el::CpCount limit) -> void {
         el::io::printLine(label, ":"_el);
         auto lineFormat = el::LogLineFormat{};
         lineFormat.setPattern("{level} [{name}] {message}"_el)
@@ -31,9 +39,9 @@ void lineMessageLimits() {
         manager->shutdown();
     };
 
-    showLimit("48 message characters"_el, el::CpLength{48U});
-    showLimit("24 message characters"_el, el::CpLength{24U});
-    showLimit("Unlimited message"_el, el::CpLength::zero());
+    showLimit("48 message characters"_el, el::CpCount{48U});
+    showLimit("24 message characters"_el, el::CpCount{24U});
+    showLimit("Unlimited message"_el, el::CpCount::zero());
 }
 
 }

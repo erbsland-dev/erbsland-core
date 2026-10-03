@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::network {
 
@@ -11,19 +11,19 @@ namespace erbsland::network {
 class UrlParseOptions final {
 public:
     /// The default maximum source length.
-    static constexpr auto cDefaultMaximumLength = unit::ByteLength{16U * 1024U};
+    static constexpr auto cDefaultMaximumLength = unit::ByteCount{16U * 1024U};
 
 public:
     /// Get the maximum source length.
-    [[nodiscard]] constexpr auto maximumLength() const noexcept -> unit::ByteLength { return _maximumLength; }
+    [[nodiscard]] constexpr auto maximumLength() const noexcept -> unit::ByteCount { return _maximumLength; }
     /// Set the maximum source length.
-    constexpr auto setMaximumLength(const unit::ByteLength value) noexcept -> UrlParseOptions & {
+    constexpr auto setMaximumLength(const unit::ByteCount value) noexcept -> UrlParseOptions & {
         _maximumLength = value;
         return *this;
     }
 
 private:
-    unit::ByteLength _maximumLength{cDefaultMaximumLength}; ///< Maximum accepted UTF-8 byte length.
+    unit::ByteCount _maximumLength{cDefaultMaximumLength}; ///< Maximum accepted UTF-8 byte length.
 };
 
 }

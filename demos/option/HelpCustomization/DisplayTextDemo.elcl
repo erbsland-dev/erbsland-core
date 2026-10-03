@@ -1,0 +1,8 @@
+# Display wording for this demonstration.
+
+[Options]
+Usage Label = "Usage"
+Options Heading = "Settings"
+Options Placeholder = "options"
+Choice Placeholder = "choice"
+Choices Label = "Choices"

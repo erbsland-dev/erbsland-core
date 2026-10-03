@@ -9,6 +9,7 @@
 #include "impl/ApplicationInstanceManager.hpp"
 #include "impl/LibraryVersion.hpp"
 
+#include "../err/RuntimeError.hpp"
 #include "../event/EventLoop.hpp"
 #include "../event/ManagedEventThread.hpp"
 
@@ -16,9 +17,10 @@
 
 namespace erbsland::core {
 
+using namespace unit;
 using namespace event;
 
-auto Application::runEventLoop() -> unit::ExitCode {
+auto Application::runEventLoop() -> ExitCode {
     const auto eventData = _data->events().get();
     eventData->runLoop();
     const auto partsData = _data->parts().getIfExists();
@@ -48,15 +50,15 @@ auto Application::eventRegistry() -> EventRegistry & {
     return _data->events().get()->eventRegistry();
 }
 
-auto Application::createEventThread() -> ManagedEventThreadPtr {
-    return _data->events().get()->createEventThread();
+auto Application::createEventThread(const event::EventLoopOptions &options) -> ManagedEventThreadPtr {
+    return _data->events().get()->createEventThread(options);
 }
 
-void Application::quit(const unit::ExitCode exitCode) noexcept {
+void Application::quit(const ExitCode exitCode) noexcept {
     requestQuit(_data, exitCode);
 }
 
-void Application::requestQuit(const impl::ApplicationDataPtr &data, const unit::ExitCode exitCode) noexcept {
+void Application::requestQuit(const impl::ApplicationDataPtr &data, const ExitCode exitCode) noexcept {
     try {
         if (const auto lifecycleData = data->lifecycle().getIfExists(); lifecycleData != nullptr) {
             lifecycleData->requestShutdown();
@@ -79,18 +81,18 @@ void Application::requestQuit(const impl::ApplicationDataPtr &data, const unit::
             }
         }
         eventData->quit();
-    } catch (...) {}
+    } catch (const err::RuntimeError &) {}
 }
 
 auto Application::instance() -> Application & {
-    return impl::ApplicationInstanceManager::instance()->application();
+    return core::application();
 }
 
 auto Application::linkWith(Application &app) -> void {
     impl::ApplicationInstanceManager::instance()->linkWith(app);
 }
 
-auto Application::libraryVersion() noexcept -> unit::Version {
+auto Application::libraryVersion() noexcept -> Version {
     return impl::libraryVersion();
 }
 

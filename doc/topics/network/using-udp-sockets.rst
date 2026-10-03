@@ -65,9 +65,8 @@ request-and-response exchange.
 
 .. erbsland-demo::
     :source: network/TimeServer/TimeServerApp.hpp
-    :function-blocks: startServer onBound onDatagram
-    :function-blocks-sha256: b7bd63d33186829f1d62ca4384186f4da758b0fd08c580b58664f407a0353ef2
-    :source-sha256: 0f05d7fc8731d9aabace0d112bc10bddc6884df6271f826b0bf7de1ffb286144
+    :show: f:startServer, f:onBound, f:onDatagram
+    :sha256: b63cf464adc1e93e4fa2c91d96f9fb6c5cab956c628516fb9605188aa22d2994
 
 .. code-block:: cpp
 
@@ -88,7 +87,7 @@ request-and-response exchange.
 
     void onDatagram(const el::UdpDatagram &datagram) {
         uint8_t version = 1;
-        if (datagram.data().length() > el::ByteLength{1}) {
+        if (datagram.data().length() > el::ByteCount::one()) {
             return;
         }
         if (!datagram.data().isEmpty()) {
@@ -108,7 +107,7 @@ request-and-response exchange.
             try {
                 const auto timestamp = ticks.value().toValue().castOrThrow<std::uint32_t>();
                 response.appendInteger(timestamp.toRawValue(), el::Endianness::Big);
-            } catch (const el::Exception &) {
+            } catch (const el::OverflowError &) {
                 return; // ignore the request if we cannot represent the timestamp
             }
         } else {
@@ -150,9 +149,8 @@ This demo chooses the first address and binds a matching IPv4 or IPv6 local sock
 
 .. erbsland-demo::
     :source: network/TimeClient/TimeClientApp.hpp
-    :function-blocks: onResolved onBound
-    :function-blocks-sha256: cddceebb7d6449d4228042c72fd8dc50e3b67997df5a52d5e3e489aab248b652
-    :source-sha256: 45c0300a8c6546798e7a35cab8e5f2609fd816951457c2ea10fd931257d43ddc
+    :show: f:onResolved, f:onBound
+    :sha256: addd345565dac7d3df47aafb45524abfb87e4c28eac242e3da5a1d6298a9151f
 
 .. code-block:: cpp
 
@@ -214,9 +212,8 @@ the application.
 
 .. erbsland-demo::
     :source: network/TimeClient/TimeClientApp.hpp
-    :function-blocks: onDatagram onClosed
-    :function-blocks-sha256: b9c99f10c40a34f1844e1892b0ff14e346710f8cd9c76bcc3d0af8e0e10ac0b2
-    :source-sha256: 45c0300a8c6546798e7a35cab8e5f2609fd816951457c2ea10fd931257d43ddc
+    :show: f:onDatagram, f:onClosed
+    :sha256: b5a73139bc1e21777cdc1259ad8e65314d72687732420304150f3c8998679111
 
 .. code-block:: cpp
 
@@ -225,11 +222,11 @@ the application.
             return; // ignore random packets from unknown sources
         }
         const auto dataSize = datagram.data().length();
-        if (dataSize != el::ByteLength{4} && dataSize != el::ByteLength{8}) {
+        if (dataSize != el::ByteCount{4} && dataSize != el::ByteCount{8}) {
             return; // ignore invalid lengths
         }
         el::Seconds ticks;
-        if (dataSize == el::ByteLength{4}) {
+        if (dataSize == el::ByteCount{4}) {
             ticks = el::Seconds{
                 static_cast<int64_t>(datagram.data().getInteger<std::uint32_t>(el::ByteIndex{}, el::Endianness::Big))};
         } else {
@@ -291,8 +288,8 @@ An empty UDP packet is valid but consumes one byte for queue accounting.
 A payload larger than ``maximumDatagramSize`` or ``sendQueueLimit`` can never fit and is rejected as an invalid argument
 instead of returning ``WouldBlock``.
 
-Pause Delivery Briefly
-======================
+Pausing and Resuming UDP Packet Delivery
+========================================
 
 Use ``pauseReceiving()`` only while code behind the packet callback cannot safely process input, for example while
 replacing a protocol decoder or rebuilding a bounded downstream queue.
@@ -305,10 +302,9 @@ is delivered.
 
 .. erbsland-demo::
     :source: network/UdpSockets/PauseDelivery.cpp
-    :function-blocks: beginReload sendUpdatesDuringReload finishReload reportDrop receiveUpdate
-    :function-blocks-sha256: ab341b0028a7c83d9488c824b24918d50867e227550e662d39d4dfafaad78165
+    :show: f:beginReload, f:sendUpdatesDuringReload, f:finishReload, f:reportDrop, f:receiveUpdate
     :exec: network/udp_sockets --demo PauseDelivery
-    :source-sha256: dfaec8d33b83bc1ae0ee10e21e569bc78583d8d23e2991f9c364fd0bdb94b4d6
+    :sha256: 1a6849e0e115eb3a392a8512559b14f68f277b8e3f51cc334562fe813595c2ad
 
 .. code-block:: cpp
 
@@ -320,8 +316,8 @@ is delivered.
 
     void sendUpdatesDuringReload() {
         const auto destination = _service->localEndpoint().value();
-        const auto oversized = el::ByteBlock{el::ByteLength{4U}, el::Byte{1U}};
-        const auto valid = el::ByteBlock{el::ByteLength{1U}, el::Byte{2U}};
+        const auto oversized = el::ByteBlock{el::ByteCount{4U}, el::Byte{1U}};
+        const auto valid = el::ByteBlock{el::ByteCount{1U}, el::Byte{2U}};
         if (!_client->send(destination, oversized).isAccepted() || !_client->send(destination, valid).isAccepted()) {
             el::stdErr()->printLine("The client could not queue both skill updates."_el);
             fail();
@@ -351,14 +347,16 @@ is delivered.
         _service->close();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Skill catalog reload started; delivery paused.
-    Client queued two updates while delivery was paused.
-    Skill catalog reload completed; delivery resumed.
-    Oversized skill update discarded.
-    Delivered after catalog reload: alchemie
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSkill catalog reload started; delivery paused.
+        Client queued two updates while delivery was paused.
+        Skill catalog reload completed; delivery resumed.
+        Oversized skill update discarded.
+        Delivered after catalog reload: alchemie␛[0m
 
 .. erbsland-demo-end::
 
@@ -369,8 +367,8 @@ The sender endpoint and observed packet size are optional because native platfor
 for truncated packets.
 Treat missing values as normal and use the information only when it is present.
 
-Close the Socket Deliberately
-=============================
+Graceful UDP Socket Close and Immediate Abort
+=============================================
 
 Plan the socket's end state as deliberately as its start.
 One :cpp:class:`UdpSocket <erbsland::network::UdpSocket>` represents one native socket lifetime and cannot be started

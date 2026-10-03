@@ -1,11 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "PathWalkerScenarioWorkload.hpp"
 
 #include "PathWalkerWorkerWorkload.hpp"
 
-#include <erbsland/path/PathInfo.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <filesystem>
 #include <memory>
@@ -61,7 +64,7 @@ auto PathWalkerScenarioWorkload::createWorker([[maybe_unused]] const std::uint32
 }
 
 void PathWalkerScenarioWorkload::validate(const pf::SampleMeasurement &measurement) {
-    if (measurement.operations == 0U || measurement.metrics.count() != el::ItemCount::one()) {
+    if (measurement.operations == 0U || measurement.metrics.count() != el::ItemCount{3U}) {
         throw el::ApplicationError{"The path-walker workload produced an invalid measurement."_el};
     }
     if (measurement.metrics.first() != measurement.operations * _expectedEntryCount) {

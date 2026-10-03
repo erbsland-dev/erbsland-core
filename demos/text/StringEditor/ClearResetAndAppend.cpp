@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
 
 namespace demo {
 
@@ -16,11 +21,11 @@ void printDraftState(const el::String &label, const el::StringEditor &editor);
 /// append operation.
 void clearResetAndAppend() {
     auto draft = el::StringEditor{"ridge log"_el};
-    draft.reserve(el::ByteLength{80U});
+    draft.reserve(el::ByteCount{80U});
 
     // Append text and repeated code points directly to the editable string.
     draft.append(": "_el).append("lichen"_el).append(", "_el).append("moss"_el);
-    draft.append(U'·', el::CpLength{3U});
+    draft.append(U'·', el::CpCount{3U});
     printDraftState("Draft"_el, draft);
 
     // Clear keeps the reserved storage for the next edit pass.

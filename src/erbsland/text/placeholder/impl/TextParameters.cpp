@@ -4,19 +4,21 @@
 
 #include "../ReplacerError.hpp"
 
-#include "../../../err/Exception.hpp"
+#include "../../../err/RuntimeError.hpp"
 #include "../../../unit/CpRange.hpp"
 #include "../../Char.hpp"
 #include "../../Literals.hpp"
 #include "../../named_key/Format.hpp"
 #include "../../named_key/Parser.hpp"
 #include "../../StringCharReader.hpp"
+#include "../../StringTransformations.hpp"
 
 #include <algorithm>
 #include <array>
 
 namespace erbsland::text::placeholder::impl {
 
+using namespace unit;
 using namespace literals;
 
 auto TextParameters::parse(const String &parameter) -> TextParameters {
@@ -40,8 +42,8 @@ auto TextParameters::parse(const String &parameter) -> TextParameters {
                                        {"then"_el, static_cast<int>(Key::Then)},
                                        {"else"_el, static_cast<int>(Key::Else)},
                                    })
-                                   .setMaximumValues(unit::ItemCount{1U})
-                                   .setMaximumValueLength(unit::CpLength::fromSizeT(4000U))
+                                   .setMaximumValues(ItemCount{1U})
+                                   .setMaximumValueLength(CpCount::fromSizeT(4000U))
                                    .setValueWithoutKeySeparatorChars(CharSet::from(AsciiCategory::Digit));
     try {
         auto result = TextParameters{};
@@ -101,7 +103,7 @@ auto TextParameters::parse(const String &parameter) -> TextParameters {
         return result;
     } catch (const ReplacerError &) {
         throw;
-    } catch (const err::Exception &error) {
+    } catch (const err::RuntimeError &error) {
         throw ReplacerError{ReplacerErrorCategory::Syntax, error.reason()};
     }
 }
@@ -127,24 +129,34 @@ auto TextParameters::conditionCount() const noexcept -> std::size_t {
     return result;
 }
 
-auto TextParameters::parseIndex(const String &input) -> unit::CpIndex {
+auto TextParameters::parseIndex(const String &input) -> CpIndex {
     try {
-        return unit::CpIndex::fromSizeTOrThrow(input.toIntegerOrThrow<std::size_t>());
-    } catch (const err::Exception &error) {
+        const auto result = CpIndex::fromSizeT(input.toIntegerOrThrow<std::size_t>());
+        if (result.isNoIndex()) {
+            throw ReplacerError{ReplacerErrorCategory::Syntax, "The text range exceeds the supported limit."_el};
+        }
+        return result;
+
+    } catch (const err::RuntimeError &error) {
         throw ReplacerError{ReplacerErrorCategory::Syntax, error.reason()};
     }
 }
 
-auto TextParameters::parseLength(const String &input) -> unit::CpLength {
+auto TextParameters::parseLength(const String &input) -> CpCount {
     try {
-        return unit::CpLength::fromSizeTOrThrow(input.toIntegerOrThrow<std::size_t>());
-    } catch (const err::Exception &error) {
+        const auto result = CpCount::fromSizeT(input.toIntegerOrThrow<std::size_t>());
+        if (result.isInfinite()) {
+            throw ReplacerError{ReplacerErrorCategory::Syntax, "The text range exceeds the supported limit."_el};
+        }
+        return result;
+
+    } catch (const err::RuntimeError &error) {
         throw ReplacerError{ReplacerErrorCategory::Syntax, error.reason()};
     }
 }
 
 auto TextParameters::parseSide(const String &input) -> Side {
-    const auto identifier = input.transformed(Char::toAsciiLowercase);
+    const auto identifier = toAsciiLowercase(input);
     if (identifier == "front"_el) {
         return Side::Front;
     }
@@ -171,14 +183,14 @@ auto TextParameters::stringSide(const Side value) noexcept -> std::optional<Stri
 
 auto TextParameters::parseChars(const String &input) -> CharSet {
     const auto inputLength = input.characterLength();
-    if (inputLength < unit::CpLength{2U} || !input.startsWith("["_el) || !input.endsWith("]"_el)) {
+    if (inputLength < CpCount{2U} || !input.startsWith("["_el) || !input.endsWith("]"_el)) {
         throw ReplacerError{ReplacerErrorCategory::Syntax, "A 'chars' value must use the form '[pattern]'."_el};
     }
-    return CharSet::fromPattern(input.slice(unit::CpRange{unit::CpIndex::one(), inputLength - unit::CpLength{2U}}));
+    return CharSet::fromPattern(input.slice(CpRange{CpIndex::one(), inputLength - CpCount{2U}}));
 }
 
 auto TextParameters::parseEscapeFormat(const String &input) -> EscapeFormat {
-    const auto identifier = input.transformed(Char::toAsciiLowercase);
+    const auto identifier = toAsciiLowercase(input);
     if (const auto result = EscapeFormat::fromString(identifier); result.has_value()) {
         return *result;
     }
@@ -186,7 +198,7 @@ auto TextParameters::parseEscapeFormat(const String &input) -> EscapeFormat {
 }
 
 auto TextParameters::parseEscapeAmount(const String &input) -> EscapeAmount {
-    const auto identifier = input.transformed(Char::toAsciiLowercase);
+    const auto identifier = toAsciiLowercase(input);
     if (const auto result = EscapeAmount::fromString(identifier); result.has_value()) {
         return *result;
     }
@@ -266,7 +278,7 @@ auto TextParameters::applySafe(const String &input) const -> String {
     verify(
         hasOnly({Key::Length, Key::Positional}) && count() <= 1U,
         "The 'safe' filter accepts only one length parameter."_el);
-    auto resultLength = length().value_or(unit::CpLength{1024U});
+    auto resultLength = length().value_or(CpCount{1024U});
     if (const auto positionalValue = positional()) {
         resultLength = parseLength(*positionalValue);
     }
@@ -298,7 +310,7 @@ auto TextParameters::applySlice(const String &input) const -> String {
                                        : input.slice(convertedSide, *startValue);
     }
     verify(startValue.has_value(), "The 'slice' filter requires 'start'."_el);
-    return input.slice(unit::CpRange{*startValue, lengthValue.value_or(unit::CpLength::infinite())});
+    return input.slice(CpRange{*startValue, lengthValue.value_or(CpCount::infinite())});
 }
 
 auto TextParameters::applyRemove(const String &input) const -> String {
@@ -329,15 +341,15 @@ auto TextParameters::applyRemove(const String &input) const -> String {
             const auto textLength = input.characterLength();
             const auto removeLength = *lengthValue < textLength ? *lengthValue : textLength;
             const auto removeStart = convertedSide == StringSide::Front
-                ? unit::CpIndex::zero()
-                : unit::CpIndex::fromSizeT(textLength.toSizeT() - removeLength.toSizeT());
-            return input.removed(unit::CpRange{removeStart, removeLength});
+                ? CpIndex::zero()
+                : CpIndex::fromSizeT(textLength.toSizeT() - removeLength.toSizeT());
+            return input.removed(CpRange{removeStart, removeLength});
         }
         return convertedSide == StringSide::Front ? input.slice(StringSide::Back, *startValue)
                                                   : input.slice(StringSide::Front, *startValue);
     }
     verify(startValue.has_value(), "The 'remove' filter requires a removal mode."_el);
-    return input.removed(unit::CpRange{*startValue, lengthValue.value_or(unit::CpLength::infinite())});
+    return input.removed(CpRange{*startValue, lengthValue.value_or(CpCount::infinite())});
 }
 
 auto TextParameters::applyReplace(const String &input) const -> String {

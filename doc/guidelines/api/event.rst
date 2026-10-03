@@ -42,7 +42,11 @@ Scheduling and Thread Types
     EventTimerMode // inactive, once, fixed-delay, or fixed-rate scheduling mode
     ManagedEventThread // application-owned event thread
     UnmanagedEventThread // standalone event thread
-    EventLoopErrorAction, EventLoopErrorHandler // callback-failure handling policy
+    EventLoopErrorAction, EventLoopErrorHandler // custom callback-failure handling
+    EventLoopOptions // copied capacity and default-error configuration
+    EventLoopErrorPolicy // default callback-failure policy
+    EventQueueOverflowAction // queue-capacity policy
+    EventQueueFullError // full-queue application failure
 
 Backend Types
 =============
@@ -81,6 +85,15 @@ Dispatch Patterns
     o.get❮Backend❯() -> T& // access one backend frontend interface
     currentEvents() -> EventsPtr // access the loop currently running on this thread
 
+Callback Binding Patterns
+=========================
+
+.. code-block:: text
+
+    bindEvent([Ep, ]callback) -> callable // bind a callback
+    bindEvent([Ep, ]sharedRecipient, method) -> callable // bind a recipient method
+    bindWeakEvent([Ep, ]weakRecipient, method) -> callable // bind a weak recipient method
+
 Subscription Patterns
 =====================
 
@@ -98,12 +111,13 @@ Event Loop Patterns
 
 .. code-block:: text
 
-    T::create([driver-or-backend]) -> EventLoopPtr // create a loop with optional integration
+    T::create([driver-or-backend, ][options]) -> EventLoopPtr // create a loop with optional integration
     o.run() // run until stopped or quit
     o.runOnce([maximumWait]) -> bool // perform one bounded event-loop cycle
     o.runUntilIdle() -> std::size_t // dispatch all immediately available work
     o.stop()/quit() // request immediate stop or queued graceful termination
     o.isRunning()/isQuitRequested() -> bool // inspect loop lifecycle state
+    o.queuedEventCount() -> std::size_t // snapshot excluding executing, delayed, and quit-control work
     o.hasError() -> bool // test whether a callback failure is queued
     o.takeError() -> std::exception_ptr // consume the oldest callback failure
     o.setErrorHandler(handler) // configure callback-failure handling
@@ -119,8 +133,8 @@ Timer and Thread Patterns
     o.stop() // cancel scheduled timer work
     o.isActive() -> bool // test whether a timer is scheduled or pending
     o.mode()/interval() -> T // inspect timer scheduling
-    o.createEventThread() -> ManagedEventThreadPtr // create an application-owned event thread
-    T::create() -> UnmanagedEventThreadPtr // create a standalone event thread
+    o.createEventThread([options]) -> ManagedEventThreadPtr // create an application-owned event thread
+    T::create([options]) -> UnmanagedEventThreadPtr // create a standalone event thread
     o.start() // start a one-shot event thread; never restart a joined thread
     o.quit() // idempotently request graceful termination without waiting
     o.join() // wait without requesting termination; never call from the worker itself
@@ -135,4 +149,14 @@ Backend Patterns
     o.poll(now)/handleEvent(event) -> bool // collect or handle backend work
     o.nextWakeTime() -> time::TimePoint // report the next requested poll time
     o.wait([maximumWait])/wake() // wait for or signal native activity
-    o.postFromBackend(event)/wakeFromBackend() // notify the owning loop from a backend
+    o.postFromBackend(event) -> bool // report whether backend work was accepted
+    o.wakeFromBackend() // notify the owning loop of backend state
+
+Event Loop Options Patterns
+===========================
+
+.. code-block:: text
+
+    o.maximumQueuedEvents()/setMaximumQueuedEvents(count) // zero means unlimited ordinary waiting events
+    o.queueOverflowAction()/setQueueOverflowAction(action) // Terminate, FailApplication, Quit, Block, Ignore
+    o.errorPolicy()/setErrorPolicy(policy) // Ignore, Store, Quit, FailApplication

@@ -3,16 +3,17 @@
 
 #include "PathTestFixture.hpp"
 
-#include <erbsland/path/FileLock.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/system/EnvironmentVariables.hpp>
-#include <erbsland/system/Subprocess.hpp>
-#include <erbsland/system/SubprocessOptions.hpp>
-#include <erbsland/system/SubprocessOutputMode.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/EnvironmentVariables.hpp>
+#include <erbsland/FileLock.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/Subprocess.hpp>
+#include <erbsland/SubprocessOptions.hpp>
+#include <erbsland/SubprocessOutputMode.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -26,7 +27,7 @@ TESTED_TARGETS(Path FileLock)
 class PathFileLockTest final : public el::UnitTest {
 private:
     void requireLockError(const el::path::Path &path, const bool hasPlatformContext) {
-        const auto lockPath = el::path::Path{el::text::String::fromJoined({path.toString(), ".lock"_el})};
+        const auto lockPath = el::path::Path{el::join(path.toString(), ".lock"_el)};
         try {
             auto lock = path.createLock();
             REQUIRE(false);
@@ -42,20 +43,22 @@ private:
         auto options = el::system::SubprocessOptions{};
         options.setInheritStandardInput(false)
             .setStandardOutputMode(el::system::SubprocessOutputMode::Capture)
-            .setStandardErrorMode(el::system::SubprocessOutputMode::Capture)
-            .setEnvironmentVariable("ERBSLAND_FILE_LOCK_TEST_PATH"_el, path.toString())
-            .setEnvironmentVariable("ERBSLAND_FILE_LOCK_TEST_STATE"_el, expectedState);
-        auto process = el::system::Subprocess::start(
+            .setStandardErrorMode(el::system::SubprocessOutputMode::Capture);
+        options.environmentChanges()
+            .setVariable("ERBSLAND_FILE_LOCK_TEST_PATH"_el, path.toString())
+            .setVariable("ERBSLAND_FILE_LOCK_TEST_STATE"_el, expectedState);
+        auto process = el::system::Subprocess::create(
             el::path::Path{el::unittest::fh::unitTestExecutablePath()},
             el::text::StringList{"name:ChildLockAttempt"_el, "--no-color"_el},
             options);
-        const auto status = process.wait();
+        process->start();
+        const auto status = process->wait();
         runWithContext(
             SOURCE_LOCATION(),
             [this, &status]() -> void { REQUIRE(status.isSuccess()); },
             [&process]() -> std::string {
-                return "Child standard output:\n" + el::text::StringConverter{process.standardOutput()}.toStdString() +
-                    "\nChild standard error:\n" + el::text::StringConverter{process.standardError()}.toStdString();
+                return "Child standard output:\n" + el::text::StringConverter{process->standardOutput()}.toStdString() +
+                    "\nChild standard error:\n" + el::text::StringConverter{process->standardError()}.toStdString();
             });
     }
 

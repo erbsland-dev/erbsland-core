@@ -19,6 +19,9 @@ target_sources(erbsland-core PRIVATE
         Rules_fwd.hpp
         RulesBuilder.cpp
         RulesBuilder.hpp
+        RulesBuilderBranch.cpp
+        RulesBuilderBranch.hpp
+        RulesBuilderBranch_fwd.hpp
         RuleType.cpp
         RuleType.hpp
 )

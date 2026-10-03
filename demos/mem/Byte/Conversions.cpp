@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/IntegerFormat.hpp>
+#include <erbsland/IntegerFormatFlag.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -15,7 +20,7 @@ void conversions() {
         el::IntegerFormat::binary()
             .setFlags(
                 el::IntegerFormatFlag::BasePrefix | el::IntegerFormatFlag::ZeroFill | el::IntegerFormatFlag::Separator)
-            .setFieldWidth(el::CpLength{8U});
+            .setFieldWidth(el::CpCount{8U});
 
     // Create bytes from values read from a compact route archive.
     const auto direction = el::Byte::fromChar('E');

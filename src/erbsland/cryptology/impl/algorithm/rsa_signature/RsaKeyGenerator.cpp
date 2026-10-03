@@ -4,7 +4,9 @@
 
 #include "Number.hpp"
 
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../../../../core/impl/ApplicationDataAccess.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../mem/ByteBlock.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../CryptologyError.hpp"
@@ -21,17 +23,19 @@ constexpr auto cPublicExponent = uint32_t{65537U};
 
 auto generate(const std::size_t modulusBits) -> ByteBlock {
     if (modulusBits != 2048U && modulusBits != 3072U && modulusBits != 4096U) {
-        throw err::ParameterError{"RSA generation supports only 2048, 3072, or 4096 bits."_el, "modulusBits"_el};
+        throw err::ParameterFailure{"RSA generation supports only 2048, 3072, or 4096 bits."_el, "modulusBits"_el};
     }
+    const auto randomData = core::impl::applicationData()->random().get();
+    auto &random = randomData->secureRandom();
     const auto primeBits = modulusBits / 2U;
     const auto modulusWords = modulusBits / rsa_signature::cWordBits;
-    auto p = Number::generatePrime(primeBits);
+    auto p = Number::generatePrime(primeBits, random);
     const auto pEraseGuard = SecureEraseGuard{p};
     auto q = Number{};
     const auto qEraseGuard = SecureEraseGuard{q};
     do {
         q.secureErase();
-        q = Number::generatePrime(primeBits);
+        q = Number::generatePrime(primeBits, random);
     } while (!p.isSeparatedFrom(q, primeBits));
 
     auto modulus = p.multiplied(q, modulusWords);

@@ -16,8 +16,8 @@ The application-part framework can manage a service graph without an
 A detached :cpp:class:`ApplicationPartManager <erbsland::core::ApplicationPartManager>` is useful in an embedded host, a
 test harness, or a process whose outer lifecycle is controlled by another framework.
 
-Owning the Lifecycle Explicitly
-===============================
+Manual Application-Part Lifecycle Management
+============================================
 
 The caller registers parts, prepares the graph, starts it, waits for startup, uses prepared service interfaces, and
 finally requests shutdown.
@@ -27,7 +27,7 @@ every started part.
 .. erbsland-demo::
     :source: core/ApplicationParts/DetachedMain.cpp
     :exec: core/core_detached_parts
-    :source-sha256: 668586eea6863f8111e81bfa38a135ab7720a55d56e9c275908181343f85bb48
+    :sha256: 735beb2ea4da8faa9d5f93b5db15c438f2cbbb325a7c720159e36fa95cea447a
 
 .. code-block:: cpp
 
@@ -58,14 +58,16 @@ every started part.
         return el::ExitCode::success().toRawValue();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    catalog storage initialized
-    catalog server initialized; catalog storage is ready
-    using local catalog endpoint
-    catalog server cleaned up
-    catalog storage cleaned up
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mcatalog storage initialized
+        catalog server initialized; catalog storage is ready
+        using local catalog endpoint
+        catalog server cleaned up
+        catalog storage cleaned up␛[0m
 
 .. erbsland-demo-end::
 
@@ -81,8 +83,8 @@ Command-line integration is optional in a detached host.
 When it is needed, call ``registerCommandLineOptions()`` after preparation and ``parseCommandLine()`` after successful
 parsing, before startup.
 
-Waiting from an Owning Thread
-=============================
+Waiting for Part Startup and Shutdown from an External Thread
+=============================================================
 
 ``start()`` and ``stop()`` are asynchronous requests.
 ``waitForRunning()`` returns ``true`` only when initial startup settles in ``Running``.

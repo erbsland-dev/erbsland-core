@@ -23,8 +23,8 @@ Normalization gives a boundary one deliberate representation.
 This page helps you choose between canonical and compatibility forms, apply that choice to a read-only value or an
 editing workflow, and recognize the concatenation boundary where a second normalization pass is necessary.
 
-Choose the Equivalence Your Data Needs
-======================================
+Canonical and Compatibility Normalization
+=========================================
 
 NFC and NFD preserve canonical meaning.
 NFC composes eligible sequences and is the usual choice for stored or exchanged text.
@@ -39,7 +39,7 @@ NFKC composes the result; NFKD leaves it decomposed.
 .. erbsland-demo::
     :source: text/String/NormalizationForms.cpp
     :exec: text/string --demo NormalizationForms
-    :source-sha256: 1eaae6aca1abcacd4987b4fcf5c1a9aeb40d2f66f5877f15acee31f60befc0e9
+    :sha256: 949cfbadf5d6ea85c13fbd95da287c87d2e4782dbcbad12a65f2caf434f80e08
 
 .. code-block:: cpp
 
@@ -63,22 +63,24 @@ NFKC composes the result; NFKD leaves it decomposed.
         el::io::printLine("  NFKD ..: "_el, nfkd);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Canonical forms:
-      source : Café (5 code points)
-      NFC ...: Café (4 code points)
-      NFD ...: Café (5 code points)
-    Compatibility forms:
-      source : ＳＥＮＳＯＲ－７
-      NFKC ..: SENSOR-7
-      NFKD ..: SENSOR-7
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCanonical forms:
+          source : Café (5 code points)
+          NFC ...: Café (4 code points)
+          NFD ...: Café (5 code points)
+        Compatibility forms:
+          source : ＳＥＮＳＯＲ－７
+          NFKC ..: SENSOR-7
+          NFKD ..: SENSOR-7␛[0m
 
 .. erbsland-demo-end::
 
-Normalize a Value or a Mutable Workflow
-=======================================
+Copy-Returning and In-Place Normalization
+=========================================
 
 For an ordinary transformation, call ``String::normalized(form)`` and keep the source unchanged.
 The returned value has the same string width, so UTF-16 and UTF-32 workflows do not need an intermediate UTF-8
@@ -91,7 +93,7 @@ This keeps the mutable intent local; once editing is complete, expose the result
 .. erbsland-demo::
     :source: text/StringEditor/NormalizeText.cpp
     :exec: text/string_editor --demo NormalizeText
-    :source-sha256: b7ef58bf0458c383cd8590fa14237b9ed411d4c1542511aeb4d6bd6e502da882
+    :sha256: 9caebfcb2ecf9b86d1e5e7641f78b33759013aab39c31678aa253eed9301441a
 
 .. code-block:: cpp
 
@@ -106,11 +108,13 @@ This keeps the mutable intent local; once editing is complete, expose the result
         el::io::printLine("After NFC : "_el, elementName);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Before NFC: カリウム
-    After NFC : ガリウム
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBefore NFC: ガリウム
+        After NFC : ガリウム␛[0m
 
 .. erbsland-demo-end::
 
@@ -133,7 +137,7 @@ There is no need to normalize every fragment first unless those fragments also c
 .. erbsland-demo::
     :source: text/String/NormalizeJoinedText.cpp
     :exec: text/string --demo NormalizeJoinedText
-    :source-sha256: bd765f619bedc94281eeef10367cf22c9455bcb8e709a61ea941161b153f7e9a
+    :sha256: d955e69a838a74c3256e245d6e6b71fab6133ed9982bd2d8a8e60b708a55f8b9
 
 .. code-block:: cpp
 
@@ -141,7 +145,7 @@ There is no need to normalize every fragment first unless those fragments also c
     void normalizeJoinedText() {
         const auto station = el::String{"Meetpunt A"_el}.normalized(el::NormalizationForm::Nfc);
         const auto ring = el::String{"\u030A"_el}.normalized(el::NormalizationForm::Nfc);
-        const auto joined = el::String::fromJoined({station, ring});
+        const auto joined = el::join(station, ring);
         const auto normalized = joined.normalized(el::NormalizationForm::Nfc);
 
         el::io::printLine("Separately normalized : "_el, joined);
@@ -149,11 +153,13 @@ There is no need to normalize every fragment first unless those fragments also c
         el::io::printLine("Code points ..........: "_el, joined.characterLength(), " -> ", normalized.characterLength());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Separately normalized : Meetpunt Å
-    After joining .........: Meetpunt Å
-    Code points ..........: 11 -> 10
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSeparately normalized : Meetpunt Å
+        After joining .........: Meetpunt Å
+        Code points ..........: 11 -> 10␛[0m
 
 .. erbsland-demo-end::

@@ -14,7 +14,7 @@ auto FileLogWriterOptions::setRotation(const LogFileRotation value) noexcept -> 
     return *this;
 }
 
-auto FileLogWriterOptions::setMaximumSize(const unit::ByteLength value) noexcept -> FileLogWriterOptions & {
+auto FileLogWriterOptions::setMaximumSize(const unit::ByteCount value) noexcept -> FileLogWriterOptions & {
     _maximumSize = value;
     return *this;
 }

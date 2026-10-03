@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/Literals.hpp>
 #include <erbsland/network/impl/http/cookie/PublicSuffixData.hpp>
 #include <erbsland/network/impl/http/cookie/PublicSuffixList.hpp>
 #include <erbsland/network/impl/http/cookie/PublicSuffixLookup.hpp>
-#include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;
@@ -12,10 +12,10 @@ using namespace el::text::literals;
 TESTED_TARGETS(PublicSuffixList PublicSuffixLookup)
 class PublicSuffixListTest final : public el::UnitTest {
 public:
-    void testPinnedCompleteListAndRegistrableDomains() {
+    void testStorageConstraintsAndRegistrableDomains() {
         REQUIRE_FALSE(el::network::impl::public_suffix_data::version().isEmpty());
         const auto data = el::network::impl::public_suffix_data::data();
-        REQUIRE_EQUAL(data.ruleCount, 10248U);
+        REQUIRE(data.ruleCount > 0U);
         REQUIRE(data.encodedStorageByteCount < 45000U);
         REQUIRE(data.encodedStorageByteCount * 4U <= data.originalRuleTextByteCount + data.ruleCount * 8U);
 

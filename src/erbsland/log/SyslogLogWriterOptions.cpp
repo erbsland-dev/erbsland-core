@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "SyslogLogWriterOptions.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../network/IpAddress.hpp"
 #include "../text/Literals.hpp"
 
@@ -10,6 +10,7 @@
 
 namespace erbsland::log {
 
+using namespace text;
 using namespace text::literals;
 
 SyslogLogWriterOptions::SyslogLogWriterOptions() :
@@ -28,43 +29,43 @@ auto SyslogLogWriterOptions::setEndpoint(network::HostEndpoint value) noexcept -
 
 auto SyslogLogWriterOptions::setFacility(const uint8_t value) -> SyslogLogWriterOptions & {
     if (value > 23U) {
-        throw err::ParameterError{"A syslog facility must be in the range zero through 23."_el, "value"_el};
+        throw err::ParameterFailure{"A syslog facility must be in the range zero through 23."_el, "value"_el};
     }
     _facility = value;
     return *this;
 }
 
-auto SyslogLogWriterOptions::setHostName(text::String value) -> SyslogLogWriterOptions & {
+auto SyslogLogWriterOptions::setHostName(String value) -> SyslogLogWriterOptions & {
     _hostName = std::move(value);
     return *this;
 }
 
-auto SyslogLogWriterOptions::setApplicationName(text::String value) -> SyslogLogWriterOptions & {
+auto SyslogLogWriterOptions::setApplicationName(String value) -> SyslogLogWriterOptions & {
     _applicationName = std::move(value);
     return *this;
 }
 
-auto SyslogLogWriterOptions::setProcessId(text::String value) -> SyslogLogWriterOptions & {
+auto SyslogLogWriterOptions::setProcessId(String value) -> SyslogLogWriterOptions & {
     _processId = std::move(value);
     return *this;
 }
 
-auto SyslogLogWriterOptions::setMessageId(text::String value) -> SyslogLogWriterOptions & {
+auto SyslogLogWriterOptions::setMessageId(String value) -> SyslogLogWriterOptions & {
     _messageId = std::move(value);
     return *this;
 }
 
-auto SyslogLogWriterOptions::setTlsConfigurationLabel(text::String value) -> SyslogLogWriterOptions & {
+auto SyslogLogWriterOptions::setTlsConfigurationLabel(String value) -> SyslogLogWriterOptions & {
     if (value.isEmpty()) {
-        throw err::ParameterError{"A TLS configuration label must not be empty."_el, "value"_el};
+        throw err::ParameterFailure{"A TLS configuration label must not be empty."_el, "value"_el};
     }
     _tlsLabel = std::move(value);
     return *this;
 }
 
-auto SyslogLogWriterOptions::setMaximumPendingBytes(const unit::ByteLength value) -> SyslogLogWriterOptions & {
+auto SyslogLogWriterOptions::setMaximumPendingBytes(const unit::ByteCount value) -> SyslogLogWriterOptions & {
     if (value.isZero()) {
-        throw err::ParameterError{"The syslog pending-data limit must be positive."_el, "value"_el};
+        throw err::ParameterFailure{"The syslog pending-data limit must be positive."_el, "value"_el};
     }
     _maximumPendingBytes = value;
     return *this;

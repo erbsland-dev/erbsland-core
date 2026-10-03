@@ -4,6 +4,10 @@
 #include "WorkingWithPathsDemos.hpp"
 
 #include <DemoCommon.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathWindowsFormat.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringConverter.hpp>
 
 namespace demo {
 

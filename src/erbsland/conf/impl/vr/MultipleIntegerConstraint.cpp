@@ -10,6 +10,7 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 MultipleIntegerConstraint::MultipleIntegerConstraint(const Integer divisor) : MultipleConstraint(divisor) {
@@ -30,16 +31,16 @@ void MultipleIntegerConstraint::validateInteger(
     [[maybe_unused]] const ValidationContext &context, const Integer value) const {
 
     if (isNotValid(value)) {
-        throwValidationError(text::StringFormat{"The value {} {}"_el}.build(comparisonText(), _divisor));
+        throwValidationError(StringFormat{"The value {} {}"_el}.build(comparisonText(), _divisor));
     }
 }
 
 void MultipleIntegerConstraint::validateText(
-    [[maybe_unused]] const ValidationContext &context, const text::String &value) const {
+    [[maybe_unused]] const ValidationContext &context, const String &value) const {
 
     if (isNotValid(static_cast<Integer>(value.characterLength().toSizeT()))) {
         throwValidationError(
-            text::StringFormat{"The number of characters in this text {} {}"_el}.build(comparisonText(), _divisor));
+            StringFormat{"The number of characters in this text {} {}"_el}.build(comparisonText(), _divisor));
     }
 }
 
@@ -47,36 +48,35 @@ void MultipleIntegerConstraint::validateBytes(
     [[maybe_unused]] const ValidationContext &context, const mem::ByteBlock &value) const {
 
     if (isNotValid(static_cast<Integer>(value.length().toSizeT()))) {
-        throwValidationError(text::StringFormat{"The number of bytes {} {}"_el}.build(comparisonText(), _divisor));
+        throwValidationError(StringFormat{"The number of bytes {} {}"_el}.build(comparisonText(), _divisor));
     }
 }
 
 void MultipleIntegerConstraint::validateValueList(const ValidationContext &context) const {
     if (isNotValid(static_cast<Integer>(context.value->asValueList().size()))) {
         throwValidationError(
-            text::StringFormat{"The number of values in this list {} {}"_el}.build(comparisonText(), _divisor));
+            StringFormat{"The number of values in this list {} {}"_el}.build(comparisonText(), _divisor));
     }
 }
 
 void MultipleIntegerConstraint::validateSectionWithNames(const ValidationContext &context) const {
     if (isNotValid(static_cast<Integer>(context.value->size()))) {
         throwValidationError(
-            text::StringFormat{"The number of entries in this section {} {}"_el}.build(comparisonText(), _divisor));
+            StringFormat{"The number of entries in this section {} {}"_el}.build(comparisonText(), _divisor));
     }
 }
 
 void MultipleIntegerConstraint::validateSectionWithTexts(const ValidationContext &context) const {
     if (isNotValid(static_cast<Integer>(context.value->size()))) {
         throwValidationError(
-            text::StringFormat{"The number of entries in this section {} {}"_el}.build(comparisonText(), _divisor));
+            StringFormat{"The number of entries in this section {} {}"_el}.build(comparisonText(), _divisor));
     }
 }
 
 void MultipleIntegerConstraint::validateSectionList(const ValidationContext &context) const {
     if (isNotValid(static_cast<Integer>(context.value->size()))) {
         throwValidationError(
-            text::StringFormat{"The number of entries in this section list {} {}"_el}.build(
-                comparisonText(), _divisor));
+            StringFormat{"The number of entries in this section list {} {}"_el}.build(comparisonText(), _divisor));
     }
 }
 

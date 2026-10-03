@@ -5,6 +5,7 @@
 #include "U8Encoding.hpp"
 
 namespace erbsland::text::impl::utf8 {
+
 /// Decode the continuation byte of a multi-byte UTF-8 character from a byte reader.
 /// @throws text::U8EncodingError On any UTF-8 encoding error.
 /// @tested{U8StringEncodingTest}
@@ -23,11 +24,12 @@ inline void decodeCharOrThrow_decodeCont(
 
 /// Decode a single UTF-8 character from a byte reader and advance the position.
 /// @throws text::U8EncodingError On any UTF-8 encoding error.
+/// The read position must be inside the input.
 /// @tested{U8StringEncodingTest}
 inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
     const auto startPosition = reader.position();
     if (!reader.canRead(1U)) {
-        throwOutOfRange("Read position out of range");
+        throwOutOfRangeFailure("Read position out of range");
     }
     const auto decodedByte = reader.peekByte();
     if (decodedByte.toUInt8() < 0x80U) {
@@ -64,7 +66,7 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
     if (!result.isValidUnicode()) {
         throwU8EncodingError("Invalid Unicode character", startPosition.toSizeT());
     }
-    reader.setPosition(startPosition + unit::ByteLength::fromSizeT(sequenceSize));
+    reader.setPosition(startPosition + unit::ByteCount::fromSizeT(sequenceSize));
     return result;
 }
 

@@ -1,34 +1,33 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringCIHashSet.hpp>
-#include <erbsland/text/StringCISet.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/StringHashSet.hpp>
-#include <erbsland/text/StringSet.hpp>
-#include <erbsland/text/u16/U16StringCIHashSet.hpp>
-#include <erbsland/text/u16/U16StringCISet.hpp>
-#include <erbsland/text/u16/U16StringHashSet.hpp>
-#include <erbsland/text/u16/U16StringSet.hpp>
-#include <erbsland/text/u32/U32StringCIHashSet.hpp>
-#include <erbsland/text/u32/U32StringCISet.hpp>
-#include <erbsland/text/u32/U32StringHashSet.hpp>
-#include <erbsland/text/u32/U32StringSet.hpp>
-#include <erbsland/text/u8/U8StringCIHashSet.hpp>
-#include <erbsland/text/u8/U8StringCISet.hpp>
-#include <erbsland/text/u8/U8StringHashSet.hpp>
-#include <erbsland/text/u8/U8StringSet.hpp>
-#include <erbsland/unit/ByteRange.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringCIHashSet.hpp>
+#include <erbsland/StringCISet.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringHashSet.hpp>
+#include <erbsland/StringSet.hpp>
+#include <erbsland/U16StringCIHashSet.hpp>
+#include <erbsland/U16StringCISet.hpp>
+#include <erbsland/U16StringHashSet.hpp>
+#include <erbsland/U16StringSet.hpp>
+#include <erbsland/U32StringCIHashSet.hpp>
+#include <erbsland/U32StringCISet.hpp>
+#include <erbsland/U32StringHashSet.hpp>
+#include <erbsland/U32StringSet.hpp>
+#include <erbsland/U8StringCIHashSet.hpp>
+#include <erbsland/U8StringCISet.hpp>
+#include <erbsland/U8StringHashSet.hpp>
+#include <erbsland/U8StringSet.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
 #include <type_traits>
 
 using namespace el::text::literals;
-
 using namespace el::text;
 
 static_assert(std::is_same_v<StringSet::Key, String>);
@@ -44,10 +43,10 @@ class StringSetTest final : public el::UnitTest {
 public:
     void testSlicedKeysAreStoredCompactly() {
 
-        auto backing = StringEditor::fromCharacter(U'x', el::unit::CpLength{1024U});
-        backing.replace(el::unit::ByteRange{el::unit::ByteIndex{500U}, el::unit::ByteLength{3U}}, "key"_el);
+        auto backing = StringEditor::fromCharacter(U'x', el::unit::CpCount{1024U});
+        backing.replace(el::unit::ByteRange{el::unit::ByteIndex{500U}, el::unit::ByteCount{3U}}, "key"_el);
         const auto source = String{backing};
-        const auto key = source.slice(el::unit::ByteRange{el::unit::ByteIndex{500U}, el::unit::ByteLength{3U}});
+        const auto key = source.slice({el::unit::ByteIndex{500U}, el::unit::ByteCount{3U}});
 
         auto ordered = StringSet{};
         ordered.insert(key);

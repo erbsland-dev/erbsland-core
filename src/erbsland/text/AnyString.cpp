@@ -42,4 +42,37 @@ auto AnyString::compare(const AnyString &other, const CharCompareFn compareFn) c
         other._value);
 }
 
+auto AnyString::compareBinary(const AnyString &other) const noexcept -> std::strong_ordering {
+    // Assignments can retain a typed empty value rather than the monostate.
+    const auto hasContent = [](const Value &value) noexcept -> bool {
+        return std::visit(
+            []<typename T>(const T &text) noexcept -> bool {
+                if constexpr (impl::AnyStringType<T>) {
+                    return !text.isEmpty();
+                } else {
+                    return false;
+                }
+            },
+            value);
+    };
+    const auto leftHasContent = hasContent(_value);
+    const auto rightHasContent = hasContent(other._value);
+    if (!leftHasContent || !rightHasContent) {
+        return leftHasContent <=> rightHasContent;
+    }
+    const auto encodingOrder = _value.index() <=> other._value.index();
+    if (encodingOrder != std::strong_ordering::equal) {
+        return encodingOrder;
+    }
+    return std::visit(
+        [&other]<typename T>(const T &left) noexcept -> std::strong_ordering {
+            if constexpr (impl::AnyStringType<T>) {
+                return left.compareBinary(std::get<T>(other._value));
+            } else {
+                return std::strong_ordering::equal;
+            }
+        },
+        _value);
+}
+
 }

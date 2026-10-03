@@ -6,6 +6,11 @@
 
 #include "../ProfileTypes.hpp"
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
+
 namespace app::stream::impl {
 
 /// Internal Fixture data for stream profiling.
@@ -17,7 +22,7 @@ struct Fixture {
     el::String expectedText;          ///< Expected text output.
     el::ByteBlock expectedRawDigest;  ///< Expected raw digest.
     el::ByteBlock expectedTextDigest; ///< Expected text digest.
-    std::uint64_t rawLength{};        ///< Raw byte length.
+    el::ByteCount rawLength{};        ///< Raw byte length.
 };
 
 }

@@ -27,6 +27,10 @@ const EscapeFormat::ValueToTextArray EscapeFormat::_valueToTextMap = {
         {Config, "config"_el},
         {ConfigTest, "config_test"_el},
         {Markdown, "markdown"_el},
+        {Url, "url"_el},
+        {UrlPath, "url_path"_el},
+        {UrlQuery, "url_query"_el},
+        {UrlUserInfo, "url_user_info"_el},
     },
 };
 

@@ -8,7 +8,7 @@
 
 #include "impl/ByteBlockLiteralFactory_fwd.hpp"
 
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 #include <array>
 #include <cstddef>
@@ -68,8 +68,8 @@ public: // tests
 
 public: // accessors
     /// Get the number of referenced bytes.
-    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteLength {
-        return unit::ByteLength::fromSizeT(_size);
+    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteCount {
+        return unit::ByteCount::fromSizeT(_size);
     }
     /// Access the complete static byte data.
     [[nodiscard]] auto span() const noexcept -> ConstByteSpan;

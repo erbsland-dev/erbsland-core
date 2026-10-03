@@ -7,7 +7,7 @@
 
 #include "unsafe/UnsafeCustomPasswordHashParameters.hpp"
 
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 #include <cstdint>
 
@@ -33,9 +33,9 @@ public: // accessors
     /// Get the password-hashing algorithm.
     [[nodiscard]] auto algorithm() const noexcept -> PasswordHashAlgorithm { return _algorithm; }
     /// Get the salt length.
-    [[nodiscard]] auto saltLength() const noexcept -> unit::ByteLength { return unit::ByteLength{16U}; }
+    [[nodiscard]] auto saltLength() const noexcept -> unit::ByteCount { return unit::ByteCount{16U}; }
     /// Get the derived-output length.
-    [[nodiscard]] auto outputLength() const noexcept -> unit::ByteLength { return unit::ByteLength{32U}; }
+    [[nodiscard]] auto outputLength() const noexcept -> unit::ByteCount { return unit::ByteCount{32U}; }
     /// Get the Argon2id memory cost in kibibytes.
     [[nodiscard]] auto memoryKiB() const noexcept -> uint32_t { return _memoryKiB; }
     /// Get the Argon2id pass count.

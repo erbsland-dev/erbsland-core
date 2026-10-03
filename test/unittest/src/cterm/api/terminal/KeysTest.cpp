@@ -48,14 +48,15 @@ public:
     }
 
     void testRejectsInvalidAndUndisplayableKeys() {
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Keys{Key::None});
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Keys{Key::Character});
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Keys{Key::Combined});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Keys{Key::None});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Keys{Key::Character});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Keys{Key::Combined});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Keys{Key{U'\0'}});
 
         auto keys = Keys{};
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, keys.add(Key::None));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, keys.add(Key::Character));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, keys.setKeys({Key::None}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, keys.add(Key::None));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, keys.add(Key::Character));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, keys.setKeys({Key::None}));
     }
 
     void testMainAndAlternativeKeys() {

@@ -39,31 +39,32 @@ The same text fails with a four-byte limit, while a separate malformed value fai
 
 .. erbsland-demo::
     :source: text/BaseN/BaseNDemos.cpp
-    :function-blocks: decodeSoundTag
-    :function-blocks-sha256: 675dce90b00fcd9712e1b7005756d2159954d6a05033b4df5b8b0532f87c5d39
+    :show: f:decodeSoundTag
     :exec: text/base_n --demo DecodeSoundTag
-    :source-sha256: 25ad05fcdf84c76b9b65f271db932811662bf5f38574ef658c1444b657225e11
+    :sha256: 9548821d2ac1f596689adf882200b283483ffdf30bb0f85b1ff4f101294c51dd
 
 .. code-block:: cpp
 
     void decodeSoundTag() {
         // Decode a small value with the largest byte count this field permits.
-        const auto decoded = el::base_n::BaseNDecoder{"a2Fpa3U="_el}.toData(el::ByteLength{5U});
+        const auto decoded = el::base_n::BaseNDecoder{"a2Fpa3U="_el}.toData(el::ByteCount{5U});
         el::io::printLine("Decoded bytes: "_el, decoded->length().toSizeT());
 
         // A malformed payload and an oversized payload both fail in the optional form.
         const auto invalid = el::base_n::BaseNDecoder{"a2Fpa3U!"_el}.toData();
-        const auto tooLarge = el::base_n::BaseNDecoder{"a2Fpa3U="_el}.toData(el::ByteLength{4U});
+        const auto tooLarge = el::base_n::BaseNDecoder{"a2Fpa3U="_el}.toData(el::ByteCount{4U});
         el::io::printLine("Malformed accepted: "_el, invalid.has_value());
         el::io::printLine("Oversized accepted: "_el, tooLarge.has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Decoded bytes: 5
-    Malformed accepted: false
-    Oversized accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDecoded bytes: 5
+        Malformed accepted: false
+        Oversized accepted: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -88,10 +89,9 @@ The example accepts a tilde between digits and then shows that an ordinary space
 
 .. erbsland-demo::
     :source: text/BaseN/BaseNDemos.cpp
-    :function-blocks: chooseWhitespace
-    :function-blocks-sha256: 6a9ca3de4b9c4db992d78761a9860ef5b3e07725affa96030674aa712491fe42
+    :show: f:chooseWhitespace
     :exec: text/base_n --demo ChooseWhitespace
-    :source-sha256: 25ad05fcdf84c76b9b65f271db932811662bf5f38574ef658c1444b657225e11
+    :sha256: 5b0611518bea5a2e40a42c4e9b6656a3b61638647ec7cbd219a67dbc85958bf9
 
 .. code-block:: cpp
 
@@ -102,11 +102,13 @@ The example accepts a tilde between digits and then shows that an ordinary space
         el::io::printLine("Space accepted: "_el, el::base_n::BaseNDecoder{"a2Fp a3U="_el, format}.toData().has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Tilde accepted: true
-    Space accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTilde accepted: true
+        Space accepted: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -129,10 +131,9 @@ The next example shows the difference from the default policy.
 
 .. erbsland-demo::
     :source: text/BaseN/BaseNDemos.cpp
-    :function-blocks: decodePaddingPolicy
-    :function-blocks-sha256: 126326c002310b649e075a25205d57cc234ac3eb9a63db1faf9946b39cd9c480
+    :show: f:decodePaddingPolicy
     :exec: text/base_n --demo DecodePaddingPolicy
-    :source-sha256: 25ad05fcdf84c76b9b65f271db932811662bf5f38574ef658c1444b657225e11
+    :sha256: cf928cf7cf61c1cbc801bd774318f71ac2a62e6b59decfcc5aaf6f290baa7834
 
 .. code-block:: cpp
 
@@ -148,12 +149,14 @@ The next example shows the difference from the default policy.
             "Incorrect padding accepted: "_el, el::base_n::BaseNDecoder{"a2Fpa3U=="_el, format}.toData().has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Default accepts a2Fpa3U: false
-    Optional padding accepts a2Fpa3U: true
-    Incorrect padding accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDefault accepts a2Fpa3U: false
+        Optional padding accepts a2Fpa3U: true
+        Incorrect padding accepted: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -162,8 +165,8 @@ If padding is present, the decoder still requires the canonical number of charac
 The encoder's ``EmitPadding`` flag is a separate setting; it controls what is written, as explained in
 :doc:`/topics/text_parsing_and_encoding/base_n_encoding`.
 
-What Strict Decoding Protects
-=============================
+Strict Base-N Validation
+========================
 
 After removing the configured ignored characters, the decoder examines the complete encoded value.
 It rejects characters outside the selected alphabet and alphabet characters that appear after padding.

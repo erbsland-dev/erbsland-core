@@ -1,7 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "CharSetWorkerWorkload.hpp"
+
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CharRange.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/LoopStatus.hpp>
 
 namespace app::charset {
 
@@ -42,24 +47,24 @@ auto CharSetWorkerWorkload::execute(const erbsland::profiling::WorkerExecutionCo
     case Operation::ConstructInitializerList:
         if (_fixture.caseName == "single"_el) {
             return measure(context, [&](const std::uint64_t, std::uint64_t &sink) -> void {
-                const auto value = el::CharSet{U'x'};
+                const auto value = el::CharSet::fromCharacters({U'x'});
                 consumeSet(sink, value);
             });
         }
         if (_fixture.caseName == "adjacent"_el) {
             return measure(context, [&](const std::uint64_t, std::uint64_t &sink) -> void {
-                const auto value = el::CharSet{U'a', U'b', U'c', U'd', U'e', U'f'};
+                const auto value = el::CharSet::fromCharacters({U'a', U'b', U'c', U'd', U'e', U'f'});
                 consumeSet(sink, value);
             });
         }
         if (_fixture.caseName == "unicode"_el) {
             return measure(context, [&](const std::uint64_t, std::uint64_t &sink) -> void {
-                const auto value = el::CharSet{U'A', U'é', U'β', U'中', el::Char{0x1F600U}};
+                const auto value = el::CharSet::fromCharacters({U'A', U'é', U'β', U'中', el::Char{0x1F600U}});
                 consumeSet(sink, value);
             });
         }
         return measure(context, [&](const std::uint64_t, std::uint64_t &sink) -> void {
-            const auto value = el::CharSet{U'a', U'e', U'i', U'o', U'u'};
+            const auto value = el::CharSet::fromCharacters({U'a', U'e', U'i', U'o', U'u'});
             consumeSet(sink, value);
         });
     case Operation::CopyConstruct:

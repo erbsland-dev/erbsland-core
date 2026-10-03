@@ -1,7 +1,7 @@
 
-******
-Groups
-******
+*************************************
+Assembler .groups and .group Commands
+*************************************
 
 Capture groups in the engine are indexed, and (optionally) can be assigned a name.
 
@@ -21,8 +21,8 @@ Syntax
 :expression:`.groups 3`
     Declare that the program uses three capture groups.
 
-Notes
------
+Capture-Group Count and Declaration Limits
+------------------------------------------
 
 - ``.groups`` can only be used once.
 - It must appear before any program code is emitted.
@@ -46,8 +46,8 @@ Arguments
 ``"text"``
     The group name.
 
-Notes
------
+Group Naming Rules
+------------------
 
 - ``.groups`` must be used before ``.group``.
 - Each group name can only be set once.

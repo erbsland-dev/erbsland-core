@@ -185,11 +185,10 @@ public:
         WITH_CONTEXT(requireFindFirst("xxaaaaabyy"_el, CaptureRange{2, 8}));
         WITH_CONTEXT(requireNoFindFirst("aaaaaaaaaaaaaac"_el));
 
-        auto longTextMatch = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{99'999U}); // ~100kb
+        auto longTextMatch = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpCount{99'999U}); // ~100kb
         longTextMatch.append("b"_el);
         WITH_CONTEXT(requireFindFirst(longTextMatch, CaptureRange{0, longTextMatch.length().toSizeT()}));
-        auto longTextNotMatch =
-            StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{99'999U}); // ~100kb
+        auto longTextNotMatch = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpCount{99'999U}); // ~100kb
         longTextNotMatch.append("c"_el);
         WITH_CONTEXT(requireNoFindFirst(longTextNotMatch));
     }
@@ -206,10 +205,10 @@ public:
             "end:      MATCH",
         }));
 
-        auto matchingText = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{1024U});
+        auto matchingText = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpCount{1024U});
         matchingText.append("b"_el);
         WITH_CONTEXT(requireFindFirst(matchingText, CaptureRange{0, matchingText.length().toSizeT()}));
-        auto nonMatchingText = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{1024U});
+        auto nonMatchingText = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpCount{1024U});
         nonMatchingText.append("c"_el);
         WITH_CONTEXT(requireNoFindFirst(nonMatchingText));
     }

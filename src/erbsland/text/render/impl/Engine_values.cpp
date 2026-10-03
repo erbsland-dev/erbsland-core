@@ -12,9 +12,10 @@
 #include "ValueData.hpp"
 #include "ValueTest.hpp"
 
+#include "../../../err/RuntimeError.hpp"
 #include "../../../math/SaturatingMath.hpp"
-#include "../../../text/Literals.hpp"
-#include "../../../text/StringFormat.hpp"
+#include "../../Literals.hpp"
+#include "../../StringFormat.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -22,6 +23,7 @@
 
 namespace erbsland::text::render::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 auto Engine::layoutAtLevel(const std::size_t level) const -> ConstCompiledLayoutPtr {
@@ -34,7 +36,7 @@ auto Engine::layoutAtLevel(const std::size_t level) const -> ConstCompiledLayout
     return _rootLayout->ancestors()[level - 1U];
 }
 
-void Engine::appendOutput(ExecutionFrame &frame, String text, const unit::CodeLocation location) {
+void Engine::appendOutput(ExecutionFrame &frame, String text, const CodeLocation location) {
     const auto byteCount = static_cast<uint64_t>(text.length().toSizeT());
     if (byteCount > _budget->remainingOutputBytes) {
         throw error(
@@ -48,7 +50,7 @@ void Engine::appendOutput(ExecutionFrame &frame, String text, const unit::CodeLo
     frame.output.append(std::move(text));
 }
 
-void Engine::push(ExecutionFrame &frame, Value value, const unit::CodeLocation location) {
+void Engine::push(ExecutionFrame &frame, Value value, const CodeLocation location) {
     if (frame.stack.size() >= _limits.valueStackDepth()) {
         throw error(
             RenderErrorCategory::Limit,
@@ -60,7 +62,7 @@ void Engine::push(ExecutionFrame &frame, Value value, const unit::CodeLocation l
     frame.stack.emplace_back(std::move(value));
 }
 
-void Engine::pushSuper(ExecutionFrame &frame, const std::size_t depth, const unit::CodeLocation location) {
+void Engine::pushSuper(ExecutionFrame &frame, const std::size_t depth, const CodeLocation location) {
     if (depth == 0U) {
         throw ProgramError{"A super request must skip at least one block implementation."_el};
     }
@@ -88,7 +90,7 @@ auto Engine::takeTop(ExecutionFrame &frame, const Opcode opcode) -> StackEntry {
     return result;
 }
 
-auto Engine::takeValue(ExecutionFrame &frame, const Opcode opcode, const unit::CodeLocation location) -> Value {
+auto Engine::takeValue(ExecutionFrame &frame, const Opcode opcode, const CodeLocation location) -> Value {
     auto entry = takeTop(frame, opcode);
     if (const auto *pending = std::get_if<PendingSuper>(&entry)) {
         return captureSuper(frame, pending->depth, location);
@@ -96,7 +98,7 @@ auto Engine::takeValue(ExecutionFrame &frame, const Opcode opcode, const unit::C
     return resolve(std::get<Value>(std::move(entry)), frame.layout, location);
 }
 
-auto Engine::resolvedTop(ExecutionFrame &frame, const unit::CodeLocation location) -> Value & {
+auto Engine::resolvedTop(ExecutionFrame &frame, const CodeLocation location) -> Value & {
     if (frame.stack.empty()) {
         throw ProgramError{"The value stack is empty for a unary operation."_el};
     }
@@ -108,7 +110,7 @@ auto Engine::resolvedTop(ExecutionFrame &frame, const unit::CodeLocation locatio
     return value;
 }
 
-auto Engine::captureSuper(ExecutionFrame &frame, const std::size_t depth, const unit::CodeLocation location) -> Value {
+auto Engine::captureSuper(ExecutionFrame &frame, const std::size_t depth, const CodeLocation location) -> Value {
     auto output = StringList{};
     executeSuper(frame, depth, output, location, true);
     return Value{output.join()};
@@ -118,10 +120,10 @@ auto Engine::constant(const ExecutionFrame &frame, const uint64_t index, const S
     if (index >= frame.layout->constantCount().toSizeT()) {
         throw ProgramError{StringFormat{"A {} constant index is outside the constant pool."_el}.build(kind)};
     }
-    return frame.layout->constant(unit::ItemIndex::fromSizeT(static_cast<std::size_t>(index)));
+    return frame.layout->constant(ItemIndex::fromSizeT(static_cast<std::size_t>(index)));
 }
 
-auto Engine::lookup(const ExecutionFrame &frame, const String &name, const unit::CodeLocation location) const -> Value {
+auto Engine::lookup(const ExecutionFrame &frame, const String &name, const CodeLocation location) const -> Value {
     auto found = false;
     auto value = findVisible(name, found);
     return resolve(std::move(value), frame.layout, location);
@@ -154,8 +156,7 @@ auto Engine::findVisible(const String &name, bool &found) const -> Value {
     return {};
 }
 
-auto Engine::resolve(Value value, const ConstCompiledLayoutPtr &layout, const unit::CodeLocation location) const
-    -> Value {
+auto Engine::resolve(Value value, const ConstCompiledLayoutPtr &layout, const CodeLocation location) const -> Value {
     for (auto count = std::size_t{0U}; value.isCallback(); ++count) {
         if (count >= _limits.callbackDepth()) {
             throw error(
@@ -167,9 +168,9 @@ auto Engine::resolve(Value value, const ConstCompiledLayoutPtr &layout, const un
         }
         try {
             value = value.evaluate();
-        } catch (const RenderError &) {
-            throw;
-        } catch (...) {
+        } catch (const RenderError &error) {
+            throw withCallbackContext(error, layout, location);
+        } catch (const err::RuntimeError &) {
             throw error(
                 RenderErrorCategory::Runtime,
                 "Layout value callback failed"_el,
@@ -182,12 +183,21 @@ auto Engine::resolve(Value value, const ConstCompiledLayoutPtr &layout, const un
     return value;
 }
 
+auto Engine::withCallbackContext(
+    const RenderError &error, const ConstCompiledLayoutPtr &layout, const CodeLocation location) -> RenderError {
+    auto context = error.context();
+    if (context.layout().isEmpty() && context.origin().isEmpty() && context.location().isUndefined()) {
+        context.setLayout(layout->name()).setOrigin(layout->source().origin()).setLocation(location);
+    }
+    return RenderError{std::move(context), error.cause()};
+}
+
 auto Engine::error(
     const RenderErrorCategory category,
     String title,
     String description,
     const ConstCompiledLayoutPtr &layout,
-    const unit::CodeLocation location,
+    const CodeLocation location,
     const std::exception_ptr cause) const -> RenderError {
     return RenderError{
         RenderErrorContext{category, std::move(title), std::move(description)}

@@ -20,8 +20,11 @@ If you are not yet familiar with :cpp:class:`Host <erbsland::network::Host>`,
 :cpp:class:`HostName <erbsland::network::HostName>`, and :cpp:class:`IpAddress <erbsland::network::IpAddress>`, start
 with :doc:`working-with-ip-addresses-and-hostnames`.
 
-Start with a Host and Wait for the Result
-=========================================
+For the conventions shared by event APIs, see :doc:`/topics/event/using_event_apis`.
+:doc:`/topics/event/callback_lifetimes` explains captures, source ownership, and cancellation beyond host lookups.
+
+Starting Host Resolution and Receiving Addresses
+================================================
 
 Create the lookup through the :cpp:class:`Network <erbsland::network::Network>` facade belonging to the event loop that
 should receive its callbacks.
@@ -35,12 +38,14 @@ The final callback is the natural place to release the lookup or start the next 
 
 .. erbsland-demo::
     :source: network/HostLookupDomain/main.cpp
-    :source-sha256: ffb08dee5209922a5c42add4094edc57aa2375caff0f0408ec6bd57d9ecca607
+    :sha256: 314651951ed4acce978fff49a7fbd3ff12f9b9e925d9d9ecd61265820326d1e6
 
 .. code-block:: cpp
 
+    /// Keep the lookup alive after its setup function returns.
+    el::HostLookupPtr lookup;
+
     /// Resolve a public host name without blocking the event loop.
-    /// Keep the lookup alive until the final event runs; the lookup owns its stable event editor.
     /// A host can resolve to several addresses, so successful code processes the complete result list.
     void resolveDocumentationHost() {
         const auto events = el::application().events();
@@ -81,8 +86,8 @@ The lookup has the terminal ``Closed`` or ``Failed`` state while the correspondi
 It returns to ``Inactive`` and clears ``host()`` before ``onFinal()`` runs.
 That ordering gives cleanup code a predictable point at which the lookup is ready to use again.
 
-Give Slow Lookups a Deadline
-============================
+Host Lookup Timeouts and Retry Limits
+=====================================
 
 Each ``start()`` call accepts :cpp:class:`HostLookupOptions <erbsland::network::HostLookupOptions>`.
 The defaults give the complete operation a ten-second deadline, allow two native resolver attempts, and wait 100
@@ -108,8 +113,8 @@ As with every event timeout, the deadline can be delivered only while the owner 
 The timeout and maximum attempt count must be positive, and the retry delay must not be negative.
 Invalid options throw synchronously from ``start()`` so configuration mistakes are visible at the call site.
 
-Turn Failures into Useful Diagnostics
-=====================================
+Host Lookup Errors and Diagnostics
+==================================
 
 Resolver failures arrive through ``onError()`` as a
 :cpp:class:`NetworkErrorContext <erbsland::network::NetworkErrorContext>`.
@@ -124,7 +129,7 @@ If your event-driven application has a standard diagnostic boundary, throw
 
 .. erbsland-demo::
     :source: network/HostLookupFailure/main.cpp
-    :source-sha256: 63c69f2f0c7907d830443af51f0b80d1c1d07682b85bf12719f3d3f163dc3308
+    :sha256: 57793b49146207fabaf645cf5a5d2068bf068ec60f4dd39917256e41d4d2268b
 
 .. code-block:: cpp
 
@@ -154,8 +159,8 @@ calling ``onError()``.
 If ``onResolved()`` or ``onError()`` throws, the lookup still returns to ``Inactive`` but skips ``onFinal()``.
 The exception continues through the event loop.
 
-Keep Callbacks with Their Owner Event Loop
-==========================================
+Host Lookup Owner Loops and Callback Execution
+==============================================
 
 Every lookup belongs to the event loop whose :cpp:class:`Network <erbsland::network::Network>` facade created it.
 Its handlers run in that loop, so related application state can stay confined to a main loop, worker loop, or other
@@ -168,7 +173,7 @@ The following demo creates a managed event thread and verifies that the lookup h
 .. erbsland-demo::
     :source: network/HostLookupEventThread/main.cpp
     :exec: network/host_lookup_event_thread
-    :source-sha256: 5c63fcfb423d7d910176a57be3f18fa3db6394440db4ef486f1714699198771f
+    :sha256: bd32da6845b589af3f3901ba4bb5be2f87571d5eca951406df5988d96a94f69d
 
 .. code-block:: cpp
 
@@ -195,15 +200,17 @@ The following demo creates a managed event thread and verifies that the lookup h
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Handler runs in worker event loop: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mHandler runs in worker event loop: true␛[0m
 
 .. erbsland-demo-end::
 
-Cancel a Result That Is No Longer Useful
-========================================
+Cancelling Host Resolution
+==========================
 
 Call ``cancel()`` when the object, request, or screen waiting for the result goes away.
 Cancellation is thread-safe and idempotent, so cleanup code can call it without first checking the lookup state.
@@ -216,7 +223,7 @@ Cancelling an inactive lookup or repeating cancellation has no effect.
 .. erbsland-demo::
     :source: network/HostLookupCancel/main.cpp
     :exec: network/host_lookup_cancel
-    :source-sha256: 466e725ab66bef56651fce78743f237579d08321c08d75499d9e29cb1c1ef049
+    :sha256: 518bf37ecb077805e2536ae5a85780894bfe02247013400bd5f169aecdb67971
 
 .. code-block:: cpp
 
@@ -245,15 +252,17 @@ Cancelling an inactive lookup or repeating cancellation has no effect.
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Lookup state after final event: Inactive
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLookup state after final event: Inactive␛[0m
 
 .. erbsland-demo-end::
 
-Let Ownership Define the Lookup Lifetime
-========================================
+HostLookup Ownership and Lifetime
+=================================
 
 Store the :cpp:type:`HostLookupPtr <erbsland::network::HostLookupPtr>` in the controller, request, or session that needs
 the result.
@@ -272,7 +281,7 @@ Every normally completed or cancelled operation reaches this handler.
 .. erbsland-demo::
     :source: network/HostLookupLifetime/main.cpp
     :exec: network/host_lookup_lifetime
-    :source-sha256: 45884d77a69a603dd385d2800c97315e6924f0b2fb39ad2814331eac0f25a63c
+    :sha256: 8cbd4fcb85b2a3b6063591bd51c43d8021035573a42ff79813f993ec7b829854
 
 .. code-block:: cpp
 
@@ -283,7 +292,7 @@ Every normally completed or cancelled operation reaches this handler.
         lookup = events->get<el::Network>().createHostLookup();
         lookup->events()
             .onResolved([](const el::List<el::IpAddress> &addresses) -> void {
-                el::stdOut()->printLine("Resolved address: "_el, addresses[el::ItemIndex{0U}]);
+                el::stdOut()->printLine("Resolved address: "_el, addresses.first());
             })
             .onFinal([]() -> void {
                 lookup.reset();
@@ -300,10 +309,15 @@ Every normally completed or cancelled operation reaches this handler.
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Resolved address: 9.9.9.9
-    Lookup released from its final handler.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mResolved address: 9.9.9.9
+        Lookup released from its final handler.␛[0m
 
 .. erbsland-demo-end::
+
+For a task that combines lookup with later steps, see :doc:`/topics/event/event_workflows` for coordinating dependent
+steps and their success and failure paths.

@@ -4,7 +4,7 @@
 
 #include "ExitCode.hpp"
 #include "IntegerAmount.hpp"
-#include "IntegerUnitAmount.hpp"
+#include "IntegerUnitCount.hpp"
 #include "IntegerUnitIndex.hpp"
 #include "IntegerUnitOffset.hpp"
 #include "IntegerUnitRange.hpp"
@@ -38,9 +38,9 @@ struct std::formatter<erbsland::unit::IntegerUnitIndex<tIntegerUnit>>
 };
 
 template <erbsland::unit::impl::ValidIntegerUnit tIntegerUnit>
-struct std::formatter<erbsland::unit::IntegerUnitAmount<tIntegerUnit>>
-    : std::formatter<typename erbsland::unit::IntegerUnitAmount<tIntegerUnit>::Value> {
-    using Amount = erbsland::unit::IntegerUnitAmount<tIntegerUnit>;
+struct std::formatter<erbsland::unit::IntegerUnitCount<tIntegerUnit>>
+    : std::formatter<typename erbsland::unit::IntegerUnitCount<tIntegerUnit>::Value> {
+    using Amount = erbsland::unit::IntegerUnitCount<tIntegerUnit>;
     using Base = std::formatter<typename Amount::Value>;
 
     auto format(const Amount value, std::format_context &ctx) const -> std::format_context::iterator {
@@ -65,7 +65,15 @@ struct std::formatter<erbsland::unit::IntegerUnitRange<tIntegerUnit>> : std::for
     using Base = std::formatter<std::string>;
 
     auto format(const Range value, std::format_context &ctx) const -> std::format_context::iterator {
-        return Base::format(std::format("{}:{}", value.index(), value.length()), ctx);
+        return Base::format(std::format("{}:{}", value.beginIndex(), value.length()), ctx);
+    }
+};
+
+template <erbsland::unit::VersionPart tPart>
+struct std::formatter<erbsland::unit::VersionComponent<tPart>> : std::formatter<uint16_t> {
+    auto format(erbsland::unit::VersionComponent<tPart> value, std::format_context &ctx) const
+        -> std::format_context::iterator {
+        return std::formatter<uint16_t>::format(value.toRawValue(), ctx);
     }
 };
 

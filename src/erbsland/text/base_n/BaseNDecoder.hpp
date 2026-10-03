@@ -7,7 +7,7 @@
 #include "../AnyString.hpp"
 
 #include "../../mem/ByteBlock_fwd.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <optional>
 
@@ -27,12 +27,12 @@ public: // accessors
 
 public: // conversion
     /// Decode data, preserving sensitive input storage and returning no value for invalid input.
-    [[nodiscard]] auto toData(unit::ByteLength maximum = unit::ByteLength::infinite()) const
+    [[nodiscard]] auto toData(unit::ByteCount maximum = unit::ByteCount::infinite()) const
         -> std::optional<mem::ByteBlock>;
     /// Decode data, preserving sensitive input storage, or throw a detailed error.
-    /// @throws err::ParseError If the text is malformed.
-    /// @throws err::OutOfRangeError If the decoded data exceeds `maximum`.
-    [[nodiscard]] auto toDataOrThrow(unit::ByteLength maximum = unit::ByteLength::infinite()) const -> mem::ByteBlock;
+    /// @param maximum The decoded byte limit, or infinite for no limit. Exceeding this limit is a parse failure.
+    /// @throws err::ParseError If the input is malformed or the decoded data exceeds `maximum`.
+    [[nodiscard]] auto toDataOrThrow(unit::ByteCount maximum = unit::ByteCount::infinite()) const -> mem::ByteBlock;
 
 private:
     AnyString _text;

@@ -5,7 +5,7 @@
 #include "HttpMediaTypeParameter.hpp"
 
 #include "../../text/StringEditor_fwd.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ItemCount.hpp"
 #include "../../util/List.hpp"
 
@@ -25,7 +25,7 @@ using HttpMediaTypeParameters = util::List<HttpMediaTypeParameter>;
 class HttpMediaType final {
 public:
     /// Maximum standalone media-type text length.
-    static constexpr auto cMaximumTextLength = unit::ByteLength{16U * 1024U};
+    static constexpr auto cMaximumTextLength = unit::ByteCount{16U * 1024U};
     /// Maximum standalone parameter count.
     static constexpr auto cMaximumParameterCount = unit::ItemCount{64U};
 
@@ -33,10 +33,13 @@ public:
     /// Create an invalid placeholder.
     HttpMediaType() noexcept = default;
     /// Create a media type without parameters.
-    /// @throws err::ParameterError If either token is invalid.
+    /// @param type The media type. Must be a non-empty ASCII token.
+    /// @param subtype The media subtype. Must be a non-empty ASCII token.
     HttpMediaType(text::String type, text::String subtype);
     /// Create a media type with ordered unique parameters.
-    /// @throws err::ParameterError If either token is invalid or a parameter name is duplicated.
+    /// @param type The media type. Must be a non-empty ASCII token.
+    /// @param subtype The media subtype. Must be a non-empty ASCII token.
+    /// @param parameters The ordered media-type parameters. Names must be unique.
     HttpMediaType(text::String type, text::String subtype, HttpMediaTypeParameters parameters);
 
     // defaults
@@ -66,10 +69,11 @@ public: // tests/accessors
 
 public: // modifiers
     /// Set a parameter in place, preserving the first matching position or appending it.
-    /// @throws err::ParameterError If the parameter is invalid.
+    /// @param parameter The validated media-type parameter. Must be valid.
     auto setParameter(HttpMediaTypeParameter parameter) -> HttpMediaType &;
     /// Set a parameter in place from text.
-    /// @throws err::ParameterError If the name or value is invalid.
+    /// @param name The parameter name. Must be a non-empty ASCII token.
+    /// @param value The parameter value. Must be valid UTF-8 without prohibited HTTP control bytes.
     auto setParameter(text::String name, text::String value) -> HttpMediaType &;
     /// Remove a parameter using ASCII-case-insensitive name matching.
     auto removeParameter(const text::String &name) -> HttpMediaType &;

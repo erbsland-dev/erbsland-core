@@ -14,4 +14,3 @@
 #include "constraint/Minimum.hpp"
 #include "constraint/Multiple.hpp"
 #include "constraint/Starts.hpp"
-

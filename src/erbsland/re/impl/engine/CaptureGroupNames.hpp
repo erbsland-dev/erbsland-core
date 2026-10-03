@@ -4,6 +4,7 @@
 
 #include "../../../text/String.hpp"
 #include "../../../text/StringCIHashMap.hpp"
+#include "../../../text/StringList.hpp"
 #include "../../CaptureGroupIndex.hpp"
 
 #include <vector>
@@ -11,7 +12,7 @@
 namespace erbsland::re::impl {
 
 /// The list with capture group names.
-using CaptureGroupNames = std::vector<text::String>;
+using CaptureGroupNames = text::StringList;
 
 /// Create a map from capture group names to their index.
 [[nodiscard]] inline auto createCaptureGroupNameToIndexMap(const CaptureGroupNames &names) noexcept

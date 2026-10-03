@@ -1,9 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ProfileTypes.hpp"
 
 #include "impl/ProfileTypeTools.hpp"
+
+#include <erbsland/String.hpp>
 
 namespace app::byte {
 
@@ -209,7 +210,7 @@ auto coverageRegistry() -> const std::vector<UseCaseDescriptor> & {
             UseCase::RingTransfer,
             {"partial"_el, "exact"_el, "exact-failure"_el},
             {"write/writeExact/read"_el});
-        addDescriptor(target, ByteType::RingBuffer, UseCase::RingOwnedRead, {"block"_el}, {"read(ByteLength)"_el});
+        addDescriptor(target, ByteType::RingBuffer, UseCase::RingOwnedRead, {"block"_el}, {"read(ByteCount)"_el});
         addDescriptor(
             target,
             ByteType::RingBuffer,

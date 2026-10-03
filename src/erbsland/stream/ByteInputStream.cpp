@@ -4,7 +4,7 @@
 
 #include "impl/StreamBufferSizes.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../mem/impl/UnsafeRingBufferAccess.hpp"
 #include "../text/Literals.hpp"
 
@@ -14,12 +14,14 @@
 
 namespace erbsland::stream {
 
+using namespace err;
+using namespace mem;
 using namespace text::literals;
 using mem::Byte;
 using mem::ByteBlock;
 using mem::Endianness;
+using unit::ByteCount;
 using unit::ByteIndex;
-using unit::ByteLength;
 using unit::ByteOffset;
 
 auto ByteInputStream::endianness() const noexcept -> Endianness {
@@ -66,10 +68,10 @@ auto ByteInputStream::deadlineFromNow() const -> ReadDeadline {
     return time::TimePoint::inFuture(inputSettings().timeout());
 }
 
-auto ByteInputStream::retainedBuffer() -> mem::RingBuffer & {
+auto ByteInputStream::retainedBuffer() -> RingBuffer & {
     if (!_retainedBytes) {
         const auto initialCapacity = impl::streamBufferSizes(inputSettings().buffering()).ioRing;
-        const auto maximumCapacity = ByteLength::fromSizeT(std::numeric_limits<std::size_t>::max());
+        const auto maximumCapacity = ByteCount::fromSizeT(std::numeric_limits<std::size_t>::max());
         _retainedBytes.emplace(initialCapacity, maximumCapacity);
         _retainedBytes->setSensitive(inputSettings().isSensitive());
     } else if (_retainedBytes->isSensitive() != inputSettings().isSensitive()) {
@@ -79,20 +81,21 @@ auto ByteInputStream::retainedBuffer() -> mem::RingBuffer & {
     return *_retainedBytes;
 }
 
-auto ByteInputStream::readChunkLocked(const mem::ByteSpan destination, const ReadDeadline deadline)
-    -> StreamReadResult<ByteLength> {
+auto ByteInputStream::readChunkLocked(const ByteSpan destination, const ReadDeadline deadline)
+    -> StreamReadResult<ByteCount> {
     if (destination.empty()) {
-        return {StreamReadStatus::Data, ByteLength::zero()};
+        return {StreamReadStatus::Data, ByteCount::zero()};
     }
-    auto &retained = retainedBuffer();
-    if (!retained.isEmpty()) {
-        return {StreamReadStatus::Data, retained.read(destination)};
+    if (_retainedBytes) {
+        auto &retained = retainedBuffer();
+        if (!retained.isEmpty()) {
+            return {StreamReadStatus::Data, retained.read(destination)};
+        }
     }
     return readFromSource(destination, deadline);
 }
 
-auto ByteInputStream::readIntoRetained(const ByteLength maximumLength, const ReadDeadline deadline)
-    -> StreamReadStatus {
+auto ByteInputStream::readIntoRetained(const ByteCount maximumLength, const ReadDeadline deadline) -> StreamReadStatus {
     if (maximumLength.isZero()) {
         return StreamReadStatus::Data;
     }
@@ -121,14 +124,14 @@ auto ByteInputStream::readIntoRetained(const ByteLength maximumLength, const Rea
     return StreamReadStatus::Data;
 }
 
-auto ByteInputStream::prepareRead(const ByteLength maximumLength, const ReadDeadline deadline) -> StreamReadStatus {
+auto ByteInputStream::prepareRead(const ByteCount maximumLength, const ReadDeadline deadline) -> StreamReadStatus {
     if (maximumLength.isZero() || !retainedBuffer().isEmpty()) {
         return StreamReadStatus::Data;
     }
     return readIntoRetained(maximumLength, deadline);
 }
 
-auto ByteInputStream::prepareExact(const ByteLength length, const ReadDeadline deadline) -> StreamReadStatus {
+auto ByteInputStream::prepareExact(const ByteCount length, const ReadDeadline deadline) -> StreamReadStatus {
     auto &retained = retainedBuffer();
     while (retained.length() < length) {
         const auto status = readIntoRetained(length - retained.length(), deadline);
@@ -139,7 +142,7 @@ auto ByteInputStream::prepareExact(const ByteLength length, const ReadDeadline d
     return StreamReadStatus::Data;
 }
 
-auto ByteInputStream::prepareAll(const ByteLength maximumLength, const ReadDeadline deadline) -> StreamReadStatus {
+auto ByteInputStream::prepareAll(const ByteCount maximumLength, const ReadDeadline deadline) -> StreamReadStatus {
     auto &retained = retainedBuffer();
     while (retained.length() < maximumLength) {
         const auto maximumRead = std::min(
@@ -155,26 +158,26 @@ auto ByteInputStream::prepareAll(const ByteLength maximumLength, const ReadDeadl
     return StreamReadStatus::Data;
 }
 
-auto ByteInputStream::takeRetained(const ByteLength length) -> ByteBlock {
+auto ByteInputStream::takeRetained(const ByteCount length) -> ByteBlock {
     return retainedBuffer().read(length);
 }
 
-auto ByteInputStream::read(const mem::ByteSpan destination) -> StreamReadResult<ByteLength> {
+auto ByteInputStream::read(const ByteSpan destination) -> StreamReadResult<ByteCount> {
     return readUntil(destination, deadlineFromNow());
 }
 
-auto ByteInputStream::readUntil(const mem::ByteSpan destination, const ReadDeadline deadline)
-    -> StreamReadResult<ByteLength> {
+auto ByteInputStream::readUntil(const ByteSpan destination, const ReadDeadline deadline)
+    -> StreamReadResult<ByteCount> {
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
-        return {StreamReadStatus::Timeout, ByteLength::zero()};
+        return {StreamReadStatus::Timeout, ByteCount::zero()};
     }
     return readChunkLocked(destination, deadline);
 }
 
-auto ByteInputStream::read(const ByteLength maximumLength) -> StreamReadResult<ByteBlock> {
+auto ByteInputStream::read(const ByteCount maximumLength) -> StreamReadResult<ByteBlock> {
     if (maximumLength.isInfinite()) {
-        throw err::ParameterError{"The maximum byte read length must be finite."_el, "maximumLength"_el};
+        throw ParameterFailure{"The maximum byte read length must be finite."_el, "maximumLength"_el};
     }
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -185,9 +188,9 @@ auto ByteInputStream::read(const ByteLength maximumLength) -> StreamReadResult<B
                                             : StreamReadResult<ByteBlock>{status, {}};
 }
 
-auto ByteInputStream::readExact(const ByteLength length) -> StreamReadResult<ByteBlock> {
+auto ByteInputStream::readExact(const ByteCount length) -> StreamReadResult<ByteBlock> {
     if (length.isInfinite()) {
-        throw err::ParameterError{"The exact byte read length must be finite."_el, "length"_el};
+        throw ParameterFailure{"The exact byte read length must be finite."_el, "length"_el};
     }
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -200,7 +203,7 @@ auto ByteInputStream::readExact(const ByteLength length) -> StreamReadResult<Byt
 
 auto ByteInputStream::readByte() -> StreamReadResult<Byte> {
     auto byte = Byte{};
-    const auto result = read(mem::ByteSpan{&byte, 1U});
+    const auto result = read(ByteSpan{&byte, 1U});
     return result == StreamReadStatus::Data ? StreamReadResult<Byte>{StreamReadStatus::Data, byte}
                                             : StreamReadResult<Byte>{result.status(), {}};
 }
@@ -209,9 +212,9 @@ auto ByteInputStream::readAll() -> StreamReadResult<ByteBlock> {
     return readAll(cDefaultByteReadMaximum);
 }
 
-auto ByteInputStream::readAll(const ByteLength maximumLength) -> StreamReadResult<ByteBlock> {
+auto ByteInputStream::readAll(const ByteCount maximumLength) -> StreamReadResult<ByteBlock> {
     if (maximumLength.isInfinite()) {
-        throw err::ParameterError{"The maximum aggregate byte length must be finite."_el, "maximumLength"_el};
+        throw ParameterFailure{"The maximum aggregate byte length must be finite."_el, "maximumLength"_el};
     }
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -222,13 +225,13 @@ auto ByteInputStream::readAll(const ByteLength maximumLength) -> StreamReadResul
                                             : StreamReadResult<ByteBlock>{status, {}};
 }
 
-auto ByteInputStream::coRead(const ByteLength maximumLength) -> util::CoTask<StreamReadResult<ByteBlock>> {
+auto ByteInputStream::coRead(const ByteCount maximumLength) -> util::CoTask<StreamReadResult<ByteBlock>> {
     auto self = std::static_pointer_cast<ByteInputStream>(sharedInputStream());
     return util::CoTask<StreamReadResult<ByteBlock>>::run(
         [self = std::move(self), maximumLength]() -> StreamReadResult<ByteBlock> { return self->read(maximumLength); });
 }
 
-auto ByteInputStream::coReadExact(const ByteLength length) -> util::CoTask<StreamReadResult<ByteBlock>> {
+auto ByteInputStream::coReadExact(const ByteCount length) -> util::CoTask<StreamReadResult<ByteBlock>> {
     auto self = std::static_pointer_cast<ByteInputStream>(sharedInputStream());
     return util::CoTask<StreamReadResult<ByteBlock>>::run(
         [self = std::move(self), length]() -> StreamReadResult<ByteBlock> { return self->readExact(length); });
@@ -238,7 +241,7 @@ auto ByteInputStream::coReadAll() -> util::CoTask<StreamReadResult<ByteBlock>> {
     return coReadAll(cDefaultByteReadMaximum);
 }
 
-auto ByteInputStream::coReadAll(const ByteLength maximumLength) -> util::CoTask<StreamReadResult<ByteBlock>> {
+auto ByteInputStream::coReadAll(const ByteCount maximumLength) -> util::CoTask<StreamReadResult<ByteBlock>> {
     auto self = std::static_pointer_cast<ByteInputStream>(sharedInputStream());
     return util::CoTask<StreamReadResult<ByteBlock>>::run(
         [self = std::move(self), maximumLength]() -> StreamReadResult<ByteBlock> {
@@ -250,11 +253,10 @@ auto ByteInputStream::coReadBlocks() -> util::CoAsyncGenerator<StreamReadResult<
     return coReadBlocks(cDefaultByteReadMaximum);
 }
 
-auto ByteInputStream::coReadBlocks(const ByteLength maximumLength)
+auto ByteInputStream::coReadBlocks(const ByteCount maximumLength)
     -> util::CoAsyncGenerator<StreamReadResult<ByteBlock>> {
     if (maximumLength.isInfinite() || maximumLength.isZero()) {
-        throw err::ParameterError{
-            "The coroutine byte-block length must be positive and finite."_el, "maximumLength"_el};
+        throw ParameterFailure{"The coroutine byte-block length must be positive and finite."_el, "maximumLength"_el};
     }
     while (true) {
         auto result = co_await coRead(maximumLength);

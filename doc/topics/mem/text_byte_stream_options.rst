@@ -33,8 +33,8 @@ A count permits arbitrary text and lets a parser skip the value without scanning
 An end mark can be convenient when a producer naturally writes until the text is complete.
 A fixed-width field gives following fields predictable offsets and can be overwritten in place.
 
-Understanding What a Count Measures
------------------------------------
+Code-Unit Counts in Text Prefixes
+---------------------------------
 
 A count is only useful when writer and reader agree on what it measures.
 Erbsland Core text prefixes count encoded *code units*: individual bytes for UTF-8, 16-bit units for UTF-16, and 32-bit
@@ -57,8 +57,8 @@ The text is identical, yet the prefix changes with the encoding:
     | count=3 | 00 41 | 00 a2 | 00 42         |  "A¢B"
     +---------+-------------------------------+
 
-Choosing a Reliable Boundary
-----------------------------
+Count-Prefixed, Terminated, and Externally Sized Text Fields
+------------------------------------------------------------
 
 The permitted text determines which kind of boundary is safe.
 A count can describe any payload representable by its integer format.
@@ -72,8 +72,8 @@ become inconsistent.
 If the record has no such boundary, the text field must carry enough framing to prevent the reader from consuming bytes
 belonging to the next field.
 
-Keeping the Boundary Defensive
-------------------------------
+Text Field Length Limits and Encoding Validation
+------------------------------------------------
 
 Framing also establishes how much input a decoder is willing to process.
 Treat every declared size as untrusted until it has been checked against both the available bytes and a sensible
@@ -130,7 +130,7 @@ For a padded field, that length is mandatory.
 .. erbsland-demo::
     :source: mem/ByteTextOptions/SelectFormat.cpp
     :exec: mem/byte_text_options --demo SelectFormat
-    :source-sha256: 0c5c9e07abf39220fd26184c303e459a0b35d3fd2d7b8ba7dbfccb2b1ba4e38d
+    :sha256: cc355ddfccc92e9459e63ab188ba4257463b33bb03dc20049be25fb2776bdc71
 
 .. code-block:: cpp
 
@@ -142,7 +142,7 @@ For a padded field, that length is mandatory.
     void selectFormat() {
         auto dynamicOptions = el::ByteTextOptions::compact();
         auto paddedOptions = dynamicOptions;
-        paddedOptions.setFormat(el::ByteTextFormat::PaddedField).setLength(el::ByteLength{12U}).setPadding(el::Byte{0x20U});
+        paddedOptions.setFormat(el::ByteTextFormat::PaddedField).setLength(el::ByteCount{12U}).setPadding(el::Byte{0x20U});
 
         // Encode the same moon phase using dynamic and fixed-field framing.
         auto dynamicWriter = el::ByteWriter{};
@@ -159,13 +159,15 @@ For a padded field, that length is mandatory.
             paddedOptions.format() == el::ByteTextFormat::PaddedField);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Phase             : croissant
-    Dynamic bytes     : 09 63 72 6f 69 73 73 61 6e 74
-    Padded bytes      : 09 63 72 6f 69 73 73 61 6e 74 20 20
-    Fixed field       : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mPhase             : croissant
+        Dynamic bytes     : 09 63 72 6f 69 73 73 61 6e 74
+        Padded bytes      : 09 63 72 6f 69 73 73 61 6e 74 20 20
+        Fixed field       : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -202,8 +204,8 @@ The generic ``Utf16`` and ``Utf32`` values encode in little-endian order; an exp
 format specification.
 Byte-order marks are rejected in these framed fields because the options already define the encoding.
 
-Keeping Two Byte Orders Separate
---------------------------------
+Integer Count Byte Order and Text Encoding Byte Order
+-----------------------------------------------------
 
 There are two independent byte-order decisions.
 The :cpp:enum:`Endianness <erbsland::mem::Endianness>` configured on the reader or writer controls fixed-width integer
@@ -216,7 +218,7 @@ The next example deliberately uses a little-endian count and big-endian UTF-16 t
 .. erbsland-demo::
     :source: mem/ByteTextOptions/SelectEncoding.cpp
     :exec: mem/byte_text_options --demo SelectEncoding
-    :source-sha256: 0f04bcef688096bd82f809bda200438bd147a9736b3c9893b5d277bffcf81412
+    :sha256: c876f0664b8083bb6bd1208cdbcb2ad5cbfbfe4055c4cb91662e437a8d403fb6
 
 .. code-block:: cpp
 
@@ -244,12 +246,14 @@ The next example deliberately uses a little-endian count and big-endian UTF-16 t
             options.encoding() == el::StringEncoding::Utf16BigEndian);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Decoded phase     : éclipse
-    Encoded bytes     : 07 00 00 e9 00 63 00 6c 00 69 00 70 00 73 00 65
-    UTF-16 big endian : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDecoded phase     : éclipse
+        Encoded bytes     : 07 00 00 e9 00 63 00 6c 00 69 00 70 00 73 00 65
+        UTF-16 big endian : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -304,7 +308,7 @@ option set back to count-only framing.
 .. erbsland-demo::
     :source: mem/ByteTextOptions/UseEndMark.cpp
     :exec: mem/byte_text_options --demo UseEndMark
-    :source-sha256: 833b9330a0663c45c5a4856eae684b88c680a0a230ec5d846e9263a2fe53731e
+    :sha256: 54a378c6e7bb29576c56498e538cba8c4252f8c7b80394ff89deee0dcd3dd319
 
 .. code-block:: cpp
 
@@ -314,7 +318,7 @@ option set back to count-only framing.
     /// The configured maximum length bounds the search when reading untrusted data.
     void useEndMark() {
         auto options = el::ByteTextOptions{};
-        options.clearCountFormat().setEndMark(U'|').setLength(el::ByteLength{16U});
+        options.clearCountFormat().setEndMark(U'|').setLength(el::ByteCount{16U});
         auto writer = el::ByteWriter{};
 
         // Encode two moon phases whose boundaries are marked by a vertical bar.
@@ -328,13 +332,15 @@ option set back to count-only framing.
         el::io::printLine("Has end mark      : "_el, el::BooleanFormat::yesNo(), options.endMark().has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    First phase       : pleine
-    Second phase      : nouvelle
-    Encoded fields    : 70 6c 65 69 6e 65 7c 6e 6f 75 76 65 6c 6c 65 7c
-    Has end mark      : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFirst phase       : pleine
+        Second phase      : nouvelle
+        Encoded fields    : 70 6c 65 69 6e 65 7c 6e 6f 75 76 65 6c 6c 65 7c
+        Has end mark      : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -359,7 +365,7 @@ See :doc:`byte_integer_formats` for the exact integer layouts.
 .. erbsland-demo::
     :source: mem/ByteTextOptions/SelectCountFormat.cpp
     :exec: mem/byte_text_options --demo SelectCountFormat
-    :source-sha256: 672c9ff2eac69be0804845031773339a6a1c8f7d1d0ddf233bcdfa66e594add4
+    :sha256: afccbffed5346798b335532b76431c26bc1e08590c9a0590804ec2b46e554ff3
 
 .. code-block:: cpp
 
@@ -383,12 +389,14 @@ See :doc:`byte_integer_formats` for the exact integer layouts.
         el::io::printLine("Count configured  : "_el, el::BooleanFormat::yesNo(), compactOptions.countFormat().has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Fixed count       : 04 00 00 00 6c 75 6e 65
-    Compact count     : 04 6c 75 6e 65
-    Count configured  : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFixed count       : 04 00 00 00 6c 75 6e 65
+        Compact count     : 04 6c 75 6e 65
+        Count configured  : yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -419,7 +427,7 @@ strip matching bytes from the payload itself.
 .. erbsland-demo::
     :source: mem/ByteTextOptions/UsePadding.cpp
     :exec: mem/byte_text_options --demo UsePadding
-    :source-sha256: b4f9653b758270bc3bdd700ecca933ae1e5baa4490df928323cf5009d96b3d72
+    :sha256: f92edc5e1c73b953a4b8515a2aaa858f2f03cd640245dd6070e25f4ddc7c3220
 
 .. code-block:: cpp
 
@@ -429,7 +437,7 @@ strip matching bytes from the payload itself.
     /// consumes the complete field, including padding, before reading the next value.
     void usePadding() {
         auto options = el::ByteTextOptions{el::ByteTextFormat::PaddedField};
-        options.clearCountFormat().setEndMark(U'|').setLength(el::ByteLength{12U}).setPadding(el::Byte{0x2eU});
+        options.clearCountFormat().setEndMark(U'|').setLength(el::ByteCount{12U}).setPadding(el::Byte{0x2eU});
         auto writer = el::ByteWriter{};
 
         // Store one phase in a twelve-byte, dot-padded field.
@@ -443,13 +451,15 @@ strip matching bytes from the payload itself.
         el::io::printLine("Reader at end     : "_el, el::BooleanFormat::yesNo(), reader.isAtEnd());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Decoded phase     : lune
-    Padded field      : 6c 75 6e 65 7c 2e 2e 2e 2e 2e 2e 2e
-    Padding byte      : 46
-    Reader at end     : yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDecoded phase     : lune
+        Padded field      : 6c 75 6e 65 7c 2e 2e 2e 2e 2e 2e 2e
+        Padding byte      : 46
+        Reader at end     : yes␛[0m
 
 .. erbsland-demo-end::
 

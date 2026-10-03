@@ -6,6 +6,8 @@
 
 namespace erbsland::text::impl {
 
+using namespace unit;
+
 ByteBlockFormatter::ByteBlockFormatter(StringAppendTools &sink, const mem::ByteBlock &bytes, const ByteFormat &format) :
     _sink{sink},
     _bytes{bytes},
@@ -13,35 +15,39 @@ ByteBlockFormatter::ByteBlockFormatter(StringAppendTools &sink, const mem::ByteB
     _byteFormat{IntegerFormat::hexadecimal()
             .setFlags(IntegerFormatFlag::ZeroFill)
             .setLetterCase(format.letterCase())
-            .setFieldWidth(unit::CpLength{2U})},
+            .setFieldWidth(CpCount{2U})},
     _offsetFormat{IntegerFormat::hexadecimal()
             .setFlags(IntegerFormatFlag::ZeroFill)
             .setLetterCase(format.letterCase())
-            .setFieldWidth(unit::CpLength{8U})} {
+            .setFieldWidth(CpCount{8U})} {
 }
 
-auto ByteBlockFormatter::format() -> unit::CpLength {
+auto ByteBlockFormatter::format() -> CpCount {
     if (_bytes.isEmpty() || _format.maximum().isZero()) {
         return _appendedLength;
     }
     const auto byteCount = _bytes.length();
     if (_format.maximum().isInfinite() || _format.maximum() >= _bytes.length()) {
-        appendByteRange(unit::ByteIndex::zero(), unit::ByteIndex::end(byteCount), byteCount);
+        appendByteRange(ByteIndex::zero(), ByteIndex::end(byteCount), byteCount);
         return _appendedLength;
     }
 
     const auto maximum = _format.maximum();
     const auto hasEllipsis = !_format.ellipsis().isEmpty();
-    const auto retainedCount = maximum - unit::ByteLength{hasEllipsis ? 1U : 0U};
+    auto ellipsisCount = ByteCount::zero();
+    if (hasEllipsis) {
+        ellipsisCount = ByteCount::one();
+    }
+    const auto retainedCount = maximum - ellipsisCount;
     const auto truncateMode = effectiveTruncateMode();
-    auto prefixCount = unit::ByteLength::zero();
-    auto suffixCount = unit::ByteLength::zero();
+    auto prefixCount = ByteCount::zero();
+    auto suffixCount = ByteCount::zero();
     switch (truncateMode) {
     case TruncateMode::Begin:
         suffixCount = retainedCount;
         break;
     case TruncateMode::Middle:
-        prefixCount = (retainedCount + unit::ByteLength{1U}) / 2U;
+        prefixCount = (retainedCount + ByteCount{1U}) / 2U;
         suffixCount = retainedCount - prefixCount;
         break;
     case TruncateMode::End:
@@ -50,15 +56,15 @@ auto ByteBlockFormatter::format() -> unit::CpLength {
         break;
     }
 
-    const auto itemCount = retainedCount + unit::ByteLength{hasEllipsis ? 1U : 0U};
-    appendByteRange(unit::ByteIndex::zero(), unit::ByteIndex::end(prefixCount), itemCount);
+    const auto itemCount = maximum;
+    appendByteRange(ByteIndex::zero(), ByteIndex::end(prefixCount), itemCount);
     if (hasEllipsis) {
         const auto sourceIndex =
-            unit::ByteIndex::end(truncateMode == TruncateMode::Begin ? byteCount - suffixCount : prefixCount);
+            ByteIndex::end(truncateMode == TruncateMode::Begin ? byteCount - suffixCount : prefixCount);
         ++_itemIndex;
         appendTextItem(_format.ellipsis(), sourceIndex, !_itemIndex.isWithin(itemCount));
     }
-    appendByteRange(unit::ByteIndex::end(byteCount - suffixCount), unit::ByteIndex::end(byteCount), itemCount);
+    appendByteRange(ByteIndex::end(byteCount - suffixCount), ByteIndex::end(byteCount), itemCount);
     return _appendedLength;
 }
 
@@ -70,8 +76,7 @@ auto ByteBlockFormatter::effectiveTruncateMode() const noexcept -> TruncateMode 
     return _format.truncateMode();
 }
 
-void ByteBlockFormatter::appendByteRange(
-    const unit::ByteIndex begin, const unit::ByteIndex end, const unit::ByteLength itemCount) {
+void ByteBlockFormatter::appendByteRange(const ByteIndex begin, const ByteIndex end, const ByteCount itemCount) {
     for (auto index = begin; index < end; ++index) {
         beginItem(index);
         _appendedLength += appendInteger(_sink, _bytes.get(index).toUInt8(), _byteFormat);
@@ -80,7 +85,7 @@ void ByteBlockFormatter::appendByteRange(
     }
 }
 
-void ByteBlockFormatter::appendTextItem(const String &text, const unit::ByteIndex sourceIndex, const bool lastItem) {
+void ByteBlockFormatter::appendTextItem(const String &text, const ByteIndex sourceIndex, const bool lastItem) {
     beginItem(sourceIndex);
     appendText(text);
     finishItem(lastItem);
@@ -90,7 +95,7 @@ void ByteBlockFormatter::appendText(const String &text) {
     _appendedLength += _sink.append(text);
 }
 
-void ByteBlockFormatter::beginItem(const unit::ByteIndex sourceIndex) {
+void ByteBlockFormatter::beginItem(const ByteIndex sourceIndex) {
     if (_currentColumn.isZero()) {
         if (_format.hasFlag(ByteFormatFlag::Lines)) {
             appendText(_format.linePrefix());
@@ -103,7 +108,7 @@ void ByteBlockFormatter::beginItem(const unit::ByteIndex sourceIndex) {
     } else if (_format.hasFlag(ByteFormatFlag::Separator)) {
         if (!_format.hasFlag(ByteFormatFlag::ByteGroups) || _currentGroupByte >= _format.byteGroupSize()) {
             appendText(_format.byteSeparator());
-            _currentGroupByte = unit::ByteLength::zero();
+            _currentGroupByte = ByteCount::zero();
         }
     }
 }
@@ -112,18 +117,18 @@ void ByteBlockFormatter::finishItem(const bool lastItem) {
     ++_currentColumn;
     ++_currentGroupByte;
     if (_format.hasFlag(ByteFormatFlag::Lines) && (_currentColumn >= _format.bytesPerLine() || lastItem)) {
-        _currentColumn = unit::ByteLength::zero();
-        _currentGroupByte = unit::ByteLength::zero();
+        _currentColumn = ByteCount::zero();
+        _currentGroupByte = ByteCount::zero();
         ++_currentLine;
         appendText(_format.lineSuffix());
         if (_format.hasFlag(ByteFormatFlag::LineGroups) && _currentLine >= _format.lineGroupSize() && !lastItem) {
             appendText(_format.lineSuffix());
-            _currentLine = unit::ItemCount::zero();
+            _currentLine = ItemCount::zero();
         }
     }
 }
 
-auto formatByteBlock(StringAppendTools &sink, const mem::ByteBlock &bytes, const ByteFormat &format) -> unit::CpLength {
+auto formatByteBlock(StringAppendTools &sink, const mem::ByteBlock &bytes, const ByteFormat &format) -> CpCount {
     return ByteBlockFormatter{sink, bytes, format}.format();
 }
 

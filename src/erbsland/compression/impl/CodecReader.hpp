@@ -4,7 +4,7 @@
 
 #include "../CompressionError.hpp"
 
-#include "../../err/OutOfRangeError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteBlockEditor.hpp"
 #include "../../text/Literals.hpp"
@@ -59,13 +59,12 @@ public:
             return {};
         }
         if (_data.length().toSizeT() - _position >= maximum) {
-            const auto result =
-                _data.slice(unit::ByteIndex::fromSizeT(_position), unit::ByteLength::fromSizeT(maximum));
+            const auto result = _data.slice(unit::ByteIndex::fromSizeT(_position), unit::ByteCount::fromSizeT(maximum));
             _position += maximum;
             return result;
         }
         mem::ByteBlockEditor result;
-        result.reserve(unit::ByteLength::fromSizeT(maximum));
+        result.reserve(unit::ByteCount::fromSizeT(maximum));
         while (result.length().toSizeT() < maximum && !atEnd()) {
             const auto count = std::min(maximum - result.length().toSizeT(), _data.length().toSizeT() - _position);
             result.append(_data.span().subspan(_position, count));
@@ -77,7 +76,7 @@ public:
     auto little(const std::size_t count) -> uint64_t {
         using namespace text::literals;
         if (count > sizeof(uint64_t)) {
-            throw err::OutOfRangeError{"Codec integer field exceeds 64 bits."_el};
+            throw err::OutOfRangeFailure{"Codec integer field exceeds 64 bits."_el};
         }
         uint64_t value{};
         for (std::size_t i{}; i < count; ++i) {

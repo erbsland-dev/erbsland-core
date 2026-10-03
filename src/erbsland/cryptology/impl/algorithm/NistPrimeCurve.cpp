@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "NistPrimeCurve.hpp"
 
+#include "../SecureEraseGuard.hpp"
+
 #include "../../../mem/Byte.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../mem/SecureErase.hpp"
@@ -13,9 +15,13 @@
 
 namespace erbsland::cryptology::impl {
 
-const NistPrimeCurve::Number NistPrimeCurve::cOne{{1U}};
+using namespace unit;
 
-const NistPrimeCurve::Number NistPrimeCurve::cP256Modulus{{
+using namespace mem;
+
+const std::array<uint32_t, 12U> NistPrimeCurve::cOne{{1U}};
+
+const std::array<uint32_t, 12U> NistPrimeCurve::cP256Modulus{{
     0xffffffffU,
     0xffffffffU,
     0xffffffffU,
@@ -25,7 +31,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP256Modulus{{
     0x00000001U,
     0xffffffffU,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP256Order{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP256Order{{
     0xfc632551U,
     0xf3b9cac2U,
     0xa7179e84U,
@@ -35,7 +41,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP256Order{{
     0x00000000U,
     0xffffffffU,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP256B{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP256B{{
     0x27d2604bU,
     0x3bce3c3eU,
     0xcc53b0f6U,
@@ -45,7 +51,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP256B{{
     0xaa3a93e7U,
     0x5ac635d8U,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP256Gx{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP256Gx{{
     0xd898c296U,
     0xf4a13945U,
     0x2deb33a0U,
@@ -55,7 +61,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP256Gx{{
     0xe12c4247U,
     0x6b17d1f2U,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP256Gy{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP256Gy{{
     0x37bf51f5U,
     0xcbb64068U,
     0x6b315eceU,
@@ -65,7 +71,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP256Gy{{
     0xfe1a7f9bU,
     0x4fe342e2U,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP256FieldR2{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP256FieldR2{{
     0x00000003U,
     0x00000000U,
     0xffffffffU,
@@ -75,7 +81,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP256FieldR2{{
     0xfffffffdU,
     0x00000004U,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP256OrderR2{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP256OrderR2{{
     0xbe79eea2U,
     0x83244c95U,
     0x49bd6fa6U,
@@ -86,7 +92,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP256OrderR2{{
     0x66e12d94U,
 }};
 
-const NistPrimeCurve::Number NistPrimeCurve::cP384Modulus{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP384Modulus{{
     0xffffffffU,
     0x00000000U,
     0x00000000U,
@@ -100,7 +106,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP384Modulus{{
     0xffffffffU,
     0xffffffffU,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP384Order{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP384Order{{
     0xccc52973U,
     0xecec196aU,
     0x48b0a77aU,
@@ -114,7 +120,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP384Order{{
     0xffffffffU,
     0xffffffffU,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP384B{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP384B{{
     0xd3ec2aefU,
     0x2a85c8edU,
     0x8a2ed19dU,
@@ -128,7 +134,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP384B{{
     0xe23ee7e4U,
     0xb3312fa7U,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP384Gx{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP384Gx{{
     0x72760ab7U,
     0x3a545e38U,
     0xbf55296cU,
@@ -142,7 +148,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP384Gx{{
     0xbe8b0537U,
     0xaa87ca22U,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP384Gy{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP384Gy{{
     0x90ea0e5fU,
     0x7a431d7cU,
     0x1d7e819dU,
@@ -156,7 +162,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP384Gy{{
     0x96262c6fU,
     0x3617de4aU,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP384FieldR2{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP384FieldR2{{
     0x00000001U,
     0xfffffffeU,
     0x00000000U,
@@ -167,7 +173,7 @@ const NistPrimeCurve::Number NistPrimeCurve::cP384FieldR2{{
     0x00000002U,
     0x00000001U,
 }};
-const NistPrimeCurve::Number NistPrimeCurve::cP384OrderR2{{
+const std::array<uint32_t, 12U> NistPrimeCurve::cP384OrderR2{{
     0x19b409a9U,
     0x2d319b24U,
     0xdf1aa419U,
@@ -185,11 +191,14 @@ const NistPrimeCurve::Number NistPrimeCurve::cP384OrderR2{{
 NistPrimeCurve::NistPrimeCurve(const Name name) noexcept : _name{name} {
 }
 
-auto NistPrimeCurve::byteLength() const noexcept -> std::size_t {
-    return _name == Name::P256 ? 32U : 48U;
+auto NistPrimeCurve::byteLength() const noexcept -> ByteCount {
+    if (_name == Name::P256) {
+        return ByteCount{32U};
+    }
+    return ByteCount{48U};
 }
 
-auto NistPrimeCurve::order() const noexcept -> const Number & {
+auto NistPrimeCurve::order() const noexcept -> Number {
     return _name == Name::P256 ? cP256Order : cP384Order;
 }
 
@@ -197,16 +206,16 @@ auto NistPrimeCurve::basePoint() const noexcept -> Point {
     return _name == Name::P256 ? affine(cP256Gx, cP256Gy) : affine(cP384Gx, cP384Gy);
 }
 
-auto NistPrimeCurve::fieldModulus() const noexcept -> const Number & {
+auto NistPrimeCurve::fieldModulus() const noexcept -> Number {
     return _name == Name::P256 ? cP256Modulus : cP384Modulus;
 }
 
-auto NistPrimeCurve::coefficientB() const noexcept -> const Number & {
+auto NistPrimeCurve::coefficientB() const noexcept -> Number {
     return _name == Name::P256 ? cP256B : cP384B;
 }
 
-auto NistPrimeCurve::numberFromBigEndian(const mem::ConstByteSpan bytes) const noexcept -> std::optional<Number> {
-    if (bytes.size() > byteLength()) {
+auto NistPrimeCurve::numberFromBigEndian(const ConstByteSpan bytes) const noexcept -> std::optional<Number> {
+    if (ByteCount::fromSizeT(bytes.size()) > byteLength()) {
         return std::nullopt;
     }
     auto result = Number{};
@@ -214,17 +223,17 @@ auto NistPrimeCurve::numberFromBigEndian(const mem::ConstByteSpan bytes) const n
         const auto reverseIndex = bytes.size() - inputIndex - 1U;
         const auto wordIndex = inputIndex / 4U;
         const auto shift = static_cast<unsigned>((inputIndex % 4U) * 8U);
-        result.words[wordIndex] |= static_cast<uint32_t>(bytes[reverseIndex].toUInt8()) << shift;
+        result.words()[wordIndex] |= static_cast<uint32_t>(bytes[reverseIndex].toUInt8()) << shift;
     }
     return result;
 }
 
 auto NistPrimeCurve::compare(const Number &left, const Number &right) const noexcept -> int {
-    for (auto index = byteLength() / 4U; index-- > 0U;) {
-        if (left.words[index] < right.words[index]) {
+    for (auto index = byteLength().toSizeT() / 4U; index-- > 0U;) {
+        if (left.words()[index] < right.words()[index]) {
             return -1;
         }
-        if (left.words[index] > right.words[index]) {
+        if (left.words()[index] > right.words()[index]) {
             return 1;
         }
     }
@@ -232,8 +241,8 @@ auto NistPrimeCurve::compare(const Number &left, const Number &right) const noex
 }
 
 auto NistPrimeCurve::isZero(const Number &value) const noexcept -> bool {
-    for (auto index = std::size_t{}; index < byteLength() / 4U; ++index) {
-        if (value.words[index] != 0U) {
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U; ++index) {
+        if (value.words()[index] != 0U) {
             return false;
         }
     }
@@ -241,22 +250,26 @@ auto NistPrimeCurve::isZero(const Number &value) const noexcept -> bool {
 }
 
 auto NistPrimeCurve::bit(const Number &value, const std::size_t index) const noexcept -> bool {
-    return ((value.words[index / 32U] >> (index % 32U)) & 1U) != 0U;
+    return ((value.words()[index / 32U] >> (index % 32U)) & 1U) != 0U;
 }
 
-auto NistPrimeCurve::numberToBigEndian(const Number &value) const noexcept -> mem::ByteBlock {
-    auto result = mem::ByteBlockEditor{unit::ByteLength::fromSizeT(byteLength())};
-    for (auto outputIndex = std::size_t{}; outputIndex < byteLength(); ++outputIndex) {
-        const auto inputIndex = byteLength() - outputIndex - 1U;
-        const auto word = value.words[inputIndex / 4U];
-        const auto shift = static_cast<unsigned>((inputIndex % 4U) * 8U);
-        result.set(unit::ByteIndex::fromSizeT(outputIndex), mem::Byte{static_cast<uint8_t>(word >> shift)});
+auto NistPrimeCurve::numberToBigEndian(const Number &value, const bool sensitive) const noexcept -> ByteBlock {
+    auto result = ByteBlockEditor{byteLength()};
+    if (sensitive) {
+        result.markAsSensitive();
     }
-    return mem::ByteBlock{result};
+    for (
+        auto outputIndex = ByteIndex::zero(); outputIndex.isWithin(result.length()); outputIndex.uncheckedIncrement()) {
+        const auto inputIndex = outputIndex.mirroredWithin(byteLength()).toSizeT();
+        const auto word = value.words()[inputIndex / 4U];
+        const auto shift = static_cast<unsigned>((inputIndex % 4U) * 8U);
+        result.set(outputIndex, Byte{static_cast<uint8_t>(word >> shift)});
+    }
+    return ByteBlock{result};
 }
 
-auto NistPrimeCurve::pointFromBytes(const mem::ConstByteSpan bytes) const noexcept -> std::optional<Point> {
-    const auto coordinateLength = byteLength();
+auto NistPrimeCurve::pointFromBytes(const ConstByteSpan bytes) const noexcept -> std::optional<Point> {
+    const auto coordinateLength = byteLength().toSizeT();
     if (bytes.empty()) {
         return std::nullopt;
     }
@@ -351,7 +364,7 @@ auto NistPrimeCurve::multiplyPublic(const Point &point, const Number &scalar) co
     // FIPS 186-5 section 6.4.2 step 6 requires public scalar multiplication. This direct MSB-first double-and-add
     // branches on public scalar bits and is intentionally not a secret-scalar API.
     auto result = identity();
-    for (auto index = byteLength() * 8U; index-- > 0U;) {
+    for (auto index = byteLength().toSizeT() * 8U; index-- > 0U;) {
         result = doublePoint(result);
         if (bit(scalar, index)) {
             result = addMixed(result, point);
@@ -363,9 +376,9 @@ auto NistPrimeCurve::multiplyPublic(const Point &point, const Number &scalar) co
 auto NistPrimeCurve::addOrderSecret(const Number &left, const Number &right) const noexcept -> Number {
     auto sum = Number{};
     auto carry = uint64_t{};
-    for (auto index = std::size_t{}; index < byteLength() / 4U; ++index) {
-        const auto wordSum = uint64_t{left.words[index]} + right.words[index] + carry;
-        sum.words[index] = static_cast<uint32_t>(wordSum);
+    for (auto index = std::size_t{}; index < byteLength().toSizeT() / 4U; ++index) {
+        const auto wordSum = uint64_t{left.words()[index]} + right.words()[index] + carry;
+        sum.words()[index] = static_cast<uint32_t>(wordSum);
         carry = wordSum >> 32U;
     }
     return reduceOnceSecret(sum, order(), static_cast<uint32_t>(carry));
@@ -386,25 +399,42 @@ auto NistPrimeCurve::invertOrderSecret(const Number &value) const noexcept -> Nu
 }
 
 auto NistPrimeCurve::multiplyBaseSecret(const Number &scalar) const noexcept -> Point {
+    return multiplySecret(basePoint(), scalar);
+}
+
+auto NistPrimeCurve::multiplySecret(const Point &point, const Number &scalar) const noexcept -> Point {
     auto result = identity();
-    const auto base = basePoint();
-    // FIPS 186-5 section 6.4.1 step 3: R = [k]G. Always compute both candidates and select with a mask for all 256
-    // P-256 scalar bits; no branch, loop bound, or memory index depends on k.
-    for (auto index = byteLength() * 8U; index-- > 0U;) {
-        const auto doubled = doubleSecret(result);
-        const auto added = addMixedSecret(doubled, base);
+    // SEC 1 section 3.3.1 step 2 and FIPS 186-5 section 6.4.1 step 3: R = [scalar]point.
+    // Compute both candidates for every curve bit; neither control flow nor memory indices depend on scalar.
+    for (auto index = byteLength().toSizeT() * 8U; index-- > 0U;) {
+        auto doubled = doubleSecret(result);
+        const auto doubledGuard = SecureEraseGuard{doubled};
+        auto added = addMixedSecret(doubled, point);
+        const auto addedGuard = SecureEraseGuard{added};
         const auto mask = uint32_t{0U} - static_cast<uint32_t>(bit(scalar, index));
-        result = selectPoint(doubled, added, mask);
+        auto replacement = selectPoint(doubled, added, mask);
+        const auto replacementGuard = SecureEraseGuard{replacement};
+        // Install a complete replacement only after erasing the superseded projective state.
+        result.secureErase();
+        result = replacement;
     }
+    // The caller owns and erases the returned secret-derived point; all per-bit scratch has already been erased.
     return result;
 }
 
 auto NistPrimeCurve::toAffineSecret(const Point &point) const noexcept -> Point {
     // SEC 1 section 2.2: Jacobian (X,Y,Z) maps to (X/Z^2,Y/Z^3). Signing produces a nonidentity subgroup point.
-    const auto inverseZ = fieldInvert(point.z);
-    const auto inverseZSquared = fieldSquare(inverseZ);
-    return affine(
-        fieldMultiply(point.x, inverseZSquared), fieldMultiply(point.y, fieldMultiply(inverseZSquared, inverseZ)));
+    auto inverseZ = fieldInvert(point.z);
+    const auto inverseGuard = SecureEraseGuard{inverseZ};
+    auto inverseZSquared = fieldSquare(inverseZ);
+    const auto squareGuard = SecureEraseGuard{inverseZSquared};
+    auto inverseZCubed = fieldMultiply(inverseZSquared, inverseZ);
+    const auto cubeGuard = SecureEraseGuard{inverseZCubed};
+    auto xCoordinate = fieldMultiply(point.x, inverseZSquared);
+    const auto xGuard = SecureEraseGuard{xCoordinate};
+    auto yCoordinate = fieldMultiply(point.y, inverseZCubed);
+    const auto yGuard = SecureEraseGuard{yCoordinate};
+    return affine(xCoordinate, yCoordinate);
 }
 
 }

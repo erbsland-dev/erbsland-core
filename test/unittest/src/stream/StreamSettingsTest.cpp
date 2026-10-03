@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/path/PathReadDataOptions.hpp>
-#include <erbsland/path/PathReadTextOptions.hpp>
-#include <erbsland/path/PathWriteDataOptions.hpp>
-#include <erbsland/path/PathWriteTextOptions.hpp>
+#include <erbsland/InputStreamSettings.hpp>
+#include <erbsland/OutputStreamSettings.hpp>
+#include <erbsland/PathReadDataOptions.hpp>
+#include <erbsland/PathReadTextOptions.hpp>
+#include <erbsland/PathWriteDataOptions.hpp>
+#include <erbsland/PathWriteTextOptions.hpp>
 #include <erbsland/stream/impl/StreamBufferSizes.hpp>
-#include <erbsland/stream/InputStreamSettings.hpp>
-#include <erbsland/stream/OutputStreamSettings.hpp>
-#include <erbsland/stream/StreamBuffering.hpp>
+#include <erbsland/StreamBuffering.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 TESTED_TARGETS(
@@ -25,7 +25,7 @@ public:
         REQUIRE_FALSE(input.isSensitive());
         REQUIRE_EQUAL(output.timeout(), el::time::TimeDelta::milliseconds(1000));
         REQUIRE_EQUAL(output.buffering(), el::stream::StreamBuffering::Balanced);
-        REQUIRE_EQUAL(output.backBufferLimit(), el::unit::ByteLength{16U * 1024U * 1024U});
+        REQUIRE_EQUAL(output.backBufferLimit(), el::unit::ByteCount{16U * 1024U * 1024U});
     }
 
     void testSettingsAreFixedInPathOptions() {
@@ -36,7 +36,7 @@ public:
         const auto output = el::stream::OutputStreamSettings{}
                                 .setTimeout(el::time::TimeDelta::milliseconds(50))
                                 .setBuffering(el::stream::StreamBuffering::Throughput)
-                                .setBackBufferLimit(el::unit::ByteLength{4096U});
+                                .setBackBufferLimit(el::unit::ByteCount{4096U});
         const auto readOptions = el::path::PathReadDataOptions{}.setStreamSettings(input);
         const auto readTextOptions = el::path::PathReadTextOptions{}.setStreamSettings(input);
         const auto writeOptions = el::path::PathWriteDataOptions{}.setStreamSettings(output);
@@ -50,10 +50,10 @@ public:
         REQUIRE(readTextOptions.streamSettings().isSensitive());
         REQUIRE_EQUAL(writeOptions.streamSettings().timeout(), el::time::TimeDelta::milliseconds(50));
         REQUIRE_EQUAL(writeOptions.streamSettings().buffering(), el::stream::StreamBuffering::Throughput);
-        REQUIRE_EQUAL(writeOptions.streamSettings().backBufferLimit(), el::unit::ByteLength{4096U});
+        REQUIRE_EQUAL(writeOptions.streamSettings().backBufferLimit(), el::unit::ByteCount{4096U});
         REQUIRE_EQUAL(writeTextOptions.streamSettings().timeout(), el::time::TimeDelta::milliseconds(50));
         REQUIRE_EQUAL(writeTextOptions.streamSettings().buffering(), el::stream::StreamBuffering::Throughput);
-        REQUIRE_EQUAL(writeTextOptions.streamSettings().backBufferLimit(), el::unit::ByteLength{4096U});
+        REQUIRE_EQUAL(writeTextOptions.streamSettings().backBufferLimit(), el::unit::ByteCount{4096U});
     }
 
     void testBufferingPresetsAndBackLimitOverride() {
@@ -62,33 +62,63 @@ public:
         constexpr auto mib = std::size_t{1024U * 1024U};
         struct Case final {
             el::stream::StreamBuffering buffering;
-            std::size_t ioRing;
-            std::size_t aggregateChunk;
-            std::size_t decoder;
-            std::size_t outputRetainedInitial;
-            std::size_t outputBackLimit;
+            el::unit::ByteCount ioRing;
+            el::unit::ByteCount aggregateChunk;
+            el::unit::ByteCount decoder;
+            el::unit::ByteCount outputRetainedInitial;
+            el::unit::ByteCount outputBackLimit;
         };
         const auto cases = std::array{
-            Case{MinimalMemory, 4U * kib, 16U * kib, 4U * kib, 4U * kib, 256U * kib},
-            Case{Interactive, 16U * kib, 32U * kib, 16U * kib, 4U * kib, 1U * mib},
-            Case{Balanced, 64U * kib, 64U * kib, 64U * kib, 16U * kib, 16U * mib},
-            Case{Throughput, 256U * kib, 256U * kib, 128U * kib, 64U * kib, 64U * mib},
-            Case{Bulk, 1U * mib, 1U * mib, 256U * kib, 256U * kib, 256U * mib},
+            Case{
+                MinimalMemory,
+                el::unit::ByteCount{4U * kib},
+                el::unit::ByteCount{16U * kib},
+                el::unit::ByteCount{4U * kib},
+                el::unit::ByteCount{4U * kib},
+                el::unit::ByteCount{256U * kib}},
+            Case{
+                Interactive,
+                el::unit::ByteCount{16U * kib},
+                el::unit::ByteCount{32U * kib},
+                el::unit::ByteCount{16U * kib},
+                el::unit::ByteCount{4U * kib},
+                el::unit::ByteCount{1U * mib}},
+            Case{
+                Balanced,
+                el::unit::ByteCount{64U * kib},
+                el::unit::ByteCount{64U * kib},
+                el::unit::ByteCount{64U * kib},
+                el::unit::ByteCount{16U * kib},
+                el::unit::ByteCount{16U * mib}},
+            Case{
+                Throughput,
+                el::unit::ByteCount{256U * kib},
+                el::unit::ByteCount{256U * kib},
+                el::unit::ByteCount{128U * kib},
+                el::unit::ByteCount{64U * kib},
+                el::unit::ByteCount{64U * mib}},
+            Case{
+                Bulk,
+                el::unit::ByteCount{1U * mib},
+                el::unit::ByteCount{1U * mib},
+                el::unit::ByteCount{256U * kib},
+                el::unit::ByteCount{256U * kib},
+                el::unit::ByteCount{256U * mib}},
         };
         for (const auto &testCase : cases) {
             const auto actual = el::stream::impl::streamBufferSizes(testCase.buffering);
-            REQUIRE_EQUAL(actual.ioRing, el::unit::ByteLength{testCase.ioRing});
-            REQUIRE_EQUAL(actual.aggregateChunk, el::unit::ByteLength{testCase.aggregateChunk});
-            REQUIRE_EQUAL(actual.decoder, el::unit::ByteLength{testCase.decoder});
-            REQUIRE_EQUAL(actual.outputRetainedInitial, el::unit::ByteLength{testCase.outputRetainedInitial});
-            REQUIRE_EQUAL(actual.outputBackLimit, el::unit::ByteLength{testCase.outputBackLimit});
+            REQUIRE_EQUAL(actual.ioRing, testCase.ioRing);
+            REQUIRE_EQUAL(actual.aggregateChunk, testCase.aggregateChunk);
+            REQUIRE_EQUAL(actual.decoder, testCase.decoder);
+            REQUIRE_EQUAL(actual.outputRetainedInitial, testCase.outputRetainedInitial);
+            REQUIRE_EQUAL(actual.outputBackLimit, testCase.outputBackLimit);
         }
 
         auto settings = el::stream::OutputStreamSettings{}.setBuffering(Interactive);
-        REQUIRE_EQUAL(settings.backBufferLimit(), el::unit::ByteLength{1U * mib});
-        settings.setBackBufferLimit(el::unit::ByteLength{7U * kib}).setBuffering(Bulk);
-        REQUIRE_EQUAL(settings.backBufferLimit(), el::unit::ByteLength{7U * kib});
-        REQUIRE_EQUAL(settings.clearBackBufferLimit().backBufferLimit(), el::unit::ByteLength{256U * mib});
+        REQUIRE_EQUAL(settings.backBufferLimit(), el::unit::ByteCount{1U * mib});
+        settings.setBackBufferLimit(el::unit::ByteCount{7U * kib}).setBuffering(Bulk);
+        REQUIRE_EQUAL(settings.backBufferLimit(), el::unit::ByteCount{7U * kib});
+        REQUIRE_EQUAL(settings.clearBackBufferLimit().backBufferLimit(), el::unit::ByteCount{256U * mib});
     }
 
     void testPathTimeoutDefaultsAndWrappers() {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/conf/Matrix.hpp>
+#include <erbsland/OutOfRangeFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <stdexcept>
@@ -49,18 +50,19 @@ public:
         const auto defaultValue = matrix.value(matrixItemIndex(0), matrixItemIndex(5), 0);
         REQUIRE_EQUAL(defaultValue, 0);
         REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.valueOrThrow(matrixItemIndex(0), matrixItemIndex(5)));
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.setValue(matrixItemIndex(0), matrixItemIndex(5), 3));
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.setRow(matrixItemIndex(5), {1}));
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.setRow(matrixItemIndex(0), {1, 2, 3}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, matrix.setValue(matrixItemIndex(0), matrixItemIndex(5), 3));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, matrix.setRow(matrixItemIndex(5), {1}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, matrix.setRow(matrixItemIndex(0), {1, 2, 3}));
     }
 
     void testMaximumSizeIsCheckedBeforeAllocation() {
         const auto excessiveRowCount = matrixItemCount(Matrix<int>::cMaximumValueCount + 1U);
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, (void)Matrix<int>{excessiveRowCount, el::unit::ItemCount::one()});
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, (void)Matrix<int>{excessiveRowCount, el::unit::ItemCount::one()});
         REQUIRE_THROWS_AS(
-            el::err::OutOfRangeError, (void)Matrix<int>{matrixItemCount(10'001), matrixItemCount(10'001)});
+            el::err::OutOfRangeFailure, (void)Matrix<int>{matrixItemCount(10'001), matrixItemCount(10'001)});
         REQUIRE_THROWS_AS(
-            el::err::OutOfRangeError, (void)Matrix<int>{el::unit::ItemCount::infinite(), el::unit::ItemCount::zero()});
+            el::err::OutOfRangeFailure,
+            (void)Matrix<int>{el::unit::ItemCount::infinite(), el::unit::ItemCount::zero()});
     }
 
 private:

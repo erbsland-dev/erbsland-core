@@ -7,7 +7,7 @@
 #include "impl/Limits.hpp"
 
 #include "../text/StringFormat.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -28,13 +28,13 @@ public:
 
 public: // limits
     /// The maximum pattern length in characters.
-    [[nodiscard]] auto maximumPatternLength() const noexcept -> unit::CpLength {
+    [[nodiscard]] auto maximumPatternLength() const noexcept -> unit::CpCount {
         return std::min(_maximumPatternLength, impl::limits::maximumPatternLength);
     }
 
     /// Set the maximum pattern length.
     /// @param length A length in characters, or zero to reset back to default.
-    void setMaximumPatternLength(unit::CpLength length) noexcept {
+    void setMaximumPatternLength(unit::CpCount length) noexcept {
         if (length.isZero()) {
             length = impl::limits::maximumPatternLength;
         }
@@ -152,7 +152,7 @@ public: // diagnostics
     }
 
 private:
-    unit::CpLength _maximumPatternLength = impl::limits::maximumPatternLength;
+    unit::CpCount _maximumPatternLength = impl::limits::maximumPatternLength;
     std::size_t _maximumGroupNestingDepth = impl::limits::maximumGroupNestingDepth;
     std::size_t _maximumCaptureGroupCount = impl::limits::maximumCaptureGroupCount;
     std::size_t _maximumSequenceLength = impl::limits::maximumSequenceLength;

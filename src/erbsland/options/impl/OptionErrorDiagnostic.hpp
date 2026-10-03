@@ -25,8 +25,7 @@ public: // implement Diagnostic
     /// Convert the diagnostic to plain text.
     [[nodiscard]] auto toString() const noexcept -> text::String override;
     /// Convert the diagnostic to a structured text document.
-    [[nodiscard]] auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText = {}) const
-        -> text::TextDocument override;
+    [[nodiscard]] auto toTextDocument() const -> text::TextDocument override;
 
 private:
     OptionErrorContext _context; ///< The option error context.

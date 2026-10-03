@@ -55,9 +55,9 @@ private:
     /// Remove a finalized active request and continue dispatch.
     void requestFinalized(const std::shared_ptr<HttpClientRequest> &request);
     /// Release a request's retained fixed-body quota.
-    void releaseBodyQuota(unit::ByteLength length) noexcept;
+    void releaseBodyQuota(unit::ByteCount length) noexcept;
     /// Replace one active request's retained fixed-body reservation.
-    [[nodiscard]] auto replaceBodyQuota(unit::ByteLength oldLength, unit::ByteLength newLength) noexcept -> bool;
+    [[nodiscard]] auto replaceBodyQuota(unit::ByteCount oldLength, unit::ByteCount newLength) noexcept -> bool;
     /// Finish graceful session closure after all submitted requests finalize.
     void assessClosed();
     /// Emit session finalization exactly once.

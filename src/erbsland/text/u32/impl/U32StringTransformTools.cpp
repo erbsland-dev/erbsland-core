@@ -4,20 +4,20 @@
 
 #include "U32Writer.hpp"
 
+#include "../U32String.hpp"
 #include "../U32StringEditor.hpp"
 
 #include "../../../util/impl/LoopControl.hpp"
 #include "../../AnyStringBuilder.hpp"
-#include "../../impl/EscapeFormatter.hpp"
+#include "../../impl/escape/EscapeFormatter.hpp"
 
 #include <cstring>
 #include <span>
-#include <string_view>
 
 namespace erbsland::text::impl {
 
+using unit::CpCount;
 using unit::CpIndex;
-using unit::CpLength;
 using unit::CpRange;
 
 auto U32StringTransformTools::forEach(const ProcessCharacterFn &function) const -> util::LoopResult {
@@ -57,8 +57,8 @@ auto U32StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
             continue;
         }
 
-        auto reservedSize = U32StringSharedStorage::checkedAddSize(
-            begin, static_cast<std::size_t>(mapped.isValidUnicode()), "Transformed string exceeds size bounds");
+        auto reservedSize =
+            U32StringSharedStorage::checkedAddSize(begin, static_cast<std::size_t>(mapped.isValidUnicode()));
         auto sizingPosition = position;
         while (sizingPosition.toSizeT() < data.size()) {
             const auto sizingCharacter = utf32::decodeCharOrReplace(data, sizingPosition);
@@ -67,9 +67,7 @@ auto U32StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
                 break;
             }
             reservedSize = U32StringSharedStorage::checkedAddSize(
-                reservedSize,
-                static_cast<std::size_t>(sizingMapped.isValidUnicode()),
-                "Transformed string exceeds size bounds");
+                reservedSize, static_cast<std::size_t>(sizingMapped.isValidUnicode()));
         }
 
         auto result = U32StringSharedStorage{};
@@ -91,8 +89,7 @@ auto U32StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
             if (!transformMapped.isValidUnicode()) {
                 continue;
             }
-            const auto requiredSize =
-                U32StringSharedStorage::checkedAddSize(writeSize, 1U, "Transformed string exceeds size bounds");
+            const auto requiredSize = U32StringSharedStorage::checkedAddSize(writeSize, 1U);
             if (requiredSize > result.capacity().toSizeT()) {
                 result.ensureMutableCapacity(requiredSize);
             }
@@ -105,16 +102,20 @@ auto U32StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
     return std::nullopt;
 }
 
-auto U32StringTransformTools::aligned(const CpLength length, const geometry::Alignment alignment, const Char fill) const
-    -> U32StringSharedStorage {
+auto U32StringTransformTools::alignedIfChanged(
+    const CpCount length, const geometry::Alignment alignment, const Char fill) const
+    -> std::optional<U32StringSharedStorage> {
+    if (length.isZero() || !fill.isValidUnicode()) {
+        return std::nullopt;
+    }
     const auto data = _data.dataSpan();
-    const auto currentLength = CpLength::fromSizeT(data.size());
-    if (length <= currentLength || !fill.isValidUnicode()) {
-        return U32StringSharedStorage::fromCodeUnits(data);
+    const auto currentLength = CpCount::fromSizeT(data.size());
+    if (length <= currentLength) {
+        return std::nullopt;
     }
     const auto padding = length - currentLength;
-    auto leftPadding = CpLength::zero();
-    auto rightPadding = CpLength::zero();
+    auto leftPadding = CpCount::zero();
+    auto rightPadding = CpCount::zero();
     if (alignment.isRight()) {
         leftPadding = padding;
     } else if (alignment.isHorizontalCenter()) {
@@ -131,24 +132,27 @@ auto U32StringTransformTools::aligned(const CpLength length, const geometry::Ali
     return result;
 }
 
-auto U32StringTransformTools::truncated(
-    const CpLength maximumWidth, const TruncateMode mode, const U32StringDataView &ellipsis) const
-    -> U32StringSharedStorage {
+auto U32StringTransformTools::truncatedIfChanged(
+    const CpCount maximumWidth, const TruncateMode mode, const U32StringDataView &ellipsis) const
+    -> std::optional<U32StringSharedStorage> {
     const auto data = _data.dataSpan();
     if (maximumWidth.isInfinite()) {
-        return U32StringSharedStorage::fromCodeUnits(data);
+        return std::nullopt;
     }
     if (maximumWidth.isZero()) {
-        return {};
+        if (data.empty()) {
+            return std::nullopt;
+        }
+        return U32StringSharedStorage{};
     }
-    if (CpLength::fromSizeT(data.size()) <= maximumWidth) {
-        return U32StringSharedStorage::fromCodeUnits(data);
+    if (CpCount::fromSizeT(data.size()) <= maximumWidth) {
+        return std::nullopt;
     }
 
-    auto ellipsisLength = CpLength::fromSizeT(ellipsis.dataSpan().size());
+    auto ellipsisLength = CpCount::fromSizeT(ellipsis.dataSpan().size());
     auto ellipsisView = ellipsis;
     if (ellipsisLength > maximumWidth) {
-        ellipsisLength = CpLength::zero();
+        ellipsisLength = CpCount::zero();
         ellipsisView = {};
     }
     const auto keepLength = maximumWidth - ellipsisLength;
@@ -159,22 +163,22 @@ auto U32StringTransformTools::truncated(
         const auto suffixStart = CpIndex::fromSizeT(data.size()).retreated(keepLength);
         appendTools.append(ellipsisView);
         appendTools.append(
-            dataView(CpRange{suffixStart, CpIndex::fromSizeT(data.size())}.withOrigin(_data.range().index())));
+            dataView(CpRange{suffixStart, CpIndex::fromSizeT(data.size())}.toAbsolute(_data.range().beginIndex())));
         break;
     }
     case TruncateMode::Middle: {
-        const auto prefixLength = keepLength.added(CpLength::one()) / 2U;
+        const auto prefixLength = keepLength.added(CpCount::one()) / 2U;
         const auto suffixLength = keepLength - prefixLength;
         const auto suffixStart = CpIndex::fromSizeT(data.size()).retreated(suffixLength);
-        appendTools.append(dataView(CpRange{CpIndex::zero(), prefixLength}.withOrigin(_data.range().index())));
+        appendTools.append(dataView(CpRange{CpIndex::zero(), prefixLength}.toAbsolute(_data.range().beginIndex())));
         appendTools.append(ellipsisView);
         appendTools.append(
-            dataView(CpRange{suffixStart, CpIndex::fromSizeT(data.size())}.withOrigin(_data.range().index())));
+            dataView(CpRange{suffixStart, CpIndex::fromSizeT(data.size())}.toAbsolute(_data.range().beginIndex())));
         break;
     }
     case TruncateMode::End:
     default:
-        appendTools.append(dataView(CpRange{CpIndex::zero(), keepLength}.withOrigin(_data.range().index())));
+        appendTools.append(dataView(CpRange{CpIndex::zero(), keepLength}.toAbsolute(_data.range().beginIndex())));
         appendTools.append(ellipsisView);
         break;
     }
@@ -182,9 +186,9 @@ auto U32StringTransformTools::truncated(
 }
 
 auto U32StringTransformTools::escapedSize(const EscapeFormat format, const EscapeAmount amount) const noexcept
-    -> CpLength {
+    -> CpCount {
     if (format == EscapeFormat::None || amount == EscapeAmount::Nothing) {
-        return CpLength::fromSizeT(_data.dataSpan().size());
+        return CpCount::fromSizeT(_data.dataSpan().size());
     }
     const auto formatter = EscapeFormatter::forFormat(format);
     auto length = std::size_t{0U};
@@ -196,25 +200,42 @@ auto U32StringTransformTools::escapedSize(const EscapeFormat format, const Escap
         }
         return true;
     });
-    return CpLength::fromSizeT(length);
+    return CpCount::fromSizeT(length);
 }
 
-auto U32StringTransformTools::toEscaped(const EscapeFormat format, const EscapeAmount amount) const -> U32StringEditor {
+auto U32StringTransformTools::toEscapedIfChanged(
+    const U32String &source, const EscapeFormat format, const EscapeAmount amount) const
+    -> std::optional<U32StringEditor> {
     const auto data = _data.dataSpan();
     if (format == EscapeFormat::None || amount == EscapeAmount::Nothing) {
-        return U32StringEditor{std::u32string_view{data.data(), data.size()}};
+        return std::nullopt;
     }
     const auto formatter = EscapeFormatter::forFormat(format);
-    auto builder = AnyStringBuilder{StringKind::U32};
-    utf32::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> bool {
-        if (formatter->needsEscape(character, amount)) {
-            formatter->escape(character, builder);
-        } else {
-            builder.append(character);
+    auto builder = std::optional<AnyStringBuilder>{};
+    auto position = CpIndex::zero();
+    while (position.toSizeT() < data.size()) {
+        const auto begin = position.toSizeT();
+        const auto character = utf32::decodeCharOrReplace(data, position);
+        const auto needsEscape = formatter->needsEscape(character, amount);
+        const auto needsRepair =
+            character == Char::replacement() && !utf32::isValid(data.subspan(begin, position.toSizeT() - begin));
+        if (!builder && !needsEscape && !needsRepair) {
+            continue;
         }
-        return true;
-    });
-    return builder.takeU32StringEditor();
+        if (!builder) {
+            builder.emplace(AnyStringBuilder::u32(CpCount::fromSizeT(data.size())));
+            builder->append(source.slice(CpRange{CpIndex::zero(), CpCount::fromSizeT(begin)}));
+        }
+        if (needsEscape) {
+            formatter->escape(character, builder.value());
+        } else {
+            builder->append(character);
+        }
+    }
+    if (builder) {
+        return builder->takeU32StringEditor();
+    }
+    return std::nullopt;
 }
 
 auto U32StringTransformTools::dataView(const CpRange range) const -> U32StringDataView {

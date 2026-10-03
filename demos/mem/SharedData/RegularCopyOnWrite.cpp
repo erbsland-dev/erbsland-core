@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/mem/SharedData.hpp>
-#include <erbsland/mem/SharedDataPointer.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/SharedData.hpp>
+#include <erbsland/SharedDataPointer.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <utility>
 #include <vector>
@@ -18,21 +22,19 @@ namespace demo {
 class DesignBoard {
     class Data final : public el::mem::SharedData {
     public:
-        Data(el::String title, std::vector<el::String> concepts) :
-            _title{std::move(title)}, _concepts{std::move(concepts)} {}
+        Data(el::String title, el::StringList concepts) : _title{std::move(title)}, _concepts{std::move(concepts)} {}
         Data(const Data &other) : SharedData{other}, _title{other._title}, _concepts{other._concepts} {}
 
         el::String _title;
-        std::vector<el::String> _concepts;
+        el::StringList _concepts;
     };
 
 public:
-    DesignBoard(el::String title, std::vector<el::String> concepts) :
-        _data{new Data{std::move(title), std::move(concepts)}} {}
+    DesignBoard(el::String title, el::StringList concepts) : _data{new Data{std::move(title), std::move(concepts)}} {}
 
-    void addConcept(el::String conceptName) { _data->_concepts.emplace_back(std::move(conceptName)); }
+    void addConcept(el::String conceptName) { _data->_concepts.append(std::move(conceptName)); }
     [[nodiscard]] auto title() const noexcept -> const el::String & { return _data->_title; }
-    [[nodiscard]] auto conceptCount() const noexcept -> std::size_t { return _data->_concepts.size(); }
+    [[nodiscard]] auto conceptCount() const noexcept -> std::size_t { return _data->_concepts.count().toSizeT(); }
     [[nodiscard]] auto isShared() const noexcept -> bool { return _data.isShared(); }
 
 private:
@@ -40,7 +42,7 @@ private:
 };
 
 void regularCopyOnWrite() {
-    auto original = DesignBoard{"Rolig form"_el, {"cirkel"_el, "bølge"_el}};
+    auto original = DesignBoard{"Rolig form"_el, el::StringList{"cirkel"_el, "bølge"_el}};
 
     // Copying the value only shares its data object.
     auto variation = original;

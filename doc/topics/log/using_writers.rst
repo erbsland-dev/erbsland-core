@@ -27,13 +27,12 @@ This page introduces that model, shows how to add writers and route entries, and
 writers.
 The following pages then explore the console, file, and syslog writers in depth.
 
-Understand the Writer's Place in the Log System
-===============================================
+Log Writers, Manager Delivery, and Routes
+=========================================
 
 When you call a method such as :cpp:func:`info() <erbsland::log::LogStream::info>`, the stream creates a log entry and
 hands it to its :cpp:class:`LogManager <erbsland::log::LogManager>`.
-The manager later formats that entry according to the active :cpp:class:`LogLineFormat <erbsland::log::LogLineFormat>`
-and offers it to every configured writer route.
+The manager later formats the entry and delivers it to the writers selected by the configuration.
 Application code therefore does not need to open files, know terminal styles, or wait for a network destination while it
 is composing a message.
 
@@ -48,6 +47,12 @@ The filter answers whether a particular level and stream path belong at that des
 If several routes accept the same entry, all their writers receive it; routing does not select a single winner.
 This is what lets one error appear in a durable file, on the operator's console, and in the application's final failure
 report without three logging calls in the application.
+
+Routes can also give their writers different line layouts.
+For example, a console can show short progress messages while a file retains timestamps and stream names.
+Without a custom format, a route uses the configuration's default
+:cpp:class:`LogLineFormat <erbsland::log::LogLineFormat>`.
+:doc:`configuring_line_format` explains how to choose and assign these layouts.
 
 Add a Writer to the Configuration
 =================================
@@ -74,7 +79,7 @@ Notice that the stream does not know which writer receives its message; it only 
 .. erbsland-demo::
     :source: log/LoggingTopics/WriterSetup.cpp
     :exec: log/logging_topics --demo WriterSetup
-    :source-sha256: 1a59e284ce8c40850094d4f21fbe317642c32c9c2838c5c2e9d17c6073b89749
+    :sha256: 1ef417ff030bb3d5d61de3afff86c3036f8b5b1ba266d1ab91017a206de0a183
 
 .. code-block:: cpp
 
@@ -96,10 +101,12 @@ Notice that the stream does not know which writer receives its message; it only 
         manager.createStream("guild/dispatch"_el)->info("The western trail report is ready."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mguild/dispatch␛[97m] The western trail report is ready.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mINF [␛[95;49mguild/dispatch␛[97;49m] The western trail report is ready.␛[0m
 
 .. erbsland-demo-end::
 
@@ -113,10 +120,16 @@ Likewise, one team may keep a separate file for the ``guild/archive`` subsystem 
 writes messages.
 
 A default :cpp:class:`LogWriterFilter <erbsland::log::LogWriterFilter>` accepts every level and every path.
-Construct it with :cpp:type:`LogLevels <erbsland::log::LogLevels>` or call
-:cpp:func:`setLevels() <erbsland::log::LogWriterFilter::setLevels>` to choose a severity set.
-Call :cpp:func:`addPath() <erbsland::log::LogWriterFilter::addPath>` for each accepted path root.
-An empty path list means all paths; once you add roots, an entry must be located below at least one of them.
+For the operations channel,
+:cpp:func:`setAcceptedLevels() <erbsland::log::LogWriterFilter::setAcceptedLevels>` selects warnings and errors.
+For an archive that should keep everything except detailed traces,
+:cpp:func:`setRejectedLevels() <erbsland::log::LogWriterFilter::setRejectedLevels>` expresses that choice directly.
+These are alternative ways to select levels; each replaces the previous selection.
+
+The archive also needs a path boundary.
+Adding ``guild/archive`` with
+:cpp:func:`addAcceptedPath() <erbsland::log::LogWriterFilter::addAcceptedPath>` restricts that route to the subsystem.
+Additional roots widen the selection to include their subtrees; a filter with no roots accepts all paths.
 
 Path matching follows complete path segments.
 The root ``guild`` accepts both ``guild`` and ``guild/archive``, but it does not accidentally accept ``guildhall``.
@@ -131,7 +144,7 @@ The warning from that stream reaches both writers, while the similarly named ``g
 .. erbsland-demo::
     :source: log/LoggingTopics/WriterRouting.cpp
     :exec: log/logging_topics --demo WriterRouting
-    :source-sha256: 9d7401a45170d13a5aa0c1a1ed8cea53504a7b1416f36950391ac5bebdeb86e9
+    :sha256: 2c1432ef8b3d045d64bf9619df4b5646d45640e15947c5c535f886c6e4465dda
 
 .. code-block:: cpp
 
@@ -144,11 +157,10 @@ The warning from that stream reaches both writers, while the similarly named ``g
         const auto operations = std::make_shared<RouteCountingLogWriter>();
         const auto archive = std::make_shared<RouteCountingLogWriter>();
 
-        auto operationsFilter = el::LogWriterFilter{el::LogLevels{el::LogLevel::Warning, el::LogLevel::Error}};
-        operationsFilter.addPath(el::LogPath{"guild"_el});
-        auto archiveFilter =
-            el::LogWriterFilter{el::LogLevels{el::LogLevel::Information, el::LogLevel::Warning, el::LogLevel::Error}};
-        archiveFilter.addPath(el::LogPath{"guild/archive"_el});
+        auto operationsFilter = el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Warning, el::LogLevel::Error});
+        operationsFilter.addAcceptedPath(el::LogPath{"guild"_el});
+        auto archiveFilter = el::LogWriterFilter{}.setRejectedLevels(el::LogLevel::Trace);
+        archiveFilter.addAcceptedPath(el::LogPath{"guild/archive"_el});
 
         auto configuration = el::LogConfiguration{};
         configuration.addWriter(operations, std::move(operationsFilter)).addWriter(archive, std::move(archiveFilter));
@@ -167,15 +179,17 @@ The warning from that stream reaches both writers, while the similarly named ``g
         el::io::printLine("Archive entries    : "_el, archive->count());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Operational entries: 1
-    Archive entries    : 2
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOperational entries: 1
+        Archive entries    : 2␛[0m
 
 .. erbsland-demo-end::
 
-Choose a Writer for Each Audience
+Console, File, and Syslog Writers
 =================================
 
 The built-in writers differ less by syntax than by audience and lifetime.
@@ -232,7 +246,7 @@ The visible escape markers in the captured output are the terminal control seque
 .. erbsland-demo::
     :source: log/LoggingTopics/ConsoleWriters.cpp
     :exec: log/logging_topics --demo ConsoleWriters
-    :source-sha256: 107fb53b01808690118d2227aec2814b06a1c304eb98918900aa297b27cea9df
+    :sha256: c14c1b5629b66b3729141f7dfafa8d1f04010db1fe003e52cee02dc22ec85693
 
 .. code-block:: cpp
 
@@ -260,11 +274,13 @@ The visible escape markers in the captured output are the terminal control seque
         log->warn("A snow squall is crossing the ridge."_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mguild/weather␛[97m] Northern ridge observation opened.
-    ␛[93mWRN [␛[95mguild/weather␛[93m] A snow squall is crossing the ridge.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mINF [␛[95;49mguild/weather␛[97;49m] Northern ridge observation opened.
+        ␛[93;49mWRN [␛[95;49mguild/weather␛[93;49m] A snow squall is crossing the ridge.␛[0m
 
 .. erbsland-demo-end::
 
@@ -299,7 +315,7 @@ first archive were created.
 .. erbsland-demo::
     :source: log/LoggingTopics/FileWriters.cpp
     :exec: log/logging_topics --demo FileWriters
-    :source-sha256: 70a0845e3e535e3c939d60bb7cef810c1baa9f64c3146033c3c1ffbd4451c523
+    :sha256: 2d672727f35130221cdef1ce60c11c0973815868f9748b196b72ebd7d5b9b018
 
 .. code-block:: cpp
 
@@ -309,7 +325,7 @@ first archive were created.
     /// daily, and weekly rotation derive archive names from entry timestamps.
     void fileWriters() {
         auto temporaryOptions = el::PathTempDirectoryOptions{};
-        temporaryOptions.setPrefix("retkikunta-"_el).setRandomLength(el::CpLength{8U});
+        temporaryOptions.setPrefix("retkikunta-"_el).setRandomLength(el::CpCount{8U});
         const auto temporary =
             el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
         const auto path = temporary->path() / "guild.log"_el;
@@ -317,7 +333,7 @@ first archive were created.
         auto writerOptions = el::FileLogWriterOptions{path};
         writerOptions.setMode(el::LogFileMode::Overwrite)
             .setRotation(el::LogFileRotation::Size)
-            .setMaximumSize(el::ByteLength{150U})
+            .setMaximumSize(el::ByteCount{150U})
             .setRetention(2U);
 
         auto format = el::LogLineFormat{};
@@ -339,11 +355,13 @@ first archive were created.
             "First archive exists: "_el, el::BooleanFormat::yesNo(), path.withStem("guild.1"_el).info().exists());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Active log exists: yes
-    First archive exists: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mActive log exists: yes
+        First archive exists: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -378,7 +396,7 @@ deterministic RFC 5424 message and its TCP/TLS frame without applying the config
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriters.cpp
     :exec: log/logging_topics --demo SyslogWriters
-    :source-sha256: 7e1b0c3f3484a03895aeb133c0886290924eae412a0718dc97d6f6e94cce8186
+    :sha256: 41e9aa5c10bb40be1d509b85d80e3bf838f4979226c1390ec5a5598d62cb74b1
 
 .. code-block:: cpp
 
@@ -396,20 +414,22 @@ deterministic RFC 5424 message and its TCP/TLS frame without applying the config
             .setProcessId("314"_el)
             .setMessageId("route"_el)
             .setTlsConfigurationLabel("guild/syslog"_el)
-            .setMaximumPendingBytes(el::ByteLength{256U * 1024U});
+            .setMaximumPendingBytes(el::ByteCount{256U * 1024U});
 
         auto configuration = el::LogConfiguration{};
         configuration.addWriter(
             el::LogWriter::createForSyslog(options),
-            el::LogWriterFilter{el::LogLevels{el::LogLevel::Warning, el::LogLevel::Error}});
+            el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Warning, el::LogLevel::Error}));
 
         el::io::printLine("Syslog endpoint: "_el, options.endpoint().toString());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Syslog endpoint: logs.example:6514
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSyslog endpoint: logs.example:6514␛[0m
 
 .. erbsland-demo-end::
 
@@ -438,7 +458,7 @@ The following application enables the default failure-only mode, writes two erro
     :source: log/LoggingSetups/LastErrorDump.cpp
     :exec: log/logging_setups last-error-dump
     :exec-exit-code: 2
-    :source-sha256: a9bec3da3a8910e5a2761bff83932159d256a12c454e5c19938d9655b5e78b0a
+    :sha256: 62f0f9e8d171de8d96d0f6c80f2cc3a547ee9546564320543348daba33980010
 
 .. code-block:: cpp
 
@@ -459,22 +479,22 @@ The following application enables the default failure-only mode, writes two erro
         return app.run();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[96m2026-09-04 19:19:06Z␛[97m INF - The expedition entered the northern pass.
-    ␛[96m2026-09-04 19:19:06Z␛[91m ERR - The reserve compass failed its check.
-    ␛[96m2026-09-04 19:19:06Z␛[91m ERR - The return route is blocked by ice.
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[39;1mRecent␛[22m ␛[1mError␛[22m ␛[1mLog␛[22m ␛[1mEntries
-
-    ␛[22;96m2026-09-04 19:19:06Z␛[91m ERR - The reserve compass failed its check.
-    ␛[96m2026-09-04 19:19:06Z␛[91m ERR - The return route is blocked by ice.␛[0m
+        ␛[0m2026-11-06 10:32:20Z INF - The expedition entered the northern pass.
+        2026-11-06 10:32:20Z ERR - The reserve compass failed its check.
+        2026-11-06 10:32:20Z ERR - The return route is blocked by ice.
+        Recent Error Log Entries
+        2026-11-06 10:32:20Z ERR - The reserve compass failed its check.
+        2026-11-06 10:32:20Z ERR - The return route is blocked by ice.␛[0m
 
 .. erbsland-demo-end::
 
-Introduce a Custom Destination Only When Necessary
-==================================================
+Implementing a Custom Log Writer
+================================
 
 If a deployment has a destination that none of the built-in writers represent, derive a class from
 :cpp:class:`LogWriter <erbsland::log::LogWriter>` and implement :cpp:func:`write()
@@ -488,8 +508,11 @@ Routing still belongs in :cpp:class:`LogWriterFilter <erbsland::log::LogWriterFi
 :cpp:class:`LogLineFormat <erbsland::log::LogLineFormat>`.
 Writer calls do not run on the producer thread, but a slow custom writer can still delay the other writers attached to
 the same manager.
-Let delivery exceptions propagate so the manager can contain and count them, and do not share one writer instance
-between active managers.
+Report expected delivery and flush failures with a concrete exception derived from
+:cpp:class:`RuntimeError <erbsland::err::RuntimeError>`, such as
+:cpp:class:`StreamError <erbsland::stream::StreamError>` for an output-stream failure.
+The manager contains and counts these exceptions; other exception types terminate its worker.
+Do not share one writer instance between active managers.
 
 Custom writer design is intentionally outside this introductory topic.
 In most applications, combining the built-in writers with well-chosen filters is both simpler and easier to operate.

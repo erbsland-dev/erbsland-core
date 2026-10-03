@@ -15,6 +15,11 @@ Using Erbsland Core
 To build an application with Erbsland Core you need:
 
 *   A compiler and standard library with C++20 support.
+
+    *   MSVC 19.50 or newer (older versions have unresolved issues compiling modern C++20 code)
+    *   GCC 14 or newer, with libstdc++ 14 or newer.
+    *   LLVM Clang 17 or newer, with libc++ 17 or newer, or libstdc++ 14 or newer.
+
 *   CMake 3.28 or newer.
 *   Git when integrating Core as the recommended Git submodule.
 *   A supported desktop or server platform: Linux, macOS, or Windows.
@@ -31,19 +36,12 @@ Developing Erbsland Core
 
 Contributors who build Core itself additionally need:
 
-*   Python 3.14 for the repository utilities.
+*   Python 3.14 for repository setup, test metadata generation, and Python tests.
 *   The recursively initialized unit-test submodule.
-*   The Python development packages pinned in ``utilities/requirements-dev.txt``.
+*   The Python development packages pinned in ``requirements-dev.txt``.
 *   Ninja for the documented development build.
 
 Building the Sphinx documentation also requires the packages pinned in ``doc/requirements-doc.txt`` and a working
 Doxygen installation.
-The repository setup utility creates ``.venv``, installs the Python packages, initializes the test dependency, and
-configures the debug build:
-
-.. code-block:: console
-
-    $ python3.14 utilities/run.py dev_setup
-
-See :doc:`guidelines/index` for the contributor documentation and :doc:`usage/build-configuration` for all supported
-Core build options.
+Follow :doc:`/development/setup` to prepare a checkout, install these dependencies, and build and test the library.
+See :doc:`/usage/build-configuration` for all supported Core build options.

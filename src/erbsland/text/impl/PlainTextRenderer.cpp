@@ -9,17 +9,17 @@
 #include "../AsciiCategory.hpp"
 #include "../Literals.hpp"
 #include "../StringCharReader.hpp"
+#include "../StringJoins.hpp"
 #include "../TextDocument.hpp"
 #include "../TextNode.hpp"
 
 #include <algorithm>
-#include <memory>
 #include <vector>
 
 namespace erbsland::text::impl {
 
 using namespace literals;
-using unit::CpLength;
+using unit::CpCount;
 
 PlainTextRenderer::PlainTextRenderer(const TextDocument &document) noexcept : _document{document} {
 }
@@ -58,7 +58,7 @@ void PlainTextRenderer::renderNode(AnyStringBuilder &builder, const TextNodePtr 
         return;
     case TextNodeType::Blockquote: {
         const auto previousIndent = _indent;
-        _indent += CpLength{2U};
+        _indent += CpCount{2U};
         renderChildren(builder, *node);
         _indent = previousIndent;
         return;
@@ -109,7 +109,7 @@ void PlainTextRenderer::renderChildren(AnyStringBuilder &builder, const TextNode
         }
         const auto previousIndent = _indent;
         if (isRootDiagnosticContent(*child) || inDiagnosticSection) {
-            _indent += CpLength{2U};
+            _indent += CpCount{2U};
         }
         renderNode(builder, child);
         _indent = previousIndent;
@@ -146,12 +146,12 @@ void PlainTextRenderer::renderCodeSnippet(AnyStringBuilder &builder, const TextN
             auto numberBuilder = AnyStringBuilder{};
             const auto padding =
                 std::max(cCodeLineNumberWidth - static_cast<int>(number.characterLength().toSizeT()), 0);
-            numberBuilder.append(Char{U' '}, CpLength::fromSizeT(static_cast<std::size_t>(padding)));
+            numberBuilder.append(Char{U' '}, CpCount::fromSizeT(static_cast<std::size_t>(padding)));
             numberBuilder.append(number);
             numberBuilder.append(" │ "_el);
             gutter = numberBuilder.toString();
             auto markerBuilder = AnyStringBuilder{};
-            markerBuilder.append(Char{U' '}, CpLength::fromSizeT(cCodeLineNumberWidth));
+            markerBuilder.append(Char{U' '}, CpCount::fromSizeT(cCodeLineNumberWidth));
             markerBuilder.append(" │ "_el);
             markerGutter = markerBuilder.toString();
         }
@@ -173,10 +173,10 @@ void PlainTextRenderer::renderCodeSnippet(AnyStringBuilder &builder, const TextN
                     continue;
                 }
                 auto markerBuilder = AnyStringBuilder{};
-                markerBuilder.append(Char{U' '}, CpLength::fromSizeT(static_cast<std::size_t>(placement->start)));
+                markerBuilder.append(Char{U' '}, CpCount::fromSizeT(static_cast<std::size_t>(placement->start)));
                 const auto point = marker.range.isEmpty();
                 markerBuilder.append(
-                    Char{point ? U'↑' : U'▔'}, CpLength::fromSizeT(static_cast<std::size_t>(placement->length)));
+                    Char{point ? U'↑' : U'▔'}, CpCount::fromSizeT(static_cast<std::size_t>(placement->length)));
                 const auto label = marker.label;
                 const auto labelWidth = label.characterLength().toSizeT() + 3U;
                 if (layout.isLastMarkerRow(rowIndex, marker.range) && !label.isEmpty() &&
@@ -199,7 +199,7 @@ void PlainTextRenderer::renderTermList(AnyStringBuilder &builder, const TextNode
 }
 
 void PlainTextRenderer::renderTermItem(
-    AnyStringBuilder &builder, const TextNode &node, const CpLength descriptionColumn) {
+    AnyStringBuilder &builder, const TextNode &node, const CpCount descriptionColumn) {
     auto name = String{};
     auto description = String{};
     for (const auto &child : node.children()) {
@@ -220,6 +220,7 @@ void PlainTextRenderer::renderTermItem(
             prefix.append(Char{U' '}, descriptionColumn - nameLength);
         } else {
             appendLine(builder, {}, name);
+            prefix.clear();
             prefix.append(Char{U' '}, descriptionColumn);
         }
         auto continuation = AnyStringBuilder{};
@@ -228,7 +229,7 @@ void PlainTextRenderer::renderTermItem(
     }
 
     const auto previousIndent = _indent;
-    _indent += CpLength{2U};
+    _indent += CpCount{2U};
     for (const auto &child : node.children()) {
         if (child->type() == TextNodeType::TermList || child->type() == TextNodeType::FieldList) {
             renderTermList(builder, *child);
@@ -278,8 +279,8 @@ auto PlainTextRenderer::termDescription(const TextNode &node) -> String {
     return builder.toString();
 }
 
-auto PlainTextRenderer::termListDescriptionColumn(const TextNode &node) -> CpLength {
-    auto widest = CpLength{};
+auto PlainTextRenderer::termListDescriptionColumn(const TextNode &node) -> CpCount {
+    auto widest = CpCount{};
     if (node.type() == TextNodeType::TermItem || node.type() == TextNodeType::FieldItem) {
         for (const auto &child : node.children()) {
             if (child->type() == TextNodeType::TermName || child->type() == TextNodeType::FieldLabel) {
@@ -298,9 +299,9 @@ auto PlainTextRenderer::termListDescriptionColumn(const TextNode &node) -> CpLen
         }
     }
     if (node.type() == TextNodeType::FieldList || node.type() == TextNodeType::FieldItem) {
-        return widest + CpLength::one();
+        return widest + CpCount::one();
     }
-    return std::clamp(widest + CpLength{2U}, cTermDescriptionMinimumColumn, cTermDescriptionMaximumColumn);
+    return std::clamp(widest + CpCount{2U}, cTermDescriptionMinimumColumn, cTermDescriptionMaximumColumn);
 }
 
 void PlainTextRenderer::renderList(AnyStringBuilder &builder, const TextNode &node, const bool numbered) {
@@ -314,7 +315,7 @@ void PlainTextRenderer::renderList(AnyStringBuilder &builder, const TextNode &no
         }
         appendLine(builder, prefix, {});
         const auto previousIndent = _indent;
-        _indent += CpLength{2U};
+        _indent += CpCount{2U};
         renderNode(builder, child);
         _indent = previousIndent;
     }
@@ -333,7 +334,7 @@ void PlainTextRenderer::renderListItem(AnyStringBuilder &builder, const TextNode
     appendLine(builder, prefix, line.toString());
 
     const auto previousIndent = _indent;
-    _indent += CpLength{2U};
+    _indent += CpCount{2U};
     for (const auto &child : node.children()) {
         if (isNestedBlock(*child)) {
             renderNode(builder, child);
@@ -433,7 +434,7 @@ void PlainTextRenderer::appendWrappedLine(
     while (!reader.isAtEnd()) {
         reader.advanceWhile(AsciiCategory::Whitespace);
 
-        auto wordLength = CpLength{};
+        auto wordLength = CpCount{};
         reader.startCapture();
         reader.readUntil(
             [&](Char) -> util::LoopStatus {
@@ -445,7 +446,7 @@ void PlainTextRenderer::appendWrappedLine(
             break;
         }
 
-        const auto separatorLength = firstWord ? CpLength{} : CpLength::one();
+        const auto separatorLength = firstWord ? CpCount{} : CpCount::one();
         if (!firstWord && line.length() + separatorLength + wordLength > cPlainTermListWidth) {
             appendLine(builder, {}, line.toString());
             line.clear();
@@ -464,7 +465,7 @@ void PlainTextRenderer::appendWrappedLine(
     }
 }
 
-void PlainTextRenderer::appendIndent(AnyStringBuilder &builder, const CpLength indent) {
+void PlainTextRenderer::appendIndent(AnyStringBuilder &builder, const CpCount indent) {
     if (!indent.isZero()) {
         builder.append(Char{U' '}, indent);
     }
@@ -474,7 +475,7 @@ auto PlainTextRenderer::listPrefix(const std::size_t index, const bool numbered)
     if (!numbered) {
         return "- "_el;
     }
-    return String::fromJoined({String::fromInteger(index), ". "_el});
+    return text::join(String::fromInteger(index), ". "_el);
 }
 
 auto PlainTextRenderer::isNestedBlock(const TextNode &node) noexcept -> bool {

@@ -16,7 +16,7 @@ namespace erbsland::network {
 class HttpClientTlsOptions final {
 public:
     /// Default client TLS configuration label.
-    inline static const auto cDefaultConfigurationLabel = text::String{"http/client"};
+    inline static const auto cDefaultConfigurationLabel = text::String{"http"};
     /// Default TLS handshake deadline.
     inline static const auto cDefaultHandshakeTimeout = time::TimeDelta::seconds(30);
     /// Default authenticated transport idle deadline.

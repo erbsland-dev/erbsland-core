@@ -58,7 +58,7 @@ See :doc:`working_with_times` for constructing and working with the underlying `
 .. erbsland-demo::
     :source: time/TimeWithZone/Create.cpp
     :exec: time/time_with_zone --demo Create
-    :source-sha256: 13dfaf1f3db90b06652ff3ea4b99d0eb40a9a6f07fedd860b4b9d15698a86697
+    :sha256: 9d8183a5873fb80733db32965a4c88020d7bbd4c6ea1806d7700807f3e47c8e5
 
 .. code-block:: cpp
 
@@ -92,22 +92,24 @@ See :doc:`working_with_times` for constructing and working with the underlying `
                 rehearsal == el::TimeWithZone{reading, zone}, rehearsal == fixed));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Αντάντε: 09:15:12.123456789[Europe/Athens]
-    Default: 00:00:00Z
-    Time-only: 09:15:12.123456789Z
-    Hour: 9
-    Minute: 15
-    Second: 12
-    Ms fraction: 123
-    Ns fraction: 123456789
-    Reading retained: true
-    Named zone: true
-    Local origin: true
-    Equal copy: true
-    Equal to fixed-zone reading: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mΑντάντε: 09:15:12.123456789[Europe/Athens]
+        Default: 00:00:00Z
+        Time-only: 09:15:12.123456789Z
+        Hour: 9
+        Minute: 15
+        Second: 12
+        Ms fraction: 123
+        Ns fraction: 123456789
+        Reading retained: true
+        Named zone: true
+        Local origin: true
+        Equal copy: true
+        Equal to fixed-zone reading: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -130,7 +132,7 @@ or use ``toUtc()`` to show the selected instant directly.
 .. erbsland-demo::
     :source: time/TimeWithZone/Resolve.cpp
     :exec: time/time_with_zone --demo Resolve
-    :source-sha256: 4a92e79286ff120cabc293fd204a1b9377497ccf19e4410fa9b68b652feb8466
+    :sha256: ae479d394f893dc3c8a5af497211bcf56c3266bce5631f5e143617c6b5d1cea7
 
 .. code-block:: cpp
 
@@ -152,15 +154,17 @@ or use ``toUtc()`` to show the selected instant directly.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Αντάντε: local 2026-01-15 09:15:00+02:00
-    UTC 2026-01-15 07:15:00Z
-    Offset seconds: 7200
-    Αντάντε: local 2026-07-15 09:15:00+03:00
-    UTC 2026-07-15 06:15:00Z
-    Offset seconds: 10800
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mΑντάντε: local 2026-01-15 09:15:00+02:00
+        UTC 2026-01-15 07:15:00Z
+        Offset seconds: 7200
+        Αντάντε: local 2026-07-15 09:15:00+03:00
+        UTC 2026-07-15 06:15:00Z
+        Offset seconds: 10800␛[0m
 
 .. erbsland-demo-end::
 
@@ -199,7 +203,7 @@ date and time with the request.
 .. erbsland-demo::
     :source: time/TimeWithZone/Transitions.cpp
     :exec: time/time_with_zone --demo Transitions
-    :source-sha256: 7ff2b68e3134b43a677338fcb2f88d4edd3f096865291f556520be3d4fa1a623
+    :sha256: e7033cfe3b1467c79aee154f65c9a8ef13e80599eb6427c07bfb97d0f1dd7794
 
 .. code-block:: cpp
 
@@ -230,18 +234,20 @@ date and time with the request.
                 el::DateTime{el::Date{}, rehearsal}.isValid()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Fold first UTC: 2026-10-25 00:30:00Z
-    Second UTC: 2026-10-25 01:30:00Z
-    Default chooses first: true
-    Gap requested: 2026-03-29 03:30:00
-    Constructor: 2026-03-29 03:30:00+03:00
-    Resolved: 2026-03-29 02:30:00+02:00
-    Gap valid: true
-    Requested fields occurred: false
-    Invalid date accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFold first UTC: 2026-10-25 00:30:00Z
+        Second UTC: 2026-10-25 01:30:00Z
+        Default chooses first: true
+        Gap requested: 2026-03-29 03:30:00
+        Constructor: 2026-03-29 03:30:00+03:00
+        Resolved: 2026-03-29 02:30:00+02:00
+        Gap valid: true
+        Requested fields occurred: false
+        Invalid date accepted: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -271,7 +277,7 @@ A zone obtained from ``TimeZone::local()`` omits the zone from this compact outp
 .. erbsland-demo::
     :source: time/TimeWithZone/Display.cpp
     :exec: time/time_with_zone --demo Display
-    :source-sha256: fbf1567b4562a82e75030049928f9ec6074bffbae28d1fa00397925bee017f7e
+    :sha256: fac4ba7000d0c081277121d31f88b6fd72c2b0f6379cdc20755c4f189d77128a
 
 .. code-block:: cpp
 
@@ -297,18 +303,20 @@ A zone obtained from ``TimeZone::local()`` omits the zone from this compact outp
                 el::TimeWithZone{reading, el::TimeZone{el::Hours{-3}, el::Minutes{-30}, el::Seconds{-15}}}));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Intended time: 09:15:00Z
-    Local origin: false
-    Intended time: 09:15:00+05:30
-    Local origin: false
-    Intended time: 09:15:00[Europe/Athens]
-    Local origin: false
-    Intended time: 09:15:00
-    Local origin: true
-    Second-level offset: 09:15:00-03:30:15
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mIntended time: 09:15:00Z
+        Local origin: false
+        Intended time: 09:15:00+05:30
+        Local origin: false
+        Intended time: 09:15:00[Europe/Athens]
+        Local origin: false
+        Intended time: 09:15:00
+        Local origin: true
+        Second-level offset: 09:15:00-03:30:15␛[0m
 
 .. erbsland-demo-end::
 
@@ -328,7 +336,7 @@ This preserves the wall-clock intention while allowing the elapsed interval betw
 .. erbsland-demo::
     :source: time/TimeWithZone/Recurrence.cpp
     :exec: time/time_with_zone --demo Recurrence
-    :source-sha256: 7d06cb6f3a621b354298e0c1865e07cbcd7274c74b0ac0198675dac437212bd7
+    :sha256: bbd5e8fe22501a2cde67ef657bc4dee20eae691f3caf353a5d1ff510299d8b78
 
 .. code-block:: cpp
 
@@ -362,18 +370,20 @@ This preserves the wall-clock intention while allowing the elapsed interval betw
                 fixedDayLater, nextLocalDate, first.durationTo(nextLocalDate).toSeconds().toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Αντάντε: 2026-03-28 09:15:00+02:00
-    Requested fields retained: true
-    Αντάντε: 2026-03-29 09:15:00+03:00
-    Requested fields retained: true
-    Αντάντε: 2026-03-30 09:15:00+03:00
-    Requested fields retained: true
-    Fixed day later: 2026-03-29 10:15:00+03:00
-    Next local occurrence: 2026-03-29 09:15:00+03:00
-    Elapsed seconds: 82800
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mΑντάντε: 2026-03-28 09:15:00+02:00
+        Requested fields retained: true
+        Αντάντε: 2026-03-29 09:15:00+03:00
+        Requested fields retained: true
+        Αντάντε: 2026-03-30 09:15:00+03:00
+        Requested fields retained: true
+        Fixed day later: 2026-03-29 10:15:00+03:00
+        Next local occurrence: 2026-03-29 09:15:00+03:00
+        Elapsed seconds: 82800␛[0m
 
 .. erbsland-demo-end::
 

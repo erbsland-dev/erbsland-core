@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "LoopState.hpp"
 
-#include "../../../err/LogicError.hpp"
-#include "../../../text/Literals.hpp"
+#include "../../../err/LogicFailure.hpp"
+#include "../../Literals.hpp"
 
 namespace erbsland::text::render::impl {
 
+using namespace err;
 using namespace text::literals;
 
 LoopState::LoopState(Value iterable) : _iterable{std::move(iterable)} {
@@ -29,21 +30,21 @@ auto LoopState::advance() -> bool {
 
 auto LoopState::listValue() const -> Value {
     if (!isList() || !_started || _index >= _iterable.itemCount().toSizeT()) {
-        throw err::LogicError{"There is no current list iteration value."_el};
+        throw LogicFailure{"There is no current list iteration value."_el};
     }
     return _iterable.get(unit::ItemIndex::fromSizeT(_index));
 }
 
 auto LoopState::mapKey() const -> String {
     if (!isMap() || !_started || _index >= _iterable.itemCount().toSizeT()) {
-        throw err::LogicError{"There is no current map iteration key."_el};
+        throw LogicFailure{"There is no current map iteration key."_el};
     }
     return _mapIterator->first;
 }
 
 auto LoopState::mapValue() const -> Value {
     if (!isMap() || !_started || _index >= _iterable.itemCount().toSizeT()) {
-        throw err::LogicError{"There is no current map iteration value."_el};
+        throw LogicFailure{"There is no current map iteration value."_el};
     }
     return _mapIterator->second;
 }
@@ -51,7 +52,7 @@ auto LoopState::mapValue() const -> Value {
 auto LoopState::metadata() const -> Value {
     const auto length = _iterable.itemCount().toSizeT();
     if (!_started || _index >= length) {
-        throw err::LogicError{"There is no current iteration metadata."_el};
+        throw LogicFailure{"There is no current iteration metadata."_el};
     }
     auto result = ValueMap{};
     result.set("index"_el, Value{_index + 1U});

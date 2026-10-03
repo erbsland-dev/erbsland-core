@@ -4,7 +4,18 @@
 #include "DataFormatsDemos.hpp"
 
 #include <DemoCommon.hpp>
-#include <erbsland/data/cbor/CborValue.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/cbor/CborFormatOptions.hpp>
+#include <erbsland/cbor/CborLink.hpp>
+#include <erbsland/cbor/CborParseOptions.hpp>
+#include <erbsland/cbor/CborType.hpp>
+#include <erbsland/cbor/CborValue.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <vector>
 
@@ -85,10 +96,10 @@ void inspectCborValue() {
 /// Limit the accepted bytes, nesting, values, and text length independently.
 void limitCborInput() {
     const auto bytes = makeExhibition().toByteBlock();
-    const auto input = CborParseOptions{}.setMaximumInputLength(el::ByteLength{10U});
+    const auto input = CborParseOptions{}.setMaximumInputLength(el::ByteCount{10U});
     const auto nesting = CborParseOptions{}.setMaximumNesting(el::ItemCount{1U});
     const auto values = CborParseOptions{}.setMaximumValueCount(el::ItemCount{3U});
-    const auto strings = CborParseOptions{}.setMaximumStringLength(el::ByteLength{4U});
+    const auto strings = CborParseOptions{}.setMaximumStringLength(el::ByteCount{4U});
     el::io::printLine("Input accepted: "_el, CborValue::fromByteBlock(bytes, input).has_value());
     el::io::printLine("Nesting accepted: "_el, CborValue::fromByteBlock(bytes, nesting).has_value());
     el::io::printLine("Values accepted: "_el, CborValue::fromByteBlock(bytes, values).has_value());

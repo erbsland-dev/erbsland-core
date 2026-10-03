@@ -8,11 +8,12 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
-auto ValueTreeHelper::createLines() -> text::StringList {
+auto ValueTreeHelper::createLines() -> StringList {
     if (!_lines.isEmpty()) {
-        throw err::LogicError("ValueTreeHelper::createLines() called twice."_el);
+        throw err::LogicFailure("ValueTreeHelper::createLines() called twice."_el);
     }
     initStack();
     while (!_stack.empty()) {
@@ -31,7 +32,7 @@ auto ValueTreeHelper::createLines() -> text::StringList {
 void ValueTreeHelper::initStack() noexcept {
     _stack.clear();
     _stack.reserve(64);
-    _stack.emplace_back(_rootValue, text::String{}, true);
+    _stack.emplace_back(_rootValue, String{}, true);
 }
 
 auto ValueTreeHelper::popFrame() noexcept -> Frame {
@@ -40,7 +41,7 @@ auto ValueTreeHelper::popFrame() noexcept -> Frame {
     return frame;
 }
 
-auto ValueTreeHelper::computeName(const conf::ConstValuePtr &value) noexcept -> text::String {
+auto ValueTreeHelper::computeName(const conf::ConstValuePtr &value) noexcept -> String {
     if (value->isDocument()) {
         return "<Document>"_el;
     }
@@ -50,8 +51,8 @@ auto ValueTreeHelper::computeName(const conf::ConstValuePtr &value) noexcept -> 
     return value->namePath().back().toPathText();
 }
 
-auto ValueTreeHelper::computePosition(const conf::ConstValuePtr &value) -> text::String {
-    text::StringEditor positionStr;
+auto ValueTreeHelper::computePosition(const conf::ConstValuePtr &value) -> String {
+    StringEditor positionStr;
     if (_format.isSet(TestFormat::ShowPosition) || _format.isSet(TestFormat::ShowSourceIdentifier)) {
         positionStr.append("["_el);
         if (_format.isSet(TestFormat::ShowSourceIdentifier)) {
@@ -65,17 +66,16 @@ auto ValueTreeHelper::computePosition(const conf::ConstValuePtr &value) -> text:
     return positionStr;
 }
 
-auto ValueTreeHelper::appendSourceIdentifier(text::StringEditor &positionStr, const conf::ConstValuePtr &value)
-    -> void {
+auto ValueTreeHelper::appendSourceIdentifier(StringEditor &positionStr, const conf::ConstValuePtr &value) -> void {
     if (auto sid = value->location().sourceIdentifier(); sid == nullptr) {
         positionStr.append("no source"_el);
     } else if (const auto labelIt = _labelMap.find(sid); labelIt != _labelMap.end()) {
         positionStr.append(labelIt->second);
     } else {
-        static const text::String labels = "ABCDEFGHIJKLMNPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz+"_el;
-        text::StringEditor labelEditor;
+        static const String labels = "ABCDEFGHIJKLMNPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz+"_el;
+        StringEditor labelEditor;
         labelEditor.append(labels.charAt(unit::CpIndex::fromSizeT(_labelIndex)));
-        const text::String label = labelEditor;
+        const String label = labelEditor;
         if (_labelIndex < labels.characterLength().toSizeT() - 2) {
             _labelIndex += 1;
         }
@@ -87,38 +87,34 @@ auto ValueTreeHelper::appendSourceIdentifier(text::StringEditor &positionStr, co
 }
 
 void ValueTreeHelper::emitLine(
-    const conf::ConstValuePtr &value,
-    const text::String &name,
-    const text::String &pos,
-    const text::String &indent,
-    const bool isLast) {
+    const conf::ConstValuePtr &value, const String &name, const String &pos, const String &indent, const bool isLast) {
     if (value == _rootValue) {
-        _lines.append(text::StringFormat{"{} => {}{}"_el}.build(name, value->toTestText(_format), pos));
+        _lines.append(StringFormat{"{} => {}{}"_el}.build(name, value->toTestText(_format), pos));
     } else {
-        text::StringEditor line{indent};
+        StringEditor line{indent};
         line.append(isLast ? "└───"_el : "├───"_el);
-        line.append(text::StringFormat{"{} => {}{}"_el}.build(name, value->toTestText(_format), pos));
-        _lines.append(text::String{line});
+        line.append(StringFormat{"{} => {}{}"_el}.build(name, value->toTestText(_format), pos));
+        _lines.append(line);
     }
 }
 
-void ValueTreeHelper::pushChildren(const conf::ConstValuePtr &value, const text::String &indent, const bool isLast) {
+void ValueTreeHelper::pushChildren(const conf::ConstValuePtr &value, const String &indent, const bool isLast) {
     const auto count = value->size();
     for (std::size_t i = count; i > 0;) {
         i -= 1;
         const bool last = (i == count - 1);
         const auto child = value->value(i);
-        text::StringEditor childIndent{indent};
+        StringEditor childIndent{indent};
         if (value != _rootValue) {
             childIndent.append(isLast ? "    "_el : "│   "_el);
         }
-        _stack.emplace_back(child, text::String{childIndent}, last);
+        _stack.emplace_back(child, childIndent, last);
     }
 }
 
 void ValueTreeHelper::appendSourceLabels() {
     for (const auto &[label, sourceIdentifier] : _labelList) {
-        _lines.append(text::StringFormat{"{}: {}"_el}.build(label, sourceIdentifier->toText()));
+        _lines.append(StringFormat{"{}: {}"_el}.build(label, sourceIdentifier->toText()));
     }
 }
 

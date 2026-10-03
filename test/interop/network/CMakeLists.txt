@@ -34,23 +34,31 @@ if(WIN32)
 else()
     set(_rust_executable "${_rust_target_directory}/release/erbsland-core-network-interop-counterpart")
 endif()
-add_custom_target(erbsland-core-network-interop-counterpart
+# Track the installed counterpart as the output so deleting it also triggers a rebuild.
+set(_rust_runtime_directory "${CMAKE_CURRENT_BINARY_DIR}")
+if(CMAKE_CONFIGURATION_TYPES)
+    string(APPEND _rust_runtime_directory "/$<CONFIG>")
+endif()
+set(_rust_counterpart "${_rust_runtime_directory}/erbsland-core-network-interop-counterpart${CMAKE_EXECUTABLE_SUFFIX}")
+add_custom_command(
+        OUTPUT "${_rust_counterpart}"
         COMMAND "${ERBSLAND_CORE_CARGO_EXECUTABLE}" build --release --locked
                 --manifest-path "${_rust_source_directory}/Cargo.toml"
                 --target-dir "${_rust_target_directory}"
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-                "${_rust_executable}"
-                "$<TARGET_FILE_DIR:erbsland-core-network-interop>"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${_rust_runtime_directory}"
+        COMMAND "${CMAKE_COMMAND}" -E copy "${_rust_executable}" "${_rust_counterpart}"
         DEPENDS
                 "${_rust_source_directory}/Cargo.toml"
                 "${_rust_source_directory}/Cargo.lock"
                 "${_rust_source_directory}/src/main.rs"
         BYPRODUCTS "${_rust_executable}"
+        DEPFILE "${_rust_target_directory}/release/erbsland-core-network-interop-counterpart.d"
         WORKING_DIRECTORY "${_rust_source_directory}"
         VERBATIM
         COMMENT "Building the rustls network interop counterpart"
 )
-add_dependencies(erbsland-core-network-interop erbsland-core-network-interop-counterpart)
+add_custom_target(erbsland-core-network-interop-counterpart-build DEPENDS "${_rust_counterpart}")
+add_dependencies(erbsland-core-network-interop erbsland-core-network-interop-counterpart-build)
 
 find_program(ERBSLAND_CORE_OPENSSL_EXECUTABLE NAMES openssl)
 set(_openssl_is_supported OFF)
@@ -100,6 +108,9 @@ add_custom_command(TARGET erbsland-core-network-interop POST_BUILD
                 "$<TARGET_FILE_DIR:erbsland-core-network-interop>/data/network/tls-interop"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
                 "${PROJECT_SOURCE_DIR}/test/unittest/data/network/tls-interop/ca.pem"
+                "${PROJECT_SOURCE_DIR}/test/unittest/data/network/tls-interop/client-ca.pem"
+                "${PROJECT_SOURCE_DIR}/test/unittest/data/network/tls-interop/client.pem"
+                "${PROJECT_SOURCE_DIR}/test/unittest/data/network/tls-interop/client-key.pem"
                 "${PROJECT_SOURCE_DIR}/test/unittest/data/network/tls-interop/server.pem"
                 "${PROJECT_SOURCE_DIR}/test/unittest/data/network/tls-interop/server-key.pem"
                 "${PROJECT_SOURCE_DIR}/test/unittest/data/network/tls-interop/server-ecdsa.pem"

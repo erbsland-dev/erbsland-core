@@ -4,6 +4,7 @@
 #include "IndividualValuesDemos.hpp"
 
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

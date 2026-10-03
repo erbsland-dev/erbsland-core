@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace erbsland::package {
 

@@ -5,7 +5,7 @@
 #include "U32StringDataView.hpp"
 #include "U32StringSharedStorage.hpp"
 
-#include "../../../unit/CpLength.hpp"
+#include "../../../unit/CpCount.hpp"
 #include "../../../unit/ItemCount.hpp"
 #include "../../Char.hpp"
 #include "../../impl/StringAppendTools.hpp"
@@ -18,7 +18,10 @@
 namespace erbsland::text::impl {
 
 /// Append algorithms for `U32StringEditor`.
-/// @tested{U32StringTest}
+/// Source views are borrowed; these tools do not retain their storage.
+/// An owning source string may share the destination allocation on entry: its ownership
+/// keeps the input alive while copy-on-write detaches the destination before writing.
+/// @tested{U32StringTest StringAppendAliasingTest}
 class U32StringAppendTools final : public StringAppendTools {
 public:
     /// Create append tools for `storage`.
@@ -30,26 +33,38 @@ public:
 public:
     using StringAppendTools::append;
     /// Append UTF-32 bytes from a data view.
-    auto append(const U32StringDataView &text) -> unit::CpLength;
+    /// @pre The caller must retain the source across destination detachment or growth.
+    /// Source data must not overlap the destination write range.
+    auto append(const U32StringDataView &text) -> unit::CpCount;
     /// Append UTF-32 bytes from a data view multiple times.
-    auto append(const U32StringDataView &text, unit::ItemCount count) -> unit::CpLength;
+    /// @pre The caller must retain the source across destination detachment or growth.
+    /// Source data must not overlap the destination write range.
+    auto append(const U32StringDataView &text, unit::ItemCount count) -> unit::CpCount;
     /// Append UTF-8 text decoded with replacement.
-    auto append(const U8StringDataView &text) -> unit::CpLength;
+    /// @pre The caller must retain the source across destination detachment or growth.
+    /// Source data must not overlap the destination write range.
+    auto append(const U8StringDataView &text) -> unit::CpCount;
     /// Append UTF-8 text decoded with replacement multiple times.
-    auto append(const U8StringDataView &text, unit::ItemCount count) -> unit::CpLength;
+    /// @pre The caller must retain the source across destination detachment or growth.
+    /// Source data must not overlap the destination write range.
+    auto append(const U8StringDataView &text, unit::ItemCount count) -> unit::CpCount;
     /// Append UTF-16 text decoded with replacement.
-    auto append(const U16StringDataView &text) -> unit::CpLength;
+    /// @pre The caller must retain the source across destination detachment or growth.
+    /// Source data must not overlap the destination write range.
+    auto append(const U16StringDataView &text) -> unit::CpCount;
     /// Append UTF-16 text decoded with replacement multiple times.
-    auto append(const U16StringDataView &text, unit::ItemCount count) -> unit::CpLength;
+    /// @pre The caller must retain the source across destination detachment or growth.
+    /// Source data must not overlap the destination write range.
+    auto append(const U16StringDataView &text, unit::ItemCount count) -> unit::CpCount;
     /// Append one Unicode code point.
-    auto append(Char character) -> unit::CpLength override;
+    auto append(Char character) -> unit::CpCount override;
     /// Append one Unicode code point multiple times.
-    auto append(Char character, unit::CpLength count) -> unit::CpLength;
+    auto append(Char character, unit::CpCount count) -> unit::CpCount;
 
 public: // implement StringAppendTools
-    auto append(const U8String &text) -> unit::CpLength override;
-    auto append(const U16String &text) -> unit::CpLength override;
-    auto append(const U32String &text) -> unit::CpLength override;
+    auto append(const U8String &text) -> unit::CpCount override;
+    auto append(const U16String &text) -> unit::CpCount override;
+    auto append(const U32String &text) -> unit::CpCount override;
 
 private:
     U32StringSharedStorage &_storage;

@@ -5,7 +5,8 @@
 #include "SampleMeasurement_fwd.hpp"
 #include "WorkerMeasurement.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/TimeDelta.hpp>
 
 #include <cstdint>
 

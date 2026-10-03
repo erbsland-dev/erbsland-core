@@ -44,7 +44,7 @@ void BlockStringData::addDisplayWidth(const int displayWidth) noexcept {
 auto BlockStringData::copyChars(BlockRange range) const -> Storage {
     range = range.clampedTo(BlockCount::fromSizeT(_chars.size()));
     return Storage{
-        _chars.cbegin() + static_cast<Storage::difference_type>(range.index().toSizeT()),
+        _chars.cbegin() + static_cast<Storage::difference_type>(range.beginIndex().toSizeT()),
         _chars.cbegin() + static_cast<Storage::difference_type>(range.endIndex().toSizeT())};
 }
 

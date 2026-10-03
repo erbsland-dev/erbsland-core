@@ -11,17 +11,11 @@
 TESTED_TARGETS(Terminal)
 class TerminalConvenienceTest final : public UNITTEST_SUBCLASS(TerminalTestHelper) {
 public:
-    void testCustomBackendConstructorClampsTheSizeAndTracksTheSafeMarginFlag() {
+    void testCustomBackendConstructorClampsTheSize() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         auto terminal = Terminal{backend, block::Size{0, 5000}};
         const auto expectedSize = block::Size{1, 2048};
 
-        REQUIRE_EQUAL(terminal.size(), expectedSize);
-        REQUIRE(terminal.safeMarginEnabled());
-
-        terminal.setSafeMarginEnabled(false);
-
-        REQUIRE_FALSE(terminal.safeMarginEnabled());
         REQUIRE_EQUAL(terminal.size(), expectedSize);
     }
 

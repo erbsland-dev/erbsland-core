@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/data/json/JsonValue.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/EscapeAmount.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/EscapeAmount.hpp>
+#include <erbsland/json/JsonValue.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -60,7 +60,7 @@ public:
     }
 
     void testLimits() {
-        const auto inputLimit = JsonParseOptions{}.setMaximumInputLength(el::unit::ByteLength{3U});
+        const auto inputLimit = JsonParseOptions{}.setMaximumInputLength(el::unit::ByteCount{3U});
         REQUIRE_FALSE(JsonValue::fromString("null"_el, inputLimit).has_value());
         const auto nestingLimit = JsonParseOptions{}.setMaximumNesting(el::unit::ItemCount{1U});
         REQUIRE(JsonValue::fromString("[1]"_el, nestingLimit).has_value());
@@ -68,13 +68,13 @@ public:
         const auto valueLimit = JsonParseOptions{}.setMaximumValueCount(el::unit::ItemCount{2U});
         REQUIRE(JsonValue::fromString("[1]"_el, valueLimit).has_value());
         REQUIRE_FALSE(JsonValue::fromString("[1,2]"_el, valueLimit).has_value());
-        const auto stringLimit = JsonParseOptions{}.setMaximumStringLength(el::unit::CpLength{2U});
+        const auto stringLimit = JsonParseOptions{}.setMaximumStringLength(el::unit::CpCount{2U});
         REQUIRE_FALSE(JsonValue::fromString("\"abc\""_el, stringLimit).has_value());
         REQUIRE_FALSE(JsonValue::fromString("{\"abc\":0}"_el, stringLimit).has_value());
 
-        REQUIRE_EQUAL(JsonParseOptions::cDefaultMaximumInputLength, el::unit::ByteLength{16U * 1024U * 1024U});
+        REQUIRE_EQUAL(JsonParseOptions::cDefaultMaximumInputLength, el::unit::ByteCount{16U * 1024U * 1024U});
         REQUIRE_EQUAL(JsonParseOptions::cDefaultMaximumNesting, el::unit::ItemCount{64U});
         REQUIRE_EQUAL(JsonParseOptions::cDefaultMaximumValueCount, el::unit::ItemCount{1'000'000U});
-        REQUIRE_EQUAL(JsonParseOptions::cDefaultMaximumStringLength, el::unit::CpLength{8U * 1024U * 1024U});
+        REQUIRE_EQUAL(JsonParseOptions::cDefaultMaximumStringLength, el::unit::CpCount{8U * 1024U * 1024U});
     }
 };

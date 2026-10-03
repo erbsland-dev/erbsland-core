@@ -4,7 +4,9 @@
 
 #include "WorkerMeasurement_fwd.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/TimeDelta.hpp>
 
 #include <cstdint>
 

@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StorageIdentifier.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 
@@ -15,7 +22,7 @@ void storageIdentifier() {
     struct CachedRange final {
         el::StorageIdentifier storageId;
         el::ByteIndex index;
-        el::ByteLength length;
+        el::ByteCount length;
     };
 
     const auto report = el::String{"温度計A: 21℃; 気圧計B: 1012hPa; 湿度計C: 45%"_el};
@@ -37,7 +44,7 @@ void storageIdentifier() {
     };
 
     const auto copiedReport = report.copy();
-    const auto tail = report.slice(el::ByteRange{report.find(token), el::ByteLength::infinite()});
+    const auto tail = report.slice(el::ByteRange{report.find(token), el::ByteCount::infinite()});
 
     el::io::printLine("Report: "_el, report);
     el::io::printLine("Cached token: "_el, token);

@@ -17,7 +17,7 @@ namespace erbsland::cryptology {
 class TlsConfigurationEntry final {
     friend class TlsConfigurationParser;
 
-private:
+public:
     /// Create one labeled TLS configuration entry.
     /// @param label The validated registry label.
     /// @param configuration The complete TLS configuration.

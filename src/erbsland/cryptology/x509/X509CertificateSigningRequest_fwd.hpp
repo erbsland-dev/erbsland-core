@@ -3,5 +3,7 @@
 #pragma once
 
 namespace erbsland::cryptology {
+
 class X509CertificateSigningRequest;
+
 }

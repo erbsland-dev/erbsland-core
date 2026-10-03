@@ -3,18 +3,18 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/network/http/HttpFieldType.hpp>
-#include <erbsland/network/http_server/HttpCookieSessionManager.hpp>
-#include <erbsland/network/http_server/HttpServerRequest.hpp>
-#include <erbsland/network/http_server/HttpServerSessionContext.hpp>
+#include <erbsland/AnyString.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/HttpCookieSessionManager.hpp>
+#include <erbsland/HttpFieldType.hpp>
+#include <erbsland/HttpServerRequest.hpp>
+#include <erbsland/HttpServerSessionContext.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
 #include <erbsland/network/impl/http/server/HttpServerSession.hpp>
-#include <erbsland/text/AnyString.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringCharReader.hpp>
-#include <erbsland/text/StringEditor.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/StringCharReader.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>
@@ -44,14 +44,16 @@ class HttpCookieSessionManagerTest final : public el::UnitTest {
         }
         [[nodiscard]] auto session() const -> HttpServerSessionPtr override { return {}; }
         void streamBody() override {}
-        void aggregateBody(el::unit::ByteLength) override {}
+        void aggregateBody(el::unit::ByteCount) override {}
         void rejectBody() override {}
         void pauseBody() override {}
         void resumeBody() override {}
         void sendResponse(HttpResponseHead, el::mem::ByteBlock) override {}
         void sendText(String, HttpStatus, HttpHeaders) override {}
-        void sendJson(String, HttpStatus, HttpHeaders) override {}
-        void sendJson(const el::data::json::JsonValue &, HttpStatus, HttpHeaders) override {}
+        void sendJson(String body, HttpStatus, HttpHeaders) override { sentJson = std::move(body); }
+        void sendJson(const el::data::json::JsonValue &body, HttpStatus, HttpHeaders) override {
+            sentJson = body.toString();
+        }
         void sendError(HttpStatus, String) override {}
         void sendRedirect(String, HttpStatus, HttpHeaders) override {}
         void startResponse(HttpResponseHead) override {}
@@ -62,8 +64,10 @@ class HttpCookieSessionManagerTest final : public el::UnitTest {
         [[nodiscard]] auto isResponseStarted() const noexcept -> bool override { return false; }
         [[nodiscard]] auto isFinal() const noexcept -> bool override { return false; }
         [[nodiscard]] auto events() -> HttpServerRequestEventEditor & override {
-            throw el::err::LogicError{"Mock request events are unavailable."_el};
+            throw el::err::LogicFailure{"Mock request events are unavailable."_el};
         }
+
+        String sentJson;
 
     private:
         HttpRequestHead _head;
@@ -113,7 +117,7 @@ class HttpCookieSessionManagerTest final : public el::UnitTest {
                 std::rethrow_exception(loop->takeError());
             }
             if (!completed) {
-                throw el::err::LogicError{"The cookie-manager test callback was not invoked."_el};
+                throw el::err::LogicFailure{"The cookie-manager test callback was not invoked."_el};
             }
             return result;
         }
@@ -124,7 +128,7 @@ private:
         auto reader = StringCharReader{value};
         reader.advanceUntil(CharSet{U'='});
         if (!reader.advanceIf(U'=')) {
-            throw el::err::LogicError{"The cookie-manager test received an invalid Set-Cookie field."_el};
+            throw el::err::LogicFailure{"The cookie-manager test received an invalid Set-Cookie field."_el};
         }
         reader.startCapture();
         reader.advanceUntil(CharSet{U';'});
@@ -139,13 +143,28 @@ private:
     }
 
 public:
+    TESTED_TARGETS(HttpServerRequest)
+    void testJsonTextOverloadSelection() {
+        auto scope = ApplicationTestScope<>{};
+        auto loop = EventLoop::create();
+        auto request = MockRequest{loop, {}};
+        auto &api = static_cast<HttpServerRequest &>(request);
+        api.sendJson("{\"ok\":true}"_el);
+        REQUIRE_EQUAL(request.sentJson, "{\"ok\":true}"_el);
+        const auto editor = StringEditor{"[1,2]"_el};
+        api.sendJson(editor);
+        REQUIRE_EQUAL(request.sentJson, "[1,2]"_el);
+        api.sendJson(el::data::json::JsonValue{"text"_el});
+        REQUIRE_EQUAL(request.sentJson, "\"text\""_el);
+    }
+
     void testCreationAttributesAndReuse() {
         auto harness = Harness{};
         const auto first = harness.select();
         REQUIRE_EQUAL(harness.created, 1U);
         REQUIRE(first.isValid());
         REQUIRE(first.session()->identifier().has_value());
-        REQUIRE_EQUAL(first.session()->identifier()->length(), el::unit::ByteLength{43U});
+        REQUIRE_EQUAL(first.session()->identifier()->length(), el::unit::ByteCount{43U});
         REQUIRE(first.reservedCookieName().has_value());
         REQUIRE_EQUAL(*first.reservedCookieName(), "erbsland-session"_el);
 
@@ -248,9 +267,9 @@ public:
     void testOptionValidation() {
         auto options = HttpCookieSessionManagerOptions{};
         options.setCookieName("bad name"_el);
-        REQUIRE_THROWS_AS(el::err::ParameterError, HttpCookieSessionManager::create(options));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, HttpCookieSessionManager::create(options));
         options = HttpCookieSessionManagerOptions{};
         options.setSameSite(HttpCookieSameSite::None).setSecurePolicy(HttpCookieSecurePolicy::Never);
-        REQUIRE_THROWS_AS(el::err::ParameterError, HttpCookieSessionManager::create(options));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, HttpCookieSessionManager::create(options));
     }
 };

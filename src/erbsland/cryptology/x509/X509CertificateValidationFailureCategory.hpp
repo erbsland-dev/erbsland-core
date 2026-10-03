@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../../core/Definitions.hpp"
+
 #include <cstdint>
 
 namespace erbsland::cryptology {
@@ -30,6 +32,10 @@ enum class X509CertificateValidationFailureCategory : uint8_t {
     ExtendedKeyUsageRejected,   ///< Extended Key Usage does not permit TLS server authentication.
     PathLengthExceeded,         ///< A CA pathLenConstraint is exceeded.
     ServerIdentityMismatch,     ///< No appropriate subjectAltName matches the requested identity.
+    TrustUnavailable,           ///< No usable system trust source is available.
+    NativeFailure,              ///< A native trust service failed independently of certificate validity.
+    CertificateRevoked,         ///< The platform reports that a certificate is revoked or explicitly distrusted.
+    SystemPolicyRejected,       ///< Native TLS certificate policy rejected the path.
 };
 
 }

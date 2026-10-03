@@ -5,16 +5,16 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/PathTempDirectoryOptions.hpp>
-#include <erbsland/path/PathTempFileOptions.hpp>
-#include <erbsland/path/TempDirectory.hpp>
-#include <erbsland/stream/TempByteOutputStream.hpp>
-#include <erbsland/stream/TempTextOutputStream.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/PathTempFileOptions.hpp>
+#include <erbsland/TempByteOutputStream.hpp>
+#include <erbsland/TempDirectory.hpp>
+#include <erbsland/TempTextOutputStream.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>
@@ -40,7 +40,7 @@ public:
         const auto applicationScope = ApplicationTestScope<>{};
         const auto fixture = PathTestFixture{"temporary-directory"};
         auto options = el::path::PathTempDirectoryOptions{};
-        options.setPrefix("lease-"_el).setSuffix("-data"_el).setRandomLength(el::unit::CpLength{8U});
+        options.setPrefix("lease-"_el).setSuffix("-data"_el).setRandomLength(el::unit::CpCount{8U});
         auto temporary = fixture.path().operations().createTempDirectoryOrThrow(options);
         const auto temporaryPath = temporary->path();
         REQUIRE(temporaryPath.info().isDirectory());
@@ -59,7 +59,7 @@ public:
         const auto applicationScope = ApplicationTestScope<>{};
         const auto fixture = PathTestFixture{"temporary-stream"};
         auto options = el::path::PathTempFileOptions{};
-        options.setPrefix("stream-"_el).setSuffix(".tmp"_el).setRandomLength(el::unit::CpLength{8U});
+        options.setPrefix("stream-"_el).setSuffix(".tmp"_el).setRandomLength(el::unit::CpCount{8U});
 
         auto byteStream = fixture.path().operations().openTempByteOutputStreamOrThrow(options);
         const auto bytePath = byteStream->path();
@@ -113,7 +113,7 @@ public:
         }
         auto collisionOptions = el::path::PathTempDirectoryOptions{};
         collisionOptions.setPrefix("occupied-"_el)
-            .setRandomLength(el::unit::CpLength{1U})
+            .setRandomLength(el::unit::CpCount{1U})
             .setMaximumAttempts(el::unit::ItemCount{2U});
         REQUIRE_FALSE(fixture.path().operations().createTempDirectory(collisionOptions));
     }

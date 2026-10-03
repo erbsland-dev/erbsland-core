@@ -3,8 +3,9 @@
 #pragma once
 
 #include "CoTaskCancelled.hpp"
-#include "CoWorkerService.hpp"
 #include "CoWorkState.hpp"
+
+#include "worker_executor/WorkerServices.hpp"
 
 #include <coroutine>
 #include <exception>
@@ -41,7 +42,7 @@ public:
             _state->cancellation = continuation.promise().cancellationState();
         }
         auto state = _state;
-        CoWorkerService::submit([state = std::move(state)]() mutable -> void {
+        worker_services::coroutine().submit([state = std::move(state)]() mutable -> void {
             try {
                 const auto cancellation = state->cancellation.lock();
                 if (!cancellation || !cancellation->isCancelled()) {

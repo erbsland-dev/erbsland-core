@@ -15,14 +15,14 @@
 #include "u32/U32StringEditor.hpp"
 #include "u8/U8StringEditor.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../mem/Byte.hpp"
 #include "../mem/ByteBlock.hpp"
 #include "../mem/ByteBuffer.hpp"
 #include "../mem/ByteSpan.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -54,20 +54,20 @@ private:
     /// The result of scanning one encoded code point.
     struct ScanResult final {
         CodePointStatus status{CodePointStatus::NeedMoreData}; ///< Boundary status.
-        unit::ByteLength byteLength{};                         ///< Bytes covered by this result.
+        unit::ByteCount byteLength{};                          ///< Bytes covered by this result.
     };
 
     /// A byte and character range selected for one decode operation.
     struct DecodedRange final {
-        unit::ByteLength byteLength;    ///< Source bytes covered by the selection.
-        unit::CpLength characterLength; ///< Characters produced by the selection.
-        bool isValid{true};             ///< Whether the selection contains only valid encoded characters.
+        unit::ByteCount byteLength;    ///< Source bytes covered by the selection.
+        unit::CpCount characterLength; ///< Characters produced by the selection.
+        bool isValid{true};            ///< Whether the selection contains only valid encoded characters.
     };
 
     /// A decoded UTF-8 string with the character count found while decoding.
     struct DecodedU8String final {
-        U8String text;                  ///< Decoded text.
-        unit::CpLength characterLength; ///< Number of decoded characters.
+        U8String text;                 ///< Decoded text.
+        unit::CpCount characterLength; ///< Number of decoded characters.
     };
 
 public:
@@ -76,9 +76,8 @@ public:
     /// @param encoding The configured text encoding.
     /// @param bomMode How byte order marks are handled.
     /// @param mode How malformed input is handled.
-    /// @throws err::ParameterError If `bufferLength` is smaller than four bytes.
     explicit StringDecodeBuffer(
-        unit::ByteLength bufferLength,
+        unit::ByteCount bufferLength,
         StringEncoding encoding,
         StringBomMode bomMode = StringBomMode::Automatic,
         EncodingMode mode = EncodingMode::Tolerant);
@@ -96,13 +95,13 @@ public: // state
     /// Get the effective encoding after BOM resolution.
     [[nodiscard]] auto effectiveEncoding() const noexcept -> StringEncoding { return _effectiveEncoding; }
     /// Get the byte capacity.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength { return _buffer.length(); }
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteCount { return _buffer.length(); }
     /// Get the available byte space.
-    [[nodiscard]] auto availableSpace() const noexcept -> unit::ByteLength { return capacity() - _byteLength; }
+    [[nodiscard]] auto availableSpace() const noexcept -> unit::ByteCount { return capacity() - _byteLength; }
     /// Get the number of buffered bytes.
-    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteLength { return _byteLength; }
+    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteCount { return _byteLength; }
     /// Count complete characters available for decoding.
-    [[nodiscard]] auto decodableCharacters(unit::CpLength maximum = unit::CpLength::infinite()) -> unit::CpLength;
+    [[nodiscard]] auto decodableCharacters(unit::CpCount maximum = unit::CpCount::infinite()) -> unit::CpCount;
     /// Test if no bytes are buffered.
     [[nodiscard]] auto isEmpty() const noexcept -> bool { return _byteLength.isZero(); }
     /// Test if input was marked complete.
@@ -141,61 +140,61 @@ public: // sensitivity
 
 public: // peek
     /// Decode available bytes to a string matching the effective encoding.
-    [[nodiscard]] auto peekAnyString(unit::CpLength maximum = unit::CpLength::infinite()) -> AnyString;
+    [[nodiscard]] auto peekAnyString(unit::CpCount maximum = unit::CpCount::infinite()) -> AnyString;
     /// Decode available bytes to the default string type.
-    [[nodiscard]] auto peekString(unit::CpLength maximum = unit::CpLength::infinite()) -> String;
+    [[nodiscard]] auto peekString(unit::CpCount maximum = unit::CpCount::infinite()) -> String;
     /// Decode available bytes to a UTF-8 string.
-    [[nodiscard]] auto peekU8String(unit::CpLength maximum = unit::CpLength::infinite()) -> U8String;
+    [[nodiscard]] auto peekU8String(unit::CpCount maximum = unit::CpCount::infinite()) -> U8String;
     /// Decode available bytes to a UTF-16 string.
-    [[nodiscard]] auto peekU16String(unit::CpLength maximum = unit::CpLength::infinite()) -> U16String;
+    [[nodiscard]] auto peekU16String(unit::CpCount maximum = unit::CpCount::infinite()) -> U16String;
     /// Decode available bytes to a UTF-32 string.
-    [[nodiscard]] auto peekU32String(unit::CpLength maximum = unit::CpLength::infinite()) -> U32String;
+    [[nodiscard]] auto peekU32String(unit::CpCount maximum = unit::CpCount::infinite()) -> U32String;
 
 public: // take
     /// Decode and consume one character.
     [[nodiscard]] auto readChar() -> std::optional<Char>;
     /// Decode and consume available bytes to a string matching the effective encoding.
-    [[nodiscard]] auto takeAnyString(unit::CpLength maximum = unit::CpLength::infinite()) -> AnyString;
+    [[nodiscard]] auto takeAnyString(unit::CpCount maximum = unit::CpCount::infinite()) -> AnyString;
     /// Decode and consume available bytes to the default string type.
-    [[nodiscard]] auto takeString(unit::CpLength maximum = unit::CpLength::infinite()) -> String;
+    [[nodiscard]] auto takeString(unit::CpCount maximum = unit::CpCount::infinite()) -> String;
     /// Decode and consume one line to the default string type.
-    [[nodiscard]] auto takeStringLine(unit::CpLength maximum = unit::CpLength::infinite()) -> String;
+    [[nodiscard]] auto takeStringLine(unit::CpCount maximum = unit::CpCount::infinite()) -> String;
     /// Decode and consume available bytes to a UTF-8 string.
-    [[nodiscard]] auto takeU8String(unit::CpLength maximum = unit::CpLength::infinite()) -> U8String;
+    [[nodiscard]] auto takeU8String(unit::CpCount maximum = unit::CpCount::infinite()) -> U8String;
     /// Decode and consume available bytes to a UTF-16 string.
-    [[nodiscard]] auto takeU16String(unit::CpLength maximum = unit::CpLength::infinite()) -> U16String;
+    [[nodiscard]] auto takeU16String(unit::CpCount maximum = unit::CpCount::infinite()) -> U16String;
     /// Decode and consume available bytes to a UTF-32 string.
-    [[nodiscard]] auto takeU32String(unit::CpLength maximum = unit::CpLength::infinite()) -> U32String;
+    [[nodiscard]] auto takeU32String(unit::CpCount maximum = unit::CpCount::infinite()) -> U32String;
 
 private:
     /// Get the writable portion of ring storage.
     [[nodiscard]] auto writableSpan() noexcept -> mem::ByteSpan;
     /// Record newly written input bytes.
-    void commitWritten(unit::ByteLength length);
+    void commitWritten(unit::ByteCount length);
     /// Get the total number of consumed input bytes.
-    [[nodiscard]] auto consumedByteLength() const noexcept -> unit::ByteLength { return _consumedByteLength; }
+    [[nodiscard]] auto consumedByteLength() const noexcept -> unit::ByteCount { return _consumedByteLength; }
     /// Test whether the byte order mark has been resolved.
     [[nodiscard]] auto isBomResolved() const noexcept -> bool { return _bomResolved; }
     /// Reset state for a continued stream with an effective encoding.
     void resetForContinuation(StringEncoding effectiveEncoding) noexcept;
     /// Decode a default string and its character count.
-    [[nodiscard]] auto takeStringWithLength(unit::CpLength maximum, bool stopAtLineEnd)
-        -> std::pair<String, unit::CpLength>;
+    [[nodiscard]] auto takeStringWithLength(unit::CpCount maximum, bool stopAtLineEnd)
+        -> std::pair<String, unit::CpCount>;
     /// Get the byte length of available decodable data.
     [[nodiscard]] auto decodableByteLength(
-        unit::CpLength maximum, unit::CpLength *characterCount = nullptr, bool *isValid = nullptr) -> unit::ByteLength;
+        unit::CpCount maximum, unit::CpCount *characterCount = nullptr, bool *isValid = nullptr) -> unit::ByteCount;
     /// Get the byte length of a decodable line.
     [[nodiscard]] auto lineByteLength(
-        unit::CpLength maximum, unit::CpLength *characterCount = nullptr, bool *isValid = nullptr) -> unit::ByteLength;
+        unit::CpCount maximum, unit::CpCount *characterCount = nullptr, bool *isValid = nullptr) -> unit::ByteCount;
     /// Select the decoded range for one operation.
-    [[nodiscard]] auto decodedRange(unit::CpLength maximum, bool stopAtLineEnd) -> DecodedRange;
+    [[nodiscard]] auto decodedRange(unit::CpCount maximum, bool stopAtLineEnd) -> DecodedRange;
     /// Invoke a function for each decoded character in a range.
     template <typename Function>
     void forEachDecodedCharacter(DecodedRange range, bool consumeDecoded, Function function);
     /// Copy a decoded range into UTF-8 storage.
     void copyUtf8Range(DecodedRange range, std::span<char> destination, bool consumeDecoded);
     /// Consume bytes from the front of ring storage.
-    void consume(unit::ByteLength length) noexcept;
+    void consume(unit::ByteCount length) noexcept;
     /// Get the ring-storage index where writing starts.
     [[nodiscard]] auto writeIndex() const noexcept -> unit::ByteIndex;
     /// Get the byte at a ring-storage index.
@@ -205,13 +204,13 @@ private:
     /// Test whether available input starts with a complete byte prefix.
     [[nodiscard]] auto byteMatchesAvailable(mem::ConstByteSpan prefix) const noexcept -> bool;
     /// Erase a prefix from ring storage.
-    void erasePrefix(unit::ByteLength length) noexcept;
+    void erasePrefix(unit::ByteCount length) noexcept;
     /// Resolve an initial byte order mark when possible.
     [[nodiscard]] auto ensureBomResolved() -> bool;
     /// Scan the code point at a byte index.
     [[nodiscard]] auto scanCodePoint(unit::ByteIndex index) const noexcept -> ScanResult;
     /// Decode a scanned character.
-    [[nodiscard]] auto decodeCharacter(unit::ByteIndex index, unit::ByteLength byteLength) const noexcept -> Char;
+    [[nodiscard]] auto decodeCharacter(unit::ByteIndex index, unit::ByteCount byteLength) const noexcept -> Char;
     /// Scan a UTF-8 code point.
     [[nodiscard]] auto scanUtf8(unit::ByteIndex index) const noexcept -> ScanResult;
     /// Scan a UTF-16 code point.
@@ -233,23 +232,23 @@ private:
         }
     }
     /// Decode available input to UTF-8 text.
-    [[nodiscard]] auto decodeToU8(unit::CpLength maximum, bool stopAtLineEnd, bool consumeDecoded) -> DecodedU8String;
+    [[nodiscard]] auto decodeToU8(unit::CpCount maximum, bool stopAtLineEnd, bool consumeDecoded) -> DecodedU8String;
     /// Decode available input to UTF-16 text.
-    [[nodiscard]] auto decodeToU16(unit::CpLength maximum, bool consumeDecoded) -> U16String;
+    [[nodiscard]] auto decodeToU16(unit::CpCount maximum, bool consumeDecoded) -> U16String;
     /// Decode available input to UTF-32 text.
-    [[nodiscard]] auto decodeToU32(unit::CpLength maximum, bool consumeDecoded) -> U32String;
+    [[nodiscard]] auto decodeToU32(unit::CpCount maximum, bool consumeDecoded) -> U32String;
 
 private:
     mem::ByteBuffer _buffer;                                 ///< Fixed-capacity ring storage.
     unit::ByteIndex _readIndex{};                            ///< First buffered byte in ring storage.
-    unit::ByteLength _byteLength{};                          ///< Number of buffered bytes.
+    unit::ByteCount _byteLength{};                           ///< Number of buffered bytes.
     StringEncoding _encoding{StringEncoding::Utf8};          ///< Configured encoding.
     StringEncoding _effectiveEncoding{StringEncoding::Utf8}; ///< BOM-resolved encoding.
     StringBomMode _bomMode{StringBomMode::Automatic};        ///< BOM handling mode.
     EncodingMode _mode{EncodingMode::Tolerant};              ///< Invalid-input handling mode.
     bool _finished{false};                                   ///< Whether the source is complete.
     bool _bomResolved{false};                                ///< Whether initial BOM handling is complete.
-    unit::ByteLength _consumedByteLength{};                  ///< Bytes consumed since reset.
+    unit::ByteCount _consumedByteLength{};                   ///< Bytes consumed since reset.
 };
 
 }

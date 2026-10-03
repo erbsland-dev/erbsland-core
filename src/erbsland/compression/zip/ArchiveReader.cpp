@@ -6,7 +6,7 @@
 
 #include "impl/ArchiveReader.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../path/PathContent.hpp"
 #include "../../path/PathError.hpp"
 #include "../../path/PathReadDataOptions.hpp"
@@ -19,23 +19,22 @@
 
 namespace erbsland::compression::zip {
 
+using namespace path;
 using namespace text::literals;
 
-auto ArchiveReader::create(const path::Path &source, ArchiveReaderOptions options) -> ArchiveReaderPtr {
+auto ArchiveReader::create(const Path &source, ArchiveReaderOptions options) -> ArchiveReaderPtr {
     if (source.isEmpty()) {
-        throw err::ParameterError{"The ZIP archive source path must not be empty."_el, "source"_el};
+        throw err::ParameterFailure{"The ZIP archive source path must not be empty."_el, "source"_el};
     }
     try {
         auto stream = source.content().openByteInputStream(
-            path::PathReadDataOptions{}
-                .setStreamSettings(options.inputStreamSettings())
-                .setSymlinkMode(path::SymlinkMode::Follow));
+            PathReadDataOptions{}.setStreamSettings(options.inputStreamSettings()).setSymlinkMode(SymlinkMode::Follow));
         auto result = std::make_shared<impl::ArchiveReader>(std::move(stream), source, std::move(options));
         result->open();
         return result;
     } catch (const ZipError &) {
         throw;
-    } catch (const path::PathError &) {
+    } catch (const PathError &) {
         throw ZipError{
             ZipErrorContext{
                 ZipErrorReason::PathFailure,
@@ -49,13 +48,13 @@ auto ArchiveReader::create(const path::Path &source, ArchiveReaderOptions option
 
 auto ArchiveReader::create(mem::ByteBlock source, ArchiveReaderOptions options) -> ArchiveReaderPtr {
     auto stream = std::make_shared<stream::ByteBlockInputStream>(std::move(source));
-    auto result = std::make_shared<impl::ArchiveReader>(std::move(stream), path::Path{}, std::move(options));
+    auto result = std::make_shared<impl::ArchiveReader>(std::move(stream), Path{}, std::move(options));
     result->open();
     return result;
 }
 
 auto ArchiveReader::create(stream::ByteInputStreamPtr source, ArchiveReaderOptions options) -> ArchiveReaderPtr {
-    auto result = std::make_shared<impl::ArchiveReader>(std::move(source), path::Path{}, std::move(options));
+    auto result = std::make_shared<impl::ArchiveReader>(std::move(source), Path{}, std::move(options));
     result->open();
     return result;
 }

@@ -2,7 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/debug/StringDebug.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/IntegerFormat.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringDebug.hpp>
+#include <erbsland/StringSide.hpp>
 
 #include <algorithm>
 #include <ranges>
@@ -40,7 +49,7 @@ void efficientLiteralUsage() {
     const auto text = el::String{cStory};
 
     // Prepare a list of words and their character/code point lengths.
-    using WordAndLength = std::pair<el::String, el::CpLength>;
+    using WordAndLength = std::pair<el::String, el::CpCount>;
     auto wordList = std::vector<WordAndLength>{};
 
     // Scan through the text, extracting words and skipping separators.
@@ -66,8 +75,8 @@ void efficientLiteralUsage() {
 
     // Print the sorted list of words.
     el::io::printLine("Sorted word list:"_el);
-    const auto integerFormat = el::IntegerFormat::decimal().setFieldWidth(el::CpLength{4});
-    auto lastLength = el::CpLength::infinite();
+    const auto integerFormat = el::IntegerFormat::decimal().setFieldWidth(el::CpCount{4});
+    auto lastLength = el::CpCount::infinite();
     for (const auto &[word, length] : wordList) {
         if (length != lastLength) {
             lastLength = length;

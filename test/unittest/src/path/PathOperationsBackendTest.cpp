@@ -5,16 +5,16 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/err/RuntimeError.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/path/impl/BackendFactory.hpp>
 #include <erbsland/path/impl/PathInfoData.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/PathTempDirectoryOptions.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/RuntimeError.hpp>
 #include <erbsland/system/impl/PosixErrorContext.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/TimePoint.hpp>
+#include <erbsland/TimePoint.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cerrno>

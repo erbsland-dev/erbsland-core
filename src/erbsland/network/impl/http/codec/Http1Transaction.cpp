@@ -4,13 +4,14 @@
 
 #include "Http1ProtocolError.hpp"
 
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../ConnectionProtocolAccess.hpp"
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text::literals;
 
 auto Http1Transaction::createClient(ConnectionPtr connection, HttpRequestHead request, Http1TransactionOptions options)
@@ -29,11 +30,11 @@ Http1Transaction::Http1Transaction(
     std::optional<HttpRequestHead> request) :
     _role{role}, _connection{std::move(connection)}, _options{options} {
     if (!_connection) {
-        throw err::ParameterError{"A connection is required for an HTTP transaction."_el, "connection"_el};
+        throw ParameterFailure{"A connection is required for an HTTP transaction."_el, "connection"_el};
     }
     if (_role == Role::Client) {
         if (!request || !request->isValid()) {
-            throw err::ParameterError{"A valid request is required for a client transaction."_el, "request"_el};
+            throw ParameterFailure{"A valid request is required for a client transaction."_el, "request"_el};
         }
         _requestMethod = request->method();
         _responseDecoder = std::make_unique<Http1ResponseDecoder>(_requestMethod, _options.codecLimits());
@@ -46,13 +47,13 @@ Http1Transaction::Http1Transaction(
 
 void Http1Transaction::start() {
     if (_state != State::Inactive) {
-        throw err::LogicError{"An HTTP transaction can only be started once."_el};
+        throw LogicFailure{"An HTTP transaction can only be started once."_el};
     }
     validateStart();
-    if (!ConnectionProtocolAccess::claim(*_connection, shared_from_this())) {
-        throw err::LogicError{"The connection already has an active protocol transaction."_el};
+    if (!ConnectionProtocolAccess{*_connection}.claim(shared_from_this())) {
+        throw LogicFailure{"The connection already has an active protocol transaction."_el};
     }
-    auto retainedInput = ConnectionProtocolAccess::takeRetainedInput(*_connection);
+    auto retainedInput = ConnectionProtocolAccess{*_connection}.takeRetainedInput();
     if (!retainedInput.isEmpty()) {
         _pendingInput = std::move(retainedInput);
     }
@@ -62,28 +63,32 @@ void Http1Transaction::start() {
     pumpOutput();
     updateOutgoingDrained();
     drainInput();
+    // A reused connection can remain paused after its preceding body completed from buffered input.
+    if (_state == State::ReceivingHeaders && !_pendingInput) {
+        _connection->resumeReceiving();
+    }
 }
 
 void Http1Transaction::streamBody() {
-    ConnectionProtocolAccess::verifyOwner(*_connection);
+    ConnectionProtocolAccess{*_connection}.verifyOwner();
     if (_state != State::AwaitingBodyPolicy || _bodyMode != BodyMode::Awaiting) {
-        throw err::LogicError{"No incoming HTTP body is awaiting a delivery policy."_el};
+        throw LogicFailure{"No incoming HTTP body is awaiting a delivery policy."_el};
     }
     _bodyMode = BodyMode::Streaming;
     _state = State::ReceivingBody;
     _streamPaused = false;
     recordBodyProgress();
-    _connection->resumeReceiving();
+    // Drain retained input before resuming a transport that may deliver data synchronously.
     drainInput();
 }
 
-void Http1Transaction::aggregateBody(const unit::ByteLength maximumLength) {
-    ConnectionProtocolAccess::verifyOwner(*_connection);
+void Http1Transaction::aggregateBody(const unit::ByteCount maximumLength) {
+    ConnectionProtocolAccess{*_connection}.verifyOwner();
     if (_state != State::AwaitingBodyPolicy || _bodyMode != BodyMode::Awaiting) {
-        throw err::LogicError{"No incoming HTTP body is awaiting a delivery policy."_el};
+        throw LogicFailure{"No incoming HTTP body is awaiting a delivery policy."_el};
     }
     if (maximumLength.isInfinite()) {
-        throw err::ParameterError{"The HTTP aggregate body limit must be finite."_el, "maximumLength"_el};
+        throw ParameterFailure{"The HTTP aggregate body limit must be finite."_el, "maximumLength"_el};
     }
     if (_incomingContentLength && *_incomingContentLength > maximumLength) {
         fail(
@@ -100,14 +105,14 @@ void Http1Transaction::aggregateBody(const unit::ByteLength maximumLength) {
     _bodyMode = BodyMode::Aggregating;
     _state = State::ReceivingBody;
     recordBodyProgress();
-    _connection->resumeReceiving();
+    // Drain retained input before resuming a transport that may deliver data synchronously.
     drainInput();
 }
 
 void Http1Transaction::rejectBody() {
-    ConnectionProtocolAccess::verifyOwner(*_connection);
+    ConnectionProtocolAccess{*_connection}.verifyOwner();
     if (_state != State::AwaitingBodyPolicy || _bodyMode != BodyMode::Awaiting) {
-        throw err::LogicError{"No incoming HTTP body is awaiting rejection."_el};
+        throw LogicFailure{"No incoming HTTP body is awaiting rejection."_el};
     }
     _bodyMode = BodyMode::Rejected;
     _reusable = false;
@@ -121,29 +126,29 @@ void Http1Transaction::rejectBody() {
 }
 
 void Http1Transaction::pauseBody() {
-    ConnectionProtocolAccess::verifyOwner(*_connection);
+    ConnectionProtocolAccess{*_connection}.verifyOwner();
     if (_bodyMode != BodyMode::Streaming || _state != State::ReceivingBody || _streamPaused) {
-        throw err::LogicError{"The HTTP streaming body is not active."_el};
+        throw LogicFailure{"The HTTP streaming body is not active."_el};
     }
     _streamPaused = true;
     _connection->pauseReceiving();
 }
 
 void Http1Transaction::resumeBody() {
-    ConnectionProtocolAccess::verifyOwner(*_connection);
+    ConnectionProtocolAccess{*_connection}.verifyOwner();
     if (_bodyMode != BodyMode::Streaming || _state != State::ReceivingBody || !_streamPaused) {
-        throw err::LogicError{"The HTTP streaming body is not paused."_el};
+        throw LogicFailure{"The HTTP streaming body is not paused."_el};
     }
     _streamPaused = false;
     recordBodyProgress();
-    _connection->resumeReceiving();
+    // Drain retained input before resuming a transport that may deliver data synchronously.
     drainInput();
 }
 
 void Http1Transaction::startResponse(HttpResponseHead response) {
-    ConnectionProtocolAccess::verifyOwner(*_connection);
+    ConnectionProtocolAccess{*_connection}.verifyOwner();
     if (_role != Role::Server || _outgoingStarted || !response.isValid() || response.status().isInformational()) {
-        throw err::LogicError{"A valid final server response can only be started once."_el};
+        throw LogicFailure{"A valid final server response can only be started once."_el};
     }
     if (response.status() == HttpStatus::SwitchingProtocols ||
         (_requestMethod.standardType() == HttpMethodType::Connect && response.status().isSuccessful())) {
@@ -173,7 +178,7 @@ void Http1Transaction::startResponse(HttpResponseHead response) {
 }
 
 auto Http1Transaction::sendInformationalResponse(HttpResponseHead response) -> NetworkSendStatus {
-    ConnectionProtocolAccess::verifyOwner(*_connection);
+    ConnectionProtocolAccess{*_connection}.verifyOwner();
     if (_role != Role::Server || _outgoingStarted || _informationalEncoder || !response.isValid() ||
         !response.status().isInformational() || response.status() == HttpStatus::SwitchingProtocols) {
         return NetworkSendStatus::Closed;
@@ -191,7 +196,7 @@ auto Http1Transaction::sendInformationalResponse(HttpResponseHead response) -> N
 }
 
 auto Http1Transaction::sendBody(const mem::ByteBlock &data) -> NetworkSendStatus {
-    ConnectionProtocolAccess::verifyOwner(*_connection);
+    ConnectionProtocolAccess{*_connection}.verifyOwner();
     if (!_outgoingStarted || _outgoingTerminated || _informationalEncoder) {
         return NetworkSendStatus::Closed;
     }
@@ -214,7 +219,7 @@ auto Http1Transaction::sendBody(const mem::ByteBlock &data) -> NetworkSendStatus
 }
 
 auto Http1Transaction::finishBody(HttpHeaders trailers) -> NetworkSendStatus {
-    ConnectionProtocolAccess::verifyOwner(*_connection);
+    ConnectionProtocolAccess{*_connection}.verifyOwner();
     if (!_outgoingStarted || _outgoingTerminated || _informationalEncoder) {
         return NetworkSendStatus::Closed;
     }
@@ -249,11 +254,11 @@ void Http1Transaction::cancel() noexcept {
 }
 
 auto Http1Transaction::takeBufferedInput() -> mem::ByteBlock {
-    ConnectionProtocolAccess::verifyOwner(*_connection);
+    ConnectionProtocolAccess{*_connection}.verifyOwner();
     if (!_finalized || !_reusable) {
-        throw err::LogicError{"Buffered HTTP input is only available after reusable completion."_el};
+        throw LogicFailure{"Buffered HTTP input is only available after reusable completion."_el};
     }
-    return ConnectionProtocolAccess::takeRetainedInput(*_connection);
+    return ConnectionProtocolAccess{*_connection}.takeRetainedInput();
 }
 
 }

@@ -1,17 +1,20 @@
 // Copyright (c) 2025-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
+
 #include "ColorPart.hpp"
 
 #include "impl/BlockTextUtil.hpp"
 
 #include "../err/ParseError.hpp"
 #include "../text/StringConverter.hpp"
+#include "../text/StringTransformations.hpp"
 
 #include <algorithm>
 #include <ranges>
 
 namespace erbsland::cterm {
 
+using namespace text;
 using namespace text::literals;
 
 auto ColorBase::tableEntry() const noexcept -> const TableEntry & {
@@ -42,12 +45,12 @@ auto ColorBase::colorTable() noexcept -> const ColorTable & {
     return table;
 }
 
-auto ColorBase::toString() const -> text::String {
+auto ColorBase::toString() const -> String {
     return tableEntry().name;
 }
 
-auto ColorBase::enumFromString(const text::String &str, const Value defaultValue) -> Value {
-    const auto normalizedIdentifier = str.transformed(text::Char::toIdentifierNormalized);
+auto ColorBase::enumFromString(const String &str, const Value defaultValue) -> Value {
+    const auto normalizedIdentifier = text::toIdentifierNormalized(str);
     const auto &table = colorTable();
     auto it =
         std::ranges::find_if(table, [&](const auto &entry) -> bool { return normalizedIdentifier == entry.name; });
@@ -57,7 +60,7 @@ auto ColorBase::enumFromString(const text::String &str, const Value defaultValue
     return it->value;
 }
 
-auto ColorBase::enumFromStringOrThrow(const text::String &str) -> Value {
+auto ColorBase::enumFromStringOrThrow(const String &str) -> Value {
     constexpr auto cInvalid = Value::_Count;
     const auto result = enumFromString(str, cInvalid);
     if (result == cInvalid) {

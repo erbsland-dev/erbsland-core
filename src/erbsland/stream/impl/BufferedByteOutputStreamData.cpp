@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "BufferedByteOutputStreamData.hpp"
 
-#include "IoService.hpp"
 #include "StreamBufferSizes.hpp"
 
+#include "../../err/RuntimeError.hpp"
 #include "../../mem/impl/UnsafeRingBufferAccess.hpp"
 
 #include <algorithm>
@@ -14,8 +14,11 @@
 
 namespace erbsland::stream::impl {
 
+using namespace mem;
+
 BufferedByteOutputStreamData::BufferedByteOutputStreamData(
-    NativeByteStreamPtr nativeStream, OutputStreamSettings streamSettings) :
+    NativeByteStreamPtr nativeStream, OutputStreamSettings streamSettings, util::impl::WorkerReservation admission) :
+    work{std::move(admission)},
     native{std::move(nativeStream)},
     settings{streamSettings},
     front{streamBufferSizes(settings.buffering()).ioRing},
@@ -42,7 +45,7 @@ void BufferedByteOutputStreamData::scheduleWrite() {
     }
     workInProgress = true;
     auto self = shared_from_this();
-    IoService::submitIoWork([self = std::move(self)]() -> void { self->performWrite(); });
+    work.submit([self = std::move(self)]() -> void { self->performWrite(); });
 }
 
 void BufferedByteOutputStreamData::refillFront() {
@@ -53,9 +56,9 @@ void BufferedByteOutputStreamData::refillFront() {
             const auto source = backAccess.readableSpans()[0];
             const auto destination = frontAccess.writableSpans()[0];
             const auto count = std::min(source.size(), destination.size());
-            std::memcpy(destination.data(), source.data(), count * sizeof(mem::Byte));
-            frontAccess.commitWritten(unit::ByteLength::fromSizeT(count));
-            backAccess.consumeRead(unit::ByteLength::fromSizeT(count));
+            std::memcpy(destination.data(), source.data(), count * sizeof(Byte));
+            frontAccess.commitWritten(unit::ByteCount::fromSizeT(count));
+            backAccess.consumeRead(unit::ByteCount::fromSizeT(count));
         }
     }
     if (back.isEmpty()) {
@@ -65,7 +68,7 @@ void BufferedByteOutputStreamData::refillFront() {
 
 void BufferedByteOutputStreamData::performWrite() {
     auto access = std::optional<mem::impl::UnsafeRingBufferAccess>{};
-    auto source = mem::ConstByteSpan{};
+    auto source = ConstByteSpan{};
     {
         const auto lock = std::scoped_lock{mutex};
         if (aborted.load()) {
@@ -80,14 +83,14 @@ void BufferedByteOutputStreamData::performWrite() {
     auto failure = std::exception_ptr{};
     try {
         native->write(source);
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         failure = std::current_exception();
     }
 
     {
         const auto lock = std::scoped_lock{mutex};
         if (!aborted.load() && !failure) {
-            access->consumeRead(unit::ByteLength::fromSizeT(source.size()));
+            access->consumeRead(unit::ByteCount::fromSizeT(source.size()));
         }
         access.reset();
         workInProgress = false;
@@ -107,7 +110,7 @@ void BufferedByteOutputStreamData::scheduleClose() {
     }
     workInProgress = true;
     auto self = shared_from_this();
-    IoService::submitIoWork([self = std::move(self)]() -> void { self->performClose(); });
+    work.submit([self = std::move(self)]() -> void { self->performClose(); });
 }
 
 void BufferedByteOutputStreamData::performClose() {
@@ -115,7 +118,7 @@ void BufferedByteOutputStreamData::performClose() {
     try {
         native->flush();
         native->close();
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         failure = std::current_exception();
     }
     {

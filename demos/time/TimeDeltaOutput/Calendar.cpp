@@ -3,7 +3,13 @@
 
 #include "TimeDeltaOutputDemos.hpp"
 
-#include <erbsland/time/all.hpp>
+#include <erbsland/all_time.hpp>
+#include <erbsland/CalendarDelta.hpp>
+#include <erbsland/CalendarDeltaParts.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/TimeDeltaFormat.hpp>
+#include <erbsland/TimeDeltaUnit.hpp>
 
 namespace demo {
 

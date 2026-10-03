@@ -5,7 +5,7 @@
 #include "../CryptographicSecurity.hpp"
 
 #include "../../text/String_fwd.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../util/impl/ComparisonHelper.hpp"
 
 #include <cstdint>
@@ -22,6 +22,7 @@ public:
     /// Raw key-agreement algorithm value.
     enum Value : uint8_t {
         X25519, ///< X25519 over Curve25519.
+        P256,   ///< ECDH over NIST P-256 (secp256r1), with uncompressed public points.
     };
 
 public:
@@ -46,11 +47,11 @@ public: // accessors
     /// Get the raw algorithm value.
     [[nodiscard]] constexpr auto toRawValue() const noexcept -> Value { return _value; }
     /// Get the encoded public-key length.
-    [[nodiscard]] auto publicKeySize() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto publicKeySize() const noexcept -> unit::ByteCount;
     /// Get the encoded private-key length.
-    [[nodiscard]] auto privateKeySize() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto privateKeySize() const noexcept -> unit::ByteCount;
     /// Get the shared-secret length.
-    [[nodiscard]] auto sharedSecretSize() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto sharedSecretSize() const noexcept -> unit::ByteCount;
     /// Get the coarse security level.
     [[nodiscard]] auto security() const noexcept -> CryptographicSecurity;
 

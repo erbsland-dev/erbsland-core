@@ -3,7 +3,9 @@
 CMake Build Files Structure
 ***************************
 
-The correct format is automatically enforced by the ``pre_commit`` utility.
+The correct format is automatically enforced by the ``code-cleanup`` maintenance command, which is also run by the
+``pre-commit`` utility.
+See :doc:`/development/tool_usage/code_cleanup` for configuration and supported syntax.
 
 1.  Inside ``src`` directories, there is one ``CMakeLists.txt`` per directory that:
 

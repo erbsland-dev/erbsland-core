@@ -10,6 +10,7 @@
 #include "../ByteReader.hpp"
 
 #include "../../err/OutOfRangeError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
 #include "../../err/OverflowError.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../math/impl/Throw.hpp"
@@ -17,14 +18,17 @@
 
 namespace erbsland::mem::impl {
 
+using namespace err;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-auto ByteReaderTools::readTextOrThrow(const ByteTextOptions &options) -> text::String {
+auto ByteReaderTools::readTextOrThrow(const ByteTextOptions &options) -> String {
     auto cursor = _reader.position();
-    auto result = text::String{};
+    auto result = String{};
     if (options.format() == ByteTextFormat::PaddedField) {
         if (!options.length().isFinite()) {
-            throw err::OutOfRangeError("A padded text field requires a finite byte length"_el);
+            throw OutOfRangeFailure("A padded text field requires a finite byte length"_el);
         }
         result = readTextFromFieldOrThrow(options, options.length(), cursor);
     } else {
@@ -35,46 +39,46 @@ auto ByteReaderTools::readTextOrThrow(const ByteTextOptions &options) -> text::S
 }
 
 auto ByteReaderTools::readTextFromFieldOrThrow(
-    const ByteTextOptions &options, const unit::ByteLength fieldLength, unit::ByteIndex &cursor) -> text::String {
+    const ByteTextOptions &options, const ByteCount fieldLength, ByteIndex &cursor) -> String {
     if (!canRead(cursor, fieldLength)) {
-        throw err::OutOfRangeError("The padded text field is incomplete"_el);
+        throw ParseError("The padded text field is incomplete"_el);
     }
     const auto fieldEnd = cursor.toSizeT() + fieldLength.toSizeT();
     const auto textTools = ByteTextTools{options};
     const auto unitSize = textTools.unitSize();
     const auto encodedMark = textTools.encodedEndMark();
 
-    auto payloadLength = unit::ByteLength{};
+    auto payloadLength = ByteCount{};
     if (options.countFormat().has_value()) {
         const auto count = readCountOrThrow(*options.countFormat(), cursor);
         payloadLength = textTools.byteLengthFromCountOrThrow(count);
         const auto requiredLength = payloadLength.added(encodedMark.length());
         if (!requiredLength.isFinite() || cursor.toSizeT() > fieldEnd ||
             requiredLength.toSizeT() > fieldEnd - cursor.toSizeT()) {
-            throw err::OutOfRangeError("Text count exceeds the field length"_el);
+            throw ParseError("Text count exceeds the field length"_el);
         }
     } else if (!encodedMark.isEmpty()) {
-        const auto searchLength = unit::ByteLength::fromSizeT(fieldEnd - cursor.toSizeT());
-        const auto searchView = ByteDataView{_reader.dataView().dataSpan(), unit::ByteRange{cursor, searchLength}};
+        const auto searchLength = ByteCount::fromSizeT(fieldEnd - cursor.toSizeT());
+        const auto searchView = ByteDataView{_reader.dataView().dataSpan(), ByteRange{cursor, searchLength}};
         const auto markPosition = ByteComparisonTools{searchView}.find(ByteDataView{encodedMark.span()});
         if (markPosition.isNoIndex() || markPosition.toSizeT() % unitSize != 0U) {
-            throw err::ParseError{"Text end mark is missing"_el};
+            throw ParseError{"Text end mark is missing"_el};
         }
         payloadLength = markPosition.distanceFromZero();
     } else {
-        payloadLength = unit::ByteLength::fromSizeT(fieldEnd - cursor.toSizeT());
+        payloadLength = ByteCount::fromSizeT(fieldEnd - cursor.toSizeT());
     }
 
     const auto payload = readBytesOrThrow(payloadLength, cursor);
     if (!encodedMark.isEmpty() && readBytesOrThrow(encodedMark.length(), cursor) != encodedMark) {
-        throw err::ParseError{"Text end mark does not match"_el};
+        throw ParseError{"Text end mark does not match"_el};
     }
-    const auto result = text::StringDecoder{payload}.decode(options.encoding(), text::StringBomMode::Reject);
-    cursor = unit::ByteIndex::fromSizeT(fieldEnd);
+    const auto result = StringDecoder{payload}.decode(options.encoding(), StringBomMode::Reject);
+    cursor = ByteIndex::fromSizeT(fieldEnd);
     return result;
 }
 
-auto ByteReaderTools::readDynamicTextOrThrow(const ByteTextOptions &options, unit::ByteIndex &cursor) -> text::String {
+auto ByteReaderTools::readDynamicTextOrThrow(const ByteTextOptions &options, ByteIndex &cursor) -> String {
     const auto textTools = ByteTextTools{options};
     const auto unitSize = textTools.unitSize();
     const auto encodedMark = textTools.encodedEndMark();
@@ -83,49 +87,52 @@ auto ByteReaderTools::readDynamicTextOrThrow(const ByteTextOptions &options, uni
         const auto count = readCountOrThrow(*options.countFormat(), cursor);
         payloadLength = textTools.byteLengthFromCountOrThrow(count);
         if (options.length().isFinite() && payloadLength > options.length()) {
-            throw err::OutOfRangeError("Text count exceeds the configured maximum length"_el);
+            throw ParseError("Text count exceeds the configured maximum length"_el);
         }
     } else if (!encodedMark.isEmpty()) {
-        const auto remainingLength = unit::ByteLength::fromSizeT(_reader.length().toSizeT() - cursor.toSizeT());
+        const auto remainingLength = ByteCount::fromSizeT(_reader.length().toSizeT() - cursor.toSizeT());
         const auto maximumFrameLength =
             options.length().isFinite() ? options.length().added(encodedMark.length()) : remainingLength;
         const auto searchLength = maximumFrameLength < remainingLength ? maximumFrameLength : remainingLength;
-        const auto searchView = ByteDataView{_reader.dataView().dataSpan(), unit::ByteRange{cursor, searchLength}};
+        const auto searchView = ByteDataView{_reader.dataView().dataSpan(), ByteRange{cursor, searchLength}};
         const auto markPosition = ByteComparisonTools{searchView}.find(ByteDataView{encodedMark.span()});
         if (markPosition.isNoIndex() || markPosition.toSizeT() % unitSize != 0U) {
-            throw err::ParseError{"Text end mark is missing"_el};
+            throw ParseError{"Text end mark is missing"_el};
         }
         payloadLength = markPosition.distanceFromZero();
     } else if (!payloadLength.isFinite()) {
-        throw err::OutOfRangeError("Unframed dynamic text requires an exact finite length"_el);
+        throw OutOfRangeFailure("Unframed dynamic text requires an exact finite length"_el);
     }
 
     const auto payload = readBytesOrThrow(payloadLength, cursor);
     if (!encodedMark.isEmpty() && readBytesOrThrow(encodedMark.length(), cursor) != encodedMark) {
-        throw err::ParseError{"Text end mark does not match"_el};
+        throw ParseError{"Text end mark does not match"_el};
     }
-    return text::StringDecoder{payload}.decode(options.encoding(), text::StringBomMode::Reject);
+    return StringDecoder{payload}.decode(options.encoding(), StringBomMode::Reject);
 }
 
-auto ByteReaderTools::readCountOrThrow(const ByteIntegerFormat format, unit::ByteIndex &cursor) const -> uint64_t {
-    const auto value = ByteReadTools{_reader.dataView()}.getIntegerOrThrow(cursor, format, _reader.endianness());
-    if (value.isNegative) {
-        throw err::OverflowError("A negative text count does not fit an unsigned value"_el);
+auto ByteReaderTools::readCountOrThrow(const ByteIntegerFormat format, ByteIndex &cursor) const -> uint64_t {
+    const auto value = ByteReadTools{_reader.dataView()}.getInteger(cursor, format, _reader.endianness());
+    if (!value.has_value()) {
+        throw ParseError{"The text count is incomplete or invalid"_el};
     }
-    cursor = cursor + value.byteLength;
-    return value.magnitude;
+    if (value->isNegative) {
+        throw OverflowError("A negative text count does not fit an unsigned value"_el);
+    }
+    cursor = cursor + value->byteLength;
+    return value->magnitude;
 }
 
-auto ByteReaderTools::readBytesOrThrow(const unit::ByteLength length, unit::ByteIndex &cursor) const -> ByteBlock {
+auto ByteReaderTools::readBytesOrThrow(const ByteCount length, ByteIndex &cursor) const -> ByteBlock {
     if (!canRead(cursor, length)) {
-        throw err::OutOfRangeError("Not enough bytes to read the requested byte block"_el);
+        throw ParseError("Not enough bytes to read the requested byte block"_el);
     }
     const auto result = _reader._block.slice(cursor, length);
     cursor = cursor + length;
     return result;
 }
 
-auto ByteReaderTools::canRead(const unit::ByteIndex cursor, const unit::ByteLength length) const noexcept -> bool {
+auto ByteReaderTools::canRead(const ByteIndex cursor, const ByteCount length) const noexcept -> bool {
     if (!cursor.isValid() || !length.isFinite()) {
         return false;
     }

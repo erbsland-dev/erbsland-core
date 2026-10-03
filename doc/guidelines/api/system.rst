@@ -23,9 +23,13 @@ Primary Types
     UserName, GroupName // type-safe platform identity names
     UserLookup // cached lookup service for platform user and group identities
     EnvironmentVariables // portable access to process environment variables
+    EnvironmentChanges // deferred inheritance, variable changes, and PATH edits
     ProcessId // opaque process identifier created only by system APIs
     ProcessInfo // eager portable process snapshot
-    Subprocess // move-only owner and controller for one child process
+    System // event-loop frontend for system event sources
+    Subprocess, SubprocessPtr // shared owner and controller for one child process
+    DetachedSubprocess, DetachedSubprocessPtr // independent launch identifier
+    SubprocessEventEditor // owner-loop handler replacement
     SubprocessOptions // launch environment, working directory, and stream policies
     SubprocessExitStatus // exit code or POSIX termination signal
 
@@ -39,6 +43,7 @@ Secondary Types
     PlatformErrorCategory // native subsystem or API failure category
     OperatingSystem, CpuArchitecture // comparable smart-enum host classifications
     SubprocessOutputMode // inherit, discard, or bounded capture
+    EnvironmentInherit // all or no base environment variables
 
 Lookup Patterns
 ===============
@@ -63,6 +68,36 @@ Environment Variable Patterns
     o.setOrThrow(name, value) // set or throw on failure
     o.remove(name) -> bool // idempotently remove without throwing
     o.removeOrThrow(name) // idempotently remove or throw on failure
+
+PATH Access Patterns
+====================
+
+.. code-block:: text
+
+    o.paths()/pathsOrThrow() -> PathList // valid normalized PATH entries in search order
+    o.prependPath(path)/appendPath(path) -> bool // edit PATH, dropping malformed entries
+    o.insertPath(index, path) -> bool // insert at a position in the deduplicated list
+    o.removePath(path)/removePathsIn(base) -> bool // remove equivalent entries or descendants
+    o.❮pathEdit❯OrThrow(...) // preserve invalid-argument and native failure details
+    o.executableCandidates(name)/executableCandidatesOrThrow(name) -> PathList // candidates without filesystem checks
+
+Environment Change Patterns
+===========================
+
+.. code-block:: text
+
+    o.setInherit(EnvironmentInherit) // select all or no base variables
+    o.setInherit(StringList) // replace the selection of inherited variable names
+    o.isUnchangedInheritance() -> bool // test for unmodified full inheritance
+    o.setVariable(name, value) // replace a pending assignment or removal
+    o.removeVariable(name/StringList) // remove after inheritance
+    o.clearVariableChange(name) // restore inheritance behavior for one name
+    o.clearVariableChanges() // clear assignments and removals only
+    o.prependPath(path)/appendPath(path) // insert at the front/back after filtering
+    o.removePath(path) // remove lexically equivalent PATH entries
+    o.removePathsIn(base) // remove the base directory and its descendants
+    o.clearPathChanges() // clear PATH rules only
+    o.apply(base) -> StringMap<String> // return the transformed environment without process access
 
 Process Information Patterns
 ============================
@@ -91,8 +126,13 @@ Subprocess Patterns
 
 .. code-block:: text
 
-    T::start(executable, arguments, options) -> Subprocess // launch an owned direct child
-    T::startDetached(executable, arguments, options) // launch without process control or capture
+    T::create(executable, arguments, options) -> SubprocessPtr // prepare without launching
+    o.start() // launch the prepared child once
+    T::start(executable, arguments, options) -> DetachedSubprocessPtr // independent detached launch
+    o.get<System>() -> System& // access the loop frontend
+    o.createSubprocess(executable, arguments, options) -> SubprocessPtr // prepare a bound source
+    o.events() -> SubprocessEventEditor& // lazily bind manual sources to the current loop
+    o.on❮Event❯(callback) -> SubprocessEventEditor& // replace a handler on the owner loop
     o.processId() -> ProcessId // inspect the launched identifier, including after exit
     o.isRunning() -> bool // poll native child state
     o.exitStatus() -> optional<SubprocessExitStatus> // inspect cached terminal state
@@ -101,8 +141,10 @@ Subprocess Patterns
     o.terminate()/kill() // request regular or forceful native termination
     o.standardOutput()/standardError() -> String // read a retained captured prefix
     o.was❮Stream❯Truncated() -> bool // detect output beyond the capture limit
-    o.setEnvironmentVariable(name, value) // assign after optional inheritance
-    o.removeEnvironmentVariable(name) // remove after optional inheritance
+    o.environmentChanges() -> EnvironmentChanges& // edit the launch-time environment descriptor
+    o.setEnvironmentChanges(changes) -> SubprocessOptions& // replace the descriptor
+    o.removesOutputBom() -> bool // initial output signature removal policy
+    o.setRemoveOutputBom(enabled) -> SubprocessOptions& // preserve machine output bytes when disabled
 
 Application Patterns
 ====================

@@ -22,8 +22,7 @@ class PasswordHashKey final {
 public:
     /// Create the normal unnamed application key.
     /// The key's shared allocation is marked as sensitive by this constructor.
-    /// @param key The application-key material.
-    /// @throws err::ParameterError If the key contains fewer than 32 bytes.
+    /// @param key The application-key material. Must contain at least 32 bytes.
     explicit PasswordHashKey(mem::ByteBlock key);
 
     // defaults
@@ -44,16 +43,18 @@ public: // factory
     /// Create an identified key for rotation.
     /// Identifiers contain 1-32 characters from ASCII letters, digits, `.`, `_`, and `-`.
     /// @param identifier The public rotation identifier.
-    /// @param key The application-key material, marked as sensitive by the resulting key.
+    /// @param key The application-key material, marked as sensitive by the resulting key. Must contain at least 32
+    /// bytes.
     /// @return The identified key.
-    /// @throws err::ParameterError If the key or identifier is invalid.
     [[nodiscard]] static auto identified(text::String identifier, mem::ByteBlock key) -> PasswordHashKey;
+
+public: // validation
+    /// Test whether an identifier meets the public rotation-identifier requirements.
+    [[nodiscard]] static auto isValidIdentifier(const text::String &identifier) noexcept -> bool;
 
 private:
     /// Create a validated password-hash key with its optional identifier.
     PasswordHashKey(std::optional<text::String> identifier, mem::ByteBlock key);
-    /// Test whether an identifier meets the public rotation-identifier requirements.
-    [[nodiscard]] static auto isValidIdentifier(const text::String &identifier) noexcept -> bool;
 
 private:
     std::optional<text::String> _identifier; ///< The optional public rotation identifier.

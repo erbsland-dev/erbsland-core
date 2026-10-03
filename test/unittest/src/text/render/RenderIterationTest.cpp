@@ -3,9 +3,11 @@
 
 #include "MemoryLayoutLoader.hpp"
 
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/render/Environment.hpp>
-#include <erbsland/text/render/RenderError.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/render/RenderError.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/StringSet.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;
@@ -13,9 +15,13 @@ using namespace el::text::render;
 
 TESTED_TARGETS(Compiler Engine LoopState Tokenizer)
 class RenderIterationTest final : public el::UnitTest {
+private:
+    static constexpr auto cItemsKey = "items"_el;
+    static constexpr auto cPageLayout = "page"_el;
+
 public:
     void testListIterationAndMetadata() {
-        const auto context = Context{}.set("items"_el, ValueList{"alpha"_el, "beta"_el, "gamma"_el});
+        const auto context = Context{}.set(cItemsKey, ValueList{"alpha"_el, "beta"_el, "gamma"_el});
         REQUIRE_EQUAL(
             render(
                 "{% for item in items %}"
@@ -25,13 +31,26 @@ public:
                 context),
             "1/0/3/2/true/false/3=alpha;2/1/2/1/false/false/3=beta;3/2/1/0/false/true/3=gamma;"_el);
         REQUIRE_EQUAL(
-            render("A{% for item in items %}{{ item }}{% endfor %}Z"_el, Context{}.set("items"_el, ValueList{})),
+            render("A{% for item in items %}{{ item }}{% endfor %}Z"_el, Context{}.set(cItemsKey, ValueList{})),
             "AZ"_el);
         REQUIRE_EQUAL(
             render(
                 "{% for item in items %}{{ loop.first }}:{{ loop.last }}={{ item }}{% endfor %}"_el,
-                Context{}.set("items"_el, ValueList{"only"_el})),
+                Context{}.set(cItemsKey, ValueList{"only"_el})),
             "true:true=only"_el);
+    }
+
+    void testStringCollectionsInContext() {
+        const auto context = Context{}
+                                 .set(cItemsKey, el::StringList{"beta"_el, "alpha"_el, "beta"_el})
+                                 .set("names"_el, el::StringSet{"beta"_el, "alpha"_el, "beta"_el});
+
+        REQUIRE_EQUAL(
+            render(
+                "{% for item in items %}{{ item }};{% endfor %}|"
+                "{% for name in names %}{{ name }};{% endfor %}"_el,
+                context),
+            "beta;alpha;beta;|alpha;beta;"_el);
     }
 
     void testOrderedMapIteration() {
@@ -60,21 +79,21 @@ public:
 
     void testIterableExpressionCallbackAndFilter() {
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, "{% for item in items | identity %}{{ item }}{% endfor %}"_el);
+        loader->set(cPageLayout, "{% for item in items | identity %}{{ item }}{% endfor %}"_el);
         const auto environment = Environment::create();
         environment->addFilter("identity"_el, [](const ValueList &values) -> Value {
             return values.getRefOrThrow(el::unit::ItemIndex::zero());
         });
         environment->addLayoutLoader(loader);
         auto evaluations = std::size_t{};
-        const auto context = Context{}.set("items"_el, ValueCallbackFn{[&evaluations]() -> Value {
+        const auto context = Context{}.set(cItemsKey, ValueCallbackFn{[&evaluations]() -> Value {
             ++evaluations;
             return ValueList{"x"_el, "y"_el};
         }});
 
-        REQUIRE_EQUAL(environment->render("page"_el, context), "xy"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout, context), "xy"_el);
         REQUIRE_EQUAL(evaluations, std::size_t{1U});
-        REQUIRE_EQUAL(environment->render("page"_el, context), "xy"_el);
+        REQUIRE_EQUAL(environment->render(cPageLayout, context), "xy"_el);
         REQUIRE_EQUAL(evaluations, std::size_t{2U});
     }
 
@@ -113,10 +132,10 @@ public:
 private:
     [[nodiscard]] static auto render(const el::text::String &text, const Context &context = {}) -> el::text::String {
         const auto loader = std::make_shared<erbsland::test::MemoryLayoutLoader>();
-        loader->set("page"_el, text);
+        loader->set(cPageLayout, text);
         const auto environment = Environment::create();
         environment->addLayoutLoader(loader);
-        return environment->render("page"_el, context);
+        return environment->render(cPageLayout, context);
     }
 
     void requireRuntimeFailure(const el::text::String &layout, Value value, const std::size_t expectedLine) {

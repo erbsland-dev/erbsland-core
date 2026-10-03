@@ -50,7 +50,7 @@ Lifecycle Patterns
     o.partManager() -> ApplicationPartManagerPtr // access the lazy application-integrated manager
     o.registerPart<T>() // register an application-part class before run
     o.part<T>() -> shared_ptr<T> // access a prepared part through its interface
-    o.enableTerminal() // create and retain advanced terminal integration
+    o.enableTerminal([size, flags]) // create and retain advanced terminal integration
     o.enableServiceLifecycle() // enable foreground-daemon and Windows service lifecycle integration
     o.reportStartupPending(expectedTime)/reportStartupComplete() // report delayed startup progress and readiness
     o.releaseOptions() // release startup-only option definitions
@@ -61,7 +61,8 @@ Customization Patterns
 .. code-block:: text
 
     o.initialize()/registerCommandLineOptions(options) // customize startup before parsing
-    o.parseCommandLine() // customize command-line parsing
+    o.parseCommandLine() // replace command-line parsing
+    o.handleCommandLineOptions(values) // handle successful parsing before part options and main dispatch
     o.main() -> unit::ExitCode // customize application work
     o.cleanup() // customize non-throwing finalization
     o.setInitializeFn/setMainFn(function) // customize lifecycle without deriving
@@ -91,7 +92,7 @@ Application Service Patterns
 
     o.info()/commandLineArguments()/optionValues() -> T // access startup metadata and parsed input
     o.random()/secureRandom() -> random::Random& // access shared random generators
-    o.displayText()/setDisplayTextMap(map) // inspect or replace application display text
+    o.displayText() -> i18n::DisplayTextPtr // access the application display-text registry
     o.userLookup() -> system::UserLookup& // access shared identity lookup
     o.resources() -> const resource::Resources& // access compiled resources through a lazy shared manager
     o.enableLastErrorDump([mode]) // retain recent errors and display them on failure or after every run

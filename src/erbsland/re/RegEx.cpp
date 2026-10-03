@@ -13,22 +13,23 @@
 
 namespace erbsland::re {
 
+using namespace text;
+
 RegEx::LazyState::LazyState(const Flags sourceFlags, Settings sourceSettings) noexcept :
     flags{sourceFlags}, settings{std::move(sourceSettings)} {
 }
 
-auto RegEx::compile(text::AnyString pattern, const Flags flags, const Settings &settings) -> RegExPtr {
+auto RegEx::compile(AnyString pattern, const Flags flags, const Settings &settings) -> RegExPtr {
     auto engine = buildEngine(pattern, flags, settings);
-    return std::make_shared<RegEx>(std::move(engine), std::move(pattern), PrivateTag{});
+    return std::make_shared<RegEx>(std::move(engine), std::move(pattern), PrivateTag{}, flags);
 }
 
-auto RegEx::lazyCompile(text::AnyString pattern, const Flags flags, const Settings &settings) -> RegExPtr {
+auto RegEx::lazyCompile(AnyString pattern, const Flags flags, const Settings &settings) -> RegExPtr {
     return std::make_shared<RegEx>(std::move(pattern), flags, settings, PrivateTag{});
 }
 
-auto RegEx::buildEngine(const text::AnyString &pattern, const Flags flags, const Settings &settings)
-    -> impl::ConstEnginePtr {
-    auto reader = text::StringCharReader{pattern};
+auto RegEx::buildEngine(const AnyString &pattern, const Flags flags, const Settings &settings) -> impl::ConstEnginePtr {
+    auto reader = StringCharReader{pattern};
     impl::Compiler compiler{std::move(reader), impl::GroupFlags::fromPatternFlags(flags), settings};
     auto engine = compiler.buildEngine();
     if (flags.isSet(Flag::CRLF)) {
@@ -63,12 +64,12 @@ auto RegEx::engine() const -> const impl::ConstEnginePtr & {
     return _engine;
 }
 
-RegEx::RegEx(impl::ConstEnginePtr engine, text::AnyString pattern, PrivateTag) noexcept :
-    _engine{std::move(engine)}, _pattern{std::move(pattern)} {
+RegEx::RegEx(impl::ConstEnginePtr engine, AnyString pattern, PrivateTag, const Flags flags) noexcept :
+    _flags{flags}, _engine{std::move(engine)}, _pattern{std::move(pattern)} {
 }
 
-RegEx::RegEx(text::AnyString pattern, const Flags flags, Settings settings, PrivateTag) :
-    _pattern{std::move(pattern)}, _lazyState{std::make_shared<LazyState>(flags, std::move(settings))} {
+RegEx::RegEx(AnyString pattern, const Flags flags, Settings settings, PrivateTag) :
+    _flags{flags}, _pattern{std::move(pattern)}, _lazyState{std::make_shared<LazyState>(flags, std::move(settings))} {
 }
 
 }

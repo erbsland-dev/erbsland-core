@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Keys.hpp"
 
-#include "../err/ParameterError.hpp"
-#include "../text/CharSet.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 #include <algorithm>
@@ -11,6 +10,8 @@
 
 namespace erbsland::cterm {
 
+using namespace unit;
+using namespace text;
 using namespace text::literals;
 
 Keys::Keys(Key key) {
@@ -21,7 +22,7 @@ Keys::Keys(const Key::Type keyType) {
     add(keyType);
 }
 
-Keys::Keys(const text::Char character) {
+Keys::Keys(const Char character) {
     add(character);
 }
 
@@ -47,10 +48,10 @@ auto Keys::alternativeKeys() const -> std::vector<Key> {
     return {_keys.begin() + static_cast<Container::difference_type>(count), _keys.end()};
 }
 
-auto Keys::mainKeyLabels() const -> text::StringList {
-    auto keyLabels = text::StringList{};
+auto Keys::mainKeyLabels() const -> StringList {
+    auto keyLabels = StringList{};
     const auto keys = mainKeys();
-    keyLabels.reserve(text::StringList::Count::fromSizeT(keys.size()));
+    keyLabels.reserve(ItemCount::fromSizeT(keys.size()));
     for (const auto &key : keys) {
         keyLabels.append(key.toDisplayText(false));
     }
@@ -85,7 +86,7 @@ auto Keys::add(const Key::Type keyType) -> Keys & {
     return add(keyFromType(keyType));
 }
 
-auto Keys::add(const text::Char character) -> Keys & {
+auto Keys::add(const Char character) -> Keys & {
     return add(Key{character});
 }
 
@@ -105,13 +106,12 @@ auto Keys::contains(const Key &key) const noexcept -> bool {
 }
 
 void Keys::validateKey(const Key &key) {
-    static const auto nullCharacters = text::CharSet{text::Char{}};
     if (!key.valid()) {
-        throw err::ParameterError{"Key binding must be a displayable key."_el, "key"_el};
+        throw err::ParameterFailure{"Key binding must be a displayable key."_el, "key"_el};
     }
     const auto displayText = key.toDisplayText(false);
-    if (displayText.isEmpty() || displayText.containsOneOf(nullCharacters)) {
-        throw err::ParameterError{"Key binding must be a displayable key."_el, "key"_el};
+    if (displayText.isEmpty()) {
+        throw err::ParameterFailure{"Key binding must be a displayable key."_el, "key"_el};
     }
 }
 
@@ -120,7 +120,7 @@ auto Keys::keyFromType(const Key::Type keyType) -> Key {
     case Key::None:
     case Key::Character:
     case Key::Combined:
-        throw err::ParameterError{"Key binding type must be one special key type."_el, "keyType"_el};
+        throw err::ParameterFailure{"Key binding type must be one special key type."_el, "keyType"_el};
     default:
         return Key{keyType};
     }

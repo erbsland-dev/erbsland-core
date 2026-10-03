@@ -3,10 +3,10 @@
 
 #include "MoveAwareTestValue.hpp"
 
-#include <erbsland/unit/ItemCount.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/LoopStatus.hpp>
+#include <erbsland/Map.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/LoopStatus.hpp>
-#include <erbsland/util/Map.hpp>
 
 #include <map>
 #include <set>

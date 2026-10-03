@@ -7,7 +7,7 @@
 
 #include "../Value.hpp"
 
-#include "../../../text/StringList.hpp"
+#include "../../StringList.hpp"
 
 #include <optional>
 #include <variant>

@@ -29,7 +29,7 @@ Native read, write, flush, close, or positioning failures throw
 .. erbsland-demo::
     :source: stream/StreamErrors/DistinguishResultStates.cpp
     :exec: stream/stream_errors --demo DistinguishResultStates
-    :source-sha256: c18ccdff9644da86faa15a84fb6b7d102075b80d36704f3cd3e4ba477d71427b
+    :sha256: 3307262d8dd1f6f0a55492ab58a58571c44d85d6de515b5065f1c77cbd556d6f
 
 .. code-block:: cpp
 
@@ -42,17 +42,19 @@ Native read, write, flush, close, or positioning failures throw
         el::io::printLine("Fin normal: "_el, input.readByte().isFinished());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Tiempo agotado: true
-    Dato marino: true
-    Fin normal: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTiempo agotado: true
+        Dato marino: true
+        Fin normal: true␛[0m
 
 .. erbsland-demo-end::
 
-Inspect Structured Context
-==========================
+Inspecting Stream Error Context
+===============================
 
 ``StreamError`` contains :cpp:class:`StreamErrorContext <erbsland::stream::StreamErrorContext>`.
 Its title states what failed; its description explains why.
@@ -62,7 +64,7 @@ without nesting a second cause.
 .. erbsland-demo::
     :source: stream/StreamErrors/InspectStreamError.cpp
     :exec: stream/stream_errors --demo InspectStreamError
-    :source-sha256: 45d452501f99c721d3aae13a7ef379efa860c45e911ca8538a06c32b92dcf1b9
+    :sha256: a8be3ff42819dcb3ca0c6bfa102ea5e4cc45ea7f81c2bc40dc2eaeea34eb3df8
 
 .. code-block:: cpp
 
@@ -72,7 +74,8 @@ without nesting a second cause.
         auto input = ScriptedByteInputStream{{1U}};
         input.setFailure(true);
         try {
-            static_cast<void>(input.readByte());
+            [[maybe_unused]] const auto byte = input.readByte();
+            // ... process the byte ...
         } catch (const el::StreamError &error) {
             el::io::printLine("Title: "_el, error.title());
             el::io::printLine("Description: "_el, error.description());
@@ -80,17 +83,19 @@ without nesting a second cause.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Title: Failed to read the scripted stream.
-    Description: The simulated sensor source failed.
-    Estado Failed: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTitle: Failed to read the scripted stream.
+        Description: The simulated sensor source failed.
+        Estado Failed: true␛[0m
 
 .. erbsland-demo-end::
 
-Report the Common Diagnostic
-============================
+Rendering Stream Error Diagnostics
+==================================
 
 Use ``diagnostic()`` or :cpp:class:`DiagnosticHelper <erbsland::err::DiagnosticHelper>` to transform the exception into
 the same renderer-neutral document used by application errors.
@@ -99,7 +104,7 @@ This keeps terminal output, logs, and graphical reporting consistent.
 .. erbsland-demo::
     :source: stream/StreamErrors/ReportDiagnostic.cpp
     :exec: stream/stream_errors --demo ReportDiagnostic
-    :source-sha256: e664271fed5d898656b56edee876a3317bb4fd314475c9bae0401a59b1cfe98d
+    :sha256: 4f8ec0419668e5d50dd3dd00982583d1ec514a0913aecb078983192533ae0187
 
 .. code-block:: cpp
 
@@ -116,11 +121,13 @@ This keeps terminal output, logs, and graphical reporting consistent.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Error: Failed to flush the scripted stream.
-      The simulated recorder failed.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mError: Failed to flush the scripted stream.
+          The simulated recorder failed.␛[0m
 
 .. erbsland-demo-end::
 
@@ -135,7 +142,7 @@ decorated text operation.
 .. erbsland-demo::
     :source: stream/StreamErrors/PreserveWrappedContext.cpp
     :exec: stream/stream_errors --demo PreserveWrappedContext
-    :source-sha256: 31a03d75d8e7c16d804f9fe66de27f601870e5cea12e087c65181f1025779084
+    :sha256: 9aca15ef09c956f80b2bbbc0e8dc1a952d155be0272bd325837ab546bc843431
 
 .. code-block:: cpp
 
@@ -148,16 +155,19 @@ decorated text operation.
         output->write("coral"_el);
         output->close();
         try {
-            static_cast<void>(output->write("pez"_el));
+            [[maybe_unused]] const auto status = output->write("pez"_el);
+            // note: real code must handle the returned status.
         } catch (const el::StreamError &error) {
             el::io::printLine("Ruta conservada: "_el, error.path().endsWith("arrecife.txt"_el));
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Ruta conservada: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRuta conservada: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -167,11 +177,15 @@ Handle Encoding Errors Separately
 Strict decoding throws :cpp:class:`EncodingError <erbsland::text::EncodingError>` because malformed text is not a native
 stream failure.
 Catch it separately when the application can explain invalid input differently from an unavailable file or device.
+Enable ``Strict`` only when encoding validity must be enforced at this boundary and the validation requirement takes
+priority over decoding time.
+Strict conversion and whole-file decoding can be much slower than tolerant processing; see
+:doc:`text_input_and_output` for the performance tradeoff and how it applies to incremental streams.
 
 .. erbsland-demo::
     :source: stream/StreamErrors/HandleEncodingError.cpp
     :exec: stream/stream_errors --demo HandleEncodingError
-    :source-sha256: 328fab55d9e00a416c96db46ca1a0f8e34af67a3b77fd672c278eb9d15275d27
+    :sha256: 191547d042a8c4cd1c9ddbb201b7a129d63708ee37d62a9ceefcc0d44c5b1e49
 
 .. code-block:: cpp
 
@@ -186,16 +200,19 @@ Catch it separately when the application can explain invalid input differently f
         options.setEncodingMode(el::EncodingMode::Strict);
 
         try {
-            static_cast<void>(path.content().openTextInputStream(options)->readAll());
+            [[maybe_unused]] const auto input = path.content().openTextInputStream(options)->readAll();
+            // ... do something with the input ...
         } catch (const el::EncodingError &) {
             el::io::printLine("The malformed UTF-8 sequence was rejected."_el);
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    The malformed UTF-8 sequence was rejected.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mThe malformed UTF-8 sequence was rejected.␛[0m
 
 .. erbsland-demo-end::
 

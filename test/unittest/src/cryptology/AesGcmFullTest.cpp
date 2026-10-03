@@ -1,17 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "CryptologyResponseKeys.hpp"
 #include "CryptologyResponseReader.hpp"
 #include "CryptologyTestHelper.hpp"
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/CryptologyError.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricDecryptor.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricEncryptor.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/text/StringLiteral.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/CryptologyError.hpp>
+#include <erbsland/StringLiteral.hpp>
+#include <erbsland/SymmetricDecryptor.hpp>
+#include <erbsland/SymmetricEncryptor.hpp>
 
 #include <algorithm>
 #include <array>
@@ -49,7 +50,7 @@ private:
     }
 
     [[nodiscard]] static auto nonceFrom(const CryptologyResponseReader::Record &record) -> SymmetricNonce {
-        return SymmetricNonce{bytesFromHex(record.value("IV"_el))};
+        return SymmetricNonce{bytesFromHex(record.value(response_key::cIvField))};
     }
 
     static void addAad(SymmetricEncryptor &encryptor, const ByteBlock &aad, const bool chunked) {
@@ -112,43 +113,78 @@ private:
         REQUIRE_EQUAL(record.unsignedSetting("Keylen"_el), file.keyBits);
         REQUIRE_EQUAL(record.unsignedSetting("IVlen"_el), 96U);
         REQUIRE_EQUAL(record.unsignedSetting("Taglen"_el), 128U);
-        REQUIRE_EQUAL(bytesFromHex(record.value("IV"_el)).length().toSizeT() * 8U, record.unsignedSetting("IVlen"_el));
         REQUIRE_EQUAL(
-            bytesFromHex(record.value("AAD"_el)).length().toSizeT() * 8U, record.unsignedSetting("AADlen"_el));
-        REQUIRE_EQUAL(bytesFromHex(record.value("CT"_el)).length().toSizeT() * 8U, record.unsignedSetting("PTlen"_el));
+            bytesFromHex(record.value(response_key::cIvField)).length().toSizeT() * 8U,
+            record.unsignedSetting("IVlen"_el));
         REQUIRE_EQUAL(
-            bytesFromHex(record.value("Tag"_el)).length().toSizeT() * 8U, record.unsignedSetting("Taglen"_el));
+            bytesFromHex(record.value(response_key::cAdditionalDataField)).length().toSizeT() * 8U,
+            record.unsignedSetting("AADlen"_el));
+        REQUIRE_EQUAL(
+            bytesFromHex(record.value(response_key::cShortCiphertextField)).length().toSizeT() * 8U,
+            record.unsignedSetting("PTlen"_el));
+        REQUIRE_EQUAL(
+            bytesFromHex(record.value(response_key::cTagField)).length().toSizeT() * 8U,
+            record.unsignedSetting("Taglen"_el));
     }
 
     void verifyEncryption(const CryptologyResponseReader::Record &record, const TestFile &file, const bool chunked) {
-        record.requireAllowedValues({"Count"_el, "Key"_el, "IV"_el, "PT"_el, "AAD"_el, "CT"_el, "Tag"_el});
-        record.requireValues({"Count"_el, "Key"_el, "IV"_el, "PT"_el, "AAD"_el, "CT"_el, "Tag"_el});
+        record.requireAllowedValues(
+            {"Count"_el,
+                "Key"_el,
+                response_key::cIvField,
+                response_key::cShortPlaintextField,
+                response_key::cAdditionalDataField,
+                response_key::cShortCiphertextField,
+                response_key::cTagField});
+        record.requireValues(
+            {"Count"_el,
+                "Key"_el,
+                response_key::cIvField,
+                response_key::cShortPlaintextField,
+                response_key::cAdditionalDataField,
+                response_key::cShortCiphertextField,
+                response_key::cTagField});
         verifyDimensions(record, file);
-        const auto plaintext = bytesFromHex(record.value("PT"_el));
+        const auto plaintext = bytesFromHex(record.value(response_key::cShortPlaintextField));
         REQUIRE_EQUAL(plaintext.length().toSizeT() * 8U, record.unsignedSetting("PTlen"_el));
         auto encryptor = SymmetricEncryptor{typeFor(file.keyBits), keyFrom(record), nonceFrom(record)};
-        addAad(encryptor, bytesFromHex(record.value("AAD"_el)), chunked);
-        REQUIRE_EQUAL(encryptPayload(encryptor, plaintext, chunked), bytesFromHex(record.value("CT"_el)));
-        REQUIRE_EQUAL(encryptor.tag().data(), bytesFromHex(record.value("Tag"_el)));
+        addAad(encryptor, bytesFromHex(record.value(response_key::cAdditionalDataField)), chunked);
+        REQUIRE_EQUAL(
+            encryptPayload(encryptor, plaintext, chunked),
+            bytesFromHex(record.value(response_key::cShortCiphertextField)));
+        REQUIRE_EQUAL(encryptor.tag().data(), bytesFromHex(record.value(response_key::cTagField)));
     }
 
     void verifyDecryption(const CryptologyResponseReader::Record &record, const TestFile &file, const bool chunked) {
-        record.requireAllowedValues({"Count"_el, "Key"_el, "IV"_el, "CT"_el, "AAD"_el, "Tag"_el, "PT"_el});
-        record.requireValues({"Count"_el, "Key"_el, "IV"_el, "CT"_el, "AAD"_el, "Tag"_el});
+        record.requireAllowedValues(
+            {"Count"_el,
+                "Key"_el,
+                response_key::cIvField,
+                response_key::cShortCiphertextField,
+                response_key::cAdditionalDataField,
+                response_key::cTagField,
+                response_key::cShortPlaintextField});
+        record.requireValues(
+            {"Count"_el,
+                "Key"_el,
+                response_key::cIvField,
+                response_key::cShortCiphertextField,
+                response_key::cAdditionalDataField,
+                response_key::cTagField});
         verifyDimensions(record, file);
-        const auto ciphertext = bytesFromHex(record.value("CT"_el));
+        const auto ciphertext = bytesFromHex(record.value(response_key::cShortCiphertextField));
         auto decryptor = SymmetricDecryptor{typeFor(file.keyBits), keyFrom(record), nonceFrom(record)};
-        addAad(decryptor, bytesFromHex(record.value("AAD"_el)), chunked);
+        addAad(decryptor, bytesFromHex(record.value(response_key::cAdditionalDataField)), chunked);
         auto plaintext = decryptPayload(decryptor, ciphertext, chunked);
-        const auto tag = SymmetricTag{bytesFromHex(record.value("Tag"_el))};
+        const auto tag = SymmetricTag{bytesFromHex(record.value(response_key::cTagField))};
         if (record.failed) {
-            REQUIRE_FALSE(record.hasValue("PT"_el));
+            REQUIRE_FALSE(record.hasValue(response_key::cShortPlaintextField));
             REQUIRE_THROWS_AS(CryptologyError, decryptor.finalize(tag));
             return;
         }
-        record.requireValues({"PT"_el});
+        record.requireValues({response_key::cShortPlaintextField});
         plaintext.append(decryptor.finalize(tag));
-        REQUIRE_EQUAL(plaintext, bytesFromHex(record.value("PT"_el)));
+        REQUIRE_EQUAL(plaintext, bytesFromHex(record.value(response_key::cShortPlaintextField)));
     }
 
 public:

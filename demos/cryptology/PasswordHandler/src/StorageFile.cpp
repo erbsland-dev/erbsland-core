@@ -1,19 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "StorageFile.hpp"
 
-#include <erbsland/err/RuntimeError.hpp>
-#include <erbsland/path/PathAccessProfile.hpp>
-#include <erbsland/path/PathCreateDirectoryOptions.hpp>
-#include <erbsland/path/PathCreateMode.hpp>
-#include <erbsland/path/PathMoveOptions.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/PathTempFileOptions.hpp>
-#include <erbsland/stream/TempTextOutputStream.hpp>
-#include <erbsland/text/EscapeAmount.hpp>
-#include <erbsland/text/EscapeFormat.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/EscapeAmount.hpp>
+#include <erbsland/EscapeFormat.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathAccessProfile.hpp>
+#include <erbsland/PathCollisionMode.hpp>
+#include <erbsland/PathCreateDirectoryOptions.hpp>
+#include <erbsland/PathCreateMode.hpp>
+#include <erbsland/PathMoveOptions.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathTempFileOptions.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/TempTextOutputStream.hpp>
 
 namespace demo {
 

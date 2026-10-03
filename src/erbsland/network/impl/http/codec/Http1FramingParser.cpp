@@ -16,6 +16,9 @@
 
 namespace erbsland::network::impl {
 
+using namespace unit;
+
+using namespace err;
 using namespace text;
 using namespace text::literals;
 
@@ -36,12 +39,12 @@ Http1FramingParser::Http1FramingParser(const HttpHeaders &headers) {
 void Http1FramingParser::parseContentLength(const String &text) {
     static const auto cNumberOptions = []() -> IntegerParseOptions {
         auto result = IntegerParseOptions{};
-        result.setFixedBase(IntegerBase::Decimal).setMinimumDigits(unit::CpLength::one());
+        result.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpCount::one());
         return result;
     }();
     auto reader = StringCharReader{text};
     if (reader.isAtEnd()) {
-        throw err::ParseError{"Content-Length must not be empty."_el};
+        throw ParseError{"Content-Length must not be empty."_el};
     }
     for (;;) {
         reader.advanceWhile(AsciiCategory::Blank);
@@ -49,18 +52,18 @@ void Http1FramingParser::parseContentLength(const String &text) {
         reader.advanceWhile(AsciiCategory::Digit);
         const auto digits = reader.takeCapture().toString();
         if (digits.isEmpty()) {
-            throw err::ParseError{"Content-Length has a malformed list value."_el};
+            throw ParseError{"Content-Length has a malformed list value."_el};
         }
-        auto value = std::uint64_t{};
+        auto value = ByteCount{};
         try {
-            value = digits.toIntegerOrThrow<std::uint64_t>(cNumberOptions);
+            value = ByteCount::fromIntegerOrThrow(digits.toIntegerOrThrow<std::uint64_t>(cNumberOptions));
         } catch (const ParseNumberError &) {
-            throw err::ParseError{"Content-Length has a malformed numeric value."_el};
-        } catch (const err::OverflowError &) {
-            throw err::ParseError{"Content-Length overflows its numeric range."_el};
+            throw ParseError{"Content-Length has a malformed numeric value."_el};
+        } catch (const OverflowError &) {
+            throw ParseError{"Content-Length overflows its numeric range."_el};
         }
         if (_contentLength && *_contentLength != value) {
-            throw err::ParseError{"Content-Length values disagree."_el};
+            throw ParseError{"Content-Length values disagree."_el};
         }
         _contentLength = value;
         reader.advanceWhile(AsciiCategory::Blank);
@@ -68,10 +71,10 @@ void Http1FramingParser::parseContentLength(const String &text) {
             break;
         }
         if (!reader.advanceIf(U',')) {
-            throw err::ParseError{"Content-Length has a malformed list delimiter."_el};
+            throw ParseError{"Content-Length has a malformed list delimiter."_el};
         }
         if (reader.isAtEnd()) {
-            throw err::ParseError{"Content-Length has an empty list member."_el};
+            throw ParseError{"Content-Length has an empty list member."_el};
         }
     }
 }
@@ -79,7 +82,7 @@ void Http1FramingParser::parseContentLength(const String &text) {
 void Http1FramingParser::parseTransferEncoding(const String &text) {
     auto reader = StringCharReader{text};
     if (reader.isAtEnd()) {
-        throw err::ParseError{"Transfer-Encoding must not be empty."_el};
+        throw ParseError{"Transfer-Encoding must not be empty."_el};
     }
     for (;;) {
         reader.advanceWhile(AsciiCategory::Blank);
@@ -87,7 +90,7 @@ void Http1FramingParser::parseTransferEncoding(const String &text) {
         reader.advanceWhile(AsciiCategory::HttpToken);
         const auto coding = reader.takeCapture().toString();
         if (coding.isEmpty()) {
-            throw err::ParseError{"Transfer-Encoding has a malformed list value."_el};
+            throw ParseError{"Transfer-Encoding has a malformed list value."_el};
         }
         ++_codingCount;
         _transferCoding = http_grammar::equalTokenCI(coding, "chunked"_el) ? Http1TransferCoding::Chunked
@@ -97,18 +100,18 @@ void Http1FramingParser::parseTransferEncoding(const String &text) {
             break;
         }
         if (!reader.advanceIf(U',')) {
-            throw err::ParseError{"Transfer-Encoding has a malformed list delimiter."_el};
+            throw ParseError{"Transfer-Encoding has a malformed list delimiter."_el};
         }
         if (reader.isAtEnd()) {
-            throw err::ParseError{"Transfer-Encoding has an empty list member."_el};
+            throw ParseError{"Transfer-Encoding has an empty list member."_el};
         }
     }
 }
 
-auto Http1FramingParser::chunkSize(const String &line) -> std::uint64_t {
+auto Http1FramingParser::chunkSize(const String &line) -> ByteCount {
     static const auto cNumberOptions = []() -> IntegerParseOptions {
         auto result = IntegerParseOptions{};
-        result.setFixedBase(IntegerBase::Hexadecimal).setMinimumDigits(unit::CpLength::one());
+        result.setFixedBase(IntegerBase::Hexadecimal).setMinimumDigits(CpCount::one());
         return result;
     }();
     auto reader = StringCharReader{line};
@@ -116,26 +119,26 @@ auto Http1FramingParser::chunkSize(const String &line) -> std::uint64_t {
     reader.advanceWhile(AsciiCategory::HexDigit);
     const auto digits = reader.takeCapture().toString();
     if (digits.isEmpty()) {
-        throw err::ParseError{"A chunk-size line requires hexadecimal digits."_el};
+        throw ParseError{"A chunk-size line requires hexadecimal digits."_el};
     }
-    auto result = std::uint64_t{};
+    auto result = ByteCount{};
     try {
-        result = digits.toIntegerOrThrow<std::uint64_t>(cNumberOptions);
+        result = ByteCount::fromIntegerOrThrow(digits.toIntegerOrThrow<std::uint64_t>(cNumberOptions));
     } catch (const ParseNumberError &) {
-        throw err::ParseError{"The chunk size is malformed."_el};
-    } catch (const err::OverflowError &) {
-        throw err::ParseError{"The chunk size overflows its numeric range."_el};
+        throw ParseError{"The chunk size is malformed."_el};
+    } catch (const OverflowError &) {
+        throw ParseError{"The chunk size overflows its numeric range."_el};
     }
     while (!reader.isAtEnd()) {
         reader.advanceWhile(AsciiCategory::Blank);
         if (reader.isAtEnd() || !reader.advanceIf(U';')) {
-            throw err::ParseError{"A chunk extension is malformed."_el};
+            throw ParseError{"A chunk extension is malformed."_el};
         }
         reader.advanceWhile(AsciiCategory::Blank);
         reader.startCapture();
         reader.advanceWhile(AsciiCategory::HttpToken);
         if (reader.takeCapture().toString().isEmpty()) {
-            throw err::ParseError{"A chunk extension name is missing."_el};
+            throw ParseError{"A chunk extension name is missing."_el};
         }
         reader.advanceWhile(AsciiCategory::Blank);
         if (reader.advanceIf(U'=')) {
@@ -155,17 +158,17 @@ auto Http1FramingParser::chunkSize(const String &line) -> std::uint64_t {
                         character = reader.read();
                     }
                     if ((character.isAsciiControl() && character != U'\t') || character == U'\x7f') {
-                        throw err::ParseError{"A chunk extension contains a prohibited control."_el};
+                        throw ParseError{"A chunk extension contains a prohibited control."_el};
                     }
                 }
                 if (!closed) {
-                    throw err::ParseError{"A quoted chunk extension is not terminated."_el};
+                    throw ParseError{"A quoted chunk extension is not terminated."_el};
                 }
             } else {
                 reader.startCapture();
                 reader.advanceWhile(AsciiCategory::HttpToken);
                 if (reader.takeCapture().toString().isEmpty()) {
-                    throw err::ParseError{"A chunk extension value is missing."_el};
+                    throw ParseError{"A chunk extension value is missing."_el};
                 }
             }
         }

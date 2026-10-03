@@ -6,7 +6,8 @@
 #include "Scenario_fwd.hpp"
 #include "ScenarioWorkload_fwd.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <functional>
 

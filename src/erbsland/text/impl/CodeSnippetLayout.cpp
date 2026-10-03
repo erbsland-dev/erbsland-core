@@ -4,11 +4,12 @@
 
 #include "../Literals.hpp"
 #include "../StringCharReader.hpp"
+#include "../StringJoins.hpp"
 
 #include "../../unit/ColumnCount.hpp"
 #include "../../unit/ColumnIndex.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/CpIndex.hpp"
-#include "../../unit/CpLength.hpp"
 #include "../../unit/CpRange.hpp"
 
 #include <algorithm>
@@ -16,6 +17,7 @@
 
 namespace erbsland::text::impl {
 
+using namespace unit;
 using namespace literals;
 
 CodeSnippetLayout::CodeSnippetLayout(
@@ -62,7 +64,7 @@ CodeSnippetLayout::CodeSnippetLayout(
     }
 }
 
-auto CodeSnippetLayout::isLastMarkerRow(const std::size_t rowIndex, const unit::ColumnRange markerRange) const noexcept
+auto CodeSnippetLayout::isLastMarkerRow(const std::size_t rowIndex, const ColumnRange markerRange) const noexcept
     -> bool {
     for (auto following = rowIndex + 1; following < _rows.size(); ++following) {
         if (_rows[following].markerPlacement(markerRange).has_value()) {
@@ -75,20 +77,19 @@ auto CodeSnippetLayout::isLastMarkerRow(const std::size_t rowIndex, const unit::
 auto CodeSnippetLayout::sourceCells(const String &source) -> std::vector<CodeSnippetLayoutCell> {
     auto result = std::vector<CodeSnippetLayoutCell>{};
     auto reader = StringCharReader{source};
-    auto logicalColumn = unit::ColumnIndex::zero();
+    auto logicalColumn = ColumnIndex::zero();
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
-        const auto nextColumn = logicalColumn.advanced(unit::ColumnCount::one());
+        const auto nextColumn = logicalColumn.advanced(ColumnCount::one());
         if (!character.isControlOrFormat() && character.displayWidth() == 0 && !result.empty()) {
-            result.back().text = String::fromJoined({result.back().text, String::fromCharacter(character)});
-            result.back().range = unit::ColumnRange{result.back().range.index(), nextColumn};
+            result.back().text = text::join(result.back().text, String::fromCharacter(character));
+            result.back().range = ColumnRange{result.back().range.beginIndex(), nextColumn};
         } else if (character.isControlOrFormat() || character.displayWidth() <= 0) {
             result.push_back(CodeSnippetLayoutCell{"?"_el, {logicalColumn, nextColumn}, 1, {}, false});
         } else {
             result.push_back(
                 CodeSnippetLayoutCell{
-                    source.slice(
-                        unit::CpRange{unit::CpIndex::fromSizeT(logicalColumn.toSizeT()), unit::CpLength::one()}),
+                    source.slice(CpRange{CpIndex::fromSizeT(logicalColumn.toSizeT()), CpCount::one()}),
                     {logicalColumn, nextColumn},
                     character.displayWidth(),
                     {},

@@ -18,7 +18,9 @@
 
 namespace erbsland::text::impl {
 
-U16StringBuilder::U16StringBuilder(const unit::U16DataLength capacity) {
+using namespace unit;
+
+U16StringBuilder::U16StringBuilder(const U16Count capacity) {
     _text.reserve(capacity);
 }
 
@@ -30,7 +32,7 @@ auto U16StringBuilder::kind() const noexcept -> StringKind {
     return StringKind::U16;
 }
 
-auto U16StringBuilder::length() const noexcept -> unit::CpLength {
+auto U16StringBuilder::length() const noexcept -> CpCount {
     return _length;
 }
 
@@ -40,46 +42,46 @@ auto U16StringBuilder::isEmpty() const noexcept -> bool {
 
 void U16StringBuilder::clear() noexcept {
     _text.clear();
-    _length = unit::CpLength::zero();
+    _length = CpCount::zero();
 }
 
-auto U16StringBuilder::append(const Char character) -> unit::CpLength {
+auto U16StringBuilder::append(const Char character) -> CpCount {
     const auto appendedLength = U16StringAppendTools{_text._storage}.append(character);
     _length += appendedLength;
     return appendedLength;
 }
 
-void U16StringBuilder::append(const Char character, unit::CpLength count) {
+void U16StringBuilder::append(const Char character, CpCount count) {
     _length += U16StringAppendTools{_text._storage}.append(character, count);
 }
 
-auto U16StringBuilder::append(const U8String &text) -> unit::CpLength {
+auto U16StringBuilder::append(const U8String &text) -> CpCount {
     const auto appendedLength = U16StringAppendTools{_text._storage}.append(text.dataView());
     _length += appendedLength;
     return appendedLength;
 }
 
-void U16StringBuilder::append(const U8String &text, const unit::ItemCount count) {
+void U16StringBuilder::append(const U8String &text, const ItemCount count) {
     _length += U16StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
-auto U16StringBuilder::append(const U16String &text) -> unit::CpLength {
+auto U16StringBuilder::append(const U16String &text) -> CpCount {
     const auto appendedLength = U16StringAppendTools{_text._storage}.append(text.dataView());
     _length += appendedLength;
     return appendedLength;
 }
 
-void U16StringBuilder::append(const U16String &text, const unit::ItemCount count) {
+void U16StringBuilder::append(const U16String &text, const ItemCount count) {
     _length += U16StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
-auto U16StringBuilder::append(const U32String &text) -> unit::CpLength {
+auto U16StringBuilder::append(const U32String &text) -> CpCount {
     const auto appendedLength = U16StringAppendTools{_text._storage}.append(text.dataView());
     _length += appendedLength;
     return appendedLength;
 }
 
-void U16StringBuilder::append(const U32String &text, const unit::ItemCount count) {
+void U16StringBuilder::append(const U32String &text, const ItemCount count) {
     _length += U16StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 

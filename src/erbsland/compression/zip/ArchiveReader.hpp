@@ -22,7 +22,7 @@ namespace erbsland::compression::zip {
 /// Parsing follows APPNOTE 6.3.10 sections 4.3.12 through 4.3.16 and 4.5.3.
 /// @seedoc{/reference/compression/zip_archives}
 /// Archive operations are unsuitable for sensitive data; codec storage is not securely erased.
-/// @tested{ZipArchiveTest}
+/// @tested{ZipArchiveTest ZipArchiveIoTest ZipArchiveMalformedTest}
 class ArchiveReader {
 protected: // defaults
     ArchiveReader() = default;
@@ -39,11 +39,22 @@ public: // defaults/deletions
 
 public: // factories
     /// Open and own a path-backed ZIP archive.
+    /// @param source The archive file to open.
+    /// @param options The archive-reading limits and options.
+    /// @return An open reader with a validated central directory; local records and payloads are checked on access.
+    /// @throws ZipError If input is malformed, unsupported, unsafe, exceeds configured limits, or cannot be read.
     [[nodiscard]] static auto create(const path::Path &source, ArchiveReaderOptions options = {}) -> ArchiveReaderPtr;
     /// Open and own an in-memory ZIP archive.
+    /// @param source The complete archive bytes to inspect.
+    /// @param options The archive-reading limits and options.
+    /// @return An open reader with a validated central directory; local records and payloads are checked on access.
+    /// @throws ZipError If input is malformed, unsupported, unsafe, or exceeds configured limits.
     [[nodiscard]] static auto create(mem::ByteBlock source, ArchiveReaderOptions options = {}) -> ArchiveReaderPtr;
     /// Open and own a ZIP archive input stream.
-    /// @throws err::ParameterError If `source` is null or does not support positioning.
+    /// @param source The archive input stream. Must not be null and must support positioning.
+    /// @param options The archive-reading limits and options.
+    /// @return An open reader with a validated central directory; local records and payloads are checked on access.
+    /// @throws ZipError If input is malformed, unsupported, unsafe, exceeds configured limits, or cannot be read.
     [[nodiscard]] static auto create(stream::ByteInputStreamPtr source, ArchiveReaderOptions options = {})
         -> ArchiveReaderPtr;
 

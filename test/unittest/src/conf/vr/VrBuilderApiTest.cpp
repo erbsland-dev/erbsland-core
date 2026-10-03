@@ -31,7 +31,7 @@
 #include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/conf/vr/RulesBuilder.hpp>
 #include <erbsland/conf/vr/RuleType.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/StringList.hpp>
 
 using namespace el::conf;
 using namespace el::text::literals;
@@ -39,6 +39,10 @@ using namespace el::text::literals;
 TESTED_TARGETS(RulesBuilder RuleDefinition)
 TAGS(ValidationRules)
 class VrBuilderApiTest final : public UNITTEST_SUBCLASS(VrBase) {
+private:
+    static constexpr auto cAppValue = "app"_el;
+    static constexpr auto cAppPortValue = "app.port"_el;
+
 public:
     [[nodiscard]] static auto makeRule(const vr::RuleType type = vr::RuleType::Text) -> el::conf::impl::Rule {
         auto rule = el::conf::impl::Rule{};
@@ -59,7 +63,7 @@ public:
     void testAddRuleSupportsAllNamePathLikeFormsAndErrors() {
         vr::RulesBuilder builder;
 
-        REQUIRE_NOTHROW(builder.addRule(NamePathLike{el::text::String{"app"_el}}, vr::RuleType::Section));
+        REQUIRE_NOTHROW(builder.addRule(NamePathLike{el::text::String{cAppValue}}, vr::RuleType::Section));
         REQUIRE_NOTHROW(builder.addRule(NamePathLike{NamePath::fromText("app.int_value"_el)}, vr::RuleType::Integer));
         REQUIRE_NOTHROW(builder.addRule(NamePathLike{Name::createRegular("root_text"_el)}, vr::RuleType::Text));
         REQUIRE_NOTHROW(builder.takeRules());
@@ -79,7 +83,7 @@ public:
     void testAddAlternativeBranches() {
         vr::RulesBuilder builder;
 
-        REQUIRE_NOTHROW(builder.addRule("app"_el, vr::RuleType::Section));
+        REQUIRE_NOTHROW(builder.addRule(cAppValue, vr::RuleType::Section));
         REQUIRE_NOTHROW(builder.addAlternative("app.variant"_el, vr::RuleType::Integer));
         REQUIRE_NOTHROW(builder.addAlternative("app.variant"_el, vr::RuleType::Text));
 
@@ -97,7 +101,7 @@ public:
         REQUIRE_EQUAL(secondAlternative->type(), vr::RuleType::Text);
 
         builder.reset();
-        REQUIRE_NOTHROW(builder.addRule("app"_el, vr::RuleType::Section));
+        REQUIRE_NOTHROW(builder.addRule(cAppValue, vr::RuleType::Section));
         REQUIRE_NOTHROW(builder.addRule("app.variant"_el, vr::RuleType::Integer));
         REQUIRE_THROWS_AS(el::conf::ConfError, builder.addAlternative("app.variant"_el, vr::RuleType::Text));
         REQUIRE_THROWS_AS(el::conf::ConfError, builder.addAlternative("missing.parent.variant"_el, vr::RuleType::Text));
@@ -106,20 +110,20 @@ public:
     void testAddMethodsValidateRuleTypeAndConstraintAlignment() {
         vr::RulesBuilder builder;
 
-        REQUIRE_THROWS_AS(el::conf::ConfError, builder.addRule("app"_el, vr::RuleType::Undefined));
-        REQUIRE_NOTHROW(builder.addRule("app"_el, vr::RuleType::Section));
+        REQUIRE_THROWS_AS(el::conf::ConfError, builder.addRule(cAppValue, vr::RuleType::Undefined));
+        REQUIRE_NOTHROW(builder.addRule(cAppValue, vr::RuleType::Section));
 
         REQUIRE_THROWS_AS(
             el::conf::ConfError,
-            builder.addRule("app.port"_el, vr::RuleType::Integer, vr::builder::Default("text"_el)));
+            builder.addRule(cAppPortValue, vr::RuleType::Integer, vr::builder::Default("text"_el)));
         REQUIRE_THROWS_AS(
             el::conf::ConfError,
-            builder.addRule("app.port"_el, vr::RuleType::Integer, vr::builder::Minimum(makeDate(2026, 1, 1))));
+            builder.addRule(cAppPortValue, vr::RuleType::Integer, vr::builder::Minimum(makeDate(2026, 1, 1))));
         REQUIRE_THROWS_AS(
             el::conf::ConfError,
-            builder.addAlternative("app.kind"_el, vr::RuleType::Text, vr::builder::In(std::vector<Integer>{1, 2})));
+            builder.addAlternative("app.kind"_el, vr::RuleType::Text, vr::builder::In(el::List<Integer>{1, 2})));
 
-        REQUIRE_NOTHROW(builder.addRule("app.port"_el, vr::RuleType::Integer, vr::builder::Default(Integer{443})));
+        REQUIRE_NOTHROW(builder.addRule(cAppPortValue, vr::RuleType::Integer, vr::builder::Default(Integer{443})));
         REQUIRE_NOTHROW(
             builder.addAlternative("app.kind"_el, vr::RuleType::Text, vr::builder::In({"dev"_el, "prod"_el})));
     }
@@ -378,13 +382,13 @@ public:
 
     void testInConstraintConstructorsAndBranches() {
         auto integerRule = makeRule(vr::RuleType::Integer);
-        vr::builder::In(std::vector<Integer>{1, 2})(integerRule);
+        vr::builder::In(el::List<Integer>{1, 2})(integerRule);
         REQUIRE(std::dynamic_pointer_cast<el::conf::impl::InIntegerConstraint>(integerRule.constraint("in"_el)));
         vr::builder::In(std::initializer_list<Integer>{1, 2})(integerRule);
         vr::builder::In(Integer{5})(integerRule);
 
         auto floatRule = makeRule(vr::RuleType::Float);
-        vr::builder::In(std::vector<Float>{1.0, 2.0})(floatRule);
+        vr::builder::In(el::List<Float>{1.0, 2.0})(floatRule);
         REQUIRE(std::dynamic_pointer_cast<el::conf::impl::InFloatConstraint>(floatRule.constraint("in"_el)));
         vr::builder::In({1.0, 2.0})(floatRule);
         vr::builder::In(Float{9.0})(floatRule);
@@ -398,7 +402,7 @@ public:
         vr::builder::In("x"_el)(textRule);
 
         auto bytesRule = makeRule(vr::RuleType::Bytes);
-        vr::builder::In(std::vector<el::mem::ByteBlock>{bytesFromHex("AA"_el)})(bytesRule);
+        vr::builder::In(el::List<el::mem::ByteBlock>{bytesFromHex("AA"_el)})(bytesRule);
         REQUIRE(std::dynamic_pointer_cast<el::conf::impl::InBytesConstraint>(bytesRule.constraint("in"_el)));
         vr::builder::In({bytesFromHex("01"_el), bytesFromHex("02"_el)})(bytesRule);
         vr::builder::In(bytesFromHex("FF"_el), {.isNegated = true, .errorMessage = "in error"_el})(bytesRule);
@@ -408,9 +412,9 @@ public:
         REQUIRE(negated->isNegated());
         REQUIRE(negated->hasCustomError());
 
-        REQUIRE_THROWS_AS(el::conf::ConfError, vr::builder::In(std::vector<Integer>{})(integerRule));
-        REQUIRE_THROWS_AS(el::conf::ConfError, vr::builder::In(std::vector<Integer>{1, 1})(integerRule));
-        REQUIRE_THROWS_AS(el::conf::ConfError, vr::builder::In(std::vector<Integer>{1, 2})(textRule));
+        REQUIRE_THROWS_AS(el::conf::ConfError, vr::builder::In(el::List<Integer>{})(integerRule));
+        REQUIRE_THROWS_AS(el::conf::ConfError, vr::builder::In(el::List<Integer>{1, 1})(integerRule));
+        REQUIRE_THROWS_AS(el::conf::ConfError, vr::builder::In(el::List<Integer>{1, 2})(textRule));
         REQUIRE_THROWS_AS(el::conf::ConfError, vr::builder::In(el::text::StringList{"A"_el, "a"_el})(textRule));
     }
 

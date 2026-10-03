@@ -43,7 +43,7 @@ This makes the intended distinction between required and optional settings visib
 .. erbsland-demo::
     :source: conf/ConfigurationDocuments/ParseAndAccess.cpp
     :exec: conf/configuration_documents --demo ParseAndAccess
-    :source-sha256: 4f9444038091e6fd0fc3e510e199342aa1e96ff9060cf249b79d40eecf467e31
+    :sha256: 166837e2217f5229e17e2d074df85b5d9fa329be1bcad80ea6aa5d0788466cf8
 
 .. code-block:: cpp
 
@@ -72,12 +72,14 @@ This makes the intended distinction between required and optional settings visib
         el::io::printLine("Stereo: "_el, el::BooleanFormat::yesNo(), stereo);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Patch: Gece Göğü
-    Voices: 8
-    Stereo: yes
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mPatch: Gece Göğü
+        Voices: 8
+        Stereo: yes␛[0m
 
 .. erbsland-demo-end::
 
@@ -128,7 +130,7 @@ they are no longer needed.
 .. erbsland-demo::
     :source: conf/ConfigurationDocuments/LoadingStrategies.cpp
     :exec: conf/configuration_documents --demo LoadingStrategies
-    :source-sha256: 696b36eceef3e80d8b59076f75d8a246ab8cb7e5b2aaa71821526a9e9ea3be9c
+    :sha256: e5fd879998fe6098dba2019e7c47a815650aeb3fc496df7d90fa2467cd5f2285
 
 .. code-block:: cpp
 
@@ -164,10 +166,12 @@ they are no longer needed.
         el::io::printLine(settings.name, ": "_el, settings.voices, " voices"_el);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Ay Işığı: 6 voices
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAy Işığı: 6 voices␛[0m
 
 .. erbsland-demo-end::
 
@@ -197,11 +201,10 @@ In that case, retrieve its :cpp:class:`Value <erbsland::conf::Value>` with
 .. erbsland-demo::
     :source: conf/ConfigurationDocuments/ManualValidation.cpp
     :files: examples/valid-patch.elcl examples/invalid-patch.elcl
-    :files-sha256: 96cdda1e29047fc389c2c1d6b97383a071d50de9043121613b87ce0850170a2c
     :exec: conf/configuration_documents --demo ManualValidation valid-patch.elcl
     :exec-2: conf/configuration_documents --demo ManualValidation invalid-patch.elcl
     :exec-2-exit-code: 1
-    :source-sha256: 1bf55d2e39bd35c81e604dd7268397c157aa4ca968f5fca1d0b95cab245578a5
+    :sha256: 0416792cfae658451eaa76c36bf9a4183844bffc2a015903a4d53319d7dbc59d
 
 .. code-block:: cpp
 
@@ -228,39 +231,47 @@ In that case, retrieve its :cpp:class:`Value <erbsland::conf::Value>` with
         el::io::printLine("Validated patch: "_el, name);
     }
 
-.. rubric:: ``$ conf/configuration_documents --demo ManualValidation valid-patch.elcl``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    Validated patch: Kuzey Rüzgârı
+        $ conf/configuration_documents --demo ManualValidation valid-patch.elcl
 
-.. rubric:: ``$ conf/configuration_documents --demo ManualValidation invalid-patch.elcl``
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[0mValidated patch: Kuzey Rüzgârı␛[0m
 
+.. erbsland-demo-run::
 
-      ␛[1;91mConverting␛[22m ␛[1ma␛[22m ␛[1mConfiguration␛[22m ␛[1mValue␛[22m ␛[1mFailed
+    .. code-block:: console
 
-      ␛[22;39mA value has not the required type. Expected 'Integer' but got 'Text'.
+        $ conf/configuration_documents --demo ManualValidation invalid-patch.elcl
 
-    ␛[1mError␛[22m ␛[1mSource:
-      ␛[22;90mPath:␛[39m     invalid-patch.elcl
-      ␛[90mLine:␛[39m     3
-      ␛[90mColumn:␛[39m   1
-      ␛[90mPosition:␛[39m 31
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
-      ␛[22;90mcategory:␛[39m  TypeMismatch
-      ␛[90mname path:␛[39m patch.voices
+        ␛[0m
+          ␛[91;49m␛[1mConverting␛[22m ␛[1ma␛[22m ␛[1mConfiguration␛[22m ␛[1mValue␛[22m ␛[1mFailed
 
-      ␛[90m   1 │ ␛[39m[patch]
-      ␛[90m   2 │ ␛[39mname: "Kuzey Rüzgârı"
-      ␛[90m   3 │ ␛[91mv␛[39moices: "twelve"
-      ␛[90m     │ ␛[91m▔
-      ␛[90m   4 │
-         5 │ ␛[39m[patch.oscillator]
+          ␛[39;49m␛[22mA value has not the required type. Expected 'Integer' but got 'Text'.
+
+        ␛[1mError␛[22m ␛[1mSource:
+          ␛[90;49m␛[22mPath:␛[39;49m     invalid-patch.elcl
+          ␛[90;49mLine:␛[39;49m     3
+          ␛[90;49mColumn:␛[39;49m   1
+          ␛[90;49mPosition:␛[39;49m 31
+
+        ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
+          ␛[90;49m␛[22mcategory:␛[39;49m  TypeMismatch
+          ␛[90;49mname path:␛[39;49m patch.voices
+
+          ␛[90;49m   1 │ ␛[39;49m[patch]
+          ␛[90;49m   2 │ ␛[39;49mname: "Kuzey Rüzgârı"
+          ␛[90;49m   3 │ ␛[91;49mv␛[39;49moices: "twelve"
+          ␛[90;49m     │ ␛[91;49m▔
+          ␛[90;49m   4 │
+             5 │ ␛[39;49m[patch.oscillator]␛[0m
 
 .. erbsland-demo-end::
 
@@ -298,11 +309,10 @@ attaches validation metadata and configured defaults to its values.
 .. erbsland-demo::
     :source: conf/ConfigurationDocuments/DocumentRules.cpp
     :files: examples/valid-patch.elcl examples/invalid-patch.elcl
-    :files-sha256: 96cdda1e29047fc389c2c1d6b97383a071d50de9043121613b87ce0850170a2c
     :exec: conf/configuration_documents --demo DocumentRules valid-patch.elcl
     :exec-2: conf/configuration_documents --demo DocumentRules invalid-patch.elcl
     :exec-2-exit-code: 1
-    :source-sha256: 7da2c53646cf8539ce1e8125e155601294bf66ab5fc89f73149cab39b6e62bac
+    :sha256: 19870177da5a4018cf12ab49b1e1a30d4c0ffe566de3d69c6cfe831ae11e0ccc
 
 .. code-block:: cpp
 
@@ -333,39 +343,47 @@ attaches validation metadata and configured defaults to its values.
         el::io::printLine("Validated voices: "_el, document->getIntegerOrThrow("patch.voices"_el));
     }
 
-.. rubric:: ``$ conf/configuration_documents --demo DocumentRules valid-patch.elcl``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    Validated voices: 12
+        $ conf/configuration_documents --demo DocumentRules valid-patch.elcl
 
-.. rubric:: ``$ conf/configuration_documents --demo DocumentRules invalid-patch.elcl``
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[0mValidated voices: 12␛[0m
 
+.. erbsland-demo-run::
 
-      ␛[1;91mValidating␛[22m ␛[1mthe␛[22m ␛[1mConfiguration␛[22m ␛[1mFailed
+    .. code-block:: console
 
-      ␛[22;39mExpected an integer value but got a text value
+        $ conf/configuration_documents --demo DocumentRules invalid-patch.elcl
 
-    ␛[1mError␛[22m ␛[1mSource:
-      ␛[22;90mPath:␛[39m     invalid-patch.elcl
-      ␛[90mLine:␛[39m     3
-      ␛[90mColumn:␛[39m   1
-      ␛[90mPosition:␛[39m 31
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
-      ␛[22;90mcategory:␛[39m  Validation
-      ␛[90mname path:␛[39m patch.voices
+        ␛[0m
+          ␛[91;49m␛[1mValidating␛[22m ␛[1mthe␛[22m ␛[1mConfiguration␛[22m ␛[1mFailed
 
-      ␛[90m   1 │ ␛[39m[patch]
-      ␛[90m   2 │ ␛[39mname: "Kuzey Rüzgârı"
-      ␛[90m   3 │ ␛[91mv␛[39moices: "twelve"
-      ␛[90m     │ ␛[91m▔
-      ␛[90m   4 │
-         5 │ ␛[39m[patch.oscillator]
+          ␛[39;49m␛[22mExpected an integer value but got a text value
+
+        ␛[1mError␛[22m ␛[1mSource:
+          ␛[90;49m␛[22mPath:␛[39;49m     invalid-patch.elcl
+          ␛[90;49mLine:␛[39;49m     3
+          ␛[90;49mColumn:␛[39;49m   1
+          ␛[90;49mPosition:␛[39;49m 31
+
+        ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
+          ␛[90;49m␛[22mcategory:␛[39;49m  Validation
+          ␛[90;49mname path:␛[39;49m patch.voices
+
+          ␛[90;49m   1 │ ␛[39;49m[patch]
+          ␛[90;49m   2 │ ␛[39;49mname: "Kuzey Rüzgârı"
+          ␛[90;49m   3 │ ␛[91;49mv␛[39;49moices: "twelve"
+          ␛[90;49m     │ ␛[91;49m▔
+          ␛[90;49m   4 │
+             5 │ ␛[39;49m[patch.oscillator]␛[0m
 
 .. erbsland-demo-end::
 
@@ -386,11 +404,10 @@ Each call to :cpp:func:`addRule() <erbsland::conf::vr::RulesBuilder::addRule>` a
 .. erbsland-demo::
     :source: conf/ConfigurationDocuments/CompiledRules.cpp
     :files: examples/valid-patch.elcl examples/invalid-patch.elcl
-    :files-sha256: 96cdda1e29047fc389c2c1d6b97383a071d50de9043121613b87ce0850170a2c
     :exec: conf/configuration_documents --demo CompiledRules valid-patch.elcl
     :exec-2: conf/configuration_documents --demo CompiledRules invalid-patch.elcl
     :exec-2-exit-code: 1
-    :source-sha256: cef37203f2b2c277ac9b37ac0595f858ba25290a93c4eb8cadce663ff64ce6b5
+    :sha256: f9cb77f7d5581049df4d342a07dbcf260c33645ade1c2813bbfc0f030b72ac74
 
 .. code-block:: cpp
 
@@ -405,10 +422,11 @@ Each call to :cpp:func:`addRule() <erbsland::conf::vr::RulesBuilder::addRule>` a
 
         auto builder = el::conf::vr::RulesBuilder{};
         builder.addRule("patch"_el, RuleType::Section);
-        builder.addRule("patch.name"_el, RuleType::Text);
-        builder.addRule("patch.voices"_el, RuleType::Integer, Minimum(1), Maximum(32));
-        builder.addRule("patch.oscillator"_el, RuleType::Section);
-        builder.addRule("patch.oscillator.waveform"_el, RuleType::Text);
+        auto patch = builder.createBranch("patch"_el);
+        patch.addRule("name"_el, RuleType::Text);
+        patch.addRule("voices"_el, RuleType::Integer, Minimum(1), Maximum(32));
+        patch.addRule("oscillator"_el, RuleType::Section);
+        patch.addRule("oscillator.waveform"_el, RuleType::Text);
         const auto rules = builder.takeRules();
 
         const auto document = el::conf::Parser{}.parseFileOrThrow(configurationPath);
@@ -417,39 +435,47 @@ Each call to :cpp:func:`addRule() <erbsland::conf::vr::RulesBuilder::addRule>` a
         el::io::printLine("Validated patch: "_el, document->getTextOrThrow("patch.name"_el));
     }
 
-.. rubric:: ``$ conf/configuration_documents --demo CompiledRules valid-patch.elcl``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    Validated patch: Kuzey Rüzgârı
+        $ conf/configuration_documents --demo CompiledRules valid-patch.elcl
 
-.. rubric:: ``$ conf/configuration_documents --demo CompiledRules invalid-patch.elcl``
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[0mValidated patch: Kuzey Rüzgârı␛[0m
 
+.. erbsland-demo-run::
 
-      ␛[1;91mValidating␛[22m ␛[1mthe␛[22m ␛[1mConfiguration␛[22m ␛[1mFailed
+    .. code-block:: console
 
-      ␛[22;39mExpected an integer value but got a text value
+        $ conf/configuration_documents --demo CompiledRules invalid-patch.elcl
 
-    ␛[1mError␛[22m ␛[1mSource:
-      ␛[22;90mPath:␛[39m     invalid-patch.elcl
-      ␛[90mLine:␛[39m     3
-      ␛[90mColumn:␛[39m   1
-      ␛[90mPosition:␛[39m 31
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
-      ␛[22;90mcategory:␛[39m  Validation
-      ␛[90mname path:␛[39m patch.voices
+        ␛[0m
+          ␛[91;49m␛[1mValidating␛[22m ␛[1mthe␛[22m ␛[1mConfiguration␛[22m ␛[1mFailed
 
-      ␛[90m   1 │ ␛[39m[patch]
-      ␛[90m   2 │ ␛[39mname: "Kuzey Rüzgârı"
-      ␛[90m   3 │ ␛[91mv␛[39moices: "twelve"
-      ␛[90m     │ ␛[91m▔
-      ␛[90m   4 │
-         5 │ ␛[39m[patch.oscillator]
+          ␛[39;49m␛[22mExpected an integer value but got a text value
+
+        ␛[1mError␛[22m ␛[1mSource:
+          ␛[90;49m␛[22mPath:␛[39;49m     invalid-patch.elcl
+          ␛[90;49mLine:␛[39;49m     3
+          ␛[90;49mColumn:␛[39;49m   1
+          ␛[90;49mPosition:␛[39;49m 31
+
+        ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
+          ␛[90;49m␛[22mcategory:␛[39;49m  Validation
+          ␛[90;49mname path:␛[39;49m patch.voices
+
+          ␛[90;49m   1 │ ␛[39;49m[patch]
+          ␛[90;49m   2 │ ␛[39;49mname: "Kuzey Rüzgârı"
+          ␛[90;49m   3 │ ␛[91;49mv␛[39;49moices: "twelve"
+          ␛[90;49m     │ ␛[91;49m▔
+          ␛[90;49m   4 │
+             5 │ ␛[39;49m[patch.oscillator]␛[0m
 
 .. erbsland-demo-end::
 

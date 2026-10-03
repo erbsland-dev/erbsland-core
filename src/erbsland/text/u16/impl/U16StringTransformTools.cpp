@@ -5,15 +5,15 @@
 #include "U16StringReadTools.hpp"
 #include "U16Writer.hpp"
 
+#include "../U16String.hpp"
 #include "../U16StringEditor.hpp"
 
 #include "../../../util/impl/LoopControl.hpp"
 #include "../../AnyStringBuilder.hpp"
-#include "../../impl/EscapeFormatter.hpp"
+#include "../../impl/escape/EscapeFormatter.hpp"
 
 #include <cstring>
 #include <span>
-#include <string_view>
 
 namespace erbsland::text::impl {
 
@@ -44,7 +44,7 @@ auto U16StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
     }
 
     const auto data = _data.dataSpan();
-    auto position = U16DataIndex::zero();
+    auto position = U16Index::zero();
     while (position.toSizeT() < data.size()) {
         const auto begin = position.toSizeT();
         const auto character = utf16::decodeCharOrReplace(data, position);
@@ -58,8 +58,8 @@ auto U16StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
 
         auto reservedSize = begin;
         if (mapped.isValidUnicode()) {
-            reservedSize = U16StringSharedStorage::checkedAddSize(
-                reservedSize, utf16::encodedLength(mapped).toSizeTOrThrow(), "Transformed string exceeds size bounds");
+            reservedSize =
+                U16StringSharedStorage::checkedAddSize(reservedSize, utf16::encodedLength(mapped).toSizeTOrThrow());
         }
         auto sizingPosition = position;
         while (sizingPosition.toSizeT() < data.size()) {
@@ -70,9 +70,7 @@ auto U16StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
             }
             if (sizingMapped.isValidUnicode()) {
                 reservedSize = U16StringSharedStorage::checkedAddSize(
-                    reservedSize,
-                    utf16::encodedLength(sizingMapped).toSizeTOrThrow(),
-                    "Transformed string exceeds size bounds");
+                    reservedSize, utf16::encodedLength(sizingMapped).toSizeTOrThrow());
             }
         }
 
@@ -85,7 +83,7 @@ auto U16StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
         }
 
         auto writeSize = begin;
-        auto transformPosition = U16DataIndex::fromSizeT(begin);
+        auto transformPosition = U16Index::fromSizeT(begin);
         while (transformPosition.toSizeT() < data.size()) {
             const auto transformCharacter = utf16::decodeCharOrReplace(data, transformPosition);
             const auto transformMapped = function(transformCharacter);
@@ -96,8 +94,7 @@ auto U16StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
                 continue;
             }
             const auto encodedSize = utf16::encodedLength(transformMapped).toSizeTOrThrow();
-            const auto requiredSize = U16StringSharedStorage::checkedAddSize(
-                writeSize, encodedSize, "Transformed string exceeds size bounds");
+            const auto requiredSize = U16StringSharedStorage::checkedAddSize(writeSize, encodedSize);
             if (requiredSize > result.capacity().toSizeT()) {
                 result.ensureMutableCapacity(requiredSize);
             }
@@ -110,16 +107,19 @@ auto U16StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
     return std::nullopt;
 }
 
-auto U16StringTransformTools::aligned(const CpLength length, const geometry::Alignment alignment, const Char fill) const
-    -> U16StringSharedStorage {
-    const auto data = _data.dataSpan();
+auto U16StringTransformTools::alignedIfChanged(
+    const CpCount length, const geometry::Alignment alignment, const Char fill) const
+    -> std::optional<U16StringSharedStorage> {
+    if (length.isZero() || !fill.isValidUnicode()) {
+        return std::nullopt;
+    }
     const auto currentLength = U16StringCharReadTool{_data}.charLength();
-    if (length <= currentLength || !fill.isValidUnicode()) {
-        return U16StringSharedStorage::fromCodeUnits(data);
+    if (length <= currentLength) {
+        return std::nullopt;
     }
     const auto padding = length - currentLength;
-    auto leftPadding = CpLength::zero();
-    auto rightPadding = CpLength::zero();
+    auto leftPadding = CpCount::zero();
+    auto rightPadding = CpCount::zero();
     if (alignment.isRight()) {
         leftPadding = padding;
     } else if (alignment.isHorizontalCenter()) {
@@ -136,38 +136,41 @@ auto U16StringTransformTools::aligned(const CpLength length, const geometry::Ali
     return result;
 }
 
-auto U16StringTransformTools::truncated(
-    const CpLength maximumWidth, const TruncateMode mode, const U16StringDataView &ellipsis) const
-    -> U16StringSharedStorage {
+auto U16StringTransformTools::truncatedIfChanged(
+    const CpCount maximumWidth, const TruncateMode mode, const U16StringDataView &ellipsis) const
+    -> std::optional<U16StringSharedStorage> {
     const auto data = _data.dataSpan();
     if (maximumWidth.isInfinite()) {
-        return U16StringSharedStorage::fromCodeUnits(data);
+        return std::nullopt;
     }
     if (maximumWidth.isZero()) {
-        return {};
+        if (data.empty()) {
+            return std::nullopt;
+        }
+        return U16StringSharedStorage{};
     }
     if (data.size() <= maximumWidth.toSizeT()) {
-        return U16StringSharedStorage::fromCodeUnits(data);
+        return std::nullopt;
     }
 
     const auto reader = U16StringCharReadTool{_data};
     auto needsTruncation = data.size() / 2U > maximumWidth.toSizeT();
     if (!needsTruncation) {
-        auto position = U16DataIndex::zero();
-        auto count = CpLength::zero();
+        auto position = U16Index::zero();
+        auto count = CpCount::zero();
         while (position.toSizeT() < data.size() && count <= maximumWidth) {
             utf16::fastAdvanceChar(data, position);
             ++count;
         }
         if (count <= maximumWidth) {
-            return U16StringSharedStorage::fromCodeUnits(data);
+            return std::nullopt;
         }
     }
 
     auto ellipsisLength = U16StringCharReadTool{ellipsis}.charLength();
     auto ellipsisView = ellipsis;
     if (ellipsisLength > maximumWidth) {
-        ellipsisLength = CpLength::zero();
+        ellipsisLength = CpCount::zero();
         ellipsisView = {};
     }
     const auto keepLength = maximumWidth - ellipsisLength;
@@ -175,22 +178,22 @@ auto U16StringTransformTools::truncated(
     auto appendTools = U16StringAppendTools{result};
     switch (mode) {
     case TruncateMode::Begin: {
-        auto suffixStart = U16DataIndex::fromSizeT(data.size());
+        auto suffixStart = U16Index::fromSizeT(data.size());
         U16StringReadTools{_data}.retreat(suffixStart, keepLength);
         appendTools.append(ellipsisView);
-        appendTools.append(dataView(
-            U16DataRange{suffixStart, U16DataIndex::fromSizeT(data.size())}.withOrigin(_data.range().index())));
+        appendTools.append(
+            dataView(U16Range{suffixStart, U16Index::fromSizeT(data.size())}.toAbsolute(_data.range().beginIndex())));
         break;
     }
     case TruncateMode::Middle: {
-        const auto prefixLength = keepLength.added(CpLength::one()) / 2U;
+        const auto prefixLength = keepLength.added(CpCount::one()) / 2U;
         const auto suffixLength = keepLength - prefixLength;
-        auto suffixStart = U16DataIndex::fromSizeT(data.size());
+        auto suffixStart = U16Index::fromSizeT(data.size());
         U16StringReadTools{_data}.retreat(suffixStart, suffixLength);
         appendTools.append(dataView(reader.sliceRange(CpRange{CpIndex::zero(), prefixLength})));
         appendTools.append(ellipsisView);
-        appendTools.append(dataView(
-            U16DataRange{suffixStart, U16DataIndex::fromSizeT(data.size())}.withOrigin(_data.range().index())));
+        appendTools.append(
+            dataView(U16Range{suffixStart, U16Index::fromSizeT(data.size())}.toAbsolute(_data.range().beginIndex())));
         break;
     }
     case TruncateMode::End:
@@ -203,9 +206,9 @@ auto U16StringTransformTools::truncated(
 }
 
 auto U16StringTransformTools::escapedSize(const EscapeFormat format, const EscapeAmount amount) const noexcept
-    -> U16DataLength {
+    -> U16Count {
     if (format == EscapeFormat::None || amount == EscapeAmount::Nothing) {
-        return U16DataLength::fromSizeT(_data.dataSpan().size());
+        return U16Count::fromSizeT(_data.dataSpan().size());
     }
     const auto formatter = EscapeFormatter::forFormat(format);
     auto length = std::size_t{0U};
@@ -217,28 +220,45 @@ auto U16StringTransformTools::escapedSize(const EscapeFormat format, const Escap
         }
         return true;
     });
-    return U16DataLength::fromSizeT(length);
+    return U16Count::fromSizeT(length);
 }
 
-auto U16StringTransformTools::toEscaped(const EscapeFormat format, const EscapeAmount amount) const -> U16StringEditor {
+auto U16StringTransformTools::toEscapedIfChanged(
+    const U16String &source, const EscapeFormat format, const EscapeAmount amount) const
+    -> std::optional<U16StringEditor> {
     const auto data = _data.dataSpan();
     if (format == EscapeFormat::None || amount == EscapeAmount::Nothing) {
-        return U16StringEditor{std::u16string_view{data.data(), data.size()}};
+        return std::nullopt;
     }
     const auto formatter = EscapeFormatter::forFormat(format);
-    auto builder = AnyStringBuilder{StringKind::U16};
-    utf16::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> bool {
-        if (formatter->needsEscape(character, amount)) {
-            formatter->escape(character, builder);
-        } else {
-            builder.append(character);
+    auto builder = std::optional<AnyStringBuilder>{};
+    auto position = U16Index::zero();
+    while (position.toSizeT() < data.size()) {
+        const auto begin = position.toSizeT();
+        const auto character = utf16::decodeCharOrReplace(data, position);
+        const auto needsEscape = formatter->needsEscape(character, amount);
+        const auto needsRepair =
+            character == Char::replacement() && !utf16::isValid(data.subspan(begin, position.toSizeT() - begin));
+        if (!builder && !needsEscape && !needsRepair) {
+            continue;
         }
-        return true;
-    });
-    return builder.takeU16StringEditor();
+        if (!builder) {
+            builder.emplace(AnyStringBuilder::u16(U16Count::fromSizeT(data.size())));
+            builder->append(source.slice(U16Range{U16Index::zero(), U16Count::fromSizeT(begin)}));
+        }
+        if (needsEscape) {
+            formatter->escape(character, builder.value());
+        } else {
+            builder->append(character);
+        }
+    }
+    if (builder) {
+        return builder->takeU16StringEditor();
+    }
+    return std::nullopt;
 }
 
-auto U16StringTransformTools::dataView(const U16DataRange range) const -> U16StringDataView {
+auto U16StringTransformTools::dataView(const U16Range range) const -> U16StringDataView {
     return U16StringDataView{_data.data(), range};
 }
 

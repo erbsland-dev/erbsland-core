@@ -5,9 +5,9 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <process.h>
 
@@ -37,7 +37,7 @@ public:
         REQUIRE(fileInfo.exists());
         REQUIRE_EQUAL(fileInfo.type(), PathType::RegularFile);
         REQUIRE(fileInfo.isRegularFile());
-        REQUIRE_EQUAL(fileInfo.fileSize(), el::unit::ByteLength{5U});
+        REQUIRE_EQUAL(fileInfo.fileSize(), el::unit::ByteCount{5U});
         REQUIRE(fileInfo.lastModified().isValid());
         REQUIRE_FALSE(fileInfo.ownerId().isEmpty());
         REQUIRE_FALSE(fileInfo.groupId().isEmpty());

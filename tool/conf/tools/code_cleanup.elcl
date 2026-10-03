@@ -1,0 +1,110 @@
+#
+# Configuration for the code_cleanup tool.
+#
+----[ Code Cleanup ]--------------------------------------------------------------------------------------------------
+# All filesystem paths below are relative to the project root, except the formatter executable.
+
+Library Directory            : "src/erbsland"
+# Compiler-visible prefix before names in Public Header Map; independent of the source directory.
+Public Include Prefix        : "erbsland"
+Public Header Map            : "tool/data/public_headers/header_map.txt"
+File Suffixes                : ".hpp", ".h", ".hxx", ".tpp", ".cpp"
+# Exact legacy umbrella names. Excluded files remain available for include lookup.
+Excluded Names               : "fwd.hpp", "all.hpp"
+
+# Each tree has its own include roots, matching its compiler search paths.
+# Directories are globs selecting recursive source roots. Each matched root and the
+# source file's directory are always searched; sibling data/templates are excluded.
+# Include Roots recognize local headers; they do not add files to be cleaned.
+----[ Code Cleanup . Sources . Library ]------------------------------------------------------------------------------
+Directories                  : "src/erbsland"
+Include Style                : "relative"
+
+----[ Code Cleanup . Sources . Tests ]--------------------------------------------------------------------------------
+Directories                  : "test/unittest/src"
+Include Style                : "public"
+Include Roots                : "test/unittest/src"
+
+----[ Code Cleanup . Sources . Demos ]--------------------------------------------------------------------------------
+Directories                  : "demos"
+Include Roots                : "demos/_common/src"
+
+----[ Code Cleanup . Sources . Constant Time ]------------------------------------------------------------------------
+Directories                  : "test/constant-time/*/src", "test/constant-time/test/unittest/src"
+Include Roots                : "test/constant-time/lib/src"
+
+----[ Code Cleanup . Sources . Profiling ]----------------------------------------------------------------------------
+Directories                  : "test/profiling/*/src"
+Include Roots                :
+    * "test/profiling/framework/src"
+
+----[ Code Cleanup . Sources . Adapters ]-----------------------------------------------------------------------------
+Directories                  : "test/adapter/src"
+
+----[ Code Cleanup . Sources . Tool ]---------------------------------------------------------------------------------
+Directories                  : "tool/src"
+
+----[ Code Cleanup . Sources . Tool Tests ]---------------------------------------------------------------------------
+Directories                  : "tool/test/unittest/src"
+Include Roots                : "tool/src"
+
+----[ Code Cleanup . Sources . Profiling Framework Tests ]------------------------------------------------------------
+Directories                  : "test/profiling/framework/test/src"
+Include Roots                : "test/profiling/framework/src"
+
+----[ Code Cleanup . Sources . Profiling Path Tests ]-----------------------------------------------------------------
+Directories                  : "test/profiling/path/test/src"
+Include Roots                : "test/profiling/framework/src", "test/profiling/path/src"
+
+----[ Code Cleanup . Sources . Build Helpers ]------------------------------------------------------------------------
+Directories                  : "cmake/tools/*/src"
+
+----[ Code Cleanup . Sources . Fuzzing ]------------------------------------------------------------------------------
+Directories                  : "test/fuzzing/*/src"
+Include Roots                : "test/fuzzing/common/src"
+
+----[ Code Cleanup . Sources . Interoperability ]---------------------------------------------------------------------
+Directories                  : "test/interop/*/src"
+Include Roots                : "test/unittest/src"
+
+----[ Code Cleanup . Sources . Additional Tests ]---------------------------------------------------------------------
+Directories                  : "test/heap/src", "test/macos/unittest/src", "test/cmake/*/src"
+
+----[ Code Cleanup . Sources . Tool Test Helpers ]--------------------------------------------------------------------
+Directories                  :
+    "tool/test/clang-format-fixture/src", "tool/test/maintenance-fixture/src", "tool/test/sphinx-fixture/src"
+
+# Only simple, directory-local PRIVATE source lists are rewritten.
+# Complex files are preserved, with the reason/scope reported in verbose output.
+# Targets are explicit; a more specific nested root overrides its parent.
+----[ Code Cleanup . Cmake ]------------------------------------------------------------------------------------------
+Minimum Version              : "3.28"
+
+----[ Code Cleanup . Cmake . Trees . Library ]------------------------------------------------------------------------
+Directory                    : "src"
+Target                       : "erbsland-core"
+
+----[ Code Cleanup . Cmake . Trees . Tests ]--------------------------------------------------------------------------
+Directory                    : "test/unittest/src"
+Target                       : "erbsland-core-unittest"
+
+----[ Code Cleanup . Cmake . Trees . Tool Executable ]----------------------------------------------------------------
+Directory                    : "tool/src"
+Target                       : "erbsland-core-tool"
+
+----[ Code Cleanup . Cmake . Trees . Tool Library ]-------------------------------------------------------------------
+Directory                    : "tool/src/tool"
+Target                       : "erbsland-core-tool-lib"
+
+----[ Code Cleanup . Cmake . Trees . Tool Tests ]---------------------------------------------------------------------
+Directory                    : "tool/test/unittest/src"
+Target                       : "erbsland-core-tool-unittest"
+
+----[ Code Cleanup . Format ]-----------------------------------------------------------------------------------------
+Executable                   : "clang-format"
+Style File                   : ".clang-format"
+Cache File                   : ".cache/code_cleanup/fingerprints.txt"
+# The first run establishes a fully formatted baseline. Later runs format only
+# changed code; leading include edits are handled by the fast C++ pass.
+# Style/formatter changes invalidate the baseline. --full-format refreshes it.
+# There is no periodic full run. --check never updates files or this cache.

@@ -3,13 +3,15 @@
 #include "EnvironmentOptions.hpp"
 
 #include "../StringCharReader.hpp"
+#include "../StringTransformations.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 
 #include <algorithm>
 
 namespace erbsland::text::render {
 
+using namespace err;
 using namespace literals;
 
 EnvironmentOptions::EnvironmentOptions() : _escapeFormats{defaultEscapeFormats()} {
@@ -47,7 +49,7 @@ auto EnvironmentOptions::setEscapeFormatForSuffix(const String &suffix, const Es
         return *this;
     }
     if (_escapeFormats->size() >= 256U) {
-        throw err::ParameterError{"There are too many layout suffix escape-format assignments."_el, "suffix"_el};
+        throw ParameterFailure{"There are too many layout suffix escape-format assignments."_el, "suffix"_el};
     }
     _escapeFormats->emplace_back(normalized, format);
     return *this;
@@ -73,7 +75,7 @@ auto EnvironmentOptions::escapeFormatForLayout(const String &layoutName) const n
         return EscapeFormat::None;
     }
     auto result = EscapeFormat{EscapeFormat::None};
-    auto longest = unit::ByteLength{};
+    auto longest = unit::ByteCount{};
     for (const auto &[suffix, format] : *_escapeFormats) {
         if (suffix.length() > longest && layoutName.endsWith(suffix)) {
             result = format;
@@ -89,22 +91,22 @@ auto EnvironmentOptions::setRenderLimits(const RenderLimits &limits) noexcept ->
 }
 
 auto EnvironmentOptions::normalizedSuffix(const String &suffix) -> String {
-    if (suffix.length() < unit::ByteLength{2U} || suffix.length() > unit::ByteLength{64U}) {
-        throw err::ParameterError{"A layout suffix must contain between two and 64 bytes."_el, "suffix"_el};
+    if (suffix.length() < unit::ByteCount{2U} || suffix.length() > unit::ByteCount{64U}) {
+        throw ParameterFailure{"A layout suffix must contain between two and 64 bytes."_el, "suffix"_el};
     }
     auto reader = StringCharReader{suffix};
     if (reader.read() != '.') {
-        throw err::ParameterError{"A layout suffix must start with a period."_el, "suffix"_el};
+        throw ParameterFailure{"A layout suffix must start with a period."_el, "suffix"_el};
     }
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
         if (!character.isAsciiAlphanumeric() && character != '.' && character != '_' && character != '-') {
-            throw err::ParameterError{
+            throw ParameterFailure{
                 "A layout suffix must only contain ASCII letters, digits, periods, underscores, or hyphens."_el,
                 "suffix"_el};
         }
     }
-    return suffix.transformed(Char::toAsciiLowercase);
+    return toAsciiLowercase(suffix);
 }
 
 }

@@ -8,6 +8,7 @@ Primary Types
 .. code-block:: text
 
     Path // platform-independent path value and filesystem-operation entry point
+    PathGlobPattern, PathGlobPatternPtr // immutable shared compiled path matcher
 
 Operation Types
 ===============
@@ -31,6 +32,8 @@ Option Types
     PathTempFileOptions, PathTempDirectoryOptions // temporary resource policies
     PathReadDataOptions, PathWriteDataOptions // binary content policies
     PathReadTextOptions, PathWriteTextOptions // text content and encoding policies
+    PathCommitOptions // temporary commit, collision, backup retention, and caller-check policies
+    PathReplaceDataOptions, PathReplaceTextOptions // complete-content replacement and output policies
     PathResolveOptions, PathWalkOptions, PathChangeOptions // resolution, traversal, and metadata policies
 
 Value Types
@@ -38,6 +41,7 @@ Value Types
 
 .. code-block:: text
 
+    PathGlobMatchMode, PathGlobPatternFlag, PathGlobPatternFlags // matching mode and compile syntax
     PathType, PathTypes, PathFormat // filesystem object and path-format classifications
     PathInfoPart, PathInfoParts // metadata fields loaded into a snapshot
     PathAccessInfo, PathAccessRight, PathAccessRights // portable access metadata
@@ -45,7 +49,9 @@ Value Types
     PathAttribute, PathAttributes // common native file attributes
     PathCollisionMode, PathCreateMode, PathResolveMode, SymlinkMode // operation policies
     PathProgress, PathProgressStatus, PathProgressFn // operation progress data and callback
+    PathCommitCheckFn // repeatable synchronous check before backup changes and replacement
     PathWalkDirection, PathWalkStatus, PathWalkResult, PathWalkFn // traversal control and result data
+    PathWalkFilterFn // path and effective-type predicate for reporting or descent
     PathWindowsFormat // native Windows export format
 
 Pattern Definitions
@@ -64,16 +70,18 @@ Path Value Patterns
     T(path) // create from portable text or a standard-library path
     o.isEmpty()/isValid() -> bool // test the sentinel state or current-platform validity
     o.isRelative/isAbsolute/isRoot() -> bool // classify path form
+    o.compare(other[, comparison]) -> std::strong_ordering // allocation-free root/component order
     o.elementCount()/element(index)/elements() -> T // inspect normalized path elements
     o.root()/parent()/parents() -> T // inspect the path hierarchy
     o.name()/stem()/suffix()/suffixes() -> T // inspect file-name parts
     o.withName/withStem/withSuffix(value) -> Path // replace one file-name part
     o.join/joined(path) -> Path // append in place or return a joined value
+    o.joinNative/joinedNative(text) -> Path // append text parsed with the current platform's native syntax
     o.slice(range)/commonAncestor(other) -> Path // derive structural path values
     o.resolve/resolveOrThrow([options]) -> Path // canonicalize with non-throwing or throwing failure
     o.toAbsolute/toRelative([base]) -> Path // convert path form with an empty failure sentinel
     o.toAbsoluteOrThrow/toRelativeOrThrow([base]) -> Path // convert path form or throw PathError
-    o.toString()/toStdPath()/toPosix()/toWindows() -> T // export portable or native representations
+    o.toString()/toNativeString()/toStdPath()/toPosix()/toWindows() -> T // export portable or native representations
     T::fromElements/from❮Format❯(value) -> Path // import normalized elements or a native representation
     T::currentDirectory/userHomeDirectory/systemTempDirectory() -> Path // query a platform directory
     T::executablePath/executablePathOrThrow() -> Path // query the current executable image path
@@ -99,6 +107,8 @@ Read and Write Patterns
     o.readTextOrThrow/readDataOrThrow([options]) -> T // read complete content or throw PathError
     o.writeText/writeData(value[, options]) -> bool // write complete content with status reporting
     o.writeTextOrThrow/writeDataOrThrow(value[, options]) // write complete content or throw PathError
+    o.replaceText/replaceData(value[, options]) -> Result // replace through a sibling temporary file
+    o.replaceTextOrThrow/replaceDataOrThrow(value[, options]) // replace complete content or throw PathError
     o.open❮Kind❯InputStream([options]) -> T // open a byte or text input stream
     o.setSymlinkMode(mode) -> O& // configure whether an input operation may follow symbolic links
     o.open❮Kind❯OutputStream([options]) -> T // open a byte or text output stream
@@ -118,6 +128,10 @@ Mutation and Temporary Resource Patterns
     o.path()/release() -> Path // inspect or release a temporary resource path
     o.removeOnDestroy()/setRemoveOnDestroy(enabled) // configure directory cleanup
     o.removeOnClose()/setRemoveOnClose(enabled) // configure temporary stream cleanup
+    o.commitTo/commitToOrThrow(destination[, options]) // finalize and commit a temporary output lease
+    o.backupCount()/setBackupCount(count) // retain finite numbered overwritten versions; zero disables backups
+    o.ignoreBackupErrors()/setIgnoreBackupErrors(enabled) // optionally suppress backup-stage failures only
+    o.beforeCommit()/setBeforeCommit(callback) // configure a repeatable caller validation or cancellation check
 
 Information Patterns
 ====================
@@ -139,4 +153,19 @@ Traversal Patterns
 
     o.walk(callback[, options]) -> PathWalkResult // traverse with explicit result reporting
     o.walkOrThrow(callback[, options]) -> PathWalkResult // traverse or throw PathError
+    o.filter()/setFilter(predicate) // select reported entries before requesting additional metadata
+    o.descendFilter()/setDescendFilter(predicate) // independently select directories to enter
+    o.globPattern()/setGlobPattern(pattern[, flags]) // compiled or text glob, relative to the walk root
+    o.globMatchMode()/setGlobMatchMode(mode) // Full by default; Suffix can start at a component boundary
     o.set❮Property❯(value) -> O& // fluently configure an operation option object
+
+Path Glob Patterns
+==================
+
+.. code-block:: text
+
+    T::compile(text[, flags]) -> PathGlobPatternPtr // compile a PathGlobPattern with explicit syntax flags
+    o.fullMatch(path/text) -> bool // match every non-root component
+    o.suffixMatch(path/text) -> bool // match a suffix ending at the final component; / anchors its start
+    o.match(path/text, mode) -> bool // select full or suffix matching at runtime
+    o.mayMatchDescendant(path/text[, mode]) -> bool // false guarantees safe strict-descendant pruning

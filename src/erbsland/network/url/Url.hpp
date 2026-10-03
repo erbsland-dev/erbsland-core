@@ -30,7 +30,11 @@ public:
     /// Create a secure HTTP URL.
     Url(HostEndpoint endpoint, text::String path = {}, text::String query = {}, text::String fragment = {});
     /// Create an HTTP, HTTPS, FTP, or FTPS URL.
-    /// @throws err::ParameterError If the scheme or endpoint is invalid for a network URL.
+    /// @param scheme The URL scheme. Must be HTTP, HTTPS, FTP, or FTPS.
+    /// @param endpoint The endpoint. Must be valid for the selected network URL scheme.
+    /// @param path The URL path component.
+    /// @param query The optional query component.
+    /// @param fragment The optional fragment component.
     Url(UrlScheme scheme,
         HostEndpoint endpoint,
         text::String path = {},

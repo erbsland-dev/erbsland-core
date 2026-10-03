@@ -16,6 +16,8 @@
 
 namespace erbsland::math {
 
+using namespace err;
+using namespace text;
 using namespace text::literals;
 
 auto BigUnsignedInteger::operator<=>(const BigUnsignedInteger &other) const noexcept -> std::strong_ordering {
@@ -144,29 +146,29 @@ auto BigUnsignedInteger::isOne() const noexcept -> bool {
     return _digits.size() == 1 && _digits.front() == 1U;
 }
 
-auto BigUnsignedInteger::toString() const -> text::String {
-    static const auto cDigitGroupFormat = text::StringFormat{"{:09}"_el};
+auto BigUnsignedInteger::toString() const -> String {
+    static const auto cDigitGroupFormat = StringFormat{"{:09}"_el};
     if (isZero()) {
-        return text::String{"0"_el};
+        return String{"0"_el};
     }
-    auto result = text::StringEditor::fromInteger(_digits.back());
+    auto result = StringEditor::fromInteger(_digits.back());
     for (auto index = _digits.size() - 1; index > 0; --index) {
         result.append(cDigitGroupFormat.build(_digits[index - 1]));
     }
     return result;
 }
 
-auto BigUnsignedInteger::fromString(const text::String &text) -> std::optional<BigUnsignedInteger> {
+auto BigUnsignedInteger::fromString(const String &text) -> std::optional<BigUnsignedInteger> {
     auto result = BigUnsignedInteger{};
     auto isFirst = true;
     auto hasDigit = false;
-    const auto loopResult = text.forEach([&](text::Char character) -> util::LoopStatus {
+    const auto loopResult = text.forEach([&](Char character) -> util::LoopStatus {
         if (isFirst && character == U'+') {
             isFirst = false;
             return util::LoopStatus::Continue;
         }
         isFirst = false;
-        const auto digitValue = character.digitValue(text::IntegerBase::Decimal);
+        const auto digitValue = character.digitValue(IntegerBase::Decimal);
         if (!digitValue.has_value()) {
             return util::LoopStatus::Error;
         }
@@ -181,10 +183,10 @@ auto BigUnsignedInteger::fromString(const text::String &text) -> std::optional<B
     return result;
 }
 
-auto BigUnsignedInteger::fromStringOrThrow(const text::String &text) -> BigUnsignedInteger {
+auto BigUnsignedInteger::fromStringOrThrow(const String &text) -> BigUnsignedInteger {
     auto result = fromString(text);
     if (!result.has_value()) {
-        throw err::ParseError{"Invalid unsigned decimal big integer."_el};
+        throw ParseError{"Invalid unsigned decimal big integer."_el};
     }
     return std::move(result).value();
 }
@@ -346,15 +348,15 @@ auto BigUnsignedInteger::divideWithRemainder(
 }
 
 void BigUnsignedInteger::throwNegativeValue() {
-    throw err::OverflowError("A BigUnsignedInteger cannot represent a negative value"_el);
+    throw OverflowError("A BigUnsignedInteger cannot represent a negative value"_el);
 }
 
 void BigUnsignedInteger::throwSubtractionUnderflow() {
-    throw err::OverflowError("BigUnsignedInteger subtraction would produce a negative value"_el);
+    throw OverflowError("BigUnsignedInteger subtraction would produce a negative value"_el);
 }
 
 void BigUnsignedInteger::throwCastOverflow() {
-    throw err::OverflowError("BigUnsignedInteger value cannot be represented by the target type"_el);
+    throw OverflowError("BigUnsignedInteger value cannot be represented by the target type"_el);
 }
 
 }

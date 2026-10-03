@@ -22,8 +22,8 @@ The examples use the default markers: ``{{ ... }}`` inserts a value and ``{% ...
 These markers are configurable for the entire render environment.
 If your document format uses braces already, see :doc:`configuring_the_render_environment` before writing the layouts.
 
-Give a Passage a Name
-=====================
+Defining Named Template Blocks
+==============================
 
 A base layout should read as a useful document on its own.
 Surround a passage with ``{% block observation %}`` and ``{% endblock %}`` to name a place that another layout may
@@ -33,10 +33,9 @@ The ordinary text before and after the block renders as usual.
 
 .. erbsland-demo::
     :source: text/RenderLayouts/LayoutInheritance.cpp
-    :function-blocks: blockDefaults
-    :function-blocks-sha256: 35b7bbd29e47ace69dae65bd454f31052926a51c18d984be0eca92bb26387276
+    :show: f:blockDefaults
     :exec: text/render_layouts --demo BlockDefaults
-    :source-sha256: d1878c5ffc2d3c1a5927a16bbbffd8b1e159a9ec3bcfd1a31b97a46595ca3b10
+    :sha256: 9eddd43b05517e672dd71802fa4bf54754de6f01f92304017e3f2af5643d393e
 
 .. code-block:: cpp
 
@@ -55,12 +54,14 @@ The ordinary text before and after the block renders as usual.
         el::io::print(environment->render("sound_note.txt"_el, el::render::Context{}.set("subject"_el, "山谷回声"_el)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    声学笔记: 山谷回声
-    观察: 尚无记录。
-    结论: 请比较声源与回声。
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m声学笔记: 山谷回声
+        观察: 尚无记录。
+        结论: 请比较声源与回声。␛[0m
 
 .. erbsland-demo-end::
 
@@ -68,8 +69,8 @@ Here the default observation makes the note complete even before a specialized l
 The ``subject`` value still comes from the render context, just as it would in any other layout.
 A block is therefore a choice about *which passage to render*, while an expression supplies a value *within* a passage.
 
-Extend the Base Layout
-======================
+Extending a Base Layout and Overriding Blocks
+=============================================
 
 Now a note about an echo can keep the base layout's heading and replace only its observation.
 The derived layout begins with ``{% extends "base.txt" %}`` and declares a block with the same name.
@@ -79,10 +80,9 @@ Blocks without an override keep their base content.
 
 .. erbsland-demo::
     :source: text/RenderLayouts/LayoutInheritance.cpp
-    :function-blocks: layoutInheritance
-    :function-blocks-sha256: 27a04e2e287b4f225a9247e0d6ce5b83187cfa4a772967584a39d38222f33701
+    :show: f:layoutInheritance
     :exec: text/render_layouts --demo LayoutInheritance
-    :source-sha256: d1878c5ffc2d3c1a5927a16bbbffd8b1e159a9ec3bcfd1a31b97a46595ca3b10
+    :sha256: 8867f449ccb63350e4733b44cf76382ff3f1eec310184595baa0976c91f53b79
 
 .. code-block:: cpp
 
@@ -107,13 +107,15 @@ Blocks without an override keep their base content.
         el::io::print(environment->render("echo.txt"_el, el::render::Context{}.set("subject"_el, "山谷回声"_el)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    声学笔记: 山谷回声
-    观察: 拍手后听到两次回声。
-    解释: 声波遇到表面会反射。
-    补充: 两次反射来自不同的岩壁。
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m声学笔记: 山谷回声
+        观察: 拍手后听到两次回声。
+        解释: 声波遇到表面会反射。
+        补充: 两次反射来自不同的岩壁。␛[0m
 
 .. erbsland-demo-end::
 
@@ -123,8 +125,8 @@ The parent name in ``extends`` is a fixed logical layout name resolved by the en
 This makes a file loader, a resource loader, or another registered loader equally suitable for a layout family; see
 :doc:`loading_render_layouts` for the loader workflow.
 
-Keep the Parent's Wording
-=========================
+Rendering Parent-Block Content with super()
+===========================================
 
 Sometimes a derived block needs to add detail rather than replace everything.
 The ``interpretation`` block above starts with ``{{ super() }}``.
@@ -138,8 +140,8 @@ If you need to transform the inherited text before inserting it, a ``super()`` r
 expression such as a filter or a ``set`` assignment.
 For the usual case of adding a line, direct ``{{ super() }}`` keeps the layout easier to read.
 
-Follow a Longer Inheritance Chain
-=================================
+Multi-Level Layout Inheritance
+==============================
 
 A layout can extend another derived layout.
 In that case, ``super()`` refers to the next block implementation in the chain, rather than always jumping to the oldest
@@ -149,10 +151,9 @@ The valley block first keeps the outdoor wording, then uses ``super.super()`` to
 
 .. erbsland-demo::
     :source: text/RenderLayouts/LayoutInheritance.cpp
-    :function-blocks: chainedInheritance
-    :function-blocks-sha256: 60be7cd1a58b1a049c04dcca038396f871e55349c242d1fb589de005613fadc5
+    :show: f:chainedInheritance
     :exec: text/render_layouts --demo ChainedInheritance
-    :source-sha256: d1878c5ffc2d3c1a5927a16bbbffd8b1e159a9ec3bcfd1a31b97a46595ca3b10
+    :sha256: 44ff61b7c45b97b1c39b060882430662b0d5320fa7d81295f5c2925ccb550f7c
 
 .. code-block:: cpp
 
@@ -178,12 +179,14 @@ The valley block first keeps the outdoor wording, then uses ``super.super()`` to
         el::io::print(environment->render("valley.txt"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    基础: 声波可以反射。
-    户外: 山坡也会反射声波。
-    直达基础: 基础: 声波可以反射。
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m基础: 声波可以反射。
+        户外: 山坡也会反射声波。
+        直达基础: 基础: 声波可以反射。␛[0m
 
 .. erbsland-demo-end::
 
@@ -192,8 +195,8 @@ valley block's direct ``super.super()`` call.
 The example makes the chain visible; in a real layout, choose the call that produces the wording you want.
 Only these two depths are available, and asking for a block implementation that is not there is a render error.
 
-Keep Each Layout's Role Clear
-=============================
+Content Rules for Base and Extending Layouts
+============================================
 
 Put the shared document structure in the base and the varying passages in named blocks.
 An extending layout can contain block declarations, top-level ``set`` assignments, comments, and whitespace outside

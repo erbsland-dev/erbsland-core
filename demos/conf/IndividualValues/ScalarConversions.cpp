@@ -3,7 +3,9 @@
 
 #include "IndividualValuesDemos.hpp"
 
+#include <erbsland/conf/ConfError.hpp>
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <cstdint>
 

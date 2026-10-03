@@ -2,12 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/base_n/BaseNDecoder.hpp>
-#include <erbsland/text/base_n/BaseNEncoder.hpp>
-#include <erbsland/text/base_n/BaseNFormat.hpp>
-#include <erbsland/text/base_n/BaseNFormatFlag.hpp>
-#include <erbsland/text/CharSet.hpp>
+#include <erbsland/base_n/BaseNDecoder.hpp>
+#include <erbsland/base_n/BaseNEncoder.hpp>
+#include <erbsland/base_n/BaseNFormat.hpp>
+#include <erbsland/base_n/BaseNFormatFlag.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Char.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/U32String.hpp>
 
 #include <span>
 
@@ -51,12 +57,12 @@ void encodeSoundTag() {
 /// the distinction as a parse or range exception. Both methods check the decoded byte count before producing data.
 void decodeSoundTag() {
     // Decode a small value with the largest byte count this field permits.
-    const auto decoded = el::base_n::BaseNDecoder{"a2Fpa3U="_el}.toData(el::ByteLength{5U});
+    const auto decoded = el::base_n::BaseNDecoder{"a2Fpa3U="_el}.toData(el::ByteCount{5U});
     el::io::printLine("Decoded bytes: "_el, decoded->length().toSizeT());
 
     // A malformed payload and an oversized payload both fail in the optional form.
     const auto invalid = el::base_n::BaseNDecoder{"a2Fpa3U!"_el}.toData();
-    const auto tooLarge = el::base_n::BaseNDecoder{"a2Fpa3U="_el}.toData(el::ByteLength{4U});
+    const auto tooLarge = el::base_n::BaseNDecoder{"a2Fpa3U="_el}.toData(el::ByteCount{4U});
     el::io::printLine("Malformed accepted: "_el, invalid.has_value());
     el::io::printLine("Oversized accepted: "_el, tooLarge.has_value());
 }
@@ -140,7 +146,7 @@ void decodePaddingPolicy() {
 void wrapLines() {
     const auto bytes = el::ByteBlock::fromSpan(std::span<const char>{"kaiku", 5U});
     auto format = el::base_n::BaseNFormat::base64();
-    format.setLineLength(el::CpLength{4U})
+    format.setLineLength(el::CpCount{4U})
         .setLineSeparator(el::U32String{U"\n"_el})
         .addFlags(el::base_n::BaseNFormatFlag::WrapLines);
     const auto wrapped = el::base_n::BaseNEncoder{bytes, format}.toString();

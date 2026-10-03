@@ -8,7 +8,7 @@
 #include "../StreamError.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../system/impl/WindowsErrorContext.hpp"
 #include "../../text/StringConverter.hpp"
 
@@ -19,10 +19,11 @@
 
 namespace erbsland::stream::impl {
 
+using namespace text;
 using ErrorContext = system::impl::WindowsErrorContext;
 using namespace text::literals;
+using unit::ByteCount;
 using unit::ByteIndex;
-using unit::ByteLength;
 using unit::ByteOffset;
 
 WindowsNativeOperation::WindowsNativeOperation(const WindowsNativeStream &stream) : _stream{stream} {
@@ -53,14 +54,17 @@ WindowsNativeOperation::~WindowsNativeOperation() {
     _stream.finishOperation(_threadHandle);
 }
 
+auto WindowsNativeStream::initialFileSize() const noexcept -> unit::ByteCount {
+    return _initialFileSize;
+}
+
 auto WindowsNativeStream::createErrorContext() const noexcept -> StreamErrorContext {
     auto context = StreamErrorSource::createErrorContext();
     context.setPath(_path);
     return context;
 }
 
-void WindowsNativeStream::throwError(
-    text::String title, text::String description, const ErrorContext::ErrorCode errorCode) const {
+void WindowsNativeStream::throwError(String title, String description, const ErrorContext::ErrorCode errorCode) const {
     auto context = createErrorContext();
     context.setTitle(std::move(title))
         .setDescription(std::move(description))
@@ -68,7 +72,7 @@ void WindowsNativeStream::throwError(
     throw StreamError{std::move(context)};
 }
 
-void WindowsNativeStream::throwErrorFromLastError(text::String title, text::String description) const {
+void WindowsNativeStream::throwErrorFromLastError(String title, String description) const {
     auto context = createErrorContext();
     context.setTitle(std::move(title))
         .setDescription(std::move(description))
@@ -79,7 +83,7 @@ void WindowsNativeStream::throwErrorFromLastError(text::String title, text::Stri
 WindowsNativeStream::WindowsNativeStream(
     const WindowsNativeHandle handle,
     const NativeStreamOwnership ownership,
-    text::String path,
+    String path,
     const bool positioningAllowed) :
     _handle{handle}, _ownership{ownership}, _path{std::move(path)} {
     if (_handle.load() == nullptr || _handle.load() == INVALID_HANDLE_VALUE) {
@@ -88,12 +92,17 @@ WindowsNativeStream::WindowsNativeStream(
 
     auto consoleMode = DWORD{};
     _isConsole = GetConsoleMode(static_cast<HANDLE>(_handle.load()), &consoleMode) != 0;
-    _supportsPositioning = positioningAllowed && GetFileType(static_cast<HANDLE>(_handle.load())) == FILE_TYPE_DISK;
+    const auto isDisk = GetFileType(static_cast<HANDLE>(_handle.load())) == FILE_TYPE_DISK;
+    _supportsPositioning = positioningAllowed && isDisk;
     auto fileInfo = BY_HANDLE_FILE_INFORMATION{};
     if (GetFileInformationByHandle(static_cast<HANDLE>(_handle.load()), &fileInfo) != 0) {
         const auto fileIndex =
             (static_cast<uint64_t>(fileInfo.nFileIndexHigh) << 32U) | static_cast<uint64_t>(fileInfo.nFileIndexLow);
         _fileIdentity = system::FileIdentity::fromNativeValues(fileInfo.dwVolumeSerialNumber, fileIndex);
+        if (isDisk && (fileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+            _initialFileSize = ByteCount::fromInteger(
+                (static_cast<uint64_t>(fileInfo.nFileSizeHigh) << 32U) | static_cast<uint64_t>(fileInfo.nFileSizeLow));
+        }
     }
 }
 
@@ -130,12 +139,12 @@ void WindowsNativeStream::writeBytes(const std::span<const char> bytes) {
     }
 }
 
-void WindowsNativeStream::writeText(const text::String &text) {
+void WindowsNativeStream::writeText(const String &text) {
     if (!_isConsole) {
         NativeOutputStream::writeText(text);
         return;
     }
-    writeWideText(erbsland::text::StringConverter{text}.toStdWString());
+    writeWideText(StringConverter{text}.toStdWString());
 }
 
 void WindowsNativeStream::flush() {
@@ -163,7 +172,7 @@ auto WindowsNativeStream::position() const -> ByteIndex {
         throwErrorFromLastError(
             "Failed to get the native stream position."_el, "The Windows position lookup failed."_el);
     }
-    return ByteIndex{static_cast<ByteIndex::Value>(result.QuadPart)};
+    return ByteIndex::fromInteger(static_cast<ByteIndex::Value>(result.QuadPart));
 }
 
 auto WindowsNativeStream::setPosition(const ByteIndex position) -> ByteIndex {
@@ -174,7 +183,7 @@ auto WindowsNativeStream::setPosition(const ByteIndex position) -> ByteIndex {
     }
     if (position.isNoIndex() ||
         position.toRawValue() > static_cast<ByteIndex::Value>(std::numeric_limits<LONGLONG>::max())) {
-        throw err::ParameterError{"Stream position is outside Windows file-offset bounds.", "position"};
+        throw err::ParameterFailure{"Stream position is outside Windows file-offset bounds.", "position"};
     }
     const auto operation = WindowsNativeOperation{*this};
     auto distance = LARGE_INTEGER{};
@@ -184,7 +193,7 @@ auto WindowsNativeStream::setPosition(const ByteIndex position) -> ByteIndex {
         throwErrorFromLastError(
             "Failed to set the native stream position."_el, "The Windows positioning operation failed."_el);
     }
-    return ByteIndex{static_cast<ByteIndex::Value>(result.QuadPart)};
+    return ByteIndex::fromInteger(static_cast<ByteIndex::Value>(result.QuadPart));
 }
 
 auto WindowsNativeStream::movePosition(const StreamPositionOrigin origin, const ByteOffset offset) -> ByteIndex {
@@ -212,12 +221,12 @@ auto WindowsNativeStream::movePosition(const StreamPositionOrigin origin, const 
     if (SetFilePointerEx(static_cast<HANDLE>(operation.handle()), distance, &result, moveMethod) == 0) {
         const auto error = GetLastError();
         if (error == ERROR_NEGATIVE_SEEK) {
-            throw err::ParameterError{"Resulting stream position is negative.", "offset"};
+            throw err::ParameterFailure{"Resulting stream position is negative.", "offset"};
         }
         throwError(
             "Failed to move the native stream position."_el, "The Windows positioning operation failed."_el, error);
     }
-    return ByteIndex{static_cast<ByteIndex::Value>(result.QuadPart)};
+    return ByteIndex::fromInteger(static_cast<ByteIndex::Value>(result.QuadPart));
 }
 
 void WindowsNativeStream::close() {
@@ -258,10 +267,10 @@ void WindowsNativeStream::abort() noexcept {
     }
 }
 
-auto WindowsNativeStream::read(const mem::ByteSpan destination) -> ByteLength {
+auto WindowsNativeStream::read(const mem::ByteSpan destination) -> ByteCount {
     const auto operation = WindowsNativeOperation{*this};
     if (destination.empty()) {
-        return ByteLength::zero();
+        return ByteCount::zero();
     }
     const auto chunkSize =
         static_cast<DWORD>(std::min<std::size_t>(destination.size(), std::numeric_limits<DWORD>::max()));
@@ -271,27 +280,27 @@ auto WindowsNativeStream::read(const mem::ByteSpan destination) -> ByteLength {
     if (ok == 0) {
         const auto error = GetLastError();
         if (error == ERROR_BROKEN_PIPE || error == ERROR_HANDLE_EOF) {
-            return ByteLength::zero();
+            return ByteCount::zero();
         }
         throwError("Failed to read from the native stream."_el, "The Windows read operation failed."_el, error);
     }
-    return ByteLength::fromSizeT(readCount);
+    return ByteCount::fromSizeT(readCount);
 }
 
 void WindowsNativeStream::write(const mem::ConstByteSpan bytes) {
     writeBytes(std::span<const char>{reinterpret_cast<const char *>(bytes.data()), bytes.size()});
 }
 
-auto WindowsNativeStream::fileSize() const -> ByteLength {
+auto WindowsNativeStream::fileSize() const -> ByteCount {
     const auto operation = WindowsNativeOperation{*this};
     auto fileSize = LARGE_INTEGER{};
     if (GetFileSizeEx(static_cast<HANDLE>(operation.handle()), &fileSize) == 0) {
         throwErrorFromLastError("Failed to get the native stream size."_el, "The Windows file-size lookup failed."_el);
     }
     if (fileSize.QuadPart <= 0) {
-        return ByteLength::zero();
+        return ByteCount::zero();
     }
-    return ByteLength::fromSizeT(static_cast<std::size_t>(fileSize.QuadPart));
+    return ByteCount::fromSizeT(static_cast<std::size_t>(fileSize.QuadPart));
 }
 
 void WindowsNativeStream::writeWideText(const std::wstring_view text) {

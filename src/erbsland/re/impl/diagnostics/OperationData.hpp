@@ -42,16 +42,17 @@ struct OperationData {
 [[nodiscard]] auto dataForOperation(Operation operation) noexcept -> const OperationData &;
 
 /// Get the base operation for the given string.
-/// @param baseName The case-insensitive string to search.
+/// @param baseName The case-insensitive operation name. Unknown names are reported as lookup errors.
 /// @return The operation.
-/// @throws err::ParameterError If the given string does not match any operation.
+/// @throws err::NotFoundError If the name or operation/modifier combination is unknown.
 [[nodiscard]] auto baseOperationForString(const text::String &baseName) -> Operation;
 
 /// Get the modified operation.
 /// @param baseOperation The base operation.
-/// @param operationModifiers The operation modifiers.
+/// @param operationModifiers The modifiers. Their combination with `baseOperation` is looked up in the supported
+/// operations.
 /// @return The modified operation.
-/// @throws err::ParameterError If there is no matching operation.
+/// @throws err::NotFoundError If the name or operation/modifier combination is unknown.
 [[nodiscard]] auto modifiedOperation(Operation baseOperation, const std::set<OperationModifier> &operationModifiers)
     -> Operation;
 

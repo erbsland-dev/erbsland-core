@@ -1,27 +1,28 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/compression/zip/ArchiveEntryOptions.hpp>
-#include <erbsland/compression/zip/ArchiveItem.hpp>
-#include <erbsland/compression/zip/ArchiveReader.hpp>
-#include <erbsland/compression/zip/ArchiveWriter.hpp>
-#include <erbsland/compression/zip/ArchiveWriterOptions.hpp>
-#include <erbsland/compression/zip/CompressionMethod.hpp>
-#include <erbsland/compression/zip/Zip64Policy.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathOperations.hpp>
-#include <erbsland/path/TempDirectory.hpp>
-#include <erbsland/system/Subprocess.hpp>
-#include <erbsland/system/SubprocessOptions.hpp>
-#include <erbsland/system/SubprocessOutputMode.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/text/StringList.hpp>
-#include <erbsland/time/DateTime.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/DateTime.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Subprocess.hpp>
+#include <erbsland/SubprocessOptions.hpp>
+#include <erbsland/SubprocessOutputMode.hpp>
+#include <erbsland/TempDirectory.hpp>
+#include <erbsland/Timestamp.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/zip/ArchiveEntryOptions.hpp>
+#include <erbsland/zip/ArchiveItem.hpp>
+#include <erbsland/zip/ArchiveReader.hpp>
+#include <erbsland/zip/ArchiveWriter.hpp>
+#include <erbsland/zip/ArchiveWriterOptions.hpp>
+#include <erbsland/zip/CompressionMethod.hpp>
+#include <erbsland/zip/Zip64Policy.hpp>
 
 #include <array>
 #include <cstdint>
@@ -143,7 +144,8 @@ private:
         const auto modificationTime = el::time::DateTime::fromIsoStringOrThrow("2024-02-03T04:05:06"_el);
         for (auto index = std::size_t{}; index < cases.size(); ++index) {
             auto options = el::compression::zip::ArchiveEntryOptions{};
-            options.setCompressionMethod(coreMethod(index)).setModificationTime(modificationTime);
+            options.setCompressionMethod(coreMethod(index))
+                .setModificationTime(el::time::Timestamp::fromDateTimeOrThrow(modificationTime));
             writer->addData(cases[index].data, el::path::Path::fromPosix(cases[index].path), options);
         }
         writer->finalize();
@@ -154,13 +156,14 @@ private:
         options.setInheritStandardInput(false)
             .setStandardOutputMode(el::system::SubprocessOutputMode::Discard)
             .setStandardErrorMode(el::system::SubprocessOutputMode::Capture);
-        auto process = el::system::Subprocess::start(
+        auto process = el::system::Subprocess::create(
             counterpartPath(),
             el::text::StringList{
                 "verify-batch"_el, nativePathText(workspace), el::text::String::fromInteger(caseCount)},
             options);
-        const auto status = process.wait();
-        const auto error = el::text::StringConverter{process.standardError()}.toString();
+        process->start();
+        const auto status = process->wait();
+        const auto error = el::text::StringConverter{process->standardError()}.toString();
         if (!error.isEmpty()) {
             _context = el::text::StringFormat{"{}\nRust counterpart error:\n{}"_el}.build(_context, error);
         }
@@ -172,7 +175,7 @@ private:
         _context = el::text::StringFormat{"Rust ZIP variant: {}"_el}.build(variant);
         const auto reader = el::compression::zip::ArchiveReader::create(archivePath);
         REQUIRE_EQUAL(reader->comment(), cComment);
-        REQUIRE_EQUAL(reader->itemCount(), el::unit::ItemCount{cases.size()});
+        REQUIRE_EQUAL(reader->itemCount(), el::unit::ItemCount::fromInteger(cases.size()));
         for (auto index = std::size_t{}; index < cases.size(); ++index) {
             runWithContext(
                 SOURCE_LOCATION(),
@@ -182,7 +185,7 @@ private:
                     REQUIRE_EQUAL(item->path(), el::path::Path::fromPosix(cases[index].path));
                     REQUIRE_EQUAL(item->compressionMethod(), rustMethod(index));
                     REQUIRE_EQUAL(item->uncompressedLength(), cases[index].data.length());
-                    REQUIRE_EQUAL(item->extract(el::unit::ByteLength{256U * 1024U}), cases[index].data);
+                    REQUIRE_EQUAL(item->extract(el::unit::ByteCount{256U * 1024U}), cases[index].data);
                 },
                 [&]() -> std::string {
                     return el::text::StringConverter{
@@ -194,9 +197,7 @@ private:
     }
 
 public: // implement UnitTest
-    auto additionalErrorMessages() -> std::string override {
-        return el::text::StringConverter{_context}.toStdString();
-    }
+    auto additionalErrorMessages() -> std::string override { return el::text::StringConverter{_context}.toStdString(); }
 
 public:
     SKIP_BY_DEFAULT()

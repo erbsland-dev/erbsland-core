@@ -37,7 +37,7 @@ and the ``el`` namespace alias.
 .. erbsland-demo::
     :source: time/TimeLiterals/Scope.cpp
     :exec: time/time_literals --demo Scope
-    :source-sha256: 30ad9fd80a16cfda8769aafe2e2927cfe324a40ff4c4e8521ed8e07ef5b0c1ca
+    :sha256: 5b2dbc3c01389d2640198e2544e90d6bf9c9d059fd39e10a6a3a9f30c8b35563
 
 .. code-block:: cpp
 
@@ -51,10 +51,12 @@ and the ``el`` namespace alias.
         el::io::printLine(el::StringFormat{"{}: observation interval {}"_el}.build(creature, interval.toString()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Drago delle nuvole: observation interval 250 ms
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDrago delle nuvole: observation interval 250 ms␛[0m
 
 .. erbsland-demo-end::
 
@@ -105,7 +107,7 @@ It is useful for corrections and subtraction, even though a particular timeout A
 .. erbsland-demo::
     :source: time/TimeLiterals/Units.cpp
     :exec: time/time_literals --demo Units
-    :source-sha256: 9272a6043dfe7351058e87bbbf67e492abfa07f21d0917dea212469ad6dbc09b
+    :sha256: f201d738b2351291d064d7fa2bce8b99942da2f61ebbd0697c3ae1d1ff733da2
 
 .. code-block:: cpp
 
@@ -143,12 +145,14 @@ It is useful for corrections and subtraction, even though a particular timeout A
                 season.toRawValue(), fixedDays.toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    1 ns; 20 us; 250 ms; 3 s; 2 min; 1 h
-    Sample: 1500 ms; correction: -250 ms; zero: true
-    Explicit amounts: 3 months; 7 fixed days
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m1 ns; 20 us; 250 ms; 3 s; 2 min; 1 h
+        Sample: 1500 ms; correction: -250 ms; zero: true
+        Explicit amounts: 3 months; 7 fixed days␛[0m
 
 .. erbsland-demo-end::
 
@@ -178,7 +182,7 @@ particular unit.
 .. erbsland-demo::
     :source: time/TimeLiterals/Expressions.cpp
     :exec: time/time_literals --demo Expressions
-    :source-sha256: 0f291d34a4afb10f55d0090a2431b87c140efde40dd97d56134d3d7afc175e60
+    :sha256: 33d8c99acea615ea6128ac6d60ed61ccc9682a08f990220ab3d2cea67795647c
 
 .. code-block:: cpp
 
@@ -207,11 +211,13 @@ particular unit.
         // 1_s + 250_ms and Months{1} + 2_h have no amount operator: choose a representation first.
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Timeout: 120 s; latency: 250 ms; calendar change: 1 mo 1 h; time: 09:30:00
-    Samples: 500 ms; converted sum: 1250 ms; precise sum: 1 s 250 ms; mixed change: 1 mo 2 h
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTimeout: 120 s; latency: 250 ms; calendar change: 1 mo 1 h; time: 09:30:00
+        Samples: 500 ms; converted sum: 1250 ms; precise sum: 1 s 250 ms; mixed change: 1 mo 2 h␛[0m
 
 .. erbsland-demo-end::
 
@@ -246,7 +252,7 @@ The amount conversion APIs let you test or reject the conversion first, as expla
 .. erbsland-demo::
     :source: time/TimeLiterals/Limits.cpp
     :exec: time/time_literals --demo Limits
-    :source-sha256: e1ad263db702da957c3e61f5db9cc6d95c7cc680c516d38b464f95c441f58856
+    :sha256: a22a449524971cf605b2077c8ef419307def77906393978e5f6a22be4a7508f3
 
 .. code-block:: cpp
 
@@ -284,15 +290,17 @@ The amount conversion APIs let you test or reject the conversion first, as expla
                 el::TimeDelta{core} == el::TimeDelta{standard}));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Oversized literal: 9223372036854775807; saturated: true; then negated: -922337203685477580
-    7
-    1500 ms in whole seconds: 1; -1500 ms: -1; Duration: 1 s
-    Large hours fit; conversion to nanoseconds would saturate: true
-    TimeDelta construction clamps to maximum nanoseconds: true
-    Core and chrono intervals agree: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOversized literal: 9223372036854775807; saturated: true; then negated: -922337203685477580
+        7
+        1500 ms in whole seconds: 1; -1500 ms: -1; Duration: 1 s
+        Large hours fit; conversion to nanoseconds would saturate: true
+        TimeDelta construction clamps to maximum nanoseconds: true
+        Core and chrono intervals agree: true␛[0m
 
 .. erbsland-demo-end::
 

@@ -38,10 +38,9 @@ It also shows the throwing form handling a malformed document.
 
 .. erbsland-demo::
     :source: data/JsonValues/ParseDocument.cpp
-    :function-blocks: parseDocument
-    :function-blocks-sha256: 0f36e2ec9af24b50b18a3d33f58b778e6dc38af6d2e3c76c74f67d9ed1d931d8
+    :show: f:parseDocument
     :exec: data/json_values --demo ParseDocument
-    :source-sha256: fa882af3e8fa0612576b7d7e8fbfd2bbe427078bf0e8a3116b287f9ac6f360b1
+    :sha256: 5a528c593e1deac84f7a911382ee728bc46c9201ee6b8ba658fc0bb29fb028b6
 
 .. code-block:: cpp
 
@@ -60,11 +59,13 @@ It also shows the throwing form handling a malformed document.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Patch: Yankı
-    Invalid JSON document
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mPatch: Yankı
+        Invalid JSON document␛[0m
 
 .. erbsland-demo-end::
 
@@ -99,10 +100,9 @@ The generic typed accessors also support ``double``, ``JsonArray``, and ``JsonOb
 
 .. erbsland-demo::
     :source: data/JsonValues/ParseDocument.cpp
-    :function-blocks: inspectDocument
-    :function-blocks-sha256: 6a25f1016d97d46e252ab1afb86637c82c64d68da99bc92335497eaa2bfe0d29
+    :show: f:inspectDocument
     :exec: data/json_values --demo InspectDocument
-    :source-sha256: fa882af3e8fa0612576b7d7e8fbfd2bbe427078bf0e8a3116b287f9ac6f360b1
+    :sha256: 40c5ef866b562b8f139ec1744936e1f19eb2f7fbf16f3bdf278bd3d72b3cbd6f
 
 .. code-block:: cpp
 
@@ -116,12 +116,14 @@ The generic typed accessors also support ``double``, ``JsonArray``, and ``JsonOb
         el::io::printLine("Missing is null: "_el, document.get("gain"_el).is(el::json::JsonType::Null));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Wave: triangle
-    Enabled: true
-    Missing is null: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mWave: triangle
+        Enabled: true
+        Missing is null: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -141,10 +143,9 @@ On an array, ``set()`` replaces an existing element, or appends when its index e
 
 .. erbsland-demo::
     :source: data/JsonValues/ParseDocument.cpp
-    :function-blocks: buildDocument
-    :function-blocks-sha256: 5160f27b238734abfbde6854184c9ab33b0b89cc6776d7b5c68fbfd879783123
+    :show: f:buildDocument
     :exec: data/json_values --demo BuildDocument
-    :source-sha256: fa882af3e8fa0612576b7d7e8fbfd2bbe427078bf0e8a3116b287f9ac6f360b1
+    :sha256: d2d4273585d832c7d105a9e77bd37f9c3d56eb535ccef71b07f3a1d2bb1dd1f8
 
 .. code-block:: cpp
 
@@ -153,25 +154,27 @@ On an array, ``set()`` replaces an existing element, or appends when its index e
         patch.set("name"_el, el::String{u8"Yankı"_el});
         patch.set("active"_el, true);
         auto voices = JsonValue{JsonArray{}};
-        voices.append(el::String{"sine"_el}).append(el::String{"triangle"_el});
+        voices.append("sine"_el).append("triangle"_el);
         patch.set("voices"_el, voices);
         el::io::printLine(patch.toString());
 
         // Copies share values until changed; the original document still has two voices.
         auto revised = patch;
         auto moreVoices = revised.getOrThrow("voices"_el);
-        moreVoices.append(el::String{"square"_el});
+        moreVoices.append("square"_el);
         revised.set("voices"_el, moreVoices);
         el::io::printLine("Original voices: "_el, patch.getOrThrow("voices"_el).itemCount().toSizeT());
         el::io::printLine("Revised voices: "_el, revised.getOrThrow("voices"_el).itemCount().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    {"active":true,"name":"Yankı","voices":["sine","triangle"]}
-    Original voices: 2
-    Revised voices: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m{"active":true,"name":"Yankı","voices":["sine","triangle"]}
+        Original voices: 2
+        Revised voices: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -194,10 +197,9 @@ When the text is meant for a person to read, pass
 
 .. erbsland-demo::
     :source: data/JsonValues/ParseDocument.cpp
-    :function-blocks: formatDocument
-    :function-blocks-sha256: 2b49af7fc2c5aa5edee3fca983956ffd1e3947c5898582e6f5b8aa8a2a6b6ec5
+    :show: f:formatDocument
     :exec: data/json_values --demo FormatDocument
-    :source-sha256: fa882af3e8fa0612576b7d7e8fbfd2bbe427078bf0e8a3116b287f9ac6f360b1
+    :sha256: cc7644b49e0e3a7b57f57a2c1c74e5b05a1ee84c86da03704bc540a644c36189
 
 .. code-block:: cpp
 
@@ -207,29 +209,30 @@ When the text is meant for a person to read, pass
         el::io::printLine("Pretty:"_el);
         el::io::printLine(patch.toString(JsonFormatOptions::pretty()));
         el::io::printLine("Four-space array:"_el);
-        el::io::printLine(
-            JsonValue{JsonArray{JsonValue{2}}}.toString(JsonFormatOptions{}.setIndentation(el::CpLength{4U})));
+        el::io::printLine(JsonValue{JsonArray{JsonValue{2}}}.toString(JsonFormatOptions{}.setIndentation(el::CpCount{4U})));
         const auto ascii = JsonFormatOptions::compact().setEscapeAmount(el::EscapeAmount::NonAscii);
         el::io::printLine("ASCII: "_el, patch.toString(ascii));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Compact: {"patch":"Yankı","voices":["sine","triangle"]}
-    Pretty:
-    {
-      "patch": "Yankı",
-      "voices": [
-        "sine",
-        "triangle"
-      ]
-    }
-    Four-space array:
-    [
-        2
-    ]
-    ASCII: {"patch":"Yank\u0131","voices":["sine","triangle"]}
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCompact: {"patch":"Yankı","voices":["sine","triangle"]}
+        Pretty:
+        {
+          "patch": "Yankı",
+          "voices": [
+            "sine",
+            "triangle"
+          ]
+        }
+        Four-space array:
+        [
+            2
+        ]
+        ASCII: {"patch":"Yank\u0131","voices":["sine","triangle"]}␛[0m
 
 .. erbsland-demo-end::
 
@@ -238,7 +241,7 @@ Indentation
 
 ``setIndentation()`` sets the number of spaces at each container level.
 The value is a
-:cpp:type:`CpLength <erbsland::unit::CpLength>`. Zero means compact output, without layout line breaks.
+:cpp:type:`CpCount <erbsland::unit::CpCount>`. Zero means compact output, without layout line breaks.
 
 ``JsonFormatOptions::compact()`` selects that default.
 ``pretty()`` uses two spaces instead.
@@ -278,18 +281,17 @@ The example lowers each limit so you can see what it rejects.
 
 .. erbsland-demo::
     :source: data/JsonValues/ParseDocument.cpp
-    :function-blocks: limitDocument
-    :function-blocks-sha256: affb849f94aeda30e94839e95875871ef700030b95e6434e494f6970a77311e3
+    :show: f:limitDocument
     :exec: data/json_values --demo LimitDocument
-    :source-sha256: fa882af3e8fa0612576b7d7e8fbfd2bbe427078bf0e8a3116b287f9ac6f360b1
+    :sha256: 683b70d971c57c96aeac3eff5c492bd0b63714caf8ff3170883bcbf1e4e7c097
 
 .. code-block:: cpp
 
     void limitDocument() {
-        const auto input = JsonParseOptions{}.setMaximumInputLength(el::ByteLength{3U});
+        const auto input = JsonParseOptions{}.setMaximumInputLength(el::ByteCount{3U});
         const auto nesting = JsonParseOptions{}.setMaximumNesting(el::ItemCount{1U});
         const auto values = JsonParseOptions{}.setMaximumValueCount(el::ItemCount{2U});
-        const auto strings = JsonParseOptions{}.setMaximumStringLength(el::CpLength{2U});
+        const auto strings = JsonParseOptions{}.setMaximumStringLength(el::CpCount{2U});
         el::io::printLine("Input limit accepts null: "_el, JsonValue::fromString("null"_el, input).has_value());
         el::io::printLine("Nesting limit accepts [[1]]: "_el, JsonValue::fromString("[[1]]"_el, nesting).has_value());
         el::io::printLine("Value limit accepts [1,2]: "_el, JsonValue::fromString("[1,2]"_el, values).has_value());
@@ -297,14 +299,16 @@ The example lowers each limit so you can see what it rejects.
         el::io::printLine("String limit accepts é: "_el, JsonValue::fromString(u8"\"é\""_el, strings).has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Input limit accepts null: false
-    Nesting limit accepts [[1]]: false
-    Value limit accepts [1,2]: false
-    String limit accepts abc: false
-    String limit accepts é: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mInput limit accepts null: false
+        Nesting limit accepts [[1]]: false
+        Value limit accepts [1,2]: false
+        String limit accepts abc: false
+        String limit accepts é: true␛[0m
 
 .. erbsland-demo-end::
 

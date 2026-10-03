@@ -10,7 +10,7 @@
 namespace erbsland::text::impl {
 
 using unit::ItemCount;
-using unit::U16DataIndex;
+using unit::U16Index;
 
 auto U16StringComparisonTools::containsOneDecodedCharacter(
     const std::span<const char16_t> data, const CharacterSet &characters) -> bool {
@@ -32,20 +32,19 @@ auto U16StringComparisonTools::compare(const U16StringDataView &other, const Cha
 }
 
 auto U16StringComparisonTools::find(const U16StringDataView &text, const CharCompareFn compareFn) const noexcept
-    -> U16DataIndex {
-    return find(text, U16DataIndex::zero(), compareFn);
+    -> U16Index {
+    return find(text, U16Index::zero(), compareFn);
 }
 
 auto U16StringComparisonTools::find(
-    const U16StringDataView &text, const U16DataIndex start, const CharCompareFn compareFn) const noexcept
-    -> U16DataIndex {
+    const U16StringDataView &text, const U16Index start, const CharCompareFn compareFn) const noexcept -> U16Index {
     if (start.isNoIndex()) {
-        return U16DataIndex::noIndex();
+        return U16Index::noIndex();
     }
 
     const auto data = _data.dataSpan();
     if (start.toSizeT() > data.size()) {
-        return U16DataIndex::noIndex();
+        return U16Index::noIndex();
     }
 
     const auto needle = text.dataSpan();
@@ -54,24 +53,19 @@ auto U16StringComparisonTools::find(
     }
 
     if (DecodedStringSearch::isUsefulFor(needle.size())) {
-        try {
-            const auto readNeedle = [&needle](U16DataIndex &position) noexcept -> Char {
-                if (position.toSizeT() >= needle.size()) {
-                    return Char::endOfData();
-                }
-                return utf16::decodeCharOrReplace(needle, position);
-            };
-            const auto readData = [&data](U16DataIndex &position) noexcept -> Char {
-                if (position.toSizeT() >= data.size()) {
-                    return Char::endOfData();
-                }
-                return utf16::decodeCharOrReplace(data, position);
-            };
-            return DecodedStringSearch{needle.size(), U16DataIndex::zero(), readNeedle, compareFn}.find(
-                start, readData);
-        } catch (...) {
-            // Preserve the noexcept search API by falling back to the allocation-free implementation.
-        }
+        const auto readNeedle = [&needle](U16Index &position) noexcept -> Char {
+            if (position.toSizeT() >= needle.size()) {
+                return Char::endOfData();
+            }
+            return utf16::decodeCharOrReplace(needle, position);
+        };
+        const auto readData = [&data](U16Index &position) noexcept -> Char {
+            if (position.toSizeT() >= data.size()) {
+                return Char::endOfData();
+            }
+            return utf16::decodeCharOrReplace(data, position);
+        };
+        return DecodedStringSearch{needle.size(), U16Index::zero(), readNeedle, compareFn}.find(start, readData);
     }
 
     auto position = start;
@@ -81,7 +75,7 @@ auto U16StringComparisonTools::find(
         }
         utf16::fastAdvanceChar(data, position);
     }
-    return U16DataIndex::noIndex();
+    return U16Index::noIndex();
 }
 
 auto U16StringComparisonTools::startsWith(const U16StringDataView &other, const CharCompareFn compareFn) const noexcept
@@ -90,7 +84,7 @@ auto U16StringComparisonTools::startsWith(const U16StringDataView &other, const 
 }
 
 auto U16StringComparisonTools::startsWith(const Char character) const noexcept -> bool {
-    return U16StringReadTools{_data}.charAt(U16DataIndex::zero()) == character;
+    return U16StringReadTools{_data}.charAt(U16Index::zero()) == character;
 }
 
 auto U16StringComparisonTools::endsWith(const U16StringDataView &other, const CharCompareFn compareFn) const noexcept
@@ -99,7 +93,7 @@ auto U16StringComparisonTools::endsWith(const U16StringDataView &other, const Ch
 }
 
 auto U16StringComparisonTools::endsWith(const Char character) const noexcept -> bool {
-    auto index = U16DataIndex::end(U16StringReadTools{_data}.byteLength());
+    auto index = U16Index::end(U16StringReadTools{_data}.byteLength());
     return U16StringReadTools{_data}.retreat(index) && U16StringReadTools{_data}.charAt(index) == character;
 }
 
@@ -126,28 +120,24 @@ auto U16StringComparisonTools::count(const U16StringDataView &other, const CharC
 
     const auto data = _data.dataSpan();
     if (DecodedStringSearch::isUsefulFor(needle.size())) {
-        try {
-            const auto readNeedle = [&needle](U16DataIndex &position) noexcept -> Char {
-                if (position.toSizeT() >= needle.size()) {
-                    return Char::endOfData();
-                }
-                return utf16::decodeCharOrReplace(needle, position);
-            };
-            const auto readData = [&data](U16DataIndex &position) noexcept -> Char {
-                if (position.toSizeT() >= data.size()) {
-                    return Char::endOfData();
-                }
-                return utf16::decodeCharOrReplace(data, position);
-            };
-            return DecodedStringSearch{needle.size(), U16DataIndex::zero(), readNeedle, compareFn}.count(
-                U16DataIndex::zero(), readData);
-        } catch (...) {
-            // Preserve the noexcept search API by falling back to the allocation-free implementation.
-        }
+        const auto readNeedle = [&needle](U16Index &position) noexcept -> Char {
+            if (position.toSizeT() >= needle.size()) {
+                return Char::endOfData();
+            }
+            return utf16::decodeCharOrReplace(needle, position);
+        };
+        const auto readData = [&data](U16Index &position) noexcept -> Char {
+            if (position.toSizeT() >= data.size()) {
+                return Char::endOfData();
+            }
+            return utf16::decodeCharOrReplace(data, position);
+        };
+        return DecodedStringSearch{needle.size(), U16Index::zero(), readNeedle, compareFn}.count(
+            U16Index::zero(), readData);
     }
 
     auto result = ItemCount{};
-    auto position = U16DataIndex::zero();
+    auto position = U16Index::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesDecodedSpan(data, position, needle, compareFn)) {
             ++result;
@@ -195,8 +185,8 @@ auto U16StringComparisonTools::containsOnly(const AsciiCategory category) const 
 auto U16StringComparisonTools::compareDecodedSpans(
     const std::span<const char16_t> left, const std::span<const char16_t> right, const CharCompareFn compareFn) noexcept
     -> std::strong_ordering {
-    auto leftPosition = U16DataIndex::zero();
-    auto rightPosition = U16DataIndex::zero();
+    auto leftPosition = U16Index::zero();
+    auto rightPosition = U16Index::zero();
 
     while (leftPosition.toSizeT() < left.size() && rightPosition.toSizeT() < right.size()) {
         const auto leftCharacter = utf16::decodeCharOrReplace(left, leftPosition);
@@ -218,29 +208,17 @@ auto U16StringComparisonTools::compareDecodedSpans(
 
 auto U16StringComparisonTools::matchesDecodedSpan(
     const std::span<const char16_t> haystack,
-    const U16DataIndex candidateStart,
+    const U16Index candidateStart,
     const std::span<const char16_t> needle,
     const CharCompareFn compareFn) noexcept -> bool {
-    auto haystackPosition = candidateStart;
-    auto needlePosition = U16DataIndex::zero();
-    while (needlePosition.toSizeT() < needle.size()) {
-        if (haystackPosition.toSizeT() >= haystack.size()) {
-            return false;
-        }
-        const auto haystackCharacter = utf16::decodeCharOrReplace(haystack, haystackPosition);
-        const auto needleCharacter = utf16::decodeCharOrReplace(needle, needlePosition);
-        if (!charactersEqual(haystackCharacter, needleCharacter, compareFn)) {
-            return false;
-        }
-    }
-    return true;
+    return !endOfTextMatch(haystack, candidateStart, needle, compareFn).isNoIndex();
 }
 
 auto U16StringComparisonTools::startsWithDecodedSpan(
     const std::span<const char16_t> haystack,
     const std::span<const char16_t> needle,
     const CharCompareFn compareFn) noexcept -> bool {
-    return needle.empty() || matchesDecodedSpan(haystack, U16DataIndex::zero(), needle, compareFn);
+    return needle.empty() || matchesDecodedSpan(haystack, U16Index::zero(), needle, compareFn);
 }
 
 auto U16StringComparisonTools::endsWithDecodedSpan(
@@ -251,8 +229,8 @@ auto U16StringComparisonTools::endsWithDecodedSpan(
         return true;
     }
 
-    auto haystackPosition = U16DataIndex::fromSizeT(haystack.size());
-    auto needlePosition = U16DataIndex::fromSizeT(needle.size());
+    auto haystackPosition = U16Index::fromSizeT(haystack.size());
+    auto needlePosition = U16Index::fromSizeT(needle.size());
     while (!needlePosition.isZero()) {
         if (haystackPosition.isZero()) {
             return false;
@@ -272,9 +250,9 @@ auto U16StringComparisonTools::endsWithDecodedSpan(
 }
 
 auto U16StringComparisonTools::endOfMatch(
-    const std::span<const char16_t> haystack, U16DataIndex start, const std::span<const char16_t> needle) noexcept
-    -> U16DataIndex {
-    auto needlePosition = U16DataIndex::zero();
+    const std::span<const char16_t> haystack, U16Index start, const std::span<const char16_t> needle) noexcept
+    -> U16Index {
+    auto needlePosition = U16Index::zero();
     while (needlePosition.toSizeT() < needle.size() && start.toSizeT() < haystack.size()) {
         utf16::fastAdvanceChar(haystack, start);
         utf16::fastAdvanceChar(needle, needlePosition);

@@ -4,6 +4,7 @@
 
 #include "Path_fwd.hpp"
 #include "PathInfo_fwd.hpp"
+#include "PathType.hpp"
 #include "PathWalkStatus.hpp"
 
 #include <functional>
@@ -15,5 +16,8 @@ using PathWalkFn = std::function<PathWalkStatus(const Path &)>;
 
 /// The path walk callback with additional path info for each path.
 using PathInfoWalkFn = std::function<PathWalkStatus(const Path &, const PathInfo &)>;
+
+/// Select a walk entry from its path and effective type, before requesting additional metadata.
+using PathWalkFilterFn = std::function<bool(const Path &, PathType)>;
 
 }

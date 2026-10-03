@@ -29,7 +29,7 @@ errors itself.
     :source: core/FunctionApplication/main.cpp
     :exec: core/core_function_application --environment production
     :exec-2: core/core_function_application --help
-    :source-sha256: ce10923940cc1c3d17e45a60741f8cdfe628e7cdf95ff25593260354ea0aee1e
+    :sha256: cfecb6202cd0d39910a3c2a132b1cade9ecab2854f17cbe87b59a5d6adc62118
 
 .. code-block:: cpp
 
@@ -46,7 +46,7 @@ errors itself.
                 ->addOption({"-e"_el, "--environment"_el, "environment"_el})
                 .setType(el::OptionType::Text)
                 .setDefaultValue("staging"_el)
-                .setHelpDescription("Environment written into the deployment label."_el);
+                .setHelpTitle("Environment written into the deployment label."_el);
         });
         app.setMainFn([&app]() -> el::ExitCode {
             el::io::printLine("deployment environment: "_el, app.optionValues()->getText("environment"_el));
@@ -55,24 +55,32 @@ errors itself.
         return app.run();
     }
 
-.. rubric:: ``$ core/core_function_application --environment production``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
-    deployment environment: production
+        $ core/core_function_application --environment production
 
-.. rubric:: ``$ core/core_function_application --help``
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-.. erbsland-ansi::
-    :escape-char: ␛
+        ␛[0mdeployment environment: production␛[0m
 
-    Usage:
-    core_function_application [options]
-    Options:
-    -e, --environment <value> Environment written into the deployment label.
-    -h, --help[=<boolean>]    Display this help.
-        --version[=<boolean>] Display version information.
+.. erbsland-demo-run::
+
+    .. code-block:: console
+
+        $ core/core_function_application --help
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUsage:
+        core_function_application [options]
+        Options:
+        -e, --environment <value> Environment written into the deployment label.
+        -h, --help[=<keyword>]    Display this help.
+            --version             Display version information.␛[0m
 
 .. erbsland-demo-end::
 

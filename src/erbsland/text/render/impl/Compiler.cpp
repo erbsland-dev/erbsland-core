@@ -11,13 +11,14 @@
 
 #include "../RenderError.hpp"
 
-#include "../../../text/Literals.hpp"
+#include "../../Literals.hpp"
 #include "../../StringFormat.hpp"
 
 #include <algorithm>
 
 namespace erbsland::text::render::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 Compiler::Compiler(
@@ -35,7 +36,7 @@ Compiler::Compiler(
 }
 
 auto Compiler::compile() -> ConstCompiledLayoutPtr {
-    if (!_source.text().isValidUtf8()) {
+    if (!_source.text().isEncodingValid()) {
         throwSyntax("The layout source is not valid UTF-8."_el, {});
     }
 
@@ -271,7 +272,7 @@ void Compiler::compileSet(Tokenizer &tokenizer) {
     targetWriter.writeStoreName(addConstant(name), nameLocation);
 }
 
-void Compiler::compileFor(Tokenizer &tokenizer, const unit::CodeLocation statementLocation) {
+void Compiler::compileFor(Tokenizer &tokenizer, const CodeLocation statementLocation) {
     const auto firstLocation = tokenizer.current().location;
     if (!tokenizer.current().isIdentifier()) {
         throwSyntax("A 'for' statement requires an ASCII target name."_el, firstLocation);
@@ -281,7 +282,7 @@ void Compiler::compileFor(Tokenizer &tokenizer, const unit::CodeLocation stateme
     tokenizer.advance();
 
     auto secondName = String{};
-    auto secondLocation = unit::CodeLocation{};
+    auto secondLocation = CodeLocation{};
     if (tokenizer.current().kind == TokenKind::Comma) {
         tokenizer.advance();
         secondLocation = tokenizer.current().location;
@@ -323,7 +324,7 @@ void Compiler::compileFor(Tokenizer &tokenizer, const unit::CodeLocation stateme
     controls().emplace_back(ForBlock{statementLocation, iterationLabel, pendingExit, {}, false});
 }
 
-void Compiler::compileEndFor(Tokenizer &tokenizer, const unit::CodeLocation statementLocation) {
+void Compiler::compileEndFor(Tokenizer &tokenizer, const CodeLocation statementLocation) {
     if (tokenizer.current().kind != TokenKind::TagEnd) {
         throwSyntax("An 'endfor' statement does not accept arguments."_el, tokenizer.current().location);
     }
@@ -346,12 +347,13 @@ void Compiler::compileEndFor(Tokenizer &tokenizer, const unit::CodeLocation stat
         writer().writeEndIteration(statementLocation);
     }
 }
+
 auto Compiler::isInsideFor() const noexcept -> bool {
     return std::ranges::any_of(
         controls(), [](const ControlBlock &block) -> bool { return std::holds_alternative<ForBlock>(block); });
 }
 
-void Compiler::noteExtendingContent(const unit::CodeLocation location) {
+void Compiler::noteExtendingContent(const CodeLocation location) {
     if (_extends != nullptr) {
         throwSyntax(
             "An extending layout may contain only setup assignments, blocks, comments, and whitespace outside blocks."_el,
@@ -362,7 +364,7 @@ void Compiler::noteExtendingContent(const unit::CodeLocation location) {
     }
 }
 
-void Compiler::validateForTarget(const String &name, const unit::CodeLocation location) const {
+void Compiler::validateForTarget(const String &name, const CodeLocation location) const {
     if (name == "loop"_el) {
         throwSyntax("The special 'loop' name cannot be used as an iteration target."_el, location);
     }
@@ -373,7 +375,7 @@ void Compiler::validateForTarget(const String &name, const unit::CodeLocation lo
     }
 }
 
-void Compiler::emitText(String text, const unit::CodeLocation location) {
+void Compiler::emitText(String text, const CodeLocation location) {
     if (text.isEmpty()) {
         return;
     }
@@ -396,7 +398,7 @@ void Compiler::throwUnclosedControl(const ControlBlock &block) const {
     throwSyntax("A 'for' statement has no matching 'endfor'."_el, std::get<ForBlock>(block).location);
 }
 
-void Compiler::throwSyntax(String description, const unit::CodeLocation location) const {
+void Compiler::throwSyntax(String description, const CodeLocation location) const {
     throw RenderError{
         RenderErrorContext{RenderErrorCategory::Syntax, "Invalid layout syntax"_el, std::move(description)}
             .setLayout(_layout)

@@ -1,0 +1,3 @@
+# SHA3-256 of text with CRLF and lone CR normalized to LF; all other bytes remain significant.
+[files]
+"box_frame_characters.txt": "88B79D2A38C77CCE9640AB505491A0F0673C8521E527C9F99D3AB4F97DD143AF"

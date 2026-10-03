@@ -15,7 +15,7 @@
 #include "../RenderLimits.hpp"
 #include "../Value.hpp"
 
-#include "../../../text/StringList.hpp"
+#include "../../StringList.hpp"
 
 #include <compare>
 #include <exception>
@@ -90,6 +90,9 @@ private:
     /// Resolve lazy callback values with a bounded recursion depth.
     [[nodiscard]] auto resolve(Value value, const ConstCompiledLayoutPtr &layout, unit::CodeLocation location) const
         -> Value;
+    /// Attach the callback site when a render error has no source context of its own.
+    [[nodiscard]] static auto withCallbackContext(
+        const RenderError &error, const ConstCompiledLayoutPtr &layout, unit::CodeLocation location) -> RenderError;
     /// Create a source-aware public render error.
     [[nodiscard]] auto error(
         RenderErrorCategory category,

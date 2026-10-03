@@ -4,6 +4,8 @@
 #include "IndividualValuesDemos.hpp"
 
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 
@@ -21,12 +23,12 @@ void typedCollections() {
     const auto document = el::conf::Parser{}.parseTextOrThrow(configuration);
 
     // Typed getters return native collections after checking every element.
-    const auto species = document->getListOrThrow<el::String>("survey.species"_el);
+    const auto species = document->getStringListOrThrow("survey.species"_el);
     const auto sampleCounts = document->getListOrThrow<int>("survey.sample_count"_el);
     const auto observations = document->getMatrixOrThrow<int>("survey.observations"_el);
 
-    el::io::printLine("Species: "_el, species.size());
-    el::io::printLine("Sample-count entries: "_el, sampleCounts.size());
+    el::io::printLine("Species: "_el, species.count());
+    el::io::printLine("Sample-count entries: "_el, sampleCounts.count());
     el::io::printLine("First observation: "_el, observations.valueOrThrow({}, {}));
 }
 

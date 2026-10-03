@@ -14,9 +14,9 @@
 
 namespace erbsland::text::impl {
 
-using unit::ByteLength;
-using unit::U16DataLength;
-using unit::U16DataRange;
+using unit::ByteCount;
+using unit::U16Count;
+using unit::U16Range;
 
 U16StringSharedStorage::~U16StringSharedStorage() = default;
 
@@ -33,7 +33,7 @@ auto U16StringSharedStorage::isEmpty() const noexcept -> bool {
 }
 
 U16StringSharedStorage::U16StringSharedStorage(const std::u16string_view text) :
-    _data{createU16StringData(text)}, _range{U16DataRange::fromSizeT(text.size())} {
+    _data{createU16StringData(text)}, _range{U16Range::fromSizeT(text.size())} {
 }
 
 U16StringSharedStorage::U16StringSharedStorage(const U16StringLiteralStorage &literal) :
@@ -41,17 +41,17 @@ U16StringSharedStorage::U16StringSharedStorage(const U16StringLiteralStorage &li
 }
 
 U16StringSharedStorage::U16StringSharedStorage(const U16StringDataView &view) :
-    U16StringSharedStorage{U16DataRange::fromSizeT(view.dataSpan().size())} {
+    U16StringSharedStorage{U16Range::fromSizeT(view.dataSpan().size())} {
     if (!view.dataSpan().empty()) {
         std::memcpy(dataForWrite(), view.dataSpan().data(), view.dataSpan().size_bytes());
     }
 }
 
-U16StringSharedStorage::U16StringSharedStorage(U16StringDataPtr data, U16DataRange range) noexcept :
+U16StringSharedStorage::U16StringSharedStorage(U16StringDataPtr data, U16Range range) noexcept :
     _data{std::move(data)}, _range{range} {
 }
 
-U16StringSharedStorage::U16StringSharedStorage(const U16DataRange range) noexcept :
+U16StringSharedStorage::U16StringSharedStorage(const U16Range range) noexcept :
     _data{createU16StringData(range.length().toSizeT())}, _range{range} {
 }
 
@@ -80,7 +80,7 @@ auto U16StringSharedStorage::storageId() const noexcept -> mem::StorageIdentifie
     if (data() == nullptr) {
         return {};
     }
-    const auto *begin = data() + _range.index().toSizeT();
+    const auto *begin = data() + _range.beginIndex().toSizeT();
     return mem::StorageIdentifier::fromMemoryRange(begin, begin + _range.length().toSizeT());
 }
 
@@ -92,7 +92,7 @@ auto U16StringSharedStorage::fromCodeUnits(const std::span<const char16_t> codeU
     if (codeUnits.empty()) {
         return {};
     }
-    auto storage = U16StringSharedStorage{U16DataRange::fromSizeT(codeUnits.size())};
+    auto storage = U16StringSharedStorage{U16Range::fromSizeT(codeUnits.size())};
     std::memcpy(storage.dataForWrite(), codeUnits.data(), codeUnits.size() * sizeof(char16_t));
     storage.dataForWrite()[codeUnits.size()] = u'\0';
     return storage;
@@ -102,29 +102,27 @@ auto U16StringSharedStorage::forSize(const std::size_t size) -> U16StringSharedS
     if (size == 0U) {
         return {};
     }
-    return U16StringSharedStorage{U16DataRange::fromSizeT(size)};
+    return U16StringSharedStorage{U16Range::fromSizeT(size)};
 }
 
 void U16StringSharedStorage::validateSize(const std::size_t size) {
-    if (math::willCastOverflow<U16DataLength::Value>(size)) {
-        throwOverflow("String storage size exceeds bounds");
+    if (size > U16Count::cRawMaximum) {
+        throwOutOfRangeFailure("String storage size exceeds bounds");
     }
 }
 
-auto U16StringSharedStorage::checkedAddSize(
-    const std::size_t first, const std::size_t second, const std::string_view reason) -> std::size_t {
+auto U16StringSharedStorage::checkedAddSize(const std::size_t first, const std::size_t second) -> std::size_t {
     if (math::willAddOverflow(first, second)) {
-        throwOverflow(reason);
+        throwOutOfRangeFailure("String storage size exceeds bounds");
     }
     const auto result = math::saturatingAdd(first, second);
     validateSize(result);
     return result;
 }
 
-auto U16StringSharedStorage::checkedMultiplySize(
-    const std::size_t first, const std::size_t second, const std::string_view reason) -> std::size_t {
+auto U16StringSharedStorage::checkedMultiplySize(const std::size_t first, const std::size_t second) -> std::size_t {
     if (math::willMultiplyOverflow(first, second)) {
-        throwOverflow(reason);
+        throwOutOfRangeFailure("String storage size exceeds bounds");
     }
     const auto result = math::saturatingMultiply(first, second);
     validateSize(result);
@@ -133,22 +131,21 @@ auto U16StringSharedStorage::checkedMultiplySize(
 
 void U16StringSharedStorage::clear() noexcept {
     if (_data.isNull()) {
-        _range = U16DataRange::empty();
+        _range = U16Range::empty();
         return;
     }
     const auto reservedCapacity = capacity().toSizeT();
     _data = createU16StringData(0U, reservedCapacity);
-    _range = U16DataRange::empty();
+    _range = U16Range::empty();
 }
 
 void U16StringSharedStorage::ensureMutableCapacity(const std::size_t requiredCapacity) {
     const auto usedSize = _range.length().toSizeT();
-    const auto usedSizeWithTerminator = checkedAddSize(usedSize, 1U, "StringEditor storage size exceeds bounds");
-    const auto requiredCapacityWithTerminator =
-        checkedAddSize(requiredCapacity, 1U, "StringEditor storage capacity exceeds bounds");
+    const auto usedSizeWithTerminator = checkedAddSize(usedSize, 1U);
+    const auto requiredCapacityWithTerminator = checkedAddSize(requiredCapacity, 1U);
     const auto oldRange = _range;
     const auto forceReallocate =
-        _data.isNull() || _data.isShared() || !_range.index().isZero() || !isFullRange(_data.constGet()->size());
+        _data.isNull() || _data.isShared() || !_range.beginIndex().isZero() || !isFullRange(_data.constGet()->size());
     mem::impl::ensureSharedArrayCapacity(
         _data,
         usedSizeWithTerminator,
@@ -156,11 +153,12 @@ void U16StringSharedStorage::ensureMutableCapacity(const std::size_t requiredCap
         forceReallocate,
         [usedSize, oldRange](const auto *oldData, auto *newData) -> void {
             if (oldData != nullptr && usedSize > 0U) {
-                std::memcpy(newData->data(), oldData->data() + oldRange.index().toSizeT(), usedSize * sizeof(char16_t));
+                std::memcpy(
+                    newData->data(), oldData->data() + oldRange.beginIndex().toSizeT(), usedSize * sizeof(char16_t));
             }
             newData->data()[usedSize] = u'\0';
         });
-    _range = U16DataRange::fromSizeT(usedSize);
+    _range = U16Range::fromSizeT(usedSize);
 }
 
 void U16StringSharedStorage::resize(const std::size_t size) noexcept {
@@ -168,7 +166,7 @@ void U16StringSharedStorage::resize(const std::size_t size) noexcept {
         if (size != 0U) {
             std::terminate();
         }
-        _range = U16DataRange::empty();
+        _range = U16Range::empty();
         return;
     }
     if (math::willAddOverflow(size, std::size_t{1U})) {
@@ -177,10 +175,10 @@ void U16StringSharedStorage::resize(const std::size_t size) noexcept {
     const auto sizeWithTerminator = math::saturatingAdd(size, std::size_t{1U});
     _data.get()->setSize(static_cast<U16StringData::SizeType>(sizeWithTerminator));
     _data.get()->data()[size] = u'\0';
-    _range = U16DataRange::fromSizeT(size);
+    _range = U16Range::fromSizeT(size);
 }
 
-void U16StringSharedStorage::reserve(const U16DataLength capacity) {
+void U16StringSharedStorage::reserve(const U16Count capacity) {
     const auto requestedCapacity = capacity.toSizeT();
     if (requestedCapacity <= this->capacity().toSizeT()) {
         return;
@@ -191,7 +189,7 @@ void U16StringSharedStorage::reserve(const U16DataLength capacity) {
 void U16StringSharedStorage::shrinkToFit() {
     if (_range.isEmpty()) {
         _data.reset();
-        _range = U16DataRange::empty();
+        _range = U16Range::empty();
         return;
     }
     const auto usedSize = _range.length().toSizeT();
@@ -203,25 +201,25 @@ void U16StringSharedStorage::shrinkToFit() {
     rematerialize(usedSize);
 }
 
-auto U16StringSharedStorage::capacity() const noexcept -> U16DataLength {
+auto U16StringSharedStorage::capacity() const noexcept -> U16Count {
     if (_data.isNull()) {
-        return U16DataLength::zero();
+        return U16Count::zero();
     }
     const auto usableCapacity = static_cast<std::size_t>(_data.constGet()->capacity()) - 1U;
     if (_range.isEmpty()) {
-        return U16DataLength::fromSizeT(usableCapacity);
+        return U16Count::fromSizeT(usableCapacity);
     }
     if (isFullRange(_data.constGet()->size())) {
-        return U16DataLength::fromSizeT(usableCapacity);
+        return U16Count::fromSizeT(usableCapacity);
     }
     return _range.length();
 }
 
-auto U16StringSharedStorage::memoryUsage() const noexcept -> ByteLength {
+auto U16StringSharedStorage::memoryUsage() const noexcept -> ByteCount {
     if (_data.isNull()) {
-        return ByteLength::zero();
+        return ByteCount::zero();
     }
-    return ByteLength::fromSizeT(sizeof(U16StringData) + _data.constGet()->capacity() * sizeof(char16_t));
+    return ByteCount::fromSizeT(sizeof(U16StringData) + _data.constGet()->capacity() * sizeof(char16_t));
 }
 
 void U16StringSharedStorage::detach() {
@@ -234,7 +232,7 @@ void U16StringSharedStorage::detach() {
     }
     if (isFullRange(dataSize)) {
         _data.detach();
-        _range = U16DataRange::fromSizeT(dataSize - 1U);
+        _range = U16Range::fromSizeT(dataSize - 1U);
         return;
     }
     *this = U16StringSharedStorage{dataView()};
@@ -248,7 +246,7 @@ auto U16StringSharedStorage::dataView() const noexcept -> U16StringDataView {
     return U16StringDataView{{data.data(), data.size()}, _range};
 }
 
-auto U16StringSharedStorage::dataView(const U16DataRange range) const noexcept -> U16StringDataView {
+auto U16StringSharedStorage::dataView(const U16Range range) const noexcept -> U16StringDataView {
     if (_data.isNull()) {
         return {};
     }
@@ -257,18 +255,18 @@ auto U16StringSharedStorage::dataView(const U16DataRange range) const noexcept -
 }
 
 auto U16StringSharedStorage::isFullRange(const std::size_t dataSize) const noexcept -> bool {
-    return dataSize > 0U && _range.index().isZero() && _range.length().toSizeT() == dataSize - 1U;
+    return dataSize > 0U && _range.beginIndex().isZero() && _range.length().toSizeT() == dataSize - 1U;
 }
 
 void U16StringSharedStorage::rematerialize(const std::size_t reservedCapacity) {
     const auto usedSize = _range.length().toSizeT();
     auto data = createU16StringData(usedSize, reservedCapacity);
     if (!_data.isNull() && usedSize > 0U) {
-        std::memcpy(data.get()->data(), this->data() + _range.index().toSizeT(), usedSize * sizeof(char16_t));
+        std::memcpy(data.get()->data(), this->data() + _range.beginIndex().toSizeT(), usedSize * sizeof(char16_t));
         data.get()->data()[usedSize] = u'\0';
     }
     _data = std::move(data);
-    _range = U16DataRange::fromSizeT(usedSize);
+    _range = U16Range::fromSizeT(usedSize);
 }
 
 }

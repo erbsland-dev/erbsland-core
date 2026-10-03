@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Default.hpp"
 
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/ParameterFailure.hpp"
 #include "../../../../text/StringFormat.hpp"
 #include "../../../impl/value/Value.hpp"
 #include "../../../Value.hpp"
@@ -11,6 +11,7 @@
 
 namespace erbsland::conf::vr::builder {
 
+using namespace text;
 using namespace text::literals;
 
 template <typename Range>
@@ -35,7 +36,7 @@ auto Default::createScalarMatrixValue(const std::vector<std::vector<T>> &values)
 
 Default::Default(ValuePtr value) : _value{std::move(value)} {
     if (_value == nullptr) {
-        throw err::ParameterError{"The default configuration value must not be null"_el, "value"_el};
+        throw err::ParameterFailure{"The default configuration value must not be null"_el, "value"_el};
     }
 }
 
@@ -48,7 +49,7 @@ Default::Default(const bool value) : _value{impl::Value::createFromValue(value)}
 Default::Default(const Float value) : _value{impl::Value::createFromValue(value)} {
 }
 
-Default::Default(text::String value) : _value{impl::Value::createFromValue(std::move(value))} {
+Default::Default(String value) : _value{impl::Value::createFromValue(std::move(value))} {
 }
 
 Default::Default(const time::Date &value) : _value{impl::Value::createFromValue(value)} {
@@ -81,7 +82,7 @@ Default::Default(const std::vector<bool> &values) : _value{createScalarListValue
 Default::Default(const std::vector<Float> &values) : _value{createScalarListValue(values)} {
 }
 
-Default::Default(const text::StringList &values) : _value{createScalarListValue(values)} {
+Default::Default(const StringList &values) : _value{createScalarListValue(values)} {
 }
 
 Default::Default(const std::vector<mem::ByteBlock> &values) : _value{createScalarListValue(values)} {
@@ -96,12 +97,11 @@ Default::Default(const std::vector<std::vector<Float>> &values) : _value{createS
 void Default::apply(RuleDefinition &rule) const {
     if (!rule.type().acceptsDefaults()) {
         throwValidationError(
-            text::StringFormat{"A default value cannot be used for '{}' node rules"_el}.build(rule.type().toText()));
+            StringFormat{"A default value cannot be used for '{}' node rules"_el}.build(rule.type().toText()));
     }
     if (!rule.type().matchesValueType(_value->type())) {
         throwValidationError(
-            text::StringFormat{
-                "The default value of a node-rules definition must match its type. Expected {}, but got {}"_el}
+            StringFormat{"The default value of a node-rules definition must match its type. Expected {}, but got {}"_el}
                 .build(rule.type().expectedValueTypeText(), _value->type().toValueDescription(true)));
     }
     rule.setDefaultValue(_value);

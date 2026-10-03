@@ -10,6 +10,8 @@
 
 namespace erbsland::re::impl {
 
+using namespace unit;
+using namespace text;
 using namespace text::literals;
 
 void Assembler::processCommandLine() {
@@ -26,7 +28,7 @@ void Assembler::processCommandLine() {
     } else if (command == "class"_el) {
         processClassCommand();
     } else {
-        throwAssemblerError(text::StringFormat{"Unknown command '{}'"}.build(command), currentToken().column());
+        throwAssemblerError(StringFormat{"Unknown command '{}'"}.build(command), currentToken().column());
     }
 }
 
@@ -39,8 +41,7 @@ void Assembler::processSectionCommand() {
     const auto &section = currentToken().getText();
     if (section != "program"_el && section != "sequence"_el && section != "class"_el) {
         throwAssemblerError(
-            text::StringFormat{"Invalid section identifier '{}'"}.build(currentToken().getText()),
-            currentToken().column());
+            StringFormat{"Invalid section identifier '{}'"}.build(currentToken().getText()), currentToken().column());
     }
     closeCurrentClass(); // close any previously started character class.
     const auto dataSection = toDataSection(currentToken().getText());
@@ -68,7 +69,7 @@ void Assembler::processDataCommand() {
     if (_currentSection == DataSection::Sequence) {
         if (currentToken().isText()) {
             // The callback always continues, so the loop result cannot carry additional information.
-            currentToken().getText().forEach([this](const text::Char character) -> util::LoopStatus {
+            currentToken().getText().forEach([this](const Char character) -> util::LoopStatus {
                 _data->sequenceData.emplace_back(character);
                 return util::LoopStatus::Continue;
             });
@@ -82,7 +83,7 @@ void Assembler::processDataCommand() {
     } else { // class
         if (currentToken().isText()) {
             // The callback always continues, so the loop result cannot carry additional information.
-            currentToken().getText().forEach([this](const text::Char character) -> util::LoopStatus {
+            currentToken().getText().forEach([this](const Char character) -> util::LoopStatus {
                 _charRanges.emplace_back(character, character);
                 return util::LoopStatus::Continue;
             });
@@ -124,7 +125,7 @@ void Assembler::processGroupsCommand() {
     const auto groupCount = currentToken().getInteger();
     if (groupCount > limits::maximumCaptureGroupCount) {
         throwAssemblerError(
-            text::StringFormat{"The maximum number of capture groups is {}"}.build(limits::maximumCaptureGroupCount));
+            StringFormat{"The maximum number of capture groups is {}"}.build(limits::maximumCaptureGroupCount));
     }
     nextToken();
     if (hasCurrentToken()) {
@@ -136,7 +137,7 @@ void Assembler::processGroupsCommand() {
     if (_data->program.size() > 0) {
         throwAssemblerError("The '.groups' command must be used before any program code"_el);
     }
-    _captureGroupNames.resize(groupCount);
+    _captureGroupNames.resize(CaptureGroupNames::Count::fromInteger(groupCount));
     _captureGroupSizeSet = true;
 }
 
@@ -151,20 +152,21 @@ void Assembler::processGroupCommand() {
         throwAssemblerError("Expected the group index after the '.group' command"_el);
     }
     const auto groupIndex = currentToken().getInteger();
-    if (groupIndex <= 0 || groupIndex > _captureGroupNames.size()) {
+    if (groupIndex <= 0 || groupIndex > _captureGroupNames.count().toSizeT()) {
         throwAssemblerError(
-            text::StringFormat{"Group index {} is out of range. Must be in the range 1 to {}"}.build(
-                groupIndex, _captureGroupNames.size()));
+            StringFormat{"Group index {} is out of range. Must be in the range 1 to {}"}.build(
+                groupIndex, _captureGroupNames.count().toSizeT()));
     }
     nextToken();
     if (!hasCurrentToken() || !currentToken().isText()) {
         throwAssemblerError("Expected the group name after the '.group' command"_el);
     }
     const auto &name = currentToken().getText();
-    if (!_captureGroupNames[groupIndex - 1].isEmpty()) {
+    const auto groupNameIndex = ItemIndex::fromSizeT(groupIndex - 1);
+    if (!_captureGroupNames.getRef(groupNameIndex).isEmpty()) {
         throwAssemblerError("Group name is already set"_el);
     }
-    _captureGroupNames[groupIndex - 1] = name;
+    _captureGroupNames.set(groupNameIndex, name);
     nextToken();
     if (hasCurrentToken()) {
         throwAssemblerError("Unexpected token after the '.group' command"_el, currentToken().column());
@@ -204,7 +206,7 @@ void Assembler::addLabel() {
     if (_labels.contains(_currentLabel)) {
         const auto labelTarget = _labels.get(_currentLabel).value();
         throwAssemblerError(
-            text::StringFormat{"Label '{}' is already defined in line {}. Duplicate"}.build(
+            StringFormat{"Label '{}' is already defined in line {}. Duplicate"}.build(
                 _currentLabel, labelTarget.sourceLine.toSizeT() + 1U));
     }
     switch (_currentSection) {

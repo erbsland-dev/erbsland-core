@@ -15,7 +15,7 @@
 
 #include "../mem/ByteBlock_fwd.hpp"
 #include "../mem/RingBuffer_fwd.hpp"
-#include "../unit/ByteLength_fwd.hpp"
+#include "../unit/ByteCount_fwd.hpp"
 #include "../util/Result.hpp"
 
 #include <type_traits>
@@ -42,15 +42,15 @@ public:
         -> mem::ByteBlock;
     /// Calculate the exact byte length produced by `encode()` without allocating the encoded byte block.
     /// Matching native representations are measured without validation.
-    /// @throws err::OverflowError If the encoded length exceeds the supported finite byte length.
+    /// The encoded length must fit the supported finite byte length.
     [[nodiscard]] auto encodedLength(StringEncoding encoding, StringBomMode bomMode = StringBomMode::Automatic) const
-        -> unit::ByteLength;
+        -> unit::ByteCount;
     /// Atomically encode the source directly into a ring buffer.
     /// Each call independently applies `bomMode`; stateful streams must suppress the BOM after their first write.
     /// Matching native representations are copied without validation.
     /// Actual transcoding replaces malformed source sequences.
     /// @return Success, or failure without modification if the encoded data exceeds the remaining hard capacity.
-    /// @throws err::OverflowError If the encoded length exceeds the supported finite byte length.
+    /// The encoded length must fit the supported finite byte length.
     [[nodiscard]] auto encodeTo(
         mem::RingBuffer &buffer, StringEncoding encoding, StringBomMode bomMode = StringBomMode::Automatic) const
         -> util::Result;

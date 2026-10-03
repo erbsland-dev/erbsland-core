@@ -1,22 +1,29 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
-#include "PepperRotation.hpp"
 #include "PepperStore.hpp"
 
+#include "PepperRotation.hpp"
+
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ApplicationErrorContext.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/conf/ConfError.hpp>
+#include <erbsland/conf/Document.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/Value.hpp>
 #include <erbsland/conf/ValueType.hpp>
-#include <erbsland/core/ApplicationError.hpp>
-#include <erbsland/core/ApplicationErrorContext.hpp>
-#include <erbsland/cryptology/PasswordHashKey.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/path/PathContent.hpp>
-#include <erbsland/path/PathReadTextOptions.hpp>
-#include <erbsland/stream/InputStreamSettings.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/util/List.hpp>
+#include <erbsland/InputStreamSettings.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/PasswordHasher.hpp>
+#include <erbsland/PasswordHashKey.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathReadTextOptions.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/String.hpp>
 
 #include <utility>
 
@@ -37,10 +44,10 @@ auto PepperStore::readKeyBytes(const el::conf::ValuePtr &section) const -> el::B
     el::ByteBlock bytes;
     try {
         bytes = section->getBytesOrThrow("Key"_el);
-    } catch (const el::Exception &) {
+    } catch (const el::conf::ConfError &) {
         throwInvalidPepper("Every key entry requires an ELCL byte value named Key."_el);
     }
-    if (bytes.length() != el::ByteLength{32U}) {
+    if (bytes.length() != el::ByteCount{32U}) {
         bytes.secureErase();
         throwInvalidPepper("Every password-hash key must contain exactly 32 bytes."_el);
     }
@@ -60,7 +67,7 @@ auto PepperStore::loadHasher() const -> el::PasswordHasher {
         readOptions.setSensitive(true);
         source = _path.content().readTextOrThrow(readOptions);
         document = el::conf::Parser{}.parseTextOrThrow(source);
-    } catch (const el::Exception &) {
+    } catch (const el::RuntimeError &) {
         throwInvalidPepper("The file is not a valid ELCL document."_el);
     }
     if (document->size() != 1U || !document->hasValue("Pepper"_el)) {
@@ -76,11 +83,11 @@ auto PepperStore::loadHasher() const -> el::PasswordHasher {
     el::String activeIdentifier;
     try {
         activeIdentifier = pepper->getTextOrThrow("Identifier"_el);
-    } catch (const el::Exception &) {
+    } catch (const el::conf::ConfError &) {
         throwInvalidPepper("The active key Identifier must be text."_el);
     }
-    if (activeIdentifier.isEmpty()) {
-        throwInvalidPepper("The active key Identifier must not be empty."_el);
+    if (!el::PasswordHashKey::isValidIdentifier(activeIdentifier)) {
+        throwInvalidPepper("The active key Identifier must contain 1-32 ASCII letters, digits, '.', '_' or '-'."_el);
     }
     auto activeKey = el::PasswordHashKey::identified(activeIdentifier, readKeyBytes(pepper));
     auto fallbackKeys = el::List<el::PasswordHashKey>{};
@@ -100,11 +107,12 @@ auto PepperStore::loadHasher() const -> el::PasswordHasher {
                 el::String identifier;
                 try {
                     identifier = entry->getTextOrThrow("Identifier"_el);
-                } catch (const el::Exception &) {
+                } catch (const el::conf::ConfError &) {
                     throwInvalidPepper("A fallback Identifier must be text."_el);
                 }
-                if (identifier.isEmpty()) {
-                    throwInvalidPepper("A fallback Identifier must not be empty."_el);
+                if (!el::PasswordHashKey::isValidIdentifier(identifier)) {
+                    throwInvalidPepper(
+                        "A fallback Identifier must contain 1-32 ASCII letters, digits, '.', '_' or '-'."_el);
                 }
                 fallbackKeys.append(el::PasswordHashKey::identified(identifier, keyBytes));
             } else {
@@ -112,12 +120,23 @@ auto PepperStore::loadHasher() const -> el::PasswordHasher {
             }
         }
     }
-    // Let PasswordHasher validate identifier uniqueness and the single unnamed-fallback rule.
-    try {
-        return buildPasswordHasher(activeKey, fallbackKeys);
-    } catch (const el::Exception &) {
-        throwInvalidPepper("The active and fallback key identifiers do not form a valid rotation set."_el);
+    auto identifiers = el::List<el::String>{};
+    identifiers.append(activeIdentifier);
+    auto hasUnnamed = false;
+    for (const auto &key : fallbackKeys) {
+        if (const auto identifier = key.identifier(); identifier.has_value()) {
+            if (identifiers.contains(*identifier)) {
+                throwInvalidPepper("Active and fallback key identifiers must be unique."_el);
+            }
+            identifiers.append(*identifier);
+        } else {
+            if (hasUnnamed) {
+                throwInvalidPepper("Only one unnamed fallback key is allowed."_el);
+            }
+            hasUnnamed = true;
+        }
     }
+    return buildPasswordHasher(activeKey, fallbackKeys);
 }
 
 }

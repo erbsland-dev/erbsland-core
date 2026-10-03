@@ -93,10 +93,10 @@ public: // factory
     /// Create a canonical record from a raw password derivation.
     /// @param policy The password-hashing policy used for the derivation.
     /// @param key The application key, or null for an explicitly unkeyed record.
-    /// @param salt The public salt.
-    /// @param rawVerifier The raw output from the password-hashing algorithm.
+    /// @param salt The public salt. Its length must equal `policy.saltLength()`.
+    /// @param rawVerifier The raw output from the password-hashing algorithm. Its length must equal
+    /// `policy.outputLength()`.
     /// @return The immutable canonical record data.
-    /// @throws err::LogicError If salt or verifier lengths violate the policy invariant.
     [[nodiscard]] static auto create(
         PasswordHashPolicy policy, const PasswordHashKey *key, mem::ConstByteSpan salt, mem::ConstByteSpan rawVerifier)
         -> PasswordHashDataPtr;
@@ -123,7 +123,7 @@ private:
     /// Encode bytes for a canonical storage field.
     [[nodiscard]] static auto encodeBytes(mem::ConstByteSpan bytes) -> text::String;
     /// Decode bytes from a canonical storage field.
-    [[nodiscard]] static auto decodeBytes(const text::String &text, unit::ByteLength expectedLength) -> mem::ByteBlock;
+    [[nodiscard]] static auto decodeBytes(const text::String &text, unit::ByteCount expectedLength) -> mem::ByteBlock;
     /// Append a named field to a canonical record.
     static void appendField(text::StringEditor &result, const text::StringLiteral &key, const text::String &value);
     /// Build the canonical record header through the salt field.

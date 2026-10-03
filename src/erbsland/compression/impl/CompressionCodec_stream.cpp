@@ -10,26 +10,28 @@
 
 namespace erbsland::compression::impl {
 
+using namespace mem;
+using namespace stream;
 using namespace text::literals;
 
 auto CompressionCodec::compress(
-    stream::ByteInputStream &source,
-    stream::ByteOutputStream &destination,
+    ByteInputStream &source,
+    ByteOutputStream &destination,
     CompressionTransferOptions transfer,
     const CompressionOptions &options) const -> CompressionTransferResult {
     transfer.setBufferLength(std::min(transfer.bufferLength(), destination.outputSettings().backBufferLimit()));
     auto remaining = transfer.inputLength();
     return compress(
-        [&]() -> mem::ByteBlock {
+        [&]() -> ByteBlock {
             if (remaining && remaining->isZero()) {
                 return {};
             }
             const auto length = remaining ? std::min(*remaining, transfer.bufferLength()) : transfer.bufferLength();
             const auto result = source.read(length);
-            if (result == stream::StreamReadStatus::Timeout) {
+            if (result == StreamReadStatus::Timeout) {
                 throw CompressionError{CompressionErrorReason::Timeout, "Compression input timed out."_el};
             }
-            if (result == stream::StreamReadStatus::Finished) {
+            if (result == StreamReadStatus::Finished) {
                 return {};
             }
             if (remaining) {
@@ -37,8 +39,8 @@ auto CompressionCodec::compress(
             }
             return result.data();
         },
-        [&](const mem::ConstByteSpan bytes) -> void {
-            if (destination.write(bytes) != stream::StreamWriteStatus::Success) {
+        [&](const ConstByteSpan bytes) -> void {
+            if (destination.write(bytes) != StreamWriteStatus::Success) {
                 throw CompressionError{CompressionErrorReason::Timeout, "Compression output timed out."_el};
             }
         },
@@ -47,23 +49,23 @@ auto CompressionCodec::compress(
 }
 
 auto CompressionCodec::decompress(
-    stream::ByteInputStream &source,
-    stream::ByteOutputStream &destination,
+    ByteInputStream &source,
+    ByteOutputStream &destination,
     CompressionTransferOptions transfer,
     const DecompressionOptions &options) const -> CompressionTransferResult {
     transfer.setBufferLength(std::min(transfer.bufferLength(), destination.outputSettings().backBufferLimit()));
     auto remaining = transfer.inputLength();
     return decompress(
-        [&]() -> mem::ByteBlock {
+        [&]() -> ByteBlock {
             if (remaining && remaining->isZero()) {
                 return {};
             }
             const auto length = remaining ? std::min(*remaining, transfer.bufferLength()) : transfer.bufferLength();
             const auto result = source.read(length);
-            if (result == stream::StreamReadStatus::Timeout) {
+            if (result == StreamReadStatus::Timeout) {
                 throw CompressionError{CompressionErrorReason::Timeout, "Compression input timed out."_el};
             }
-            if (result == stream::StreamReadStatus::Finished) {
+            if (result == StreamReadStatus::Finished) {
                 return {};
             }
             if (remaining) {
@@ -71,8 +73,8 @@ auto CompressionCodec::decompress(
             }
             return result.data();
         },
-        [&](const mem::ConstByteSpan bytes) -> void {
-            if (destination.write(bytes) != stream::StreamWriteStatus::Success) {
+        [&](const ConstByteSpan bytes) -> void {
+            if (destination.write(bytes) != StreamWriteStatus::Success) {
                 throw CompressionError{CompressionErrorReason::Timeout, "Compression output timed out."_el};
             }
         },

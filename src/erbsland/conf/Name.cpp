@@ -13,18 +13,21 @@
 #include "../text/StringCharReader.hpp"
 #include "../text/StringEditor.hpp"
 #include "../text/StringFormat.hpp"
+#include "../text/StringTransformations.hpp"
 
 #include <cassert>
 
 namespace erbsland::conf {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
-auto Name::createRegular(text::String name) -> Name {
+auto Name::createRegular(String name) -> Name {
     return Name{NameType::Regular, normalize(std::move(name)), PrivateTag{}};
 }
 
-auto Name::createText(text::String text) -> Name {
+auto Name::createText(String text) -> Name {
     validateText(text);
     return Name{NameType::Text, std::move(text), PrivateTag{}};
 }
@@ -38,32 +41,30 @@ auto Name::createTextIndex(std::size_t index) -> Name {
 }
 
 auto Name::isReservedValidationRule() const noexcept -> bool {
-    return std::holds_alternative<text::String>(_value) &&
-        std::get<text::String>(_value).startsWith(impl::vrc::cReservedPrefix);
+    return std::holds_alternative<String>(_value) && std::get<String>(_value).startsWith(impl::vrc::cReservedPrefix);
 }
 
 auto Name::isEscapedReservedValidationRule() const noexcept -> bool {
-    return std::holds_alternative<text::String>(_value) &&
-        std::get<text::String>(_value).startsWith(impl::vrc::cReservedEscape);
+    return std::holds_alternative<String>(_value) && std::get<String>(_value).startsWith(impl::vrc::cReservedEscape);
 }
 
 auto Name::withReservedVRPrefixRemoved() const noexcept -> Name {
     if (!isReservedValidationRule()) {
         return *this;
     }
-    const auto &text = std::get<text::String>(_value);
+    const auto &text = std::get<String>(_value);
     const auto prefixLength = impl::vrc::cReservedPrefix.length();
     return Name{
         _type,
-        text.slice(unit::ByteRange{unit::ByteIndex::fromSizeT(prefixLength.toSizeT()), text.length() - prefixLength}),
+        text.slice(ByteRange{ByteIndex::fromSizeT(prefixLength.toSizeT()), text.length() - prefixLength}),
         PrivateTag{}};
 }
 
-auto Name::asText() const noexcept -> text::String {
-    if (std::holds_alternative<text::String>(_value)) {
-        return std::get<text::String>(_value);
+auto Name::asText() const noexcept -> String {
+    if (std::holds_alternative<String>(_value)) {
+        return std::get<String>(_value);
     }
-    return text::StringEditor::fromInteger(std::get<std::size_t>(_value));
+    return StringEditor::fromInteger(std::get<std::size_t>(_value));
 }
 
 auto Name::asIndex() const noexcept -> std::size_t {
@@ -77,23 +78,23 @@ auto Name::pathTextSize() const noexcept -> std::size_t {
     return toPathText().length().toSizeT();
 }
 
-auto Name::toPathText() const noexcept -> text::String {
+auto Name::toPathText() const noexcept -> String {
     switch (_type) {
     case NameType::Regular:
-        return std::get<text::String>(_value);
+        return std::get<String>(_value);
     case NameType::Text:
-        return text::StringFormat{"\"{:/config_test}\""_el}.build(std::get<text::String>(_value));
+        return StringFormat{"\"{:/config_test}\""_el}.build(std::get<String>(_value));
     case NameType::Index:
-        return text::StringFormat{"[{}]"_el}.build(std::get<std::size_t>(_value));
+        return StringFormat{"[{}]"_el}.build(std::get<std::size_t>(_value));
     case NameType::TextIndex:
-        return text::StringFormat{"\"\"[{}]"_el}.build(std::get<std::size_t>(_value));
+        return StringFormat{"\"\"[{}]"_el}.build(std::get<std::size_t>(_value));
     default:
         assert(false);
         return {};
     }
 }
 
-auto Name::normalize(const text::String &inputText) -> text::String {
+auto Name::normalize(const String &inputText) -> String {
     if (inputText.isEmpty()) {
         throw ConfError{ConfErrorCategory::Syntax, "Regular names must not be empty."_el};
     }
@@ -103,21 +104,21 @@ auto Name::normalize(const text::String &inputText) -> text::String {
         throw ConfError{ConfErrorCategory::LimitExceeded, "The given name is too long."_el};
     }
     // transform the text as efficient as possible, ideally, this is a zero copy operation.
-    auto result = inputText.transformed(text::Char::toIdentifierNormalized);
+    auto result = text::toIdentifierNormalized(inputText);
     // check the syntax, for later checks, remove any meta `@`.
     auto resultNamePart = result;
     if (result.startsWith("@"_el)) {
-        resultNamePart = result.slice({unit::CpIndex::one(), unit::CpLength::infinite()});
+        resultNamePart = result.slice({CpIndex::one(), CpCount::infinite()});
         if (resultNamePart.isEmpty()) {
             throw ConfError{ConfErrorCategory::Syntax, "A meta-name requires at least one letter."_el};
         }
     }
     // using a forEach with index is the simplest and fastest scan for syntax and used characters.
-    text::Char lastChar;
-    resultNamePart.forEach([&](const text::Char character, const unit::CpIndex index) -> util::LoopStatus {
+    Char lastChar;
+    resultNamePart.forEach([&](const Char character, const CpIndex index) -> util::LoopStatus {
         if (character != U'_' && !character.isAsciiAlphanumeric()) {
             throw ConfError{
-                ConfErrorCategory::Syntax, text::StringFormat{"Invalid character at position {}"_el}.build(index)};
+                ConfErrorCategory::Syntax, StringFormat{"Invalid character at position {}"_el}.build(index)};
         }
         if (character == U'_') {
             if (index.isZero()) {
@@ -141,14 +142,14 @@ auto Name::normalize(const text::String &inputText) -> text::String {
     return result;
 }
 
-void Name::validateText(const text::String &inputText) {
+void Name::validateText(const String &inputText) {
     if (inputText.isEmpty()) {
         throw ConfError{ConfErrorCategory::Syntax, "Text-names must not be empty."_el};
     }
     if (inputText.length().toSizeT() > impl::limits::maxLineLength) {
         throw ConfError{ConfErrorCategory::LimitExceeded, "The given text-name exceeds the size limit."_el};
     }
-    auto reader = text::StringCharReader{inputText};
+    auto reader = StringCharReader{inputText};
     while (!reader.isAtEnd()) {
         if (reader.read() != impl::CharClass::ValidLang) {
             throw ConfError{
@@ -160,7 +161,7 @@ void Name::validateText(const text::String &inputText) {
 
 auto Name::meta(Meta metaName) -> const Name & {
     if (static_cast<std::size_t>(metaName) >= static_cast<std::size_t>(Meta::_count)) {
-        throw err::LogicError{"Unknown meta-name."};
+        throw err::LogicFailure{"Unknown meta-name."};
     }
     return allMetaNames()[static_cast<std::size_t>(metaName)];
 }
@@ -199,7 +200,7 @@ auto Name::emptyInstance() noexcept -> const Name & {
 
 auto Name::vrName(VR vrName) -> const Name & {
     if (static_cast<std::size_t>(vrName) >= static_cast<std::size_t>(VR::_count)) {
-        throw err::LogicError{"Unknown VR name."};
+        throw err::LogicFailure{"Unknown VR name."};
     }
     return allVrNames()[static_cast<std::size_t>(vrName)];
 }
@@ -242,10 +243,11 @@ auto internalView(const Name &object) -> impl::InternalViewPtr {
     if (std::holds_alternative<std::size_t>(object._value)) {
         result->setValue("index", std::get<std::size_t>(object._value));
     } else {
-        result->setValue("name", std::get<text::String>(object._value));
+        result->setValue("name", std::get<String>(object._value));
     }
     return result;
 }
+
 #endif
 
 }

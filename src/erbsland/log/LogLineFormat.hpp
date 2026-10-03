@@ -8,7 +8,7 @@
 #include "LogTimestampZone.hpp"
 
 #include "../text/String.hpp"
-#include "../unit/CpLength.hpp"
+#include "../unit/CpCount.hpp"
 
 namespace erbsland::log {
 
@@ -43,11 +43,11 @@ public:
     /// @return These settings for chained configuration.
     auto setNameFormat(LogNameFormat value) noexcept -> LogLineFormat &;
     /// Get the character limit for left-truncated names.
-    [[nodiscard]] auto nameLimit() const noexcept -> unit::CpLength { return _nameLimit; }
+    [[nodiscard]] auto nameLimit() const noexcept -> unit::CpCount { return _nameLimit; }
     /// Set the character limit for left-truncated names.
     /// @param value The maximum code-point count when `LogNameFormat::LeftTruncated` is selected.
     /// @return These settings for chained configuration.
-    auto setNameLimit(unit::CpLength value) noexcept -> LogLineFormat &;
+    auto setNameLimit(unit::CpCount value) noexcept -> LogLineFormat &;
     /// Get the message-truncation rule.
     [[nodiscard]] auto messageTruncation() const noexcept -> LogMessageTruncation { return _messageTruncation; }
     /// Set the message-truncation rule.
@@ -55,11 +55,11 @@ public:
     /// @return These settings for chained configuration.
     auto setMessageTruncation(LogMessageTruncation value) noexcept -> LogLineFormat &;
     /// Get the configured message or total-line character limit.
-    [[nodiscard]] auto messageLimit() const noexcept -> unit::CpLength { return _messageLimit; }
+    [[nodiscard]] auto messageLimit() const noexcept -> unit::CpCount { return _messageLimit; }
     /// Set the message or total-line character limit.
     /// @param value The code-point limit used by the selected truncation rule.
     /// @return These settings for chained configuration.
-    auto setMessageLimit(unit::CpLength value) noexcept -> LogLineFormat &;
+    auto setMessageLimit(unit::CpCount value) noexcept -> LogLineFormat &;
     /// Get the mark appended to truncated text.
     [[nodiscard]] auto truncationMark() const noexcept -> const text::String & { return _truncationMark; }
     /// Set the mark appended to truncated text.
@@ -78,9 +78,9 @@ private:
     LogTimestampZone _timestampZone{LogTimestampZone::Utc};              ///< Zone used while rendering timestamps.
     LogLevelFormat _levelFormat{LogLevelFormat::ThreeLetterUpper};       ///< Rendered level spelling and case.
     LogNameFormat _nameFormat{LogNameFormat::Full};                      ///< Rendered stream-path representation.
-    unit::CpLength _nameLimit{40U};                                      ///< Code-point limit for left-truncated names.
+    unit::CpCount _nameLimit{40U};                                       ///< Code-point limit for left-truncated names.
     LogMessageTruncation _messageTruncation{LogMessageTruncation::None}; ///< Rendering-time truncation rule.
-    unit::CpLength _messageLimit{0U};                                    ///< Code-point limit for the selected rule.
+    unit::CpCount _messageLimit{0U};                                     ///< Code-point limit for the selected rule.
     text::String _truncationMark;                                        ///< Marker appended to truncated text.
 };
 

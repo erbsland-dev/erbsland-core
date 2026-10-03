@@ -17,14 +17,16 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
-ChaCha20Poly1305State::ChaCha20Poly1305State(const mem::ConstByteSpan key, const mem::ConstByteSpan nonce) :
+ChaCha20Poly1305State::ChaCha20Poly1305State(const ConstByteSpan key, const ConstByteSpan nonce) :
     _chacha20{createChaCha20Backend(key, nonce)} {
     // RFC 8439, Sections 2.6 and 2.8: counter zero produces the first 256 bits of the one-time Poly1305 key.
     auto firstBlock = _chacha20->generateBlocks(0U, 1U);
-    auto oneTimeKey = mem::ByteArray<32>{};
-    oneTimeKey.overwrite(firstBlock.span(unit::ByteIndex{0U}, unit::ByteLength{32U}));
+    auto oneTimeKey = ByteArray<32>{};
+    oneTimeKey.overwrite(firstBlock.span(ByteIndex{0U}, ByteCount{32U}));
     try {
         _poly1305 = createPoly1305(oneTimeKey.span());
     } catch (const err::RuntimeError &) {
@@ -41,38 +43,38 @@ ChaCha20Poly1305State::~ChaCha20Poly1305State() noexcept {
     secureErase();
 }
 
-void ChaCha20Poly1305State::addAuthenticatedData(const mem::ConstByteSpan data) {
+void ChaCha20Poly1305State::addAuthenticatedData(const ConstByteSpan data) {
     // RFC 8439, Section 2.8: the final framing stores the AAD byte count in one unsigned 64-bit field.
-    if (data.size() > std::numeric_limits<uint64_t>::max() - _authenticatedDataLength) {
+    if (ByteCount::fromSizeT(data.size()) > ByteCount::maximum() - _authenticatedDataLength) {
         throw CryptologyError{"ChaCha20-Poly1305 authenticated data exceeds the per-message limit."_el};
     }
     _poly1305->update(data);
-    _authenticatedDataLength += static_cast<uint64_t>(data.size());
+    _authenticatedDataLength += ByteCount::fromSizeT(data.size());
 }
 
-auto ChaCha20Poly1305State::transform(const mem::ConstByteSpan data, const bool encrypting) -> mem::ByteBlock {
+auto ChaCha20Poly1305State::transform(const ConstByteSpan data, const bool encrypting) -> ByteBlock {
     if (data.empty()) {
         // An empty payload call does not end the AAD phase; the public facade permits more AAD afterwards.
         return {};
     }
-    if (data.size() > maximumPayloadLength - _payloadLength) {
+    if (ByteCount::fromSizeT(data.size()) > ByteCount{maximumPayloadLength} - _payloadLength) {
         throw CryptologyError{"ChaCha20-Poly1305 payload exceeds the RFC 8439 counter limit."_el};
     }
     finishAuthenticatedData();
 
     // RFC 8439, Sections 2.4 and 2.8: payload counters start at one and XOR the input with the key stream.
-    auto result = mem::ByteBlockEditor{unit::ByteLength::fromSizeT(data.size())};
+    auto result = ByteBlockEditor{ByteCount::fromSizeT(data.size())};
     for (auto index = std::size_t{}; index < data.size(); ++index) {
-        if (_keyStreamOffset == _keyStreamLength) {
+        if (_keyStreamOffset == ByteIndex::end(_keyStreamLength)) {
             generateKeyStream(data.size() - index);
         }
-        result.set(unit::ByteIndex{index}, data[index] ^ _keyStream.get(unit::ByteIndex{_keyStreamOffset}));
-        ++_keyStreamOffset;
+        result.set(ByteIndex{index, ByteIndex::Unchecked{}}, data[index] ^ _keyStream.get(_keyStreamOffset));
+        _keyStreamOffset.uncheckedIncrement();
     }
 
     // RFC 8439, Section 2.8: Poly1305 authenticates ciphertext for both encryption and decryption.
     _poly1305->update(encrypting ? result.span() : data);
-    _payloadLength += static_cast<uint64_t>(data.size());
+    _payloadLength += ByteCount::fromSizeT(data.size());
     return result;
 }
 
@@ -83,9 +85,9 @@ auto ChaCha20Poly1305State::finalizeTag() noexcept -> Tag {
     addPadding(_payloadLength);
 
     // RFC 8439, Section 2.8: append the AAD and ciphertext byte lengths as two little-endian uint64 values.
-    auto lengths = mem::ByteArray<16>{};
-    lengths.setIntegerOrThrow(unit::ByteIndex{0U}, _authenticatedDataLength, mem::Endianness::Little);
-    lengths.setIntegerOrThrow(unit::ByteIndex{8U}, _payloadLength, mem::Endianness::Little);
+    auto lengths = ByteArray<16>{};
+    lengths.setIntegerOrThrow(ByteIndex{0U}, _authenticatedDataLength.toRawValue(), Endianness::Little);
+    lengths.setIntegerOrThrow(ByteIndex{8U}, _payloadLength.toRawValue(), Endianness::Little);
     _poly1305->update(lengths.span());
     auto result = _poly1305->finalize();
     lengths.secureErase();
@@ -102,11 +104,11 @@ void ChaCha20Poly1305State::secureErase() noexcept {
         _chacha20.reset();
     }
     _keyStream.secureErase();
-    _keyStreamOffset = 0U;
-    _keyStreamLength = 0U;
+    _keyStreamOffset = ByteIndex{0U};
+    _keyStreamLength = ByteCount{0U};
     _nextCounter = 0U;
-    _authenticatedDataLength = 0U;
-    _payloadLength = 0U;
+    _authenticatedDataLength = ByteCount{0U};
+    _payloadLength = ByteCount{0U};
     _authenticatedDataFinished = false;
 }
 
@@ -119,13 +121,13 @@ void ChaCha20Poly1305State::finishAuthenticatedData() noexcept {
     _authenticatedDataFinished = true;
 }
 
-void ChaCha20Poly1305State::addPadding(const uint64_t length) noexcept {
-    const auto paddingLength = static_cast<std::size_t>((16U - (length % 16U)) % 16U);
-    if (paddingLength == 0U) {
+void ChaCha20Poly1305State::addPadding(const ByteCount length) noexcept {
+    const auto paddingLength = (ByteCount{16U} - (length % 16U)) % 16U;
+    if (paddingLength == ByteCount{0U}) {
         return;
     }
-    const auto zeroes = mem::ByteArray<16>{};
-    _poly1305->update(zeroes.span(unit::ByteIndex{0U}, unit::ByteLength{paddingLength}));
+    const auto zeroes = ByteArray<16>{};
+    _poly1305->update(zeroes.span(ByteIndex{0U}, paddingLength));
 }
 
 void ChaCha20Poly1305State::generateKeyStream(const std::size_t remainingInput) noexcept {
@@ -135,8 +137,8 @@ void ChaCha20Poly1305State::generateKeyStream(const std::size_t remainingInput) 
     const auto blockCount = canGenerateBatch ? std::size_t{4U} : std::size_t{1U};
     _keyStream.secureErase();
     _keyStream = _chacha20->generateBlocks(static_cast<uint32_t>(_nextCounter), blockCount);
-    _keyStreamOffset = 0U;
-    _keyStreamLength = blockCount * 64U;
+    _keyStreamOffset = ByteIndex{0U};
+    _keyStreamLength = ByteCount::fromSizeT(blockCount * 64U);
     _nextCounter += blockCount;
 }
 

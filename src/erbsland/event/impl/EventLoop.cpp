@@ -3,195 +3,140 @@
 #include "EventLoop.hpp"
 
 #include "CallbackEventData.hpp"
-#include "CurrentEventsScope.hpp"
+#include "EventLoopRunScope.hpp"
 #include "SchedulerBackend.hpp"
 
 #include "../EventRegistry.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
+#include "../../err/RuntimeError.hpp"
 #include "../../network/impl/NetworkBackend.hpp"
+#include "../../system/impl/SystemBackend.hpp"
 #include "../../text/Literals.hpp"
+#include "../../util/impl/UtilitiesBackend.hpp"
 
 #include <utility>
 
 namespace erbsland::event::impl {
 
+using namespace err;
 using namespace text::literals;
 using time::TimeDelta;
 using time::TimePoint;
 
-EventLoop::EventLoop() : EventLoop{EventLoopDriver::createDefault()} {
+EventLoop::EventLoop(const EventLoopOptions &options, FailureHandler failureHandler) :
+    EventLoop{EventLoopDriver::createDefault(), options, std::move(failureHandler)} {
 }
 
-EventLoop::EventLoop(EventLoopDriverPtr driver) : _driver{std::move(driver)} {
+EventLoop::EventLoop(EventLoopDriverPtr driver, const EventLoopOptions &options, FailureHandler failureHandler) :
+    _options{options}, _failureHandler{std::move(failureHandler)}, _driver{std::move(driver)} {
+    if (!_failureHandler &&
+        (_options.errorPolicy() == EventLoopErrorPolicy::FailApplication ||
+            _options.queueOverflowAction() == EventQueueOverflowAction::FailApplication)) {
+        throw ParameterFailure{"FailApplication requires an application-managed event thread."_el, "options"_el};
+    }
+    switch (_options.queueOverflowAction()) {
+    case EventQueueOverflowAction::Terminate:
+    case EventQueueOverflowAction::FailApplication:
+    case EventQueueOverflowAction::Quit:
+    case EventQueueOverflowAction::Block:
+    case EventQueueOverflowAction::Ignore:
+        break;
+    default:
+        throw ParameterFailure{"Invalid event queue overflow action."_el, "options"_el};
+    }
+    switch (_options.errorPolicy()) {
+    case EventLoopErrorPolicy::Ignore:
+    case EventLoopErrorPolicy::Store:
+    case EventLoopErrorPolicy::Quit:
+    case EventLoopErrorPolicy::FailApplication:
+        break;
+    default:
+        throw ParameterFailure{"Invalid event loop error policy."_el, "options"_el};
+    }
     if (_driver == nullptr) {
-        throw err::ParameterError{"The event-loop driver must not be null."_el, "driver"_el};
+        throw ParameterFailure{"The event-loop driver must not be null."_el, "driver"_el};
     }
-}
-
-void EventLoop::post(Event event) {
-    postInternal(std::move(event), false);
-}
-
-void EventLoop::postInternal(Event event, const bool allowAfterQuit) {
-    ensureBackendsAttached();
-    {
-        std::scoped_lock lock{_mutex};
-        if (_quitRequested && !allowAfterQuit) {
-            return;
-        }
-        _queue.emplace_back(std::move(event));
-    }
-    _driver->wake();
-}
-
-void EventLoop::invoke(EventCallback callback) {
-    post(Event{id::InvocationEvent, std::make_unique<CallbackEventData>(std::move(callback))});
-}
-
-void EventLoop::invokeAfter(const TimeDelta delay, EventCallback callback) {
-    if (!delay.isPositive()) {
-        invoke(std::move(callback));
-        return;
-    }
-    get<EventScheduler>().invokeAfter(delay, std::move(callback));
-}
-
-void EventLoop::postFromBackend(Event event) {
-    post(std::move(event));
-}
-
-void EventLoop::wakeFromBackend() noexcept {
-    _driver->wake();
 }
 
 void EventLoop::run() {
-    ensureBackendsAttached();
-    auto currentEventsScope = CurrentEventsScope{shared_from_this()};
-    {
-        std::scoped_lock lock{_mutex};
-        if (_running) {
-            throw err::LogicError{"The event loop is already running."_el};
+    auto runScope = EventLoopRunScope{*this};
+    while (!isStopRequested()) {
+        if (!runOnceImpl(std::nullopt) && isQuitRequested()) {
+            break;
         }
-        _running = true;
-        _stopRequested = false;
     }
-    try {
-        while (!isStopRequested()) {
-            if (!runOnceImpl(std::nullopt) && isQuitRequested()) {
-                break;
-            }
-        }
-    } catch (...) {
-        std::scoped_lock lock{_mutex};
-        _running = false;
-        throw;
-    }
-    std::scoped_lock lock{_mutex};
-    _running = false;
 }
 
 auto EventLoop::runOnce() -> bool {
-    ensureBackendsAttached();
-    auto currentEventsScope = CurrentEventsScope{shared_from_this()};
-    {
-        std::scoped_lock lock{_mutex};
-        if (_running) {
-            throw err::LogicError{"The event loop is already running."_el};
-        }
-        _running = true;
-        _stopRequested = false;
-    }
-    auto result = false;
-    try {
-        result = runOnceImpl(std::nullopt);
-    } catch (...) {
-        std::scoped_lock lock{_mutex};
-        _running = false;
-        throw;
-    }
-    std::scoped_lock lock{_mutex};
-    _running = false;
-    return result;
+    auto runScope = EventLoopRunScope{*this};
+    return runOnceImpl(std::nullopt);
 }
 
 auto EventLoop::runOnce(const TimeDelta maximumWait) -> bool {
-    ensureBackendsAttached();
-    auto currentEventsScope = CurrentEventsScope{shared_from_this()};
-    {
-        std::scoped_lock lock{_mutex};
-        if (_running) {
-            throw err::LogicError{"The event loop is already running."_el};
-        }
-        _running = true;
-        _stopRequested = false;
-    }
-    auto result = false;
-    try {
-        result = runOnceImpl(maximumWait);
-    } catch (...) {
-        std::scoped_lock lock{_mutex};
-        _running = false;
-        throw;
-    }
-    std::scoped_lock lock{_mutex};
-    _running = false;
-    return result;
+    auto runScope = EventLoopRunScope{*this};
+    return runOnceImpl(maximumWait);
 }
 
 auto EventLoop::runUntilIdle() -> std::size_t {
-    ensureBackendsAttached();
-    auto currentEventsScope = CurrentEventsScope{shared_from_this()};
-    {
-        std::scoped_lock lock{_mutex};
-        if (_running) {
-            throw err::LogicError{"The event loop is already running."_el};
-        }
-        _running = true;
-        _stopRequested = false;
-    }
+    auto runScope = EventLoopRunScope{*this};
     auto result = std::size_t{0};
-    try {
-        while (runOnceImpl(TimeDelta::zero())) {
-            result += 1U;
-        }
-    } catch (...) {
-        std::scoped_lock lock{_mutex};
-        _running = false;
-        throw;
+    while (runOnceImpl(TimeDelta::zero())) {
+        ++result;
     }
-    std::scoped_lock lock{_mutex};
-    _running = false;
     return result;
+}
+
+auto EventLoop::beginDispatch() -> CurrentEventsScope {
+    ensureBackendsAttached();
+    auto events = shared_from_this();
+    std::scoped_lock lock{_mutex};
+    if (_running) {
+        throw LogicFailure{"The event loop is already running."_el};
+    }
+    _running = true;
+    _consumerThread = std::this_thread::get_id();
+    _stopRequested = false;
+    return CurrentEventsScope{std::move(events)};
 }
 
 void EventLoop::stop() noexcept {
     {
         std::scoped_lock lock{_mutex};
         _stopRequested = true;
+        ++_stopGeneration;
     }
+    _queueSpace.notify_all();
+    _driver->wake();
+}
+
+void EventLoop::finishDispatch() noexcept {
+    std::scoped_lock lock{_mutex};
+    _running = false;
+    _consumerThread = {};
+    _failureStopRequested = false;
+}
+
+void EventLoop::stopForFailure() noexcept {
+    {
+        std::scoped_lock lock{_mutex};
+        _failureStopRequested = true;
+        ++_stopGeneration;
+    }
+    _queueSpace.notify_all();
     _driver->wake();
 }
 
 void EventLoop::quit() noexcept {
-    auto queueQuitEvent = false;
     {
         std::scoped_lock lock{_mutex};
-        if (!_quitEventQueued) {
+        if (!_quitRequested) {
             _quitRequested = true;
             _quitEventQueued = true;
-            queueQuitEvent = true;
         }
     }
-    if (queueQuitEvent) {
-        try {
-            postInternal(Event{id::QuitEvent}, true);
-        } catch (...) {
-            stop();
-        }
-        return;
-    }
+    _queueSpace.notify_all();
     _driver->wake();
 }
 
@@ -205,42 +150,22 @@ auto EventLoop::isQuitRequested() const noexcept -> bool {
     return _quitRequested;
 }
 
-auto EventLoop::hasError() const noexcept -> bool {
-    std::scoped_lock lock{_mutex};
-    return !_errors.empty();
-}
-
-auto EventLoop::takeError() noexcept -> std::exception_ptr {
-    std::scoped_lock lock{_mutex};
-    if (_errors.empty()) {
-        return {};
-    }
-    auto result = _errors.front();
-    _errors.pop();
-    return result;
-}
-
-void EventLoop::setErrorHandler(EventLoopErrorHandler handler) {
-    std::scoped_lock lock{_mutex};
-    _errorHandler = std::move(handler);
-}
-
 void EventLoop::registerBackend(EventBackendPtr backend) {
     if (backend == nullptr) {
-        throw err::ParameterError{"The backend must not be null."_el, "backend"_el};
+        throw ParameterFailure{"The backend must not be null."_el, "backend"_el};
     }
     if (!backend->backendId().isValid()) {
-        throw err::ParameterError{"The backend identifier must not be `NoBackend`."_el, "backend"_el};
+        throw ParameterFailure{"The backend identifier must not be `NoBackend`."_el, "backend"_el};
     }
     ensureBackendsAttached();
     {
         std::scoped_lock lock{_mutex};
         if (_running) {
-            throw err::LogicError{"Can not register a backend while the event loop is running."_el};
+            throw LogicFailure{"Can not register a backend while the event loop is running."_el};
         }
         for (const auto &registeredBackend : _backends) {
             if (registeredBackend->backendId() == backend->backendId()) {
-                throw err::ParameterError{"A backend with this identifier is already registered."_el, "backend"_el};
+                throw ParameterFailure{"A backend with this identifier is already registered."_el, "backend"_el};
             }
         }
         registerBackendInternal(std::move(backend));
@@ -249,7 +174,7 @@ void EventLoop::registerBackend(EventBackendPtr backend) {
 
 auto EventLoop::getBackend(const EventBackendId backendId) -> EventBackend & {
     if (!backendId.isValid()) {
-        throw err::ParameterError{"The backend identifier must not be `NoBackend`."_el, "backendId"_el};
+        throw ParameterFailure{"The backend identifier must not be `NoBackend`."_el, "backendId"_el};
     }
     ensureBackendsAttached();
     std::scoped_lock lock{_mutex};
@@ -260,7 +185,7 @@ auto EventLoop::getBackend(const EventBackendId backendId) -> EventBackend & {
     }
     auto backend = createFundamentalBackend(backendId);
     if (backend == nullptr) {
-        throw err::ParameterError{"The requested backend is not available."_el, "backendId"_el};
+        throw ParameterFailure{"The requested backend is not available."_el, "backendId"_el};
     }
     // Returning the reference is safe, as the backend lifetime is bound to the event loop.
     return registerBackendInternal(std::move(backend));
@@ -279,6 +204,12 @@ auto EventLoop::registerBackendInternal(EventBackendPtr backend) -> EventBackend
 auto EventLoop::createFundamentalBackend(const EventBackendId backendId) -> EventBackendPtr {
     if (backendId == id::SchedulerBackend) {
         return std::make_unique<SchedulerBackend>();
+    }
+    if (backendId == id::UtilitiesBackend) {
+        return std::make_unique<util::impl::UtilitiesBackend>();
+    }
+    if (backendId == id::SystemBackend) {
+        return std::make_unique<system::impl::SystemBackend>();
     }
     if (backendId == id::NetworkBackend) {
         return std::make_unique<network::impl::NetworkBackend>();
@@ -312,7 +243,15 @@ auto EventLoop::runOnceImpl(const std::optional<TimeDelta> maximumWait) -> bool 
 
     while (true) {
         const auto now = TimePoint::now();
-        pollBackends(now);
+        if (isStopRequested()) {
+            return false;
+        }
+        if (!isQuitRequested()) {
+            pollBackends(now);
+        }
+        if (isStopRequested()) {
+            return false;
+        }
         if (auto event = takeNextEvent(); event.has_value()) {
             processEvent(*event);
             return true;
@@ -359,18 +298,37 @@ auto EventLoop::runOnceImpl(const std::optional<TimeDelta> maximumWait) -> bool 
 }
 
 auto EventLoop::takeNextEvent() -> std::optional<Event> {
-    std::scoped_lock lock{_mutex};
+    auto lock = std::unique_lock{_mutex};
+    if (!_continuations.empty() && (_preferContinuation || _queue.empty())) {
+        auto result = std::move(_continuations.front());
+        _continuations.pop_front();
+        _preferContinuation = false;
+        return result;
+    }
     if (_queue.empty()) {
+        if (_quitEventQueued) {
+            _quitEventQueued = false;
+            return Event{id::QuitEvent};
+        }
         return std::nullopt;
     }
     auto result = std::move(_queue.front());
     _queue.pop_front();
+    _preferContinuation = true;
+    lock.unlock();
+    _queueSpace.notify_one();
     return result;
 }
 
 void EventLoop::clearQueuedEvents() noexcept {
-    std::scoped_lock lock{_mutex};
-    _queue.clear();
+    auto discarded = std::deque<Event>{};
+    auto discardedContinuations = std::deque<Event>{};
+    {
+        std::scoped_lock lock{_mutex};
+        discarded.swap(_queue);
+        discardedContinuations.swap(_continuations);
+    }
+    _queueSpace.notify_all();
 }
 
 void EventLoop::processEvent(const Event &event) {
@@ -378,7 +336,7 @@ void EventLoop::processEvent(const Event &event) {
         {
             std::scoped_lock lock{_mutex};
             _quitRequested = true;
-            _quitEventQueued = true;
+            _quitEventQueued = false;
         }
         clearQueuedEvents();
         stop();
@@ -401,7 +359,7 @@ void EventLoop::processInvocationEvent(const Event &event) {
     }
     try {
         callbackData->callback()();
-    } catch (...) {
+    } catch (const RuntimeError &) {
         handleError(std::current_exception());
     }
 }
@@ -412,7 +370,7 @@ auto EventLoop::dispatchBackendEvent(const Event &event) -> bool {
             if (backend->handleEvent(event)) {
                 return true;
             }
-        } catch (...) {
+        } catch (const RuntimeError &) {
             handleError(std::current_exception());
             return true;
         }
@@ -420,37 +378,9 @@ auto EventLoop::dispatchBackendEvent(const Event &event) -> bool {
     return false;
 }
 
-void EventLoop::captureError(std::exception_ptr error) noexcept {
-    if (error == nullptr) {
-        return;
-    }
-    std::scoped_lock lock{_mutex};
-    _errors.push(std::move(error));
-}
-
-void EventLoop::handleError(std::exception_ptr error) noexcept {
-    captureError(error);
-    auto handler = EventLoopErrorHandler{};
-    {
-        std::scoped_lock lock{_mutex};
-        handler = _errorHandler;
-    }
-    if (!handler) {
-        return;
-    }
-    try {
-        if (handler(std::move(error)) == EventLoopErrorAction::Stop) {
-            stop();
-        }
-    } catch (...) {
-        captureError(std::current_exception());
-        stop();
-    }
-}
-
 auto EventLoop::isStopRequested() const noexcept -> bool {
     std::scoped_lock lock{_mutex};
-    return _stopRequested;
+    return _stopRequested || _failureStopRequested;
 }
 
 auto EventLoop::backendSnapshot() const -> std::vector<EventBackend *> {

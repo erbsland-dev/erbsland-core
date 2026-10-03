@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HttpMediaTypeMapping.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/ParameterError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/ParameterFailure.hpp"
 #include "../../text/CaseSensitivity.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringCharReader.hpp"
@@ -12,6 +12,7 @@
 
 namespace erbsland::network {
 
+using namespace err;
 using namespace text;
 using namespace text::literals;
 
@@ -84,7 +85,7 @@ auto HttpMediaTypeMapping::setSuffix(String suffix, HttpMediaType mediaType) -> 
         }
     }
     if (_entries.size() >= cMaximumSuffixCount.toSizeT()) {
-        throw err::ParameterError{"The HTTP media-type mapping contains too many suffixes."_el, "suffix"_el};
+        throw ParameterFailure{"The HTTP media-type mapping contains too many suffixes."_el, "suffix"_el};
     }
     _entries.emplace_back(std::move(suffix), std::move(mediaType));
     return *this;
@@ -133,21 +134,21 @@ auto HttpMediaTypeMapping::copy() const -> HttpMediaTypeMappingPtr {
 }
 
 auto HttpMediaTypeMapping::normalizedSuffix(String suffix) -> String {
-    if (!suffix.isValidUtf8() || suffix.isEmpty() || suffix.length() > cMaximumSuffixLength ||
+    if (!suffix.isEncodingValid() || suffix.isEmpty() || suffix.length() > cMaximumSuffixLength ||
         !suffix.startsWith("."_el)) {
-        throw err::ParameterError{
+        throw ParameterFailure{
             "An HTTP media-type suffix must start with a dot and remain within limits."_el, "suffix"_el};
     }
     auto reader = StringCharReader{suffix};
     reader.advance();
     if (reader.isAtEnd()) {
-        throw err::ParameterError{"An HTTP media-type suffix requires text after its dot."_el, "suffix"_el};
+        throw ParameterFailure{"An HTTP media-type suffix requires text after its dot."_el, "suffix"_el};
     }
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
         if (!character.isAsciiAlphanumeric() && character != U'.' && character != U'+' && character != U'_' &&
             character != U'-') {
-            throw err::ParameterError{"An HTTP media-type suffix contains an invalid character."_el, "suffix"_el};
+            throw ParameterFailure{"An HTTP media-type suffix contains an invalid character."_el, "suffix"_el};
         }
     }
     return suffix;
@@ -155,13 +156,13 @@ auto HttpMediaTypeMapping::normalizedSuffix(String suffix) -> String {
 
 void HttpMediaTypeMapping::verifyMediaType(const HttpMediaType &mediaType) {
     if (!mediaType.isValid()) {
-        throw err::ParameterError{"An HTTP media-type mapping requires a valid media type."_el, "mediaType"_el};
+        throw ParameterFailure{"An HTTP media-type mapping requires a valid media type."_el, "mediaType"_el};
     }
 }
 
 void HttpMediaTypeMapping::verifyMutable() const {
     if (_activeUseCount != 0U) {
-        throw err::LogicError{"An HTTP media-type mapping cannot change while a static-content handler is active."_el};
+        throw LogicFailure{"An HTTP media-type mapping cannot change while a static-content handler is active."_el};
     }
 }
 

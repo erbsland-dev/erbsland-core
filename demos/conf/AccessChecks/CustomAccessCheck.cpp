@@ -2,9 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/all_path.hpp>
 #include <erbsland/conf/AccessCheck.hpp>
+#include <erbsland/conf/AccessCheckResult.hpp>
+#include <erbsland/conf/AccessSources.hpp>
+#include <erbsland/conf/ConfError.hpp>
+#include <erbsland/conf/ConfErrorCategory.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/path/all.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathOperations.hpp>
+#include <erbsland/PathResolveMode.hpp>
+#include <erbsland/PathTempDirectoryOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 #include <exception>
 
@@ -57,7 +69,7 @@ private:
 /// Install a custom access check that implements an application-owned trust boundary.
 void customAccessCheck() {
     auto temporaryOptions = el::PathTempDirectoryOptions{};
-    temporaryOptions.setPrefix("stacja-badawcza-"_el).setRandomLength(el::CpLength{8U});
+    temporaryOptions.setPrefix("stacja-badawcza-"_el).setRandomLength(el::CpCount{8U});
     const auto temporary =
         el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow(temporaryOptions);
     const auto root = temporary->path();

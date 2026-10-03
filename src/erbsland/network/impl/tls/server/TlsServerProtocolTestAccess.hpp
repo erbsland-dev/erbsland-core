@@ -7,7 +7,7 @@
 
 #include "../TlsWireWriter.hpp"
 
-#include "../../../../err/LogicError.hpp"
+#include "../../../../err/LogicFailure.hpp"
 #include "../../../../text/Literals.hpp"
 
 #include <utility>
@@ -23,13 +23,13 @@ public:
     explicit TlsServerProtocolTestAccess(TlsServerProtocol &protocol) noexcept : _protocol{protocol} {}
 
 public:
-    /// Resume ClientHello with deterministic server random and X25519 inputs.
+    /// Resume ClientHello with deterministic server random and key-agreement inputs.
     /// @param random Exact 32-byte ServerHello.random.
-    /// @param privateKey Deterministic protected X25519 private key.
+    /// @param privateKey Deterministic protected private key for the selected group.
     void resume(mem::ByteBlock random, cryptology::KeyAgreementPrivateKey privateKey) {
         using namespace text::literals;
         if (_protocol._checkpoint != TlsServerProtocolCheckpoint::ClientHello) {
-            throw err::LogicError{"TLS server test resume requires the ClientHello checkpoint."_el};
+            throw err::LogicFailure{"TLS server test resume requires the ClientHello checkpoint."_el};
         }
         _protocol._checkpoint = TlsServerProtocolCheckpoint::None;
         _protocol.resumeWithInputs(std::move(random), std::move(privateKey));
@@ -40,7 +40,7 @@ public:
     void queueKeyUpdate(const bool requestPeerUpdate) {
         using namespace text::literals;
         if (_protocol._state != TlsServerProtocolState::Established || _protocol.hasCheckpoint()) {
-            throw err::LogicError{"TLS server test KeyUpdate requires an unpaused established protocol."_el};
+            throw err::LogicFailure{"TLS server test KeyUpdate requires an unpaused established protocol."_el};
         }
         // RFC 8446 Section 4.6.3: encode request_update under the old server application write generation.
         auto writer = TlsWireWriter{};

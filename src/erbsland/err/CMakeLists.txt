@@ -15,11 +15,13 @@ target_sources(erbsland-core PRIVATE
         Exception.cpp
         Exception.hpp
         Exception_fwd.hpp
-        LogicError.hpp
+        LogicFailure.hpp
+        NotFoundError.hpp
         OutOfRangeError.hpp
+        OutOfRangeFailure.hpp
         OverflowError.hpp
-        ParameterError.cpp
-        ParameterError.hpp
+        ParameterFailure.cpp
+        ParameterFailure.hpp
         ParseError.cpp
         ParseError.hpp
         RuntimeError.hpp

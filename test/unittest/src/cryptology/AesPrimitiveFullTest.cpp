@@ -1,21 +1,23 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "CryptologyResponseKeys.hpp"
 #include "CryptologyResponseReader.hpp"
 #include "CryptologyTestHelper.hpp"
 
 #include "../core/ApplicationTestScope.hpp"
+#include "../ParallelTestWork.hpp"
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesBlockCipher.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesBlockCipherFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/GaloisMultiplierFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/HardwareFeatures.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/PortableAesBlockCipher.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/PortableGaloisMultiplier.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/text/StringLiteral.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringLiteral.hpp>
 
 #if defined(ERBSLAND_AES_ARM_BACKEND)
 #include <erbsland/cryptology/impl/algorithm/aes/ArmAesBlockCipher.hpp>
@@ -28,6 +30,7 @@
 
 #include <array>
 #include <memory>
+#include <utility>
 #include <vector>
 
 using el::cryptology::impl::AesBlockCipher;
@@ -153,16 +156,26 @@ private:
         return ByteArray<N>::fromSpanOrThrow(bytes.span());
     }
 
-    void verifyKnownAnswer(
-        const CryptologyResponseReader::Record &record, const Backend backend, const bool chunkedBlocks) {
+    [[nodiscard]] static auto calculateKnownAnswer(
+        const CryptologyResponseReader::Record &record, const Backend backend, const bool chunkedBlocks)
+        -> std::pair<ByteBlock, ByteBlock> {
         record.requireAllowedSettings({});
-        record.requireAllowedValues({"COUNT"_el, "KEY"_el, "PLAINTEXT"_el, "CIPHERTEXT"_el});
-        record.requireValues({"COUNT"_el, "KEY"_el, "PLAINTEXT"_el, "CIPHERTEXT"_el});
-        const auto key = bytesFromHex(record.value("KEY"_el));
-        const auto plaintext = bytesFromHex(record.value("PLAINTEXT"_el));
-        const auto ciphertext = bytesFromHex(record.value("CIPHERTEXT"_el));
-        REQUIRE_EQUAL(plaintext.length(), ciphertext.length());
-        REQUIRE_EQUAL(plaintext.length().toSizeT() % 16U, 0U);
+        record.requireAllowedValues(
+            {"COUNT"_el,
+                response_key::cEncryptionKeyField,
+                response_key::cPlaintextField,
+                response_key::cCiphertextField});
+        record.requireValues(
+            {"COUNT"_el,
+                response_key::cEncryptionKeyField,
+                response_key::cPlaintextField,
+                response_key::cCiphertextField});
+        const auto key = bytesFromHex(record.value(response_key::cEncryptionKeyField));
+        const auto plaintext = bytesFromHex(record.value(response_key::cPlaintextField));
+        const auto ciphertext = bytesFromHex(record.value(response_key::cCiphertextField));
+        if (plaintext.length() != ciphertext.length() || plaintext.length().toSizeT() % 16U != 0U) {
+            throw el::RuntimeError{"Invalid AES response block lengths."_el};
+        }
         auto cipher = createCipher(backend, key.span());
         auto actual = el::mem::ByteBlockEditor{};
         for (auto offset = std::size_t{}; offset < plaintext.length().toSizeT(); offset += 16U) {
@@ -178,27 +191,37 @@ private:
                 cipher = createCipher(backend, key.span());
             }
         }
-        REQUIRE_EQUAL(
-            actual, record.direction == CryptologyResponseReader::Direction::Encrypt ? ciphertext : plaintext);
+        return {
+            ByteBlock{actual},
+            record.direction == CryptologyResponseReader::Direction::Encrypt ? ciphertext : plaintext};
     }
 
-    void verifyMonteCarlo(const CryptologyResponseReader::Record &record, const Backend backend) {
+    [[nodiscard]] static auto calculateMonteCarlo(const CryptologyResponseReader::Record &record, const Backend backend)
+        -> std::pair<ByteBlock, ByteBlock> {
         record.requireAllowedSettings({});
-        record.requireAllowedValues({"COUNT"_el, "KEY"_el, "PLAINTEXT"_el, "CIPHERTEXT"_el});
-        record.requireValues({"COUNT"_el, "KEY"_el, "PLAINTEXT"_el, "CIPHERTEXT"_el});
-        const auto key = bytesFromHex(record.value("KEY"_el));
+        record.requireAllowedValues(
+            {"COUNT"_el,
+                response_key::cEncryptionKeyField,
+                response_key::cPlaintextField,
+                response_key::cCiphertextField});
+        record.requireValues(
+            {"COUNT"_el,
+                response_key::cEncryptionKeyField,
+                response_key::cPlaintextField,
+                response_key::cCiphertextField});
+        const auto key = bytesFromHex(record.value(response_key::cEncryptionKeyField));
         auto value = record.direction == CryptologyResponseReader::Direction::Encrypt
-            ? arrayFrom<16>(bytesFromHex(record.value("PLAINTEXT"_el)))
-            : arrayFrom<16>(bytesFromHex(record.value("CIPHERTEXT"_el)));
+            ? arrayFrom<16>(bytesFromHex(record.value(response_key::cPlaintextField)))
+            : arrayFrom<16>(bytesFromHex(record.value(response_key::cCiphertextField)));
         auto cipher = createCipher(backend, key.span());
         for (auto iteration = std::size_t{}; iteration < 1000U; ++iteration) {
             value = record.direction == CryptologyResponseReader::Direction::Encrypt ? cipher->encrypt(value)
                                                                                      : cipher->decrypt(value);
         }
         const auto expected = record.direction == CryptologyResponseReader::Direction::Encrypt
-            ? arrayFrom<16>(bytesFromHex(record.value("CIPHERTEXT"_el)))
-            : arrayFrom<16>(bytesFromHex(record.value("PLAINTEXT"_el)));
-        REQUIRE_EQUAL(value, expected);
+            ? arrayFrom<16>(bytesFromHex(record.value(response_key::cCiphertextField)))
+            : arrayFrom<16>(bytesFromHex(record.value(response_key::cPlaintextField)));
+        return {ByteBlock::fromSpan(value.span()), ByteBlock::fromSpan(expected.span())};
     }
 
 public:
@@ -247,13 +270,15 @@ public:
             for (auto iteration = std::size_t{}; iteration < 4096U; ++iteration) {
                 auto left = GaloisMultiplier::Block{};
                 auto right = GaloisMultiplier::Block{};
-                for (auto index = std::size_t{}; index < 16U; ++index) {
+                for (
+                    auto index = el::unit::ByteIndex::zero(); index.isWithin(el::unit::ByteCount{16U});
+                    index.uncheckedIncrement()) {
                     left.set(
-                        el::unit::ByteIndex{index},
-                        el::mem::Byte{static_cast<uint8_t>((iteration * 17U + index * 29U) & 0xffU)});
+                        index,
+                        el::mem::Byte{static_cast<uint8_t>((iteration * 17U + index.toRawValue() * 29U) & 0xffU)});
                     right.set(
-                        el::unit::ByteIndex{index},
-                        el::mem::Byte{static_cast<uint8_t>((iteration * 43U + index * 11U + 7U) & 0xffU)});
+                        index,
+                        el::mem::Byte{static_cast<uint8_t>((iteration * 43U + index.toRawValue() * 11U + 7U) & 0xffU)});
                 }
                 REQUIRE_EQUAL(multiplier->multiply(left, right), portable.multiply(left, right));
             }
@@ -267,8 +292,17 @@ public:
             for (const auto &file : files) {
                 const auto records = CryptologyResponseReader{el::Path{"data/cryptology/aes"_el} / file.name}.read();
                 REQUIRE_EQUAL(records.size(), file.records);
+                const auto results = parallel_test_work::run(
+                    records.size(), [&](const std::size_t index) -> std::pair<ByteBlock, ByteBlock> {
+                        if (file.monteCarlo) {
+                            return calculateMonteCarlo(records[index], backend);
+                        }
+                        return calculateKnownAnswer(
+                            records[index], backend, el::String{file.name}.startsWith("ECBMMT"_el));
+                    });
                 auto directionCounts = std::array<std::size_t, 2>{};
-                for (const auto &record : records) {
+                for (auto index = std::size_t{}; index < records.size(); ++index) {
+                    const auto &record = records[index];
                     REQUIRE(
                         record.direction == CryptologyResponseReader::Direction::Encrypt ||
                         record.direction == CryptologyResponseReader::Direction::Decrypt);
@@ -279,11 +313,9 @@ public:
                     runWithContext(
                         SOURCE_LOCATION(),
                         [&]() -> void {
-                            if (file.monteCarlo) {
-                                verifyMonteCarlo(record, backend);
-                            } else {
-                                verifyKnownAnswer(record, backend, el::String{file.name}.startsWith("ECBMMT"_el));
-                            }
+                            REQUIRE_NOTHROW(results[index].value());
+                            const auto &[actual, expected] = results[index].value();
+                            REQUIRE_EQUAL(actual, expected);
                         },
                         [&]() -> std::string {
                             return el::StringConverter{

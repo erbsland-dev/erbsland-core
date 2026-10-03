@@ -1,13 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/StdFormat.hpp>
-#include <erbsland/time/Timestamp.hpp>
-#include <erbsland/unit/StdFormat.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/Timestamp.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -106,7 +104,7 @@ public:
         REQUIRE_FALSE(Timestamp::fromTicks(Seconds{std::numeric_limits<int64_t>::min()}, TimeEpoch::Posix));
         REQUIRE_FALSE(Timestamp::fromTicks(Seconds{}, Nanoseconds{-1}));
         REQUIRE_FALSE(Timestamp::fromTicks(Seconds{}, Nanoseconds{1'000'000'000}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Timestamp::fromTicksOrThrow(Seconds{}, Nanoseconds{-1}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, Timestamp::fromTicksOrThrow(Seconds{}, Nanoseconds{-1}));
         REQUIRE_THROWS_AS(el::err::OutOfRangeError, Timestamp::fromTicksOrThrow(Seconds{-1}));
         REQUIRE_THROWS_AS(
             el::err::OutOfRangeError, Timestamp::fromTicksOrThrow(Seconds{std::numeric_limits<int64_t>::max()}));

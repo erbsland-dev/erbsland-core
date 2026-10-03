@@ -10,6 +10,7 @@
 #include "../host/HostLookup_fwd.hpp"
 #include "../host/HostResolver_fwd.hpp"
 
+#include "../../../event/impl/EventContinuation_fwd.hpp"
 #include "../../../time/TimePoint.hpp"
 #include "../../../util/List.hpp"
 #include "../../source/ConnectionCloseContext.hpp"
@@ -26,7 +27,7 @@
 namespace erbsland::network::impl {
 
 /// Native TCP connection source implementation.
-/// @tested{TcpConnectionTest TcpSocketLiveTest}
+/// @tested{TcpConnectionTest TcpSocketLiveTest TlsServerConnectionTest}
 class TcpConnection final : public network::TcpConnection {
     friend class TcpConnectionEventEditor;
 
@@ -130,15 +131,16 @@ private:
     TcpConnectOptions _connectOptions;                      ///< Captured outgoing options.
     SocketBufferLimits _bufferLimits;                       ///< Captured stream limits.
     network::ConnectionQuotaLease _quotaLease;              ///< Accepted-connection lifetime lease.
+    event::impl::EventContinuationPtr _abortContinuation;   ///< Reserved cleanup and finalization after abort.
     time::TimePoint _deadline;                              ///< Overall outgoing deadline.
     util::List<IpEndpoint> _resolvedEndpoints;              ///< Ordered outgoing candidates.
     std::size_t _nextEndpoint{};                            ///< Next candidate index.
     std::optional<NetworkErrorContext> _lastConnectError;   ///< Most recent candidate failure.
     std::deque<mem::ByteBlock> _sendQueue;                  ///< Accepted output blocks.
-    unit::ByteLength _sendQueueSize;                        ///< Queued output bytes.
-    unit::ByteLength _blockedCharge;                        ///< Largest rejected output block.
+    unit::ByteCount _sendQueueSize;                         ///< Queued output bytes.
+    unit::ByteCount _blockedCharge;                         ///< Largest rejected output block.
     std::deque<mem::ByteBlock> _receiveQueue;               ///< Received input awaiting delivery.
-    unit::ByteLength _receiveQueueSize;                     ///< Queued input bytes.
+    unit::ByteCount _receiveQueueSize;                      ///< Queued input bytes.
     std::atomic<ConnectionState> _state{ConnectionState::Inactive}; ///< Lifecycle state.
     std::atomic<std::uint64_t> _generation{0U};                     ///< Native operation generation.
     std::atomic<bool> _started{false};                              ///< Whether this source was consumed.

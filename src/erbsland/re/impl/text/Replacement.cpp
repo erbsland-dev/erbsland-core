@@ -25,15 +25,15 @@ void Replacement::appendTo(text::StringEditor &text, const MatchPtr &match) cons
     }
 }
 
-auto Replacement::length(const MatchPtr &match) const -> unit::ByteLength {
-    auto result = unit::ByteLength{};
+auto Replacement::length(const MatchPtr &match) const -> unit::ByteCount {
+    auto result = unit::ByteCount{};
     for (const auto &part : _parts) {
         std::visit(
             [&]<typename T>(const T &value) -> void {
                 if constexpr (std::is_same_v<std::decay_t<T>, StaticText>) {
                     result += value.text.length();
                 } else if constexpr (std::is_same_v<std::decay_t<T>, CaptureGroup>) {
-                    result += unit::ByteLength::fromSizeT(match->range(value.index).size());
+                    result += unit::ByteCount::fromSizeT(match->range(value.index).size());
                 }
             },
             part);

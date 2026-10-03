@@ -10,7 +10,7 @@
 #include "../StringList.hpp"
 #include "../u32/U32String.hpp"
 
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 #include <cstddef>
@@ -44,9 +44,9 @@ public: // accessors
     /// Set the pattern.
     auto setPattern(text::String pattern) noexcept -> Matcher &;
     /// Get the maximum accepted edit distance.
-    [[nodiscard]] auto maximumDistance() const noexcept -> unit::CpLength { return _maximumDistance; }
+    [[nodiscard]] auto maximumDistance() const noexcept -> unit::CpCount { return _maximumDistance; }
     /// Set the maximum accepted edit distance.
-    auto setMaximumDistance(unit::CpLength maximumDistance) noexcept -> Matcher &;
+    auto setMaximumDistance(unit::CpCount maximumDistance) noexcept -> Matcher &;
     /// Get the maximum number of returned matches.
     [[nodiscard]] auto maximumResults() const noexcept -> unit::ItemCount { return _maximumResults; }
     /// Set the maximum number of returned matches.
@@ -70,7 +70,7 @@ private:
     };
 
     /// Compute a bounded edit distance.
-    [[nodiscard]] auto distance(const text::U32String &candidate) const -> unit::CpLength;
+    [[nodiscard]] auto distance(const text::U32String &candidate) const -> unit::CpCount;
     /// Compare two decoded characters using the configured comparison.
     [[nodiscard]] auto charactersEqual(text::Char left, text::Char right) const noexcept -> bool;
     /// Test whether equivalent candidate text was already collected.
@@ -79,7 +79,7 @@ private:
 
 private:
     text::String _pattern;                                        ///< The reference text.
-    unit::CpLength _maximumDistance{unit::CpLength::infinite()};  ///< Maximum accepted edit distance.
+    unit::CpCount _maximumDistance{unit::CpCount::infinite()};    ///< Maximum accepted edit distance.
     unit::ItemCount _maximumResults{unit::ItemCount::infinite()}; ///< Maximum returned matches.
     CharCompareFn _comparisonFn{nullptr};                         ///< Optional character comparison.
 };

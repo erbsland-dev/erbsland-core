@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/CpRange.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 
@@ -16,8 +21,8 @@ void codePointRangeSlicing() {
     const auto label = el::String{"Färd-Karta-07"_el};
 
     // The label is short and fixed-shape, so code-point positions are readable.
-    const auto mapName = label.slice(el::CpRange{el::CpIndex{5U}, el::CpLength{5U}});
-    const auto number = label.slice(el::CpRange{el::CpIndex{11U}, el::CpLength{2U}});
+    const auto mapName = label.slice(el::CpRange{el::CpIndex{5U}, el::CpCount{5U}});
+    const auto number = label.slice(el::CpRange{el::CpIndex{11U}, el::CpCount{2U}});
 
     el::io::printLine("Label: "_el, label);
     el::io::printLine("Map name: "_el, mapName);

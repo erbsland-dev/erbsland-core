@@ -153,7 +153,7 @@ Their sources live in ``demos/time/Date``, ``demos/time/Time``, ``demos/time/Tim
 ``demos/time/IsoTimeOutput``, ``demos/time/Duration``, ``demos/time/TimeLiterals``, ``demos/time/TimeAmounts``,
 ``demos/time/TimeDelta``, ``demos/time/TimeDeltaOutput``, ``demos/time/CalendarDelta``, ``demos/time/CalendarParts``,
 ``demos/time/ElapsedTimer``, ``demos/time/TimePoint``, ``demos/time/TimeWithZone``, and ``demos/time/TimeZone``.
-The documentation utility synchronizes both source and output into each topic.
+The ``doc-process-rst`` maintenance command synchronizes source and output when demo processing is explicitly enabled.
 From the repository root, build and select an individual example:
 
 .. code-block:: console

@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteRange.hpp>
+#include <erbsland/CharSet.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 
@@ -18,10 +23,10 @@ void sliceAndKept() {
     journal.advance(noteStart);
 
     // `slice()` keeps the range as a narrow view into compatible string storage.
-    const auto noteSlice = journal.slice(el::ByteRange{noteStart, el::ByteLength::infinite()});
+    const auto noteSlice = journal.slice(el::ByteRange{noteStart, el::ByteCount::infinite()});
 
     // `kept()` copies just the selected range into an independent string.
-    const auto noteCopy = journal.kept(el::ByteRange{noteStart, el::ByteLength::infinite()});
+    const auto noteCopy = journal.kept(el::ByteRange{noteStart, el::ByteCount::infinite()});
 
     el::io::printLine("Slice result: "_el, noteSlice);
     el::io::printLine("Kept result:  "_el, noteCopy);

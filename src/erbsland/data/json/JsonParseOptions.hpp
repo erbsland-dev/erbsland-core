@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../unit/ByteLength.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/ByteCount.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 namespace erbsland::data::json {
@@ -12,16 +12,16 @@ namespace erbsland::data::json {
 /// @tested{JsonParserTest}
 class JsonParseOptions final {
 public:
-    static constexpr auto cDefaultMaximumInputLength = unit::ByteLength{16U * 1024U * 1024U}; ///< Input limit.
-    static constexpr auto cDefaultMaximumNesting = unit::ItemCount{64U};                      ///< Nesting limit.
-    static constexpr auto cDefaultMaximumValueCount = unit::ItemCount{1'000'000U};            ///< Value limit.
-    static constexpr auto cDefaultMaximumStringLength = unit::CpLength{8U * 1024U * 1024U};   ///< text::String limit.
+    static constexpr auto cDefaultMaximumInputLength = unit::ByteCount{16U * 1024U * 1024U}; ///< Input limit.
+    static constexpr auto cDefaultMaximumNesting = unit::ItemCount{64U};                     ///< Nesting limit.
+    static constexpr auto cDefaultMaximumValueCount = unit::ItemCount{1'000'000U};           ///< Value limit.
+    static constexpr auto cDefaultMaximumStringLength = unit::CpCount{8U * 1024U * 1024U};   ///< text::String limit.
 
-public:                                                                                       // accessors
+public:                                                                                      // accessors
     /// Get the maximum source length in bytes.
-    [[nodiscard]] constexpr auto maximumInputLength() const noexcept -> unit::ByteLength { return _maximumInputLength; }
+    [[nodiscard]] constexpr auto maximumInputLength() const noexcept -> unit::ByteCount { return _maximumInputLength; }
     /// Set the maximum source length in bytes.
-    constexpr auto setMaximumInputLength(const unit::ByteLength value) noexcept -> JsonParseOptions & {
+    constexpr auto setMaximumInputLength(const unit::ByteCount value) noexcept -> JsonParseOptions & {
         _maximumInputLength = value;
         return *this;
     }
@@ -40,18 +40,18 @@ public:                                                                         
         return *this;
     }
     /// Get the maximum decoded key or string length in Unicode code points.
-    [[nodiscard]] constexpr auto maximumStringLength() const noexcept -> unit::CpLength { return _maximumStringLength; }
+    [[nodiscard]] constexpr auto maximumStringLength() const noexcept -> unit::CpCount { return _maximumStringLength; }
     /// Set the maximum decoded key or string length in Unicode code points.
-    constexpr auto setMaximumStringLength(const unit::CpLength value) noexcept -> JsonParseOptions & {
+    constexpr auto setMaximumStringLength(const unit::CpCount value) noexcept -> JsonParseOptions & {
         _maximumStringLength = value;
         return *this;
     }
 
 private:
-    unit::ByteLength _maximumInputLength{cDefaultMaximumInputLength}; ///< Maximum source bytes.
-    unit::ItemCount _maximumNesting{cDefaultMaximumNesting};          ///< Maximum open containers.
-    unit::ItemCount _maximumValueCount{cDefaultMaximumValueCount};    ///< Maximum total values.
-    unit::CpLength _maximumStringLength{cDefaultMaximumStringLength}; ///< Maximum decoded string code points.
+    unit::ByteCount _maximumInputLength{cDefaultMaximumInputLength}; ///< Maximum source bytes.
+    unit::ItemCount _maximumNesting{cDefaultMaximumNesting};         ///< Maximum open containers.
+    unit::ItemCount _maximumValueCount{cDefaultMaximumValueCount};   ///< Maximum total values.
+    unit::CpCount _maximumStringLength{cDefaultMaximumStringLength}; ///< Maximum decoded string code points.
 };
 
 }

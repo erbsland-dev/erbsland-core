@@ -11,8 +11,10 @@
 #include "../../../../data/json/JsonParseOptions.hpp"
 #include "../../../../data/json/JsonValue.hpp"
 #include "../../../../err/Exception.hpp"
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
+#include "../../../../err/ParseError.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../path/Path.hpp"
 #include "../../../../path/PathCollisionMode.hpp"
@@ -21,10 +23,12 @@
 #include "../../../../path/PathOperations.hpp"
 #include "../../../../path/PathTempFileOptions.hpp"
 #include "../../../../stream/ByteOutputStream.hpp"
+#include "../../../../stream/StreamError.hpp"
 #include "../../../../stream/TempByteOutputStream.hpp"
 #include "../../../../text/AnyString.hpp"
 #include "../../../../text/AsciiCategory.hpp"
 #include "../../../../text/CaseSensitivity.hpp"
+#include "../../../../text/EncodingError.hpp"
 #include "../../../../text/EncodingMode.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringBomMode.hpp"
@@ -32,12 +36,12 @@
 #include "../../../../text/StringDecoder.hpp"
 #include "../../../../text/StringEncoding.hpp"
 #include "../../../../unit/ByteIndex.hpp"
+#include "../../../../util/impl/worker_executor/WorkerServices.hpp"
 #include "../../../http/HttpFieldType.hpp"
 #include "../../../http/HttpMediaType.hpp"
 #include "../../../source/NetworkErrorContext.hpp"
 #include "../../../source/NetworkErrorPhase.hpp"
 #include "../../../source/NetworkErrorReason.hpp"
-#include "../../ResolverService.hpp"
 
 #include <algorithm>
 #include <ranges>
@@ -45,6 +49,8 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
+using namespace unit;
 using namespace text;
 using namespace text::literals;
 
@@ -54,8 +60,8 @@ HttpClientResponse::HttpClientResponse(
     Http1TransactionPtr transaction,
     const bool hasBody,
     Url effectiveUrl,
-    const unit::ItemCount redirectCount,
-    std::optional<unit::ByteLength> expectedLength) :
+    const ItemCount redirectCount,
+    std::optional<ByteCount> expectedLength) :
     network::HttpClientResponse{request->ownerEvents()},
     _request{std::move(request)},
     _head{std::move(head)},
@@ -80,7 +86,7 @@ auto HttpClientResponse::effectiveUrl() const noexcept -> const Url & {
     return _effectiveUrl;
 }
 
-auto HttpClientResponse::redirectCount() const noexcept -> unit::ItemCount {
+auto HttpClientResponse::redirectCount() const noexcept -> ItemCount {
     return _redirectCount;
 }
 
@@ -93,12 +99,11 @@ void HttpClientResponse::streamBody() {
     }
 }
 
-void HttpClientResponse::aggregateBody(const unit::ByteLength maximumLength) {
+void HttpClientResponse::aggregateBody(const ByteCount maximumLength) {
     verifyCurrentOwnerEvents();
     verifyAwaitingPolicy();
     if (maximumLength.isZero() || maximumLength.isInfinite()) {
-        throw err::ParameterError{
-            "An HTTP response aggregate limit must be positive and finite."_el, "maximumLength"_el};
+        throw ParameterFailure{"An HTTP response aggregate limit must be positive and finite."_el, "maximumLength"_el};
     }
     _policySelected = true;
     _aggregateMode = AggregateMode::Bytes;
@@ -107,12 +112,12 @@ void HttpClientResponse::aggregateBody(const unit::ByteLength maximumLength) {
     }
 }
 
-void HttpClientResponse::aggregateText(const unit::ByteLength maximumLength) {
+void HttpClientResponse::aggregateText(const ByteCount maximumLength) {
     aggregateBody(maximumLength);
     _aggregateMode = AggregateMode::Text;
 }
 
-void HttpClientResponse::aggregateJson(const unit::ByteLength maximumLength) {
+void HttpClientResponse::aggregateJson(const ByteCount maximumLength) {
     aggregateBody(maximumLength);
     _aggregateMode = AggregateMode::Json;
 }
@@ -121,8 +126,12 @@ void HttpClientResponse::writeBodyTo(stream::ByteOutputStreamPtr output) {
     verifyCurrentOwnerEvents();
     verifyAwaitingPolicy();
     if (output == nullptr || !output->isOpen()) {
-        throw err::ParameterError{"An open byte output stream is required."_el, "output"_el};
+        throw ParameterFailure{"An open byte output stream is required."_el, "output"_el};
     }
+    auto work = util::impl::worker_services::blocking().reserve();
+    auto completion = event::impl::EventContinuation::create(ownerEvents());
+    _sinkWork = std::move(work);
+    _sinkCompletion = std::move(completion);
     _policySelected = true;
     _output = std::move(output);
     if (_hasBody) {
@@ -134,8 +143,12 @@ void HttpClientResponse::writeBodyTo(path::Path destination) {
     verifyCurrentOwnerEvents();
     verifyAwaitingPolicy();
     if (destination.isEmpty() || !destination.isValid() || destination.parent().isEmpty()) {
-        throw err::ParameterError{"A valid destination with a parent directory is required."_el, "destination"_el};
+        throw ParameterFailure{"A valid destination with a parent directory is required."_el, "destination"_el};
     }
+    auto work = util::impl::worker_services::blocking().reserve();
+    auto completion = event::impl::EventContinuation::create(ownerEvents());
+    _sinkWork = std::move(work);
+    _sinkCompletion = std::move(completion);
     _policySelected = true;
     _destination = std::move(destination);
     _pathSinkCancelled = std::make_shared<std::atomic_bool>(false);
@@ -159,7 +172,7 @@ void HttpClientResponse::rejectBody() {
 void HttpClientResponse::pauseBody() {
     verifyCurrentOwnerEvents();
     if (_final || !_policySelected || _output != nullptr) {
-        throw err::LogicError{"Only an active callback-streamed response body can be paused."_el};
+        throw LogicFailure{"Only an active callback-streamed response body can be paused."_el};
     }
     _transaction->pauseBody();
 }
@@ -167,7 +180,7 @@ void HttpClientResponse::pauseBody() {
 void HttpClientResponse::resumeBody() {
     verifyCurrentOwnerEvents();
     if (_final || !_policySelected || _output != nullptr) {
-        throw err::LogicError{"Only an explicitly paused callback-streamed response body can be resumed."_el};
+        throw LogicFailure{"Only an explicitly paused callback-streamed response body can be resumed."_el};
     }
     _transaction->resumeBody();
 }
@@ -242,7 +255,7 @@ void HttpClientResponse::handleAggregatedBody(mem::ByteBlock data) {
     auto textBody = text::String{};
     try {
         textBody = StringDecoder{data}.decode(StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict);
-    } catch (...) {
+    } catch (const text::EncodingError &) {
         fail(NetworkErrorReason::HttpResponseValidationFailure, "The HTTP response body is not valid UTF-8."_el);
         return;
     }
@@ -257,7 +270,7 @@ void HttpClientResponse::handleAggregatedBody(mem::ByteBlock data) {
         auto options = data::json::JsonParseOptions{};
         options.setMaximumInputLength(data.length());
         json = data::json::JsonValue::fromStringOrThrow(textBody, options);
-    } catch (...) {
+    } catch (const ParseError &) {
         fail(NetworkErrorReason::HttpResponseValidationFailure, "The HTTP response body is not valid JSON."_el);
         return;
     }
@@ -302,10 +315,9 @@ void HttpClientResponse::handleBodyCompleted() {
 }
 
 void HttpClientResponse::writeSinkBlock(mem::ByteBlock data) {
-    constexpr auto cMaximumSinkWriteLength = unit::ByteLength{16U * 1024U};
+    constexpr auto cMaximumSinkWriteLength = ByteCount{16U * 1024U};
     if (data.length() > cMaximumSinkWriteLength) {
-        _sinkRemainder =
-            data.slice(unit::ByteIndex::end(cMaximumSinkWriteLength), data.length() - cMaximumSinkWriteLength);
+        _sinkRemainder = data.slice(ByteIndex::end(cMaximumSinkWriteLength), data.length() - cMaximumSinkWriteLength);
         data = data.slice({}, cMaximumSinkWriteLength);
     }
     _sinkPending = true;
@@ -313,24 +325,25 @@ void HttpClientResponse::writeSinkBlock(mem::ByteBlock data) {
     const auto output = _output;
     const auto weakSelf =
         std::weak_ptr<HttpClientResponse>{std::static_pointer_cast<HttpClientResponse>(shared_from_this())};
-    const auto owner = ownerEvents();
+    const auto continuation = _sinkCompletion;
     try {
-        ResolverService::submit([weakSelf, owner, output, data = std::move(data)]() mutable -> void {
+        _sinkWork.submit([weakSelf, continuation, output, data = std::move(data)]() mutable -> void {
             auto failure = std::exception_ptr{};
             try {
                 if (!output->write(data).isSuccess()) {
-                    throw err::LogicError{"The HTTP response output stream timed out."_el};
+                    throw stream::StreamError{stream::StreamErrorContext{
+                        "HTTP response output failed"_el, "The HTTP response output stream timed out."_el}};
                 }
-            } catch (...) {
+            } catch (const RuntimeError &) {
                 failure = std::current_exception();
             }
-            owner->invoke([weakSelf, failure]() -> void {
+            continuation->invoke([weakSelf, failure]() -> void {
                 if (const auto self = weakSelf.lock()) {
                     self->sinkWriteCompleted(failure);
                 }
             });
         });
-    } catch (...) {
+    } catch (const RuntimeError &) {
         sinkWriteCompleted(std::current_exception());
     }
 }

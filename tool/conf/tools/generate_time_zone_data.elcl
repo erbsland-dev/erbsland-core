@@ -1,0 +1,5 @@
+#
+# The configuration for the generate_time_zone_data tool
+#
+----[ Generate Time Zone Data ]---------------------------------------------------------------------------------------
+Output Directory            : "src/erbsland/time/tz/impl"

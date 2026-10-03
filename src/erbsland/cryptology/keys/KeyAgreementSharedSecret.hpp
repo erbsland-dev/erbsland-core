@@ -41,7 +41,7 @@ public: // accessors
     /// Get the key-agreement algorithm.
     [[nodiscard]] auto algorithm() const noexcept -> KeyAgreementAlgorithm { return _algorithm; }
     /// Get the shared-secret length without decrypting it.
-    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteLength { return _data.byteLength(); }
+    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteCount { return _data.byteLength(); }
 
 private:
     /// Store one shared secret in protected storage.

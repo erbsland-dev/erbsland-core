@@ -7,7 +7,7 @@
 
 #include "../IpEndpoint.hpp"
 
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <optional>
 
@@ -24,9 +24,9 @@ public:
     /// @param datagramSize The original payload size, if the platform reported it.
     UdpDatagramDropContext(
         UdpDatagramDropReason reason,
-        unit::ByteLength maximumSize,
+        unit::ByteCount maximumSize,
         std::optional<IpEndpoint> remoteEndpoint = {},
-        std::optional<unit::ByteLength> datagramSize = {}) noexcept :
+        std::optional<unit::ByteCount> datagramSize = {}) noexcept :
         _remoteEndpoint{std::move(remoteEndpoint)},
         _datagramSize{datagramSize},
         _maximumSize{maximumSize},
@@ -36,19 +36,17 @@ public: // accessors
     /// Get the reason for discarding the datagram.
     [[nodiscard]] constexpr auto reason() const noexcept -> UdpDatagramDropReason { return _reason; }
     /// Get the configured maximum payload size.
-    [[nodiscard]] constexpr auto maximumSize() const noexcept -> unit::ByteLength { return _maximumSize; }
+    [[nodiscard]] constexpr auto maximumSize() const noexcept -> unit::ByteCount { return _maximumSize; }
     /// Get the sender endpoint, if the platform reported it.
     [[nodiscard]] auto remoteEndpoint() const noexcept -> const std::optional<IpEndpoint> & { return _remoteEndpoint; }
     /// Get the original payload size, if the platform reported it.
-    [[nodiscard]] auto datagramSize() const noexcept -> const std::optional<unit::ByteLength> & {
-        return _datagramSize;
-    }
+    [[nodiscard]] auto datagramSize() const noexcept -> const std::optional<unit::ByteCount> & { return _datagramSize; }
 
 private:
-    std::optional<IpEndpoint> _remoteEndpoint;     ///< Optional sender endpoint.
-    std::optional<unit::ByteLength> _datagramSize; ///< Optional original payload size.
-    unit::ByteLength _maximumSize;                 ///< Configured maximum payload size.
-    UdpDatagramDropReason _reason;                 ///< Reason for discarding the datagram.
+    std::optional<IpEndpoint> _remoteEndpoint;    ///< Optional sender endpoint.
+    std::optional<unit::ByteCount> _datagramSize; ///< Optional original payload size.
+    unit::ByteCount _maximumSize;                 ///< Configured maximum payload size.
+    UdpDatagramDropReason _reason;                ///< Reason for discarding the datagram.
 };
 
 }

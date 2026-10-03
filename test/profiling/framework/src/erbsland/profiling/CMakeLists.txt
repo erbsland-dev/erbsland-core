@@ -14,6 +14,7 @@ target_sources(erbsland-profiling PRIVATE
         AxisSelection_fwd.hpp
         AxisValue.hpp
         AxisValue_fwd.hpp
+        ConfigurationKeys.hpp
         ConfigurationLoader.cpp
         ConfigurationLoader.hpp
         ConfigurationLoader_fwd.hpp

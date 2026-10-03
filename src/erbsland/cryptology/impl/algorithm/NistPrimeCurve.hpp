@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "NistPrimeNumber.hpp"
+
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteSpan.hpp"
 #include "../../../mem/SecureErase.hpp"
+#include "../../../unit/ByteCount.hpp"
 
 #include <array>
 #include <cstddef>
@@ -21,9 +24,9 @@ namespace erbsland::cryptology::impl {
 /// used with an ECDHE private scalar or any other secret value.
 ///
 /// ECDSA verification creates no secret state: every scalar and point processed by the public-input path comes from a
-/// public key, message digest, signature, or fixed curve parameter. The separately named signing operations implement
-/// a fixed 256-bit schedule for P-256 secret inputs and require their callers to erase all returned scratch values.
-/// @tested{EcdsaSignatureTest EcdsaSignatureFullTest SigningPrivateKeyTest}
+/// public key, message digest, signature, or fixed curve parameter. Separately named secret operations use fixed
+/// 256-bit or 384-bit schedules. Every arithmetic number owns and erases its limbs, including expression temporaries.
+/// @tested{EcdsaSignatureTest EcdsaSignatureFullTest SigningPrivateKeyTest P256KeyAgreementTest}
 class NistPrimeCurve final {
 public:
     /// Supported NIST prime curves.
@@ -32,13 +35,8 @@ public:
         P384, ///< NIST P-384, also named secp384r1.
     };
 
-    /// One bounded nonnegative integer.
-    struct Number final {
-        std::array<uint32_t, 12U> words{}; ///< Little-endian base-2^32 limbs.
-
-        /// Erase every fixed-width limb.
-        void secureErase() noexcept { mem::secureErase(std::span{words}); }
-    };
+    /// Fixed-width arithmetic scratch with automatic limb erasure.
+    using Number = NistPrimeNumber;
 
     /// One Jacobian curve point; `z == 0` represents the identity.
     struct Point final {
@@ -69,9 +67,9 @@ public: // accessors
     /// Get the selected curve.
     [[nodiscard]] auto name() const noexcept -> Name { return _name; }
     /// Get the fixed coordinate/scalar width in bytes.
-    [[nodiscard]] auto byteLength() const noexcept -> std::size_t;
+    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteCount;
     /// Get the prime subgroup order.
-    [[nodiscard]] auto order() const noexcept -> const Number &;
+    [[nodiscard]] auto order() const noexcept -> Number;
     /// Get the standard base point in Jacobian form.
     [[nodiscard]] auto basePoint() const noexcept -> Point;
 
@@ -85,7 +83,9 @@ public: // number conversion and tests
     /// Test one integer bit.
     [[nodiscard]] auto bit(const Number &value, std::size_t index) const noexcept -> bool;
     /// Encode one number at the selected curve width using big-endian octets.
-    [[nodiscard]] auto numberToBigEndian(const Number &value) const noexcept -> mem::ByteBlock;
+    /// @param value The number to encode.
+    /// @param sensitive Erase all encoding storage when released, including the intermediate editor.
+    [[nodiscard]] auto numberToBigEndian(const Number &value, bool sensitive = false) const noexcept -> mem::ByteBlock;
 
 public: // point conversion and tests
     /// Decode and fully validate one compressed or uncompressed RFC 5480 public point.
@@ -118,6 +118,11 @@ public: // ECDSA secret-input signing arithmetic
     [[nodiscard]] auto invertOrderSecret(const Number &value) const noexcept -> Number;
     /// Multiply the standard base point by one secret scalar using double-and-add-always and masked selection.
     [[nodiscard]] auto multiplyBaseSecret(const Number &scalar) const noexcept -> Point;
+    /// Multiply a validated affine point by a secret scalar using a fixed schedule (SEC 1 section 3.3.1).
+    /// @param point Validated nonidentity point with affine z = 1 on this curve.
+    /// @param scalar Validated scalar in [1,n-1]; the caller erases it and the returned point.
+    /// @return Secret-derived Jacobian point.
+    [[nodiscard]] auto multiplySecret(const Point &point, const Number &scalar) const noexcept -> Point;
     /// Convert a nonidentity secret-derived point to affine form with a fixed inversion schedule.
     [[nodiscard]] auto toAffineSecret(const Point &point) const noexcept -> Point;
     /// Encode one affine point in uncompressed SEC 1 form.
@@ -131,9 +136,9 @@ public: // ECDSA secret-input signing arithmetic
 
 private: // curve parameters
     /// Get the prime field modulus.
-    [[nodiscard]] auto fieldModulus() const noexcept -> const Number &;
+    [[nodiscard]] auto fieldModulus() const noexcept -> Number;
     /// Get the curve coefficient `b`.
-    [[nodiscard]] auto coefficientB() const noexcept -> const Number &;
+    [[nodiscard]] auto coefficientB() const noexcept -> Number;
 
 private: // bounded integer arithmetic
     /// Add two reduced integers modulo `modulus` without overflowing the fixed representation.
@@ -149,7 +154,7 @@ private: // bounded integer arithmetic
     [[nodiscard]] auto montgomeryMultiply(
         const Number &left, const Number &right, const Number &modulus, uint32_t factor) const noexcept -> Number;
     /// Get the precomputed squared Montgomery radix for a supported modulus.
-    [[nodiscard]] auto montgomeryR2(const Number &modulus) const noexcept -> const Number &;
+    [[nodiscard]] auto montgomeryR2(const Number &modulus) const noexcept -> Number;
     /// Get `-modulus^-1 mod 2^32` for Montgomery reduction.
     [[nodiscard]] auto montgomeryFactor(const Number &modulus) const noexcept -> uint32_t;
     /// Raise `value` to a public exponent modulo `modulus`.
@@ -212,21 +217,21 @@ private: // point arithmetic
         -> Point;
 
 private:
-    static const Number cOne;         ///< Multiplicative identity.
-    static const Number cP256Modulus; ///< P-256 field modulus.
-    static const Number cP256Order;   ///< P-256 subgroup order.
-    static const Number cP256B;       ///< P-256 coefficient b.
-    static const Number cP256Gx;      ///< P-256 base-point x-coordinate.
-    static const Number cP256Gy;      ///< P-256 base-point y-coordinate.
-    static const Number cP256FieldR2; ///< P-256 field Montgomery radix squared modulo p.
-    static const Number cP256OrderR2; ///< P-256 scalar Montgomery radix squared modulo n.
-    static const Number cP384Modulus; ///< P-384 field modulus.
-    static const Number cP384Order;   ///< P-384 subgroup order.
-    static const Number cP384B;       ///< P-384 coefficient b.
-    static const Number cP384Gx;      ///< P-384 base-point x-coordinate.
-    static const Number cP384Gy;      ///< P-384 base-point y-coordinate.
-    static const Number cP384FieldR2; ///< P-384 field Montgomery radix squared modulo p.
-    static const Number cP384OrderR2; ///< P-384 scalar Montgomery radix squared modulo n.
+    static const std::array<uint32_t, 12U> cOne;         ///< Multiplicative identity.
+    static const std::array<uint32_t, 12U> cP256Modulus; ///< P-256 field modulus.
+    static const std::array<uint32_t, 12U> cP256Order;   ///< P-256 subgroup order.
+    static const std::array<uint32_t, 12U> cP256B;       ///< P-256 coefficient b.
+    static const std::array<uint32_t, 12U> cP256Gx;      ///< P-256 base-point x-coordinate.
+    static const std::array<uint32_t, 12U> cP256Gy;      ///< P-256 base-point y-coordinate.
+    static const std::array<uint32_t, 12U> cP256FieldR2; ///< P-256 field Montgomery radix squared modulo p.
+    static const std::array<uint32_t, 12U> cP256OrderR2; ///< P-256 scalar Montgomery radix squared modulo n.
+    static const std::array<uint32_t, 12U> cP384Modulus; ///< P-384 field modulus.
+    static const std::array<uint32_t, 12U> cP384Order;   ///< P-384 subgroup order.
+    static const std::array<uint32_t, 12U> cP384B;       ///< P-384 coefficient b.
+    static const std::array<uint32_t, 12U> cP384Gx;      ///< P-384 base-point x-coordinate.
+    static const std::array<uint32_t, 12U> cP384Gy;      ///< P-384 base-point y-coordinate.
+    static const std::array<uint32_t, 12U> cP384FieldR2; ///< P-384 field Montgomery radix squared modulo p.
+    static const std::array<uint32_t, 12U> cP384OrderR2; ///< P-384 scalar Montgomery radix squared modulo n.
 
 private:
     Name _name; ///< Selected fixed curve.

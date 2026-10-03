@@ -58,3 +58,15 @@ Tests should keep protocol assertions in C++ so they exercise the public Core im
 The matrix exercises Core in both TLS client and accepted-TLS server roles. It covers all supported TLS 1.3 cipher
 suites, RSA/ECDSA/Ed25519 server identities, exact and default SNI selection, TLS 1.2 rejection, an unsupported selected
 cipher, handshake interruption, KeyUpdate, graceful and truncated closure, ALPN, and four-MiB duplex streams.
+
+Initial-handshake client authentication uses an independent ECDSA client CA and clientAuth-only certificate. The
+rustls verifier requires and verifies the exact configured client certificate in the positive scenario. Negative
+scenarios verify an empty certificate list for absent configuration and mismatched issuer constraints, and verify
+that an untrusted server receives no client identity. The committed client key is a disposable test fixture, never
+production credential material. Its certificate expires in October 2036.
+
+Run the optional mTLS scenarios with `name:TlsClientConnectionInterop +name:TlsClientConnectionInterop -tag:LiveNetwork`.
+The `LiveSystemTrust` scenario is skipped by default and makes a real TLS 1.3 connection to `www.cloudflare.com:443`
+without registering any TLS configuration. Enable it deliberately with `tag:LiveNetwork +tag:LiveNetwork`.
+It requires Internet access and a working OS/distribution trust source; unavailable connectivity is a visible failure,
+not a silently successful empty run. Use `-tag:LiveNetwork` when selecting `+tag:FullRun` for an offline run.

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/event/impl/WindowsEventLoopDriver.hpp>
-#include <erbsland/time/TimeDelta.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>

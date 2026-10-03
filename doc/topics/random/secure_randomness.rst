@@ -7,7 +7,7 @@
     single: SecureRandom
     single: FastRandom
     single: CharSet
-    single: RandomError
+    single: RandomFailure
     single: Visible Tokens
     single: Binary Secrets
     single: Entropy
@@ -66,36 +66,35 @@ Do not log real secrets in application code unless the surrounding security mode
 .. erbsland-demo::
     :source: random/RandomTopics/SecureTokens.cpp
     :exec: random/random_topics --demo SecureTokens
-    :source-sha256: adb0116c82c369a77956920e2dea65bae047626b6e755161648aff6c842f62dc
+    :sha256: a73e588121ba598eaee7e3ffefa72b4930c1c5dddb10f4b0ae7a3669f2061675
 
 .. code-block:: cpp
 
     /// `SecureRandom` is the generator for secrets and security boundaries.
     ///
     /// It draws bytes from the operating system entropy source and throws
-    /// `RandomError` if secure random data is unavailable. Generate protocol-visible
+    /// `RandomFailure` if secure random data is unavailable. Generate protocol-visible
     /// tokens with an explicit character set, and use protected values for secrets
     /// that do not have to be exposed.
     void secureTokens() {
         const auto tokenAlphabet = el::CharSet::fromPattern("A-Za-z0-9"_el);
 
-        try {
-            // Field notebooks use a protected access code and a binary sealing key.
-            auto &secureRandom = el::application().secureRandom();
-            const auto notebookCode = secureRandom.buildString(el::CpLength{32U}, tokenAlphabet);
-            const auto sealingKey = secureRandom.buildByteBuffer(el::ByteLength{32U});
+        // Field notebooks use a protected access code and a binary sealing key.
+        auto &secureRandom = el::application().secureRandom();
+        const auto notebookCode = secureRandom.buildString(el::CpCount{32U}, tokenAlphabet);
+        const auto sealingKey = secureRandom.buildByteBuffer(el::ByteCount{32U});
 
-            el::io::printLine("Feltbog token length : "_el, notebookCode.characterLength().toSizeT());
-            el::io::printLine("Binary key bytes     : "_el, sealingKey.length().toSizeT());
-        } catch (const el::RandomError &error) {
-            el::io::printLine("Secure randomness is unavailable: "_el, error.reason());
-        }
+        el::io::printLine("Feltbog token length : "_el, notebookCode.characterLength().toSizeT());
+        el::io::printLine("Binary key bytes     : "_el, sealingKey.length().toSizeT());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Feltbog token length : 32
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFeltbog token length : 32
+        Binary key bytes     : 32␛[0m
 
 .. erbsland-demo-end::
 
@@ -133,8 +132,8 @@ Use ``buildByteBuffer()`` for independent dynamic storage or ``buildByteBlock()`
 Protected Generated Values
 ==========================
 
-On ``SecureRandom``, :cpp:func:`Random::buildString() <erbsland::random::Random::buildString>` marks the UTF-8 allocation
-before writing generated text.
+On ``SecureRandom``, :cpp:func:`Random::buildString() <erbsland::random::Random::buildString>` marks the UTF-8
+allocation before writing generated text.
 The builder finds the widest UTF-8 encoding in the character set, checks the capacity arithmetic, reserves once, and
 writes each selected character directly into that allocation.
 
@@ -148,7 +147,7 @@ Failure Behavior
 ================
 
 If the operating system entropy source cannot provide random bytes, the API throws
-:cpp:class:`RandomError <erbsland::random::RandomError>`.
+:cpp:class:`RandomFailure <erbsland::random::RandomFailure>`.
 This is intentional.
 A secure generator must not silently continue with predictable data.
 

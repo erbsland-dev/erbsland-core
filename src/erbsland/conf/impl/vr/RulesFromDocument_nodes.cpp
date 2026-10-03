@@ -11,9 +11,11 @@
 #include "../value/ValueTreeWalker.hpp"
 
 #include "../../../text/StringFormat.hpp"
+#include "../../../unit/ItemCount.hpp"
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 void RulesFromDocument::handleTypeOrTemplate(const conf::ValuePtr &node, const RulePtr &rule) {
@@ -45,7 +47,7 @@ void RulesFromDocument::handleCaseSensitive(const conf::ValuePtr &node, const Ru
             throwValidationError("The 'case_sensitive' value must be boolean"_el);
         }
         rule->setCaseSensitivity(
-            caseSensitive->asBoolean() ? text::CaseSensitivity::CaseSensitive : text::CaseSensitivity::CaseInsensitive);
+            caseSensitive->asBoolean() ? CaseSensitivity::CaseSensitive : CaseSensitivity::CaseInsensitive);
     }
 }
 
@@ -67,7 +69,7 @@ void RulesFromDocument::processTemplate(
                 NamePath{{Name::vrName(Name::VR::ReservedTemplate), Name::createRegular(useTemplateValue->asText())}};
         } catch (const ConfError &error) {
             throwValidationError(
-                text::StringFormat{"The name specified in 'use_template' is not a valid template name: {}"_el}.build(
+                StringFormat{"The name specified in 'use_template' is not a valid template name: {}"_el}.build(
                     error.description()));
         }
         const auto templateNode = _document->value(templateNamePath);
@@ -153,7 +155,7 @@ void RulesFromDocument::processDependencies(const conf::ValuePtr &node) {
         auto mode = vr::DependencyMode{vr::DependencyMode::Undefined};
         NamePathList sourcePaths;
         NamePathList targetPaths;
-        text::String errorMessage;
+        String errorMessage;
         for (const auto &child : dependencyNode->childrenImpl()) {
             try {
                 if (child->name() == Name::vrName(Name::VR::DepMode)) {
@@ -169,15 +171,15 @@ void RulesFromDocument::processDependencies(const conf::ValuePtr &node) {
                 } else if (
                     child->name() == Name::vrName(Name::VR::DepSource) ||
                     child->name() == Name::vrName(Name::VR::DepTarget)) {
-                    auto namePathTexts = child->asList<text::String>();
-                    if (namePathTexts.empty()) {
+                    auto namePathTexts = child->asList<String>();
+                    if (namePathTexts.isEmpty()) {
                         throwValidationError(
-                            text::StringFormat{"The '{}' value in 'vr_dependency' must one or more text values"_el}
-                                .build(child->name().asText()));
+                            StringFormat{"The '{}' value in 'vr_dependency' must one or more text values"_el}.build(
+                                child->name().asText()));
                     }
-                    if (namePathTexts.size() > 10) {
+                    if (namePathTexts.count() > unit::ItemCount{10}) {
                         throwValidationError(
-                            text::StringFormat{
+                            StringFormat{
                                 "This implementation does not support more than 10 '{}' paths in one 'vr_dependency'"_el}
                                 .build(child->name().asText()));
                     }
@@ -188,7 +190,7 @@ void RulesFromDocument::processDependencies(const conf::ValuePtr &node) {
                             path = NamePath::fromText(namePathText);
                         } catch (const ConfError &) {
                             throwValidationError(
-                                text::StringFormat{"A name path in '{}' in 'vr_dependency' is not valid"_el}.build(
+                                StringFormat{"A name path in '{}' in 'vr_dependency' is not valid"_el}.build(
                                     child->name().asText()));
                         }
                         paths.emplace_back(std::move(path));
@@ -248,7 +250,7 @@ void RulesFromDocument::processKey(const conf::ValuePtr &node) {
                 name = Name::createRegular(nameValue->asText());
             } catch (const ConfError &error) {
                 throwValidationError(
-                    text::StringFormat{"The 'name' in 'vr_key' is not a valid regular name: {}"_el}.build(
+                    StringFormat{"The 'name' in 'vr_key' is not a valid regular name: {}"_el}.build(
                         error.description()),
                     nameValue->namePath(),
                     nameValue->location());
@@ -268,20 +270,20 @@ void RulesFromDocument::processKey(const conf::ValuePtr &node) {
         for (const auto &keyPath : keyPaths) {
             if (keyPath->type() != ValueType::Text) {
                 throwValidationError(
-                    text::StringFormat{"Expected one or more text values in 'key' of 'vr_key', but got {}"_el}.build(
+                    StringFormat{"Expected one or more text values in 'key' of 'vr_key', but got {}"_el}.build(
                         keyPath->type().toValueDescription(true)),
                     keyPath->namePath(),
                     keyPath->location());
             }
         }
-        auto caseSensitivity = text::CaseSensitivity::CaseInsensitive;
+        auto caseSensitivity = CaseSensitivity::CaseInsensitive;
         const auto caseSensitiveValue = child->value(Name::vrName(Name::VR::CaseSensitive));
         if (caseSensitiveValue != nullptr) {
             if (caseSensitiveValue->type() != ValueType::Boolean) {
                 throwValidationError("The 'case_sensitive' value must be boolean"_el);
             }
-            caseSensitivity = caseSensitiveValue->asBoolean() ? text::CaseSensitivity::CaseSensitive
-                                                              : text::CaseSensitivity::CaseInsensitive;
+            caseSensitivity =
+                caseSensitiveValue->asBoolean() ? CaseSensitivity::CaseSensitive : CaseSensitivity::CaseInsensitive;
         }
         KeyDefinition::Keys keys;
         for (const auto &keyPath : keyPaths) {
@@ -289,8 +291,7 @@ void RulesFromDocument::processKey(const conf::ValuePtr &node) {
                 keys.emplace_back(NamePath::fromText(keyPath->asText()));
             } catch (const ConfError &error) {
                 throwValidationError(
-                    text::StringFormat{"A name path in 'key' in 'vr_key' is not valid: {}"_el}.build(
-                        error.description()),
+                    StringFormat{"A name path in 'key' in 'vr_key' is not valid: {}"_el}.build(error.description()),
                     keyPath->namePath(),
                     keyPath->location());
             }

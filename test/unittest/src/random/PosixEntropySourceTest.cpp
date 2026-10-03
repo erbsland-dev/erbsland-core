@@ -2,22 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/random/impl/PosixEntropySource.hpp>
-#include <erbsland/random/RandomError.hpp>
+#include <erbsland/RandomFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
 #include <cstddef>
 
-using el::random::RandomError;
+using el::random::RandomFailure;
 
-TESTED_TARGETS(PosixEntropySource PosixFileDescriptor RandomError)
+TESTED_TARGETS(PosixEntropySource PosixFileDescriptor RandomFailure)
 class PosixEntropySourceTest final : public el::UnitTest {
 public:
     void testFailureForMissingDevice() {
         auto source = el::random::impl::PosixEntropySource{"/this/path/does/not/exist"};
         auto bytes = std::array<std::byte, 1>{};
 
-        REQUIRE_THROWS_AS(RandomError, source.fillBytes(bytes));
+        REQUIRE_THROWS_AS(RandomFailure, source.fillBytes(bytes));
     }
 
     void testEmptyRequestDoesNotOpenDevice() {

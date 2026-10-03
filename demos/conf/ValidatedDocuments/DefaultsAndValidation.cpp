@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/all_conf_vr.hpp>
+#include <erbsland/all_conf_vr_builder.hpp>
+#include <erbsland/BooleanFormat.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/vr/RulesBuilder.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -17,9 +20,10 @@ void defaultsAndValidation() {
 
     auto builder = el::conf::vr::RulesBuilder{};
     builder.addRule("survey"_el, RuleType::Section);
-    builder.addRule("survey.forest"_el, RuleType::Text);
-    builder.addRule("survey.region"_el, RuleType::Text, Default{"Mata Atlântica"_el});
-    builder.addRule("survey.extension"_el, RuleType::NotValidated);
+    auto survey = builder.createBranch("survey"_el);
+    survey.addRule("forest"_el, RuleType::Text);
+    survey.addRule("region"_el, RuleType::Text, Default{"Mata Atlântica"_el});
+    survey.addRule("extension"_el, RuleType::NotValidated);
     const auto rules = builder.takeRules();
 
     const auto configuration = "[survey]\n"

@@ -43,7 +43,7 @@ replacement, and in-place shuffling.
 .. erbsland-demo::
     :source: random/RandomTopics/ElementSampling.cpp
     :exec: random/random_topics --demo ElementSampling
-    :source-sha256: 880fabe7eabc41c3748bb38d4081318bbd3998d0d140c956bdbb66f49a2d4196
+    :sha256: 99b469179ed6d30d11560ec3c63225e8d3086e739760cccfda3ed413c882a11c
 
 .. code-block:: cpp
 
@@ -63,7 +63,7 @@ replacement, and in-place shuffling.
 
         // Select one element directly or provide a fallback for empty input.
         const auto accent = random.selectElement(palette);
-        const auto fallback = random.selectElement(el::StringList{}, el::String{"biel"_el});
+        const auto fallback = random.selectElement(el::StringList{}, "biel"_el);
         el::io::printLine("Accent color : "_el, accent);
         el::io::printLine("Fallback     : "_el, fallback);
 
@@ -82,15 +82,17 @@ replacement, and in-place shuffling.
         el::io::printLine("Shuffled     : "_el, palette.join(", "_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Accent color : złoto
-    Fallback     : biel
-    Accent index : 1
-    Gradient     : błękit, zieleń, karmin, złoto, karmin
-    Study set    : karmin, zieleń, złoto
-    Shuffled     : błękit, złoto, karmin, zieleń
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAccent color : złoto
+        Fallback     : biel
+        Accent index : 1
+        Gradient     : błękit, zieleń, karmin, złoto, karmin
+        Study set    : karmin, zieleń, złoto
+        Shuffled     : błękit, złoto, karmin, zieleń␛[0m
 
 .. erbsland-demo-end::
 

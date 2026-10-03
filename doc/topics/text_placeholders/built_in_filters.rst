@@ -61,10 +61,9 @@ safe string.
 
 .. erbsland-demo::
     :source: text/Placeholders/BuiltInFilters.cpp
-    :function-blocks: transformFieldNote
-    :function-blocks-sha256: b5c6e77f265e51be0e930ea4adaf946cd5cfec9fc90a1b05fcf7f41a576549b3
+    :show: f:transformFieldNote
     :exec: text/text_placeholders --demo TransformFieldNote
-    :source-sha256: e25ca73265f7e769727e6c258a4af57fecb2aaad9862156bfa8761ac84dc6dc5
+    :sha256: 478cebaa93acc6785d1675ac107edb9935dfeaa4a332a02de728d99562b145ae
 
 .. code-block:: cpp
 
@@ -85,14 +84,16 @@ safe string.
         el::io::printLine(replacer.replaceOrThrow("Status: ${var:status|default:pending}"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Site: vulkan-askja
-    Year: 2026
-    Sample: BASALT
-    Summary: "Vulka…(28 total)"
-    Status: pending
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mSite: vulkan-askja
+        Year: 2026
+        Sample: BASALT
+        Summary: "Vulka…(28 total)"
+        Status: pending␛[0m
 
 .. erbsland-demo-end::
 
@@ -298,10 +299,9 @@ The next demo escapes an HTML fragment, chooses an audience from a review state,
 
 .. erbsland-demo::
     :source: text/Placeholders/BuiltInFilters.cpp
-    :function-blocks: chooseFieldNoteText
-    :function-blocks-sha256: 83d29fe97076726fb1f31c9d598993c0637a2e7f6c9fe78018044ca45b884ee7
+    :show: f:chooseFieldNoteText
     :exec: text/text_placeholders --demo ChooseFieldNoteText
-    :source-sha256: e25ca73265f7e769727e6c258a4af57fecb2aaad9862156bfa8761ac84dc6dc5
+    :sha256: 5030f34f5d80f4d0c15cfac4fff7dc67f6c4f930690d9236fec5130d8e91e983
 
 .. code-block:: cpp
 
@@ -317,12 +317,14 @@ The next demo escapes an HTML fragment, chooses an audience from a review state,
         el::io::printLine(replacer.replaceOrThrow("Sample: ${var:sample|error_if:empty}"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    HTML: &lt;krater&gt;Askja&lt;/krater&gt;
-    Audience: internal
-    Sample: A-104
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mHTML: &lt;krater&gt;Askja&lt;/krater&gt;
+        Audience: internal
+        Sample: A-104␛[0m
 
 .. erbsland-demo-end::
 
@@ -396,10 +398,9 @@ The following demo uses the simpler ``required`` filter to reject an empty appli
 
 .. erbsland-demo::
     :source: text/Placeholders/BuiltInFilters.cpp
-    :function-blocks: requireFieldNoteValue
-    :function-blocks-sha256: 05b1e6716d4f2cfb7c13450ed3190df27da006f41df8dd82fd782d7bc447d00e
+    :show: f:requireFieldNoteValue
     :exec: text/text_placeholders --demo RequireFieldNoteValue
-    :source-sha256: e25ca73265f7e769727e6c258a4af57fecb2aaad9862156bfa8761ac84dc6dc5
+    :sha256: 6454a1225b20d2747e4540ea5d8bb0a59fda78c19e37f64bc2022798fd8f314f
 
 .. code-block:: cpp
 
@@ -415,13 +416,15 @@ The following demo uses the simpler ``required`` filter to reject an empty appli
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Required sample failed: A required placeholder value is empty.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRequired sample failed: A required placeholder value is empty.␛[0m
 
 .. erbsland-demo-end::
 
 Parameter mistakes, such as combining two conditions or omitting a required key, produce a ``Syntax`` replacer error.
 Calling ``addTextFilters()`` twice, or registering a custom filter under one of the built-in names, raises
-:cpp:class:`LogicError <erbsland::err::LogicError>` because filter names must be unique.
+:cpp:class:`LogicFailure <erbsland::err::LogicFailure>` because filter names must be unique.

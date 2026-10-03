@@ -1,11 +1,21 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "Corpus.hpp"
 
 #include "CorpusDirectory.hpp"
 
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathReadDataOptions.hpp>
 #include <erbsland/profiling/Seed.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 #include <algorithm>
 #include <array>
@@ -86,7 +96,7 @@ auto Corpus::find(const el::String &id) const noexcept -> const CorpusEntry * {
     return nullptr;
 }
 
-auto Corpus::build(const CorpusEntry &entry, const el::ByteLength size, const std::uint64_t globalSeed) const
+auto Corpus::build(const CorpusEntry &entry, const el::ByteCount size, const std::uint64_t globalSeed) const
     -> el::ByteBlock {
     constexpr auto cCanonicalSize = std::uint64_t{1024U * 1024U};
     constexpr auto cCanonicalSeed = std::uint64_t{0x455242534c414e44ULL};
@@ -138,7 +148,7 @@ auto Corpus::digest(const el::ByteBlock &data) const noexcept -> std::uint64_t {
 
 auto Corpus::loadSeed(const el::String &fileName) const -> el::ByteBlock {
     auto options = el::path::PathReadDataOptions{};
-    options.setMaximumByteLength(el::ByteLength{1024U * 1024U});
+    options.setMaximumByteLength(el::ByteCount{1024U * 1024U});
     const auto result = (el::Path{el::String{cCorpusDirectory}} / fileName).content().readDataOrThrow(options);
     if (result.isEmpty()) {
         throw el::ApplicationError{"A compression corpus seed file is empty."_el};
@@ -146,7 +156,7 @@ auto Corpus::loadSeed(const el::String &fileName) const -> el::ByteBlock {
     return result;
 }
 
-auto Corpus::expandSeed(const el::ByteBlock &seed, const el::ByteLength size, const std::uint64_t markerSeed) const
+auto Corpus::expandSeed(const el::ByteBlock &seed, const el::ByteCount size, const std::uint64_t markerSeed) const
     -> el::ByteBlock {
     auto result = el::ByteBlockEditor{};
     result.reserve(size);
@@ -166,7 +176,7 @@ auto Corpus::expandSeed(const el::ByteBlock &seed, const el::ByteLength size, co
     return el::ByteBlock{result};
 }
 
-auto Corpus::buildRuns(const el::ByteLength size, const std::uint64_t seed) const -> el::ByteBlock {
+auto Corpus::buildRuns(const el::ByteCount size, const std::uint64_t seed) const -> el::ByteBlock {
     static constexpr auto cRunLengths =
         std::array<std::size_t, 14U>{1U, 2U, 3U, 4U, 5U, 14U, 15U, 16U, 31U, 255U, 259U, 260U, 4096U, 65'537U};
     auto result = el::ByteBlockEditor{};
@@ -176,13 +186,13 @@ auto Corpus::buildRuns(const el::ByteLength size, const std::uint64_t seed) cons
         const auto remaining = size.toSizeTOrThrow() - result.length().toSizeTOrThrow();
         const auto length = std::min(remaining, cRunLengths[runIndex % cRunLengths.size()]);
         const auto value = el::Byte::fromCroppedUInt64(seed + runIndex * 37U + runIndex / cRunLengths.size());
-        result.append(value, el::ByteLength::fromSizeT(length));
+        result.append(value, el::ByteCount::fromSizeT(length));
         ++runIndex;
     }
     return el::ByteBlock{result};
 }
 
-auto Corpus::buildMatches(const el::ByteLength size, const std::uint64_t seed) const -> el::ByteBlock {
+auto Corpus::buildMatches(const el::ByteCount size, const std::uint64_t seed) const -> el::ByteBlock {
     const auto target = size.toSizeTOrThrow();
     auto bytes = std::vector<std::uint8_t>(target);
     auto random = std::mt19937_64{seed};
@@ -201,7 +211,7 @@ auto Corpus::buildMatches(const el::ByteLength size, const std::uint64_t seed) c
     return el::ByteBlock::fromVector(bytes);
 }
 
-auto Corpus::buildSparseBinary(const el::ByteLength size, const std::uint64_t seed) const -> el::ByteBlock {
+auto Corpus::buildSparseBinary(const el::ByteCount size, const std::uint64_t seed) const -> el::ByteBlock {
     const auto target = size.toSizeTOrThrow();
     auto bytes = std::vector<std::uint8_t>(target, 0U);
     auto random = std::mt19937_64{seed};
@@ -217,7 +227,7 @@ auto Corpus::buildSparseBinary(const el::ByteLength size, const std::uint64_t se
     return el::ByteBlock::fromVector(bytes);
 }
 
-auto Corpus::buildEntropy(const el::ByteLength size, const std::uint64_t seed) const -> el::ByteBlock {
+auto Corpus::buildEntropy(const el::ByteCount size, const std::uint64_t seed) const -> el::ByteBlock {
     auto random = std::mt19937_64{seed};
     auto bytes = std::vector<std::uint8_t>(size.toSizeTOrThrow());
     for (auto &byte : bytes) {
@@ -226,16 +236,16 @@ auto Corpus::buildEntropy(const el::ByteLength size, const std::uint64_t seed) c
     return el::ByteBlock::fromVector(bytes);
 }
 
-auto Corpus::buildMixed(const el::ByteLength size, const std::uint64_t seed) const -> el::ByteBlock {
+auto Corpus::buildMixed(const el::ByteCount size, const std::uint64_t seed) const -> el::ByteBlock {
     const auto target = size.toSizeTOrThrow();
     const auto quarter = target / 4U;
     const auto lengths = std::array<std::size_t, 4U>{quarter, quarter, quarter, target - quarter * 3U};
     auto result = el::ByteBlockEditor{};
     result.reserve(size);
-    result.append(buildRuns(el::ByteLength::fromSizeT(lengths[0U]), seed ^ 0x11U));
-    result.append(buildMatches(el::ByteLength::fromSizeT(lengths[1U]), seed ^ 0x22U));
-    result.append(buildSparseBinary(el::ByteLength::fromSizeT(lengths[2U]), seed ^ 0x33U));
-    result.append(buildEntropy(el::ByteLength::fromSizeT(lengths[3U]), seed ^ 0x44U));
+    result.append(buildRuns(el::ByteCount::fromSizeT(lengths[0U]), seed ^ 0x11U));
+    result.append(buildMatches(el::ByteCount::fromSizeT(lengths[1U]), seed ^ 0x22U));
+    result.append(buildSparseBinary(el::ByteCount::fromSizeT(lengths[2U]), seed ^ 0x33U));
+    result.append(buildEntropy(el::ByteCount::fromSizeT(lengths[3U]), seed ^ 0x44U));
     return el::ByteBlock{result};
 }
 

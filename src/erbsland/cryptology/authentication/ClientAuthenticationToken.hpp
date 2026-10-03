@@ -35,10 +35,10 @@ public:
 
 public: // main operations
     /// Sign a complete challenge using this client's private key.
+    /// This client token must not be empty.
     /// @param challenge The exact challenge bytes supplied by the server.
     /// @return A purpose-separated signed response.
     /// @throws err::ParseError If the challenge is malformed or addresses another identifier.
-    /// @throws err::LogicError If this token is empty.
     [[nodiscard]] auto createResponse(mem::ConstByteSpan challenge) const -> SignedByteBlock;
 
 public: // tests and accessors

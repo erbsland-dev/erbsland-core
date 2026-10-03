@@ -5,8 +5,9 @@
 #include <erbsland/compression/impl/CodecOutput.hpp>
 #include <erbsland/compression/impl/CodecReader.hpp>
 #include <erbsland/compression/impl/CompressionCrc32.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/OutOfRangeError.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/OutOfRangeFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <utility>
@@ -28,7 +29,7 @@ public:
 
     void testIntegerWidthLimit() {
         auto reader = el::compression::impl::CodecReader{[] { return el::mem::ByteBlock{}; }};
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, reader.little(9U));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, reader.little(9U));
     }
 
     void testIncrementalCrc32() {
@@ -68,18 +69,18 @@ public:
                     actual.append(bytes);
                 },
                 window,
-                u::ByteLength{200000U}};
-            output.append(m::Byte{0x91U}, u::ByteLength{65533U});
-            expected.append(m::Byte{0x91U}, u::ByteLength{65533U});
+                u::ByteCount{200000U}};
+            output.append(m::Byte{0x91U}, u::ByteCount{65533U});
+            expected.append(m::Byte{0x91U}, u::ByteCount{65533U});
             uint32_t random{123456789U};
             for (unsigned operation{}; operation < 64U; ++operation) {
                 random = random * 1664525U + 1013904223U;
-                const auto distance = uint64_t{random % window + 1U};
-                const auto count = uint64_t{random % 257U + 1U};
-                const auto start = expected.length().toRawValue() - distance;
-                output.appendRepeated(u::ByteRange{u::ByteIndex{start}, u::ByteLength{distance}}, u::ByteLength{count});
-                for (uint64_t i{}; i < count; ++i) {
-                    expected.append(expected.get(u::ByteIndex{start + i % distance}));
+                const auto distance = u::ByteCount::fromInteger(random % window + 1U);
+                const auto count = u::ByteCount::fromInteger(random % 257U + 1U);
+                const auto start = u::ByteIndex::end(expected.length() - distance);
+                output.appendRepeated(u::ByteRange{start, distance}, count);
+                for (auto i = u::ByteCount::zero(); i < count; ++i) {
+                    expected.append(expected.get(start.advanced(i % distance.toRawValue())));
                 }
                 const auto literal = m::Byte{static_cast<uint8_t>(random >> 24U)};
                 output.append(literal);
@@ -100,18 +101,18 @@ public:
         const auto input = m::ByteBlock{0x01U, 0x23U, 0x45U, 0x67U, 0x89U};
         auto actual = m::ByteBlockEditor{};
         auto output = el::compression::impl::CodecOutput{
-            [&](m::ConstByteSpan bytes) { actual.append(bytes); }, 3U, u::ByteLength{10U}};
+            [&](m::ConstByteSpan bytes) { actual.append(bytes); }, 3U, u::ByteCount{10U}};
         output.append(input.span());
         output.flush();
         REQUIRE_EQUAL(output.getOrThrow(u::ByteIndex{2U}), m::Byte{0x45U});
-        REQUIRE_THROWS_AS(el::err::LogicError, output.getOrThrow(u::ByteIndex{1U}));
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, output.append(m::Byte{}, u::ByteLength{6U}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, output.getOrThrow(u::ByteIndex{1U}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, output.append(m::Byte{}, u::ByteCount{6U}));
         REQUIRE_THROWS_AS(
             el::err::OutOfRangeError,
-            output.appendRepeated(u::ByteRange{u::ByteIndex{2U}, u::ByteLength{3U}}, u::ByteLength{6U}));
-        REQUIRE_EQUAL(output.length(), u::ByteLength{5U});
+            output.appendRepeated(u::ByteRange{u::ByteIndex{2U}, u::ByteCount{3U}}, u::ByteCount{6U}));
+        REQUIRE_EQUAL(output.length(), u::ByteCount{5U});
         REQUIRE_EQUAL(actual, input);
-        output.appendRepeated(u::ByteRange{u::ByteIndex{2U}, u::ByteLength{3U}}, u::ByteLength{5U});
+        output.appendRepeated(u::ByteRange{u::ByteIndex{2U}, u::ByteCount{3U}}, u::ByteCount{5U});
         output.flush();
         REQUIRE_EQUAL(actual, m::ByteBlock({1U, 0x23U, 0x45U, 0x67U, 0x89U, 0x45U, 0x67U, 0x89U, 0x45U, 0x67U}));
     }

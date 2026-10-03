@@ -82,10 +82,9 @@ its parent process.
 
 .. erbsland-demo::
     :source: conf/Placeholders/BuiltInProviders.cpp
-    :function-blocks: builtInProviders
-    :function-blocks-sha256: 3b148d146c14aa1fa311439e0e12e288211bdf711de45fb710d3555374529a07
+    :show: f:builtInProviders
     :exec: conf/placeholders --demo BuiltInProviders
-    :source-sha256: cdcb8ac364bd5fa380566198a8bf940fa82453f0a4f9c2aa210cc3c52bdd81da
+    :sha256: a292d13e938a9e48c5b493df4e8757b78714e4a26f0b72d2afcb087623bed76e
 
 .. code-block:: cpp
 
@@ -107,11 +106,13 @@ its parent process.
         el::io::printLine("Species: "_el, document->getTextOrThrow("survey.species"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Area: 瀬戸内海
-    Species: アマモ
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mArea: 瀬戸内海
+        Species: アマモ␛[0m
 
 .. erbsland-demo-end::
 
@@ -121,7 +122,7 @@ The inserted text then becomes part of the ordinary quoted ELCL value.
 You can assign a different source name with the optional ``name`` argument of either source method; expressions must
 then use that name instead of ``env`` or ``var``.
 Source and filter names must be unique on the parser, so adding the same environment source or filter set twice raises
-:cpp:class:`LogicError <erbsland::err::LogicError>`.
+:cpp:class:`LogicFailure <erbsland::err::LogicFailure>`.
 The :doc:`/topics/text_placeholders/built_in_sources` and :doc:`/topics/text_placeholders/built_in_filters` topics
 describe the complete lookup, parameter, and transformation rules shared with the standalone text replacer.
 
@@ -139,7 +140,7 @@ remain in English.
 .. erbsland-demo::
     :source: conf/Placeholders/CustomSource.cpp
     :exec: conf/placeholders --demo CustomSource
-    :source-sha256: eb1d7dfeb894943bc0add77d3656c05836f3baf451c83ba40f4059423f90fa05
+    :sha256: 9ad0877c786fd401859beb3417c0c69e7004a776777c8a894c341e0b74b9c7d1
 
 .. code-block:: cpp
 
@@ -177,11 +178,13 @@ remain in English.
         el::io::printLine("Message: "_el, document->getTextOrThrow("academy.welcome"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Academy: Academia da Lua
-    Message: Bem-vindo à Biblioteca das Estrelas
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAcademy: Academia da Lua
+        Message: Bem-vindo à Biblioteca das Estrelas␛[0m
 
 .. erbsland-demo-end::
 
@@ -212,7 +215,7 @@ The next demo registers a filter that adds a named academy area in front of a ro
 .. erbsland-demo::
     :source: conf/Placeholders/CustomFilter.cpp
     :exec: conf/placeholders --demo CustomFilter
-    :source-sha256: 5aab01f4b736395fe8ab2699a127a7fe4617c671391ef128fe3b347afb751b9a
+    :sha256: a03e4c922338d42097123fe62b0f22f773e4c36e3c08bf856869689c5e5688c3
 
 .. code-block:: cpp
 
@@ -226,7 +229,7 @@ The next demo registers a filter that adds a named academy area in front of a ro
 
         [[nodiscard]] auto apply(const el::String &, const el::String &parameter, const el::String &value)
             -> el::String override {
-            return el::String::fromJoined({"["_el, parameter, "] "_el, value});
+            return el::join("["_el, parameter, "] "_el, value);
         }
     };
 
@@ -242,10 +245,12 @@ The next demo registers a filter that adds a named academy area in front of a ro
         el::io::printLine("Room: "_el, document->getTextOrThrow("academy.room"_el));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Room: [ala norte] Biblioteca Arcana
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRoom: [ala norte] Biblioteca Arcana␛[0m
 
 .. erbsland-demo-end::
 
@@ -274,7 +279,7 @@ The following demo triggers one source failure and one filter failure so you can
     :exec-exit-code: 1
     :exec-2: conf/placeholders --demo FilterError
     :exec-2-exit-code: 1
-    :source-sha256: e1e4f08ec5387c716d9ea4326ac698951638c7311bcc835f2cd53302c1771038
+    :sha256: b254161ccca0f6d8979dc9119e9601ef09790b49e4b89a178c9c9c28d22cacea
 
 .. code-block:: cpp
 
@@ -335,59 +340,67 @@ The following demo triggers one source failure and one filter failure so you can
         el::io::printLine("Unexpected value: "_el, document->getTextOrThrow("academy.title"_el));
     }
 
-.. rubric:: ``$ conf/placeholders --demo SourceError``
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. code-block:: console
 
+        $ conf/placeholders --demo SourceError
 
-      ␛[1;91mUnknown␛[22m ␛[1mError
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-      ␛[22;39mThe academy registry entry 'secret archive' is unavailable.
+        ␛[0m
+          ␛[91;49m␛[1mUnknown␛[22m ␛[1mError
 
-    ␛[1mError␛[22m ␛[1mSource:
-      ␛[22;90mLine:␛[39m     2
-      ␛[90mColumn:␛[39m   8
-      ␛[90mPosition:␛[39m 18
+          ␛[39;49m␛[22mThe academy registry entry 'secret archive' is unavailable.
 
-    ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
-      ␛[22;90mcategory:␛[39m  Access
-      ␛[90mname path:␛[39m academy.name
+        ␛[1mError␛[22m ␛[1mSource:
+          ␛[90;49m␛[22mLine:␛[39;49m     2
+          ␛[90;49mColumn:␛[39;49m   8
+          ␛[90;49mPosition:␛[39;49m 18
 
-      ␛[90m   1 │ ␛[39m[academy]
-      ␛[90m   2 │ ␛[39mname: "␛[91m$␛[39m{academy:secret archive}"
-      ␛[90m     │ ␛[39m       ␛[91m▔
+        ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
+          ␛[90;49m␛[22mcategory:␛[39;49m  Access
+          ␛[90;49mname path:␛[39;49m academy.name
 
-    ␛[90m╭─ Caused By:
-    │   ␛[39;1mThe␛[22m ␛[1macademy␛[22m ␛[1mregistry␛[22m ␛[1mentry␛[22m ␛[1m'secret␛[22m ␛[1marchive'␛[22m ␛[1mis␛[22m ␛[1munavailable.
-    ␛[22;90m╰─␛[0m
+          ␛[90;49m   1 │ ␛[39;49m[academy]
+          ␛[90;49m   2 │ ␛[39;49mname: "␛[91;49m$␛[39;49m{academy:secret archive}"
+          ␛[90;49m     │ ␛[39;49m       ␛[91;49m▔
 
-.. rubric:: ``$ conf/placeholders --demo FilterError``
+        ␛[90;49m╭─ Caused By:
+        │   ␛[39;49m␛[1mThe␛[22m ␛[1macademy␛[22m ␛[1mregistry␛[22m ␛[1mentry␛[22m ␛[1m'secret␛[22m ␛[1marchive'␛[22m ␛[1mis␛[22m ␛[1munavailable.
+        ␛[90;49m␛[22m╰─␛[0m
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
+    .. code-block:: console
 
-      ␛[1;91mUnknown␛[22m ␛[1mError
+        $ conf/placeholders --demo FilterError
 
-      ␛[22;39mThe academy title contains a rune that is not permitted here.
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    ␛[1mError␛[22m ␛[1mSource:
-      ␛[22;90mLine:␛[39m     2
-      ␛[90mColumn:␛[39m   9
-      ␛[90mPosition:␛[39m 19
+        ␛[0m
+          ␛[91;49m␛[1mUnknown␛[22m ␛[1mError
 
-    ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
-      ␛[22;90mcategory:␛[39m  Validation
-      ␛[90mname path:␛[39m academy.title
+          ␛[39;49m␛[22mThe academy title contains a rune that is not permitted here.
 
-      ␛[90m   1 │ ␛[39m[academy]
-      ␛[90m   2 │ ␛[39mtitle: "␛[91m$␛[39m{literal:Grimório Antigo|safe rune}"
-      ␛[90m     │ ␛[39m        ␛[91m▔
+        ␛[1mError␛[22m ␛[1mSource:
+          ␛[90;49m␛[22mLine:␛[39;49m     2
+          ␛[90;49mColumn:␛[39;49m   9
+          ␛[90;49mPosition:␛[39;49m 19
 
-    ␛[90m╭─ Caused By:
-    │   ␛[39;1mThe␛[22m ␛[1macademy␛[22m ␛[1mtitle␛[22m ␛[1mcontains␛[22m ␛[1ma␛[22m ␛[1mrune␛[22m ␛[1mthat␛[22m ␛[1mis␛[22m ␛[1mnot␛[22m ␛[1mpermitted␛[22m ␛[1mhere.
-    ␛[22;90m╰─␛[0m
+        ␛[1mConfiguration␛[22m ␛[1mError␛[22m ␛[1mDetails:
+          ␛[90;49m␛[22mcategory:␛[39;49m  Validation
+          ␛[90;49mname path:␛[39;49m academy.title
+
+          ␛[90;49m   1 │ ␛[39;49m[academy]
+          ␛[90;49m   2 │ ␛[39;49mtitle: "␛[91;49m$␛[39;49m{literal:Grimório Antigo|safe rune}"
+          ␛[90;49m     │ ␛[39;49m        ␛[91;49m▔
+
+        ␛[90;49m╭─ Caused By:
+        │   ␛[39;49m␛[1mThe␛[22m ␛[1macademy␛[22m ␛[1mtitle␛[22m ␛[1mcontains␛[22m ␛[1ma␛[22m ␛[1mrune␛[22m ␛[1mthat␛[22m ␛[1mis␛[22m ␛[1mnot␛[22m ␛[1mpermitted␛[22m ␛[1mhere.
+        ␛[90;49m␛[22m╰─␛[0m
 
 .. erbsland-demo-end::
 
@@ -395,8 +408,8 @@ Malformed expression syntax is reported as a syntax error.
 An unknown source or filter is an unsupported-feature error, and a chain beyond the filter limit is a limit error.
 These parser-generated errors receive the same value path, location, and excerpt as errors from custom providers.
 
-Choosing the Available Runtime Surface
-======================================
+Restricting Placeholder Sources and Filters
+===========================================
 
 Register only sources and filters that a document actually needs.
 A source is an application capability: if it can read secrets, inspect the environment, or query another subsystem,

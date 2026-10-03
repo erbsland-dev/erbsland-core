@@ -3,17 +3,19 @@
 
 #include "ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/options/OptionError.hpp>
-#include <erbsland/options/OptionErrorContext.hpp>
-#include <erbsland/options/OptionModule.hpp>
-#include <erbsland/options/Options.hpp>
-#include <erbsland/options/OptionValue.hpp>
-#include <erbsland/options/OptionValues.hpp>
-#include <erbsland/stream/AnyStringBuilderStream.hpp>
-#include <erbsland/stream/StandardStreams.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/Events.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionError.hpp>
+#include <erbsland/OptionErrorContext.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionValue.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
@@ -33,9 +35,123 @@ using el::unit::ExitCode;
 using el::unit::ItemIndex;
 using namespace el::text::literals;
 
+/// Record the successful-parse hook without replacing the default main dispatch.
+/// @tested{ApplicationOptionsTest}
+class OptionsHandlingApplication final : public Application {
+public:
+    using Application::Application;
+    int handledCount{0};           ///< Number of hook invocations.
+    OptionValuesPtr handledValues; ///< Values passed by the lifecycle.
+    bool rejectValues{false};      ///< Exercise a controlled validation failure.
+    bool cleaned{false};           ///< Whether lifecycle cleanup ran.
+
+protected:                         // implement Application
+    void handleCommandLineOptions(const OptionValuesPtr &values) override {
+        ++handledCount;
+        handledValues = values;
+        if (rejectValues) {
+            throw el::core::ApplicationError{"Rejected parsed values"_el, ExitCode{19}};
+        }
+    }
+    void cleanup() noexcept override { cleaned = true; }
+};
+
 TESTED_TARGETS(Application OptionModule OptionValue OptionValues Options)
 class ApplicationOptionsTest final : public el::UnitTest {
+private:
+    static constexpr auto cNameOption = "--name"_el;
+    static constexpr auto cSecretOption = "--secret"_el;
+
 public:
+    void testOptionsHookPrecedesFunctionMain() {
+        auto scope = ApplicationTestScope<OptionsHandlingApplication>{};
+        auto &app = scope.app();
+        auto sawHandledValues = false;
+        app.setMainFn([&]() -> ExitCode {
+            sawHandledValues = app.handledCount == 1 && app.handledValues == app.optionValues();
+            return ExitCode{17};
+        });
+        REQUIRE_EQUAL(app.run(), 17);
+        REQUIRE(sawHandledValues);
+        REQUIRE(app.cleaned);
+    }
+
+    void testOptionsHookPreservesModuleDispatch() {
+        char arg0[] = "tool";
+        char arg1[] = "run";
+        char *argv[] = {arg0, arg1};
+        auto scope = ApplicationTestScope<OptionsHandlingApplication>{2, argv};
+        auto &app = scope.app();
+        auto sawHandledValues = false;
+        auto module = OptionModule::create("run"_el);
+        module->setMainFn([&](OptionValuesPtr values) -> ExitCode {
+            sawHandledValues = app.handledCount == 1 && app.handledValues == values;
+            return ExitCode{23};
+        });
+        app.options()->addModule(module);
+        REQUIRE_EQUAL(app.run(), 23);
+        REQUIRE(sawHandledValues);
+    }
+
+    void testOptionsHookPreservesDefaultEventLoop() {
+        auto scope = ApplicationTestScope<OptionsHandlingApplication>{};
+        auto &app = scope.app();
+        auto hookRanBeforeEvent = false;
+        app.events()->invoke([&]() -> void {
+            hookRanBeforeEvent = app.handledCount == 1;
+            app.quit(ExitCode{29});
+        });
+        REQUIRE_EQUAL(app.run(), 29);
+        REQUIRE(hookRanBeforeEvent);
+    }
+
+    void testOptionsHookSkippedForHelpVersionOverviewAndErrors() {
+        const auto streamRedirect = redirectStandardStreams();
+        for (const auto argument : {"--help", "--version", "--unknown"}) {
+            char arg0[] = "tool";
+            // The constructor retains argv; writable storage remains alive throughout run().
+            auto arg1 = el::text::StringConverter{el::text::String{argument}}.toStdString();
+            char *argv[] = {arg0, arg1.data()};
+            auto scope = ApplicationTestScope<OptionsHandlingApplication>{2, argv};
+            auto &app = scope.app();
+            auto mainCalled = false;
+            app.setMainFn([&]() -> ExitCode {
+                mainCalled = true;
+                return ExitCode::success();
+            });
+            const auto result = app.run();
+            if (el::text::String{argument} == "--unknown"_el) {
+                REQUIRE_NOT_EQUAL(result, 0);
+            } else {
+                REQUIRE_EQUAL(result, 0);
+            }
+            REQUIRE_EQUAL(app.handledCount, 0);
+            REQUIRE_FALSE(mainCalled);
+            REQUIRE(app.cleaned);
+        }
+        auto scope = ApplicationTestScope<OptionsHandlingApplication>{};
+        auto &app = scope.app();
+        app.options()->addModule(OptionModule::create("run"_el));
+        REQUIRE_EQUAL(app.run(), 0);
+        REQUIRE_EQUAL(app.handledCount, 0);
+    }
+
+    void testOptionsHookFailureUsesApplicationErrorBoundary() {
+        const auto streamRedirect = redirectStandardStreams();
+        auto scope = ApplicationTestScope<OptionsHandlingApplication>{};
+        auto &app = scope.app();
+        app.rejectValues = true;
+        auto mainCalled = false;
+        app.setMainFn([&]() -> ExitCode {
+            mainCalled = true;
+            return ExitCode::success();
+        });
+        REQUIRE_EQUAL(app.run(), 19);
+        REQUIRE_EQUAL(app.handledCount, 1);
+        REQUIRE_FALSE(mainCalled);
+        REQUIRE(app.cleaned);
+    }
+
     void testInitializeFunctionRunsBeforeMain() {
         auto scope = ApplicationTestScope<Application>{};
         auto &application = scope.app();
@@ -88,7 +204,7 @@ public:
         auto moduleValues = OptionValuesPtr{};
         auto moduleMainGotFlagCount = false;
         auto module = OptionModule::create("run"_el);
-        module->addOption("--name"_el).setType(OptionType::Text);
+        module->addOption(cNameOption).setType(OptionType::Text);
         module->addOption({"-v"_el, "--verbose"_el}).setType(OptionType::Flag);
         module->setMainFn(
             [&moduleMainCalled, &moduleValues, &moduleMainGotFlagCount](OptionValuesPtr values) -> ExitCode {
@@ -106,8 +222,8 @@ public:
         REQUIRE_EQUAL(application.run(), 23);
         REQUIRE_EQUAL(application.optionValues(), moduleValues);
         REQUIRE_EQUAL(application.optionValues()->module(), module);
-        REQUIRE_EQUAL(moduleValues->getText("--name"_el), "Ada"_el);
-        REQUIRE_EQUAL(moduleValues->value("--name"_el)->argumentIndex(), ArgumentIndex{3U});
+        REQUIRE_EQUAL(moduleValues->getText(cNameOption), "Ada"_el);
+        REQUIRE_EQUAL(moduleValues->value(cNameOption)->argumentIndex(), ArgumentIndex{3U});
         REQUIRE(moduleMainGotFlagCount);
         REQUIRE(moduleMainCalled);
         REQUIRE_FALSE(applicationMainCalled);
@@ -163,7 +279,7 @@ public:
             auto &application = scope.app();
             auto mainCalled = false;
             application.options()
-                ->addOption("--name"_el)
+                ->addOption(cNameOption)
                 .setType(OptionType::Text)
                 .setHelpTitle("Name Option"_el)
                 .setHelpDescription("Select the displayed name."_el);
@@ -215,7 +331,7 @@ public:
             char *argv[] = {arg0, arg1};
             auto scope = ApplicationTestScope<Application>{2, argv};
             auto &application = scope.app();
-            application.options()->addOption("--secret"_el).setType(OptionType::SensitiveText);
+            application.options()->addOption(cSecretOption).setType(OptionType::SensitiveText);
             application.setMainFn([]() -> ExitCode { return ExitCode::success(); });
 
             REQUIRE_EQUAL(application.run(), 0);
@@ -230,7 +346,7 @@ public:
         auto scope = ApplicationTestScope<Application>{3, argv};
         auto &application = scope.app();
         application.options()
-            ->addOption("--secret"_el)
+            ->addOption(cSecretOption)
             .setType(OptionType::SensitiveText)
             .setValidateFn([](OptionValuePtr, OptionValuesPtr) -> void {
                 throw OptionError{OptionErrorContext{}.setDescription("Rejected secret"_el)};
@@ -250,7 +366,7 @@ public:
             wchar_t *argv[] = {arg0, arg1, arg2};
             auto scope = ApplicationTestScope<Application>{3, argv};
             auto &application = scope.app();
-            application.options()->addOption("--secret"_el).setType(OptionType::SensitiveText);
+            application.options()->addOption(cSecretOption).setType(OptionType::SensitiveText);
             application.setMainFn([]() -> ExitCode { return ExitCode::success(); });
 
             REQUIRE_EQUAL(application.run(), 0);
@@ -264,7 +380,7 @@ public:
         auto scope = ApplicationTestScope<Application>{2, argv};
         auto &application = scope.app();
         application.options()
-            ->addOption("--secret"_el)
+            ->addOption(cSecretOption)
             .setType(OptionType::SensitiveText)
             .setValidateFn([](OptionValuePtr, OptionValuesPtr) -> void {
                 throw OptionError{OptionErrorContext{}.setDescription("Rejected secret"_el)};
@@ -325,7 +441,7 @@ private:
         auto scope = ApplicationTestScope<Application>{3, argv};
         auto &application = scope.app();
         auto module = OptionModule::create("run"_el);
-        module->addOption("--name"_el).setType(OptionType::Text);
+        module->addOption(cNameOption).setType(OptionType::Text);
         configureSkippedMainTest(application, module, moduleMainCalled, applicationMainCalled);
 
         REQUIRE_NOT_EQUAL(application.run(), 0);

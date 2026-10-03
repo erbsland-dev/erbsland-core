@@ -3,11 +3,17 @@
 #pragma once
 
 #include <DemoCommon.hpp>
+#include <erbsland/base_n/BaseNEncoder.hpp>
+#include <erbsland/base_n/BaseNFormat.hpp>
+#include <erbsland/ByteBlock.hpp>
 #include <erbsland/conf/ConfError.hpp>
+#include <erbsland/conf/ConfErrorCategory.hpp>
 #include <erbsland/conf/SignatureSigner.hpp>
-#include <erbsland/cryptology/Hmac.hpp>
-#include <erbsland/text/base_n/BaseNEncoder.hpp>
-#include <erbsland/text/base_n/BaseNFormat.hpp>
+#include <erbsland/conf/SignatureSignerData.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hmac.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringJoins.hpp>
 
 namespace demo {
 
@@ -36,7 +42,7 @@ public: // implement `SignatureSigner`
         authenticator.update(data.documentDigest);
         const auto encoded =
             el::base_n::BaseNEncoder{authenticator.finalize(), el::base_n::BaseNFormat::base64()}.toString();
-        return el::String::fromJoined({"hmac-sha256;"_el, data.signingPersonText, ";"_el, encoded});
+        return el::join("hmac-sha256;"_el, data.signingPersonText, ";"_el, encoded);
     }
 
 private:

@@ -1,6 +1,6 @@
-************************
-How to use the Assembler
-************************
+**************************************
+Using the Regular-Expression Assembler
+**************************************
 
 There is a public API that allows you to use the assembler and disassembler in your programs.
 

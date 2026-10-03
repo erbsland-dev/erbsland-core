@@ -4,10 +4,9 @@
 
 #include "TestCase.hpp"
 
-#include <erbsland/core/Definitions.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/MakeOneNamespace.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/Definitions.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/String.hpp>
 
 #include <memory>
 
@@ -23,7 +22,7 @@ public:
     /// @param prototype Immutable scenario configuration and variant factory.
     explicit Registration(std::shared_ptr<const TestCase> prototype) : _prototype{std::move(prototype)} {
         if (!_prototype) {
-            throw el::LogicError{"A registered scenario requires a factory object."_el};
+            throw el::LogicFailure{"A registered scenario requires a factory object."_el};
         }
         _id = _prototype->metadata().id;
     }
@@ -35,12 +34,12 @@ public:
     /// Get the exact selection ID.
     [[nodiscard]] auto id() const noexcept -> const el::String & { return _id; }
     /// Construct a fresh backend variant.
+    /// A concrete factory must be registered.
     /// @param automatic Whether factory selection may use acceleration.
     /// @return Independently owned measurement scenario.
-    /// @throws el::LogicError If no concrete factory is registered.
     [[nodiscard]] auto create(bool automatic) const -> std::unique_ptr<TestCase> {
         if (!_prototype) {
-            throw el::LogicError{"No measurement factory registered."_el};
+            throw el::LogicFailure{"No measurement factory registered."_el};
         }
         return _prototype->create(automatic);
     }

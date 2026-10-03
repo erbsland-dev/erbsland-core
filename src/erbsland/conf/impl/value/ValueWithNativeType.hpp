@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Value.hpp"
+#include "ValueDigest.hpp"
 
 #include "../../../text/StringFormat.hpp"
 
@@ -12,6 +13,7 @@ namespace erbsland::conf::impl {
 using namespace text::literals;
 
 /// Value implementation that stores a native value type.
+/// @tested{ValueDigestTest ValueAsMethodsTest}
 template <typename StorageType, ValueType::Enum tValueType>
 class ValueWithNativeType : public Value {
 public:
@@ -33,7 +35,8 @@ public:
     [[nodiscard]] auto deepCopy() const -> ValuePtr override {
         return std::make_shared<ValueWithNativeType<StorageType, tValueType>>(_value);
     }
-    /// Get the native stored value.
+    void updateDigestValue(ValueDigest &digest) const override { digest.update(_value); }
+    /// Access the stored value without conversion or copying.
     [[nodiscard]] auto rawStorage() const noexcept -> const StorageType & { return _value; }
 
 protected:

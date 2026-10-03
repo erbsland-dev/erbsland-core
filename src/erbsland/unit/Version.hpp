@@ -2,8 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BuildNumber.hpp"
+#include "Major.hpp"
+#include "Minor.hpp"
+#include "Revision.hpp"
 #include "VersionRange_fwd.hpp"
-#include "VersionUnit.hpp"
+
+#include "impl/VersionComponentTraits.hpp"
 
 #include "../text/String.hpp"
 #include "../util/HashHelper.hpp"
@@ -31,8 +36,17 @@ public:
 public:
     /// Create version `0.0.0.0`.
     constexpr Version() noexcept = default;
-    /// Create a version from raw values.
-    explicit constexpr Version(Value major, Value minor = 0U, Value revision = 0U, Value build = 0U) noexcept :
+    /// Create a version from compile-time integer components in 0...65535.
+    /// @param major The major component.
+    /// @param minor The minor component, defaulting to zero.
+    /// @param revision The revision component, defaulting to zero.
+    /// @param build The build component, defaulting to zero.
+    template <
+        math::NativeInteger tMajor,
+        math::NativeInteger tMinor = unsigned,
+        math::NativeInteger tRevision = unsigned,
+        math::NativeInteger tBuild = unsigned>
+    explicit consteval Version(tMajor major, tMinor minor = 0U, tRevision revision = 0U, tBuild build = 0U) :
         _major{major}, _minor{minor}, _revision{revision}, _build{build} {}
     /// Create a version from typed version parts in any order.
     template <impl::VersionComponentArgument... tArguments>
@@ -138,10 +152,10 @@ public: // conversion
     /// Create a version from a packed 64-bit number.
     [[nodiscard]] constexpr static auto fromNumber(uint64_t value) noexcept -> Version {
         return Version{
-            static_cast<Value>((value >> 48U) & 0xffffU),
-            static_cast<Value>((value >> 32U) & 0xffffU),
-            static_cast<Value>((value >> 16U) & 0xffffU),
-            static_cast<Value>(value & 0xffffU)};
+            Major::fromInteger((value >> 48U) & 0xffffU),
+            Minor::fromInteger((value >> 32U) & 0xffffU),
+            Revision::fromInteger((value >> 16U) & 0xffffU),
+            BuildNumber::fromInteger(value & 0xffffU)};
     }
 
 private:
@@ -164,6 +178,7 @@ private:
 }
 
 namespace std {
+
 /// Hashes a version by its parts.
 template <>
 struct hash<erbsland::unit::Version> {
@@ -172,4 +187,5 @@ struct hash<erbsland::unit::Version> {
         return erbsland::util::createHash(value.major(), value.minor(), value.revision(), value.build());
     }
 };
+
 }

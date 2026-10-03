@@ -32,9 +32,12 @@ target_sources(erbsland-core PRIVATE
         BlockTextPainter.cpp
         BlockTextPainter.hpp
         BlockTextUtil.hpp
+        BufferRenderer.cpp
+        BufferRenderer.hpp
         CommonBoxFrameBlockCombinationStyle.cpp
         CommonBoxFrameBlockCombinationStyle.hpp
         CommonBoxFrameBlockCombinationStyle_data.cpp
+        EmulationCursorState.hpp
         FrameBorder_data.hpp
         FramePainter.cpp
         FramePainter.hpp
@@ -69,6 +72,8 @@ target_sources(erbsland-core PRIVATE
         TerminalStreamData.cpp
         TerminalStreamData.hpp
         TerminalStreamData_fwd.hpp
+        VirtualBackend.cpp
+        VirtualBackend.hpp
 )
 
 if (WIN32)

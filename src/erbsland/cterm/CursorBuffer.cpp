@@ -3,11 +3,12 @@
 #include "CursorBuffer.hpp"
 
 #include "Buffer.hpp"
+#include "BufferConstRefView.hpp"
 
 #include "impl/paragraph/Layout.hpp"
 #include "impl/paragraph/Printer.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::cterm {
@@ -19,9 +20,53 @@ using block::Direction;
 using block::Position;
 using block::Size;
 
+CursorBuffer::CursorBuffer(const CursorBuffer &other) : RemappedBuffer{other} {
+    copyCursorState(other);
+}
+
+CursorBuffer::CursorBuffer(CursorBuffer &&other) noexcept : RemappedBuffer{std::move(other)} {
+    copyCursorState(other);
+}
+
+auto CursorBuffer::operator=(const CursorBuffer &other) -> CursorBuffer & {
+    if (this != &other) {
+        RemappedBuffer::operator=(other);
+        copyCursorState(other);
+    }
+    return *this;
+}
+
+auto CursorBuffer::operator=(CursorBuffer &&other) noexcept -> CursorBuffer & {
+    if (this != &other) {
+        RemappedBuffer::operator=(std::move(other));
+        copyCursorState(other);
+    }
+    return *this;
+}
+
+void CursorBuffer::copyCursorState(const CursorBuffer &other) noexcept {
+    _overflowMode = other._overflowMode;
+    _maximumSize = other._maximumSize;
+    _fillChar = other._fillChar;
+    _cursorPosition = other._cursorPosition;
+    _currentStyle = other._currentStyle;
+    _autoWrap = other._autoWrap;
+    _wrapOnNextChar = other._wrapOnNextChar;
+}
+
+void CursorBuffer::onScroll(const Direction direction, const int count) noexcept {
+    if (!_scrollOutCallback || !direction.contains(Direction::North)) {
+        return;
+    }
+    for (auto row = 0; row < count; ++row) {
+        const auto line = BufferConstRefView{*this, block::Rectangle{0, row, _size.width().toRawValue(), 1}};
+        _scrollOutCallback(line);
+    }
+}
+
 void CursorBuffer::validateFillChar(const Block &fillChar) {
     if (fillChar.displayWidth() != 1) {
-        throw err::ParameterError{"fillChar must be a single-width character."_el, "fillChar"_el};
+        throw err::ParameterFailure{"fillChar must be a single-width character."_el, "fillChar"_el};
     }
 }
 
@@ -84,13 +129,15 @@ auto CursorBuffer::supportedBlockAttributes() const noexcept -> BlockAttributes 
     return BlockAttributes::all();
 }
 
+void CursorBuffer::restorePosition(const Position position, const bool wrapPending) noexcept {
+    _cursorPosition = rect().clamp(position);
+    _wrapOnNextChar = wrapPending;
+}
+
 void CursorBuffer::moveCursor(const Position posOrDelta, const MoveMode mode) noexcept {
     if (std::abs(posOrDelta.x().toRawValue()) > cMaximumSize.width().toRawValue() ||
         std::abs(posOrDelta.y().toRawValue()) > cMaximumSize.height().toRawValue()) {
         return; // ignore calls with extreme values.
-    }
-    if (posOrDelta == Position{0, 0}) {
-        return;
     }
     _wrapOnNextChar = false;
     if (mode == MoveMode::Absolute) {

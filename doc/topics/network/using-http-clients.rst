@@ -218,9 +218,14 @@ Retain a block after ``WouldBlock`` and retry only after ``onWritable``.
 HTTPS and Deadlines
 ===================
 
-HTTPS uses the immutable TLS configuration selected by ``HttpClientTlsOptions``.
-The default label is ``http/client`` and the session forces HTTP/1.1 ALPN.
-Register explicit trust anchors for this label before sending HTTPS requests.
+HTTPS authenticates the server using the TLS profile selected by
+:cpp:class:`HttpClientTlsOptions <erbsland::network::HttpClientTlsOptions>` and negotiates HTTP/1.1 through ALPN.
+The default label is ``http``.
+With the default shared TLS settings, an unconfigured client uses system trust, so ordinary HTTPS requests need no
+additional TLS setup.
+For a private service, register a profile with your own trust anchors; for a service that requests client certificates,
+include a client identity in that profile.
+See :doc:`/topics/cryptology/configuring_tls` for profile setup and fallback rules.
 
 ``HttpClientSessionOptions`` separates DNS, TCP connection, TLS handshake, response-head, body-idle, overall, and
 graceful-close limits.

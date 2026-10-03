@@ -3,5 +3,7 @@
 #pragma once
 
 namespace erbsland::network::impl {
+
 class TlsServerConnection;
+
 }

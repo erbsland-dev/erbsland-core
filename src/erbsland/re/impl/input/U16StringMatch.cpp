@@ -4,17 +4,19 @@
 
 #include "../error/InternalError.hpp"
 
-#include "../../../unit/U16DataRange.hpp"
+#include "../../../unit/U16Range.hpp"
 
 namespace erbsland::re::impl {
 
+using namespace unit;
+
 auto U16StringMatch::getContentForGroup(const CaptureGroup &group) const noexcept -> text::U16String {
-    const auto beginIndex = unit::U16DataIndex::fromSizeT(group.begin());
-    const auto endIndex = unit::U16DataIndex::fromSizeT(group.end());
+    const auto beginIndex = U16Index::fromSizeT(group.begin());
+    const auto endIndex = U16Index::fromSizeT(group.end());
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(beginIndex <= endIndex, "Capture group begin index must not exceed end index"_el);
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
-        endIndex <= unit::U16DataIndex::end(_text.length()), "Capture group end index out of bounds"_el);
-    return _text.slice(unit::U16DataRange{beginIndex, endIndex});
+        endIndex <= U16Index::end(_text.length()), "Capture group end index out of bounds"_el);
+    return _text.slice(U16Range{beginIndex, endIndex});
 }
 
 }

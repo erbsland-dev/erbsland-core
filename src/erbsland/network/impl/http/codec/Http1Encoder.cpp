@@ -16,6 +16,8 @@
 
 namespace erbsland::network::impl {
 
+using namespace mem;
+using namespace unit;
 using namespace text::literals;
 
 Http1Encoder::Http1Encoder(HttpRequestHead head, const Http1CodecLimits limits) :
@@ -26,8 +28,7 @@ Http1Encoder::Http1Encoder(HttpRequestHead head, const Http1CodecLimits limits) 
     if (!head.isValid()) {
         misuse("Cannot encode an invalid HTTP request head."_el);
     }
-    if (head.method().text().length() + head.target().length() + unit::ByteLength{10U} >
-        _limits.maximumStartLineLength()) {
+    if (head.method().text().length() + head.target().length() + ByteCount{10U} > _limits.maximumStartLineLength()) {
         misuse("The HTTP request start line exceeds its configured limit."_el);
     }
     validateFields(head.headers(), _limits.headerLimits());
@@ -43,7 +44,7 @@ Http1Encoder::Http1Encoder(HttpResponseHead head, HttpMethod requestMethod, cons
     if (!head.isValid()) {
         misuse("Cannot encode an invalid HTTP response head."_el);
     }
-    if (head.reasonPhrase().length() + unit::ByteLength{13U} > _limits.maximumStartLineLength()) {
+    if (head.reasonPhrase().length() + ByteCount{13U} > _limits.maximumStartLineLength()) {
         misuse("The HTTP response start line exceeds its configured limit."_el);
     }
     validateFields(head.headers(), _limits.headerLimits());
@@ -51,15 +52,15 @@ Http1Encoder::Http1Encoder(HttpResponseHead head, HttpMethod requestMethod, cons
     beginResponse(head, requestMethod);
 }
 
-auto Http1Encoder::writeBody(const mem::ConstByteSpan bytes) -> NetworkSendStatus {
+auto Http1Encoder::writeBody(const ConstByteSpan bytes) -> NetworkSendStatus {
     if (_complete || _framing == Http1BodyFraming::None || _framing == Http1BodyFraming::Opaque) {
         return NetworkSendStatus::Closed;
     }
     if (bytes.size() > Http1CodecLimits::cMaximumBodyChunkLength.toSizeT()) {
         misuse("An HTTP encoder body fragment exceeds 16 KiB."_el);
     }
-    if (bytes.size() > _limits.maximumBodyLength().toSizeT() -
-            std::min(_bodyWritten.toSizeT(), _limits.maximumBodyLength().toSizeT())) {
+    if (ByteCount::fromSizeT(bytes.size()) >
+        _limits.maximumBodyLength() - std::min(_bodyWritten, _limits.maximumBodyLength())) {
         misuse("The encoded HTTP body exceeds its configured limit."_el);
     }
     if (_framing == Http1BodyFraming::FixedLength && bytes.size() > _bodyRemaining.toSizeT()) {
@@ -68,13 +69,13 @@ auto Http1Encoder::writeBody(const mem::ConstByteSpan bytes) -> NetworkSendStatu
     if (_framing == Http1BodyFraming::Chunked && bytes.empty()) {
         return NetworkSendStatus::Accepted;
     }
-    const auto required = _framing == Http1BodyFraming::Chunked ? chunkWireLength(unit::ByteLength{bytes.size()})
-                                                                : unit::ByteLength{bytes.size()};
+    const auto required = _framing == Http1BodyFraming::Chunked ? chunkWireLength(ByteCount::fromInteger(bytes.size()))
+                                                                : ByteCount::fromInteger(bytes.size());
     if (!canQueue(required) || isFailure(_output.reserveAdditional(required))) {
         return NetworkSendStatus::WouldBlock;
     }
     if (_framing == Http1BodyFraming::Chunked) {
-        appendChunkPrefix(unit::ByteLength{bytes.size()});
+        appendChunkPrefix(ByteCount::fromInteger(bytes.size()));
         if (isFailure(_output.writeExact(bytes))) {
             std::terminate();
         }
@@ -84,7 +85,7 @@ auto Http1Encoder::writeBody(const mem::ConstByteSpan bytes) -> NetworkSendStatu
             std::terminate();
         }
     }
-    const auto length = unit::ByteLength{bytes.size()};
+    const auto length = ByteCount::fromInteger(bytes.size());
     _bodyWritten += length;
     if (_framing == Http1BodyFraming::FixedLength) {
         _bodyRemaining -= length;
@@ -102,8 +103,8 @@ auto Http1Encoder::finish(HttpHeaders trailers) -> NetworkSendStatus {
     if (_framing == Http1BodyFraming::FixedLength && !_bodyRemaining.isZero()) {
         misuse("Fewer body bytes than Content-Length were supplied."_el);
     }
-    const auto required = _framing == Http1BodyFraming::Chunked ? trailerWireLength(trailers) + unit::ByteLength{5U}
-                                                                : unit::ByteLength::zero();
+    const auto required =
+        _framing == Http1BodyFraming::Chunked ? trailerWireLength(trailers) + ByteCount{5U} : ByteCount::zero();
     if (!canQueue(required) || isFailure(_output.reserveAdditional(required))) {
         return NetworkSendStatus::WouldBlock;
     }
@@ -116,15 +117,15 @@ auto Http1Encoder::finish(HttpHeaders trailers) -> NetworkSendStatus {
     return NetworkSendStatus::Accepted;
 }
 
-auto Http1Encoder::takeOutput(const unit::ByteLength maximumLength) -> mem::ByteBlock {
+auto Http1Encoder::takeOutput(const ByteCount maximumLength) -> ByteBlock {
     return _output.read(maximumLength);
 }
 
 void Http1Encoder::beginRequest(const HttpRequestHead &head) {
     const auto method = head.method().text();
     const auto version = head.version().toString();
-    const auto required = method.length() + head.target().length() + version.length() +
-        head.headers().serializedLength() + unit::ByteLength{6U};
+    const auto required =
+        method.length() + head.target().length() + version.length() + head.headers().serializedLength() + ByteCount{6U};
     if (!canQueue(required) || isFailure(_output.reserveAdditional(required))) {
         misuse("The serialized HTTP request head exceeds the output queue limit."_el);
     }
@@ -142,7 +143,7 @@ void Http1Encoder::beginResponse(const HttpResponseHead &head, const HttpMethod 
     const auto version = head.version().toString();
     const auto status = head.status().toString();
     const auto required = version.length() + status.length() + head.reasonPhrase().length() +
-        head.headers().serializedLength() + unit::ByteLength{6U};
+        head.headers().serializedLength() + ByteCount{6U};
     if (!canQueue(required) || isFailure(_output.reserveAdditional(required))) {
         misuse("The serialized HTTP response head exceeds the output queue limit."_el);
     }
@@ -207,10 +208,10 @@ void Http1Encoder::selectFieldFraming(const HttpHeaders &headers) {
     try {
         const auto parser = Http1FramingParser{headers};
         if (const auto value = parser.contentLength()) {
-            if (*value > _limits.maximumBodyLength().toSizeT()) {
+            if (*value > _limits.maximumBodyLength()) {
                 misuse("The declared body exceeds the encoder body limit."_el);
             }
-            _contentLength = unit::ByteLength{*value};
+            _contentLength = *value;
         } else {
             _contentLength.reset();
         }
@@ -223,20 +224,20 @@ void Http1Encoder::selectFieldFraming(const HttpHeaders &headers) {
     }
 }
 
-auto Http1Encoder::canQueue(const unit::ByteLength length) const noexcept -> bool {
+auto Http1Encoder::canQueue(const ByteCount length) const noexcept -> bool {
     const auto maximum = _limits.maximumOutputLength().toSizeT();
     return length.toSizeT() <= maximum && _output.length().toSizeT() <= maximum - length.toSizeT();
 }
 
 void Http1Encoder::appendString(const text::String &value) {
     const auto chars = text::impl::UnsafeU8StringAccess{value}.dataSpan();
-    if (isFailure(_output.writeExact(mem::toConstByteSpan(chars)))) {
+    if (isFailure(_output.writeExact(toConstByteSpan(chars)))) {
         std::terminate();
     }
 }
 
 void Http1Encoder::appendLiteral(const std::string_view value) {
-    if (isFailure(_output.writeExact(mem::toConstByteSpan(std::span<const char>{value.data(), value.size()})))) {
+    if (isFailure(_output.writeExact(toConstByteSpan(std::span<const char>{value.data(), value.size()})))) {
         std::terminate();
     }
 }
@@ -251,26 +252,26 @@ void Http1Encoder::appendHeaders(const HttpHeaders &headers) {
     }
 }
 
-void Http1Encoder::appendChunkPrefix(const unit::ByteLength length) {
+void Http1Encoder::appendChunkPrefix(const ByteCount length) {
     auto buffer = std::array<char, 2U * sizeof(std::size_t)>{};
     const auto result = std::to_chars(buffer.data(), buffer.data() + buffer.size(), length.toSizeT(), 16);
-    if (isFailure(_output.writeExact(mem::toConstByteSpan(std::span<const char>{buffer.data(), result.ptr})))) {
+    if (isFailure(_output.writeExact(toConstByteSpan(std::span<const char>{buffer.data(), result.ptr})))) {
         std::terminate();
     }
     appendLiteral("\r\n");
 }
 
-auto Http1Encoder::chunkWireLength(const unit::ByteLength length) noexcept -> unit::ByteLength {
+auto Http1Encoder::chunkWireLength(const ByteCount length) noexcept -> ByteCount {
     auto value = length.toSizeT();
     auto digits = std::size_t{1U};
     while (value >= 16U) {
         value /= 16U;
         ++digits;
     }
-    return length + unit::ByteLength{digits + 4U};
+    return length + ByteCount{digits + 4U, ByteCount::Unchecked{}};
 }
 
-auto Http1Encoder::trailerWireLength(const HttpHeaders &trailers) const -> unit::ByteLength {
+auto Http1Encoder::trailerWireLength(const HttpHeaders &trailers) const -> ByteCount {
     validateFields(trailers, _limits.trailerLimits());
     const auto fields = trailers.fields();
     for (const auto &field : fields) {

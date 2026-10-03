@@ -10,16 +10,20 @@ target_sources(erbsland-core-unittest PRIVATE
         PathContentTest.cpp
         PathConversionTest.cpp
         PathFileLockTest.cpp
+        PathGlobPatternTest.cpp
         PathInfoTest.cpp
         PathModificationTest.cpp
         PathNameToolsTest.cpp
         PathOperationsBackendTest.cpp
         PathOperationsTest.cpp
+        PathReplacementTest.cpp
         PathResolveBackendTest.cpp
         PathTemporaryTest.cpp
         PathTestFixture.hpp
         PathTestHelper.hpp
+        PathWalkerFilterTest.cpp
         PathWalkerTest.cpp
+        ReplacementOutputStream.hpp
 )
 
 if(WIN32)

@@ -9,6 +9,7 @@
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>
+#include <type_traits>
 
 using namespace erbsland::conf;
 using el::conf::impl::TokenType;
@@ -18,6 +19,7 @@ TESTED_TARGETS(TokenType)
 class TokenTypeTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
 public:
     void testDefaultAndConstructor() {
+        static_assert(std::is_same_v<TokenType, el::conf::syntax::TokenKind>);
         TokenType typeDefault;
         REQUIRE_EQUAL(typeDefault, TokenType::Error);
 
@@ -59,5 +61,9 @@ public:
         REQUIRE_EQUAL(boolean, "Boolean");
         REQUIRE_EQUAL(multiLineCodeOpen, "MultiLineCodeOpen");
         REQUIRE_EQUAL(error, "Error");
+        REQUIRE_EQUAL(std::format("{}", TokenType{TokenType::EndOfData}), "EndOfData");
+        REQUIRE_EQUAL(std::format("{}", TokenType{TokenType::RegEx}), "RegEx");
+        REQUIRE_EQUAL(std::format("{}", TokenType{TokenType::SectionName}), "SectionName");
+        REQUIRE_EQUAL(std::format("{}", TokenType{TokenType::SectionTextName}), "SectionTextName");
     }
 };

@@ -3,8 +3,11 @@
 
 #include "DateDemos.hpp"
 
-#include <erbsland/err/OverflowError.hpp>
-#include <erbsland/time/all.hpp>
+#include <erbsland/all_time.hpp>
+#include <erbsland/Date.hpp>
+#include <erbsland/OverflowError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace demo {
 

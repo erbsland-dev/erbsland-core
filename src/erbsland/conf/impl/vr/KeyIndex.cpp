@@ -10,20 +10,22 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
+
 KeyIndex::~KeyIndex() = default;
 
-KeyIndex::KeyIndex(Name name, const text::CaseSensitivity caseSensitivity, const std::size_t elementCount) :
+KeyIndex::KeyIndex(Name name, const CaseSensitivity caseSensitivity, const std::size_t elementCount) :
     _name{std::move(name)}, _caseSensitivity{caseSensitivity}, _elementCount{elementCount} {
 
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(elementCount > 0, "The element count must be greater than zero"_el);
     if (_elementCount == 1) {
-        if (_caseSensitivity == text::CaseSensitivity::CaseInsensitive) {
+        if (_caseSensitivity == CaseSensitivity::CaseInsensitive) {
             _data = std::make_unique<KeyIndexDataSingleCaseInsensitive>();
         } else {
             _data = std::make_unique<KeyIndexDataSingleCaseSensitive>();
         }
     } else {
-        if (_caseSensitivity == text::CaseSensitivity::CaseInsensitive) {
+        if (_caseSensitivity == CaseSensitivity::CaseInsensitive) {
             _data = std::make_unique<KeyIndexDataMultipleCaseInsensitive>(_elementCount);
         } else {
             _data = std::make_unique<KeyIndexDataMultipleCaseSensitive>(_elementCount);
@@ -36,11 +38,11 @@ auto KeyIndex::tryAddKey(const ConfKey &key) -> bool {
     return _data->tryAddKey(key);
 }
 
-auto KeyIndex::hasKey(const text::String &keyString) const noexcept -> bool {
-    static const auto separatorCharacters = text::CharSet{U','};
+auto KeyIndex::hasKey(const String &keyString) const noexcept -> bool {
+    static const auto separatorCharacters = CharSet{U','};
     if (_elementCount > 1) {
-        auto key = ConfKey{text::StringList::fromSplit(
-            keyString, separatorCharacters, unit::ItemCount::fromSizeT(_elementCount - 1), true)};
+        auto key = ConfKey{
+            StringList::fromSplit(keyString, separatorCharacters, unit::ItemCount::fromSizeT(_elementCount - 1), true)};
         if (key.size() != _elementCount) {
             return false;
         }
@@ -53,7 +55,7 @@ auto KeyIndex::hasKey(const ConfKey &key) const noexcept -> bool {
     return _data->hasKey(key);
 }
 
-auto KeyIndex::hasKey(const text::String &keyString, const std::size_t index) const noexcept -> bool {
+auto KeyIndex::hasKey(const String &keyString, const std::size_t index) const noexcept -> bool {
     if (index >= _elementCount) {
         return false;
     }

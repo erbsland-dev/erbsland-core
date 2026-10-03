@@ -32,17 +32,49 @@ keeps only a weak link to it.
 Archive-level memory use is independent of the total file length, while each selected compressed and uncompressed item
 is transferred in bounded chunks; whole-value extraction still returns an in-memory value.
 
-.. code-block:: cpp
-
-    auto reader = zip::ArchiveReader::create(archivePath);
-    for (const auto &item : reader->items()) {
-        io::printLine(item->path().toString(), " : "_el, item->uncompressedLength().toSizeT());
-    }
-    reader->close();
-
 .. erbsland-demo::
     :source: compression/ZipArchive/ReadArchive.cpp
     :exec: compression/zip_archive --demo ReadArchive
+    :sha256: f73ee601835a577e06dcf48431ab1de3a429e2509a3a1035863d966bd7dcd8d5
+
+.. code-block:: cpp
+
+    /// Inspect validated ZIP metadata and extract selected entries under a safe root.
+    void readArchive() {
+        const auto workspace = el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow();
+        const auto archivePath = workspace->path() / "survey.zip"_el;
+        const auto northText = el::String{"north"_el};
+        const auto southText = el::String{"south"_el};
+        auto writer = el::zip::ArchiveWriter::create(archivePath);
+        writer->addData(
+            el::StringEncoder{northText}.encode(el::StringEncoding::Utf8), el::Path{"measurements/north.txt"_el});
+        writer->addData(
+            el::StringEncoder{southText}.encode(el::StringEncoding::Utf8), el::Path{"measurements/south.txt"_el});
+        writer->finalize();
+
+        const auto outputRoot = workspace->path() / "selected"_el;
+        auto reader = el::zip::ArchiveReader::create(archivePath);
+        for (const auto &item : reader->items()) {
+            el::io::printLine(item->path().toString(), " : "_el, item->uncompressedLength().toSizeT(), " bytes"_el);
+        }
+        reader->extractToDirectory(
+            outputRoot, {}, [](const el::zip::ArchiveItem &item) { return item.path().name() == "north.txt"_el; });
+        reader->close();
+
+        el::io::printLine("Extracted under: "_el, outputRoot.toString());
+    }
+
+.. erbsland-demo-run::
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mmeasurements/north.txt : 5 bytes
+        measurements/south.txt : 5 bytes
+        Extracted under: /var/folders/f2/rq38shx1797_b7m0vy142phw0000gn/T/tmp-74W2zYT7Ijdut52gN7iB
+        zhxb/selected␛[0m
+
+.. erbsland-demo-end::
 
 Safe Extraction
 ===============
@@ -79,21 +111,44 @@ An :cpp:class:`ArchiveWriter <erbsland::compression::zip::ArchiveWriter>` writes
 Set persistent defaults once, then add paths, byte blocks, owned input streams, or a directory tree.
 Per-entry options override the compression method, level, timestamp, or comment without changing later entries.
 
-.. code-block:: cpp
-
-    auto writer = zip::ArchiveWriter::create(archivePath);
-    writer->setCompressionMethod(zip::CompressionMethod::Zstandard);
-    writer->setCompressionLevel(CompressionLevel::High);
-    writer->addFile(reportPath, Path::fromPosix("reports/final.txt"_el));
-    writer->addData(manifestBytes, Path::fromPosix("manifest.json"_el));
-    writer->finalize();
-
 .. erbsland-demo::
     :source: compression/ZipArchive/WriteArchive.cpp
     :exec: compression/zip_archive --demo WriteArchive
+    :sha256: 355e0f0d2fad4aa8b445f167c7e1f8ceccafaf7212cae25ebbb9db1072e78130
+
+.. code-block:: cpp
+
+    /// Create and finalize a ZIP archive from bytes using persistent compression defaults.
+    void writeArchive() {
+        const auto workspace = el::Path::systemTempDirectoryOrThrow().operations().createTempDirectoryOrThrow();
+        const auto archivePath = workspace->path() / "field-notes.zip"_el;
+        const auto notesText = el::String{"alpine observation"_el};
+        const auto notes = el::StringEncoder{notesText}.encode(el::StringEncoding::Utf8);
+
+        auto writer = el::zip::ArchiveWriter::create(archivePath);
+        writer->setCompressionMethod(el::zip::CompressionMethod::Zstandard);
+        writer->setCompressionLevel(el::CompressionLevel::High);
+        writer->setComment("Expedition field notes"_el);
+        writer->addData(notes, el::Path{"observations/day-01.txt"_el});
+        writer->finalize();
+
+        el::io::printLine("Archive : "_el, archivePath.toString());
+        el::io::printLine("Bytes   : "_el, archivePath.info().fileSize().toSizeT());
+    }
+
+.. erbsland-demo-run::
+
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mArchive : /var/folders/f2/rq38shx1797_b7m0vy142phw0000gn/T/tmp-74W2zYT7Ijdut52gN7iBzhxb/fi
+        eld-notes.zip
+        Bytes   : 231␛[0m
+
+.. erbsland-demo-end::
 
 ``finalize()`` is required because it writes the central directory and closes the owned output stream.
-Repeating it after success is harmless, while every add operation then raises ``LogicError``.
+Repeating it after success is harmless, while every add operation then raises ``LogicFailure``.
 ``abort()`` is the immediate terminal alternative.
 For path destinations, the old file is not replaced until the new archive is complete.
 
@@ -118,7 +173,7 @@ count grows beyond a classic limit.
 Errors and Limits
 =================
 
-Invalid caller parameters and lifecycle misuse raise ``ParameterError`` or ``LogicError``.
+Invalid caller parameters and lifecycle misuse raise ``ParameterFailure`` or ``LogicFailure``.
 Archive, stream, path, codec, integrity, and resource-policy failures raise
 :cpp:class:`ZipError <erbsland::compression::zip::ZipError>`.
 Its context includes a concise title, detailed description, machine-readable reason and operation phase, relevant

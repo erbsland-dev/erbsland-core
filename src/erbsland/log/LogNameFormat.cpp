@@ -9,9 +9,10 @@
 
 namespace erbsland::log {
 
+using namespace text;
 using namespace text::literals;
 
-auto LogNameFormat::toString() const -> text::String {
+auto LogNameFormat::toString() const -> String {
     switch (_value) {
     case Full:
         return "full"_el;
@@ -25,11 +26,11 @@ auto LogNameFormat::toString() const -> text::String {
     return {};
 }
 
-auto LogNameFormat::allStrings() -> text::StringList {
-    return text::StringList{"full"_el, "leaf"_el, "head_and_leaf"_el, "left_truncated"_el};
+auto LogNameFormat::allStrings() -> StringList {
+    return StringList{"full"_el, "leaf"_el, "head_and_leaf"_el, "left_truncated"_el};
 }
 
-auto LogNameFormat::fromString(const text::String &text) noexcept -> std::optional<LogNameFormat> {
+auto LogNameFormat::fromString(const String &text) noexcept -> std::optional<LogNameFormat> {
     const auto compare = ::erbsland::text::cCaseInsensitive.asciiComparisonFn();
     if (text.compare("full"_el, compare) == std::strong_ordering::equal) {
         return Full;
@@ -46,7 +47,7 @@ auto LogNameFormat::fromString(const text::String &text) noexcept -> std::option
     return std::nullopt;
 }
 
-auto LogNameFormat::fromStringOrThrow(const text::String &text) -> LogNameFormat {
+auto LogNameFormat::fromStringOrThrow(const String &text) -> LogNameFormat {
     if (const auto result = fromString(text); result.has_value()) {
         return *result;
     }

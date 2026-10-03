@@ -5,10 +5,12 @@
 #include "U8StringDataView.hpp"
 
 #include "../../../unit/ByteIndex.hpp"
+#include "../../../unit/ByteRange.hpp"
 #include "../../../unit/ItemCount.hpp"
 #include "../../AsciiCategory.hpp"
 #include "../../CharCompareFn.hpp"
 #include "../../CharSet.hpp"
+#include "../../StringSide.hpp"
 
 #include <compare>
 #include <span>
@@ -16,7 +18,7 @@
 namespace erbsland::text::impl {
 
 /// Comparison and containment algorithms on UTF-8 string data.
-/// @tested{U8StringTest}
+/// @tested{U8StringTest StringSeparatorSplitTest}
 class U8StringComparisonTools final {
 public:
     /// A set of Unicode code-points for decoded character lookups.
@@ -38,6 +40,28 @@ public: // find
     /// Find the first decoded character sequence at or after the given byte index.
     [[nodiscard]] auto find(
         const U8StringDataView &text, unit::ByteIndex start, CharCompareFn compareFn = {}) const noexcept
+        -> unit::ByteIndex;
+
+    /// Find the first non-empty separator and retain its native boundaries.
+    /// @param text The separator data.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return The relative match range, or no-range for an absent or empty separator.
+    [[nodiscard]] auto findFirstRange(const U8StringDataView &text, CharCompareFn compareFn = {}) const noexcept
+        -> unit::ByteRange;
+    /// Find the rightmost non-empty separator, including overlapping matches.
+    /// @param text The separator data.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return The relative match range, or no-range for an absent or empty separator.
+    [[nodiscard]] auto findLastRange(const U8StringDataView &text, CharCompareFn compareFn = {}) const noexcept
+        -> unit::ByteRange;
+    /// Match a decoded separator at one candidate position.
+    /// @param data The source data span.
+    /// @param start The candidate's native start index.
+    /// @param text The separator span.
+    /// @param compareFn Optional decoded character comparison function.
+    /// @return The actual source end of the match, or no-index on mismatch.
+    [[nodiscard]] static auto endOfTextMatch(
+        std::span<const char> data, unit::ByteIndex start, std::span<const char> text, CharCompareFn compareFn) noexcept
         -> unit::ByteIndex;
 
 public: // tests
@@ -71,6 +95,10 @@ public: // character traversal
         -> bool;
 
 private:
+    /// Search in the selected direction and retain the match boundaries.
+    [[nodiscard]] auto findTextRange(
+        const U8StringDataView &text, StringSide side, CharCompareFn compareFn) const noexcept -> unit::ByteRange;
+
     /// Compare two decoded spans with tolerant UTF-8 decoding.
     [[nodiscard]] static auto compareDecodedSpans(
         std::span<const char> left, std::span<const char> right, CharCompareFn compareFn) noexcept

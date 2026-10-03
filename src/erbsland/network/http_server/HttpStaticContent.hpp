@@ -5,7 +5,7 @@
 #include "HttpStaticContent_fwd.hpp"
 
 #include "../../stream/ByteInputStream_fwd.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::network {
 
@@ -21,10 +21,10 @@ public:
 
 public:
     /// Get the exact finite logical content length.
-    [[nodiscard]] virtual auto length() const noexcept -> unit::ByteLength = 0;
+    [[nodiscard]] virtual auto length() const noexcept -> unit::ByteCount = 0;
     /// Get the memory retained while this content is active.
     /// The conservative default assumes the complete logical content is retained.
-    [[nodiscard]] virtual auto retainedMemoryLength() const noexcept -> unit::ByteLength;
+    [[nodiscard]] virtual auto retainedMemoryLength() const noexcept -> unit::ByteCount;
     /// Open the one-shot content stream at byte zero.
     [[nodiscard]] virtual auto open() -> stream::ByteInputStreamPtr = 0;
 };

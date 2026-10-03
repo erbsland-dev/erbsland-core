@@ -23,7 +23,7 @@ public:
     explicit TlsClientProtocolTestAccess(TlsClientProtocol &protocol) noexcept : _protocol{protocol} {}
 
 public:
-    /// Start with exact deterministic random, session ID, and X25519 private key.
+    /// Start with exact deterministic random, session ID, and key-agreement private key.
     void start(mem::ByteBlock random, mem::ByteBlock legacySessionId, cryptology::KeyAgreementPrivateKey privateKey) {
         _protocol.startWithInputs(std::move(random), std::move(legacySessionId), std::move(privateKey));
     }

@@ -11,6 +11,7 @@ Core Semantics
     format namespace = bson, cbor, json, or xml below data
     parse options = bounded input size, nesting, item count, and string length
     format options = output policy and a stable API extension point
+    text value = accepts String, StringEditor, and Core string literals without explicit conversion
     opaque value = recognized wire payload preserved without interpreting or executing it
 
 Primary Types

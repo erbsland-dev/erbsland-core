@@ -24,7 +24,7 @@ namespace erbsland::util {
 /// @seedoc{/reference/util/utilities}
 /// @tparam tElement The element type stored in this list.
 /// @tparam tSelf Internal CRTP type used by derived public list types.
-/// @tested{ListTest}
+/// @tested{ListTest LastIndexTest}
 template <typename tElement, typename tSelf>
 class List {
 public:
@@ -133,6 +133,8 @@ public: // elements
     /// Return the number of elements.
     /// @return The element count.
     [[nodiscard]] auto count() const noexcept -> Count;
+    /// Get the final element index, or noIndex() if this list is empty.
+    [[nodiscard]] auto lastIndex() const noexcept -> Index;
     /// Count all elements matching a predicate.
     /// @param function The predicate called for every element.
     /// @return The number of matching elements.
@@ -156,9 +158,9 @@ public: // elements
     /// Get a const reference to an element by index.
     /// The returned reference is borrowed from this list and remains valid only until this list is modified or
     /// destroyed.
-    /// @param index The element index.
+    /// @param index The element index. Must identify an existing element in this list.
     /// @return A const reference to the element.
-    /// @throws err::OutOfRangeError If `index` is invalid or outside this list.
+    /// @throws err::OutOfRangeError If the index does not identify an element.
     [[nodiscard]] auto getRefOrThrow(Index index) const -> const Element &;
     /// Get the first element.
     /// @return A copy of the first element.

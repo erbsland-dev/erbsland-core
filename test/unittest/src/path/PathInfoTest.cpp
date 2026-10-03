@@ -6,14 +6,14 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/path/impl/BackendFactory.hpp>
 #include <erbsland/path/impl/CommonPathBackend.hpp>
 #include <erbsland/path/impl/PathInfoData.hpp>
-#include <erbsland/path/PathError.hpp>
-#include <erbsland/path/PathInfo.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/time/TimePoint.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/TimePoint.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <chrono>
@@ -72,7 +72,7 @@ class PathInfoTest final : public el::UnitTest {
             result.loadedParts = parts | PathInfoPart::Type;
             result.lastRefresh = el::time::TimePoint::now();
             if (parts.isSet(PathInfoPart::Size)) {
-                result.fileSize = el::unit::ByteLength{123U};
+                result.fileSize = el::unit::ByteCount{123U};
             }
             if (parts.isSet(PathInfoPart::FileIdentity)) {
                 result.fileIdentity = el::system::FileIdentity::fromNativeValues(12U, 34U);
@@ -140,7 +140,7 @@ public:
 
         const auto info = Path{"report.txt"_el}.info();
         REQUIRE_EQUAL(scope.backendPtr->loadCount, 1);
-        REQUIRE_EQUAL(info.fileSize(), el::unit::ByteLength{123U});
+        REQUIRE_EQUAL(info.fileSize(), el::unit::ByteCount{123U});
         REQUIRE(scope.backendPtr->lastParts.isSet(PathInfoPart::Size));
         REQUIRE_EQUAL(scope.backendPtr->loadCount, 2);
         REQUIRE_EQUAL(scope.backendPtr->fullLoadCount, 1);
@@ -228,7 +228,7 @@ public:
         REQUIRE_FALSE(scope.backendPtr->lastParts.isSet(PathInfoPart::Size));
         REQUIRE_EQUAL(scope.backendPtr->loadCount, 2);
 
-        REQUIRE_EQUAL(info.fileSize(), el::unit::ByteLength{123U});
+        REQUIRE_EQUAL(info.fileSize(), el::unit::ByteCount{123U});
         REQUIRE(scope.backendPtr->lastParts.isSet(PathInfoPart::Size));
         REQUIRE_EQUAL(scope.backendPtr->loadCount, 3);
     }

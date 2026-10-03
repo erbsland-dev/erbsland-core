@@ -1,0 +1,9 @@
+#
+# Global headers for generated files. Validation supplies the defaults.
+#
+----[ Rendering ]-----------------------------------------------------------------------------------------------------
+
+# Copyright Line         : "Copyright (c) ${var:year} Tobias Erbsland - https://erbsland.dev"
+# License Line           : "SPDX-License-Identifier: Apache-2.0"
+# Environment sources and text filters are also available:
+# Copyright Line         : "Copyright (c) ${var:year} ${env:OWNER,required|trim}"

@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/network/url/Url.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEditor.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/Url.hpp>
 
 using namespace el::network;
 using namespace el::text::literals;
@@ -57,15 +57,24 @@ public:
         const auto secure = Url{endpoint, "/v1"_el};
         REQUIRE_EQUAL(secure.scheme(), UrlScheme::Https);
         REQUIRE_EQUAL(secure.toString(), "https://example.test:8443/v1"_el);
-        REQUIRE_THROWS_AS(el::err::ParameterError, Url(UrlScheme::File, endpoint));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Url(UrlScheme::Http, HostEndpoint{}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Url(endpoint, "path-without-slash"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, Url(UrlScheme::File, endpoint));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, Url(UrlScheme::Http, HostEndpoint{}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, Url(endpoint, "path-without-slash"_el));
 
         const auto file = Url::file(Host::fromStringOrThrow("server"_el), "/share"_el, "download=1"_el, "top"_el);
         REQUIRE_EQUAL(file.toString(), "file://server/share?download=1#top"_el);
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, Url::customWithAuthority("demo"_el, "host"_el, "path-without-slash"_el));
-        REQUIRE_THROWS_AS(el::err::ParameterError, Url::custom("https"_el, "value"_el));
+            el::err::ParameterFailure, Url::customWithAuthority("demo"_el, "host"_el, "path-without-slash"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, Url::custom("https"_el, "value"_el));
+    }
+
+    void testEscapingKeepsComponentBoundaries() {
+        const auto parsed = Url::fromStringOrThrow(
+            "https://u%3A%40:p%2F%3F@example.test/a%20b/%C3%A9%3F%23%25?q=a/b?c%23%25#f/a?b%23%25"_el);
+        const auto options = UrlFormatOptions{}.setRedactPassword(false);
+        REQUIRE_EQUAL(
+            parsed.toString(options),
+            "https://u%3A%40:p%2F%3F@example.test/a%20b/%C3%A9%3F%23%25?q=a/b?c%23%25#f/a?b%23%25"_el);
     }
 
     void testFileMailtoAndCustomUrls() {
@@ -84,7 +93,7 @@ public:
         REQUIRE_EQUAL(mail.toString(), "mailto:user@example.test?subject=Hello%20World"_el);
         REQUIRE_FALSE(Url::fromString("mailto:/user@example.test"_el).isValid());
         REQUIRE_FALSE(Url::fromString("mailto:user%2Fname@example.test"_el).isValid());
-        REQUIRE_THROWS_AS(el::err::ParameterError, Url::mailto("user/name@example.test"_el));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, Url::mailto("user/name@example.test"_el));
 
         REQUIRE_EQUAL(Url::fromStringOrThrow("demo:value#part"_el).toString(), "demo:value#part"_el);
         REQUIRE_EQUAL(Url::fromStringOrThrow("demo:/value"_el).toString(), "demo:/value"_el);
@@ -124,7 +133,8 @@ public:
         auto boundary = el::text::StringEditor{"https://example.test/"_el};
         boundary.append(
             "x"_el,
-            el::unit::ItemCount{UrlParseOptions::cDefaultMaximumLength.toRawValue() - boundary.length().toRawValue()});
+            el::unit::ItemCount::fromInteger(
+                (UrlParseOptions::cDefaultMaximumLength - boundary.length()).toRawValue()));
         REQUIRE(Url::fromString(el::text::String{boundary}).isValid());
         boundary.append(U'x');
         REQUIRE_FALSE(Url::fromString(el::text::String{boundary}).isValid());
@@ -157,7 +167,7 @@ public:
             Url::fromStringOrThrow("ftp://example.test/a/b"_el).resolvedOrThrow("../c"_el).toString(),
             "ftp://example.test/c"_el);
         REQUIRE_EQUAL(Url::fromStringOrThrow("file:///a/b"_el).resolvedOrThrow("../c"_el).toString(), "file:///c"_el);
-        REQUIRE_FALSE(base.resolved("abc"_el, UrlParseOptions{}.setMaximumLength(el::unit::ByteLength{2U})).isValid());
+        REQUIRE_FALSE(base.resolved("abc"_el, UrlParseOptions{}.setMaximumLength(el::unit::ByteCount{2U})).isValid());
     }
 
     void testRfc3986ResolutionExamples() {

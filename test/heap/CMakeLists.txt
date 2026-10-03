@@ -19,3 +19,4 @@ add_test(
         NAME erbsland-core-heap-unittest
         COMMAND $<TARGET_FILE:erbsland-core-heap-unittest> --no-color
 )
+set_tests_properties(erbsland-core-heap-unittest PROPERTIES LABELS ci)

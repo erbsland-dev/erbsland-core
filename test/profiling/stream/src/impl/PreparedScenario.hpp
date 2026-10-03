@@ -7,6 +7,8 @@
 
 #include "../ProfileTypes.hpp"
 
+#include <erbsland/TempDirectory.hpp>
+
 namespace app::stream::impl {
 
 /// Internal PreparedScenario data for stream profiling.

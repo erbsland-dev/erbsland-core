@@ -3,11 +3,11 @@
 
 #include "MoveAwareTestValueHash.hpp"
 
-#include <erbsland/unit/ItemCount.hpp>
+#include <erbsland/HashSet.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/LoopStatus.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/HashSet.hpp>
-#include <erbsland/util/List.hpp>
-#include <erbsland/util/LoopStatus.hpp>
 
 #include <algorithm>
 #include <set>

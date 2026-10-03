@@ -49,6 +49,7 @@ public: // implements NativeOutputStream
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
 
 public: // implements NativeByteStream
+    [[nodiscard]] auto initialFileSize() const noexcept -> unit::ByteCount override;
     [[nodiscard]] auto fileIdentity() const noexcept -> system::FileIdentity override;
     [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
     [[nodiscard]] auto position() const -> unit::ByteIndex override;
@@ -56,7 +57,7 @@ public: // implements NativeByteStream
     auto movePosition(StreamPositionOrigin origin, unit::ByteOffset offset) -> unit::ByteIndex override;
     void close() override;
     void abort() noexcept override;
-    [[nodiscard]] auto read(mem::ByteSpan destination) -> unit::ByteLength override;
+    [[nodiscard]] auto read(mem::ByteSpan destination) -> unit::ByteCount override;
     void write(mem::ConstByteSpan bytes) override;
 
 public:
@@ -67,7 +68,7 @@ public:
     /// Get the current file size if this stream references a file.
     /// @return The file size in bytes, or zero for zero-length streams.
     /// @throws stream::StreamError If the stream is closed or size lookup fails.
-    [[nodiscard]] auto fileSize() const -> unit::ByteLength;
+    [[nodiscard]] auto fileSize() const -> unit::ByteCount;
 
 private:
     /// Throw a stream error with a Windows error code.
@@ -86,6 +87,7 @@ private:
     text::String _path;                                                ///< Stream path, when available.
     system::FileIdentity _fileIdentity;                                ///< Identity captured from the handle.
     bool _isConsole{false};                                            ///< Whether the handle is a Windows console.
+    unit::ByteCount _initialFileSize{unit::ByteCount::infinite()};     ///< Regular-file size captured at construction.
     bool _supportsPositioning{false};                                  ///< Whether this handle can be positioned.
     mutable std::mutex _operationMutex;                                ///< Protects operation and deferred close state.
     mutable std::vector<WindowsNativeHandle> _operationThreads;        ///< Active operation threads.
@@ -93,4 +95,5 @@ private:
 };
 
 }
+
 #include "../../mem/ByteSpan.hpp"

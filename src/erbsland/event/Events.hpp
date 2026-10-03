@@ -10,7 +10,7 @@
 #include "EventScheduler.hpp"
 #include "EventTimer_fwd.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 #include "../time/TimeDelta.hpp"
 
@@ -38,16 +38,16 @@ public: // interface
     /// @param callback The callback to execute on the target event loop.
     virtual void invokeAfter(time::TimeDelta delay, EventCallback callback) = 0;
     /// Access a backend frontend interface.
+    /// The requested backend must be available and expose the interface `T`.
     /// @tparam T The public backend frontend interface.
     /// @return The requested backend frontend.
-    /// @throws err::ParameterError If the backend is not available or has the wrong type.
     template <typename T>
     [[nodiscard]] auto get() -> T & {
         using namespace text::literals;
         auto &backend = getBackend(T::backendId());
         const auto result = dynamic_cast<T *>(&backend);
         if (result == nullptr) {
-            throw err::ParameterError{"The backend does not implement the requested interface."_el, "backend"_el};
+            throw err::ParameterFailure{"The backend does not implement the requested interface."_el, "backend"_el};
         }
         return *result;
     }

@@ -11,7 +11,7 @@
 #include "impl/input/U16StringInput.hpp"
 #include "impl/input/U32StringInput.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::re {
@@ -36,7 +36,7 @@ auto RegEx::collectAll(const stream::TextInputStreamPtr &input) const -> MatchLi
 
 auto RegEx::collectAll(const InputPtr &input) const -> MatchList {
     if (input == nullptr) {
-        throw err::ParameterError{"Input cannot be null."_el, "input"_el};
+        throw err::ParameterFailure{"Input cannot be null."_el, "input"_el};
     }
     auto result = MatchList{};
     for (auto match : findAll(input)) {
@@ -47,7 +47,7 @@ auto RegEx::collectAll(const InputPtr &input) const -> MatchList {
 
 auto RegEx::collectAll(const Input16Ptr &input) const -> Match16List {
     if (input == nullptr) {
-        throw err::ParameterError{"Input cannot be null."_el, "input"_el};
+        throw err::ParameterFailure{"Input cannot be null."_el, "input"_el};
     }
     auto result = Match16List{};
     for (auto match : findAll(input)) {
@@ -58,7 +58,7 @@ auto RegEx::collectAll(const Input16Ptr &input) const -> Match16List {
 
 auto RegEx::collectAll(const Input32Ptr &input) const -> Match32List {
     if (input == nullptr) {
-        throw err::ParameterError{"Input cannot be null."_el, "input"_el};
+        throw err::ParameterFailure{"Input cannot be null."_el, "input"_el};
     }
     auto result = Match32List{};
     for (auto match : findAll(input)) {

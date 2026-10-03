@@ -12,9 +12,10 @@
 #include "ValueData.hpp"
 #include "ValueTest.hpp"
 
+#include "../../../err/RuntimeError.hpp"
 #include "../../../math/SaturatingMath.hpp"
-#include "../../../text/Literals.hpp"
-#include "../../../text/StringFormat.hpp"
+#include "../../Literals.hpp"
+#include "../../StringFormat.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -22,9 +23,10 @@
 
 namespace erbsland::text::render::impl {
 
+using namespace unit;
 using namespace text::literals;
 
-void Engine::executeUnary(ExecutionFrame &frame, const Opcode opcode, const unit::CodeLocation location) {
+void Engine::executeUnary(ExecutionFrame &frame, const Opcode opcode, const CodeLocation location) {
     auto &value = resolvedTop(frame, location);
     if (!value.isInteger() && !value.isFloat()) {
         throw error(
@@ -44,7 +46,7 @@ void Engine::executeUnary(ExecutionFrame &frame, const Opcode opcode, const unit
         value.isInteger() ? Value{math::saturatingSubtract(int64_t{0}, value.asInteger())} : Value{-value.asFloat()};
 }
 
-void Engine::executeArithmetic(ExecutionFrame &frame, const Opcode opcode, const unit::CodeLocation location) {
+void Engine::executeArithmetic(ExecutionFrame &frame, const Opcode opcode, const CodeLocation location) {
     auto right = takeValue(frame, opcode, location);
     auto left = takeValue(frame, opcode, location);
     const auto leftNumeric = left.isInteger() || left.isFloat();
@@ -105,7 +107,7 @@ void Engine::executeArithmetic(ExecutionFrame &frame, const Opcode opcode, const
     push(frame, Value{result}, location);
 }
 
-void Engine::executeConcatenation(ExecutionFrame &frame, const unit::CodeLocation location) {
+void Engine::executeConcatenation(ExecutionFrame &frame, const CodeLocation location) {
     auto right = takeValue(frame, Opcode::Concatenate, location);
     auto left = takeValue(frame, Opcode::Concatenate, location);
     if (left.isList() || left.isMap() || right.isList() || right.isMap()) {
@@ -123,7 +125,7 @@ void Engine::executeConcatenation(ExecutionFrame &frame, const unit::CodeLocatio
 }
 
 void Engine::buildCollection(
-    ExecutionFrame &frame, const Opcode opcode, const uint64_t count, const unit::CodeLocation location) {
+    ExecutionFrame &frame, const Opcode opcode, const uint64_t count, const CodeLocation location) {
     if (count > frame.stack.size() || (opcode == Opcode::BuildMap && count > frame.stack.size() / 2U)) {
         throw ProgramError{"A collection literal consumes more values than are available on the stack."_el};
     }
@@ -150,7 +152,7 @@ void Engine::buildCollection(
     push(frame, Value{result}, location);
 }
 
-void Engine::executeMembership(ExecutionFrame &frame, const bool negate, const unit::CodeLocation location) {
+void Engine::executeMembership(ExecutionFrame &frame, const bool negate, const CodeLocation location) {
     auto container = takeValue(frame, negate ? Opcode::NotIn : Opcode::In, location);
     auto needle = takeValue(frame, negate ? Opcode::NotIn : Opcode::In, location);
     if (needle.isList() || needle.isMap()) {
@@ -167,7 +169,7 @@ void Engine::executeMembership(ExecutionFrame &frame, const bool negate, const u
     } else if (container.isList()) {
         const auto &values = list(container);
         for (auto index = std::size_t{}; index < values.count().toSizeT(); ++index) {
-            if (valuesEqual(needle, values.get(unit::ItemIndex::fromSizeT(index)))) {
+            if (valuesEqual(needle, values.get(ItemIndex::fromSizeT(index)))) {
                 result = true;
                 break;
             }
@@ -186,7 +188,7 @@ void Engine::executeMembership(ExecutionFrame &frame, const bool negate, const u
 }
 
 void Engine::executeTest(
-    ExecutionFrame &frame, const uint64_t rawTest, const bool negate, const unit::CodeLocation location) {
+    ExecutionFrame &frame, const uint64_t rawTest, const bool negate, const CodeLocation location) {
     if (rawTest >= static_cast<uint64_t>(ValueTest::Count)) {
         throw ProgramError{"A value-test operand is invalid."_el};
     }
@@ -242,7 +244,7 @@ void Engine::executeTest(
     push(frame, Value{negate ? !result : result}, location);
 }
 
-void Engine::executeComparison(ExecutionFrame &frame, const Opcode opcode, const unit::CodeLocation location) {
+void Engine::executeComparison(ExecutionFrame &frame, const Opcode opcode, const CodeLocation location) {
     auto right = takeValue(frame, opcode, location);
     auto left = takeValue(frame, opcode, location);
     if (left.isList() || left.isMap() || right.isList() || right.isMap()) {
@@ -301,10 +303,8 @@ auto Engine::valuesEqual(const Value &left, const Value &right) const -> bool {
 }
 
 auto Engine::compareValues(
-    const ConstCompiledLayoutPtr &layout,
-    const Value &left,
-    const Value &right,
-    const unit::CodeLocation location) const -> std::partial_ordering {
+    const ConstCompiledLayoutPtr &layout, const Value &left, const Value &right, const CodeLocation location) const
+    -> std::partial_ordering {
     if ((left.isInteger() || left.isFloat()) && (right.isInteger() || right.isFloat())) {
         return value_comparison::compareNumbers(left, right);
     }
@@ -327,7 +327,7 @@ auto Engine::compareValues(
 }
 
 void Engine::applyFilter(
-    ExecutionFrame &frame, const uint64_t operand, const bool builtIn, const unit::CodeLocation location) {
+    ExecutionFrame &frame, const uint64_t operand, const bool builtIn, const CodeLocation location) {
     const auto argumentCount = operand & 0x03U;
     const auto identifier = operand >> 2U;
     if (argumentCount > 2U) {
@@ -359,16 +359,16 @@ void Engine::applyFilter(
                 location);
         } else {
             auto values = ValueList{};
-            values.reserve(unit::ItemCount::fromSizeT(static_cast<std::size_t>(argumentCount) + 1U));
+            values.reserve(ItemCount::fromSizeT(static_cast<std::size_t>(argumentCount) + 1U));
             values.append(value);
             values.append(arguments);
             value = resolve((*applicationFilter)(values), frame.layout, location);
         }
-    } catch (const RenderError &) {
-        throw;
+    } catch (const RenderError &error) {
+        throw withCallbackContext(error, frame.layout, location);
     } catch (const ProgramError &) {
         throw;
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         throw error(
             RenderErrorCategory::Runtime,
             "Layout filter failed"_el,

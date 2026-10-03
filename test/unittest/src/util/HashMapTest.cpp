@@ -4,9 +4,9 @@
 #include "MoveAwareTestValue.hpp"
 #include "MoveAwareTestValueHash.hpp"
 
-#include <erbsland/unit/ItemCount.hpp>
+#include <erbsland/HashMap.hpp>
+#include <erbsland/ItemCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/HashMap.hpp>
 
 #include <algorithm>
 #include <map>
@@ -106,7 +106,7 @@ public:
 
         second.reserve(ItemCount{32}).set(2, 22).set(3, 30);
 
-        REQUIRE(second.capacity().toSizeT() >= 32U);
+        REQUIRE(second.capacity() >= el::ItemCount{32U});
         REQUIRE_EQUAL(first.get(2, 0), 20);
         REQUIRE(!first.contains(3));
         REQUIRE_EQUAL(second.get(2, 0), 22);

@@ -22,7 +22,7 @@ public:
         return _encoder.finish(std::move(trailers));
     }
     /// Detach one bounded wire-output block.
-    [[nodiscard]] auto takeOutput(unit::ByteLength maximumLength = Http1CodecLimits::cMaximumBodyChunkLength)
+    [[nodiscard]] auto takeOutput(unit::ByteCount maximumLength = Http1CodecLimits::cMaximumBodyChunkLength)
         -> mem::ByteBlock {
         return _encoder.takeOutput(maximumLength);
     }
@@ -31,7 +31,7 @@ public:
     /// Test whether semantic input is complete.
     [[nodiscard]] auto isComplete() const noexcept -> bool { return _encoder.isComplete(); }
     /// Get queued wire-output bytes.
-    [[nodiscard]] auto queuedOutputLength() const noexcept -> unit::ByteLength { return _encoder.queuedOutputLength(); }
+    [[nodiscard]] auto queuedOutputLength() const noexcept -> unit::ByteCount { return _encoder.queuedOutputLength(); }
 
 private:
     Http1Encoder _encoder; ///< Shared implementation.

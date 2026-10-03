@@ -40,7 +40,7 @@ public:
 
     void testLiteralFastPathRespectsCompilerLimits() {
         auto settings = Settings{};
-        settings.setMaximumPatternLength(el::unit::CpLength{5U});
+        settings.setMaximumPatternLength(el::unit::CpCount{5U});
         REQUIRE_THROWS(compileAndDisassemble("hello"_el, {}, settings));
 
         settings = Settings{};

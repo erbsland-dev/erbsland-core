@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "AesCbcEncryptorData.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
 using namespace text::literals;
 
 AesCbcEncryptorData::AesCbcEncryptorData(
-    const SymmetricEncryptionType type, const mem::ConstByteSpan key, const mem::ConstByteSpan iv) :
+    const SymmetricEncryptionType type, const ConstByteSpan key, const ConstByteSpan iv) :
     _type{type}, _state{type, key, iv} {
 }
 
@@ -22,20 +23,20 @@ auto AesCbcEncryptorData::type() const noexcept -> SymmetricEncryptionType {
     return _type;
 }
 
-void AesCbcEncryptorData::addAuthenticatedData(mem::ConstByteSpan) {
-    throw err::LogicError{"AES-CBC does not support authenticated data."_el};
+void AesCbcEncryptorData::addAuthenticatedData(ConstByteSpan) {
+    throw err::LogicFailure{"AES-CBC does not support authenticated data."_el};
 }
 
-auto AesCbcEncryptorData::encrypt(const mem::ConstByteSpan data) -> mem::ByteBlock {
+auto AesCbcEncryptorData::encrypt(const ConstByteSpan data) -> ByteBlock {
     return _state.encrypt(data);
 }
 
-auto AesCbcEncryptorData::finalize() -> mem::ByteBlock {
+auto AesCbcEncryptorData::finalize() -> ByteBlock {
     return _state.finalizeEncryption();
 }
 
 auto AesCbcEncryptorData::tag() const -> SymmetricTag {
-    throw err::LogicError{"AES-CBC does not produce an authentication tag."_el};
+    throw err::LogicFailure{"AES-CBC does not produce an authentication tag."_el};
 }
 
 void AesCbcEncryptorData::secureErase() noexcept {

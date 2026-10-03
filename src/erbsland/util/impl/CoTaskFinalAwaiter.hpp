@@ -17,6 +17,7 @@ public:
     /// Test whether final suspension can proceed without suspension.
     [[nodiscard]] auto await_ready() const noexcept -> bool { return false; }
     /// Destroy the coroutine frame and complete its shared task state.
+    /// @param handle The completed coroutine handle.
     void await_suspend(const std::coroutine_handle<CoTaskPromise<tValue>> handle) const noexcept;
     /// Resume after final coroutine completion.
     void await_resume() const noexcept {}

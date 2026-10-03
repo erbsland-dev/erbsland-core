@@ -11,11 +11,12 @@ auto CodeSnippetLayoutCell::ellipsis() -> CodeSnippetLayoutCell {
 }
 
 auto CodeSnippetLayoutCell::overlaps(const unit::ColumnRange other) const noexcept -> bool {
-    return !isEllipsis && !other.isEmpty() && range.index() < other.endIndex() && other.index() < range.endIndex();
+    return !isEllipsis && !other.isEmpty() && range.beginIndex() < other.endIndex() &&
+        other.beginIndex() < range.endIndex();
 }
 
 auto CodeSnippetLayoutCell::containsOrFollows(const unit::ColumnIndex point) const noexcept -> bool {
-    return !isEllipsis && (point <= range.index() || range.contains(point));
+    return !isEllipsis && (point <= range.beginIndex() || range.contains(point));
 }
 
 }

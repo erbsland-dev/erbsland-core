@@ -1,0 +1,43 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Duration            : 180s
+Threads             : 1
+Warmup Samples      : 1
+Samples             : 7
+Minimum Sample Time : 2ms
+Memory Limit        : 32 MiB
+Progress Interval   : 5s
+Sensitive Mode      : "normal"
+
+# Every manual/native pair uses identical source bytes and separator placement.
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "split-short"
+Widths              : "all"
+Types               : "all"
+Use Cases           : "separator-split"
+Variants            : "all"
+Content Profiles    : "ascii", "mixed", "supplementary"
+Size Modes          : "fixed"
+Size Min            : 64
+Size Max            : 4096
+Operand Size Min    : 1
+Operand Size Max    : 1
+Sensitive Modes     : "normal"
+Weight              : 1
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "split-long"
+Widths              : "all"
+Types               : "all"
+Use Cases           : "separator-split"
+Variants            : "first-text", "last-text", "first-text-miss", "last-text-miss", "manual-first-text", "manual-last-text", "manual-first-text-miss", "manual-last-text-miss"
+Content Profiles    : "ascii", "mixed"
+Size Modes          : "fixed"
+Size Min            : 4096
+Size Max            : 4096
+Operand Size Min    : 128
+Operand Size Max    : 128
+Sensitive Modes     : "normal"
+Weight              : 1

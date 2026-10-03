@@ -2,17 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/event/impl/EpollEventLoopDriver.hpp>
-#include <erbsland/time/TimeDelta.hpp>
+#include <erbsland/PlatformError.hpp>
+#include <erbsland/system/impl/PosixErrorContext.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <unistd.h>
 
 #include <array>
+#include <cerrno>
+#include <limits>
 
 using namespace el::time;
 
 TESTED_TARGETS(EpollEventLoopDriver)
 class EpollEventLoopDriverTest final : public el::UnitTest {
 public:
+    void testInvalidDescriptorReportsNativeContext() {
+        auto driver = el::event::impl::EpollEventLoopDriver{};
+        try {
+            const auto registration = driver.registerDescriptor(
+                std::numeric_limits<int>::max(), true, false, [](bool, bool, bool) -> void {});
+            REQUIRE(false);
+        } catch (const el::PlatformError &error) {
+            const auto context = std::dynamic_pointer_cast<const el::system::impl::PosixErrorContext>(error.context());
+            REQUIRE(context != nullptr);
+            REQUIRE_EQUAL(context->errorCode(), EBADF);
+        }
+    }
+
     void testDescriptorReadinessAndRegistrationGeneration() {
         auto driver = el::event::impl::EpollEventLoopDriver{};
         auto descriptors = std::array<int, 2>{};

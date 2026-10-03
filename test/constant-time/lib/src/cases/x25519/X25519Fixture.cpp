@@ -1,15 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "X25519Fixture.hpp"
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
@@ -17,9 +16,9 @@ using namespace el::text::literals;
 
 X25519Fixture::X25519Fixture(el::Random &random, const bool population, X25519Operation operation) :
     _operation{operation} {
-    auto secret = input(random, population, 32);
+    auto secret = input(random, population, el::ByteCount{32});
     _secret = std::move(secret);
-    _message = el::ByteBuffer{el::ByteLength{32}};
+    _message = el::ByteBuffer{el::ByteCount{32}};
     _message.set(el::ByteIndex{}, el::Byte{9U});
     _field = ci::x25519::FieldElement::fromBytes(_secret.span());
     require(ci::x25519::FieldElement::multiply(_field, ci::x25519::FieldElement::one()).toBytes() == _field.toBytes());
@@ -61,7 +60,7 @@ auto X25519Fixture::measure(const uint64_t repetitions) -> uint64_t {
     case X25519Operation::Swap:
         return repeat(repetitions, [this]() -> uint64_t { return sample<X25519Operation::Swap>(); });
     }
-    throw el::LogicError{"Unknown sample operation."_el};
+    throw el::LogicFailure{"Unknown sample operation."_el};
 }
 
 }

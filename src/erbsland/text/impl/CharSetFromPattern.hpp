@@ -10,8 +10,13 @@
 namespace erbsland::text::impl {
 
 /// Create a character set from a simple range pattern read character-by-character.
+/// @param reader The pattern reader, with an optional leading inversion marker.
+/// @return The parsed set, or its complement for a leading caret.
+/// @throws err::ParseError If the pattern syntax is invalid.
+/// @tested{CharSetTest StringPatternTest}
 [[nodiscard]] inline auto charSetFromPatternCharacters(StringCharReader &reader) -> CharSet {
     auto result = CharSet{};
+    const auto isInverted = reader.advanceIf(Char{U'^'});
     auto isFirstCharacter = true;
 
     while (!reader.isAtEnd()) {
@@ -47,6 +52,9 @@ namespace erbsland::text::impl {
         isFirstCharacter = false;
     }
 
+    if (isInverted) {
+        return result.inverted();
+    }
     return result;
 }
 

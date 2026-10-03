@@ -3,6 +3,14 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/all_cterm.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ApplicationErrorContext.hpp>
+#include <erbsland/CodeLocation.hpp>
+#include <erbsland/ColumnIndex.hpp>
+#include <erbsland/cterm/TerminalDocumentRenderer.hpp>
+#include <erbsland/DiagnosticHelper.hpp>
+#include <erbsland/LineIndex.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 

@@ -20,14 +20,23 @@ public:
 
 public: // factory
     /// Create the default native TCP listener device.
+    /// @param driver The platform's default native event-loop driver; custom drivers are not supported.
+    /// @param callbacks The source callbacks.
+    /// @return The platform-native listener device.
     [[nodiscard]] static auto create(event::EventLoopDriverPtr driver, TcpListenerDeviceCallbacks callbacks)
         -> TcpListenerDevicePtr;
 
 public:
     /// Bind and listen on a local endpoint.
+    /// @param localEndpoint The local endpoint to bind.
+    /// @param backlog The maximum pending-connection queue size.
     /// @return The actual bound endpoint.
+    /// @throws NetworkError If socket creation, configuration, binding, or listening fails.
+    /// @throws system::PlatformError If native event registration fails.
     [[nodiscard]] virtual auto start(IpEndpoint localEndpoint, unit::ItemCount backlog) -> IpEndpoint = 0;
     /// Enable or disable native accept operations.
+    /// @param enabled Whether to accept connections.
+    /// @throws system::PlatformError If native event registration fails.
     virtual void setAccepting(bool enabled) = 0;
     /// Close the native listening socket.
     virtual void close() noexcept = 0;

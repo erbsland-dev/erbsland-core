@@ -49,8 +49,9 @@ Terminal::Terminal(BackendPtr backend, const block::Size size) :
 }
 
 void Terminal::setSize(const block::Size size) noexcept {
-    if (_size != size) {
-        _size = size.limitedWith(cMaximumSize).expandedWith(cMinimumSize);
+    const auto boundedSize = size.limitedWith(cMaximumSize).expandedWith(cMinimumSize);
+    if (_size != boundedSize) {
+        _size = boundedSize;
         _afterResize = true;
     }
 }
@@ -86,18 +87,6 @@ void Terminal::setLineBufferEnabled(const bool enabled) noexcept {
         return;
     }
     _lineBuffer.setCachingEnabled(enabled);
-}
-
-auto Terminal::safeMarginEnabled() const noexcept -> bool {
-    return _safeMarginEnabled;
-}
-
-void Terminal::setSafeMarginEnabled(const bool enabled) noexcept {
-    _safeMarginEnabled = enabled;
-    if (_terminalSize == block::Size{}) {
-        return; // ignore if we have no detected terminal size.
-    }
-    setSize(applySafeMargin(_terminalSize));
 }
 
 auto Terminal::backBufferEnabled() const noexcept -> bool {

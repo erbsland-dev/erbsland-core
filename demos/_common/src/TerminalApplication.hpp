@@ -2,10 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
-#include <erbsland/core/MakeOneNamespace.hpp>
-#include <erbsland/cterm/all.hpp>
-#include <erbsland/stream/StandardStreams.hpp>
+#include <erbsland/all_cterm.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/cterm/Buffer.hpp>
+#include <erbsland/cterm/Key.hpp>
+#include <erbsland/cterm/Terminal.hpp>
+#include <erbsland/cterm/UpdateSettings.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -23,6 +28,8 @@ public:
     ~TerminalApplication() override = default;
 
 protected: // implement el::Application
+    [[nodiscard]] auto createAndInitializeTerminal(el::block::Size size, el::cterm::TerminalFlags flags)
+        -> el::cterm::TerminalPtr override;
     void initialize() override;
     [[nodiscard]] auto main() -> erbsland::ExitCode override;
 

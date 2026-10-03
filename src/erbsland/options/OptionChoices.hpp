@@ -6,7 +6,7 @@
 #include "OptionChoiceEditor.hpp"
 #include "OptionChoices_fwd.hpp"
 
-#include "../unit/ArgumentUnit.hpp"
+#include "../unit/ArgumentCount.hpp"
 
 #include <vector>
 

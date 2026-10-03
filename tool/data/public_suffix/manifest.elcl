@@ -1,0 +1,5 @@
+# SHA3-256 of text with CRLF and lone CR normalized to LF; all other bytes remain significant.
+[snapshot]
+version: "2026-08-19_19-18-48_UTC"
+[files]
+"public_suffix_list.dat": "96890D4AEDA1D99E1EB7883E2C3E326DA111E2286CD44AAE5BD432E6FFA183C6"

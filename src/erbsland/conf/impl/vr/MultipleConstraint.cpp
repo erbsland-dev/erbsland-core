@@ -12,12 +12,14 @@
 
 #include "../../../math/IntegerMath.hpp"
 #include "../../../text/StringFormat.hpp"
+#include "../../../unit/ItemCount.hpp"
 
 #include <cmath>
 #include <limits>
 
 namespace erbsland::conf::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 auto handleMultipleConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr {
@@ -61,11 +63,11 @@ auto handleMultipleConstraint(const ConstraintHandlerContext &context) -> Constr
         return std::make_shared<MultipleIntegerConstraint>(node->asInteger());
     case vr::RuleType::ValueMatrix: {
         const auto intList = node->asList<int>();
-        if (intList.size() == 2) {
-            if (intList[0] == 0 || intList[1] == 0) {
+        if (intList.count() == ItemCount{2}) {
+            if (intList.get(ItemIndex{0}) == 0 || intList.get(ItemIndex{1}) == 0) {
                 throwValidationError("The 'multiple' divisors must not be zero"_el);
             }
-            return std::make_shared<MultipleMatrixConstraint>(intList[0], intList[1]);
+            return std::make_shared<MultipleMatrixConstraint>(intList.get(ItemIndex{0}), intList.get(ItemIndex{1}));
         }
         throwValidationError("The 'multiple' constraint for a value matrix must be a list with two integer values"_el);
     }

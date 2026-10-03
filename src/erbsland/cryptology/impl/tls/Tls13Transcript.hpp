@@ -11,7 +11,7 @@ namespace erbsland::cryptology::impl {
 
 /// Internal RFC 8446 Section 4.4.1 TLS 1.3 handshake transcript.
 /// Callers provide complete handshake messages, including the one-byte type and three-byte length, but never record
-/// headers. HelloRetryRequest transcript reconstruction is deliberately unavailable in the initial X25519-only client.
+/// headers. The caller permits at most one HelloRetryRequest reconstruction per handshake.
 /// Specification: https://www.rfc-editor.org/rfc/rfc8446.html#section-4.4.1
 /// @tested{Tls13KeyScheduleTest}
 class Tls13Transcript final {
@@ -30,9 +30,12 @@ public:
 
 public:
     /// Add one exact complete handshake message.
-    /// @param message The handshake header and body, with no record header.
-    /// @throws err::ParameterError If the header is absent or its uint24 length is inconsistent.
+    /// @param message The handshake header and body, with no record header. Must include the header and exactly match
+    /// its uint24 body length.
     void update(mem::ConstByteSpan message);
+    /// Replace ClientHello1 by message_hash and append HelloRetryRequest (RFC 8446 section 4.4.1).
+    /// @param helloRetryRequest Complete HelloRetryRequest handshake message.
+    void retry(mem::ConstByteSpan helloRetryRequest);
     /// Snapshot the transcript hash without finalizing the live transcript.
     /// @return The current transcript hash.
     [[nodiscard]] auto hash() const -> mem::ByteBlock;

@@ -5,6 +5,7 @@
 #include "FormatSpec.hpp"
 #include "NamedFormatDomain.hpp"
 
+#include "../IntegerBase.hpp"
 #include "../named_key/Entry.hpp"
 #include "../named_key/Format.hpp"
 #include "../StringCharReader.hpp"
@@ -26,11 +27,15 @@ class NamedFormatParser final {
         Escape,
         EscapeAmount,
         Base,
+        Decimal,
+        Hexadecimal,
+        Octal,
+        Binary,
         Notation,
         LetterCase,
         Sign,
         Precision,
-        Alternate,
+        BasePrefix,
         ZeroFill,
         Style,
         Capitalization,
@@ -58,7 +63,7 @@ private:
     /// Read the selected option value as a normalized identifier.
     [[nodiscard]] auto readIdentifier() const -> String;
     /// Read the selected option value as a decimal number.
-    [[nodiscard]] auto readNumber() -> unit::CpLength;
+    [[nodiscard]] auto readNumber() -> unit::CpCount;
     /// Read the selected option value as one character.
     [[nodiscard]] auto readFill() const -> Char;
     /// Parse one named option entry.
@@ -79,6 +84,9 @@ private:
     void parseEscapeAmount();
     /// Parse the number base option.
     void parseBase();
+    /// Select a bare integer base, rejecting values and repeated base selection.
+    /// @param base The selected integer base.
+    void parseBaseShortcut(IntegerBase base);
     /// Parse the number notation option.
     void parseNotation();
     /// Parse the number letter-case option.
@@ -87,8 +95,8 @@ private:
     void parseSign();
     /// Parse the number precision option.
     void parsePrecision();
-    /// Parse the number alternate-form flag.
-    void parseAlternate();
+    /// Parse the number base-prefix flag.
+    void parseBasePrefix();
     /// Parse the number zero-fill flag.
     void parseZeroFill();
     /// Parse the Boolean rendering style option.

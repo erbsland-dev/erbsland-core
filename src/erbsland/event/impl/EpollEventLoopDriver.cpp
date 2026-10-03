@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "EpollEventLoopDriver.hpp"
 
-#include "../../err/ParameterError.hpp"
-#include "../../err/RuntimeError.hpp"
+#include "../../err/ParameterFailure.hpp"
+#include "../../system/impl/PosixErrorContext.hpp"
+#include "../../system/PlatformError.hpp"
 #include "../../text/Literals.hpp"
 
 #include <sys/epoll.h>
@@ -18,26 +19,28 @@
 
 namespace erbsland::event::impl {
 
+using namespace err;
 using namespace text::literals;
 
-EpollEventLoopDriver::EpollEventLoopDriver() :
-    _epoll{::epoll_create1(EPOLL_CLOEXEC)}, _wake{::eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK)} {
-    if (_epoll < 0 || _wake < 0) {
-        if (_wake >= 0) {
-            ::close(_wake);
-        }
-        if (_epoll >= 0) {
-            ::close(_epoll);
-        }
-        throw err::RuntimeError{"Failed to create the epoll event-loop driver."};
+EpollEventLoopDriver::EpollEventLoopDriver() : _epoll{::epoll_create1(EPOLL_CLOEXEC)} {
+    if (_epoll < 0) {
+        throw system::PlatformError{
+            "Failed to create the epoll event-loop driver."_el, system::impl::PosixErrorContext::fromErrno()};
+    }
+    _wake = ::eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+    if (_wake < 0) {
+        const auto context = system::impl::PosixErrorContext::fromErrno();
+        ::close(_epoll);
+        throw system::PlatformError{"Failed to create the epoll wake descriptor."_el, context};
     }
     auto event = epoll_event{.events = EPOLLIN, .data = {.u64 = cWakeGeneration}};
     if (::epoll_ctl(_epoll, EPOLL_CTL_ADD, _wake, &event) < 0) {
+        const auto context = system::impl::PosixErrorContext::fromErrno();
         ::close(_wake);
         ::close(_epoll);
         _wake = -1;
         _epoll = -1;
-        throw err::RuntimeError{"Failed to register the epoll wake descriptor."};
+        throw system::PlatformError{"Failed to register the epoll wake descriptor."_el, context};
     }
 }
 
@@ -75,18 +78,18 @@ void EpollEventLoopDriver::wake() noexcept {
 auto EpollEventLoopDriver::registerDescriptor(
     const int descriptor, const bool read, const bool write, NativeEventCallback callback) -> RegistrationPtr {
     if (descriptor < 0) {
-        throw err::ParameterError{"The native descriptor must not be negative."_el, "descriptor"_el};
+        throw ParameterFailure{"The native descriptor must not be negative."_el, "descriptor"_el};
     }
     if (!read && !write) {
-        throw err::ParameterError{"At least one native event direction must be registered."_el, "read"_el};
+        throw ParameterFailure{"At least one native event direction must be registered."_el, "read"_el};
     }
     if (!callback) {
-        throw err::ParameterError{"The native event callback must not be empty."_el, "callback"_el};
+        throw ParameterFailure{"The native event callback must not be empty."_el, "callback"_el};
     }
     for (const auto &entry : _registrations) {
         const auto &registration = entry.second;
         if (registration.descriptor == descriptor) {
-            throw err::ParameterError{"The native descriptor is already registered."_el, "descriptor"_el};
+            throw ParameterFailure{"The native descriptor is already registered."_el, "descriptor"_el};
         }
     }
     const auto generation = _nextGeneration++;
@@ -99,7 +102,8 @@ auto EpollEventLoopDriver::registerDescriptor(
     }
     auto event = epoll_event{.events = flags, .data = {.u64 = generation}};
     if (::epoll_ctl(_epoll, EPOLL_CTL_ADD, descriptor, &event) < 0) {
-        throw err::RuntimeError{"Failed to register a native descriptor with epoll."_el};
+        throw system::PlatformError{
+            "Failed to register a native descriptor with epoll."_el, system::impl::PosixErrorContext::fromErrno()};
     }
     _registrations.emplace(generation, Registration{descriptor, std::move(callback)});
     return std::make_unique<EventLoopDriverRegistration>(
@@ -141,7 +145,8 @@ void EpollEventLoopDriver::waitInternal(const int timeoutMilliseconds) {
             return;
         }
         if (errno != EINTR) {
-            throw err::RuntimeError{"The epoll event-loop wait failed."};
+            throw system::PlatformError{
+                "The epoll event-loop wait failed."_el, system::impl::PosixErrorContext::fromErrno()};
         }
     }
 }

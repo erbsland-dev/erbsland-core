@@ -20,7 +20,7 @@
 
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/SharedVirtualData.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/ItemCount.hpp"
 
 namespace erbsland::text::impl {
@@ -43,29 +43,29 @@ public:
     /// Get the target string kind.
     [[nodiscard]] virtual auto kind() const noexcept -> StringKind = 0;
     /// Get the current decoded code-point length.
-    [[nodiscard]] virtual auto length() const noexcept -> unit::CpLength = 0;
+    [[nodiscard]] virtual auto length() const noexcept -> unit::CpCount = 0;
     /// Test if the builder is empty.
     [[nodiscard]] virtual auto isEmpty() const noexcept -> bool = 0;
     /// Clear the builder.
     virtual void clear() noexcept = 0;
     /// Append one Unicode code point.
     /// @return The number of code points appended.
-    auto append(Char character) -> unit::CpLength override = 0;
+    auto append(Char character) -> unit::CpCount override = 0;
     /// Append one Unicode code point multiple times.
-    virtual void append(Char character, unit::CpLength count) = 0;
+    virtual void append(Char character, unit::CpCount count) = 0;
     /// Append a UTF-8 read-only string.
     /// @return The number of code points appended.
-    auto append(const U8String &text) -> unit::CpLength override = 0;
+    auto append(const U8String &text) -> unit::CpCount override = 0;
     /// Append a UTF-8 read-only string multiple times.
     virtual void append(const U8String &text, unit::ItemCount count) = 0;
     /// Append a UTF-16 read-only string.
     /// @return The number of code points appended.
-    auto append(const U16String &text) -> unit::CpLength override = 0;
+    auto append(const U16String &text) -> unit::CpCount override = 0;
     /// Append a UTF-16 read-only string multiple times.
     virtual void append(const U16String &text, unit::ItemCount count) = 0;
     /// Append a UTF-32 read-only string.
     /// @return The number of code points appended.
-    auto append(const U32String &text) -> unit::CpLength override = 0;
+    auto append(const U32String &text) -> unit::CpCount override = 0;
     /// Append a UTF-32 read-only string multiple times.
     virtual void append(const U32String &text, unit::ItemCount count) = 0;
     /// Append a byte block as formatted hexadecimal text.

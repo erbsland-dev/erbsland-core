@@ -11,24 +11,27 @@
 #include "../../text/StringDecoder.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../text/StringEncoding.hpp"
+#include "../../unit/ByteCount.hpp"
 #include "../../unit/ByteIndex.hpp"
-#include "../../unit/ByteLength.hpp"
 
 namespace erbsland::cryptology {
+
+using namespace text;
+using namespace unit;
 
 auto Asn1Node::isEmpty() const noexcept -> bool {
     return _encodedData.isEmpty();
 }
 
 auto Asn1Node::isConstructed() const noexcept -> bool {
-    return !isEmpty() && (_encodedData.get(unit::ByteIndex::zero()).toUInt8() & 0x20U) != 0U;
+    return !isEmpty() && (_encodedData.get(ByteIndex::zero()).toUInt8() & 0x20U) != 0U;
 }
 
 auto Asn1Node::tagClass() const noexcept -> Asn1TagClass {
     if (isEmpty()) {
         return Asn1TagClass::Universal;
     }
-    return static_cast<Asn1TagClass>((_encodedData.get(unit::ByteIndex::zero()).toUInt8() >> 6U) & 0x03U);
+    return static_cast<Asn1TagClass>((_encodedData.get(ByteIndex::zero()).toUInt8() >> 6U) & 0x03U);
 }
 
 auto Asn1Node::tagNumber() const noexcept -> uint32_t {
@@ -42,11 +45,11 @@ auto Asn1Node::universalType() const noexcept -> Asn1UniversalType {
     return static_cast<Asn1UniversalType>(tagNumber());
 }
 
-auto Asn1Node::childCount() const noexcept -> unit::ItemCount {
+auto Asn1Node::childCount() const noexcept -> ItemCount {
     return _children.count();
 }
 
-auto Asn1Node::child(const unit::ItemIndex index) const noexcept -> Asn1Node {
+auto Asn1Node::child(const ItemIndex index) const noexcept -> Asn1Node {
     if (isEmpty() || !index.isWithin(_children.count())) {
         return {};
     }
@@ -65,7 +68,7 @@ auto Asn1Node::contentData() const -> mem::ByteBlock {
     if (isEmpty()) {
         return {};
     }
-    return _encodedData.slice(unit::ByteIndex::end(_headerLength), _encodedData.length() - _headerLength);
+    return _encodedData.slice(ByteIndex::end(_headerLength), _encodedData.length() - _headerLength);
 }
 
 auto Asn1Node::toBoolean() const noexcept -> std::optional<bool> {
@@ -73,7 +76,7 @@ auto Asn1Node::toBoolean() const noexcept -> std::optional<bool> {
         return std::nullopt;
     }
     const auto content = contentData();
-    if (content.length() != unit::ByteLength{1U}) {
+    if (content.length() != ByteCount{1U}) {
         return std::nullopt;
     }
     return content.span().front().toUInt8() != 0U;
@@ -84,21 +87,20 @@ auto Asn1Node::toObjectIdentifier() const noexcept -> std::optional<Asn1ObjectId
         return std::nullopt;
     }
     try {
-        return Asn1ObjectIdentifier{impl::Asn1ObjectIdentifierCodec{contentData(), unit::ByteIndex::zero()}.decode()};
+        return Asn1ObjectIdentifier{impl::Asn1ObjectIdentifierCodec{contentData(), ByteIndex::zero()}.decode()};
     } catch (const err::RuntimeError &) {
         return std::nullopt;
     }
 }
 
-auto Asn1Node::toString() const noexcept -> std::optional<text::String> {
+auto Asn1Node::toString() const noexcept -> std::optional<String> {
     try {
         const auto type = universalType();
         const auto content = contentData();
         if (type == Asn1UniversalType::Utf8String) {
-            return text::StringDecoder{content}.decode(
-                text::StringEncoding::Utf8, text::StringBomMode::Reject, text::EncodingMode::Strict);
+            return StringDecoder{content}.decode(StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict);
         }
-        auto result = text::StringEditor{};
+        auto result = StringEditor{};
         if (type == Asn1UniversalType::BmpString) {
             if (content.span().size() % 2U != 0U) {
                 return std::nullopt;
@@ -106,13 +108,13 @@ auto Asn1Node::toString() const noexcept -> std::optional<text::String> {
             for (auto index = std::size_t{}; index < content.span().size(); index += 2U) {
                 const auto codePoint = static_cast<char32_t>(
                     (content.span()[index].toUInt32() << 8U) | content.span()[index + 1U].toUInt32());
-                const auto character = text::Char{codePoint};
+                const auto character = Char{codePoint};
                 if (!character.isValidUnicode()) {
                     return std::nullopt;
                 }
                 result.append(character);
             }
-            return text::String{result};
+            return result;
         }
         if (type == Asn1UniversalType::UniversalString) {
             if (content.span().size() % 4U != 0U) {
@@ -122,13 +124,13 @@ auto Asn1Node::toString() const noexcept -> std::optional<text::String> {
                 const auto codePoint = static_cast<char32_t>(
                     (content.span()[index].toUInt32() << 24U) | (content.span()[index + 1U].toUInt32() << 16U) |
                     (content.span()[index + 2U].toUInt32() << 8U) | content.span()[index + 3U].toUInt32());
-                const auto character = text::Char{codePoint};
+                const auto character = Char{codePoint};
                 if (!character.isValidUnicode()) {
                     return std::nullopt;
                 }
                 result.append(character);
             }
-            return text::String{result};
+            return result;
         }
         const auto isAsciiType = type == Asn1UniversalType::NumericString ||
             type == Asn1UniversalType::PrintableString || type == Asn1UniversalType::TeletexString ||
@@ -141,19 +143,19 @@ auto Asn1Node::toString() const noexcept -> std::optional<text::String> {
             if (byte.toUInt8() > 0x7FU) {
                 return std::nullopt;
             }
-            result.append(text::Char{byte.toUInt32()});
+            result.append(Char{byte.toUInt32()});
         }
-        return text::String{result};
+        return result;
     } catch (const err::RuntimeError &) {
         return std::nullopt;
     }
 }
 
-auto Asn1Node::encodedStorageByteIndex() const noexcept -> unit::ByteIndex {
+auto Asn1Node::encodedStorageByteIndex() const noexcept -> ByteIndex {
     if (isEmpty()) {
-        return unit::ByteIndex::zero();
+        return ByteIndex::zero();
     }
-    return mem::impl::UnsafeByteBlockAccess{_encodedData}.dataView().range().index();
+    return mem::impl::UnsafeByteBlockAccess{_encodedData}.dataView().range().beginIndex();
 }
 
 }

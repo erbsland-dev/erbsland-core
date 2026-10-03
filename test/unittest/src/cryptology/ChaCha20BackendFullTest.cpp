@@ -5,12 +5,12 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/ChaCha20BackendFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/Poly1305Factory.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricEncryptor.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/SymmetricEncryptor.hpp>
 
 #include <algorithm>
 #include <array>
@@ -21,10 +21,13 @@ TESTED_TARGETS(ChaCha20Backend Poly1305 ArmChaCha20Backend X86ChaCha20Backend Ar
 class ChaCha20BackendFullTest final : public UNITTEST_SUBCLASS(CryptologyTestHelper) {
 private:
     [[nodiscard]] static auto deterministicBytes(const std::size_t length, const uint8_t seed) -> el::mem::ByteBlock {
-        auto result = el::mem::ByteBlockEditor{el::unit::ByteLength::fromSizeT(length)};
-        for (auto index = std::size_t{}; index < length; ++index) {
+        auto result = el::mem::ByteBlockEditor{el::unit::ByteCount::fromSizeT(length)};
+        for (
+            auto index = el::unit::ByteIndex::zero(); index.isWithin(el::unit::ByteCount::fromSizeT(length));
+            index.uncheckedIncrement()) {
             result.set(
-                el::unit::ByteIndex{index}, el::mem::Byte{static_cast<uint8_t>(seed + index * 29U + (index >> 2U))});
+                index,
+                el::mem::Byte{static_cast<uint8_t>(seed + index.toRawValue() * 29U + (index.toRawValue() >> 2U))});
         }
         return result;
     }
@@ -58,13 +61,19 @@ public:
         const auto applicationScope = ApplicationTestScope<>{};
         const auto key = deterministicBytes(32U, 0x17U);
         const auto nonce = deterministicBytes(12U, 0x31U);
-        for (const auto offset : {0U, 1U, 3U, 7U, 15U}) {
-            auto keyStorage = el::mem::ByteBlockEditor{el::unit::ByteLength{32U + offset}};
-            auto nonceStorage = el::mem::ByteBlockEditor{el::unit::ByteLength{12U + offset}};
-            keyStorage.overwrite(el::unit::ByteIndex{offset}, key.span());
-            nonceStorage.overwrite(el::unit::ByteIndex{offset}, nonce.span());
-            const auto keySpan = keyStorage.span(el::unit::ByteIndex{offset}, el::unit::ByteLength{32U});
-            const auto nonceSpan = nonceStorage.span(el::unit::ByteIndex{offset}, el::unit::ByteLength{12U});
+        for (
+            const auto offset :
+            {el::unit::ByteCount{0U},
+                el::unit::ByteCount{1U},
+                el::unit::ByteCount{3U},
+                el::unit::ByteCount{7U},
+                el::unit::ByteCount{15U}}) {
+            auto keyStorage = el::mem::ByteBlockEditor{el::unit::ByteCount{32U} + offset};
+            auto nonceStorage = el::mem::ByteBlockEditor{el::unit::ByteCount{12U} + offset};
+            keyStorage.overwrite(el::unit::ByteIndex::end(offset), key.span());
+            nonceStorage.overwrite(el::unit::ByteIndex::end(offset), nonce.span());
+            const auto keySpan = keyStorage.span(el::unit::ByteIndex::end(offset), el::unit::ByteCount{32U});
+            const auto nonceSpan = nonceStorage.span(el::unit::ByteIndex::end(offset), el::unit::ByteCount{12U});
             auto portable = el::cryptology::impl::createPortableChaCha20Backend(keySpan, nonceSpan);
             auto selected = el::cryptology::impl::createChaCha20Backend(keySpan, nonceSpan);
             for (const auto counter : {uint32_t{1U}, uint32_t{7U}, uint32_t{0xfffffffcU}}) {
@@ -78,10 +87,16 @@ public:
     void testPortableAndSelectedPoly1305Streaming() {
         const auto applicationScope = ApplicationTestScope<>{};
         const auto key = deterministicBytes(32U, 0x51U);
-        for (const auto alignment : {0U, 1U, 3U, 7U, 15U}) {
-            auto keyStorage = el::mem::ByteBlockEditor{el::unit::ByteLength{32U + alignment}};
-            keyStorage.overwrite(el::unit::ByteIndex{alignment}, key.span());
-            const auto keySpan = keyStorage.span(el::unit::ByteIndex{alignment}, el::unit::ByteLength{32U});
+        for (
+            const auto alignment :
+            {el::unit::ByteCount{0U},
+                el::unit::ByteCount{1U},
+                el::unit::ByteCount{3U},
+                el::unit::ByteCount{7U},
+                el::unit::ByteCount{15U}}) {
+            auto keyStorage = el::mem::ByteBlockEditor{el::unit::ByteCount{32U} + alignment};
+            keyStorage.overwrite(el::unit::ByteIndex::end(alignment), key.span());
+            const auto keySpan = keyStorage.span(el::unit::ByteIndex::end(alignment), el::unit::ByteCount{32U});
             for (const auto length : {0U, 1U, 15U, 16U, 17U, 63U, 64U, 65U, 255U, 256U, 257U, 1024U}) {
                 const auto message = deterministicBytes(length, 0x73U);
                 auto portable = el::cryptology::impl::createPortablePoly1305(keySpan);

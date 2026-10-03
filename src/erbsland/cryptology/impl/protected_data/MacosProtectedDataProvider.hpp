@@ -30,9 +30,9 @@ public:
     auto operator=(MacosProtectedDataProvider &&) -> MacosProtectedDataProvider & = delete;
 
 public: // implement ProtectedDataProvider
-    [[nodiscard]] auto protect(mem::ConstByteSpan plaintext, unit::ByteLength plaintextLength)
+    [[nodiscard]] auto protect(mem::ConstByteSpan plaintext, unit::ByteCount plaintextLength)
         -> mem::ByteBlock override;
-    [[nodiscard]] auto unprotect(mem::ConstByteSpan envelope, unit::ByteLength plaintextLength)
+    [[nodiscard]] auto unprotect(mem::ConstByteSpan envelope, unit::ByteCount plaintextLength)
         -> mem::ByteBlock override;
 
 private:

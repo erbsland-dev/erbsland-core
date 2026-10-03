@@ -171,10 +171,11 @@ public: // distances
     /// @return The distance, or zero if either timestamp is invalid.
     [[nodiscard]] auto secondsTo(Timestamp other) const noexcept -> Seconds;
     /// Return the exact signed distance, truncated toward zero.
-    /// @param other The target timestamp.
+    /// This timestamp must be valid.
+    /// @param other The target timestamp. Must be valid.
     /// @return The distance.
-    /// @throws err::ParameterError if either timestamp is invalid.
     /// @throws err::OverflowError if the result does not fit.
+    /// @throws err::OutOfRangeError If either timestamp is invalid.
     [[nodiscard]] auto secondsToOrThrow(Timestamp other) const -> Seconds;
     /// Test whether the distance would saturate; invalid operands return false.
     /// @param other The target timestamp.
@@ -185,10 +186,11 @@ public: // distances
     /// @return The distance, or zero if either timestamp is invalid.
     [[nodiscard]] auto millisecondsTo(Timestamp other) const noexcept -> Milliseconds;
     /// Return the exact signed distance, truncated toward zero.
-    /// @param other The target timestamp.
+    /// This timestamp must be valid.
+    /// @param other The target timestamp. Must be valid.
     /// @return The distance.
-    /// @throws err::ParameterError if either timestamp is invalid.
     /// @throws err::OverflowError if the result does not fit.
+    /// @throws err::OutOfRangeError If either timestamp is invalid.
     [[nodiscard]] auto millisecondsToOrThrow(Timestamp other) const -> Milliseconds;
     /// Test whether the distance would saturate; invalid operands return false.
     /// @param other The target timestamp.
@@ -199,10 +201,11 @@ public: // distances
     /// @return The distance, or zero if either timestamp is invalid.
     [[nodiscard]] auto microsecondsTo(Timestamp other) const noexcept -> Microseconds;
     /// Return the exact signed distance, truncated toward zero.
-    /// @param other The target timestamp.
+    /// This timestamp must be valid.
+    /// @param other The target timestamp. Must be valid.
     /// @return The distance.
-    /// @throws err::ParameterError if either timestamp is invalid.
     /// @throws err::OverflowError if the result does not fit.
+    /// @throws err::OutOfRangeError If either timestamp is invalid.
     [[nodiscard]] auto microsecondsToOrThrow(Timestamp other) const -> Microseconds;
     /// Test whether the distance would saturate; invalid operands return false.
     /// @param other The target timestamp.
@@ -213,10 +216,11 @@ public: // distances
     /// @return The distance, or zero if either timestamp is invalid.
     [[nodiscard]] auto nanosecondsTo(Timestamp other) const noexcept -> Nanoseconds;
     /// Return the exact signed distance, truncated toward zero.
-    /// @param other The target timestamp.
+    /// This timestamp must be valid.
+    /// @param other The target timestamp. Must be valid.
     /// @return The distance.
-    /// @throws err::ParameterError if either timestamp is invalid.
     /// @throws err::OverflowError if the result does not fit.
+    /// @throws err::OutOfRangeError If either timestamp is invalid.
     [[nodiscard]] auto nanosecondsToOrThrow(Timestamp other) const -> Nanoseconds;
     /// Test whether the distance would saturate; invalid operands return false.
     /// @param other The target timestamp.
@@ -227,10 +231,11 @@ public: // distances
     /// @return The distance, or zero if either timestamp is invalid.
     [[nodiscard]] auto durationTo(Timestamp other) const noexcept -> Duration;
     /// Return the exact signed distance, truncated toward zero.
-    /// @param other The target timestamp.
+    /// This timestamp must be valid.
+    /// @param other The target timestamp. Must be valid.
     /// @return The distance.
-    /// @throws err::ParameterError if either timestamp is invalid.
     /// @throws err::OverflowError if the result does not fit.
+    /// @throws err::OutOfRangeError If either timestamp is invalid.
     [[nodiscard]] auto durationToOrThrow(Timestamp other) const -> Duration;
     /// Test whether the distance would saturate; invalid operands return false.
     /// @param other The target timestamp.
@@ -241,10 +246,11 @@ public: // distances
     /// @return The distance, or zero if either timestamp is invalid.
     [[nodiscard]] auto timeDeltaTo(Timestamp other) const noexcept -> TimeDelta;
     /// Return the exact signed distance, truncated toward zero.
-    /// @param other The target timestamp.
+    /// This timestamp must be valid.
+    /// @param other The target timestamp. Must be valid.
     /// @return The distance.
-    /// @throws err::ParameterError if either timestamp is invalid.
     /// @throws err::OverflowError if the result does not fit.
+    /// @throws err::OutOfRangeError If either timestamp is invalid.
     [[nodiscard]] auto timeDeltaToOrThrow(Timestamp other) const -> TimeDelta;
     /// Test whether the distance would saturate; invalid operands return false.
     /// @param other The target timestamp.
@@ -261,15 +267,19 @@ public: // conversion
     /// @return The UTC instant, or no value for an invalid timestamp.
     [[nodiscard]] auto toDateTime() const noexcept -> std::optional<DateTime>;
     /// Convert to a UTC DateTime.
+    /// This timestamp must be valid.
     /// @return The UTC instant.
-    /// @throws err::OutOfRangeError if this timestamp is invalid.
+    /// @throws err::OutOfRangeError If the input is invalid or cannot be represented in the requested calendar or tick
+    /// range.
     [[nodiscard]] auto toDateTimeOrThrow() const -> DateTime;
     /// Format the instant as YYYY-MM-DDTHH:MM:SS.nnnnnnnnnZ.
     /// @return The ISO text, or no value for an invalid timestamp.
     [[nodiscard]] auto toIsoString() const -> std::optional<text::String>;
     /// Format the instant with exactly nine fractional digits in UTC.
+    /// This timestamp must be valid.
     /// @return The ISO text.
-    /// @throws err::OutOfRangeError if this timestamp is invalid.
+    /// @throws err::OutOfRangeError If the input is invalid or cannot be represented in the requested calendar or tick
+    /// range.
     [[nodiscard]] auto toIsoStringOrThrow() const -> text::String;
     /// Return canonical ISO text, or an empty string for an invalid timestamp.
     [[nodiscard]] auto toString() const -> text::String;
@@ -280,10 +290,12 @@ public: // conversion
     template <impl::DateTimeTickUnit T>
     [[nodiscard]] auto toTicks(TimeEpoch epoch = TimeEpoch::Core) const noexcept -> std::optional<T>;
     /// Convert to signed ticks relative to a named epoch, truncating toward zero.
+    /// This timestamp must be valid and representable as ticks of `T` relative to `epoch`.
     /// @tparam T A supported fixed tick amount.
     /// @param epoch The reference epoch.
     /// @return The ticks.
-    /// @throws err::OutOfRangeError if invalid or unrepresentable.
+    /// @throws err::OutOfRangeError If the input is invalid or cannot be represented in the requested calendar or tick
+    /// range.
     template <impl::DateTimeTickUnit T>
     [[nodiscard]] auto toTicksOrThrow(TimeEpoch epoch = TimeEpoch::Core) const -> T;
     /// Split epoch-relative time into floor seconds and a nonnegative fraction.
@@ -292,9 +304,11 @@ public: // conversion
     [[nodiscard]] auto toSecondsAndFractions(TimeEpoch epoch = TimeEpoch::Core) const noexcept
         -> std::optional<std::pair<Seconds, Nanoseconds>>;
     /// Split epoch-relative time into floor seconds and a nonnegative fraction.
+    /// This timestamp must be valid.
     /// @param epoch The reference epoch.
     /// @return Seconds and nanoseconds.
-    /// @throws err::OutOfRangeError if this timestamp is invalid.
+    /// @throws err::OutOfRangeError If the input is invalid or cannot be represented in the requested calendar or tick
+    /// range.
     [[nodiscard]] auto toSecondsAndFractionsOrThrow(TimeEpoch epoch = TimeEpoch::Core) const
         -> std::pair<Seconds, Nanoseconds>;
     /// Convert to floor POSIX seconds, or minus one if invalid or outside the native range.
@@ -320,10 +334,10 @@ public: // factories
     /// @return The timestamp, or no value on failure.
     [[nodiscard]] static auto fromRawValue(int32_t days, int64_t nanoseconds) noexcept -> std::optional<Timestamp>;
     /// Create from unbiased fields; negative fields produce canonical invalid state.
-    /// @param days The input days.
-    /// @param nanoseconds The input nanoseconds.
+    /// @param days The unbiased day count. Non-negative fields are checked against the supported calendar range.
+    /// @param nanoseconds The nanoseconds since midnight. Non-negative fields are checked against the one-day limit.
     /// @return The timestamp.
-    /// @throws err::ParameterError if the input cannot be converted.
+    /// @throws err::OutOfRangeError If the fields exceed the calendar or time-of-day range.
     [[nodiscard]] static auto fromRawValueOrThrow(int32_t days, int64_t nanoseconds) -> Timestamp;
     /// Create from unbiased day and nanosecond amounts.
     /// @param days The input days.
@@ -332,28 +346,29 @@ public: // factories
     [[nodiscard]] static auto fromDaysAndNanoseconds(Days days, Nanoseconds nanoseconds) noexcept
         -> std::optional<Timestamp>;
     /// Create from unbiased day and nanosecond amounts.
-    /// @param days The input days.
-    /// @param nanoseconds The input nanoseconds.
+    /// @param days The unbiased day count. Non-negative fields are checked against the supported calendar range.
+    /// @param nanoseconds The nanoseconds since midnight. Non-negative fields are checked against the one-day limit.
     /// @return The timestamp.
-    /// @throws err::ParameterError if the input cannot be converted.
+    /// @throws err::OutOfRangeError If the fields exceed the calendar or time-of-day range.
     [[nodiscard]] static auto fromDaysAndNanosecondsOrThrow(Days days, Nanoseconds nanoseconds) -> Timestamp;
     /// Decode exactly 12 big-endian bytes.
     /// @param value The input value.
     /// @return The timestamp, or no value on failure.
     [[nodiscard]] static auto fromByteBlock(const mem::ByteBlock &value) noexcept -> std::optional<Timestamp>;
     /// Decode exactly 12 big-endian bytes.
-    /// @param value The input value.
+    /// @param value The encoded timestamp. Expected to contain exactly 12 big-endian bytes with representable fields.
     /// @return The timestamp.
-    /// @throws err::ParameterError if the input cannot be converted.
+    /// @throws err::ParseError If the input is not a canonical 12-byte timestamp.
     [[nodiscard]] static auto fromByteBlockOrThrow(const mem::ByteBlock &value) -> Timestamp;
     /// Copy the UTC instant and discard display metadata.
     /// @param value The input value.
     /// @return The timestamp, or no value on failure.
     [[nodiscard]] static auto fromDateTime(const DateTime &value) noexcept -> std::optional<Timestamp>;
     /// Copy the UTC instant and discard display metadata.
-    /// @param value The input value.
+    /// @param value The UTC date/time to copy. Must be convertible to the timestamp calendar range.
     /// @return The timestamp.
-    /// @throws err::OutOfRangeError if the input cannot be converted.
+    /// @throws err::OutOfRangeError If the input is invalid or cannot be represented in the requested calendar or tick
+    /// range.
     [[nodiscard]] static auto fromDateTimeOrThrow(const DateTime &value) -> Timestamp;
     /// Parse an ISO instant with seconds and an explicit zone offset.
     /// @param value The input value.
@@ -371,9 +386,10 @@ public: // factories
         return fromRawValue(value.first, value.second);
     }
     /// Create from a signed raw field pair.
-    /// @param value The input fields.
+    /// @param value The signed raw fields. When both fields are non-negative, days must fit the supported calendar
+    /// range and nanoseconds must be less than one day.
     /// @return The timestamp.
-    /// @throws err::ParameterError if nonnegative fields exceed their bounds.
+    /// @throws err::OutOfRangeError If the fields exceed the calendar or time-of-day range.
     [[nodiscard]] static auto fromRawValueOrThrow(RawValue value) -> Timestamp {
         return fromRawValueOrThrow(value.first, value.second);
     }
@@ -387,10 +403,12 @@ public: // factories
         -> std::optional<Timestamp>;
     /// Create from signed ticks relative to a named epoch.
     /// @tparam T A supported fixed tick amount.
-    /// @param ticks The signed tick count.
+    /// @param ticks The signed tick count. Relative to `epoch`, must produce a result within the supported calendar
+    /// range.
     /// @param epoch The reference epoch.
     /// @return The timestamp.
-    /// @throws err::OutOfRangeError if the result exceeds the calendar range.
+    /// @throws err::OutOfRangeError If the input is invalid or cannot be represented in the requested calendar or tick
+    /// range.
     template <impl::DateTimeTickUnit T>
     [[nodiscard]] static auto fromTicksOrThrow(T ticks, TimeEpoch epoch = TimeEpoch::Core) -> Timestamp;
     /// Create from floor seconds and a nonnegative nanosecond fraction.
@@ -401,12 +419,13 @@ public: // factories
     [[nodiscard]] static auto fromTicks(
         Seconds seconds, Nanoseconds fractions, TimeEpoch epoch = TimeEpoch::Core) noexcept -> std::optional<Timestamp>;
     /// Create from floor seconds and a nonnegative nanosecond fraction.
-    /// @param seconds The signed seconds relative to the epoch.
+    /// @param seconds The signed seconds relative to the epoch. Together with `fractions`, must produce a result within
+    /// the supported calendar range.
     /// @param fractions The fraction in 0..999999999.
     /// @param epoch The reference epoch.
     /// @return The timestamp.
-    /// @throws err::ParameterError if the fraction is invalid.
-    /// @throws err::OutOfRangeError if the result exceeds the calendar range.
+    /// @throws err::OutOfRangeError If the input is invalid or cannot be represented in the requested calendar or tick
+    /// range.
     [[nodiscard]] static auto fromTicksOrThrow(
         Seconds seconds, Nanoseconds fractions, TimeEpoch epoch = TimeEpoch::Core) -> Timestamp;
     /// Create from signed native POSIX seconds.

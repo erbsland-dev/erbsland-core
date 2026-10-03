@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/Literals.hpp>
 #include <erbsland/re/Match.hpp>
-#include <erbsland/re/RegEx.hpp>
 #include <erbsland/re/RegExError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/RegEx.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>
@@ -17,6 +17,20 @@ using namespace el::text::literals;
 TESTED_TARGETS(RegEx)
 class RegExLazyCompileTest final : public el::UnitTest {
 public:
+    void testInitialFlagsSurviveCompilationAndCopies() {
+        const auto flags = Flags{Flag::IgnoreCase, Flag::Verbose};
+        const auto eager = RegEx::compile("a b"_el, flags);
+        const auto lazy = RegEx::lazyCompile("a b"_el, flags);
+        REQUIRE_EQUAL(eager->flags().toRawValue(), flags.toRawValue());
+        REQUIRE_EQUAL(lazy->flags().toRawValue(), flags.toRawValue());
+        REQUIRE_FALSE(lazy->isCompiled());
+        auto copy = *lazy;
+        copy.compileNow();
+        REQUIRE_EQUAL(copy.flags().toRawValue(), flags.toRawValue());
+        REQUIRE_EQUAL(lazy->flags().toRawValue(), flags.toRawValue());
+        REQUIRE_EQUAL(RegEx::compile("abc"_el)->flags().toRawValue(), 0U);
+    }
+
     void testEagerCompileState() {
         const auto regex = RegEx::compile("abc"_el);
 

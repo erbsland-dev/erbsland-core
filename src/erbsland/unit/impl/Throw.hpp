@@ -9,4 +9,7 @@ namespace erbsland::unit::impl {
 /// Throw an overflow error with the supplied reason.
 [[noreturn]] void throwOverflow(std::string_view reason);
 
+/// Throw an out-of-range error for invalid endpoints.
+[[noreturn]] void throwOutOfRange(std::string_view reason);
+
 }

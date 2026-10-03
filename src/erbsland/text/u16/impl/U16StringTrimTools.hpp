@@ -5,8 +5,8 @@
 #include "U16Encoding.hpp"
 #include "U16StringDataView.hpp"
 
-#include "../../../unit/U16DataIndex.hpp"
-#include "../../../unit/U16DataRange.hpp"
+#include "../../../unit/U16Index.hpp"
+#include "../../../unit/U16Range.hpp"
 #include "../../CharSet.hpp"
 #include "../../StringSide.hpp"
 
@@ -42,21 +42,21 @@ public:
 
 public: // trim
     /// Return the absolute byte range with ASCII whitespace removed from the selected side.
-    [[nodiscard]] auto trimmedRange(Side side) const noexcept -> unit::U16DataRange;
+    [[nodiscard]] auto trimmedRange(Side side) const noexcept -> unit::U16Range;
     /// Return the absolute byte range with characters from the set removed from the selected side.
-    [[nodiscard]] auto trimmedRange(const CharSet &characters, Side side) const noexcept -> unit::U16DataRange;
+    [[nodiscard]] auto trimmedRange(const CharSet &characters, Side side) const noexcept -> unit::U16Range;
 
 private:
     /// Compute the trimmed byte range using the given decoded-character predicate.
     template <typename Predicate>
-    [[nodiscard]] auto trimmedRangeFor(Side side, Predicate predicate) const noexcept -> unit::U16DataRange {
+    [[nodiscard]] auto trimmedRangeFor(Side side, Predicate predicate) const noexcept -> unit::U16Range {
         const auto data = _data.dataSpan();
         if (data.empty()) {
-            return unit::U16DataRange::empty();
+            return unit::U16Range::empty();
         }
 
-        auto begin = unit::U16DataIndex::zero();
-        auto end = unit::U16DataIndex::fromSizeT(data.size());
+        auto begin = unit::U16Index::zero();
+        auto end = unit::U16Index::fromSizeT(data.size());
 
         if (side == Side::Both || side == Side::Begin) {
             while (begin < end) {
@@ -85,8 +85,7 @@ private:
         return toAbsoluteRange(begin, end);
     }
     /// Convert a relative byte range in the data span into an absolute range in the backing storage.
-    [[nodiscard]] auto toAbsoluteRange(unit::U16DataIndex begin, unit::U16DataIndex end) const noexcept
-        -> unit::U16DataRange;
+    [[nodiscard]] auto toAbsoluteRange(unit::U16Index begin, unit::U16Index end) const noexcept -> unit::U16Range;
 
 private:
     U16StringDataView _data;

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ApplicationSystemData.hpp"
 
-#include "../../../i18n/DisplayTextMap.hpp"
+#include "../../../i18n/impl/DisplayText.hpp"
 #include "../../../system/UserLookup.hpp"
 
 #include <memory>
@@ -14,17 +14,12 @@ ApplicationSystemData::ApplicationSystemData() = default;
 
 ApplicationSystemData::~ApplicationSystemData() = default;
 
-auto ApplicationSystemData::displayText() -> const i18n::DisplayTextMapConstPtr & {
+auto ApplicationSystemData::displayText() -> i18n::DisplayTextPtr {
     const auto lock = std::scoped_lock{_mutex};
     if (_displayText == nullptr) {
-        _displayText = i18n::DisplayTextMap::defaultMap();
+        _displayText = i18n::DisplayTextPtr{new i18n::impl::DisplayText{}};
     }
     return _displayText;
-}
-
-void ApplicationSystemData::setDisplayText(const i18n::DisplayTextMapConstPtr &displayText) {
-    const auto lock = std::scoped_lock{_mutex};
-    _displayText = displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap();
 }
 
 auto ApplicationSystemData::userLookup() -> system::UserLookup & {

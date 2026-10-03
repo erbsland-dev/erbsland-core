@@ -7,20 +7,12 @@
 #include "../../system/impl/signal/ProcessSignalDispatcher.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 #include <conio.h>
 #include <fcntl.h>
 
 #include <iostream>
-
-namespace erbsland::cterm {
-
-auto Backend::createPlatformDefault(const TerminalFlags terminalFlags) -> BackendPtr {
-    return impl::WindowsBackend::getOrCreate(terminalFlags);
-}
-
-}
 
 namespace erbsland::cterm::impl {
 

@@ -12,14 +12,23 @@ namespace erbsland::system::impl {
 /// @tested{ProcessInfoTest SubprocessInteropTest}
 class ProcessIdAccess final {
 public:
+    /// Bind access to a process identifier that outlives this helper.
+    /// @param value The process identifier.
+    explicit constexpr ProcessIdAccess(const ProcessId &value) noexcept : _value{value} {}
+
+public: // conversion
     /// Create a process identifier from a native numeric value.
+    /// @param value The native identifier; zero represents an invalid identifier.
+    /// @return The opaque process identifier.
     [[nodiscard]] static constexpr auto fromNative(const std::uint64_t value) noexcept -> ProcessId {
-        return value == 0U ? ProcessId{} : ProcessId{value};
+        return ProcessId{value};
     }
     /// Get the native numeric value of a process identifier.
-    [[nodiscard]] static constexpr auto toNative(const ProcessId value) noexcept -> std::uint64_t {
-        return value._value;
-    }
+    /// @return The native identifier, or zero for an invalid identifier.
+    [[nodiscard]] constexpr auto toNative() const noexcept -> std::uint64_t { return _value._value; }
+
+private:
+    const ProcessId &_value; ///< The accessed identifier.
 };
 
 }

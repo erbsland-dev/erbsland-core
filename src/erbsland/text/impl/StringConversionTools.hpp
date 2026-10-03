@@ -17,7 +17,7 @@
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/ByteSpan.hpp"
 #include "../../mem/RingBuffer_fwd.hpp"
-#include "../../unit/ByteLength_fwd.hpp"
+#include "../../unit/ByteCount_fwd.hpp"
 #include "../../util/Result.hpp"
 
 #include <span>
@@ -203,22 +203,22 @@ public:
 
     /// Gets the encoded length of an editable UTF-8 string.
     [[nodiscard]] static auto encodedLength(const U8StringEditor &str, StringEncoding encoding, StringBomMode bomMode)
-        -> unit::ByteLength;
+        -> unit::ByteCount;
     /// Gets the encoded length of a UTF-8 string.
     [[nodiscard]] static auto encodedLength(const U8String &str, StringEncoding encoding, StringBomMode bomMode)
-        -> unit::ByteLength;
+        -> unit::ByteCount;
     /// Gets the encoded length of an editable UTF-16 string.
     [[nodiscard]] static auto encodedLength(const U16StringEditor &str, StringEncoding encoding, StringBomMode bomMode)
-        -> unit::ByteLength;
+        -> unit::ByteCount;
     /// Gets the encoded length of a UTF-16 string.
     [[nodiscard]] static auto encodedLength(const U16String &str, StringEncoding encoding, StringBomMode bomMode)
-        -> unit::ByteLength;
+        -> unit::ByteCount;
     /// Gets the encoded length of an editable UTF-32 string.
     [[nodiscard]] static auto encodedLength(const U32StringEditor &str, StringEncoding encoding, StringBomMode bomMode)
-        -> unit::ByteLength;
+        -> unit::ByteCount;
     /// Gets the encoded length of a UTF-32 string.
     [[nodiscard]] static auto encodedLength(const U32String &str, StringEncoding encoding, StringBomMode bomMode)
-        -> unit::ByteLength;
+        -> unit::ByteCount;
 
     /// Encodes an editable UTF-8 string into a ring buffer.
     [[nodiscard]] static auto encodeTo(
@@ -267,7 +267,7 @@ private:
     /// Calculates the length of directly encoded character data.
     template <typename T>
     [[nodiscard]] static auto rawEncodedLength(
-        std::span<const T> source, StringEncoding encoding, StringBomMode bomMode) -> unit::ByteLength;
+        std::span<const T> source, StringEncoding encoding, StringBomMode bomMode) -> unit::ByteCount;
     /// Copies source bytes into the destination at the current offset.
     static void copyBytes(mem::ByteSpan destination, std::size_t &offset, mem::ConstByteSpan source) noexcept;
     /// Directly encodes character data with a matching representation.
@@ -286,7 +286,7 @@ private:
     /// Calculates an encoded string length using direct copying or character conversion as appropriate.
     template <typename tData, typename tTools, typename tDataView>
     [[nodiscard]] static auto encodedStringLength(tDataView dataView, StringEncoding encoding, StringBomMode bomMode)
-        -> unit::ByteLength;
+        -> unit::ByteCount;
     /// Encodes a string into a ring buffer using direct copying or character conversion as appropriate.
     template <typename tData, typename tTools, typename tDataView>
     [[nodiscard]] static auto encodeStringTo(

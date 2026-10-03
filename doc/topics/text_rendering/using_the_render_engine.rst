@@ -26,7 +26,7 @@ existing absolute layout directory.
 .. erbsland-demo::
     :source: text/RenderLayouts/RenderWorkflow.cpp
     :exec: text/render_layouts --demo RenderWorkflow
-    :source-sha256: e3e405d69ef21a4755db709ac0d999b9a5b7e77921f4726e0d5e50daed8e47da
+    :sha256: 9f168575b82702169336f3092fb196a4c39edd6d0711cf384ad64ca10d3e1cc8
 
 .. code-block:: cpp
 
@@ -59,13 +59,15 @@ existing absolute layout directory.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Esercizio: Tre battiti
-    Tempo: 72 BPM
-    Ripeti lentamente.
-    Could not render: missing.txt
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mEsercizio: Tre battiti
+        Tempo: 72 BPM
+        Ripeti lentamente.
+        Could not render: missing.txt␛[0m
 
 .. erbsland-demo-end::
 

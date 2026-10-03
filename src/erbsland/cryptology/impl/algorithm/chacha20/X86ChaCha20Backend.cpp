@@ -9,6 +9,9 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+using namespace unit;
+
 /// Rotate all four 32-bit lanes left, as required by RFC 8439 Section 2.1.
 /// @tested{ChaCha20BackendFullTest}
 auto X86ChaCha20Backend::rotateLeft(const __m128i value, const int amount) noexcept -> __m128i {
@@ -46,7 +49,7 @@ auto X86ChaCha20Backend::generateBlocks(const uint32_t firstCounter, const std::
     initial[3] = _mm_set1_epi32(0x6b206574U);
     for (auto index = std::size_t{}; index < 8U; ++index) {
         initial[index + 4U] = _mm_set1_epi32(
-            static_cast<int32_t>(_key.getInteger<uint32_t>(unit::ByteIndex{index * 4U}, mem::Endianness::Little)));
+            static_cast<int32_t>(_key.getInteger<uint32_t>(ByteIndex::fromInteger(index * 4U), Endianness::Little)));
     }
     initial[12] = _mm_set_epi32(
         static_cast<int32_t>(firstCounter + 3U),
@@ -55,7 +58,7 @@ auto X86ChaCha20Backend::generateBlocks(const uint32_t firstCounter, const std::
         static_cast<int32_t>(firstCounter));
     for (auto index = std::size_t{}; index < 3U; ++index) {
         initial[index + 13U] = _mm_set1_epi32(
-            static_cast<int32_t>(_nonce.getInteger<uint32_t>(unit::ByteIndex{index * 4U}, mem::Endianness::Little)));
+            static_cast<int32_t>(_nonce.getInteger<uint32_t>(ByteIndex::fromInteger(index * 4U), Endianness::Little)));
     }
     __m128i working[stateWordCount]{};
     for (auto index = std::size_t{}; index < stateWordCount; ++index) {
@@ -75,14 +78,14 @@ auto X86ChaCha20Backend::generateBlocks(const uint32_t firstCounter, const std::
     }
 
     // Transpose the lane-wise words into four RFC little-endian 64-byte blocks through the byte abstraction.
-    auto lanes = mem::ByteArray<16>{};
+    auto lanes = ByteArray<16>{};
     auto laneBytes = mem::impl::UnsafeByteArrayAccess{lanes}.writableData();
     for (auto wordIndex = std::size_t{}; wordIndex < stateWordCount; ++wordIndex) {
         working[wordIndex] = _mm_add_epi32(working[wordIndex], initial[wordIndex]);
         _mm_storeu_si128(reinterpret_cast<__m128i *>(laneBytes.data()), working[wordIndex]);
         for (auto lane = std::size_t{}; lane < 4U; ++lane) {
-            const auto value = lanes.getInteger<uint32_t>(unit::ByteIndex{lane * 4U}, mem::Endianness::Little);
-            result.setIntegerOrThrow(unit::ByteIndex{lane * 64U + wordIndex * 4U}, value, mem::Endianness::Little);
+            const auto value = lanes.getInteger<uint32_t>(ByteIndex::fromInteger(lane * 4U), Endianness::Little);
+            result.setIntegerOrThrow(ByteIndex::fromInteger(lane * 64U + wordIndex * 4U), value, Endianness::Little);
         }
     }
     lanes.secureErase();

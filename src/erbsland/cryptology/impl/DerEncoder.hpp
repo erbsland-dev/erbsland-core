@@ -30,13 +30,13 @@ public:
         /// @param lengthIndex Start of the reserved length field.
         /// @param contentIndex Start of the value content.
         /// @param depth Nesting depth after opening the value.
-        Scope(std::size_t lengthIndex, std::size_t contentIndex, std::size_t depth) noexcept :
+        Scope(unit::ByteIndex lengthIndex, unit::ByteIndex contentIndex, std::size_t depth) noexcept :
             _lengthIndex{lengthIndex}, _contentIndex{contentIndex}, _depth{depth} {}
 
     private:
-        std::size_t _lengthIndex{};  ///< Start of the reserved length field.
-        std::size_t _contentIndex{}; ///< Start of the encoded content.
-        std::size_t _depth{};        ///< Nesting depth used to enforce LIFO closure.
+        unit::ByteIndex _lengthIndex{};  ///< Start of the reserved length field.
+        unit::ByteIndex _contentIndex{}; ///< Start of the encoded content.
+        std::size_t _depth{};            ///< Nesting depth used to enforce LIFO closure.
     };
 
 public:

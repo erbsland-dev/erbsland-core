@@ -10,6 +10,7 @@
 #include "../../stream/OutputStreamSettings.hpp"
 #include "../../stream/StreamState.hpp"
 #include "../../text/String.hpp"
+#include "../../util/impl/worker_executor/WorkerServices.hpp"
 
 #include <atomic>
 #include <condition_variable>
@@ -60,7 +61,8 @@ public:
     [[nodiscard]] static auto commandLength(const Command &command) noexcept -> std::size_t;
 
 public:
-    TerminalPtr terminal;                  ///< The terminal receiving output.
+    util::impl::WorkerReservation work{util::impl::worker_services::io().reserve()}; ///< Lifetime I/O admission.
+    TerminalPtr terminal;                                                            ///< The terminal receiving output.
     BlockStyle style;                      ///< The style applied to newly queued output.
     stream::OutputStreamSettings settings; ///< The immutable stream settings.
     mutable std::mutex mutex;              ///< Protects the queue and non-atomic stream state.

@@ -16,6 +16,7 @@
 
 namespace erbsland::cterm {
 
+using namespace text;
 using namespace impl;
 
 auto BlockStringEditor::splitWords() const noexcept -> std::vector<BlockStringEditor> {
@@ -71,7 +72,7 @@ auto BlockStringEditor::withBase(const BlockStyle style) const noexcept -> Block
 }
 
 auto BlockStringEditor::fromLines(
-    const std::initializer_list<text::String> lines, const Color color, const BlockAttributes attributes) noexcept
+    const std::initializer_list<String> lines, const Color color, const BlockAttributes attributes) noexcept
     -> BlockStringEditor {
     if (lines.size() == 0) {
         return {};
@@ -94,13 +95,13 @@ auto BlockStringEditor::fromLines(
     return fromStorageWithDisplayWidth(std::move(data.chars()), data.displayWidth());
 }
 
-auto BlockStringEditor::fromLines(const std::initializer_list<text::String> lines, const BlockStyle style) noexcept
+auto BlockStringEditor::fromLines(const std::initializer_list<String> lines, const BlockStyle style) noexcept
     -> BlockStringEditor {
     return fromLines(lines, style.color(), style.attributes());
 }
 
 auto BlockStringEditor::fromLines(
-    const std::initializer_list<text::U32String> lines, const Color color, const BlockAttributes attributes) noexcept
+    const std::initializer_list<U32String> lines, const Color color, const BlockAttributes attributes) noexcept
     -> BlockStringEditor {
     if (lines.size() == 0) {
         return {};
@@ -123,12 +124,12 @@ auto BlockStringEditor::fromLines(
     return fromStorageWithDisplayWidth(std::move(data.chars()), data.displayWidth());
 }
 
-auto BlockStringEditor::fromLines(const std::initializer_list<text::U32String> lines, const BlockStyle style) noexcept
+auto BlockStringEditor::fromLines(const std::initializer_list<U32String> lines, const BlockStyle style) noexcept
     -> BlockStringEditor {
     return fromLines(lines, style.color(), style.attributes());
 }
 
-auto BlockStringEditor::splitCharacters(const text::String &str, const Color color, const BlockAttributes attributes)
+auto BlockStringEditor::splitCharacters(const String &str, const Color color, const BlockAttributes attributes)
     -> Storage {
     auto data = BlockStringData{};
     data.reserve(static_cast<std::size_t>(BlockStringData::measureDisplayWidth(str)));
@@ -136,7 +137,7 @@ auto BlockStringEditor::splitCharacters(const text::String &str, const Color col
     return std::move(data.chars());
 }
 
-auto BlockStringEditor::splitCharacters(const text::U32String &str, const Color color, const BlockAttributes attributes)
+auto BlockStringEditor::splitCharacters(const U32String &str, const Color color, const BlockAttributes attributes)
     -> Storage {
     auto data = BlockStringData{};
     data.reserve(str.length().toSizeT());
@@ -172,7 +173,7 @@ void BlockStringEditor::appendStringWithBaseStyle(const BlockString &view, const
 }
 
 void BlockStringEditor::detach() {
-    if (_range.index().isZero() && _range.length().toSizeT() == _data->size() && _data.useCount() == 1) {
+    if (_range.beginIndex().isZero() && _range.length().toSizeT() == _data->size() && _data.useCount() == 1) {
         return;
     }
     _data = BlockStringDataPtr{new BlockStringData{_data->copyChars(_range)}};
@@ -197,8 +198,8 @@ auto BlockStringEditor::characterAt(const BlockIndex index) const noexcept -> co
     return BlockStringRangeView{*_data, _range}.characterAt(index);
 }
 
-auto BlockStringEditor::defaultTrimCharacters() -> const text::CharSet & {
-    static const auto characters = text::CharSet{{U' ', U'\n', U'\t'}};
+auto BlockStringEditor::defaultTrimCharacters() -> const CharSet & {
+    static const auto characters = CharSet{U' ', U'\n', U'\t'};
     return characters;
 }
 

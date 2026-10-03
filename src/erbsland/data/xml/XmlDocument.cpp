@@ -4,11 +4,13 @@
 
 #include "impl/XmlCodec.hpp"
 
-#include "../../err/ParameterError.hpp"
+#include "../../err/ParameterFailure.hpp"
+#include "../../err/ParseError.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::data::xml {
 
+using namespace text;
 using namespace text::literals;
 
 auto XmlDocument::root() const noexcept -> XmlNodePtr {
@@ -22,32 +24,32 @@ auto XmlDocument::root() const noexcept -> XmlNodePtr {
 
 auto XmlDocument::add(XmlNodePtr node) -> XmlNodePtr {
     if (!node) {
-        throw err::ParameterError{"XML document node cannot be null."_el, "node"_el};
+        throw err::ParameterFailure{"XML document node cannot be null."_el, "node"_el};
     }
     _nodes.append(node);
     return node;
 }
 
-auto XmlDocument::addRoot(text::String name, text::String text) -> XmlNodePtr {
+auto XmlDocument::addRoot(String name, String text) -> XmlNodePtr {
     if (root()) {
-        throw err::ParameterError{"XML document already has a root."_el, "name"_el};
+        throw err::ParameterFailure{"XML document already has a root."_el, "name"_el};
     }
     return add(XmlNode::createElement(std::move(name), std::move(text)));
 }
 
-auto XmlDocument::toString(XmlFormatOptions options) const -> text::String {
+auto XmlDocument::toString(XmlFormatOptions options) const -> String {
     return impl::XmlCodec::encode(*this, options);
 }
 
-auto XmlDocument::fromString(const text::String &text, XmlParseOptions options) noexcept -> std::optional<XmlDocument> {
+auto XmlDocument::fromString(const String &text, XmlParseOptions options) noexcept -> std::optional<XmlDocument> {
     try {
         return fromStringOrThrow(text, options);
-    } catch (...) {
+    } catch (const err::ParseError &) {
         return std::nullopt;
     }
 }
 
-auto XmlDocument::fromStringOrThrow(const text::String &text, XmlParseOptions options) -> XmlDocument {
+auto XmlDocument::fromStringOrThrow(const String &text, XmlParseOptions options) -> XmlDocument {
     return impl::XmlCodec::decode(text, options);
 }
 

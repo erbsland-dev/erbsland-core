@@ -3,8 +3,8 @@
 
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/Hasher.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/Hasher.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 
 #include <span>
@@ -42,7 +42,9 @@ public:
             const auto fixturePath = std::string{"data/cryptology/"} + path;
             const auto fixture = el::unittest::fh::readDataText(fixturePath, 50'000'000U);
             auto hasher = Hasher{HashAlgorithm::Sha2_256};
-            hasher.update(el::mem::ByteBlock::fromSpan(std::span<const char>{fixture}));
+            using namespace el::text::literals;
+            const auto text = el::String{fixture}.replacedAll("\r\n"_el, "\n"_el).replacedAll("\r"_el, "\n"_el);
+            hasher.update(text);
             REQUIRE_EQUAL(hasher.finalize(), bytesFromHex(digestText));
         }
     }

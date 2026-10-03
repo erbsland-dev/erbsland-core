@@ -1,16 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/event/EventSource.hpp>
 #include <erbsland/event/impl/CommonEventEditor.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/EventSource.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/RuntimeError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>
 #include <memory>
-#include <stdexcept>
 
 using namespace el::event;
 
@@ -114,13 +114,13 @@ public:
         REQUIRE(weakSource.expired());
     }
 
-    void testExpiredCommonEditorSourceIsLogicError() {
+    void testExpiredCommonEditorSourceIsLogicFailure() {
         const auto loop = EventLoop::create();
         auto source = std::make_shared<Source>(loop);
         auto editor = std::make_unique<DetachedEditor>(source, loop);
         source.reset();
 
-        REQUIRE_THROWS_AS(el::err::LogicError, editor->source());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, editor->source());
         REQUIRE_EQUAL(editor->target(), loop);
     }
 
@@ -129,9 +129,9 @@ public:
         const auto otherLoop = EventLoop::create();
         const auto source = std::make_shared<Source>(ownerLoop);
 
-        REQUIRE_THROWS_AS(el::err::ParameterError, DetachedEditor(EventSourcePtr{}, ownerLoop));
-        REQUIRE_THROWS_AS(el::err::ParameterError, DetachedEditor(source, EventsPtr{}));
-        REQUIRE_THROWS_AS(el::err::LogicError, DetachedEditor(source, otherLoop));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, DetachedEditor(EventSourcePtr{}, ownerLoop));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, DetachedEditor(source, EventsPtr{}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, DetachedEditor(source, otherLoop));
     }
 
     void testEditorRejectsWrongCurrentLoop() {
@@ -143,7 +143,7 @@ public:
         otherLoop->invoke([&]() -> void {
             try {
                 static_cast<void>(source->events());
-            } catch (const el::err::LogicError &) {
+            } catch (const el::err::LogicFailure &) {
                 rejected = true;
             }
         });
@@ -156,7 +156,7 @@ public:
         const auto loop = EventLoop::create();
         const auto source = std::make_shared<Source>(loop);
         loop->invoke([&]() -> void {
-            source->events().setCallback([]() -> void { throw std::runtime_error{"editor"}; });
+            source->events().setCallback([]() -> void { throw el::err::RuntimeError{"editor"}; });
             source->emit();
         });
 

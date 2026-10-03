@@ -1,14 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/network/http/HttpMediaType.hpp>
-#include <erbsland/network/http/HttpMethod.hpp>
-#include <erbsland/network/http/HttpStatus.hpp>
-#include <erbsland/network/http/HttpVersion.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEditor.hpp>
+#include <erbsland/HttpMediaType.hpp>
+#include <erbsland/HttpMethod.hpp>
+#include <erbsland/HttpStatus.hpp>
+#include <erbsland/HttpVersion.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::network;
@@ -66,7 +67,7 @@ public:
         REQUIRE_FALSE(HttpStatus::fromCode(600U).isValid());
         REQUIRE_FALSE(HttpStatus::fromString("20"_el).isValid());
         REQUIRE_FALSE(HttpStatus::fromString("+200"_el).isValid());
-        REQUIRE_THROWS_AS(el::err::ParameterError, HttpStatus::fromCodeOrThrow(600U));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, HttpStatus::fromCodeOrThrow(600U));
     }
 
     void testMediaTypes() {
@@ -91,10 +92,10 @@ public:
         REQUIRE_FALSE(HttpMediaType::fromString("text/plain; charset"_el).isValid());
         REQUIRE_FALSE(HttpMediaType::fromString("text/plain; a=1; A=2"_el).isValid());
         REQUIRE_FALSE(HttpMediaType::fromString("text/plain; a=\"unterminated"_el).isValid());
-        REQUIRE_THROWS_AS(el::err::ParameterError, HttpMediaType{"text space"_el, "plain"_el});
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, HttpMediaType{"text space"_el, "plain"_el});
 
         auto oversized = el::text::StringEditor{"text/plain; x="_el};
-        oversized.append(U'a', el::unit::CpLength{HttpMediaType::cMaximumTextLength.toRawValue()});
+        oversized.append(U'a', el::unit::CpCount::fromInteger(HttpMediaType::cMaximumTextLength.toRawValue()));
         REQUIRE_FALSE(HttpMediaType::fromString(el::text::String{oversized}).isValid());
     }
 };

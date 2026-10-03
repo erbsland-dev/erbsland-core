@@ -21,7 +21,7 @@ Add Erbsland Core first so its targets exist when CMake configures ``elgrep``.
     :caption: <project>/CMakeLists.txt
 
 Add the Erbsland Core Aggregator
-===========================
+================================
 
 Create ``erbsland/CMakeLists.txt`` as the single place where the project registers Erbsland Core libraries.
 When you add an extension later, add its subdirectory below ``core`` in this file.

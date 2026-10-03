@@ -53,7 +53,7 @@ public:
             throw CompressionError{CompressionErrorReason::MalformedData, "Truncated codec byte field."_el};
         }
         return _reader.readBytesOrThrow(
-            unit::ByteLength::fromSizeT(std::min(maximum, _reader.remainingBitCount() / 8U)));
+            unit::ByteCount::fromSizeT(std::min(maximum, _reader.remainingBitCount() / 8U)));
     }
     /// Check a byte field; larger streamed fields are validated as they are read.
     auto canReadBytes(std::size_t count) -> bool { return count <= 8U ? canRead(count * 8U) : true; }

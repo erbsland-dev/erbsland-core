@@ -17,8 +17,8 @@ They are meant to live with application components and to be shared with work pe
 The manager performs queueing, formatting, and writer delivery in the background, leaving producers with a small and
 predictable interface.
 
-Create a Stable Stream for a Component
-======================================
+Component-Owned Log Streams and Stream Paths
+============================================
 
 Create a stream once when a component is constructed and retain its
 :cpp:type:`LogStreamPtr <erbsland::log::LogStreamPtr>` for the component's lifetime. Recreating the same stream for each
@@ -29,7 +29,7 @@ coupling it to the global application object.
 .. erbsland-demo::
     :source: log/LoggingTopics/StoredLogStream.cpp
     :exec: log/logging_topics --demo StoredLogStream
-    :source-sha256: 4efffaabb7c8402e1fce53354a81b794bbdf6a74ac22f2818b19d6d6d2ec0da4
+    :sha256: b2f92b7fb7d86392cf2ff6d7c43df1874742eedd5beea66e4ff70ede95838795
 
 .. code-block:: cpp
 
@@ -63,11 +63,13 @@ coupling it to the global application object.
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mguild/journal␛[97m] Opened the expedition journal.
-    ␛[93mWRN [␛[95mguild/journal␛[93m] Fresh snow covered the eastern trail markers.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mINF [␛[95;49mguild/journal␛[97;49m] Opened the expedition journal.
+        ␛[93;49mWRN [␛[95;49mguild/journal␛[93;49m] Fresh snow covered the eastern trail markers.␛[0m
 
 .. erbsland-demo-end::
 
@@ -83,8 +85,8 @@ Names such as ``network/http`` and ``network/dns`` form a useful hierarchy.
 Writer path filters compare complete segments, so a route for ``network`` accepts both names, while a route for ``net``
 accepts neither.
 
-Choose a Level for the Person Reading It
-========================================
+Log Severity Levels
+===================
 
 Levels are not a measure of how interesting the code was to write.
 They describe the consequence of the event for the reader.
@@ -94,7 +96,7 @@ writer.
 .. erbsland-demo::
     :source: log/LoggingTopics/LogLevels.cpp
     :exec: log/logging_topics --demo LogLevels
-    :source-sha256: 6c4cc06405081e12dffd4858eb604c579e2a204709c7143b448912ae254a9a82
+    :sha256: ad7590ec16cd1b7239cd6b1445098030d274752f99cefbf8c4f40ac09ea0098a
 
 .. code-block:: cpp
 
@@ -120,13 +122,15 @@ writer.
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[90mTRC: Compared the lake and ridge routes.
-    ␛[97mINF: Selected the ridge route.
-    ␛[93mWRN: The last marker is weathered, but still readable.
-    ␛[91mERR: The northern checkpoint did not answer.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[90;49mTRC: Compared the lake and ridge routes.
+        ␛[97;49mINF: Selected the ridge route.
+        ␛[93;49mWRN: The last marker is weathered, but still readable.
+        ␛[91;49mERR: The northern checkpoint did not answer.␛[0m
 
 .. erbsland-demo-end::
 
@@ -142,8 +146,8 @@ The same event should normally keep the same level across installations.
 Routes decide where a level is delivered; changing an error into information merely to make one console quieter hides
 its meaning from every other writer as well.
 
-Build One Complete Message from Printable Values
-================================================
+Constructing Log Messages from Printable Values
+===============================================
 
 Each log method accepts the same printable-value model as Erbsland Core text output.
 Strings, numbers, paths, byte blocks, and other printable values can remain in their natural types until the stream
@@ -155,7 +159,7 @@ Formatting controls such as :cpp:class:`IntegerFormat <erbsland::text::IntegerFo
 .. erbsland-demo::
     :source: log/LoggingTopics/LogStreams.cpp
     :exec: log/logging_topics --demo LogStreams
-    :source-sha256: d4835de1646bd61e15dc8b1086a5d0994449caadf0f2b75ea8fda93158785359
+    :sha256: 719fe02e6527f06e2ee8087327d2d017a4c924bfc34cb367c1e6372614249032
 
 .. code-block:: cpp
 
@@ -188,10 +192,12 @@ Formatting controls such as :cpp:class:`IntegerFormat <erbsland::text::IntegerFo
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mguild/equipment␛[97m] Crates=2a, checked=yes, seal=2a 7c 91 e0␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mINF [␛[95;49mguild/equipment␛[97;49m] Crates=2a, checked=yes, seal=2a 7c 91 e0␛[0m
 
 .. erbsland-demo-end::
 
@@ -201,8 +207,8 @@ to make several routing decisions for what was conceptually one fact.
 Newlines inside a message are retained when a genuinely multiline value is useful; other control and format characters
 are escaped so untrusted data cannot quietly manipulate the rendered log.
 
-Use Multiple Streams When the Names Add Meaning
-===============================================
+Multiple Component Streams and Writer Routing
+=============================================
 
 Most components need only one ``_log``.
 A component with two genuinely distinct responsibilities can own more than one, especially when operators may route
@@ -212,7 +218,7 @@ The example service separates route selection from supply accounting and lets th
 .. erbsland-demo::
     :source: log/LoggingTopics/MultipleLogStreams.cpp
     :exec: log/logging_topics --demo MultipleLogStreams
-    :source-sha256: 40856211b73b0af6bb2d1c35cfb7754b6ff218b30397f721923b074cd661983d
+    :sha256: 73dfd7b171952c500f85e46cceb59a49a493f282882feb93548e094e38c141f0
 
 .. code-block:: cpp
 
@@ -250,11 +256,13 @@ The example service separates route selection from supply accounting and lets th
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[97mINF [␛[95mguild/expedition/routes␛[97m] The ridge route has three checkpoints.
-    ␛[93mWRN [␛[95mguild/expedition/supplies␛[93m] Two lanterns still need fresh oil.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[97;49mINF [␛[95;49mguild/expedition/routes␛[97;49m] The ridge route has three checkpoints.
+        ␛[93;49mWRN [␛[95;49mguild/expedition/supplies␛[93;49m] Two lanterns still need fresh oil.␛[0m
 
 .. erbsland-demo-end::
 
@@ -278,7 +286,7 @@ Associate that stream with a
 .. erbsland-demo::
     :source: log/LoggingTopics/TraceSections.cpp
     :exec: log/logging_topics --demo TraceSections
-    :source-sha256: 248b1822238911e1753301dc432f32c20299255bb3711ac9ce5cfea346e2e34b
+    :sha256: ca72ff7de8463670d694cc270ba58042c2f24747e2406e9275dfd90163a02125
 
 .. code-block:: cpp
 
@@ -287,7 +295,7 @@ Associate that stream with a
     /// Create the section once, enable it in the complete configuration, and attach it when creating the stream. The same
     /// stream continues to carry information messages whether or not its trace section is enabled.
     void traceSections() {
-        const auto routeSearchTrace = el::LogTraceSection{"route-search"_el};
+        constexpr auto routeSearchTrace = el::LogTraceSection{"route-search"_el};
         auto format = el::LogLineFormat{};
         format.setPattern("{level} [{name}] {message}"_el);
 
@@ -296,7 +304,7 @@ Associate that stream with a
             .enableTraceSection(routeSearchTrace)
             .addWriter(
                 el::LogWriter::createForConsole(el::application().terminal()),
-                el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace, el::LogLevel::Information}});
+                el::LogWriterFilter{}.setAcceptedLevels({el::LogLevel::Trace, el::LogLevel::Information}));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -304,26 +312,28 @@ Associate that stream with a
 
         // Only build a detailed route description when tracing is active.
         if (routeLog->traceEnabled()) {
-            const auto route = el::String::fromJoined({"Kallio"_el, " → "_el, "Jääjärvi"_el, " → "_el, "Majakka"_el});
+            const auto route = el::join("Kallio"_el, " → "_el, "Jääjärvi"_el, " → "_el, "Majakka"_el);
             routeLog->trace("Candidate route: "_el, route);
         }
         routeLog->info("The route search selected three waypoints."_el);
         manager->shutdown();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    ␛[90mTRC [␛[95mguild/route-search␛[90m] Candidate route: Kallio → Jääjärvi → Majakka
-    ␛[97mINF [␛[95mguild/route-search␛[97m] The route search selected three waypoints.␛[0m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m␛[90;49mTRC [␛[95;49mguild/route-search␛[90;49m] Candidate route: Kallio → Jääjärvi → Majakka
+        ␛[97;49mINF [␛[95;49mguild/route-search␛[97;49m] The route search selected three waypoints.␛[0m
 
 .. erbsland-demo-end::
 
-The check becomes true only when the stream's section is enabled and at least one trace route accepts the stream path.
-Configuration replacement refreshes that cached flag synchronously, so producers immediately observe the new startup
-policy.
-Keeping configuration stable after startup makes this behavior easy to reason about and avoids turning normal logging
-into a runtime control protocol.
+In this example, enabling ``route-search`` makes the check true, and the console route accepts the resulting trace
+entry.
+The section controls whether the stream produces trace messages; the writer filter controls their delivery.
+A stream created without a trace section is always trace-enabled, so give costly diagnostics an explicit section and
+select it in the startup configuration.
 
 See :doc:`trace_sections` for choosing section boundaries and configuring them.
 For the routing rules that connect levels and paths to writers, continue with :doc:`using_writers`.

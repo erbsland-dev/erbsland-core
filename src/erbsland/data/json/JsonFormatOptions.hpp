@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../../text/EscapeAmount.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 namespace erbsland::data::json {
 
@@ -12,9 +12,9 @@ namespace erbsland::data::json {
 class JsonFormatOptions final {
 public: // accessors
     /// Get the spaces used for each indentation level; zero selects compact output.
-    [[nodiscard]] constexpr auto indentation() const noexcept -> unit::CpLength { return _indentation; }
+    [[nodiscard]] constexpr auto indentation() const noexcept -> unit::CpCount { return _indentation; }
     /// Set the spaces used for each indentation level.
-    constexpr auto setIndentation(const unit::CpLength value) noexcept -> JsonFormatOptions & {
+    constexpr auto setIndentation(const unit::CpCount value) noexcept -> JsonFormatOptions & {
         _indentation = value;
         return *this;
     }
@@ -31,11 +31,11 @@ public: // factories
     [[nodiscard]] static constexpr auto compact() noexcept -> JsonFormatOptions { return {}; }
     /// Create pretty formatting options using two spaces.
     [[nodiscard]] static constexpr auto pretty() noexcept -> JsonFormatOptions {
-        return JsonFormatOptions{}.setIndentation(unit::CpLength{2U});
+        return JsonFormatOptions{}.setIndentation(unit::CpCount{2U});
     }
 
 private:
-    unit::CpLength _indentation;                                    ///< Spaces per nesting level.
+    unit::CpCount _indentation;                                     ///< Spaces per nesting level.
     text::EscapeAmount _escapeAmount{text::EscapeAmount::Required}; ///< text::String escape policy.
 };
 

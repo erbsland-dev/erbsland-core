@@ -5,6 +5,8 @@
 #include <memory>
 
 namespace erbsland::network {
+
 class TlsServerConnection;
 using TlsServerConnectionPtr = std::shared_ptr<TlsServerConnection>;
+
 }

@@ -1,7 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/render/Environment.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -21,11 +28,9 @@ protected: // implement Application
         info().setApplicationVersion(el::Version{1, 0, 0});
     }
     void registerCommandLineOptions(const el::OptionsPtr &options) override {
-        options->addOption("environment"_el)
-            .setRequired()
-            .setHelpDescription("Environment summarized by the report."_el);
+        options->addOption("environment"_el).setRequired().setHelpTitle("Environment summarized by the report."_el);
         options->addOption({"-d"_el, "--dry-run"_el, "dry-run"_el})
-            .setHelpDescription("Marks the report as a simulation."_el);
+            .setHelpTitle("Marks the report as a simulation."_el);
     }
     [[nodiscard]] auto main() -> el::ExitCode override {
         el::io::printLine("environment: "_el, optionValues()->getText("environment"_el));

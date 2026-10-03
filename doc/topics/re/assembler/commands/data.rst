@@ -1,7 +1,7 @@
 
-****
-Data
-****
+***********************
+Assembler .data Command
+***********************
 
 The ``.data`` command writes data into the current *data section*.
 
@@ -45,8 +45,8 @@ Valid value types are:
 - decimal code-point (``123``)
 - hexadecimal code-point (``$1072``)
 
-Notes
-=====
+Sequence and Character-Range Rules
+==================================
 
 - ``.data`` can only be used in the ``&sequence`` and ``&class`` sections.
 - Only one value (or one range) is allowed per ``.data`` line.

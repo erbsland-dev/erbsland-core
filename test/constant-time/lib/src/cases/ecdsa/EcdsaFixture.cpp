@@ -1,19 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "EcdsaFixture.hpp"
 
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
 #include <erbsland/cryptology/impl/algorithm/ecdsa_signature/EcdsaSigner.hpp>
 #include <erbsland/cryptology/impl/SigningKeyEncoding.hpp>
-#include <erbsland/cryptology/keys/PublicKey.hpp>
-#include <erbsland/cryptology/tls/TlsSignatureScheme.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/PublicKey.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TlsSignatureScheme.hpp>
 
 namespace app::constant_time {
 
@@ -28,7 +27,7 @@ EcdsaFixture::EcdsaFixture(
     // width.
     secret.set(el::ByteIndex{}, el::Byte{1U});
     _secret = std::move(secret);
-    _message = el::ByteBuffer{el::ByteLength{32}, el::Byte{0x33U}};
+    _message = el::ByteBuffer{el::ByteCount{32}, el::Byte{0x33U}};
     _nist = ci::ecdsa_signer::decodePrivateScalar(_secret.span(), name);
     require(curve.compare(_nist, curve.order()) < 0 && !curve.isZero(_nist));
     if (operation <= EcdsaOperation::Sign) {
@@ -82,7 +81,7 @@ auto EcdsaFixture::measure(const uint64_t repetitions) -> uint64_t {
     case EcdsaOperation::BaseMultiply:
         return repeat(repetitions, [this]() -> uint64_t { return sample<EcdsaOperation::BaseMultiply>(); });
     }
-    throw el::LogicError{"Unknown sample operation."_el};
+    throw el::LogicFailure{"Unknown sample operation."_el};
 }
 
 }

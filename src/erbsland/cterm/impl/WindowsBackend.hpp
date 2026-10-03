@@ -74,7 +74,6 @@ private:
     [[nodiscard]] static auto keyModifiersFromControlState(uint32_t controlKeyState) noexcept -> KeyModifiers;
     /// Read one key using either a timeout-based poll or a blocking wait.
     [[nodiscard]] auto readKeyFromConsole(OptionalTimeout timeout) -> Key;
-    /// Restore the terminal and terminate the process for one handled event.
 
 private:
     static std::mutex _instanceMutex;          ///< The mutex to protect the instance.

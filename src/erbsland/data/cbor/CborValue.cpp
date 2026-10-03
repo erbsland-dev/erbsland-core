@@ -5,12 +5,18 @@
 #include "impl/CborCodec.hpp"
 #include "impl/CborValueData.hpp"
 
-#include "../../err/LogicError.hpp"
-#include "../../err/OutOfRangeError.hpp"
+#include "../../err/LogicFailure.hpp"
+#include "../../err/NotFoundError.hpp"
+#include "../../err/OutOfRangeFailure.hpp"
+#include "../../err/ParseError.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::data::cbor {
 
+using namespace err;
+using namespace mem;
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 CborValue::CborValue(bool value) : _data{std::make_shared<impl::CborValueData>(value)} {
@@ -25,10 +31,10 @@ CborValue::CborValue(uint64_t value) : _data{std::make_shared<impl::CborValueDat
 CborValue::CborValue(double value) : _data{std::make_shared<impl::CborValueData>(value)} {
 }
 
-CborValue::CborValue(text::String value) : _data{std::make_shared<impl::CborValueData>(std::move(value))} {
+CborValue::CborValue(String value) : _data{std::make_shared<impl::CborValueData>(std::move(value))} {
 }
 
-CborValue::CborValue(mem::ByteBlock value) : _data{std::make_shared<impl::CborValueData>(std::move(value))} {
+CborValue::CborValue(ByteBlock value) : _data{std::make_shared<impl::CborValueData>(std::move(value))} {
 }
 
 CborValue::CborValue(CborArray value) : _data{std::make_shared<impl::CborValueData>(std::move(value))} {
@@ -73,7 +79,7 @@ auto CborValue::type() const noexcept -> CborType {
     }
 }
 
-auto CborValue::itemCount() const noexcept -> unit::ItemCount {
+auto CborValue::itemCount() const noexcept -> ItemCount {
     if (const auto value = getArray()) {
         return value->count();
     }
@@ -83,32 +89,32 @@ auto CborValue::itemCount() const noexcept -> unit::ItemCount {
     return {};
 }
 
-auto CborValue::get(unit::ItemIndex index) const -> CborValue {
+auto CborValue::get(ItemIndex index) const -> CborValue {
     const auto value = getArray();
     return value ? value->get(index) : CborValue{};
 }
 
-auto CborValue::get(const text::String &key) const -> CborValue {
+auto CborValue::get(const String &key) const -> CborValue {
     const auto value = getMap();
     return value ? value->get(key).value_or(CborValue{}) : CborValue{};
 }
 
-auto CborValue::getOrThrow(unit::ItemIndex index) const -> CborValue {
+auto CborValue::getOrThrow(ItemIndex index) const -> CborValue {
     const auto value = getArray();
     if (!value) {
-        throw err::LogicError{"The CBOR value is not an array."_el};
+        throw LogicFailure{"The CBOR value is not an array."_el};
     }
     return value->getRefOrThrow(index);
 }
 
-auto CborValue::getOrThrow(const text::String &key) const -> CborValue {
+auto CborValue::getOrThrow(const String &key) const -> CborValue {
     const auto value = getMap();
     if (!value) {
-        throw err::LogicError{"The CBOR value is not a map."_el};
+        throw LogicFailure{"The CBOR value is not a map."_el};
     }
     const auto result = value->get(key);
     if (!result) {
-        throw err::OutOfRangeError{"The CBOR map key is absent."_el};
+        throw NotFoundError{"The CBOR map key is absent."_el};
     }
     return *result;
 }
@@ -123,8 +129,8 @@ auto CborValue::getOrThrow(const text::String &key) const -> CborValue {
     }
 ERBSLAND_CBOR_GETTER(getBool, bool)
 ERBSLAND_CBOR_GETTER(getFloat, double)
-ERBSLAND_CBOR_GETTER(getText, text::String)
-ERBSLAND_CBOR_GETTER(getBytes, mem::ByteBlock)
+ERBSLAND_CBOR_GETTER(getText, String)
+ERBSLAND_CBOR_GETTER(getBytes, ByteBlock)
 ERBSLAND_CBOR_GETTER(getTimestamp, time::Timestamp)
 ERBSLAND_CBOR_GETTER(getArray, CborArray)
 ERBSLAND_CBOR_GETTER(getMap, CborMap)
@@ -156,7 +162,7 @@ auto CborValue::getUnsigned() const noexcept -> std::optional<uint64_t> {
     return std::nullopt;
 }
 
-auto CborValue::getLinkBytes() const noexcept -> std::optional<mem::ByteBlock> {
+auto CborValue::getLinkBytes() const noexcept -> std::optional<ByteBlock> {
     if (!_data) {
         return std::nullopt;
     }
@@ -172,9 +178,9 @@ void CborValue::detach() {
     }
 }
 
-auto CborValue::set(unit::ItemIndex index, CborValue value) -> CborValue & {
+auto CborValue::set(ItemIndex index, CborValue value) -> CborValue & {
     if (!is(CborType::Array)) {
-        throw err::LogicError{"The CBOR value is not an array."_el};
+        throw LogicFailure{"The CBOR value is not an array."_el};
     }
     detach();
     auto &array = std::get<CborArray>(_data->value);
@@ -183,14 +189,14 @@ auto CborValue::set(unit::ItemIndex index, CborValue value) -> CborValue & {
     } else if (index.isWithin(array.count())) {
         array.set(index, std::move(value));
     } else {
-        throw err::OutOfRangeError{"The CBOR array index exceeds the append position."_el};
+        throw OutOfRangeFailure{"The CBOR array index exceeds the append position."_el};
     }
     return *this;
 }
 
-auto CborValue::set(const text::String &key, CborValue value) -> CborValue & {
+auto CborValue::set(const String &key, CborValue value) -> CborValue & {
     if (!is(CborType::Map)) {
-        throw err::LogicError{"The CBOR value is not a map."_el};
+        throw LogicFailure{"The CBOR value is not a map."_el};
     }
     detach();
     std::get<CborMap>(_data->value).set(key, std::move(value));
@@ -199,27 +205,26 @@ auto CborValue::set(const text::String &key, CborValue value) -> CborValue & {
 
 auto CborValue::append(CborValue value) -> CborValue & {
     if (!is(CborType::Array)) {
-        throw err::LogicError{"The CBOR value is not an array."_el};
+        throw LogicFailure{"The CBOR value is not an array."_el};
     }
     detach();
     std::get<CborArray>(_data->value).append(std::move(value));
     return *this;
 }
 
-auto CborValue::toByteBlock(CborFormatOptions options) const -> mem::ByteBlock {
+auto CborValue::toByteBlock(CborFormatOptions options) const -> ByteBlock {
     return impl::CborCodec::encode(*this, options);
 }
 
-auto CborValue::fromByteBlock(const mem::ByteBlock &bytes, CborParseOptions options) noexcept
-    -> std::optional<CborValue> {
+auto CborValue::fromByteBlock(const ByteBlock &bytes, CborParseOptions options) noexcept -> std::optional<CborValue> {
     try {
         return fromByteBlockOrThrow(bytes, options);
-    } catch (...) {
+    } catch (const ParseError &) {
         return std::nullopt;
     }
 }
 
-auto CborValue::fromByteBlockOrThrow(const mem::ByteBlock &bytes, CborParseOptions options) -> CborValue {
+auto CborValue::fromByteBlockOrThrow(const ByteBlock &bytes, CborParseOptions options) -> CborValue {
     return impl::CborCodec::decode(bytes, options);
 }
 

@@ -1,13 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "TlsFinishedCase.hpp"
 
-#include <erbsland/cryptology/HashAlgorithm.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringFormat.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
 
 namespace app::constant_time {
 
@@ -17,8 +16,7 @@ TlsFinishedCase::TlsFinishedCase(el::HashAlgorithm algorithm) : _algorithm{algor
     const auto tlsId = el::StringFormat{"tls/finished/{}"_el}.build(el::HashAlgorithm{algorithm}.toString());
 
     configure(
-        TestMetadata{tlsId, "TLS Finished verification"_el, "first-vs-last-invalid-finished"_el},
-        el::ByteLength{65536});
+        TestMetadata{tlsId, "TLS Finished verification"_el, "first-vs-last-invalid-finished"_el}, el::ByteCount{65536});
 }
 
 auto TlsFinishedCase::create([[maybe_unused]] const bool automatic) const -> std::unique_ptr<TestCase> {

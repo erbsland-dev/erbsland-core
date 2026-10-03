@@ -59,7 +59,7 @@ private:
     /// Close the AAD section by adding RFC 8439 `pad16(AAD)` exactly once.
     void finishAuthenticatedData() noexcept;
     /// Add enough zero bytes to align a section to a 16-byte boundary.
-    void addPadding(uint64_t length) noexcept;
+    void addPadding(unit::ByteCount length) noexcept;
     /// Refill the stream cache with one scalar block or one four-block backend batch.
     void generateKeyStream(std::size_t remainingInput) noexcept;
 
@@ -69,11 +69,11 @@ private:
     std::unique_ptr<ChaCha20Backend> _chacha20; ///< Independently selected ChaCha20 backend.
     std::unique_ptr<Poly1305> _poly1305;        ///< Independently selected Poly1305 backend.
     ChaCha20Backend::Batch _keyStream;          ///< One or four cached ChaCha20 blocks.
-    std::size_t _keyStreamOffset{};             ///< Next byte in `_keyStream`.
-    std::size_t _keyStreamLength{};             ///< Number of valid cached bytes.
+    unit::ByteIndex _keyStreamOffset{};         ///< Next byte in `_keyStream`.
+    unit::ByteCount _keyStreamLength{};         ///< Number of valid cached bytes.
     uint64_t _nextCounter{1U};                  ///< Next payload block counter, held wide to detect exhaustion.
-    uint64_t _authenticatedDataLength{};        ///< Accepted AAD byte count.
-    uint64_t _payloadLength{};                  ///< Accepted ciphertext byte count.
+    unit::ByteCount _authenticatedDataLength{}; ///< Accepted AAD byte count.
+    unit::ByteCount _payloadLength{};           ///< Accepted ciphertext byte count.
     bool _authenticatedDataFinished{};          ///< Whether `pad16(AAD)` was submitted.
 };
 

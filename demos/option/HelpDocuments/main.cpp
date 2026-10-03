@@ -1,14 +1,24 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
-#include <erbsland/i18n/DisplayTextMap.hpp>
+#include <DemoTerminal.hpp>
+#include <DisplayTextDemo.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ApplicationInfo.hpp>
+#include <erbsland/DisplayText.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/TextDocument.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
 using namespace el::text::literals;
 
-/// `OptionManager` can build neutral help, version, and error documents without using `Application`.
+/// `OptionManager` can build neutral help, version, and error documents independently of the application lifecycle.
 ///
 /// The documents are `TextDocument` trees.
 /// A command line application can display them with the default plain renderer, or with terminal styling after enabling
@@ -25,13 +35,12 @@ auto helpDocuments() -> el::ExitCode {
     options->addOption({"-m"_el, "--mode"_el, "mode"_el})
         .addChoice("plain"_el)
         .addChoice("terminal"_el)
-        .setHelpDescription("Rendering style used by the enclosing application."_el);
-    options->addOption("topic"_el).setHelpDescription("Help topic to inspect."_el);
+        .setHelpTitle("Rendering style used by the enclosing application."_el);
+    options->addOption("topic"_el).setHelpTitle("Help topic to inspect."_el);
 
-    auto displayText = el::DisplayTextMap::defaultMap()->clone();
-    displayText->set("options.OptionsHeading"_el, "Registered Options"_el);
+    el::application().displayText()->addData(DisplayTextDemo::create());
+
     auto manager = el::OptionManager{options};
-    manager.setDisplayTextMap(displayText);
 
     el::io::printLine(manager.helpDocument({}).toString());
     return el::ExitCode::success();
@@ -41,7 +50,7 @@ auto helpDocuments() -> el::ExitCode {
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     app.setMainFn(demo::helpDocuments);
     return app.run();
 }

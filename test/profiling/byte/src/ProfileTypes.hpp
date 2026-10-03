@@ -2,8 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/all.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/cterm/Block.hpp>
+#include <erbsland/cterm/Buffer.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/profiling/Definitions.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/re/Settings.hpp>
+#include <erbsland/RingBuffer.hpp>
+#include <erbsland/SecureErase.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -70,11 +79,11 @@ enum class WorkUnit : std::uint8_t { Operations, Bytes };
 /// One supported implementation-path variant and its public API coverage.
 /// @notest{Verified by byte profiler dry-run and smoke CTest entries.}
 struct UseCaseDescriptor {
-    ByteType type{};                       ///< The owning byte type.
-    UseCase useCase{};                     ///< The use case.
-    el::String variant;                    ///< The implementation-path variant.
-    std::vector<el::String> apiFamilies{}; ///< Public API families represented by this path.
-    WorkUnit workUnit{WorkUnit::Bytes};    ///< The normalization unit.
+    ByteType type{};                    ///< The owning byte type.
+    UseCase useCase{};                  ///< The use case.
+    el::String variant;                 ///< The implementation-path variant.
+    el::StringList apiFamilies{};       ///< Public API families represented by this path.
+    WorkUnit workUnit{WorkUnit::Bytes}; ///< The normalization unit.
 };
 
 /// Settings shared by a complete profiler run.
@@ -103,8 +112,8 @@ struct Scenario {
     el::String variant{"default"_el};                   ///< The implementation-path variant.
     SizeMode sizeMode{SizeMode::Fixed};                 ///< The source size-expansion mode.
     SensitiveMode sensitiveMode{SensitiveMode::Normal}; ///< Effective sensitive-storage state.
-    std::uint64_t size{4096U};                          ///< Primary byte size.
-    std::uint64_t operandSize{64U};                     ///< Secondary operand or chunk size.
+    el::ByteCount size{4096U};                          ///< Primary byte size.
+    el::ByteCount operandSize{64U};                     ///< Secondary operand or chunk size.
     std::uint32_t weight{1U};                           ///< Profile-mode repetition weight.
     WorkUnit workUnit{WorkUnit::Bytes};                 ///< Measurement normalization unit.
 };

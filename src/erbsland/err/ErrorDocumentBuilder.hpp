@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../i18n/DisplayTextMap_fwd.hpp"
 #include "../text/String.hpp"
 #include "../text/TextDocument.hpp"
 #include "../text/TextNode_fwd.hpp"
@@ -15,8 +14,7 @@ namespace erbsland::err {
 class ErrorDocumentBuilder final {
 public:
     /// Create a builder and add the initial title and optional description.
-    explicit ErrorDocumentBuilder(
-        text::String title, text::String description = {}, const i18n::DisplayTextMapConstPtr &displayText = {});
+    explicit ErrorDocumentBuilder(text::String title, text::String description = {});
 
     // defaults/deletions
     ~ErrorDocumentBuilder() = default;
@@ -36,8 +34,6 @@ public:
 public: // accessors
     /// Access the document root for domain-specific additions.
     [[nodiscard]] auto root() const noexcept -> text::TextNodePtr { return _document.root(); }
-    /// Access the resolved display-text map.
-    [[nodiscard]] auto displayText() const noexcept -> const i18n::DisplayTextMapConstPtr & { return _displayText; }
 
 private:
     /// Add a source-location field to the diagnostic document.
@@ -45,7 +41,6 @@ private:
 
 private:
     text::TextDocument _document;
-    i18n::DisplayTextMapConstPtr _displayText;
 };
 
 }

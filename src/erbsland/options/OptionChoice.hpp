@@ -5,6 +5,9 @@
 #include "OptionChoice_fwd.hpp"
 #include "OptionHelp.hpp"
 
+#include "../text/StringList.hpp"
+
+#include <initializer_list>
 #include <utility>
 
 namespace erbsland::options {
@@ -12,7 +15,7 @@ namespace erbsland::options {
 /// A single accepted choice for an option.
 ///
 /// Choice matching is case-insensitive, but the stored parsed value uses the configured choice text.
-/// @tested{OptionsFrameworkTest}
+/// @tested{OptionsFrameworkTest OptionHelpDocumentTest}
 class OptionChoice {
 public:
     /// Create an empty option choice.
@@ -50,10 +53,10 @@ public: // accessors
     /// @param help Replacement help metadata.
     void setHelp(OptionHelp help) { _help = std::move(help); }
     /// Set the help title for this choice.
-    /// @param title Short title used when no description is available.
+    /// @param title Brief text shown in overview output.
     void setHelpTitle(text::String title) { _help.setTitle(std::move(title)); }
     /// Set the help description for this choice.
-    /// @param description User-facing description shown for this choice in help output.
+    /// @param description Detailed description shown on the choice help page.
     void setHelpDescription(text::String description) { _help.setDescription(std::move(description)); }
     /// Set the help epilog for this choice.
     /// @param epilog Optional trailing text for renderers that support choice-level epilogs.
@@ -70,9 +73,21 @@ public: // accessors
     /// @param text Replacement choice text.
     void setText(text::String text) { _text = std::move(text); }
 
+    /// Get explicitly configured detailed-help aliases; an empty list enables the value-name fallback.
+    [[nodiscard]] auto helpNames() const noexcept -> const text::StringList & { return _helpNames; }
+    /// Replace the detailed-help aliases with normalized bare ASCII names.
+    /// @param names Bare ASCII aliases satisfying `Option::isValidPositionalName()`, each at most 100 characters; empty
+    /// restores the value-name fallback.
+    void setHelpNames(const text::StringList &names);
+    /// Replace the detailed-help aliases from a list of bare names.
+    /// @param names Bare ASCII aliases satisfying `Option::isValidPositionalName()`, each at most 100 characters,
+    /// independent of the accepted choice value.
+    void setHelpNames(std::initializer_list<text::String> names);
+
 private:
-    OptionHelp _help;   ///< The help text for the choice.
-    text::String _text; ///< The text of this choice.
+    text::StringList _helpNames; ///< Explicit aliases independent of the accepted choice value.
+    OptionHelp _help;            ///< The help text for the choice.
+    text::String _text;          ///< The text of this choice.
 };
 
 }

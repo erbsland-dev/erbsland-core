@@ -34,4 +34,5 @@ add_subdirectory(util)
 target_sources(erbsland-core-unittest PRIVATE
         main.cpp
         MergedIncludeHeadersTest.cpp
+        ParallelTestWork.hpp
 )

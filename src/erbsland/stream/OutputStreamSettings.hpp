@@ -5,7 +5,7 @@
 #include "StreamBuffering.hpp"
 
 #include "../time/TimeDelta.hpp"
-#include "../unit/ByteLength.hpp"
+#include "../unit/ByteCount.hpp"
 
 #include <optional>
 
@@ -30,9 +30,9 @@ public: // accessors
         return *this;
     }
     /// Get the effective hard back-ring limit.
-    [[nodiscard]] auto backBufferLimit() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto backBufferLimit() const noexcept -> unit::ByteCount;
     /// Set the hard back-ring limit.
-    auto setBackBufferLimit(unit::ByteLength value) noexcept -> OutputStreamSettings & {
+    auto setBackBufferLimit(unit::ByteCount value) noexcept -> OutputStreamSettings & {
         _backBufferLimit = value;
         return *this;
     }
@@ -45,7 +45,7 @@ public: // accessors
 private:
     time::TimeDelta _timeout{time::TimeDelta::milliseconds(1000)};
     StreamBuffering _buffering{StreamBuffering::Balanced};
-    std::optional<unit::ByteLength> _backBufferLimit;
+    std::optional<unit::ByteCount> _backBufferLimit;
 };
 
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "CategoryMask.hpp"
 #include "Character.hpp"
 
 #include "../../../text/CharSet.hpp"
@@ -9,56 +10,15 @@
 #include "../../../text/StringHashMap.hpp"
 #include "../../../util/impl/ComparisonHelper.hpp"
 
-#include <cstdint>
+#include <cstddef>
 #include <unordered_map>
 #include <vector>
-
-namespace erbsland::re::impl::ch {
-/// The mask type for the category.
-using Mask = uint32_t;
-
-constexpr static std::size_t cUnicodeSubCategoryBitCount = 7U;
-constexpr static std::size_t cUnicodeCategoryBitCount = 7U;
-constexpr static std::size_t cReSubcategoryBitCount = 1U;
-constexpr static std::size_t cReCategoryBitCount = 8U;
-constexpr static std::size_t cTotalBits =
-    cUnicodeSubCategoryBitCount + cUnicodeCategoryBitCount + cReSubcategoryBitCount + cReCategoryBitCount;
-static_assert(cTotalBits <= 24U, "The total number of bits for category masks exceeds the maximum allowed (24 bits).");
-
-constexpr static std::size_t cUnicodeSubCategoryBaseBit = 0;
-constexpr static std::size_t cUnicodeCategoryBaseBit = cUnicodeSubCategoryBaseBit + cUnicodeSubCategoryBitCount;
-constexpr static std::size_t cReSubCategoryBaseBit = cUnicodeCategoryBaseBit + cUnicodeCategoryBitCount;
-constexpr static std::size_t cReCategoryBaseBit = cReSubCategoryBaseBit + cReSubcategoryBitCount;
-
-/// Create a mask for a one-letter Unicode category.
-constexpr static auto ucValue(const std::size_t categoryIndex) noexcept -> Mask {
-    return static_cast<Mask>(1U) << (categoryIndex + cUnicodeCategoryBaseBit);
-}
-/// Create a mask for a two-letter Unicode category.
-constexpr static auto ucValue(const std::size_t categoryIndex, const std::size_t subcategoryIndex) noexcept -> Mask {
-    return ucValue(categoryIndex) | static_cast<Mask>(1U) << (subcategoryIndex + cUnicodeSubCategoryBaseBit);
-}
-/// Create a mask for a regular-expression category.
-constexpr static auto reValue(const std::size_t categoryIndex, bool isAscii) noexcept -> Mask {
-    return static_cast<Mask>(1U) << (categoryIndex + cReCategoryBaseBit) |
-        static_cast<Mask>(isAscii ? 1U : 0U) << cReSubCategoryBaseBit;
-}
-/// Create a mask for an ASCII regular-expression category.
-constexpr static auto reAsciiValue(const std::size_t categoryIndex) noexcept -> Mask {
-    return reValue(categoryIndex, true); // Ascii is more limited than Unicode, ASCII flag must be set.
-}
-/// Create a mask for a Unicode regular-expression category.
-constexpr static auto reUnicodeValue(const std::size_t categoryIndex) noexcept -> Mask {
-    return reValue(categoryIndex, false); // Unicode variant includes all ASCII characters.
-}
-
-}
 
 namespace erbsland::re::impl {
 
 /// A named character category.
 /// All Unicode categories and extensions.
-/// @tested{CategoryContainsTest}
+/// @tested{CategoryContainsTest CategoryTest}
 class Category {
 public:
     using Mask = ch::Mask;
@@ -201,9 +161,9 @@ public: // conversion
     [[nodiscard]] static auto fromString(const text::String &str) -> Category;
 
     /// Get a character class for a given unprocessed name.
-    /// @param str The unprocessed string.
+    /// @param str The unprocessed category name. Must identify a known character category.
     /// @return The category.
-    /// @throws err::ParameterError If the category is unknown.
+    /// @throws err::NotFoundError If the normalized category name is unknown.
     [[nodiscard]] static auto fromUnprocessedString(const text::String &str) -> Category;
 
     /// Return a long string for the given character category.
@@ -212,7 +172,7 @@ public: // conversion
     /// Return a short string for the given character category.
     [[nodiscard]] auto toShortString() const -> text::String;
 
-    /// Create the Core character set represented by this category.
+    /// Get the character set represented by this category, lazily caching expensive sets.
     [[nodiscard]] auto characterSet() const -> text::CharSet;
 
     /// Return the raw value.

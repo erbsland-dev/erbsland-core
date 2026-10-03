@@ -16,8 +16,8 @@
 #include "impl/SecureErase.hpp"
 #include "impl/UnsafeByteArrayAccess_fwd.hpp"
 
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 #include "../unit/ByteRange.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 #include "../util/LoopResult.hpp"
@@ -36,7 +36,7 @@ namespace erbsland::mem {
 /// Default construction initializes every byte to zero.
 /// Whole-array shifts and rotations treat index zero as the most-significant byte.
 /// @tparam N The number of bytes.
-/// @tested{ByteArrayTest}
+/// @tested{ByteArrayTest LastIndexTest}
 template <std::size_t N>
 class ByteArray final {
     friend class impl::UnsafeByteArrayAccess<N>;
@@ -146,10 +146,14 @@ public: // operators
 
 public: // access
     /// Get the number of bytes as a byte length.
-    [[nodiscard]] static constexpr auto length() noexcept -> unit::ByteLength { return unit::ByteLength::fromSizeT(N); }
+    [[nodiscard]] static constexpr auto length() noexcept -> unit::ByteCount { return unit::ByteCount::fromSizeT(N); }
     /// Get the index after the last byte.
     [[nodiscard]] static constexpr auto endIndex() noexcept -> unit::ByteIndex {
         return unit::ByteIndex::end(length());
+    }
+    /// Get the final byte index, or noIndex() if this array is empty.
+    [[nodiscard]] static constexpr auto lastIndex() noexcept -> unit::ByteIndex {
+        return unit::ByteIndex::last(length());
     }
     /// Test if this array contains no bytes.
     [[nodiscard]] static constexpr auto isEmpty() noexcept -> bool { return N == 0U; }
@@ -161,9 +165,9 @@ public: // access
         return impl::ByteReadTools{dataView()}.get(index, defaultValue);
     }
     /// Get a byte or throw if `index` is out of range.
-    /// @param index The zero-based byte index.
+    /// @param index The zero-based byte index. Must be inside this array.
     /// @return The stored byte.
-    /// @throws err::OutOfRangeError If `index` is out of range.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     [[nodiscard]] auto getOrThrow(const unit::ByteIndex index) const -> Byte {
         return impl::ByteReadTools{dataView()}.getOrThrow(index);
     }
@@ -179,6 +183,7 @@ public: // modifiers
         impl::ByteWriteTools{ByteSpan{writableSpan()}}.set(index, value);
     }
     /// Set a byte or throw if its index is invalid.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     constexpr void setOrThrow(const unit::ByteIndex index, const Byte value) {
         impl::ByteWriteTools{ByteSpan{writableSpan()}}.setOrThrow(index, value);
     }
@@ -187,7 +192,9 @@ public: // modifiers
         impl::ByteWriteTools{ByteSpan{writableSpan()}}.xorAt(index, value);
     }
     /// XOR a byte value at an index or throw if its index is invalid.
-    /// @throws err::OutOfRangeError If `index` is invalid or outside this array.
+    /// @param index The byte index. Must be inside this array.
+    /// @param value The byte value to XOR with the existing byte.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     constexpr void xorAtOrThrow(const unit::ByteIndex index, const Byte value) {
         impl::ByteWriteTools{ByteSpan{writableSpan()}}.xorAtOrThrow(index, value);
     }
@@ -209,7 +216,7 @@ public: // modifiers
     /// Overwrite from an index with as many source bytes as fit.
     void overwrite(const unit::ByteIndex index, const ConstByteSpan source) noexcept {
         impl::ByteWriteTools{ByteSpan{writableSpan()}}.overwrite(
-            unit::ByteRange{index, unit::ByteLength::infinite()}, impl::ByteDataView{source});
+            unit::ByteRange{index, unit::ByteCount::infinite()}, impl::ByteDataView{source});
     }
     /// Overwrite a clamped target range with as many source bytes as fit.
     void overwrite(const unit::ByteRange targetRange, const ConstByteSpan source) noexcept {
@@ -224,7 +231,7 @@ public: // modifiers
         return true;
     }
     /// XOR every byte with an equally sized source or throw if the lengths differ.
-    /// @throws err::ParameterError If the lengths differ.
+    /// @param source The bytes to XOR. Must have the same length as this array.
     void xorWithOrThrow(const ConstByteSpan source) {
         if (!xorWith(source)) {
             impl::throwByteArrayWrongLength();
@@ -392,10 +399,10 @@ public: // integers
     }
     /// Get an integer or throw if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
-    /// @param offset The first byte index.
+    /// @param offset The first byte index. The complete `sizeof(T)`-byte integer must fit at this position.
     /// @param endianness The byte order.
     /// @return The decoded value.
-    /// @throws err::OutOfRangeError If the integer does not fit at `offset`.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     [[nodiscard]] auto getIntegerOrThrow(
@@ -432,10 +439,10 @@ public: // integers
     }
     /// Store an integer in this array or throw if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
-    /// @param offset The first byte index.
+    /// @param offset The first byte index. The complete `sizeof(T)`-byte integer must fit at this position.
     /// @param value The integer value.
     /// @param endianness The byte order.
-    /// @throws err::OutOfRangeError If the integer does not fit at `offset`.
+    /// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     constexpr void setIntegerOrThrow(
@@ -462,7 +469,7 @@ public: // accessors
     /// @param begin The first byte index.
     /// @param lengthValue The requested byte length.
     /// @return The clamped span, or an empty span for an invalid index.
-    [[nodiscard]] constexpr auto span(const unit::ByteIndex begin, const unit::ByteLength lengthValue) const noexcept
+    [[nodiscard]] constexpr auto span(const unit::ByteIndex begin, const unit::ByteCount lengthValue) const noexcept
         -> ConstByteSpan {
         return span(unit::ByteRange{begin, lengthValue});
     }
@@ -483,9 +490,8 @@ public: // factories
         return result;
     }
     /// Create an array by copying a borrowed span with exactly the required size.
-    /// @param bytes The bytes to copy.
+    /// @param bytes The bytes to copy. Must contain exactly `N` bytes.
     /// @return The copied array.
-    /// @throws err::ParameterError If `bytes` does not contain exactly `N` bytes.
     [[nodiscard]] static auto fromSpanOrThrow(const ConstByteSpan bytes) -> ByteArray {
         if (const auto result = fromSpan(bytes); result.has_value()) {
             return *result;

@@ -12,11 +12,11 @@ target_sources(erbsland-core PRIVATE
         TlsClientConnectionEventEditor_fwd.hpp
         TlsClientConnectOptions.hpp
         TlsClientConnectOptions_fwd.hpp
+        TlsConfigurationMapping.hpp
         TlsServerAcceptOptions.hpp
         TlsServerAcceptOptions_fwd.hpp
         TlsServerConnection.hpp
         TlsServerConnection_fwd.hpp
         TlsServerConnectionEventEditor.hpp
         TlsServerConnectionEventEditor_fwd.hpp
-        TlsServerIdentityMapping.hpp
 )

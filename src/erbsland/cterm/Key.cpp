@@ -6,7 +6,9 @@
 
 #include "../text/CharSet.hpp"
 #include "../text/Literals.hpp"
-#include "../unit/CpLength.hpp"
+#include "../text/StringJoins.hpp"
+#include "../text/StringTransformations.hpp"
+#include "../unit/CpCount.hpp"
 
 #include <array>
 #include <optional>
@@ -105,7 +107,7 @@ auto Key::findKeyTextDefinition(const Type type) noexcept -> std::optional<KeyTe
 }
 
 auto Key::normalizeKeyText(const String &text) -> String {
-    return text.transformed(Char::toLowercase);
+    return text::toLowercase(text);
 }
 
 auto Key::parseModifierText(const String &text) noexcept -> std::optional<KeyModifier> {
@@ -125,17 +127,17 @@ auto Key::parseModifiers(String &text) noexcept -> KeyModifiers {
     static const auto separatorCharacters = CharSet{U'+'};
     auto modifiers = KeyModifiers{};
     while (true) {
-        const auto separator = text.findFirstOf(separatorCharacters);
-        if (separator.isNoIndex()) {
+        const auto parts = text.splitAtFirst(separatorCharacters);
+        if (!parts) {
             return modifiers;
         }
-        const auto modifierText = normalizeKeyText(text.slice(unit::ByteRange{unit::ByteIndex::zero(), separator}));
+        const auto modifierText = normalizeKeyText(parts->first);
         const auto modifier = parseModifierText(modifierText);
         if (!modifier.has_value()) {
             return modifiers;
         }
         modifiers.set(*modifier);
-        text = text.slice(unit::ByteRange{separator + unit::ByteLength::one(), unit::ByteLength::infinite()});
+        text = parts->second;
     }
 }
 
@@ -167,11 +169,11 @@ auto Key::wrapDisplayText(const String &text, const bool useBrackets) -> String 
     if (!useBrackets) {
         return text;
     }
-    return String::fromJoined({"["_el, text, "]"_el});
+    return text::join("["_el, text, "]"_el);
 }
 
 auto Key::createCharacterKey(const CombinedChar &character) noexcept -> Key {
-    if (character.characterCount() <= unit::CpLength::one()) {
+    if (character.characterCount() <= unit::CpCount::one()) {
         return Key{Character, character.first()};
     }
     return Key{Combined, character.toU32String()};
@@ -239,7 +241,7 @@ auto Key::operator!=(const Type type) const noexcept -> bool {
 }
 
 auto Key::unicode() const noexcept -> Char {
-    if (_type != Character || _character.characterCount() != unit::CpLength::one()) {
+    if (_type != Character || _character.characterCount() != unit::CpCount::one()) {
         return {};
     }
     return _character.first();

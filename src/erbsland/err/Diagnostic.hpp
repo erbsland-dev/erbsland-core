@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../i18n/DisplayTextMap_fwd.hpp"
 #include "../text/String.hpp"
 #include "../text/TextDocument_fwd.hpp"
 #include "../unit/CodeLocation.hpp"
@@ -38,10 +37,7 @@ public: // conversion
     /// Render this diagnostic as plain text.
     [[nodiscard]] virtual auto toString() const noexcept -> text::String;
     /// Render this diagnostic as a structured text document.
-    [[nodiscard]] virtual auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
-        -> text::TextDocument;
-    /// @overload
-    [[nodiscard]] auto toTextDocument() const -> text::TextDocument;
+    [[nodiscard]] virtual auto toTextDocument() const -> text::TextDocument;
 };
 
 /// Shared diagnostic pointer.

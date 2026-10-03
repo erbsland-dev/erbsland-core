@@ -5,7 +5,7 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesBlockCipherFactory.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesKeySchedule.hpp>
 #include <erbsland/cryptology/impl/algorithm/aes/AesOperations.hpp>
@@ -89,7 +89,7 @@ public:
         const auto galoisExpected = arrayFromHex<16>("5e2ec746917062882c85b0685353deb7");
         const auto multiplier = el::cryptology::impl::createGaloisMultiplier();
         const auto actual = multiplier->multiply(left, right);
-        for (auto index = el::unit::ByteIndex{}; index < actual.endIndex(); ++index) {
+        for (auto index = el::unit::ByteIndex{}; index.isWithin(actual.length()); index.uncheckedIncrement()) {
             REQUIRE_EQUAL(actual.get(index), galoisExpected.get(index));
         }
 
@@ -99,10 +99,11 @@ public:
         for (auto iteration = uint8_t{}; iteration < 64U; ++iteration) {
             auto block = AesBlockCipher::Block{};
             auto factor = AesBlockCipher::Block{};
-            for (auto index = std::size_t{}; index < 16U; ++index) {
-                block.set(el::unit::ByteIndex{index}, el::mem::Byte{static_cast<uint8_t>(iteration + index * 17U)});
-                factor.set(
-                    el::unit::ByteIndex{index}, el::mem::Byte{static_cast<uint8_t>(iteration * 3U + index * 29U)});
+            for (
+                auto index = el::unit::ByteIndex::zero(); index.isWithin(el::unit::ByteCount{16U});
+                index.uncheckedIncrement()) {
+                block.set(index, el::mem::Byte{static_cast<uint8_t>(iteration + index.toRawValue() * 17U)});
+                factor.set(index, el::mem::Byte{static_cast<uint8_t>(iteration * 3U + index.toRawValue() * 29U)});
             }
             REQUIRE_EQUAL(cipher->encrypt(block), portableCipher.encrypt(block));
             REQUIRE_EQUAL(cipher->decrypt(block), portableCipher.decrypt(block));

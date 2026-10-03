@@ -34,16 +34,16 @@ public:
 
 public: // factories
     /// Create an inactive reusable host lookup.
+    /// Must be called on the owner event loop.
     /// @return The new lookup source.
-    /// @throws err::LogicError If called outside the owner event loop.
     [[nodiscard]] virtual auto createHostLookup() -> HostLookupPtr = 0;
     /// Create an active session-first HTTP/1.1 and HTTPS client.
+    /// Must be called on the owner event loop.
     /// @return The new client session.
-    /// @throws err::LogicError If called outside the owner event loop.
     [[nodiscard]] virtual auto createHttpClientSession() -> HttpClientSessionPtr = 0;
     /// Create an inactive HTTP/1.1 or HTTPS server.
+    /// Must be called on the owner event loop.
     /// @return The new server source.
-    /// @throws err::LogicError If called outside the owner event loop.
     [[nodiscard]] virtual auto createHttpServer() -> HttpServerPtr = 0;
     /// Create an inactive TCP listener.
     /// @return The new listener source.
@@ -52,16 +52,15 @@ public: // factories
     /// @return The new connection source.
     [[nodiscard]] virtual auto createTcpConnection() -> TcpConnectionPtr = 0;
     /// Create an inactive TLS client connection.
+    /// Must be called on the owner event loop.
     /// @return The new one-shot authenticated connection source.
-    /// @throws err::LogicError If called outside the owner event loop.
     [[nodiscard]] virtual auto createTlsClientConnection() -> TlsClientConnectionPtr = 0;
     /// Create an inactive accepted TLS server connection.
+    /// Must be called on the owner event loop.
     /// @return The new one-shot authenticated server connection source.
-    /// @throws err::LogicError If called outside the owner event loop.
     [[nodiscard]] virtual auto createTlsServerConnection() -> TlsServerConnectionPtr = 0;
     /// Create an inactive UDP socket.
     /// @return The new UDP socket source.
-    /// @throws err::RuntimeError If the backend does not implement UDP sockets.
     [[nodiscard]] virtual auto createUdpSocket() -> UdpSocketPtr = 0;
 };
 

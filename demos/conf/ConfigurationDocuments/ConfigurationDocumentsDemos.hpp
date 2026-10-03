@@ -3,6 +3,7 @@
 #pragma once
 
 #include <DemoCommon.hpp>
+#include <erbsland/Path.hpp>
 
 namespace demo {
 

@@ -40,7 +40,7 @@ Core decoding requires the caller's configured algorithm to match the embedded i
 Errors and Resource Policies
 ============================
 
-Invalid constructor combinations raise :cpp:class:`ParameterError <erbsland::err::ParameterError>`.
+Invalid constructor combinations raise :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>`.
 Malformed payloads, algorithm mismatches, unsupported stream features, and exact-length mismatches raise
 :cpp:class:`CompressionError <erbsland::compression::CompressionError>`. A payload that exceeds the configured output or
 workspace policy raises :cpp:class:`OutOfRangeError <erbsland::err::OutOfRangeError>` before the disallowed reservation.

@@ -11,6 +11,7 @@
 
 namespace erbsland::block {
 
+using namespace text;
 using namespace text::literals;
 
 auto Direction::contains(Direction direction) const noexcept -> bool {
@@ -71,7 +72,7 @@ auto Direction::fromDelta(const Position delta) noexcept -> Direction {
     }
 }
 
-auto Direction::toString() const noexcept -> text::String {
+auto Direction::toString() const noexcept -> String {
     auto it = std::ranges::find_if(directionToStringMap(), [this](const DirectionToStringEntry &entry) -> bool {
         return std::get<0>(entry) == _value;
     });
@@ -81,12 +82,12 @@ auto Direction::toString() const noexcept -> text::String {
     return std::get<1>(*it);
 }
 
-auto Direction::isValidString(const text::String &text) noexcept -> bool {
+auto Direction::isValidString(const String &text) noexcept -> bool {
     auto direction = Direction{};
     return findStringDirection(text, direction);
 }
 
-auto Direction::fromString(const text::String &text) noexcept -> Direction {
+auto Direction::fromString(const String &text) noexcept -> Direction {
     auto direction = Direction{};
     if (findStringDirection(text, direction)) {
         return direction;
@@ -152,9 +153,9 @@ auto Direction::stringToDirectionMap() noexcept -> const StringToDirectionMap & 
     return map;
 }
 
-auto Direction::findStringDirection(const text::String &text, Direction &direction) noexcept -> bool {
+auto Direction::findStringDirection(const String &text, Direction &direction) noexcept -> bool {
     auto it = std::ranges::find_if(stringToDirectionMap(), [text](const StringToDirectionEntry &entry) -> bool {
-        return text.compare(std::get<0>(entry), text::Char::compareIdentifier) == std::strong_ordering::equal;
+        return text.compare(std::get<0>(entry), Char::compareIdentifier) == std::strong_ordering::equal;
     });
     if (it == stringToDirectionMap().end()) {
         return false;

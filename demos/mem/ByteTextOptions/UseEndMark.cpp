@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/ByteReader.hpp>
+#include <erbsland/ByteTextOptions.hpp>
+#include <erbsland/ByteWriter.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -11,7 +18,7 @@ namespace demo {
 /// The configured maximum length bounds the search when reading untrusted data.
 void useEndMark() {
     auto options = el::ByteTextOptions{};
-    options.clearCountFormat().setEndMark(U'|').setLength(el::ByteLength{16U});
+    options.clearCountFormat().setEndMark(U'|').setLength(el::ByteCount{16U});
     auto writer = el::ByteWriter{};
 
     // Encode two moon phases whose boundaries are marked by a vertical bar.

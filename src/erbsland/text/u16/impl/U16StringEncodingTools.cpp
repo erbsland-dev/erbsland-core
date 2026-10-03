@@ -7,7 +7,7 @@
 
 #include "../U16StringEditor.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteReader.hpp"
 #include "../../../mem/ByteWriter.hpp"
@@ -26,6 +26,7 @@
 
 namespace erbsland::text::impl {
 
+using namespace unit;
 using mem::ByteBlock;
 using mem::ByteReader;
 using mem::ByteWriter;
@@ -142,13 +143,13 @@ auto U16StringEncodingTools::decodeUtf8(const ByteBlock &data, const DecodeLayou
     case EncodingMode::Strict:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
+            reader.setPosition(ByteIndex::fromSizeT(layout.start));
             utf8::forEachDecodedCharacter<EncodingMode::Strict>(reader, function);
         });
     case EncodingMode::Tolerant:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
+            reader.setPosition(ByteIndex::fromSizeT(layout.start));
             utf8::forEachDecodedCharacter<EncodingMode::Tolerant>(reader, function);
         });
     }
@@ -161,14 +162,14 @@ auto U16StringEncodingTools::decodeUtf16(const ByteBlock &data, const DecodeLayo
     case EncodingMode::Strict:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
+            reader.setPosition(ByteIndex::fromSizeT(layout.start));
             reader.setEndianness(layout.endianness);
             utf16::forEachDecodedCharacter<EncodingMode::Strict>(reader, function);
         });
     case EncodingMode::Tolerant:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
+            reader.setPosition(ByteIndex::fromSizeT(layout.start));
             reader.setEndianness(layout.endianness);
             utf16::forEachDecodedCharacter<EncodingMode::Tolerant>(reader, function);
         });
@@ -182,14 +183,14 @@ auto U16StringEncodingTools::decodeUtf32(const ByteBlock &data, const DecodeLayo
     case EncodingMode::Strict:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
+            reader.setPosition(ByteIndex::fromSizeT(layout.start));
             reader.setEndianness(layout.endianness);
             utf32::forEachValidatedCharacter<EncodingMode::Strict>(reader, function);
         });
     case EncodingMode::Tolerant:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
+            reader.setPosition(ByteIndex::fromSizeT(layout.start));
             reader.setEndianness(layout.endianness);
             utf32::forEachValidatedCharacter<EncodingMode::Tolerant>(reader, function);
         });
@@ -214,10 +215,15 @@ auto U16StringEncodingTools::encode(const StringEncoding encoding, const StringB
 }
 
 auto U16StringEncodingTools::encodedLength(const StringEncoding encoding, const StringBomMode bomMode) const
-    -> unit::ByteLength {
+    -> ByteCount {
     auto result = encoding.bomLength(bomMode);
-    utf16::forEachDecodedCharacter<EncodingMode::Tolerant>(
-        _data.dataSpan(), [&](const Char character) -> void { result.addOrThrow(character.encodedBytes(encoding)); });
+    utf16::forEachDecodedCharacter<EncodingMode::Tolerant>(_data.dataSpan(), [&](const Char character) -> void {
+        const auto characterLength = character.encodedBytes(encoding);
+        if (characterLength > ByteCount::maximum() - result) {
+            throwOutOfRangeFailure("Encoded string length exceeds bounds");
+        }
+        result += characterLength;
+    });
     return result;
 }
 
@@ -236,7 +242,7 @@ auto U16StringEncodingTools::encodeTo(
     utf16::forEachDecodedCharacter<EncodingMode::Tolerant>(
         _data.dataSpan(), [&](const Char character) -> void { writer.write(character); });
     if (ringWriter.position().distanceFromZero() != length) {
-        throw err::LogicError{"Encoded byte length does not match the calculated length."};
+        throw err::LogicFailure{"Encoded byte length does not match the calculated length."};
     }
     ringWriter.commit();
     return util::Result::Success;

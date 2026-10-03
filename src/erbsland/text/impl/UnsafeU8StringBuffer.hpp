@@ -8,12 +8,15 @@
 #include "../u8/U8String.hpp"
 #include "../u8/U8StringEditor.hpp"
 
-#include "../../unit/ByteLength.hpp"
+#include "../../mem/ByteSpan.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <exception>
 #include <limits>
+#include <span>
 #include <utility>
 
 namespace erbsland::text::impl {
@@ -27,8 +30,27 @@ public:
     explicit UnsafeU8StringBuffer(const std::size_t dataSize, const bool sensitive = false) :
         _data{createDataForDataSize(dataSize, sensitive)} {}
     /// Create a buffer with the given usable capacity, excluding the null byte.
-    explicit UnsafeU8StringBuffer(const unit::ByteLength capacity, const bool sensitive = false) :
+    explicit UnsafeU8StringBuffer(const unit::ByteCount capacity, const bool sensitive = false) :
         UnsafeU8StringBuffer{dataSizeForCapacity(capacity), sensitive} {}
+    /// Create a buffer by copying raw standard bytes without validation or BOM handling.
+    /// @param bytes Exact payload, including any null bytes; no terminator is required.
+    /// @param sensitive Whether to protect the copied storage as sensitive data.
+    explicit UnsafeU8StringBuffer(const std::span<const std::byte> bytes, const bool sensitive = false) :
+        UnsafeU8StringBuffer{unit::ByteCount::fromSizeT(bytes.size()), sensitive} {
+        if (!bytes.empty()) {
+            std::memcpy(data(), bytes.data(), bytes.size());
+        }
+    }
+    /// Create a buffer by copying raw Core bytes without validation or BOM handling.
+    /// @param bytes Exact payload, including any null bytes; no terminator is required.
+    /// @param sensitive Whether to protect the copied storage as sensitive data.
+    explicit UnsafeU8StringBuffer(const mem::ConstByteSpan bytes, const bool sensitive = false) :
+        UnsafeU8StringBuffer{std::as_bytes(bytes), sensitive} {}
+    /// Create a buffer by copying raw character bytes without validation or BOM handling.
+    /// @param bytes Exact payload, including any null bytes; no terminator is required.
+    /// @param sensitive Whether to protect the copied storage as sensitive data.
+    explicit UnsafeU8StringBuffer(const std::span<const char> bytes, const bool sensitive = false) :
+        UnsafeU8StringBuffer{std::as_bytes(bytes), sensitive} {}
 
     // defaults
     ~UnsafeU8StringBuffer() = default;
@@ -70,19 +92,19 @@ public:
         return _data.constGet()->capacity();
     }
     /// Access the usable buffer capacity, excluding the null byte.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength {
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteCount {
         const auto size = dataSize();
         if (size == 0U) {
-            return unit::ByteLength::zero();
+            return unit::ByteCount::zero();
         }
-        return unit::ByteLength::fromSizeT(size - 1U);
+        return unit::ByteCount::fromSizeT(size - 1U);
     }
     /// Create a UTF-8 string from the buffer and release the buffer.
-    [[nodiscard]] auto take(unit::ByteLength length = unit::ByteLength::infinite()) -> U8StringEditor {
+    [[nodiscard]] auto take(unit::ByteCount length = unit::ByteCount::infinite()) -> U8StringEditor {
         return U8StringEditor{takeStorage(length)};
     }
     /// Create a read-only UTF-8 string from the buffer and release the buffer.
-    [[nodiscard]] auto takeString(unit::ByteLength length = unit::ByteLength::infinite()) -> U8String {
+    [[nodiscard]] auto takeString(unit::ByteCount length = unit::ByteCount::infinite()) -> U8String {
         return U8String{takeStorage(length)};
     }
 
@@ -109,7 +131,7 @@ private:
         return U8StringDataPtr{data};
     }
     /// Convert usable capacity to full buffer size.
-    [[nodiscard]] static auto dataSizeForCapacity(unit::ByteLength capacity) -> std::size_t {
+    [[nodiscard]] static auto dataSizeForCapacity(unit::ByteCount capacity) -> std::size_t {
         if (capacity.isInfinite()) {
             std::terminate();
         }
@@ -120,7 +142,7 @@ private:
         return size + 1U;
     }
     /// Validate the final string length for take().
-    [[nodiscard]] auto checkedFinalLength(unit::ByteLength length) const -> unit::ByteLength {
+    [[nodiscard]] auto checkedFinalLength(unit::ByteCount length) const -> unit::ByteCount {
         if (length.isInfinite()) {
             return capacity();
         }
@@ -130,9 +152,9 @@ private:
         return length;
     }
     /// Finalize and detach shared string storage.
-    [[nodiscard]] auto takeStorage(unit::ByteLength length) -> U8StringSharedStorage {
+    [[nodiscard]] auto takeStorage(unit::ByteCount length) -> U8StringSharedStorage {
         const auto finalLength = checkedFinalLength(length);
-        if (finalLength.isZero()) {
+        if (finalLength.isZero() && !isSensitive()) {
             _data.reset();
             return {};
         }

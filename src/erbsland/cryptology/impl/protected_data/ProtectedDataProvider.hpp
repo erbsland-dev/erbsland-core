@@ -6,7 +6,7 @@
 
 #include "../../../mem/ByteBlock_fwd.hpp"
 #include "../../../mem/ByteSpan.hpp"
-#include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteCount.hpp"
 
 #include <atomic>
 
@@ -38,10 +38,10 @@ public:
 
 public:
     /// Encrypt and authenticate plaintext into a provider-owned envelope.
-    [[nodiscard]] virtual auto protect(mem::ConstByteSpan plaintext, unit::ByteLength plaintextLength)
+    [[nodiscard]] virtual auto protect(mem::ConstByteSpan plaintext, unit::ByteCount plaintextLength)
         -> mem::ByteBlock = 0;
     /// Authenticate and decrypt a provider-owned envelope.
-    [[nodiscard]] virtual auto unprotect(mem::ConstByteSpan envelope, unit::ByteLength plaintextLength)
+    [[nodiscard]] virtual auto unprotect(mem::ConstByteSpan envelope, unit::ByteCount plaintextLength)
         -> mem::ByteBlock = 0;
 
 private:

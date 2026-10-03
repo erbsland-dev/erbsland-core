@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StringConversionTools.hpp"
 
+#include "ThrowHelper.hpp"
+
 #include "../u16/impl/U16Encoding.hpp"
 #include "../u16/impl/U16StringEncodingTools.hpp"
 #include "../u16/impl/U16StringReadTools.hpp"
@@ -29,17 +31,19 @@
 #include <span>
 
 namespace erbsland::text::impl {
+
+using namespace mem;
+using unit::ByteCount;
+
 template <typename T>
 [[nodiscard]] auto StringConversionTools::isMatchingRepresentation(const StringEncoding encoding) noexcept -> bool {
     if constexpr (std::same_as<T, char>) {
         return encoding.isUtf8();
     } else if constexpr (std::same_as<T, char16_t>) {
-        const auto nativeEndianness =
-            std::endian::native == std::endian::little ? mem::Endianness::Little : mem::Endianness::Big;
+        const auto nativeEndianness = std::endian::native == std::endian::little ? Endianness::Little : Endianness::Big;
         return encoding.isUtf16() && encoding.endianness() == nativeEndianness;
     } else if constexpr (std::same_as<T, char32_t>) {
-        const auto nativeEndianness =
-            std::endian::native == std::endian::little ? mem::Endianness::Little : mem::Endianness::Big;
+        const auto nativeEndianness = std::endian::native == std::endian::little ? Endianness::Little : Endianness::Big;
         return encoding.isUtf32() && encoding.endianness() == nativeEndianness;
     } else {
         return false;
@@ -47,20 +51,23 @@ template <typename T>
 }
 
 template <typename T>
-[[nodiscard]] auto StringConversionTools::asByteSpan(const std::span<const T> source) noexcept -> mem::ConstByteSpan {
-    return {reinterpret_cast<const mem::Byte *>(source.data()), source.size_bytes()};
+[[nodiscard]] auto StringConversionTools::asByteSpan(const std::span<const T> source) noexcept -> ConstByteSpan {
+    return {reinterpret_cast<const Byte *>(source.data()), source.size_bytes()};
 }
 
 template <typename T>
 [[nodiscard]] auto StringConversionTools::rawEncodedLength(
-    const std::span<const T> source, const StringEncoding encoding, const StringBomMode bomMode) -> unit::ByteLength {
+    const std::span<const T> source, const StringEncoding encoding, const StringBomMode bomMode) -> ByteCount {
     auto result = encoding.bomLength(bomMode);
-    result.addOrThrow(unit::ByteLength::fromSizeT(source.size_bytes()));
+    if (source.size_bytes() > (ByteCount::maximum() - result).toRawValue()) {
+        throwOutOfRangeFailure("Encoded string length exceeds bounds");
+    }
+    result += ByteCount::fromSizeT(source.size_bytes());
     return result;
 }
 
 void StringConversionTools::copyBytes(
-    const mem::ByteSpan destination, std::size_t &offset, const mem::ConstByteSpan source) noexcept {
+    const ByteSpan destination, std::size_t &offset, const ConstByteSpan source) noexcept {
     if (!source.empty()) {
         std::memcpy(destination.data() + offset, source.data(), source.size());
         offset += source.size();
@@ -69,7 +76,7 @@ void StringConversionTools::copyBytes(
 
 template <typename T>
 [[nodiscard]] auto StringConversionTools::encodeRaw(
-    const std::span<const T> source, const StringEncoding encoding, const StringBomMode bomMode) -> mem::ByteBlock {
+    const std::span<const T> source, const StringEncoding encoding, const StringBomMode bomMode) -> ByteBlock {
     const auto length = rawEncodedLength(source, encoding, bomMode);
     auto buffer = mem::impl::UnsafeByteBlockBuffer{length};
     auto offset = std::size_t{0U};
@@ -80,10 +87,8 @@ template <typename T>
 
 template <typename T>
 [[nodiscard]] auto StringConversionTools::encodeRawTo(
-    const std::span<const T> source,
-    mem::RingBuffer &buffer,
-    const StringEncoding encoding,
-    const StringBomMode bomMode) -> util::Result {
+    const std::span<const T> source, RingBuffer &buffer, const StringEncoding encoding, const StringBomMode bomMode)
+    -> util::Result {
     const auto length = rawEncodedLength(source, encoding, bomMode);
     if (isFailure(buffer.reserveAdditional(length))) {
         return util::Result::Failure;
@@ -92,7 +97,7 @@ template <typename T>
     const auto writable = access.writableSpans();
     auto spanIndex = std::size_t{0U};
     auto spanOffset = std::size_t{0U};
-    auto write = [&](const mem::ConstByteSpan bytes) -> void {
+    auto write = [&](const ConstByteSpan bytes) -> void {
         auto sourceOffset = std::size_t{0U};
         while (sourceOffset < bytes.size()) {
             if (spanOffset == writable[spanIndex].size()) {
@@ -113,7 +118,7 @@ template <typename T>
 
 template <typename tData, typename tTools, typename tDataView>
 [[nodiscard]] auto StringConversionTools::encodeString(
-    const tDataView dataView, const StringEncoding encoding, const StringBomMode bomMode) -> mem::ByteBlock {
+    const tDataView dataView, const StringEncoding encoding, const StringBomMode bomMode) -> ByteBlock {
     if (isMatchingRepresentation<tData>(encoding)) {
         return encodeRaw<tData>(dataView.dataSpan(), encoding, bomMode);
     }
@@ -122,7 +127,7 @@ template <typename tData, typename tTools, typename tDataView>
 
 template <typename tData, typename tTools, typename tDataView>
 [[nodiscard]] auto StringConversionTools::encodedStringLength(
-    const tDataView dataView, const StringEncoding encoding, const StringBomMode bomMode) -> unit::ByteLength {
+    const tDataView dataView, const StringEncoding encoding, const StringBomMode bomMode) -> ByteCount {
     if (isMatchingRepresentation<tData>(encoding)) {
         return rawEncodedLength<tData>(dataView.dataSpan(), encoding, bomMode);
     }
@@ -131,7 +136,7 @@ template <typename tData, typename tTools, typename tDataView>
 
 template <typename tData, typename tTools, typename tDataView>
 [[nodiscard]] auto StringConversionTools::encodeStringTo(
-    const tDataView dataView, mem::RingBuffer &buffer, const StringEncoding encoding, const StringBomMode bomMode)
+    const tDataView dataView, RingBuffer &buffer, const StringEncoding encoding, const StringBomMode bomMode)
     -> util::Result {
     if (isMatchingRepresentation<tData>(encoding)) {
         return encodeRawTo<tData>(dataView.dataSpan(), buffer, encoding, bomMode);
@@ -141,15 +146,15 @@ template <typename tData, typename tTools, typename tDataView>
 
 #define ERBSLAND_DEFINE_STRING_CONVERSION(TYPE, DATA_TYPE, TOOLS)                                                      \
     auto StringConversionTools::encode(const TYPE &str, const StringEncoding encoding, const StringBomMode bomMode)    \
-        -> mem::ByteBlock {                                                                                            \
+        -> ByteBlock {                                                                                                 \
         return encodeString<DATA_TYPE, TOOLS>(str.dataView(), encoding, bomMode);                                      \
     }                                                                                                                  \
     auto StringConversionTools::encodedLength(                                                                         \
-        const TYPE &str, const StringEncoding encoding, const StringBomMode bomMode) -> unit::ByteLength {             \
+        const TYPE &str, const StringEncoding encoding, const StringBomMode bomMode) -> ByteCount {                    \
         return encodedStringLength<DATA_TYPE, TOOLS>(str.dataView(), encoding, bomMode);                               \
     }                                                                                                                  \
     auto StringConversionTools::encodeTo(                                                                              \
-        const TYPE &str, mem::RingBuffer &buffer, const StringEncoding encoding, const StringBomMode bomMode)          \
+        const TYPE &str, RingBuffer &buffer, const StringEncoding encoding, const StringBomMode bomMode)               \
         -> util::Result {                                                                                              \
         return encodeStringTo<DATA_TYPE, TOOLS>(str.dataView(), buffer, encoding, bomMode);                            \
     }
@@ -162,4 +167,5 @@ ERBSLAND_DEFINE_STRING_CONVERSION(U32StringEditor, char32_t, U32StringEncodingTo
 ERBSLAND_DEFINE_STRING_CONVERSION(U32String, char32_t, U32StringEncodingTools);
 
 #undef ERBSLAND_DEFINE_STRING_CONVERSION
+
 }

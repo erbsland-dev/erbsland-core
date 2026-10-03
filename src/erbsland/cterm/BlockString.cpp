@@ -279,7 +279,7 @@ auto BlockString::characterAt(const BlockIndex localIndex) const noexcept -> con
 }
 
 auto BlockString::defaultTrimCharacters() -> const CharSet & {
-    static const auto characters = CharSet{{U' ', U'\n', U'\t'}};
+    static const auto characters = CharSet{U' ', U'\n', U'\t'};
     return characters;
 }
 

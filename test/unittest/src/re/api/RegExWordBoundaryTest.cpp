@@ -23,7 +23,7 @@ class RegExWordBoundaryTest final : public UNITTEST_SUBCLASS(RegExBase) {
 
     static auto makeRepeatedWords(const std::size_t wordCount) -> StringEditor {
         auto text = StringEditor{};
-        text.reserve(el::unit::ByteLength{wordCount * 5U});
+        text.reserve(el::unit::ByteCount::fromInteger(wordCount * 5U));
         for (std::size_t i = 0; i < wordCount; ++i) {
             text.append("word"_el);
             text.append(" "_el);

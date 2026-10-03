@@ -11,7 +11,7 @@ class InBytesConstraint final : public InConstraint<mem::ByteBlock> {
 public:
     /// Creates a byte-block membership constraint.
     /// @param values The allowed byte-block values.
-    explicit InBytesConstraint(std::vector<mem::ByteBlock> values) : InConstraint(std::move(values)) {}
+    explicit InBytesConstraint(util::List<mem::ByteBlock> values) : InConstraint(std::move(values)) {}
 
 protected:
     void validateBytes(const ValidationContext &context, const mem::ByteBlock &value) const override;

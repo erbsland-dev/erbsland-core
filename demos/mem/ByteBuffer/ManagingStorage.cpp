@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteFormat.hpp>
+#include <erbsland/StandardStreams.hpp>
 
 namespace demo {
 
@@ -14,11 +20,11 @@ void managingStorage() {
     auto samples = el::ByteBuffer{el::Byte{21U}, el::Byte{34U}};
 
     // Prepare room for a larger survey without adding visible bytes.
-    samples.reserve(el::ByteLength{16U});
+    samples.reserve(el::ByteCount{16U});
     const auto reservedCapacity = samples.capacity();
 
     // Extend the visible data; all new sample positions start at zero.
-    samples.resize(el::ByteLength{5U});
+    samples.resize(el::ByteCount{5U});
     const auto grownSamples = el::ByteBlock::fromSpan(samples.span());
 
     // Reuse the allocation for a new survey, then trim it to the final result.

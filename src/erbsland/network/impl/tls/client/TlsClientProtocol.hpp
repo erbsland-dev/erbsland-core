@@ -9,8 +9,10 @@
 #include "TlsClientProtocolTestAccess_fwd.hpp"
 
 #include "../TlsAlertDescription.hpp"
+#include "../TlsCertificateValidationRequest.hpp"
 #include "../TlsHandshakeStream.hpp"
 #include "../TlsRecordStream.hpp"
+#include "../TlsSignatureRequest.hpp"
 
 #include "../../../../cryptology/impl/tls/Tls13KeySchedule.hpp"
 #include "../../../../cryptology/impl/tls/Tls13Transcript.hpp"
@@ -37,8 +39,8 @@
 namespace erbsland::network::impl {
 
 /// Transport-independent authenticated TLS 1.3 client protocol core.
-/// The initial implementation follows RFC 8446 for a non-PSK X25519 client, RFC 6066 for DNS SNI, and RFC 7301 for
-/// ALPN. It owns record framing, handshake authentication, application protection, alerts, KeyUpdate, and closure,
+/// The initial implementation follows RFC 8446 for a non-PSK X25519/P-256 client, RFC 6066 for DNS SNI, and RFC 7301
+/// for ALPN. It owns record framing, handshake authentication, application protection, alerts, KeyUpdate, and closure,
 /// while a future `TcpConnection` decorator owns transport I/O and the actual handshake deadline.
 /// Specification: https://www.rfc-editor.org/rfc/rfc8446.html
 /// @tested{TlsClientProtocolTest}
@@ -46,6 +48,12 @@ class TlsClientProtocol final {
     friend class TlsClientProtocolTestAccess;
 
 private:
+    /// Complete the authenticated flight after external signing.
+    void finishSignedFlight(const mem::ByteBlock &signature);
+    /// Complete client Finished and replace traffic-key generations.
+    void finishClientFlight();
+    /// Check all advertised client identity constraints before disclosure.
+    [[nodiscard]] auto selectClientIdentity() const -> std::optional<cryptology::TlsSignatureScheme>;
     /// Expected next authenticated handshake message.
     enum class HandshakeStep : uint8_t {
         ServerHello,          ///< Await plaintext ServerHello.
@@ -79,7 +87,7 @@ public:
 
 public:
     /// Generate ephemeral inputs, queue ClientHello, and enter handshaking state.
-    /// @throws err::LogicError If the protocol is not inactive.
+    /// The protocol must be inactive.
     void start();
     /// Feed arbitrary coalesced or fragmented TCP bytes.
     /// Peer-controlled failures are converted to terminal state and an alert where transmission remains possible.
@@ -102,7 +110,27 @@ public:
     /// EOF without peer close_notify is treated as truncation.
     void transportClosed() noexcept;
 
+public: // external signing
+    /// Get pending external signing work, if any.
+    [[nodiscard]] auto pendingSignature() const noexcept -> const std::optional<TlsSignatureRequest> & {
+        return _pendingSignature;
+    }
+    /// Consume the result of the current signing request and resume the handshake.
+    /// @param signature The provider's verified TLS signature.
+    void completeSignature(mem::ByteBlock signature) noexcept;
+    /// Fail pending external work without exposing provider data.
+    /// @param diagnostic A diagnostic without private material.
+    void failPendingOperation(text::String diagnostic) noexcept;
+
 public: // queues
+    /// Get the pending validation request, without executing native trust services.
+    [[nodiscard]] auto pendingCertificateValidation() const noexcept
+        -> const std::optional<TlsCertificateValidationRequest> & {
+        return _pendingCertificateValidation;
+    }
+    /// Consume one external validation result and continue retained protocol input.
+    void completeCertificateValidation(cryptology::X509CertificateValidation validation) noexcept;
+
     /// Take the oldest complete encrypted transport record.
     /// @return One record, or no value if no output is pending.
     [[nodiscard]] auto takeTransportOutput() -> std::optional<mem::ByteBlock>;
@@ -129,6 +157,11 @@ public: // accessors
     }
     /// Get the terminal local diagnostic text.
     [[nodiscard]] auto failureDiagnostic() const noexcept -> const text::String & { return _failureDiagnostic; }
+    /// Get structured certificate rejection independently of its wire alert.
+    [[nodiscard]] auto certificateFailureCategory() const noexcept
+        -> std::optional<cryptology::X509CertificateValidationFailureCategory> {
+        return _certificateFailureCategory;
+    }
     /// Test whether terminal failure was caused by a received peer alert.
     [[nodiscard]] auto failureWasPeerAlert() const noexcept -> bool { return _failureWasPeerAlert; }
     /// Test whether terminal failure was caused by unauthenticated transport EOF.
@@ -172,6 +205,9 @@ private:
     void processHandshake(const mem::ByteBlock &message);
     /// Process ServerHello and install handshake record keys.
     void processServerHello(const mem::ByteBlock &message);
+    /// Process the one permitted HelloRetryRequest and emit ClientHello2.
+    void processHelloRetryRequest(
+        const mem::ByteBlock &message, cryptology::TlsCipherSuite suite, mem::ConstByteSpan extensions);
     /// Process EncryptedExtensions and optional ALPN selection.
     void processEncryptedExtensions(const mem::ByteBlock &message);
     /// Process a main-handshake CertificateRequest.
@@ -194,24 +230,32 @@ private:
     [[nodiscard]] auto queueTransport(mem::ByteBlock record) -> bool;
     /// Queue a protected handshake message under current sending keys.
     void queueProtectedHandshake(mem::ConstByteSpan message);
+    /// Queue the one middlebox compatibility CCS before ClientHello2 or the final client flight.
+    void queueCompatibilityCcs();
     /// Queue one alert under the best available record protection.
     void queueAlert(TlsAlertDescription description) noexcept;
     /// Enter terminal failure, queueing an alert when requested, then erase secret state.
     void fail(TlsAlertDescription alert, text::String diagnostic, bool sendAlert = true) noexcept;
     /// Erase retained secret and parser state while preserving queued output and diagnostics.
     void eraseSecurityState() noexcept;
-    /// Map certificate-validation failure to a TLS alert.
-    [[nodiscard]] static auto certificateAlert(cryptology::X509CertificateValidationFailureCategory category) noexcept
-        -> TlsAlertDescription;
 
 private:
-    static constexpr std::size_t cMaximumCertificates{16U};      ///< Fixed Certificate-list entry bound.
-    static constexpr std::size_t cMaximumExtensions{64U};        ///< Fixed per-message extension-count bound.
-    static constexpr std::size_t cMaximumIgnoredCcs{8U};         ///< Compatibility-mode CCS tolerance bound.
-    static constexpr std::size_t cMaximumHandshakeRecords{256U}; ///< Handshake CPU/work record bound.
+    static constexpr std::size_t cMaximumCertificates{16U}; ///< Fixed Certificate-list entry bound.
+    std::optional<TlsSignatureRequest> _pendingSignature;   ///< Owned public signing request and provider lifetime.
+    util::List<cryptology::TlsSignatureScheme> _requestedSignatureSchemes; ///< Peer signing constraints.
+    util::List<cryptology::TlsSignatureScheme>
+        _requestedCertificateSchemes;                                      ///< Peer certificate-signature constraints.
+    std::vector<mem::ByteBlock> _requestedAuthorities;                     ///< Exact acceptable issuer names.
+    bool _hasUnsupportedOidFilters{};                     ///< Unsupported constraints prohibit identity disclosure.
+    std::optional<cryptology::TlsSignatureScheme>
+        _clientSignatureScheme;                           ///< Compatible explicitly configured identity scheme.
+    static constexpr std::size_t cMaximumExtensions{64U}; ///< Fixed per-message extension-count bound.
+    static constexpr std::size_t cMaximumIgnoredCcs{8U};  ///< Compatibility-mode CCS tolerance bound.
+    static constexpr std::size_t cMaximumHandshakeRecords{256U};                  ///< Handshake CPU/work record bound.
 
-    TlsClientProtocolOptions _options;                           ///< Immutable protocol configuration.
-    TlsClientHelloBuilder _clientHelloBuilder;                   ///< Validated deterministic ClientHello serializer.
+    TlsClientProtocolOptions _options;                                            ///< Immutable protocol configuration.
+    std::optional<TlsCertificateValidationRequest> _pendingCertificateValidation; ///< Suspended trust operation.
+    TlsClientHelloBuilder _clientHelloBuilder; ///< Validated deterministic ClientHello serializer.
     TlsClientProtocolState _state{TlsClientProtocolState::Inactive};            ///< Lifecycle state.
     TlsClientProtocolCheckpoint _checkpoint{TlsClientProtocolCheckpoint::None}; ///< Pending facade checkpoint.
     HandshakeStep _handshakeStep{HandshakeStep::ServerHello};                   ///< Expected handshake transition.
@@ -219,7 +263,7 @@ private:
     TlsHandshakeStream _handshakeStream;                                        ///< Incremental handshake deframer.
     mem::ByteBlock _clientHello;                    ///< Complete ClientHello retained until suite hash selection.
     mem::ByteBlock _legacySessionId;                ///< Compatibility-mode ServerHello echo value.
-    cryptology::KeyAgreementPrivateKey _privateKey; ///< Protected ephemeral X25519 private key.
+    cryptology::KeyAgreementPrivateKey _privateKey; ///< Protected ephemeral key-agreement private key.
     std::optional<cryptology::TlsCipherSuite> _cipherSuite;           ///< Negotiated supported suite.
     std::unique_ptr<cryptology::impl::Tls13Transcript> _transcript;   ///< Active handshake transcript.
     std::unique_ptr<cryptology::impl::Tls13KeySchedule> _keySchedule; ///< Active protected key schedule.
@@ -228,6 +272,8 @@ private:
     cryptology::PublicKey _serverPublicKey;                           ///< Validated target key for CertificateVerify.
     util::List<cryptology::X509Certificate> _validatedPath;           ///< Accepted target-to-anchor path.
     text::String _negotiatedAlpn;                                     ///< Exact selected ALPN protocol.
+    bool _retryReceived{};                            ///< Whether a HelloRetryRequest has already been processed.
+    bool _compatibilityCcsSent{};                     ///< Whether the compatibility CCS was already queued.
     bool _certificateRequested{};                     ///< Whether an empty client Certificate is required.
     bool _peerCloseNotify{};                          ///< Whether peer orderly closure was authenticated.
     bool _localCloseNotify{};                         ///< Whether local orderly closure was queued.
@@ -240,7 +286,8 @@ private:
     std::deque<mem::ByteBlock> _applicationInput;     ///< Ordered authenticated application fragments.
     std::size_t _applicationInputBytes{};             ///< Aggregate queued authenticated bytes.
     std::optional<TlsAlertDescription> _failureAlert; ///< Terminal alert category.
-    text::String _failureDiagnostic;                  ///< Terminal local diagnostic.
+    std::optional<cryptology::X509CertificateValidationFailureCategory> _certificateFailureCategory; ///< Trust failure.
+    text::String _failureDiagnostic; ///< Terminal local diagnostic.
 };
 
 }

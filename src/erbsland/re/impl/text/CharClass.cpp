@@ -12,6 +12,8 @@
 
 namespace erbsland::re::impl {
 
+using namespace text;
+
 void CharClass::normalizeRanges() noexcept {
     if (_data->ranges->empty()) {
         return;
@@ -67,7 +69,7 @@ auto CharClass::operator!=(const CharClass &other) const -> bool {
     return !(*this == other);
 }
 
-void CharClass::add(text::Char character) {
+void CharClass::add(Char character) {
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(character.isValidUnicode(), "Cannot add an invalid Unicode character"_el);
     conditionalDetach();
     _data->ranges->emplace_back(character, character);
@@ -75,7 +77,7 @@ void CharClass::add(text::Char character) {
     _data->readyForUse = false;
 }
 
-void CharClass::add(text::Char first, text::Char last) {
+void CharClass::add(Char first, Char last) {
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
         first.isValidUnicode() && last.isValidUnicode(), "Cannot add an invalid Unicode character range"_el);
     conditionalDetach();
@@ -106,7 +108,7 @@ void CharClass::prepareForUse() {
     }
 }
 
-auto CharClass::matches(const text::Char character) const -> bool {
+auto CharClass::matches(const Char character) const -> bool {
     const auto &data = *_data;
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(data.readyForUse, "CharClass::matches called before normalization"_el);
     const auto &ranges = *data.ranges;
@@ -117,9 +119,7 @@ auto CharClass::matches(const text::Char character) const -> bool {
             ranges.begin(),
             ranges.end(),
             character,
-            [](const CharRange &range, const text::Char &character) noexcept -> bool {
-                return range.first() < character;
-            });
+            [](const CharRange &range, const Char &character) noexcept -> bool { return range.first() < character; });
         if (rangeIt != ranges.end() && rangeIt->first() == character) {
             doesMatch = true; // exact match on the start of a range
         } else if (rangeIt != ranges.begin()) {
@@ -130,10 +130,10 @@ auto CharClass::matches(const text::Char character) const -> bool {
     return doesMatch;
 }
 
-auto CharClass::toString() const -> text::String {
+auto CharClass::toString() const -> String {
     const auto &data = *_data;
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(data.readyForUse, "CharClass::toString called before normalization"_el);
-    text::StringEditor result;
+    StringEditor result;
     for (const auto &range : *data.ranges) {
         result.append(range.toString());
     }

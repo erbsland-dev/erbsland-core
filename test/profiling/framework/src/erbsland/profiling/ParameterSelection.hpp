@@ -4,7 +4,10 @@
 
 #include "ParameterSelection_fwd.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TimeDelta.hpp>
 
 #include <cstdint>
 #include <variant>
@@ -14,10 +17,10 @@ namespace erbsland::profiling {
 /// One typed parameter stored in an expanded scenario.
 /// @tested{ConfigurationLoaderTest}
 struct ParameterSelection {
-    using Value = std::variant<String, std::int64_t, bool, ByteLength, TimeDelta, Path>; ///< Supported values.
+    using Value = std::variant<String, std::int64_t, bool, ByteCount, TimeDelta, Path>; ///< Supported values.
 
-    String parameter;                                                                    ///< Parameter identifier.
-    Value value{};                                                                       ///< Typed parameter value.
+    String parameter;                                                                   ///< Parameter identifier.
+    Value value{};                                                                      ///< Typed parameter value.
 };
 
 }

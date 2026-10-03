@@ -9,15 +9,15 @@
 
 .. _options-option-values:
 
-*************
-Option Values
-*************
+************************************
+Accessing Parsed Command-Line Values
+************************************
 
 :cpp:class:`OptionValues <erbsland::options::OptionValues>` is the parsed result of a successful command-line parse.
 This page explains how values are assigned, how aliases work, and how application code should read flags, counts, lists,
 defaults, and selected module names.
 
-How the Parser Fills the Result
+Parsed Option Values and Lookup
 ===============================
 
 After the parser has selected the active root and module sets, it assigns command-line arguments to the matching
@@ -35,7 +35,7 @@ values, except that they do not have a source argument index.
 .. erbsland-demo::
     :source: option/OptionValues/main.cpp
     :exec: option/option_values
-    :source-sha256: 744eccb15abaff817a33ab03770c152788dfe94467de5646614a5f66bb1a8590
+    :sha256: 255fc51bc39d09ce1b607afad3dd009458fe826d91d9d0ead5f7b7f83828078c
 
 .. code-block:: cpp
 
@@ -50,16 +50,16 @@ values, except that they do not have a source argument index.
         info.setApplicationName("Laboratory Values"_el);
         info.setApplicationVersion(el::Version{0, 8, 0});
         options->setApplicationInfo(info);
-        options->addOption({"-v"_el, "--verbose"_el, "verbose"_el}).setHelpDescription("Increases the detail level."_el);
+        options->addOption({"-v"_el, "--verbose"_el, "verbose"_el}).setHelpTitle("Increases the detail level."_el);
         options->addOption({"-p"_el, "--point"_el, "point"_el})
             .setType(el::OptionType::Text)
             .setMaximum(el::ArgumentCount{4U})
-            .setHelpDescription("Measurement point. Can appear up to four times."_el);
+            .setHelpTitle("Measurement point. Can appear up to four times."_el);
         options->addOption({"--level"_el, "level"_el})
             .setType(el::OptionType::Integer)
             .setDefaultValue(el::OptionInteger{2})
-            .setHelpDescription("Default observation level."_el);
-        options->addOption("instrument"_el).setRequired().setHelpDescription("Primary instrument."_el);
+            .setHelpTitle("Default observation level."_el);
+        options->addOption("instrument"_el).setRequired().setHelpTitle("Primary instrument."_el);
 
         auto manager = el::OptionManager{options};
         auto arguments =
@@ -82,15 +82,17 @@ values, except that they do not have a source argument index.
         return el::ExitCode::success();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    same object: yes
-    verbose count: 2
-    instrument: microscopio
-    level: 2
-    points: entrada, lente
-    first index: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0msame object: yes
+        verbose count: 2
+        instrument: microscopio
+        level: 2
+        points: entrada, lente
+        first index: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -133,7 +135,7 @@ Applications that do not use module main functions can dispatch manually with th
 .. erbsland-demo::
     :source: option/OptionValueAccess/main.cpp
     :exec: option/option_value_access
-    :source-sha256: 09e86783add390fdea58d16cdbfdb3282bdb5fb63239e77112c192a21db978c9
+    :sha256: f95deda871a8097991aacc70466b433ace6541471212f32b823302c30a2c5a2d
 
 .. code-block:: cpp
 
@@ -165,16 +167,18 @@ Applications that do not use module main functions can dispatch manually with th
         return el::ExitCode::success();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    module: count
-    area: dune
-    verbose count: 2
-    routes: forest-edge, pond
-    level: 2
-    profile: night
-    route argument index: 4
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mmodule: count
+        area: dune
+        verbose count: 2
+        routes: forest-edge, pond
+        level: 2
+        profile: night
+        route argument index: 4␛[0m
 
 .. erbsland-demo-end::
 

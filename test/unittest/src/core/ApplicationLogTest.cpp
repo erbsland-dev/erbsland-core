@@ -4,14 +4,15 @@
 #include "ApplicationTestScope.hpp"
 
 #include "../cterm/support/TerminalTestBackend.hpp"
+#include "../i18n/DisplayTextTestLayer.hpp"
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/Application.hpp>
 #include <erbsland/cterm/BlockAttributes.hpp>
 #include <erbsland/cterm/Terminal.hpp>
-#include <erbsland/i18n/DisplayTextMap.hpp>
-#include <erbsland/log/LogConfiguration.hpp>
-#include <erbsland/log/LogManager.hpp>
-#include <erbsland/log/LogStream.hpp>
+#include <erbsland/DisplayText.hpp>
+#include <erbsland/LogConfiguration.hpp>
+#include <erbsland/LogManager.hpp>
+#include <erbsland/LogStream.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -40,7 +41,9 @@ protected:
         return result;
     }
 
-    [[nodiscard]] auto createAndInitializeTerminal() -> el::cterm::TerminalPtr override {
+    [[nodiscard]] auto createAndInitializeTerminal(
+        [[maybe_unused]] el::block::Size size, [[maybe_unused]] el::cterm::TerminalFlags flags)
+        -> el::cterm::TerminalPtr override {
         auto terminal = std::make_shared<el::cterm::Terminal>(backend, el::block::Size{80, 25});
         terminal->initializeScreen();
         return terminal;
@@ -82,9 +85,11 @@ public:
             auto &application = scope.app();
             backend = application.backend;
             application.result = el::unit::ExitCode{17};
-            auto displayText = el::i18n::DisplayTextMap::defaultMap()->clone();
-            displayText->set("log.LastErrorDumpTitle"_el, "Retained Test Errors"_el);
-            application.setDisplayTextMap(std::move(displayText));
+            const auto displayText = std::make_shared<DisplayTextTestData>(std::initializer_list<DisplayTextTestEntry>{
+                {"log"_el, "last_error_dump_title"_el, "Retained Test Errors"_el},
+            });
+            application.displayText()->addData(displayText);
+
             application.enableLastErrorDump();
 
             REQUIRE_EQUAL(application.run(), 17);

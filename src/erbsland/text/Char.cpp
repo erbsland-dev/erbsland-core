@@ -7,11 +7,13 @@
 
 namespace erbsland::text {
 
-auto Char::utf8Size() const noexcept -> unit::ByteLength {
+using namespace unit;
+
+auto Char::utf8Size() const noexcept -> ByteCount {
     return impl::utf8::encodedLength(*this);
 }
 
-auto Char::utf16Size() const noexcept -> unit::U16DataLength {
+auto Char::utf16Size() const noexcept -> U16Count {
     return impl::utf16::encodedLength(*this);
 }
 
@@ -26,24 +28,24 @@ auto Char::encodedSize(const StringKind stringKind) const noexcept -> std::size_
     }
 }
 
-auto Char::encodedBytes(const StringEncoding encoding) const noexcept -> unit::ByteLength {
+auto Char::encodedBytes(const StringEncoding encoding) const noexcept -> ByteCount {
     if (!isValidUnicode()) {
-        return unit::ByteLength::zero();
+        return ByteCount::zero();
     }
     switch (encoding.effectiveEncoding().toRawValue()) {
     case StringEncoding::Utf8:
         return utf8Size();
     case StringEncoding::Utf16LittleEndian:
     case StringEncoding::Utf16BigEndian:
-        return unit::ByteLength{static_cast<unit::ByteLength::Value>(utf16Size().toRawValue() * 2U)};
+        return ByteCount{utf16Size().toRawValue() * 2U, ByteCount::Unchecked{}};
     case StringEncoding::Utf32LittleEndian:
     case StringEncoding::Utf32BigEndian:
-        return unit::ByteLength{4U};
+        return ByteCount{4U};
     case StringEncoding::Utf16:
     case StringEncoding::Utf32:
         break;
     }
-    return unit::ByteLength::zero();
+    return ByteCount::zero();
 }
 
 }

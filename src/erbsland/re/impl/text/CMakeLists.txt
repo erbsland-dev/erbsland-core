@@ -7,6 +7,7 @@ target_sources(erbsland-core PRIVATE
         Category.cpp
         Category.hpp
         Category_names.cpp
+        CategoryMask.hpp
         Character.cpp
         Character.hpp
         CharClass.cpp

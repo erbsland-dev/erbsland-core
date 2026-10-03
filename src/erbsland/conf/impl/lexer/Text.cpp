@@ -16,14 +16,11 @@
 
 namespace erbsland::conf::impl::lexer {
 
+using namespace text;
 using namespace text::literals;
 
 void parseString(
-    Decoder &decoder,
-    text::StringEditor &target,
-    const text::Char terminator,
-    const text::Char escapeChar,
-    const EscapeFn &escapeFn) {
+    Decoder &decoder, StringEditor &target, const Char terminator, const Char escapeChar, const EscapeFn &escapeFn) {
 
     while (!decoder.character().isEndOfData()) {
         // Capture ordinary text as one raw UTF-8 span. The decoder still visits and validates every character, but
@@ -59,14 +56,14 @@ void parseString(
 
 auto parseMultiLineString(
     TokenDecoder &decoder,
-    const text::Char escapeChar,
+    const Char escapeChar,
     EscapeFn escapeFn,
     const TokenType tokenType,
     const bool expandPlaceholders) -> TokenGenerator {
 
     // Initial check if the line starts with the end marker, so we avoid creating a transaction and capture string.
     if (!isAtMultiLineEnd(decoder, tokenType)) {
-        text::StringEditor decodedText;
+        StringEditor decodedText;
         // Carefully consume the text block by block, so we can skip trailing spacing.
         while (!isAtMultiLineEnd(decoder, tokenType)) {
             // Consume anything that is not space, or the end of the line.
@@ -88,7 +85,7 @@ auto parseMultiLineString(
             }
             // At this point we are in spacing territory, always expect that we read the trailing space of the line.
             auto trailingSpaceTransaction = Transaction{decoder};
-            decoder.advanceWhile(text::AsciiCategory::Blank);
+            decoder.advanceWhile(AsciiCategory::Blank);
             if (isAtMultiLineEnd(decoder, tokenType)) {
                 // If we reached the end of the line, while consuming spaces. We have to roll back this section,
                 // as this is the trailing portion that is not part of the actual text.
@@ -107,11 +104,11 @@ auto parseMultiLineString(
     co_return;
 }
 
-void parseText(Decoder &decoder, text::StringEditor &target) {
+void parseText(Decoder &decoder, StringEditor &target) {
     parseString(decoder, target, nc::doubleQuote, nc::backslash, parseTextEscapeSequence);
 }
 
-void parseTextWithPlaceholders(TokenDecoder &decoder, text::StringEditor &target) {
+void parseTextWithPlaceholders(TokenDecoder &decoder, StringEditor &target) {
     while (!decoder.character().isEndOfData()) {
         if (decoder.character() == CharClass::LineBreak) {
             decoder.throwSyntaxError("Unexpected line break in text or code-block."_el);
@@ -140,14 +137,13 @@ void parseTextWithPlaceholders(TokenDecoder &decoder, text::StringEditor &target
 /// Parse the Unicode escape sequence, after `\u` or `\U`.
 /// @param decoder The decoder.
 /// @param target The target to add the parsed Unicode character.
-void parseUnicodeEscapeSequence(Decoder &decoder, text::StringEditor &target) {
+void parseUnicodeEscapeSequence(Decoder &decoder, StringEditor &target) {
     decoder.expectMore("Unexpected end in a Unicode escape sequence."_el);
-    text::Char character{};
+    Char character{};
     if (decoder.character() == nc::openingCurlyBracket) { // dynamic length hex.
         decoder.next();
         decoder.expect(CharClass::HexDigit, "Expected a hex digit after the opening bracket."_el);
-        const auto numberResult =
-            parseNumber(decoder, text::IntegerBase::Hexadecimal, Sign::Positive, NumberSeparators::No);
+        const auto numberResult = parseNumber(decoder, IntegerBase::Hexadecimal, Sign::Positive, NumberSeparators::No);
         const auto number = numberResult.value();
         const auto digits = numberResult.digitCount();
         decoder.expectMore("Unexpected end in a Unicode escape sequence."_el);
@@ -155,15 +151,15 @@ void parseUnicodeEscapeSequence(Decoder &decoder, text::StringEditor &target) {
             decoder.throwSyntaxError("Hex escape sequence is too long."_el);
         }
         decoder.expectAndNext(nc::closingCurlyBracket, "Expected a closing bracket after the hexadecimal number."_el);
-        character = text::Char{static_cast<char32_t>(number)};
+        character = Char{static_cast<char32_t>(number)};
     } else if (decoder.character() == CharClass::HexDigit) { // fixed length hex.
         const auto number =
-            parseNumber(decoder, text::IntegerBase::Hexadecimal, Sign::Positive, NumberSeparators::No, 4).value();
+            parseNumber(decoder, IntegerBase::Hexadecimal, Sign::Positive, NumberSeparators::No, 4).value();
         decoder.expectMore("Unexpected end in a Unicode escape sequence."_el);
         if (number < 0) {
             decoder.throwSyntaxError("Hex escape sequence requires four digits."_el);
         }
-        character = text::Char{static_cast<char32_t>(number)};
+        character = Char{static_cast<char32_t>(number)};
     } else {
         decoder.throwSyntaxError("Expected a hex digit or an opening bracket."_el);
     }
@@ -173,7 +169,7 @@ void parseUnicodeEscapeSequence(Decoder &decoder, text::StringEditor &target) {
     target.append(character);
 }
 
-void parseTextEscapeSequence(Decoder &decoder, text::StringEditor &target) {
+void parseTextEscapeSequence(Decoder &decoder, StringEditor &target) {
     // Do end checks before calling `next()`, because of open transactions.
     decoder.expectMore("Unexpected end in an escape sequence."_el);
     if (decoder.character() == CharClass::LineBreak) {
@@ -215,11 +211,11 @@ void parseTextEscapeSequence(Decoder &decoder, text::StringEditor &target) {
     }
 }
 
-void parseRegularExpression(Decoder &decoder, text::StringEditor &target) {
+void parseRegularExpression(Decoder &decoder, StringEditor &target) {
     parseString(decoder, target, nc::slash, nc::backslash, parseRegularExpressionEscapeSequence);
 }
 
-void parseRegularExpressionEscapeSequence(Decoder &decoder, text::StringEditor &target) {
+void parseRegularExpressionEscapeSequence(Decoder &decoder, StringEditor &target) {
     if (decoder.character() == nc::slash) {
         target.append(u8'/');
     } else if (!decoder.character().isError()) {
@@ -232,12 +228,12 @@ void parseRegularExpressionEscapeSequence(Decoder &decoder, text::StringEditor &
     decoder.next();
 }
 
-void parseCode(Decoder &decoder, text::StringEditor &target) {
+void parseCode(Decoder &decoder, StringEditor &target) {
     parseString(
         decoder,
         target,
         nc::backtick,
-        text::Char::null(), // no escape.
+        Char::null(), // no escape.
         nullptr);
 }
 

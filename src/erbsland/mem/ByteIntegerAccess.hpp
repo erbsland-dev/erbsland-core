@@ -39,10 +39,10 @@ template <typename T>
 /// Get an integer from a byte span or throw for an invalid range.
 /// @tparam T A non-boolean native integer type.
 /// @param bytes The source bytes.
-/// @param offset The first byte index.
+/// @param offset The first byte index. The complete `sizeof(T)`-byte integer must fit inside `bytes` at this position.
 /// @param endianness The byte order.
 /// @return The decoded value.
-/// @throws err::OutOfRangeError If the integer does not fit at `offset`.
+/// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
 /// @tested{ByteArrayTest}
 template <typename T>
     requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
@@ -103,10 +103,10 @@ template <typename T>
 /// Store an integer in a byte span or throw for an invalid range.
 /// @tparam T A non-boolean native integer type.
 /// @param bytes The destination bytes.
-/// @param offset The first byte index.
+/// @param offset The first byte index. The complete `sizeof(T)`-byte integer must fit inside `bytes` at this position.
 /// @param value The integer value.
 /// @param endianness The byte order.
-/// @throws err::OutOfRangeError If the integer does not fit at `offset`.
+/// @throws err::OutOfRangeError If the requested byte or integer range is outside the available bytes.
 /// @tested{ByteArrayTest}
 template <typename T>
     requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)

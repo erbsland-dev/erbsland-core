@@ -5,17 +5,18 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
+#include <erbsland/ByteBlockEditor.hpp>
 #include <erbsland/cryptology/impl/tls/TlsRecordState.hpp>
 #include <erbsland/cryptology/impl/tls/TlsRecordTestAccess.hpp>
-#include <erbsland/cryptology/tls/TlsCipherSuite.hpp>
-#include <erbsland/cryptology/tls_record/TlsRecordDecryptor.hpp>
-#include <erbsland/cryptology/tls_record/TlsRecordEncryptor.hpp>
-#include <erbsland/cryptology/tls_record/TlsRecordError.hpp>
-#include <erbsland/cryptology/tls_record/TlsTrafficSecret.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/OutOfRangeError.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/TlsCipherSuite.hpp>
+#include <erbsland/TlsRecordDecryptor.hpp>
+#include <erbsland/TlsRecordEncryptor.hpp>
+#include <erbsland/TlsRecordError.hpp>
+#include <erbsland/TlsTrafficSecret.hpp>
 
 #include <cstdint>
 #include <limits>
@@ -25,7 +26,7 @@
 using namespace el::cryptology;
 using namespace el::text::literals;
 using el::mem::ByteBlock;
-using el::unit::ByteLength;
+using el::unit::ByteCount;
 
 TESTED_TARGETS(
     TlsCipherSuite TlsTrafficSecret TlsRecordContentType TlsRecordErrorCategory TlsRecordError TlsRecordPlaintext
@@ -61,7 +62,7 @@ private:
         const TlsCipherSuite suite,
         const TlsRecordContentType type,
         const ByteBlock &content,
-        const ByteLength padding = ByteLength::zero()) {
+        const ByteCount padding = ByteCount::zero()) {
         const auto secretBytes = ByteBlock{suite.hashAlgorithm().digestSize(), 0x5aU};
         auto encryptor = TlsRecordEncryptor{suite, makeSecret(suite, secretBytes)};
         auto decryptor = TlsRecordDecryptor{suite, makeSecret(suite, secretBytes)};
@@ -98,20 +99,20 @@ public:
         REQUIRE(TlsCipherSuite::fromRawValue(0x1303U).has_value());
         REQUIRE_FALSE(TlsCipherSuite::fromRawValue(0x1304U).has_value());
 
-        auto consumed = ByteBlock{ByteLength{32U}, 0x31U};
+        auto consumed = ByteBlock{ByteCount{32U}, 0x31U};
         auto secret = TlsTrafficSecret::fromBytes(HashAlgorithm::Sha2_256, std::move(consumed));
-        REQUIRE_EQUAL(consumed, ByteBlock{ByteLength{32U}});
-        REQUIRE_EQUAL(secret.byteLength(), ByteLength{32U});
+        REQUIRE_EQUAL(consumed, ByteBlock{ByteCount{32U}});
+        REQUIRE_EQUAL(secret.byteLength(), ByteCount{32U});
         REQUIRE_EQUAL(secret.hashAlgorithm(), HashAlgorithm::Sha2_256);
         secret.secureErase();
         REQUIRE(secret.isEmpty());
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, TlsTrafficSecret::fromBytes(HashAlgorithm::Sha2_384, ByteBlock{ByteLength{32U}}));
+            el::err::OutOfRangeError, TlsTrafficSecret::fromBytes(HashAlgorithm::Sha2_384, ByteBlock{ByteCount{32U}}));
         const auto invalidSuite = TlsCipherSuite{static_cast<TlsCipherSuite::Value>(0xffffU)};
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
+            el::err::ParameterFailure,
             TlsRecordEncryptor(
-                invalidSuite, TlsTrafficSecret::fromBytes(HashAlgorithm::Sha2_256, ByteBlock{ByteLength{32U}})));
+                invalidSuite, TlsTrafficSecret::fromBytes(HashAlgorithm::Sha2_256, ByteBlock{ByteCount{32U}})));
     }
 
     void testRfc8448Aes128ApplicationRecord() {
@@ -142,7 +143,7 @@ public:
         auto aes256 = TlsRecordEncryptor{
             TlsCipherSuite::Aes256GcmSha384, makeSecret(TlsCipherSuite::Aes256GcmSha384, aes256Secret)};
         REQUIRE_EQUAL(
-            aes256.protect(TlsRecordContentType::ApplicationData, bytesFromHex("00010203").span(), ByteLength{2U}),
+            aes256.protect(TlsRecordContentType::ApplicationData, bytesFromHex("00010203").span(), ByteCount{2U}),
             aes256Expected);
 
         const auto chachaSecret = sequentialBytes(32U, true);
@@ -150,7 +151,7 @@ public:
         auto chacha = TlsRecordEncryptor{
             TlsCipherSuite::ChaCha20Poly1305Sha256, makeSecret(TlsCipherSuite::ChaCha20Poly1305Sha256, chachaSecret)};
         REQUIRE_EQUAL(
-            chacha.protect(TlsRecordContentType::ApplicationData, bytesFromHex("00010203").span(), ByteLength{2U}),
+            chacha.protect(TlsRecordContentType::ApplicationData, bytesFromHex("00010203").span(), ByteCount{2U}),
             chachaExpected);
 
         WITH_CONTEXT(
@@ -159,18 +160,15 @@ public:
             TlsCipherSuite::Aes256GcmSha384,
             TlsRecordContentType::Handshake,
             bytesFromHex("18000001"),
-            ByteLength{31U}));
+            ByteCount{31U}));
         WITH_CONTEXT(requireRoundTrip(
-            TlsCipherSuite::ChaCha20Poly1305Sha256,
-            TlsRecordContentType::ApplicationData,
-            ByteBlock{},
-            ByteLength{7U}));
+            TlsCipherSuite::ChaCha20Poly1305Sha256, TlsRecordContentType::ApplicationData, ByteBlock{}, ByteCount{7U}));
     }
 
     void testSequencesDirectionsAndKeyUpdate() {
         const auto applicationScope = ApplicationTestScope<>{};
         const auto suite = TlsCipherSuite{TlsCipherSuite::Aes128GcmSha256};
-        const auto secret = ByteBlock{ByteLength{32U}, 0xa7U};
+        const auto secret = ByteBlock{ByteCount{32U}, 0xa7U};
         const auto payload = bytesFromHex("010203");
         auto sender = TlsRecordEncryptor{suite, makeSecret(suite, secret)};
         auto receiver = TlsRecordDecryptor{suite, makeSecret(suite, secret)};
@@ -200,7 +198,7 @@ public:
     void testMalformedTamperedAndTerminalFailures() {
         const auto applicationScope = ApplicationTestScope<>{};
         const auto suite = TlsCipherSuite{TlsCipherSuite::Aes128GcmSha256};
-        const auto secret = ByteBlock{ByteLength{32U}, 0x19U};
+        const auto secret = ByteBlock{ByteCount{32U}, 0x19U};
         const auto content = bytesFromHex("01020304");
         auto sender = TlsRecordEncryptor{suite, makeSecret(suite, secret)};
         const auto record = sender.protect(TlsRecordContentType::ApplicationData, content.span());
@@ -233,29 +231,29 @@ public:
         REQUIRE(invalidHeader.isEmpty());
 
         auto tamperedBytes = el::mem::ByteBlockEditor{record};
-        tamperedBytes.xorWith(el::ByteRange{el::ByteIndex{6U}, ByteLength{1U}}, ByteBlock({0x80U}).span());
+        tamperedBytes.xorWith(el::ByteRange{el::ByteIndex{6U}, ByteCount{1U}}, ByteBlock({0x80U}).span());
         auto tampered = TlsRecordDecryptor{suite, makeSecret(suite, secret)};
         requireRecordError(
             TlsRecordErrorCategory::BadRecordMac, [&] { static_cast<void>(tampered.unprotect(tamperedBytes.span())); });
         REQUIRE(tampered.isEmpty());
-        REQUIRE_THROWS_AS(el::err::LogicError, tampered.unprotect(record.span()));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, tampered.unprotect(record.span()));
     }
 
     void testBoundsUsageLimitsAndLocalErrors() {
         const auto applicationScope = ApplicationTestScope<>{};
         const auto suite = TlsCipherSuite{TlsCipherSuite::Aes128GcmSha256};
-        const auto secret = ByteBlock{ByteLength{32U}, 0x44U};
+        const auto secret = ByteBlock{ByteCount{32U}, 0x44U};
         auto sender = TlsRecordEncryptor{suite, makeSecret(suite, secret)};
-        REQUIRE_THROWS_AS(el::err::ParameterError, sender.protect(TlsRecordContentType::Alert, ByteBlock{}.span()));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, sender.protect(TlsRecordContentType::Alert, ByteBlock{}.span()));
         REQUIRE_FALSE(sender.isEmpty());
         REQUIRE_EQUAL(el::cryptology::impl::TlsRecordTestAccess{sender}.sequenceNumber(), uint64_t{0U});
 
-        const auto maximumContent = ByteBlock{ByteLength{uint16_t{1U} << 14U}, 0x61U};
+        const auto maximumContent = ByteBlock{ByteCount{uint16_t{1U} << 14U}, 0x61U};
         const auto maximumRecord = sender.protect(TlsRecordContentType::ApplicationData, maximumContent.span());
-        REQUIRE_EQUAL(maximumRecord.length(), ByteLength{5U + (uint16_t{1U} << 14U) + 1U + 16U});
+        REQUIRE_EQUAL(maximumRecord.length(), ByteCount{5U + (uint16_t{1U} << 14U) + 1U + 16U});
         REQUIRE_THROWS_AS(
-            el::err::ParameterError,
-            sender.protect(TlsRecordContentType::ApplicationData, maximumContent.span(), ByteLength{1U}));
+            el::err::ParameterFailure,
+            sender.protect(TlsRecordContentType::ApplicationData, maximumContent.span(), ByteCount{1U}));
         REQUIRE_FALSE(sender.isEmpty());
 
         el::cryptology::impl::TlsRecordTestAccess{sender}.setCounters(uint64_t{1U} << 24U, uint64_t{1U} << 24U);
@@ -267,7 +265,7 @@ public:
         REQUIRE(sender.isEmpty());
 
         const auto chachaSuite = TlsCipherSuite{TlsCipherSuite::ChaCha20Poly1305Sha256};
-        auto chacha = TlsRecordEncryptor{chachaSuite, makeSecret(chachaSuite, ByteBlock{ByteLength{32U}, 0x55U})};
+        auto chacha = TlsRecordEncryptor{chachaSuite, makeSecret(chachaSuite, ByteBlock{ByteCount{32U}, 0x55U})};
         el::cryptology::impl::TlsRecordTestAccess{chacha}.setCounters(
             std::numeric_limits<uint64_t>::max() - 1U, std::numeric_limits<uint64_t>::max() - 1U);
         REQUIRE(chacha.isKeyUpdateRequired());

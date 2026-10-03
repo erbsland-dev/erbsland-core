@@ -18,7 +18,6 @@ target_sources(erbsland-core PRIVATE
 
 if (APPLE)
     target_sources(erbsland-core PRIVATE
-            MacosDataReference.hpp
             MacosProtectedDataProvider.cpp
             MacosProtectedDataProvider.hpp
     )

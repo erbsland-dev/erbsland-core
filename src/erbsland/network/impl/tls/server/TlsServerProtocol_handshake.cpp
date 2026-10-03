@@ -3,24 +3,31 @@
 #include "TlsServerProtocol.hpp"
 
 #include "../TlsAlpnProtocol.hpp"
+#include "../TlsKeyShare.hpp"
 #include "../TlsProtocolError.hpp"
 #include "../TlsWireReader.hpp"
 
 #include "../../../../cryptology/keys/KeyAgreementAlgorithm.hpp"
-#include "../../../../cryptology/tls/TlsServerIdentity.hpp"
+#include "../../../../cryptology/tls/TlsIdentity.hpp"
 #include "../../../../err/Exception.hpp"
+#include "../../../../err/ParameterFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../mem/Byte.hpp"
+#include "../../../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../../../text/Literals.hpp"
+#include "../../../../text/StringList.hpp"
 
+#include <map>
 #include <set>
-#include <string_view>
 #include <utility>
 
 namespace erbsland::network::impl {
 
+using namespace mem;
+using namespace text;
 using namespace text::literals;
 
-void TlsServerProtocol::processHandshake(const mem::ByteBlock &message) {
+void TlsServerProtocol::processHandshake(const ByteBlock &message) {
     const auto type = message.getOrThrow(unit::ByteIndex::zero()).toUInt8();
     switch (_handshakeStep) {
     case HandshakeStep::ClientHello:
@@ -29,6 +36,18 @@ void TlsServerProtocol::processHandshake(const mem::ByteBlock &message) {
         }
         processClientHello(message);
         return;
+    case HandshakeStep::ClientCertificate:
+        if (type != 11U) {
+            throw TlsProtocolError{TlsAlertDescription::UnexpectedMessage, "Expected client Certificate."_el};
+        }
+        processClientCertificate(message);
+        break;
+    case HandshakeStep::ClientCertificateVerify:
+        if (type != 15U) {
+            throw TlsProtocolError{TlsAlertDescription::UnexpectedMessage, "Expected client CertificateVerify."_el};
+        }
+        processClientCertificateVerify(message);
+        break;
     case HandshakeStep::ClientFinished:
         if (type != 20U) {
             throw TlsProtocolError{TlsAlertDescription::UnexpectedMessage, "TLS server expected client Finished."_el};
@@ -41,7 +60,7 @@ void TlsServerProtocol::processHandshake(const mem::ByteBlock &message) {
     }
 }
 
-void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
+void TlsServerProtocol::processClientHello(const ByteBlock &message) {
     auto reader = TlsWireReader{message.span().subspan(4U)};
 
     // RFC 8446 Section 4.1.2: legacy_version is fixed to TLS 1.2 and random is exactly 32 public bytes.
@@ -82,7 +101,7 @@ void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
 
     // RFC 8446 Section 4.1.2: TLS 1.3 permits exactly the one-byte null legacy compression vector.
     const auto compressionMethods = reader.readVector8();
-    if (compressionMethods.size() != 1U || compressionMethods[0] != mem::Byte{0U}) {
+    if (compressionMethods.size() != 1U || compressionMethods[0] != Byte{0U}) {
         throw TlsProtocolError{TlsAlertDescription::IllegalParameter, "ClientHello legacy compression is invalid."_el};
     }
 
@@ -91,12 +110,13 @@ void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
     auto hasTls13 = false;
     auto hasSignatureAlgorithms = false;
     auto hasSupportedGroups = false;
-    auto hasX25519Group = false;
+    auto offeredGroups = std::set<uint16_t>{};
+    auto offeredShares = std::map<uint16_t, ByteBlock>{};
     auto hasKeyShare = false;
     auto offeredSchemes = std::vector<cryptology::TlsSignatureScheme>{};
     auto clientKey = cryptology::KeyAgreementPublicKey{};
     auto serverName = std::optional<HostName>{};
-    auto offeredAlpn = std::vector<text::String>{};
+    auto offeredAlpn = StringList{};
 
     // RFC 8446 Section 4.2: parse every recognized extension exactly once; unknown extensions are ignored so future
     // public-input capabilities do not accidentally become required behavior.
@@ -116,15 +136,14 @@ void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
                     TlsAlertDescription::IllegalParameter, "ClientHello must contain exactly one DNS SNI name."_el};
             }
             try {
-                const auto view = std::string_view{reinterpret_cast<const char *>(nameBytes.data()), nameBytes.size()};
-                serverName = HostName::fromStringOrThrow(text::String{view});
-            } catch (const err::Exception &error) {
+                serverName = HostName::fromStringOrThrow(text::impl::UnsafeU8StringBuffer{nameBytes}.takeString());
+            } catch (const err::RuntimeError &error) {
                 throw TlsProtocolError{TlsAlertDescription::UnrecognizedName, error.reason()};
             }
             return;
         }
         case 10U: { // supported_groups
-            // RFC 8446 Section 4.2.7: bound the even non-empty NamedGroup list and remember X25519 support.
+            // RFC 8446 Section 4.2.7: bound the even non-empty NamedGroup list and retain the offered groups.
             auto extensionReader = TlsWireReader{extension.data};
             auto groups = TlsWireReader{extensionReader.readVector16()};
             extensionReader.requireEnd();
@@ -136,7 +155,10 @@ void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
                         TlsAlertDescription::DecodeError, "ClientHello supported groups exceed the work bound."_el};
                 }
                 const auto group = groups.readU16();
-                hasX25519Group = hasX25519Group || group == 0x001dU;
+                if (!offeredGroups.insert(group).second) {
+                    throw TlsProtocolError{
+                        TlsAlertDescription::IllegalParameter, "ClientHello repeats a supported group."_el};
+                }
             }
             if (count == 0U) {
                 throw TlsProtocolError{TlsAlertDescription::DecodeError, "ClientHello supported groups are empty."_el};
@@ -174,7 +196,7 @@ void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
             extensionReader.requireEnd();
             auto encodedLength = std::size_t{0U};
             while (!protocols.isAtEnd()) {
-                if (offeredAlpn.size() >= cMaximumAlpnProtocols) {
+                if (offeredAlpn.count().toSizeT() >= cMaximumAlpnProtocols) {
                     throw TlsProtocolError{
                         TlsAlertDescription::DecodeError, "ClientHello ALPN exceeds 64 protocols."_el};
                 }
@@ -187,9 +209,9 @@ void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
                 if (encodedLength > cMaximumAlpnBytes) {
                     throw TlsProtocolError{TlsAlertDescription::DecodeError, "ClientHello ALPN exceeds 4096 bytes."_el};
                 }
-                offeredAlpn.push_back(TlsAlpnProtocol::fromBytes(protocol));
+                offeredAlpn.append(text::impl::UnsafeU8StringBuffer{protocol}.takeString());
             }
-            if (offeredAlpn.empty()) {
+            if (offeredAlpn.isEmpty()) {
                 throw TlsProtocolError{TlsAlertDescription::DecodeError, "ClientHello ALPN offer is empty."_el};
             }
             return;
@@ -255,7 +277,7 @@ void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
             return;
         }
         case 51U: { // key_share
-            // RFC 8446 Section 4.2.8: inspect at most 64 unique shares and retain the one exact 32-byte X25519 key.
+            // RFC 8446 Section 4.2.8: inspect at most 64 unique shares before selecting a configured group.
             auto extensionReader = TlsWireReader{extension.data};
             auto shares = TlsWireReader{extensionReader.readVector16()};
             extensionReader.requireEnd();
@@ -273,18 +295,13 @@ void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
                     throw TlsProtocolError{
                         TlsAlertDescription::IllegalParameter, "ClientHello repeats a key-share group."_el};
                 }
-                if (group == 0x001dU) {
-                    if (keyBytes.size() != 32U) {
-                        throw TlsProtocolError{
-                            TlsAlertDescription::IllegalParameter, "ClientHello X25519 share has the wrong length."_el};
-                    }
-                    clientKey = cryptology::KeyAgreementPublicKey{cryptology::KeyAgreementAlgorithm::X25519, keyBytes};
-                    hasKeyShare = true;
+                if (keyBytes.empty()) {
+                    throw TlsProtocolError{
+                        TlsAlertDescription::DecodeError, "ClientHello contains an empty key share."_el};
                 }
+                offeredShares.emplace(group, ByteBlock::fromSpan(keyBytes));
             }
-            if (count == 0U) {
-                throw TlsProtocolError{TlsAlertDescription::DecodeError, "ClientHello key shares are empty."_el};
-            }
+            hasKeyShare = true;
             return;
         }
         default:
@@ -300,37 +317,76 @@ void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
             TlsAlertDescription::MissingExtension,
             "ClientHello is missing signature_algorithms or supported_groups."_el};
     }
-    if (!hasX25519Group || !hasKeyShare) {
-        // RFC 8446 Sections 4.1.4 and 4.2.8: another compatible share would require HelloRetryRequest, deliberately
-        // absent from the initial profile, so fail before any expensive key agreement.
-        throw TlsProtocolError{
-            TlsAlertDescription::HandshakeFailure, "ClientHello would require HelloRetryRequest."_el};
+    if (!hasKeyShare) {
+        throw TlsProtocolError{TlsAlertDescription::MissingExtension, "ClientHello is missing key_share."_el};
+    }
+    for (const auto &[group, encoded] : offeredShares) {
+        if (!offeredGroups.contains(group)) {
+            throw TlsProtocolError{
+                TlsAlertDescription::IllegalParameter, "ClientHello key share is not in supported_groups."_el};
+        }
+    }
+    if (_retryGroup.has_value()) {
+        if (_cipherSuite != selectedSuite || _retryInvariant != clientHelloInvariant(message) ||
+            offeredShares.size() != 1U || !offeredShares.contains(tls_key_share::group(*_retryGroup))) {
+            throw TlsProtocolError{
+                TlsAlertDescription::IllegalParameter,
+                "ClientHello2 changed forbidden fields or did not supply the requested share."_el};
+        }
+    }
+    auto retryGroup = std::optional<cryptology::KeyAgreementAlgorithm>{};
+    for (const auto algorithm : _options.supportedGroups()) {
+        const auto group = tls_key_share::group(algorithm);
+        if (!offeredGroups.contains(group)) {
+            continue;
+        }
+        if (!retryGroup.has_value()) {
+            retryGroup = algorithm;
+        }
+        const auto share = offeredShares.find(group);
+        if (share != offeredShares.end()) {
+            try {
+                clientKey = cryptology::KeyAgreementPublicKey{algorithm, share->second.span()};
+            } catch (const err::ParameterFailure &) {
+                throw TlsProtocolError{
+                    TlsAlertDescription::IllegalParameter, "ClientHello contains an invalid key share."_el};
+            }
+            break;
+        }
+    }
+    if (clientKey.isEmpty()) {
+        if (_retryGroup.has_value() || !retryGroup.has_value()) {
+            throw TlsProtocolError{
+                TlsAlertDescription::HandshakeFailure, "ClientHello has no compatible key-agreement group."_el};
+        }
+        sendHelloRetryRequest(message, *selectedSuite, *retryGroup, legacySessionId);
+        return;
     }
 
-    auto selectedIdentity = _options.defaultIdentity();
-    auto selectedIdentityIndex = std::size_t{};
+    auto selectedConfiguration = _options.defaultConfiguration();
+    auto selectedConfigurationIndex = std::size_t{};
     if (serverName.has_value()) {
-        const auto &namedIdentities = _options.namedIdentities();
-        for (auto index = std::size_t{}; index < namedIdentities.size(); ++index) {
-            if (namedIdentities[index].serverName == *serverName) {
-                selectedIdentity = namedIdentities[index].identity;
-                selectedIdentityIndex = index + 1U;
+        const auto &namedConfigurations = _options.namedConfigurations();
+        for (auto index = std::size_t{}; index < namedConfigurations.size(); ++index) {
+            if (namedConfigurations[index].serverName == *serverName) {
+                selectedConfiguration = namedConfigurations[index].configuration;
+                selectedConfigurationIndex = index + 1U;
                 break;
             }
         }
     }
-    const auto selectedSignature =
-        selectedIdentity->selectSignatureScheme(util::List<cryptology::TlsSignatureScheme>{std::move(offeredSchemes)});
+    const auto selectedSignature = selectedConfiguration.identity->selectSignatureScheme(
+        util::List<cryptology::TlsSignatureScheme>{std::move(offeredSchemes)});
     if (!selectedSignature.has_value()) {
         throw TlsProtocolError{
             TlsAlertDescription::HandshakeFailure, "No compatible CertificateVerify scheme was offered."_el};
     }
 
-    auto negotiatedAlpn = text::String{};
-    if (!offeredAlpn.empty()) {
+    auto negotiatedAlpn = String{};
+    if (!offeredAlpn.isEmpty()) {
         for (const auto &supported : _options.alpnProtocols()) {
             for (const auto &offered : offeredAlpn) {
-                if (TlsAlpnProtocol::equal(supported, offered)) {
+                if (tls_alpn_protocol::equal(supported, offered)) {
                     negotiatedAlpn = supported;
                     break;
                 }
@@ -352,19 +408,20 @@ void TlsServerProtocol::processClientHello(const mem::ByteBlock &message) {
     }
 
     _clientHello = message;
-    _legacySessionId = mem::ByteBlock::fromSpan(legacySessionId);
+    _legacySessionId = ByteBlock::fromSpan(legacySessionId);
     _clientKey = std::move(clientKey);
     _cipherSuite = *selectedSuite;
     _signatureScheme = *selectedSignature;
-    _selectedIdentity = std::move(selectedIdentity);
-    _selectedIdentityIndex = selectedIdentityIndex;
+    _selectedIdentity = selectedConfiguration.identity;
+    _selectedConfiguration = std::move(selectedConfiguration);
+    _selectedConfigurationIndex = selectedConfigurationIndex;
     _serverName = std::move(serverName);
     _offeredAlpn = std::move(offeredAlpn);
     _negotiatedAlpn = std::move(negotiatedAlpn);
     _checkpoint = TlsServerProtocolCheckpoint::ClientHello;
 }
 
-void TlsServerProtocol::processClientFinished(const mem::ByteBlock &message) {
+void TlsServerProtocol::processClientFinished(const ByteBlock &message) {
     const auto verifyData = message.span().subspan(4U);
     const auto beforeClientFinished = _transcript->hash();
 
@@ -393,12 +450,13 @@ void TlsServerProtocol::processClientFinished(const mem::ByteBlock &message) {
     const auto clientFinishedTranscriptHash = _transcript->hash();
     _keySchedule->discardResumptionMaster(clientFinishedTranscriptHash.span());
 
+    _peerAuthenticated = !_validatedClientPath.isEmpty();
     _handshakeStep = HandshakeStep::PostHandshake;
     _state = TlsServerProtocolState::Established;
     _checkpoint = TlsServerProtocolCheckpoint::HandshakeCompleted;
 }
 
-void TlsServerProtocol::forEachExtension(const mem::ConstByteSpan extensions, const ExtensionFn &function) const {
+void TlsServerProtocol::forEachExtension(const ConstByteSpan extensions, const ExtensionFn &function) const {
     auto reader = TlsWireReader{extensions};
     auto seen = std::set<uint16_t>{};
     auto count = std::size_t{0U};

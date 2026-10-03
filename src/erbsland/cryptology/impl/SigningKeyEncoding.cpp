@@ -8,7 +8,7 @@
 #include "../asn1/Asn1ObjectIdentifier.hpp"
 #include "../keys/PublicKey.hpp"
 
-#include "../../err/LogicError.hpp"
+#include "../../err/LogicFailure.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::cryptology::impl::signing_key_encoding {
@@ -81,7 +81,7 @@ void appendPrivateKey(
         encoder.appendOctetString(privateData);
         break;
     case SigningKeyAlgorithm::Unknown:
-        throw err::LogicError{"Cannot encode an empty signing key."_el};
+        throw err::LogicFailure{"Cannot encode an empty signing key."_el};
     }
     encoder.end(root);
 }

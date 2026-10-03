@@ -1,22 +1,26 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/core/CommandLineArguments.hpp>
+#include "../core/ApplicationTestScope.hpp"
+
+#include <erbsland/AnyStringBuilderStream.hpp>
+#include <erbsland/CommandLineArguments.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OptionChoices.hpp>
+#include <erbsland/OptionError.hpp>
+#include <erbsland/OptionErrorContext.hpp>
+#include <erbsland/OptionManager.hpp>
+#include <erbsland/OptionModule.hpp>
+#include <erbsland/Options.hpp>
 #include <erbsland/options/impl/ExecutableName.hpp>
-#include <erbsland/options/OptionChoices.hpp>
-#include <erbsland/options/OptionError.hpp>
-#include <erbsland/options/OptionErrorContext.hpp>
-#include <erbsland/options/OptionManager.hpp>
-#include <erbsland/options/OptionModule.hpp>
-#include <erbsland/options/Options.hpp>
-#include <erbsland/options/OptionSensitiveTextLocation.hpp>
-#include <erbsland/options/OptionSet.hpp>
-#include <erbsland/options/OptionValue.hpp>
-#include <erbsland/options/OptionValues.hpp>
-#include <erbsland/stream/AnyStringBuilderStream.hpp>
-#include <erbsland/stream/StandardStreams.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/OptionSensitiveTextLocation.hpp>
+#include <erbsland/OptionSet.hpp>
+#include <erbsland/OptionValue.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringList.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <initializer_list>
@@ -37,16 +41,123 @@ using namespace el::text::literals;
 
 TESTED_TARGETS(OptionManager OptionParser OptionParserFlag)
 class OptionsParserTest final : public el::UnitTest {
+private:
+    static constexpr auto cAllOption = "--all"_el;
+    static constexpr auto cChoiceOption = "--choice"_el;
+    static constexpr auto cColorOption = "--color"_el;
+    static constexpr auto cCountOption = "--count"_el;
+    static constexpr auto cEqualsOption = "--equals"_el;
+    static constexpr auto cFeatureOption = "--feature"_el;
+    static constexpr auto cForceOption = "--force"_el;
+    static constexpr auto cHelpOption = "--help"_el;
+    static constexpr auto cIncludeOption = "--include"_el;
+    static constexpr auto cIntegerOption = "--integer"_el;
+    static constexpr auto cLateOption = "--late"_el;
+    static constexpr auto cLongOption = "--long"_el;
+    static constexpr auto cModeOption = "--mode"_el;
+    static constexpr auto cModuleFlagOption = "--module-flag"_el;
+    static constexpr auto cNameOption = "--name"_el;
+    static constexpr auto cOffOption = "--off"_el;
+    static constexpr auto cRequiredOption = "--required"_el;
+    static constexpr auto cSecretOption = "--secret"_el;
+    static constexpr auto cSeparateOption = "--separate"_el;
+    static constexpr auto cSpaceOption = "--space"_el;
+    static constexpr auto cTextOption = "--text"_el;
+    static constexpr auto cThreadsOption = "--threads"_el;
+    static constexpr auto cVerboseOption = "--verbose"_el;
+    static constexpr auto cVisibleOption = "--visible"_el;
+    static constexpr auto cUpperAOption = "-A"_el;
+    static constexpr auto cLowerAOption = "-a"_el;
+    static constexpr auto cBOption = "-b"_el;
+    static constexpr auto cEOption = "-e"_el;
+    static constexpr auto cFOption = "-f"_el;
+    static constexpr auto cPOption = "-p"_el;
+    static constexpr auto cSOption = "-s"_el;
+    static constexpr auto cTOption = "-t"_el;
+    static constexpr auto cVOption = "-v"_el;
+    static constexpr auto cArgumentsOption = "arguments"_el;
+    static constexpr auto cCountPositionalOption = "count"_el;
+    static constexpr auto cFilesOption = "files"_el;
+    static constexpr auto cInputOption = "input"_el;
+    static constexpr auto cInputsOption = "inputs"_el;
+    static constexpr auto cLiteralOption = "literal"_el;
+    static constexpr auto cModePositionalOption = "mode"_el;
+    static constexpr auto cOutputOption = "output"_el;
+    static constexpr auto cPathOption = "path"_el;
+    static constexpr auto cPositionalOption = "positional"_el;
+    static constexpr auto cSourceOption = "source"_el;
+    static constexpr auto cTargetOption = "target"_el;
+
 public:
-    void testRootOptionSuccess() {
+    void testCanonicalCommandLineNamesPreserveValuesAndArguments() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption({"-v"_el, "--verbose"_el}).setType(OptionType::Flag);
-        options->addOption({"-a"_el, "--all"_el}).setType(OptionType::Flag);
-        options->addOption({"-b"_el, "--binary"_el}).setType(OptionType::Flag);
+        options->addOption({cUpperAOption, "--One_Two"_el, "One_Two"_el});
+        options->addOption(cLowerAOption);
+        options->addOption("--text_value"_el).setType(OptionType::Text);
+        options->addOption("--choice_value"_el).addChoice("safe_mode"_el);
+        options->addOption("path_name"_el).setType(OptionType::Text).setMaximum(ArgumentCount{2U});
+        auto module = OptionModule::create("Run_One"_el);
+        options->addModule(module);
+        auto args = makeArgs(
+            {"tool"_el,
+                "RUN_ONE"_el,
+                "--ONE_TWO"_el,
+                "-aA"_el,
+                "--TEXT_VALUE=Keep_This_Case"_el,
+                "--choice_value"_el,
+                "safe_mode"_el,
+                "--"_el,
+                "__help"_el,
+                "keep_this_path"_el});
+        options->editOption("--one-two"_el).setMaximum(ArgumentCount{2U});
+        const auto result = OptionManager{options}.parse(args);
+        REQUIRE_EQUAL(result.status(), OptionResultStatus::Success);
+        REQUIRE_EQUAL(result.values()->module()->name(), "run-one"_el);
+        REQUIRE_EQUAL(result.values()->moduleName(), "run-one"_el);
+        REQUIRE_EQUAL(result.values()->getFlagCount(cUpperAOption), ArgumentCount{2U});
+        REQUIRE_EQUAL(result.values()->getFlagCount(cLowerAOption), ArgumentCount::one());
+        REQUIRE_EQUAL(result.values()->getText("TEXT_VALUE"_el), String{});
+        REQUIRE_EQUAL(result.values()->getText("--TEXT_VALUE"_el), "Keep_This_Case"_el);
+        REQUIRE_EQUAL(result.values()->getText("--choice-value"_el), "safe_mode"_el);
+        REQUIRE_EQUAL(result.values()->getTextList("PATH_NAME"_el).first(), "__help"_el);
+        REQUIRE_EQUAL(args.get(el::unit::ItemIndex::one()), "RUN_ONE"_el);
+        REQUIRE_EQUAL(args.get(el::unit::ItemIndex{4U}), "--TEXT_VALUE=Keep_This_Case"_el);
+        const auto separate = parse(options, {"tool"_el, "run-one"_el, "--text_value"_el, "keep_this"_el});
+        REQUIRE_EQUAL(separate.status(), OptionResultStatus::Success);
+        REQUIRE_EQUAL(separate.values()->getText("--text-value"_el), "keep_this"_el);
+    }
+
+    void testNameNormalizationCannotCreateOptionPrefixes() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->addOption("--one-two"_el);
+        for (
+            const auto &argument :
+            el::text::StringList{"_a"_el, "__one_two"_el, "__help"_el, "-_"_el, "-_a"_el, "--one__two"_el}) {
+            const auto result = parse(options, {"tool"_el, argument});
+            REQUIRE_EQUAL(result.status(), OptionResultStatus::Error);
+            REQUIRE(result.errorContext().has_value());
+        }
+        REQUIRE_EQUAL(parse(options, {"tool"_el, "--ONE_TWO"_el}).status(), OptionResultStatus::Success);
+        REQUIRE_EQUAL(parse(options, {"tool"_el, "--HELP"_el}).status(), OptionResultStatus::DisplayHelp);
+        REQUIRE_EQUAL(parse(options, {"tool"_el, "--VERSION"_el}).status(), OptionResultStatus::DisplayVersion);
+        REQUIRE_EQUAL(parse(options, {"tool"_el, "-H"_el}).status(), OptionResultStatus::Error);
+        options->addOption("--one_two"_el);
+        REQUIRE_EQUAL(
+            parse(options, {"tool"_el, "--one-two"_el}).errorContext()->reason(), OptionErrorReason::SyntaxError);
+    }
+
+    void testRootOptionSuccess() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->addOption({cVOption, cVerboseOption}).setType(OptionType::Flag);
+        options->addOption({cLowerAOption, cAllOption}).setType(OptionType::Flag);
+        options->addOption({cBOption, "--binary"_el}).setType(OptionType::Flag);
         options->addOption({"-c"_el, "--create"_el}).setType(OptionType::Flag);
-        options->addOption({"-n"_el, "--name"_el}).setType(OptionType::Text);
+        options->addOption({"-n"_el, cNameOption}).setType(OptionType::Text);
         options->addOption({"-i"_el, "--iterations"_el}).setType(OptionType::Integer);
-        options->addOption("--mode"_el)
+        options->addOption(cModeOption)
             .setType(OptionType::Choice)
             .setChoices(OptionChoices::create({"fast"_el, "safe"_el}));
 
@@ -55,51 +166,53 @@ public:
             {"tool"_el,
                 "--VERBOSE"_el,
                 "-abc"_el,
-                "--name"_el,
+                cNameOption,
                 "Ada"_el,
                 "--iterations=42"_el,
-                "--mode"_el,
+                cModeOption,
                 "SAFE"_el});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
         REQUIRE(result.values());
-        REQUIRE(result.values()->getFlag("--verbose"_el));
-        REQUIRE(result.values()->getFlag("--all"_el));
+        REQUIRE(result.values()->getFlag(cVerboseOption));
+        REQUIRE(result.values()->getFlag(cAllOption));
         REQUIRE(result.values()->getFlag("--binary"_el));
         REQUIRE(result.values()->getFlag("--create"_el));
-        REQUIRE(result.values()->getText("--name"_el) == "Ada"_el);
+        REQUIRE(result.values()->getText(cNameOption) == "Ada"_el);
         REQUIRE_EQUAL(result.values()->getInteger("--iterations"_el), OptionInteger{42});
-        REQUIRE(result.values()->getText("--mode"_el) == "safe"_el);
+        REQUIRE(result.values()->getText(cModeOption) == "safe"_el);
     }
 
     void testListValuesAndDefaults() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--include"_el).setType(OptionType::Text).setMaximum(ArgumentCount{3U});
-        options->addOption("--count"_el).setType(OptionType::Integer).setMaximum(ArgumentCount{2U});
-        options->addOption("--threads"_el).setType(OptionType::Integer).setDefaultValue(OptionInteger{4});
-        options->addOption("--color"_el)
+        options->addOption(cIncludeOption).setType(OptionType::Text).setMaximum(ArgumentCount{3U});
+        options->addOption(cCountOption).setType(OptionType::Integer).setMaximum(ArgumentCount{2U});
+        options->addOption(cThreadsOption).setType(OptionType::Integer).setDefaultValue(OptionInteger{4});
+        options->addOption(cColorOption)
             .setType(OptionType::Choice)
             .setChoices(OptionChoices::create({"auto"_el, "never"_el}))
             .setDefaultValue(StringEditor{"AUTO"_el});
 
         const auto result = parse(
             options,
-            {"tool"_el, "--include"_el, "src"_el, "--include"_el, "test"_el, "--count"_el, "1"_el, "--count=2"_el});
+            {"tool"_el, cIncludeOption, "src"_el, cIncludeOption, "test"_el, cCountOption, "1"_el, "--count=2"_el});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
-        const auto includes = result.values()->getTextList("--include"_el);
+        const auto includes = result.values()->getTextList(cIncludeOption);
         REQUIRE_EQUAL(includes.count(), el::unit::ItemCount{2U});
         REQUIRE(includes.get(el::unit::ItemIndex::zero()) == "src"_el);
         REQUIRE(includes.get(el::unit::ItemIndex{1U}) == "test"_el);
-        const auto counts = result.values()->getIntegerList("--count"_el);
+        const auto counts = result.values()->getIntegerList(cCountOption);
         REQUIRE_EQUAL(counts.size(), 2U);
         REQUIRE_EQUAL(counts.at(0), OptionInteger{1});
         REQUIRE_EQUAL(counts.at(1), OptionInteger{2});
-        REQUIRE_EQUAL(result.values()->getInteger("--threads"_el), OptionInteger{4});
-        REQUIRE(result.values()->getText("--color"_el) == "auto"_el);
+        REQUIRE_EQUAL(result.values()->getInteger(cThreadsOption), OptionInteger{4});
+        REQUIRE(result.values()->getText(cColorOption) == "auto"_el);
     }
 
     void testBooleanScalarListAndDefaults() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->addOption("--enabled"_el).setType(OptionType::Boolean);
         options->addOption("--switch"_el).setType(OptionType::Boolean).setMaximum(ArgumentCount{3U});
@@ -128,26 +241,27 @@ public:
     }
 
     void testAcceptAsFlagForAllValueTypes() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->addOption("--boolean"_el).setType(OptionType::Boolean).setFlag(OptionFlag::AcceptAsFlag);
-        options->addOption("--integer"_el).setType(OptionType::Integer).setFlag(OptionFlag::AcceptAsFlag);
-        options->addOption("--text"_el).setType(OptionType::Text).setFlag(OptionFlag::AcceptAsFlag);
-        options->addOption("--choice"_el)
+        options->addOption(cIntegerOption).setType(OptionType::Integer).setFlag(OptionFlag::AcceptAsFlag);
+        options->addOption(cTextOption).setType(OptionType::Text).setFlag(OptionFlag::AcceptAsFlag);
+        options->addOption(cChoiceOption)
             .setChoices(OptionChoices::create({"fast"_el, "safe"_el}))
             .setFlag(OptionFlag::AcceptAsFlag);
-        options->addOption("--secret"_el).setType(OptionType::SensitiveText).setFlag(OptionFlag::AcceptAsFlag);
+        options->addOption(cSecretOption).setType(OptionType::SensitiveText).setFlag(OptionFlag::AcceptAsFlag);
 
         auto result =
-            parse(options, {"tool"_el, "--boolean"_el, "--integer"_el, "--text"_el, "--choice"_el, "--secret"_el});
+            parse(options, {"tool"_el, "--boolean"_el, cIntegerOption, cTextOption, cChoiceOption, cSecretOption});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        for (const auto &name : {"--boolean"_el, "--integer"_el, "--text"_el, "--choice"_el, "--secret"_el}) {
+        for (const auto &name : {"--boolean"_el, cIntegerOption, cTextOption, cChoiceOption, cSecretOption}) {
             REQUIRE(result.values()->getFlag(name));
         }
         REQUIRE_FALSE(result.values()->getBoolean("--boolean"_el));
-        REQUIRE_EQUAL(result.values()->getInteger("--integer"_el), OptionInteger{0});
-        REQUIRE(result.values()->getText("--text"_el).isEmpty());
-        REQUIRE(result.values()->getText("--choice"_el).isEmpty());
-        REQUIRE(result.values()->getText("--secret"_el).isEmpty());
+        REQUIRE_EQUAL(result.values()->getInteger(cIntegerOption), OptionInteger{0});
+        REQUIRE(result.values()->getText(cTextOption).isEmpty());
+        REQUIRE(result.values()->getText(cChoiceOption).isEmpty());
+        REQUIRE(result.values()->getText(cSecretOption).isEmpty());
 
         result = parse(
             options,
@@ -159,24 +273,25 @@ public:
                 "--secret=value"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
         REQUIRE(result.values()->getBoolean("--boolean"_el));
-        REQUIRE_EQUAL(result.values()->getInteger("--integer"_el), OptionInteger{42});
-        REQUIRE(result.values()->getText("--text"_el) == "Ada"_el);
-        REQUIRE(result.values()->getText("--choice"_el) == "safe"_el);
-        REQUIRE(result.values()->getText("--secret"_el) == "value"_el);
-        REQUIRE_FALSE(result.values()->getFlag("--text"_el));
+        REQUIRE_EQUAL(result.values()->getInteger(cIntegerOption), OptionInteger{42});
+        REQUIRE(result.values()->getText(cTextOption) == "Ada"_el);
+        REQUIRE(result.values()->getText(cChoiceOption) == "safe"_el);
+        REQUIRE(result.values()->getText(cSecretOption) == "value"_el);
+        REQUIRE_FALSE(result.values()->getFlag(cTextOption));
     }
 
     void testAcceptAsFlagDefinitionAndValidationRules() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto validatorSawFlag = false;
         auto options = Options::create();
-        options->addOption("--required"_el)
+        options->addOption(cRequiredOption)
             .setType(OptionType::Text)
             .setFlag(OptionFlag::AcceptAsFlag)
             .setRequired()
             .setValidateFn([&validatorSawFlag](const OptionValuePtr &value, const OptionValuesPtr &) -> void {
                 validatorSawFlag = value->getFlag();
             });
-        auto result = parse(options, {"tool"_el, "--required"_el});
+        auto result = parse(options, {"tool"_el, cRequiredOption});
         REQUIRE(result.status() == OptionResultStatus::Success);
         REQUIRE(validatorSawFlag);
 
@@ -197,54 +312,72 @@ public:
     }
 
     void testDashLeadingValuesRequireAttachedSyntax() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--count"_el).setType(OptionType::Integer);
-        assertError(options, {"tool"_el, "--count"_el, "-22"_el}, OptionErrorReason::UnexpectedValueType);
+        options->addOption(cCountOption).setType(OptionType::Integer);
+        assertError(options, {"tool"_el, cCountOption, "-22"_el}, OptionErrorReason::UnexpectedValueType);
         const auto result = parse(options, {"tool"_el, "--count=-22"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE_EQUAL(result.values()->getInteger("--count"_el), OptionInteger{-22});
+        REQUIRE_EQUAL(result.values()->getInteger(cCountOption), OptionInteger{-22});
+    }
+
+    void testAttachedEmptyAndRepeatedSeparators() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->addOption(cTextOption).setType(OptionType::Text);
+        options->addOption(cTOption).setType(OptionType::Text);
+        for (const auto &argument : el::StringList{"--text="_el, "-t="_el}) {
+            const auto result = parse(options, {"tool"_el, argument});
+            REQUIRE(result.status() == OptionResultStatus::Success);
+        }
+        const auto result = parse(options, {"tool"_el, "--text=a=b"_el, "-t=秘密=x"_el});
+        REQUIRE(result.status() == OptionResultStatus::Success);
+        REQUIRE_EQUAL(result.values()->getText(cTextOption), "a=b"_el);
+        REQUIRE_EQUAL(result.values()->getText(cTOption), "秘密=x"_el);
     }
 
     void testValueArgumentIndexes() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--equals"_el).setType(OptionType::Text);
-        options->addOption("--space"_el).setType(OptionType::Text);
-        options->addOption("-e"_el).setType(OptionType::Text);
-        options->addOption("-s"_el).setType(OptionType::Text);
+        options->addOption(cEqualsOption).setType(OptionType::Text);
+        options->addOption(cSpaceOption).setType(OptionType::Text);
+        options->addOption(cEOption).setType(OptionType::Text);
+        options->addOption(cSOption).setType(OptionType::Text);
 
-        auto result = parse(options, {"tool"_el, "--equals=A"_el, "--space"_el, "B"_el, "-e=C"_el, "-s"_el, "D"_el});
+        auto result = parse(options, {"tool"_el, "--equals=A"_el, cSpaceOption, "B"_el, "-e=C"_el, cSOption, "D"_el});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
-        requireArgumentIndexes(result.values()->value("--equals"_el), {ArgumentIndex{1U}});
-        requireArgumentIndexes(result.values()->value("--space"_el), {ArgumentIndex{3U}});
-        requireArgumentIndexes(result.values()->value("-e"_el), {ArgumentIndex{4U}});
-        requireArgumentIndexes(result.values()->value("-s"_el), {ArgumentIndex{6U}});
+        requireArgumentIndexes(result.values()->value(cEqualsOption), {ArgumentIndex{1U}});
+        requireArgumentIndexes(result.values()->value(cSpaceOption), {ArgumentIndex{3U}});
+        requireArgumentIndexes(result.values()->value(cEOption), {ArgumentIndex{4U}});
+        requireArgumentIndexes(result.values()->value(cSOption), {ArgumentIndex{6U}});
 
         options = Options::create();
-        options->addOption("path"_el).setType(OptionType::Text);
-        options->addOption("literal"_el).setType(OptionType::Text);
-        result = parse(options, {"tool"_el, "input.txt"_el, "--"_el, "--help"_el});
+        options->addOption(cPathOption).setType(OptionType::Text);
+        options->addOption(cLiteralOption).setType(OptionType::Text);
+        result = parse(options, {"tool"_el, "input.txt"_el, "--"_el, cHelpOption});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
-        requireArgumentIndexes(result.values()->value("path"_el), {ArgumentIndex{1U}});
-        requireArgumentIndexes(result.values()->value("literal"_el), {ArgumentIndex{3U}});
+        requireArgumentIndexes(result.values()->value(cPathOption), {ArgumentIndex{1U}});
+        requireArgumentIndexes(result.values()->value(cLiteralOption), {ArgumentIndex{3U}});
     }
 
     void testSensitiveTextValuesLocationsAndMasking() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--long"_el).setType(OptionType::SensitiveText);
-        options->addOption("-s"_el).setType(OptionType::SensitiveText);
-        options->addOption("--separate"_el).setType(OptionType::SensitiveText);
-        options->addOption("-p"_el).setType(OptionType::SensitiveText);
-        options->addOption("positional"_el).setType(OptionType::SensitiveText);
+        options->addOption(cLongOption).setType(OptionType::SensitiveText);
+        options->addOption(cSOption).setType(OptionType::SensitiveText);
+        options->addOption(cSeparateOption).setType(OptionType::SensitiveText);
+        options->addOption(cPOption).setType(OptionType::SensitiveText);
+        options->addOption(cPositionalOption).setType(OptionType::SensitiveText);
         auto manager = OptionManager{options};
         auto arguments = makeArgs(
             {"tool"_el,
                 "--long=alpha"_el,
                 "-s=秘密"_el,
-                "--separate"_el,
+                cSeparateOption,
                 "bravo"_el,
-                "-p"_el,
+                cPOption,
                 "charlie"_el,
                 "delta"_el});
         const auto retainedUnicodeArgument = arguments.get(el::unit::ItemIndex{2U});
@@ -254,15 +387,15 @@ public:
         const auto result = manager.parse(arguments);
 
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values()->value("--long"_el)->type() == OptionValueType::SensitiveText);
-        REQUIRE(result.values()->getText("--long"_el) == "alpha"_el);
-        REQUIRE(result.values()->getText("-s"_el) == u8"秘密"_el);
-        REQUIRE(result.values()->getText("--separate"_el) == "bravo"_el);
-        REQUIRE(result.values()->getText("-p"_el) == "charlie"_el);
-        REQUIRE(result.values()->getText("positional"_el) == "delta"_el);
-        REQUIRE(result.values()->value("--long"_el)->getText() == "alpha"_el);
-        REQUIRE(result.values()->getText("--long"_el).isSensitive());
-        REQUIRE(result.values()->getText("-s"_el).isSensitive());
+        REQUIRE(result.values()->value(cLongOption)->type() == OptionValueType::SensitiveText);
+        REQUIRE(result.values()->getText(cLongOption) == "alpha"_el);
+        REQUIRE(result.values()->getText(cSOption) == u8"秘密"_el);
+        REQUIRE(result.values()->getText(cSeparateOption) == "bravo"_el);
+        REQUIRE(result.values()->getText(cPOption) == "charlie"_el);
+        REQUIRE(result.values()->getText(cPositionalOption) == "delta"_el);
+        REQUIRE(result.values()->value(cLongOption)->getText() == "alpha"_el);
+        REQUIRE(result.values()->getText(cLongOption).isSensitive());
+        REQUIRE(result.values()->getText(cSOption).isSensitive());
 
         const auto &locations = result.sensitiveTextLocations();
         REQUIRE_EQUAL(locations.size(), std::size_t{5U});
@@ -274,9 +407,9 @@ public:
 
         REQUIRE(arguments.get(el::unit::ItemIndex{1U}) == "--long=*****"_el);
         REQUIRE(arguments.get(el::unit::ItemIndex{2U}) == "-s=*****"_el);
-        REQUIRE(arguments.get(el::unit::ItemIndex{3U}) == "--separate"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{3U}) == cSeparateOption);
         REQUIRE(arguments.get(el::unit::ItemIndex{4U}) == "*****"_el);
-        REQUIRE(arguments.get(el::unit::ItemIndex{5U}) == "-p"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{5U}) == cPOption);
         REQUIRE(arguments.get(el::unit::ItemIndex{6U}) == "*****"_el);
         REQUIRE(arguments.get(el::unit::ItemIndex{7U}) == "*****"_el);
 
@@ -289,20 +422,21 @@ public:
     }
 
     void testSensitiveTextRejectsDefaultsListsAndRepetition() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--secret"_el)
+        options->addOption(cSecretOption)
             .setType(OptionType::SensitiveText)
             .setDefaultValue(StringEditor{"fallback"_el});
         assertError(options, {"tool"_el}, OptionErrorReason::SyntaxError);
 
         options = Options::create();
-        options->addOption("--secret"_el).setType(OptionType::SensitiveText).setMaximum(ArgumentCount{2U});
+        options->addOption(cSecretOption).setType(OptionType::SensitiveText).setMaximum(ArgumentCount{2U});
         assertError(options, {"tool"_el}, OptionErrorReason::SyntaxError);
 
         options = Options::create();
-        options->addOption("--secret"_el).setType(OptionType::SensitiveText);
+        options->addOption(cSecretOption).setType(OptionType::SensitiveText);
         auto manager = OptionManager{options};
-        auto arguments = makeArgs({"tool"_el, "--secret=first"_el, "--secret"_el, "second"_el});
+        auto arguments = makeArgs({"tool"_el, "--secret=first"_el, cSecretOption, "second"_el});
         const auto result = manager.parse(arguments);
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext().has_value());
@@ -313,8 +447,9 @@ public:
     }
 
     void testSensitiveTextIsMaskedInValidatorErrors() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--secret"_el)
+        options->addOption(cSecretOption)
             .setType(OptionType::SensitiveText)
             .setValidateFn([](OptionValuePtr, OptionValuesPtr) -> void {
                 auto context = OptionErrorContext{};
@@ -323,7 +458,7 @@ public:
                 throw OptionError{context};
             });
         auto manager = OptionManager{options};
-        auto arguments = makeArgs({"tool"_el, "--secret"_el, "täuschend"_el});
+        auto arguments = makeArgs({"tool"_el, cSecretOption, "täuschend"_el});
 
         const auto result = manager.parse(arguments);
 
@@ -336,99 +471,104 @@ public:
     }
 
     void testListAndDefaultArgumentIndexes() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--include"_el).setType(OptionType::Text).setMaximum(ArgumentCount{3U});
-        options->addOption("files"_el).setType(OptionType::Text).setMaximum(ArgumentCount{2U});
-        options->addOption("--mode"_el).setType(OptionType::Text).setDefaultValue(StringEditor{"auto"_el});
+        options->addOption(cIncludeOption).setType(OptionType::Text).setMaximum(ArgumentCount{3U});
+        options->addOption(cFilesOption).setType(OptionType::Text).setMaximum(ArgumentCount{2U});
+        options->addOption(cModeOption).setType(OptionType::Text).setDefaultValue(StringEditor{"auto"_el});
 
         const auto result =
-            parse(options, {"tool"_el, "--include"_el, "src"_el, "--include=test"_el, "one"_el, "two"_el});
+            parse(options, {"tool"_el, cIncludeOption, "src"_el, "--include=test"_el, "one"_el, "two"_el});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
-        requireArgumentIndexes(result.values()->value("--include"_el), {ArgumentIndex{2U}, ArgumentIndex{3U}});
-        requireArgumentIndexes(result.values()->value("files"_el), {ArgumentIndex{4U}, ArgumentIndex{5U}});
-        REQUIRE(result.values()->value("--mode"_el)->argumentIndex().isNoIndex());
-        REQUIRE(result.values()->value("--mode"_el)->argumentIndexes().empty());
+        requireArgumentIndexes(result.values()->value(cIncludeOption), {ArgumentIndex{2U}, ArgumentIndex{3U}});
+        requireArgumentIndexes(result.values()->value(cFilesOption), {ArgumentIndex{4U}, ArgumentIndex{5U}});
+        REQUIRE(result.values()->value(cModeOption)->argumentIndex().isNoIndex());
+        REQUIRE(result.values()->value(cModeOption)->argumentIndexes().empty());
     }
 
     void testFlagArgumentIndexes() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption({"-a"_el, "--all"_el}).setType(OptionType::Flag);
-        options->addOption("-b"_el).setType(OptionType::Flag);
-        options->addOption({"-v"_el, "--verbose"_el}).setType(OptionType::Flag);
+        options->addOption({cLowerAOption, cAllOption}).setType(OptionType::Flag);
+        options->addOption(cBOption).setType(OptionType::Flag);
+        options->addOption({cVOption, cVerboseOption}).setType(OptionType::Flag);
 
         const auto result =
-            parse(options, {"tool"_el, "-ab"_el, "--verbose"_el, "-avv"_el, "--all"_el, "--verbose"_el});
+            parse(options, {"tool"_el, "-ab"_el, cVerboseOption, "-avv"_el, cAllOption, cVerboseOption});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
         requireArgumentIndexes(
-            result.values()->value("--all"_el), {ArgumentIndex{1U}, ArgumentIndex{3U}, ArgumentIndex{4U}});
-        requireArgumentIndexes(result.values()->value("-b"_el), {ArgumentIndex{1U}});
+            result.values()->value(cAllOption), {ArgumentIndex{1U}, ArgumentIndex{3U}, ArgumentIndex{4U}});
+        requireArgumentIndexes(result.values()->value(cBOption), {ArgumentIndex{1U}});
         requireArgumentIndexes(
-            result.values()->value("--verbose"_el),
+            result.values()->value(cVerboseOption),
             {ArgumentIndex{2U}, ArgumentIndex{3U}, ArgumentIndex{3U}, ArgumentIndex{5U}});
-        REQUIRE_EQUAL(result.values()->getFlagCount("--all"_el), ArgumentCount{3U});
-        REQUIRE_EQUAL(result.values()->getFlagCount("-a"_el), ArgumentCount{3U});
-        REQUIRE_EQUAL(result.values()->getFlagCount("-b"_el), ArgumentCount::one());
-        REQUIRE_EQUAL(result.values()->getFlagCount("--verbose"_el), ArgumentCount{4U});
-        REQUIRE_EQUAL(result.values()->getFlagCount("-v"_el), ArgumentCount{4U});
-        REQUIRE_EQUAL(result.values()->valueCount("--all"_el), ArgumentCount::one());
+        REQUIRE_EQUAL(result.values()->getFlagCount(cAllOption), ArgumentCount{3U});
+        REQUIRE_EQUAL(result.values()->getFlagCount(cLowerAOption), ArgumentCount{3U});
+        REQUIRE_EQUAL(result.values()->getFlagCount(cBOption), ArgumentCount::one());
+        REQUIRE_EQUAL(result.values()->getFlagCount(cVerboseOption), ArgumentCount{4U});
+        REQUIRE_EQUAL(result.values()->getFlagCount(cVOption), ArgumentCount{4U});
+        REQUIRE_EQUAL(result.values()->valueCount(cAllOption), ArgumentCount::one());
     }
 
     void testBooleanValues() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption({"-f"_el, "--feature"_el}).setType(OptionType::Boolean);
-        options->addOption("input"_el).setType(OptionType::Text);
+        options->addOption({cFOption, cFeatureOption}).setType(OptionType::Boolean);
+        options->addOption(cInputOption).setType(OptionType::Text);
 
         auto result = parse(options, {"tool"_el, "--feature=false"_el, "file.txt"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE_FALSE(result.values()->getBoolean("--feature"_el));
-        REQUIRE_EQUAL(result.values()->getFlagCount("--feature"_el), ArgumentCount::zero());
-        requireArgumentIndexes(result.values()->value("--feature"_el), {ArgumentIndex{1U}});
-        REQUIRE_EQUAL(result.values()->getText("input"_el), "file.txt"_el);
+        REQUIRE_FALSE(result.values()->getBoolean(cFeatureOption));
+        REQUIRE_EQUAL(result.values()->getFlagCount(cFeatureOption), ArgumentCount::zero());
+        requireArgumentIndexes(result.values()->value(cFeatureOption), {ArgumentIndex{1U}});
+        REQUIRE_EQUAL(result.values()->getText(cInputOption), "file.txt"_el);
 
-        result = parse(options, {"tool"_el, "-f"_el, "YES"_el, "file.txt"_el});
+        result = parse(options, {"tool"_el, cFOption, "YES"_el, "file.txt"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values()->getBoolean("--feature"_el));
-        REQUIRE_EQUAL(result.values()->getText("input"_el), "file.txt"_el);
+        REQUIRE(result.values()->getBoolean(cFeatureOption));
+        REQUIRE_EQUAL(result.values()->getText(cInputOption), "file.txt"_el);
 
         result = parse(options, {"tool"_el, "-f=disabled"_el, "file.txt"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE_FALSE(result.values()->getBoolean("--feature"_el));
-        REQUIRE_EQUAL(result.values()->getFlagCount("--feature"_el), ArgumentCount::zero());
+        REQUIRE_FALSE(result.values()->getBoolean(cFeatureOption));
+        REQUIRE_EQUAL(result.values()->getFlagCount(cFeatureOption), ArgumentCount::zero());
 
-        assertError(options, {"tool"_el, "--feature"_el, "maybe"_el}, OptionErrorReason::UnexpectedValueType);
+        assertError(options, {"tool"_el, cFeatureOption, "maybe"_el}, OptionErrorReason::UnexpectedValueType);
 
-        options->editOption("--feature"_el).setDefaultValue(true);
+        options->editOption(cFeatureOption).setDefaultValue(true);
         result = parse(options, {"tool"_el, "--feature=off"_el, "file.txt"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE_FALSE(result.values()->getBoolean("--feature"_el));
+        REQUIRE_FALSE(result.values()->getBoolean(cFeatureOption));
     }
 
     void testBooleanMaximumAndFlagRepetition() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption({"-f"_el, "--feature"_el}).setType(OptionType::Boolean);
+        options->addOption({cFOption, cFeatureOption}).setType(OptionType::Boolean);
 
         assertError(
             options, {"tool"_el, "--feature=false"_el, "--feature=true"_el}, OptionErrorReason::UnexpectedValueType);
 
         options = Options::create();
-        options->addOption({"-f"_el, "--feature"_el}).setType(OptionType::Flag);
+        options->addOption({cFOption, cFeatureOption}).setType(OptionType::Flag);
         const auto repeatedImplicit = parse(options, {"tool"_el, "-fff"_el});
         REQUIRE(repeatedImplicit.status() == OptionResultStatus::Success);
-        REQUIRE_EQUAL(repeatedImplicit.values()->getFlagCount("--feature"_el), ArgumentCount{3U});
+        REQUIRE_EQUAL(repeatedImplicit.values()->getFlagCount(cFeatureOption), ArgumentCount{3U});
     }
 
     void testPureFlagsDoNotConsumeValues() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setParserFlag(OptionParserFlag::NoHelpDetails);
-        options->addOption({"-f"_el, "--feature"_el}).setType(OptionType::Flag);
-        options->addOption("input"_el).setType(OptionType::Text);
+        options->addOption({cFOption, cFeatureOption}).setType(OptionType::Flag);
+        options->addOption(cInputOption).setType(OptionType::Text);
 
-        auto result = parse(options, {"tool"_el, "--feature"_el, "false"_el});
+        auto result = parse(options, {"tool"_el, cFeatureOption, "false"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values()->getFlag("--feature"_el));
-        REQUIRE_EQUAL(result.values()->getText("input"_el), "false"_el);
+        REQUIRE(result.values()->getFlag(cFeatureOption));
+        REQUIRE_EQUAL(result.values()->getText(cInputOption), "false"_el);
 
         assertError(options, {"tool"_el, "--feature=false"_el}, OptionErrorReason::UnexpectedValueType);
         assertError(options, {"tool"_el, "-f=false"_el}, OptionErrorReason::UnexpectedValueType);
@@ -436,30 +576,32 @@ public:
         auto moduleOptions = Options::create();
         moduleOptions->setParserFlag(OptionParserFlag::NoHelpDetails);
         auto module = OptionModule::create("run"_el);
-        module->addOption("--module-flag"_el).setType(OptionType::Flag);
-        module->addOption("input"_el).setType(OptionType::Text);
+        module->addOption(cModuleFlagOption).setType(OptionType::Flag);
+        module->addOption(cInputOption).setType(OptionType::Text);
         moduleOptions->addModule(module);
 
-        result = parse(moduleOptions, {"tool"_el, "run"_el, "--module-flag"_el, "false"_el});
+        result = parse(moduleOptions, {"tool"_el, "run"_el, cModuleFlagOption, "false"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values()->getFlag("--module-flag"_el));
-        REQUIRE_EQUAL(result.values()->getText("input"_el), "false"_el);
+        REQUIRE(result.values()->getFlag(cModuleFlagOption));
+        REQUIRE_EQUAL(result.values()->getText(cInputOption), "false"_el);
     }
 
     void testHelpAndVersionStatus() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--name"_el).setType(OptionType::Text);
-        options->addOption("--verbose"_el).setType(OptionType::Flag);
+        options->addOption(cNameOption).setType(OptionType::Text);
+        options->addOption(cVerboseOption).setType(OptionType::Flag);
 
         auto helpResult = parse(options, {"tool"_el, "-h"_el});
         REQUIRE(helpResult.status() == OptionResultStatus::DisplayHelp);
-        REQUIRE_EQUAL(helpResult.values()->getFlagCount("--verbose"_el), ArgumentCount::zero());
-        REQUIRE(parse(options, {"tool"_el, "--help"_el}).status() == OptionResultStatus::DisplayHelp);
+        REQUIRE_EQUAL(helpResult.values()->getFlagCount(cVerboseOption), ArgumentCount::zero());
+        REQUIRE(parse(options, {"tool"_el, cHelpOption}).status() == OptionResultStatus::DisplayHelp);
         REQUIRE(parse(options, {"tool"_el, "--version"_el}).status() == OptionResultStatus::DisplayVersion);
-        REQUIRE(parse(options, {"tool"_el, "--unknown"_el, "--help"_el}).status() == OptionResultStatus::DisplayHelp);
+        REQUIRE(parse(options, {"tool"_el, "--unknown"_el, cHelpOption}).status() == OptionResultStatus::DisplayHelp);
     }
 
     void testBuiltInHelpDetailsAndPureVersion() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
 
         auto result = parse(options, {"tool"_el, "--help=topic"_el});
@@ -469,14 +611,15 @@ public:
         REQUIRE(parse(options, {"tool"_el, "-h"_el, "enabled"_el}).status() == OptionResultStatus::DisplayHelp);
         assertError(options, {"tool"_el, "--version=on"_el}, OptionErrorReason::UnexpectedValueType);
         assertError(options, {"tool"_el, "--help=topic"_el, "-h"_el}, OptionErrorReason::UnexpectedValueType);
-        assertError(options, {"tool"_el, "--help"_el, "-h"_el}, OptionErrorReason::UnexpectedValueType);
+        assertError(options, {"tool"_el, cHelpOption, "-h"_el}, OptionErrorReason::UnexpectedValueType);
 
         options->setParserFlag(OptionParserFlag::NoHelpDetails);
-        REQUIRE(parse(options, {"tool"_el, "--help"_el, "false"_el}).status() == OptionResultStatus::DisplayHelp);
+        REQUIRE(parse(options, {"tool"_el, cHelpOption, "false"_el}).status() == OptionResultStatus::DisplayHelp);
         assertError(options, {"tool"_el, "--help=false"_el}, OptionErrorReason::UnexpectedValueType);
     }
 
     void testExecutableInformationIsStoredOnOptions() {
+        auto applicationScope = ApplicationTestScope<>{};
         REQUIRE(el::options::impl::extractExecutableName("/opt/demo/bitmap-showcase.EXE"_el) == "bitmap-showcase"_el);
         REQUIRE(
             el::options::impl::extractExecutableName("C:\\Tools\\bitmap-showcase.com"_el) == "bitmap-showcase.com"_el);
@@ -498,13 +641,15 @@ public:
     }
 
     void testBuiltInOptionCollision() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--help"_el).setType(OptionType::Flag);
+        options->addOption(cHelpOption).setType(OptionType::Flag);
 
         assertError(options, {"tool"_el}, OptionErrorReason::SyntaxError);
     }
 
     void testBuiltInOptionsCanBeDisabledIndividually() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
         options->setParserFlag(OptionParserFlag::DisableVersion);
         options->addOption({"--version"_el, "language-version"_el}).setType(OptionType::Text);
@@ -512,11 +657,11 @@ public:
         auto result = parse(options, {"tool"_el, "--version"_el, "1.0"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
         REQUIRE(result.values()->getText("language-version"_el) == "1.0"_el);
-        REQUIRE(parse(options, {"tool"_el, "--help"_el}).status() == OptionResultStatus::DisplayHelp);
+        REQUIRE(parse(options, {"tool"_el, cHelpOption}).status() == OptionResultStatus::DisplayHelp);
 
         options->setParserFlag(OptionParserFlag::DisableHelp);
-        options->addOption({"--help"_el, "custom-help"_el}).setType(OptionType::Flag);
-        result = parse(options, {"tool"_el, "--help"_el});
+        options->addOption({cHelpOption, "custom-help"_el}).setType(OptionType::Flag);
+        result = parse(options, {"tool"_el, cHelpOption});
         REQUIRE(result.status() == OptionResultStatus::Success);
         REQUIRE(result.values()->getFlag("custom-help"_el));
 
@@ -525,15 +670,16 @@ public:
     }
 
     void testParseOrThrow() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto streamRedirect = redirectStandardStreams();
         auto options = Options::create();
-        options->addOption("--name"_el).setType(OptionType::Text);
+        options->addOption(cNameOption).setType(OptionType::Text);
 
         auto manager = OptionManager{options};
-        auto arguments = makeArgs({"tool"_el, "--name"_el, "Ada"_el});
+        auto arguments = makeArgs({"tool"_el, cNameOption, "Ada"_el});
         const auto values = manager.parseOrThrow(arguments);
         REQUIRE(values);
-        REQUIRE(values->getText("--name"_el) == "Ada"_el);
+        REQUIRE(values->getText(cNameOption) == "Ada"_el);
 
         arguments = makeArgs({"tool"_el, "--unknown"_el});
         REQUIRE_THROWS_AS(OptionError, manager.parseOrThrow(arguments));
@@ -545,25 +691,26 @@ public:
             moduleMainCalled = true;
             return ExitCode{7};
         });
-        module->addOption("--force"_el).setType(OptionType::Flag);
+        module->addOption(cForceOption).setType(OptionType::Flag);
         moduleOptions->addModule(module);
 
         auto moduleManager = OptionManager{moduleOptions};
-        auto moduleArguments = makeArgs({"tool"_el, "run"_el, "--force"_el});
+        auto moduleArguments = makeArgs({"tool"_el, "run"_el, cForceOption});
         const auto moduleValues = moduleManager.parseOrThrow(moduleArguments);
         REQUIRE(moduleValues);
         REQUIRE(moduleValues->moduleName() == "run"_el);
         REQUIRE(moduleValues->module() == module);
-        REQUIRE(moduleValues->getFlag("--force"_el));
+        REQUIRE(moduleValues->getFlag(cForceOption));
         REQUIRE_FALSE(moduleMainCalled);
     }
 
     void testParseOrThrowRendersDisplayRequests() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto output = el::stream::AnyStringBuilderStream::create();
         const auto error = el::stream::AnyStringBuilderStream::create();
         const auto streamRedirect = el::stream::redirectStandardStreams(output, error);
         auto options = Options::create();
-        options->addOption("--verbose"_el)
+        options->addOption(cVerboseOption)
             .setType(OptionType::Flag)
             .setHelpTitle("Verbose Output"_el)
             .setHelpDescription("Display additional diagnostics."_el);
@@ -576,10 +723,11 @@ public:
         REQUIRE_NOT_EQUAL(outputText.find("tool --verbose"), std::string::npos);
 
         arguments = makeArgs({"tool"_el, "--help=--verbsoe"_el});
-        REQUIRE_THROWS_AS(OptionError, manager.parseOrThrow(arguments));
-        const auto errorText = StringConverter{error->toU8String()}.toStdString();
-        REQUIRE_NOT_EQUAL(errorText.find("Did You Mean:"), std::string::npos);
-        REQUIRE_NOT_EQUAL(errorText.find("--verbose"), std::string::npos);
+        REQUIRE_FALSE(manager.parseOrThrow(arguments));
+        outputText = StringConverter{output->toU8String()}.toStdString();
+        REQUIRE_NOT_EQUAL(outputText.find("Matching help for"), std::string::npos);
+        REQUIRE_NOT_EQUAL(outputText.find("--verbose"), std::string::npos);
+        REQUIRE_EQUAL(outputText.find("--help=--verbose"), std::string::npos);
 
         auto moduleOptions = Options::create();
         moduleOptions->addModule(OptionModule::create("run"_el));
@@ -591,92 +739,96 @@ public:
     }
 
     void testPositionalSuccess() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("path"_el).setType(OptionType::Text);
-        options->addOption("count"_el).setType(OptionType::Integer);
-        options->addOption("mode"_el)
+        options->addOption(cPathOption).setType(OptionType::Text);
+        options->addOption(cCountPositionalOption).setType(OptionType::Integer);
+        options->addOption(cModePositionalOption)
             .setType(OptionType::Choice)
             .setChoices(OptionChoices::create({"fast"_el, "safe"_el}));
 
         const auto result = parse(options, {"tool"_el, "file.txt"_el, "42"_el, "SAFE"_el});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values()->getText("path"_el) == "file.txt"_el);
-        REQUIRE_EQUAL(result.values()->getInteger("count"_el), OptionInteger{42});
-        REQUIRE(result.values()->getText("mode"_el) == "safe"_el);
+        REQUIRE(result.values()->getText(cPathOption) == "file.txt"_el);
+        REQUIRE_EQUAL(result.values()->getInteger(cCountPositionalOption), OptionInteger{42});
+        REQUIRE(result.values()->getText(cModePositionalOption) == "safe"_el);
     }
 
     void testMixedOptionsAndTerminator() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--verbose"_el).setType(OptionType::Flag);
-        options->addOption("path"_el).setType(OptionType::Text);
-        options->addOption("arguments"_el).setType(OptionType::Text).setMaximum(ArgumentCount{3U});
+        options->addOption(cVerboseOption).setType(OptionType::Flag);
+        options->addOption(cPathOption).setType(OptionType::Text);
+        options->addOption(cArgumentsOption).setType(OptionType::Text).setMaximum(ArgumentCount{3U});
 
-        const auto result = parse(options, {"tool"_el, "--verbose"_el, "input.txt"_el, "--"_el, "--help"_el, "-x"_el});
+        const auto result = parse(options, {"tool"_el, cVerboseOption, "input.txt"_el, "--"_el, cHelpOption, "-x"_el});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values()->getFlag("--verbose"_el));
-        REQUIRE(result.values()->getText("path"_el) == "input.txt"_el);
-        const auto arguments = result.values()->getTextList("arguments"_el);
+        REQUIRE(result.values()->getFlag(cVerboseOption));
+        REQUIRE(result.values()->getText(cPathOption) == "input.txt"_el);
+        const auto arguments = result.values()->getTextList(cArgumentsOption);
         REQUIRE_EQUAL(arguments.count(), el::unit::ItemCount{2U});
-        REQUIRE(arguments.get(el::unit::ItemIndex::zero()) == "--help"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex::zero()) == cHelpOption);
         REQUIRE(arguments.get(el::unit::ItemIndex{1U}) == "-x"_el);
     }
 
     void testModulePositionals() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--verbose"_el).setType(OptionType::Flag);
+        options->addOption(cVerboseOption).setType(OptionType::Flag);
         auto module = OptionModule::create("copy"_el);
-        module->addOption("source"_el).setType(OptionType::Text);
-        module->addOption("target"_el).setType(OptionType::Text);
+        module->addOption(cSourceOption).setType(OptionType::Text);
+        module->addOption(cTargetOption).setType(OptionType::Text);
         options->addModule(module);
 
-        const auto result = parse(options, {"tool"_el, "COPY"_el, "--verbose"_el, "a.txt"_el, "b.txt"_el});
+        const auto result = parse(options, {"tool"_el, "COPY"_el, cVerboseOption, "a.txt"_el, "b.txt"_el});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
         REQUIRE(result.values()->moduleName() == "copy"_el);
         REQUIRE(result.values()->module() == module);
-        REQUIRE(result.values()->getFlag("--verbose"_el));
-        REQUIRE(result.values()->getText("source"_el) == "a.txt"_el);
-        REQUIRE(result.values()->getText("target"_el) == "b.txt"_el);
+        REQUIRE(result.values()->getFlag(cVerboseOption));
+        REQUIRE(result.values()->getText(cSourceOption) == "a.txt"_el);
+        REQUIRE(result.values()->getText(cTargetOption) == "b.txt"_el);
     }
 
     void testPositionalListReservationAndGreedy() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("inputs"_el).setType(OptionType::Text).setMaximum(ArgumentCount{10U});
-        options->addOption("output"_el).setType(OptionType::Text).setFlag(OptionFlag::Required);
+        options->addOption(cInputsOption).setType(OptionType::Text).setMaximum(ArgumentCount{10U});
+        options->addOption(cOutputOption).setType(OptionType::Text).setFlag(OptionFlag::Required);
 
         auto result = parse(options, {"tool"_el, "one"_el, "two"_el, "out"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        const auto inputs = result.values()->getTextList("inputs"_el);
+        const auto inputs = result.values()->getTextList(cInputsOption);
         REQUIRE_EQUAL(inputs.count(), el::unit::ItemCount{2U});
         REQUIRE(inputs.get(el::unit::ItemIndex::zero()) == "one"_el);
         REQUIRE(inputs.get(el::unit::ItemIndex{1U}) == "two"_el);
-        REQUIRE(result.values()->getText("output"_el) == "out"_el);
+        REQUIRE(result.values()->getText(cOutputOption) == "out"_el);
 
         options = Options::create();
-        options->addOption("inputs"_el)
+        options->addOption(cInputsOption)
             .setType(OptionType::Text)
             .setMaximum(ArgumentCount{10U})
             .setFlag(OptionFlag::Greedy);
-        options->addOption("output"_el).setType(OptionType::Text).setFlag(OptionFlag::Required);
+        options->addOption(cOutputOption).setType(OptionType::Text).setFlag(OptionFlag::Required);
 
         assertError(options, {"tool"_el, "one"_el, "two"_el, "out"_el}, OptionErrorReason::UnexpectedValueType);
     }
 
     void testPositionalErrorCases() {
+        auto applicationScope = ApplicationTestScope<>{};
         assertError(makeOptionsWithTextOption(), {"tool"_el, "file.txt"_el}, OptionErrorReason::SyntaxError);
 
         auto options = Options::create();
-        options->addOption("path"_el).setType(OptionType::Text);
+        options->addOption(cPathOption).setType(OptionType::Text);
         assertError(options, {"tool"_el, "one"_el, "two"_el}, OptionErrorReason::SyntaxError);
 
         options = Options::create();
-        options->addOption("1path"_el).setType(OptionType::Text);
-        assertError(options, {"tool"_el, "file.txt"_el}, OptionErrorReason::SyntaxError);
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, options->addOption("1path"_el));
 
         options = Options::create();
-        options->addOption("path"_el).setType(OptionType::Text);
+        options->addOption(cPathOption).setType(OptionType::Text);
         options->addOption("PATH"_el).setType(OptionType::Text);
         assertError(options, {"tool"_el, "file.txt"_el}, OptionErrorReason::SyntaxError);
 
@@ -685,84 +837,87 @@ public:
         assertError(options, {"tool"_el, "true"_el}, OptionErrorReason::SyntaxError);
 
         options = Options::create();
-        options->addOption("count"_el).setType(OptionType::Integer);
+        options->addOption(cCountPositionalOption).setType(OptionType::Integer);
         assertError(options, {"tool"_el, "abc"_el}, OptionErrorReason::UnexpectedValueType);
 
         options = Options::create();
-        options->addOption("mode"_el)
+        options->addOption(cModePositionalOption)
             .setType(OptionType::Choice)
             .setChoices(OptionChoices::create({"fast"_el, "safe"_el}));
         assertError(options, {"tool"_el, "slow"_el}, OptionErrorReason::UnexpectedValueType);
 
         options = Options::create();
-        options->addOption("path"_el).setType(OptionType::Text).setFlag(OptionFlag::Required);
+        options->addOption(cPathOption).setType(OptionType::Text).setFlag(OptionFlag::Required);
         const auto result = parse(options, {"tool"_el});
         REQUIRE(result.status() == OptionResultStatus::DisplayHelp);
     }
 
     void testHelpBeforeAndAfterTerminator() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto preCallbackCalled = false;
         auto validatorCalled = false;
         auto options = Options::create();
-        options->addOption("path"_el)
+        options->addOption(cPathOption)
             .setType(OptionType::Text)
             .setValidateFn([&validatorCalled](OptionValuePtr, OptionValuesPtr) -> void { validatorCalled = true; });
         options->optionSets().front()->setPreParsingFn(
             [&preCallbackCalled](OptionSetPtr) -> void { preCallbackCalled = true; });
 
-        auto result = parse(options, {"tool"_el, "--help"_el});
+        auto result = parse(options, {"tool"_el, cHelpOption});
         REQUIRE(result.status() == OptionResultStatus::DisplayHelp);
         REQUIRE_FALSE(preCallbackCalled);
         REQUIRE_FALSE(validatorCalled);
 
-        result = parse(options, {"tool"_el, "--"_el, "--help"_el});
+        result = parse(options, {"tool"_el, "--"_el, cHelpOption});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values()->getText("path"_el) == "--help"_el);
+        REQUIRE(result.values()->getText(cPathOption) == cHelpOption);
         REQUIRE(preCallbackCalled);
         REQUIRE(validatorCalled);
     }
 
     void testErrorCases() {
+        auto applicationScope = ApplicationTestScope<>{};
         assertError(makeOptionsWithTextOption(), {"tool"_el, "--missing"_el}, OptionErrorReason::UnknownName);
-        assertError(makeDisabledOptions(), {"tool"_el, "--off"_el}, OptionErrorReason::UnknownName);
-        assertError(makeOptionsWithTextOption(), {"tool"_el, "--name"_el}, OptionErrorReason::UnexpectedValueType);
+        assertError(makeDisabledOptions(), {"tool"_el, cOffOption}, OptionErrorReason::UnknownName);
+        assertError(makeOptionsWithTextOption(), {"tool"_el, cNameOption}, OptionErrorReason::UnexpectedValueType);
         assertError(
             makeOptionsWithTextOption(),
-            {"tool"_el, "--name"_el, "--other"_el},
+            {"tool"_el, cNameOption, "--other"_el},
             OptionErrorReason::UnexpectedValueType);
         assertError(
             makeOptionsWithIntegerOption(),
-            {"tool"_el, "--count"_el, "abc"_el},
+            {"tool"_el, cCountOption, "abc"_el},
             OptionErrorReason::UnexpectedValueType);
         assertError(
-            makeOptionsWithChoiceOption(), {"tool"_el, "--mode"_el, "slow"_el}, OptionErrorReason::UnexpectedValueType);
+            makeOptionsWithChoiceOption(), {"tool"_el, cModeOption, "slow"_el}, OptionErrorReason::UnexpectedValueType);
         assertError(
             makeOptionsWithTextOption(),
-            {"tool"_el, "--name"_el, "Ada"_el, "--name"_el, "Bob"_el},
+            {"tool"_el, cNameOption, "Ada"_el, cNameOption, "Bob"_el},
             OptionErrorReason::UnexpectedValueType);
         assertError(
             makeOptionsWithTextListOption(),
-            {"tool"_el, "--include"_el, "src"_el, "--include"_el, "test"_el, "--include"_el, "doc"_el},
+            {"tool"_el, cIncludeOption, "src"_el, cIncludeOption, "test"_el, cIncludeOption, "doc"_el},
             OptionErrorReason::SyntaxError);
         assertError(makeOptionsWithTextOption(), {"tool"_el, "file.txt"_el}, OptionErrorReason::SyntaxError);
         assertError(makeOptionsWithDuplicateNames(), {"tool"_el}, OptionErrorReason::SyntaxError);
     }
 
     void testFuzzySuggestionsForOptionsModulesAndChoices() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--verbose"_el);
+        options->addOption(cVerboseOption);
         options->addOption("-x"_el);
         auto result = parse(options, {"tool"_el, "--verbsoe"_el});
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext()->suggestions().count() >= ItemCount::one());
-        REQUIRE(result.errorContext()->suggestions().get(el::unit::ItemIndex::zero()) == "--verbose"_el);
+        REQUIRE(result.errorContext()->suggestions().get(el::unit::ItemIndex::zero()) == cVerboseOption);
 
         result = parse(options, {"tool"_el, "--q"_el});
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext()->suggestions().isEmpty());
 
         options = Options::create();
-        options->addOption("--mode"_el).setChoices(OptionChoices::create({"fast"_el, "safe"_el}));
+        options->addOption(cModeOption).setChoices(OptionChoices::create({"fast"_el, "safe"_el}));
         result = parse(options, {"tool"_el, "--mode=fats"_el});
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE_EQUAL(result.errorContext()->suggestions().count(), ItemCount::one());
@@ -777,28 +932,29 @@ public:
     }
 
     void testDisabledOptionSetsAreAbsentAndHiddenOptionsParse() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto disabledPreCalled = false;
         auto options = Options::create();
-        options->addOption("--visible"_el).setType(OptionType::Flag);
+        options->addOption(cVisibleOption).setType(OptionType::Flag);
 
         auto hiddenSet = OptionSet::create();
-        hiddenSet->addOption("--secret"_el).setType(OptionType::Flag).setHelpVisibility(OptionHelpVisibility::Hidden);
+        hiddenSet->addOption(cSecretOption).setType(OptionType::Flag).setHelpVisibility(OptionHelpVisibility::Hidden);
         options->addSet(hiddenSet);
 
         auto disabledSet = OptionSet::create();
         disabledSet->setFlags(OptionFlag::Disabled);
         disabledSet->setPreParsingFn([&disabledPreCalled](OptionSetPtr) -> void { disabledPreCalled = true; });
-        disabledSet->addOption("--off"_el).setType(OptionType::Flag);
-        disabledSet->addOption("--visible"_el).setType(OptionType::Flag);
+        disabledSet->addOption(cOffOption).setType(OptionType::Flag);
+        disabledSet->addOption(cVisibleOption).setType(OptionType::Flag);
         options->addSet(disabledSet);
 
-        auto result = parse(options, {"tool"_el, "--visible"_el, "--secret"_el});
+        auto result = parse(options, {"tool"_el, cVisibleOption, cSecretOption});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values()->getFlag("--visible"_el));
-        REQUIRE(result.values()->getFlag("--secret"_el));
+        REQUIRE(result.values()->getFlag(cVisibleOption));
+        REQUIRE(result.values()->getFlag(cSecretOption));
         REQUIRE_FALSE(disabledPreCalled);
 
-        result = parse(options, {"tool"_el, "--off"_el});
+        result = parse(options, {"tool"_el, cOffOption});
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext().has_value());
         REQUIRE(result.errorContext()->reason() == OptionErrorReason::UnknownName);
@@ -806,22 +962,24 @@ public:
     }
 
     void testRequiredAndNegativeValues() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--required"_el).setType(OptionType::Text).setFlag(OptionFlag::Required);
-        options->addOption("--count"_el).setType(OptionType::Integer);
+        options->addOption(cRequiredOption).setType(OptionType::Text).setFlag(OptionFlag::Required);
+        options->addOption(cCountOption).setType(OptionType::Integer);
 
         assertError(options, {"tool"_el}, OptionErrorReason::UnexpectedValueType);
 
-        const auto result = parse(options, {"tool"_el, "--required"_el, "value"_el, "--count=-1"_el});
+        const auto result = parse(options, {"tool"_el, cRequiredOption, "value"_el, "--count=-1"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values()->getText("--required"_el) == "value"_el);
-        REQUIRE_EQUAL(result.values()->getInteger("--count"_el), OptionInteger{-1});
+        REQUIRE(result.values()->getText(cRequiredOption) == "value"_el);
+        REQUIRE_EQUAL(result.values()->getInteger(cCountOption), OptionInteger{-1});
     }
 
     void testEmptyRequiredPositionalDisplaysHelp() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto preParsingCalled = false;
         auto options = Options::create();
-        options->addOption("source"_el).setType(OptionType::Text).setFlag(OptionFlag::Required);
+        options->addOption(cSourceOption).setType(OptionType::Text).setFlag(OptionFlag::Required);
         options->optionSets().front()->setPreParsingFn(
             [&preParsingCalled](OptionSetPtr) -> void { preParsingCalled = true; });
 
@@ -839,31 +997,33 @@ public:
     }
 
     void testModuleOptionSuccess() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = makeOptionsWithGlobalAndModuleOptions();
 
-        const auto result = parse(options, {"tool"_el, "REMOVE"_el, "--verbose"_el, "--force"_el, "--count=3"_el});
+        const auto result = parse(options, {"tool"_el, "REMOVE"_el, cVerboseOption, cForceOption, "--count=3"_el});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
         REQUIRE(result.values()->moduleName() == "remove"_el);
         REQUIRE(result.values()->module() == options->optionModules().front());
         REQUIRE(result.values());
-        REQUIRE(result.values()->getFlag("--verbose"_el));
-        REQUIRE(result.values()->getFlag("--force"_el));
-        REQUIRE_EQUAL(result.values()->getInteger("--count"_el), OptionInteger{3});
+        REQUIRE(result.values()->getFlag(cVerboseOption));
+        REQUIRE(result.values()->getFlag(cForceOption));
+        REQUIRE_EQUAL(result.values()->getInteger(cCountOption), OptionInteger{3});
     }
 
     void testModuleHelpAndVersionStatus() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto callbackCalled = false;
         auto options = makeOptionsWithGlobalAndModuleOptions();
         options->optionModules().front()->setPreParsingFn(
             [&callbackCalled](OptionModulePtr) -> void { callbackCalled = true; });
 
-        auto result = parse(options, {"tool"_el, "--help"_el});
+        auto result = parse(options, {"tool"_el, cHelpOption});
         REQUIRE(result.status() == OptionResultStatus::DisplayHelp);
         REQUIRE(result.values()->moduleName().isEmpty());
         REQUIRE_FALSE(result.values()->module());
 
-        result = parse(options, {"tool"_el, "remove"_el, "--help"_el});
+        result = parse(options, {"tool"_el, "remove"_el, cHelpOption});
         REQUIRE(result.status() == OptionResultStatus::DisplayHelp);
         REQUIRE(result.values()->moduleName() == "remove"_el);
         REQUIRE(result.values()->module() == options->optionModules().front());
@@ -881,6 +1041,7 @@ public:
     }
 
     void testModuleErrorCases() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto result = parse(makeOptionsWithGlobalAndModuleOptions(), {"tool"_el});
         REQUIRE(result.status() == OptionResultStatus::DisplayModuleOverview);
         REQUIRE_FALSE(result.values()->module());
@@ -888,13 +1049,13 @@ public:
 
         assertError(makeOptionsWithGlobalAndModuleOptions(), {"tool"_el, "missing"_el}, OptionErrorReason::UnknownName);
         assertError(
-            makeOptionsWithGlobalAndModuleOptions(), {"tool"_el, "--verbose"_el}, OptionErrorReason::SyntaxError);
+            makeOptionsWithGlobalAndModuleOptions(), {"tool"_el, cVerboseOption}, OptionErrorReason::SyntaxError);
         assertError(
             makeOptionsWithGlobalAndModuleOptions(), {"tool"_el, "--"_el, "remove"_el}, OptionErrorReason::SyntaxError);
         assertError(makeOptionsWithDuplicateModuleNames(), {"tool"_el, "remove"_el}, OptionErrorReason::SyntaxError);
 
         auto disabledGlobalOptions = makeOptionsWithDisabledGlobalOption();
-        result = parse(disabledGlobalOptions, {"tool"_el, "remove"_el, "--verbose"_el});
+        result = parse(disabledGlobalOptions, {"tool"_el, "remove"_el, cVerboseOption});
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.values()->module() == disabledGlobalOptions->optionModules().front());
         REQUIRE(result.errorContext().has_value());
@@ -902,7 +1063,7 @@ public:
 
         assertError(
             makeOptionsWithDisabledModuleOption(),
-            {"tool"_el, "remove"_el, "--force"_el},
+            {"tool"_el, "remove"_el, cForceOption},
             OptionErrorReason::UnknownName);
         assertError(
             makeOptionsWithGlobalAndModuleOptions(),
@@ -911,6 +1072,7 @@ public:
     }
 
     void testMissingModuleOverviewAndStrictModeSuppressCallbacks() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto callbackCalled = false;
         auto options = Options::create();
         auto module = OptionModule::create("run"_el);
@@ -929,24 +1091,26 @@ public:
     }
 
     void testModulePreCallbackCanEditGlobalOptions() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto normalOptions = makeOptionsWithGlobalAndModuleOptions();
-        auto normalResult = parse(normalOptions, {"tool"_el, "remove"_el, "-v"_el});
+        auto normalResult = parse(normalOptions, {"tool"_el, "remove"_el, cVOption});
         REQUIRE(normalResult.status() == OptionResultStatus::Success);
-        REQUIRE(normalResult.values()->getFlag("--verbose"_el));
+        REQUIRE(normalResult.values()->getFlag(cVerboseOption));
 
         auto callbackCalled = false;
         auto specialOptions = makeOptionsWithGlobalAndModuleOptions("special"_el);
         specialOptions->optionModules().front()->setPreParsingFn(
             [specialOptions, &callbackCalled](OptionModulePtr) -> void {
                 callbackCalled = true;
-                specialOptions->editOption("--verbose"_el).setFlag(OptionFlag::Disabled);
+                specialOptions->editOption(cVerboseOption).setFlag(OptionFlag::Disabled);
             });
 
-        assertError(specialOptions, {"tool"_el, "special"_el, "-v"_el}, OptionErrorReason::UnknownName);
+        assertError(specialOptions, {"tool"_el, "special"_el, cVOption}, OptionErrorReason::UnknownName);
         REQUIRE(callbackCalled);
     }
 
     void testModulePreCallbackErrorContext() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = makeOptionsWithGlobalAndModuleOptions();
         options->optionModules().front()->setPreParsingFn([](OptionModulePtr) -> void {
             auto context = OptionErrorContext{};
@@ -965,20 +1129,22 @@ public:
     }
 
     void testOptionSetPreCallbackCanEditOptions() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--late"_el).setType(OptionType::Flag).setFlag(OptionFlag::Disabled);
+        options->addOption(cLateOption).setType(OptionType::Flag).setFlag(OptionFlag::Disabled);
         options->optionSets().front()->setPreParsingFn(
-            [options](OptionSetPtr) -> void { options->editOption("--late"_el).clearFlag(OptionFlag::Disabled); });
+            [options](OptionSetPtr) -> void { options->editOption(cLateOption).clearFlag(OptionFlag::Disabled); });
 
-        const auto result = parse(options, {"tool"_el, "--late"_el});
+        const auto result = parse(options, {"tool"_el, cLateOption});
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values()->getFlag("--late"_el));
+        REQUIRE(result.values()->getFlag(cLateOption));
     }
 
     void testCallbackOrder() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto calls = std::vector<StringEditor>{};
         auto options = Options::create();
-        options->addOption({"-v"_el, "--verbose"_el}).setType(OptionType::Flag);
+        options->addOption({cVOption, cVerboseOption}).setType(OptionType::Flag);
         const auto rootSet = options->optionSets().front();
         rootSet->setPreParsingFn([&calls](OptionSetPtr) -> void { calls.emplace_back("root-pre"_el); });
         rootSet->setPostParsingFn([&calls](OptionValuesPtr) -> void { calls.emplace_back("root-post"_el); });
@@ -986,13 +1152,13 @@ public:
         const auto module = OptionModule::create("run"_el);
         module->setPreParsingFn([&calls](OptionModulePtr) -> void { calls.emplace_back("module-pre"_el); });
         module->setPostParsingFn([&calls](OptionValuesPtr) -> void { calls.emplace_back("module-post"_el); });
-        module->addOption("--force"_el).setType(OptionType::Flag);
+        module->addOption(cForceOption).setType(OptionType::Flag);
         const auto moduleSet = module->optionSets().front();
         moduleSet->setPreParsingFn([&calls](OptionSetPtr) -> void { calls.emplace_back("module-set-pre"_el); });
         moduleSet->setPostParsingFn([&calls](OptionValuesPtr) -> void { calls.emplace_back("module-set-post"_el); });
         options->addModule(module);
 
-        const auto result = parse(options, {"tool"_el, "run"_el, "--verbose"_el, "--force"_el});
+        const auto result = parse(options, {"tool"_el, "run"_el, cVerboseOption, cForceOption});
         REQUIRE(result.status() == OptionResultStatus::Success);
         REQUIRE_EQUAL(calls.size(), 6U);
         REQUIRE(calls.at(0) == "module-pre"_el);
@@ -1004,6 +1170,7 @@ public:
     }
 
     void testValidators() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto parsedValidatorCalled = false;
         auto parsedValidatorGotValue = false;
         auto parsedValidatorGotValues = false;
@@ -1016,24 +1183,24 @@ public:
         auto skippedOptionalValidatorCalled = false;
         auto skippedDisabledValidatorCalled = false;
         auto options = Options::create();
-        options->addOption("--name"_el)
+        options->addOption(cNameOption)
             .setType(OptionType::Text)
             .setValidateFn(
                 [&parsedValidatorCalled, &parsedValidatorGotValue, &parsedValidatorGotValues, &parsedValidatorGotIndex](
                     OptionValuePtr value, OptionValuesPtr values) -> void {
                     parsedValidatorCalled = true;
-                    parsedValidatorGotValue = value == values->value("--name"_el);
+                    parsedValidatorGotValue = value == values->value(cNameOption);
                     parsedValidatorGotValues =
-                        values->getText("--name"_el) == "Ada"_el && values->getText("--mode"_el) == "auto"_el;
+                        values->getText(cNameOption) == "Ada"_el && values->getText(cModeOption) == "auto"_el;
                     parsedValidatorGotIndex = value->argumentIndex() == ArgumentIndex{2U};
                 });
-        options->addOption({"-v"_el, "--verbose"_el})
+        options->addOption({cVOption, cVerboseOption})
             .setType(OptionType::Flag)
             .setValidateFn([&parsedValidatorGotFlagCount](OptionValuePtr value, OptionValuesPtr values) -> void {
                 parsedValidatorGotFlagCount = value->flagCount() == ArgumentCount{2U} &&
-                    values->getFlagCount("--verbose"_el) == ArgumentCount{2U};
+                    values->getFlagCount(cVerboseOption) == ArgumentCount{2U};
             });
-        options->addOption("--mode"_el)
+        options->addOption(cModeOption)
             .setType(OptionType::Text)
             .setDefaultValue(StringEditor{"auto"_el})
             .setValidateFn(
@@ -1042,8 +1209,8 @@ public:
                     &defaultValidatorGotValues,
                     &defaultValidatorGotNoIndex](OptionValuePtr value, OptionValuesPtr values) -> void {
                     defaultValidatorCalled = true;
-                    defaultValidatorGotValue = value == values->value("--mode"_el);
-                    defaultValidatorGotValues = values->getText("--mode"_el) == "auto"_el;
+                    defaultValidatorGotValue = value == values->value(cModeOption);
+                    defaultValidatorGotValues = values->getText(cModeOption) == "auto"_el;
                     defaultValidatorGotNoIndex = value->argumentIndex().isNoIndex();
                 });
         options->addOption("--optional"_el)
@@ -1059,7 +1226,7 @@ public:
                 skippedDisabledValidatorCalled = true;
             });
 
-        const auto result = parse(options, {"tool"_el, "--name"_el, "Ada"_el, "-vv"_el});
+        const auto result = parse(options, {"tool"_el, cNameOption, "Ada"_el, "-vv"_el});
         REQUIRE(result.status() == OptionResultStatus::Success);
         REQUIRE(parsedValidatorCalled);
         REQUIRE(parsedValidatorGotValue);
@@ -1075,10 +1242,11 @@ public:
     }
 
     void testValidatorErrorContext() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto postCalled = false;
         auto options = Options::create();
         auto module = OptionModule::create("run"_el);
-        const auto editor = module->addOption("--name"_el)
+        const auto editor = module->addOption(cNameOption)
                                 .setType(OptionType::Text)
                                 .setValidateFn([](OptionValuePtr, OptionValuesPtr) -> void {
                                     auto context = OptionErrorContext{};
@@ -1090,7 +1258,7 @@ public:
         optionSet->setPostParsingFn([&postCalled](OptionValuesPtr) -> void { postCalled = true; });
         options->addModule(module);
 
-        const auto result = parse(options, {"tool"_el, "run"_el, "--name"_el, "Ada"_el});
+        const auto result = parse(options, {"tool"_el, "run"_el, cNameOption, "Ada"_el});
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext().has_value());
         REQUIRE(result.errorContext()->reason() == OptionErrorReason::ValidationError);
@@ -1102,23 +1270,24 @@ public:
     }
 
     void testCallbackErrorDefaults() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto options = Options::create();
-        options->addOption("--name"_el).setType(OptionType::Text);
+        options->addOption(cNameOption).setType(OptionType::Text);
         const auto optionSet = options->optionSets().front();
         optionSet->setPreParsingFn([](OptionSetPtr) -> void { throw OptionError{OptionErrorContext{}}; });
 
-        auto result = parse(options, {"tool"_el, "--name"_el, "Ada"_el});
+        auto result = parse(options, {"tool"_el, cNameOption, "Ada"_el});
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext().has_value());
         REQUIRE(result.errorContext()->reason() == OptionErrorReason::None);
         REQUIRE(result.errorContext()->optionSet() == optionSet);
 
         options = Options::create();
-        options->addOption("--name"_el).setType(OptionType::Text);
+        options->addOption(cNameOption).setType(OptionType::Text);
         const auto postOptionSet = options->optionSets().front();
         postOptionSet->setPostParsingFn([](OptionValuesPtr) -> void { throw OptionError{OptionErrorContext{}}; });
 
-        result = parse(options, {"tool"_el, "--name"_el, "Ada"_el});
+        result = parse(options, {"tool"_el, cNameOption, "Ada"_el});
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext().has_value());
         REQUIRE(result.errorContext()->reason() == OptionErrorReason::ValidationError);
@@ -1126,24 +1295,25 @@ public:
     }
 
     void testNoCallbacksForHelpAndNoPostAfterErrors() {
+        auto applicationScope = ApplicationTestScope<>{};
         auto callbackCalled = false;
         auto postCalled = false;
         auto validatorCalled = false;
         auto options = Options::create();
-        options->addOption("--name"_el)
+        options->addOption(cNameOption)
             .setType(OptionType::Text)
             .setValidateFn([&validatorCalled](OptionValuePtr, OptionValuesPtr) -> void { validatorCalled = true; });
         const auto optionSet = options->optionSets().front();
         optionSet->setPreParsingFn([&callbackCalled](OptionSetPtr) -> void { callbackCalled = true; });
         optionSet->setPostParsingFn([&postCalled](OptionValuesPtr) -> void { postCalled = true; });
 
-        auto result = parse(options, {"tool"_el, "--help"_el});
+        auto result = parse(options, {"tool"_el, cHelpOption});
         REQUIRE(result.status() == OptionResultStatus::DisplayHelp);
         REQUIRE_FALSE(callbackCalled);
         REQUIRE_FALSE(postCalled);
         REQUIRE_FALSE(validatorCalled);
 
-        result = parse(options, {"tool"_el, "--name"_el});
+        result = parse(options, {"tool"_el, cNameOption});
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(callbackCalled);
         REQUIRE_FALSE(postCalled);
@@ -1151,9 +1321,10 @@ public:
     }
 
     void testParseOrThrowReportsValidationErrors() {
+        auto applicationScope = ApplicationTestScope<>{};
         const auto streamRedirect = redirectStandardStreams();
         auto options = Options::create();
-        options->addOption("--name"_el)
+        options->addOption(cNameOption)
             .setType(OptionType::Text)
             .setValidateFn([](OptionValuePtr, OptionValuesPtr) -> void {
                 auto context = OptionErrorContext{};
@@ -1163,10 +1334,10 @@ public:
 
         auto manager = OptionManager{options};
 
-        auto arguments = makeArgs({"tool"_el, "--name"_el, "Ada"_el});
+        auto arguments = makeArgs({"tool"_el, cNameOption, "Ada"_el});
         REQUIRE_THROWS_AS(OptionError, manager.parseOrThrow(arguments));
 
-        arguments = makeArgs({"tool"_el, "--name"_el, "Ada"_el});
+        arguments = makeArgs({"tool"_el, cNameOption, "Ada"_el});
         const auto result = manager.parse(arguments);
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext().has_value());
@@ -1182,7 +1353,7 @@ private:
 
     [[nodiscard]] static auto makeArgs(std::initializer_list<String> args) -> CommandLineArguments {
         auto result = CommandLineArguments{};
-        result.reserve(ItemCount{args.size()});
+        result.reserve(ItemCount::fromInteger(args.size()));
         for (const auto &arg : args) {
             result.append(arg.copy());
         }
@@ -1219,19 +1390,19 @@ private:
 
     [[nodiscard]] static auto makeOptionsWithTextOption() -> OptionsPtr {
         auto options = Options::create();
-        options->addOption("--name"_el).setType(OptionType::Text);
+        options->addOption(cNameOption).setType(OptionType::Text);
         return options;
     }
 
     [[nodiscard]] static auto makeOptionsWithIntegerOption() -> OptionsPtr {
         auto options = Options::create();
-        options->addOption("--count"_el).setType(OptionType::Integer);
+        options->addOption(cCountOption).setType(OptionType::Integer);
         return options;
     }
 
     [[nodiscard]] static auto makeOptionsWithChoiceOption() -> OptionsPtr {
         auto options = Options::create();
-        options->addOption("--mode"_el)
+        options->addOption(cModeOption)
             .setType(OptionType::Choice)
             .setChoices(OptionChoices::create({"fast"_el, "safe"_el}));
         return options;
@@ -1239,13 +1410,13 @@ private:
 
     [[nodiscard]] static auto makeOptionsWithTextListOption() -> OptionsPtr {
         auto options = Options::create();
-        options->addOption("--include"_el).setType(OptionType::Text).setMaximum(ArgumentCount{2U});
+        options->addOption(cIncludeOption).setType(OptionType::Text).setMaximum(ArgumentCount{2U});
         return options;
     }
 
     [[nodiscard]] static auto makeDisabledOptions() -> OptionsPtr {
         auto options = Options::create();
-        options->addOption("--off"_el).setType(OptionType::Flag).setFlag(OptionFlag::Disabled);
+        options->addOption(cOffOption).setType(OptionType::Flag).setFlag(OptionFlag::Disabled);
         return options;
     }
 
@@ -1258,17 +1429,17 @@ private:
 
     [[nodiscard]] static auto makeOptionsWithGlobalAndModuleOptions(String moduleName = "remove"_el) -> OptionsPtr {
         auto options = Options::create();
-        options->addOption({"-v"_el, "--verbose"_el}).setType(OptionType::Flag);
+        options->addOption({cVOption, cVerboseOption}).setType(OptionType::Flag);
         auto module = OptionModule::create(moduleName);
-        module->addOption("--force"_el).setType(OptionType::Flag);
-        module->addOption("--count"_el).setType(OptionType::Integer);
+        module->addOption(cForceOption).setType(OptionType::Flag);
+        module->addOption(cCountOption).setType(OptionType::Integer);
         options->addModule(module);
         return options;
     }
 
     [[nodiscard]] static auto makeOptionsWithDuplicateModuleNames() -> OptionsPtr {
         auto options = Options::create();
-        options->addOption("--force"_el).setType(OptionType::Flag);
+        options->addOption(cForceOption).setType(OptionType::Flag);
         auto module = OptionModule::create("remove"_el);
         module->addOption("--FORCE"_el).setType(OptionType::Flag);
         options->addModule(module);
@@ -1277,13 +1448,13 @@ private:
 
     [[nodiscard]] static auto makeOptionsWithDisabledGlobalOption() -> OptionsPtr {
         auto options = makeOptionsWithGlobalAndModuleOptions();
-        options->editOption("--verbose"_el).setFlag(OptionFlag::Disabled);
+        options->editOption(cVerboseOption).setFlag(OptionFlag::Disabled);
         return options;
     }
 
     [[nodiscard]] static auto makeOptionsWithDisabledModuleOption() -> OptionsPtr {
         auto options = makeOptionsWithGlobalAndModuleOptions();
-        options->optionModules().front()->editOption("--force"_el).setFlag(OptionFlag::Disabled);
+        options->optionModules().front()->editOption(cForceOption).setFlag(OptionFlag::Disabled);
         return options;
     }
 };

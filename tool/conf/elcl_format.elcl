@@ -1,0 +1,49 @@
+# Copy this file to a directory containing ELCL files, or select it with --config.
+# The nearest elcl_format.elcl in each input file's ancestors supplies its format.
+
+----[ Elcl Format . Base ]--------------------------------------------------------------------------------------------
+Maximum Line Length          : 118
+Value Wrapping               : "next_line_if_fits"
+
+------[ . Names ]----
+Section Case                 : "title"
+Section Separator            : "space"
+Value Case                   : "title"
+Value Separator              : "space"
+Text Name Case               : "keep"
+Text Identifier Case         : "keep"
+
+------[ . Section ]----
+Indent                       : 4
+Suffix                       : "infinite"
+Star                         : Yes
+Space After Open             : Yes
+Space Before Close           : Yes
+Space Around Dot             : Yes
+
+------[ . Vector ]----
+Style                        : "keep"
+Spaces After Star            : 1
+
+------[ . Matrix ]----
+Style                        : "keep"
+
+------[ . Separator ]----
+Character                    : ":"
+Position Mode                : "column"
+Position                     : 29
+Value Position Mode          : "spaces"
+Value Position               : 1
+
+------[ . Indentation ]----
+Style                        : "spaces"
+Count                        : 4
+
+# Explicitly opt in to identifier normalization in selected text values.
+# Adjust this path selection to the schema fields in your own documents.
+---*[ Elcl Format . Rules ]*------------------------------------------------------------------------------------------
+------[ . Selector ]----
+Paths                        : "schema.**.type"
+------[ . Style . Names ]----
+Text Identifier Case         : "title"
+Text Identifier Separator    : "space"

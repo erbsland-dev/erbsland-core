@@ -9,6 +9,7 @@
 #include "application_data/ApplicationOptionsData.hpp"
 #include "application_data/ApplicationPartsData.hpp"
 #include "application_data/ApplicationRandomData.hpp"
+#include "application_data/ApplicationRegExData.hpp"
 #include "application_data/ApplicationResourceData.hpp"
 #include "application_data/ApplicationRuntimeData.hpp"
 #include "application_data/ApplicationSystemData.hpp"
@@ -62,6 +63,10 @@ auto ApplicationDataImpl::resources() const noexcept -> const ApplicationResourc
 
 auto ApplicationDataImpl::system() const noexcept -> const ApplicationSystemDataAccessor & {
     return _system;
+}
+
+auto ApplicationDataImpl::regularExpressions() const noexcept -> const ApplicationRegExDataAccessor & {
+    return _regularExpressions;
 }
 
 }

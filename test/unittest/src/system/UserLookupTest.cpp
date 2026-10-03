@@ -3,11 +3,11 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/system/UserLookup.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParameterFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/UserLookup.hpp>
 
 #include <memory>
 
@@ -90,10 +90,10 @@ public:
     void testRejectsEmptyIdentifiers() {
         auto lookup = el::system::UserLookup{std::make_unique<TestBackend>()};
 
-        REQUIRE_THROWS_AS(el::err::ParameterError, lookup.userNameForId(el::system::UserId{}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, lookup.groupNameForId(el::system::GroupId{}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, lookup.userIdForName(el::system::UserName{}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, lookup.groupIdForName(el::system::GroupName{}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, lookup.userNameForId(el::system::UserId{}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, lookup.groupNameForId(el::system::GroupId{}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, lookup.userIdForName(el::system::UserName{}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, lookup.groupIdForName(el::system::GroupName{}));
     }
 
     void testNameFormattingWithDomain() {

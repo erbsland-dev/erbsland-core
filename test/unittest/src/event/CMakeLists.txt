@@ -4,9 +4,14 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core-unittest PRIVATE
+        BindEventTest.cpp
+        BindWeakEventTest.cpp
         EventBackendTest.cpp
+        EventFatalFailureTest.cpp
         EventLoopDriverTest.cpp
+        EventLoopOptionsTest.cpp
         EventLoopTest.cpp
+        EventQueueTerminationTest.cpp
         EventRegistryTest.cpp
         EventSourceTest.cpp
         EventSubscriptionTest.cpp

@@ -8,25 +8,26 @@
 
 #include "../compression/ByteDecompressor.hpp"
 #include "../compression/CompressionError.hpp"
+#include "../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../text/Literals.hpp"
 #include "../text/u8/impl/U8StringLiteralFactory.hpp"
 
-#include <string_view>
-
 namespace erbsland::resource {
 
+using namespace mem;
+using namespace text;
 using namespace text::literals;
 
 ResourceManager::ResourceManager() = default;
 
 ResourceManager::~ResourceManager() = default;
 
-auto ResourceManager::contains(const text::String &identifier, const text::String &path) const -> bool {
+auto ResourceManager::contains(const String &identifier, const String &path) const -> bool {
     return data().find(identifier, path) != nullptr;
 }
 
-auto ResourceManager::getStoredData(const text::String &identifier, const text::String &path) const
-    -> std::optional<mem::ConstByteSpan> {
+auto ResourceManager::getStoredData(const String &identifier, const String &path) const
+    -> std::optional<ConstByteSpan> {
     const auto state = data().find(identifier, path);
     if (state == nullptr) {
         return std::nullopt;
@@ -34,8 +35,7 @@ auto ResourceManager::getStoredData(const text::String &identifier, const text::
     return state->entry.storedData.span();
 }
 
-auto ResourceManager::getStoredDataOrThrow(const text::String &identifier, const text::String &path) const
-    -> mem::ConstByteSpan {
+auto ResourceManager::getStoredDataOrThrow(const String &identifier, const String &path) const -> ConstByteSpan {
     const auto result = getStoredData(identifier, path);
     if (!result.has_value()) {
         throw ResourceError{ResourceErrorCategory::NotFound, "Compiled resource was not found."_el};
@@ -43,8 +43,7 @@ auto ResourceManager::getStoredDataOrThrow(const text::String &identifier, const
     return *result;
 }
 
-auto ResourceManager::getData(const text::String &identifier, const text::String &path) const
-    -> std::optional<mem::ByteBlock> {
+auto ResourceManager::getData(const String &identifier, const String &path) const -> std::optional<ByteBlock> {
     const auto state = data().find(identifier, path);
     if (state == nullptr) {
         return std::nullopt;
@@ -70,7 +69,7 @@ auto ResourceManager::getData(const text::String &identifier, const text::String
     return state->data;
 }
 
-auto ResourceManager::getDataOrThrow(const text::String &identifier, const text::String &path) const -> mem::ByteBlock {
+auto ResourceManager::getDataOrThrow(const String &identifier, const String &path) const -> ByteBlock {
     const auto state = data().find(identifier, path);
     if (state == nullptr) {
         throw ResourceError{ResourceErrorCategory::NotFound, "Compiled resource was not found."_el};
@@ -82,8 +81,7 @@ auto ResourceManager::getDataOrThrow(const text::String &identifier, const text:
     return *result;
 }
 
-auto ResourceManager::getText(const text::String &identifier, const text::String &path) const
-    -> std::optional<text::String> {
+auto ResourceManager::getText(const String &identifier, const String &path) const -> std::optional<String> {
     const auto state = data().find(identifier, path);
     if (state == nullptr) {
         return std::nullopt;
@@ -94,12 +92,12 @@ auto ResourceManager::getText(const text::String &identifier, const text::String
     }
     if (!state->entry.compressionAlgorithm.has_value()) {
         if (state->entry.storedData.isEmpty()) {
-            state->text = text::String{};
+            state->text = String{};
             return state->text;
         }
         const auto storedData = state->entry.storedData.span();
         const auto *characters = reinterpret_cast<const char *>(storedData.data());
-        state->text = text::String{text::impl::createU8StringLiteral(characters, storedData.size())};
+        state->text = String{text::impl::createU8StringLiteral(characters, storedData.size())};
         return state->text;
     }
     try {
@@ -109,15 +107,14 @@ auto ResourceManager::getText(const text::String &identifier, const text::String
         const auto decompressor = compression::ByteDecompressor{
             *state->entry.compressionAlgorithm, compression::CompressionFormat::Raw, options};
         const auto bytes = decompressor.decompress(state->entry.storedData);
-        const auto span = bytes.span();
-        state->text = text::String{std::string_view{reinterpret_cast<const char *>(span.data()), span.size()}};
+        state->text = text::impl::UnsafeU8StringBuffer{bytes.span()}.takeString();
     } catch (const compression::CompressionError &) {
         return std::nullopt;
     }
     return state->text;
 }
 
-auto ResourceManager::getTextOrThrow(const text::String &identifier, const text::String &path) const -> text::String {
+auto ResourceManager::getTextOrThrow(const String &identifier, const String &path) const -> String {
     const auto state = data().find(identifier, path);
     if (state == nullptr) {
         throw ResourceError{ResourceErrorCategory::NotFound, "Compiled resource was not found."_el};
@@ -129,8 +126,7 @@ auto ResourceManager::getTextOrThrow(const text::String &identifier, const text:
     return *result;
 }
 
-auto ResourceManager::getInfo(const text::String &identifier, const text::String &path) const
-    -> std::optional<ResourceInfo> {
+auto ResourceManager::getInfo(const String &identifier, const String &path) const -> std::optional<ResourceInfo> {
     const auto state = data().find(identifier, path);
     if (state == nullptr) {
         return std::nullopt;
@@ -145,7 +141,7 @@ auto ResourceManager::getInfo(const text::String &identifier, const text::String
         entry.encrypted};
 }
 
-auto ResourceManager::getInfoOrThrow(const text::String &identifier, const text::String &path) const -> ResourceInfo {
+auto ResourceManager::getInfoOrThrow(const String &identifier, const String &path) const -> ResourceInfo {
     const auto result = getInfo(identifier, path);
     if (!result.has_value()) {
         throw ResourceError{ResourceErrorCategory::NotFound, "Compiled resource was not found."_el};

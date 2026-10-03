@@ -3,8 +3,12 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/text/placeholder/Filter.hpp>
-#include <erbsland/text/placeholder/Source.hpp>
+#include <erbsland/placeholder/Filter.hpp>
+#include <erbsland/placeholder/Source.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/StringList.hpp>
 
 namespace demo {
 
@@ -26,7 +30,7 @@ public:
 
     [[nodiscard]] auto apply(const el::String &, const el::String &parameter, const el::String &value)
         -> el::String override {
-        return el::String::fromJoined({"["_el, parameter, "] "_el, value});
+        return el::join("["_el, parameter, "] "_el, value);
     }
 };
 

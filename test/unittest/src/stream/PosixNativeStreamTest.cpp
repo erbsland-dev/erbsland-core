@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteArray.hpp>
+#include <erbsland/ByteArray.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/stream/impl/PosixNativeStream.hpp>
-#include <erbsland/stream/StreamError.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringEditor.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <fcntl.h>
 #include <unistd.h>
@@ -20,8 +20,8 @@
 using el::mem::Byte;
 using el::stream::StreamError;
 using el::stream::StreamPositionOrigin;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteOffset;
 using namespace el::text::literals;
 
@@ -92,13 +92,14 @@ public:
         auto stream = el::stream::impl::PosixNativeStream{
             pipe.readDescriptor(), el::stream::impl::NativeStreamOwnership::Borrowed};
         REQUIRE_FALSE(stream.supportsPositioning());
+        REQUIRE(stream.initialFileSize().isInfinite());
         const auto expected = std::string{"Read text"};
         const auto writeCount = ::write(pipe.writeDescriptor(), expected.data(), expected.size());
         REQUIRE_EQUAL(writeCount, static_cast<ssize_t>(expected.size()));
 
         auto buffer = std::array<el::mem::Byte, 32>{};
         const auto readCount = stream.read(el::mem::ByteSpan{buffer});
-        REQUIRE_EQUAL(readCount, ByteLength::fromSizeT(expected.size()));
+        REQUIRE_EQUAL(readCount, ByteCount::fromSizeT(expected.size()));
 
         auto actual = std::string{};
         for (auto i = std::size_t{0}; i < readCount.toSizeT(); ++i) {
@@ -149,7 +150,7 @@ public:
         REQUIRE_GREATER_EQUAL(ownedDescriptor, 0);
         auto stream =
             el::stream::impl::PosixNativeStream{ownedDescriptor, el::stream::impl::NativeStreamOwnership::Owned};
-        auto future = std::async(std::launch::async, [&stream]() -> ByteLength {
+        auto future = std::async(std::launch::async, [&stream]() -> ByteCount {
             auto buffer = std::array<el::mem::Byte, 8>{};
             return stream.read(el::mem::ByteSpan{buffer});
         });
@@ -175,11 +176,13 @@ public:
         auto stream =
             el::stream::impl::PosixNativeStream{fileDescriptor, el::stream::impl::NativeStreamOwnership::Owned};
         REQUIRE(stream.fileSize().isZero());
+        REQUIRE(stream.initialFileSize().isZero());
 
         const auto text = std::string{"Size"};
         stream.writeBytes(std::span<const char>{text.data(), text.size()});
 
-        REQUIRE_EQUAL(stream.fileSize(), ByteLength::fromSizeT(text.size()));
+        REQUIRE_EQUAL(stream.fileSize(), ByteCount::fromSizeT(text.size()));
+        REQUIRE(stream.initialFileSize().isZero());
         stream.close();
         std::filesystem::remove(path);
     }
@@ -205,6 +208,7 @@ public:
         auto append =
             el::stream::impl::PosixNativeStream{appendDescriptor, el::stream::impl::NativeStreamOwnership::Owned};
         REQUIRE_FALSE(append.supportsPositioning());
+        REQUIRE_EQUAL(append.initialFileSize(), ByteCount{4U});
         REQUIRE_THROWS_AS(StreamError, append.position());
         append.close();
         std::filesystem::remove(path);

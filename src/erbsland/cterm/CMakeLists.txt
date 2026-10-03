@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
+        Backend.cpp
         Backend.hpp
         Backend_fwd.hpp
         Bitmap.cpp
@@ -53,6 +54,7 @@ target_sources(erbsland-core PRIVATE
         Buffer_fwd.hpp
         BufferConstRefView.hpp
         BufferDrawOptions.hpp
+        BufferRenderOptions.hpp
         BufferResizeMode.hpp
         BufferView.cpp
         BufferView.hpp
@@ -108,6 +110,7 @@ target_sources(erbsland-core PRIVATE
         ReadableBuffer.cpp
         ReadableBuffer.hpp
         ReadableBuffer_fwd.hpp
+        ReadableBuffer_render.cpp
         ReadLine.cpp
         ReadLine.hpp
         ReadLine_fwd.hpp
@@ -121,6 +124,7 @@ target_sources(erbsland-core PRIVATE
         ReadSecret_fwd.hpp
         RemappedBuffer.cpp
         RemappedBuffer.hpp
+        RenderFormat.hpp
         SimpleBlockCombinationStyle.cpp
         SimpleBlockCombinationStyle.hpp
         TabOverflowBehavior.hpp
@@ -140,6 +144,13 @@ target_sources(erbsland-core PRIVATE
         TerminalDocumentStyleRule.hpp
         TerminalDocumentStyleSelector.cpp
         TerminalDocumentStyleSelector.hpp
+        TerminalEmulation.cpp
+        TerminalEmulation.hpp
+        TerminalEmulation_commands.cpp
+        TerminalEmulation_parse.cpp
+        TerminalEmulationOptions.cpp
+        TerminalEmulationOptions.hpp
+        TerminalError.hpp
         TerminalFlag.hpp
         TerminalFlags.hpp
         TerminalOutputGuard.hpp

@@ -8,7 +8,7 @@ namespace erbsland::util::impl {
 
 /// Throw an out-of-range error without introducing an exception-header dependency into container templates.
 /// @param reason The reason for the error.
-/// @throws err::OutOfRangeError Always.
+/// @throws err::OutOfRangeError Always; reports the supplied bounds error.
 /// @tested{ListTest}
 [[noreturn]] void throwOutOfRange(std::string_view reason);
 

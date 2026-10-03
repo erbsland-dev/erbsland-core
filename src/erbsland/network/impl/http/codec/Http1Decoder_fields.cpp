@@ -13,6 +13,7 @@
 #include "../../../../text/CharSet.hpp"
 #include "../../../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../../../text/Literals.hpp"
+#include "../../../../unit/ByteCount.hpp"
 #include "../../../../unit/ByteIndex.hpp"
 #include "../../../../unit/ByteRange.hpp"
 
@@ -20,17 +21,18 @@
 #include <cstring>
 
 namespace erbsland::network::impl {
+
+using namespace unit;
 using namespace text;
 using namespace text::literals;
 
-auto Http1Decoder::takeLine(const unit::ByteLength limit, const Http1FailureReason limitReason)
-    -> std::optional<text::String> {
+auto Http1Decoder::takeLine(const ByteCount limit, const Http1FailureReason limitReason) -> std::optional<String> {
     auto access = mem::impl::UnsafeRingBufferAccess{_input};
     const auto spans = access.readableSpans();
     const auto syntaxReason = _state == State::StartLine                ? Http1FailureReason::MalformedStartLine
         : (_state == State::ChunkLine || _state == State::ChunkDataEnd) ? Http1FailureReason::MalformedChunk
                                                                         : Http1FailureReason::MalformedField;
-    auto index = std::size_t{};
+    auto index = ByteCount{};
     auto previousWasCr = false;
     for (const auto span : spans) {
         for (const auto byte : span) {
@@ -39,27 +41,27 @@ auto Http1Decoder::takeLine(const unit::ByteLength limit, const Http1FailureReas
                 if (!previousWasCr) {
                     fail(syntaxReason, "Bare LF is forbidden in HTTP/1.x."_el);
                 }
-                const auto lineLength = index - 1U;
-                if (lineLength > limit.toSizeT()) {
+                const auto lineLength = index - ByteCount::one();
+                if (lineLength > limit) {
                     fail(limitReason, "An HTTP protocol line exceeds its configured limit."_el);
                 }
-                if (lineLength == 0U) {
-                    access.consumeRead(unit::ByteLength{2U});
-                    return text::String{};
+                if (lineLength == ByteCount{0U}) {
+                    access.consumeRead(ByteCount{2U});
+                    return String{};
                 }
-                auto buffer = text::impl::UnsafeU8StringBuffer{unit::ByteLength{lineLength}};
+                auto buffer = text::impl::UnsafeU8StringBuffer{lineLength};
                 auto offset = std::size_t{};
                 auto remaining = lineLength;
                 for (const auto source : spans) {
-                    const auto count = std::min(source.size(), remaining);
-                    if (count > 0U) {
-                        std::memcpy(buffer.data() + offset, source.data(), count);
-                        offset += count;
+                    const auto count = std::min(ByteCount::fromSizeT(source.size()), remaining);
+                    if (count > ByteCount{0U}) {
+                        std::memcpy(buffer.data() + offset, source.data(), count.toSizeT());
+                        offset += count.toSizeT();
                         remaining -= count;
                     }
                 }
-                access.consumeRead(unit::ByteLength{lineLength + 2U});
-                return buffer.takeString(unit::ByteLength{lineLength});
+                access.consumeRead(lineLength + ByteCount{2U});
+                return buffer.takeString(lineLength);
             }
             if (previousWasCr) {
                 fail(syntaxReason, "Bare CR is forbidden in HTTP/1.x."_el);
@@ -74,24 +76,22 @@ auto Http1Decoder::takeLine(const unit::ByteLength limit, const Http1FailureReas
     return {};
 }
 
-void Http1Decoder::parseRequestLine(const text::String &line) {
+void Http1Decoder::parseRequestLine(const String &line) {
     static const auto cSpace = CharSet{U' '};
-    const auto firstSpace = line.findFirstOf(cSpace);
-    if (firstSpace.isNoIndex() || firstSpace.isZero()) {
+    const auto first = line.splitAtFirst(cSpace);
+    if (!first || first->first.isEmpty()) {
         fail(Http1FailureReason::MalformedStartLine, "The HTTP request line is malformed."_el);
     }
-    const auto secondSpace = line.findFirstOf(cSpace, firstSpace.incremented());
-    if (secondSpace.isNoIndex() || secondSpace == firstSpace.incremented() ||
-        secondSpace.incremented() >= unit::ByteIndex::end(line.length()) ||
-        !line.findFirstOf(cSpace, secondSpace.incremented()).isNoIndex()) {
+    const auto second = first->second.splitAtFirst(cSpace);
+    if (!second || second->first.isEmpty() || second->second.isEmpty() || second->second.containsOneOf(cSpace)) {
         fail(Http1FailureReason::MalformedStartLine, "A request line must contain exactly two spaces."_el);
     }
-    _method = HttpMethod::fromString(line.slice(unit::ByteRange{unit::ByteIndex::zero(), firstSpace}));
-    _target = line.slice(unit::ByteRange{firstSpace.incremented(), secondSpace});
+    _method = HttpMethod::fromString(first->first);
+    _target = second->first;
     if (!_method.isValid() || !http_grammar::isRequestTarget(_target)) {
         fail(Http1FailureReason::MalformedStartLine, "The HTTP request control data is malformed."_el);
     }
-    const auto version = line.slice(unit::ByteRange{secondSpace.incremented(), unit::ByteLength::infinite()});
+    const auto &version = second->second;
     if (version == "HTTP/1.0"_el) {
         _version = HttpVersion::Http10;
     } else if (version == "HTTP/1.1"_el) {
@@ -101,12 +101,11 @@ void Http1Decoder::parseRequestLine(const text::String &line) {
     }
 }
 
-void Http1Decoder::parseStatusLine(const text::String &line) {
-    if (line.length().toSizeT() < 13U || line.charAt(unit::ByteIndex{8U}) != U' ' ||
-        line.charAt(unit::ByteIndex{12U}) != U' ') {
+void Http1Decoder::parseStatusLine(const String &line) {
+    if (line.length() < ByteCount{13U} || line.charAt(ByteIndex{8U}) != U' ' || line.charAt(ByteIndex{12U}) != U' ') {
         fail(Http1FailureReason::MalformedStartLine, "The HTTP status line is malformed."_el);
     }
-    const auto version = line.slice(unit::ByteRange{unit::ByteIndex::zero(), unit::ByteIndex{8U}});
+    const auto version = line.slice(ByteRange{ByteIndex::zero(), ByteIndex{8U}});
     if (version == "HTTP/1.0"_el) {
         _version = HttpVersion::Http10;
     } else if (version == "HTTP/1.1"_el) {
@@ -114,14 +113,14 @@ void Http1Decoder::parseStatusLine(const text::String &line) {
     } else {
         fail(Http1FailureReason::UnsupportedVersion, "The HTTP version is unsupported."_el);
     }
-    _status = HttpStatus::fromString(line.slice(unit::ByteRange{unit::ByteIndex{9U}, unit::ByteIndex{12U}}));
-    _reason = line.slice(unit::ByteRange{unit::ByteIndex{13U}, unit::ByteLength::infinite()});
+    _status = HttpStatus::fromString(line.slice({ByteIndex{9U}, ByteIndex{12U}}));
+    _reason = line.slice(ByteRange{ByteIndex{13U}, ByteCount::infinite()});
     if (!_status.isValid() || !http_grammar::isReasonPhrase(_reason)) {
         fail(Http1FailureReason::MalformedStartLine, "The HTTP response control data is malformed."_el);
     }
 }
 
-auto Http1Decoder::parseFieldLine(const text::String &line, const bool trailer) -> HttpField {
+auto Http1Decoder::parseFieldLine(const String &line, const bool trailer) -> HttpField {
     static const auto cColon = CharSet{U':'};
     static const auto cOws = CharSet{U' ', U'\t'};
     const auto limits = trailer ? _limits.trailerLimits() : _limits.headerLimits();
@@ -130,20 +129,20 @@ auto Http1Decoder::parseFieldLine(const text::String &line, const bool trailer) 
     if (line.isEmpty() || line.startsWith(" "_el) || line.startsWith("\t"_el)) {
         fail(Http1FailureReason::MalformedField, "Obsolete folded HTTP fields are forbidden."_el);
     }
-    const auto colon = line.findFirstOf(cColon);
-    if (colon.isNoIndex() || colon.isZero() || line.charAt(colon.retreated(unit::ByteLength::one())) == U' ' ||
-        line.charAt(colon.retreated(unit::ByteLength::one())) == U'\t') {
+    const auto parts = line.splitAtFirst(cColon);
+    if (!parts || parts->first.isEmpty() || parts->first.charAt(StringSide::Back) == U' ' ||
+        parts->first.charAt(StringSide::Back) == U'\t') {
         fail(Http1FailureReason::MalformedField, "An HTTP field line has an invalid colon delimiter."_el);
     }
-    auto nameText = line.slice(unit::ByteRange{unit::ByteIndex::zero(), colon});
-    auto value = line.slice(unit::ByteRange{colon.incremented(), unit::ByteLength::infinite()}).trimmed(cOws);
+    auto nameText = parts->first;
+    auto value = parts->second.trimmed(cOws);
     if (nameText.length() > limits.maximumNameLength() || value.length() > limits.maximumValueLength()) {
         fail(limitReason, "An HTTP field component exceeds its configured limit."_el);
     }
     if (_fields.count().toSizeT() >= limits.maximumFieldCount().toSizeT()) {
         fail(limitReason, "An HTTP field section contains too many fields."_el);
     }
-    const auto canonicalLength = nameText.length() + unit::ByteLength{2U} + value.length() + unit::ByteLength{2U};
+    const auto canonicalLength = nameText.length() + ByteCount{2U} + value.length() + ByteCount{2U};
     const auto maximumAggregate = limits.maximumAggregateLength().toSizeT();
     if (_fieldBytes.toSizeT() > maximumAggregate ||
         canonicalLength.toSizeT() > maximumAggregate - _fieldBytes.toSizeT()) {
@@ -171,10 +170,10 @@ void Http1Decoder::selectFraming(const HttpHeaders &headers) {
     try {
         const auto parser = Http1FramingParser{headers};
         if (const auto value = parser.contentLength()) {
-            if (*value > _limits.maximumBodyLength().toSizeT()) {
+            if (*value > _limits.maximumBodyLength()) {
                 fail(Http1FailureReason::BodyLimitExceeded, "The declared HTTP body exceeds its configured limit."_el);
             }
-            _contentLength = unit::ByteLength{*value};
+            _contentLength = *value;
         } else {
             _contentLength.reset();
         }
@@ -246,24 +245,23 @@ void Http1Decoder::selectResponseFraming() {
     }
 }
 
-void Http1Decoder::accountBody(const unit::ByteLength length) {
-    if (length.toSizeT() > _limits.maximumBodyLength().toSizeT() -
-            std::min(_bodyDecoded.toSizeT(), _limits.maximumBodyLength().toSizeT())) {
+void Http1Decoder::accountBody(const ByteCount length) {
+    if (length > _limits.maximumBodyLength() - std::min(_bodyDecoded, _limits.maximumBodyLength())) {
         fail(Http1FailureReason::BodyLimitExceeded, "Decoded body data exceeds its configured limit."_el);
     }
     _bodyDecoded += length;
 }
 
-void Http1Decoder::consumeInput(const unit::ByteLength length) {
+void Http1Decoder::consumeInput(const ByteCount length) {
     auto access = mem::impl::UnsafeRingBufferAccess{_input};
     access.consumeRead(length);
 }
 
-auto Http1Decoder::takeInput(const unit::ByteLength length) -> mem::ByteBlock {
+auto Http1Decoder::takeInput(const ByteCount length) -> mem::ByteBlock {
     return _input.read(length);
 }
 
-void Http1Decoder::fail(const Http1FailureReason reason, const text::String &message) {
+void Http1Decoder::fail(const Http1FailureReason reason, const String &message) {
     _state = State::Failed;
     throw Http1ProtocolError{reason, message};
 }

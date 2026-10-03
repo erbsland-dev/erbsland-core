@@ -24,7 +24,7 @@ Run the agent-focused scanner from the project root:
 
 .. code-block:: console
 
-    .venv/bin/python3 utilities/run.py anti_patterns
+    ./erbsland-core-tool anti-patterns
 
 The scanner reports the most severe findings first and limits its output to 20 report rows by default.
 Within one severity, rows representing more findings are shown first.
@@ -32,6 +32,7 @@ Multiple missing API documentation or default-group comment findings in the same
 shows the first location and the number of additional findings.
 Pass one or more project-relative files or directories to narrow the scan, use ``--limit`` to change the row limit, and
 use ``--show-suppressed`` to audit accepted locations.
+``--jobs`` selects 1 to 64 file workers; the default is the bounded logical CPU count.
 Each report ends with paths to the relevant pages in this catalog.
 
 The scanner uses conservative mechanical heuristics.
@@ -58,26 +59,25 @@ A single location can be accepted with an adjacent line comment before the const
     static_cast<void>(operation()); // anti-pattern: allow static_cast_void -- Validation already succeeded.
 
 The marker must use the exact rule identifier and include a non-empty reason.
-For a directory- or file-wide exception, add a rule entry to ``utilities/conf/anti_patterns.elcl``.
+For a directory- or file-wide exception, add a rule entry to ``tool/conf/tools/anti_patterns.elcl``.
 The excluded path is relative to the project root.
-A directory path recursively covers its contents.
+Directory coverage must use an explicit recursive glob such as ``demos/**``.
 Central exceptions require a reason and remain visible with ``--show-suppressed``.
 
 .. code-block:: text
 
-    --*[ Rule . static_cast_void ]*--
-    Excluded Path : "test/unittest/src"
-    Reason        : "The guideline explicitly permits this construct in unit tests."
+    --*[ Anti Patterns . Exception ]*--
+    Path   : "test/unittest/src/**"
+    Rules  : "static_cast_void", "regular_string_literal"
+    Reason : "These test fixtures require the standard-library forms to exercise their boundaries."
 
-If an excluded path contains ``*`` or ``?``, it is matched as a case-sensitive path pattern against each
-project-relative path.
-Wildcards do not cross directory separators; use ``**`` to match any number of directories.
-
-.. code-block:: text
-
-    --*[ Rule . static_only_class ]*--
-    Excluded Path : "src/erbsland/unit/*Unit.hpp"
-    Reason        : "These unit traits define compile-time representation mappings."
+Each exception requires a project-relative ``Path`` glob, a nonempty list of ``Rules`` identifiers, and a nonempty
+``Reason``.
+Group rules by path and explain the constraint for each rule in the shared reason.
+A glob must match the complete project-relative file path; ``*`` does not cross separators and ``**`` may cross
+directories.
+Duplicate path/rule pairs and unknown rule identifiers are errors.
+The catalog entry for ``unnecessary_conversion`` describes policy but has no automated detector.
 
 Anti-Pattern Catalog
 ====================
@@ -95,9 +95,17 @@ Anti-Pattern Catalog
     static_global_object
     static_only_class
     missing_api_documentation
+    api_documentation_on_member_implementation
+    misplaced_unittest_metadata
     missing_default_group_comment
     multiple_types_in_header
     regular_string_literal
+    erbsland_core_containers_strict
+    named_constant_for_repeated_literals
     static_cast_void
     unnecessary_conversion
     nested_namespace
+    multiple_namespaces
+    unnecessary_unit_conversion
+    unnecessary_type_construction
+    namespace_noise

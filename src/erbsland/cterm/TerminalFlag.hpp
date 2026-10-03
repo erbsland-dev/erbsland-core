@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../core/Definitions.hpp"
+
 #include <cstdint>
 
 namespace erbsland::cterm {
@@ -12,6 +14,9 @@ enum class TerminalFlag : uint8_t {
     /// If this flag is set, you must ensure that the `restoreScreen()` method is called when the application
     /// is terminated by a signal. Otherwise, the terminal will not be restored properly.
     NoSignalHandling = 1 << 0,
+    /// Emit ANSI to stdout without native terminal detection, setup, or input.
+    /// Screen dimensions are controlled by the constructor and `Terminal::setSize()`.
+    VirtualTty = 1 << 1,
 };
 
 }

@@ -4,17 +4,20 @@
 
 #include "../TlsProtocolError.hpp"
 
-#include "../../../../core/Application.hpp"
+#include "../../../../core/impl/application_data/ApplicationRandomData.hpp"
+#include "../../../../core/impl/ApplicationDataAccess.hpp"
 #include "../../../../err/Exception.hpp"
-#include "../../../../err/LogicError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../random/Random.hpp"
 #include "../../../../text/Literals.hpp"
-#include "../../../../unit/ByteLength.hpp"
+#include "../../../../unit/ByteCount.hpp"
 
 #include <utility>
 
 namespace erbsland::network::impl {
 
+using namespace mem;
 using namespace text::literals;
 
 TlsServerProtocol::TlsServerProtocol(TlsServerProtocolOptions options) :
@@ -27,13 +30,17 @@ TlsServerProtocol::~TlsServerProtocol() {
 
 void TlsServerProtocol::start() {
     if (_state != TlsServerProtocolState::Inactive) {
-        throw err::LogicError{"The TLS server protocol has already been started."_el};
+        throw err::LogicFailure{"The TLS server protocol has already been started."_el};
     }
     // RFC 8446 Appendix A.2, START -> REC: enter the receive state without generating server secrets or output.
     _state = TlsServerProtocolState::Handshaking;
 }
 
 void TlsServerProtocol::resume() noexcept {
+    if (_checkpoint == TlsServerProtocolCheckpoint::Signature ||
+        _checkpoint == TlsServerProtocolCheckpoint::CertificateValidation) {
+        return;
+    }
     if (!hasCheckpoint() || _state == TlsServerProtocolState::Closed || _state == TlsServerProtocolState::Failed) {
         return;
     }
@@ -43,31 +50,30 @@ void TlsServerProtocol::resume() noexcept {
         try {
             // RFC 8446 Sections 4.1.3 and 4.2.8: create fresh independent server random and X25519 inputs only after
             // application policy accepts the fully parsed ClientHello checkpoint.
-            auto random = core::application().secureRandom().buildByteBlock(unit::ByteLength{32U});
-            auto privateKey = cryptology::KeyAgreementPrivateKey::generate(cryptology::KeyAgreementAlgorithm::X25519);
+            const auto randomData = core::impl::applicationData()->random().get();
+            auto random = randomData->secureRandom().buildByteBlock(unit::ByteCount{32U});
+            auto privateKey = cryptology::KeyAgreementPrivateKey::generate(_clientKey.algorithm());
             resumeWithInputs(std::move(random), std::move(privateKey));
         } catch (const TlsProtocolError &error) {
             fail(error.alert(), error.reason());
-        } catch (const err::Exception &error) {
+        } catch (const err::RuntimeError &error) {
             fail(TlsAlertDescription::InternalError, error.reason());
-        } catch (...) {
-            fail(TlsAlertDescription::InternalError, "TLS server flight generation failed unexpectedly."_el);
         }
         return;
     }
     processRetainedInputNoThrow();
 }
 
-void TlsServerProtocol::resumeWithInputs(mem::ByteBlock random, cryptology::KeyAgreementPrivateKey privateKey) {
+void TlsServerProtocol::resumeWithInputs(ByteBlock random, cryptology::KeyAgreementPrivateKey privateKey) {
     if (_state != TlsServerProtocolState::Handshaking || _handshakeStep != HandshakeStep::ClientHello ||
         _clientHello.isEmpty() || !_cipherSuite.has_value() || !_signatureScheme.has_value()) {
-        throw err::LogicError{"TLS server ClientHello checkpoint is not ready for flight generation."_el};
+        throw err::LogicFailure{"TLS server ClientHello checkpoint is not ready for flight generation."_el};
     }
     buildServerFlight(std::move(random), std::move(privateKey));
     processRetainedInputNoThrow();
 }
 
-auto TlsServerProtocol::takeTransportOutput() -> std::optional<mem::ByteBlock> {
+auto TlsServerProtocol::takeTransportOutput() -> std::optional<ByteBlock> {
     if (_transportOutput.empty()) {
         return {};
     }
@@ -84,7 +90,7 @@ auto TlsServerProtocol::takeTransportOutput() -> std::optional<mem::ByteBlock> {
     return result;
 }
 
-auto TlsServerProtocol::takeApplicationData() -> std::optional<mem::ByteBlock> {
+auto TlsServerProtocol::takeApplicationData() -> std::optional<ByteBlock> {
     if (_applicationInput.empty()) {
         return {};
     }
@@ -94,7 +100,7 @@ auto TlsServerProtocol::takeApplicationData() -> std::optional<mem::ByteBlock> {
     return result;
 }
 
-auto TlsServerProtocol::queueTransport(mem::ByteBlock record) -> bool {
+auto TlsServerProtocol::queueTransport(ByteBlock record) -> bool {
     const auto limit = _options.bufferLimits().send().toSizeT();
     const auto length = record.length().toSizeT();
     if (length > limit || _transportOutputBytes > limit - length) {

@@ -121,8 +121,7 @@ public:
 
     /// Add a regular expression value to the document.
     /// @param namePath The name path of the element.
-    /// @param value The regular expression to add.
-    /// @throws err::ParameterError If `value` is null.
+    /// @param value The regular expression to add. Must not be null.
     void addRegEx(const NamePathLike &namePath, const re::RegExPtr &value) { addValue<re::RegExPtr>(namePath, value); }
 
     /// Reset the builder and discard the current document.

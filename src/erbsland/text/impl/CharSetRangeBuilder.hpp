@@ -11,7 +11,7 @@
 namespace erbsland::text::impl {
 
 /// Builds a character set from ranges supplied in ascending order.
-/// @tested{CharSetTest}
+/// @tested{CharSetTest StringStorageBoundsTest}
 class CharSetRangeBuilder final {
 public:
     /// Create a builder with an upper bound for the final number of ranges.

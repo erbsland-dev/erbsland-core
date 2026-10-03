@@ -20,9 +20,8 @@ auto PlatformErrorDiagnostic::toString() const noexcept -> text::String {
     return _title;
 }
 
-auto PlatformErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
-    -> text::TextDocument {
-    auto builder = err::ErrorDocumentBuilder{_title, {}, displayText};
+auto PlatformErrorDiagnostic::toTextDocument() const -> text::TextDocument {
+    auto builder = err::ErrorDocumentBuilder{_title, {}};
     if (_context != nullptr) {
         auto contextDocument = _context->toTextDocument();
         for (const auto &child : contextDocument.root()->children()) {

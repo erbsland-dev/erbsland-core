@@ -1,20 +1,20 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/text/u8/impl/U8StringLiteralStorage.hpp>
 #include <erbsland/text/u8/impl/U8StringReadTools.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
-#include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
 #include <span>
 #include <string>
 
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteRange;
 
 TESTED_TARGETS(U8StringLiteralStorage)
@@ -41,7 +41,7 @@ public:
 
     void testStorageFromSpanWithCustomRange() {
         constexpr auto text = std::array<char, 7>{'l', 'i', 't', 'e', 'r', 'a', 'l'};
-        const auto range = ByteRange{ByteIndex{2U}, ByteLength{3U}};
+        const auto range = ByteRange{ByteIndex{2U}, ByteCount{3U}};
         const auto storage = el::text::impl::U8StringLiteralStorage{std::span<const char>{text}, range};
 
         REQUIRE_EQUAL(storage.range(), range);
@@ -65,7 +65,7 @@ public:
     void testDataViewWithCustomRange() {
         const auto *text = "literal";
         const auto storage = el::text::impl::U8StringLiteralStorage{text, 7U};
-        const auto range = ByteRange{ByteIndex{1U}, ByteLength{2U}};
+        const auto range = ByteRange{ByteIndex{1U}, ByteCount{2U}};
 
         REQUIRE_EQUAL(toString(storage.dataView(range)), std::string{"it"});
         REQUIRE_EQUAL(storage.range(), ByteRange::fromSizeT(7U));

@@ -5,6 +5,10 @@
 #include "OptionChoice_fwd.hpp"
 #include "OptionHelp.hpp"
 
+#include "../text/StringList.hpp"
+
+#include <initializer_list>
+
 namespace erbsland::options {
 
 /// A fluent editor for an option choice definition.
@@ -31,24 +35,24 @@ public:
     /// Access the edited option choice.
     /// @return The shared option choice edited by this object, or `nullptr` for an invalid editor.
     [[nodiscard]] auto choice() const noexcept -> const OptionChoicePtr & { return _choice; }
-    /// Set the help description.
-    /// @param description User-facing help description for this choice.
+    /// Set the brief help title.
+    /// @param title Brief text shown beside the choice in overview output.
     /// @return This editor for chaining.
-    auto setHelp(text::String description) -> OptionChoiceEditor &;
+    auto setHelp(text::String title) -> OptionChoiceEditor &;
     /// Set the full help definition.
     /// @param help Complete help metadata.
     /// @return This editor for chaining.
     auto setHelp(OptionHelp help) -> OptionChoiceEditor &;
     /// Set the help title.
-    /// @param title Short title used when no description is available.
+    /// @param title Brief text shown in overview output.
     /// @return This editor for chaining.
     auto setHelpTitle(text::String title) -> OptionChoiceEditor &;
     /// Set the help description.
-    /// @param description User-facing help description for this choice.
+    /// @param description Detailed description shown on the choice help page.
     /// @return This editor for chaining.
     auto setHelpDescription(text::String description) -> OptionChoiceEditor &;
     /// Set the help epilog.
-    /// @param epilog Optional trailing text for renderers that support choice-level epilogs.
+    /// @param epilog Trailing text shown after the choice detail page.
     /// @return This editor for chaining.
     auto setHelpEpilog(text::String epilog) -> OptionChoiceEditor &;
     /// Set the detailed-help example.
@@ -59,6 +63,14 @@ public:
     /// @param visibility Controls where this choice appears in generated help output.
     /// @return This editor for chaining.
     auto setHelpVisibility(OptionHelpVisibility visibility) -> OptionChoiceEditor &;
+    /// Replace the detailed-help aliases with normalized bare ASCII names.
+    /// @param names Bare ASCII aliases satisfying `Option::isValidPositionalName()`, each at most 100 characters; empty
+    /// restores automatic lookup.
+    auto setHelpNames(const text::StringList &names) -> OptionChoiceEditor &;
+    /// Replace the detailed-help aliases from a list of bare names.
+    /// @param names Bare ASCII aliases satisfying `Option::isValidPositionalName()`, each at most 100 characters,
+    /// independent of the accepted choice value.
+    auto setHelpNames(std::initializer_list<text::String> names) -> OptionChoiceEditor &;
 
 private:
     OptionChoicePtr _choice; ///< The option choice being edited.

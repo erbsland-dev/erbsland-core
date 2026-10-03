@@ -1,5 +1,6 @@
 # The paths in this included profile resolve from this directory.
-*[tls]*
-Label                         : "included/server"
-Server Certificate Chain File: "../../../network/tls-interop/server.pem"
-Server Signing Key File       : "../../../network/tls-interop/server-key.pem"
+
+*[TLS . Server]*
+Label: "included/server"
+certificate_chain_file: "../../../network/tls-interop/server.pem"
+signing_key_file: "../../../network/tls-interop/server-key.pem"

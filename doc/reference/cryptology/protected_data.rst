@@ -9,6 +9,8 @@
     single: Key Agreement
     single: X25519
     single: Application
+    single: Secure Storage; Reference
+    single: Persistent Secrets
 
 **************
 Protected Data
@@ -19,7 +21,9 @@ Overview
 
 :cpp:class:`ProtectedByteBlock <erbsland::cryptology::ProtectedByteBlock>` keeps application-lifetime secrets in an
 opaque authenticated envelope.
-The generic key-agreement API uses this storage for X25519 private keys and shared secrets.
+The key-agreement API uses this storage for private keys and shared secrets.
+:cpp:class:`SecureStorage <erbsland::cryptology::SecureStorage>` stores secrets across application runs through the current user's operating-system credential store.
+Reading a stored secret returns a protected block for use in the current application.
 
 Application Configuration
 =========================
@@ -71,9 +75,70 @@ The internal provider generates one AES-256 key per application, assigns a uniqu
 authenticates envelope metadata.
 Application destruction releases or deletes native references and securely erases an internally owned key.
 
+Persistent Secret Storage
+=========================
+
+``SecureStorage`` provides synchronous read, write, and removal operations within an application namespace.
+Namespace and item names are nonempty UTF-8 text, limited to 256 bytes each and without control characters.
+The namespace separates application item names; operating-system access controls determine who may read them.
+It does not isolate processes running as the same user.
+
+``read()`` returns an optional ``ProtectedByteBlock``.
+A missing item returns no value, while an existing empty item returns an empty protected block.
+``write()`` creates or replaces an item from a protected block or borrowed plaintext bytes.
+The borrowed overload leaves cleanup of the input with the caller.
+The stored value is independent of the application's temporary protected-memory envelope, so it remains available to
+later application instances.
+``remove()`` reports whether the item existed.
+
+Platform Support and Limits
+---------------------------
+
+``capabilities()`` reports platform support without accessing or unlocking storage.
+macOS uses generic-password items in the current user's default standard Keychain, available to command-line and desktop
+applications without data-protection-Keychain entitlements.
+Items are local and are not marked for synchronization.
+Windows uses generic Credential Manager items with current-user, local-computer persistence.
+Linux reports unsupported.
+The common payload limit is 2,560 bytes, including values read from items written by another program.
+
+The operating system owns persistence, access controls, and any copies made by its security service.
+The library erases scoped decrypted copies and mutable native password buffers when it releases them.
+A failed update does not delete the previously stored value.
+
+Interaction and Errors
+----------------------
+
+The default ``SecureStorageInteraction::Forbid`` policy suppresses authorization dialogs.
+``SecureStorageInteraction::Allow`` permits them where supported; Windows generic-credential operations do not offer an
+authorization dialog.
+:cpp:class:`SecureStorageError <erbsland::cryptology::SecureStorageError>` distinguishes unsupported platforms, denied access, required interaction, cancellation, size
+limits, invalid names, and native failures.
+A missing item is not an error, but a retrieval failure is never treated as an empty value.
+
+Operations may block, so call them during setup or on a worker when responsiveness matters.
+On macOS, standard-Keychain interaction policy is process-wide.
+The library serializes its own Keychain calls and restores the previous policy after each operation.
+Applications making independent Security.framework calls must coordinate those calls and interaction-policy changes.
+
+Configuration Integration
+-------------------------
+
+``text::placeholder::SecureStorageSource`` exposes items from one storage namespace as ``${secure:item}`` placeholders.
+See :doc:`/reference/text/placeholders` for resolution and error behavior, and
+:doc:`/topics/cryptology/configuring_tls` for a key-password configuration example.
+
 Interface
 =========
 
 .. doxygenclass:: erbsland::cryptology::ProtectedByteBlock
     :members:
 .. doxygenenum:: erbsland::cryptology::ProtectedDataMode
+.. doxygenclass:: erbsland::cryptology::SecureStorage
+    :members:
+.. doxygenstruct:: erbsland::cryptology::SecureStorageCapabilities
+    :members:
+.. doxygenclass:: erbsland::cryptology::SecureStorageError
+    :members:
+.. doxygenenum:: erbsland::cryptology::SecureStorageErrorCategory
+.. doxygenenum:: erbsland::cryptology::SecureStorageInteraction

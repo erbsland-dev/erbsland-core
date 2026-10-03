@@ -141,6 +141,8 @@ Collections
       - ``{{ sightings | first }}``, ``{{ sightings | last }}``
     * - ``join([separator [, member]])``
       - ``{{ species | join(', ') }}``, ``{{ nests | join(', ', 'species') }}``
+    * - ``batch(size [, fill])``
+      - ``{% for row in numbers | batch(10) %}{{ row | join(' ') ~ '\n' }}{% endfor %}``
     * - ``length``, ``count``
       - ``{{ sightings | length }}``, ``{{ sightings | count }}``
     * - ``reverse``
@@ -151,6 +153,9 @@ Collections
       - ``{{ nest | keys | join(', ') }}``, ``{{ nest | values | length }}``, ``{{ nest | items | length }}``
 
 ``first``, ``last``, ``min``, and ``max`` return null for an empty collection.
+``batch`` splits a list into lists of the given positive size.
+The last list is shorter unless a non-null ``fill`` value is supplied to pad it; an empty input list produces an empty
+list.
 A list or map cannot be inserted directly; select a scalar, join suitable entries, or use a loop.
 
 Numbers
@@ -271,7 +276,7 @@ Its context supplies the data, while the layout decides how to present it.
 .. erbsland-demo::
     :source: text/RenderLayouts/FeatureCheatSheet.cpp
     :exec: text/render_layouts --demo FeatureCheatSheet
-    :source-sha256: cfedd793d0f6fd72d2552689373d969e38cfc173821c22c76de44e03561c2f9b
+    :sha256: c09017139d2e8a1e11ac62a4377cfce1fcba5250d36fc2d82a444ad4b46df949
 
 .. code-block:: cpp
 
@@ -306,14 +311,16 @@ Its context supplies the data, while the layout decides how to present it.
         el::io::print(environment->render("nest.txt"_el, context));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Pesä: Kirjosieppo
-    Munia: 3; seuraava: 4
-    Pariton määrä
-    1. aamulla
-    2. illalla
-    Merkitsijä: tuntematon
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mPesä: Kirjosieppo
+        Munia: 3; seuraava: 4
+        Pariton määrä
+        1. aamulla
+        2. illalla
+        Merkitsijä: tuntematon␛[0m
 
 .. erbsland-demo-end::

@@ -34,7 +34,7 @@ Choose the smallest mechanism that preserves the information the caller needs:
     :source: err/Exception/ChoosingFailureMechanism.cpp
     :exec: err/exception --demo ChoosingFailureMechanism
     :exec-exit-code: 3
-    :source-sha256: 4425147ba48a9b5638cef638bdd956df346145228f8614ce2da12d558edf8247
+    :sha256: c4a15eb251cea27ff4c43f2eab665c688e7521d631176f649a8f997843261cd2
 
 .. code-block:: cpp
 
@@ -64,16 +64,18 @@ Choose the smallest mechanism that preserves the information the caller needs:
 
     void prepareInstrumentOrThrow(const el::String &instrument) {
         if (isFailure(prepareInstrument(instrument))) {
-            throw el::RuntimeError{el::String::fromJoined({"The instrument could not be prepared: "_el, instrument})};
+            throw el::RuntimeError{el::StringFormat{"The instrument could not be prepared: {}"_el}.build(instrument)};
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    The shakuhachi is ready.
-    Exception: The instrument could not be prepared: 篳篥
-    Error: The concert preparation could not be completed.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mThe shakuhachi is ready.
+        Exception: The instrument could not be prepared: 篳篥
+        Error: The concert preparation could not be completed.␛[0m
 
 .. erbsland-demo-end::
 
@@ -111,27 +113,31 @@ The Common Exception Family
 Every library exception derives from :cpp:class:`Exception <erbsland::err::Exception>`.
 The two main branches express whether application code is expected to recover:
 
-* :cpp:class:`LogicError <erbsland::err::LogicError>` indicates a broken program invariant or invalid API use. These
+* :cpp:class:`LogicFailure <erbsland::err::LogicFailure>` indicates a broken program invariant or invalid API use. These
   errors should normally reach the application boundary and terminate the faulty operation instead of being treated as
   user input problems.
-* :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` represents failures caused by input, data, resources, or the
+* :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` represents failures caused by input, data, or the
   execution environment. Catch these errors where your application can recover or add useful context.
 
 .. mermaid::
 
     classDiagram
-        Exception <|-- LogicError
+        Exception <|-- LogicFailure
         Exception <|-- RuntimeError
-        LogicError <|-- OutOfRangeError
-        LogicError <|-- ParameterError
+        LogicFailure <|-- OutOfRangeFailure
+        RuntimeError <|-- OutOfRangeError
+        RuntimeError <|-- NotFoundError
+        LogicFailure <|-- ParameterFailure
         RuntimeError <|-- OverflowError
         RuntimeError <|-- ParseError
 
 The neutral derived types cover recurring situations without introducing a domain dependency:
 
-* :cpp:class:`ParameterError <erbsland::err::ParameterError>` identifies an invalid function argument and includes its
+* :cpp:class:`ParameterFailure <erbsland::err::ParameterFailure>` identifies an invalid function argument and includes its
   parameter name.
-* :cpp:class:`OutOfRangeError <erbsland::err::OutOfRangeError>` reports an operation outside a valid API range.
+* :cpp:class:`OutOfRangeError <erbsland::err::OutOfRangeError>` reports recoverable numeric bounds or configured processing-limit violations.
+* ``NotFoundError`` reports an absent key or name.
+* ``OutOfRangeFailure`` reports bounds precondition violations and unsupported system capacities.
 * :cpp:class:`OverflowError <erbsland::err::OverflowError>` reports a runtime calculation that exceeded its supported
   range.
 * :cpp:class:`ParseError <erbsland::err::ParseError>` reports invalid text and can identify a code-point position.
@@ -139,15 +145,15 @@ The neutral derived types cover recurring situations without introducing a domai
 .. erbsland-demo::
     :source: err/Exception/BuiltInExceptions.cpp
     :exec: err/exception --demo BuiltInExceptions
-    :source-sha256: 26e4983b7beeabc14fd3045033266a7ced64a7f564b95b42dac607d2c012f20a
+    :sha256: c1bdb650e9dc406820131f092f754bfe9fc223ecfe8f24ffdc8671f61b5887ee
 
 .. code-block:: cpp
 
     /// The neutral exception types describe common failure categories without tying them to a library domain.
-    /// `LogicError` and `ParameterError` indicate programming mistakes, while `RuntimeError`, `OverflowError`, and
+    /// `LogicFailure` and `ParameterFailure` indicate programming mistakes, while `RuntimeError`, `OverflowError`, and
     /// `ParseError` describe failures that can arise from data or the execution environment.
     void builtInExceptions() {
-        const auto parameterError = el::ParameterError{"The volume must be positive."_el, "volume"_el};
+        const auto parameterError = el::ParameterFailure{"The volume must be positive."_el, "volume"_el};
         const auto parseError = el::ParseError{"The musical note could not be parsed."_el, el::CpIndex{4}};
         const auto overflowError = el::OverflowError{"The time-signature counter exceeded its limit."_el};
 
@@ -156,18 +162,20 @@ The neutral derived types cover recurring situations without introducing a domai
         el::io::printLine("Overflow: "_el, overflowError.toString());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Parameter: The volume must be positive. (parameter: volume)
-    Parse: The musical note could not be parsed. at code point 4
-    Overflow: The time-signature counter exceeded its limit.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mParameter: The volume must be positive. (parameter: volume)
+        Parse: The musical note could not be parsed. at code point 4
+        Overflow: The time-signature counter exceeded its limit.␛[0m
 
 .. erbsland-demo-end::
 
 The hierarchy is deliberately independent from similarly named standard-library exceptions.
-Catch Erbsland Core exceptions through their Erbsland Core base classes, and use the actual inheritance shown above when selecting
-a handler.
+Catch Erbsland Core exceptions through their Erbsland Core base classes, and use the actual inheritance shown above when
+selecting a handler.
 
 Domain-Specific Exceptions
 ==========================
@@ -190,7 +198,7 @@ Catch its neutral base at a wider boundary when all runtime failures have the sa
 .. erbsland-demo::
     :source: err/Exception/DomainExceptions.cpp
     :exec: err/exception --demo DomainExceptions
-    :source-sha256: 8b0650fa6a78f82bbfc6de84e14f1d293f2ce8442134794c0dc4057eb5f0e13f
+    :sha256: 981a4c75ffddbc22aa021881527c27aab1b244265ee08cac0b19e836f83b1417
 
 .. code-block:: cpp
 
@@ -215,19 +223,21 @@ Catch its neutral base at a wider boundary when all runtime failures have the sa
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Text-domain error: Format field requires an integer argument
-    Path-domain error: File could not be opened for reading
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mText-domain error: Format field requires an integer argument
+        Path-domain error: File could not be opened for reading␛[0m
 
 .. erbsland-demo-end::
 
 The domain exception remains the right type when it contains details such as a path, option, or native error code.
 Do not flatten those details into a string merely to throw a neutral ``RuntimeError``.
 
-From Failure to a Helpful Message
-=================================
+Rendering Exceptions as Diagnostics
+===================================
 
 An exception carries control flow and error context.
 A :cpp:class:`Diagnostic <erbsland::err::Diagnostic>` translates that information into a user-facing structure, and a

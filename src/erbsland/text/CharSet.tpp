@@ -6,12 +6,20 @@
 
 #include <concepts>
 #include <functional>
-#include <initializer_list>
 #include <optional>
 #include <type_traits>
 #include <utility>
 
 namespace erbsland::text {
+
+template <typename tFirst, typename tSecond, typename... tRest>
+    requires(
+        std::convertible_to<tFirst, Char> && std::convertible_to<tSecond, Char> &&
+        (std::convertible_to<tRest, Char> && ...))
+constexpr CharSet::CharSet(tFirst first, tSecond second, tRest... rest) :
+    CharSet{CharRange{static_cast<Char>(std::move(first))}, CharRange{static_cast<Char>(std::move(second))}} {
+    (addWithCapacity(CharRange{static_cast<Char>(std::move(rest))}, sizeof...(tRest) + 2U), ...);
+}
 
 template <typename Function>
 auto CharSet::forEach(Function function) const -> util::LoopResult {

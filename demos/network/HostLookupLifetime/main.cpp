@@ -1,13 +1,19 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <DemoTerminal.hpp>
 #include <erbsland/all_core.hpp>
 #include <erbsland/all_event.hpp>
 #include <erbsland/all_network.hpp>
+#include <erbsland/all_network_host_lookup.hpp>
 #include <erbsland/all_stream.hpp>
 #include <erbsland/all_text.hpp>
-#include <erbsland/network/host_lookup/all.hpp>
-#include <erbsland/network/host_lookup/HostLookup.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/Host.hpp>
+#include <erbsland/HostLookup.hpp>
+#include <erbsland/IpAddress.hpp>
+#include <erbsland/List.hpp>
+#include <erbsland/Network.hpp>
 
 namespace demo {
 
@@ -34,7 +40,7 @@ void resolveAndRelease() {
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
-    app.enableTerminal();
+    demo::DemoTerminal::enable(app);
     app.events()->invoke(resolveAndRelease);
     return app.run();
 }

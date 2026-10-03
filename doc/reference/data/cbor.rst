@@ -16,6 +16,13 @@ Introduction
 ``CborParseOptions`` sets input limits and the DAG-CBOR profile; ``CborFormatOptions`` selects the output profile.
 See :doc:`/topics/data/reading_and_writing_cbor` for examples, supported types, tags, navigation, and wire rules.
 
+Truncated input is rejected as ``ParseError`` by the throwing decoder, or as an empty optional by the tolerant decoder.
+Internal bounds errors and resource failures are not converted into malformed-input errors.
+
+Text arguments accept ``String``, ``StringEditor``, and Core string literals directly, including when passed to
+``set()`` or ``append()``.
+Stored text retains its value if the original editor is changed later.
+
 Interface
 =========
 

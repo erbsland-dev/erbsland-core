@@ -22,14 +22,12 @@ namespace erbsland::cterm {
 class GridLayout final {
 public:
     /// Create a grid layout.
-    /// @param columnWidths The content width of each column. Each value must be positive.
-    /// @param rowHeights The content height of each row. Each value must be positive.
-    /// @throws err::ParameterError if either list is empty or contains a non-positive size.
+    /// @param columnWidths The content width of each column. Must not be empty; every value must be positive.
+    /// @param rowHeights The content height of each row. Must not be empty; every value must be positive.
     GridLayout(std::vector<block::Coordinate> columnWidths, std::vector<block::Coordinate> rowHeights);
     /// Create a grid layout from initializer lists.
-    /// @param columnWidths The content width of each column. Each value must be positive.
-    /// @param rowHeights The content height of each row. Each value must be positive.
-    /// @throws err::ParameterError if either list is empty or contains a non-positive size.
+    /// @param columnWidths The content width of each column. Must not be empty; every value must be positive.
+    /// @param rowHeights The content height of each row. Must not be empty; every value must be positive.
     GridLayout(
         std::initializer_list<block::Coordinate> columnWidths, std::initializer_list<block::Coordinate> rowHeights);
 
@@ -49,14 +47,12 @@ public: // accessors
     /// Number of columns in the grid.
     [[nodiscard]] auto columnCount() const noexcept -> std::size_t;
     /// Access one row height.
-    /// @param row The row index.
+    /// @param row The row index. Must be inside the layout.
     /// @return The row content height.
-    /// @throws err::OutOfRangeError if `row` is outside the layout.
     [[nodiscard]] auto rowHeight(std::size_t row) const -> block::Coordinate;
     /// Access one column width.
-    /// @param column The column index.
+    /// @param column The column index. Must be inside the layout.
     /// @return The column content width.
-    /// @throws err::OutOfRangeError if `column` is outside the layout.
     [[nodiscard]] auto columnWidth(std::size_t column) const -> block::Coordinate;
     /// Access all row heights.
     [[nodiscard]] auto rowHeights() const noexcept -> const std::vector<block::Coordinate> &;
@@ -69,12 +65,11 @@ public:
     /// @return The total grid size including active frame lines.
     [[nodiscard]] auto size(const FrameBorder &border) const noexcept -> block::Size;
     /// Calculate the content rectangle for one cell.
-    /// @param row The row index.
-    /// @param column The column index.
+    /// @param row The row index. Must be inside the layout.
+    /// @param column The column index. Must be inside the layout.
     /// @param origin The top-left position of the full grid.
     /// @param border Border styles that decide which frame lines occupy cells.
     /// @return The cell content rectangle.
-    /// @throws err::OutOfRangeError if `row` or `column` is outside the layout.
     [[nodiscard]] auto cellRect(
         std::size_t row, std::size_t column, block::Position origin, const FrameBorder &border) const
         -> block::Rectangle;

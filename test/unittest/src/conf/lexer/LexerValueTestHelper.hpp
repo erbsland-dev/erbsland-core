@@ -83,7 +83,7 @@ public:
 
     /// Append the requested value-test prefix to `doc`.
     static void documentPrefix(el::text::StringEditor &doc, PrefixFormat prefixFormat) {
-        doc.reserve(el::unit::ByteLength{1024U});
+        doc.reserve(el::unit::ByteCount{1024U});
         doc.append(cSectionLine);
         doc.append(cValueStart);
         switch (prefixFormat) {
@@ -137,7 +137,7 @@ public:
     void setupTokenGeneratorForValueTest(
         const el::text::String &valueText, const PrefixFormat prefixFormat, const SuffixFormat suffixFormat) {
         el::text::StringEditor doc;
-        doc.reserve(el::unit::ByteLength{250U});
+        doc.reserve(el::unit::ByteCount{250U});
         documentPrefix(doc, prefixFormat);
         doc.append(valueText);
         documentSuffix(doc, suffixFormat);

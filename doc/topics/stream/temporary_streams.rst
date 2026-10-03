@@ -27,7 +27,7 @@ Regular ``PathWriteTextOptions`` controls encoding and output settings.
 .. erbsland-demo::
     :source: stream/TemporaryStreams/CreateTemporaryText.cpp
     :exec: stream/temporary_streams --demo CreateTemporaryText
-    :source-sha256: 0b8c14b944c6b9547a3657f31e2e33d128e0d564197027bc772371f1a87b496d
+    :sha256: 1e57cd20e06bb1850de5565d22f6f4a1e101bdd7965273ce8bfd78c31a2f532a
 
 .. code-block:: cpp
 
@@ -35,9 +35,7 @@ Regular ``PathWriteTextOptions`` controls encoding and output settings.
     /// Temporary-file options control naming, access, and cleanup; text options independently control encoding.
     void createTemporaryText() {
         auto temporaryOptions = el::PathTempFileOptions{};
-        temporaryOptions.setPrefix("θηλαστικά-"_el)
-            .setSuffix(".txt"_el)
-            .setAccessProfile(el::PathAccessProfile::UserOnly);
+        temporaryOptions.setPrefix("θηλαστικά-"_el).setSuffix(".txt"_el).setAccessProfile(el::PathAccessProfile::UserOnly);
         auto textOptions = el::PathWriteTextOptions{el::StringEncoding::Utf8};
 
         const auto output = el::Path::systemTempDirectoryOrThrow().operations().openTempTextOutputStreamOrThrow(
@@ -47,10 +45,12 @@ Regular ``PathWriteTextOptions`` controls encoding and output settings.
         output->close();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Temporary text with a .txt suffix: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTemporary text with a .txt suffix: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -65,7 +65,7 @@ transferred.
 .. erbsland-demo::
     :source: stream/TemporaryStreams/CreateTemporaryBytes.cpp
     :exec: stream/temporary_streams --demo CreateTemporaryBytes
-    :source-sha256: c60bf1e1da85edc17fbc950cf368b2344b70f3e39aa231dc40674d039949db4c
+    :sha256: 1ecc2ffbf02540b43e7e0874eefde5e3cd43c270abf32d2423c060072fde6293
 
 .. code-block:: cpp
 
@@ -81,10 +81,12 @@ transferred.
         output->close();
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Binary data: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBinary data: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -98,7 +100,7 @@ This is the preferred cleanup path because removal failures can still be reporte
 .. erbsland-demo::
     :source: stream/TemporaryStreams/RemoveOnClose.cpp
     :exec: stream/temporary_streams --demo RemoveOnClose
-    :source-sha256: d17c945c924dbdad46e8cc00b5848a42b135324393372b23381157e0db46dea7
+    :sha256: d65a46b82503961954952e8933454043b23b9e7e07faa226fe5dfb1d88252630
 
 .. code-block:: cpp
 
@@ -113,16 +115,18 @@ This is the preferred cleanup path because removal failures can still be reporte
         el::io::printLine("Exists after close: "_el, path.info().exists());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Existed before close: true
-    Exists after close: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mExisted before close: true
+        Exists after close: false␛[0m
 
 .. erbsland-demo-end::
 
-Release a File Deliberately
-===========================
+Releasing Ownership of a Temporary File
+=======================================
 
 ``release()`` disables automatic removal, empties the stream's temporary-path ownership, and returns the path.
 The caller must still close the stream to finish output and then owns removal or movement of the file.
@@ -131,7 +135,7 @@ Use this for atomic publish workflows where a completed temporary file is rename
 .. erbsland-demo::
     :source: stream/TemporaryStreams/ReleaseTemporaryFile.cpp
     :exec: stream/temporary_streams --demo ReleaseTemporaryFile
-    :source-sha256: 0fa278230664cd11693362e285a381876f4e60df718d692efaad194ced3682b9
+    :sha256: df5f152583f74998446fb337884a284c363a21daaca2636cc5c446c2116566be
 
 .. code-block:: cpp
 
@@ -148,11 +152,13 @@ Use this for atomic publish workflows where a completed temporary file is rename
         el::io::printLine("Caller removed the file: "_el, !retainedPath.info().exists());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    File was retained: true
-    Caller removed the file: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFile was retained: true
+        Caller removed the file: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -166,7 +172,7 @@ Prefer explicit close whenever successful output matters.
 .. erbsland-demo::
     :source: stream/TemporaryStreams/CleanupAfterAbort.cpp
     :exec: stream/temporary_streams --demo CleanupAfterAbort
-    :source-sha256: 1bc50e9d991841d3b40ba0e814026319dfe38e0dbe39f2302320657cdc76489f
+    :sha256: bd47c9932c5bf69f8a3aed8ba38e7d7aebcfdf4ea66b3c5028a2c93c852a30d0
 
 .. code-block:: cpp
 
@@ -180,10 +186,12 @@ Prefer explicit close whenever successful output matters.
         el::io::printLine("Abort returned with a closed stream: "_el, output->state() == el::StreamState::Closed);
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Automatic cleanup: true
-    Abort returned with a closed stream: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAutomatic cleanup: true
+        Abort returned with a closed stream: true␛[0m
 
 .. erbsland-demo-end::

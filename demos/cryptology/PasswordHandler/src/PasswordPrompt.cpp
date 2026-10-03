@@ -1,15 +1,16 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "PasswordPrompt.hpp"
 
-#include <erbsland/core/ApplicationError.hpp>
-#include <erbsland/core/ApplicationErrorContext.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ApplicationErrorContext.hpp>
+#include <erbsland/CpCount.hpp>
 #include <erbsland/cterm/ReadLineOptions.hpp>
 #include <erbsland/cterm/ReadSecret.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/LineCount.hpp>
+#include <erbsland/cterm/Terminal.hpp>
+#include <erbsland/LineCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/String.hpp>
 
 #include <utility>
 
@@ -30,7 +31,7 @@ auto PasswordPrompt::readPassword() const -> el::String {
 /// trimming, case folding, composition rules, or normalization.
 auto PasswordPrompt::readNewPassword() const -> el::String {
     auto password = read("Enter new password"_el);
-    if (password.characterLength() < el::CpLength{15U}) {
+    if (password.characterLength() < el::CpCount{15U}) {
         throw el::ApplicationError{el::core::ApplicationErrorContext{
             "Password is too short"_el, "New passwords must contain at least 15 Unicode code points."_el}};
     }

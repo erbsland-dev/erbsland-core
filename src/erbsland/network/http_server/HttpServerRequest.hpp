@@ -16,9 +16,11 @@
 #include "../../event/EventSource.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/String.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
+#include <concepts>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 namespace erbsland::network {
@@ -48,7 +50,7 @@ public: // incoming body
     /// Select incremental body delivery through ``onBodyData``.
     virtual void streamBody() = 0;
     /// Select atomic aggregation under a finite request-specific maximum.
-    virtual void aggregateBody(unit::ByteLength maximumLength) = 0;
+    virtual void aggregateBody(unit::ByteCount maximumLength) = 0;
     /// Reject unread body bytes and make the connection non-reusable.
     virtual void rejectBody() = 0;
     /// Pause an active streamed body.
@@ -63,6 +65,15 @@ public: // response
     virtual void sendText(text::String body, HttpStatus status = HttpStatus::Ok, HttpHeaders headers = {}) = 0;
     /// Commit one UTF-8 JSON response.
     virtual void sendJson(text::String body, HttpStatus status = HttpStatus::Ok, HttpHeaders headers = {}) = 0;
+    /// Commit preformatted JSON from a Core string editor or literal.
+    /// @param body The JSON text to send without further serialization.
+    /// @param status The response status.
+    /// @param headers Additional response headers.
+    template <typename tText>
+        requires(!std::same_as<std::remove_cvref_t<tText>, text::String> && std::convertible_to<tText, text::String>)
+    void sendJson(tText &&body, HttpStatus status = HttpStatus::Ok, HttpHeaders headers = {}) {
+        sendJson(text::String{std::forward<tText>(body)}, status, std::move(headers));
+    }
     /// Serialize and commit one compact JSON response.
     virtual void sendJson(
         const data::json::JsonValue &body, HttpStatus status = HttpStatus::Ok, HttpHeaders headers = {}) = 0;

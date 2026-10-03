@@ -20,11 +20,14 @@
 #include "../system/ProcessInfo.hpp"
 #include "../text/StringConverter.hpp"
 #include "../text/StringEditor.hpp"
+#include "../text/StringJoins.hpp"
 
 #include <exception>
 #include <utility>
 
 namespace erbsland::path {
+
+using namespace err;
 using namespace text::literals;
 using impl::PathData;
 using impl::PathDataPtr;
@@ -41,13 +44,13 @@ using unit::ItemRange;
 Path::Path(const String &path) noexcept {
     try {
         _data = PathParser{path, PathParseMode::Generic}.parse();
-    } catch (const err::ParseError &) {}
+    } catch (const ParseError &) {}
 }
 
 Path::Path(const std::filesystem::path &path) noexcept {
     try {
         _data = PathParser{String{path.generic_string()}, PathParseMode::Generic}.parse();
-    } catch (const err::ParseError &) {}
+    } catch (const ParseError &) {}
 }
 
 Path::Path(PathDataPtr data) noexcept : _data{std::move(data)} {
@@ -90,6 +93,9 @@ auto Path::isRoot() const noexcept -> bool {
 }
 
 auto Path::compare(const Path &other, const CharCompareFn compareFn) const noexcept -> std::strong_ordering {
+    if (compareFn == nullptr && _data == other._data) {
+        return std::strong_ordering::equal;
+    }
     if (isEmpty() && other.isEmpty()) {
         return std::strong_ordering::equal;
     }
@@ -99,7 +105,7 @@ auto Path::compare(const Path &other, const CharCompareFn compareFn) const noexc
     if (other.isEmpty()) {
         return std::strong_ordering::greater;
     }
-    return toString().compare(other.toString(), compareFn);
+    return _data->compare(*other._data, compareFn);
 }
 
 auto Path::format() const noexcept -> PathFormat {
@@ -178,29 +184,29 @@ auto Path::stem() const noexcept -> String {
 }
 
 auto Path::withName(const String &newName) const noexcept -> Path {
-    if (isEmpty() || newName.isEmpty() || !newName.isValidUtf8()) {
+    if (isEmpty() || newName.isEmpty() || !newName.isEncodingValid()) {
         return {};
     }
     auto elements = _data->elements();
     if (elements.count().isZero()) {
         return {};
     }
-    elements.set(ItemIndex::zero() + (elements.count() - ItemCount::one()), newName);
+    elements.set(elements.lastIndex(), newName);
     return Path{PathData::create(_data->format(), _data->root(), std::move(elements))};
 }
 
 auto Path::withSuffix(const String &replacement) const noexcept -> Path {
-    if (isEmpty() || !replacement.isValidUtf8()) {
+    if (isEmpty() || !replacement.isEncodingValid()) {
         return {};
     }
-    return withName(String::fromJoined({stem(), impl::normalizedSuffixReplacement(replacement)}));
+    return withName(text::join(stem(), impl::normalizedSuffixReplacement(replacement)));
 }
 
 auto Path::withStem(const String &replacement) const noexcept -> Path {
-    if (isEmpty() || replacement.isEmpty() || !replacement.isValidUtf8()) {
+    if (isEmpty() || replacement.isEmpty() || !replacement.isEncodingValid()) {
         return {};
     }
-    return withName(String::fromJoined({replacement, suffixes()}));
+    return withName(text::join(replacement, suffixes()));
 }
 
 auto Path::join(const Path &other) noexcept -> Path & {
@@ -217,6 +223,10 @@ auto Path::join(const String &other) noexcept -> Path & {
     return join(Path{other});
 }
 
+auto Path::joinNative(const String &other) noexcept -> Path & {
+    return join(Path::fromNative(other));
+}
+
 auto Path::joined(const Path &other) const noexcept -> Path {
     auto result = *this;
     result.join(other);
@@ -225,6 +235,10 @@ auto Path::joined(const Path &other) const noexcept -> Path {
 
 auto Path::joined(const String &other) const noexcept -> Path {
     return joined(Path{other});
+}
+
+auto Path::joinedNative(const String &other) const noexcept -> Path {
+    return joined(Path::fromNative(other));
 }
 
 auto Path::slice(const ItemRange range) const noexcept -> Path {
@@ -332,6 +346,14 @@ auto Path::toStdPath() const noexcept -> std::filesystem::path {
 #endif
 }
 
+auto Path::toNativeString() const noexcept -> String {
+#ifdef ERBSLAND_OS_WINDOWS
+    return toWindows(PathWindowsFormat::Native);
+#else
+    return toPosix();
+#endif
+}
+
 auto Path::toPosix() const noexcept -> String {
     if (isEmpty() || (format() == PathFormat::Windows && isAbsolute())) {
         return {};
@@ -363,7 +385,7 @@ auto Path::fromElements(const StringList &elements) noexcept -> Path {
 auto Path::fromPosix(const String &path) noexcept -> Path {
     try {
         return Path{PathParser{path, PathParseMode::Posix}.parse()};
-    } catch (const err::ParseError &) {
+    } catch (const ParseError &) {
         return {};
     }
 }
@@ -375,7 +397,7 @@ auto Path::fromPosixOrThrow(const String &path) -> Path {
 auto Path::fromWindows(const String &path) noexcept -> Path {
     try {
         return Path{PathParser{path, PathParseMode::Windows}.parse()};
-    } catch (const err::ParseError &) {
+    } catch (const ParseError &) {
         return {};
     }
 }
@@ -387,7 +409,7 @@ auto Path::fromWindowsOrThrow(const String &path) -> Path {
 auto Path::fromNative(const String &path) noexcept -> Path {
     try {
         return Path{PathParser{path, PathParseMode::Native}.parse()};
-    } catch (const err::ParseError &) {
+    } catch (const ParseError &) {
         return {};
     }
 }

@@ -1,6 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/CpCount.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathReadTextOptions.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StreamError.hpp>
+#include <erbsland/TextInputStream.hpp>
+#include <erbsland/TimeDelta.hpp>
 #include <StreamDemoSupport.hpp>
 
 #include <exception>
@@ -23,7 +31,7 @@ void readObservationLines() {
 /// `readLine()` keeps a line ending when one is present and returns a final unterminated line as data.
 /// Repeating the same call after timeout continues the pending logical line.
 void readObservationLines(el::TextInputStream &input) {
-    constexpr auto cMaximumLineLength = el::CpLength{40U};
+    constexpr auto cMaximumLineLength = el::CpCount{40U};
     constexpr auto cMaximumTimeouts = 3U;
 
     auto lineNumber = 1;

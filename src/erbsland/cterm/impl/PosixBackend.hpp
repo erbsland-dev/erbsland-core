@@ -7,6 +7,7 @@
 #include "../Backend.hpp"
 
 #include "../../event/EventSubscription.hpp"
+#include "../../stream/impl/NativeOutputStream.hpp"
 
 #include <termios.h>
 #include <unistd.h>
@@ -35,6 +36,10 @@ public:
     /// Create a POSIX terminal backend with requested flags.
     /// @param terminalFlags The requested terminal features.
     explicit PosixBackend(TerminalFlags terminalFlags); // must never be called directly
+    /// Create an isolated backend with a borrowed descriptor for native key input.
+    /// The backend does not register a global instance or signal handlers. Line input still uses Core stdin.
+    /// @param inputFd A descriptor in `[0, FD_SETSIZE)` that must remain open for the backend's lifetime.
+    explicit PosixBackend(int inputFd);
     ~PosixBackend() override;
 
 public:
@@ -77,10 +82,10 @@ private:
     void initializeKeyInputSession();
     /// Restore a key interactive session.
     void restoreKeyInputSession();
-    /// Wait until stdin becomes readable.
-    [[nodiscard]] static auto waitForInput(OptionalTimeout timeout) -> bool;
-    /// Poll whether stdin is currently readable without blocking.
-    [[nodiscard]] static auto pollForInput() -> bool;
+    /// Wait until the key-input descriptor becomes readable.
+    [[nodiscard]] auto waitForInput(OptionalTimeout timeout) const -> bool;
+    /// Poll whether the key-input descriptor is readable without blocking.
+    [[nodiscard]] auto pollForInput() const -> bool;
     /// Read one or more available chunks and append them to the pending key buffer.
     void appendInputChunks(OptionalTimeout timeout);
     /// Mark the start time for one pending escape sequence.
@@ -95,10 +100,13 @@ private:
     [[nodiscard]] auto readDecodedKey(const InputTimeout &timeout) -> Key;
 
 private:
-    static std::mutex _instanceMutex;                     ///< The mutex to protect the instance.
-    static PosixBackend *_instance;                       ///< The global instance of the PosixBackend.
+    static std::mutex _instanceMutex; ///< The mutex to protect the instance.
+    static PosixBackend *_instance;   ///< The global instance of the PosixBackend.
 
+    stream::impl::NativeOutputStreamPtr _output{stream::impl::createNativeStandardOutputStream(
+        stream::impl::NativeStandardStream::Out)};        ///< Borrowed native stdout.
     TerminalFlags _terminalFlags;                         ///< The terminal flags.
+    int _inputFd;                                         ///< Borrowed native key-input descriptor.
     bool _isInitialized = false;                          ///< If the platform was initialized.
     bool _keyInputSessionActive = false;                  ///< If we have an input session that needs to be restored.
     time::TimePoint _lastScreenSizeDetection = {};        ///< Time of last screen size detection.

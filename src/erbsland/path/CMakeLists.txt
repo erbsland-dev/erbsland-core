@@ -18,9 +18,12 @@ target_sources(erbsland-core PRIVATE
         PathAttribute.hpp
         PathChangeOptions.hpp
         PathCollisionMode.hpp
+        PathCommitCheckFn.hpp
+        PathCommitOptions.hpp
         PathContent.cpp
         PathContent.hpp
         PathContent_fwd.hpp
+        PathContent_replace.cpp
         PathCopyOptions.hpp
         PathCreateDirectoryOptions.hpp
         PathCreateFileOptions.hpp
@@ -31,6 +34,11 @@ target_sources(erbsland-core PRIVATE
         PathErrorContext.cpp
         PathErrorContext.hpp
         PathFormat.hpp
+        PathGlobMatchMode.hpp
+        PathGlobPattern.cpp
+        PathGlobPattern.hpp
+        PathGlobPattern_fwd.hpp
+        PathGlobPatternFlags.hpp
         PathInfo.cpp
         PathInfo.hpp
         PathInfo_fwd.hpp
@@ -45,6 +53,8 @@ target_sources(erbsland-core PRIVATE
         PathReadTextOptions.cpp
         PathReadTextOptions.hpp
         PathRemoveOptions.hpp
+        PathReplaceDataOptions.hpp
+        PathReplaceTextOptions.hpp
         PathResolveMode.hpp
         PathResolveOptions.hpp
         PathTempDirectoryOptions.cpp

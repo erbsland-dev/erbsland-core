@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include <memory>
+
 namespace erbsland::system {
 
 class Subprocess;
+/// Shared ownership of an owned subprocess.
+using SubprocessPtr = std::shared_ptr<Subprocess>;
 
 }

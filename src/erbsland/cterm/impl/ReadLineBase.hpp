@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ReadLineLayout_fwd.hpp"
+#include "ReadLineTestAccess_fwd.hpp"
 
 #include "../Block_fwd.hpp"
 #include "../BlockString_fwd.hpp"
@@ -31,6 +32,8 @@ namespace erbsland::cterm::impl {
 /// Concrete subclasses exclusively own and mutate their ordinary or sensitive text storage.
 /// @tested{ReadLineTest ReadSecretTest}
 class ReadLineBase {
+    friend class ReadLineTestAccess;
+
 protected:
     using NowFn = std::function<time::TimePoint()>;
 
@@ -80,11 +83,11 @@ private: // concrete storage interface
     /// Get the text displayed by the editor.
     [[nodiscard]] virtual auto displayText() const noexcept -> const text::U32StringEditor & = 0;
     /// Insert a key's text at the specified index and return its length.
-    [[nodiscard]] virtual auto insertKeyText(const Key &key, unit::CpIndex index) -> unit::CpLength = 0;
+    [[nodiscard]] virtual auto insertKeyText(const Key &key, unit::CpIndex index) -> unit::CpCount = 0;
     /// Insert a new line at the specified index.
     [[nodiscard]] virtual auto insertNewLine(unit::CpIndex index) -> bool = 0;
     /// Erase text at the specified index and length.
-    virtual void eraseText(unit::CpIndex index, unit::CpLength length) noexcept = 0;
+    virtual void eraseText(unit::CpIndex index, unit::CpCount length) noexcept = 0;
     /// Find the preceding editing-unit boundary.
     [[nodiscard]] virtual auto previousUnitStart(unit::CpIndex index) const noexcept -> unit::CpIndex = 0;
     /// Find the following editing-unit boundary.

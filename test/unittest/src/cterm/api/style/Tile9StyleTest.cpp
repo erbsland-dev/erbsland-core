@@ -84,10 +84,10 @@ public:
     }
 
     void testStringConstructorRejectsInvalidTileCounts() {
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Tile9Style{"12345678"_el});
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Tile9Style{"1234567890"_el});
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Tile9Style{"123456789012345"_el});
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Tile9Style{"12345678901234567"_el});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Tile9Style{"12345678"_el});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Tile9Style{"1234567890"_el});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Tile9Style{"123456789012345"_el});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, Tile9Style{"12345678901234567"_el});
     }
 
     void testCreateFactoryBuildsSharedStyles() {

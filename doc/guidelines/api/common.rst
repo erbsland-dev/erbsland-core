@@ -83,13 +83,25 @@ We prefer the first variant where it makes sense, as this leads to more readable
 The second variant makes sense for APIs like parsers, where e.g. embedded IO objects may throw on read errors at any
 time and, therefore, the caller must expect exceptions with every call.
 
-All thrown exceptions shall be listed in the API documentation.
+Document the *concrete* runtime exceptions (ending in `...Error`) callers can expect as `@throws` entries with the
+conditions that cause them.
+Document logic errors (ending in `...Failure`) as preconditions on parameters or in the description, but not using
+`@throws` entries, as these are reserved for expectable runtime errors.
+
+Do not throw ``RuntimeError`` directly from library APIs.
+Use a concrete domain exception for expected runtime failures, or a logic-failure type for violated preconditions and
+internal invariants.
+Do not use ``RuntimeError`` as a catch-all in API documentation; list the concrete exception types instead.
+Catching the common base at an intentional runtime-error boundary remains valid.
 
 Test Status Markers
 ===================
 
-Every documented class or struct and every namespace-scope free function shall end its API documentation block with one
-test-status marker.
+Every documented class or struct and every namespace-scope free function of the public or internal library API in
+``src/erbsland`` shall end its API documentation block with one test-status marker.
+Tools and unit tests do not require these markers.
+Do not add them to demos or documentation examples: their API comments teach library usage, and coverage metadata
+distracts readers from that purpose.
 The marker points to the test suite where a maintainer can find the relevant coverage; it does not describe individual
 test methods.
 
@@ -135,6 +147,17 @@ They define the following sections:
     Patterns omit keywords like ``const``, ``auto``, ``static``.
     The patterns reduce noise and unnecessary repetitions.
     Only if necessary, a block clarifies a used placeholder ``
+
+Namespace Views
+===============
+
+Public declarations belong to their domain namespaces.
+Core implementation code uses explicit domain names and compiles with the private ``ERBSLAND_CORE_BUILDING_LIBRARY``
+marker.
+Consumer headers automatically expose the flattened namespace unless the consumer defines
+``ERBSLAND_CORE_DO_NOT_FLATTEN_NS`` for its target.
+Keep flattening helpers in ``impl`` and select them only through ``Definitions.hpp``.
+Neither namespace policy belongs in shared compiler-option helpers or public Core compile definitions.
 
 Related Guidelines
 ==================

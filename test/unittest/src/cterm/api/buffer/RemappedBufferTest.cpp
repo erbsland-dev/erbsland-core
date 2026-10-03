@@ -5,7 +5,7 @@
 
 #include <erbsland/block/StdFormat.hpp>
 #include <erbsland/cterm/RemappedBuffer.hpp>
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>
@@ -43,9 +43,9 @@ public:
             REQUIRE_EQUAL(clone->get(block::Position{2, 0}).color(), Color(fg::Red, bg::Black));
         });
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(block::Size{0, 1}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(block::Size{1, 0}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(block::Size{10'001, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, RemappedBuffer(block::Size{0, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, RemappedBuffer(block::Size{1, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, RemappedBuffer(block::Size{10'001, 1}));
     }
 
     void testResizeWithPreserveContentKeepsVisibleContent() {
@@ -227,17 +227,18 @@ public:
     void testInvalidArgumentsAreRejected() {
         auto buffer = RemappedBuffer{block::Size{4, 3}, geometry::Orientation::Vertical};
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.resize(block::Size{0, 3}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.shift(block::Direction::North, Block::space(), -1));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.rotate(block::Direction::East, 5));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.eraseRows(blockCoordinate(2), Block::space(), 2));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.eraseColumns(blockCoordinate(-1), Block::space(), 1));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.insertRows(blockCoordinate(2), Block::space(), 2));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.insertColumns(blockCoordinate(3), Block::space(), 2));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.resize(block::Size{0, 3}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.shift(block::Direction::North, Block::space(), -1));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.rotate(block::Direction::East, 5));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.eraseRows(blockCoordinate(2), Block::space(), 2));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.eraseColumns(blockCoordinate(-1), Block::space(), 1));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.insertRows(blockCoordinate(2), Block::space(), 2));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterFailure, buffer.insertColumns(blockCoordinate(3), Block::space(), 2));
         REQUIRE_THROWS_AS(
-            erbsland::err::ParameterError, buffer.moveRows(blockCoordinate(1), 3, blockCoordinate(1), Block::space()));
+            erbsland::err::ParameterFailure,
+            buffer.moveRows(blockCoordinate(1), 3, blockCoordinate(1), Block::space()));
         REQUIRE_THROWS_AS(
-            erbsland::err::ParameterError,
+            erbsland::err::ParameterFailure,
             buffer.moveColumns(blockCoordinate(3), 2, blockCoordinate(-1), Block::space()));
     }
 
@@ -246,7 +247,7 @@ public:
         try {
             buffer.eraseColumns(blockCoordinate(-1), Block::space(), 1);
             REQUIRE(false);
-        } catch (const erbsland::err::ParameterError &error) {
+        } catch (const erbsland::err::ParameterFailure &error) {
             REQUIRE_EQUAL(error.toString(), "The start coordinate is out of bounds. (parameter: startColumn)"_el);
         }
     }

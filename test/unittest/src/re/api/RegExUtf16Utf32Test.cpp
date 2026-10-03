@@ -7,12 +7,12 @@
 #include <erbsland/re/Match.hpp>
 #include <erbsland/re/Match16.hpp>
 #include <erbsland/re/Match32.hpp>
-#include <erbsland/re/RegEx.hpp>
 #include <erbsland/re/StdFormat.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/RegEx.hpp>
+#include <erbsland/U16String.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32String.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;

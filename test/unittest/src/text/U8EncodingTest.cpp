@@ -1,11 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteReader.hpp>
-#include <erbsland/text/StdFormat.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteReader.hpp>
+#include <erbsland/OutOfRangeFailure.hpp>
+#include <erbsland/StdFormat.hpp>
 #include <erbsland/text/u8/impl/U8Encoding.hpp>
-#include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -67,6 +68,15 @@ public:
         requireDecodeOrThrowFails({0xEDU, 0xA0U, 0x80U}, 0U);
         requireDecodeOrThrowFails({0xF4U, 0x90U, 0x80U, 0x80U}, 0U);
         requireDecodeOrThrowFails({0xEFU, 0xBBU, 0xBFU}, 0U);
+    }
+
+    void testDecodeCharOrThrowFromNonzeroPosition() {
+        auto bytes = byteArray({0x41U, 0xC2U, 0xA2U, 0xE2U, 0x28U, 0xA1U});
+        auto position = ByteIndex{1U};
+        REQUIRE_EQUAL(el::text::impl::utf8::decodeCharOrThrow(std::span<char>{bytes}, position), Char{U'¢'});
+        REQUIRE_EQUAL(position, ByteIndex{3U});
+        REQUIRE_THROWS(el::text::impl::utf8::decodeCharOrThrow(std::span<char>{bytes}, position));
+        REQUIRE_EQUAL(position, ByteIndex{3U});
     }
 
     void testDecodeCharOrThrowAllMalformedUtf8Categories() {
@@ -142,7 +152,7 @@ public:
 
     void testReaderDecodeCharErrorMovement() {
         auto emptyReader = ByteReader{ByteBlock{}};
-        REQUIRE_THROWS(el::text::impl::utf8::decodeCharOrThrow(emptyReader));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeFailure, el::text::impl::utf8::decodeCharOrThrow(emptyReader));
         REQUIRE(emptyReader.position().isZero());
 
         for (const auto error : th::allUtf8Errors) {
@@ -209,6 +219,13 @@ public:
         requireFastAdvance({0xF5U, 0x80U, 0x80U, 0x80U}, 1U);
         requireFastAdvance({0xEDU, 0xA0U, 0x80U}, 3U);
         requireFastAdvance({0xF4U, 0x90U, 0x80U, 0x80U}, 4U);
+    }
+
+    void testFastRetreatPreservesNoIndex() {
+        const auto bytes = std::array<char, 1>{'a'};
+        auto position = el::ByteIndex::noIndex();
+        el::text::impl::utf8::fastRetreatChar(std::span<const char>{bytes}, position);
+        REQUIRE(position.isNoIndex());
     }
 
     void testFastRetreatCharSuccessCases() {

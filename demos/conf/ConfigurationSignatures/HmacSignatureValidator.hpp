@@ -3,10 +3,16 @@
 #pragma once
 
 #include <DemoCommon.hpp>
+#include <erbsland/base_n/BaseNDecoder.hpp>
+#include <erbsland/base_n/BaseNFormat.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/conf/SignatureValidator.hpp>
-#include <erbsland/cryptology/Hmac.hpp>
-#include <erbsland/text/base_n/BaseNDecoder.hpp>
-#include <erbsland/text/base_n/BaseNFormat.hpp>
+#include <erbsland/conf/SignatureValidatorData.hpp>
+#include <erbsland/conf/SignatureValidatorResult.hpp>
+#include <erbsland/HashAlgorithm.hpp>
+#include <erbsland/Hmac.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 
@@ -39,25 +45,22 @@ public: // implement `SignatureValidator`
             return _unsignedDocuments == UnsignedDocuments::Accept ? Result::Accept : Result::Reject;
         }
 
-        const auto algorithmSeparator = data.signatureText.find(";"_el);
-        if (algorithmSeparator.isNoIndex()) {
+        const auto first = data.signatureText.splitAtFirst(";"_el);
+        if (!first) {
             return Result::Reject;
         }
-        auto [algorithm, payload] = data.signatureText.splitAt(algorithmSeparator);
-        payload = std::get<1>(payload.slice(el::StringSide::Front));
-
-        const auto signerSeparator = payload.find(";"_el);
-        if (signerSeparator.isNoIndex()) {
+        const auto &[algorithm, payload] = *first;
+        const auto second = payload.splitAtFirst(";"_el);
+        if (!second) {
             return Result::Reject;
         }
-        auto [signer, authenticatorText] = payload.splitAt(signerSeparator);
-        authenticatorText = std::get<1>(authenticatorText.slice(el::StringSide::Front));
+        const auto &[signer, authenticatorText] = *second;
         if (algorithm != "hmac-sha256"_el || signer != _trustedSigner) {
             return Result::Reject;
         }
 
         const auto expected =
-            el::base_n::BaseNDecoder{authenticatorText, el::base_n::BaseNFormat::base64()}.toData(el::ByteLength{32U});
+            el::base_n::BaseNDecoder{authenticatorText, el::base_n::BaseNFormat::base64()}.toData(el::ByteCount{32U});
         if (!expected.has_value()) {
             return Result::Reject;
         }

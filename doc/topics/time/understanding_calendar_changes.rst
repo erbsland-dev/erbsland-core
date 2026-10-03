@@ -69,7 +69,7 @@ two months.
 .. erbsland-demo::
     :source: time/CalendarDelta/Compose.cpp
     :exec: time/calendar_delta --demo Compose
-    :source-sha256: 92661af7acd36842182687484966e0b4cd94daf78b27a97da1fd2d862229c305
+    :sha256: e9da320386f2d5806d6ab4c18179f819da309d7d9bbfd1fd094a40c8bfcbea9a
 
 .. code-block:: cpp
 
@@ -112,12 +112,14 @@ two months.
         el::io::printLine(el::StringFormat{"Rebuilt parts equal: {}"_el}.build(el::CalendarDelta{parts} == adjustment));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Tangskov: zero true; monthly 1 mo; visit 1 mo 1 d 2 h
-    ns 1; us 2; ms 3; s 4; min 5; h 6; d 7; wk 8; mo 9; yr 10
-    Rebuilt parts equal: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTangskov: zero true; monthly 1 mo; visit 1 mo 1 d 2 h
+        ns 1; us 2; ms 3; s 4; min 5; h 6; d 7; wk 8; mo 9; yr 10
+        Rebuilt parts equal: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -146,7 +148,7 @@ This distinction also matters near a date/time boundary, where the components ar
 .. erbsland-demo::
     :source: time/CalendarDelta/Combine.cpp
     :exec: time/calendar_delta --demo Combine
-    :source-sha256: 864dada1c152be88f3b20664b545484780934718eae5c8121fad97dc3b5312ee
+    :sha256: 36007103bb2f14bd7c3e83383d5360dbd942c2b0d6800e858b8bcfe75eb2a9b5
 
 .. code-block:: cpp
 
@@ -172,12 +174,14 @@ This distinction also matters near a date/time boundary, where the components ar
             el::StringFormat{"Subtracting identical parts isZero: {}"_el}.build((combined - combined).isZero()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Combined: 1 mo 2 d; edited: 2 mo; difference: 2 d; negated: -1 mo -2 d
-    Same stored parts: false; cancellation isZero: false; fixed total: 0 s
-    Subtracting identical parts isZero: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCombined: 1 mo 2 d; edited: 2 mo; difference: 2 d; negated: -1 mo -2 d
+        Same stored parts: false; cancellation isZero: false; fixed total: 0 s
+        Subtracting identical parts isZero: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -212,7 +216,7 @@ It also shows why applying a month twice can differ from applying two months onc
 .. erbsland-demo::
     :source: time/CalendarDelta/Apply.cpp
     :exec: time/calendar_delta --demo Apply
-    :source-sha256: 661fb1bf67074a903f463450c9e71fe38ce5eafeb768140ad9bbdefa6dd3af0b
+    :sha256: 4257680ba89c102a2cacbc41d8d4f8be917640f3502e7d82662257ceab4a900e
 
 .. code-block:: cpp
 
@@ -247,17 +251,19 @@ It also shows why applying a month twice can differ from applying two months onc
             el::StringFormat{"Leap day plus year: {}"_el}.build((next + el::CalendarDelta{el::Years{1}}).toString()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    After hours: 2024-01-31 01:30:00Z
-    After days: 2024-02-01 01:30:00Z
-    After months: 2024-03-01 01:30:00Z
-    After years: 2025-03-01 01:30:00Z; combined: 2025-03-01 01:30:00Z
-    Month end: 2024-01-31 09:00:00Z; after month: 2024-02-29 09:00:00Z
-    Subtract month: 2024-01-29 09:00:00Z
-    Two at once: 2024-03-31 09:00:00Z; two separately: 2024-03-29 09:00:00Z
-    Leap day plus year: 2025-02-28 09:00:00Z
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAfter hours: 2024-01-31 01:30:00Z
+        After days: 2024-02-01 01:30:00Z
+        After months: 2024-03-01 01:30:00Z
+        After years: 2025-03-01 01:30:00Z; combined: 2025-03-01 01:30:00Z
+        Month end: 2024-01-31 09:00:00Z; after month: 2024-02-29 09:00:00Z
+        Subtract month: 2024-01-29 09:00:00Z
+        Two at once: 2024-03-31 09:00:00Z; two separately: 2024-03-29 09:00:00Z
+        Leap day plus year: 2025-02-28 09:00:00Z␛[0m
 
 .. erbsland-demo-end::
 
@@ -293,7 +299,7 @@ local clock reading.
 .. erbsland-demo::
     :source: time/CalendarDelta/Zones.cpp
     :exec: time/calendar_delta --demo Zones
-    :source-sha256: ce19c42005e7fd0dc7df0cb39573e7eacf2be932cf6c2e392bd1fe56a3850324
+    :sha256: 612312355a6e1cf8bfc56fc30f332007d3fad548f5f3f1e5fd80b1c7838e182d
 
 .. code-block:: cpp
 
@@ -317,12 +323,14 @@ local clock reading.
                 recurring.toString(), recurring.hour() == wallTime.hour()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Start: 2024-03-30 09:00:00+01:00; UTC: 2024-03-30 08:00:00
-    UTC day added: 2024-03-31 10:00:00+02:00; offset seconds: 7200
-    Next local occurrence: 2024-03-31 09:00:00+02:00; requested hour retained: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mStart: 2024-03-30 09:00:00+01:00; UTC: 2024-03-30 08:00:00
+        UTC day added: 2024-03-31 10:00:00+02:00; offset seconds: 7200
+        Next local occurrence: 2024-03-31 09:00:00+02:00; requested hour retained: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -362,7 +370,7 @@ Use the checked forms when clamping would silently change the meaning of your ru
 .. erbsland-demo::
     :source: time/CalendarDelta/Boundaries.cpp
     :exec: time/calendar_delta --demo Boundaries
-    :source-sha256: 35785571bf9847112c8520dc9b420f46505b8876d975803bbb8063107e0c8d0c
+    :sha256: cf83a879f3fa28ba68d3c0e3c064246d5672e9b97f0cd2cc9864ec0e987ccc0e
 
 .. code-block:: cpp
 
@@ -393,13 +401,15 @@ Use the checked forms when clamping would silently change the meaning of your ru
                 changed.toString(), !el::DateTime{}.addedOrThrow(tick).isValid()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Upper overflow: true; lower overflow: true; clamped high: true
-    Intermediate overflow: true; saturating result: 9999-12-30 23:59:59.999999999Z
-    Checked application rejects the first overflowing step.
-    Changed in place: 9999-11-30 23:59:59.999999999Z; invalid remains invalid: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mUpper overflow: true; lower overflow: true; clamped high: true
+        Intermediate overflow: true; saturating result: 9999-12-30 23:59:59.999999999Z
+        Checked application rejects the first overflowing step.
+        Changed in place: 9999-11-30 23:59:59.999999999Z; invalid remains invalid: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -433,7 +443,7 @@ It does not apply the delta to a date and does not alter the stored fields.
 .. erbsland-demo::
     :source: time/CalendarDelta/Convert.cpp
     :exec: time/calendar_delta --demo Convert
-    :source-sha256: 265a0324d1ce4c9f441c6470653d6863b92421e907e138fce7f07c8d0b903334
+    :sha256: 87abbc2d53e9b8f32947e08edebc6c1ff5d6484a502e331be9da2134b45b054a
 
 .. code-block:: cpp
 
@@ -468,17 +478,17 @@ It does not apply the delta to a date and does not alter the stored fields.
         }
     }
 
-    }
+.. erbsland-demo-run::
 
-.. erbsland-ansi::
-    :escape-char: ␛
+    .. erbsland-ansi::
+        :escape-char: ␛
 
-    Fixed change: 2 d 1 h 250 ms; precise interval: 2 d 1 h 250 ms
-    Month valid: false; optional: false; large valid: false; optional: false
-    Intermediate sum overflow converts: false
-    No exact fixed interval fits this change.
-    No exact fixed interval fits this change.
-    No exact fixed interval fits this change.
+        ␛[0mFixed change: 2 d 1 h 250 ms; precise interval: 2 d 1 h 250 ms
+        Month valid: false; optional: false; large valid: false; optional: false
+        Intermediate sum overflow converts: false
+        No exact fixed interval fits this change.
+        No exact fixed interval fits this change.
+        No exact fixed interval fits this change.␛[0m
 
 .. erbsland-demo-end::
 

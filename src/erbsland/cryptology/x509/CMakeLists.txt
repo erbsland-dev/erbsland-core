@@ -36,7 +36,8 @@ target_sources(erbsland-core PRIVATE
         X509Name_fwd.hpp
         X509NameAttribute.hpp
         X509RelativeDistinguishedName.hpp
-        X509ServerCertificatePolicy.cpp
-        X509ServerCertificatePolicy.hpp
+        X509RevocationStatus.hpp
+        X509TlsCertificatePolicy.cpp
+        X509TlsCertificatePolicy.hpp
         X509Version.hpp
 )

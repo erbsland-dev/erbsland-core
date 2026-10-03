@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "OperationData.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/NotFoundError.hpp"
 #include "../../../text/Literals.hpp"
 
 namespace erbsland::re::impl {
 
+using namespace text;
 using namespace text::literals;
 
 auto operationData() noexcept -> const std::vector<OperationData> & {
@@ -205,13 +206,13 @@ auto dataForOperation(const Operation operation) noexcept -> const OperationData
     return operationData().back();
 }
 
-auto baseOperationForString(const text::String &baseName) -> Operation {
+auto baseOperationForString(const String &baseName) -> Operation {
     for (const auto &data : operationData()) {
-        if (baseName.compare(data.baseName, text::Char::compareCaseFolded) == std::strong_ordering::equal) {
+        if (baseName.compare(data.baseName, Char::compareCaseFolded) == std::strong_ordering::equal) {
             return data.operation;
         }
     }
-    throw err::ParameterError{"Invalid operation name."_el, "str"_el};
+    throw err::NotFoundError{"Invalid operation name."_el};
 }
 
 auto modifiedOperation(const Operation baseOperation, const std::set<OperationModifier> &operationModifiers)
@@ -222,14 +223,14 @@ auto modifiedOperation(const Operation baseOperation, const std::set<OperationMo
             return data.operation;
         }
     }
-    throw err::ParameterError{"Invalid operation modifiers."_el, "modifiers"_el};
+    throw err::NotFoundError{"Invalid operation modifiers."_el};
 }
 
-auto toString(const Operation operation) noexcept -> text::String {
+auto toString(const Operation operation) noexcept -> String {
     return dataForOperation(operation).displayName;
 }
 
-auto toBaseName(const Operation operation) noexcept -> text::String {
+auto toBaseName(const Operation operation) noexcept -> String {
     return dataForOperation(operation).baseName;
 }
 

@@ -3,6 +3,7 @@
 #include "U16StringModifyTools.hpp"
 
 #include "U16StringCharReadTool.hpp"
+#include "U16StringComparisonTools.hpp"
 #include "U16Writer.hpp"
 
 #include <algorithm>
@@ -10,26 +11,27 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <utility>
 
 namespace erbsland::text::impl {
 
 using namespace unit;
 
-auto U16StringModifyTools::removed(const CpRange range) const -> U16StringSharedStorage {
+auto U16StringModifyTools::removedIfChanged(const CpRange range) const -> std::optional<U16StringSharedStorage> {
     const auto data = _data.dataSpan();
     const auto removeRange = _data.relativeRangeForAbsolute(U16StringCharReadTool{_data}.sliceRange(range));
     if (data.empty() || removeRange.isEmpty()) {
-        return U16StringSharedStorage::fromCodeUnits(data);
+        return std::nullopt;
     }
 
-    const auto start = removeRange.index().toSizeT();
+    const auto start = removeRange.beginIndex().toSizeT();
     const auto count = removeRange.length().toSizeT();
     const auto newSize = data.size() - count;
     auto storage = U16StringSharedStorage::forSize(newSize);
     if (start > 0U) {
         std::memcpy(storage.dataForWrite(), data.data(), start * sizeof(char16_t));
     }
-    const auto tailStart = U16StringSharedStorage::checkedAddSize(start, count, "Remove range exceeds string bounds");
+    const auto tailStart = U16StringSharedStorage::checkedAddSize(start, count);
     if (tailStart < data.size()) {
         std::memcpy(
             storage.dataForWrite() + start, data.data() + tailStart, (data.size() - tailStart) * sizeof(char16_t));
@@ -37,18 +39,14 @@ auto U16StringModifyTools::removed(const CpRange range) const -> U16StringShared
     return storage;
 }
 
-auto U16StringModifyTools::removedAll(const CharSet &characters) const -> U16StringSharedStorage {
-    const auto data = _data.dataSpan();
-    if (data.empty() || characters.isEmpty()) {
-        return U16StringSharedStorage::fromCodeUnits(data);
-    }
-    return replacedCharacters(
-        [&](const Char character) noexcept -> bool { return characters.contains(character); }, {});
+auto U16StringModifyTools::removedAllIfChanged(const CharSet &characters) const
+    -> std::optional<U16StringSharedStorage> {
+    return replacedAllIfChanged(characters, U16StringDataView{});
 }
 
-auto U16StringModifyTools::removed(const U16StringDataView &text, const CharCompareFn compareFn) const
-    -> U16StringSharedStorage {
-    return replacedText(text, {}, compareFn);
+auto U16StringModifyTools::removedAllIfChanged(const U16StringDataView &text, const CharCompareFn compareFn) const
+    -> std::optional<U16StringSharedStorage> {
+    return replacedTextIfChanged(text, {}, compareFn);
 }
 
 auto U16StringModifyTools::kept(const CpRange range) const -> U16StringSharedStorage {
@@ -57,92 +55,98 @@ auto U16StringModifyTools::kept(const CpRange range) const -> U16StringSharedSto
     if (data.empty() || keepRange.isEmpty()) {
         return {};
     }
+    // Keeping a range deliberately prunes the backing storage; do not return a shared subview.
     return U16StringSharedStorage::fromCodeUnits(
-        data.subspan(keepRange.index().toSizeT(), keepRange.length().toSizeT()));
+        data.subspan(keepRange.beginIndex().toSizeT(), keepRange.length().toSizeT()));
 }
 
-auto U16StringModifyTools::replacedAll(const CharSet &characters, const Char replacement) const
-    -> U16StringSharedStorage {
+auto U16StringModifyTools::replacedAllIfChanged(const CharSet &characters, const Char replacement) const
+    -> std::optional<U16StringSharedStorage> {
     const auto data = _data.dataSpan();
     if (data.empty() || characters.isEmpty()) {
-        return U16StringSharedStorage::fromCodeUnits(data);
+        return std::nullopt;
     }
     const auto bytes = characterBytes(replacement);
-    return replacedCharacters(
+    return replacedCharactersIfChanged(
         [&](const Char character) noexcept -> bool { return characters.contains(character); },
         characterByteSpan(replacement, bytes));
 }
 
-auto U16StringModifyTools::replacedAll(const CharSet &characters, const U16StringDataView &replacement) const
-    -> U16StringSharedStorage {
+auto U16StringModifyTools::replacedAllIfChanged(const CharSet &characters, const U16StringDataView &replacement) const
+    -> std::optional<U16StringSharedStorage> {
     const auto data = _data.dataSpan();
     if (data.empty() || characters.isEmpty()) {
-        return U16StringSharedStorage::fromCodeUnits(data);
+        return std::nullopt;
     }
-    return replacedCharacters(
+    return replacedCharactersIfChanged(
         [&](const Char character) noexcept -> bool { return characters.contains(character); }, replacement.dataSpan());
 }
 
-auto U16StringModifyTools::replacedAll(
+auto U16StringModifyTools::replacedAllIfChanged(
     const U16StringDataView &text, const U16StringDataView &replacement, const CharCompareFn compareFn) const
-    -> U16StringSharedStorage {
-    return replacedText(text, replacement.dataSpan(), compareFn);
+    -> std::optional<U16StringSharedStorage> {
+    return replacedTextIfChanged(text, replacement.dataSpan(), compareFn);
 }
 
-auto U16StringModifyTools::removed(const U16DataRange range) const -> U16StringSharedStorage {
-    return replaced(range, {});
+auto U16StringModifyTools::removedIfChanged(const U16Range range) const -> std::optional<U16StringSharedStorage> {
+    return replacedIfChanged(range, {});
 }
 
-auto U16StringModifyTools::kept(const U16DataRange range) const -> U16StringSharedStorage {
+auto U16StringModifyTools::kept(const U16Range range) const -> U16StringSharedStorage {
     const auto data = _data.dataSpan();
     if (data.empty() || !range.isValid()) {
         return {};
     }
-    const auto keepRange = range.clampedTo(U16DataLength::fromSizeT(data.size()));
+    const auto keepRange = range.clampedTo(U16Count::fromSizeT(data.size()));
     if (keepRange.isEmpty()) {
         return {};
     }
+    // Keeping a range deliberately prunes the backing storage; do not return a shared subview.
     return U16StringSharedStorage::fromCodeUnits(
-        data.subspan(keepRange.index().toSizeT(), keepRange.length().toSizeT()));
+        data.subspan(keepRange.beginIndex().toSizeT(), keepRange.length().toSizeT()));
 }
 
-auto U16StringModifyTools::inserted(const U16DataIndex index, const U16StringDataView &text) const
-    -> U16StringSharedStorage {
-    if (index.isNoIndex()) {
-        return U16StringSharedStorage::fromCodeUnits(_data.dataSpan());
+auto U16StringModifyTools::insertedIfChanged(const U16Index index, const U16StringDataView &text) const
+    -> std::optional<U16StringSharedStorage> {
+    if (index.isNoIndex() || text.dataSpan().empty()) {
+        return std::nullopt;
     }
-    const auto insertIndex = U16DataIndex::fromSizeT(std::min(index.toSizeT(), _data.dataSpan().size()));
-    return replaced(U16DataRange::emptyAt(insertIndex), text);
+    const auto insertIndex = U16Index::fromSizeT(std::min(index.toSizeT(), _data.dataSpan().size()));
+    return replacedIfChanged(U16Range::emptyAt(insertIndex), text);
 }
 
-auto U16StringModifyTools::inserted(const CpIndex index, const U16StringDataView &text) const
-    -> U16StringSharedStorage {
-    if (index.isNoIndex()) {
-        return U16StringSharedStorage::fromCodeUnits(_data.dataSpan());
+auto U16StringModifyTools::insertedIfChanged(const CpIndex index, const U16StringDataView &text) const
+    -> std::optional<U16StringSharedStorage> {
+    if (index.isNoIndex() || text.dataSpan().empty()) {
+        return std::nullopt;
     }
     auto dataIndex = dataIndexForCharacterIndex(_data, index);
     if (dataIndex.isNoIndex()) {
-        dataIndex = U16DataIndex::end(U16DataLength::fromSizeT(_data.dataSpan().size()));
+        dataIndex = U16Index::end(U16Count::fromSizeT(_data.dataSpan().size()));
     }
-    return inserted(dataIndex, text);
+    return insertedIfChanged(dataIndex, text);
 }
 
-auto U16StringModifyTools::replaced(const U16DataRange range, const U16StringDataView &text) const
-    -> U16StringSharedStorage {
+auto U16StringModifyTools::replacedIfChanged(const U16Range range, const U16StringDataView &text) const
+    -> std::optional<U16StringSharedStorage> {
     const auto data = _data.dataSpan();
     if (!range.isValid()) {
-        return U16StringSharedStorage::fromCodeUnits(data);
+        return std::nullopt;
     }
-    const auto replaceRange = range.clampedTo(U16DataLength::fromSizeT(data.size()));
+    const auto replaceRange = range.clampedTo(U16Count::fromSizeT(data.size()));
     const auto replacement = text.dataSpan();
     if (replaceRange.isEmpty() && replacement.empty()) {
-        return U16StringSharedStorage::fromCodeUnits(data);
+        return std::nullopt;
     }
 
-    const auto start = replaceRange.index().toSizeT();
+    const auto start = replaceRange.beginIndex().toSizeT();
     const auto removeLength = replaceRange.length().toSizeT();
-    const auto newSize = U16StringSharedStorage::checkedAddSize(
-        data.size() - removeLength, replacement.size(), "Modified string exceeds size bounds");
+    if (removeLength == replacement.size() &&
+        (removeLength == 0U ||
+            std::memcmp(data.data() + start, replacement.data(), removeLength * sizeof(char16_t)) == 0)) {
+        return std::nullopt;
+    }
+    const auto newSize = U16StringSharedStorage::checkedAddSize(data.size() - removeLength, replacement.size());
     auto storage = U16StringSharedStorage::forSize(newSize);
     if (start > 0U) {
         std::memcpy(storage.dataForWrite(), data.data(), start * sizeof(char16_t));
@@ -150,7 +154,7 @@ auto U16StringModifyTools::replaced(const U16DataRange range, const U16StringDat
     if (!replacement.empty()) {
         std::memcpy(storage.dataForWrite() + start, replacement.data(), replacement.size() * sizeof(char16_t));
     }
-    const auto tailStart = U16StringSharedStorage::checkedAddSize(start, removeLength, "Replace range exceeds bounds");
+    const auto tailStart = U16StringSharedStorage::checkedAddSize(start, removeLength);
     if (tailStart < data.size()) {
         std::memcpy(
             storage.dataForWrite() + start + replacement.size(),
@@ -160,103 +164,78 @@ auto U16StringModifyTools::replaced(const U16DataRange range, const U16StringDat
     return storage;
 }
 
-auto U16StringModifyTools::replaced(const CpRange range, const U16StringDataView &text) const
-    -> U16StringSharedStorage {
-    return replaced(dataRangeForCharacterRange(_data, range), text);
+auto U16StringModifyTools::replacedIfChanged(const CpRange range, const U16StringDataView &text) const
+    -> std::optional<U16StringSharedStorage> {
+    return replacedIfChanged(dataRangeForCharacterRange(_data, range), text);
 }
 
-auto U16StringModifyTools::removedFirst(const U16StringDataView &text, const CharCompareFn compareFn) const
-    -> U16StringSharedStorage {
-    return replacedFirst(text, {}, compareFn);
+auto U16StringModifyTools::removedFirstIfChanged(const U16StringDataView &text, const CharCompareFn compareFn) const
+    -> std::optional<U16StringSharedStorage> {
+    return replacedFirstIfChanged(text, {}, compareFn);
 }
 
-auto U16StringModifyTools::replacedFirst(
+auto U16StringModifyTools::replacedFirstIfChanged(
     const U16StringDataView &text, const U16StringDataView &replacement, const CharCompareFn compareFn) const
-    -> U16StringSharedStorage {
-    const auto range = findFirstTextRange(_data, text, compareFn);
+    -> std::optional<U16StringSharedStorage> {
+    const auto range = U16StringComparisonTools{_data}.findFirstRange(text, compareFn);
     if (!range.isValid()) {
-        return U16StringSharedStorage::fromCodeUnits(_data.dataSpan());
+        return std::nullopt;
     }
-    return replaced(range, replacement);
+    return replacedIfChanged(range, replacement);
 }
 
-auto U16StringModifyTools::replacedText(
+void U16StringModifyTools::appendData(U16StringSharedStorage &storage, const std::span<const char16_t> data) {
+    if (data.empty()) {
+        return;
+    }
+    const auto oldSize = storage.range().length().toSizeT();
+    const auto newSize = U16StringSharedStorage::checkedAddSize(oldSize, data.size());
+    storage.ensureMutableCapacity(newSize);
+    std::memcpy(storage.dataForWrite() + oldSize, data.data(), data.size() * sizeof(char16_t));
+    storage.resize(newSize);
+}
+
+auto U16StringModifyTools::replacedTextIfChanged(
     const U16StringDataView &text, const std::span<const char16_t> replacement, const CharCompareFn compareFn) const
-    -> U16StringSharedStorage {
+    -> std::optional<U16StringSharedStorage> {
     const auto data = _data.dataSpan();
     const auto needle = text.dataSpan();
     if (data.empty() || needle.empty()) {
-        return U16StringSharedStorage::fromCodeUnits(data);
+        return std::nullopt;
     }
 
-    auto newSize = std::size_t{0};
-    auto position = U16DataIndex::zero();
+    auto result = std::optional<U16StringSharedStorage>{};
+    auto copyStart = std::size_t{0};
+    auto position = U16Index::zero();
     while (position.toSizeT() < data.size()) {
-        if (matchesText(data, position, needle, compareFn)) {
-            newSize = U16StringSharedStorage::checkedAddSize(
-                newSize, replacement.size(), "Modified string exceeds size bounds");
-            position = endOfMatch(data, position, needle);
-        } else {
-            const auto characterStart = position;
+        const auto matchEnd = U16StringComparisonTools::endOfTextMatch(data, position, needle, compareFn);
+        if (matchEnd.isNoIndex()) {
             utf16::fastAdvanceChar(data, position);
-            newSize = U16StringSharedStorage::checkedAddSize(
-                newSize, position.toSizeT() - characterStart.toSizeT(), "Modified string exceeds size bounds");
+            continue;
         }
-    }
-    U16StringSharedStorage::validateSize(newSize);
-    auto storage = U16StringSharedStorage::forSize(newSize);
-    auto writePosition = std::size_t{0};
-    position = U16DataIndex::zero();
-    while (position.toSizeT() < data.size()) {
-        if (matchesText(data, position, needle, compareFn)) {
-            if (!replacement.empty()) {
-                std::memcpy(
-                    storage.dataForWrite() + writePosition, replacement.data(), replacement.size() * sizeof(char16_t));
-                writePosition = U16StringSharedStorage::checkedAddSize(
-                    writePosition, replacement.size(), "Modified string write exceeds size bounds");
+        const auto begin = position.toSizeT();
+        position = matchEnd;
+        const auto matchSize = position.toSizeT() - begin;
+        if (matchSize == replacement.size() &&
+            std::memcmp(data.data() + begin, replacement.data(), matchSize * sizeof(char16_t)) == 0) {
+            continue;
+        }
+        if (!result) {
+            result.emplace();
+            const auto initialCapacity =
+                U16StringSharedStorage::checkedAddSize(data.size() - matchSize, replacement.size());
+            if (initialCapacity > 0U) {
+                result->ensureMutableCapacity(initialCapacity);
             }
-            position = endOfMatch(data, position, needle);
-        } else {
-            const auto characterStart = position;
-            utf16::fastAdvanceChar(data, position);
-            const auto characterSize = position.toSizeT() - characterStart.toSizeT();
-            std::memcpy(
-                storage.dataForWrite() + writePosition,
-                data.data() + characterStart.toSizeT(),
-                characterSize * sizeof(char16_t));
-            writePosition = U16StringSharedStorage::checkedAddSize(
-                writePosition, characterSize, "Modified string write exceeds size bounds");
         }
+        appendData(result.value(), data.subspan(copyStart, begin - copyStart));
+        appendData(result.value(), replacement);
+        copyStart = position.toSizeT();
     }
-    return storage;
-}
-
-auto U16StringModifyTools::matchesText(
-    const std::span<const char16_t> data,
-    const U16DataIndex start,
-    const std::span<const char16_t> text,
-    const CharCompareFn compareFn) noexcept -> bool {
-    auto dataPosition = start;
-    auto textPosition = U16DataIndex::zero();
-    while (textPosition.toSizeT() < text.size()) {
-        if (dataPosition.toSizeT() >= data.size()) {
-            return false;
-        }
-        const auto dataCharacter = utf16::decodeCharOrReplace(data, dataPosition);
-        const auto textCharacter = utf16::decodeCharOrReplace(text, textPosition);
-        if (!charactersEqual(dataCharacter, textCharacter, compareFn)) {
-            return false;
-        }
+    if (result) {
+        appendData(result.value(), data.subspan(copyStart));
     }
-    return true;
-}
-
-auto U16StringModifyTools::charactersEqual(const Char left, const Char right, const CharCompareFn compareFn) noexcept
-    -> bool {
-    if (compareFn != nullptr) {
-        return compareFn(left, right) == std::strong_ordering::equal;
-    }
-    return left == right;
+    return result;
 }
 
 auto U16StringModifyTools::replaceTextInStorage(
@@ -271,17 +250,20 @@ auto U16StringModifyTools::replaceTextInStorage(
         return storage;
     }
     if (!storage.isUniqueFullRange() || !replacement.empty()) {
-        storage = U16StringModifyTools{dataView}.replacedText(text, replacement, compareFn);
+        if (auto result = U16StringModifyTools{dataView}.replacedTextIfChanged(text, replacement, compareFn)) {
+            storage = std::move(result.value());
+        }
         return storage;
     }
 
     auto hasMatch = false;
     auto writePosition = std::size_t{0};
-    auto position = U16DataIndex::zero();
+    auto position = U16Index::zero();
     while (position.toSizeT() < data.size()) {
-        if (matchesText(data, position, needle, compareFn)) {
+        const auto matchEnd = U16StringComparisonTools::endOfTextMatch(data, position, needle, compareFn);
+        if (!matchEnd.isNoIndex()) {
             hasMatch = true;
-            position = endOfMatch(data, position, needle);
+            position = matchEnd;
         } else {
             const auto characterStart = position;
             utf16::fastAdvanceChar(data, position);
@@ -292,8 +274,7 @@ auto U16StringModifyTools::replaceTextInStorage(
                     data.data() + characterStart.toSizeT(),
                     characterSize * sizeof(char16_t));
             }
-            writePosition = U16StringSharedStorage::checkedAddSize(
-                writePosition, characterSize, "Modified string write exceeds size bounds");
+            writePosition = U16StringSharedStorage::checkedAddSize(writePosition, characterSize);
         }
     }
     if (hasMatch) {
@@ -303,63 +284,31 @@ auto U16StringModifyTools::replaceTextInStorage(
 }
 
 auto U16StringModifyTools::dataRangeForCharacterRange(const U16StringDataView &data, const CpRange range) noexcept
-    -> U16DataRange {
+    -> U16Range {
     if (!range.isValid()) {
-        return U16DataRange::noRange();
+        return U16Range::noRange();
     }
-    auto start = dataIndexForCharacterIndex(data, range.index());
+    auto start = dataIndexForCharacterIndex(data, range.beginIndex());
     if (start.isNoIndex()) {
-        start = U16DataIndex::end(U16DataLength::fromSizeT(data.dataSpan().size()));
+        start = U16Index::end(U16Count::fromSizeT(data.dataSpan().size()));
     }
     if (range.length().isZero()) {
-        return U16DataRange::emptyAt(start);
+        return U16Range::emptyAt(start);
     }
     if (range.length().isInfinite()) {
-        return U16DataRange{start, U16DataLength::infinite()}.clampedTo(
-            U16DataLength::fromSizeT(data.dataSpan().size()));
+        return U16Range{start, U16Count::infinite()}.clampedTo(U16Count::fromSizeT(data.dataSpan().size()));
     }
     auto end = range.endIndex();
-    auto endData = end.isNoIndex() ? U16DataIndex::noIndex() : dataIndexForCharacterIndex(data, end);
+    auto endData = end.isNoIndex() ? U16Index::noIndex() : dataIndexForCharacterIndex(data, end);
     if (endData.isNoIndex()) {
-        endData = U16DataIndex::end(U16DataLength::fromSizeT(data.dataSpan().size()));
+        endData = U16Index::end(U16Count::fromSizeT(data.dataSpan().size()));
     }
-    return U16DataRange{start, endData}.clampedTo(U16DataLength::fromSizeT(data.dataSpan().size()));
+    return U16Range{start, endData}.clampedTo(U16Count::fromSizeT(data.dataSpan().size()));
 }
 
 auto U16StringModifyTools::dataIndexForCharacterIndex(const U16StringDataView &data, const CpIndex index) noexcept
-    -> U16DataIndex {
+    -> U16Index {
     return U16StringCharReadTool{data}.byteIndexAt(index);
-}
-
-auto U16StringModifyTools::findFirstTextRange(
-    const U16StringDataView &dataView, const U16StringDataView &text, const CharCompareFn compareFn) noexcept
-    -> U16DataRange {
-    const auto data = dataView.dataSpan();
-    const auto needle = text.dataSpan();
-    if (data.empty() || needle.empty()) {
-        return U16DataRange::noRange();
-    }
-
-    auto position = U16DataIndex::zero();
-    while (position.toSizeT() < data.size()) {
-        const auto start = position;
-        if (matchesText(data, start, needle, compareFn)) {
-            return U16DataRange{start, endOfMatch(data, start, needle)};
-        }
-        utf16::fastAdvanceChar(data, position);
-    }
-    return U16DataRange::noRange();
-}
-
-auto U16StringModifyTools::endOfMatch(
-    const std::span<const char16_t> data, U16DataIndex start, const std::span<const char16_t> text) noexcept
-    -> U16DataIndex {
-    auto textPosition = U16DataIndex::zero();
-    while (textPosition.toSizeT() < text.size() && start.toSizeT() < data.size()) {
-        utf16::fastAdvanceChar(data, start);
-        utf16::fastAdvanceChar(text, textPosition);
-    }
-    return start;
 }
 
 }

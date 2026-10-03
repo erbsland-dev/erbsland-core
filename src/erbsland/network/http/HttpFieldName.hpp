@@ -23,7 +23,7 @@ public:
     /// Create the conventional name for a recognized field type.
     HttpFieldName(HttpFieldType type) noexcept; // NOLINT(*-explicit-constructor)
     /// Create a validated field name.
-    /// @throws err::ParameterError If the text is not a non-empty ASCII token.
+    /// @param text The field name text. Must be a non-empty ASCII token.
     explicit HttpFieldName(text::String text);
 
     // defaults

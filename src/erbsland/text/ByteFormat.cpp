@@ -10,8 +10,8 @@
 namespace erbsland::text {
 
 using namespace literals;
+using unit::ByteCount;
 using unit::ByteIndex;
-using unit::ByteLength;
 using unit::ItemCount;
 
 ByteFormat::ByteFormat() : _p{std::make_unique<impl::ByteFormatData>()} {
@@ -66,11 +66,11 @@ auto ByteFormat::setLetterCase(LetterCase letterCase) noexcept -> ByteFormat & {
     return *this;
 }
 
-auto ByteFormat::bytesPerLine() const noexcept -> ByteLength {
+auto ByteFormat::bytesPerLine() const noexcept -> ByteCount {
     return _p->bytesPerLine;
 }
 
-auto ByteFormat::byteGroupSize() const noexcept -> ByteLength {
+auto ByteFormat::byteGroupSize() const noexcept -> ByteCount {
     return _p->byteGroupSize;
 }
 
@@ -96,11 +96,11 @@ auto ByteFormat::setStartOffset(ByteIndex startOffset) noexcept -> ByteFormat & 
     return *this;
 }
 
-auto ByteFormat::maximum() const noexcept -> ByteLength {
+auto ByteFormat::maximum() const noexcept -> ByteCount {
     return _p->maximum;
 }
 
-auto ByteFormat::setMaximum(const ByteLength maximum) noexcept -> ByteFormat & {
+auto ByteFormat::setMaximum(const ByteCount maximum) noexcept -> ByteFormat & {
     _p->maximum = maximum;
     return *this;
 }
@@ -123,12 +123,12 @@ auto ByteFormat::setEllipsis(const String &ellipsis) -> ByteFormat & {
     return *this;
 }
 
-auto ByteFormat::setBytesPerLine(const ByteLength bytesPerLine) noexcept -> ByteFormat & {
+auto ByteFormat::setBytesPerLine(const ByteCount bytesPerLine) noexcept -> ByteFormat & {
     _p->bytesPerLine = atLeastOne(bytesPerLine);
     return *this;
 }
 
-auto ByteFormat::setByteGroupSize(const ByteLength byteGroupSize) noexcept -> ByteFormat & {
+auto ByteFormat::setByteGroupSize(const ByteCount byteGroupSize) noexcept -> ByteFormat & {
     _p->byteGroupSize = atLeastOne(byteGroupSize);
     return *this;
 }
@@ -183,14 +183,11 @@ auto ByteFormat::memoryDump() -> ByteFormat {
 }
 
 auto ByteFormat::forDiagnostic() -> ByteFormat {
-    return ByteFormat::compact()
-        .setMaximum(ByteLength{16U})
-        .setTruncateMode(TruncateMode::Middle)
-        .setEllipsis("..."_el);
+    return ByteFormat::compact().setMaximum(ByteCount{16U}).setTruncateMode(TruncateMode::Middle).setEllipsis("..."_el);
 }
 
-auto ByteFormat::atLeastOne(const ByteLength value) noexcept -> ByteLength {
-    return value.isZero() ? ByteLength::one() : value;
+auto ByteFormat::atLeastOne(const ByteCount value) noexcept -> ByteCount {
+    return value.isZero() ? ByteCount::one() : value;
 }
 
 auto ByteFormat::atLeastOne(const ItemCount value) noexcept -> ItemCount {

@@ -5,18 +5,21 @@
 #include "OptionChoices.hpp"
 
 #include "impl/AsciiOptionText.hpp"
+#include "impl/OptionLiterals.hpp"
 
+#include "../err/ParameterFailure.hpp"
+#include "../i18n/DisplayText.hpp"
 #include "../text/Literals.hpp"
+#include "../text/StringList.hpp"
 
 #include <compare>
 #include <memory>
 
 namespace erbsland::options {
 
+using namespace unit;
+using namespace text;
 using namespace text::literals;
-using text::Char;
-using text::String;
-using text::StringSide;
 
 Option::Option(std::initializer_list<String> names) {
     setNames(names);
@@ -31,11 +34,11 @@ auto Option::create(std::initializer_list<String> names) -> OptionPtr {
 }
 
 auto Option::isLongName(const String &name) noexcept -> bool {
-    return name.startsWith("--"_el);
+    return name.startsWith(impl::option_literal::cLongNamePrefix);
 }
 
 auto Option::isShortName(const String &name) noexcept -> bool {
-    return name.startsWith("-"_el) && !isLongName(name);
+    return name.startsWith(impl::option_literal::cShortNamePrefix) && !isLongName(name);
 }
 
 auto Option::isOptionName(const String &name) noexcept -> bool {
@@ -50,7 +53,7 @@ auto Option::isValidLongName(const String &name) noexcept -> bool {
     if (!isLongName(name)) {
         return false;
     }
-    const auto token = name.slice({unit::ByteIndex{2U}, unit::ByteLength::infinite()});
+    const auto token = name.slice({ByteIndex{2U}, ByteCount::infinite()});
     return impl::isAsciiNameToken(token);
 }
 
@@ -59,8 +62,7 @@ auto Option::isValidShortName(const String &name) noexcept -> bool {
         return false;
     }
 
-    const auto [character, rest] =
-        name.slice({unit::ByteIndex::one(), unit::ByteLength::infinite()}).slice(StringSide::Front);
+    const auto [character, rest] = name.slice({ByteIndex::one(), ByteCount::infinite()}).slice(StringSide::Front);
     return character.isAsciiAlphanumeric() && rest.isEmpty();
 }
 
@@ -75,20 +77,24 @@ auto Option::isValidPositionalName(const String &name) noexcept -> bool {
     return impl::isAsciiNameToken(name);
 }
 
-void Option::addName(String name) {
-    if (isShortName(name)) {
-        _names.emplace_back(std::move(name));
-    } else {
-        _names.emplace_back(name.transformed(Char::toAsciiLowercase));
+void Option::addName(const String &name) {
+    if (!isValidOptionName(name) && !isValidPositionalName(name)) {
+        throw err::ParameterFailure{i18n::displayText("options.invalid_definition_name"_el), "name"_el};
     }
+    _names.append(impl::normalizeOptionName(name));
     updateImplicitTypeFromNames();
 }
 
 void Option::setNames(std::initializer_list<String> names) {
-    _names.clear();
+    auto replacement = StringList{};
+    replacement.reserve(ItemCount{names.size(), ItemCount::Unchecked{}});
     for (const auto &name : names) {
-        _names.emplace_back(isShortName(name) ? name : name.transformed(Char::toAsciiLowercase));
+        if (!isValidOptionName(name) && !isValidPositionalName(name)) {
+            throw err::ParameterFailure{i18n::displayText("options.invalid_definition_name"_el), "names"_el};
+        }
+        replacement.append(impl::normalizeOptionName(name));
     }
+    _names = std::move(replacement);
     updateImplicitTypeFromNames();
 }
 
@@ -97,7 +103,7 @@ auto Option::isDisabled() const noexcept -> bool {
 }
 
 auto Option::hasLongName(const String &name) const -> bool {
-    const auto canonicalName = name.transformed(Char::toAsciiLowercase);
+    const auto canonicalName = impl::normalizeOptionName(name);
     for (const auto &optionName : _names) {
         if (isLongName(optionName) && optionName == canonicalName) {
             return true;
@@ -108,7 +114,7 @@ auto Option::hasLongName(const String &name) const -> bool {
 
 auto Option::hasShortName(const Char shortName) const -> bool {
     for (const auto &optionName : _names) {
-        if (isValidShortName(optionName) && optionName.charAt(unit::ByteIndex::one()) == shortName) {
+        if (isValidShortName(optionName) && optionName.charAt(ByteIndex::one()) == shortName) {
             return true;
         }
     }
@@ -134,7 +140,7 @@ auto Option::hasPositionalName() const -> bool {
 }
 
 auto Option::hasPositionalName(const String &name) const -> bool {
-    const auto canonicalName = name.transformed(Char::toAsciiLowercase);
+    const auto canonicalName = impl::normalizeOptionName(name);
     for (const auto &optionName : _names) {
         if (isPositionalName(optionName) && optionName == canonicalName) {
             return true;

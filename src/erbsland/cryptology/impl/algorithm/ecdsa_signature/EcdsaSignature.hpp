@@ -29,9 +29,16 @@ namespace erbsland::cryptology::impl::ecdsa_signature {
     mem::ConstByteSpan message,
     mem::ConstByteSpan signature) -> bool;
 /// Decode the supported signature algorithm and its absent parameters.
-[[nodiscard]] auto decodeParameters(const X509AlgorithmIdentifier &algorithm) -> Parameters;
+[[nodiscard]] auto decodeHash(const X509AlgorithmIdentifier &algorithm) -> HashAlgorithm;
+/// Decode the named curve independently of the certificate signature hash (RFC 5480 section 2.1.1).
+/// @param publicKey The SubjectPublicKeyInfo to inspect.
+/// @return The supported named curve.
+/// @throws err::ParseError If the algorithm or curve encoding is unsupported.
+/// @tested{EcdsaSignatureTest}
+[[nodiscard]] auto decodeCurve(const PublicKey &publicKey) -> NistPrimeCurve::Name;
 /// Decode and validate the matching id-ecPublicKey SubjectPublicKeyInfo.
-[[nodiscard]] auto decodePublicKey(const PublicKey &publicKey, const Parameters &parameters) -> NistPrimeCurve::Point;
+[[nodiscard]] auto decodePublicKey(const PublicKey &publicKey, NistPrimeCurve::Name expectedCurve)
+    -> NistPrimeCurve::Point;
 /// Decode one canonical DER ECDSA-Sig-Value, returning no value for out-of-range r or s.
 [[nodiscard]] auto decodeSignature(mem::ConstByteSpan signature, const NistPrimeCurve &curve)
     -> std::optional<SignatureValues>;

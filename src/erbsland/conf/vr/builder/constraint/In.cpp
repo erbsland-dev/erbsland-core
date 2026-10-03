@@ -22,13 +22,13 @@ void In::apply(RuleDefinition &rule) const {
                     text::StringFormat{"The 'in' constraint must specify a single {} value or a list of {} values"_el}
                         .build(rule.type().toText(), rule.type().toText()));
             }
-            if constexpr (std::is_same_v<T, std::vector<Integer>>) {
+            if constexpr (std::is_same_v<T, util::List<Integer>>) {
                 requireRuleTypeForConstraint(rule, "in"_el, {vr::RuleType::Integer});
                 if (impl::InIntegerConstraint::hasDuplicate(values, rule.caseSensitivity())) {
                     throwValidationError("The 'in' list must not contain duplicate values"_el);
                 }
                 return std::make_shared<impl::InIntegerConstraint>(values);
-            } else if constexpr (std::is_same_v<T, std::vector<Float>>) {
+            } else if constexpr (std::is_same_v<T, util::List<Float>>) {
                 requireRuleTypeForConstraint(rule, "in"_el, {vr::RuleType::Float});
                 if (impl::InFloatConstraint::hasDuplicate(values, rule.caseSensitivity())) {
                     throwValidationError("The 'in' list must not contain duplicate values"_el);

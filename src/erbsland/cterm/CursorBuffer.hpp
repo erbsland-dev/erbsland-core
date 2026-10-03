@@ -5,6 +5,9 @@
 #include "CursorWriter.hpp"
 #include "RemappedBuffer.hpp"
 
+#include <functional>
+#include <utility>
+
 namespace erbsland::cterm {
 
 /// A buffer that can be used to write text using a cursor.
@@ -21,7 +24,13 @@ namespace erbsland::cterm {
 ///   - If the `wrapOnNextChar` is set, and the cursor is moved, the flag is cleared.
 ///   - If the `wrapOnNextChar` is set, and a line-break is printed, the flag is cleared first before moving the
 ///     cursor to the next line.
+/// @tested{CursorBufferTest}
 class CursorBuffer : public RemappedBuffer, public CursorWriter {
+public:
+    /// Receive a borrowed, complete row before it scrolls out of the top.
+    /// The row is valid only during the call. Callbacks must not throw or modify this buffer.
+    using ScrollOutFn = std::function<void(const ReadableBuffer &)>;
+
 public:
     /// The overflow mode determines what happens when the cursor gets a line-break in the last line.
     enum class OverflowMode : uint8_t {
@@ -33,11 +42,10 @@ public:
 
 public:
     /// Create a new cursor buffer with the given startSize.
-    /// @param startSize The start size of the buffer.
+    /// @param startSize The start size of the buffer. Must not exceed the maximum height.
     /// @param overflowMode The overflow mode of the buffer.
     /// @param maximumSize The maximum size of the buffer. Only `height` is used.
-    /// @param fillChar The character used to initialize and refill empty cells.
-    /// @throws err::ParameterError if startSize exceeds the maximum or fillChar is not a single-width character.
+    /// @param fillChar The character used to initialize and refill empty cells. Must have display width one.
     explicit CursorBuffer(
         const block::Size startSize,
         const OverflowMode overflowMode = OverflowMode::Shift,
@@ -52,12 +60,42 @@ public:
     /// Create a new cursor buffer with a default size of 80x25 and overflow mode `Shift`.
     CursorBuffer() : CursorBuffer{block::Size{80, 25}, OverflowMode::Shift} {}
 
+    /// Copy content and cursor state without copying the source observer.
+    /// @param other Source buffer.
+    CursorBuffer(const CursorBuffer &other);
+    /// Move content and cursor state without transferring the source observer.
+    /// @param other Source buffer.
+    CursorBuffer(CursorBuffer &&other) noexcept;
+
     // defaults
     ~CursorBuffer() override = default;
-    CursorBuffer(const CursorBuffer &) = default;
-    CursorBuffer(CursorBuffer &&) = default;
-    auto operator=(const CursorBuffer &) -> CursorBuffer & = default;
-    auto operator=(CursorBuffer &&) -> CursorBuffer & = default;
+
+public:
+    /// Copy content and cursor state, retaining this instance's observer.
+    /// @param other Source buffer.
+    /// @return This buffer.
+    auto operator=(const CursorBuffer &other) -> CursorBuffer &;
+    /// Move content and cursor state, retaining this instance's observer.
+    /// @param other Source buffer.
+    /// @return This buffer.
+    auto operator=(CursorBuffer &&other) noexcept -> CursorBuffer &;
+
+public: // cursor state
+    /// Get the tracked cursor position without querying a device.
+    [[nodiscard]] auto position() const noexcept -> block::Position { return _cursorPosition; }
+    /// Test whether the next printable character wraps before writing.
+    [[nodiscard]] auto wrapPending() const noexcept -> bool { return _wrapOnNextChar; }
+    /// Restore a previously saved cursor position and delayed wrap state.
+    /// @param position Position clamped to the current buffer bounds.
+    /// @param wrapPending Whether printing should first perform a delayed wrap.
+    void restorePosition(block::Position position, bool wrapPending) noexcept;
+
+public: // scrolling notifications
+    /// Observe each row leaving the top during a shift, in top-to-bottom order.
+    /// Automatic overflow and explicit northward shifts are observed; other operations are not.
+    /// Observers belong to their buffer instance and are not copied or moved with its contents.
+    /// @param callback Borrowed-row callback; an empty callback disables notification.
+    void setScrollOutCallback(ScrollOutFn callback) { _scrollOutCallback = std::move(callback); }
 
 public: // setup
     /// Get the maximum size.
@@ -75,9 +113,7 @@ public: // setup
     /// @return The current fill character.
     [[nodiscard]] auto fillChar() const noexcept -> const Block &;
     /// Set the character used for newly exposed or empty cells.
-    /// The character should have a display width of one cell.
-    /// @param fillChar The new fill character.
-    /// @throws err::ParameterError if fillChar is not a single-width character.
+    /// @param fillChar The new fill character. Must have display width one.
     void setFillChar(Block fillChar);
 
 public: // implement CursorWriter
@@ -92,6 +128,7 @@ public: // implement CursorWriter
     void setForeground(Foreground color) noexcept override;
     void setBackground(Background color) noexcept override;
     [[nodiscard]] auto supportedBlockAttributes() const noexcept -> BlockAttributes override;
+    auto cursorPosition() noexcept -> std::optional<block::Position> override { return _cursorPosition; }
     void moveCursor(block::Position posOrDelta, MoveMode mode) noexcept override;
     void setAutoWrap(bool enabled) noexcept override;
     void clearScreen() noexcept override;
@@ -102,17 +139,23 @@ public: // implement CursorWriter
     void write(const ReadableBuffer &buffer) noexcept override;
     void writeLineBreak() noexcept override;
 
+protected: // implement RemappedBuffer
+    void onScroll(block::Direction direction, int count) noexcept override;
+
 protected:
     /// Print a paragraph using the cursor-aware buffer output.
     auto printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int override;
 
 private:
+    /// Copy cursor policies and presentation after copying or moving the base buffer.
+    void copyCursorState(const CursorBuffer &other) noexcept;
     /// Validate a block used for fill operations.
     static void validateFillChar(const Block &fillChar);
     /// Write a block after resolving cursor state.
     void writeResolvedBlock(const Block &character) noexcept;
 
 private:
+    ScrollOutFn _scrollOutCallback;                  ///< Observer of complete rows leaving the top.
     OverflowMode _overflowMode{OverflowMode::Shift}; ///< The overflow mode of the buffer.
     block::Size _maximumSize{block::Size{0, 0}};     ///< The maximum size of the buffer.
     Block _fillChar{Block::space()};                 ///< The character used for empty cells.

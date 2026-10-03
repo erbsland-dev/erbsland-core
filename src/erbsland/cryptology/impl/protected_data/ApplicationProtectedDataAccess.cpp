@@ -2,19 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ApplicationProtectedDataAccess.hpp"
 
-#include "../../../core/Application.hpp"
+#include "../../../core/impl/application_data/ApplicationCryptologyData.hpp"
+#include "../../../core/impl/ApplicationDataAccess.hpp"
 #include "../../configuration/CryptologyConfiguration.hpp"
 
 namespace erbsland::cryptology::impl {
 
-auto ApplicationProtectedDataAccess::protect(const mem::ConstByteSpan plaintext, const unit::ByteLength plaintextLength)
-    -> mem::ByteBlock {
-    return core::application().cryptologyConfiguration().protectData(plaintext, plaintextLength);
+using namespace mem;
+
+auto ApplicationProtectedDataAccess::protect(const ConstByteSpan plaintext, const unit::ByteCount plaintextLength)
+    -> ByteBlock {
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    return cryptologyData->configuration().protectData(plaintext, plaintextLength);
 }
 
-auto ApplicationProtectedDataAccess::unprotect(
-    const mem::ConstByteSpan envelope, const unit::ByteLength plaintextLength) -> mem::ByteBlock {
-    return core::application().cryptologyConfiguration().unprotectData(envelope, plaintextLength);
+auto ApplicationProtectedDataAccess::unprotect(const ConstByteSpan envelope, const unit::ByteCount plaintextLength)
+    -> ByteBlock {
+    const auto cryptologyData = core::impl::applicationData()->cryptology().get();
+    return cryptologyData->configuration().unprotectData(envelope, plaintextLength);
 }
 
 }

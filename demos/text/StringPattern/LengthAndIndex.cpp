@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringPattern.hpp>
 
 namespace demo {
 
@@ -11,13 +14,13 @@ namespace demo {
 /// code-point positions. The values are meant for slicing and diagnostics near string boundaries, not for scanning an
 /// entire grammar.
 void lengthAndIndex() {
-    const auto microSensor = el::StringPattern{u8"µ?*"_el};
+    const auto microSensor = el::StringPattern::fromDivider(u8"µ?*"_el);
     const auto u8Measurement = el::String{u8"µA=0.42"_el};
 
     el::io::printLine("UTF-8 split index .......: "_el, microSensor.index(u8Measurement));
     el::io::printLine("UTF-8 match bytes .......: "_el, microSensor.length(u8Measurement));
 
-    const auto suffix = el::StringPattern{"*;ok"_el};
+    const auto suffix = el::StringPattern::fromDivider("*;ok"_el);
     const auto accepted = el::String{"temperatur=21.4;ok"_el};
 
     el::io::printLine("suffix index ............: "_el, suffix.index(accepted));

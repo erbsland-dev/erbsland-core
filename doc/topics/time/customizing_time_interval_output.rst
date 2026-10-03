@@ -45,7 +45,7 @@ It is a query, rather than an additional formatting switch; the preset selects t
 .. erbsland-demo::
     :source: time/TimeDeltaOutput/Presets.cpp
     :exec: time/time_delta_output --demo Presets
-    :source-sha256: 7d571783b7891688242eb1e3517619c955d8a12afec6ddc0e9eebe0e8fb85ac3
+    :sha256: 93c769f88c18bdf0e88fa005fe0a8673b8c2b6bcb7debe2c983ce9ad4a596c41
 
 .. code-block:: cpp
 
@@ -72,21 +72,23 @@ It is a query, rather than an additional formatting switch; the preset selects t
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Default; ELCL aliases: false
-    1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
-    Calendar: 1 y 2 mo 4 min
-    Short; ELCL aliases: false
-    1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
-    Calendar: 1 y 2 mo 4 min
-    Long; ELCL aliases: false
-    1 week 1 day 1 hour 1 minute 1 second 123 milliseconds 456 microseconds 789 nanoseconds
-    Calendar: 1 year 2 months 4 minutes
-    ELCL; ELCL aliases: true
-    1w, 1d, 1h, 1m, 1s, 123ms, 456us, 789ns
-    Calendar: 1year, 2month, 4m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDefault; ELCL aliases: false
+        1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
+        Calendar: 1 y 2 mo 4 min
+        Short; ELCL aliases: false
+        1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
+        Calendar: 1 y 2 mo 4 min
+        Long; ELCL aliases: false
+        1 week 1 day 1 hour 1 minute 1 second 123 milliseconds 456 microseconds 789 nanoseconds
+        Calendar: 1 year 2 months 4 minutes
+        ELCL; ELCL aliases: true
+        1w, 1d, 1h, 1m, 1s, 123ms, 456us, 789ns
+        Calendar: 1year, 2month, 4m␛[0m
 
 .. erbsland-demo-end::
 
@@ -117,7 +119,7 @@ The separators remain independent of the name style.
 .. erbsland-demo::
     :source: time/TimeDeltaOutput/UnitStyle.cpp
     :exec: time/time_delta_output --demo UnitStyle
-    :source-sha256: 7ecee25574cd380c3e777bf9a1e1a2ae1dccf30dc38c4bd5ee7e0d3287446d81
+    :sha256: b493a6093599d8d6db7d513a39ae59512c729c492788dd19c68c710f5588aaa7
 
 .. code-block:: cpp
 
@@ -145,19 +147,21 @@ The separators remain independent of the name style.
         el::io::printLine(el::TimeDelta::milliseconds(1250).toString(fractional));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
-    One: 1 s; two: 2 s; negative one: -1 s
-    1 week 1 day 1 hour 1 minute 1 second 123 milliseconds 456 microseconds 789 nanoseconds
-    One: 1 second; two: 2 seconds; negative one: -1 second
-    1.25 seconds
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
+        One: 1 s; two: 2 s; negative one: -1 s
+        1 week 1 day 1 hour 1 minute 1 second 123 milliseconds 456 microseconds 789 nanoseconds
+        One: 1 second; two: 2 seconds; negative one: -1 second
+        1.25 seconds␛[0m
 
 .. erbsland-demo-end::
 
-Between a Number and Its Unit
------------------------------
+Value Separator between Number and Unit
+---------------------------------------
 
 The value separator sits immediately after the number, including any fractional part, and before its unit name.
 :cpp:func:`setValueSeparator() <erbsland::time::TimeDeltaFormat::setValueSeparator>` accepts an ordinary library string.
@@ -167,7 +171,7 @@ This setting changes every displayed component consistently and does not affect 
 .. erbsland-demo::
     :source: time/TimeDeltaOutput/ValueSeparator.cpp
     :exec: time/time_delta_output --demo ValueSeparator
-    :source-sha256: 46237266b2bb829319d4a3f1513a6ed732852cde8377d3b8e8cf72e8c61d7f0b
+    :sha256: ea1269da1af7e50f12a1331e1916bb088e3fa2c15c5b5bb8cf47c087c7a6bcc9
 
 .. code-block:: cpp
 
@@ -184,17 +188,19 @@ This setting changes every displayed component consistently and does not affect 
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
-    1w 1d 1h 1min 1s 123ms 456us 789ns
-    1:w 1:d 1:h 1:min 1:s 123:ms 456:us 789:ns
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
+        1w 1d 1h 1min 1s 123ms 456us 789ns
+        1:w 1:d 1:h 1:min 1:s 123:ms 456:us 789:ns␛[0m
 
 .. erbsland-demo-end::
 
-Between Complete Components
----------------------------
+Unit Separator between Interval Components
+------------------------------------------
 
 The unit separator sits between complete number-and-unit pairs.
 :cpp:func:`setUnitSeparator() <erbsland::time::TimeDeltaFormat::setUnitSeparator>` can make a long interval easier to scan
@@ -205,7 +211,7 @@ There is no leading or trailing unit separator.
 .. erbsland-demo::
     :source: time/TimeDeltaOutput/UnitSeparator.cpp
     :exec: time/time_delta_output --demo UnitSeparator
-    :source-sha256: bd8f9a07b4ed347641432cd23b23775309f203a22d43e0e44a3dd56754d7a4a0
+    :sha256: a7478162d92cb82a4869b8bb687955ba3186b3d686d4538678e64cd6933f3869
 
 .. code-block:: cpp
 
@@ -222,12 +228,14 @@ There is no leading or trailing unit separator.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
-    1 w, 1 d, 1 h, 1 min, 1 s, 123 ms, 456 us, 789 ns
-    1 w | 1 d | 1 h | 1 min | 1 s | 123 ms | 456 us | 789 ns
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
+        1 w, 1 d, 1 h, 1 min, 1 s, 123 ms, 456 us, 789 ns
+        1 w | 1 d | 1 h | 1 min | 1 s | 123 ms | 456 us | 789 ns␛[0m
 
 .. erbsland-demo-end::
 
@@ -250,7 +258,7 @@ Calendar years and months remain independently visible regardless of this fixed-
 .. erbsland-demo::
     :source: time/TimeDeltaOutput/SmallestUnit.cpp
     :exec: time/time_delta_output --demo SmallestUnit
-    :source-sha256: 59285d1e8d2a38d663e45804da904dfc97d89afe3d774dde3f06b86fc1192869
+    :sha256: 9ea7c35b6cba929a62dde1bf136245af3e00026e2a1f04e51520be92fffe65c5
 
 .. code-block:: cpp
 
@@ -285,17 +293,19 @@ Calendar years and months remain independently visible regardless of this fixed-
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Nanoseconds: 1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
-    Microseconds: 1 w 1 d 1 h 1 min 1 s 123 ms 456 us
-    Milliseconds: 1 w 1 d 1 h 1 min 1 s 123 ms
-    Seconds: 1 w 1 d 1 h 1 min 1 s
-    Minutes: 1 w 1 d 1 h 1 min
-    Hours: 1 w 1 d 1 h
-    Days: 1 w 1 d
-    Weeks: 1 w
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mNanoseconds: 1 w 1 d 1 h 1 min 1 s 123 ms 456 us 789 ns
+        Microseconds: 1 w 1 d 1 h 1 min 1 s 123 ms 456 us
+        Milliseconds: 1 w 1 d 1 h 1 min 1 s 123 ms
+        Seconds: 1 w 1 d 1 h 1 min 1 s
+        Minutes: 1 w 1 d 1 h 1 min
+        Hours: 1 w 1 d 1 h
+        Days: 1 w 1 d
+        Weeks: 1 w␛[0m
 
 .. erbsland-demo-end::
 
@@ -317,7 +327,7 @@ At nanosecond precision there is no smaller stored remainder to display as a fra
 .. erbsland-demo::
     :source: time/TimeDeltaOutput/Fractions.cpp
     :exec: time/time_delta_output --demo Fractions
-    :source-sha256: accd417356d307d721e13bc5d5da0248d77d91416864e87420be2e5bf2087e10
+    :sha256: 7f266998cb6d7d60b729b194bb78094b94f5174de7aa807d95bd0b3be2ef8188
 
 .. code-block:: cpp
 
@@ -333,11 +343,13 @@ At nanosecond precision there is no smaller stored remainder to display as a fra
         el::io::printLine(el::StringFormat{"Fractions on: {}"_el}.build(interval.toString(format)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Fractions off: 1 w 1 d 1 h 1 min 1 s
-    Fractions on: 1 w 1 d 1 h 1 min 1.123456789 s
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mFractions off: 1 w 1 d 1 h 1 min 1 s
+        Fractions on: 1 w 1 d 1 h 1 min 1.123456789 s␛[0m
 
 .. erbsland-demo-end::
 
@@ -358,7 +370,7 @@ weeks can still need more decimal places; nine digits do not guarantee a lossles
 .. erbsland-demo::
     :source: time/TimeDeltaOutput/FractionDigits.cpp
     :exec: time/time_delta_output --demo FractionDigits
-    :source-sha256: a6405432fea1aadc88ba34a2a3189d46e9ebeb4f4d7741b58d197c67f427752b
+    :sha256: 1c414e82bcb2abb9362a065f7c8782b8c1dfe4677307214709ba946111d1b090
 
 .. code-block:: cpp
 
@@ -380,15 +392,17 @@ weeks can still need more decimal places; nine digits do not guarantee a lossles
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Requested 0; effective 0: 1 w 1 d 1 h 1 min 1 s
-    Requested 2; effective 2: 1 w 1 d 1 h 1 min 1.12 s
-    Requested 3; effective 3: 1 w 1 d 1 h 1 min 1.123 s
-    Requested 6; effective 6: 1 w 1 d 1 h 1 min 1.123456 s
-    Requested 9; effective 9: 1 w 1 d 1 h 1 min 1.123456789 s
-    Requested 12; effective 9: 1 w 1 d 1 h 1 min 1.123456789 s
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mRequested 0; effective 0: 1 w 1 d 1 h 1 min 1 s
+        Requested 2; effective 2: 1 w 1 d 1 h 1 min 1.12 s
+        Requested 3; effective 3: 1 w 1 d 1 h 1 min 1.123 s
+        Requested 6; effective 6: 1 w 1 d 1 h 1 min 1.123456 s
+        Requested 9; effective 9: 1 w 1 d 1 h 1 min 1.123456789 s
+        Requested 12; effective 9: 1 w 1 d 1 h 1 min 1.123456789 s␛[0m
 
 .. erbsland-demo-end::
 
@@ -418,7 +432,7 @@ human-readable label.
 .. erbsland-demo::
     :source: time/TimeDeltaOutput/Precision.cpp
     :exec: time/time_delta_output --demo Precision
-    :source-sha256: 6c92e7253750ae6e7e47f55e6cf05f2364b33b5922489835aeebf4b4138394ef
+    :sha256: e39f287ad2dda7a30ade4edb6f2a134f81c372f8e599c251f9f328876f20972b
 
 .. code-block:: cpp
 
@@ -452,17 +466,19 @@ human-readable label.
                 el::TimeDelta::seconds(1).toString(minutes), el::TimeDelta::zero().toString(minutes)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    0 ns: 0 s
-    1250000000 ns: 1.25 s
-    -1250000000 ns: -1.25 s
-    1999999999 ns: 1.999 s
-    1000 ns: 0 s
-    -1000 ns: -0 s
-    Hidden sub-second input: 0 s
-    One second as minutes: 0.016 min; zero as minutes: 0 min
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m0 ns: 0 s
+        1250000000 ns: 1.25 s
+        -1250000000 ns: -1.25 s
+        1999999999 ns: 1.999 s
+        1000 ns: 0 s
+        -1000 ns: -0 s
+        Hidden sub-second input: 0 s
+        One second as minutes: 0.016 min; zero as minutes: 0 min␛[0m
 
 .. erbsland-demo-end::
 
@@ -497,7 +513,7 @@ The final example selects weeks as the smallest fixed display unit and retains t
 .. erbsland-demo::
     :source: time/TimeDeltaOutput/Calendar.cpp
     :exec: time/time_delta_output --demo Calendar
-    :source-sha256: 822139e3ebecdca44ff623ba2b8636f107665d888efb8c5353a9e288f88267cd
+    :sha256: 24606d9078fa240b1ee76f2f345d0ffe944db702ad761e5337052ef241f8ac11
 
 .. code-block:: cpp
 
@@ -526,14 +542,16 @@ The final example selects weeks as the smallest fixed display unit and retains t
             el::StringFormat{"Weeks-only fixed display retains calendar units: {}"_el}.build(change.toString(weeksOnly)));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Short: 1 y -14 mo 30 min; long: 1 year -14 months 30 minutes
-    Stored minutes: 90; stored hours: -1
-    Cancellation: 0 s; all stored parts zero: false
-    Wide fixed total: 9223372036854775807 w; fits TimeDelta: false
-    Weeks-only fixed display retains calendar units: 1 y -14 mo
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mShort: 1 y -14 mo 30 min; long: 1 year -14 months 30 minutes
+        Stored minutes: 90; stored hours: -1
+        Cancellation: 0 s; all stored parts zero: false
+        Wide fixed total: 9223372036854775807 w; fits TimeDelta: false
+        Weeks-only fixed display retains calendar units: 1 y -14 mo␛[0m
 
 .. erbsland-demo-end::
 
@@ -562,7 +580,7 @@ A format chooses how the reader sees a value; the interval type determines what 
 .. erbsland-demo::
     :source: time/TimeDeltaOutput/Reuse.cpp
     :exec: time/time_delta_output --demo Reuse
-    :source-sha256: a19a0ac85e4fc9a11b7dedcb8616c2b64720733d7bd4e69aa7943487bb0e461c
+    :sha256: 7c74d8c9fdda2c4655bad228cb1e6cf6fe518e9d2d8dc177bd914d747e096782
 
 .. code-block:: cpp
 
@@ -585,11 +603,13 @@ A format chooses how the reader sees a value; the interval type determines what 
         el::io::printLine(el::StringFormat{"Configuration: {}"_el}.build(change.toString(el::TimeDeltaFormat::elcl())));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Εξερεύνηση: 1.25 seconds
-    Συνεργασία: 2.65 seconds
-    Configuration: 1year, 2month, 4m
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mΕξερεύνηση: 1.25 seconds
+        Συνεργασία: 2.65 seconds
+        Configuration: 1year, 2month, 4m␛[0m
 
 .. erbsland-demo-end::

@@ -111,7 +111,8 @@ public: // conversion/factories
         return result;
     }
     /// Create a status from a numeric code.
-    /// @throws err::ParameterError If the code is outside 100--599.
+    /// @param code The numeric status code. The supported range is 100 through 599.
+    /// @throws err::OutOfRangeError If the code is outside 100 through 599.
     [[nodiscard]] static auto fromCodeOrThrow(uint16_t code) -> HttpStatus;
     /// Parse exactly three decimal digits, returning an invalid placeholder on failure.
     [[nodiscard]] static auto fromString(const text::String &text) noexcept -> HttpStatus;

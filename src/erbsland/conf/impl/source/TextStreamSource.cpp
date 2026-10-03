@@ -14,6 +14,8 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 void TextStreamSource::open() {
@@ -21,7 +23,7 @@ void TextStreamSource::open() {
         throw ConfError(ConfErrorCategory::Internal, "The source is already open."_el, Location{identifier()});
     }
     _recentLines.clear();
-    _nextLine = unit::LineIndex::zero();
+    _nextLine = LineIndex::zero();
     _atEnd = false;
     try {
         _stream = createStream();
@@ -53,7 +55,7 @@ void TextStreamSource::open() {
     }
 }
 
-auto TextStreamSource::readLine() -> text::String {
+auto TextStreamSource::readLine() -> String {
     if (_atEnd) {
         return {};
     }
@@ -61,7 +63,7 @@ auto TextStreamSource::readLine() -> text::String {
         throw ConfError(ConfErrorCategory::IO, "You cannot read from a closed source."_el, Location{identifier()});
     }
     try {
-        auto linePosition = std::optional<unit::ByteIndex>{};
+        auto linePosition = std::optional<ByteIndex>{};
         if (_streamSupportsPositioning) {
             linePosition = _stream->position();
         }
@@ -77,7 +79,7 @@ auto TextStreamSource::readLine() -> text::String {
         return std::move(*line);
     } catch (const ConfError &) {
         throw;
-    } catch (const text::EncodingError &) {
+    } catch (const EncodingError &) {
         throwReadError(
             ConfErrorCategory::Encoding,
             "Decoding the Configuration Source Failed"_el,
@@ -95,8 +97,8 @@ auto TextStreamSource::readLine() -> text::String {
     }
 }
 
-auto TextStreamSource::codeSnippet(const unit::CodeLocation location) noexcept -> std::optional<text::CodeSnippet> {
-    static const auto lineBreakCharacters = text::CharSet{"\r\n"_el};
+auto TextStreamSource::codeSnippet(const CodeLocation location) noexcept -> std::optional<CodeSnippet> {
+    static const auto lineBreakCharacters = CharSet{"\r\n"_el};
     if (location.line().isNoIndex() || _recentLines.empty()) {
         return std::nullopt;
     }
@@ -107,11 +109,11 @@ auto TextStreamSource::codeSnippet(const unit::CodeLocation location) noexcept -
         return std::nullopt;
     }
 
-    const auto maximumLine = requestedLine.advanced(unit::LineCount{2U});
-    auto additionalLineCount = unit::LineCount::zero();
+    const auto maximumLine = requestedLine.advanced(LineCount{2U});
+    auto additionalLineCount = LineCount::zero();
     while (
         _isOpen && !_atEnd && _stream != nullptr && _stream->isReady() && _nextLine <= maximumLine &&
-        additionalLineCount < unit::LineCount{2U}) {
+        additionalLineCount < LineCount{2U}) {
         try {
             if (readLine().isEmpty()) {
                 break;
@@ -122,9 +124,9 @@ auto TextStreamSource::codeSnippet(const unit::CodeLocation location) noexcept -
         }
     }
 
-    const auto minimumLine = requestedLine.retreated(unit::LineCount{2U});
-    auto lines = text::StringList{};
-    auto startLine = unit::LineIndex::noIndex();
+    const auto minimumLine = requestedLine.retreated(LineCount{2U});
+    auto lines = StringList{};
+    auto startLine = LineIndex::noIndex();
     for (const auto &[lineIndex, sourceLine] : _recentLines) {
         if (lineIndex < minimumLine || lineIndex > maximumLine) {
             continue;
@@ -132,11 +134,10 @@ auto TextStreamSource::codeSnippet(const unit::CodeLocation location) noexcept -
         if (startLine.isNoIndex()) {
             startLine = lineIndex;
         }
-        lines.append(sourceLine.trimmed(lineBreakCharacters, text::StringSide::Back));
+        lines.append(sourceLine.trimmed(lineBreakCharacters, StringSide::Back));
     }
-    return lines.isEmpty()
-        ? std::nullopt
-        : std::optional<text::CodeSnippet>{text::CodeSnippet{std::move(lines), startLine, "elcl"_el}};
+    return lines.isEmpty() ? std::nullopt
+                           : std::optional<CodeSnippet>{CodeSnippet{std::move(lines), startLine, "elcl"_el}};
 }
 
 void TextStreamSource::close() noexcept {
@@ -147,8 +148,8 @@ void TextStreamSource::close() noexcept {
     }
 }
 
-auto TextStreamSource::readStreamLine() -> std::optional<text::String> {
-    const auto result = _stream->readLine(unit::CpLength{limits::maxLineLength + 1});
+auto TextStreamSource::readStreamLine() -> std::optional<String> {
+    const auto result = _stream->readLine(CpCount{limits::maxLineLength + 1});
     if (result.isTimeout()) {
         throwTimeout();
     }
@@ -158,18 +159,18 @@ auto TextStreamSource::readStreamLine() -> std::optional<text::String> {
     return result.data();
 }
 
-void TextStreamSource::rememberLine(const text::String &line, const std::optional<unit::ByteIndex> position) {
+void TextStreamSource::rememberLine(const String &line, const std::optional<ByteIndex> position) {
     if (position.has_value()) {
         rememberLinePosition(_nextLine, *position);
     }
     _recentLines.emplace_back(_nextLine, line);
-    _nextLine = _nextLine.advanced(unit::LineCount::one());
+    _nextLine = _nextLine.advanced(LineCount::one());
     while (_recentLines.size() > 5U) {
         _recentLines.pop_front();
     }
 }
 
-auto TextStreamSource::setStreamPosition(const unit::ByteIndex position, const unit::LineIndex nextLine) -> bool {
+auto TextStreamSource::setStreamPosition(const ByteIndex position, const LineIndex nextLine) -> bool {
     if (!_isOpen || _stream == nullptr || !_streamSupportsPositioning) {
         return false;
     }
@@ -191,7 +192,7 @@ void TextStreamSource::throwLineLengthExceeded() {
     close();
     throw ConfError(
         ConfErrorCategory::LimitExceeded,
-        text::StringFormat{"The line exceeds the maximum size of {} bytes."_el}.build(limits::maxLineLength),
+        StringFormat{"The line exceeds the maximum size of {} bytes."_el}.build(limits::maxLineLength),
         Location{identifier()});
 }
 
@@ -199,7 +200,7 @@ void TextStreamSource::throwTimeout() {
     throw ConfError(ConfErrorCategory::IO, "Timed out while reading from the source."_el, Location{identifier()});
 }
 
-void TextStreamSource::throwReadError(const ConfErrorCategory category, text::String title, text::String description) {
+void TextStreamSource::throwReadError(const ConfErrorCategory category, String title, String description) {
     const auto cause = std::current_exception();
     close();
     throw ConfError{category, std::move(title), std::move(description), Location{identifier()}, cause};

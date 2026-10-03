@@ -14,8 +14,8 @@ class HttpStaticFileHandler final : public network::HttpStaticFileHandler {
 private:
     /// One successfully resolved regular-file candidate.
     struct Candidate final {
-        path::Path path;         ///< Physical file path.
-        unit::ByteLength length; ///< Captured regular-file length.
+        path::Path path;        ///< Physical file path.
+        unit::ByteCount length; ///< Captured regular-file length.
     };
 
 public:

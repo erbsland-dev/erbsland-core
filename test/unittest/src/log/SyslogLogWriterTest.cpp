@@ -1,23 +1,23 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/event/EventBackend.hpp>
-#include <erbsland/event/EventBackendTarget.hpp>
-#include <erbsland/event/EventLoop.hpp>
+#include <erbsland/ConnectionCloseContext.hpp>
+#include <erbsland/EventBackend.hpp>
+#include <erbsland/EventBackendTarget.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/Literals.hpp>
 #include <erbsland/log/impl/SyslogLogWriter.hpp>
-#include <erbsland/log/line/LogLine.hpp>
-#include <erbsland/log/LogEntry.hpp>
-#include <erbsland/network/Network.hpp>
-#include <erbsland/network/source/ConnectionCloseContext.hpp>
-#include <erbsland/network/tcp/TcpAcceptOptions.hpp>
-#include <erbsland/network/tcp/TcpConnection.hpp>
-#include <erbsland/network/tcp/TcpConnectionEventEditor.hpp>
-#include <erbsland/network/tls/TlsClientConnection.hpp>
-#include <erbsland/network/tls/TlsClientConnectionEventEditor.hpp>
-#include <erbsland/network/udp/UdpSocket.hpp>
-#include <erbsland/network/udp/UdpSocketEventEditor.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringDecoder.hpp>
+#include <erbsland/LogEntry.hpp>
+#include <erbsland/LogLine.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/StringDecoder.hpp>
+#include <erbsland/TcpAcceptOptions.hpp>
+#include <erbsland/TcpConnection.hpp>
+#include <erbsland/TcpConnectionEventEditor.hpp>
+#include <erbsland/TlsClientConnection.hpp>
+#include <erbsland/TlsClientConnectionEventEditor.hpp>
+#include <erbsland/UdpSocket.hpp>
+#include <erbsland/UdpSocketEventEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -29,11 +29,14 @@ using namespace el::text::literals;
 
 namespace erbsland::test::logtest {
 
+using namespace mem;
+using namespace text;
+
 struct FakeSyslogNetworkState final {
-    std::vector<el::mem::ByteBlock> udpData;
-    std::vector<el::mem::ByteBlock> tcpData;
-    std::vector<el::mem::ByteBlock> tlsData;
-    el::text::String tlsLabel;
+    std::vector<ByteBlock> udpData;
+    std::vector<ByteBlock> tcpData;
+    std::vector<ByteBlock> tlsData;
+    String tlsLabel;
     std::size_t tcpConnectionCount{};
     bool failFirstTcpSend{};
 };
@@ -177,7 +180,7 @@ public:
     auto remoteEndpoint() const -> std::optional<el::network::IpEndpoint> override { return std::nullopt; }
     auto bufferLimits() const noexcept -> el::network::SocketBufferLimits override { return {}; }
     auto state() const noexcept -> el::network::ConnectionState override { return _connectionState; }
-    auto send(const el::mem::ByteBlock &data) -> el::network::NetworkSendStatus override {
+    auto send(const ByteBlock &data) -> el::network::NetworkSendStatus override {
         if (_failSend) {
             _failSend = false;
             _connectionState = el::network::ConnectionState::Failed;
@@ -268,11 +271,11 @@ public:
     FakeTlsConnection(el::event::EventsPtr owner, std::shared_ptr<FakeSyslogNetworkState> state) :
         TlsClientConnection{std::move(owner)}, _state{std::move(state)} {}
 
-    auto requestedConfigurationLabel() const -> el::text::String override { return _state->tlsLabel; }
-    auto matchedConfigurationLabel() const -> el::text::String override { return _state->tlsLabel; }
+    auto requestedConfigurationLabel() const -> String override { return _state->tlsLabel; }
+    auto matchedConfigurationLabel() const -> String override { return _state->tlsLabel; }
     auto requestedEndpoint() const -> std::optional<el::network::HostEndpoint> override { return _endpoint; }
     auto cipherSuite() const -> std::optional<el::cryptology::TlsCipherSuite> override { return std::nullopt; }
-    auto negotiatedAlpn() const -> el::text::String override { return {}; }
+    auto negotiatedAlpn() const -> String override { return {}; }
     auto peerCertificatePath() const -> el::util::List<el::cryptology::X509Certificate> override { return {}; }
     void connect(el::network::HostEndpoint endpoint, el::network::TlsClientConnectOptions options) override {
         _endpoint = std::move(endpoint);
@@ -286,7 +289,7 @@ public:
     auto remoteEndpoint() const -> std::optional<el::network::IpEndpoint> override { return std::nullopt; }
     auto bufferLimits() const noexcept -> el::network::SocketBufferLimits override { return {}; }
     auto state() const noexcept -> el::network::ConnectionState override { return _connectionState; }
-    auto send(const el::mem::ByteBlock &data) -> el::network::NetworkSendStatus override {
+    auto send(const ByteBlock &data) -> el::network::NetworkSendStatus override {
         _state->tlsData.push_back(data);
         return el::network::NetworkSendStatus::Accepted;
     }

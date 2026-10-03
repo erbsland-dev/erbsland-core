@@ -19,8 +19,8 @@ efficiently.
     intentionally differs in a few areas. See
     `Differences from Common Regex Engines`_ at the end of this page.
 
-:expression:`[...]`
-===================
+Character Class: :expression:`[...]`
+====================================
 
 Matches a single character from a set.
 
@@ -64,8 +64,8 @@ engines and are explained in more detail at the end of this page.
 The exact meaning of character type escapes depends on the active ASCII or Unicode mode.
 See :doc:`character-types` for details.
 
-:expression:`[^...]`
-====================
+Negated Character Class: :expression:`[^...]`
+=============================================
 
 Negates the character class. It matches any single character **not** listed in the class.
 
@@ -81,8 +81,8 @@ The following constructs exist for compatibility with other regular expression e
 They are clearly marked as legacy to discourage their use in new patterns unless compatibility
 is required.
 
-:expression:`[\\Q...\\E]`
--------------------------
+Quoted Literals in a Character Class: :expression:`[\\Q...\\E]`
+---------------------------------------------------------------
 
 Legacy quoted-literal mode inside a character class. Everything between :esc_code:`Q` and
 :esc_code:`E` is treated as literal text, including characters that would normally terminate
@@ -91,8 +91,8 @@ the class, such as :expression:`]`.
 The quoted block must be properly terminated. A missing :esc_code:`E` always results in a
 parse error.
 
-:expression:`[[:<name>:]]`
---------------------------
+POSIX Character Class: :expression:`[[:<name>:]]`
+-------------------------------------------------
 
 POSIX-style character classes. These are supported for compatibility and are only available when
 the :cpp:any:`Feature::PosixClasses <erbsland::re::Feature::PosixClasses>` option is enabled
@@ -124,8 +124,8 @@ POSIX classes cannot be mixed with literals or ranges inside the same character 
 
 :expression:`(?:[[:digit:]]|x)`
 
-:expression:`[[:^<name>:]]`
----------------------------
+Negated POSIX Character Class: :expression:`[[:^<name>:]]`
+----------------------------------------------------------
 
 Negated POSIX class. This negates the **entire** class.
 
@@ -134,8 +134,8 @@ leading :expression:`^` negation syntax.
 
 Use :expression:`[[:^digit:]]` instead of :expression:`[^[:digit:]]`.
 
-:expression:`[[:...:][:...:]]`
-------------------------------
+Combined POSIX Character Classes: :expression:`[[:...:][:...:]]`
+----------------------------------------------------------------
 
 Multiple POSIX classes may be combined by concatenation, for example:
 

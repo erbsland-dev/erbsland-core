@@ -17,8 +17,8 @@ This page explains why a named result is clearer than a Boolean value, shows rea
 you through defining a custom result with several meaningful states.
 You will also learn when an exception communicates failure more effectively.
 
-Prefer Named Outcomes over ``bool``
-===================================
+Named Success and Failure Outcomes
+==================================
 
 A ``bool`` can represent two outcomes, but it does not explain what either value means.
 At a call site such as ``if (prepareRobotArm())``, the reader has to remember whether ``true`` means that the operation
@@ -34,7 +34,7 @@ states without changing how callers test the broad success and failure groups.
 .. erbsland-demo::
     :source: err/Result/ClearStatuses.cpp
     :exec: err/result --demo ClearStatuses
-    :source-sha256: 1faaed73377ad18b617a439cc06d30bba6f8e54f1126adfbfc68e5ae48a16ec5
+    :sha256: b3e502b28b43c1330800c4ca924ff35453bb0794f0a6cb77a411e597f430fed8
 
 .. code-block:: cpp
 
@@ -55,11 +55,13 @@ states without changing how callers test the broad success and failure groups.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    The Aurora arm is ready.
-    The Neblina arm could not be prepared.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mThe Aurora arm is ready.
+        The Neblina arm could not be prepared.␛[0m
 
 .. erbsland-demo-end::
 
@@ -74,16 +76,16 @@ Choose the handling form based on what the current code needs to know.
 All three forms below use the same success and failure grouping; they differ only in whether the exact result must
 remain available after the initial test.
 
-Test a Temporary with a Free Function
--------------------------------------
+Free-Function Success and Failure Predicates
+--------------------------------------------
 
 Use ``isSuccessful(method())`` or ``isFailure(method())`` when the branch only needs the broad outcome.
 This reads naturally and avoids introducing a local variable that would not otherwise be used.
 The free functions accept :cpp:class:`Result <erbsland::util::Result>` and derived result types, so the call remains
 unchanged if an API returns a more specific result.
 
-Keep the Result for Exact-State Handling
-----------------------------------------
+Exact Result-State Handling with an if Initializer
+--------------------------------------------------
 
 Use an ``if`` initializer when a custom result has several failure or success states and the branch must distinguish
 them:
@@ -98,8 +100,8 @@ The operation runs once, and ``result`` remains available throughout the branch.
 Do not call the method once for the group test and again for the exact-state test: the second call may be expensive, may
 have side effects, or may produce a different outcome.
 
-Use the Member Form for a Compact Decision
-------------------------------------------
+Result Member Predicates
+------------------------
 
 The equivalent member forms, ``method().isSuccessful()`` and ``method().isFailure()``, are useful when they make the
 expression read more naturally from left to right.
@@ -108,7 +110,7 @@ Like the free functions, the inherited member functions work with custom derived
 .. erbsland-demo::
     :source: err/Result/HandlingResults.cpp
     :exec: err/result --demo HandlingResults
-    :source-sha256: 7f330d06b94d697a734480e1fe542f11ec790443cd1f026169a9725389b8c436
+    :sha256: 8445ab8076442ae73ef240bd678af1975051d0c2171da546c2ac35eb5691a0da
 
 .. code-block:: cpp
 
@@ -134,12 +136,14 @@ Like the free functions, the inherited member functions work with custom derived
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    The vision module is calibrated.
-    The gripper is obstructed.
-    The movement module is ready.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mThe vision module is calibrated.
+        The gripper is obstructed.
+        The movement module is ready.␛[0m
 
 .. erbsland-demo-end::
 
@@ -161,7 +165,7 @@ matters.
 .. erbsland-demo::
     :source: err/Result/CustomResultTypes.cpp
     :exec: err/result --demo CustomResultTypes
-    :source-sha256: 77d2989d5ec2e8342a20de6d85af8e56f04e22a5ef784ef5933a93d7060163d4
+    :sha256: 9d5e0c910068755be40ca5c67ec8c46385c61ff5661bf095b552be91050fd9a2
 
 .. code-block:: cpp
 
@@ -212,16 +216,18 @@ matters.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Brisa is ready for the project.
-    Remove the obstacle from Pedra.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mBrisa is ready for the project.
+        Remove the obstacle from Pedra.␛[0m
 
 .. erbsland-demo-end::
 
-Keep the State Set Focused
---------------------------
+Designing Custom Result States
+------------------------------
 
 Add a state only when it enables a distinct and useful caller action.
 For example, an obstruction may ask the caller to clear a work area, while an offline controller may ask it to restore a
@@ -263,7 +269,7 @@ Use the smallest mechanism that preserves what the caller must know.
 .. erbsland-demo::
     :source: err/Result/ResultOrException.cpp
     :exec: err/result --demo ResultOrException
-    :source-sha256: e5a6fbc466d1f56b82e0d15141305ddcdd12e449261ceb144102eb23f541d128
+    :sha256: 2a01165f2e76aff204ba05fe4cb9c779b3d4d395356e873a8d80226b8ecf1ab3
 
 .. code-block:: cpp
 
@@ -283,11 +289,13 @@ Use the smallest mechanism that preserves what the caller must know.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Move away from the robot before starting.
-    Mission failure: The mission plan was not found.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mMove away from the robot before starting.
+        Mission failure: The mission plan was not found.␛[0m
 
 .. erbsland-demo-end::
 

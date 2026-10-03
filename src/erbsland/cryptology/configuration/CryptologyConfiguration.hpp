@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../CryptographicStatus.hpp"
+#include "../CryptologyError.hpp"
 #include "../HashAlgorithm.hpp"
 #include "../HashSelector_fwd.hpp"
 #include "../impl/CryptologyConfigurationSnapshot.hpp"
@@ -15,11 +16,13 @@
 #include "../symmetric/SymmetricEncryptionType.hpp"
 #include "../tls/TlsConfiguration.hpp"
 #include "../tls/TlsConfigurationResolution.hpp"
+#include "../tls/TlsConfigurationSet.hpp"
 
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/ByteSpan.hpp"
 #include "../../text/StringHashMap.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../text/StringList.hpp"
+#include "../../unit/ByteCount.hpp"
 
 #include <mutex>
 #include <optional>
@@ -55,39 +58,32 @@ public: // accessors
     /// Permit or prohibit architecture-specific cryptographic backends for subsequently created workers.
     void setHardwareAccelerationEnabled(bool enabled);
     /// Get the administrative maximum status for a hash algorithm.
-    /// @param algorithm The algorithm to inspect.
+    /// @param algorithm The algorithm to inspect. Must be a valid hash algorithm.
     /// @return The configured limit, or no value if no limit is configured.
-    /// @throws err::ParameterError If `algorithm` is invalid.
     [[nodiscard]] auto maximumStatus(HashAlgorithm algorithm) const -> std::optional<CryptographicStatus>;
     /// Set an administrative maximum status for a hash algorithm.
-    /// @param algorithm The algorithm to limit.
-    /// @param status The highest status permitted by the application policy.
-    /// @throws err::ParameterError If either value is invalid.
+    /// @param algorithm The algorithm to limit. Must be a valid hash algorithm.
+    /// @param status The highest status permitted by the application policy. Must be a valid cryptographic status.
     void setMaximumStatus(HashAlgorithm algorithm, CryptographicStatus status);
     /// Clear the administrative maximum status for a hash algorithm.
-    /// @param algorithm The algorithm whose limit is cleared.
-    /// @throws err::ParameterError If `algorithm` is invalid.
+    /// @param algorithm The algorithm whose limit is cleared. Must be a valid hash algorithm.
     void clearMaximumStatus(HashAlgorithm algorithm);
     /// Get the administrative maximum status for a symmetric encryption type.
-    /// @param type The encryption type to inspect.
+    /// @param type The encryption type to inspect. Must be a valid symmetric encryption type.
     /// @return The configured limit, or no value if no limit is configured.
-    /// @throws err::ParameterError If `type` is invalid.
     [[nodiscard]] auto maximumStatus(SymmetricEncryptionType type) const -> std::optional<CryptographicStatus>;
     /// Set an administrative maximum status for a symmetric encryption type.
-    /// @param type The encryption type to limit.
-    /// @param status The highest status permitted by the application policy.
-    /// @throws err::ParameterError If either value is invalid.
+    /// @param type The encryption type to limit. Must be a valid symmetric encryption type.
+    /// @param status The highest status permitted by the application policy. Must be a valid cryptographic status.
     void setMaximumStatus(SymmetricEncryptionType type, CryptographicStatus status);
     /// Clear the administrative maximum status for a symmetric encryption type.
-    /// @param type The encryption type whose limit is cleared.
-    /// @throws err::ParameterError If `type` is invalid.
+    /// @param type The encryption type whose limit is cleared. Must be a valid symmetric encryption type.
     void clearMaximumStatus(SymmetricEncryptionType type);
     /// Get the configured protected-data provider selection mode.
     [[nodiscard]] auto protectedDataMode() const -> ProtectedDataMode;
     /// Select protected-data provider initialization behavior.
-    /// @param mode The provider selection mode.
-    /// @throws err::ParameterError If `mode` is invalid.
-    /// @throws err::LogicError If a different mode is selected after provider initialization.
+    /// @param mode The provider selection mode. Must be valid and must not differ from the selected mode after provider
+    /// initialization.
     void setProtectedDataMode(ProtectedDataMode mode);
     /// Initialize and self-test protected-data support at an explicit application startup point.
     /// @throws CryptologyError If the selected provider cannot be initialized or fails its self-test.
@@ -101,31 +97,45 @@ public: // TLS configurations
     /// Maximum number of slash-delimited segments in a non-empty TLS configuration label.
     static constexpr auto cMaximumTlsConfigurationLabelSegments = impl::tls_configuration_label::cMaximumSegments;
 
-    /// Atomically register or replace one TLS configuration.
-    /// @param label The exact hierarchical label, or an empty label for the global default.
-    /// @param configuration The configuration copied into a new immutable registry entry.
-    /// @throws err::ParameterError If the label is invalid.
-    /// @throws err::RuntimeError If a new label would exceed the registry capacity.
+    /// Replace supplied roles at a named label, preserving an existing other role.
+    /// @param label Nonempty validated application label; empty is reserved for built-in defaults.
+    /// @param configuration One or both complete role configurations.
+    /// @throws CryptologyError If a new label exceeds capacity or a supplied role is invalid.
     void setTlsConfiguration(const text::String &label, TlsConfiguration configuration);
-    /// Remove one exact TLS configuration label.
-    /// @param label The exact hierarchical label, or the empty global-default label.
-    /// @throws err::ParameterError If the label is invalid.
+    /// Atomically replace all named profiles and shared settings after validating the complete set.
+    /// @param configurations The new owned generation; duplicate roles at one label are invalid.
+    /// @throws CryptologyError If any profile is invalid, duplicated, or exceeds capacity.
+    void replaceTlsConfigurations(const TlsConfigurationSet &configurations);
+    /// Get a copy of the current shared TLS settings.
+    [[nodiscard]] auto tlsSettings() const -> TlsSettings;
+    /// Remove both roles at a named label.
+    /// @param label Nonempty application label.
     void clearTlsConfiguration(const text::String &label);
-    /// Remove every registered TLS configuration.
+    /// Remove one role at a named label.
+    /// @param label Nonempty application label.
+    /// @param role The local role to remove.
+    void clearTlsConfiguration(const text::String &label, TlsRole role);
+    /// Remove named profiles, retaining shared settings and built-in defaults.
     void clearTlsConfigurations();
-    /// Test whether one exact TLS configuration label is registered.
-    /// Parent fallbacks are intentionally not considered.
-    /// @param label The exact hierarchical label, or the empty global-default label.
-    /// @return `true` if the exact label is registered.
-    /// @throws err::ParameterError If the label is invalid.
-    [[nodiscard]] auto hasTlsConfiguration(const text::String &label) const -> bool;
-    /// Resolve a label to one complete immutable TLS configuration.
-    /// Resolution removes trailing slash-delimited segments and finally tries the empty global-default label.
-    /// @param label The exact or descendant label to resolve.
-    /// @return The requested label, matched label, and immutable selected entry.
-    /// @throws err::ParameterError If the label is invalid.
-    /// @throws err::RuntimeError If no fallback candidate is registered.
-    [[nodiscard]] auto resolveTlsConfiguration(const text::String &label) const -> TlsConfigurationResolution;
+    /// Test exact role presence, including the reserved built-in defaults.
+    /// @param label Valid application label, or empty for the built-in default.
+    /// @param role Local connection role.
+    /// @return Whether the exact label contains this role.
+    [[nodiscard]] auto hasTlsConfiguration(const text::String &label, TlsRole role) const -> bool;
+    /// Resolve one role through its label ancestors and reserved default.
+    /// @param label Valid application label, or empty for the built-in default.
+    /// @param role Local connection role.
+    /// @return The selected immutable role and effective certificate policy.
+    /// @throws CryptologyError If the selected profile cannot be used for its role.
+    [[nodiscard]] auto resolveTlsConfiguration(const text::String &label, TlsRole role) const
+        -> TlsConfigurationResolution;
+    /// Resolve multiple labels against one coherent generation of the registry.
+    /// @param labels Requested labels in result order.
+    /// @param role Local connection role.
+    /// @return One immutable resolution for each label.
+    /// @throws CryptologyError If any selected profile is unusable.
+    [[nodiscard]] auto resolveTlsConfigurations(const text::StringList &labels, TlsRole role) const
+        -> std::vector<TlsConfigurationResolution>;
 
 public:
     /// Restore acceleration permission and clear status limits and registered TLS configurations.
@@ -145,13 +155,17 @@ private:
     /// Exercise a provider with one authenticated round trip.
     static void selfTestProtectedDataProvider(impl::ProtectedDataProvider &provider);
     /// Encrypt application-lifetime protected data.
-    [[nodiscard]] auto protectData(mem::ConstByteSpan plaintext, unit::ByteLength plaintextLength) -> mem::ByteBlock;
+    [[nodiscard]] auto protectData(mem::ConstByteSpan plaintext, unit::ByteCount plaintextLength) -> mem::ByteBlock;
     /// Decrypt application-lifetime protected data.
-    [[nodiscard]] auto unprotectData(mem::ConstByteSpan envelope, unit::ByteLength plaintextLength) -> mem::ByteBlock;
+    [[nodiscard]] auto unprotectData(mem::ConstByteSpan envelope, unit::ByteCount plaintextLength) -> mem::ByteBlock;
     /// Validate a protected-data selection mode.
     static void validateProtectedDataMode(ProtectedDataMode mode);
-    /// Build a diagnostic containing every fallback candidate for a label.
-    [[nodiscard]] static auto tlsConfigurationResolutionError(const text::String &label) -> text::String;
+    /// Validate a named label, rejecting the reserved default.
+    static void validateTlsLabel(const text::String &label);
+    /// Validate one role and resolve its policy without performing native operations.
+    [[nodiscard]] static auto resolveTlsPolicy(
+        const TlsConfiguration &configuration, TlsRole role, const TlsSettings &settings)
+        -> std::optional<X509TlsCertificatePolicy>;
 
 private:
     mutable std::recursive_mutex _mutex; ///< Protects coherent snapshots, configuration, and provider creation.
@@ -159,6 +173,7 @@ private:
     ProtectedDataMode _protectedDataMode{ProtectedDataMode::Automatic}; ///< Provider selection before initialization.
     bool _protectedDataModeLocked{false};                  ///< Whether provider selection can no longer change.
     impl::ProtectedDataProviderPtr _protectedDataProvider; ///< Application-lifetime protected-data provider.
+    TlsSettings _tlsSettings;                              ///< Shared TLS settings for the current registry generation.
     text::StringHashMap<TlsConfigurationConstPtr> _tlsConfigurations; ///< Immutable labeled TLS configurations.
 };
 

@@ -66,7 +66,7 @@ The following demo uses all three delimiter settings together.
 .. erbsland-demo::
     :source: text/NamedKeyParsing/ChooseSeparators.cpp
     :exec: text/named_key_parsing --demo ChooseSeparators
-    :source-sha256: ae171521f96dbcd0c42060a106c958596908c428bde92ac44fa8373400d5fd2c
+    :sha256: e56605e06ca177bf98a6762a42dc9eb2b727089c2e4945683d85ab7aec356d13
 
 .. code-block:: cpp
 
@@ -81,7 +81,7 @@ The following demo uses all three delimiter settings together.
                                 .setValueSeparator(U':')
                                 .setStopCharacter(U']')
                                 .setValueListAllowed(false);
-        auto reader = el::StringCharReader{el::String{"topic:gezegen;level:2]next field"_el}};
+        auto reader = el::StringCharReader{"topic:gezegen;level:2]next field"_el};
         const auto entries = el::named_key::Parser{reader, format}.readAllEntries();
         for (const auto &entry : entries) {
             el::io::printLine(format.keyName(entry.keyIndex()), ": "_el, entry.value());
@@ -89,12 +89,14 @@ The following demo uses all three delimiter settings together.
         el::io::printLine("Next field remains: "_el, reader.peek() == U'n');
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    topic: gezegen
-    level: 2
-    Next field remains: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mtopic: gezegen
+        level: 2
+        Next field remains: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -132,7 +134,7 @@ The following demo combines a signed key with a compact numeric value.
 .. erbsland-demo::
     :source: text/NamedKeyParsing/PrefixAndCompactValues.cpp
     :exec: text/named_key_parsing --demo PrefixAndCompactValues
-    :source-sha256: c1bb5aaf80079dd0d14927406f6a7b395b2be54d24808ec72148659a7a771d1d
+    :sha256: 9513bf3cec516e50dd1711d3f69333f3ae8132448a1a724c81925ea80f53459a
 
 .. code-block:: cpp
 
@@ -146,17 +148,19 @@ The following demo combines a signed key with a compact numeric value.
                                 .setAllowedKeyPrefixes(el::CharSet{U'+', U'-'})
                                 .setValueWithoutKeySeparatorChars(el::CharSet::from(el::AsciiCategory::Digit))
                                 .setValueListAllowed(false);
-        auto reader = el::StringCharReader{el::String{"+hint,level3"_el}};
+        auto reader = el::StringCharReader{"+hint,level3"_el};
         const auto entries = el::named_key::Parser{reader, format}.readAllEntries();
         el::io::printLine("Hint enabled: "_el, entries.get(el::unit::ItemIndex{0U}).prefix() == U'+');
         el::io::printLine("Quiz level: "_el, entries.get(el::unit::ItemIndex{1U}).value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Hint enabled: true
-    Quiz level: 3
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mHint enabled: true
+        Quiz level: 3␛[0m
 
 .. erbsland-demo-end::
 
@@ -174,7 +178,7 @@ This setting does not restrict registered key names or a prefix before the key.
 .. erbsland-demo::
     :source: text/NamedKeyParsing/RestrictValueCharacters.cpp
     :exec: text/named_key_parsing --demo RestrictValueCharacters
-    :source-sha256: c2a9554dfe6d28ff812c978d95f8cb8a2c4712f5db39786ba0412700537fbb1c
+    :sha256: 00498dff98f124f151c2afd450a8f26fc7f5112fb3b66afecbba63b7c5b44a2a
 
 .. code-block:: cpp
 
@@ -187,11 +191,11 @@ This setting does not restrict registered key names or a prefix before the key.
                                 .setKeys({{"answer"_el, 0}})
                                 .setAllowedValueChars(el::CharSet::fromPattern("a-z0-9"_el))
                                 .setValueListAllowed(false);
-        auto acceptedReader = el::StringCharReader{el::String{"answer=gezegen2"_el}};
+        auto acceptedReader = el::StringCharReader{"answer=gezegen2"_el};
         el::io::printLine("Answer: "_el, el::named_key::Parser{acceptedReader, format}.readEntry().value());
 
         // A localized answer with a non-ASCII letter needs a broader allowed set.
-        auto rejectedReader = el::StringCharReader{el::String{"answer=güneş"_el}};
+        auto rejectedReader = el::StringCharReader{"answer=güneş"_el};
         try {
             const auto entry = el::named_key::Parser{rejectedReader, format}.readEntry();
             el::io::printLine("Unexpected accepted answer: "_el, entry.value());
@@ -200,11 +204,13 @@ This setting does not restrict registered key names or a prefix before the key.
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Answer: gezegen2
-    Localized answer rejected
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAnswer: gezegen2
+        Localized answer rejected␛[0m
 
 .. erbsland-demo-end::
 
@@ -219,5 +225,5 @@ If a key contains a compact-value marker, or a prefix conflicts with a separator
 one part of an entry ends and another begins.
 
 ``Format::validate()`` checks these relationships when you construct a parser.
-An invalid *format* raises :cpp:class:`LogicError <erbsland::err::LogicError>`.
+An invalid *format* raises :cpp:class:`LogicFailure <erbsland::err::LogicFailure>`.
 Malformed *input* instead raises :cpp:class:`ParseError <erbsland::err::ParseError>` while the parser reads it.

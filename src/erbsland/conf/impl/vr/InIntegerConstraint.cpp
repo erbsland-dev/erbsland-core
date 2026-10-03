@@ -13,11 +13,11 @@ using namespace text::literals;
 void InIntegerConstraint::validateInteger(const ValidationContext &context, const Integer value) const {
     if (isNotValid(value, context)) {
         text::StringEditor expected;
-        for (std::size_t i = 0; i < _values.size(); ++i) {
-            if (i != 0) {
+        for (const auto &allowed : _values) {
+            if (!expected.isEmpty()) {
                 expected.append(" or "_el);
             }
-            expected.append(text::StringFormat{"{}"_el}.build(_values[i]));
+            expected.append(text::StringFormat{"{}"_el}.build(allowed));
         }
         throwValidationError(text::StringFormat{"The value {} {}"_el}.build(comparisonText(), expected));
     }

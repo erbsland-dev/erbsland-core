@@ -80,16 +80,16 @@ auto RulesFromDocument::handleVersion(const ConstraintHandlerContext &context) -
     const auto &node = context.node;
     const auto &rule = context.rule;
     const auto versionList = node->asList<Integer>();
-    if (versionList.empty()) {
+    if (versionList.isEmpty()) {
         throwValidationError("The 'version' value must be one or more integers"_el);
     }
     // test for uniqueness.
-    for (std::size_t i = 0; i < versionList.size(); ++i) {
-        if (versionList[i] < 0) {
+    for (auto i = unit::ItemIndex::zero(); i.isWithin(versionList.count()); i.uncheckedIncrement()) {
+        if (versionList.get(i) < 0) {
             throwValidationError("The values in 'version' must be non-negative integers"_el);
         }
-        for (auto j = i + 1; j < versionList.size(); ++j) {
-            if (versionList[i] == versionList[j]) {
+        for (auto j = i.incremented(); j.isWithin(versionList.count()); j.uncheckedIncrement()) {
+            if (versionList.get(i) == versionList.get(j)) {
                 throwValidationError("The values in 'version' must be unique"_el);
             }
         }

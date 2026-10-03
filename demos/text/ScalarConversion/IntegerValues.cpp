@@ -3,6 +3,17 @@
 
 #include "ScalarConversionDemos.hpp"
 
+#include <erbsland/CpCount.hpp>
+#include <erbsland/IntegerFormat.hpp>
+#include <erbsland/IntegerFormatFlag.hpp>
+#include <erbsland/IntegerParseFlag.hpp>
+#include <erbsland/IntegerParseOptions.hpp>
+#include <erbsland/IntegerSignMode.hpp>
+#include <erbsland/LetterCase.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+
 #include <cstdint>
 
 namespace demo {
@@ -23,14 +34,14 @@ void integerValues() {
     try {
         const auto unexpectedValue = el::String{"12x"_el}.toIntegerOrThrow<int>();
         el::io::printLine("12x ...............: "_el, unexpectedValue);
-    } catch (const el::Exception &) {
+    } catch (const el::ParseError &) {
         el::io::printLine("12x ...............: parse error"_el);
     }
 
     auto hexadecimal = el::IntegerFormat::hexadecimal();
     hexadecimal.addFlags(el::IntegerFormatFlag::BasePrefix | el::IntegerFormatFlag::ZeroFill)
         .setLetterCase(el::LetterCase::Uppercase)
-        .setFieldWidth(el::CpLength{6U});
+        .setFieldWidth(el::CpCount{6U});
 
     auto groupedDecimal = el::IntegerFormat::decimal();
     groupedDecimal.addFlags(el::IntegerFormatFlag::Separator).setSignMode(el::IntegerSignMode::Always);

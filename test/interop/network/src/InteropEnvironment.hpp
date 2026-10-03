@@ -4,7 +4,7 @@
 
 #include "InteropControl.hpp"
 
-#include <erbsland/system/Subprocess.hpp>
+#include <erbsland/Subprocess.hpp>
 
 #include <cstdint>
 #include <filesystem>
@@ -65,6 +65,6 @@ private:
 private:
     inline static InteropEnvironment *_instance{};
     InteropControl _control;
-    std::optional<erbsland::system::Subprocess> _counterpart;
+    erbsland::system::SubprocessPtr _counterpart;
     std::uint64_t _nextId{1U};
 };

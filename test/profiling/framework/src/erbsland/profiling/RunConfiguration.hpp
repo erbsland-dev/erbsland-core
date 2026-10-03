@@ -5,7 +5,11 @@
 #include "RunConfiguration_fwd.hpp"
 #include "RunMode.hpp"
 
-#include <erbsland/all.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/re/Settings.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/TimeDelta.hpp>
 
 #include <cstdint>
 
@@ -24,7 +28,7 @@ struct RunConfiguration {
     std::uint32_t warmupSamples{1U};                          ///< Warm-up samples per scenario.
     std::uint32_t samples{9U};                                ///< Measured benchmark samples.
     TimeDelta minimumSampleTime{TimeDelta::milliseconds(20)}; ///< Calibration target.
-    ByteLength memoryLimit{256U * 1024U * 1024U};             ///< Aggregate fixture memory limit.
+    ByteCount memoryLimit{256U * 1024U * 1024U};              ///< Aggregate fixture memory limit.
     TimeDelta progressInterval{TimeDelta::seconds(10)};       ///< Progress reporting interval.
 };
 

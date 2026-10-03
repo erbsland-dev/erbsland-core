@@ -5,7 +5,7 @@
 #include "ProgramError.hpp"
 
 #include "../../../mem/ByteIntegerFormat.hpp"
-#include "../../../text/Literals.hpp"
+#include "../../Literals.hpp"
 
 namespace erbsland::text::render::impl {
 
@@ -13,12 +13,10 @@ using namespace text::literals;
 
 auto ProgramReader::read() -> ProgramInstruction {
     const auto position = _reader.position();
-    auto opcode = Opcode{};
-    try {
-        opcode = static_cast<Opcode>(_reader.readByteOrThrow().toUInt8());
-    } catch (...) {
+    if (_reader.isAtEnd()) {
         throw ProgramError{"The program contains a truncated opcode."_el};
     }
+    const auto opcode = static_cast<Opcode>(_reader.readByte().toUInt8());
     switch (opcode) {
     case Opcode::EmitText:
     case Opcode::LoadName:
@@ -85,19 +83,19 @@ void ProgramReader::jumpTo(const uint64_t target) {
 }
 
 auto ProgramReader::readOperand() -> uint64_t {
-    try {
-        return _reader.readIntegerOrThrow<uint64_t>(mem::ByteIntegerFormat::UnsignedVariableLength);
-    } catch (...) {
+    const auto value = _reader.readInteger<uint64_t>(mem::ByteIntegerFormat::UnsignedVariableLength);
+    if (!value.has_value()) {
         throw ProgramError{"The program contains a malformed or truncated operand."_el};
     }
+    return *value;
 }
 
 auto ProgramReader::readFixedOperand() -> uint64_t {
-    try {
-        return _reader.readUInt64OrThrow();
-    } catch (...) {
+    auto value = uint64_t{};
+    if (!_reader.readIntegerInto(value)) {
         throw ProgramError{"The program contains a malformed or truncated fixed operand."_el};
     }
+    return value;
 }
 
 }

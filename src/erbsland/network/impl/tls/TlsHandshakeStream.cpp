@@ -11,6 +11,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace unit;
 using namespace text::literals;
 
 void TlsHandshakeStream::append(const mem::ConstByteSpan data) {
@@ -40,7 +41,7 @@ auto TlsHandshakeStream::next() -> std::optional<mem::ByteBlock> {
     }
 
     auto result = mem::ByteBlock::fromSpan(bytes.first(messageLength));
-    _buffer.remove(unit::ByteRange{unit::ByteIndex::zero(), unit::ByteLength{messageLength}});
+    _buffer.remove(ByteRange{ByteIndex::zero(), ByteCount{messageLength, ByteCount::Unchecked{}}});
     return result;
 }
 

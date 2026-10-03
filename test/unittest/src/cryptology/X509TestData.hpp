@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <erbsland/text/String.hpp>
+#include <erbsland/String.hpp>
 
 namespace erbsland::test::x509 {
 

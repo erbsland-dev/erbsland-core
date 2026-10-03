@@ -2,9 +2,9 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-******************
-Terminal Chronicle
-******************
+*****************************************
+Terminal Chronicle: Styled Console Output
+*****************************************
 
 ``terminal-chronicle`` tells a short story using only ``Terminal::print()`` and ``Terminal::printLine()``.
 It is the most direct example in the repository of colorful, structured terminal output without a back buffer or

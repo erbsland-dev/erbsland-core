@@ -15,6 +15,9 @@ public:
     [[nodiscard]] auto validate(const String &filterName, const String &parameter) -> bool override;
 
 private:
+    /// Evaluate a built-in transformation before propagating the input sensitivity mark.
+    [[nodiscard]] static auto applyValue(const String &filterName, const String &parameter, const String &value)
+        -> String;
     /// Apply a lower- or upper-case conversion.
     [[nodiscard]] static auto applyCase(const String &filterName, const String &parameter, const String &value)
         -> String;

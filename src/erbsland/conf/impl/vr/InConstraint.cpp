@@ -15,21 +15,28 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
 using namespace text::literals;
 
 auto handleInConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr {
     const auto &node = context.node;
     const auto &rule = context.rule;
     const auto createConstraint = [&node, &rule]<typename Constraint, typename Value>() -> ConstraintPtr {
-        auto values = typename Constraint::Values{node->asList<Value>()};
+        auto values = [&node]() -> typename Constraint::Values {
+            if constexpr (std::is_same_v<Value, String>) {
+                return node->asStringList();
+            } else {
+                return node->asList<Value>();
+            }
+        }();
         if (std::ranges::empty(values)) {
             throwValidationError(
-                text::StringFormat{"The '{}' constraint must specify a single {} value or a list of {} values"_el}
-                    .build(node->name().asText(), rule->type().toText(), rule->type().toText()));
+                StringFormat{"The '{}' constraint must specify a single {} value or a list of {} values"_el}.build(
+                    node->name().asText(), rule->type().toText(), rule->type().toText()));
         }
         if (Constraint::hasDuplicate(values, rule->caseSensitivity())) {
             throwValidationError(
-                text::StringFormat{"The '{}' list must not contain duplicate values"_el}.build(node->name().asText()));
+                StringFormat{"The '{}' list must not contain duplicate values"_el}.build(node->name().asText()));
         }
         return std::make_shared<Constraint>(std::move(values));
     };
@@ -39,14 +46,14 @@ auto handleInConstraint(const ConstraintHandlerContext &context) -> ConstraintPt
     case vr::RuleType::Float:
         return createConstraint.template operator()<InFloatConstraint, Float>();
     case vr::RuleType::Text:
-        return createConstraint.template operator()<InTextConstraint, text::String>();
+        return createConstraint.template operator()<InTextConstraint, String>();
     case vr::RuleType::Bytes:
         return createConstraint.template operator()<InBytesConstraint, mem::ByteBlock>();
     default:
         break;
     }
     throwValidationError(
-        text::StringFormat{"The '{}' constraint is not supported for '{}' rules"_el}.build(
+        StringFormat{"The '{}' constraint is not supported for '{}' rules"_el}.build(
             context.node->name().asText(), context.rule->type().toText()));
 }
 

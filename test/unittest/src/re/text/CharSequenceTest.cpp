@@ -1,11 +1,11 @@
 // Copyright (c) 2025-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/HashHelper.hpp>
 #include <erbsland/re/impl/text/CharSequence.hpp>
 #include <erbsland/re/RegExError.hpp>
 #include <erbsland/re/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
-#include <erbsland/util/HashHelper.hpp>
 
 using namespace el::re;
 using el::text::Char;

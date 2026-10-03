@@ -12,7 +12,7 @@
 #include "../StringSide.hpp"
 
 #include "../../mem/UnsafeCharPtr.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 #include "../../unit/CpRange.hpp"
 
 #include <cstddef>
@@ -23,7 +23,7 @@ namespace erbsland::text {
 /// A thin wrapper around a UTF-32 string literal.
 /// This class provides a safe and efficient way to work with UTF-32 string literals.
 /// It allows work with literals that are only copied if a modification is required.
-/// @tested{U32StringLiteralTest}
+/// @tested{U32StringLiteralTest StringEncodingValidationTest}
 class U32StringLiteral final {
     friend class U32StringEditor;
     friend class U32String;
@@ -39,17 +39,21 @@ public: // tests
     /// Test if this string is empty.
     [[nodiscard]] auto isEmpty() const noexcept -> bool { return impl::U32StringReadTools{dataView()}.isEmpty(); }
     /// Test if this string is valid UTF-32.
-    [[nodiscard]] auto isValidUtf32() const noexcept -> bool {
-        return impl::U32StringReadTools{dataView()}.isValidUtf32();
+    [[nodiscard]] auto isEncodingValid() const noexcept -> bool {
+        return impl::U32StringReadTools{dataView()}.isEncodingValid();
     }
+    /// Validate this string without modifying its contents.
+    /// @throws U32EncodingError If malformed encoding is detected, with a UTF-32 code-point index relative to this
+    /// string.
+    void encodingValidOrThrow() const { impl::U32StringReadTools{dataView()}.encodingValidOrThrow(); }
 
 public: // accessors
     /// Get the UTF-32 code-unit length of this string.
-    [[nodiscard]] auto length() const noexcept -> unit::CpLength {
+    [[nodiscard]] auto length() const noexcept -> unit::CpCount {
         return impl::U32StringReadTools{dataView()}.length();
     }
     /// Get the UTF-32 code-unit length of this string.
-    [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength { return length(); }
+    [[nodiscard]] auto characterLength() const noexcept -> unit::CpCount { return length(); }
     /// Get the index for one side of the string.
     [[nodiscard]] auto indexAt(const StringSide side) const noexcept -> unit::CpIndex {
         return side == StringSide::Front ? unit::CpIndex::zero() : unit::CpIndex::end(length());

@@ -5,7 +5,7 @@
 #include "../../stream/StandardStreams.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringSide.hpp"
-#include "../../unit/CpLength.hpp"
+#include "../../unit/CpCount.hpp"
 
 namespace erbsland::cterm::impl {
 
@@ -18,10 +18,10 @@ auto readStandardInputLine() -> text::String {
     }
     auto line = result.takeData();
     if (line.endsWith("\r\n"_el)) {
-        return line.slice(text::StringSide::Front, line.characterLength() - unit::CpLength{2U});
+        return line.slice(text::StringSide::Front, line.characterLength() - unit::CpCount{2U});
     }
     if (line.endsWith("\r"_el) || line.endsWith("\n"_el)) {
-        return line.slice(text::StringSide::Front, line.characterLength() - unit::CpLength::one());
+        return line.slice(text::StringSide::Front, line.characterLength() - unit::CpCount::one());
     }
     return line;
 }

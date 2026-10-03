@@ -4,5 +4,4 @@
 
 #include "CpIndex_fwd.hpp"
 #include "IntegerUnitIndex.hpp"
-
 // The public alias is declared in the canonical forward header.

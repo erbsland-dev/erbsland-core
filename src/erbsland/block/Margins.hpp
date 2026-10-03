@@ -5,7 +5,7 @@
 #include "MarginPair.hpp"
 #include "Size.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParameterFailure.hpp"
 #include "../geometry/Axis.hpp"
 #include "../geometry/Dimensionality.hpp"
 #include "../geometry/Orientation.hpp"
@@ -168,9 +168,8 @@ public: // axis components
         }
     }
     /// Get the margin pair for a physical axis.
-    /// @param axis The physical axis to select.
+    /// @param axis The physical axis to select. Must be X or Y.
     /// @return The selected margin pair.
-    /// @throws err::ParameterError if `axis` is Z.
     [[nodiscard]] constexpr auto component(const geometry::Axis axis) const -> MarginPair {
         using namespace text::literals;
         switch (axis) {
@@ -179,13 +178,12 @@ public: // axis components
         case geometry::Axis::Y:
             return vertical();
         default:
-            throw err::ParameterError{"The axis is outside the margins dimensionality."_el, "axis"_el};
+            throw err::ParameterFailure{"The axis is outside the margins dimensionality."_el, "axis"_el};
         }
     }
     /// Set the margin pair for a physical axis.
-    /// @param axis The physical axis to select.
+    /// @param axis The physical axis to select. Must be X or Y.
     /// @param margins The new margin pair.
-    /// @throws err::ParameterError if `axis` is Z.
     constexpr void setComponent(const geometry::Axis axis, const MarginPair margins) {
         using namespace text::literals;
         switch (axis) {
@@ -196,13 +194,12 @@ public: // axis components
             setVertical(margins);
             break;
         default:
-            throw err::ParameterError{"The axis is outside the margins dimensionality."_el, "axis"_el};
+            throw err::ParameterFailure{"The axis is outside the margins dimensionality."_el, "axis"_el};
         }
     }
     /// Get the margin pair for a signed physical axis.
-    /// @param axis The signed physical axis to select.
+    /// @param axis The signed physical axis to select. Must select X or Y.
     /// @return The selected pair, reversed when requested.
-    /// @throws err::ParameterError if `axis` selects Z.
     [[nodiscard]] constexpr auto component(const geometry::SignedAxis axis) const -> MarginPair {
         const auto result = component(axis.axis());
         return axis.isReversed() ? result.reversed() : result;

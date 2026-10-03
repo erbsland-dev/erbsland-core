@@ -15,9 +15,11 @@
 #include "../HttpGrammar.hpp"
 
 #include "../../../../err/Exception.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/AnyString.hpp"
 #include "../../../../text/AsciiCategory.hpp"
+#include "../../../../text/EncodingError.hpp"
 #include "../../../../text/EncodingMode.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringBomMode.hpp"
@@ -40,6 +42,7 @@
 #include <utility>
 
 namespace erbsland::network::impl {
+
 using namespace text;
 using namespace text::literals;
 
@@ -106,7 +109,7 @@ void HttpServerConnection::dispatch(
             }
             auto headers = HttpHeaders{};
             if (!allow.isEmpty()) {
-                headers.setField(HttpFieldType::Allow, String{allow});
+                headers.setField(HttpFieldType::Allow, allow);
             }
             request->sendResponse(
                 HttpResponseHead{
@@ -168,7 +171,7 @@ void HttpServerConnection::handleAggregatedBody(mem::ByteBlock body) {
     auto textBody = text::String{};
     try {
         textBody = StringDecoder{body}.decode(StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict);
-    } catch (...) {
+    } catch (const text::EncodingError &) {
         _request->sendError(HttpStatus::BadRequest, {});
         return;
     }
@@ -183,7 +186,7 @@ void HttpServerConnection::handleAggregatedBody(mem::ByteBlock body) {
         auto jsonBody = data::json::JsonValue::fromStringOrThrow(textBody, parseOptions);
         const auto callback = std::get<HttpServerJsonRequestFn>(_handler.callback());
         invokeApplication([&]() mutable -> void { callback(_request->session(), _request, std::move(jsonBody)); });
-    } catch (const err::Exception &) {
+    } catch (const err::RuntimeError &) {
         _request->sendError(HttpStatus::BadRequest, {});
     }
 }
@@ -191,7 +194,7 @@ void HttpServerConnection::handleAggregatedBody(mem::ByteBlock body) {
 void HttpServerConnection::invokeApplication(const std::function<void()> &callback) {
     try {
         callback();
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         if (_request != nullptr && !_request->isResponseStarted()) {
             _request->sendError(HttpStatus::InternalServerError, {});
         } else if (_transaction != nullptr) {
@@ -206,12 +209,12 @@ auto HttpServerConnection::acceptsContentType(const HttpRouteHandler &handler) c
     }
     const auto &explicitPatterns = handler.options().acceptedContentTypes();
     if ((handler.kind() == HttpRouteHandler::Kind::Bytes && !explicitPatterns.has_value()) ||
-        (explicitPatterns.has_value() && explicitPatterns->empty())) {
+        (explicitPatterns.has_value() && explicitPatterns->isEmpty())) {
         return true;
     }
     const auto values = _request->head().headers().getAll(HttpFieldType::ContentType);
     if (values.isEmpty()) {
-        return !explicitPatterns.has_value() || explicitPatterns->empty();
+        return !explicitPatterns.has_value() || explicitPatterns->isEmpty();
     }
     if (values.count() != unit::ItemCount{1U}) {
         return false;
@@ -262,7 +265,7 @@ auto HttpServerConnection::matchesContentTypePattern(const String &pattern, cons
         reader.advanceWhile(AsciiCategory::HttpToken);
         auto suffix = StringEditor{};
         suffix.append(U'+').append(reader.takeCapture().toString());
-        return mediaType.subtype().endsWith(String{suffix}, Char::compareAsciiFolded);
+        return mediaType.subtype().endsWith(suffix, Char::compareAsciiFolded);
     }
     reader.startCapture();
     reader.advanceWhile(AsciiCategory::HttpToken);

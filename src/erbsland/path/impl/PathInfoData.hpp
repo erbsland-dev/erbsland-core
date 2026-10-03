@@ -18,7 +18,7 @@
 #include "../../text/StringEditor.hpp"
 #include "../../time/TimePoint.hpp"
 #include "../../time/Timestamp.hpp"
-#include "../../unit/ByteLength.hpp"
+#include "../../unit/ByteCount.hpp"
 
 namespace erbsland::path::impl {
 
@@ -44,7 +44,7 @@ public:
     bool exists{false};                 ///< If the target exists.
     bool refreshFailed{false};          ///< If automatic refresh must stop until explicit reload.
     PathType type{PathType::Unknown};   ///< The target type.
-    unit::ByteLength fileSize;          ///< Size for regular files.
+    unit::ByteCount fileSize;           ///< Size for regular files.
     system::FileIdentity fileIdentity;  ///< Stable identity of the current filesystem object.
     time::Timestamp lastModified;       ///< Last modification time.
     time::Timestamp lastAccessed;       ///< Last access time.

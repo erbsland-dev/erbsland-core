@@ -9,7 +9,7 @@
 #include "../algorithm/Sha2.hpp"
 #include "../algorithm/Sha3.hpp"
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 
 namespace erbsland::cryptology::impl {
 
@@ -32,7 +32,7 @@ auto createHashWorker(const HashAlgorithm algorithm) -> std::shared_ptr<HashWork
     case HashAlgorithm::Md5:
         return std::make_shared<HashWorkerAdapter<Md5, HashAlgorithm::Md5>>();
     }
-    throw err::LogicError{"Invalid hash algorithm."};
+    throw err::LogicFailure{"Invalid hash algorithm."};
 }
 
 }

@@ -7,7 +7,7 @@
 
 #include "../AnyString.hpp"
 
-#include "../../unit/ArgumentUnit.hpp"
+#include "../../unit/ArgumentIndex.hpp"
 
 namespace erbsland::text::impl {
 

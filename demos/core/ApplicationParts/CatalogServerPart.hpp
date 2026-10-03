@@ -5,6 +5,11 @@
 #include "CatalogServer.hpp"
 #include "CatalogStorage.hpp"
 
+#include <erbsland/ApplicationPartManagerAccess.hpp>
+#include <erbsland/ApplicationPartWithInterface.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+
 #include <memory>
 
 namespace demo {

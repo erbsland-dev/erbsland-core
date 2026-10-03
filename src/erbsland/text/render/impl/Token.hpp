@@ -4,8 +4,8 @@
 
 #include "TokenKind.hpp"
 
-#include "../../../text/String.hpp"
 #include "../../../unit/CodeLocation.hpp"
+#include "../../String.hpp"
 
 namespace erbsland::text::render::impl {
 

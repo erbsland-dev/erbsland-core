@@ -2,8 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/data/json/JsonValue.hpp>
-#include <erbsland/err/ParseError.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/EscapeAmount.hpp>
+#include <erbsland/ItemCount.hpp>
+#include <erbsland/ItemIndex.hpp>
+#include <erbsland/json/JsonFormatOptions.hpp>
+#include <erbsland/json/JsonParseOptions.hpp>
+#include <erbsland/json/JsonType.hpp>
+#include <erbsland/json/JsonValue.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 namespace demo {
 
@@ -55,14 +65,14 @@ void buildDocument() {
     patch.set("name"_el, el::String{u8"Yankı"_el});
     patch.set("active"_el, true);
     auto voices = JsonValue{JsonArray{}};
-    voices.append(el::String{"sine"_el}).append(el::String{"triangle"_el});
+    voices.append("sine"_el).append("triangle"_el);
     patch.set("voices"_el, voices);
     el::io::printLine(patch.toString());
 
     // Copies share values until changed; the original document still has two voices.
     auto revised = patch;
     auto moreVoices = revised.getOrThrow("voices"_el);
-    moreVoices.append(el::String{"square"_el});
+    moreVoices.append("square"_el);
     revised.set("voices"_el, moreVoices);
     el::io::printLine("Original voices: "_el, patch.getOrThrow("voices"_el).itemCount().toSizeT());
     el::io::printLine("Revised voices: "_el, revised.getOrThrow("voices"_el).itemCount().toSizeT());
@@ -78,8 +88,7 @@ void formatDocument() {
     el::io::printLine("Pretty:"_el);
     el::io::printLine(patch.toString(JsonFormatOptions::pretty()));
     el::io::printLine("Four-space array:"_el);
-    el::io::printLine(
-        JsonValue{JsonArray{JsonValue{2}}}.toString(JsonFormatOptions{}.setIndentation(el::CpLength{4U})));
+    el::io::printLine(JsonValue{JsonArray{JsonValue{2}}}.toString(JsonFormatOptions{}.setIndentation(el::CpCount{4U})));
     const auto ascii = JsonFormatOptions::compact().setEscapeAmount(el::EscapeAmount::NonAscii);
     el::io::printLine("ASCII: "_el, patch.toString(ascii));
 }
@@ -89,10 +98,10 @@ void formatDocument() {
 /// `JsonParseOptions` measures the source in bytes, container depth in levels, values as a count including the root,
 /// and decoded key or string length in Unicode code points. A document exceeding any limit fails parsing.
 void limitDocument() {
-    const auto input = JsonParseOptions{}.setMaximumInputLength(el::ByteLength{3U});
+    const auto input = JsonParseOptions{}.setMaximumInputLength(el::ByteCount{3U});
     const auto nesting = JsonParseOptions{}.setMaximumNesting(el::ItemCount{1U});
     const auto values = JsonParseOptions{}.setMaximumValueCount(el::ItemCount{2U});
-    const auto strings = JsonParseOptions{}.setMaximumStringLength(el::CpLength{2U});
+    const auto strings = JsonParseOptions{}.setMaximumStringLength(el::CpCount{2U});
     el::io::printLine("Input limit accepts null: "_el, JsonValue::fromString("null"_el, input).has_value());
     el::io::printLine("Nesting limit accepts [[1]]: "_el, JsonValue::fromString("[[1]]"_el, nesting).has_value());
     el::io::printLine("Value limit accepts [1,2]: "_el, JsonValue::fromString("[1,2]"_el, values).has_value());

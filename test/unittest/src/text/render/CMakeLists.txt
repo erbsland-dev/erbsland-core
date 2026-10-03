@@ -7,6 +7,7 @@ target_sources(erbsland-core-unittest PRIVATE
         FileSystemLoaderTest.cpp
         MemoryLayoutLoader.hpp
         RenderCompilerTest.cpp
+        RenderConcurrencyTest.cpp
         RenderContextTest.cpp
         RenderEnvironmentTest.cpp
         RenderExpressionTest.cpp

@@ -3,11 +3,13 @@
 #include "StringTree.hpp"
 
 #include "Literals.hpp"
+#include "StringJoins.hpp"
 
 #include <memory>
 
 namespace erbsland::text {
 
+using namespace unit;
 using namespace literals;
 using impl::StringTreeData;
 using impl::StringTreeDataPtr;
@@ -72,7 +74,7 @@ auto StringTree::append(const StringTree &tree) -> StringTree & {
     return *this;
 }
 
-auto StringTree::toString(const unit::CpLength indentWidth, const unit::CpLength initialIndentWidth) const -> String {
+auto StringTree::toString(const CpCount indentWidth, const CpCount initialIndentWidth) const -> String {
     auto result = StringEditor{};
     auto firstLine = true;
     appendData(result, *_data, indentWidth, initialIndentWidth, firstLine);
@@ -88,8 +90,8 @@ auto StringTree::createData(String title) -> StringTreeDataPtr {
 void StringTree::appendData(
     StringEditor &result,
     const StringTreeData &data,
-    const unit::CpLength indentWidth,
-    const unit::CpLength indent,
+    const CpCount indentWidth,
+    const CpCount indent,
     bool &firstLine) {
     auto entryIndent = indent;
     if (!data.title.isEmpty()) {
@@ -108,8 +110,8 @@ void StringTree::appendData(
 void StringTree::appendEntry(
     StringEditor &result,
     const StringTreeEntry &entry,
-    const unit::CpLength indentWidth,
-    const unit::CpLength indent,
+    const CpCount indentWidth,
+    const CpCount indent,
     bool &firstLine) {
     appendLinePrefix(result, indent, firstLine);
     if (entry.kind == StringTreeEntryKind::Text) {
@@ -131,7 +133,7 @@ void StringTree::appendEntry(
     appendData(result, *entry.treeData, indentWidth, indent + indentWidth, firstLine);
 }
 
-void StringTree::appendLinePrefix(StringEditor &result, const unit::CpLength indent, bool &firstLine) {
+void StringTree::appendLinePrefix(StringEditor &result, const CpCount indent, bool &firstLine) {
     if (!firstLine) {
         result.append(U'\n');
     }
@@ -140,7 +142,7 @@ void StringTree::appendLinePrefix(StringEditor &result, const unit::CpLength ind
 }
 
 auto StringTree::listIndexLabel(const std::size_t index) -> String {
-    return String::fromJoined({"["_el, String::fromInteger(index), "]"_el});
+    return text::join("["_el, String::fromInteger(index), "]"_el);
 }
 
 void StringTree::ensureUnique() {

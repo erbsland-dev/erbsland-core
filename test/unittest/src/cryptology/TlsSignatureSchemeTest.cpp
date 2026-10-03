@@ -3,9 +3,9 @@
 
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/cryptology/tls/TlsSignatureScheme.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/TlsSignatureScheme.hpp>
 
 #include <cstdint>
 
@@ -28,12 +28,18 @@ public:
         WITH_CONTEXT(requireMetadata(TlsSignatureScheme::RsaPssPssSha256, 0x0809U, "rsa_pss_pss_sha256"_el));
         WITH_CONTEXT(requireMetadata(TlsSignatureScheme::RsaPssPssSha384, 0x080aU, "rsa_pss_pss_sha384"_el));
 
-        REQUIRE_FALSE(TlsSignatureScheme::fromRawValue(0x0806U).has_value());
+        REQUIRE(TlsSignatureScheme::fromRawValue(0x0806U).has_value());
         REQUIRE_FALSE(TlsSignatureScheme::fromRawValue(0xffffU).has_value());
         REQUIRE_THROWS_AS(el::err::ParseError, TlsSignatureScheme::fromRawValueOrThrow(0xffffU));
     }
 
     void testUsagePolicy() {
+        WITH_CONTEXT(requireMetadata(TlsSignatureScheme::RsaPssPssSha512, 0x080bU, "rsa_pss_pss_sha512"_el));
+        WITH_CONTEXT(requirePolicy(TlsSignatureScheme::RsaPssPssSha512, true, true));
+        WITH_CONTEXT(requireMetadata(TlsSignatureScheme::RsaPssRsaeSha512, 0x0806U, "rsa_pss_rsae_sha512"_el));
+        WITH_CONTEXT(requirePolicy(TlsSignatureScheme::RsaPssRsaeSha512, true, true));
+        WITH_CONTEXT(requireMetadata(TlsSignatureScheme::RsaPkcs1Sha512, 0x0601U, "rsa_pkcs1_sha512"_el));
+        WITH_CONTEXT(requirePolicy(TlsSignatureScheme::RsaPkcs1Sha512, false, true));
         WITH_CONTEXT(requirePolicy(TlsSignatureScheme::RsaPkcs1Sha256, false, true));
         WITH_CONTEXT(requirePolicy(TlsSignatureScheme::RsaPkcs1Sha384, false, true));
         WITH_CONTEXT(requirePolicy(TlsSignatureScheme::EcdsaSecp256r1Sha256, true, true));

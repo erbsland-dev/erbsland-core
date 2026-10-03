@@ -3,7 +3,11 @@
 
 #include "IndividualValuesDemos.hpp"
 
+#include <erbsland/conf/Name.hpp>
+#include <erbsland/conf/NamePath.hpp>
 #include <erbsland/conf/Parser.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
 
 #include <cstddef>
 #include <cstdint>

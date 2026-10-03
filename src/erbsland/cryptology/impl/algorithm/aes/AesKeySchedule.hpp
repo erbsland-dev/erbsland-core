@@ -16,7 +16,6 @@ class AesKeySchedule final {
 public:
     /// Create and expand an AES-128 or AES-256 key.
     /// @param key The 16-byte or 32-byte key.
-    /// @throws err::ParameterError If the key length is unsupported.
     explicit AesKeySchedule(mem::ConstByteSpan key);
 
     /// Securely erase expanded key material.

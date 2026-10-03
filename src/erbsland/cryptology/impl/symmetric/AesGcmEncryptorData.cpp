@@ -6,8 +6,10 @@
 
 namespace erbsland::cryptology::impl {
 
+using namespace mem;
+
 AesGcmEncryptorData::AesGcmEncryptorData(
-    const SymmetricEncryptionType type, const mem::ConstByteSpan key, const mem::ConstByteSpan nonce) :
+    const SymmetricEncryptionType type, const ConstByteSpan key, const ConstByteSpan nonce) :
     _type{type}, _state{key, nonce} {
 }
 
@@ -19,21 +21,21 @@ auto AesGcmEncryptorData::type() const noexcept -> SymmetricEncryptionType {
     return _type;
 }
 
-void AesGcmEncryptorData::addAuthenticatedData(const mem::ConstByteSpan data) {
+void AesGcmEncryptorData::addAuthenticatedData(const ConstByteSpan data) {
     _state.addAuthenticatedData(data);
 }
 
-auto AesGcmEncryptorData::encrypt(const mem::ConstByteSpan data) -> mem::ByteBlock {
+auto AesGcmEncryptorData::encrypt(const ConstByteSpan data) -> ByteBlock {
     return _state.transform(data, true);
 }
 
-auto AesGcmEncryptorData::finalize() -> mem::ByteBlock {
+auto AesGcmEncryptorData::finalize() -> ByteBlock {
     _tag = _state.finalizeTag();
     return {};
 }
 
 auto AesGcmEncryptorData::tag() const -> SymmetricTag {
-    return SymmetricTag{mem::ByteBlock{_tag}};
+    return SymmetricTag{ByteBlock{_tag}};
 }
 
 void AesGcmEncryptorData::secureErase() noexcept {

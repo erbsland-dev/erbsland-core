@@ -27,7 +27,7 @@
 #include "../../text/StringEditor.hpp"
 #include "../../text/u16/U16StringEditor.hpp"
 #include "../../time/impl/WindowsTimeConverter.hpp"
-#include "../../unit/U16DataLength.hpp"
+#include "../../unit/U16Count.hpp"
 
 #include <aclapi.h>
 #include <sddl.h>
@@ -42,6 +42,10 @@
 
 namespace erbsland::path::impl {
 
+using namespace text;
+using text::impl::PlatformU16StringAccess;
+using text::impl::UnsafeU16StringBuffer;
+using namespace unit;
 using namespace text::literals;
 
 auto WindowsPathBackend::currentDirectoryOrThrow() const -> Path {
@@ -53,7 +57,7 @@ auto WindowsPathBackend::currentDirectoryOrThrow() const -> Path {
             {},
             GetLastError());
     }
-    auto buffer = text::impl::UnsafeU16StringBuffer{static_cast<std::size_t>(length)};
+    auto buffer = UnsafeU16StringBuffer{static_cast<std::size_t>(length)};
     const auto actualLength = GetCurrentDirectoryW(length, buffer.dataAsWide());
     if (actualLength == 0U || actualLength >= length) {
         throwSystemError(
@@ -62,7 +66,7 @@ auto WindowsPathBackend::currentDirectoryOrThrow() const -> Path {
             {},
             GetLastError());
     }
-    return Path::fromWindowsOrThrow(buffer.takeAsUtf8(unit::U16DataLength::fromSizeT(actualLength)));
+    return Path::fromWindowsOrThrow(buffer.takeAsUtf8(U16Count::fromSizeT(actualLength)));
 }
 
 auto WindowsPathBackend::userHomeDirectoryOrThrow() const -> Path {
@@ -86,7 +90,7 @@ auto WindowsPathBackend::userHomeDirectoryOrThrow() const -> Path {
             {},
             lengthError);
     }
-    auto buffer = text::impl::UnsafeU16StringBuffer{static_cast<std::size_t>(length)};
+    auto buffer = UnsafeU16StringBuffer{static_cast<std::size_t>(length)};
     if (GetUserProfileDirectoryW(token, buffer.dataAsWide(), &length) == 0 || length <= 1U) {
         throwSystemError(
             "User home directory is unavailable"_el,
@@ -94,7 +98,7 @@ auto WindowsPathBackend::userHomeDirectoryOrThrow() const -> Path {
             {},
             GetLastError());
     }
-    const auto home = Path::fromWindows(buffer.takeAsUtf8(unit::U16DataLength::fromSizeT(length - 1U)));
+    const auto home = Path::fromWindows(buffer.takeAsUtf8(U16Count::fromSizeT(length - 1U)));
     if (home.isEmpty() || !home.isAbsolute()) {
         throw PathError{PathErrorContext{
             "User home directory is unavailable"_el,
@@ -116,7 +120,7 @@ auto WindowsPathBackend::systemTempDirectoryOrThrow() const -> Path {
             {},
             GetLastError());
     }
-    auto buffer = text::impl::UnsafeU16StringBuffer{static_cast<std::size_t>(length)};
+    auto buffer = UnsafeU16StringBuffer{static_cast<std::size_t>(length)};
     const auto actualLength =
         useLegacyFunction ? GetTempPathW(length, buffer.dataAsWide()) : GetTempPath2W(length, buffer.dataAsWide());
     if (actualLength == 0U || actualLength >= length) {
@@ -126,7 +130,7 @@ auto WindowsPathBackend::systemTempDirectoryOrThrow() const -> Path {
             {},
             GetLastError());
     }
-    return Path::fromWindowsOrThrow(buffer.takeAsUtf8(unit::U16DataLength::fromSizeT(actualLength)));
+    return Path::fromWindowsOrThrow(buffer.takeAsUtf8(U16Count::fromSizeT(actualLength)));
 }
 
 auto WindowsPathBackend::resolveOrThrow(const Path &path, const PathResolveOptions options) const -> Path {
@@ -157,7 +161,7 @@ auto WindowsPathBackend::loadResolvedInfoOrThrow(
     result.resolvedPath = resolvedPath;
 
     const auto pathText = pathTextOrThrow(result.resolvedPath);
-    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto pathTextAccess = PlatformU16StringAccess{pathText};
     const auto handle = CreateFileW(
         pathTextAccess.nullTerminatedWideCharPtr(),
         FILE_READ_ATTRIBUTES | READ_CONTROL,
@@ -224,7 +228,7 @@ auto WindowsPathBackend::loadResolvedInfoOrThrow(
         const auto size = (static_cast<std::uint64_t>(fileInfo.nFileSizeHigh) << 32U) |
             static_cast<std::uint64_t>(fileInfo.nFileSizeLow);
         if (result.type == PathType::RegularFile) {
-            result.fileSize = unit::ByteLength::fromSizeT(static_cast<std::size_t>(size));
+            result.fileSize = ByteCount::fromSizeT(static_cast<std::size_t>(size));
         }
         result.loadedParts.set(PathInfoPart::Size);
     }

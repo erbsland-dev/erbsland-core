@@ -2,9 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/cryptology/keys/SigningPrivateKey.hpp>
-#include <erbsland/cryptology/SignedByteBlock.hpp>
-#include <erbsland/text/StringEncoder.hpp>
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/SignedByteBlock.hpp>
+#include <erbsland/SigningKeyProfile.hpp>
+#include <erbsland/SigningPrivateKey.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringBomMode.hpp>
+#include <erbsland/StringEncoder.hpp>
+#include <erbsland/StringEncoding.hpp>
 
 namespace demo {
 
@@ -22,7 +29,7 @@ void verifyRecord() {
 
     // Treat bytes from storage or a peer as untrusted, even if the record parses.
     const auto record =
-        el::cryptology::SignedByteBlock::fromByteBlockOrThrow(receivedBytes.span(), el::ByteLength{256U});
+        el::cryptology::SignedByteBlock::fromByteBlockOrThrow(receivedBytes.span(), el::ByteCount{256U});
     // The hint selects a candidate from a trusted local key registry; it is not proof by itself.
     if (!record.untrustedKeyIdHint().has_value() || *record.untrustedKeyIdHint() != "score_2026"_el) {
         throw el::ApplicationError{"Unknown score publisher key."_el};

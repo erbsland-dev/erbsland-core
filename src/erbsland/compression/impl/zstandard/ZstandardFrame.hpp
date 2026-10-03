@@ -41,6 +41,7 @@ public:
     /// Encode a continuous frame from bounded input.
     void compressStream(CodecReader &input, CompressionLevel level, const CodecOutput::Write &output) const;
     /// Decode a continuous frame with bounded history.
+    /// @throws err::OutOfRangeError If frame sizes exceed the platform range or configured workspace/output limits.
     void decompressStream(
         CodecReader &input, const DecompressionOptions &options, const CodecOutput::Write &output) const;
     // defaults

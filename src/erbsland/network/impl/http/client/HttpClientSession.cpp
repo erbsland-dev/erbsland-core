@@ -5,8 +5,9 @@
 #include "HttpClientRequest.hpp"
 #include "HttpClientSessionEventEditor.hpp"
 
-#include "../../../../err/LogicError.hpp"
-#include "../../../../err/ParameterError.hpp"
+#include "../../../../err/LogicFailure.hpp"
+#include "../../../../err/ParameterFailure.hpp"
+#include "../../../../err/RuntimeError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../http/HttpFieldType.hpp"
@@ -19,6 +20,7 @@
 
 namespace erbsland::network::impl {
 
+using namespace err;
 using namespace text::literals;
 
 HttpClientSession::HttpClientSession(event::EventsPtr ownerEvents) :
@@ -39,7 +41,7 @@ HttpClientSession::~HttpClientSession() {
 void HttpClientSession::setOptions(HttpClientSessionOptions options) {
     verifyCurrentOwnerEvents();
     if (_state != NetworkSourceState::Active) {
-        throw err::LogicError{"A closed HTTP client session cannot be configured."_el};
+        throw LogicFailure{"A closed HTTP client session cannot be configured."_el};
     }
     const auto previous = _options;
     _options = std::move(options);
@@ -58,7 +60,7 @@ void HttpClientSession::setOptions(HttpClientSessionOptions options) {
 void HttpClientSession::setTlsOptions(HttpClientTlsOptions options) {
     verifyCurrentOwnerEvents();
     if (_state != NetworkSourceState::Active) {
-        throw err::LogicError{"A closed HTTP client session cannot be configured."_el};
+        throw LogicFailure{"A closed HTTP client session cannot be configured."_el};
     }
     const auto previous = _tlsOptions;
     _tlsOptions = std::move(options);
@@ -75,10 +77,10 @@ void HttpClientSession::setTlsOptions(HttpClientTlsOptions options) {
 void HttpClientSession::setRedirectOptions(HttpClientRedirectOptions options) {
     verifyCurrentOwnerEvents();
     if (_state != NetworkSourceState::Active) {
-        throw err::LogicError{"A closed HTTP client session cannot be configured."_el};
+        throw LogicFailure{"A closed HTTP client session cannot be configured."_el};
     }
     if (options.maximumRedirects().isZero() || options.maximumRedirects().isInfinite()) {
-        throw err::ParameterError{"The redirect limit must be positive and finite."_el, "options"_el};
+        throw ParameterFailure{"The redirect limit must be positive and finite."_el, "options"_el};
     }
     _redirectOptions = options;
 }
@@ -86,14 +88,14 @@ void HttpClientSession::setRedirectOptions(HttpClientRedirectOptions options) {
 void HttpClientSession::setDefaultHeaders(HttpHeaders headers) {
     verifyCurrentOwnerEvents();
     if (_state != NetworkSourceState::Active) {
-        throw err::LogicError{"A closed HTTP client session cannot be configured."_el};
+        throw LogicFailure{"A closed HTTP client session cannot be configured."_el};
     }
     for (const auto &field : headers.fields()) {
         const auto type = field.name().type();
         if (type == HttpFieldType::Host || type == HttpFieldType::ContentLength ||
             type == HttpFieldType::TransferEncoding || type == HttpFieldType::Expect ||
             type == HttpFieldType::Upgrade) {
-            throw err::ParameterError{
+            throw ParameterFailure{
                 "Host, framing, Expect, and Upgrade fields are controlled by the HTTP client."_el, "headers"_el};
         }
     }
@@ -111,10 +113,10 @@ auto HttpClientSession::createRequest(Url url) -> HttpClientRequestPtr {
 auto HttpClientSession::createRequest(HttpMethod method, Url url) -> HttpClientRequestPtr {
     verifyCurrentOwnerEvents();
     if (!method.isValid()) {
-        throw err::ParameterError{"An HTTP client request requires a valid method."_el, "method"_el};
+        throw ParameterFailure{"An HTTP client request requires a valid method."_el, "method"_el};
     }
     if (!url.isValid() || (url.scheme() != UrlScheme::Http && url.scheme() != UrlScheme::Https)) {
-        throw err::ParameterError{"An HTTP client request requires an absolute HTTP or HTTPS URL."_el, "url"_el};
+        throw ParameterFailure{"An HTTP client request requires an absolute HTTP or HTTPS URL."_el, "url"_el};
     }
     return std::make_shared<HttpClientRequest>(
         std::static_pointer_cast<HttpClientSession>(shared_from_this()), std::move(method), std::move(url));
@@ -124,7 +126,7 @@ void HttpClientSession::sendRequest(HttpClientRequestPtr request) {
     verifyCurrentOwnerEvents();
     const auto concrete = std::dynamic_pointer_cast<HttpClientRequest>(request);
     if (concrete == nullptr || concrete->_session.lock().get() != this) {
-        throw err::ParameterError{"The request was not created by this HTTP client session."_el, "request"_el};
+        throw ParameterFailure{"The request was not created by this HTTP client session."_el, "request"_el};
     }
     concrete->submit(
         _options,
@@ -243,9 +245,9 @@ void HttpClientSession::validateConfiguration() const {
         _options.cookieJarOptions().maximumCookiesPerRegistrableDomain().isInfinite() ||
         _options.cookieJarOptions().maximumCookies().isZero() ||
         _options.cookieJarOptions().maximumCookies().isInfinite() || _tlsOptions.configurationLabel().isEmpty() ||
-        !_tlsOptions.configurationLabel().isValidUtf8() || !positive(_tlsOptions.handshakeTimeout()) ||
+        !_tlsOptions.configurationLabel().isEncodingValid() || !positive(_tlsOptions.handshakeTimeout()) ||
         !positive(_tlsOptions.idleTimeout())) {
-        throw err::ParameterError{"HTTP client limits and deadlines must be positive and finite."_el, "options"_el};
+        throw ParameterFailure{"HTTP client limits and deadlines must be positive and finite."_el, "options"_el};
     }
 }
 
@@ -278,11 +280,11 @@ void HttpClientSession::requestFinalized(const std::shared_ptr<HttpClientRequest
     assessClosed();
 }
 
-void HttpClientSession::releaseBodyQuota(const unit::ByteLength length) noexcept {
+void HttpClientSession::releaseBodyQuota(const unit::ByteCount length) noexcept {
     _retainedBodyLength -= std::min(_retainedBodyLength, length.toRawValue());
 }
 
-auto HttpClientSession::replaceBodyQuota(const unit::ByteLength oldLength, const unit::ByteLength newLength) noexcept
+auto HttpClientSession::replaceBodyQuota(const unit::ByteCount oldLength, const unit::ByteCount newLength) noexcept
     -> bool {
     const auto oldValue = oldLength.toRawValue();
     const auto newValue = newLength.toRawValue();
@@ -303,7 +305,7 @@ void HttpClientSession::assessClosed() {
     if (_onClosed) {
         try {
             _onClosed();
-        } catch (...) {}
+        } catch (const RuntimeError &) {}
     }
     finishFinal();
 }
@@ -316,7 +318,7 @@ void HttpClientSession::finishFinal() {
     if (_onFinal) {
         try {
             _onFinal();
-        } catch (...) {}
+        } catch (const RuntimeError &) {}
     }
 }
 

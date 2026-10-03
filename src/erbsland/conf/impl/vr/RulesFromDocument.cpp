@@ -23,6 +23,8 @@
 
 namespace erbsland::conf::impl {
 
+using namespace text;
+using namespace unit;
 using namespace text::literals;
 
 auto RulesFromDocument::constraintHandlerTable() -> const ConstraintHandlers & {
@@ -177,7 +179,7 @@ void RulesFromDocument::processNameNodeRules(const conf::ValuePtr &node, const R
 void RulesFromDocument::processCommonNodeRules(const conf::ValuePtr &node, const RulePtr &rule) {
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
         node->type() == ValueType::SectionWithNames, "Expected section with names node"_el);
-    std::unordered_map<text::String, text::String> customErrorMessages;
+    std::unordered_map<String, String> customErrorMessages;
     for (const auto &value : *node) {
         try {
             if (value->type().isStructural()) {
@@ -201,8 +203,7 @@ void RulesFromDocument::processCommonNodeRules(const conf::ValuePtr &node, const
     for (const auto &[name, errorMessage] : customErrorMessages) {
         if (!rule->hasConstraint(name)) {
             throwValidationError(
-                text::StringFormat{"There is no constraint '{0}' for the custom error message '{0}_error'"_el}.build(
-                    name));
+                StringFormat{"There is no constraint '{0}' for the custom error message '{0}_error'"_el}.build(name));
         }
         const auto constraint = rule->constraint(name);
         constraint->setErrorMessage(errorMessage);
@@ -210,23 +211,21 @@ void RulesFromDocument::processCommonNodeRules(const conf::ValuePtr &node, const
 }
 
 void RulesFromDocument::handleConstraintAndAttributes(
-    std::unordered_map<text::String, text::String> &customErrorMessages,
-    const RulePtr &rule,
-    const conf::ValuePtr &value) {
+    std::unordered_map<String, String> &customErrorMessages, const RulePtr &rule, const conf::ValuePtr &value) {
 
     auto name = value->name().asText();
     if (name.endsWith(vrc::ctSuffixError)) {
-        name = name.slice(unit::ByteRange{unit::ByteIndex::zero(), name.length() - vrc::ctSuffixError.length()});
+        name = name.slice(ByteRange{ByteIndex::zero(), name.length() - vrc::ctSuffixError.length()});
         auto lookupName = name;
         if (name.startsWith(vrc::ctPrefixNot)) {
             lookupName = name.slice(
-                unit::ByteRange{
-                    unit::ByteIndex::fromSizeT(vrc::ctPrefixNot.length().toSizeT()),
+                ByteRange{
+                    ByteIndex::fromSizeT(vrc::ctPrefixNot.length().toSizeT()),
                     name.length() - vrc::ctPrefixNot.length()});
         }
         auto constraintHandler = resolveConstraintHandler(lookupName);
         if (!constraintHandler.acceptError) {
-            throwValidationError(text::StringFormat{"'{}' does not accept '_error' suffixes"_el}.build(name));
+            throwValidationError(StringFormat{"'{}' does not accept '_error' suffixes"_el}.build(name));
         }
         customErrorMessages[name] = value->asText();
         return;
@@ -236,14 +235,13 @@ void RulesFromDocument::handleConstraintAndAttributes(
     if (name.startsWith(vrc::ctPrefixNot)) {
         isNegated = true;
         lookupName = name.slice(
-            unit::ByteRange{
-                unit::ByteIndex::fromSizeT(vrc::ctPrefixNot.length().toSizeT()),
-                name.length() - vrc::ctPrefixNot.length()});
+            ByteRange{
+                ByteIndex::fromSizeT(vrc::ctPrefixNot.length().toSizeT()), name.length() - vrc::ctPrefixNot.length()});
     }
     ConstraintPtr constraint;
     auto constraintHandler = resolveConstraintHandler(lookupName);
     if (isNegated && !constraintHandler.acceptNot) {
-        throwValidationError(text::StringFormat{"'{}' does not accept 'not_' prefixes"_el}.build(name));
+        throwValidationError(StringFormat{"'{}' does not accept 'not_' prefixes"_el}.build(name));
     }
     auto context = ConstraintHandlerContext{.rule = rule, .node = value, .isNegated = isNegated};
     constraint = constraintHandler.handler(context);
@@ -261,12 +259,11 @@ void RulesFromDocument::handleConstraintAndAttributes(
                 // Improve the error message if
                 if (existingConstraint->name() != constraint->name()) {
                     throwValidationError(
-                        text::StringFormat{"Constraint '{}' for type '{}' is already defined. "
-                                           "You must not mix positive and negative constraints for the same type"_el}
+                        StringFormat{"Constraint '{}' for type '{}' is already defined. "
+                                     "You must not mix positive and negative constraints for the same type"_el}
                             .build(constraint->name(), constraint->type().toText()));
                 }
-                throwValidationError(
-                    text::StringFormat{"Constraint '{}' is already defined"_el}.build(constraint->name()));
+                throwValidationError(StringFormat{"Constraint '{}' is already defined"_el}.build(constraint->name()));
             }
         }
         // Add or overwrite the constraint.
@@ -274,14 +271,14 @@ void RulesFromDocument::handleConstraintAndAttributes(
     }
 }
 
-auto RulesFromDocument::resolveConstraintHandler(const text::String &name) -> const ConstraintHandler & {
+auto RulesFromDocument::resolveConstraintHandler(const String &name) -> const ConstraintHandler & {
     const auto &constraintHandlers = constraintHandlerTable();
     const auto it = std::ranges::find_if(
         constraintHandlers, [name](const ConstraintHandler &handler) -> bool { return handler.name == name; });
     if (it == constraintHandlers.end()) {
-        text::StringEditor message{"Unknown constraint: "_el};
+        StringEditor message{"Unknown constraint: "_el};
         message.append(name);
-        throwValidationError(text::String{message});
+        throwValidationError(message);
     }
     return *it;
 }

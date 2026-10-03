@@ -19,8 +19,8 @@ The calendar and clock part types let you keep that meaning while validating inp
 dates, and extracting fields from complete values.
 This page explains the part model and develops the calendar helpers you can use in those calculations.
 
-Positions and Quantities
-========================
+Calendar Positions versus Time Quantities
+=========================================
 
 A part identifies a position within a calendar or clock: ``Day{15}`` is a day of a month, and ``Hour{9}`` is a reading
 within a clock day.
@@ -123,7 +123,7 @@ calendar context, so the test refers to the actual month or year end.
 .. erbsland-demo::
     :source: time/CalendarParts/Construct.cpp
     :exec: time/calendar_parts --demo Construct
-    :source-sha256: e012d3147a3bf2970b98a74728e770e1e51a8290f1a6142d79a67a1cabb90a40
+    :sha256: 12c543b871d0312930ec67ebe8f171cb3483f9a9104e914832cd9b578f670950
 
 .. code-block:: cpp
 
@@ -156,13 +156,15 @@ calendar context, so the test refers to the actual month or year end.
                 el::Second{}.toValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Tangskov: month accepted false; clamped month 12
-    Day in part range: true; February date valid: false
-    January first: true; December last: true; June < July: true; clamped hour: 23
-    Year first/last: 0/9999; maximum day: 31; default second: 0
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mTangskov: month accepted false; clamped month 12
+        Day in part range: true; February date valid: false
+        January first: true; December last: true; June < July: true; clamped hour: 23
+        Year first/last: 0/9999; maximum day: 31; default second: 0␛[0m
 
 .. erbsland-demo-end::
 
@@ -173,8 +175,8 @@ Integer addition/subtraction, matching amount addition/subtraction, and incremen
 For midnight carry, calculate with :cpp:class:`Time <erbsland::time::Time>` as explained in :doc:`working_with_times`.
 For calendar carry, the context-aware navigation helpers below return all affected fields together.
 
-Moving Between Labels and Amounts
-=================================
+Converting Calendar Labels to Zero-Based Amounts
+================================================
 
 ``toAmount()`` returns the offset from the part's minimum label.
 It is not always a copy of the visible number.
@@ -190,7 +192,7 @@ Keeping the word *offset* in mind helps when moving between human calendar label
 .. erbsland-demo::
     :source: time/CalendarParts/Amounts.cpp
     :exec: time/calendar_parts --demo Amounts
-    :source-sha256: 845546923cc26500264662c2b0fb33cae99a5cf809ff73241bd45e05d6174f43
+    :sha256: 8417d9139882fb7656704b7e199a0e6886cdd9289d4e4df12023aa7e30f9bfa4
 
 .. code-block:: cpp
 
@@ -219,13 +221,15 @@ Keeping the word *offset* in mind helps when moving between human calendar label
         }
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Day 1 -> 0 days; month 1 -> 0 months; hour 9 -> 9 hours
-    Offset 14 -> day 15; offset 5 -> month 6; day equals offset 14: true
-    Day plus 2: 17; negative offset clamped: 1
-    Month offsets must be in 0..11.
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDay 1 -> 0 days; month 1 -> 0 months; hour 9 -> 9 hours
+        Offset 14 -> day 15; offset 5 -> month 6; day equals offset 14: true
+        Day plus 2: 17; negative offset clamped: 1
+        Month offsets must be in 0..11.␛[0m
 
 .. erbsland-demo-end::
 
@@ -255,7 +259,7 @@ This gives you a clear choice between rejecting a nonexistent day and intentiona
 .. erbsland-demo::
     :source: time/CalendarParts/Lengths.cpp
     :exec: time/calendar_parts --demo Lengths
-    :source-sha256: f05cb206f5e938532da6a36fc196d1f1571265883ecb9a26ac8ff6d67d7db89f
+    :sha256: 01685658f1635fcf17d6d2b7d25df41ff62695db675e2e08bd837e32878ea5f0
 
 .. code-block:: cpp
 
@@ -283,12 +287,14 @@ This gives you a clear choice between rejecting a nonexistent day and intentiona
                 el::DayOfYear::last(el::Year{2023}).toValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Leap year: true; year days: 366; month days: 29; last day: 29
-    Day 31 exists: false; clamped: 29; contextual last: true
-    February fixed length: false; min/max days: 28/29; common-year last ordinal: 365
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mLeap year: true; year days: 366; month days: 29; last day: 29
+        Day 31 exists: false; clamped: 29; contextual last: true
+        February fixed length: false; min/max days: 28/29; common-year last ordinal: 365␛[0m
 
 .. erbsland-demo-end::
 
@@ -319,7 +325,7 @@ position, rather than validating raw input.
 .. erbsland-demo::
     :source: time/CalendarParts/Navigate.cpp
     :exec: time/calendar_parts --demo Navigate
-    :source-sha256: 268cff3fd87b5ae4f6639f38dc92ddcf497c7892a0f9a1f76f22d1439414dbe4
+    :sha256: 93e70f78f126ab4e6008b6bfa6180c66d45eb0d0589a2d6649d13a2c4220dcda
 
 .. code-block:: cpp
 
@@ -354,12 +360,14 @@ position, rather than validating raw input.
                 el::Day{1}.hasPrevious(el::Year::first(), el::Month::january())));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Next month: 2025-1; back: 2024-12; next day: 2025-01-01; back: 2024-12-31
-    Year next/previous: 2025/2023; final year has next: false; first year has previous: false
-    Month next/previous available: false/false; day next/previous available: false/false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mNext month: 2025-1; back: 2024-12; next day: 2025-01-01; back: 2024-12-31
+        Year next/previous: 2025/2023; final year has next: false; first year has previous: false
+        Month next/previous available: false/false; day next/previous available: false/false␛[0m
 
 .. erbsland-demo-end::
 
@@ -392,7 +400,7 @@ choose ``Days{-7}``.
 .. erbsland-demo::
     :source: time/CalendarParts/Weekdays.cpp
     :exec: time/calendar_parts --demo Weekdays
-    :source-sha256: 07c9bfd252ef5c7ce77d448cc1aaa5daa8149d0b140a4dc866e82cb02d820339
+    :sha256: 2bdc0d6b84ad7eeb81468f53e590869538daf2aef604a42496d07129977b0687
 
 .. code-block:: cpp
 
@@ -418,12 +426,14 @@ choose ``Days{-7}``.
                 target.daysToNext(target).toRawValue(), target.daysToPrevious(target).toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    2024-06-12: Wednesday / Wed; Monday is 0
-    Next Monday: 2024-06-17 (5 days); previous Monday: 2024-06-10 (-2 days)
-    Equal weekday next/previous: 0/0 days
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0m2024-06-12: Wednesday / Wed; Monday is 0
+        Next Monday: 2024-06-17 (5 days); previous Monday: 2024-06-10 (-2 days)
+        Equal weekday next/previous: 0/0 days␛[0m
 
 .. erbsland-demo-end::
 
@@ -449,7 +459,7 @@ These helpers are useful when turning a month selection into an ordinal range or
 .. erbsland-demo::
     :source: time/CalendarParts/Ordinal.cpp
     :exec: time/calendar_parts --demo Ordinal
-    :source-sha256: 44cdbb0082ac799155b2d975a3bdd6b73213af6caeaad3ad737ca5e30c081173
+    :sha256: d30248ef1f4f1644ee5a951f80e7857557377bae54cf5ce1eaec608de0fe2ee8
 
 .. code-block:: cpp
 
@@ -481,12 +491,14 @@ These helpers are useful when turning a month selection into an ordinal range or
                 el::DayOfYear::contains(366), el::DayOfYear::last(el::Year{2023}).toValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Ordinal 60: 2024-02-29; month from year: 2; zero-based offset: 59; recovered day: 29
-    Days before March: 60; March ordinals: 61..91; year-end ordinal is last: true
-    366 in part range: true; last ordinal in 2023: 365
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mOrdinal 60: 2024-02-29; month from year: 2; zero-based offset: 59; recovered day: 29
+        Days before March: 60; March ordinals: 61..91; year-end ordinal is last: true
+        366 in part range: true; last ordinal in 2023: 365␛[0m
 
 .. erbsland-demo-end::
 
@@ -505,8 +517,8 @@ Month/day extraction first clamps its ordinal input to the part range; that alon
 year.
 Validate the original count or contextual ordinal before extraction when you need to reject unsupported input.
 
-Keeping Related Fields Together
-===============================
+DateParts, TimeParts, and DateTimeParts
+=======================================
 
 :cpp:func:`Date::parts() <erbsland::time::Date::parts>` and :cpp:func:`Time::parts() <erbsland::time::Time::parts>` return :cpp:struct:`DateParts <erbsland::time::DateParts>` and :cpp:struct:`TimeParts <erbsland::time::TimeParts>`.
 They name the extracted fields and keep your code readable when several fields are needed together.
@@ -529,7 +541,7 @@ explicitly.
 .. erbsland-demo::
     :source: time/CalendarParts/Aggregates.cpp
     :exec: time/calendar_parts --demo Aggregates
-    :source-sha256: bd4b13a8e44e2dcea9a5c72c39e77a5ec92315706f90a33f9e78fe5f8e929c53
+    :sha256: 34182a8de45c96231ffc7229741763e60c165250efc68a80b6c778be0603c984
 
 .. code-block:: cpp
 
@@ -564,11 +576,13 @@ explicitly.
                 local.nanosecondFraction.toRawValue()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Date/time retained: true/true; local/UTC hour: 9/7; reconstructed: true
-    Aggregate date valid: false; fraction retained: 123456789 ns
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mDate/time retained: true/true; local/UTC hour: 9/7; reconstructed: true
+        Aggregate date valid: false; fraction retained: 123456789 ns␛[0m
 
 .. erbsland-demo-end::
 

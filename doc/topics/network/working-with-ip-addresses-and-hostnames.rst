@@ -29,7 +29,7 @@ Use ``fromStringOrThrow()`` for trusted constants or code paths where invalid te
 .. erbsland-demo::
     :source: network/NetworkValues/ParseAddressesAndHosts.cpp
     :exec: network/network_values --demo ParseAddressesAndHosts
-    :source-sha256: adcbfb0b2a17297430633a047a1e22b4109d7cf37fd7ac8dea7ea9945448dca2
+    :sha256: 18e41866b490709755f0c6f6e84bf888784a0595be11fb643faf3fe92257acfd
 
 .. code-block:: cpp
 
@@ -51,14 +51,16 @@ Use ``fromStringOrThrow()`` for trusted constants or code paths where invalid te
         el::io::printLine("Invalid user input accepted: "_el, invalidHost.has_value());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Canonical address: 2001:db8::42
-    Host name: stelling.example
-    Numeric host contains an address: true
-    Named host contains a name: true
-    Invalid user input accepted: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mCanonical address: 2001:db8::42
+        Host name: stelling.example
+        Numeric host contains an address: true
+        Named host contains a name: true
+        Invalid user input accepted: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -111,7 +113,7 @@ network interface; the scope follows ``%`` inside the brackets.
 .. erbsland-demo::
     :source: network/NetworkValues/BuildEndpoints.cpp
     :exec: network/network_values --demo BuildEndpoints
-    :source-sha256: 993e04c06a7964a44d21e1f60afa2a9f278b4c1fc91e8bab8e5eb3e44899da61
+    :sha256: af6fbc9bea1dd4b054985df093148541d2cec067d1ddde37548dc48447428ddb
 
 .. code-block:: cpp
 
@@ -128,13 +130,15 @@ network interface; the scope follows ``%`` inside the brackets.
         el::io::printLine("IPv6 scope identifier: "_el, linkLocal.scopeId().toRawValue());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Named endpoint: stelling.example:443
-    Resolved endpoint: 192.0.2.42:443
-    Scoped IPv6 endpoint: [fe80::42%7]:443
-    IPv6 scope identifier: 7
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mNamed endpoint: stelling.example:443
+        Resolved endpoint: 192.0.2.42:443
+        Scoped IPv6 endpoint: [fe80::42%7]:443
+        IPv6 scope identifier: 7␛[0m
 
 .. erbsland-demo-end::
 
@@ -153,7 +157,7 @@ you need the inclusive range.
 .. erbsland-demo::
     :source: network/NetworkValues/MatchNetworks.cpp
     :exec: network/network_values --demo MatchNetworks
-    :source-sha256: d19f514699b3606d16a878cd640746724a14089ac9654dccd6fff61113e9b55a
+    :sha256: dd548b03450cb624adc614c8ccd0f8d0141e9f44129b7c57d1a4c99f8d306189
 
 .. code-block:: cpp
 
@@ -170,13 +174,15 @@ you need the inclusive range.
         el::io::printLine("Address range: "_el, network.firstAddress(), " - "_el, network.lastAddress());
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Normalized network: 192.0.2.0/24
-    192.0.2.42 belongs to the network: true
-    198.51.100.42 belongs to the network: false
-    Address range: 192.0.2.0 - 192.0.2.255
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mNormalized network: 192.0.2.0/24
+        192.0.2.42 belongs to the network: true
+        198.51.100.42 belongs to the network: false
+        Address range: 192.0.2.0 - 192.0.2.255␛[0m
 
 .. erbsland-demo-end::
 

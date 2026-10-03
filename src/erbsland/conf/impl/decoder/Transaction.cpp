@@ -61,6 +61,7 @@ auto internalView(const Transaction &object) -> InternalViewPtr {
     }
     return result;
 }
+
 #endif
 
 }

@@ -57,7 +57,7 @@ Neither reading changes what the timer will measure next.
 .. erbsland-demo::
     :source: time/ElapsedTimer/Measure.cpp
     :exec: time/elapsed_timer --demo Measure
-    :source-sha256: 8c67a30195825a089a35cb7ffe1ee6fb293a7517e3cab079d205ee6dc78f3ec8
+    :sha256: 02c7aad771d9a44940e0356a0b6a266afcd62e1a52db957e131c61d7a86c6f6a
 
 .. code-block:: cpp
 
@@ -92,13 +92,15 @@ Neither reading changes what the timer will measure next.
             el::StringFormat{"Second reading is at least the first: {}"_el}.build(secondReading >= firstReading));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Algılayıcı: mean 13.5
-    First reading: 333 ns; second reading: 541 ns
-    Whole milliseconds: 0; formatted: 541 nanoseconds
-    Second reading is at least the first: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAlgılayıcı: mean 13.5
+        First reading: 167 ns; second reading: 333 ns
+        Whole milliseconds: 0; formatted: 333 nanoseconds
+        Second reading is at least the first: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -133,7 +135,7 @@ Copy assignment follows the same rule: the assigned timer receives the source ti
 .. erbsland-demo::
     :source: time/ElapsedTimer/Phases.cpp
     :exec: time/elapsed_timer --demo Phases
-    :source-sha256: 03bd454cabd88245a3303b7c6c72747eea91b99803fc9d1dad043cae9367eaf1
+    :sha256: 20fbfb87a585a9e09238a8977b0f4d3a855fd50c5f9001cecbf4246955181da3
 
 .. code-block:: cpp
 
@@ -171,12 +173,14 @@ Copy assignment follows the same rule: the assigned timer receives the source ti
                 totalElapsed >= calibrationElapsed + reductionElapsed));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Işık sensörü: calibrated total 69
-    Calibration: 125 ns; reduction: 84 ns; total: 583 ns
-    Copied timer still includes the first phase: true
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mIşık sensörü: calibrated total 69
+        Calibration: 250 ns; reduction: 42 ns; total: 542 ns
+        Copied timer still includes the first phase: true␛[0m
 
 .. erbsland-demo-end::
 
@@ -201,7 +205,7 @@ Input preparation happens before timer construction, so the budget covers proces
 .. erbsland-demo::
     :source: time/ElapsedTimer/Budget.cpp
     :exec: time/elapsed_timer --demo Budget
-    :source-sha256: 3d6161b18a6f7dda24003ac216f78557321ebe46b2c1bd773e8512fa511a091e
+    :sha256: bde4814be2ea914a37a912b5bb16916c40097b1351fa121ddb836ab40d48a7ac
 
 .. code-block:: cpp
 
@@ -236,11 +240,13 @@ Input preparation happens before timer construction, so the budget covers proces
                 timeBudget.toString(), elapsed.toString(), processed == samples.size()));
     }
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-demo-run::
 
-    Algılayıcı: processed 886784 of 1000000 samples; calibrated total 8867840
-    Budget: 2 ms; elapsed: 2 ms 833 ns; complete: false
+    .. erbsland-ansi::
+        :escape-char: ␛
+
+        ␛[0mAlgılayıcı: processed 866560 of 1000000 samples; calibrated total 8665600
+        Budget: 2 ms; elapsed: 2 ms 250 ns; complete: false␛[0m
 
 .. erbsland-demo-end::
 
@@ -260,8 +266,8 @@ between them.
 :doc:`working_with_monotonic_time_points` shows how to construct that point, compare it with the current reading,
 and calculate a signed remaining interval.
 
-Reading Measurements Sensibly
-=============================
+Elapsed-Time Measurement Accuracy and Overhead
+==============================================
 
 An elapsed measurement includes the time during which your operation was waiting to run, as well as the time it spent
 executing.

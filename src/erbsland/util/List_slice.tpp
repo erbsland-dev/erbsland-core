@@ -27,7 +27,7 @@ auto List<tElement, tSelf>::slice(const Range range) const -> Self {
     if (!clampedRange.isValid() || clampedRange.isEmpty()) {
         return {};
     }
-    const auto begin = clampedRange.index().toSizeT();
+    const auto begin = clampedRange.beginIndex().toSizeT();
     const auto end = clampedRange.endIndex().toSizeT();
     return makeSelf(
         Raw{data.begin() + static_cast<typename Raw::difference_type>(begin),

@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../../core/Definitions.hpp"
+
 #include <cstdint>
 
 namespace erbsland::data::xml {
+
 /// Kinds of nodes retained in an XML document.
 enum class XmlNodeType : uint8_t {
     Element,               ///< Element with ordered attributes and children.
@@ -16,4 +19,5 @@ enum class XmlNodeType : uint8_t {
     Declaration,           ///< XML declaration.
     EntityReference,       ///< Named or numeric entity reference.
 };
+
 }

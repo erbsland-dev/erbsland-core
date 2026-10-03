@@ -1,7 +1,22 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ReadLineApp.hpp"
+
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/block/Coordinate.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/cterm/BlockStyle.hpp>
+#include <erbsland/cterm/Color.hpp>
+#include <erbsland/cterm/FrameBorder.hpp>
+#include <erbsland/cterm/ReadLineOptions.hpp>
+#include <erbsland/LineCount.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/RuntimeError.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <array>
 #include <utility>
@@ -29,7 +44,7 @@ void ReadLineApp::applyConfiguration(el::cterm::ReadLineOptions &settings) {
             if (value != nullptr) {
                 setter(value->asTextOrThrow());
             }
-        } catch (const el::Exception &error) {
+        } catch (const el::RuntimeError &error) {
             throwConfigurationError(
                 "Failed to Read the Configuration"_el,
                 "A value in the configuration has an unexpected format."_el,
@@ -42,7 +57,7 @@ void ReadLineApp::applyConfiguration(el::cterm::ReadLineOptions &settings) {
     applyText("readline.placeholder"_el, [&](const el::String &value) -> void { settings.setPlaceholder(value); });
     applyText("readline.current_text"_el, [&](el::String value) -> void { settings.setCurrentText(std::move(value)); });
     if (document->hasValue("readline.history"_el)) {
-        settings.setHistory(el::StringList{document->getListOrThrow<el::String>("readline.history"_el)});
+        settings.setHistory(document->getStringListOrThrow("readline.history"_el));
     }
 
     const auto applyNonNegative = [&](const el::String &path, const auto &setter) -> void {
@@ -59,7 +74,7 @@ void ReadLineApp::applyConfiguration(el::cterm::ReadLineOptions &settings) {
         setter(static_cast<std::size_t>(value));
     };
     applyNonNegative("readline.maximum_length"_el, [&](const std::size_t value) -> void {
-        settings.setMaximumLength(el::CpLength::fromSizeT(value));
+        settings.setMaximumLength(el::CpCount::fromSizeT(value));
     });
     applyNonNegative("readline.maximum_lines"_el, [&](const std::size_t value) -> void {
         if (value == 0U) {
@@ -162,8 +177,8 @@ void ReadLineApp::applyConfiguration(el::cterm::ReadLineOptions &settings) {
         "readline.frame.v_line"_el,
     };
     for (auto index = std::size_t{0}; index < elements.size(); ++index) {
-        const auto stylePath = el::String::fromJoined({paths[index], ".style"_el});
-        const auto colorPath = el::String::fromJoined({paths[index], ".color"_el});
+        const auto stylePath = el::join(paths[index], ".style"_el);
+        const auto colorPath = el::join(paths[index], ".color"_el);
         if (document->hasValue(stylePath)) {
             border.set(
                 elements[index], parseFrameStyle(document->getTextOrThrow(stylePath)), border.color(elements[index]));

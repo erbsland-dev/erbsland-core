@@ -14,6 +14,11 @@ auto List<tElement, tSelf>::count() const noexcept -> Count {
 }
 
 template <typename tElement, typename tSelf>
+auto List<tElement, tSelf>::lastIndex() const noexcept -> Index {
+    return Index::last(count());
+}
+
+template <typename tElement, typename tSelf>
 template <typename Function>
 auto List<tElement, tSelf>::countIf(Function function) const -> Count {
     auto result = std::size_t{0};

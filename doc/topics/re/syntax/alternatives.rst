@@ -15,8 +15,8 @@ The :expression:`|` operator has the **lowest precedence** in the syntax. This m
 applies to the entire *current group* unless you explicitly introduce grouping. Keeping this
 rule in mind is essential for writing correct and readable patterns.
 
-:expression:`A|B|C`
-===================
+Alternation: :expression:`A|B|C`
+================================
 
 Use the :expression:`|` operator to separate alternatives that should be matched in order.
 For example, :expression:`cat|dog` matches either “cat” or “dog”.
@@ -38,8 +38,8 @@ may contain up to **1000 alternatives**. Exceeding this limit results in a parsi
 If you need to match a literal :expression:`|` character, escape it as :esc_code:`|`
 or place it inside a character class, for example :expression:`[|]`.
 
-:expression:`(?:A|B|C)`
-=======================
+Grouped Alternation: :expression:`(?:A|B|C)`
+============================================
 
 Use a *non-capturing group* to scope alternatives without creating a capture group. This is
 essential whenever alternatives are part of a larger expression.

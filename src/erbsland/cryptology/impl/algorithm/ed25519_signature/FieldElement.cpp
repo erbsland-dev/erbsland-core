@@ -13,6 +13,7 @@
 
 namespace erbsland::cryptology::impl::ed25519_signature {
 
+using namespace mem;
 using namespace unit;
 
 auto FieldElement::add(const FieldElement &a, const FieldElement &b) noexcept -> FieldElement {
@@ -138,7 +139,7 @@ auto FieldElement::one() noexcept -> FieldElement {
     return result;
 }
 
-auto FieldElement::fromCanonicalBytes(const mem::ConstByteSpan bytes) noexcept -> std::optional<FieldElement> {
+auto FieldElement::fromCanonicalBytes(const ConstByteSpan bytes) noexcept -> std::optional<FieldElement> {
     if (bytes.size() != 32U || (bytes[31U].toUInt8() & 0x80U) != 0U) {
         return std::nullopt;
     }
@@ -202,14 +203,14 @@ auto FieldElement::fromCanonicalBytes(const mem::ConstByteSpan bytes) noexcept -
 }
 
 auto FieldElement::fromConstant(const std::array<uint8_t, 32U> &bytes) noexcept -> FieldElement {
-    const auto result = fromCanonicalBytes(mem::toConstByteSpan(std::span{bytes}));
+    const auto result = fromCanonicalBytes(toConstByteSpan(std::span{bytes}));
     return result.has_value() ? *result : FieldElement{};
 }
 
-auto FieldElement::toBytes() const noexcept -> mem::ByteArray<32U> {
+auto FieldElement::toBytes() const noexcept -> ByteArray<32U> {
     auto canonical = *this;
     canonical.normalize();
-    auto result = mem::ByteArray<32U>{};
+    auto result = ByteArray<32U>{};
     for (auto limb = std::size_t{0}; limb < canonical._limbs.size(); ++limb) {
         const auto offset = limbOffset(limb);
         const auto width = limbBits(limb);
@@ -217,7 +218,7 @@ auto FieldElement::toBytes() const noexcept -> mem::ByteArray<32U> {
             const auto outputBit = offset + bit;
             const auto byteIndex = ByteIndex::fromSizeT(outputBit / 8U);
             const auto value = static_cast<uint8_t>(((canonical._limbs[limb] >> bit) & 1U) << (outputBit % 8U));
-            result.set(byteIndex, result.get(byteIndex) | mem::Byte{value});
+            result.set(byteIndex, result.get(byteIndex) | Byte{value});
         }
     }
     return result;

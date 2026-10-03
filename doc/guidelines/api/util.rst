@@ -10,19 +10,32 @@ Primary Types
     List❮Value❯ // copy-on-write sequential container
     Set❮Key❯, HashSet❮Key❯ // copy-on-write ordered and unordered sets
     Map❮Entry❯, HashMap❮Entry❯ // copy-on-write ordered and unordered maps
+    FifoCache, LruCache // independently owned bounded caches
     EnumFlags❮Enum❯ // type-safe enum-class flag set
     Result, ResultWithData❮Data❯ // typed status and payload-bearing result
     CoGenerator❮Value❯ // lazy synchronous pull generator
     CoTask❮Value❯ // eagerly started move-only coroutine task
     CoAsyncGenerator❮Value❯ // lazy asynchronous single-pass generator
+    WorkerPool // independently owned parallel execution with optional owner-loop outcomes
+    Utilities // event-loop frontend for explicitly bound utility event sources
 
 Secondary Types
 ===============
 
 .. code-block:: text
 
+    WorkerPoolOptions, WorkerPoolEventEditor // pool configuration and source-owned notifications
+    WorkerPoolFullError, WorkerPoolClosedError, WorkerCancelledError // admission and cancellation outcomes
     LoopResult // completion reason returned by visitors and parsers
     LoopStatus // continue, regular stop, or error request from a loop callback
+
+Cooperative Stop Types
+======================
+
+.. code-block:: text
+
+    StopSource // shared signalling authority for one irreversible stop request
+    StopToken // shared read-only observation; a default token never reports stopping
 
 Pattern Definitions
 ===================
@@ -65,6 +78,7 @@ List Patterns
 
 .. code-block:: text
 
+    o.lastIndex() -> unit::ItemIndex // final element index; noIndex for an empty list
     o.get(index[, fallback]) -> E // access a value or fallback
     o.getRef(index) -> const E& // borrow a value or a shared immutable default
     o.getRefOrThrow(index) -> const E& // borrow a value or throw for an invalid index
@@ -108,6 +122,19 @@ Map Patterns
     o.to❮Part❯List()/to❮Part❯Set() -> T // copy keys, values, or entries into a Core container
     o.toStd❮Container❯() -> R // explicitly copy into a standard container
 
+Cache Patterns
+==============
+
+.. code-block:: text
+
+    T(capacity) // finite maximum entry count; zero disables retention
+    o.capacity()/setCapacity(count) // inspect or change the limit, evicting excess entries immediately
+    o.get(key) -> std::optional<V> // copy a value; LRU refreshes recency, FIFO preserves insertion order
+    o.peek(key) -> std::optional<V> // copy a value without changing eviction order
+    o.set(key, value) -> T& // insert or replace; LRU refreshes recency, FIFO preserves existing order
+    o.count()/isEmpty()/contains(key) // inspect retained entries without changing order
+    o.remove(key)/clear() -> T& // remove one key or all entries
+
 Flag Patterns
 =============
 
@@ -141,3 +168,39 @@ Coroutine Patterns
     o.result()/takeResult() -> V // inspect or consume a task result
     o.cancel() // request cancellation and release the task handle
     o.next() -> T // produce or await the next optional value
+
+Cooperative Stop Patterns
+=========================
+
+.. code-block:: text
+
+    o.stopToken() -> StopToken // retain read-only observation independently of source lifetime
+    o.requestStop() -> bool // request stopping; true only for the first request
+    o.isStopRequested() -> bool // observe stopping on a source or token
+
+Worker Pool Patterns
+====================
+
+.. code-block:: text
+
+    T::create([options]) -> WorkerPoolPtr // open an independent, joinable pool
+    o.submit(work) -> std::future<R> // submit a value or void callable
+    o.map(values, work) -> std::future<List<R>> // snapshot and transform a finite range in input order
+    o.forEach(values, work) -> std::future<void> // snapshot and process a finite range
+    o.submit/map/forEach(..., completed[, failed]) // deliver the outcome on the owner loop
+    o.events() -> WorkerPoolEventEditor& // bind the current owner loop once and edit source-owned handlers
+    o.onError/onCancelled/onIdle/onFinal(callback) -> T& // replace one owner-loop handler
+    o.wait() // drain work captures without closing admission or dispatching callbacks
+    o.quit()/stop() // close admission and drain/request cooperative cancellation without waiting
+    o.join() // wait for worker termination without requesting shutdown
+    o.isAccepting()/workerCount()/stopToken() -> T // inspect procedural admission, concurrency, or stopping
+    o.workerCount()/setWorkerCount(count) // options: zero means automatic hardware concurrency
+    o.maximumPendingTasks()/setMaximumPendingTasks(count) // options: zero means unlimited operations
+
+Utilities Frontend Patterns
+===========================
+
+.. code-block:: text
+
+    o.get<Utilities>() -> Utilities& // frontend belonging to the selected loop
+    o.createWorkerPool([options]) -> WorkerPoolPtr // create and bind on that frontend's owner loop

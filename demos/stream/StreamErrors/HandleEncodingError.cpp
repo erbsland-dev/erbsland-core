@@ -1,6 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/EncodingError.hpp>
+#include <erbsland/EncodingMode.hpp>
+#include <erbsland/PathContent.hpp>
+#include <erbsland/PathReadTextOptions.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringEncoding.hpp>
 #include <StreamDemoSupport.hpp>
 
 namespace demo {

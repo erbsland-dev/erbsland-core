@@ -1,30 +1,29 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "StreamFixture.hpp"
 
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteBuffer.hpp>
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/Poly1305Factory.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/PortableChaCha20Backend.hpp>
 #include <erbsland/cryptology/impl/algorithm/chacha20/PortablePoly1305.hpp>
 #include <erbsland/cryptology/impl/symmetric/AesGcmState.hpp>
 #include <erbsland/cryptology/impl/symmetric/ChaCha20Poly1305State.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/mem/Byte.hpp>
-#include <erbsland/mem/ByteBuffer.hpp>
-#include <erbsland/random/Random.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/Random.hpp>
+#include <erbsland/String.hpp>
 
 namespace app::constant_time {
 
 using namespace el::text::literals;
 
 StreamFixture::StreamFixture(
-    el::Random &random, const bool population, std::size_t size, StreamOperation operation, bool automatic) :
+    el::Random &random, const bool population, el::ByteCount size, StreamOperation operation, bool automatic) :
     _size{size}, _operation{operation}, _automatic{automatic} {
-    auto key = input(random, population, 32);
-    auto nonce = el::ByteBuffer{el::ByteLength{12}};
-    auto data = el::ByteBuffer{el::ByteLength{size}, el::Byte{0x33U}};
+    auto key = input(random, population, el::ByteCount{32U});
+    auto nonce = el::ByteBuffer{el::ByteCount{12}};
+    auto data = el::ByteBuffer{size, el::Byte{0x33U}};
     auto worker = automatic ? ci::createChaCha20Backend(key.span(), nonce.span())
                             : ci::createPortableChaCha20Backend(key.span(), nonce.span());
     require(
@@ -60,7 +59,7 @@ StreamFixture::StreamFixture(
 template <StreamOperation tOperation>
 auto StreamFixture::sample() -> uint64_t {
     constexpr auto operation = tOperation;
-    const auto size = _size;
+    const auto size = _size.toSizeT();
 
     if constexpr (operation == StreamOperation::ChaCha20) {
         // Include actual tail transformation rather than rounding the requested input
@@ -97,7 +96,7 @@ auto StreamFixture::measure(const uint64_t repetitions) -> uint64_t {
     case StreamOperation::ChaCha20Poly1305:
         return repeat(repetitions, [this]() -> uint64_t { return sample<StreamOperation::ChaCha20Poly1305>(); });
     }
-    throw el::LogicError{"Unknown sample operation."_el};
+    throw el::LogicFailure{"Unknown sample operation."_el};
 }
 
 }

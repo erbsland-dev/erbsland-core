@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/debug/StringDebug.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u16/U16StringEditor.hpp>
-#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringDebug.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/U16StringEditor.hpp>
+#include <erbsland/U32StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
@@ -19,8 +19,8 @@ using el::text::StringConverter;
 using el::text::StringEditor;
 using el::text::U16StringEditor;
 using el::text::U32StringEditor;
+using el::unit::ByteCount;
 using el::unit::ByteIndex;
-using el::unit::ByteLength;
 using el::unit::ByteRange;
 using namespace el::text::literals;
 
@@ -41,7 +41,7 @@ public:
     void testMemoryDetailsForLiteralViewAndSlice() {
 
         const auto text = String{"abcdef"_el};
-        const auto slice = text.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
+        const auto slice = text.slice({ByteIndex{1U}, ByteCount{3U}});
         const auto details = DebugViewDetail::BackingStore | DebugViewDetail::CoreDetails | DebugViewDetail::StorageId;
         const auto textOutput = StringConverter{toDebugString(text, details)}.toStdString();
         const auto sliceOutput = StringConverter{toDebugString(slice, details)}.toStdString();

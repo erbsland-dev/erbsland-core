@@ -10,9 +10,11 @@
 
 namespace erbsland::core::impl {
 
+using namespace options;
+
 template <typename Char>
 void ApplicationOptionsData::maskNativeArguments(
-    const int argumentCount, Char **arguments, const options::OptionSensitiveTextLocations &locations) noexcept {
+    const int argumentCount, Char **arguments, const OptionSensitiveTextLocations &locations) noexcept {
     if (argumentCount <= 0 || arguments == nullptr) {
         return;
     }
@@ -35,7 +37,7 @@ void ApplicationOptionsData::maskNativeArguments(
     }
 }
 
-ApplicationOptionsData::ApplicationOptionsData() : _options{options::Options::create()} {
+ApplicationOptionsData::ApplicationOptionsData() : _options{Options::create()} {
 }
 
 void ApplicationOptionsData::setCommandLineArguments(const int argc, char *argv[]) {
@@ -45,7 +47,7 @@ void ApplicationOptionsData::setCommandLineArguments(const int argc, char *argv[
     _nativeArgumentCount = argc;
     _nativeArguments = argv;
     _nativeWideArguments = nullptr;
-    _arguments = options::OptionManager::convertCommandLineArguments(argc, argv);
+    _arguments = OptionManager::convertCommandLineArguments(argc, argv);
     _argumentsInitialized = true;
 }
 
@@ -56,7 +58,7 @@ void ApplicationOptionsData::setCommandLineArguments(const int argc, wchar_t *ar
     _nativeArgumentCount = argc;
     _nativeArguments = nullptr;
     _nativeWideArguments = argv;
-    _arguments = options::OptionManager::convertCommandLineArguments(argc, argv);
+    _arguments = OptionManager::convertCommandLineArguments(argc, argv);
     _argumentsInitialized = true;
 }
 
@@ -68,8 +70,7 @@ auto ApplicationOptionsData::commandLineArgumentsForParsing() noexcept -> Comman
     return _arguments;
 }
 
-void ApplicationOptionsData::maskSensitiveCommandLineText(
-    const options::OptionSensitiveTextLocations &locations) noexcept {
+void ApplicationOptionsData::maskSensitiveCommandLineText(const OptionSensitiveTextLocations &locations) noexcept {
     if (_nativeArguments != nullptr) {
         maskNativeArguments(_nativeArgumentCount, _nativeArguments, locations);
     } else {
@@ -77,7 +78,7 @@ void ApplicationOptionsData::maskSensitiveCommandLineText(
     }
 }
 
-auto ApplicationOptionsData::options() noexcept -> const options::OptionsPtr & {
+auto ApplicationOptionsData::options() noexcept -> const OptionsPtr & {
     return _options;
 }
 
@@ -85,11 +86,11 @@ void ApplicationOptionsData::releaseOptions() noexcept {
     _options.reset();
 }
 
-auto ApplicationOptionsData::optionValues() noexcept -> const options::OptionValuesPtr & {
+auto ApplicationOptionsData::optionValues() noexcept -> const OptionValuesPtr & {
     return _optionValues;
 }
 
-void ApplicationOptionsData::setOptionValues(options::OptionValuesPtr optionValues) noexcept {
+void ApplicationOptionsData::setOptionValues(OptionValuesPtr optionValues) noexcept {
     _optionValues = std::move(optionValues);
 }
 

@@ -1,17 +1,17 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/FormatAs.hpp>
+#include <erbsland/ArgumentIndex.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/CpCount.hpp>
+#include <erbsland/CpIndex.hpp>
+#include <erbsland/CpOffset.hpp>
+#include <erbsland/FormatAs.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/text/impl/FormatMakeArguments.hpp>
-#include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringEditor.hpp>
-#include <erbsland/text/u8/U8Format.hpp>
-#include <erbsland/unit/ArgumentUnit.hpp>
-#include <erbsland/unit/CpIndex.hpp>
-#include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/CpOffset.hpp>
+#include <erbsland/U8Format.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -22,22 +22,24 @@
 using el::text::StringConverter;
 using el::text::U8Format;
 using el::unit::ArgumentIndex;
+using el::unit::CpCount;
 using el::unit::CpIndex;
-using el::unit::CpLength;
 using el::unit::CpOffset;
 
 namespace erbsland::test {
 
+using namespace text;
+
 struct CustomTextValue {
     std::string value;
 
-    [[nodiscard]] auto toString() const -> el::text::String { return el::text::String{std::string_view{"ignored"}}; }
+    [[nodiscard]] auto toString() const -> String { return String{std::string_view{"ignored"}}; }
 };
 
 struct ToStringValue {
     std::string value;
 
-    [[nodiscard]] auto toString() const -> el::text::String { return el::text::String{std::string_view{value}}; }
+    [[nodiscard]] auto toString() const -> String { return String{std::string_view{value}}; }
 };
 
 }
@@ -78,7 +80,7 @@ public:
     void testUnitValuesFormatAsRawNumbers() {
         const auto format = U8Format{"{}|{}|{}|{}"};
 
-        const auto result = format.build(CpIndex{2U}, CpLength{3U}, CpOffset{-1}, ArgumentIndex{4U});
+        const auto result = format.build(CpIndex{2U}, CpCount{3U}, CpOffset{-1}, ArgumentIndex{4U});
 
         REQUIRE_EQUAL(StringConverter{result}.toStdString(), std::string{"2|3|-1|4"});
     }

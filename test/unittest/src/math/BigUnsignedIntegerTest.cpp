@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OverflowError.hpp>
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/math/BigUnsignedInteger.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/BigUnsignedInteger.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/OverflowError.hpp>
+#include <erbsland/ParseError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>

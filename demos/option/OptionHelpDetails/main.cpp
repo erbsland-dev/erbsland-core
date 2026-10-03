@@ -1,7 +1,31 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/all.hpp>
+#include <DemoTerminal.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/BooleanFormat.hpp>
+#include <erbsland/ByteIntegerAccess.hpp>
+#include <erbsland/conf/Integer.hpp>
+#include <erbsland/ExitCode.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Option.hpp>
+#include <erbsland/OptionChoice.hpp>
+#include <erbsland/OptionChoices.hpp>
+#include <erbsland/OptionEditor.hpp>
+#include <erbsland/OptionError.hpp>
+#include <erbsland/OptionErrorContext.hpp>
+#include <erbsland/OptionFlag.hpp>
+#include <erbsland/OptionHelp.hpp>
+#include <erbsland/OptionHelpVisibility.hpp>
+#include <erbsland/OptionInteger.hpp>
+#include <erbsland/Options.hpp>
+#include <erbsland/OptionType.hpp>
+#include <erbsland/OptionValue.hpp>
+#include <erbsland/OptionValues.hpp>
+#include <erbsland/pattern/Text.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/Time.hpp>
+#include <erbsland/Version.hpp>
 
 namespace demo {
 
@@ -36,7 +60,7 @@ public:
 
 protected:
     void initialize() override {
-        enableTerminal();
+        DemoTerminal::enable(*this);
         info().setApplicationName("Night Watch"_el);
         info().setApplicationVersion(el::Version{0, 8, 0});
     }
@@ -48,12 +72,12 @@ protected:
             .setType(el::OptionType::Text)
             .setValueName("animal"_el)
             .setRequired()
-            .setHelpDescription("Animal species tracked during the round."_el)
+            .setHelpTitle("Animal species tracked during the round."_el)
             .setHelpVisibility(el::OptionHelpVisibility::Usage);
         options->addOption({"-f"_el, "--phase"_el, "phase"_el})
             .setChoices(activityChoices())
             .setDefaultValue("night"_el)
-            .setHelpDescription("Time window in which the observation occurs."_el);
+            .setHelpTitle("Time window in which the observation occurs."_el);
         options->addOption({"-r"_el, "--round"_el, "round"_el})
             .setType(el::OptionType::Integer)
             .setDefaultValue(el::OptionInteger{2})
@@ -65,14 +89,14 @@ protected:
                     throw el::OptionError{context};
                 }
             })
-            .setHelpDescription("Number of observation rounds in this area."_el);
+            .setHelpTitle("Number of observation rounds in this area."_el);
         options->addOption({"-q"_el, "--quiet"_el, "quiet"_el})
-            .setHelpDescription("Writes only the final result."_el)
+            .setHelpTitle("Writes only the final result."_el)
             .setHelpVisibility(el::OptionHelpVisibility::Hidden);
         options->addOption({"--old-log"_el, "old-log"_el})
             .setFlag(el::OptionFlag::Disabled)
-            .setHelpDescription("Old logging option that is no longer accepted."_el);
-        options->addOption("area"_el).setRequired().setHelpDescription("Area where the observation takes place."_el);
+            .setHelpTitle("Old logging option that is no longer accepted."_el);
+        options->addOption("area"_el).setRequired().setHelpTitle("Area where the observation takes place."_el);
     }
     [[nodiscard]] auto main() -> el::ExitCode override {
         const auto values = optionValues();

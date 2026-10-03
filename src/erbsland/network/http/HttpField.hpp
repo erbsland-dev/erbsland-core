@@ -20,10 +20,12 @@ public:
     /// Create an invalid empty placeholder.
     HttpField() noexcept = default;
     /// Create a field from a validated name and exact value.
-    /// @throws err::ParameterError If the name is invalid or the value contains a prohibited control byte.
+    /// @param name The validated field name. Must not be empty or invalid.
+    /// @param value The exact field value. Must not contain prohibited HTTP control bytes.
     HttpField(HttpFieldName name, text::String value);
     /// Create a field from name text and an exact value.
-    /// @throws err::ParameterError If the name or value is invalid.
+    /// @param name The field name. Must be a non-empty ASCII token.
+    /// @param value The exact field value. Must not contain prohibited HTTP control bytes.
     HttpField(text::String name, text::String value);
 
     // defaults

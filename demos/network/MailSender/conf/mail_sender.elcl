@@ -1,0 +1,14 @@
+# Demonstration configuration for a local implicit-TLS mail exchange.
+[Main]
+SMTP Host: "localhost"
+SMTP Port: 8465
+TLS Profile: "tls/mail"
+Sender Email: "sender@example.test"
+Sender Name: "Alex"
+Receiver Email: "reader@example.test"
+Receiver Name: "Sam"
+Message: "The new observation notes are ready.\nSee you at the telescope tonight!"
+
+*[TLS.Client]
+Label: "tls/mail"
+Trust Anchors File: "client-certificates/ca.pem"

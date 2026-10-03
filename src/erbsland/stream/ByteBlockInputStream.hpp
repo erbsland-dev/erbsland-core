@@ -6,8 +6,8 @@
 #include "ByteInputStream.hpp"
 
 #include "../mem/ByteBlock.hpp"
+#include "../unit/ByteCount.hpp"
 #include "../unit/ByteIndex.hpp"
-#include "../unit/ByteLength.hpp"
 #include "../unit/ByteOffset.hpp"
 
 #include <mutex>
@@ -40,7 +40,7 @@ public: // implement InputStream
 
 protected: // implement ByteInputStream
     [[nodiscard]] auto readFromSource(mem::ByteSpan destination, ReadDeadline deadline)
-        -> StreamReadResult<unit::ByteLength> override;
+        -> StreamReadResult<unit::ByteCount> override;
     [[nodiscard]] auto sourceSupportsPositioning() const noexcept -> bool override;
     [[nodiscard]] auto sourcePosition() const -> unit::ByteIndex override;
     auto setSourcePosition(unit::ByteIndex position) -> StreamPositionStatus override;

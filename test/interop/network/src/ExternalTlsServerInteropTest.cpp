@@ -3,28 +3,29 @@
 
 #include "core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/configuration/CryptologyConfiguration.hpp>
-#include <erbsland/cryptology/keys/SigningPrivateKey.hpp>
-#include <erbsland/cryptology/tls/TlsConfiguration.hpp>
-#include <erbsland/cryptology/tls/TlsServerIdentity.hpp>
-#include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
-#include <erbsland/event/EventLoop.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/network/source/ConnectionQuota.hpp>
-#include <erbsland/network/Network.hpp>
-#include <erbsland/network/source/NetworkErrorContext.hpp>
-#include <erbsland/network/tcp/TcpConnectionRequest.hpp>
-#include <erbsland/network/tcp/TcpListener.hpp>
-#include <erbsland/network/tls/TlsServerConnection.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/system/Subprocess.hpp>
-#include <erbsland/system/SubprocessOptions.hpp>
-#include <erbsland/system/SubprocessOutputMode.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/ConnectionQuota.hpp>
+#include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/EventLoop.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/Network.hpp>
+#include <erbsland/NetworkErrorContext.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/SigningPrivateKey.hpp>
+#include <erbsland/StringConverter.hpp>
+#include <erbsland/StringList.hpp>
+#include <erbsland/Subprocess.hpp>
+#include <erbsland/SubprocessOptions.hpp>
+#include <erbsland/SubprocessOutputMode.hpp>
+#include <erbsland/TcpConnectionRequest.hpp>
+#include <erbsland/TcpListener.hpp>
+#include <erbsland/TlsConfiguration.hpp>
+#include <erbsland/TlsIdentity.hpp>
+#include <erbsland/TlsServerConnection.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/X509CertificateBundle.hpp>
 
 #include <chrono>
 #include <filesystem>
@@ -62,20 +63,19 @@ private:
 
     static void installIdentity() {
         auto configuration = TlsConfiguration{};
-        configuration.setServerIdentity(TlsServerIdentity{
-            X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/server.pem")),
-            SigningPrivateKey::fromPemOrThrow(readText("data/network/tls-interop/server-key.pem"))});
+        configuration.setServer(
+            el::cryptology::TlsServerConfiguration{TlsIdentity{
+                X509CertificateBundle::fromPemOrThrow(readText("data/network/tls-interop/server.pem")),
+                SigningPrivateKey::fromPemOrThrow(readText("data/network/tls-interop/server-key.pem"))}});
         el::core::application().cryptologyConfiguration().setTlsConfiguration(
-            "tls/server/external"_el, std::move(configuration));
+            "tls/external"_el, std::move(configuration));
     }
 
-    [[nodiscard]] static auto alpn() -> el::text::String {
-        return "erbsland-test"_el;
-    }
+    [[nodiscard]] static auto alpn() -> el::text::String { return "erbsland-test"_el; }
 
     [[nodiscard]] static auto httpResponse() -> mem::ByteBlock {
-        constexpr auto cText = std::string_view{
-            "HTTP/1.1 200 OK\r\nContent-Length: 12\r\nConnection: close\r\n\r\nhello curl!\n"};
+        constexpr auto cText =
+            std::string_view{"HTTP/1.1 200 OK\r\nContent-Length: 12\r\nConnection: close\r\n\r\nhello curl!\n"};
         auto result = mem::ByteBlockEditor{};
         for (const auto character : cText) {
             result.append(static_cast<mem::Byte>(character));
@@ -93,11 +93,7 @@ private:
     [[nodiscard]] static auto curlArguments(const std::uint16_t port) -> el::text::StringList {
         const auto authority = "localhost:" + std::to_string(port);
         auto arguments = el::text::StringList{
-            "--tlsv1.3"_el,
-            "--tls-max"_el,
-            "1.3"_el,
-            "--cacert"_el,
-            toString(ERBSLAND_CORE_INTEROP_CA_FILE)};
+            "--tlsv1.3"_el, "--tls-max"_el, "1.3"_el, "--cacert"_el, toString(ERBSLAND_CORE_INTEROP_CA_FILE)};
 #if defined(_WIN32)
         // The standalone fixture intentionally has no online revocation service. Schannel otherwise rejects it
         // before exercising the TLS implementation under test.
@@ -112,10 +108,8 @@ private:
         return arguments;
     }
 
-    auto runServer(
-        const bool http,
-        const std::function<el::system::Subprocess(std::uint16_t)> &startProcess) ->
-        std::pair<el::system::Subprocess, Result> {
+    auto runServer(const bool http, const std::function<el::system::SubprocessPtr(std::uint16_t)> &startProcess)
+        -> std::pair<el::system::SubprocessPtr, Result> {
         const auto applicationScope = ApplicationTestScope<>{};
         installIdentity();
         const auto loop = EventLoop::create();
@@ -136,8 +130,11 @@ private:
                             result.handshakeCompleted = true;
                             if (!http) {
                                 loop->invoke([&]() -> void {
-                                    REQUIRE(connection->send(mem::ByteBlock({
-                                        'o', 'p', 'e', 'n', 's', 's', 'l', '-', 'o', 'k', '\n'})).isAccepted());
+                                    REQUIRE(connection
+                                            ->send(
+                                                mem::ByteBlock(
+                                                    {'o', 'p', 'e', 'n', 's', 's', 'l', '-', 'o', 'k', '\n'}))
+                                            .isAccepted());
                                     connection->close();
                                 });
                             }
@@ -154,8 +151,8 @@ private:
                         .onError([&](const NetworkErrorContext &context) -> void { result.error = context; })
                         .onFinal([&]() -> void { result.final = true; });
                     auto options = TlsServerAcceptOptions{handshakeQuota};
-                    options.setConfigurationLabel("tls/server/external"_el)
-                        .setAlpnProtocols({http ? el::text::String{"http/1.1"_el} : alpn()});
+                    options.setConfigurationLabel("tls/external"_el)
+                        .setAlpnProtocols(el::StringList{http ? el::text::String{"http/1.1"_el} : alpn()});
                     connection->accept(std::move(request), std::move(options));
                     listener->close();
                 })
@@ -169,11 +166,11 @@ private:
 
         auto process = startProcess(listener->localEndpoint()->port().toRawValue());
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{20};
-        while ((!result.final || process.isRunning()) && std::chrono::steady_clock::now() < deadline) {
+        while ((!result.final || process->isRunning()) && std::chrono::steady_clock::now() < deadline) {
             static_cast<void>(loop->runOnce(el::time::Milliseconds{20}));
         }
         REQUIRE(result.final);
-        REQUIRE_FALSE(process.isRunning());
+        REQUIRE_FALSE(process->isRunning());
         REQUIRE_EQUAL(tcpQuota->current(), unit::ItemCount{});
         REQUIRE_EQUAL(handshakeQuota->current(), unit::ItemCount{});
         return {std::move(process), std::move(result)};
@@ -182,8 +179,8 @@ private:
 public:
     void testOpenSslSClientTls13SniAlpnStreamAndClosure() {
 #if defined(ERBSLAND_CORE_OPENSSL_EXECUTABLE)
-        const auto [process, result] = runServer(false, [](const std::uint16_t port) -> el::system::Subprocess {
-            return el::system::Subprocess::start(
+        const auto [process, result] = runServer(false, [](const std::uint16_t port) -> el::system::SubprocessPtr {
+            auto process = el::system::Subprocess::create(
                 el::path::Path{std::filesystem::path{ERBSLAND_CORE_OPENSSL_EXECUTABLE}},
                 el::text::StringList{
                     "s_client"_el,
@@ -198,29 +195,34 @@ public:
                     toString(ERBSLAND_CORE_INTEROP_CA_FILE),
                     "-quiet"_el},
                 captureOptions());
+            process->start();
+            return process;
         });
         REQUIRE(result.handshakeCompleted);
         REQUIRE_FALSE(result.error.has_value());
-        REQUIRE(process.exitStatus()->isSuccess());
-        REQUIRE(process.standardOutput().contains("openssl-ok"_el));
+        REQUIRE(process->exitStatus()->isSuccess());
+        REQUIRE(process->standardOutput().contains("openssl-ok"_el));
 #endif
     }
 
     void testCurlHttpsWithManualHttp11Response() {
 #if defined(ERBSLAND_CORE_CURL_EXECUTABLE)
-        const auto [process, result] = runServer(true, [](const std::uint16_t port) -> el::system::Subprocess {
-            return el::system::Subprocess::start(
+        const auto [process, result] = runServer(true, [](const std::uint16_t port) -> el::system::SubprocessPtr {
+            auto process = el::system::Subprocess::create(
                 el::path::Path{std::filesystem::path{ERBSLAND_CORE_CURL_EXECUTABLE}},
-                curlArguments(port), captureOptions());
+                curlArguments(port),
+                captureOptions());
+            process->start();
+            return process;
         });
-        if (!process.exitStatus()->isSuccess()) {
-            std::cerr << "curl TLS interop error: "
-                      << el::text::StringConverter{process.standardError()}.toStdString() << '\n';
+        if (!process->exitStatus()->isSuccess()) {
+            std::cerr << "curl TLS interop error: " << el::text::StringConverter{process->standardError()}.toStdString()
+                      << '\n';
         }
         REQUIRE(result.handshakeCompleted);
         REQUIRE(result.responseSent);
-        REQUIRE(process.exitStatus()->isSuccess());
-        REQUIRE_EQUAL(process.standardOutput(), "hello curl!\n"_el);
+        REQUIRE(process->exitStatus()->isSuccess());
+        REQUIRE_EQUAL(process->standardOutput(), "hello curl!\n"_el);
         if (result.error.has_value()) {
             // curl may close its native socket as soon as the declared HTTP body is complete instead of waiting for
             // the server's close_notify exchange. Accept only that post-response closing reset.

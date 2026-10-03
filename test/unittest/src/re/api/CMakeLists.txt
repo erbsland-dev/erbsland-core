@@ -14,6 +14,7 @@ target_sources(erbsland-core-unittest PRIVATE
         RegExAtomicGroupNestedTest.cpp
         RegExAtomicGroupQuantifierTest.cpp
         RegExBase.hpp
+        RegExCachedTest.cpp
         RegExCaptureGroupTest.cpp
         RegExCharClassBase.hpp
         RegExCharClassTest.cpp

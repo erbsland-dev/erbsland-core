@@ -13,7 +13,7 @@ General Rules
 * Keep ``#if`` platform switching minimal and close to backend creation and platform-only implementation files.
 * Keep platform dependent code in isolated compilation units (``Windows....cpp/hpp`` / ``Posix....cpp/hpp``)
 * Use CMake ``if (WIN32)`` to only include the units for the compiled platform.
-* Use ``ERBSLAND_CORE_OS_...`` macros to detect the platform (in ``core/Definitions.hpp``)
+* Use ``ERBSLAND_OS_...`` macros to detect the platform (in ``core/Definitions.hpp``)
 
 Recommended Pattern
 -------------------
@@ -31,7 +31,7 @@ Recommended Pattern
 
     // File impl/Example.cpp
     auto Example::create() -> ExamplePtr {
-    #ifdef ERBSLAND_CORE_OS_WINDOWS
+    #ifdef ERBSLAND_OS_WINDOWS
         return std::make_shared<WindowsExample>();
     #else
         return std::make_shared<PosixExample>();
@@ -66,7 +66,11 @@ Strings and Buffers
   access inside the library. They deliberately do not expose null-terminated pointers.
 * Use ``text::impl::UnsafeU8StringBuffer`` and ``text::impl::UnsafeU16StringBuffer`` for APIs that fill caller-owned
   buffers.
-* Track buffer sizes with strong unit types such as ``unit::ByteLength`` and ``unit::U16DataLength`` whenever the size
+* To copy an existing raw UTF-8 payload inside the library, use ``UnsafeU8StringBuffer{bytes}.takeString()`` with a
+  const span of ``char``, ``std::byte``, or ``mem::Byte``. This preserves every byte, including embedded nulls and BOMs,
+  without validation or decoding. Use ``StringDecoder`` when encoding validation or BOM handling is required.
+  Avoid casts through ``std::string_view`` and manual allocation-and-copy sequences for this conversion.
+* Track buffer sizes with strong unit types such as ``unit::ByteCount`` and ``unit::U16Count`` whenever the size
   is part of library logic.
 
 Platform Notes

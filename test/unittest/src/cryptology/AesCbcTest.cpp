@@ -6,12 +6,12 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/CryptologyError.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricDecryptor.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricEncryptor.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/Application.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteBlockEditor.hpp>
+#include <erbsland/CryptologyError.hpp>
+#include <erbsland/SymmetricDecryptor.hpp>
+#include <erbsland/SymmetricEncryptor.hpp>
 
 using namespace el::cryptology;
 using el::mem::ByteBlockEditor;
@@ -45,8 +45,8 @@ public:
             "b2eb05e2c39be9fcda6c19078c6a9d1b");
         auto encryptor = SymmetricEncryptor{SymmetricEncryptionType::Aes256CbcRandomFill, key(), iv()};
         auto ciphertext = ByteBlockEditor{};
-        ciphertext.append(encryptor.encrypt(plaintext.span(el::unit::ByteIndex{}, el::unit::ByteLength{13U})));
-        ciphertext.append(encryptor.encrypt(plaintext.span(el::unit::ByteIndex{13U}, el::unit::ByteLength{51U})));
+        ciphertext.append(encryptor.encrypt(plaintext.span(el::unit::ByteIndex{}, el::unit::ByteCount{13U})));
+        ciphertext.append(encryptor.encrypt(plaintext.span(el::unit::ByteIndex{13U}, el::unit::ByteCount{51U})));
         ciphertext.append(encryptor.finalize());
         REQUIRE_EQUAL(ciphertext, expected);
 
@@ -64,20 +64,20 @@ public:
         auto ciphertext = ByteBlockEditor{};
         ciphertext.append(encryptor.encrypt(plaintext));
         ciphertext.append(encryptor.finalize());
-        REQUIRE_EQUAL(ciphertext.length(), el::unit::ByteLength{32U});
+        REQUIRE_EQUAL(ciphertext.length(), el::unit::ByteCount{32U});
 
         auto decryptor = SymmetricDecryptor{SymmetricEncryptionType::Aes256CbcIso9797Method2, key(), iv()};
         auto recovered = ByteBlockEditor{};
-        for (auto index = std::size_t{}; index < ciphertext.length().toSizeT(); ++index) {
-            recovered.append(
-                decryptor.decrypt(ciphertext.span(el::unit::ByteIndex{index}, el::unit::ByteLength::one())));
+        for (
+            auto index = el::unit::ByteIndex::zero(); index.isWithin(ciphertext.length()); index.uncheckedIncrement()) {
+            recovered.append(decryptor.decrypt(ciphertext.span(index, el::unit::ByteCount::one())));
         }
         recovered.append(decryptor.finalize());
         REQUIRE_EQUAL(recovered, plaintext);
 
         auto emptyEncryptor = SymmetricEncryptor{SymmetricEncryptionType::Aes256CbcIso9797Method2, key(), iv()};
         const auto emptyCiphertext = emptyEncryptor.finalize();
-        REQUIRE_EQUAL(emptyCiphertext.length(), el::unit::ByteLength{16U});
+        REQUIRE_EQUAL(emptyCiphertext.length(), el::unit::ByteCount{16U});
         auto emptyDecryptor = SymmetricDecryptor{SymmetricEncryptionType::Aes256CbcIso9797Method2, key(), iv()};
         REQUIRE(emptyDecryptor.decrypt(emptyCiphertext).isEmpty());
         REQUIRE(emptyDecryptor.finalize().isEmpty());
@@ -100,10 +100,12 @@ public:
         REQUIRE_THROWS_AS(CryptologyError, malformedIso.finalize());
 
         // Validate every position of an ISO method 2 suffix: the marker and each following zero byte.
-        for (auto paddingIndex = std::size_t{7U}; paddingIndex < 16U; ++paddingIndex) {
+        for (
+            auto paddingIndex = el::unit::ByteIndex{7U}; paddingIndex.isWithin(el::unit::ByteCount{16U});
+            paddingIndex.uncheckedIncrement()) {
             auto forgedPlaintext = ByteBlockEditor{bytesFromHex("00112233445566800000000000000000")};
             forgedPlaintext.set(
-                el::unit::ByteIndex{paddingIndex}, paddingIndex == 7U ? el::mem::Byte{} : el::mem::Byte{0x01U});
+                paddingIndex, paddingIndex == el::unit::ByteIndex{7U} ? el::mem::Byte{} : el::mem::Byte{0x01U});
             auto rawEncryptor = SymmetricEncryptor{SymmetricEncryptionType::Aes256CbcRandomFill, key(), iv()};
             auto forgedCiphertext = ByteBlockEditor{rawEncryptor.encrypt(forgedPlaintext)};
             forgedCiphertext.append(rawEncryptor.finalize());
@@ -124,13 +126,13 @@ public:
         auto ciphertext = ByteBlockEditor{};
         ciphertext.append(encryptor.encrypt(plaintext));
         ciphertext.append(encryptor.finalize());
-        REQUIRE_EQUAL(ciphertext.length(), el::unit::ByteLength{16U});
+        REQUIRE_EQUAL(ciphertext.length(), el::unit::ByteCount{16U});
         REQUIRE_EQUAL(ciphertext, expectedCiphertext);
 
         auto decryptor = SymmetricDecryptor{SymmetricEncryptionType::Aes256CbcRandomFill, key(), iv()};
         auto recovered = ByteBlockEditor{decryptor.decrypt(ciphertext)};
         recovered.append(decryptor.finalize());
-        REQUIRE_EQUAL(recovered.length(), el::unit::ByteLength{16U});
+        REQUIRE_EQUAL(recovered.length(), el::unit::ByteCount{16U});
         REQUIRE(recovered.startsWith(plaintext.span()));
     }
 };

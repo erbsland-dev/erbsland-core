@@ -3,9 +3,9 @@
 
 #include "PathTestHelper.hpp"
 
-#include <erbsland/err/ParseError.hpp>
-#include <erbsland/path/PathWindowsFormat.hpp>
-#include <erbsland/text/Literals.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/ParseError.hpp>
+#include <erbsland/PathWindowsFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using el::path::Path;
@@ -16,6 +16,16 @@ using namespace erbsland::test::pathtest;
 TESTED_TARGETS(Path)
 class PathConversionTest final : public el::UnitTest {
 public:
+    void testNativeCommandLineSpelling() {
+        const auto relative = Path{"folder/file.txt"_el};
+#ifdef EL_OS_WINDOWS
+        REQUIRE_EQUAL(relative.toNativeString(), "folder\\file.txt"_el);
+#else
+        REQUIRE_EQUAL(relative.toNativeString(), "folder/file.txt"_el);
+#endif
+        REQUIRE(Path{}.toNativeString().isEmpty());
+    }
+
     void testStringConversions() {
         const auto relative = Path{"diario/voo.txt"_el};
         REQUIRE_EQUAL(toStdString(relative.toString()), "diario/voo.txt");

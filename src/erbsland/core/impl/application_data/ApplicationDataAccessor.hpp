@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../err/LogicError.hpp"
+#include "../../../err/LogicFailure.hpp"
 #include "../../../text/Literals.hpp"
 
 #include <functional>
@@ -38,19 +38,19 @@ public:
 
 public:
     /// Access the component, creating it on first use.
+    /// When creating the component on first use, the factory must not be empty and must return a non-null pointer.
     /// @return Shared ownership of the component.
-    /// @throws err::LogicError If the configured factory is empty or returns a null pointer.
     [[nodiscard]] auto get() const -> std::shared_ptr<T> {
         using namespace text::literals;
 
         const auto lock = std::scoped_lock{_mutex};
         if (_data == nullptr) {
             if (!_factory) {
-                throw err::LogicError{"The application-data component factory is empty."_el};
+                throw err::LogicFailure{"The application-data component factory is empty."_el};
             }
             auto data = _factory();
             if (data == nullptr) {
-                throw err::LogicError{"The application-data component factory returned a null pointer."_el};
+                throw err::LogicFailure{"The application-data component factory returned a null pointer."_el};
             }
             _data = std::move(data);
         }

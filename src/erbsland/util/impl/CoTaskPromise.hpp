@@ -85,8 +85,6 @@ private:
 };
 
 template <typename tValue>
-/// Complete this task and destroy its coroutine frame.
-/// @param handle The completed coroutine handle.
 void CoTaskFinalAwaiter<tValue>::await_suspend(
     const std::coroutine_handle<CoTaskPromise<tValue>> handle) const noexcept {
     auto state = handle.promise().state();

@@ -13,6 +13,8 @@ _MERMAID_CONFIG = """---
 config:
     theme: default
     fontFamily: Lato, proxima-nova, "Helvetica Neue", Arial, sans-serif
+    flowchart:
+        padding: 2
 ---"""
 
 

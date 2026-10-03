@@ -3,8 +3,8 @@
 
 #include "../../support/TestHelper.hpp"
 
-#include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/CpLength.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/CpCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>
@@ -28,9 +28,9 @@ public:
         const auto fromUtf32Text = Block{U"e\u0301"_el};
         constexpr auto fromCodePoint = Block{U'★'};
 
-        REQUIRE_EQUAL(fromUtf8.characterCount(), erbsland::unit::CpLength{2});
-        REQUIRE_EQUAL(fromUtf32Text.characterCount(), erbsland::unit::CpLength{2});
-        REQUIRE_EQUAL(fromCodePoint.characterCount(), erbsland::unit::CpLength{1});
+        REQUIRE_EQUAL(fromUtf8.characterCount(), erbsland::unit::CpCount{2});
+        REQUIRE_EQUAL(fromUtf32Text.characterCount(), erbsland::unit::CpCount{2});
+        REQUIRE_EQUAL(fromCodePoint.characterCount(), erbsland::unit::CpCount{1});
 
         REQUIRE_EQUAL(fromUtf8.characters(), (std::array<erbsland::text::Char, 3>{U'e', U'\u0301', 0}));
         REQUIRE_EQUAL(fromUtf32Text.characters(), (std::array<erbsland::text::Char, 3>{U'e', U'\u0301', 0}));
@@ -59,7 +59,7 @@ public:
 
         buffer += blockToStdString(character);
 
-        REQUIRE_EQUAL(character.byteCount(), erbsland::unit::ByteLength{3});
+        REQUIRE_EQUAL(character.byteCount(), erbsland::unit::ByteCount{3});
         REQUIRE_EQUAL(character.toString(), erbsland::text::StringEditor{bytes({0x65, 0xCC, 0x81})});
         REQUIRE_EQUAL(buffer, std::string{"prefix:"} + bytes({0x65, 0xCC, 0x81}));
     }
@@ -67,7 +67,7 @@ public:
     void testWithCombiningAppendsZeroWidthCodePoints() {
         const auto combined = Block{U'e'}.withCombining(U'\u0301');
 
-        REQUIRE_EQUAL(combined.characterCount(), erbsland::unit::CpLength{2});
+        REQUIRE_EQUAL(combined.characterCount(), erbsland::unit::CpCount{2});
         REQUIRE_EQUAL(combined.characters(), (std::array<erbsland::text::Char, 3>{U'e', U'\u0301', 0}));
         REQUIRE_EQUAL(combined.toString(), erbsland::text::StringEditor{bytes({0x65, 0xCC, 0x81})});
     }
@@ -306,7 +306,7 @@ public:
     void testUtf8ConstructorsReplaceMalformedInput() {
         const auto character = Block{erbsland::text::StringEditor{bytes({0xC3})}};
 
-        REQUIRE_EQUAL(character.characterCount(), erbsland::unit::CpLength{1});
+        REQUIRE_EQUAL(character.characterCount(), erbsland::unit::CpCount{1});
         REQUIRE_EQUAL(character.first(), U'\uFFFD');
         REQUIRE_EQUAL(character.toString(), erbsland::text::StringEditor{bytes({0xEF, 0xBF, 0xBD})});
     }

@@ -6,6 +6,7 @@
 #include "OptionValue.hpp"
 
 #include "../err/ParseError.hpp"
+#include "../err/RuntimeError.hpp"
 
 namespace erbsland::options {
 
@@ -23,7 +24,7 @@ auto OptionEditor::setValidateTextValue(text::String errorTitle) -> OptionEditor
                 static_cast<void>(tValueType::fromStringOrThrow(valueText));
             } catch (const err::ParseError &parseError) {
                 throw OptionError({errorTitle, parseError.reason()});
-            } catch (const err::Exception &) {
+            } catch (const err::RuntimeError &) {
                 throw OptionError({errorTitle, "Failed to parse the given option text"_el});
             }
         } else if constexpr (requires {

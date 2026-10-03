@@ -3,18 +3,18 @@
 
 #include "../core/ApplicationTestScope.hpp"
 
-#include <erbsland/cryptology/CryptologyError.hpp>
+#include <erbsland/ByteBlock.hpp>
+#include <erbsland/ByteCount.hpp>
 #include <erbsland/cryptology/impl/symmetric/SymmetricDecryptorBackendAccess.hpp>
 #include <erbsland/cryptology/impl/symmetric/SymmetricDecryptorData.hpp>
 #include <erbsland/cryptology/impl/symmetric/SymmetricEncryptorBackendAccess.hpp>
 #include <erbsland/cryptology/impl/symmetric/SymmetricEncryptorData.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricDecryptor.hpp>
-#include <erbsland/cryptology/symmetric/SymmetricEncryptor.hpp>
-#include <erbsland/err/LogicError.hpp>
-#include <erbsland/err/ParameterError.hpp>
-#include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/CryptologyError.hpp>
+#include <erbsland/Literals.hpp>
+#include <erbsland/LogicFailure.hpp>
+#include <erbsland/ParameterFailure.hpp>
+#include <erbsland/SymmetricDecryptor.hpp>
+#include <erbsland/SymmetricEncryptor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -24,7 +24,7 @@
 using namespace el::cryptology;
 using namespace el::text::literals;
 using el::mem::ByteBlock;
-using el::unit::ByteLength;
+using el::unit::ByteCount;
 
 TESTED_TARGETS(
     CryptologyError SymmetricEncryptor SymmetricDecryptor SymmetricEncryptorData SymmetricDecryptorData
@@ -65,7 +65,7 @@ private:
 
         [[nodiscard]] auto tag() const -> SymmetricTag override {
             ++_state->tagCalls;
-            return SymmetricTag{ByteBlock{ByteLength{16U}, 0xa5U}};
+            return SymmetricTag{ByteBlock{ByteCount{16U}, 0xa5U}};
         }
 
         void secureErase() noexcept override { _state->erased = true; }
@@ -124,15 +124,13 @@ private:
         return el::cryptology::impl::SymmetricDecryptorBackendAccess{std::move(worker)}.create();
     }
 
-    [[nodiscard]] static auto makeKey() -> SymmetricKey { return SymmetricKey{ByteBlock{ByteLength{32U}, 0x11U}}; }
+    [[nodiscard]] static auto makeKey() -> SymmetricKey { return SymmetricKey{ByteBlock{ByteCount{32U}, 0x11U}}; }
 
-    [[nodiscard]] static auto makeNonce() -> SymmetricNonce {
-        return SymmetricNonce{ByteBlock{ByteLength{12U}, 0x22U}};
-    }
+    [[nodiscard]] static auto makeNonce() -> SymmetricNonce { return SymmetricNonce{ByteBlock{ByteCount{12U}, 0x22U}}; }
 
-    [[nodiscard]] static auto makeIv() -> SymmetricIv { return SymmetricIv{ByteBlock{ByteLength{16U}, 0x33U}}; }
+    [[nodiscard]] static auto makeIv() -> SymmetricIv { return SymmetricIv{ByteBlock{ByteCount{16U}, 0x33U}}; }
 
-    [[nodiscard]] static auto makeTag() -> SymmetricTag { return SymmetricTag{ByteBlock{ByteLength{16U}, 0x44U}}; }
+    [[nodiscard]] static auto makeTag() -> SymmetricTag { return SymmetricTag{ByteBlock{ByteCount{16U}, 0x44U}}; }
 
     static_assert(!std::is_copy_constructible_v<SymmetricEncryptor>);
     static_assert(!std::is_copy_assignable_v<SymmetricEncryptor>);
@@ -150,21 +148,21 @@ public:
         auto decryptor = SymmetricDecryptor{};
         REQUIRE(encryptor.isEmpty());
         REQUIRE(decryptor.isEmpty());
-        REQUIRE_THROWS_AS(el::err::LogicError, encryptor.type());
-        REQUIRE_THROWS_AS(el::err::LogicError, encryptor.encrypt(ByteBlock{}));
-        REQUIRE_THROWS_AS(el::err::LogicError, decryptor.decrypt(ByteBlock{}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encryptor.type());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encryptor.encrypt(ByteBlock{}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, decryptor.decrypt(ByteBlock{}));
         encryptor.secureErase();
         decryptor.secureErase();
 
         const auto key = makeKey();
         const auto nonce = makeNonce();
         const auto iv = makeIv();
-        REQUIRE_THROWS_AS(el::err::ParameterError, SymmetricEncryptor(SymmetricEncryptionType{}, key, nonce));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, SymmetricEncryptor(SymmetricEncryptionType{}, key, nonce));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, SymmetricEncryptor(SymmetricEncryptionType::Aes256Gcm, SymmetricKey{}, nonce));
+            el::err::ParameterFailure, SymmetricEncryptor(SymmetricEncryptionType::Aes256Gcm, SymmetricKey{}, nonce));
         REQUIRE_THROWS_AS(
-            el::err::ParameterError, SymmetricEncryptor(SymmetricEncryptionType::Aes256CbcRandomFill, key, nonce));
-        REQUIRE_THROWS_AS(el::err::ParameterError, SymmetricDecryptor(SymmetricEncryptionType::Aes256Gcm, key, iv));
+            el::err::ParameterFailure, SymmetricEncryptor(SymmetricEncryptionType::Aes256CbcRandomFill, key, nonce));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, SymmetricDecryptor(SymmetricEncryptionType::Aes256Gcm, key, iv));
         REQUIRE_EQUAL(
             SymmetricEncryptor(SymmetricEncryptionType::Aes256Gcm, key, nonce).type(),
             SymmetricEncryptionType::Aes256Gcm);
@@ -187,18 +185,18 @@ public:
         REQUIRE_EQUAL(output, ByteBlock({0x01U, 0x02U}));
         REQUIRE_EQUAL(state->authenticatedDataCalls, 2U);
         REQUIRE_EQUAL(state->payloadCalls, 2U);
-        REQUIRE_THROWS_AS(el::err::LogicError, encryptor.addAuthenticatedData(ByteBlock({0xa1U})));
-        REQUIRE_THROWS_AS(el::err::LogicError, encryptor.tag());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encryptor.addAuthenticatedData(ByteBlock({0xa1U})));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encryptor.tag());
         REQUIRE_EQUAL(encryptor.finalize(), ByteBlock({0xf0U}));
-        REQUIRE_EQUAL(encryptor.tag().byteLength(), ByteLength{16U});
+        REQUIRE_EQUAL(encryptor.tag().byteLength(), ByteCount{16U});
         REQUIRE_EQUAL(state->finalizeCalls, 1U);
         REQUIRE_EQUAL(state->tagCalls, 1U);
-        REQUIRE_THROWS_AS(el::err::LogicError, encryptor.finalize());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encryptor.finalize());
 
         encryptor.secureErase();
         REQUIRE(state->erased);
         REQUIRE(encryptor.isEmpty());
-        REQUIRE_THROWS_AS(el::err::LogicError, encryptor.type());
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encryptor.type());
     }
 
     void testMoveAssignmentSecurelyErasesPreviousWorker() {
@@ -219,7 +217,7 @@ public:
         state->failPayload = true;
         auto encryptor = makeEncryptor(state);
         REQUIRE_THROWS_AS(CryptologyError, encryptor.encrypt(ByteBlock({0x01U})));
-        REQUIRE_THROWS_AS(el::err::LogicError, encryptor.encrypt(ByteBlock({0x02U})));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, encryptor.encrypt(ByteBlock({0x02U})));
         encryptor.secureErase();
         REQUIRE(state->erased);
         REQUIRE(encryptor.isEmpty());
@@ -232,13 +230,13 @@ public:
         const auto plaintext = decryptor.decrypt(ByteBlock({0x01U, 0x02U}));
         REQUIRE_EQUAL(plaintext, ByteBlock({0x01U, 0x02U}));
         REQUIRE(plaintext.isSensitive());
-        REQUIRE_THROWS_AS(el::err::LogicError, decryptor.addAuthenticatedData(ByteBlock({0xa1U})));
-        REQUIRE_THROWS_AS(el::err::LogicError, decryptor.finalize());
-        REQUIRE_THROWS_AS(el::err::ParameterError, decryptor.finalize(SymmetricTag{}));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, decryptor.addAuthenticatedData(ByteBlock({0xa1U})));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, decryptor.finalize());
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, decryptor.finalize(SymmetricTag{}));
         const auto finalPlaintext = decryptor.finalize(makeTag());
         REQUIRE_EQUAL(finalPlaintext, ByteBlock({0xd0U}));
         REQUIRE(finalPlaintext.isSensitive());
-        REQUIRE_THROWS_AS(el::err::LogicError, decryptor.finalize(makeTag()));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, decryptor.finalize(makeTag()));
         decryptor.secureErase();
         REQUIRE(state->erased);
     }
@@ -246,8 +244,8 @@ public:
     void testLegacyCbcLifecycle() {
         const auto state = std::make_shared<FakeState>();
         auto decryptor = makeDecryptor(state, SymmetricEncryptionType::Aes256CbcIso9797Method2);
-        REQUIRE_THROWS_AS(el::err::LogicError, decryptor.addAuthenticatedData(ByteBlock({0xa0U})));
-        REQUIRE_THROWS_AS(el::err::LogicError, decryptor.finalize(makeTag()));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, decryptor.addAuthenticatedData(ByteBlock({0xa0U})));
+        REQUIRE_THROWS_AS(el::err::LogicFailure, decryptor.finalize(makeTag()));
         const auto finalPlaintext = decryptor.finalize();
         REQUIRE_EQUAL(finalPlaintext, ByteBlock({0xc0U}));
         REQUIRE(finalPlaintext.isSensitive());

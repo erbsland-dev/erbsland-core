@@ -77,7 +77,7 @@ void CharSetRangeBuilder::append(const CharRange range) {
 void CharSetRangeBuilder::promote() {
     const auto capacity = std::max(_maximumRangeCount, std::size_t{3U});
     if (!CharSet::RangeData::canAllocateWithCapacity(capacity)) {
-        throwOverflow("Character set range count exceeds supported bounds");
+        throwOutOfRangeFailure("Character set range count exceeds supported bounds");
     }
     constexpr auto inlineCount = std::size_t{2U};
     auto replacement = CharSet::RangeDataPtr{CharSet::RangeData::create(

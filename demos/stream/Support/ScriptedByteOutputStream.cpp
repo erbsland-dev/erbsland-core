@@ -1,7 +1,18 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
-
 #include "ScriptedByteOutputStream.hpp"
+
+#include <erbsland/Byte.hpp>
+#include <erbsland/ByteCount.hpp>
+#include <erbsland/ByteIndex.hpp>
+#include <erbsland/ByteOffset.hpp>
+#include <erbsland/ByteOutputStream.hpp>
+#include <erbsland/StreamCloseStatus.hpp>
+#include <erbsland/StreamPositionOrigin.hpp>
+#include <erbsland/StreamPositionStatus.hpp>
+#include <erbsland/StreamState.hpp>
+#include <erbsland/StreamWaitStatus.hpp>
+#include <erbsland/StreamWriteStatus.hpp>
 
 namespace demo {
 
@@ -73,7 +84,7 @@ auto ScriptedByteOutputStream::write(const std::span<const el::Byte> bytes) -> e
     for (const auto byte : bytes) {
         _bytes.push_back(byte.toUInt8());
     }
-    _position += el::ByteLength::fromSizeT(bytes.size());
+    _position += el::ByteCount::fromSizeT(bytes.size());
     return el::StreamWriteStatus::Success;
 }
 

@@ -5,9 +5,9 @@
 #include "PackageSettings.hpp"
 
 #include <erbsland/conf/Document.hpp>
-#include <erbsland/path/Path.hpp>
-#include <erbsland/text/String.hpp>
-#include <erbsland/text/StringList.hpp>
+#include <erbsland/Path.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringList.hpp>
 
 #include <vector>
 
@@ -21,15 +21,21 @@ public:
     explicit PackageConfig(path::Path file);
     /// Resolve the settings for the named package, platform, architecture, and target.
     [[nodiscard]] auto settings(
-        const text::String &name, const text::String &platform, const text::String &architecture,
-        const text::String &target, const text::String &projectName,
+        const text::String &name,
+        const text::String &platform,
+        const text::String &architecture,
+        const text::String &target,
+        const text::String &projectName,
         const text::String &projectVersion) const -> PackageSettings;
     /// Get the directory used to resolve relative configured paths.
     [[nodiscard]] auto baseDirectory() const noexcept -> const path::Path & { return _baseDirectory; }
     /// Expand package placeholders, failing on an unknown attribute.
     [[nodiscard]] static auto expand(
-        const text::String &format, const PackageSettings &settings, const text::String &platform,
-        const text::String &architecture, const text::String &target) -> text::String;
+        const text::String &format,
+        const PackageSettings &settings,
+        const text::String &platform,
+        const text::String &architecture,
+        const text::String &target) -> text::String;
 
 private:
     /// Validate a package or target name for regular ELCL sections.
@@ -40,7 +46,7 @@ private:
     void addFiles(PackageSettings &result, const text::String &sectionPath) const;
 
 private:
-    path::Path _baseDirectory; ///< Config directory or project root.
+    path::Path _baseDirectory;   ///< Config directory or project root.
     conf::DocumentPtr _document; ///< Parsed optional configuration.
 };
 

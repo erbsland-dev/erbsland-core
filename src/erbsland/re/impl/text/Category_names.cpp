@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Category.hpp"
 
-#include "../../../err/ParameterError.hpp"
+#include "../../../err/NotFoundError.hpp"
 #include "../../../text/Literals.hpp"
+#include "../../../text/StringTransformations.hpp"
 
 #include <algorithm>
 #include <array>
 #include <ranges>
 
 namespace erbsland::re::impl {
+
 using namespace text::literals;
 using namespace text;
 
@@ -21,13 +23,11 @@ auto Category::fromString(const String &str) -> Category {
 }
 
 auto Category::fromUnprocessedString(const String &str) -> Category {
-    const auto normalized = str.transformed([](const Char character) noexcept -> Char {
-        return character == U'_' ? Char::noCodePoint() : character.toAsciiLowercase();
-    });
+    const auto normalized = text::toAsciiLowercase(str).removedAll("_"_el);
     if (const auto foundValue = nameToValueMap().get(normalized); foundValue.has_value()) {
         return *foundValue;
     }
-    throw err::ParameterError{"Invalid category name."_el, "str"_el};
+    throw err::NotFoundError{"Invalid category name."_el};
 }
 
 auto Category::toLongString() const -> String {

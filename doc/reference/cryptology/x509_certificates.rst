@@ -22,9 +22,10 @@ validity, intended purpose, or the current time.
 Reading and Writing
 ===================
 
-The non-throwing ``fromPem()``, ``fromDer()``, and ``fromFile()`` factories return an empty certificate for every
-failure.
-The matching ``OrThrow`` factories preserve parse, range, and file diagnostics.
+The non-throwing ``fromPem()``, ``fromDer()``, and ``fromFile()`` factories return an empty certificate for parse and
+file failures.
+The matching ``OrThrow`` factories preserve parse and file diagnostics.
+Input exceeding the parser limits is a parse failure; fatal programming and allocation errors are not recovered.
 Singular factories require exactly one certificate, while
 :cpp:class:`X509CertificateBundle <erbsland::cryptology::X509CertificateBundle>` accepts one or more ordered PEM
 blocks.
@@ -108,9 +109,10 @@ RSA Signature Verification
 ==========================
 
 RSA verification follows RSAVP1 and the EMSA verification procedures in RFC 8017 sections 5.2.2, 8, and 9. It accepts
-RSASSA-PSS and RSASSA-PKCS1-v1_5 with SHA-256 or SHA-384. PSS algorithm and key parameters follow RFC 4055 sections 3.1
-and 3.3: the message and MGF1 hashes must match, only trailer field 1 is accepted, and the salt length cannot exceed the
-selected hash length.
+RSASSA-PSS and RSASSA-PKCS1-v1_5 with SHA-256, SHA-384, or SHA-512. PSS algorithm and key parameters follow RFC 4055
+sections 3.1 and 3.3: the message and MGF1 hashes must match, only trailer field 1 is accepted, and the salt length
+cannot exceed the selected hash length.
+Nested SHA-2 algorithm identifiers accept absent or NULL parameters; other parameter values remain invalid.
 General-purpose RSA public-key encoding follows RFC 3279 section 2.3.1.
 
 The RSA modulus must be odd and between 2048 and 8192 bits.
@@ -125,7 +127,10 @@ public; no private exponent, prime, secret scalar, or other secret state is crea
 ECDSA Signature Verification
 ============================
 
-ECDSA verification follows FIPS 186-5 section 6.4.2 and supports exactly P-256 with SHA-256 and P-384 with SHA-384.
+ECDSA certificate verification follows FIPS 186-5 section 6.4.2 and supports P-256 and P-384 independently of the
+signature's SHA-256, SHA-384, or SHA-512 hash choice.
+The verifier truncates longer digests to the subgroup-order width and accepts shorter digests without padding them.
+TLS CertificateVerify retains the scheme-specific P-256/SHA-256 and P-384/SHA-384 restrictions.
 Curve parameters come from NIST SP 800-186 sections 3.2.1.3--3.2.1.4, public-key encoding follows RFC 5480 sections
 2.1.1--2.2, and signature identifiers follow RFC 5758 section 3.2. Signature values are one complete canonical DER
 ``SEQUENCE`` containing exactly two positive ``INTEGER`` values.
@@ -146,8 +151,8 @@ bound modular arithmetic.
 The verification double-scalar calculation is deliberately variable-time: the branch schedule may depend on ``u``,
 ``v``, the public key, and signature, all of which are public verification data.
 Verification creates no private scalar or other secret state, so no secret-erasure lifecycle is involved.
-A future ECDHE implementation may reuse constants and field arithmetic only; its secret-scalar multiplication must use a
-separately reviewed constant-schedule path and explicitly erase private intermediates.
+ECDHE and signing reuse field arithmetic through separately named fixed-schedule secret multiplication routines.
+Arithmetic scratch owns and erases its limbs even when created as an unnamed intermediate expression.
 
 Ed25519 Signature Verification
 ==============================
@@ -180,9 +185,9 @@ TLS 1.3 Signature Schemes
 
 :cpp:class:`TlsSignatureScheme <erbsland::cryptology::TlsSignatureScheme>` represents the supported two-octet
 ``SignatureScheme`` values from RFC 8446 section 4.2.3. It supports ECDSA with P-256/SHA-256 or P-384/SHA-384, pure
-Ed25519, RSA-PSS-RSAE and RSA-PSS-PSS with SHA-256 or SHA-384, plus certificate-only RSA-PKCS1/SHA-256 and
-RSA-PKCS1/SHA-384. The raw-value factories reject every unsupported registry value rather than preserving an unknown
-construction.
+Ed25519, RSA-PSS-RSAE and RSA-PSS-PSS with SHA-256, SHA-384, or SHA-512, plus certificate-only RSA-PKCS1 with these
+three SHA-2 hashes.
+The raw-value factories reject every unsupported registry value rather than preserving an unknown construction.
 
 The certificate and TLS-message policies are intentionally separate.
 PKCS#1 v1.5 schemes can describe signatures appearing in certificates but are never allowed for a TLS 1.3
@@ -208,16 +213,71 @@ PKCS#1 v1.5 support exists for certificate-chain compatibility.
 RFC 8446 section 4.2.3 permits these schemes for certificate signatures but not for TLS 1.3 ``CertificateVerify``; the
 dedicated TLS verification operation enforces this distinction before signature dispatch.
 Signing and private-key loading remain separate work.
-Portable explicit-anchor server authentication is described below; platform trust-store policy remains deferred.
+Explicit-anchor and system-trust peer certificate validation are described below.
 
-Explicit-Anchor Server Authentication
-=====================================
+System-Trust TLS Authentication
+===============================
 
-:cpp:class:`X509ServerCertificatePolicy <erbsland::cryptology::X509ServerCertificatePolicy>` authenticates an
-already-parsed peer certificate set for one :cpp:class:`network::Host <erbsland::network::Host>` reference identity.
+:cpp:func:`X509TlsCertificatePolicy::systemTrust() <erbsland::cryptology::X509TlsCertificatePolicy::systemTrust>` selects native TLS trust evaluation on macOS and Windows, or a
+distribution-maintained CA bundle on Linux.
+Construction does not read files, access a credential store, or contact a server.
+``validateServer()`` and ``validateClient()`` are synchronous; network connections run validation on background workers.
+See :doc:`/topics/cryptology/configuring_tls` for selecting trust through an application profile.
+
+Native Trust Evaluation
+-----------------------
+
+macOS evaluates the chain with Security.framework's role-specific TLS and best-effort revocation policies.
+Windows uses the current-user chain engine and SSL policy with the server- or client-authentication purpose.
+Both preserve native path constraints and trust settings, with additional library checks for supported keys and
+certificate signatures.
+Server validation also checks RFC 9525 service identity through Subject Alternative Names; a certificate's Common Name
+cannot satisfy hostname verification.
+Client validation checks the client-authentication purpose without matching a DNS name or IP address.
+
+Native evaluation may retrieve missing intermediates and revocation information by default.
+``systemTrust(false)`` requests evaluation using only local material and caches.
+Known revocation and explicit distrust reject validation.
+Acceptance alone does not establish that revocation was checked.
+``X509CertificateValidation::revocationStatus()`` distinguishes these outcomes:
+
+* ``NotChecked`` for portable validation, including Linux bundle validation.
+* ``Unknown`` when native evaluation does not provide sufficient revocation evidence.
+* ``Checked`` when native evaluation confirms non-revocation for the path excluding its trust anchor.
+
+Linux Trust Bundles
+-------------------
+
+Linux uses the distribution's CA certificates, normally installed through its ``ca-certificates`` package.
+Discovery selects the first existing bundle from this ordered list:
+
+* ``/etc/ssl/certs/ca-certificates.crt``
+* ``/etc/pki/tls/certs/ca-bundle.crt``
+* ``/etc/ssl/ca-bundle.pem``
+* ``/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem``
+
+``systemTrust(false, bundlePath)`` selects an explicit Linux bundle instead.
+A nonempty override on macOS or Windows fails.
+The selected file is authoritative: alternatives are not merged or substituted if it later disappears.
+Missing, empty, malformed, unreadable, or concurrently changed bundles produce ``TrustUnavailable`` with a diagnostic.
+Bundle changes are reloaded before subsequent validation; a failed reload does not reuse obsolete trust data.
+
+Linux validation is offline and uses the portable validation rules described below.
+It does not check revocation, process name or policy constraints, or apply RFC 4518 distinguished-name equivalence.
+Unsupported critical constraints reject validation.
+
+Explicit-Anchor TLS Authentication
+==================================
+
+:cpp:class:`X509TlsCertificatePolicy <erbsland::cryptology::X509TlsCertificatePolicy>` authenticates an
+already-parsed peer certificate set.
+``validateServer(bundle, host, time)`` checks a
+:cpp:class:`network::Host <erbsland::network::Host>` reference identity; ``validateClient(bundle, time)`` checks the
+client-authentication purpose without DNS/IP matching.
+Both use the same bounded path construction and validation.
 The first peer certificate is the target and all remaining peer certificates are unordered issuer candidates.
 Configured intermediates provide a second candidate source.
-Explicit certificate trust anchors are mandatory; the policy does not consult a platform trust store.
+The explicit-anchor constructor never consults a platform trust store; an empty explicit bundle rejects validation.
 
 Path construction follows RFC 4158 sections 2.4 and 5. It performs deterministic depth-first traversal, preferring peer
 intermediates and then configured intermediates in their source order before anchors, while trying alternate branches
@@ -243,11 +303,13 @@ Every non-anchor certificate must have no compatible-parser profile issue and mu
 The caller may supply a validation time explicitly; the convenience overload uses ``Timestamp::now()``.
 
 An intermediate requires a critical Basic Constraints extension with ``cA=true``.
-If Key Usage exists it must include ``keyCertSign``; if Extended Key Usage exists it must include ``serverAuth`` or
-``anyExtendedKeyUsage``.
+If Key Usage exists it must include ``keyCertSign``; if Extended Key Usage exists it must include the requested TLS
+purpose or ``anyExtendedKeyUsage``.
 ``pathLenConstraint`` counts only non-self-issued intermediate CA certificates below the constrained CA. The target must
 not assert ``cA=true``; an existing Key Usage must include ``digitalSignature`` and an existing Extended Key Usage must
-permit server authentication, as required for the TLS certificate role by RFC 8446 section 4.4.2.2.
+permit the requested peer authentication purpose, as required by RFC 8446 section 4.4.2.2. An absent Extended Key Usage
+permits either TLS purpose; an explicitly empty extension permits neither.
+Client validation establishes a certificate identity without inferring an application account or permissions.
 
 The validator recognizes the currently decoded Subject Key Identifier, Authority Key Identifier, Subject Alternative
 Name, Basic Constraints, Key Usage, and Extended Key Usage extensions.
@@ -287,10 +349,15 @@ Rejection carries an
 category, optional affected certificate and issuer candidate, partial path, and human-readable diagnostic.
 No outcome uses an empty certificate as a signal.
 
-Attacker-controlled work is bounded to 256 aggregate unique certificates, 16 certificates in one prospective path, and
-1024 signature-verification attempts.
+Attacker-controlled work is bounded to 256 unique peer and configured intermediate certificates, 16 certificates in one
+prospective path, and 1024 signature-verification attempts.
+Trust anchors have a separate 4096-certificate limit, exact-DER deduplication, and a subject-name index; distribution
+bundles do not consume the peer-candidate budget.
 Repeated certificates are rejected as path loops and verified edges are cached.
 Exhausting any bound produces an explicit resource-limit failure category.
+System evaluation distinguishes unavailable trust sources, native service failures, revoked certificates, and native
+policy rejection.
+Connection cancellation and timeout are separate network-operation outcomes, not certificate acceptance or rejection.
 
 Strict and Compatible Profiles
 ==============================
@@ -301,6 +368,11 @@ Strict mode rejects a certificate when, for example, its inner and outer signatu
 Compatible mode retains supported interoperability exceptions as
 :cpp:class:`X509CertificateProfileIssue <erbsland::cryptology::X509CertificateProfileIssue>` values so callers can
 make an explicit policy decision.
+For example, compatible parsing retains an unambiguous ``YYYYMMDDHHMMSSZ`` GeneralizedTime before 2050 as a
+``ValidityEncoding`` issue.
+Some distribution trust anchors use this encoding.
+Strict mode still requires UTCTime for these years; malformed dates, offsets, fractions, and missing seconds remain
+rejected in both modes.
 Malformed ASN.1, noncanonical DER, invalid lengths, invalid primitive encodings, and resource-limit violations remain
 errors in both modes.
 
@@ -317,6 +389,9 @@ Portable certificates store parsed values directly; future Windows and macOS int
 certificate-store reference and materialize the same immutable portable view only when an accessor or serialization
 operation needs it.
 Native handles are not exposed by the public facade.
+
+Certificate reissuance reports unsupported critical extensions with ``CryptologyError``; supplying an empty certificate
+remains a caller precondition failure.
 
 Interface
 =========
@@ -362,6 +437,7 @@ Interface
     :members:
 .. doxygenclass:: erbsland::cryptology::X509RelativeDistinguishedName
     :members:
-.. doxygenclass:: erbsland::cryptology::X509ServerCertificatePolicy
+.. doxygenenum:: erbsland::cryptology::X509RevocationStatus
+.. doxygenclass:: erbsland::cryptology::X509TlsCertificatePolicy
     :members:
 .. doxygenenum:: erbsland::cryptology::X509Version

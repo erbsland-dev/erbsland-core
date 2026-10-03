@@ -3,8 +3,6 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-add_subdirectory(impl)
-
 target_sources(erbsland-core PRIVATE
         AnyElement.hpp
         Divider.hpp
@@ -12,5 +10,6 @@ target_sources(erbsland-core PRIVATE
         OneChar.hpp
         PatternSet.hpp
         Range.hpp
+        Star.hpp
         Text.hpp
 )

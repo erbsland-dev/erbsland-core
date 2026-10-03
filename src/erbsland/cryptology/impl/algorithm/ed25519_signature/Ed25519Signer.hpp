@@ -22,13 +22,11 @@ using WideScalar = mem::ByteArray<64U>;
 /// Derive the canonical 32-octet public-key encoding from one private seed.
 /// @param seed The exact 32-octet RFC 8032 private seed.
 /// @return The canonical encoded public point.
-/// @throws err::ParameterError If the seed length is invalid.
 [[nodiscard]] auto publicKey(mem::ConstByteSpan seed) -> mem::ByteArray<32U>;
 /// Sign one exact message with one private seed.
 /// @param seed The exact 32-octet RFC 8032 private seed.
-/// @param message The exact message bytes.
+/// @param message The exact message bytes. Hashing the message must not exceed the SHA-512 message-length bound.
 /// @return The 64-octet `ENC(R) || ENC(S)` signature.
-/// @throws err::ParameterError If the seed length is invalid or hashing exceeds its bound.
 [[nodiscard]] auto sign(mem::ConstByteSpan seed, mem::ConstByteSpan message) -> mem::ByteBlock;
 /// Expand and clamp the secret scalar from SHA-512(seed).
 [[nodiscard]] auto expandedScalar(mem::ConstByteSpan digest) -> Scalar;

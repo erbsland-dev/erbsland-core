@@ -41,9 +41,9 @@ public:
     /// Get the writable sections around the wrap point.
     [[nodiscard]] auto writableSpans() noexcept -> std::array<ByteSpan, 2> { return buffer().writableSpans(); }
     /// Make bytes written through this lease visible to readers.
-    void commitWritten(const unit::ByteLength length) { buffer().commitWritten(length.toSizeTOrThrow()); }
+    void commitWritten(const unit::ByteCount length) { buffer().commitWritten(length.toSizeTOrThrow()); }
     /// Consume bytes read through this lease.
-    void consumeRead(const unit::ByteLength length) { buffer().consumeRead(length.toSizeTOrThrow()); }
+    void consumeRead(const unit::ByteCount length) { buffer().consumeRead(length.toSizeTOrThrow()); }
 
 private:
     /// Access the leased ring buffer.

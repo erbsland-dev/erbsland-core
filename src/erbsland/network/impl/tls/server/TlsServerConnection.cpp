@@ -10,7 +10,7 @@
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringList.hpp"
 #include "../../../tcp/TcpConnectionRequest.hpp"
@@ -24,17 +24,17 @@ using namespace text;
 using namespace text::literals;
 
 TlsServerConnection::TlsServerConnection(
-    event::EventsPtr ownerEvents, network::TcpConnectionPtr tcpConnection, StartProtocolFn startProtocol) :
-    network::TlsServerConnection{std::move(ownerEvents)},
+    event::EventTargetPtr ownerLoop, network::TcpConnectionPtr tcpConnection, StartProtocolFn startProtocol) :
+    network::TlsServerConnection{std::move(ownerLoop)},
     _tcpConnection{std::move(tcpConnection)},
     _startProtocol{std::move(startProtocol)} {
-    if (_tcpConnection == nullptr || _tcpConnection->ownerEvents() != this->ownerEvents()) {
+    if (_tcpConnection == nullptr || _tcpConnection->ownerLoop() != this->ownerLoop()) {
         throw LogicFailure{"A TLS server connection requires a TCP connection from the same owner loop."_el};
     }
     if (!_startProtocol) {
         _startProtocol = [](TlsServerProtocol &protocol) -> void { protocol.start(); };
     }
-    _finalContinuation = event::impl::EventContinuation::create(this->ownerEvents());
+    _finalContinuation = event::impl::EventContinuation::create(this->ownerLoop());
 }
 
 TlsServerConnection::~TlsServerConnection() {
@@ -114,7 +114,7 @@ auto TlsServerConnection::state() const noexcept -> ConnectionState {
 
 void TlsServerConnection::accept(network::TcpConnectionRequestPtr request, TlsServerAcceptOptions options) {
     const auto lock = std::scoped_lock{_mutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_started.load()) {
         throw LogicFailure{"A TLS server connection can only be started once."_el};
     }
@@ -181,7 +181,7 @@ void TlsServerConnection::accept(network::TcpConnectionRequestPtr request, TlsSe
 
 auto TlsServerConnection::send(const mem::ByteBlock &data) -> NetworkSendStatus {
     const auto lock = std::scoped_lock{_mutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != ConnectionState::Active || _protocol == nullptr) {
         return NetworkSendStatus::Closed;
     }
@@ -204,7 +204,7 @@ auto TlsServerConnection::send(const mem::ByteBlock &data) -> NetworkSendStatus 
 
 void TlsServerConnection::pauseReceiving() {
     const auto lock = std::scoped_lock{_mutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != ConnectionState::Active || _receivingPaused) {
         return;
     }
@@ -214,7 +214,7 @@ void TlsServerConnection::pauseReceiving() {
 
 void TlsServerConnection::resumeReceiving() {
     const auto lock = std::scoped_lock{_mutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != ConnectionState::Active || !_receivingPaused) {
         return;
     }
@@ -227,7 +227,7 @@ void TlsServerConnection::resumeReceiving() {
 
 void TlsServerConnection::close() {
     const auto lock = std::scoped_lock{_mutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     const auto current = _state.load();
     if (current == ConnectionState::Inactive || current == ConnectionState::Accepting ||
         current == ConnectionState::Handshaking) {
@@ -266,7 +266,7 @@ void TlsServerConnection::abort() noexcept {
 
 auto TlsServerConnection::events() -> network::TlsServerConnectionEventEditor & {
     const auto lock = std::scoped_lock{_mutex};
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<TlsServerConnectionEventEditor>(shared_from_this(), std::move(target));
     }

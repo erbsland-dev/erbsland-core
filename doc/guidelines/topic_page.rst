@@ -82,6 +82,40 @@ documentation.
 
    In most cases, no final summary section is required because the introduction already provides an overview.
 
+.. _topic-page-practical-separation:
+
+Separate Topic Text from Practical Discussion
+=============================================
+
+Regular topic text must explain concepts, API behavior, requirements, and generally applicable design choices
+independently of any demo.
+It must remain coherent and sufficient to understand the topic when readers skip every practical block.
+Neutral text can still address the reader directly, explain practical consequences, and use short generic expressions or
+fragments that require no knowledge of a particular example, such as ``app.loop()``.
+
+Every demo walkthrough or discussion of a concrete example application must appear inside an
+``erbsland-in-practice-begin/end`` block.
+Include the example's introduction, source excerpts, commands, output, interpretation, and discussion of its design
+choices within that boundary.
+This also applies to practical walkthroughs without a compiled demo block.
+See :doc:`demo_integration` for the directive syntax and placement rules.
+
+Explain the general concept in the regular text before showing its application in a practical block.
+Keep demo names, helper identifiers, and references such as "our monitor" inside the practical discussion.
+After the block, continue the conceptual explanation without relying on the demo's state or execution history.
+General requirements, including ownership and execution rules, must be explained in the regular text; repeat them inside
+a practical block when needed to explain the example safely.
+
+Section headings must describe concepts, API operations, or reader tasks independently of the demo.
+Use the practical block's label to identify the concrete example or the part of it being discussed.
+A section needs a practical block only when it contains such a discussion.
+
+Complete demo applications have their own walkthroughs under ``doc/demo_apps``; see :doc:`demo_app_page`.
+A topic's practical block can link to that walkthrough and keep its commentary focused on how the selected code
+illustrates the current concept.
+Do not repeat the application's entire architecture in each topic.
+The regular topic text must still teach the complete concept without following the walkthrough link.
+
 Recommended Workflow to Create the Content
 ==========================================
 
@@ -97,7 +131,8 @@ Recommended Workflow to Create the Content
   These sections don't need to have the questions in its titles, they just need to answer them and
   provide a title a reader immediately understands that this section will answer their question.
 * Support API usage with compiled demos.
-  A section can explain the preceding demo or show a focused excerpt instead of introducing another complete program.
+  A practical block can explain an earlier demo or show a focused excerpt instead of introducing another complete
+  program.
   Creating these demos before writing the content can help to find more questions a developer will have.
 * Next, write the sections as described in "Page Structure".
 * After writing the topic page, review it, unbiased and don't be shy to remove/rewrite content if you
@@ -115,8 +150,9 @@ A topic page does not need to cover every API involved in its example.
 Introduce the underlying concept before walking through the demo
 ----------------------------------------------------------------
 
-Explain what the relevant API does, why the reader would choose it, and which ownership or execution rules apply.
-Then use focused excerpts to make those rules concrete.
+Explain in the regular text what the relevant API does, why the reader would choose it, and which ownership or execution
+rules apply.
+Then use focused excerpts inside a practical block to make those rules concrete.
 Connect the example back to the reader's own code: distinguish API requirements from choices made for that demo, and
 explain how common alternatives change the design.
 This is a teaching progression, not a mandatory set of headings for every section.
@@ -125,7 +161,8 @@ Introduce the purpose of each operation before its architectural classification
 -------------------------------------------------------------------------------
 
 For example, explain that a method queues work on a loop before introducing the target interface and its type aliases.
-Use concrete object names consistently until the reader has enough context to understand the general terminology.
+Within a practical block, use concrete object names consistently and relate them to the concepts introduced in the
+regular text.
 
 Explain the normal execution path before discussing variations
 --------------------------------------------------------------
@@ -139,7 +176,7 @@ Give each example one teaching purpose
 --------------------------------------
 
 Do not add unrelated accessors, scheduling, output, or framework features merely because they are available.
-Use a consistent scenario where it helps readers connect the concepts.
+Use a consistent scenario across practical blocks where it helps readers connect the concepts.
 Do not turn the page into a commentary on every function in the demo.
 If a variation requires a second framework and several new concepts, consider a separate page or a link to an existing
 example instead.
@@ -178,8 +215,8 @@ handle and why it matters.
 Avoid metaphors, generic advice, and a repeated imperative formula.
 
 Read the headings alone and check that they describe the content and fulfill the promise of the page title.
-The tree of headings, with the page title at its root should allow the reader to navigate to the section of
-a page their are interested in.
+The tree of headings, with the page title at its root should allow the reader to navigate to the section of a page their
+are interested in.
 
 Review the Reader's Path
 ========================
@@ -190,14 +227,23 @@ Before considering the page finished, check:
 * Can the reader identify the task and the expected result before learning several unfamiliar type names?
 * Can they find a particular subject by scanning the headings alone?
 * Can they explain how to use the concepts and APIs in their own code, beyond reproducing the demo?
+* Does the regular text remain coherent and explain the necessary concepts and requirements when all practical blocks
+  are skipped?
+* Are demo identifiers, scenario references, and the complete discussion of each example inside practical blocks?
+* Are general ownership, execution, and safety requirements explained in the regular text rather than only in examples?
 * Can they follow the first example's execution and locate the state that must survive between calls?
 * Is each non-obvious prerequisite explained when it first matters?
 * Does every substantial part of an example help answer its section's question?
-* Do later sections build on the established example, or repeatedly require a new mental model?
+* Do later sections build on established concepts, with practical blocks reusing a familiar example where useful?
 * Can a detail be moved to an existing page without making the demonstrated pattern unsafe or misleading?
 
 When the answer exposes a structural problem, revise the example or section order first.
 Adding more explanatory paragraphs to an overloaded example usually increases the reader's work.
+
+When adapting an existing page, review the prose as well as the code blocks.
+Move the complete demo discussion inside the practical boundary and ensure that general explanations remain in the
+regular text.
+Wrapping only the code is not sufficient.
 
 Recommended Writing Style
 =========================

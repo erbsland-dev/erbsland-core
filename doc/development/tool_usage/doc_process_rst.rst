@@ -53,3 +53,8 @@ them.
 
 See :doc:`usage` for shared invocation options and
 :doc:`../tool_reference/documentation_tools_reference` for the technical contracts.
+
+Compile-only sources under ``demos/<domain>/templates`` support source extraction only.
+The synchronizer rejects execution, expected exit-code, fixture, and command-display options before looking up cached
+blocks or starting a program.
+Compile and link these templates without running them; see :doc:`/guidelines/demo_integration`.

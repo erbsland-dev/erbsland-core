@@ -4,7 +4,7 @@
 #include "../../../core/impl/ApplicationExecutionContext.hpp"
 #include "../../../err/LogicFailure.hpp"
 #include "../../../err/RuntimeError.hpp"
-#include "../../../event/Events.hpp"
+#include "../../../event/EventTarget.hpp"
 #include "../../../event/impl/EventContinuation.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../time/TimePoint.hpp"
@@ -43,7 +43,7 @@ public:
     /// Reserve work and completion capacity before scheduling a copied request.
     /// @throws util::impl::WorkerAdmissionError If the bounded security domain is full.
     template <typename Request, typename Completion>
-    void start(Request request, event::EventsPtr events, time::TimePoint deadline, Completion completion) {
+    void start(Request request, event::EventTargetPtr events, time::TimePoint deadline, Completion completion) {
         if (isPending()) {
             using namespace text::literals;
             throw err::LogicFailure{"A TLS background operation is already pending."_el};

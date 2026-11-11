@@ -13,7 +13,7 @@
 namespace erbsland::conf::syntax::impl {
 
 /// Source-preserving layout engine operating on recognized statements.
-/// @tested{SyntaxFormatterTest}
+/// @tested{SyntaxFormatterTest SyntaxLiteralFormattingTest}
 class Writer final {
 public:
     // defaults
@@ -57,6 +57,8 @@ private:
     auto matrixColumns() -> util::List<unit::CpCount>;
     /// Apply opt-in normalization to a source token.
     auto tokenText(const Token &token) const -> text::String;
+    /// Format a Boolean token using the selected word pair and case.
+    auto booleanText(const text::String &source) const -> text::String;
     /// Normalize identifier case and word separators.
     auto nameText(const text::String &text, WordCase wordCase, WordSeparator separator) const -> text::String;
     /// Create the selected continuation indentation.

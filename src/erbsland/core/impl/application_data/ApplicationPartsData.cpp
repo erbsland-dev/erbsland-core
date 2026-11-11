@@ -5,7 +5,7 @@
 #include "ApplicationEventData.hpp"
 #include "ApplicationLifecycleData.hpp"
 
-#include "../../../event/impl/CurrentEventsScope.hpp"
+#include "../../../event/impl/CurrentLoopScope.hpp"
 #include "../../ApplicationPartManager.hpp"
 #include "../../ApplicationPartManagerState.hpp"
 
@@ -18,7 +18,7 @@ auto ApplicationPartsData::manager(
     -> ApplicationPartManagerPtr {
     const auto lock = std::scoped_lock{_mutex};
     if (_manager == nullptr) {
-        _manager = core::ApplicationPartManager::create(eventData->events());
+        _manager = core::ApplicationPartManager::create(eventData->loop());
         const auto weakEventData = std::weak_ptr<ApplicationEventData>{eventData};
         const auto weakLifecycleData = std::weak_ptr<ApplicationLifecycleData>{lifecycleData};
         _stateSubscription =
@@ -60,8 +60,8 @@ void ApplicationPartsData::stop(ApplicationEventData &eventData) {
     }
     if (managerState == ApplicationPartManagerState::Ready || managerState == ApplicationPartManagerState::Starting ||
         managerState == ApplicationPartManagerState::Running || managerState == ApplicationPartManagerState::Stopping) {
-        auto currentEventsScope = event::impl::CurrentEventsScope{eventData.events()};
-        eventData.eventLoop().run();
+        auto currentLoopScope = event::impl::CurrentLoopScope{eventData.loop()};
+        eventData.mainEventLoop().run();
     }
     if (manager->hasError()) {
         std::rethrow_exception(manager->takeError());

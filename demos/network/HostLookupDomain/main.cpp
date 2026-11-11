@@ -28,7 +28,7 @@ el::HostLookupPtr lookup;
 /// Resolve a public host name without blocking the event loop.
 /// A host can resolve to several addresses, so successful code processes the complete result list.
 void resolveDocumentationHost() {
-    const auto events = el::application().events();
+    const auto events = el::application().loop();
     lookup = events->get<el::Network>().createHostLookup();
     lookup->events()
         .onResolved([](const el::List<el::IpAddress> &addresses) -> void {
@@ -48,7 +48,7 @@ void resolveDocumentationHost() {
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
     demo::DemoTerminal::enable(app);
-    app.events()->invoke(resolveDocumentationHost);
+    app.loop()->invoke(resolveDocumentationHost);
     return app.run();
 }
 

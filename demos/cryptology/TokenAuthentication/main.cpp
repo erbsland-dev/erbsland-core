@@ -44,7 +44,7 @@ protected: // implement Application
             auto pair = el::cryptology::AuthenticationTokenPair::generate(value);
             el::io::printLine("Server token: "_el, pair.server().toString());
             el::io::printLine("Client token: "_el, pair.client().toString());
-            events()->invoke([this]() -> void { quit(); });
+            loop()->invoke([this]() -> void { quit(); });
             return;
         }
         const auto document = el::conf::Parser{}.parseFileOrThrow(el::Path::fromNativeOrThrow(value));
@@ -53,16 +53,16 @@ protected: // implement Application
             const auto port = el::Port::fromStringOrThrow(document->getTextOrThrow("server.port"_el));
             const auto token = el::cryptology::ServerAuthenticationToken::fromStringOrThrow(
                 document->getTextOrThrow("server.token"_el));
-            _server = std::make_unique<Server>(events(), address, port, token);
-            events()->invoke([this]() -> void { _server->start(); });
+            _server = std::make_unique<Server>(loop(), address, port, token);
+            loop()->invoke([this]() -> void { _server->start(); });
         } else if (mode == "client"_el) {
             const auto host = el::Host::fromStringOrThrow(document->getTextOrThrow("client.host"_el));
             const auto port = el::Port::fromStringOrThrow(document->getTextOrThrow("client.port"_el));
             auto tokenText = document->getTextOrThrow("client.token"_el);
             tokenText.markAsSensitive();
             auto token = el::cryptology::ClientAuthenticationToken::fromStringOrThrow(tokenText);
-            _client = std::make_unique<Client>(events(), host, port, std::move(token));
-            events()->invoke([this]() -> void { _client->start(); });
+            _client = std::make_unique<Client>(loop(), host, port, std::move(token));
+            loop()->invoke([this]() -> void { _client->start(); });
         } else {
             throw el::ApplicationError{"Mode must be generate, server, or client."_el};
         }

@@ -9,7 +9,7 @@
 #include <erbsland/ApplicationError.hpp>
 #include <erbsland/ByteBlock.hpp>
 #include <erbsland/ByteCount.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/IpAddress.hpp>
 #include <erbsland/IpEndpoint.hpp>
 #include <erbsland/json/JsonValue.hpp>
@@ -42,7 +42,7 @@ namespace demo {
 class ServerSession final {
 public:
     ServerSession(
-        el::EventsPtr events,
+        el::EventTargetPtr events,
         el::TcpConnectionRequestPtr request,
         el::cryptology::ServerAuthenticationToken token,
         std::function<void(ServerSession *)> done) :
@@ -107,7 +107,7 @@ private:
     enum class State { Hello, Proof, Finished };
 
 private:
-    el::EventsPtr _events;
+    el::EventTargetPtr _events;
     el::TcpConnectionRequestPtr _request;
     el::cryptology::ServerAuthenticationToken _token;
     std::function<void(ServerSession *)> _done;
@@ -122,7 +122,10 @@ private:
 class Server final {
 public:
     Server(
-        el::EventsPtr events, el::IpAddress address, el::Port port, el::cryptology::ServerAuthenticationToken token) :
+        el::EventTargetPtr events,
+        el::IpAddress address,
+        el::Port port,
+        el::cryptology::ServerAuthenticationToken token) :
         _events{std::move(events)}, _address{std::move(address)}, _port{port}, _token{std::move(token)} {}
 
     void start() {
@@ -151,7 +154,7 @@ private:
     }
 
 private:
-    el::EventsPtr _events;
+    el::EventTargetPtr _events;
     el::IpAddress _address;
     el::Port _port;
     el::cryptology::ServerAuthenticationToken _token;

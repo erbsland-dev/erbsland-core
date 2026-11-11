@@ -64,7 +64,7 @@ public: // lifecycle
 
 protected:
     /// Create an abstract server source owned by one event target.
-    explicit HttpServer(event::EventsPtr ownerEvents) : EventSource{std::move(ownerEvents)} {}
+    explicit HttpServer(event::EventTargetPtr ownerLoop) : EventSource{std::move(ownerLoop)} {}
 };
 
 }

@@ -24,7 +24,7 @@ el::HostLookupPtr lookup;
 /// Store the lookup in the object that needs its result and configure its source-owned editor directly.
 /// The lookup owns its handlers and can be released safely from its final handler.
 void resolveAndRelease() {
-    const auto events = el::application().events();
+    const auto events = el::application().loop();
     lookup = events->get<el::Network>().createHostLookup();
     lookup->events()
         .onResolved([](const el::List<el::IpAddress> &addresses) -> void {
@@ -41,7 +41,7 @@ void resolveAndRelease() {
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
     demo::DemoTerminal::enable(app);
-    app.events()->invoke(resolveAndRelease);
+    app.loop()->invoke(resolveAndRelease);
     return app.run();
 }
 

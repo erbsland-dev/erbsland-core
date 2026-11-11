@@ -41,7 +41,7 @@ void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
     for (const auto &keyDefinition : rule->keyDefinitions()) {
         try {
             NamePath firstListPath;
-            RulePtr firstListRule;
+            NamePathList entryValuePaths;
             if (!keyDefinition->name().empty()) {
                 if (seenIndexNames.contains(keyDefinition->name())) {
                     throwValidationError("All 'vr_key' definition in the same section must have an unique name"_el);
@@ -49,57 +49,53 @@ void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
                 seenIndexNames.insert(keyDefinition->name());
             }
             for (const auto &key : keyDefinition->keys()) {
-                const auto entryIndex = key.find(Name::vrName(Name::VR::ReservedEntry));
-                if (entryIndex == NamePath::npos) {
+                const auto valueRule = rule->descendantByValuePath(key);
+                if (valueRule == nullptr) {
+                    throwValidationError(
+                        StringFormat{"The key path '{}' does not point to a validated value"_el}.build(key.toText()));
+                }
+                RulePtr entryRule;
+                for (auto ancestor = valueRule; ancestor != rule; ancestor = ancestor->parent()) {
+                    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(ancestor != nullptr, "Key must remain within its scope"_el);
+                    if (ancestor->role() != RuleRole::ListEntry) {
+                        continue;
+                    }
+                    if (entryRule != nullptr) {
+                        throwValidationError(
+                            StringFormat{"The key '{}' points to a value in a nested section list"_el}.build(
+                                key.toText()));
+                    }
+                    entryRule = ancestor;
+                }
+                if (entryRule == nullptr) {
                     throwValidationError(
                         StringFormat{"Keys must point to values inside a section list. "
                                      "The 'vr_entry' is missing in the key path '{}'"_el}
                             .build(key.toText()));
                 }
-                const auto newListPath = key.subPath(0, entryIndex);
-                if (newListPath.empty()) {
-                    throwValidationError(
-                        StringFormat{"The key '{}' does not point to a section list. "
-                                     "No list named in from of the 'vr_entry'"_el}
-                            .build(key.toText()));
-                }
-                if (firstListPath.empty()) {
-                    firstListPath = newListPath;
-                    firstListRule = rule->child(firstListPath);
-                    if (firstListRule == nullptr || firstListRule->type() != vr::RuleType::SectionList) {
-                        throwValidationError(
-                            StringFormat{"The initial path '{}' in a key does not point to a section list"_el}.build(
-                                firstListPath.toText()));
-                    }
-                } else if (firstListPath != newListPath) {
-                    throwValidationError(
-                        StringFormat{
-                            "All keys in a `vr_key` definition must point to the same section list. "
-                            "The key '{}' points to a different list as previous keys in the same definition"_el}
-                            .build(key.toText()));
-                }
-                const auto valuePath = key.subPath(entryIndex + 1);
-                if (valuePath.empty()) {
-                    throwValidationError(
-                        StringFormat{"The key '{}' has no value path after 'vr_entry'"_el}.build(key.toText()));
-                }
-                if (valuePath.find(Name::vrName(Name::VR::ReservedEntry)) != NamePath::npos) {
-                    throwValidationError(
-                        StringFormat{"The key '{}' points to a value in a nested section list"_el}.build(key.toText()));
-                }
-                const auto entryRule = firstListRule->child(Name::vrName(Name::VR::ReservedEntry));
-                if (entryRule == nullptr || entryRule->type() != vr::RuleType::Section) {
+                const auto listRule = entryRule->parent();
+                if (listRule->type() != vr::RuleType::SectionList || entryRule->type() != vr::RuleType::Section) {
                     throwValidationError(
                         StringFormat{
                             "The 'vr_entry' in the key path '{}' does not point to a section in a section list"_el}
                             .build(key.toText()));
                 }
-                const auto valueRule = entryRule->child(valuePath);
-                if (valueRule == nullptr) {
+                const auto newListPath = listRule->valueNamePath().subPath(rule->valueNamePath().size());
+                if (firstListPath.empty()) {
+                    firstListPath = newListPath;
+                } else if (firstListPath != newListPath) {
                     throwValidationError(
-                        StringFormat{"The value path '{}' in the key '{}' does not point to a validated value"_el}
-                            .build(valuePath.toText(), key.toText()));
+                        StringFormat{
+                            "All keys in a 'vr_key' definition must point to the same section list. "
+                            "The key '{}' points to a different list as previous keys in the same definition"_el}
+                            .build(key.toText()));
                 }
+                const auto valuePath = valueRule->valueNamePath().subPath(entryRule->valueNamePath().size());
+                if (valuePath.empty()) {
+                    throwValidationError(
+                        StringFormat{"The key '{}' has no value path after 'vr_entry'"_el}.build(key.toText()));
+                }
+                entryValuePaths.push_back(valuePath);
                 if (valueRule->type() == vr::RuleType::Alternatives) {
                     bool hasIntegerOrText = false;
                     for (const auto &child : valueRule->childrenImpl()) {
@@ -120,6 +116,7 @@ void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
                             .build(valuePath.toText(), key.toText()));
                 }
             }
+            keyDefinition->setResolvedPaths(std::move(firstListPath), std::move(entryValuePaths));
         } catch (const ConfError &error) {
             throw error.withLocation(keyDefinition->location());
         }
@@ -224,7 +221,7 @@ auto RulesDefinitionValidator::resolveKeyDefinitionType(
     const RulePtr &rule, const KeyDefinitionPtr &keyDefinition, const std::size_t index) -> std::vector<vr::RuleType> {
 
     ERBSLAND_CORE_CONF_REQUIRE_DEBUG(index < keyDefinition->keys().size(), "Partial key index out of bounds"_el);
-    const auto targetRule = rule->child(keyDefinition->keys().at(index));
+    const auto targetRule = rule->descendantByValuePath(keyDefinition->keys().at(index));
     ERBSLAND_CORE_CONF_REQUIRE_DEBUG(targetRule != nullptr, "A given key definition does not exist"_el);
     std::vector<vr::RuleType> result;
     if (targetRule->type() == vr::RuleType::Alternatives) {
@@ -234,8 +231,8 @@ auto RulesDefinitionValidator::resolveKeyDefinitionType(
                     result.push_back(alternative->type());
                 }
             }
-            ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!result.empty(), "Unexpected alternative without matching types."_el);
         }
+        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!result.empty(), "Unexpected alternative without matching types."_el);
         return result;
     }
     ERBSLAND_CORE_CONF_REQUIRE_DEBUG(
@@ -282,29 +279,24 @@ void RulesDefinitionValidator::validateDependencyPath(const RulePtr &rule, const
     if (dependencyPath.containsIndex() || dependencyPath.containsText()) {
         throwValidationError("The dependency path cannot contain an index or text"_el);
     }
-    if (dependencyPath.find(Name::vrName(Name::VR::ReservedEntry)) != NamePath::npos) {
-        throwValidationError(
-            StringFormat{"The dependency path '{}' points to a value in a section list"_el}.build(
-                dependencyPath.toText()));
-    }
-    auto targetRule = rule->child(dependencyPath);
+    const auto targetRule = rule->descendantByValuePath(dependencyPath);
     if (targetRule == nullptr) {
         throwValidationError(
             StringFormat{"The dependency path '{}' does not point to a validated value"_el}.build(
                 dependencyPath.toText()));
     }
-    // Test all rules in the branch if they are optional
-    auto testedPath = dependencyPath;
-    auto testedRule = targetRule;
-    while (true) {
-        if (isRuleOptional(testedRule)) {
-            return; // ok
+    bool hasOptionalAncestor = false;
+    for (auto ancestor = targetRule; ancestor != rule; ancestor = ancestor->parent()) {
+        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(ancestor != nullptr, "Dependency must remain within its scope"_el);
+        if (ancestor->role() == RuleRole::ListEntry) {
+            throwValidationError(
+                StringFormat{"The dependency path '{}' points to a value in a section list"_el}.build(
+                    dependencyPath.toText()));
         }
-        if (testedPath.size() == 1) {
-            break;
-        }
-        testedPath = testedPath.parent();
-        testedRule = rule->child(testedPath);
+        hasOptionalAncestor = hasOptionalAncestor || isRuleOptional(ancestor);
+    }
+    if (hasOptionalAncestor) {
+        return;
     }
     throwValidationError(
         StringFormat{"The dependency path '{}' points to a value that is neither optional nor has a default value"_el}

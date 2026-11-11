@@ -6,7 +6,7 @@
 
 #include "../../../err/ParameterFailure.hpp"
 #include "../../../err/RuntimeError.hpp"
-#include "../../../event/Events.hpp"
+#include "../../../event/EventTarget.hpp"
 #include "../../../event/impl/EventContinuation.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../source/NetworkError.hpp"
@@ -21,7 +21,7 @@ using namespace text::literals;
 
 auto TcpConnection::send(const mem::ByteBlock &data) -> NetworkSendStatus {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != ConnectionState::Active) {
         return NetworkSendStatus::Closed;
     }
@@ -43,7 +43,7 @@ auto TcpConnection::send(const mem::ByteBlock &data) -> NetworkSendStatus {
 
 void TcpConnection::pauseReceiving() {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != ConnectionState::Active || _receivePaused) {
         return;
     }
@@ -53,7 +53,7 @@ void TcpConnection::pauseReceiving() {
 
 void TcpConnection::resumeReceiving() {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != ConnectionState::Active || !_receivePaused) {
         return;
     }
@@ -64,7 +64,7 @@ void TcpConnection::resumeReceiving() {
 
 void TcpConnection::close() {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     const auto current = _state.load();
     if (current == ConnectionState::Closed || current == ConnectionState::Failed ||
         current == ConnectionState::Closing) {
@@ -117,7 +117,7 @@ void TcpConnection::abort() noexcept {
 
 void TcpConnection::postConnected(const std::uint64_t generation, IpEndpoint localEndpoint, IpEndpoint remoteEndpoint) {
     const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
-    ownerEvents()->invoke(
+    ownerLoop()->invoke(
         [weakSelf,
             generation,
             localEndpoint = std::move(localEndpoint),
@@ -141,7 +141,7 @@ void TcpConnection::postData(const std::uint64_t generation, mem::ByteBlock data
 
 void TcpConnection::postSendCompleted(const std::uint64_t generation) {
     const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverSendCompleted(generation);
         }
@@ -150,7 +150,7 @@ void TcpConnection::postSendCompleted(const std::uint64_t generation) {
 
 void TcpConnection::postRemoteClosed(const std::uint64_t generation) {
     const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverRemoteClosed(generation);
         }
@@ -159,7 +159,7 @@ void TcpConnection::postRemoteClosed(const std::uint64_t generation) {
 
 void TcpConnection::postError(const std::uint64_t generation, NetworkErrorContext context) {
     const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation, context = std::move(context)]() mutable -> void {
+    ownerLoop()->invoke([weakSelf, generation, context = std::move(context)]() mutable -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverError(generation, std::move(context));
         }
@@ -265,7 +265,7 @@ void TcpConnection::notifyWritableIfReady() {
     _blockedCharge = {};
     const auto generation = _generation.load();
     const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock();
             self != nullptr && self->isCurrent(generation) && self->_state.load() == ConnectionState::Active) {
             const auto callback = self->_onWritable;
@@ -300,7 +300,7 @@ void TcpConnection::scheduleDataDelivery() {
     _receiveDeliveryPosted = true;
     const auto generation = _generation.load();
     const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverData(generation);
         }
@@ -344,7 +344,7 @@ void TcpConnection::finishFailed(NetworkErrorContext context) {
 
 void TcpConnection::postClosedAndFinal(const std::uint64_t generation, const ConnectionCloseContext context) {
     const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation, context]() -> void {
+    ownerLoop()->invoke([weakSelf, generation, context]() -> void {
         const auto self = weakSelf.lock();
         if (self == nullptr || !self->isCurrent(generation) || self->_finalPosted.exchange(true)) {
             return;
@@ -377,7 +377,7 @@ void TcpConnection::postClosedAndFinal(const std::uint64_t generation, const Con
 
 void TcpConnection::postErrorAndFinal(std::uint64_t generation, NetworkErrorContext context) {
     const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation, context = std::move(context)]() -> void {
+    ownerLoop()->invoke([weakSelf, generation, context = std::move(context)]() -> void {
         const auto self = weakSelf.lock();
         if (self == nullptr || !self->isCurrent(generation) || self->_finalPosted.exchange(true)) {
             return;

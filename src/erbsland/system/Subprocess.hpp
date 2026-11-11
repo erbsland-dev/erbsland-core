@@ -94,7 +94,7 @@ private:
     /// Prepare the internal workflow.
     explicit Subprocess(std::shared_ptr<impl::SubprocessState> state);
     /// Bind events and register backend polling.
-    void bindEvents(const event::EventsPtr &owner);
+    void bindEvents(const event::EventTargetPtr &owner);
 
 private:
     std::shared_ptr<impl::SubprocessState> _state;  ///< Synchronized process workflow.

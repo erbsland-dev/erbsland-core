@@ -94,7 +94,7 @@ The server file needs only the public verifier; a server compromise alone cannot
 .. erbsland-demo::
     :source: cryptology/TokenAuthentication/main.cpp
     :show: f:registerCommandLineOptions, f:handleCommandLineOptions
-    :sha256: b466ebfa8a35654ff92c558d0a04627c83a1f3208b930622ce54535f0eb7ec24
+    :sha256: 39255e544ce18bad0812fde26e483b9876d395552caa6f6d7a741524a122e0f0
 
 .. code-block:: cpp
 
@@ -111,7 +111,7 @@ The server file needs only the public verifier; a server compromise alone cannot
             auto pair = el::cryptology::AuthenticationTokenPair::generate(value);
             el::io::printLine("Server token: "_el, pair.server().toString());
             el::io::printLine("Client token: "_el, pair.client().toString());
-            events()->invoke([this]() -> void { quit(); });
+            loop()->invoke([this]() -> void { quit(); });
             return;
         }
         const auto document = el::conf::Parser{}.parseFileOrThrow(el::Path::fromNativeOrThrow(value));
@@ -120,16 +120,16 @@ The server file needs only the public verifier; a server compromise alone cannot
             const auto port = el::Port::fromStringOrThrow(document->getTextOrThrow("server.port"_el));
             const auto token = el::cryptology::ServerAuthenticationToken::fromStringOrThrow(
                 document->getTextOrThrow("server.token"_el));
-            _server = std::make_unique<Server>(events(), address, port, token);
-            events()->invoke([this]() -> void { _server->start(); });
+            _server = std::make_unique<Server>(loop(), address, port, token);
+            loop()->invoke([this]() -> void { _server->start(); });
         } else if (mode == "client"_el) {
             const auto host = el::Host::fromStringOrThrow(document->getTextOrThrow("client.host"_el));
             const auto port = el::Port::fromStringOrThrow(document->getTextOrThrow("client.port"_el));
             auto tokenText = document->getTextOrThrow("client.token"_el);
             tokenText.markAsSensitive();
             auto token = el::cryptology::ClientAuthenticationToken::fromStringOrThrow(tokenText);
-            _client = std::make_unique<Client>(events(), host, port, std::move(token));
-            events()->invoke([this]() -> void { _client->start(); });
+            _client = std::make_unique<Client>(loop(), host, port, std::move(token));
+            loop()->invoke([this]() -> void { _client->start(); });
         } else {
             throw el::ApplicationError{"Mode must be generate, server, or client."_el};
         }
@@ -214,7 +214,7 @@ need separate protection.
 .. erbsland-demo::
     :source: cryptology/TokenAuthentication/Server.hpp
     :show: f:onRecord
-    :sha256: 710e894128d234d15cdf62072fbd49b86bd7d792aace2075f62bd011123395c4
+    :sha256: 622ebcc6ec48a664987a205ac2898cc929319dc20f8d1377fd3ea56ffd4fbbe4
 
 .. code-block:: cpp
 
@@ -267,7 +267,7 @@ channel; an unauthenticated TCP peer can forge ``accepted`` or close the stream.
 .. erbsland-demo::
     :source: cryptology/TokenAuthentication/Client.hpp
     :show: f:sendHello, f:onRecord
-    :sha256: 6e93701fd21fec9d14094e60e5732ce4f1bce0ae41786e8df89928c4af3040c3
+    :sha256: a7d90dbcc6852d42c6e7c8c97222c72efb908051b625c29b2a7a56fa53070cdc
 
 .. code-block:: cpp
 

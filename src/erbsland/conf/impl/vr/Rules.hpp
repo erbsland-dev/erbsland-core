@@ -10,7 +10,8 @@
 
 namespace erbsland::conf::impl {
 
-/// A set of validation rules.
+/// A rule tree constructed by definition identity and finalized before document validation.
+/// @tested{VrRulePathsTest VrBuilderApiTest VrLiteralPathsTest}
 class Rules : public vr::Rules {
 public:
     /// Create an empty set of rules.
@@ -28,20 +29,19 @@ public: // implementation interface
     /// Add a rule to this set by attaching it to the correct parent.
     /// @param rule The rule to add.
     auto addRule(const RulePtr &rule) -> void;
-    /// Add an alternative.
-    /// Compared with `addRule`, if the last element in the name path does not exist, it will be created
-    /// as an alternative with the rule added as the first element.
-    /// Subsequent calls to `addAlternativeRule` will add the rule as an alternative to the last element
-    /// in the name path.
+    /// Attach a candidate to an alternatives container, creating the container if needed.
+    /// The container retains the original role and value path; the candidate gains an alternative index.
+    /// @param rule The unfinished candidate with its intended container paths and role.
+    /// @throws ConfError (Validation) if the parent is missing or an incompatible rule exists.
     auto addAlternativeRule(const RulePtr &rule) -> void;
     /// Get the root rule.
     [[nodiscard]] auto root() const -> RulePtr;
-    /// Get the rule at the given path.
-    /// @param path The name path of the rule to get.
-    /// @param maxDepth The maximum depth to search for the rule.
-    /// @return The rule at the given path, or nullptr if not found.
-    [[nodiscard]] auto ruleForNamePath(const NamePath &path, std::size_t maxDepth = 0) const -> RulePtr;
-    /// Validate this rules definition for correctness.
+    /// Follow a definition path from the root without decoding escapes.
+    /// @param path The absolute expanded definition path, including alternative indexes.
+    /// @param maxDepth Maximum components to follow; zero means the whole path.
+    /// @return The rule, or an empty pointer for an empty or unresolved path.
+    [[nodiscard]] auto ruleByDefinitionPath(const NamePath &path, std::size_t maxDepth = 0) const -> RulePtr;
+    /// Validate the complete tree and resolve key paths before exposing rules to document validation.
     /// @throws ConfError (Validation) for any invalid rule definition.
     void validateDefinition();
 

@@ -36,7 +36,7 @@ class BindEventTest final : public el::UnitTest {
         ThrowingCopy(ThrowingCopy &&) = default;
         void operator()() {}
     };
-    class ThrowingEvents final : public Events {
+    class ThrowingEventTarget final : public EventTarget {
     public:
         void post(Event) override { throw el::err::RuntimeError{"post"}; }
         void invoke(EventCallback) override { throw el::err::RuntimeError{"submit"}; }
@@ -77,7 +77,7 @@ public:
         auto values = std::vector<int>{};
         receiver->invoke([&]() -> void {
             callback = bindEvent([&](int value) -> void {
-                REQUIRE_EQUAL(currentEvents(), receiver);
+                REQUIRE_EQUAL(currentLoop(), receiver);
                 values.push_back(value);
             });
             method = bindEvent(recipient, &Recipient::add);
@@ -103,7 +103,7 @@ public:
         auto values = std::vector<int>(80, 0);
         const auto callback = bindEvent(loop, [&](int value) -> void {
             REQUIRE_EQUAL(std::this_thread::get_id(), receiverThread);
-            REQUIRE_EQUAL(currentEvents(), loop);
+            REQUIRE_EQUAL(currentLoop(), loop);
             ++values.at(static_cast<std::size_t>(value));
         });
         auto threads = std::vector<std::jthread>{};
@@ -257,12 +257,12 @@ public:
         const auto recipient = std::make_shared<Recipient>();
         auto nullFunction = static_cast<void (*)(int &)>(nullptr);
         auto nullMethod = static_cast<void (Recipient::*)(int)>(nullptr);
-        REQUIRE_THROWS_AS(el::err::ParameterFailure, bindEvent(EventsPtr{}, &increment));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, bindEvent(EventTargetPtr{}, &increment));
         REQUIRE_THROWS_AS(el::err::ParameterFailure, bindEvent(loop, nullFunction));
         REQUIRE_THROWS_AS(el::err::ParameterFailure, bindEvent(loop, std::function<void()>{}));
         REQUIRE_THROWS_AS(el::err::ParameterFailure, bindEvent(loop, std::shared_ptr<Recipient>{}, &Recipient::add));
         REQUIRE_THROWS_AS(el::err::ParameterFailure, bindEvent(loop, recipient, nullMethod));
-        REQUIRE_THROWS_AS(el::err::ParameterFailure, bindEvent(EventsPtr{}, recipient, &Recipient::add));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, bindEvent(EventTargetPtr{}, recipient, &Recipient::add));
         REQUIRE_THROWS_AS(el::err::LogicFailure, bindEvent(&increment));
         REQUIRE_THROWS_AS(el::err::LogicFailure, bindEvent(recipient, &Recipient::add));
         auto callback = bindEvent(loop, &increment);
@@ -286,7 +286,7 @@ public:
         const auto storage = bindEvent(loop, [](ThrowingCopy) -> void {});
         REQUIRE_THROWS_AS(el::err::RuntimeError, storage(throwing));
         REQUIRE_EQUAL(loop->queuedEventCount(), std::size_t{0});
-        const auto submission = bindEvent(std::make_shared<ThrowingEvents>(), []() -> void {});
+        const auto submission = bindEvent(std::make_shared<ThrowingEventTarget>(), []() -> void {});
         REQUIRE_THROWS_AS(el::err::RuntimeError, submission());
         const auto execution = bindEvent(loop, []() -> void { throw el::err::RuntimeError{"handler"}; });
         REQUIRE_NOTHROW(execution());

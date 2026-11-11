@@ -8,7 +8,7 @@
 
 #include "../../event/EventBackend.hpp"
 #include "../../event/EventBackendTarget_fwd.hpp"
-#include "../../event/Events_fwd.hpp"
+#include "../../event/EventTarget_fwd.hpp"
 #include "../../text/String.hpp"
 
 namespace erbsland::network::impl {
@@ -42,7 +42,7 @@ public: // implement Network
 
 private:
     /// Lock and return the events owner of this backend.
-    [[nodiscard]] auto ownerEvents() const -> event::EventsPtr;
+    [[nodiscard]] auto ownerLoop() const -> event::EventTargetPtr;
 
 private:
     HostResolverPtr _resolver;                ///< Native host resolver.

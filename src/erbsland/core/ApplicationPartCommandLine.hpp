@@ -22,7 +22,7 @@ public:
     virtual void registerCommandLineOptions(const options::OptionsPtr &options) = 0;
     /// Receive successfully parsed command-line values.
     /// @param values The parsed option values.
-    virtual void parseCommandLine(const options::OptionValuesPtr &values) = 0;
+    virtual void handleCommandLineOptions(const options::OptionValuesPtr &values) = 0;
 };
 
 }

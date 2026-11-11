@@ -69,7 +69,7 @@ public: // lifecycle
 
 protected:
     /// Create an abstract session owned by one event target.
-    explicit HttpClientSession(event::EventsPtr ownerEvents) : EventSource{std::move(ownerEvents)} {}
+    explicit HttpClientSession(event::EventTargetPtr ownerLoop) : EventSource{std::move(ownerLoop)} {}
 };
 
 }

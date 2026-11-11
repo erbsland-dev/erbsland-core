@@ -43,7 +43,7 @@ public:
     /// Create a facade over one inactive TCP connection.
     /// The optional start function is an internal deterministic-test injection point.
     TlsServerConnection(
-        event::EventsPtr ownerEvents, network::TcpConnectionPtr tcpConnection, StartProtocolFn startProtocol = {});
+        event::EventTargetPtr ownerLoop, network::TcpConnectionPtr tcpConnection, StartProtocolFn startProtocol = {});
     ~TlsServerConnection() override;
 
 public: // implement network::TlsServerConnection
@@ -82,7 +82,7 @@ private:
         try {
             _backgroundOperation.start(
                 request,
-                ownerEvents(),
+                ownerLoop(),
                 _handshakeDeadline,
                 [weakSelf, generation, complete](std::optional<Result> result, text::String diagnostic) -> void {
                     if (const auto self = weakSelf.lock(); self != nullptr) {

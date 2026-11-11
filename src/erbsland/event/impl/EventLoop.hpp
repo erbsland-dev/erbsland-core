@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "CurrentEventsScope.hpp"
+#include "CurrentLoopScope.hpp"
 #include "EventContinuation_fwd.hpp"
 #include "EventLoop_fwd.hpp"
 
@@ -11,6 +11,8 @@
 #include "../EventBackendTarget.hpp"
 #include "../EventLoop.hpp"
 #include "../EventLoopDriver.hpp"
+
+#include "../../util/StopSource.hpp"
 
 #include <condition_variable>
 #include <cstdint>
@@ -42,17 +44,25 @@ public:
     /// @param options Copied capacity and error policies. Policies must be valid.
     /// @param failureHandler Optional managed-application failure delivery. Must be set if a policy requires
     /// application delivery.
-    explicit EventLoop(const EventLoopOptions &options = {}, FailureHandler failureHandler = {});
+    /// @param threadStopSource Optional shared source for an owning event thread's cancellation token.
+    explicit EventLoop(
+        const EventLoopOptions &options = {},
+        FailureHandler failureHandler = {},
+        std::optional<util::StopSource> threadStopSource = std::nullopt);
     /// Create an event loop with a supplied driver.
     /// @param driver The non-null native wait and wake driver.
     /// @param options Copied capacity and error policies. Policies must be valid and supported by the failure handler.
     /// @param failureHandler Optional managed-application failure delivery.
+    /// @param threadStopSource Optional shared source for an owning event thread's cancellation token.
     explicit EventLoop(
-        EventLoopDriverPtr driver, const EventLoopOptions &options = {}, FailureHandler failureHandler = {});
+        EventLoopDriverPtr driver,
+        const EventLoopOptions &options = {},
+        FailureHandler failureHandler = {},
+        std::optional<util::StopSource> threadStopSource = std::nullopt);
     /// Stop the current or next run for application failure without preventing later shutdown dispatch.
     void stopForFailure() noexcept;
 
-public: // implement Events
+public: // implement EventTarget
     void post(Event event) override;
     void invoke(EventCallback callback) override;
     void invokeAfter(time::TimeDelta delay, EventCallback callback) override;
@@ -80,6 +90,8 @@ private:
     [[nodiscard]] auto getBackend(EventBackendId backendId) -> EventBackend & override;
 
 private:
+    /// Close admission, reserve quit dispatch, and signal thread cancellation while holding the mutex.
+    void requestQuitLocked() noexcept;
     /// Register `backend` and return its stable reference.
     auto registerBackendInternal(EventBackendPtr backend) -> EventBackend &;
     /// Create the fundamental backend identified by `backendId`.
@@ -91,7 +103,7 @@ private:
     /// Store and deliver an application failure, then quit this worker.
     void failApplication(std::exception_ptr error) noexcept;
     /// Enter dispatch and bind this loop to the calling thread.
-    [[nodiscard]] auto beginDispatch() -> CurrentEventsScope;
+    [[nodiscard]] auto beginDispatch() -> CurrentLoopScope;
     /// Finish dispatch and release the consumer identity.
     void finishDispatch() noexcept;
     /// Process events and backends once with an optional wait limit.
@@ -124,15 +136,16 @@ private:
     void waitForWake(time::TimeDelta waitTime);
 
 private:
-    EventLoopOptions _options;              ///< Installed options.
-    FailureHandler _failureHandler;         ///< Weak application failure delivery.
-    std::condition_variable _queueSpace;    ///< Producer wait notification.
-    std::thread::id _consumerThread;        ///< Active consumer identity.
-    std::size_t _stopGeneration{0};         ///< Detect stop even across a subsequent restart.
-    bool _failureStopRequested{false};      ///< Sticky stop for current or next run.
-    mutable std::mutex _mutex;              ///< Protects loop state.
-    EventLoopDriverPtr _driver;             ///< Native wait and wake driver.
-    std::deque<Event> _queue;               ///< Immediate event queue.
+    EventLoopOptions _options;                         ///< Installed options.
+    FailureHandler _failureHandler;                    ///< Weak application failure delivery.
+    std::optional<util::StopSource> _threadStopSource; ///< Cancellation state for a dedicated event thread, if any.
+    std::condition_variable _queueSpace;               ///< Producer wait notification.
+    std::thread::id _consumerThread;                   ///< Active consumer identity.
+    std::size_t _stopGeneration{0};                    ///< Detect stop even across a subsequent restart.
+    bool _failureStopRequested{false};                 ///< Sticky stop for current or next run.
+    mutable std::mutex _mutex;                         ///< Protects loop state.
+    EventLoopDriverPtr _driver;                        ///< Native wait and wake driver.
+    std::deque<Event> _queue;                          ///< Immediate event queue.
     std::deque<Event> _continuations;       ///< Separately admitted completions, bounded by reservation count.
     std::size_t _continuationCount{};       ///< Live reserved slots, including native work not yet complete.
     bool _preferContinuation{true};         ///< Fair alternation with ordinary queued work.

@@ -7,6 +7,23 @@ namespace erbsland::conf::syntax {
 using namespace unit;
 using namespace text;
 
+auto FormatStylePatch::setAbbreviations(StringList value) -> FormatStylePatch & {
+    auto style = FormatStyle{};
+    style.setAbbreviations(std::move(value));
+    _abbreviations = style.abbreviations();
+    return *this;
+}
+
+auto FormatStylePatch::setBooleanCase(WordCase value) noexcept -> FormatStylePatch & {
+    _booleanCase = value;
+    return *this;
+}
+
+auto FormatStylePatch::setBooleanForm(BooleanForm value) noexcept -> FormatStylePatch & {
+    _booleanForm = value;
+    return *this;
+}
+
 auto FormatStylePatch::setMaximumLineLength(CpCount value) noexcept -> FormatStylePatch & {
     _maximumLineLength = value;
     return *this;
@@ -137,7 +154,16 @@ auto FormatStylePatch::setIndentationCount(CpCount value) noexcept -> FormatStyl
     return *this;
 }
 
-void FormatStylePatch::applyTo(FormatStyle &style) const noexcept {
+void FormatStylePatch::applyTo(FormatStyle &style) const {
+    if (_abbreviations) {
+        style.setAbbreviations(*_abbreviations);
+    }
+    if (_booleanCase) {
+        style.setBooleanCase(*_booleanCase);
+    }
+    if (_booleanForm) {
+        style.setBooleanForm(*_booleanForm);
+    }
     if (_valueWrapping) {
         style.setValueWrapping(*_valueWrapping);
     }

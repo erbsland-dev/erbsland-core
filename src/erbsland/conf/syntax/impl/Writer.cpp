@@ -3,9 +3,16 @@
 #include "Writer.hpp"
 
 #include "../../../err/ParameterFailure.hpp"
+#include "../../../text/BooleanFormat.hpp"
+#include "../../../text/CharSet.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringJoins.hpp"
+#include "../../../text/StringList.hpp"
+#include "../../../text/StringSide.hpp"
+#include "../../../text/StringTransformations.hpp"
 #include "../../ConfError.hpp"
+
+#include <utility>
 
 namespace erbsland::conf::syntax::impl {
 
@@ -97,37 +104,77 @@ void Writer::pad(StringEditor &out, const PositionMode mode, const CpCount count
 }
 
 auto Writer::nameText(const String &text, const WordCase wordCase, const WordSeparator separator) const -> String {
-    auto result = StringEditor{};
-    // ASCII case changes and separator replacements preserve the UTF-8 byte length.
-    result.reserve(text.length());
-    auto first = true;
-    auto index = ByteIndex{};
-    while (index.isWithin(text.length())) {
-        auto ch = text.readCharAndAdvance(index);
-        if (ch == U' ' || ch == U'_') {
-            if (separator == WordSeparator::Space) {
-                result.append(Char{U' '});
-            } else {
-                result.append(Char{U'_'});
-            }
-            first = true;
-        } else {
-            if (wordCase == WordCase::Upper || (wordCase == WordCase::Title && first)) {
-                ch = ch.toAsciiUppercase();
-            } else if (wordCase != WordCase::Keep) {
-                ch = ch.toAsciiLowercase();
-            }
-            result.append(ch);
-            if (ch != U'@') {
-                first = false;
-            }
-        }
+    auto prefix = String{};
+    auto name = text;
+    if (name.startsWith("@"_el)) {
+        prefix = "@"_el;
+        name = name.slice(StringSide::Back, ByteIndex{1});
     }
-    return result;
+    auto words = StringList::fromSplit(name, CharSet{U' ', U'_'});
+    words.map([this, wordCase](const String &word) -> String {
+        if (wordCase == WordCase::Title) {
+            const auto upper = toAsciiUppercase(word);
+            if (_style.abbreviations().contains(upper)) {
+                return upper;
+            }
+            return toAsciiCapitalized(word);
+        } else if (wordCase == WordCase::Upper) {
+            return toAsciiUppercase(word);
+        } else if (wordCase == WordCase::Lower) {
+            return toAsciiLowercase(word);
+        }
+        return word;
+    });
+    if (separator == WordSeparator::Space) {
+        return text::join(prefix, words.join(" "_el));
+    }
+    return text::join(prefix, words.join("_"_el));
+}
+
+auto Writer::booleanText(const String &source) const -> String {
+    const auto lower = toAsciiLowercase(source);
+    auto original = BooleanForm::TrueFalse;
+    if (lower == "yes"_el || lower == "no"_el) {
+        original = BooleanForm::YesNo;
+    } else if (lower == "on"_el || lower == "off"_el) {
+        original = BooleanForm::OnOff;
+    } else if (lower == "enabled"_el || lower == "disabled"_el) {
+        original = BooleanForm::EnabledDisabled;
+    }
+    auto form = _style.booleanForm();
+    if (form == BooleanForm::Keep) {
+        form = original;
+    }
+    if (_style.booleanCase() == WordCase::Keep && form == original) {
+        return source;
+    }
+    const auto value = lower == "true"_el || lower == "yes"_el || lower == "on"_el || lower == "enabled"_el;
+    auto format = BooleanFormat{};
+    switch (form) {
+    case BooleanForm::YesNo:
+        format.setStyle(BooleanFormat::Style::YesNo);
+        break;
+    case BooleanForm::OnOff:
+        format.setStyle(BooleanFormat::Style::OnOff);
+        break;
+    case BooleanForm::EnabledDisabled:
+        format.setStyle(BooleanFormat::Style::EnabledDisabled);
+        break;
+    default:
+        break;
+    }
+    if (_style.booleanCase() == WordCase::Title) {
+        format.setCapitalization(Capitalization::Capitalized);
+    } else if (_style.booleanCase() == WordCase::Upper) {
+        format.setCapitalization(Capitalization::Uppercase);
+    }
+    return String{format.text(value)};
 }
 
 auto Writer::tokenText(const Token &token) const -> String {
     switch (token.kind().raw()) {
+    case TokenKind::Boolean:
+        return booleanText(token.text());
     case TokenKind::SectionName:
         return nameText(token.text(), _style.sectionNameCase(), _style.sectionNameSeparator());
     case TokenKind::RegularName:

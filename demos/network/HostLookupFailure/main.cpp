@@ -28,7 +28,7 @@ struct LookupData {
 /// Resolver failures arrive through `onError()` as a structured context.
 /// Throwing `NetworkError` transfers that context to the application's standard diagnostic boundary.
 void resolveMissingHost() {
-    const auto events = el::application().events();
+    const auto events = el::application().loop();
     lookupData.lookup = events->get<el::Network>().createHostLookup();
     lookupData.lookup->events().onError(
         [](const el::NetworkErrorContext &context) -> void { throw el::NetworkError{context}; });
@@ -38,7 +38,7 @@ void resolveMissingHost() {
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
     demo::DemoTerminal::enable(app);
-    app.events()->invoke(resolveMissingHost);
+    app.loop()->invoke(resolveMissingHost);
     return app.run();
 }
 

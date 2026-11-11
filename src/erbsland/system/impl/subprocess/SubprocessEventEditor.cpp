@@ -5,7 +5,7 @@
 #include "SubprocessState.hpp"
 
 #include "../../../err/LogicFailure.hpp"
-#include "../../../event/CurrentEvents.hpp"
+#include "../../../event/CurrentLoop.hpp"
 #include "../../../text/Literals.hpp"
 
 namespace erbsland::system::impl {
@@ -13,7 +13,7 @@ namespace erbsland::system::impl {
 using namespace text::literals;
 
 SubprocessEventEditor::SubprocessEventEditor(
-    event::EventSourcePtr source, event::EventsPtr target, std::shared_ptr<SubprocessState> state) :
+    event::EventSourcePtr source, event::EventTargetPtr target, std::shared_ptr<SubprocessState> state) :
     system::SubprocessEventEditor{std::move(source), std::move(target)}, _state{std::move(state)} {
 }
 
@@ -60,7 +60,7 @@ auto SubprocessEventEditor::onStandardError(OutputFn callback) -> system::Subpro
 }
 
 void SubprocessEventEditor::verifyOwner() const {
-    if (event::currentEvents() != target()) {
+    if (event::currentLoop() != target()) {
         throw err::LogicFailure{"Subprocess handlers must be edited on their owner loop."_el};
     }
 }

@@ -5,7 +5,8 @@
 #include "ApplicationPartIdentifier.hpp"
 
 #include "../../err/LogicFailure.hpp"
-#include "../../event/Events.hpp"
+#include "../../event/EventTarget.hpp"
+#include "../../event/impl/CurrentLoopScope.hpp"
 #include "../../event/UnmanagedEventThread.hpp"
 #include "../../text/Literals.hpp"
 
@@ -18,19 +19,21 @@ namespace erbsland::core::impl {
 using namespace err;
 using namespace text::literals;
 
-auto ApplicationPartManager::create(event::EventsPtr controlEvents) -> std::shared_ptr<ApplicationPartManager> {
+auto ApplicationPartManager::create(event::EventTargetPtr controlEvents) -> std::shared_ptr<ApplicationPartManager> {
     auto result = std::shared_ptr<ApplicationPartManager>{
         new ApplicationPartManager{std::move(controlEvents)}, &ApplicationPartManager::destroy};
     result->initializeControlThread();
     return result;
 }
 
-ApplicationPartManager::ApplicationPartManager(event::EventsPtr controlEvents) :
+ApplicationPartManager::ApplicationPartManager(event::EventTargetPtr controlEvents) :
     _managerToken{[]() -> uint64_t {
         static auto nextToken = std::atomic<uint64_t>{1};
         return nextToken.fetch_add(1);
-    }()},
-    _controlEvents{std::move(controlEvents)} {
+    }()} {
+    if (controlEvents != nullptr) {
+        bindOwnerLoop(std::move(controlEvents));
+    }
 }
 
 ApplicationPartManager::~ApplicationPartManager() noexcept {
@@ -51,11 +54,11 @@ ApplicationPartManager::~ApplicationPartManager() noexcept {
 }
 
 void ApplicationPartManager::initializeControlThread() {
-    if (_controlEvents != nullptr) {
+    if (ownerLoop() != nullptr) {
         return;
     }
     _ownedControlThread = event::UnmanagedEventThread::create();
-    _controlEvents = _ownedControlThread->events();
+    bindOwnerLoop(_ownedControlThread->loop());
     _ownedControlThread->start();
 }
 
@@ -78,7 +81,8 @@ void ApplicationPartManager::destroy(ApplicationPartManager *manager) noexcept {
 auto ApplicationPartManager::isCurrentThreadOwned() const noexcept -> bool {
     const auto lock = std::scoped_lock{_mutex};
     const auto currentThread = std::this_thread::get_id();
-    if (_ownedControlThread != nullptr && currentThread == _controlThreadId) {
+    if (_ownedControlThread != nullptr &&
+        (currentThread == _controlThreadId || event::impl::currentLoopWeakPtr().lock() == ownerLoop())) {
         return true;
     }
     for (const auto &record : _records) {
@@ -175,6 +179,14 @@ auto ApplicationPartManager::events() noexcept -> core::ApplicationPartManagerEv
     return *this;
 }
 
+auto ApplicationPartManager::source() const -> event::EventSourcePtr {
+    return std::const_pointer_cast<event::EventSource>(shared_from_this());
+}
+
+auto ApplicationPartManager::target() const noexcept -> event::EventTargetPtr {
+    return ownerLoop();
+}
+
 auto ApplicationPartManager::addStateChanged(ApplicationPartManagerStateChangedFn callback)
     -> event::EventSubscription {
     return _stateChangedCallbacks.add(std::move(callback));
@@ -199,8 +211,12 @@ auto ApplicationPartManager::takeError() noexcept -> std::exception_ptr {
     return result;
 }
 
+auto ApplicationPartManager::weakManager() -> std::weak_ptr<ApplicationPartManager> {
+    return std::static_pointer_cast<ApplicationPartManager>(shared_from_this());
+}
+
 void ApplicationPartManager::invokeControl(std::function<void()> callback) {
-    _controlEvents->invoke([weak = weak_from_this(), callback = std::move(callback)]() -> void {
+    ownerLoop()->invoke([weak = weakManager(), callback = std::move(callback)]() -> void {
         if (const auto self = weak.lock(); self != nullptr) {
             self->recordControlThread();
             callback();
@@ -215,7 +231,7 @@ void ApplicationPartManager::recordControlThread() noexcept {
 
 auto ApplicationPartManager::isWaitForbiddenLocked() const noexcept -> bool {
     const auto current = std::this_thread::get_id();
-    if (current == _controlThreadId) {
+    if (current == _controlThreadId || event::impl::currentLoopWeakPtr().lock() == ownerLoop()) {
         return true;
     }
     for (const auto &record : _records) {

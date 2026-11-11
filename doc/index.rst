@@ -51,6 +51,12 @@ Choose Your Starting Point
 
         Learn the concepts and patterns behind individual library areas.
 
+    .. grid-item-card:: :fas:`laptop-code;sd-text-success` Demo Applications Explained
+        :link: demo_apps/index
+        :link-type: doc
+
+        Follow complete applications through their execution contexts, ownership, data flow, and completion.
+
     .. grid-item-card:: :fas:`code;sd-text-success` API Reference
         :link: reference/index
         :link-type: doc
@@ -121,6 +127,7 @@ All Documentation
     get-started/index
     usage/index
     topics/index
+    demo_apps/index
     reference/index
     addendum/background
     addendum/roadmap

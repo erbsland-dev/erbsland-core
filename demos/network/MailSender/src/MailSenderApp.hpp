@@ -15,7 +15,7 @@
 #include <erbsland/ByteBlock.hpp>
 #include <erbsland/ConnectionCloseContext.hpp>
 #include <erbsland/CryptologyConfiguration.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/ExitCode.hpp>
 #include <erbsland/Network.hpp>
 #include <erbsland/NetworkErrorContext.hpp>
@@ -62,7 +62,7 @@ protected: // implement el::Application
         _settings = SenderSettings::load(configuration);
         _messageData = _settings.mail.wireData(); // Validate all mail input before opening a socket.
         cryptologyConfiguration().replaceTlsConfigurations(configuration.tlsProfiles());
-        events()->invoke([this]() -> void { connectToServer(); });
+        loop()->invoke([this]() -> void { connectToServer(); });
     }
     void cleanup() noexcept override {
         if (_connection) {
@@ -73,7 +73,7 @@ protected: // implement el::Application
 private:
     /// Select a trust profile and start one outgoing connection.
     void connectToServer() {
-        _connection = events()->get<el::Network>().createTlsClientConnection();
+        _connection = loop()->get<el::Network>().createTlsClientConnection();
         installHandlers();
         auto options = el::TlsClientConnectOptions{};
         options.setConfigurationLabel(_settings.tlsProfile);

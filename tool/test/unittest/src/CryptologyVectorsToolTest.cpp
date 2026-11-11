@@ -93,8 +93,8 @@ public:
         auto endpoint = std::promise<el::IpEndpoint>{};
         auto ready = endpoint.get_future();
         auto requests = std::atomic<int>{0};
-        thread->events()->invoke([&] {
-            server = thread->events()->get<el::Network>().createHttpServer();
+        thread->loop()->invoke([&] {
+            server = thread->loop()->get<el::Network>().createHttpServer();
             server->events().onListening([&] { endpoint.set_value(*server->localEndpoint()); });
             server->events().onRequest(
                 el::HttpMethod{el::HttpMethodType::Get},
@@ -131,10 +131,10 @@ public:
         prepare(url.toString());
         REQUIRE_EQUAL(run(el::StringList{"--check"_el}), 0);
         REQUIRE_EQUAL(requests.load(), 4);
-        thread->events()->invoke([&] { server->abort(); });
+        thread->loop()->invoke([&] { server->abort(); });
         thread->quit();
         thread->join();
-        REQUIRE_FALSE(thread->eventLoop().hasError());
+        REQUIRE_FALSE(thread->workerEventLoop().hasError());
     }
 
 private:

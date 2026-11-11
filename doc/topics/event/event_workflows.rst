@@ -3,67 +3,161 @@
     SPDX-License-Identifier: Apache-2.0
 
 .. index::
-    single: Events; Workflows
-    single: Callbacks; Operation State
+    single: Events; Application State
+    single: Events; Procedural and Event-Driven Design
+    single: Callbacks; State Transitions
     single: Events; Workflow Completion
 
-***********************************
-Building Workflows Across Callbacks
-***********************************
+************************************************
+Designing Event-Driven Applications Around State
+************************************************
 
-A useful operation often needs several asynchronous steps, with each result deciding what happens next.
-A callback receives one result; a workflow connects those results to the task the caller wants completed.
-You need somewhere to keep progress between callbacks, decide which step may follow, and report the final outcome.
+In procedural code, you can often follow an operation from beginning to end by reading one function.
+In an event-driven application, that operation may span several callbacks, with other work happening between them.
+How do you keep its progress understandable when no single function stays in control?
 
-The ``ChecksumPacker`` demo shows this with a practical task: create a ZIP archive of a directory and include a
-``checksum.txt`` manifest containing the files' checksums.
-Scanning and packing run on worker threads, while callbacks on the main loop coordinate the operation.
-This page focuses on operation state and dependencies, building on the bound continuations introduced in
-:doc:`event_bindings`.
+Organize the operation around persistent state and let events drive changes to that state.
+This page explains how that design differs from a procedural sequence, where to keep the state, and how callbacks use it
+to decide what happens next.
+The same principle applies to a whole application component or to one task within it.
 
-From Individual Steps to One Operation
-======================================
+From Sequential Execution to Event Handling
+===========================================
 
-Creating a package has a dependency: packing needs the file list and checksums produced by scanning.
-A successful scan makes packing possible, but the caller's task is complete only when the archive has been written.
-If either step fails, the workflow must report failure instead of leaving the caller waiting for success.
+A synchronous function can start an operation, wait for its result, and use that result in its next statement.
+Its local variables retain the data, and its position in the call sequence tells you how far it has progressed.
+The caller resumes when the function returns a result or throws an exception.
+While it waits, that thread cannot return to an event loop to handle other work.
 
-The demo creates one ``Workflow`` object for each source directory.
-That object owns the scanner, packer, current state, and a completion callback supplied by the application.
-It survives the individual callbacks, giving all steps a shared context.
-Its states describe progress toward one archive:
+An event-driven operation separates starting work from reacting to its outcome.
+A callback starts an asynchronous step and returns to the loop.
+Later, a result notification makes another callback ready, and the loop dispatches it.
+Between those callbacks, the loop can handle input, timers, and other operations.
+There is no suspended call to the first callback that automatically resumes at its next statement.
+The later callback must find the data and progress it needs in state that survived the first callback's return.
+
+.. list-table::
+    :header-rows: 1
+    :widths: 25 37 38
+
+    * - Design question
+      - Synchronous sequence
+      - Event-driven operation
+    * - What determines the next action?
+      - The next statement after a call finishes.
+      - An incoming event interpreted against current state.
+    * - Where does progress survive?
+      - Local variables and active calls can hold it.
+      - An owner retains it between callbacks.
+    * - What happens while work is pending?
+      - The calling thread waits for the call to finish.
+      - The initiating callback returns and the loop dispatches other work.
+    * - How does the caller receive the outcome?
+      - Through a return value or an exception from the call.
+      - Through a later completion notification.
+
+The code inside an individual callback is still ordinary sequential C++.
+What changes is how you connect steps whose results are not available yet.
+Waiting for such a result inside a callback prevents its loop from dispatching other callbacks, including a result
+handler that needs that same loop.
+
+Keeping State Between Events
+============================
+
+Start with the information that must remain meaningful after a callback returns.
+An operation may need its input, partial results, the step currently in progress, and the destination for its final
+outcome.
+A longer-lived component may also retain a current selection or a collection of active operations.
+Keep related information together in an object whose lifetime covers the events that use it.
+
+This object gives the operation a central place for decisions.
+Callbacks receive new information and consult that shared context instead of each maintaining a separate view of
+progress.
+A phase such as pending, processing, or finished can make valid transitions explicit, but state includes the data as
+well as the phase.
+A small operation may need only a pending flag and a result; a larger one may benefit from named states.
+Neither requires a general state-machine framework.
+
+Centralizing related state does not mean putting all application data in one global object.
+Each component or independent operation can have its own owner.
+Several operations can be pending on the same loop, with each callback updating the state of the operation it belongs
+to.
+The event loop schedules those callbacks; your application defines what their events mean.
+
+.. erbsland-in-practice-begin:: Keeping One Archive Operation Together
+
+The :doc:`checksum packer </demo_apps/event/checksum_packer>` uses one ``Workflow`` object per archive.
+Its persistent members hold the completion callback, progress, and the components that perform its two steps:
+
+.. erbsland-demo::
+    :source: event/apps/ChecksumPacker/src/Workflow.hpp
+    :show: c:readonly setup data(+0,+7)
+    :sha256: 94d0d144d623a8fe4edc360ce3af647ed7e17242cad742afdd2359529f4afa05
+
+.. code-block:: cpp
+
+    // readonly setup data:
+    const el::LogStreamPtr _logStream; ///< The log stream to write output to during the operation.
+    const OnDone _onDone;              ///< Callback for when the workflow is done.
+    // owned by this working set and its events:
+    State _state; ///< The state of the working set.
+    // the workflow components
+    Scanner _scanner; ///< The scanner logic.
+    Packer _packer;   ///< The packer logic.
+
+.. erbsland-demo-end::
+
+The application retains each workflow through a shared pointer until cleanup, and the workflow derives from
+``std::enable_shared_from_this<Workflow>``.
+Its bound result callbacks also retain it while they need it.
+``State`` records the phase: ``Initialized``, ``Scanning``, ``Packing``, ``Done``, or ``Failed``.
+The scanner and packer perform individual steps; the workflow decides how those steps contribute to one completed
+archive.
+
+.. erbsland-in-practice-end::
+
+Making Decisions from Events and Current State
+==============================================
+
+An event tells you that something happened.
+The current state tells you what that event means for the operation now.
+A completion can make the next step possible while an operation is pending, yet be irrelevant after that operation has
+been cancelled or replaced.
+The event's data alone cannot make that decision.
+
+A handler therefore starts by establishing which operation the event belongs to and whether that operation expects it.
+It incorporates the new information, records the resulting state, and initiates any work that follows.
+Then it returns to dispatch.
+Recording the new state before starting the next asynchronous step makes the operation ready to interpret that step's
+notifications.
 
 .. mermaid::
 
     flowchart TD
-        Initialized["Initialized"] -->|Start| Scanning["Scanning"]
-        Scanning -->|File list and checksums ready| Packing["Packing"]
-        Packing -->|Archive finished| Done["Done"]
-        Scanning -->|Scan error| Failed["Failed"]
-        Packing -->|Packing error| Failed
+        event["An event becomes ready"] --> dispatch["Loop dispatches its handler"]
+        state["Persistent operation state"] --> decision["Interpret event using current state"]
+        dispatch --> decision
+        decision --> update["Update data and progress"]
+        update --> action["Start next work or report an outcome, if needed"]
+        action --> return["Return to the event loop"]
+        update -.->|"Retained for later events"| state
 
-``Scanning`` and ``Packing`` mean that the operation is still in progress.
-``Done`` and ``Failed`` are its two terminal outcomes.
-The application retains its workflows until cleanup, and queued callbacks also capture a shared pointer to their
-workflow so it stays alive while they use it.
+This is more than splitting a long function into smaller functions.
+The connections are expressed by state and events rather than by one uninterrupted sequence of calls.
+Some events advance the operation, some only update its data, and others leave it unchanged.
+An impossible transition can indicate a programming error; an obsolete notification can be an expected consequence of
+cancellation.
+Choose that reaction according to the operation's rules.
 
-This state belongs to the whole operation.
-The scanner knows how to produce a file list; the workflow knows that a successful file list should lead to packing.
-Keeping that decision in the workflow lets each worker concentrate on its own step.
-In your own application, the equivalent object might coordinate downloading and importing a document, or loading and
-transforming an image.
+.. erbsland-in-practice-begin:: Letting a Scan Result Decide the Next Step
 
-Advancing the Workflow from a Result
-====================================
-
-The first transition happens in ``Workflow::start()``, which the application queues on the main loop.
-It sets the state to ``Scanning`` before asking the scanner to begin.
-It also supplies the callback that will carry the result back to this workflow:
+The checksum workflow's ``start()`` runs on the main loop.
+It records that scanning is pending before launching the scan:
 
 .. erbsland-demo::
-    :source: event/ChecksumPacker/src/Workflow.hpp
+    :source: event/apps/ChecksumPacker/src/Workflow.hpp
     :show: f:start(-2,-1)
-    :sha256: 4f4dff8ced409ce699842c6e3f993aefc6e526e9c46df2c017823298a30b3b6e
+    :sha256: 57e8cc5422c44f60d344cbe08fb25c33c7ca2e3bfa1a53dcb9eaba4a1cf2012f
 
 .. code-block:: cpp
 
@@ -72,15 +166,15 @@ It also supplies the callback that will carry the result back to this workflow:
 
 .. erbsland-demo-end::
 
-The binding captures the current main-loop target and retains this workflow.
-``scan()`` starts a worker thread and returns; the workflow remains in ``Scanning`` while main dispatches other work.
-When scanning finishes, the worker calls its ordinary completion function with the file list and an optional error.
-That bound function queues ``onScanned()`` on main, where the result determines the next state:
+``scan()`` starts background work and returns.
+The binding arranges for the eventual result to reach ``onScanned()`` on this same loop, retaining the workflow through
+``shared_from_this()``.
+The later handler makes the next decision:
 
 .. erbsland-demo::
-    :source: event/ChecksumPacker/src/Workflow.hpp
+    :source: event/apps/ChecksumPacker/src/Workflow.hpp
     :show: f:onScanned
-    :sha256: 3c4a30523405b38f05d5efe6d65f5373196cded92e27fac5aa445efde1467d94
+    :sha256: 1dd72c0c118cdb89d63ba18308eb080d3c214696fa0c941afcda5a671f799755
 
 .. code-block:: cpp
 
@@ -97,122 +191,75 @@ That bound function queues ``onScanned()`` on main, where the result determines 
 
 .. erbsland-demo-end::
 
-A failed scan ends the workflow and reports the error through ``_onDone``.
-A successful scan changes the state to ``Packing`` and passes the file list to the packer.
-The callback supplied to ``pack()`` arranges for ``onPacked()`` to receive the next result on the main loop.
-The method then returns while packing continues.
+``requireAndSet()`` checks that the workflow is still ``Scanning`` before changing its phase.
+An error leads to ``Failed`` and completion notification; a file list leads to ``Packing`` and another asynchronous
+step.
+The method then returns, leaving the new phase in the persistent workflow.
+Here ``shutdown()`` joins the scanner after it has reported its result, before the workflow advances.
+The worker and archive implementation are covered in the application's walkthrough.
 
-``requireAndSet()`` expresses which transition is valid: this callback must arrive while the workflow is ``Scanning``.
-It makes an unexpected transition a detectable programming error.
-You do not need a general workflow engine to connect these steps; named continuation methods and explicit state make the
-sequence visible in ordinary application code.
+.. erbsland-in-practice-end::
 
-Returning Decisions to the Owner Loop
-=====================================
+Keeping State on Its Owner Loop
+===============================
 
-The scan call has two distinct boundaries: starting a worker and returning its result to the main loop.
-``Scanner::scan()`` itself runs on main; it starts a thread that executes ``scanInThread()``.
-When the work finishes, ``scanInThread()`` calls the completion function passed to ``scan()``, named ``onDone`` inside
-the scanner.
-That function is the event binding supplied by the workflow.
-Calling it on the worker queues its continuation on main.
+Give each mutable component or operation state one owner loop.
+Perform its reads, decisions, and updates inside callbacks dispatched by that loop.
+Because the loop executes one callback at a time, those callbacks do not access the state concurrently.
+You can reason about each handler using the state left by earlier handlers without placing a mutex around every member.
+This guarantee depends on all access following the ownership rule.
+A shared pointer keeps an object alive but does not make access from another thread safe.
 
-.. mermaid::
+Background work can use independent input and produce a result without touching the owner's mutable state.
+Send that result back to the owner loop, where a callback decides what it means for the operation.
+An ordinary call to an object's method does not move execution to its owner loop.
+Queue it through :cpp:func:`invoke() <erbsland::event::EventTarget::invoke>` or supply a callback bound to that loop
+with :cpp:func:`bindEvent() <erbsland::event::bindEvent>`.
+:doc:`communicating_between_loops` explains how these messages carry parameters and results.
 
-    sequenceDiagram
-        participant M as Main loop / Workflow
-        participant S as Scanner (called on main)
-        participant W as Scan worker
-        M->>M: start(): Initialized to Scanning
-        M->>S: scan(onDone)
-        S->>W: Start thread: scanInThread(onDone)
-        S-->>M: scan() returns
-        Note over M: start() returns to dispatch
-        Note over W: Build file list and checksums
-        W->>W: onDone(fileList, error)
-        W-->>M: Bound continuation: queue onScanned()
-        Note over M: Later, dispatch the queued callback
-        M->>M: onScanned(fileList, error)
-        Note over M: Advance to Packing or finish as Failed
+Keep the owner's handlers short enough to let the loop process other events.
+Moving lengthy work to another thread lets the owner remain responsive, but the worker must still have a safe way to
+receive input and report completion.
+:doc:`processing_work_on_event_threads` explains how to create and manage such workers.
 
-The scanner's completion callback reports that one step has finished.
-The queued ``onScanned()`` continuation decides what that means for the whole operation.
-An ordinary callback has no automatic main-loop affinity.
-The binding establishes that return boundary when the workflow registers it.
+Serialized access prevents simultaneous updates; it does not make every later event relevant.
+While background work runs, another callback may replace the input or cancel the operation.
+A result handler must therefore use the state at delivery time, not assume that the state at submission time still
+applies.
+An operation identifier and a pending state can distinguish a current result from one that should be discarded.
 
-Packing uses the same pattern: ``onScanned()`` starts the packer, the pack worker reports its result, and a queued
-callback enters ``onPacked()`` on main.
-All workflow state changes therefore happen on one loop, even though the individual steps run elsewhere.
-:doc:`communicating_between_loops` develops the request and reply mechanics in more detail.
+Representing Completion and Failure
+===================================
 
-Ownership Across the Steps
-==========================
+Returning from a callback means that this reaction has finished.
+It says nothing by itself about whether the whole operation has finished.
+The operation's state must express that distinction: a step can finish while the operation still needs another step.
+Only the owner has enough context to decide that the requested task has succeeded or can no longer continue.
 
-The demo needs no application mutex around its workflow state or file list because different threads do not modify those
-objects at the same time.
-The main loop alone changes ``_state``.
-The scan worker builds its own list, supplies a result value to its callback, and that value moves into the queued
-continuation.
-After receiving it, the main loop passes it onward to the packing worker.
+Give the operation explicit terminal outcomes and notify its caller when it reaches one.
+Record the outcome before sending the notification so that later observers see a completed operation.
+A worker error needs a transition just as a successful result does; otherwise the state can remain pending forever.
+An exception from a later callback does not unwind the earlier call that started the work.
+Choose how the operation reports failure and how that interacts with application-wide error handling, as described in
+:doc:`handling_event_errors`.
 
-.. list-table::
-    :header-rows: 1
-    :widths: 45 55
+Once an operation has finished, later progress notifications must not reopen it or report a second completion.
+For replaceable or cancellable work, check both the operation's identity and whether it is still pending before
+accepting a result.
+Stopping the producer can save work, but a notification already queued may still arrive.
 
-    * - Data
-      - Where it is used
-    * - Workflow progress and next-step decisions
-      - Main-loop callbacks only.
-    * - File list being assembled
-      - Scan worker only.
-    * - Result waiting for dispatch
-      - Owned by the queued callback.
-    * - File list used to create the archive
-      - Pack worker, after the handoff from main.
+.. erbsland-in-practice-begin:: Completing the Archive Rather Than Just One Step
 
-The strong member binding keeps the workflow alive; it does not make its members thread-safe.
-The ownership and execution rules are what make access safe.
-The worker shutdown signal is explicitly atomic, and the event queue handles synchronization for delivering callbacks.
-Before advancing past a worker's result, the workflow joins that worker through ``shutdown()``.
-Application cleanup also stops and joins workers before releasing the workflows.
-See :doc:`shutting_down_event_work` for the broader shutdown design.
+A successful scan leaves the checksum workflow in ``Packing``.
+Only a successful pack changes it to ``Done``; an error from either step changes it to ``Failed``.
+Both terminal paths invoke ``_onDone`` after recording the state.
+The application can then decide whether its other archive operations are complete or whether a failure should end the
+application.
+That application-wide decision is separate from the state of one workflow.
 
-Defining Completion for the Caller
-==================================
+.. erbsland-in-practice-end::
 
-Each step has a result, but only the workflow knows whether that result completes the caller's task.
-A successful scan continues to packing; a successful pack completes the archive.
-Either worker's reported error ends this workflow with failure.
-The common completion callback, ``_onDone``, carries ``nullptr`` for success or an exception pointer for failure.
-
-The final continuation records the outcome before notifying the application:
-
-.. erbsland-demo::
-    :source: event/ChecksumPacker/src/Workflow.hpp
-    :show: f:onPacked
-    :sha256: 060392aebce7cee11bbecef3d09999d36cfaf56f1ebea4e42af9b8379a98923e
-
-.. code-block:: cpp
-
-    void onPacked(std::exception_ptr error) {
-        _packer.shutdown();
-        if (error != nullptr) {
-            _state.requireAndSet(State::Packing, State::Failed);
-        } else {
-            _state.requireAndSet(State::Packing, State::Done);
-        }
-        _onDone(std::move(error));
-    }
-
-.. erbsland-demo-end::
-
-The caller therefore observes a workflow that has already reached its terminal state.
-Both failure paths and the success path provide an explicit end to the operation.
-When you compose your own steps, give each result this same decision: continue with a valid next step, or finish with an
-outcome the caller can handle.
-
-The application may have several independent directory workflows in progress.
-It quits successfully when all have reached ``Done``; a reported error is rethrown on main so the application's error
-handling can report failure and begin cleanup.
-That application-wide policy is separate from the sequence needed to create one archive.
-:doc:`handling_event_errors` explains error reporting beyond the individual workflow.
+Completion also needs an ownership plan: keep the state alive while required callbacks use it, and release worker
+resources only after the workers have stopped accessing them.
+:doc:`callback_lifetimes` covers callback recipients, and :doc:`shutting_down_event_work` explains how to finish or
+cancel outstanding work before ending dispatch.

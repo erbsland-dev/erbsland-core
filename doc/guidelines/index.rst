@@ -32,6 +32,7 @@ project.
     platform_integration
     rst_style
     topic_page
+    demo_app_page
     reference_page
     development_tool_pages
     writing_style

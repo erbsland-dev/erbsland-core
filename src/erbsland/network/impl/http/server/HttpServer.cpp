@@ -9,7 +9,7 @@
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../mem/ByteBlock.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringBomMode.hpp"
@@ -32,7 +32,7 @@ using namespace err;
 using namespace unit;
 using namespace text::literals;
 
-HttpServer::HttpServer(event::EventsPtr ownerEvents) : network::HttpServer{std::move(ownerEvents)} {
+HttpServer::HttpServer(event::EventTargetPtr ownerLoop) : network::HttpServer{std::move(ownerLoop)} {
 }
 
 HttpServer::~HttpServer() {
@@ -45,19 +45,19 @@ HttpServer::~HttpServer() {
 }
 
 void HttpServer::setOptions(HttpServerOptions options) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyInactive();
     _options = std::move(options);
 }
 
 void HttpServer::setListenerOptions(TcpListenerOptions options) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyInactive();
     _listenerOptions = std::move(options);
 }
 
 void HttpServer::setTcpAcceptOptions(TcpAcceptOptions options) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyInactive();
     _tcpAcceptOptions = std::move(options);
 }
@@ -67,19 +67,19 @@ void HttpServer::enableTls() {
 }
 
 void HttpServer::enableTls(HttpServerTlsOptions options) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyInactive();
     _tlsOptions = std::move(options);
 }
 
 void HttpServer::setSessionManager(HttpServerSessionManagerPtr manager) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyInactive();
     _sessionManager = std::move(manager);
 }
 
 void HttpServer::addStaticContentHandler(HttpStaticContentHandlerPtr handler) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyInactive();
     if (handler == nullptr) {
         throw ParameterFailure{"An HTTP server requires a valid static-content handler."_el, "handler"_el};
@@ -96,7 +96,7 @@ auto HttpServer::state() const noexcept -> NetworkSourceState {
 }
 
 void HttpServer::start(IpEndpoint localEndpoint) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyInactive();
     validateOptions();
     if (_tlsOptions.has_value()) {
@@ -111,7 +111,7 @@ void HttpServer::start(IpEndpoint localEndpoint) {
     _staticContentUse = std::move(staticContentUse);
     try {
         _state = NetworkSourceState::Starting;
-        _listener = ownerEvents()->get<Network>().createTcpListener();
+        _listener = ownerLoop()->get<Network>().createTcpListener();
         const auto weakSelf = std::weak_ptr<HttpServer>{std::static_pointer_cast<HttpServer>(shared_from_this())};
         _listener->events()
             .onListening([weakSelf]() -> void {
@@ -151,21 +151,21 @@ void HttpServer::start(IpEndpoint localEndpoint) {
 }
 
 void HttpServer::pauseAccepting() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_listener != nullptr) {
         _listener->pauseAccepting();
     }
 }
 
 void HttpServer::resumeAccepting() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_listener != nullptr && _state == NetworkSourceState::Active) {
         _listener->resumeAccepting();
     }
 }
 
 void HttpServer::close() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state == NetworkSourceState::Closed || _state == NetworkSourceState::Failed ||
         _state == NetworkSourceState::Closing) {
         return;
@@ -200,7 +200,7 @@ void HttpServer::abort() noexcept {
         _finalEmitted = true;
         try {
             const auto callback = _onFinal;
-            ownerEvents()->invoke([callback]() -> void {
+            ownerLoop()->invoke([callback]() -> void {
                 if (callback) {
                     callback();
                 }
@@ -210,7 +210,7 @@ void HttpServer::abort() noexcept {
 }
 
 auto HttpServer::events() -> network::HttpServerEventEditor & {
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<HttpServerEventEditor>(shared_from_this(), std::move(target), *this);
     }
@@ -263,7 +263,7 @@ auto HttpServer::createSession(std::optional<text::String> identifier, HttpSessi
     -> network::HttpServerSessionPtr {
     const auto weakSelf = std::weak_ptr<HttpServer>{std::static_pointer_cast<HttpServer>(shared_from_this())};
     auto session = std::make_shared<impl::HttpServerSession>(
-        ownerEvents(),
+        ownerLoop(),
         std::move(identifier),
         std::move(data),
         [weakSelf](const network::HttpServerSessionPtr &invalidated) -> void {

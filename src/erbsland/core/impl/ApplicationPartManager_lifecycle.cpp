@@ -6,7 +6,7 @@
 
 #include "../../err/LogicFailure.hpp"
 #include "../../err/RuntimeError.hpp"
-#include "../../event/Events.hpp"
+#include "../../event/EventTarget.hpp"
 #include "../../text/Literals.hpp"
 
 #include <utility>
@@ -29,7 +29,7 @@ void ApplicationPartManager::start() {
             throw LogicFailure{"The application-part manager lifecycle is one-shot."_el};
         }
     }
-    invokeControl([weak = weak_from_this()]() -> void {
+    invokeControl([weak = weakManager()]() -> void {
         if (const auto self = weak.lock(); self != nullptr) {
             self->handleStartAll();
         }
@@ -50,7 +50,7 @@ void ApplicationPartManager::start(const ApplicationPartIdentifierPtr &identifie
         auto marks = std::vector<uint8_t>(_records.size(), 0);
         validateDependencyClosureCanStartLocked(number, marks);
     }
-    invokeControl([weak = weak_from_this(), number]() -> void {
+    invokeControl([weak = weakManager(), number]() -> void {
         if (const auto self = weak.lock(); self != nullptr) {
             self->handleStartPart(number);
         }
@@ -59,7 +59,7 @@ void ApplicationPartManager::start(const ApplicationPartIdentifierPtr &identifie
 
 void ApplicationPartManager::stop(const ApplicationPartIdentifierPtr &identifier) {
     const auto number = resolveIdentifier(identifier);
-    invokeControl([weak = weak_from_this(), number]() -> void {
+    invokeControl([weak = weakManager(), number]() -> void {
         if (const auto self = weak.lock(); self != nullptr) {
             self->handleStopPart(number);
         }
@@ -77,7 +77,7 @@ void ApplicationPartManager::stop() {
             return;
         }
     }
-    invokeControl([weak = weak_from_this()]() -> void {
+    invokeControl([weak = weakManager()]() -> void {
         if (const auto self = weak.lock(); self != nullptr) {
             self->handleStopAll();
         }
@@ -207,11 +207,10 @@ void ApplicationPartManager::startPart(const std::size_t number) {
         }
         part = record.part;
     }
-    const auto weak = weak_from_this();
+    const auto weak = weakManager();
     auto thread = std::make_shared<ApplicationPartThread>(
         [weak, part, number]() -> void {
-            part->initialize();
-            part->running();
+            part->onInitialize();
             if (const auto self = weak.lock(); self != nullptr) {
                 self->invokeControl([weak, number]() -> void {
                     if (const auto manager = weak.lock(); manager != nullptr) {
@@ -239,7 +238,7 @@ void ApplicationPartManager::startPart(const std::size_t number) {
                 });
             }
         });
-    part->bind(ApplicationPartManagerAccessWeakPtr{shared_from_this()}, thread->events());
+    part->bind(ApplicationPartManagerAccessWeakPtr{weakManager()}, thread->loop());
     {
         const auto lock = std::scoped_lock{part->_stoppingMutex};
         part->_completeStoppingFn = [weakThread = std::weak_ptr<ApplicationPartThread>{thread}]() -> void {
@@ -257,13 +256,20 @@ void ApplicationPartManager::startPart(const std::size_t number) {
 }
 
 void ApplicationPartManager::handlePartRunning(const std::size_t number) {
+    auto part = ApplicationPartPtr{};
     {
         const auto lock = std::scoped_lock{_mutex};
         if (_records[number - 1].failed) {
             return;
         }
+        part = _records[number - 1].part;
     }
     setPartState(number, ApplicationPartState::Running);
+    part->loop()->invoke([weakPart = std::weak_ptr<ApplicationPart>{part}]() -> void {
+        if (const auto runningPart = weakPart.lock(); runningPart != nullptr) {
+            runningPart->onRunning();
+        }
+    });
     progressStartup();
     progressStopping();
 }
@@ -357,10 +363,14 @@ void ApplicationPartManager::stopPart(const std::size_t number) {
     }
     setPartState(number, ApplicationPartState::Stopping);
     try {
-        thread->requestStop([part]() -> void { part->stopping(); });
+        thread->requestStop([weakPart = std::weak_ptr<ApplicationPart>{part}]() -> void {
+            if (const auto stoppingPart = weakPart.lock(); stoppingPart != nullptr) {
+                stoppingPart->onStopping();
+            }
+        });
         const auto timeout = part->shutdownTimeout();
         if (timeout.isPositive()) {
-            _controlEvents->invokeAfter(timeout, [weak = weak_from_this(), number, generation]() -> void {
+            ownerLoop()->invokeAfter(timeout, [weak = weakManager(), number, generation]() -> void {
                 if (const auto self = weak.lock(); self != nullptr) {
                     self->recordControlThread();
                     self->handlePartTimeout(number, generation);

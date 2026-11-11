@@ -29,7 +29,7 @@ public:
 public:
     /// Create one server-owned session with optional identity and data.
     HttpServerSession(
-        event::EventsPtr ownerEvents,
+        event::EventTargetPtr ownerLoop,
         std::optional<text::String> identifier,
         HttpSessionDataPtr data,
         InvalidatedFn invalidatedFn,

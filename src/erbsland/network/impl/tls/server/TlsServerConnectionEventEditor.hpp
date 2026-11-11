@@ -15,7 +15,7 @@ public:
     /// Create an editor for one built-in accepted TLS connection.
     /// @param source The source that owns the callbacks.
     /// @param target The event target on which callbacks run.
-    TlsServerConnectionEventEditor(event::EventSourcePtr source, event::EventsPtr target);
+    TlsServerConnectionEventEditor(event::EventSourcePtr source, event::EventTargetPtr target);
 
 public:
     auto onTransportConnected(NetworkEventFn callback) -> network::TlsServerConnectionEventEditor & override;

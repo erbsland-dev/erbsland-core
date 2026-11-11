@@ -80,8 +80,8 @@ Preparing Before Startup
 Typed ``part<T>()`` lookup is available after preparation even if the selected part has not started.
 
 Command-line integration is optional in a detached host.
-When it is needed, call ``registerCommandLineOptions()`` after preparation and ``parseCommandLine()`` after successful
-parsing, before startup.
+When it is needed, call ``registerCommandLineOptions()`` after preparation and ``handleCommandLineOptions()`` after
+successful parsing, before startup.
 
 Waiting for Part Startup and Shutdown from an External Thread
 =============================================================

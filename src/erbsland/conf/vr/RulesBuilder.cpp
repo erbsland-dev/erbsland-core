@@ -29,7 +29,7 @@ auto RulesBuilder::parentPath() const -> NamePath {
 }
 
 auto RulesBuilder::createBranch(const NamePathLike &namePath) -> RulesBuilderBranch {
-    auto path = impl::RulesBuilder::resolveRuleNamePath(namePath);
+    auto path = impl::RulesBuilder::resolveDefinitionNamePath(namePath);
     path.prepend(parentPath());
     return RulesBuilderBranch{*this, std::move(path)};
 }

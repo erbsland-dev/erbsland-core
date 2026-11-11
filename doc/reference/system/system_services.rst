@@ -303,7 +303,7 @@ Prefer creating event-driven processes through the loop's system frontend:
     });
     process->start();
 
-The frontend is obtained as a reference from ``Events::get<System>()``.
+The frontend is obtained as a reference from ``EventTarget::get<System>()``.
 Creation through it and handler editing must occur on its owner loop.
 For manually created processes, the first ``events()`` call binds the current loop, or throws ``LogicFailure`` if the
 thread has no active loop.

@@ -13,7 +13,8 @@ namespace erbsland::network::impl {
 class HttpClientSessionEventEditor final : public network::HttpClientSessionEventEditor {
 public:
     /// Bind the editor to its owning session.
-    HttpClientSessionEventEditor(event::EventSourcePtr source, event::EventsPtr target, HttpClientSession &session);
+    HttpClientSessionEventEditor(
+        event::EventSourcePtr source, event::EventTargetPtr target, HttpClientSession &session);
 
 public: // implement network::HttpClientSessionEventEditor
     auto onResponse(HttpClientResponseFn callback, HttpClientResponseOptions options)

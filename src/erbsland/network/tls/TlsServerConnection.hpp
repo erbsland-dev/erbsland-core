@@ -72,7 +72,7 @@ public: // implement Connection
 
 protected:
     /// Create an accepted TLS source owned by one event target.
-    explicit TlsServerConnection(event::EventsPtr ownerEvents) : Connection{std::move(ownerEvents)} {}
+    explicit TlsServerConnection(event::EventTargetPtr ownerLoop) : Connection{std::move(ownerLoop)} {}
 };
 
 }

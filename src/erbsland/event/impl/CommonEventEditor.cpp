@@ -15,7 +15,7 @@ namespace erbsland::event::impl {
 using namespace err;
 using namespace text::literals;
 
-CommonEventEditor::CommonEventEditor(EventSourcePtr source, EventsPtr target) :
+CommonEventEditor::CommonEventEditor(EventSourcePtr source, EventTargetPtr target) :
     _source{source}, _target{std::move(target)} {
     if (source == nullptr) {
         throw ParameterFailure{"The event source must not be null."_el, "source"_el};
@@ -23,7 +23,7 @@ CommonEventEditor::CommonEventEditor(EventSourcePtr source, EventsPtr target) :
     if (_target == nullptr) {
         throw ParameterFailure{"The event target must not be null."_el, "target"_el};
     }
-    if (source->ownerEvents() != _target) {
+    if (source->ownerLoop() != _target) {
         throw LogicFailure{"The event editor target does not own its source."_el};
     }
 }
@@ -36,7 +36,7 @@ auto CommonEventEditor::source() const -> EventSourcePtr {
     return result;
 }
 
-auto CommonEventEditor::target() const noexcept -> EventsPtr {
+auto CommonEventEditor::target() const noexcept -> EventTargetPtr {
     return _target;
 }
 

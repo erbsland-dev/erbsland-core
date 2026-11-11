@@ -17,7 +17,7 @@
 #include <erbsland/cterm/Key.hpp>
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/Endianness.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/IpAddress.hpp>
 #include <erbsland/IpEndpoint.hpp>
 #include <erbsland/Literals.hpp>
@@ -64,7 +64,7 @@ public:
     using RequestFn = std::function<void(const el::IpEndpoint &, const el::String &)>;
 
     MapSession(
-        el::EventsPtr events,
+        el::EventTargetPtr events,
         std::shared_ptr<const Map> map,
         el::TcpConnectionRequestPtr request,
         RequestFn requestFn,
@@ -115,7 +115,7 @@ private:
     }
 
 private:
-    el::EventsPtr _events;
+    el::EventTargetPtr _events;
     std::shared_ptr<const Map> _map;
     el::TcpConnectionRequestPtr _request;
     RequestFn _requestFn;
@@ -152,7 +152,7 @@ protected: // implement Application
         _address = el::IpAddress::fromStringOrThrow(values->getText("address"_el));
         _port = el::Port::fromStringOrThrow(values->getText("port"_el));
         _map = loadMap(el::Path::fromNativeOrThrow(values->getText("map-file"_el)));
-        events()->invoke([this]() -> void { startServer(); });
+        loop()->invoke([this]() -> void { startServer(); });
     }
 
 private:
@@ -169,7 +169,7 @@ private:
     void startServer() {
         terminal()->printLine(fg::BrightWhite, BlockAttributes::Bold, "TCP Map Server"_el);
         terminal()->printLine(fg::Cyan, el::StringFormat{"Loaded {} map entries"_el}.build(_map->count().toSizeT()));
-        _listener = events()->get<el::Network>().createTcpListener();
+        _listener = loop()->get<el::Network>().createTcpListener();
         _listener->events()
             .onListening([this]() -> void {
                 terminal()->printLine(
@@ -187,7 +187,7 @@ private:
 
     void startSession(el::TcpConnectionRequestPtr request) {
         auto session = std::make_shared<MapSession>(
-            events(),
+            loop(),
             _map,
             std::move(request),
             [this](const el::IpEndpoint &remote, const el::String &key) -> void {
@@ -199,7 +199,7 @@ private:
     }
 
     void removeSession(MapSession *finished) {
-        events()->invoke([this, finished]() -> void {
+        loop()->invoke([this, finished]() -> void {
             std::erase_if(_sessions, [finished](const auto &session) -> bool { return session.get() == finished; });
         });
     }

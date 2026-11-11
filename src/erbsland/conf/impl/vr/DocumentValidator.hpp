@@ -116,7 +116,7 @@ private:
 
     /// Build a key index and validate the uniqueness of all values.
     /// @param value The value node that is entered which is the base node for the index.
-    /// @param keyDefinition The key definition that is used to build the index.
+    /// @param keyDefinition A finalized definition with list and entry-relative value paths.
     /// @return The key index that was built.
     /// @throws ConfError if the key index is invalid, or if the key values are not unique.
     [[nodiscard]] auto buildKeyIndexAndValidateUniqueness(

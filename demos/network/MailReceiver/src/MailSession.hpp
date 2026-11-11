@@ -11,7 +11,7 @@
 #include <erbsland/ByteBlock.hpp>
 #include <erbsland/ConnectionCloseContext.hpp>
 #include <erbsland/ConnectionState.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/LogStream.hpp>
 #include <erbsland/Network.hpp>
 #include <erbsland/NetworkErrorContext.hpp>
@@ -35,7 +35,7 @@ public:
     /// @param events The owning event collection.
     /// @param log The shared diagnostic stream.
     /// @param finished Notification after finalization; true means a message and clean TLS closure.
-    MailSession(const el::EventsPtr &events, el::LogStreamPtr log, std::function<void(bool)> finished) :
+    MailSession(const el::EventTargetPtr &events, el::LogStreamPtr log, std::function<void(bool)> finished) :
         _events{events},
         _connection{events->get<el::Network>().createTlsServerConnection()},
         _log{std::move(log)},
@@ -174,7 +174,7 @@ private:
     }
 
 private:
-    el::EventsPtr _events;                  ///< Owns the queue used to start application work after the checkpoint.
+    el::EventTargetPtr _events;             ///< Owns the queue used to start application work after the checkpoint.
     el::TlsServerConnectionPtr _connection; ///< TLS source owned until finalization.
     el::LogStreamPtr _log;                  ///< Shared diagnostic stream.
     std::function<void(bool)> _finished;    ///< Defers removal through the application.

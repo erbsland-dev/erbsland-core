@@ -40,7 +40,7 @@ public:
 
 protected:
     /// Create an abstract logical session owned by one event target.
-    explicit HttpServerSession(event::EventsPtr ownerEvents) : EventSource{std::move(ownerEvents)} {}
+    explicit HttpServerSession(event::EventTargetPtr ownerLoop) : EventSource{std::move(ownerLoop)} {}
 };
 
 }

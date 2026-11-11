@@ -22,7 +22,7 @@ set_target_properties(erbsland-core-all-demos PROPERTIES
         FOLDER "Demos"
 )
 
-function(erbsland_core_add_demo target_name)
+function(_erbsland_core_add_demo target_name output_tree)
     cmake_path(SET _demoSourceDir NORMALIZE "${CMAKE_CURRENT_SOURCE_DIR}")
     cmake_path(SET _demoRootDir NORMALIZE "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/..")
     cmake_path(RELATIVE_PATH _demoSourceDir BASE_DIRECTORY "${_demoRootDir}" OUTPUT_VARIABLE _demoRelativeDir)
@@ -38,8 +38,17 @@ function(erbsland_core_add_demo target_name)
     erbsland_set_required_compiler_options(${target_name})
     erbsland_enable_debug_warnings(${target_name})
     set_target_properties(${target_name} PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/demo-apps/${_demoCategory}"
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${output_tree}/${_demoCategory}"
             FOLDER "Demos/${_demoCategory}"
     )
     add_dependencies(erbsland-core-all-demos ${target_name})
+endfunction()
+
+function(erbsland_core_add_demo target_name)
+    _erbsland_core_add_demo(${target_name} demo-apps ${ARGN})
+endfunction()
+
+# Templates are compiled with demos but must never enter the runnable demo tree.
+function(erbsland_core_add_demo_template target_name)
+    _erbsland_core_add_demo(${target_name} demo-templates ${ARGN})
 endfunction()

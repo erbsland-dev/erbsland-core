@@ -18,7 +18,7 @@
 #include <erbsland/cterm/ReadLineStatus.hpp>
 #include <erbsland/DateTime.hpp>
 #include <erbsland/DateTimePrecision.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/ExitCode.hpp>
 #include <erbsland/String.hpp>
 #include <erbsland/StringJoins.hpp>
@@ -51,7 +51,7 @@ auto ReadLineApp::main() -> el::ExitCode {
             "The ReadLine demo can only run in an interactive terminal. Use --help to inspect its options."_el}};
     }
     startReadLine(std::move(settings));
-    return runEventLoop();
+    return runMainEventLoop();
 }
 
 void ReadLineApp::cleanup() noexcept {
@@ -67,7 +67,7 @@ void ReadLineApp::startReadLine(el::cterm::ReadLineOptions settings) {
     writeClock(true);
     _readLine = el::cterm::ReadLine::create(terminal(), std::move(settings));
     _readLine->start();
-    _updateTimer = events()->createTimer([this]() -> void { updateReadLine(); });
+    _updateTimer = loop()->createTimer([this]() -> void { updateReadLine(); });
     _updateTimer->startFixedRate(el::Milliseconds{25});
 }
 

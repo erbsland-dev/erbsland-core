@@ -105,7 +105,7 @@ auto Application::runApplicationLifecycle() -> int {
             const auto partsData = _data->parts().getIfExists();
             const auto manager = partsData != nullptr ? partsData->managerIfExists() : nullptr;
             if (manager != nullptr) {
-                manager->parseCommandLine(optionsData->optionValues());
+                manager->handleCommandLineOptions(optionsData->optionValues());
             }
             if (const auto lifecycleData = _data->lifecycle().getIfExists(); lifecycleData != nullptr) {
                 if (manager != nullptr) {
@@ -278,7 +278,7 @@ auto Application::main() -> ExitCode {
             manager->start();
         }
     }
-    return runEventLoop();
+    return runMainEventLoop();
 }
 
 void Application::cleanup() noexcept {
@@ -349,8 +349,8 @@ void Application::setSystemOutputStyle(cterm::TerminalDocumentStyle style) noexc
     _data->terminal().get()->setSystemOutputStyle(std::move(style));
 }
 
-auto Application::eventLoop() -> EventLoop & {
-    return _data->events().get()->eventLoop();
+auto Application::mainEventLoop() -> EventLoop & {
+    return _data->events().get()->mainEventLoop();
 }
 
 void Application::stopPartManager() {

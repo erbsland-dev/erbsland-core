@@ -167,28 +167,12 @@ auto DocumentValidator::buildKeyIndexes(const conf::ValuePtr &value, const RuleP
 }
 
 auto DocumentValidator::buildKeyIndexAndValidateUniqueness(
-    [[maybe_unused]] const conf::ValuePtr &value, const KeyDefinitionPtr &keyDefinition) -> KeyIndexPtr {
+    const conf::ValuePtr &value, const KeyDefinitionPtr &keyDefinition) -> KeyIndexPtr {
 
-    NamePath listPath;
-    std::vector<NamePath> valuePaths;
-    for (const auto &key : keyDefinition->keys()) {
-        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!key.containsIndex(), "The key must not contain an index"_el);
-        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!key.containsText(), "The key must not contain text"_el);
-        auto entryIndex = key.find(Name::vrName(Name::VR::ReservedEntry));
-        auto newListPath = key.subPath(0, entryIndex);
-        if (listPath.empty()) {
-            listPath = newListPath;
-        } else {
-            ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
-                listPath == newListPath, "The list portion of key paths must be equal"_el);
-        }
-        auto valuePath = key.subPath(entryIndex + 1);
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!valuePath.empty(), "The value path must not be empty"_el);
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
-            valuePath.find(Name::vrName(Name::VR::ReservedEntry)) == NamePath::npos,
-            "A key must not point into nested lists."_el);
-        valuePaths.emplace_back(std::move(valuePath));
-    }
+    const auto &listPath = keyDefinition->listPath();
+    const auto &valuePaths = keyDefinition->entryValuePaths();
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!listPath.empty(), "Key definition must be finalized"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(valuePaths.size() == keyDefinition->keys().size(), "All keys must be resolved"_el);
 
     auto keyIndex =
         std::make_shared<KeyIndex>(keyDefinition->name(), keyDefinition->caseSensitivity(), valuePaths.size());

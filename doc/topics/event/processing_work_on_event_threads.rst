@@ -3,9 +3,9 @@
     SPDX-License-Identifier: Apache-2.0
 
 .. index::
-    single: Events; Managed Threads
-    single: Event Loops; Worker Threads
-    single: Events; Result Ownership
+    single: Events; Worker Threads
+    single: Event Threads; Lifecycle
+    single: Event Threads; Synchronization
 
 .. _event-procedural-workers:
 
@@ -13,211 +13,235 @@
 Processing Work on Event Threads
 ********************************
 
-An event thread owns an event loop and runs it on a separate thread.
-Callbacks on that loop execute one at a time, while callbacks on different threads can run concurrently.
-This lets you move independent computation or blocking work away from a loop that needs to stay responsive.
-Posting work chooses its execution thread; it does not automatically make the data it uses safe to share.
+An event thread gives work a dedicated loop on a separate native thread.
+You create and retain the thread object, start it, and submit callbacks through its target.
+This page follows that lifetime through completion and joining, both when the application manages shutdown and when you
+own it yourself.
+It assumes the loop, target, and source vocabulary introduced in :doc:`events_in_erbsland_core`.
 
-The usual design gives each thread exclusive access to its mutable state and transfers inputs and results as values.
-A receiving loop processes those values in callbacks.
-A procedural caller can instead wait for a thread to finish and take over its results after joining it.
-These explicit handover points make it possible to coordinate work without adding a mutex around every application
-variable.
+Main Loop and Worker Loop
+=========================
 
-This page explains how to create managed event threads, send work, choose a result destination, and coordinate
-completion and failure.
-The file-hasher demo illustrates those APIs in a batch tool whose main function waits while other threads work.
-It builds on :doc:`using_event_loops`.
+The application's main loop runs on the main thread when the application enters ``runMainEventLoop()``, normally through
+its default ``main()``.
+An :cpp:class:`EventThread <erbsland::event::EventThread>` owns a separate loop and the native thread that dispatches
+it.
+Its ``loop()`` exposes the target for posting and service access;
+:cpp:func:`workerEventLoop() <erbsland::event::EventThread::workerEventLoop>` exposes the full worker loop when the
+owner needs operations such as error inspection.
 
-Result Ownership and Synchronization
-====================================
+A dedicated loop is useful when a component needs its own serialized state and event sources, or when blocking work must
+not hold up the main loop.
+The main and worker loops can run concurrently, but callbacks within each loop still execute one at a time.
+An overridden procedural ``main()`` can also use workers without dispatching the application's main loop at all.
+In that design, the workers must be able to finish without callbacks on main.
 
-Before starting threads, decide which thread may access each mutable object and when that responsibility changes.
-A shared pointer solves object lifetime, not concurrent access.
-You can avoid an application mutex when only one thread accesses mutable state at a time and synchronization establishes
-each handover.
+Before creating several workers for independent jobs, consider
+:cpp:class:`util::WorkerPool <erbsland::util::WorkerPool>`.
+It schedules jobs across reusable worker threads and supports both event-based results and procedural futures.
+Dedicated event threads are useful when ownership of a particular loop matters; a pool is often a better fit for a batch
+of independent computations.
+See :doc:`planned/processing_work_with_a_worker_pool` for job scheduling.
 
-In the file hasher, command-line handling resolves the input directory before ``main()`` begins.
-Main then collects the file paths, fixes the expected result count, and reserves result storage before starting any
-threads.
-While the batch runs, workers calculate hashes in local state, and only the receiver appends results and updates the
-completion count.
-Main does not inspect that state again until it has joined the receiver.
-Starting the threads, posting values, and joining the receiver provide synchronization at the boundaries.
-The library coordinates those operations internally; the result list itself needs no additional application mutex.
+Managed and Unmanaged Threads
+=============================
+
+:cpp:func:`Application::createEventThread() <erbsland::core::Application::createEventThread>` creates a managed thread registered with that application.
+The framework requests shutdown and joins retained managed threads when the application finishes or fails.
+This integrates worker lifetime with the application lifecycle described in :doc:`using_event_loops`.
+
+:cpp:func:`UnmanagedEventThread::create() <erbsland::event::UnmanagedEventThread::create>` creates a standalone thread without application shutdown integration.
+Its owner arranges termination, joining, and error delivery, even if it happens to be used inside an ``Application``.
+Both factories return an unstarted object, and **both require retained ownership**.
+Application registration does not keep a managed thread alive for you.
+
+.. list-table::
+    :header-rows: 1
+
+    * - Responsibility
+      - Managed thread
+      - Unmanaged thread
+    * - Factory
+      - ``createEventThread()``
+      - ``UnmanagedEventThread::create()``
+    * - Start and retain
+      - Application code
+      - Application code
+    * - Application shutdown
+      - Framework requests quit and joins
+      - Owner must arrange it
+    * - Operational callback failure
+      - ``FailApplication`` can report to the application
+      - ``Quit`` can stop dispatch; owner inspects the error
+
+Creation and Startup
+====================
+
+Call :cpp:func:`start() <erbsland::event::EventThread::start>` once on the retained thread object.
+It starts the native thread, which enters worker-loop dispatch.
+After ``start()`` succeeds you can immediately submit work to ``thread->loop()``; there is no need to poll until the
+worker reports that it is running.
+The queue bridges the interval before dispatch begins.
+
+:cpp:func:`isStarted() <erbsland::event::EventThread::isStarted>` records that native-thread startup succeeded and remains true after the worker has finished.
+:cpp:func:`isRunning() <erbsland::event::EventThread::isRunning>` is only a snapshot of dispatch state.
+It is not a readiness signal or synchronization barrier: its value may change immediately after you read it.
+If your application needs to know that worker initialization has completed, publish an explicit completion notification
+through a path that the recipient is actually processing.
 
 .. mermaid::
 
     flowchart TD
-        Prepare["Main: prepare result storage"]
-        Collect["Receiver: append results"]
-        Read["Main: read and sort results"]
-        Prepare -->|Start threads; main stops accessing results| Collect
-        Collect -->|Receiver exits; join returns| Read
+        created["Created, unstarted"] -->|"start() succeeds"| started["Native thread starts"]
+        started --> dispatch["Dispatch or wait for work"]
+        dispatch -->|"quit(): close admission"| drain["Finish current callback and accepted queue"]
+        drain --> ended["Native thread ends"]
+        ended -->|"Owner joins"| joined["Joined"]
 
-Here, "ownership" means responsibility for access; the result list remains a member of the same application object
-throughout all three phases.
-The worker and receiver handles also live in that object:
+This is a one-shot lifetime; joining does not make the object restartable.
+An idle worker continues waiting until shutdown is requested.
+:cpp:func:`quit() <erbsland::event::EventThread::quit>` can also be requested before startup; starting such a thread does not reopen admission.
+:cpp:func:`join() <erbsland::event::EventThread::join>` before startup or after an earlier join is a no-op.
+
+Submitting Work Through the Target
+==================================
+
+Any producer thread holding a valid :cpp:type:`EventTargetPtr <erbsland::event::EventTargetPtr>` can use its thread-safe
+posting and invocation operations.
+``worker->loop()->invoke(callback)`` queues the function without calling it inline.
+The worker calls it when it dispatches that accepted event, with its loop available through ``el::currentLoop()``.
+The producer does not need to run an event loop of its own to submit work.
+
+Capture input values by value, moving larger owned values into the callback where appropriate.
+A reference to a producer's local variable can outlive that variable before the worker uses it.
+Borrowing application state requires the owner to survive every use, including worker shutdown and joining.
+Keep mutable worker state on the worker and arrange an explicit handover for results.
+
+Thread-safe submission protects the queue, not everything reachable from a callback.
+It does not make captured mutable objects safe for concurrent access, and it does not grant cross-thread access to a
+source's editor or loop-bound operations.
+Queue source creation and handler setup onto their intended owner loop.
+The serial execution of worker callbacks then gives those sources and worker-owned state a consistent context.
+
+.. erbsland-in-practice-begin:: A Managed Worker in a Procedural Application
+
+This startup template retains the worker in an application member and queues ``beginWork()`` immediately after startup.
+The reader supplies the business operations and connects their successful completion to ``completeWork()``.
+The framework supplies the worker loop and application-level failure shutdown.
 
 .. erbsland-demo::
-    :source: event/FileHasher/FileHasherApp.hpp
-    :show: c:Workers retained-c:Read by main only
-    :sha256: 9a4c08b9e7ddf4d9a8b3799aa4ef2fb369f44121ff1582ec632a548ac835f16b
+    :source: event/templates/ApplicationStartup/ProceduralWorker/WorkApplication.hpp
+    :show: f:main, f:beginWork, f:completeWork, c:Owned by the application
+    :sha256: 918d6b1e29e2e6b7667d95f254005d2c8a518554bb3c78a8a17e6e3df538b9f1
 
 .. code-block:: cpp
 
-    std::vector<el::ManagedEventThreadPtr> _workers; ///< Workers retained throughout the batch.
-    el::ManagedEventThreadPtr _resultReceiver;       ///< Sole owner of mutable result state while running.
-    el::Path _root;                                  ///< The root path to be scanned.
-    el::PathList _paths;                             ///< The list of paths to process.
-    std::size_t _totalFiles{0};                      ///< Fixed before any thread starts.
-    std::size_t _completedFiles{0};                  ///< Updated only on the receiver thread.
-    std::vector<HashResult> _results;                ///< Read by main only after the receiver is joined.
-
-.. erbsland-demo-end::
-
-The input list ``_paths`` remains unchanged while the batch runs.
-Main copies each path into a worker callback; workers do not traverse or modify the shared list.
-The receiver uses the fixed ``_totalFiles`` count to decide when it has collected every result.
-
-``FileHasherApp`` derives from :cpp:class:`Application <erbsland::core::Application>` and stays alive throughout
-``app.run()``.
-The framework stops and joins its managed threads before application cleanup, so the queued callbacks can safely use
-this application's ``this`` pointer.
-That lifetime guarantee is separate from the access rules above: capturing ``this`` alone never makes simultaneous
-access to its members safe.
-
-Creating and Starting Managed Threads
-=====================================
-
-:cpp:func:`createEventThread() <erbsland::core::Application::createEventThread>` creates a thread object with its own
-loop and connects it to application shutdown.
-Retain the returned ``ManagedEventThreadPtr`` for as long as you need that thread: application management coordinates
-shutdown but does not keep the thread object alive for you.
-Keep its final owning pointer outside the worker itself so that releasing it can stop and join the thread safely.
-
-:cpp:func:`start() <erbsland::event::EventThread::start>` launches the worker, and ``events()`` provides the target for
-posting its callbacks.
-A thread object can be started only once; it cannot be restarted after shutdown.
-After ``start()`` succeeds, you can submit work without polling ``isRunning()``.
-The loop may still be starting, but it can receive queued work.
-
-The demo creates one receiver and up to one worker per reported logical CPU, capped at the number of files.
-An empty input returns before any threads are started.
-This avoids creating workers that cannot receive a job; the count is a workload choice, not a requirement of the event
-API:
-
-.. erbsland-demo::
-    :source: event/FileHasher/FileHasherApp.hpp
-    :show: f:startLoops
-    :sha256: bb43a71f25ba93791cdd924279cd78d9c234b8453959d774af7e2b0fb96196e9
-
-.. code-block:: cpp
-
-    void startLoops() {
-        /// Prepare the result receiver.
-        auto options = el::EventLoopOptions{}.setErrorPolicy(el::EventLoopErrorPolicy::FailApplication);
-        _resultReceiver = createEventThread(options);
-        _resultReceiver->start();
-        /// Reserve either enough workers for all CPU cores or for every file if there are less.
-        const auto count = std::min<std::size_t>(el::system::info::logicalCpuCount(), _paths.count().toSizeT());
-        _workers.reserve(count);
-        for (auto index = std::uint32_t{0}; index < count; ++index) {
-            auto worker = createEventThread(options);
-            _workers.push_back(worker);
-            worker->start();
-        }
+    auto main() -> el::ExitCode override {
+        auto options = el::EventLoopOptions{};
+        options.setErrorPolicy(el::EventLoopErrorPolicy::FailApplication);
+        _worker = createEventThread(options);
+        _worker->start();
+        _worker->loop()->invoke([this]() -> void { beginWork(); });
+        // completeWork() must quit the worker before this join can return.
+        _worker->join();
+        // Read worker-owned results only after joining. No main loop was needed.
+        return el::ExitCode::success();
     }
 
-.. erbsland-demo-end::
-
-The receiver must keep running while main waits, because it decides when all results have arrived.
-The workers can then send results there independently of the main thread's progress.
-
-Posting Work and Choosing a Result Target
-=========================================
-
-``worker->events()->invoke(callback)`` transfers a callback to that worker's queue.
-Capture input values or owned objects that will remain valid until dispatch.
-Within the callback, perform the work and post its result to the target responsible for receiving it.
-An ordinary function call stays on the caller's thread; posting through a target is the step that crosses the thread
-boundary.
-
-The result target must belong to a loop that continues dispatching while the work runs.
-A responsive main loop can receive results directly and update the application's state in its result callback.
-Blocking that loop while waiting for a result would also prevent it from dispatching the callback that delivers the
-result.
-The working example in :doc:`communicating_between_loops` develops this approach and shows how to handle replies to
-requests that have since been replaced.
-
-The file hasher instead overrides ``main()`` with a procedural batch function.
-Main waits without dispatching, so posting results to its loop would leave them unprocessed.
-A separate receiver loop collects the hashes and decides when the batch is complete.
-The main function makes the handover visible: prepare storage, start the loops, submit work, then wait for the receiver
-before reading results:
-
-.. literalinclude:: ../../../demos/event/FileHasher/FileHasherApp.hpp
-    :language: cpp
-    :start-at: [[nodiscard]] auto main()
-    :end-before: private:
-    :dedent: 4
-
-``collectFiles()`` stores the paths in ``_paths`` and prepares the result storage.
-After the receiver finishes, ``printResults()`` sorts and prints the completed hashes.
-The setup, file traversal, hashing, and output helpers are implemented in ``FileHasherApp.cpp``.
-The application lifecycle behind the setup is explained in :doc:`/topics/core/procedural_applications`.
-
-``distributePaths()`` runs on main and assigns successive paths to workers in round-robin order.
-Its two nested callbacks show the complete route from an input path to a received result:
-
-.. erbsland-demo::
-    :source: event/FileHasher/FileHasherApp.hpp
-    :show: f:distributePaths
-    :sha256: af2841267416f8c4e372f1239b9966d8f1b15bd307758e490e17923514657870
-
-.. code-block:: cpp
-
-    void distributePaths() {
-        for (auto index = el::ItemIndex{}; index.isWithin(_paths.count()); ++index) {
-            _workers[index.toSizeT() % _workers.size()]->events()->invoke([this, path = _paths.get(index)]() -> void {
-                auto result = hashFile(path);
-                _resultReceiver->events()->invoke(
-                    [this, result = std::move(result)]() mutable -> void { addResult(std::move(result)); });
-            });
-        }
+    void beginWork() {
+        // TODO: Create and retain your worker's business operations here.
+        // Connect their final successful completion to completeWork().
+        // Do not route required completion through the application's idle main loop.
     }
 
+    void completeWork() { _worker->quit(); }
+
+    el::ManagedEventThreadPtr _worker; ///< Owned by the application through shutdown and joining.
+
 .. erbsland-demo-end::
 
-The first :cpp:func:`invoke() <erbsland::event::Events::invoke>` queues a callback on a worker loop.
-Its ``path`` capture is a value, so it remains valid after the loop iteration that submitted the job.
-``hashFile(path)`` runs on that worker and returns a ``HashResult`` containing the path and digest.
-The worker then moves this result into another callback and queues that callback on the receiver.
-Only when the receiver dispatches it does ``addResult()`` run.
+The join in ``main()`` depends on the completion hook or failure policy ending dispatch.
+This template is compiled, not run: until its business operation is implemented, no success callback requests quit.
 
-Queuing a function changes where it will execute; calling ``addResult()`` directly from the worker would update the
-result list on the wrong thread.
-Likewise, capturing an object by reference does not make it safe to share.
-The demo avoids shared hashing state by calculating each hash locally and passing the completed value to its next owner.
+.. erbsland-in-practice-end::
 
 Completion, Quit, and Join
 ==========================
 
-A result notification, a quit request, and a join have different roles.
-Your application defines when the task is complete.
-``quit()`` requests graceful termination of a loop; it does not interrupt a callback or wait for the thread.
-``join()`` waits for the thread to finish; it does not request termination.
-Call it from outside that thread, and ensure that some completion or failure path will stop the loop.
+Application completion, loop termination, and native-thread joining are three different steps.
+First, your operation decides that all required work has finished or has been cancelled.
+Then ``quit()`` requests the end of dispatch.
+Finally, ``join()`` waits for the native thread to end and synchronizes with its completion.
+Joining does not itself request termination.
 
-In this batch, the receiver alone changes ``_results`` and ``_completedFiles``.
-Each received hash advances the batch by one file, and the last one requests receiver shutdown:
+``quit()`` closes admission to the loop and arranges for accepted queued work to drain before the loop returns.
+It does not interrupt the currently executing callback.
+New submissions after admission closes are not accepted; an invocation call is not a delivery acknowledgement.
+A callback already in progress can continue running, but follow-up work it posts after closure cannot be relied on.
+
+For a long-running callback, capture the worker's ``stopToken()`` before submission and check ``isStopRequested()``
+between bounded steps.
+The token becomes requested when the worker is quit, including when application shutdown initiates the quit request.
+It can be copied safely without retaining the worker or borrowing its loop.
+Checking it allows an executing callback to finish early even when a queued cancellation command could not yet run.
+The resumable ``EventLoop::stop()`` operation does not request this token.
+
+Draining queued callbacks does not finish every asynchronous operation that might later produce a notification.
+If a source still needs dispatch to finish or cancel, keep its loop open until its required completion is handled.
+Request quit only when closing that path is safe.
+:doc:`shutting_down_event_work` develops cancellation, graceful source closure, and shutdown deadlines.
+
+Synchronizing a Procedural Caller
+=================================
+
+A procedural caller can submit a finite operation, join the worker after its completion requests quit, and then read the
+results.
+While the worker runs, only it accesses the result state; after the join returns, ownership of access passes back to the
+caller.
+If the caller needs progress before joining, it needs a separate synchronization or event-delivery arrangement.
+``isRunning()`` is not a replacement for either.
+
+A main thread blocked in ``join()`` cannot dispatch its main-loop callbacks.
+Do not make worker completion depend on a reply to that loop: main would wait for the worker while the worker waits for
+main.
+Keep the completion path entirely on the worker or on another actively dispatching loop.
+For request/reply applications with a responsive main loop, see :doc:`communicating_between_loops`.
+
+The final owning pointer to the thread must remain outside its worker.
+An event thread cannot join itself, including implicitly when its final owner is destroyed.
+Retain the thread in the calling scope or application object through joining, and release it there.
+Although destruction requests quit and joins, explicit completion and joining make result ownership and failure handling
+visible.
+
+.. erbsland-in-practice-begin:: FileHasher Joins Its Result Receiver
+
+``FileHasher`` keeps main procedural and sends worker results to a separate receiver loop.
+That receiver alone appends results and requests its own quit after the last result.
+Main joins the receiver before checking the count or reading the collection:
 
 .. erbsland-demo::
-    :source: event/FileHasher/FileHasherApp.hpp
-    :show: f:addResult
-    :sha256: 694e2a1d2be2a2ae0ab56bb23f8bba0a10087356eea190074df43ed73b5b6d25
+    :source: event/apps/FileHasher/FileHasherApp.hpp
+    :show: c:implement Application(-4,+19), f:addResult
+    :sha256: 03ed70b35f133729370c1cadfebf2a43a15b223a030cdb37844316ffc5f0b164
 
 .. code-block:: cpp
+
+    [[nodiscard]] auto main() -> el::ExitCode override {
+        collectFiles();
+        if (_totalFiles == 0) {
+            el::io::printLine("No files to hash."_el);
+            return el::ExitCode::success();
+        }
+        startLoops();
+        el::io::printLine("Hashing "_el, _totalFiles, " files with "_el, _workers.size(), " worker loops."_el);
+        distributePaths();
+        _resultReceiver->join();
+        if (_completedFiles != _totalFiles) {
+            return el::ExitCode::failure();
+        }
+        printResults();
+        return el::ExitCode::success();
+    }
 
     void addResult(HashResult result) {
         _results.push_back(std::move(result));
@@ -233,55 +257,78 @@ Each received hash advances the batch by one file, and the last one requests rec
 
 .. erbsland-demo-end::
 
-The receiver's :cpp:func:`quit() <erbsland::event::EventThread::quit>` request allows its loop to exit after the
-callback returns.
-Main's :cpp:func:`join() <erbsland::event::EventThread::join>` waits until that thread has finished.
-Only then does main inspect the completion count, sort the results, and print them.
-The incomplete-count check prevents an interrupted batch from being reported as a successful full run.
+The application retains all worker objects through its managed shutdown.
+The full :doc:`/demo_apps/event/file_hasher` walkthrough explains the worker/receiver routing, ownership handovers, and
+failure path.
+For ordinary independent file jobs, also consider a worker pool before adopting this multi-loop design.
 
-This is the final ownership handover: ``join()`` establishes that the receiver has finished and its writes are visible
-to main.
-The absence of simultaneous access, together with that synchronization, makes reading the results safe.
-Merely observing a count or retaining a shared pointer would not establish the same boundary.
+.. erbsland-in-practice-end::
 
-The workers remain retained until the application's shutdown sequence stops and joins its managed threads.
-The receiver quitting therefore marks completion of result collection, while the application still handles the remaining
-thread cleanup.
+Failures Must Also End the Wait
+===============================
 
-You can run the demo against a directory from the repository root:
+A missing success callback must not leave the owner joining forever.
+For a managed worker whose operational failure should end the application, set
+``EventLoopOptions::setErrorPolicy(EventLoopErrorPolicy::FailApplication)`` before creating the thread.
+A captured :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` then reaches the application, which requests managed
+shutdown and reports the failure.
+This also works when procedural main is waiting on a managed receiver rather than dispatching the main loop.
 
-.. code-block:: console
+For an unmanaged worker, use ``EventLoopErrorPolicy::Quit`` when a captured operational error should end dispatch.
+After joining, inspect ``workerEventLoop().takeError()`` and handle or rethrow the captured exception on the owner
+thread.
+**Joining does not transport worker exceptions.** The default ``Store`` policy alone does not supply a termination path.
+These policies handle Erbsland ``RuntimeError`` exceptions; arbitrary exceptions escaping the native worker entry point
+are not converted into join results and can terminate the process.
 
-    $ cmake-build-debug/demo-apps/event/file_hasher demos/event/FileHasher
+.. erbsland-in-practice-begin:: Owning an Unmanaged Worker
 
-It prints a SHA-256 digest and relative path for each file, sorted by path.
-Although workers may finish in any order, sorting after the receiver has joined gives the report a stable order.
+This compile-only counterpart uses ``Quit`` and checks the captured error after joining.
+Rethrowing on the application's main thread lets ``Application::run()`` report an operational error.
+The reader supplies the business operation and success completion; the owner explicitly handles the standalone thread's
+error and lifetime obligations.
 
-Failure and Interrupted Work
-============================
+.. erbsland-demo::
+    :source: event/templates/EventThreads/UnmanagedWorker/WorkApplication.hpp
+    :show: f:main, f:cleanup, f:beginWork, f:completeWork, c:Main-thread owner
+    :sha256: 4331f24cd3281ef404d21b2a130560e98b7ab36720ca8921a1bda81b2b453dbf
 
-A completion design also needs a path for failures that produce no result.
-``join()`` waits for termination; it is not an exception-transport mechanism.
-Choose an event-loop error policy that lets the waiting caller finish or receive a failure.
+.. code-block:: cpp
 
-All these loops use :cpp:enumerator:`FailApplication <erbsland::event::EventLoopErrorPolicy::FailApplication>`.
-If hashing throws instead of producing a result, this policy forwards the error to the application and requests shutdown
-of its managed loops, including the receiver.
-Without a failure path that releases main's wait, the missing result could leave the batch waiting forever.
-:doc:`handling_event_errors` explains failure policies and the application boundary that reports the retained error.
+    auto main() -> el::ExitCode override {
+        const auto options = el::EventLoopOptions{}.setErrorPolicy(el::EventLoopErrorPolicy::Quit);
+        _worker = el::UnmanagedEventThread::create(options);
+        _worker->start();
+        _worker->loop()->invoke([this]() -> void { beginWork(); });
+        // completeWork() or the Quit error policy must end dispatch before join returns.
+        _worker->join();
+        if (const auto error = _worker->workerEventLoop().takeError()) {
+            std::rethrow_exception(error);
+        }
+        // TODO: Read worker-owned results here, after joining and checking failure.
+        return el::ExitCode::success();
+    }
 
-Queue Limits and Cooperative Cancellation
-=========================================
+    void cleanup() noexcept override {
+        // The application does not manage this thread. Its final owner stops and joins it.
+        _worker.reset();
+    }
 
-This demo submits the complete file list up front.
-Limiting the number of worker threads does not limit the number of queued jobs: a large input list still means many
-queued callbacks and retained paths.
-For larger workloads, limit outstanding jobs and submit another when a result arrives.
-:doc:`controlling_event_load` develops bounded requests, callback duration, and queue-overflow choices.
+    void beginWork() {
+        // TODO: Create and retain your business operations here.
+        // Connect successful completion to completeWork(), without a main-loop reply.
+    }
 
-A worker callback still occupies its loop until it returns.
-A quit request cannot interrupt a file hash halfway through that callback.
-If your jobs need prompt cancellation, divide them into bounded steps and check for cancellation between steps.
-:doc:`shutting_down_event_work` explains how cancellation, required replies, and thread joining fit together.
-If the work instead becomes a long-lived service with dependencies and asynchronous shutdown, an
-:doc:`application part <using_event_loops_in_application_parts>` provides the surrounding lifecycle.
+    void completeWork() { _worker->quit(); }
+
+    el::UnmanagedEventThreadPtr _worker; ///< Main-thread owner retained through join and cleanup.
+
+.. erbsland-demo-end::
+
+Cleanup releases the final pointer on main even if submission or later processing fails.
+The thread object's destructor then requests quit and joins if necessary, without needing a callback on main.
+
+.. erbsland-in-practice-end::
+
+See :doc:`handling_event_errors` for error handlers and the broader failure contract, and
+:doc:`controlling_event_load` for bounded queues and overload behavior.

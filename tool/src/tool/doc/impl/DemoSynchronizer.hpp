@@ -63,6 +63,8 @@ private:
 private:
     /// Parse one managed block, leaving the index at its closing directive.
     static auto readBlock(const el::StringList &lines, el::ItemIndex &index) -> DemoBlock;
+    /// Reject execution metadata on template sources, including cached blocks.
+    void validateTemplateOptions(const el::StringMap<el::String> &options) const;
     /// Validate a source path and its input size before reading.
     auto sourcePath(const el::String &name) const -> el::Path;
     /// Read a source path confined below demos.

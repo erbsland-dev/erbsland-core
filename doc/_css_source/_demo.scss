@@ -1,11 +1,16 @@
-/*
+/*!
  * Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
  * SPDX-License-Identifier: Apache-2.0
  */
 
 :root {
+    // Match the Read the Docs page background inside tinted discussions.
+    --erbsland-demo-background-color: #fcfcfc;
     --erbsland-demo-frame-color: #454141;
     --erbsland-demo-frame-text-color: #e0e0e0;
+    --erbsland-in-practice-background: #f3f7fb;
+    --erbsland-in-practice-border: #b8cfe2;
+    --erbsland-in-practice-title-color: #3b6688;
 }
 
 .erbsland-demo-hidden {
@@ -14,6 +19,7 @@
 
 .erbsland-demo {
     margin: 1.5em 0;
+    background-color: var(--erbsland-demo-background-color);
     border-left: 3px solid var(--erbsland-demo-frame-color);
     border-top-left-radius: 0.5em;
     overflow: hidden;
@@ -102,4 +108,25 @@
 
 .demo-source-appendix[hidden] {
     display: none;
+}
+
+.rst-content .erbsland-in-practice {
+    margin: 1.5em 0;
+    padding: 1em 1.25em;
+    border: 1px solid var(--erbsland-in-practice-border);
+    border-radius: .4em;
+    background-color: var(--erbsland-in-practice-background);
+
+    > .erbsland-in-practice-title {
+        margin: 0 0 1em;
+        color: var(--erbsland-in-practice-title-color);
+        font-size: .8rem;
+        font-weight: 700;
+        line-height: 1.5;
+        letter-spacing: .03em;
+    }
+
+    > :last-child {
+        margin-bottom: 0;
+    }
 }

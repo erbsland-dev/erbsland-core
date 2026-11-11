@@ -22,7 +22,7 @@
 #include "../event/EventLoop_fwd.hpp"
 #include "../event/EventLoopOptions.hpp"
 #include "../event/EventRegistry_fwd.hpp"
-#include "../event/Events_fwd.hpp"
+#include "../event/EventTarget_fwd.hpp"
 #include "../event/EventThread_fwd.hpp"
 #include "../i18n/DisplayText_fwd.hpp"
 #include "../log/LogManager_fwd.hpp"
@@ -139,19 +139,9 @@ protected: // customizable methods
         -> cterm::TerminalPtr;
 
 public:
-    /// Run the default application lifecycle.
-    /// This is calling the application methods in the following order:
-    /// - `initialize()`
-    /// - `registerCommandLineOptions()`
-    /// - `parseCommandLine()`
-    /// - `handleCommandLineOptions()` (only after successful parsing)
-    /// - `main()` (only after successful parsing)
-    /// - `cleanup()`
-    /// Exceptions thrown from callbacks in the automatically managed main event loop use the same boundary.
-    /// If any `err::Exception` is thrown from one of these methods or callbacks, it will be handled by calling
-    /// `cleanup()` first, then printing the error to `stdErr()` and exiting the application with an exit code of 1.
-    /// In case of an `core::ApplicationError`, the exit code from the exception will be used.
-    /// Any non-`err::Exception` propagates out of this method.
+    /// Run the application lifecycle with operational-error reporting and final cleanup.
+    /// @return The selected exit code, or failure after reporting a `RuntimeError`.
+    /// @seedoc{/reference/core/application_framework}
     [[nodiscard]] auto run() -> int;
     /// Set the function called by the default `initialize()` implementation.
     /// Use this to customize initialization without deriving from `Application`.
@@ -238,8 +228,8 @@ public: // terminal access
 
 public: // event system
     /// Access the target interface of the main event loop.
-    /// Use these events to post/schedule events and calls that shall run in the main thread.
-    [[nodiscard]] auto events() -> event::EventsPtr;
+    /// Use this target to post events and schedule callbacks on the main thread.
+    [[nodiscard]] auto loop() -> event::EventTargetPtr;
     /// Access the event registry.
     [[nodiscard]] auto eventRegistry() -> event::EventRegistry &;
     /// Create a managed event thread.
@@ -253,10 +243,11 @@ protected: // event system
     /// Access the main event loop.
     /// @note Only access the event loop if you need to manually control it from a derived application class.
     ///     The default implementation of `main()` will enter the loop and wait for events.
-    [[nodiscard]] auto eventLoop() -> event::EventLoop &;
+    [[nodiscard]] auto mainEventLoop() -> event::EventLoop &;
     /// Run the main event loop.
     /// Call this from your derived `main()` method to enter the main loop.
-    [[nodiscard]] auto runEventLoop() -> unit::ExitCode;
+    /// Installs the application's default runtime-error handler, replacing any previously installed handler.
+    [[nodiscard]] auto runMainEventLoop() -> unit::ExitCode;
 
 public: // singleton handling.
     /// Get the application instance.

@@ -22,17 +22,16 @@
 namespace erbsland::core::impl {
 
 /// Default detached application-part manager implementation.
-/// @tested{ApplicationPartManagerTest ApplicationPartApplicationTest}
+/// @tested{ApplicationPartManagerTest ApplicationPartApplicationTest ApplicationPartManagerEventTest}
 class ApplicationPartManager final : public core::ApplicationPartManager,
-                                     private core::ApplicationPartManagerEventEditor,
-                                     public std::enable_shared_from_this<ApplicationPartManager> {
+                                     private core::ApplicationPartManagerEventEditor {
 public:
     /// Create a manager with safe destruction from owned callback threads.
-    [[nodiscard]] static auto create(event::EventsPtr controlEvents) -> std::shared_ptr<ApplicationPartManager>;
+    [[nodiscard]] static auto create(event::EventTargetPtr controlEvents) -> std::shared_ptr<ApplicationPartManager>;
 
 public:
     /// Create a manager with an optional external control event target.
-    explicit ApplicationPartManager(event::EventsPtr controlEvents);
+    explicit ApplicationPartManager(event::EventTargetPtr controlEvents);
     /// Stop owned threads and release the manager.
     ~ApplicationPartManager() noexcept override;
 
@@ -58,7 +57,7 @@ public: // implement core::ApplicationPartManagerAccess
 public: // implement core::ApplicationPartManager
     void prepare() override;
     void registerCommandLineOptions(const options::OptionsPtr &options) override;
-    void parseCommandLine(const options::OptionValuesPtr &values) override;
+    void handleCommandLineOptions(const options::OptionValuesPtr &values) override;
     void start() override;
     void start(const ApplicationPartIdentifierPtr &identifier) override;
     void stop(const ApplicationPartIdentifierPtr &identifier) override;
@@ -66,17 +65,21 @@ public: // implement core::ApplicationPartManager
     [[nodiscard]] auto events() noexcept -> core::ApplicationPartManagerEventEditor & override;
     void setErrorHandler(ApplicationPartErrorHandler handler) override;
 
-private: // implement core::ApplicationPartManagerEventEditor
-    [[nodiscard]] auto addStateChanged(ApplicationPartManagerStateChangedFn callback)
-        -> event::EventSubscription override;
-    [[nodiscard]] auto addPartStateChanged(ApplicationPartStateChangedFn callback) -> event::EventSubscription override;
-
 public: // errors
     [[nodiscard]] auto hasError() const noexcept -> bool override;
     [[nodiscard]] auto takeError() noexcept -> std::exception_ptr override;
 
 protected:
     void registerPart(Registration registration) override;
+
+private: // implement event::EventEditor
+    [[nodiscard]] auto source() const -> event::EventSourcePtr override;
+    [[nodiscard]] auto target() const noexcept -> event::EventTargetPtr override;
+
+private: // implement core::ApplicationPartManagerEventEditor
+    [[nodiscard]] auto addStateChanged(ApplicationPartManagerStateChangedFn callback)
+        -> event::EventSubscription override;
+    [[nodiscard]] auto addPartStateChanged(ApplicationPartStateChangedFn callback) -> event::EventSubscription override;
 
 private: // preparation
     /// Resolve an identifier under the manager lock.
@@ -89,6 +92,8 @@ private: // preparation
     void validateAcyclicPart(std::size_t number, std::vector<uint8_t> &marks) const;
 
 private: // control dispatch
+    /// Get a weak manager reference using the event source's shared ownership.
+    [[nodiscard]] auto weakManager() -> std::weak_ptr<ApplicationPartManager>;
     /// Delete a manager directly or transfer deletion away from an owned thread.
     static void destroy(ApplicationPartManager *manager) noexcept;
     /// Test whether the current thread is owned by this manager.
@@ -115,7 +120,7 @@ private: // startup
     [[nodiscard]] auto dependenciesRunning(const ApplicationPartRecord &record) const noexcept -> bool;
     /// Create and start the dedicated thread for one part.
     void startPart(std::size_t number);
-    /// Publish successful startup from a part thread.
+    /// Publish successful initialization and queue the part's running callback.
     void handlePartRunning(std::size_t number);
 
 private: // stopping
@@ -162,7 +167,6 @@ private:
     ApplicationPartErrorHandler _errorHandler;      ///< Part failure policy.
     event::impl::EventCallbackList<ApplicationPartManagerStateChangedFn> _stateChangedCallbacks; ///< State observers.
     event::impl::EventCallbackList<ApplicationPartStateChangedFn> _partStateChangedCallbacks;    ///< Part observers.
-    event::EventsPtr _controlEvents;                    ///< Serializes runtime graph changes.
     event::UnmanagedEventThreadPtr _ownedControlThread; ///< Optional private control thread.
     std::thread::id _controlThreadId;                   ///< Control thread observed during dispatch.
     bool _prepared{false};                              ///< True after successful preparation.

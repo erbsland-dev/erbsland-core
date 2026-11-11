@@ -45,6 +45,7 @@ void RulesDefinitionValidator::validateRule(const RulePtr &rule) {
 
     try {
         constexpr std::array testFunctions{
+            &RulesDefinitionValidator::testUniqueValueNames,
             &RulesDefinitionValidator::testVrNameMustBeText,
             &RulesDefinitionValidator::testSectionList,
             &RulesDefinitionValidator::testAlternatives,
@@ -63,9 +64,25 @@ void RulesDefinitionValidator::validateRule(const RulePtr &rule) {
         }
     } catch (const ConfError &error) {
         if (error.location().isUndefined()) {
-            throw error.withNamePathAndLocation(rule->namePath(), rule->location());
+            throw error.withNamePathAndLocation(rule->definitionNamePath(), rule->location());
         }
         throw;
+    }
+}
+
+void RulesDefinitionValidator::testUniqueValueNames(const RulePtr &rule) {
+    if (rule->type() == vr::RuleType::Alternatives) {
+        return;
+    }
+    std::unordered_set<Name> names;
+    for (const auto &child : rule->childrenImpl()) {
+        if (child->role() != RuleRole::NamedValue) {
+            continue;
+        }
+        if (!names.insert(child->valueName()).second) {
+            throwValidationError(
+                "Multiple rules resolve to the same target name"_el, child->definitionNamePath(), child->location());
+        }
     }
 }
 
@@ -98,7 +115,7 @@ void RulesDefinitionValidator::testAlternatives(const RulePtr &rule) {
 }
 
 void RulesDefinitionValidator::testVrAny(const RulePtr &rule) {
-    if (rule->ruleName() != Name::vrName(Name::VR::ReservedAny)) {
+    if (rule->role() != RuleRole::AnyValue) {
         return;
     }
     if (rule->isOptional()) {
@@ -110,7 +127,7 @@ void RulesDefinitionValidator::testVrAny(const RulePtr &rule) {
 }
 
 void RulesDefinitionValidator::testVrNameMustBeText(const RulePtr &rule) {
-    if (rule->ruleName() == Name::vrName(Name::VR::ReservedName)) {
+    if (rule->role() == RuleRole::NameConstraint) {
         if (rule->type() != vr::RuleType::Text) {
             throwValidationError("The name rule must have a type of 'text'"_el);
         }
@@ -121,11 +138,11 @@ void RulesDefinitionValidator::testSectionList(const RulePtr &rule) {
     if (rule->type() != vr::RuleType::SectionList) {
         return;
     }
-    if (!rule->hasChild(Name::vrName(Name::VR::ReservedEntry))) {
+    if (rule->listEntryRule() == nullptr) {
         throwValidationError("A section list rule must have a 'vr_entry' node-rules definition"_el);
     }
     // also validate its type.
-    const auto entryRule = rule->child(Name::vrName(Name::VR::ReservedEntry));
+    const auto entryRule = rule->listEntryRule();
     ERBSLAND_CORE_CONF_REQUIRE_DEBUG(entryRule != nullptr, "vr_entry must not be null"_el);
     try {
         if (entryRule->type() == vr::RuleType::Alternatives) {
@@ -139,7 +156,7 @@ void RulesDefinitionValidator::testSectionList(const RulePtr &rule) {
                     }
                     testVrEntryCommonConstraints(child);
                 } catch (const ConfError &error) {
-                    throw error.withNamePathAndLocation(child->namePath(), child->location());
+                    throw error.withNamePathAndLocation(child->definitionNamePath(), child->location());
                 }
             }
         } else if (entryRule->type() != vr::RuleType::Section && entryRule->type() != vr::RuleType::SectionWithTexts) {
@@ -151,7 +168,7 @@ void RulesDefinitionValidator::testSectionList(const RulePtr &rule) {
         }
     } catch (const ConfError &error) {
         if (error.location().isUndefined()) {
-            throw error.withNamePathAndLocation(entryRule->namePath(), entryRule->location());
+            throw error.withNamePathAndLocation(entryRule->definitionNamePath(), entryRule->location());
         }
         throw;
     }
@@ -162,10 +179,10 @@ void RulesDefinitionValidator::testValueList(const RulePtr &rule) {
     if (rule->type() != vr::RuleType::ValueList && rule->type() != vr::RuleType::ValueMatrix) {
         return;
     }
-    if (!rule->hasChild(Name::vrName(Name::VR::ReservedEntry))) {
+    if (rule->listEntryRule() == nullptr) {
         throwValidationError("A value list or matrix rule must have a 'vr_entry' node-rules definition"_el);
     }
-    const auto entryRule = rule->child(Name::vrName(Name::VR::ReservedEntry));
+    const auto entryRule = rule->listEntryRule();
     ERBSLAND_CORE_CONF_REQUIRE_DEBUG(entryRule != nullptr, "vr_entry must not be null"_el);
     try {
         if (entryRule->type() == vr::RuleType::Alternatives) {
@@ -179,7 +196,7 @@ void RulesDefinitionValidator::testValueList(const RulePtr &rule) {
                     }
                     testVrEntryCommonConstraints(child);
                 } catch (const ConfError &error) {
-                    throw error.withNamePathAndLocation(child->namePath(), child->location());
+                    throw error.withNamePathAndLocation(child->definitionNamePath(), child->location());
                 }
             }
         } else if (!entryRule->type().isScalar()) {
@@ -192,7 +209,7 @@ void RulesDefinitionValidator::testValueList(const RulePtr &rule) {
         }
     } catch (const ConfError &error) {
         if (error.location().isUndefined()) {
-            throw error.withNamePathAndLocation(entryRule->namePath(), entryRule->location());
+            throw error.withNamePathAndLocation(entryRule->definitionNamePath(), entryRule->location());
         }
         throw;
     }
@@ -210,11 +227,11 @@ void RulesDefinitionValidator::testVrEntryCommonConstraints(const RulePtr &rule)
 
 void RulesDefinitionValidator::testNoOtherSubsectionInListDefinitions(const RulePtr &rule) {
     for (const auto &child : rule->childrenImpl()) {
-        if (child->ruleName() != Name::vrName(Name::VR::ReservedEntry)) {
+        if (child->role() != RuleRole::ListEntry) {
             throwValidationError(
                 StringFormat{"Unexpected sub-node-rules definition in '{}' rule: only 'vr_entry' is permitted"_el}
                     .build(rule->type().toText()),
-                child->namePath(),
+                child->definitionNamePath(),
                 child->location());
         }
     }

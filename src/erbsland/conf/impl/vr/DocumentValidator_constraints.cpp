@@ -13,7 +13,7 @@ using namespace text;
 using namespace text::literals;
 
 void DocumentValidator::validateNameConstraints(const RulePtr &rule, const ValuePtr &value) {
-    if (!rule->hasNameConstraints()) {
+    if (rule->nameConstraintRule() == nullptr) {
         return; // skip if this rule has no name constraints.
     }
     const auto name = value->name();
@@ -21,7 +21,7 @@ void DocumentValidator::validateNameConstraints(const RulePtr &rule, const Value
         throwValidationError(
             "Expected a named value, but got a list entry or text index"_el, value->namePath(), value->location());
     }
-    const auto nameRule = rule->nameConstraints();
+    const auto nameRule = rule->nameConstraintRule();
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(nameRule != nullptr, "Unexpected missing name rule"_el);
     const auto validationContext = ValidationContext{
         .target = ValidationTarget::Name,

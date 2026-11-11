@@ -13,7 +13,8 @@ namespace erbsland::network::impl {
 class HttpClientRequestEventEditor final : public network::HttpClientRequestEventEditor {
 public:
     /// Bind the editor to its owning request.
-    HttpClientRequestEventEditor(event::EventSourcePtr source, event::EventsPtr target, HttpClientRequest &request);
+    HttpClientRequestEventEditor(
+        event::EventSourcePtr source, event::EventTargetPtr target, HttpClientRequest &request);
 
 public: // implement network::HttpClientRequestEventEditor
     auto onResponse(HttpClientResponseFn callback, HttpClientResponseOptions options)

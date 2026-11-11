@@ -5,7 +5,7 @@
 #include "SchedulerBackend_fwd.hpp"
 
 #include "../EventCallback.hpp"
-#include "../Events_fwd.hpp"
+#include "../EventTarget_fwd.hpp"
 
 #include "../../time/TimeDelta.hpp"
 
@@ -25,7 +25,7 @@ public:
     /// Release admission after the operation and any queued callback release shared ownership.
     ~EventContinuation();
     /// Reserve one of the loop's 1024 continuation slots before accepting external work.
-    [[nodiscard]] static auto create(const EventsPtr &events) -> EventContinuationPtr;
+    [[nodiscard]] static auto create(const EventTargetPtr &events) -> EventContinuationPtr;
     /// Queue one completion; the reservation may be reused once that callback starts.
     void invoke(EventCallback callback);
     /// Schedule a completion through the existing timer backend while retaining reserved queue capacity.

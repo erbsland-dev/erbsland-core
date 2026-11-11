@@ -65,7 +65,7 @@ public: // lifecycle
 
 protected:
     /// Create an abstract response owned by one event target.
-    explicit HttpClientResponse(event::EventsPtr ownerEvents) : EventSource{std::move(ownerEvents)} {}
+    explicit HttpClientResponse(event::EventTargetPtr ownerLoop) : EventSource{std::move(ownerLoop)} {}
 };
 
 }

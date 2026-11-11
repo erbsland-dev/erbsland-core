@@ -65,7 +65,7 @@ public: // branch construction
     /// Resolve a rule name path to its canonical representation.
     /// @param namePathLike The source rule name path.
     /// @return The resolved name path.
-    [[nodiscard]] static auto resolveRuleNamePath(const NamePathLike &namePathLike) -> NamePath;
+    [[nodiscard]] static auto resolveDefinitionNamePath(const NamePathLike &namePathLike) -> NamePath;
 
 private:
     /// Apply attributes and validate an implicit entry before modifying the rule tree.

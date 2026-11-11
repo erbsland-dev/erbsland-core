@@ -13,28 +13,64 @@ They...
 2. explain the API using a practical example of **real-world code** that is useful for a user.
 3. provide **verified and compiled** example code that can be used in the documentation.
 4. show the **intended** usage of the API.
-5. are embedded in the documentation, and become part of the text.
+5. are embedded in the documentation to support its explanations.
 
-Demo Executable Behavior
-========================
+Demo Categories and Layout
+==========================
 
-Regular demos shall make use of the common demo framework in `demos/_common`, that provides a special
-``DemoApplication`` class.
-This framework allows to create small demo snippets, each in a separate function that can be registered in the
-application.
-When run, the demo functions are executed and produce output in the terminal.
+Organize demos by domain, then by their teaching purpose:
 
-The utility ``create-demo`` automatically creates new demos, or add new parts to existing demos.
+.. code-block:: text
 
-The generated executable entry point imports the ``demo`` namespace and defines only the required global ``main``
-function.
+    demos/<domain>/
+        apps/<ApplicationName>/
+        snippets/<CollectionName>/
+        templates/<TemplateCollection>/<Variant>/
+
+**Apps** are realistic working applications that demonstrate one or more topics.
+They include the business functionality needed to observe their behavior.
+Build and link them, run their relevant tests, and validate bounded documentation commands.
+They must be safe to start from the command line and provide ``--help`` or ``-h``.
+Use ``erbsland_core_add_demo`` to register each executable.
+Explain complete applications under ``doc/demo_apps/<domain>`` following :doc:`demo_app_page`.
+Topic pages may reuse focused excerpts inside practical blocks and link to the complete walkthrough.
+Snippet collections, compile-only templates, and shared demo framework documentation do not belong in that section.
+
+**Snippets** are runnable collections of focused examples using ``DemoApplication`` from ``demos/_common``.
+Each example is a separate registered function.
+Build and link the collection, then execute the relevant examples and synchronize their captured output.
+The command ``create-demo <domain>/<DemoName>/<DemoPart>`` creates new collections under ``snippets``.
+It extends an existing legacy collection at ``demos/<domain>/<DemoName>`` in place.
+It rejects ambiguous legacy/categorized locations and names already used by ``apps`` or ``templates``.
+
+**Templates** are compilable starting points with business functionality deliberately omitted.
+They contain real entry points, lifecycle hooks, resource ownership, required configuration handling, and completion
+hooks.
+Comments identify where the reader supplies operations and connects their completion.
+Do not add simulated work, artificial output, or unrelated facilities merely to make a template terminate.
+A template may keep running until its missing business functionality is implemented.
+
+Templates **must compile and link, but must never be executed for documentation or validation**, including with
+``--help``.
+Register each independent variant with ``erbsland_core_add_demo_template`` and include it in normal demo compilation.
+This helper writes executables to ``demo-templates/<domain>`` in the build tree, outside the runnable
+``demo-apps/<domain>`` tree used by apps and snippets.
+Do not register templates as executable tests or include them in demo-running scripts.
+Documentation uses source-only ``erbsland-demo`` blocks for templates.
+
+The event domain uses this categorized layout.
+Other domains retain their existing locations until explicitly migrated; do not reorganize them as a side effect of
+adding a snippet.
+Changing a source directory must preserve existing target names and runnable executable locations, and update all source
+references and documentation selectors.
+
+Demo Entry Points
+=================
+
+The generated snippet entry point imports the ``demo`` namespace and defines only the required global ``main`` function.
 A forwarding global ``main`` may be added when the namespaced implementation itself is embedded in the documentation and
 the wrapper must be omitted from the displayed source.
-
-If this framework is not suitable for the demo:
-
-* A demo must be safe to be started from the command line.
-* The command line option ``--help`` or ``-h`` shall display command line help.
+Apps and templates use the entry points appropriate to the application design they teach.
 
 Terminal Capture
 ================
@@ -95,6 +131,8 @@ a selected component without having to inspect the entire application first.
 Demo Code in Documentation Pages
 ================================
 
+For topic pages, follow :ref:`topic-page-practical-separation` to keep demos and their discussion inside practical
+blocks.
 Use :doc:`demo_integration` to select source excerpts, capture commands and output, synchronize managed blocks, and
 review their rendered presentation.
 That guide documents all ``erbsland-demo`` options and the ``doc-process-rst`` workflow.
@@ -105,7 +143,8 @@ Language and Themes in Demos
 When to use a theme and language?
 
 * Only use a theme for small functions like demos to make them more entertaining.
-* Don't use a theme for large application like demos that resemble real-life applications.
+* Don't use a theme for application demos or compile-only templates.
+* Templates use neutral names and comments to identify the business functionality the reader must supply.
 
 How to use a theme and language?
 

@@ -11,7 +11,7 @@
 
 namespace erbsland::util::impl {
 
-void WorkerPoolState::bind(const event::EventsPtr &owner, event::EventSourceWeakPtr source) {
+void WorkerPoolState::bind(const event::EventTargetPtr &owner, event::EventSourceWeakPtr source) {
     auto continuation = event::impl::EventContinuation::create(owner);
     const auto lock = std::scoped_lock{_mutex};
     _owner = std::dynamic_pointer_cast<event::EventLoop>(owner);

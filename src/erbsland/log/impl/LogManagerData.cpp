@@ -11,7 +11,7 @@
 
 #include "../../err/LogicFailure.hpp"
 #include "../../err/RuntimeError.hpp"
-#include "../../event/Events.hpp"
+#include "../../event/EventTarget.hpp"
 #include "../../event/UnmanagedEventThread.hpp"
 #include "../../text/Char.hpp"
 #include "../../text/CharSet.hpp"
@@ -306,7 +306,7 @@ void LogManagerData::scheduleLocked() noexcept {
     }
     _scheduled = true;
     const auto weak = weak_from_this();
-    _eventThread->events()->invoke([weak]() -> void {
+    _eventThread->loop()->invoke([weak]() -> void {
         if (const auto self = weak.lock()) {
             self->drain();
         }
@@ -437,7 +437,7 @@ void LogManagerData::closeWriters(const std::vector<LogWriterPtr> &writers) {
     auto completionMutex = std::mutex{};
     auto completionCondition = std::condition_variable{};
     auto completed = false;
-    _eventThread->events()->invoke([this, writers, &completionMutex, &completionCondition, &completed]() -> void {
+    _eventThread->loop()->invoke([this, writers, &completionMutex, &completionCondition, &completed]() -> void {
         for (const auto &writer : writers) {
             writer->close();
             writer->release(this);

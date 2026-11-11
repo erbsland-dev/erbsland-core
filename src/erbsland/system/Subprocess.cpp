@@ -8,7 +8,7 @@
 #include "impl/subprocess/SubprocessState.hpp"
 #include "impl/subprocess/SubprocessValidation.hpp"
 
-#include "../event/Events.hpp"
+#include "../event/EventTarget.hpp"
 
 namespace erbsland::system {
 
@@ -74,15 +74,15 @@ auto Subprocess::wasStandardErrorTruncated() const noexcept -> bool {
     return _state->truncated(true);
 }
 
-void Subprocess::bindEvents(const event::EventsPtr &owner) {
-    bindOwnerEvents(owner);
+void Subprocess::bindEvents(const event::EventTargetPtr &owner) {
+    bindOwnerLoop(owner);
 }
 
 auto Subprocess::events() -> SubprocessEventEditor & {
-    if (ownerEvents() == nullptr) {
-        event::currentEvents()->get<System>().bindSubprocess(std::static_pointer_cast<Subprocess>(shared_from_this()));
+    if (ownerLoop() == nullptr) {
+        event::currentLoop()->get<System>().bindSubprocess(std::static_pointer_cast<Subprocess>(shared_from_this()));
     }
-    auto owner = currentOwnerEvents();
+    auto owner = currentOwnerLoop();
     if (_editor == nullptr) {
         _editor = std::make_unique<impl::SubprocessEventEditor>(shared_from_this(), owner, _state);
     }

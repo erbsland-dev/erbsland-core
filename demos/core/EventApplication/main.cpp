@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/Application.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/Literals.hpp>
 #include <erbsland/StandardStreams.hpp>
 #include <erbsland/Version.hpp>
@@ -23,13 +23,13 @@ protected: // implement Application
     void initialize() override {
         info().setApplicationName("Maintenance Queue"_el);
         info().setApplicationVersion(el::Version{1, 0, 0});
-        events()->invoke([this]() -> void { runMaintenance(); });
+        loop()->invoke([this]() -> void { runMaintenance(); });
     }
 
 private:
     void runMaintenance() {
         el::io::printLine("maintenance job started"_el);
-        events()->invoke([this]() -> void {
+        loop()->invoke([this]() -> void {
             el::io::printLine("maintenance job completed"_el);
             quit();
         });

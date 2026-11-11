@@ -20,7 +20,7 @@ Primary Types
 .. code-block:: text
 
     Application // process application lifecycle and shared Core service owner
-    ApplicationPartManager // detached application-part graph and lifecycle owner
+    ApplicationPartManager // detached application-part graph owner and lifecycle EventSource
 
 Secondary Types
 ===============
@@ -67,6 +67,8 @@ Customization Patterns
     o.cleanup() // customize non-throwing finalization
     o.setInitializeFn/setMainFn(function) // customize lifecycle without deriving
     o.createAndInitializeTerminal() -> cterm::TerminalPtr // customize terminal construction
+    o.mainEventLoop() -> event::EventLoop& // access the main loop from a derived application
+    o.runMainEventLoop() -> unit::ExitCode // run the main loop from a derived application's main
 
 Application-Part Patterns
 =========================
@@ -79,10 +81,16 @@ Application-Part Patterns
     o.prepare() // close registration, validate the graph, and construct parts
     o.start([identifier])/stop([identifier]) // request asynchronous one-shot lifecycle transitions
     o.waitForRunning([identifier])/waitForStopped([identifier]) -> bool // wait outside managed event threads
-    o.registerCommandLineOptions(options)/parseCommandLine(values) // synchronously forward option phases
+    o.registerCommandLineOptions(options)/handleCommandLineOptions(values) // synchronously forward option phases
     o.setErrorHandler(handler) // select Continue or StopAll after part failures
-    o.events() -> ApplicationPartManagerEventEditor& // access the stable manager-owned lifecycle event editor
-    o.addStateChanged/addPartStateChanged(callback) -> EventSubscription // add an observer through the event editor
+    o.ownerLoop() -> event::EventTargetPtr // access the manager's fixed control and callback target
+    o.events() -> ApplicationPartManagerEventEditor& // access the stable manager-owned editor from any thread
+    o.loop() -> event::EventTargetPtr // access a started application part's event target
+    o.onInitialize() // initialize a part in its event loop while Starting
+    o.onRunning() // begin work in a separate queued callback after initialization and publication of Running
+    o.onStopping()/completeStopping() // begin and complete graceful stopping in the part's event loop
+    o.cleanup() // finalize on the part thread after its loop exits
+    o.addStateChanged/addPartStateChanged(callback) -> EventSubscription // thread-safe registration through the editor
     o.hasError()/takeError() -> T // inspect and consume the ordered error queue
 
 Application Service Patterns
@@ -97,7 +105,7 @@ Application Service Patterns
     o.resources() -> const resource::Resources& // access compiled resources through a lazy shared manager
     o.enableLastErrorDump([mode]) // retain recent errors and display them on failure or after every run
     o.terminal()/systemOutputStyle() -> T // access terminal integration and presentation
-    o.events()/eventRegistry()/createEventThread() -> T // access shared event services
+    o.loop()/eventRegistry()/createEventThread() -> T // access shared event services
 
 Application Instance Patterns
 =============================

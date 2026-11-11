@@ -7,7 +7,7 @@
 #include <erbsland/cterm/BlockString.hpp>
 #include <erbsland/cterm/BlockStringEditor.hpp>
 #include <erbsland/cterm/TerminalDocumentRenderer.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/StringFormat.hpp>
 #include <erbsland/StringJoins.hpp>
 
@@ -25,7 +25,7 @@ TaskDisplay::TaskDisplay(el::cterm::TerminalPtr terminal) :
         _terminal->isInteractive() && _terminal->outputMode() == el::cterm::Terminal::OutputMode::FullControl;
     if (_interactive) {
         _thread = frame::app().createEventThread();
-        _timer = _thread->events()->createTimer([this]() -> void { refresh(); });
+        _timer = _thread->loop()->createTimer([this]() -> void { refresh(); });
         _timer->startFixedDelay(el::time::TimeDelta::milliseconds(100));
         _thread->start();
     }

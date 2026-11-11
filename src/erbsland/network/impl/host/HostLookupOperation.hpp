@@ -21,8 +21,8 @@ struct HostLookupOperation final {
     /// Create the record for one lookup operation.
     /// @param operationHost The host being resolved.
     /// @param operationOptions The options captured for this operation.
-    /// @param ownerEvents Owner event loop whose completion capacity is reserved before admission.
-    HostLookupOperation(Host operationHost, HostLookupOptions operationOptions, const event::EventsPtr &ownerEvents);
+    /// @param ownerLoop Owner event loop whose completion capacity is reserved before admission.
+    HostLookupOperation(Host operationHost, HostLookupOptions operationOptions, const event::EventTargetPtr &ownerLoop);
 
     event::impl::EventContinuationPtr resultCompletion;       ///< Serialized result and retry capacity.
     event::impl::EventContinuationPtr cancellationCompletion; ///< Independent cancellation capacity.

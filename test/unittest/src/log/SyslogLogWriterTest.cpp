@@ -43,7 +43,7 @@ struct FakeSyslogNetworkState final {
 
 class FakeUdpSocketEventEditor final : public el::network::UdpSocketEventEditor {
 public:
-    FakeUdpSocketEventEditor(el::event::EventSourcePtr source, el::event::EventsPtr target) :
+    FakeUdpSocketEventEditor(el::event::EventSourcePtr source, el::event::EventTargetPtr target) :
         UdpSocketEventEditor{std::move(source), std::move(target)} {}
 
     auto onBound(el::network::NetworkEventFn callback) -> FakeUdpSocketEventEditor & override {
@@ -81,7 +81,7 @@ public:
 
 class FakeUdpSocket final : public el::network::UdpSocket {
 public:
-    FakeUdpSocket(el::event::EventsPtr owner, std::shared_ptr<FakeSyslogNetworkState> state) :
+    FakeUdpSocket(el::event::EventTargetPtr owner, std::shared_ptr<FakeSyslogNetworkState> state) :
         UdpSocket{std::move(owner)}, _state{std::move(state)} {}
 
     auto localEndpoint() const -> std::optional<el::network::IpEndpoint> override { return _localEndpoint; }
@@ -108,7 +108,7 @@ public:
     void abort() noexcept override { _sourceState = el::network::NetworkSourceState::Closed; }
     auto events() -> el::network::UdpSocketEventEditor & override {
         if (!_events) {
-            _events = std::make_unique<FakeUdpSocketEventEditor>(shared_from_this(), ownerEvents());
+            _events = std::make_unique<FakeUdpSocketEventEditor>(shared_from_this(), ownerLoop());
         }
         return *_events;
     }
@@ -122,7 +122,7 @@ private:
 
 class FakeTcpConnectionEventEditor final : public el::network::TcpConnectionEventEditor {
 public:
-    FakeTcpConnectionEventEditor(el::event::EventSourcePtr source, el::event::EventsPtr target) :
+    FakeTcpConnectionEventEditor(el::event::EventSourcePtr source, el::event::EventTargetPtr target) :
         TcpConnectionEventEditor{std::move(source), std::move(target)} {}
 
     auto onHostResolved(el::network::TcpHostResolvedFn callback) -> FakeTcpConnectionEventEditor & override {
@@ -165,7 +165,8 @@ public:
 
 class FakeTcpConnection final : public el::network::TcpConnection {
 public:
-    FakeTcpConnection(el::event::EventsPtr owner, std::shared_ptr<FakeSyslogNetworkState> state, const bool failSend) :
+    FakeTcpConnection(
+        el::event::EventTargetPtr owner, std::shared_ptr<FakeSyslogNetworkState> state, const bool failSend) :
         TcpConnection{std::move(owner)}, _state{std::move(state)}, _failSend{failSend} {}
 
     void connect(el::network::HostEndpoint endpoint, el::network::TcpConnectOptions) override {
@@ -195,7 +196,7 @@ public:
     void abort() noexcept override { _connectionState = el::network::ConnectionState::Closed; }
     auto events() -> el::network::TcpConnectionEventEditor & override {
         if (!_events) {
-            _events = std::make_unique<FakeTcpConnectionEventEditor>(shared_from_this(), ownerEvents());
+            _events = std::make_unique<FakeTcpConnectionEventEditor>(shared_from_this(), ownerLoop());
         }
         return *_events;
     }
@@ -210,7 +211,7 @@ private:
 
 class FakeTlsConnectionEventEditor final : public el::network::TlsClientConnectionEventEditor {
 public:
-    FakeTlsConnectionEventEditor(el::event::EventSourcePtr source, el::event::EventsPtr target) :
+    FakeTlsConnectionEventEditor(el::event::EventSourcePtr source, el::event::EventTargetPtr target) :
         TlsClientConnectionEventEditor{std::move(source), std::move(target)} {}
 
     auto onHostResolved(el::network::TcpHostResolvedFn callback) -> FakeTlsConnectionEventEditor & override {
@@ -268,7 +269,7 @@ public:
 
 class FakeTlsConnection final : public el::network::TlsClientConnection {
 public:
-    FakeTlsConnection(el::event::EventsPtr owner, std::shared_ptr<FakeSyslogNetworkState> state) :
+    FakeTlsConnection(el::event::EventTargetPtr owner, std::shared_ptr<FakeSyslogNetworkState> state) :
         TlsClientConnection{std::move(owner)}, _state{std::move(state)} {}
 
     auto requestedConfigurationLabel() const -> String override { return _state->tlsLabel; }
@@ -299,7 +300,7 @@ public:
     void abort() noexcept override { _connectionState = el::network::ConnectionState::Closed; }
     auto events() -> el::network::TlsClientConnectionEventEditor & override {
         if (!_events) {
-            _events = std::make_unique<FakeTlsConnectionEventEditor>(shared_from_this(), ownerEvents());
+            _events = std::make_unique<FakeTlsConnectionEventEditor>(shared_from_this(), ownerLoop());
         }
         return *_events;
     }
@@ -317,7 +318,7 @@ public:
 
     auto backendId() const noexcept -> el::event::EventBackendId override { return el::network::Network::backendId(); }
     void attach(el::event::EventBackendTargetWeakPtr target, el::event::EventLoopDriverWeakPtr) override {
-        _owner = std::dynamic_pointer_cast<el::event::Events>(target.lock());
+        _owner = std::dynamic_pointer_cast<el::event::EventTarget>(target.lock());
     }
     void poll(el::time::TimePoint) override {}
     auto handleEvent(const el::event::Event &) -> bool override { return false; }
@@ -342,7 +343,7 @@ public:
 
 private:
     std::shared_ptr<FakeSyslogNetworkState> _state;
-    el::event::EventsPtr _owner;
+    el::event::EventTargetPtr _owner;
 };
 
 }

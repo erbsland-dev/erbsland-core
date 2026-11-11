@@ -20,9 +20,9 @@ namespace erbsland::core {
 using namespace unit;
 using namespace event;
 
-auto Application::runEventLoop() -> ExitCode {
+auto Application::runMainEventLoop() -> ExitCode {
     const auto eventData = _data->events().get();
-    eventData->runLoop();
+    eventData->runMainEventLoop();
     const auto partsData = _data->parts().getIfExists();
     const auto manager = partsData != nullptr ? partsData->managerIfExists() : nullptr;
     if (manager != nullptr) {
@@ -31,7 +31,7 @@ auto Application::runEventLoop() -> ExitCode {
             managerState == ApplicationPartManagerState::Running) {
             manager->stop();
             if (!eventData->isQuitRequested()) {
-                eventData->runLoop();
+                eventData->runMainEventLoop();
             }
         }
     }
@@ -42,8 +42,8 @@ auto Application::runEventLoop() -> ExitCode {
     return exitCode;
 }
 
-auto Application::events() -> EventsPtr {
-    return _data->events().get()->events();
+auto Application::loop() -> EventTargetPtr {
+    return _data->events().get()->loop();
 }
 
 auto Application::eventRegistry() -> EventRegistry & {

@@ -27,14 +27,15 @@ public:
 public: // implements event::EventThread
     void start() override;
     void quit() noexcept override;
+    [[nodiscard]] auto stopToken() const noexcept -> util::StopToken override;
     void join() override;
     [[nodiscard]] auto isStarted() const noexcept -> bool override;
     [[nodiscard]] auto isRunning() const noexcept -> bool override;
-    [[nodiscard]] auto eventLoop() noexcept -> event::EventLoop & override;
-    [[nodiscard]] auto events() noexcept -> event::EventsPtr override;
+    [[nodiscard]] auto workerEventLoop() noexcept -> event::EventLoop & override;
+    [[nodiscard]] auto loop() noexcept -> event::EventTargetPtr override;
 
 private: // implements EventThreadBase
-    void runEventLoop() override;
+    void runWorkerEventLoop() override;
 };
 
 }

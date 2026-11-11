@@ -63,7 +63,7 @@ protected:
     /// Create an editor for its source and owner target.
     /// @param source The owning source.
     /// @param target The callback target.
-    SubprocessEventEditor(event::EventSourcePtr source, event::EventsPtr target);
+    SubprocessEventEditor(event::EventSourcePtr source, event::EventTargetPtr target);
 };
 
 }

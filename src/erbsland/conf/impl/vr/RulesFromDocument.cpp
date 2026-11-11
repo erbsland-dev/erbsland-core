@@ -61,17 +61,7 @@ void RulesFromDocument::read() {
         if (!node->isDocument() && node->namePath().front() == Name::vrName(Name::VR::ReservedTemplate)) {
             return false; // Skip the template nodes, as they are just referenced from regular nodes.
         }
-        if (node->name().isIndex()) {
-            if (!node->hasParent()) {
-                return false; // coverage: this should never happen
-            }
-            const auto parentName = node->parent()->name();
-            if (parentName == Name::vrName(Name::VR::ReservedKey) ||
-                parentName == Name::vrName(Name::VR::ReservedDependency)) {
-                return false; // skip the individual entries in `vr_key` and `vr_dependency`
-            }
-        }
-        return node->type().isMap() || node->type() == ValueType::SectionList;
+        return isRuleNode(node);
     };
     auto visit = [this](const conf::ValuePtr &node) -> void {
         if (!node->isDocument()) {
@@ -83,6 +73,24 @@ void RulesFromDocument::read() {
     walker.setRoot(_document);
     walker.setFilter(filter);
     walker.walk(visit);
+}
+
+auto RulesFromDocument::isRuleNode(const conf::ValuePtr &node) -> bool {
+    if (node->name().isIndex()) {
+        if (!node->hasParent()) {
+            return false; // coverage: this should never happen
+        }
+        const auto parentName = node->parent()->name();
+        const auto parentPath = node->parent()->namePath();
+        const auto isTemplateRoot =
+            parentPath.size() == 2 && parentPath.front() == Name::vrName(Name::VR::ReservedTemplate);
+        if (!isTemplateRoot &&
+            (parentName == Name::vrName(Name::VR::ReservedKey) ||
+                parentName == Name::vrName(Name::VR::ReservedDependency))) {
+            return false; // skip the individual entries in `vr_key` and `vr_dependency`
+        }
+    }
+    return node->type().isMap() || node->type() == ValueType::SectionList;
 }
 
 void RulesFromDocument::processDocumentNode(const conf::ValuePtr &node) {
@@ -110,7 +118,9 @@ void RulesFromDocument::processDocumentNode(const conf::ValuePtr &node) {
             processKey(node);
         } else if (name == Name::vrName(Name::VR::ReservedEntry) || name == Name::vrName(Name::VR::ReservedAny)) {
             processRegularNode(node);
-        } else if (!name.isReservedValidationRule() || name.isEscapedReservedValidationRule()) {
+        } else if (
+            !name.isReservedValidationRule() || name.isEscapedReservedValidationRule() ||
+            name.asText().startsWith(vrc::cLiteralPrefix)) {
             processRegularNode(node);
         } else {
             throwValidationError("Unknown reserved name"_el);
@@ -124,10 +134,10 @@ void RulesFromDocument::processDocumentNode(const conf::ValuePtr &node) {
 }
 
 void RulesFromDocument::processRegularNode(const conf::ValuePtr &node) {
-    const auto rule = std::make_shared<Rule>();
+    const auto rule = std::make_shared<Rule>(Rule::roleForDefinitionName(node->name()));
     rule->setLocation(node->location());
-    rule->setRuleNamePath(createRuleNamePath(node->namePath()));
-    rule->setTargetNamePath(createTargetNamePath(node->namePath()));
+    rule->setDefinitionNamePath(createDefinitionNamePath(node->namePath()));
+    rule->setValueNamePath(createValueNamePath(node->namePath()));
     // Add the unfinished rule early to the structure ensuring we have a valid parent.
     _rules->addRule(rule);
     if (node->type() == ValueType::SectionList) {
@@ -160,17 +170,13 @@ void RulesFromDocument::processNodeRules(const conf::ValuePtr &node, const RuleP
 void RulesFromDocument::processNameNodeRules(const conf::ValuePtr &node, const RulePtr &rule) {
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
         node->type() == ValueType::SectionWithNames, "Expected section with names node"_el);
-    if (const auto value = node->value(Name::vrName(Name::VR::Type)); value != nullptr) {
-        if (value->type() != ValueType::Text) {
-            throwValidationError("The 'type' value must be a text"_el, value->namePath(), value->location());
-        }
-        if (vr::RuleType::fromText(value->asText()) != vr::RuleType::Text) {
+    if (node->hasValue(Name::vrName(Name::VR::Type)) || node->hasValue(Name::vrName(Name::VR::UseTemplate))) {
+        handleTypeOrTemplate(node, rule);
+        if (rule->type() != vr::RuleType::Text) {
+            const auto value = node->valueOrThrow(Name::vrName(Name::VR::Type));
             throwValidationError(
                 "Name node-rules must have a 'type' value of 'text'"_el, value->namePath(), value->location());
         }
-    }
-    if (node->hasValue(Name::vrName(Name::VR::UseTemplate))) {
-        throwValidationError("Name node-rules cannot have a 'use_template' value"_el);
     }
     handleCaseSensitive(node, rule);
     processCommonNodeRules(node, rule);
@@ -183,7 +189,7 @@ void RulesFromDocument::processCommonNodeRules(const conf::ValuePtr &node, const
     for (const auto &value : *node) {
         try {
             if (value->type().isStructural()) {
-                if (rule->ruleName() == Name::vrName(Name::VR::ReservedName)) {
+                if (rule->role() == RuleRole::NameConstraint) {
                     throwValidationError("A 'vr_name' section cannot have subsections"_el);
                 }
                 continue; // Ignore subsections, section lists, etc.

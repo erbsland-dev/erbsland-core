@@ -5,7 +5,7 @@
 #include <erbsland/ApplicationError.hpp>
 #include <erbsland/ByteBlock.hpp>
 #include <erbsland/CryptologyConfiguration.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/HttpMethod.hpp>
 #include <erbsland/HttpMethodType.hpp>
 #include <erbsland/HttpServerRequest.hpp>
@@ -96,7 +96,7 @@ void HttpsServerApp::parseCommandLine() {
     }
     _runFor = el::Seconds{runFor};
     configureTls();
-    events()->invoke([this]() -> void { startServer(); });
+    loop()->invoke([this]() -> void { startServer(); });
 }
 
 /// Register the certificate and matching private key under the HTTP server's standard TLS configuration label.
@@ -148,7 +148,7 @@ void HttpsServerApp::configureRoutes() {
 
 /// Create the HTTPS server, attach lifecycle callbacks, and bind its configured endpoint.
 void HttpsServerApp::startServer() {
-    _server = events()->get<el::Network>().createHttpServer();
+    _server = loop()->get<el::Network>().createHttpServer();
     _server->enableTls();
     configureStaticContent();
     configureRoutes();
@@ -164,7 +164,7 @@ void HttpsServerApp::onListening() {
     el::stdOut()->printLine("HTTPS server listening on "_el, _server->localEndpoint()->toString());
     el::stdOut()->printLine("Routes: /health, /hello/{name}, /stream, /assets/..."_el);
     if (_runFor.isPositive()) {
-        events()->invokeAfter(_runFor, [this]() -> void { closeGracefully(); });
+        loop()->invokeAfter(_runFor, [this]() -> void { closeGracefully(); });
     }
 }
 
@@ -179,7 +179,7 @@ void HttpsServerApp::closeGracefully() {
 }
 
 void HttpsServerApp::removeResponse(StreamedResponse *finished) {
-    events()->invoke([this, finished]() -> void {
+    loop()->invoke([this, finished]() -> void {
         std::erase_if(_responses, [finished](const auto &response) -> bool { return response.get() == finished; });
     });
 }

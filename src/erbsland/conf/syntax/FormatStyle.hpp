@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BooleanForm.hpp"
 #include "IndentationStyle.hpp"
 #include "MatrixStyle.hpp"
 #include "PositionMode.hpp"
@@ -11,18 +12,32 @@
 #include "WordSeparator.hpp"
 
 #include "../../text/Char.hpp"
+#include "../../text/StringList.hpp"
 #include "../../unit/CpCount.hpp"
 
 namespace erbsland::conf::syntax {
 
 /// Complete formatting properties with repository-style defaults.
-/// @tested{SyntaxFormatterTest SyntaxFormatTest}
+/// @tested{SyntaxFormatterTest SyntaxFormatTest SyntaxLiteralFormattingTest}
 class FormatStyle final {
 public:
-    // defaults
-    FormatStyle() = default;
+    /// Create the default formatting style.
+    FormatStyle();
 
 public: // properties
+    /// Whole identifier words kept uppercase in title case.
+    [[nodiscard]] auto abbreviations() const noexcept -> const text::StringList & { return _abbreviations; }
+    /// Set whole identifier words kept uppercase in title case.
+    /// @param value Single regular words; an empty list disables abbreviation handling.
+    auto setAbbreviations(text::StringList value) -> FormatStyle &;
+    /// Case of Boolean literals.
+    [[nodiscard]] auto booleanCase() const noexcept -> WordCase { return _booleanCase; }
+    /// Set case of Boolean literals.
+    auto setBooleanCase(WordCase value) noexcept -> FormatStyle &;
+    /// Word pair of Boolean literals.
+    [[nodiscard]] auto booleanForm() const noexcept -> BooleanForm { return _booleanForm; }
+    /// Set word pair of Boolean literals.
+    auto setBooleanForm(BooleanForm value) noexcept -> FormatStyle &;
     /// Soft maximum line width.
     [[nodiscard]] auto maximumLineLength() const noexcept -> unit::CpCount { return _maximumLineLength; }
     /// Set soft maximum line width.
@@ -179,6 +194,9 @@ public: // properties
     auto setIndentationCount(unit::CpCount value) noexcept -> FormatStyle &;
 
 private:
+    text::StringList _abbreviations;                              ///< Title-case abbreviation words.
+    WordCase _booleanCase{WordCase::Title};                       ///< Boolean literal case.
+    BooleanForm _booleanForm{BooleanForm::Keep};                  ///< Boolean word pair.
     ValueWrapping _valueWrapping{ValueWrapping::NextLineIfFits};  ///< Non-multiline value placement.
     unit::CpCount _maximumLineLength{unit::CpCount{118}};         ///< Soft maximum line width.
     WordCase _sectionNameCase{WordCase::Title};                   ///< Case of regular section names.

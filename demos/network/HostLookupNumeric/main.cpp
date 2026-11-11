@@ -29,7 +29,7 @@ struct LookupData {
 /// Numeric hosts use the same asynchronous callback contract as names.
 /// The public address is returned on a later event-loop turn without calling the native resolver or contacting it.
 void resolveMoonRelay() {
-    const auto events = el::application().events();
+    const auto events = el::application().loop();
     lookupData.lookup = events->get<el::Network>().createHostLookup();
     lookupData.lookup->events()
         .onResolved([](const el::List<el::IpAddress> &addresses) -> void {
@@ -46,7 +46,7 @@ void resolveMoonRelay() {
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
     demo::DemoTerminal::enable(app);
-    app.events()->invoke(resolveMoonRelay);
+    app.loop()->invoke(resolveMoonRelay);
     return app.run();
 }
 

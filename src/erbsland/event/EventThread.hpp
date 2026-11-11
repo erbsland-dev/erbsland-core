@@ -3,8 +3,10 @@
 #pragma once
 
 #include "EventLoop_fwd.hpp"
-#include "Events_fwd.hpp"
+#include "EventTarget_fwd.hpp"
 #include "EventThread_fwd.hpp"
+
+#include "../util/StopToken.hpp"
 
 namespace erbsland::event {
 
@@ -29,6 +31,12 @@ public:
     /// This operation is idempotent, returns without waiting, and can be called before `start()`. Events queued before
     /// the quit request are processed before the loop terminates.
     virtual void quit() noexcept = 0;
+    /// Observe permanent quit requests without retaining the thread or its event loop.
+    /// The token is signalled by explicit quit, application shutdown, quitting policies, and destruction.
+    /// It remains valid after destruction. Resumable `EventLoop::stop()` does not signal it.
+    /// @return A copyable token for cooperative cancellation; it never interrupts an executing callback.
+    /// @seedoc{/reference/event/event_system}
+    [[nodiscard]] virtual auto stopToken() const noexcept -> util::StopToken = 0;
     /// Wait until the thread has finished.
     /// This operation does not request termination. It blocks while the worker is running, returns immediately if the
     /// thread was never started or was already joined, and leaves `isStarted()` unchanged. Exceptions escaping the
@@ -44,10 +52,10 @@ public:
     [[nodiscard]] virtual auto isRunning() const noexcept -> bool = 0;
     /// Access the event loop owned by this thread.
     /// @return A reference that remains valid for the lifetime of this thread object.
-    [[nodiscard]] virtual auto eventLoop() noexcept -> EventLoop & = 0;
+    [[nodiscard]] virtual auto workerEventLoop() noexcept -> EventLoop & = 0;
     /// Access the event-target interface of the owned loop.
     /// @return A shared event target suitable for posting work to this thread.
-    [[nodiscard]] virtual auto events() noexcept -> EventsPtr = 0;
+    [[nodiscard]] virtual auto loop() noexcept -> EventTargetPtr = 0;
 };
 
 }

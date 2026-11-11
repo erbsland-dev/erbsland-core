@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "Events_fwd.hpp"
 #include "EventSource_fwd.hpp"
+#include "EventTarget_fwd.hpp"
 
 namespace erbsland::event {
 
 /// Common interface for editing handlers owned by an event source.
 /// Sources own their editors and return them by reference. The source and target accessors exist primarily for
-/// generic code that works with heterogeneous editors; regular code uses the typed `on...()` methods.
+/// generic code that works with heterogeneous editors; regular code uses the typed `on...()` or `add...()` methods.
+/// Access and editing require the source's owner loop unless the concrete editor documents thread-safe operations.
 /// @tested{EventSourceTest}
 class EventEditor {
 public:
@@ -29,7 +30,7 @@ public: // interface
     [[nodiscard]] virtual auto source() const -> EventSourcePtr = 0;
     /// Retain and access the target on which callbacks are executed.
     /// @return The callback target.
-    [[nodiscard]] virtual auto target() const noexcept -> EventsPtr = 0;
+    [[nodiscard]] virtual auto target() const noexcept -> EventTargetPtr = 0;
 
 protected:
     // defaults

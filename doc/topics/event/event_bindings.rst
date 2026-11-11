@@ -7,31 +7,59 @@
     single: Callbacks; Bound Continuations
     single: Events; Weak Bindings
 
-************************************
-Simplifying Event Code with Bindings
-************************************
+****************************************
+Delivering Callbacks with Event Bindings
+****************************************
 
-You already know how ``invoke`` queues a call and how captured values survive until dispatch.
-Returning results from a worker often repeats the same two lambdas: one receives the result, and another calls its
-recipient on the right loop.
-An event binding packages that return path into a reusable callback.
-This page develops that return path in two checksum applications, then separates required calculation results from
-optional display updates in a pi calculator.
+When background work finishes, its result often belongs to an object whose state is managed on an event loop.
+The worker can report the result through a callback, but that callback must arrange for the receiving code to run on the
+right loop.
+An event binding packages this return path into a reusable callable.
+With :cpp:func:`bindEvent() <erbsland::event::bindEvent>` and
+:cpp:func:`bindWeakEvent() <erbsland::event::bindWeakEvent>`, you can choose where results arrive and whether a bound
+recipient must stay alive to receive them.
+This page explains those choices, how result arguments survive deferred delivery, and how to keep required completion
+independent of optional notifications.
 
-From Nested Callbacks to a Bound Continuation
-=============================================
+Turning a Callback into Queued Delivery
+=======================================
 
-The checksum applications scan files on an ordinary worker thread and return a file list to their main-loop workflow.
-``ChecksumPackerInvoke`` spells out the return path with ``invoke``:
+:cpp:func:`invoke() <erbsland::event::EventTarget::invoke>` queues a callback whose work and captured values are already
+known.
+A binding prepares a callback for values that will arrive later.
+You supply the receiving loop and a handler; the producer supplies the handler's arguments when it calls the binding.
+The handler can be a lambda or another callable, or a member function paired with its recipient.
+It must return ``void``.
+
+Creating the binding does not queue work or start a worker.
+Calling the returned callable stores the supplied arguments and queues a delivery on the receiving loop.
+The loop then invokes the handler with those arguments.
+Delivery is always deferred, even when the binding is called on the receiving loop itself, so the call does not return a
+result from the handler.
+You can call the same binding repeatedly; each call creates a separate delivery.
+
+This makes bindings useful at ordinary callback boundaries.
+A producer can accept a compatible ``std::function<void(...)>`` and call it from its worker thread without knowing
+anything about event loops.
+The receiver supplies a binding as that callback and keeps its result handling on its own loop.
+You can also keep the returned callable directly in a variable declared with ``auto``.
+
+.. erbsland-in-practice-begin:: Returning a File Scan to Its Owner
+
+The checksum packer scans files on a worker thread and reports a file list and an optional error to ``Workflow``.
+The application owns the workflow through a shared pointer, and ``Workflow`` inherits
+``std::enable_shared_from_this<Workflow>`` so its methods can obtain that shared ownership with ``shared_from_this()``.
+Its ``start()`` method runs on the main event loop.
+The version using explicit invocation prepares the return path like this:
 
 .. erbsland-demo::
-    :source: event/ChecksumPackerInvoke/src/Workflow.hpp
+    :source: event/apps/ChecksumPackerInvoke/src/Workflow.hpp
     :show: f:start(-3,-1)
-    :sha256: 3cc5d7a8a2f82f3f17ae925517e37d136db385b7aa8d04d8745397df87115df3
+    :sha256: f245d8dc9aad3abb4841da5b90cdd3e8c5c2fdd64442a4c98ed69952a162c50e
 
 .. code-block:: cpp
 
-    auto events = el::currentEvents();
+    auto events = el::currentLoop();
     auto workflow = shared_from_this();
     _scanner.scan([events, workflow](FileWithDigestList fileList, std::exception_ptr error) -> void {
         events->invoke([workflow, fileList = std::move(fileList), error = std::move(error)]() mutable -> void {
@@ -41,14 +69,13 @@ The checksum applications scan files on an ordinary worker thread and return a f
 
 .. erbsland-demo-end::
 
-The outer callback receives the worker's result.
-It moves the file list into the inner callback, which retains the workflow and waits in main's queue.
-``ChecksumPacker`` expresses that same continuation with ``bindEvent``:
+The outer callback runs when the scanner reports its result; the inner callback waits for dispatch on main.
+A member binding expresses the same return path:
 
 .. erbsland-demo::
-    :source: event/ChecksumPacker/src/Workflow.hpp
+    :source: event/apps/ChecksumPacker/src/Workflow.hpp
     :show: f:start(-3,-1)
-    :sha256: 94c65308894fbed42c7c1bef03f12d18c4b7d880f9d39a6a85b7ef5079aa8cfe
+    :sha256: 80e107731789a49de93896b0dde89c0d1f1b33264c64e3f53a753354dbe76534
 
 .. code-block:: cpp
 
@@ -56,182 +83,85 @@ It moves the file list into the inner callback, which retains the workflow and w
 
 .. erbsland-demo-end::
 
-The returned callable accepts the arguments for ``Workflow::onScanned``.
-Calling it queues that method; it never calls the method synchronously, even when called on the receiving loop.
-The member binding retains the shared workflow for as long as the binding or a queued delivery needs it.
+Here, omitting the target captures the main loop because it is running on the calling thread when the binding is
+created.
+The binding and any queued delivery retain the workflow.
+The scanner still accepts an ordinary ``std::function<void(FileWithDigestList, std::exception_ptr)>``; the binding
+supplies the queuing and retention that previously required explicit captures.
+The error argument is empty on success.
+The complete applications are described in :doc:`/demo_apps/event/checksum_packer_invoke` and
+:doc:`/demo_apps/event/checksum_packer`.
 
-Each call owns its argument storage: lvalues are copied, and rvalues are moved.
-The scanner passes its file list with ``std::move``, so the queued delivery owns those files until main receives them.
-Stored arguments are delivered as rvalues, allowing the continuation to move the list onward to the packer.
-Pointers, views, and explicit reference wrappers still borrow their referents; wrapping them does not extend their
-lifetime.
+.. erbsland-in-practice-end::
 
 Choosing the Receiving Loop
 ===========================
 
-``Workflow::start`` runs on main, so the binding without an explicit target captures main through ``currentEvents`` when
-it is created.
-Later calls from the scan worker return to that captured target.
-Creating the same binding on a worker loop would capture the worker instead.
+The receiving loop is selected when you create a binding, not when the producer calls it.
+Without an explicit target, both binding functions capture
+:cpp:func:`currentLoop() <erbsland::event::currentLoop>`.
+Create such a binding while the intended receiving loop is running on the calling thread, before passing it to a worker.
+Creating it outside a running loop is an error; creating it inside another loop selects that other loop.
 
-When you already have the intended ``EventsPtr``, pass it explicitly:
+Pass an :cpp:type:`EventTargetPtr <erbsland::event::EventTargetPtr>` as the first argument when you already know the
+receiving target.
+This lets you create the binding before the loop starts or from code running on a different thread.
+Later calls still deliver to the captured target, regardless of which thread submits them.
+The same explicit-target form is available for callable, strong member, and weak member bindings.
+
+.. erbsland-in-practice-begin:: Supplying the Workflow's Target Explicitly
+
+If the checksum workflow already has its receiving target in ``events``, it can prepare its scan callback explicitly:
 
 .. code-block:: cpp
 
     auto onScanned = el::bindEvent(events, shared_from_this(), &Workflow::onScanned);
 
-This form also works outside a running loop.
-Capturing a target keeps its object alive; it does not keep dispatch running.
-The receiving application still has to run its loop until required results have been handled.
+This callback can be passed to the scanner even when its creation does not take place inside the receiving loop.
 
-Passing Results to a Bound Method
-=================================
+.. erbsland-in-practice-end::
 
-The workers keep ordinary callback interfaces.
-They need no knowledge of the receiving loop or event bindings:
+A binding retains the target object, but it does not start the loop or keep its thread running.
+Your application must keep dispatch running until required results have been handled.
+Target retention alone does not guarantee that a submission is accepted or that its handler will run.
 
-.. erbsland-demo::
-    :source: event/ChecksumPacker/src/Scanner.hpp
-    :show: c:The callback if the scan is done(+0,+3), f:scan
-    :sha256: a5986ec66934a4b111d6a94c40739b432164d901b24d6d0c9b35f6e22e050008
+Choosing Strong or Weak Recipient Ownership
+===========================================
 
-.. code-block:: cpp
+When you defer a method call, its recipient may otherwise disappear before dispatch.
+Choosing a strong or weak member binding determines whether pending work keeps that recipient alive, independently of
+choosing the receiving loop.
 
-    /// The callback if the scan is done.
-    /// On success, nullptr is passed to indicate that no failures occurred.
-    /// On failure, a std::exception_ptr containing an exception is passed to indicate why the scan failed.
-    using OnDone = std::function<void(FileWithDigestList, std::exception_ptr)>;
+A strong member binding made with :cpp:func:`bindEvent() <erbsland::event::bindEvent>` takes a ``std::shared_ptr`` and a
+member-function pointer.
+The binding retains the recipient, and every copy of the binding and every queued delivery shares that retention.
+Releasing your original pointer therefore does not destroy the recipient while any of those owners remain.
+This is useful for an operation owner that must process results, record failures, or complete cleanup after background
+work finishes.
 
-    void scan(OnDone onDone) {
-        _workerThread = std::thread{[onDone = std::move(onDone), this]() -> void { scanInThread(onDone); }};
-    }
+A weak member binding made with :cpp:func:`bindWeakEvent() <erbsland::event::bindWeakEvent>` takes a ``std::weak_ptr``
+and a member-function pointer.
+It queues delivery without retaining the recipient, then attempts to lock the weak pointer on the receiving loop just
+before calling the method.
+If the recipient has expired, the method is skipped, including when the recipient was still alive at submission time.
+If locking succeeds, the recipient stays alive until the method returns or throws.
+This is useful for a display or observer whose notifications are no longer needed after it disappears.
 
-.. erbsland-demo-end::
+Both forms use the same deferred delivery and argument storage.
+The difference is whether pending callbacks extend the recipient's lifetime.
+A weak binding still queues a delivery when its recipient has expired; it does not cancel the producer's work or report
+completion back to it.
+Required completion therefore needs an owner that remains alive, while weak delivery is appropriate for notifications
+that may safely be omitted.
 
-.. erbsland-demo::
-    :source: event/ChecksumPacker/src/Packer.hpp
-    :show: c:The callback if the packing is done(+0,+3), f:pack
-    :sha256: f2395903b67db6c0ebf1481e738f2eab59f03fa1420b88b66ef1963500a0bbab
+.. erbsland-in-practice-begin:: Keeping a Display Optional
 
-.. code-block:: cpp
-
-    /// The callback if the packing is done.
-    /// On success, nullptr is passed to indicate that no failures occurred.
-    /// On failure, a std::exception_ptr containing an exception is passed to indicate why packing failed.
-    using OnDone = std::function<void(std::exception_ptr)>;
-
-    void pack(FileWithDigestList fileList, OnDone onDone) {
-        _workerThread = std::thread{[fileList = std::move(fileList), onDone = std::move(onDone), this]() -> void {
-            packInThread(fileList, onDone);
-        }};
-    }
-
-.. erbsland-demo-end::
-
-A binding fits these ``std::function`` parameters through their normal constructors.
-The pack callback uses the same transformation with just an error argument.
-First, the explicit return path in ``ChecksumPackerInvoke``:
+The pi calculator keeps required calculation state separate from its optional display:
 
 .. erbsland-demo::
-    :source: event/ChecksumPackerInvoke/src/Workflow.hpp
-    :show: f:onScanned(-8,-1)
-    :sha256: 44c58073031f4a7fcbcaa69a90780575fce8297a20e4519ffc231b303dcdd96b
-
-.. code-block:: cpp
-
-    auto events = el::currentEvents();
-    auto workflow = shared_from_this();
-    _packer.pack(std::move(fileList), [events, workflow](std::exception_ptr error) -> void {
-        events->invoke(
-            [workflow, error = std::move(error)]() mutable -> void { workflow->onPacked(std::move(error)); });
-    });
-
-.. erbsland-demo-end::
-
-Then the bound continuation in ``ChecksumPacker``:
-
-.. erbsland-demo::
-    :source: event/ChecksumPacker/src/Workflow.hpp
-    :show: f:onScanned(-8,-1)
-    :sha256: 0e3f4d4069d6adef77a6bd1c0eed6eb1fbf4272708236b991734e7a36c99d3bf
-
-.. code-block:: cpp
-
-    _packer.pack(std::move(fileList), el::bindEvent(shared_from_this(), &Workflow::onPacked));
-
-.. erbsland-demo-end::
-
-Both applications have the same state transitions, error reporting, archive contents, and worker shutdown ordering.
-:doc:`event_workflows` follows those operation decisions without repeating the transport mechanics.
-
-Binding a Callable with Additional Context
-==========================================
-
-A method binding passes result arguments directly to a method.
-A bound lambda can also retain context that belongs to the request.
-TextPreview creates its reply on main before submitting the worker job:
-
-.. erbsland-demo::
-    :source: event/TextPreview/TextPreviewApp.cpp
-    :show: f:TextPreviewApp::requestPreview
-    :sha256: bef1f36356e20a74158df63775569013d23090a7c3dab36ea6bf267439e83148
-
-.. code-block:: cpp
-
-    void TextPreviewApp::requestPreview(el::String text) {
-        const auto requestId = ++_requestId;
-        // Bind the reply on main before sending work to another loop.
-        auto reply =
-            el::bindEvent([this, requestId](el::String preview) -> void { receivePreview(requestId, std::move(preview)); });
-        _worker->events()->invoke([reply = std::move(reply), text = std::move(text)]() -> void {
-            // Worker uses only captured input; main owns every application-state update.
-            reply(el::toUppercase(text));
-        });
-    }
-
-.. erbsland-demo-end::
-
-The bound handler keeps the request identifier; the worker supplies only the computed preview.
-``invoke`` remains useful for the immediate worker submission, while the bound reply makes the return path reusable.
-The application outlives the worker, so its borrowed ``this`` remains valid throughout the exchange.
-:doc:`communicating_between_loops` develops the obsolete-result checks and failure paths.
-
-Copies of a binding share one handler, including its mutable state and move-only captures.
-Each call nevertheless creates an independent argument delivery.
-That distinction matters when a callback is copied into ``std::function`` or retained by several producers.
-
-Retaining an Operation While Its Display Disappears
-===================================================
-
-The pi calculator continuously calculates decimal digits on an ordinary thread.
-Its main loop stores every accepted batch in chunked history and displays a scrollable window into that prefix.
-Press **S** to stop calculation permanently and browse the retained digits, or **Q** / **Escape** to quit.
-Arrow keys, PageUp/PageDown, Home/End scroll; **F** follows the newest digits again.
-``--timeout N`` stops and exits after N seconds, including while browsing; zero means unlimited.
-``--digits N`` calculates exactly N fractional digits and exits.
-
-``PiCalculatorApp`` inherits ``Application::main()`` to run the main loop and propagate callback failures.
-Option processing queues setup before that loop starts dispatching:
-
-.. erbsland-demo::
-    :source: event/PiCalculator/src/PiCalculatorApp.cpp
-    :show: c:Start the application as soon(+0,+1)
-    :sha256: b113b85382f3b2c50c83a3d47397d6827d159ae71885cf7529c442ad8e3f0d27
-
-.. code-block:: cpp
-
-    // Start the application as soon the main loop has started.
-    events()->invoke([this]() -> void { begin(); });
-
-.. erbsland-demo-end::
-
-``begin()`` therefore creates its implicit-target bindings while main is the current loop.
-The application owns required operation state separately from its optional view:
-
-.. erbsland-demo::
-    :source: event/PiCalculator/src/PiCalculatorApp.hpp
+    :source: event/apps/PiCalculator/src/PiCalculatorApp.hpp
     :show: c:Required data(+0,+2)
-    :sha256: 6ef126dd9671e459c2c89cb599f38312030fb3daedd34e3d5d67160890e613ca
+    :sha256: 9301b6a61aa3882807293dd42fba2a1662f7cd51388d1ea1812b9f2c74571336
 
 .. code-block:: cpp
 
@@ -241,151 +171,166 @@ The application owns required operation state separately from its optional view:
 
 .. erbsland-demo-end::
 
-``PiSession`` binds batch and final callbacks strongly to itself on main.
-The worker's interfaces remain ordinary ``std::function`` callbacks:
+The application creates the following callback while its main loop is running:
 
 .. erbsland-demo::
-    :source: event/PiCalculator/src/PiWorker.hpp
-    :show: c:Receive one owned(+0,+1), c:Receive exactly one(+0,+1)
-    :sha256: da3d7f7a42c4c93061ead861854e067f3a58cefe985f76c0f981ea90e7898687
+    :source: event/apps/PiCalculator/src/PiCalculatorApp.cpp
+    :show: c:Optional presentation(-1,+1)
+    :sha256: 3ff5c7e7df3741c6bce0eb1bc4a55fc113c14b9fed09e2e803afb96db5e7b417
 
 .. code-block:: cpp
 
-    /// Receive one owned batch of fractional digits on the calculation thread.
-    using OnDigits = std::function<void(el::String)>;
-
-    /// Receive exactly one final notification; nullptr means ordinary completion or cancellation.
-    using OnFinished = std::function<void(std::exception_ptr)>;
-
-.. erbsland-demo-end::
-
-The session supplies both receiving methods:
-
-.. erbsland-demo::
-    :source: event/PiCalculator/src/PiSession.cpp
-    :show: c:Required results retain(+4,+6)
-    :sha256: 73cb8814d0fb11df3d8466e77eb3a109881d2b5a82e601e6e8614a26225b3a9f
-
-.. code-block:: cpp
-
-    void PiSession::start(const std::optional<el::CpCount> limit) {
-        if (_started) {
-            throw el::LogicFailure{"A pi calculation session starts once."_el};
-        }
-        // Required results retain the session and always return to its owner loop.
-        _worker.start(
-            limit,
-            el::bindEvent(_events, shared_from_this(), &PiSession::onDigits),
-            el::bindEvent(_events, shared_from_this(), &PiSession::onFinished));
-        _started = true;
-    }
-
-.. erbsland-demo-end::
-
-After main stores each batch, the session requests the next one.
-At most one batch is outstanding, so calculation cannot accumulate a backlog while main is busy.
-Batches contain at most 32 fractional digits; a nonempty partial batch is flushed after roughly 20 ms of calculation.
-Optional display notification does not control demand or completion.
-
-The application supplies that notification through ``bindWeakEvent``:
-
-.. erbsland-demo::
-    :source: event/PiCalculator/src/PiCalculatorApp.cpp
-    :show: c:Optional presentation(+0,+1)
-    :sha256: 3477dd02d35ed9d669406fbcaa338efc8ee3d0205e90fab8fa8fa6d9c957029a
-
-.. code-block:: cpp
-
-    // Optional presentation must not keep the view alive after Q or timeout releases it.
     updated = el::bindWeakEvent(std::weak_ptr<PiView>{_view}, &PiView::onUpdated);
 
 .. erbsland-demo-end::
 
-The weak member binding checks its recipient on main during dispatch.
-If the view has disappeared, the queued delivery makes no call.
-Once a weak recipient is locked successfully, it stays alive through that method call.
-The session holds no strong path back to the view, and losing that view cannot discard a required calculation result.
+The session receives this callback for display updates.
+Releasing ``_view`` allows the display to disappear even if updates are already queued; those deliveries skip the
+expired recipient.
+The independently owned history and session remain available to accept required results.
+Binding ``_view`` strongly here would instead keep it alive while the callback or its deliveries retained it.
 
-The arithmetic is isolated in ``PiDigitGenerator``, using growing exact ``BigInteger`` values and the streaming
-algorithm from section 5 of `Gibbons's corrected paper
-<https://www.cs.ox.ac.uk/people/jeremy.gibbons/publications/spigot.pdf>`_.
-History retains the entire computed prefix, so memory use grows as calculation continues.
-Plain mode provides deterministic output without interactive screen controls:
+.. erbsland-in-practice-end::
+
+Passing Results and Owning Their Data
+=====================================
+
+A producer may finish using a result before the receiving loop gets to it.
+To bridge that interval, each invocation of a binding owns storage for its supplied arguments.
+Lvalues are copied into that storage, and rvalues are moved into it.
+Passing an owned result with ``std::move`` therefore allows its contents to move into the pending delivery.
+The producer must treat that result as moved from after the call.
+
+At dispatch, the stored arguments are passed to the handler as rvalues.
+A handler can take a result by value and move it onward to the next operation, or take a const reference when it only
+needs to inspect the result during the call.
+Each invocation has independent argument storage, even when several deliveries wait in the queue at once.
+
+Owning the argument does not necessarily mean owning the data it refers to.
+Copying a pointer, a view, or an explicit reference wrapper still borrows the underlying object.
+That object must outlive delivery, and shared access still needs appropriate synchronization.
+Prefer an owning value when the producer cannot provide that lifetime guarantee.
+:doc:`callback_lifetimes` explains borrowed captures and shared state in more detail.
+
+Copies of a binding share one handler, including its captured values and mutable state.
+Copying a binding into ``std::function`` does not create a fresh handler for that producer.
+Move-only captures remain in the shared handler; they are not automatically consumed by each delivery.
+This shared context is separate from the independently stored arguments supplied on each call.
+
+.. erbsland-in-practice-begin:: Moving a Received Result to the Next Step
+
+The checksum workflow receives the scan result as a value in ``onScanned()``.
+After checking the error, it transfers the file list to the packer and supplies a binding for the final notification:
 
 .. erbsland-demo::
-    :source: event/PiCalculator/src/PiCalculatorApp.cpp
-    :show: c:S leaves the stopped view(+8,+5)
-    :exec: event/pi_calculator --plain --digits 100
-    :show-cmd-line:
-    :sha256: 762124eb4e9d22e7acf792138f2e015c0d54bc0fd1f80a4c23df271eba5d122b
+    :source: event/apps/ChecksumPacker/src/Workflow.hpp
+    :show: f:onScanned(-8,-1)
+    :sha256: cff883d6701f640d490d00026ecd0cdc39039f4fe29dc842dd2c17b0b081ce42
 
 .. code-block:: cpp
 
-    void PiCalculatorApp::onCalculationFinished(std::exception_ptr error) {
-        if (error) {
-            std::rethrow_exception(error);
-        }
-        if (_plain) {
-            printNewDigits();
-            terminal()->printLine();
-        }
-        // S leaves the stopped view available even with --digits. Only normal finite completion exits automatically.
-        const auto finiteCompletion = _limit.has_value() && !_session->isStopping();
-        if (_exitRequested || finiteCompletion || _plain) {
-            quit();
-        }
-    }
-
-.. erbsland-demo-run::
-
-    .. code-block:: console
-
-        $ event/pi_calculator --plain --digits 100
-
-    .. erbsland-ansi::
-        :escape-char: ␛
-
-        ␛[0m3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348
-        253421170679␛[0m
+    _packer.pack(std::move(fileList), el::bindEvent(shared_from_this(), &Workflow::onPacked));
 
 .. erbsland-demo-end::
 
-An interactive capture after **S** shows the retained prefix ready for browsing.
-The number of completed digits depends on when you stop:
+The list belongs to the receiving method at this point, so it can move the result onward.
+The bound ``onPacked()`` method will receive the packer's ``std::exception_ptr`` argument on the same main loop.
+:doc:`event_workflows` develops the operation's state transitions and failure handling.
 
-.. erbsland-ansi::
-    :escape-char: ␛
+.. erbsland-in-practice-end::
 
-    ␛[96;40mPi = 3. │ 255 fractional digits │ Stopped - browse the retained digits
+Capturing Request Context
+=========================
 
-    ␛[32m       1␛[90m | ␛[93m1415926535␛[37m ␛[93m8979323846␛[37m ␛[93m2643383279␛[37m ␛[93m5028841971␛[37m ␛[93m6939937510
-    ␛[32m      51␛[90m | ␛[93m5820974944␛[37m ␛[93m5923078164␛[37m ␛[93m0628620899␛[37m ␛[93m8628034825␛[37m ␛[93m3421170679
-    ␛[32m     101␛[90m | ␛[93m8214808651␛[37m ␛[93m3282306647␛[37m ␛[93m0938446095␛[37m ␛[93m5058223172␛[37m ␛[93m5359408128
-    ␛[32m     151␛[90m | ␛[93m4811174502␛[37m ␛[93m8410270193␛[37m ␛[93m8521105559␛[37m ␛[93m6446229489␛[37m ␛[93m5493038196
-    ␛[32m     201␛[90m | ␛[93m4428810975␛[37m ␛[93m6659334461␛[37m ␛[93m2847564823␛[37m ␛[93m3786783165␛[37m ␛[93m2712019091
-    ␛[32m     251␛[90m | ␛[93m45648
-    ␛[32m     301␛[90m |
-    ␛[32m     351␛[90m |
-    ␛[32m     401␛[90m |
-    ␛[32m     451␛[90m |
-    ␛[32m     501␛[90m |
-    ␛[32m     551␛[90m |
-    ␛[32m     601␛[90m |
-    ␛[32m     651␛[90m |
-    ␛[32m     701␛[90m |
-    ␛[32m     751␛[90m |
+A member binding is convenient when the producer's result arguments already match the receiving method.
+A bound lambda is useful when you also need context known at the time you start the request, such as a request
+identifier.
+Capture that context when creating the handler, then let the producer supply only the result values when calling the
+binding.
+The handler can combine both when the receiving loop dispatches it.
 
-    [␛[92mS␛[90m]␛[37m Stop ␛[90m[␛[92mQ␛[90m/␛[92mEsc␛[90m]␛[37m Quit ␛[90m[␛[92m↑␛[90m/␛[92m↓␛[90m/␛[92mPgUp␛[90m/␛[92mPgDown␛[90m/␛[92mHome␛[90m/␛[92mEnd␛[90m]␛[37m Scroll ␛[90m[␛[92mF␛[90m]␛[37m Follow ␛[90m(␛[33mfollow␛[90m)␛[0m
+Captures follow the usual C++ ownership rules.
+A value capture retains its value, and a shared-pointer capture retains its recipient.
+Capturing ``this`` or a reference only borrows the object; binding the lambda does not extend that object's lifetime.
+Its owner must ensure it survives every delivery that may access it.
 
-Finishing Work After the User Quits
-===================================
+.. erbsland-in-practice-begin:: Recognizing a Search Reply
 
-The quit path releases the optional view first, requests cancellation, and keeps main dispatching:
+The file search application creates this binding on main before submitting work.
+The handler retains the current query generation, while the worker supplies a ``SearchUpdate`` containing its results:
 
 .. erbsland-demo::
-    :source: event/PiCalculator/src/PiCalculatorApp.cpp
-    :show: c:Release optional UI(+2,+7)
-    :sha256: 5abad4b50ee1c8e37d2c6d10ebd8e9f34db13d2b964c236c75c30e13310860e0
+    :source: event/apps/FileSearch/src/FileSearchApp.cpp
+    :show: c:Bind on main(+1,+6)
+    :sha256: 868f84ddf2a0bc29f7a24c3acaf5dbd3738a80f1cbf91a7deb5299d88f48aa0c
+
+.. code-block:: cpp
+
+    const auto generation = _results.generation();
+    // Bind on main before crossing to the worker. The reply retains this request's identity.
+    auto reply = el::bindEvent([this, generation](SearchUpdate update) -> void {
+        if (!_exiting) {
+            _results.receive(generation, std::move(update));
+            _dirty = true;
+        }
+    });
+
+.. erbsland-demo-end::
+
+``SearchResults::receive()`` checks the retained generation so an older request cannot replace the current query's
+results.
+The captured ``this`` is borrowed: the application survives its worker and the reply dispatch that can access it.
+For the request/reply design and why cancellation alone does not exclude stale results, see
+:doc:`communicating_between_loops`; :doc:`/demo_apps/event/file_search` covers the complete application.
+
+.. erbsland-in-practice-end::
+
+Completing Work Independently of Its View
+=========================================
+
+Strong and weak bindings work together when an operation can outlive the interface displaying its progress.
+Keep required results and completion state in a retained operation owner.
+That owner receives the worker's required callbacks through strong bindings and can notify an optional view through a
+weak binding.
+A skipped display update must not lose a result, prevent completion, or withhold permission for the worker to continue.
+For example, if a worker waits for each result to be accepted before producing another, the operation owner must request
+the next result independently of whether the view receives its notification.
+
+Closing the view and stopping the operation are separate decisions.
+If closing the view also requests cancellation, retain the operation owner and keep the receiving loop dispatching until
+required completion has arrived.
+Join the worker before releasing state it may still access, then end dispatch when no remaining operation needs it.
+The binding manages callback ownership; your application still coordinates cancellation and shutdown.
+
+.. erbsland-in-practice-begin:: Retaining Completion After the Display Closes
+
+The pi calculator's session stores the main-loop target in ``_events`` and inherits
+``std::enable_shared_from_this<PiSession>``.
+The application retains the session through worker shutdown.
+When starting calculation, the session supplies strong bindings for both result batches and final completion:
+
+.. erbsland-demo::
+    :source: event/apps/PiCalculator/src/PiSession.cpp
+    :show: c:Required results retain(-1,+4)
+    :sha256: 5ff4e25e96defca852138211a3486f02e418e9e07d5ab8b217616631da11b53f
+
+.. code-block:: cpp
+
+    _worker.start(
+        limit,
+        el::bindEvent(_events, shared_from_this(), &PiSession::onDigits),
+        el::bindEvent(_events, shared_from_this(), &PiSession::onFinished));
+
+.. erbsland-demo-end::
+
+``onDigits()`` stores each batch in the retained history and requests further work independently of the optional display
+callback.
+On exit, the application releases its view and requests cancellation while leaving main available for completion:
+
+.. erbsland-demo::
+    :source: event/apps/PiCalculator/src/PiCalculatorApp.cpp
+    :show: f:PiCalculatorApp::requestExit
+    :sha256: 46f7283fdbafb7c06429ff6eb54574015659de3a9e94fa029d6ac81449e9911e
 
 .. code-block:: cpp
 
@@ -402,12 +347,15 @@ The quit path releases the optional view first, requests cancellation, and keeps
 
 .. erbsland-demo-end::
 
-The worker checks cancellation between arithmetic advancements, reports final completion through its strong binding, and
-is joined by the session on main.
-Only then does the application quit its event loop and release the session.
-One large-integer operation remains non-interruptible; cancellation does not promise a fixed shutdown latency.
-:doc:`shutting_down_event_work` explains this completion sequence and its exception cleanup in detail.
+If calculation is still active, the final strong delivery reaches ``PiSession::onFinished()``, which joins the worker
+before notifying the application that it can quit.
+The weak display callback can expire without interrupting that sequence.
+See :doc:`/demo_apps/event/pi_calculator` for the complete application.
 
-Weak delivery is suitable for optional presentation, while required completion needs an owner that stays alive.
-Destroying a binding does not cancel its queued deliveries, and handler destruction has no receiving-thread guarantee.
-For complete ownership, threading, argument-transfer, and failure contracts, see :ref:`event-bound-callbacks`.
+.. erbsland-in-practice-end::
+
+Destroying a binding does not cancel deliveries that are already queued.
+Also, the last owner of a handler or recipient may be released outside the receiving loop, so their destruction has no
+receiving-thread guarantee.
+:doc:`shutting_down_event_work` explains shutdown ordering and cleanup when dispatch ends because of a failure.
+For the full argument-transfer, threading, and failure contracts, see :ref:`event-bound-callbacks`.

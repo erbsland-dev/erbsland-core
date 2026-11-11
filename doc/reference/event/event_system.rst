@@ -8,16 +8,21 @@ Event System
 Usage Notes
 ===========
 
-See :doc:`/topics/event/events_in_erbsland_core` for the programming model and scheduling examples, and
+See :doc:`/topics/event/events_in_erbsland_core` for the loop, target, backend, source, and editor model, and
 :doc:`/topics/event/using_event_loops` for application and worker-loop designs.
 
-``Events::post`` accepts raw event objects; ``invoke`` queues callbacks, and ``invokeAfter`` queues delayed callbacks.
+``EventTarget::post`` accepts raw event objects; ``invoke`` queues callbacks, and ``invokeAfter`` queues delayed
+callbacks.
 ``EventTimer`` supplies cancellation and repetition through a retained handle.
 See :doc:`/topics/event/scheduling_work` for delay, timer lifetime, repetition, and debounce, and
-:doc:`/topics/event/event_workflows` for coordinating operation state, dependent steps, and completion.
-For request/reply ownership across threads, see :doc:`/topics/event/communicating_between_loops`.
+:doc:`/topics/event/event_workflows` for designing event-driven operations around persistent state.
+For sending requests and results between loops, see :doc:`/topics/event/communicating_between_loops`.
 For resource completion before loop termination and thread joins, see :doc:`/topics/event/shutting_down_event_work`.
-``currentEvents()`` identifies the loop currently running on the calling thread.
+``currentLoop()`` identifies the loop currently running on the calling thread.
+Applications, application parts, and event threads expose their target through ``loop()``.
+The target supports posting, scheduling, and backend access.
+Derived applications can control the main loop through ``mainEventLoop()`` and enter it through ``runMainEventLoop()``;
+``EventThread::workerEventLoop()`` exposes the worker's full loop interface.
 ``EventLoopDriver`` provides the native wait and wake interface for custom reactors and tests.
 
 .. _event-bound-callbacks:
@@ -26,9 +31,9 @@ Bound Callbacks
 ===============
 
 :cpp:func:`bindEvent() <erbsland::event::bindEvent>` creates a reusable callback that queues its handler on a captured
-``EventsPtr``.
-Supply an explicit target, or omit it to capture :cpp:func:`currentEvents() <erbsland::event::currentEvents>` when
-creating the binding.
+``EventTargetPtr``.
+Supply an explicit target, or omit it to capture :cpp:func:`currentLoop() <erbsland::event::currentLoop>` when creating
+the binding.
 The returned object has an implementation-defined type, can be stored with ``auto``, and converts to compatible
 ``std::function<void(...)>`` callback parameters.
 The handler must return ``void`` and be callable as an lvalue.
@@ -97,7 +102,7 @@ dispatch, rejection, target destruction, or destruction of the last binding copy
 
 Null explicit targets, null strong recipients, null function or member pointers, and empty ``std::function`` handlers
 produce ``ParameterFailure`` during binding.
-Implicit binding outside a running loop produces ``LogicFailure`` through ``currentEvents()``.
+Implicit binding outside a running loop produces ``LogicFailure`` through ``currentLoop()``.
 Incompatible invocation arguments and non-void handler results are rejected at compile time when checking or using the
 returned callable.
 An overloaded method name must first be resolved to the intended member-function pointer type by the caller.
@@ -126,6 +131,27 @@ process.
 
 Destroying an event thread requests termination and joins a started worker.
 Therefore, the final owning pointer must be released from another thread, never from the event thread itself.
+
+Cooperative Thread Cancellation
+-------------------------------
+
+``EventThread::stopToken()`` returns a ``StopToken`` observing the owned loop's permanent quit request.
+Both managed and unmanaged threads provide it immediately after construction.
+Copies share the request state, can be polled from any thread, and remain valid without retaining the thread or loop.
+The source stays private; consumers can observe cancellation but cannot request it through the token.
+
+Explicit thread or underlying-loop quit, posted quit events, quitting error or queue-overflow policies, and thread
+destruction signal the token before waiting for callback completion.
+Application shutdown signals its managed workers through the same mechanism, including shutdown after a main-loop
+failure or a worker's ``FailApplication`` error.
+A request before ``start()`` is visible to subsequently dispatched callbacks and is never reset.
+
+The token does not change graceful draining: already accepted callbacks still run and may choose to finish early.
+It does not report thread completion; ``join()`` still supplies that synchronization.
+Polling is cooperative and cannot interrupt a blocked operating-system call.
+``EventLoop::stop()`` and an error handler returning ``Stop`` end resumable dispatch without signalling the token.
+``Store`` and ``Ignore`` policies do not request quit either.
+See :doc:`/topics/event/shutting_down_event_work` for operation cancellation and shutdown ordering.
 
 .. _event-loop-options:
 
@@ -201,11 +227,13 @@ Source Editors and Subscriptions
 ================================
 
 An ``EventSource`` owns its handlers and one stable ``EventEditor`` returned by reference.
-Editor access and handler changes belong on the source's owner loop.
+Editor access and handler changes require the source's owner loop unless the concrete source explicitly documents
+thread-safe access and registration.
+Thread-safe registration does not change the callback target.
 An ``on...()`` method replaces one handler; an empty callback clears it.
 ``EventEditor::source()`` and ``target()`` return owning pointers, while the editor itself remains borrowed.
-On applications, parts, and event threads, ``events()`` instead returns an ``EventsPtr`` target.
-See :doc:`/topics/event/using_event_apis` for setup, frontend access, and callback argument contracts.
+Applications, parts, and event threads provide an ``EventTargetPtr`` through ``loop()`` for submitting work.
+See :doc:`/topics/event/using_event_apis` for source binding, frontend access, and editor conventions.
 
 Multiple-observer notifications use ``add...()`` and return move-only ``EventSubscription`` handles.
 Retain each handle to keep its registration active; cancellation or destruction prevents future invocations, while an
@@ -222,18 +250,18 @@ by ``errorPolicy()``.
 Interface
 =========
 
-.. doxygenfunction:: erbsland::event::bindEvent(EventsPtr events, tFunction &&callback)
+.. doxygenfunction:: erbsland::event::bindEvent(EventTargetPtr target, tFunction &&callback)
 
 .. doxygenfunction:: erbsland::event::bindEvent(tFunction &&callback)
 
-.. doxygenfunction:: erbsland::event::bindEvent(EventsPtr events, std::shared_ptr<tRecipient> recipient, tMethod method)
+.. doxygenfunction:: erbsland::event::bindEvent(EventTargetPtr target, std::shared_ptr<tRecipient> recipient, tMethod method)
 
 .. doxygenfunction:: erbsland::event::bindEvent(std::shared_ptr<tRecipient> recipient, tMethod method)
 
-.. doxygenfunction:: erbsland::event::bindWeakEvent(EventsPtr events, std::weak_ptr<tRecipient> weakRecipient, tMethod method)
+.. doxygenfunction:: erbsland::event::bindWeakEvent(EventTargetPtr target, std::weak_ptr<tRecipient> weakRecipient, tMethod method)
 
 .. doxygenfunction:: erbsland::event::bindWeakEvent(std::weak_ptr<tRecipient> weakRecipient, tMethod method)
-.. doxygenfunction:: erbsland::event::currentEvents() -> EventsPtr
+.. doxygenfunction:: erbsland::event::currentLoop() -> EventTargetPtr
 .. doxygenclass:: erbsland::event::Event
     :members:
 .. doxygenclass:: erbsland::event::EventBackend
@@ -267,13 +295,13 @@ Interface
 .. doxygenenum:: erbsland::event::EventQueueOverflowAction
 .. doxygenclass:: erbsland::event::EventRegistry
     :members:
-.. doxygenclass:: erbsland::event::Events
-    :members:
 .. doxygenclass:: erbsland::event::EventScheduler
     :members:
 .. doxygenclass:: erbsland::event::EventSource
     :members:
 .. doxygenclass:: erbsland::event::EventSubscription
+    :members:
+.. doxygenclass:: erbsland::event::EventTarget
     :members:
 .. doxygenclass:: erbsland::event::EventThread
     :members:

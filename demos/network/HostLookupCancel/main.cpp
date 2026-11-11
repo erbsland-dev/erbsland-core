@@ -24,7 +24,7 @@ el::HostLookupPtr lookup;
 /// Cancel a lookup when its result is no longer useful.
 /// Cancellation is safe to repeat and prevents a pending completion handler from running when it wins the race.
 void cancelUnneededLookup() {
-    const auto events = el::application().events();
+    const auto events = el::application().loop();
     lookup = events->get<el::Network>().createHostLookup();
     lookup->events()
         .onResolved([](const el::List<el::IpAddress> &) -> void {
@@ -42,7 +42,7 @@ void cancelUnneededLookup() {
 auto main(const int argc, char *argv[]) -> int {
     auto app = el::Application{argc, argv};
     demo::DemoTerminal::enable(app);
-    app.events()->invoke(cancelUnneededLookup);
+    app.loop()->invoke(cancelUnneededLookup);
     return app.run();
 }
 

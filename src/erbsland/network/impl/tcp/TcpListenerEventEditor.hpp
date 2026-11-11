@@ -13,7 +13,7 @@ namespace erbsland::network::impl {
 class TcpListenerEventEditor final : public network::TcpListenerEventEditor {
 public:
     /// Create the source-owned editor.
-    TcpListenerEventEditor(event::EventSourcePtr source, event::EventsPtr target);
+    TcpListenerEventEditor(event::EventSourcePtr source, event::EventTargetPtr target);
 
 public: // implement network::TcpListenerEventEditor
     auto onListening(NetworkEventFn callback) -> network::TcpListenerEventEditor & override;

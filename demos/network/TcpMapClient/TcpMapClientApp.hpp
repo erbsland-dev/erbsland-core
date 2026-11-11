@@ -17,7 +17,7 @@
 #include <erbsland/cterm/ColorPart.hpp>
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/Endianness.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/Host.hpp>
 #include <erbsland/HostEndpoint.hpp>
 #include <erbsland/IpEndpoint.hpp>
@@ -72,14 +72,14 @@ protected: // implement Application
         _key = values->getText("key"_el);
         _host = el::Host::fromStringOrThrow(values->getText("host"_el));
         _port = el::Port::fromStringOrThrow(values->getText("port"_el));
-        events()->invoke([this]() -> void { startClient(); });
+        loop()->invoke([this]() -> void { startClient(); });
     }
 
 private:
     void startClient() {
         terminal()->printLine(fg::BrightWhite, BlockAttributes::Bold, "TCP Map Client"_el);
         terminal()->printLine(fg::Cyan, "Looking up "_el, _key, " on "_el, _host.toString());
-        _connection = events()->get<el::Network>().createTcpConnection();
+        _connection = loop()->get<el::Network>().createTcpConnection();
         _connection->events()
             .onHostResolved(
                 [this](const el::List<el::IpEndpoint> &endpoints) -> void { validateResolvedEndpoints(endpoints); })

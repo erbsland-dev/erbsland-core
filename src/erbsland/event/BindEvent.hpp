@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "Events_fwd.hpp"
+#include "EventTarget_fwd.hpp"
 
 #include "impl/BindEventTraits.hpp"
 
@@ -14,7 +14,7 @@ namespace erbsland::event {
 
 /// Bind a callback to an explicit event target.
 /// @tparam tFunction The handler type; invocations must return void.
-/// @param events The non-null target on which the handler will execute.
+/// @param target The non-null target on which the handler will execute.
 /// @param callback The handler to copy or move into shared storage. Function pointers and `std::function` objects must
 /// not be empty.
 /// @return A copyable callable that queues owned arguments; copies share the handler.
@@ -23,7 +23,7 @@ namespace erbsland::event {
 /// @tested{BindEventTest}
 template <typename tFunction>
     requires impl::EventBindableFunction<tFunction>
-[[nodiscard]] auto bindEvent(EventsPtr events, tFunction &&callback);
+[[nodiscard]] auto bindEvent(EventTargetPtr target, tFunction &&callback);
 
 /// Bind a callback to the event loop currently running on this thread.
 /// The calling thread must be running an event loop.
@@ -41,7 +41,7 @@ template <typename tFunction>
 /// Bind a retained recipient's method to an explicit event target.
 /// @tparam tRecipient The recipient type, optionally const or derived from the method's class.
 /// @tparam tMethod The member-function pointer type; invocations must return void.
-/// @param events The non-null target on which the method will execute.
+/// @param target The non-null target on which the method will execute.
 /// @param recipient The non-null recipient retained by bindings and queued deliveries.
 /// @param method The non-null member-function pointer.
 /// @return A copyable callable that queues owned arguments for the retained recipient.
@@ -50,7 +50,7 @@ template <typename tFunction>
 /// @tested{BindEventTest}
 template <typename tRecipient, typename tMethod>
     requires std::is_member_function_pointer_v<tMethod>
-[[nodiscard]] auto bindEvent(EventsPtr events, std::shared_ptr<tRecipient> recipient, tMethod method);
+[[nodiscard]] auto bindEvent(EventTargetPtr target, std::shared_ptr<tRecipient> recipient, tMethod method);
 
 /// Bind a retained recipient's method to the current event loop.
 /// The calling thread must be running an event loop.
@@ -69,7 +69,7 @@ template <typename tRecipient, typename tMethod>
 /// Bind a weak recipient's method to an explicit event target.
 /// @tparam tRecipient The recipient type, optionally const or derived from the method's class.
 /// @tparam tMethod The member-function pointer type; invocations must return void.
-/// @param events The non-null target on which the method will execute.
+/// @param target The non-null target on which the method will execute.
 /// @param weakRecipient The recipient to lock during dispatch; empty and expired pointers are allowed.
 /// @param method The non-null member-function pointer.
 /// @return A copyable callable that queues owned arguments and skips expired recipients at dispatch.
@@ -78,7 +78,7 @@ template <typename tRecipient, typename tMethod>
 /// @tested{BindWeakEventTest}
 template <typename tRecipient, typename tMethod>
     requires std::is_member_function_pointer_v<tMethod>
-[[nodiscard]] auto bindWeakEvent(EventsPtr events, std::weak_ptr<tRecipient> weakRecipient, tMethod method);
+[[nodiscard]] auto bindWeakEvent(EventTargetPtr target, std::weak_ptr<tRecipient> weakRecipient, tMethod method);
 
 /// Bind a weak recipient's method to the current event loop.
 /// The calling thread must be running an event loop.

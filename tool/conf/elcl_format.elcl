@@ -6,12 +6,17 @@ Maximum Line Length          : 118
 Value Wrapping               : "next_line_if_fits"
 
 ------[ . Names ]----
+Abbreviations                : "HTTP", "HTTPS", "FTP", "FTPS", "SSH", "VR"
 Section Case                 : "title"
 Section Separator            : "space"
 Value Case                   : "title"
 Value Separator              : "space"
 Text Name Case               : "keep"
 Text Identifier Case         : "keep"
+
+------[ . Boolean ]----
+Case                         : "title"
+Form                         : "keep"
 
 ------[ . Section ]----
 Indent                       : 4

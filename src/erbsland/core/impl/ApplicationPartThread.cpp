@@ -72,7 +72,7 @@ void ApplicationPartThread::join() {
     _thread.join();
 }
 
-auto ApplicationPartThread::events() const noexcept -> event::EventsPtr {
+auto ApplicationPartThread::loop() const noexcept -> event::EventTargetPtr {
     return _eventLoop;
 }
 

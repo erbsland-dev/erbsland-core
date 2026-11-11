@@ -127,8 +127,8 @@ public:
                         Matches{R"(\A[a-z]+\z)"_el});
                 }
                 const auto rules = std::dynamic_pointer_cast<el::conf::impl::Rules>(builder.takeRules());
-                const auto list = rules->ruleForNamePath(el::conf::NamePath::fromText(cSampleValuesValue));
-                const auto entry = list->child(el::conf::Name::vrName(el::conf::Name::VR::ReservedEntry));
+                const auto list = rules->ruleByDefinitionPath(el::conf::NamePath::fromText(cSampleValuesValue));
+                const auto entry = list->listEntryRule();
                 REQUIRE_EQUAL(list->title(), "List"_el);
                 REQUIRE(list->isOptional());
                 REQUIRE(list->constraints().empty());
@@ -174,8 +174,8 @@ public:
         builder.addRule("empty"_el, RuleType::ValueList, EntryConstraints{}, EntryType{RuleType::Text}, IsOptional{});
         const auto rules = std::dynamic_pointer_cast<el::conf::impl::Rules>(builder.takeRules());
         for (const auto &name : {"first"_el, "second"_el}) {
-            const auto list = rules->ruleForNamePath(el::conf::NamePath::fromText(name));
-            const auto entry = list->child(el::conf::Name::vrName(el::conf::Name::VR::ReservedEntry));
+            const auto list = rules->ruleByDefinitionPath(el::conf::NamePath::fromText(name));
+            const auto entry = list->listEntryRule();
             REQUIRE_EQUAL(entry->title(), "Final title"_el);
             REQUIRE_EQUAL(entry->description(), "Final description"_el);
             REQUIRE_EQUAL(entry->constraints().size(), 2U);

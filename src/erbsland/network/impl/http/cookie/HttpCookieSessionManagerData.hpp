@@ -4,7 +4,7 @@
 
 #include "HttpCookieSessionManagerData_fwd.hpp"
 
-#include "../../../../event/Events_fwd.hpp"
+#include "../../../../event/EventTarget_fwd.hpp"
 #include "../../../../time/TimePoint.hpp"
 #include "../../../http_server/HttpCookieSessionManagerOptions.hpp"
 #include "../../../http_server/HttpServerSessionContext.hpp"
@@ -59,7 +59,7 @@ private:
     /// Remove all entries expired at the supplied owner-loop time.
     void removeExpired(time::TimePoint now);
     /// Capture and enforce exclusive server owner-loop use.
-    void captureOwner(const event::EventsPtr &owner);
+    void captureOwner(const event::EventTargetPtr &owner);
     /// Schedule bounded cleanup at the earliest ordered expiry.
     void scheduleCleanup();
     /// Move one entry to the newest idle position.
@@ -72,7 +72,7 @@ private:
     std::unordered_map<text::String, std::shared_ptr<Entry>> _entries; ///< Identifier registry.
     std::list<std::shared_ptr<Entry>> _creation;                       ///< Absolute-expiry order.
     std::list<std::shared_ptr<Entry>> _idle;                           ///< Sliding-idle and eviction order.
-    event::EventsPtr _ownerEvents;                                     ///< Exclusive server owner loop.
+    event::EventTargetPtr _ownerLoop;                                  ///< Exclusive server owner loop.
     bool _cleanupScheduled{};                                          ///< Whether an expiry callback is pending.
 };
 

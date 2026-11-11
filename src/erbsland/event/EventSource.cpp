@@ -11,33 +11,33 @@ namespace erbsland::event {
 using namespace err;
 using namespace text::literals;
 
-EventSource::EventSource(EventsPtr ownerEvents) : _ownerEvents{std::move(ownerEvents)} {
-    if (_ownerEvents == nullptr) {
-        throw ParameterFailure{"The owner event target must not be null."_el, "ownerEvents"_el};
+EventSource::EventSource(EventTargetPtr ownerLoop) : _ownerLoop{std::move(ownerLoop)} {
+    if (_ownerLoop == nullptr) {
+        throw ParameterFailure{"The owner event target must not be null."_el, "ownerLoop"_el};
     }
 }
 
-void EventSource::bindOwnerEvents(EventsPtr ownerEvents) {
-    if (ownerEvents == nullptr || _ownerEvents != nullptr) {
+void EventSource::bindOwnerLoop(EventTargetPtr ownerLoop) {
+    if (ownerLoop == nullptr || _ownerLoop != nullptr) {
         throw LogicFailure{"An event source must bind exactly once to a non-null owner."_el};
     }
-    _ownerEvents = std::move(ownerEvents);
+    _ownerLoop = std::move(ownerLoop);
 }
 
-auto EventSource::ownerEvents() const noexcept -> const EventsPtr & {
-    return _ownerEvents;
+auto EventSource::ownerLoop() const noexcept -> const EventTargetPtr & {
+    return _ownerLoop;
 }
 
-auto EventSource::currentOwnerEvents() const -> EventsPtr {
-    const auto current = currentEvents();
-    if (current != _ownerEvents) {
+auto EventSource::currentOwnerLoop() const -> EventTargetPtr {
+    const auto current = currentLoop();
+    if (current != _ownerLoop) {
         throw LogicFailure{"This event source operation must run on its owner loop."_el};
     }
     return current;
 }
 
-void EventSource::verifyCurrentOwnerEvents() const {
-    if (currentEvents() != _ownerEvents) {
+void EventSource::verifyCurrentOwnerLoop() const {
+    if (currentLoop() != _ownerLoop) {
         throw LogicFailure{"This event source operation must run on its owner loop."_el};
     }
 }

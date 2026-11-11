@@ -5,8 +5,8 @@
 #include "subprocess/SubprocessState.hpp"
 
 #include "../../err/LogicFailure.hpp"
-#include "../../event/CurrentEvents.hpp"
-#include "../../event/Events.hpp"
+#include "../../event/CurrentLoop.hpp"
+#include "../../event/EventTarget.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::system::impl {
@@ -26,7 +26,7 @@ void SystemBackend::poll(time::TimePoint) {
     const auto sources = _sources;
     for (const auto &entry : sources) {
         if (const auto source = entry.lock()) {
-            source->_state->queueDispatch(source->ownerEvents(), source->_state);
+            source->_state->queueDispatch(source->ownerLoop(), source->_state);
         }
     }
     std::erase_if(_sources, [](const std::weak_ptr<Subprocess> &entry) -> bool { return entry.expired(); });
@@ -49,8 +49,8 @@ auto SystemBackend::createSubprocess(
 }
 
 void SystemBackend::bindSubprocess(const SubprocessPtr &process) {
-    const auto owner = std::dynamic_pointer_cast<event::Events>(_target.lock());
-    if (owner == nullptr || owner != event::currentEvents()) {
+    const auto owner = std::dynamic_pointer_cast<event::EventTarget>(_target.lock());
+    if (owner == nullptr || owner != event::currentLoop()) {
         throw err::LogicFailure{"System event sources must be configured on their owner loop."_el};
     }
     process->bindEvents(owner);

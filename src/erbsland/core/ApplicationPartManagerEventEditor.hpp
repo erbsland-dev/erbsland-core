@@ -5,17 +5,20 @@
 #include "ApplicationPartCallback.hpp"
 #include "ApplicationPartManagerEventEditor_fwd.hpp"
 
+#include "../event/EventEditor.hpp"
 #include "../event/EventSubscription.hpp"
 
 namespace erbsland::core {
 
 /// Editor for application-part manager lifecycle observers.
 /// The manager owns this stable editor. Each added callback remains active while its returned subscription is retained.
-/// @tested{ApplicationPartManagerTest ApplicationPartApplicationTest ApplicationServiceLifecycleTest}
-class ApplicationPartManagerEventEditor {
+/// Registration and the source and target accessors may be used from any thread; callbacks run on the control loop.
+/// @seedoc{/reference/core/application_framework}
+/// @tested{ApplicationPartManagerTest ApplicationPartManagerEventTest ApplicationServiceLifecycleTest}
+class ApplicationPartManagerEventEditor : public event::EventEditor {
 public:
     // defaults
-    virtual ~ApplicationPartManagerEventEditor() = default;
+    ~ApplicationPartManagerEventEditor() override = default;
 
 public:
     /// Add a manager-state observer.

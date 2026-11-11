@@ -12,6 +12,7 @@ target_sources(erbsland-core-unittest PRIVATE
         ApplicationLogTest.cpp
         ApplicationOptionsTest.cpp
         ApplicationPartApplicationTest.cpp
+        ApplicationPartManagerEventTest.cpp
         ApplicationPartManagerTest.cpp
         ApplicationResourceTest.cpp
         ApplicationServiceLifecycleTest.cpp

@@ -26,7 +26,7 @@ class HttpServerRequest final : public network::HttpServerRequest {
 public:
     /// Create one public request snapshot before session selection.
     HttpServerRequest(
-        event::EventsPtr ownerEvents,
+        event::EventTargetPtr ownerLoop,
         HttpRequestHead head,
         HttpRequestTarget target,
         HttpConnectionInfo connectionInfo,

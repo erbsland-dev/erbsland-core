@@ -15,7 +15,7 @@ public:
     /// Create an editor for one built-in TLS client connection.
     /// @param source The source that owns the callbacks.
     /// @param target The event target on which callbacks run.
-    TlsClientConnectionEventEditor(event::EventSourcePtr source, event::EventsPtr target);
+    TlsClientConnectionEventEditor(event::EventSourcePtr source, event::EventTargetPtr target);
 
 public:
     auto onHostResolved(TcpHostResolvedFn callback) -> network::TlsClientConnectionEventEditor & override;

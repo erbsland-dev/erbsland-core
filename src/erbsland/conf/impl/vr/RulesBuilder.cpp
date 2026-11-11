@@ -22,7 +22,7 @@ void RulesBuilder::configureRoot(const std::span<const vr::builder::Attribute *c
 
 void RulesBuilder::configureRule(
     const NamePath &namePath, const std::span<const vr::builder::Attribute *const> attributes) {
-    const auto rule = _rules->ruleForNamePath(namePath);
+    const auto rule = _rules->ruleByDefinitionPath(namePath);
     if (rule == nullptr) {
         throwValidationError("Cannot configure a missing branch parent rule."_el);
     }
@@ -51,13 +51,13 @@ void RulesBuilder::addRule(
     if (ruleType == vr::RuleType::Undefined) {
         throwValidationError("A rule type of 'undefined' is not allowed"_el);
     }
-    auto ruleNamePath = resolveRuleNamePath(namePath);
-    if (_rules->ruleForNamePath(ruleNamePath) != nullptr) {
+    auto definitionNamePath = resolveDefinitionNamePath(namePath);
+    if (_rules->ruleByDefinitionPath(definitionNamePath) != nullptr) {
         throwValidationError("A rule already exists at the given name path."_el);
     }
-    auto rule = std::make_shared<Rule>();
-    rule->setRuleNamePath(ruleNamePath);
-    rule->setTargetNamePath(ruleNamePath);
+    auto rule = std::make_shared<Rule>(Rule::roleForDefinitionName(definitionNamePath.back()));
+    rule->setDefinitionNamePath(definitionNamePath);
+    rule->setValueNamePath(definitionNamePath);
     rule->setType(ruleType);
     auto entry = applyAttributes(rule, attributes);
     _rules->addRule(rule);
@@ -71,10 +71,10 @@ void RulesBuilder::addAlternative(
     if (ruleType == vr::RuleType::Undefined) {
         throwValidationError("A rule type of 'undefined' is not allowed"_el);
     }
-    auto ruleNamePath = resolveRuleNamePath(namePath);
-    auto rule = std::make_shared<Rule>();
-    rule->setRuleNamePath(ruleNamePath);
-    rule->setTargetNamePath(ruleNamePath);
+    auto definitionNamePath = resolveDefinitionNamePath(namePath);
+    auto rule = std::make_shared<Rule>(Rule::roleForDefinitionName(definitionNamePath.back()));
+    rule->setDefinitionNamePath(definitionNamePath);
+    rule->setValueNamePath(definitionNamePath);
     rule->setType(ruleType);
     auto entry = applyAttributes(rule, attributes);
     _rules->addAlternativeRule(rule);
@@ -88,10 +88,10 @@ auto RulesBuilder::prepareImplicitEntry(const RulePtr &rule) -> RulePtr {
         }
         return {};
     }
-    if (rule->type() != vr::RuleType::ValueList || rule->hasChild(Name::vrName(Name::VR::ReservedEntry))) {
+    if (rule->type() != vr::RuleType::ValueList || rule->listEntryRule() != nullptr) {
         throwValidationError("An implicit scalar entry requires a value list without an existing vr_entry."_el);
     }
-    auto entry = std::make_shared<Rule>();
+    auto entry = std::make_shared<Rule>(RuleRole::ListEntry);
     entry->setType(rule->entryType());
     for (const auto &attribute : rule->entryAttributes()) {
         attribute->apply(*entry);
@@ -103,12 +103,12 @@ void RulesBuilder::attachImplicitEntry(const RulePtr &rule, const RulePtr &entry
     if (entry == nullptr) {
         return;
     }
-    auto rulePath = rule->ruleNamePath();
+    auto rulePath = rule->definitionNamePath();
     rulePath.append(Name::vrName(Name::VR::ReservedEntry));
-    auto targetPath = rule->targetNamePath();
-    targetPath.append(Name::vrName(Name::VR::ReservedEntry));
-    entry->setRuleNamePath(rulePath);
-    entry->setTargetNamePath(targetPath);
+    auto valuePath = rule->valueNamePath();
+    valuePath.append(Name::vrName(Name::VR::ReservedEntry));
+    entry->setDefinitionNamePath(rulePath);
+    entry->setValueNamePath(valuePath);
     entry->setParent(rule);
     rule->addChild(entry);
 }
@@ -119,7 +119,7 @@ void RulesBuilder::readFromDocument(const DocumentPtr &document) {
     _rules->validateDefinition();
 }
 
-auto RulesBuilder::resolveRuleNamePath(const NamePathLike &namePathLike) -> NamePath {
+auto RulesBuilder::resolveDefinitionNamePath(const NamePathLike &namePathLike) -> NamePath {
     NamePath namePath;
     if (std::holds_alternative<std::size_t>(namePathLike)) {
         throwValidationError("The given name-path is not valid"_el);

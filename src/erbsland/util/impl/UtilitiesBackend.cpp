@@ -3,8 +3,8 @@
 #include "UtilitiesBackend.hpp"
 
 #include "../../err/LogicFailure.hpp"
-#include "../../event/CurrentEvents.hpp"
-#include "../../event/Events.hpp"
+#include "../../event/CurrentLoop.hpp"
+#include "../../event/EventTarget.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::util::impl {
@@ -31,8 +31,8 @@ auto UtilitiesBackend::nextWakeTime() const -> std::optional<time::TimePoint> {
 }
 
 auto UtilitiesBackend::createWorkerPool(const WorkerPoolOptions &options) -> WorkerPoolPtr {
-    const auto owner = std::dynamic_pointer_cast<event::Events>(_target.lock());
-    if (owner == nullptr || owner != event::currentEvents()) {
+    const auto owner = std::dynamic_pointer_cast<event::EventTarget>(_target.lock());
+    if (owner == nullptr || owner != event::currentLoop()) {
         throw err::LogicFailure{"Utility event sources must be configured on their owner loop."_el};
     }
     auto pool = WorkerPool::create(options);

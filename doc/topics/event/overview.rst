@@ -10,118 +10,149 @@ Event System Overview
 *********************
 
 The event system connects callbacks, timers, and background work through event loops.
-These topics explain the programming model, help you choose where loops run, and show how to connect callbacks safely.
-They then develop scheduling and the state needed to coordinate a complete task.
-For work spanning several loops, continue with communication, shutdown, and load control.
-Failure handling supports both paths; direct loop ownership and extension APIs form separate paths.
+Start with the core concepts and application startup, then learn to connect sources, manage callback lifetimes, and
+schedule work.
+Bindings, event threads, and application parts provide the tools for organizing work around persistent state and
+exchanging requests and results between loops.
+The later topics explain error handling, orderly shutdown, and responsiveness under load.
+Worker pools, direct loop execution, and extension APIs offer further paths for specific application needs.
 
-Event System Concepts and Facilities
-====================================
+Core Concepts of the Event System
+=================================
 
 :doc:`events_in_erbsland_core` introduces event loops and callbacks from the perspective of procedural C++ code.
-It explains how targets, invocations, timers, and event sources fit together, and when a main loop, worker thread, or
-application part is useful.
+It establishes waiting and dispatch, separate loop contexts, and the relationship between a target, a backend's public
+interface, an event source, and its editor.
 
-Application Event Loops
-=======================
+Running an Application with Event Loops
+=======================================
 
-:doc:`using_event_loops` builds a file monitor around the application's main loop, then shows how a derived
-application can run setup and cleanup around that loop.
-It also explains when worker threads or application parts are useful next steps.
+:doc:`using_event_loops` connects application startup hooks to running event loops.
+It explains direct and derived applications, validated configuration, workers in procedural programs, and registered
+parts, with compile-only templates for each startup design.
+The lifecycle continues through completion, managed shutdown, and cleanup.
+
+Connecting to Event Sources
+===========================
+
+:doc:`using_event_apis` develops the source and editor concepts through direct and lazy loop binding, callback
+registration, and independent subscriptions.
+It explains why callbacks run on the owner loop, how to send setup there, and how direct invocations and bindings fit
+the same execution model.
+
+Callback Lifetimes and Ownership
+================================
+
+:doc:`callback_lifetimes` explains why callbacks can disappear, access destroyed objects, or keep objects alive forever.
+Complete lookup programs show how source ownership, lambda captures, and weak recipients prevent these mistakes.
+The page also explains subscription handles and why editor references cannot replace owning source pointers.
+
+Scheduling Work and Timers
+==========================
+
+:doc:`scheduling_work` shows how to defer a callback, choose a delayed invocation or retained timer, and cancel or
+replace a deadline.
+It compares repeating timer modes and develops a debounce for repeated input.
+
+Delivering Callbacks with Event Bindings
+========================================
+
+:doc:`event_bindings` turns nested result callbacks into reusable continuations bound to their receiving loop.
+It compares explicit invocation with bindings and separates required operation completion from optional notifications.
 
 Processing Work on Event Threads
 ================================
 
 :doc:`processing_work_on_event_threads` explains thread creation, posting work, result ownership, and synchronization
 through thread joining.
-A file-hashing batch illustrates how exclusive access and value transfer avoid shared mutable result state.
+It compares managed and unmanaged ownership, explains startup and shutdown, and makes success and failure completion
+paths explicit.
 
-Event Loops in Application Parts
-================================
+Using Event Loops in Application Parts
+======================================
 
 :doc:`using_event_loops_in_application_parts` explains the execution and lifecycle model of a part's dedicated loop.
-It uses a file server to demonstrate source ownership, readiness, cross-thread service calls, and asynchronous shutdown.
+It covers source ownership, readiness, cross-thread service calls, and asynchronous shutdown.
 
-Connecting to Event Sources
-===========================
+Designing Event-Driven Applications Around State
+================================================
 
-:doc:`using_event_apis` follows a source from setup to result and explains the shared conventions behind targets,
-source-owned editors, replaceable handlers, and independent observers.
-It also shows how to send setup to the owner loop and access its network service.
+:doc:`event_workflows` explains how persistent state connects callbacks after a procedural call sequence has ended.
+It develops decisions based on events and current state, ownership by one loop, and explicit completion and failure.
 
-Callback Ownership and Lifetime
-===============================
+Sending Requests and Results Between Event Loops
+================================================
 
-:doc:`callback_lifetimes` explains what retains a source, timer, callback, and observer registration.
-You will see when value and strong captures are useful, how weak captures let recipients disappear, and why cancellation
-and callback completion are different lifetime questions.
+:doc:`communicating_between_loops` explains queued notifications, requests, and replies by comparing them with
+synchronous function calls.
+It shows how bindings carry parameters and results, why a reply is a separate delivery, and how receivers retain data
+and accept only relevant results.
 
-Invocations and Timers
-======================
-
-:doc:`scheduling_work` shows how to defer a callback, choose a delayed invocation or retained timer, and cancel or
-replace a deadline.
-It compares repeating timer modes and develops a debounce for repeated input.
-
-Simplifying Event Code with Bindings
-====================================
-
-:doc:`event_bindings` turns nested result callbacks into reusable continuations bound to their receiving loop.
-Two checksum applications show the same operation with explicit invocation and event bindings.
-A pi calculator then separates required operation completion from an optional display.
-
-Asynchronous Task Workflows
-===========================
-
-:doc:`event_workflows` uses the Checksum Packer to connect scanning and packing into one operation.
-It explains state transitions, result ownership, and success and failure paths coordinated by callbacks on the main
-loop.
-
-Communication Between Loops
-===========================
-
-:doc:`communicating_between_loops` routes requests to a worker and replies to a running main loop while keeping
-mutable state with its owner.
-It explains transferred values, recipient lifetime, obsolete replies, and completion paths that remain responsive.
-
-Cancellation and Shutdown
-=========================
-
-:doc:`shutting_down_event_work` follows resources through cancellation or close, final callbacks, loop termination,
-and thread joining.
-It distinguishes draining accepted callbacks from finishing asynchronous operations, and explains failure and deadline
-paths for shutdown.
-
-Handling Event Failures
-=======================
+Handling Event Errors and Callback Exceptions
+=============================================
 
 :doc:`handling_event_errors` distinguishes synchronous exceptions, operation error notifications, and callback failures.
 It shows how to retrieve captured exceptions, choose a loop policy, and end a managed worker's task without leaving its
 caller waiting for a missing result.
 
-Keeping Loops Responsive Under Load
-===================================
+Cancelling Event Work and Shutting Down
+=======================================
 
-:doc:`controlling_event_load` starts with bounded outstanding requests and short callbacks, then develops queue
-capacity as a separate overload policy.
-It explains disposable updates, coalescing, blocking admission, and the limits of queue counts and timer deadlines.
+:doc:`shutting_down_event_work` distinguishes cancellation requests, operation completion, loop termination, and
+thread joining.
+It develops cooperative cancellation, required completion paths, dependency-aware shutdown, and cleanup when closure
+fails or takes too long.
 
-Owning Loop Execution
-=====================
+Event Loop Responsiveness and Overload Control
+==============================================
 
-The planned topic :doc:`running_event_loops_directly` covers dispatch controlled by a procedural host and standalone
-worker ownership.
+:doc:`controlling_event_load` explains how callback duration and excess incoming work affect a loop differently.
+It develops bounded chunks, outstanding-request limits, queue capacity policies, and coalesced progress updates, then
+explains blocking admission and how to interpret queue counts.
+
+Processing Work with a Worker Pool
+==================================
+
+:doc:`planned/processing_work_with_a_worker_pool` introduces independent-job scheduling as an alternative to creating
+several dedicated event threads.
+It covers choosing a pool, submitting jobs, and receiving results through event callbacks or procedural futures.
+
+Driving Event Loops Directly
+============================
+
+:doc:`planned/running_event_loops_directly` covers dispatch controlled by a procedural host and standalone worker
+ownership.
 It forms an optional path for applications that need to drive execution themselves.
 
-Extending the Event System
-==========================
+Creating Event Sources and Notifications
+========================================
 
-The extension tutorials are planned as a progression from a component's public notifications to native integration.
-:doc:`creating_event_sources` will start with an object that publishes events.
-:doc:`defining_custom_events` will develop typed event data and routing, and :doc:`writing_event_backends` will connect
-custom work to the loop.
-:doc:`integrating_event_loop_drivers` will cover native waiting and custom drivers.
-These destinations are marked as planned topics until their tutorials are written.
+:doc:`planned/creating_event_sources` explains how to publish a component's notifications through an event interface and
+connect its lifetime to an owning loop.
+
+Defining and Posting Typed Events
+=================================
+
+:doc:`planned/defining_custom_events` develops typed event data, event identifiers, and routing to recipients.
+
+Writing an Event Backend
+========================
+
+:doc:`planned/writing_event_backends` connects custom sources of work to a loop through backend dispatch, scheduling, and
+shutdown.
+
+Integrating Native Events with Loop Drivers
+===========================================
+
+:doc:`planned/integrating_event_loop_drivers` covers native readiness and custom waiting behavior while preserving loop
+ownership and orderly shutdown.
+
+Demo Application Walkthroughs
+=============================
+
+:doc:`/demo_apps/event/index` follows the complete event applications, from small monitors to multi-stage workflows.
+Use these walkthroughs to connect the focused examples in the topics to each application's ownership and completion
+strategy.
 
 Related Topics
 ==============

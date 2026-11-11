@@ -7,7 +7,7 @@
 #include "../../../err/LogicFailure.hpp"
 #include "../../../err/ParameterFailure.hpp"
 #include "../../../err/RuntimeError.hpp"
-#include "../../../event/Events.hpp"
+#include "../../../event/EventTarget.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../source/NetworkError.hpp"
 
@@ -20,8 +20,8 @@ using namespace err;
 using namespace text::literals;
 
 TcpListener::TcpListener(
-    event::EventsPtr ownerEvents, event::EventLoopDriverPtr driver, TcpListenerDeviceCreateFn createDevice) :
-    network::TcpListener{std::move(ownerEvents)}, _driver{std::move(driver)}, _createDevice{std::move(createDevice)} {
+    event::EventTargetPtr ownerLoop, event::EventLoopDriverPtr driver, TcpListenerDeviceCreateFn createDevice) :
+    network::TcpListener{std::move(ownerLoop)}, _driver{std::move(driver)}, _createDevice{std::move(createDevice)} {
     if (_driver == nullptr || !_createDevice) {
         throw LogicFailure{"A TCP listener requires a driver and device factory."_el};
     }
@@ -43,7 +43,7 @@ auto TcpListener::state() const noexcept -> NetworkSourceState {
 
 void TcpListener::start(IpEndpoint localEndpoint, TcpListenerOptions options) {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_started.load()) {
         throw LogicFailure{"A TCP listener can only be started once."_el};
     }
@@ -85,7 +85,7 @@ void TcpListener::start(IpEndpoint localEndpoint, TcpListenerOptions options) {
 
 void TcpListener::pauseAccepting() {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != NetworkSourceState::Active || _acceptPaused) {
         return;
     }
@@ -95,7 +95,7 @@ void TcpListener::pauseAccepting() {
 
 void TcpListener::resumeAccepting() {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != NetworkSourceState::Active || !_acceptPaused) {
         return;
     }
@@ -105,7 +105,7 @@ void TcpListener::resumeAccepting() {
 
 void TcpListener::close() {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     const auto current = _state.exchange(NetworkSourceState::Closed);
     if (current == NetworkSourceState::Closed || current == NetworkSourceState::Failed) {
         return;
@@ -125,7 +125,7 @@ void TcpListener::abort() noexcept {
     const auto generation = _generation.fetch_add(1U) + 1U;
     cleanupDevice(true);
     const auto weakSelf = std::weak_ptr<TcpListener>{std::static_pointer_cast<TcpListener>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->postFinal(generation);
         }
@@ -133,7 +133,7 @@ void TcpListener::abort() noexcept {
 }
 
 auto TcpListener::events() -> network::TcpListenerEventEditor & {
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<TcpListenerEventEditor>(shared_from_this(), std::move(target));
     }
@@ -178,7 +178,7 @@ void TcpListener::handleAccepted(const std::uint64_t generation, TcpAcceptedSock
     auto request =
         std::make_shared<TcpConnectionRequest>(std::move(socket), std::move(*quotaLease), [weakSelf]() -> void {
             if (const auto self = weakSelf.lock(); self != nullptr) {
-                self->ownerEvents()->invoke([weakSelf]() -> void {
+                self->ownerLoop()->invoke([weakSelf]() -> void {
                     if (const auto target = weakSelf.lock(); target != nullptr) {
                         target->releasePendingRequest();
                     }
@@ -187,7 +187,7 @@ void TcpListener::handleAccepted(const std::uint64_t generation, TcpAcceptedSock
         });
     updateAccepting();
     const auto callback = _onConnection;
-    ownerEvents()->invoke([callback, request = std::move(request)]() -> void {
+    ownerLoop()->invoke([callback, request = std::move(request)]() -> void {
         if (callback) {
             callback(request);
         }
@@ -196,7 +196,7 @@ void TcpListener::handleAccepted(const std::uint64_t generation, TcpAcceptedSock
 
 void TcpListener::postListening(const std::uint64_t generation) {
     const auto weakSelf = std::weak_ptr<TcpListener>{std::static_pointer_cast<TcpListener>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverListening(generation);
         }
@@ -205,7 +205,7 @@ void TcpListener::postListening(const std::uint64_t generation) {
 
 void TcpListener::postError(const std::uint64_t generation, NetworkErrorContext context) {
     const auto weakSelf = std::weak_ptr<TcpListener>{std::static_pointer_cast<TcpListener>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation, context = std::move(context)]() mutable -> void {
+    ownerLoop()->invoke([weakSelf, generation, context = std::move(context)]() mutable -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverError(generation, std::move(context));
         }
@@ -248,7 +248,7 @@ void TcpListener::releasePendingRequest() {
 
 void TcpListener::handleQuotaCapacity() {
     const auto weakSelf = std::weak_ptr<TcpListener>{std::static_pointer_cast<TcpListener>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf]() -> void {
+    ownerLoop()->invoke([weakSelf]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             const auto lifecycleLock = std::scoped_lock{self->_lifecycleMutex};
             self->updateAccepting();
@@ -272,7 +272,7 @@ void TcpListener::updateAccepting() {
 
 void TcpListener::postClosedAndFinal(const std::uint64_t generation) {
     const auto weakSelf = std::weak_ptr<TcpListener>{std::static_pointer_cast<TcpListener>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         const auto self = weakSelf.lock();
         if (self == nullptr || !self->isCurrent(generation) || self->_finalPosted.exchange(true)) {
             return;
@@ -304,7 +304,7 @@ void TcpListener::postClosedAndFinal(const std::uint64_t generation) {
 
 void TcpListener::postErrorAndFinal(std::uint64_t generation, NetworkErrorContext context) {
     const auto weakSelf = std::weak_ptr<TcpListener>{std::static_pointer_cast<TcpListener>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation, context = std::move(context)]() -> void {
+    ownerLoop()->invoke([weakSelf, generation, context = std::move(context)]() -> void {
         const auto self = weakSelf.lock();
         if (self == nullptr || !self->isCurrent(generation) || self->_finalPosted.exchange(true)) {
             return;

@@ -7,7 +7,7 @@
 
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../stream/ByteInputStream.hpp"
 #include "../../../../stream/StreamReadStatus.hpp"
 #include "../../../../text/CaseSensitivity.hpp"
@@ -64,7 +64,7 @@ void HttpStaticContentOperation::start() {
     _activeReservation = true;
     try {
         _work = util::impl::worker_services::blocking().reserve();
-        _completion = event::impl::EventContinuation::create(server->ownerEvents());
+        _completion = event::impl::EventContinuation::create(server->ownerLoop());
     } catch (const RuntimeError &) {
         sendError(HttpStatus::ServiceUnavailable);
         return;

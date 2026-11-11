@@ -8,7 +8,7 @@
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../http/HttpFieldType.hpp"
 #include "../../../source/NetworkErrorContext.hpp"
@@ -23,10 +23,10 @@ namespace erbsland::network::impl {
 using namespace err;
 using namespace text::literals;
 
-HttpClientSession::HttpClientSession(event::EventsPtr ownerEvents) :
-    network::HttpClientSession{ownerEvents},
-    _cookieJar{ownerEvents},
-    _connectionManager{std::make_shared<HttpClientConnectionManager>(std::move(ownerEvents))} {
+HttpClientSession::HttpClientSession(event::EventTargetPtr ownerLoop) :
+    network::HttpClientSession{ownerLoop},
+    _cookieJar{ownerLoop},
+    _connectionManager{std::make_shared<HttpClientConnectionManager>(std::move(ownerLoop))} {
 }
 
 HttpClientSession::~HttpClientSession() {
@@ -39,7 +39,7 @@ HttpClientSession::~HttpClientSession() {
 }
 
 void HttpClientSession::setOptions(HttpClientSessionOptions options) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state != NetworkSourceState::Active) {
         throw LogicFailure{"A closed HTTP client session cannot be configured."_el};
     }
@@ -58,7 +58,7 @@ void HttpClientSession::setOptions(HttpClientSessionOptions options) {
 }
 
 void HttpClientSession::setTlsOptions(HttpClientTlsOptions options) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state != NetworkSourceState::Active) {
         throw LogicFailure{"A closed HTTP client session cannot be configured."_el};
     }
@@ -75,7 +75,7 @@ void HttpClientSession::setTlsOptions(HttpClientTlsOptions options) {
 }
 
 void HttpClientSession::setRedirectOptions(HttpClientRedirectOptions options) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state != NetworkSourceState::Active) {
         throw LogicFailure{"A closed HTTP client session cannot be configured."_el};
     }
@@ -86,7 +86,7 @@ void HttpClientSession::setRedirectOptions(HttpClientRedirectOptions options) {
 }
 
 void HttpClientSession::setDefaultHeaders(HttpHeaders headers) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state != NetworkSourceState::Active) {
         throw LogicFailure{"A closed HTTP client session cannot be configured."_el};
     }
@@ -111,7 +111,7 @@ auto HttpClientSession::createRequest(Url url) -> HttpClientRequestPtr {
 }
 
 auto HttpClientSession::createRequest(HttpMethod method, Url url) -> HttpClientRequestPtr {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (!method.isValid()) {
         throw ParameterFailure{"An HTTP client request requires a valid method."_el, "method"_el};
     }
@@ -123,7 +123,7 @@ auto HttpClientSession::createRequest(HttpMethod method, Url url) -> HttpClientR
 }
 
 void HttpClientSession::sendRequest(HttpClientRequestPtr request) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     const auto concrete = std::dynamic_pointer_cast<HttpClientRequest>(request);
     if (concrete == nullptr || concrete->_session.lock().get() != this) {
         throw ParameterFailure{"The request was not created by this HTTP client session."_el, "request"_el};
@@ -146,7 +146,7 @@ void HttpClientSession::sendRequest(HttpClientRequestPtr request) {
         _active.size() >= _options.maximumConcurrentRequests().toSizeT();
     if (_state != NetworkSourceState::Active || queueFull || wouldOverflow) {
         const auto closed = _state != NetworkSourceState::Active;
-        ownerEvents()->invoke([target = std::move(concrete), closed]() -> void {
+        ownerLoop()->invoke([target = std::move(concrete), closed]() -> void {
             auto context = NetworkErrorContext{
                 closed ? "HTTP client session closed"_el : "HTTP client request limit"_el,
                 closed ? "The HTTP client session no longer accepts requests."_el
@@ -189,7 +189,7 @@ auto HttpClientSession::state() const noexcept -> NetworkSourceState {
 }
 
 void HttpClientSession::close() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state == NetworkSourceState::Closed || _state == NetworkSourceState::Closing) {
         return;
     }
@@ -220,7 +220,7 @@ void HttpClientSession::abort() noexcept {
 }
 
 auto HttpClientSession::events() -> network::HttpClientSessionEventEditor & {
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<HttpClientSessionEventEditor>(shared_from_this(), std::move(target), *this);
     }

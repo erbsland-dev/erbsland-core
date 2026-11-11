@@ -18,6 +18,20 @@ Good examples should be:
 * immediately useful to the reader.
 
 Avoid overly artificial examples that only demonstrate syntax without meaningful context.
+For placement in topic pages, follow :ref:`topic-page-practical-separation` and the directive syntax in
+:doc:`demo_integration`.
+
+Choosing an Example Category
+============================
+
+Use an app for a complete working program, a snippet collection for focused runnable examples, and a template for an
+application starting point whose business operations belong to the reader.
+Follow the categorized layout and validation rules in :doc:`demo`.
+Templates must compile and link, but must never be run for documentation or validation.
+Their source should show real ownership, startup, configuration where needed, and completion hooks without inventing
+business behavior to fill the gaps.
+In a practical block, explain what the reader supplies and which lifecycle or dispatch behavior the framework already
+provides.
 
 Code Style
 ==========

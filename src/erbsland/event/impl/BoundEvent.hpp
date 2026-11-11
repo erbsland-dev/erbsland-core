@@ -4,7 +4,7 @@
 
 #include "BindEventTraits.hpp"
 
-#include "../Events_fwd.hpp"
+#include "../EventTarget_fwd.hpp"
 
 #include <concepts>
 #include <memory>
@@ -26,7 +26,7 @@ public:
     /// @throws Any exception from allocating or constructing the handler.
     template <typename tSource>
         requires std::constructible_from<tFunction, tSource>
-    explicit BoundEvent(EventsPtr events, tSource &&function);
+    explicit BoundEvent(EventTargetPtr events, tSource &&function);
 
     // defaults
     BoundEvent(const BoundEvent &) = default;
@@ -46,7 +46,7 @@ public:
     void operator()(tArguments &&...arguments) const;
 
 private:
-    EventsPtr _events;                    ///< Target retained by bindings, not by queued transport closures.
+    EventTargetPtr _events;               ///< Target retained by bindings, not by queued transport closures.
     std::shared_ptr<tFunction> _function; ///< Handler shared by binding copies and pending deliveries.
 };
 

@@ -4,7 +4,7 @@
 
 #include "../../../err/RuntimeError.hpp"
 #include "../../../event/EventBackendTarget.hpp"
-#include "../../../event/Events.hpp"
+#include "../../../event/EventTarget.hpp"
 
 namespace erbsland::system::impl {
 
@@ -40,7 +40,7 @@ auto SubprocessState::claimWake() -> event::EventBackendTargetPtr {
     return target;
 }
 
-void SubprocessState::queueDispatch(const event::EventsPtr &owner, std::weak_ptr<SubprocessState> self) {
+void SubprocessState::queueDispatch(const event::EventTargetPtr &owner, std::weak_ptr<SubprocessState> self) {
     if (!claimDispatch()) {
         return;
     }

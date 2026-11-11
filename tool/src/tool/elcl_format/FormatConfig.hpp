@@ -13,6 +13,12 @@ using namespace el::text::literals;
 
 /// Validate and translate an independent formatter configuration.
 class FormatConfig final {
+    /// Style key listing title-case abbreviations.
+    static constexpr auto cNamesAbbreviations = "names.abbreviations"_el;
+    /// Style key selecting Boolean case.
+    static constexpr auto cBooleanCase = "boolean.case"_el;
+    /// Style key selecting Boolean word pairs.
+    static constexpr auto cBooleanForm = "boolean.form"_el;
     /// Configuration path containing the base formatting style applied before conditional rules.
     static constexpr auto cElclFormatBase = "elcl_format.base"_el;
     /// Configuration path containing the ordered conditional formatting rules.
@@ -103,6 +109,10 @@ public:
 private:
     /// Declare all optional formatting properties.
     static void addStyleRules(el::conf::vr::RulesBuilderBranch branch);
+    /// Declare abbreviation and Boolean settings.
+    static void addLiteralStyleRules(el::conf::vr::RulesBuilderBranch &branch);
+    /// Read abbreviation and Boolean settings.
+    static void readLiteralStyle(const el::conf::ValuePtr &section, el::conf::syntax::FormatStylePatch &patch);
     /// Translate explicit style settings into a property patch.
     static auto readStyle(const el::conf::ValuePtr &section) -> el::conf::syntax::FormatStylePatch;
     /// Read the name formatting properties.

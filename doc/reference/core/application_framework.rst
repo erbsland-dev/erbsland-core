@@ -50,6 +50,29 @@ This drains writes queued on I/O workers before process teardown can discard the
 Each stream is flushed independently using its configured timeout; a flush failure does not prevent cleanup of the other
 stream or escape the application destructor.
 
+Exception Handling
+==================
+
+``Application::run()`` handles ``RuntimeError`` from lifecycle methods and the managed main loop by shutting down
+managed work, calling ``cleanup()``, rendering the diagnostic to standard error, and returning a failure exit code.
+``ApplicationError`` supplies its own exit code; other runtime errors use ``ExitCode::failure()``.
+``LogicFailure`` is logged when logging is configured, then rethrown after cleanup.
+Other exceptions also propagate after cleanup.
+These fatal failures are not converted into ordinary application diagnostics and successful returns.
+
+``runMainEventLoop()`` installs the default handler on every entry, replacing any previously installed main-loop
+handler.
+It stops dispatch on the first runtime failure and delivers that failure to the application boundary after managed
+worker shutdown.
+A derived ``main()`` can instead install a custom handler and drive ``mainEventLoop().run()`` directly; that override
+owns consumption of stored errors, reporting, and the exit code it returns.
+The surrounding application lifecycle still handles managed-thread shutdown and cleanup.
+
+Managed event threads use ``Store`` unless configured otherwise.
+``FailApplication`` forwards worker runtime failures to the application, retaining the first failure and requesting
+shutdown of all managed event threads.
+See :doc:`/topics/event/handling_event_errors` for local recovery, final notifications, policies, and joining.
+
 Terminal Output
 ===============
 
@@ -132,6 +155,20 @@ dedicated event target, and read-only manager access.
 Public service interfaces publish the same static identifier and can be combined with the implementation through
 :cpp:class:`ApplicationPartWithInterface <erbsland::core::ApplicationPartWithInterface>`.
 
+Part Lifecycle Hooks
+--------------------
+
+These protected hooks customize the part's event work and finalization.
+See :doc:`/topics/event/using_event_loops_in_application_parts` for their execution contexts and source ownership.
+
+.. doxygenfunction:: erbsland::core::ApplicationPart::automaticStart
+.. doxygenfunction:: erbsland::core::ApplicationPart::shutdownTimeout
+.. doxygenfunction:: erbsland::core::ApplicationPart::onInitialize
+.. doxygenfunction:: erbsland::core::ApplicationPart::onRunning
+.. doxygenfunction:: erbsland::core::ApplicationPart::onStopping
+.. doxygenfunction:: erbsland::core::ApplicationPart::cleanup
+.. doxygenfunction:: erbsland::core::ApplicationPart::completeStopping
+
 Manager Access and Lifecycle
 ----------------------------
 
@@ -140,12 +177,46 @@ wait, and prepared-part lookup operations.
 The mutable manager interface adds registration, preparation, command-line forwarding, asynchronous lifecycle requests,
 callbacks, and ordered error retrieval.
 
-Manager and part state callbacks execute on the manager's control event source.
+Manager and part state callbacks execute on the manager's control event loop.
 Every started part receives a separate event thread.
+``onInitialize()`` runs as an event callback while the part is ``Starting``.
+Successful initialization causes the manager to publish ``Running`` and queue ``onRunning()`` as a separate callback on
+the part's loop.
+The manager can start dependent parts and satisfy ``waitForRunning()`` before ``onRunning()`` finishes.
+Callbacks queued during initialization can run before ``onRunning()``.
+``Running`` establishes completed initialization, not completion of asynchronous service setup.
 Dependencies gate startup and reverse the shutdown order.
+``onStopping()`` runs as an event callback and begins graceful shutdown; ``completeStopping()`` requests loop
+termination when that work completes.
+``cleanup() noexcept`` executes on the part thread after the loop exits, including after handled callback failures.
+Command-line registration and ``handleCommandLineOptions(values)`` run synchronously before part startup.
+
+Lifecycle Observers
+-------------------
+
+``ApplicationPartManager`` derives from :cpp:class:`EventSource <erbsland::event::EventSource>`.
+Its ``ownerLoop()`` is the control target selected at creation: the application's main loop for ``app.partManager()``,
+the supplied target for ``ApplicationPartManager::create(target)``, or a dedicated control thread's loop for
+``create()``.
+The target is bound before the factory returns and remains unchanged for the manager's lifetime.
+
+``events()`` returns a stable, manager-owned
+:cpp:class:`ApplicationPartManagerEventEditor <erbsland::core::ApplicationPartManagerEventEditor>`, derived from
+:cpp:class:`EventEditor <erbsland::event::EventEditor>`.
+Its ``source()`` retains the manager and ``target()`` retains its control target.
+The editor reference itself is borrowed and remains valid only while the manager is alive.
+
+Editor access, ``source()``, ``target()``, and observer registration are thread-safe and may be used before loop
+dispatch begins.
+Notifications always execute on the control loop, regardless of the registering thread.
+This guarantee applies to the manager's editor; other event sources require owner-loop editing unless documented
+otherwise.
+
 State observers are independent subscriptions.
 Retain the ``EventSubscription`` returned by ``events().addStateChanged()`` or ``events().addPartStateChanged()`` for as
 long as the observer shall remain active.
+Handled operational failures from observers are queued on the manager and trigger coordinated shutdown.
+See :doc:`/topics/event/using_event_apis` for connecting callbacks and retaining subscriptions.
 
 Compiled Resources
 ==================

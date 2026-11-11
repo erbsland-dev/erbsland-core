@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "CurrentEventsScope.hpp"
+#include "CurrentLoopScope.hpp"
 #include "EventLoop_fwd.hpp"
 
 namespace erbsland::event::impl {
@@ -24,8 +24,8 @@ public:
     auto operator=(EventLoopRunScope &&) -> EventLoopRunScope & = delete;
 
 private:
-    EventLoop &_loop;                ///< Loop whose dispatch state is restored.
-    CurrentEventsScope _eventsScope; ///< Scoped thread-local event target.
+    EventLoop &_loop;              ///< Loop whose dispatch state is restored.
+    CurrentLoopScope _eventsScope; ///< Scoped thread-local event target.
 };
 
 }

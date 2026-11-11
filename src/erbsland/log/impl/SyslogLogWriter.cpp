@@ -5,8 +5,8 @@
 #include "../line/LogLine.hpp"
 
 #include "../../err/ParameterFailure.hpp"
-#include "../../event/CurrentEvents.hpp"
-#include "../../event/Events.hpp"
+#include "../../event/CurrentLoop.hpp"
+#include "../../event/EventTarget.hpp"
 #include "../../network/Network.hpp"
 #include "../../network/source/Connection.hpp"
 #include "../../network/tcp/TcpConnection.hpp"
@@ -167,7 +167,7 @@ void SyslogLogWriter::ensureTransport() {
 }
 
 void SyslogLogWriter::createUdpTransport() {
-    auto &network = event::currentEvents()->get<network::Network>();
+    auto &network = event::currentLoop()->get<network::Network>();
     _udpSocket = network.createUdpSocket();
     _connecting = true;
     const auto weak = weak_from_this();
@@ -196,7 +196,7 @@ void SyslogLogWriter::createUdpTransport() {
 }
 
 void SyslogLogWriter::createTcpTransport() {
-    auto &network = event::currentEvents()->get<network::Network>();
+    auto &network = event::currentLoop()->get<network::Network>();
     auto connection = network.createTcpConnection();
     const auto weak = weak_from_this();
     connection->events()
@@ -229,7 +229,7 @@ void SyslogLogWriter::createTcpTransport() {
 }
 
 void SyslogLogWriter::createTlsTransport() {
-    auto &network = event::currentEvents()->get<network::Network>();
+    auto &network = event::currentLoop()->get<network::Network>();
     auto connection = network.createTlsClientConnection();
     const auto weak = weak_from_this();
     connection->events()
@@ -304,7 +304,7 @@ void SyslogLogWriter::transportFailed() {
     const auto delay = time::TimeDelta::seconds(delaySeconds);
     _nextRetry = time::TimePoint::inFuture(delay);
     const auto weak = weak_from_this();
-    event::currentEvents()->invokeAfter(delay, [weak]() -> void {
+    event::currentLoop()->invokeAfter(delay, [weak]() -> void {
         if (const auto self = weak.lock()) {
             self->ensureTransport();
             self->drainPending();

@@ -13,7 +13,7 @@ namespace erbsland::network::impl {
 class TcpConnectionEventEditor final : public network::TcpConnectionEventEditor {
 public:
     /// Create the source-owned editor.
-    TcpConnectionEventEditor(event::EventSourcePtr source, event::EventsPtr target);
+    TcpConnectionEventEditor(event::EventSourcePtr source, event::EventTargetPtr target);
 
 public: // implement network::TcpConnectionEventEditor
     auto onHostResolved(TcpHostResolvedFn callback) -> network::TcpConnectionEventEditor & override;

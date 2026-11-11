@@ -16,7 +16,7 @@
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../http/HttpFieldType.hpp"
 #include "../../../http/HttpRequestHead.hpp"
@@ -45,7 +45,7 @@ namespace erbsland::network::impl {
 using namespace text::literals;
 
 HttpClientRequest::HttpClientRequest(std::shared_ptr<HttpClientSession> session, HttpMethod method, Url url) :
-    network::HttpClientRequest{session->ownerEvents()},
+    network::HttpClientRequest{session->ownerLoop()},
     _session{std::move(session)},
     _method{std::move(method)},
     _url{std::move(url)},
@@ -74,7 +74,7 @@ auto HttpClientRequest::headers() const noexcept -> const HttpHeaders & {
 }
 
 void HttpClientRequest::setHeaders(HttpHeaders headers) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyPrepared();
     for (const auto &field : headers.fields()) {
         const auto type = field.name().type();
@@ -89,21 +89,21 @@ void HttpClientRequest::setHeaders(HttpHeaders headers) {
 }
 
 void HttpClientRequest::setBody(mem::ByteBlock body) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyPrepared();
     _fixedBody = std::move(body);
     _bodyMode = BodyMode::Fixed;
 }
 
 void HttpClientRequest::streamBody() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyPrepared();
     _fixedBody = {};
     _bodyMode = BodyMode::Streaming;
 }
 
 void HttpClientRequest::setRedirectOptions(HttpClientRedirectOptions options) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyPrepared();
     if (options.maximumRedirects().isZero() || options.maximumRedirects().isInfinite()) {
         throw err::ParameterFailure{"The redirect limit must be positive and finite."_el, "options"_el};
@@ -112,7 +112,7 @@ void HttpClientRequest::setRedirectOptions(HttpClientRedirectOptions options) {
 }
 
 auto HttpClientRequest::sendBody(const mem::ByteBlock &data) -> NetworkSendStatus {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_bodyMode != BodyMode::Streaming || _failed || _finalEmitted || _uploadFinished) {
         return NetworkSendStatus::Closed;
     }
@@ -126,7 +126,7 @@ auto HttpClientRequest::sendBody(const mem::ByteBlock &data) -> NetworkSendStatu
 }
 
 auto HttpClientRequest::finishBody(HttpHeaders trailers) -> NetworkSendStatus {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_bodyMode != BodyMode::Streaming || _failed || _finalEmitted || _uploadFinished) {
         return NetworkSendStatus::Closed;
     }
@@ -166,7 +166,7 @@ void HttpClientRequest::cancel() noexcept {
 }
 
 auto HttpClientRequest::events() -> network::HttpClientRequestEventEditor & {
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<HttpClientRequestEventEditor>(shared_from_this(), std::move(target), *this);
     }
@@ -203,7 +203,7 @@ void HttpClientRequest::submit(
     const auto generation = ++_overallGeneration;
     const auto weakSelf =
         std::weak_ptr<HttpClientRequest>{std::static_pointer_cast<HttpClientRequest>(shared_from_this())};
-    ownerEvents()->invokeAfter(_options.overallTimeout(), [weakSelf, generation]() -> void {
+    ownerLoop()->invokeAfter(_options.overallTimeout(), [weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock()) {
             self->handleOverallTimeout(generation);
         }
@@ -230,13 +230,13 @@ void HttpClientRequest::start() {
     const auto generation = ++_phaseTimerGeneration;
     const auto weakSelf =
         std::weak_ptr<HttpClientRequest>{std::static_pointer_cast<HttpClientRequest>(shared_from_this())};
-    ownerEvents()->invokeAfter(_options.dnsTimeout(), [weakSelf, generation]() -> void {
+    ownerLoop()->invokeAfter(_options.dnsTimeout(), [weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock()) {
             self->handlePhaseTimeout(generation, NetworkErrorPhase::Resolving);
         }
     });
     try {
-        auto &network = ownerEvents()->get<Network>();
+        auto &network = ownerLoop()->get<Network>();
         auto tcpOptions = TcpConnectOptions{};
         auto lookupOptions = tcpOptions.hostLookupOptions();
         lookupOptions.setTimeout(_options.dnsTimeout());
@@ -320,7 +320,7 @@ void HttpClientRequest::handleHostResolved() {
     const auto generation = ++_phaseTimerGeneration;
     const auto weakSelf =
         std::weak_ptr<HttpClientRequest>{std::static_pointer_cast<HttpClientRequest>(shared_from_this())};
-    ownerEvents()->invokeAfter(_options.connectTimeout(), [weakSelf, generation]() -> void {
+    ownerLoop()->invokeAfter(_options.connectTimeout(), [weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock()) {
             self->handlePhaseTimeout(generation, NetworkErrorPhase::Connecting);
         }

@@ -69,9 +69,9 @@ public:
         auto extra = app.createBranch("extra"_el);
         extra.addRule("vr_any"_el, RuleType::Text);
         const auto rules = finish(builder);
-        REQUIRE(rules->ruleForNamePath(NamePath::fromText("app.server.port"_el)));
-        REQUIRE(rules->ruleForNamePath(NamePath::fromText("app.entries.vr_entry.value"_el)));
-        REQUIRE(rules->ruleForNamePath(NamePath::fromText("app.extra.vr_any"_el)));
+        REQUIRE(rules->ruleByDefinitionPath(NamePath::fromText("app.server.port"_el)));
+        REQUIRE(rules->ruleByDefinitionPath(NamePath::fromText("app.entries.vr_entry.value"_el)));
+        REQUIRE(rules->ruleByDefinitionPath(NamePath::fromText("app.extra.vr_any"_el)));
     }
 
     void testBranchPathsAreValidatedBeforePrefixing() {
@@ -114,7 +114,7 @@ public:
         branch.addRule("entries.vr_entry.id"_el, RuleType::Text);
         const auto rules = finish(builder);
         REQUIRE_EQUAL(rules->root()->title(), "Document"_el);
-        const auto app = rules->ruleForNamePath(NamePath::fromText(cAppValue));
+        const auto app = rules->ruleByDefinitionPath(NamePath::fromText(cAppValue));
         REQUIRE_EQUAL(app->title(), "Application"_el);
         REQUIRE_EQUAL(app->description(), "Settings"_el);
         REQUIRE(app->hasKeyDefinitions());
@@ -139,17 +139,17 @@ public:
         branch.addAlternative(
             "values"_el, RuleType::ValueList, EntryType{RuleType::Text}, EntryConstraints{Matches{"[a-z]+"_el}});
         const auto rules = finish(builder);
-        const auto alternatives = rules->ruleForNamePath(NamePath::fromText("app.values"_el));
+        const auto alternatives = rules->ruleByDefinitionPath(NamePath::fromText("app.values"_el));
         REQUIRE_EQUAL(alternatives->type(), RuleType::Alternatives);
         REQUIRE_EQUAL(alternatives->children().size(), 2U);
         for (const auto &branch : alternatives->childrenImpl()) {
-            const auto entry = branch->child(Name::vrName(Name::VR::ReservedEntry));
+            const auto entry = branch->listEntryRule();
             REQUIRE(entry);
             REQUIRE(entry->parent() == branch);
-            auto declaration = branch->ruleNamePath();
+            auto declaration = branch->definitionNamePath();
             declaration.append(Name::vrName(Name::VR::ReservedEntry));
-            REQUIRE_EQUAL(entry->ruleNamePath(), declaration);
-            REQUIRE_EQUAL(entry->targetNamePath().toText(), "app.values.vr_entry"_el);
+            REQUIRE_EQUAL(entry->definitionNamePath(), declaration);
+            REQUIRE_EQUAL(entry->valueNamePath().toText(), "app.values.vr_entry"_el);
         }
         for (const auto &text : {"[app]\nvalues: 1, 2\n"_el, "[app]\nvalues: \"one\", \"two\"\n"_el}) {
             const auto document = Parser{}.parseTextOrThrow(text);
@@ -170,7 +170,7 @@ public:
                 builder.reset();
             } else {
                 const auto rules = finish(builder);
-                REQUIRE(rules->ruleForNamePath(NamePath::fromText("app.port"_el)));
+                REQUIRE(rules->ruleByDefinitionPath(NamePath::fromText("app.port"_el)));
             }
             REQUIRE_THROWS_AS(ConfError, branch.configureRoot(Title{"Missing"_el}));
             REQUIRE_THROWS_AS(ConfError, addPort(branch));

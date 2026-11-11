@@ -26,9 +26,9 @@ class HostLookup final : public network::HostLookup {
 
 public:
     /// Create an inactive lookup.
-    /// @param ownerEvents The owner event loop.
+    /// @param ownerLoop The owner event loop.
     /// @param resolver The native resolver.
-    HostLookup(event::EventsPtr ownerEvents, HostResolverPtr resolver);
+    HostLookup(event::EventTargetPtr ownerLoop, HostResolverPtr resolver);
     ~HostLookup() override;
 
 public: // implement network::HostLookup

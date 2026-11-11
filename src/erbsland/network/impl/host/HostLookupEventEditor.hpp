@@ -18,7 +18,7 @@ public:
     /// Create an editor for lookup-owned event handlers.
     /// @param source The lookup that owns this editor.
     /// @param target The callback target.
-    HostLookupEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+    HostLookupEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
         network::HostLookupEventEditor{std::move(source), std::move(target)} {}
 
 public: // implement network::HostLookupEventEditor

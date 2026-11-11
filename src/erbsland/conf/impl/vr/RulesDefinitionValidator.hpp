@@ -9,11 +9,12 @@
 
 namespace erbsland::conf::impl {
 
-/// A validator to validate the definition of a rule tree.
-/// Checks for missing elements, type relations, etc.
+/// Validate rule-tree relationships and finalize key paths for document validation.
+/// @tested{VrRulePathsTest VrLiteralNamesTest VrLiteralPathsTest}
 class RulesDefinitionValidator final {
 public:
-    /// Create a new validator for the given rule tree.
+    /// Create a validator for a complete, unfinished rule tree.
+    /// @param root The non-null root of the expanded rule tree.
     explicit RulesDefinitionValidator(RulePtr root);
 
     // defaults
@@ -27,7 +28,8 @@ public:
 private:
     /// Validate a rule in the rule tree.
     void validateRule(const RulePtr &rule);
-
+    /// Reject duplicate literal target names among sibling rules.
+    static void testUniqueValueNames(const RulePtr &rule);
     /// Test alternatives related constraints.
     static void testAlternatives(const RulePtr &rule);
     /// Test `vr_any` restrictions.
@@ -48,7 +50,7 @@ private:
     static void testSecretMarkerType(const RulePtr &rule);
     /// Test if minimum and maximum constraints define a valid range.
     static void testMinimumMaximumRelation(const RulePtr &rule);
-    /// Test the key definitions.
+    /// Validate key definitions and publish list and entry-relative paths after successful resolution.
     static void testKeyDefinitionPlacement(const RulePtr &rule);
     /// Test one key definition.
     static void validateKeyReference(const RulePtr &rule, const NamePath &keyReference);
@@ -59,7 +61,8 @@ private:
         -> std::vector<vr::RuleType>;
     /// Test a `vr_dependency` definition.
     static void testDependencyDefinition(const RulePtr &rule);
-    /// Test a single dependency path.
+    /// Resolve a relative value path and check ancestors below its owning rule.
+    /// List-entry crossings are forbidden; the owning rule cannot supply optionality.
     static void validateDependencyPath(const RulePtr &rule, const NamePath &dependencyPath);
     /// Test if a rule is optional.
     [[nodiscard]] static auto isRuleOptional(const RulePtr &rule) -> bool;

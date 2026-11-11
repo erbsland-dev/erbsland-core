@@ -283,7 +283,7 @@ useful work.
 
 .. erbsland-demo::
     :source: core/ServiceLifecycle/CatalogMonitorApplication.cpp
-    :sha256: ae265a61e55e20a999e3db7ab70275e8dea7755709730cd24b9beb309a8eca49
+    :sha256: 2de8dc6f3f26c039e6f9bb6ee70bd2f484e897e63a673017341b82d95b2bd24b
 
 .. code-block:: cpp
 
@@ -303,7 +303,7 @@ useful work.
         // Refine the estimate before opening the catalog and starting periodic work.
         reportStartupPending(el::Seconds{10});
         openCatalog();
-        _refreshTimer = events()->createTimer([this]() -> void { refreshCatalog(); });
+        _refreshTimer = loop()->createTimer([this]() -> void { refreshCatalog(); });
         _refreshTimer->startFixedDelay(el::Seconds{30});
 
         // Mark the service ready only after it can perform its advertised work.

@@ -124,7 +124,7 @@ public:
         const auto loop = EventLoop::create();
         const auto weak = std::weak_ptr<Recipient>{};
         const auto nullMethod = static_cast<void (Recipient::*)(int)>(nullptr);
-        REQUIRE_THROWS_AS(el::err::ParameterFailure, bindWeakEvent(EventsPtr{}, weak, &Recipient::add));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, bindWeakEvent(EventTargetPtr{}, weak, &Recipient::add));
         REQUIRE_THROWS_AS(el::err::ParameterFailure, bindWeakEvent(loop, weak, nullMethod));
         REQUIRE_THROWS_AS(el::err::LogicFailure, bindWeakEvent(weak, &Recipient::add));
         const auto wrongRecipient = bindWeakEvent(loop, std::weak_ptr<int>{}, &Recipient::add);

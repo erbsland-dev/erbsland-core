@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../Events.hpp"
+#include "../EventTarget.hpp"
 
 #include "../../err/LogicFailure.hpp"
 #include "../../err/ParameterFailure.hpp"
@@ -16,7 +16,7 @@ namespace erbsland::event::impl {
 template <typename tFunction>
 template <typename tSource>
     requires std::constructible_from<tFunction, tSource>
-BoundEvent<tFunction>::BoundEvent(EventsPtr events, tSource &&function) : _events{std::move(events)} {
+BoundEvent<tFunction>::BoundEvent(EventTargetPtr events, tSource &&function) : _events{std::move(events)} {
     using namespace text::literals;
     if (_events == nullptr) {
         throw err::ParameterFailure{"The event target must not be null."_el, "events"_el};

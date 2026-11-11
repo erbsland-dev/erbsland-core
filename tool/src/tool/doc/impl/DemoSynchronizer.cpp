@@ -247,6 +247,7 @@ auto DemoSynchronizer::process(
         }
         const auto first = index;
         const auto block = readBlock(lines, index);
+        validateTemplateOptions(block.options);
         auto unchanged = false;
         if (!force) {
             try {
@@ -272,6 +273,20 @@ auto DemoSynchronizer::process(
         result = el::join(result, "\n"_el);
     }
     return result;
+}
+
+void DemoSynchronizer::validateTemplateOptions(const el::StringMap<el::String> &options) const {
+    for (const auto &[key, value] : options) {
+        if (key == "exec"_el || key.startsWith("exec-"_el) || key == cFiles || key == "show-cmd-line"_el) {
+            const auto root = _files.projectRoot() / "demos"_el;
+            const auto path = _files.checked(root / options.get(cSource, {}), true);
+            if (path.toRelativeOrThrow(root).element(el::ItemIndex{1}) == "templates"_el) {
+                throwError(
+                    "Template sources only support source excerpts; execution options are forbidden."_el,
+                    options.get(cSource, {}));
+            }
+        }
+    }
 }
 
 auto DemoSynchronizer::readBlock(const el::StringList &lines, el::ItemIndex &index) -> DemoBlock {

@@ -45,9 +45,9 @@ private:
 
 public:
     [[nodiscard]] static auto makeRule(const vr::RuleType type = vr::RuleType::Text) -> el::conf::impl::Rule {
-        auto rule = el::conf::impl::Rule{};
-        rule.setRuleNamePath(NamePath::fromText("app.value"_el));
-        rule.setTargetNamePath(NamePath::fromText("app.value"_el));
+        auto rule = el::conf::impl::Rule{el::conf::impl::RuleRole::NamedValue};
+        rule.setDefinitionNamePath(NamePath::fromText("app.value"_el));
+        rule.setValueNamePath(NamePath::fromText("app.value"_el));
         rule.setType(type);
         return rule;
     }
@@ -88,13 +88,13 @@ public:
         REQUIRE_NOTHROW(builder.addAlternative("app.variant"_el, vr::RuleType::Text));
 
         auto rulesImpl = takeRulesImpl(builder);
-        const auto alternativeRule = rulesImpl->ruleForNamePath(NamePath::fromText("app.variant"_el));
+        const auto alternativeRule = rulesImpl->ruleByDefinitionPath(NamePath::fromText("app.variant"_el));
         REQUIRE(alternativeRule);
         REQUIRE_EQUAL(alternativeRule->type(), vr::RuleType::Alternatives);
         REQUIRE_EQUAL(alternativeRule->childrenImpl().size(), 2U);
 
-        const auto firstAlternative = alternativeRule->childrenImpl().rule(Name::createIndex(0));
-        const auto secondAlternative = alternativeRule->childrenImpl().rule(Name::createIndex(1));
+        const auto firstAlternative = alternativeRule->childByDefinitionName(Name::createIndex(0));
+        const auto secondAlternative = alternativeRule->childByDefinitionName(Name::createIndex(1));
         REQUIRE(firstAlternative);
         REQUIRE(secondAlternative);
         REQUIRE_EQUAL(firstAlternative->type(), vr::RuleType::Integer);

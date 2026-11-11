@@ -61,7 +61,7 @@ A bad map file therefore fails early, before a client can receive a partial or s
 .. erbsland-demo::
     :source: network/TcpMapServer/TcpMapServerApp.hpp
     :show: f:registerCommandLineOptions, f:handleCommandLineOptions, f:loadMap
-    :sha256: ceaf825d09da941e01e8ea8e770709855a106457df6810706df8f2a79ca478d0
+    :sha256: d9169199016bc72c23c99eadbcb6a0c35b591de3b7dd3a588a1231b29912ca8b
 
 .. code-block:: cpp
 
@@ -84,7 +84,7 @@ A bad map file therefore fails early, before a client can receive a partial or s
         _address = el::IpAddress::fromStringOrThrow(values->getText("address"_el));
         _port = el::Port::fromStringOrThrow(values->getText("port"_el));
         _map = loadMap(el::Path::fromNativeOrThrow(values->getText("map-file"_el)));
-        events()->invoke([this]() -> void { startServer(); });
+        loop()->invoke([this]() -> void { startServer(); });
     }
 
     auto loadMap(const el::Path &path) -> std::shared_ptr<const Map> {
@@ -123,14 +123,14 @@ you experiment with the client.
 .. erbsland-demo::
     :source: network/TcpMapServer/TcpMapServerApp.hpp
     :show: f:startServer, f:startSession, f:removeSession
-    :sha256: 31478d2096bdb5095c1699cb75a9d04909078e1c7d102e4730100e4ff39c4b91
+    :sha256: 99e16a2311db0f6f407a3a2b4be8e3c7a953b8a50a68d69627cd20b69ceebe7b
 
 .. code-block:: cpp
 
     void startServer() {
         terminal()->printLine(fg::BrightWhite, BlockAttributes::Bold, "TCP Map Server"_el);
         terminal()->printLine(fg::Cyan, el::StringFormat{"Loaded {} map entries"_el}.build(_map->count().toSizeT()));
-        _listener = events()->get<el::Network>().createTcpListener();
+        _listener = loop()->get<el::Network>().createTcpListener();
         _listener->events()
             .onListening([this]() -> void {
                 terminal()->printLine(
@@ -148,7 +148,7 @@ you experiment with the client.
 
     void startSession(el::TcpConnectionRequestPtr request) {
         auto session = std::make_shared<MapSession>(
-            events(),
+            loop(),
             _map,
             std::move(request),
             [this](const el::IpEndpoint &remote, const el::String &key) -> void {
@@ -160,7 +160,7 @@ you experiment with the client.
     }
 
     void removeSession(MapSession *finished) {
-        events()->invoke([this, finished]() -> void {
+        loop()->invoke([this, finished]() -> void {
             std::erase_if(_sessions, [finished](const auto &session) -> bool { return session.get() == finished; });
         });
     }
@@ -191,7 +191,7 @@ retain the block and retry it from ``onWritable()``.
 .. erbsland-demo::
     :source: network/TcpMapServer/TcpMapServerApp.hpp
     :show: f:start, f:onData, f:sendAnswer
-    :sha256: 8f630d216409afd3e74a6413dc13e8286955f2c7ecfdb998be75891e4607e0b6
+    :sha256: 502851e3a4bd496142454d8f742145472a0fb08d7fa5d122471412d1ff40c72b
 
 .. code-block:: cpp
 
@@ -252,7 +252,7 @@ demo rejects unspecified addresses.
 .. erbsland-demo::
     :source: network/TcpMapClient/TcpMapClientApp.hpp
     :show: f:registerCommandLineOptions, f:handleCommandLineOptions, f:startClient, f:validateResolvedEndpoints
-    :sha256: b1a23f6c453c98e27ee3c5f6c231335610fcdcf3d8f73be0ffbf1e9aeca16ef7
+    :sha256: 6d7bed4d9fca5989764fd11fbdfdf5f160cb71f6c06794b00d98997ee7877783
 
 .. code-block:: cpp
 
@@ -275,13 +275,13 @@ demo rejects unspecified addresses.
         _key = values->getText("key"_el);
         _host = el::Host::fromStringOrThrow(values->getText("host"_el));
         _port = el::Port::fromStringOrThrow(values->getText("port"_el));
-        events()->invoke([this]() -> void { startClient(); });
+        loop()->invoke([this]() -> void { startClient(); });
     }
 
     void startClient() {
         terminal()->printLine(fg::BrightWhite, BlockAttributes::Bold, "TCP Map Client"_el);
         terminal()->printLine(fg::Cyan, "Looking up "_el, _key, " on "_el, _host.toString());
-        _connection = events()->get<el::Network>().createTcpConnection();
+        _connection = loop()->get<el::Network>().createTcpConnection();
         _connection->events()
             .onHostResolved(
                 [this](const el::List<el::IpEndpoint> &endpoints) -> void { validateResolvedEndpoints(endpoints); })
@@ -319,7 +319,7 @@ The server then closes the connection, and ``onFinal()`` ends this one-shot clie
 .. erbsland-demo::
     :source: network/TcpMapClient/TcpMapClientApp.hpp
     :show: f:sendQuery, f:onData
-    :sha256: aa0864e2e6f62357a4140b57a7bd43ad90c5ee195bdd1221ed6f3dde15e11a7e
+    :sha256: b335e6c98713089f4eca33ad3e18d1f9fbc2e45ef17050292ad2f5e8eff7e68c
 
 .. code-block:: cpp
 

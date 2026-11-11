@@ -5,7 +5,7 @@
 #include "HttpCookieJarEntry.hpp"
 #include "PublicSuffixList.hpp"
 
-#include "../../../../event/Events_fwd.hpp"
+#include "../../../../event/EventTarget_fwd.hpp"
 #include "../../../../text/StringList.hpp"
 #include "../../../http/HttpHeaders.hpp"
 #include "../../../http_client/HttpCookieJar.hpp"
@@ -21,7 +21,7 @@ namespace erbsland::network::impl {
 class HttpCookieJar final : public network::HttpCookieJar {
 public:
     /// Create a cookie jar owned by the given event collection.
-    explicit HttpCookieJar(event::EventsPtr ownerEvents);
+    explicit HttpCookieJar(event::EventTargetPtr ownerLoop);
 
 public: // implement network::HttpCookieJar
     [[nodiscard]] auto options() const noexcept -> HttpCookieJarOptions override;
@@ -76,7 +76,7 @@ private:
     [[nodiscard]] static auto validPrefix(const HttpCookieJarEntry &entry, bool secureOrigin) noexcept -> bool;
 
 private:
-    event::EventsPtr _ownerEvents;
+    event::EventTargetPtr _ownerLoop;
     HttpCookieJarOptions _options;
     std::vector<HttpCookieJarEntry> _entries;
     std::uint64_t _sequence{};

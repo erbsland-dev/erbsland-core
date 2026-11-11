@@ -15,12 +15,19 @@ using el::conf::vr::RuleType;
 using namespace el::conf::vr::builder;
 
 void FormatConfig::addStyleRules(el::conf::vr::RulesBuilderBranch branch) {
+    addLiteralStyleRules(branch);
     branch.addRule(
         "names"_el,
         RuleType::Section,
         IsOptional{},
         Title{"Name formatting"_el},
         Description{"Word case and separators for section names and value names."_el});
+    branch.addRule(
+        cNamesAbbreviations,
+        RuleType::ValueList,
+        EntryType{RuleType::Text},
+        IsOptional{},
+        Title{"Title-case abbreviations"_el});
     branch.addRule(
         cSection,
         RuleType::Section,
@@ -249,6 +256,7 @@ auto FormatConfig::readStyle(const el::conf::ValuePtr &section) -> FormatStylePa
             invalid(value);
         }
     }
+    readLiteralStyle(section, patch);
     readNameStyle(section, patch);
     readSectionStyle(section, patch);
     readValueStyle(section, patch);

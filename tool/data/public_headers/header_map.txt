@@ -116,6 +116,7 @@ conf/ValueMatrix.hpp;conf/ValueMatrix.hpp
 conf/ValueType.hpp;conf/ValueType.hpp
 conf/all.hpp;all_conf.hpp
 conf/all.hpp;conf/all.hpp
+conf/syntax/BooleanForm.hpp;conf/syntax/BooleanForm.hpp
 conf/syntax/Diagnostic.hpp;conf/syntax/Diagnostic.hpp
 conf/syntax/Document.hpp;conf/syntax/Document.hpp
 conf/syntax/Format.hpp;conf/syntax/Format.hpp
@@ -607,8 +608,8 @@ err/all.hpp;all_err.hpp
 err/all.hpp;err/all.hpp
 event/BindEvent.hpp;BindEvent.hpp
 event/BindEvent.hpp;event/BindEvent.hpp
-event/CurrentEvents.hpp;CurrentEvents.hpp
-event/CurrentEvents.hpp;event/CurrentEvents.hpp
+event/CurrentLoop.hpp;CurrentLoop.hpp
+event/CurrentLoop.hpp;event/CurrentLoop.hpp
 event/Event.hpp;Event.hpp
 event/Event.hpp;event/Event.hpp
 event/EventBackend.hpp;EventBackend.hpp
@@ -653,14 +654,14 @@ event/EventSource.hpp;EventSource.hpp
 event/EventSource.hpp;event/EventSource.hpp
 event/EventSubscription.hpp;EventSubscription.hpp
 event/EventSubscription.hpp;event/EventSubscription.hpp
+event/EventTarget.hpp;EventTarget.hpp
+event/EventTarget.hpp;event/EventTarget.hpp
 event/EventThread.hpp;EventThread.hpp
 event/EventThread.hpp;event/EventThread.hpp
 event/EventTimer.hpp;EventTimer.hpp
 event/EventTimer.hpp;event/EventTimer.hpp
 event/EventTimerMode.hpp;EventTimerMode.hpp
 event/EventTimerMode.hpp;event/EventTimerMode.hpp
-event/Events.hpp;Events.hpp
-event/Events.hpp;event/Events.hpp
 event/ManagedEventThread.hpp;ManagedEventThread.hpp
 event/ManagedEventThread.hpp;event/ManagedEventThread.hpp
 event/UnmanagedEventThread.hpp;UnmanagedEventThread.hpp

@@ -42,4 +42,6 @@ Topic Pages
 
 * The text should be a good read that readers enjoy to read. It should not feel like a list of instructions.
   It should feel like a good book about an interesting topic, motivating developers to read and learn.
+* Keep the regular explanation independent of demo scenarios, while remaining direct and useful to the reader.
+  Follow :ref:`topic-page-practical-separation` to place concrete walkthroughs and demo discussion in practical blocks.
 

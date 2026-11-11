@@ -14,7 +14,8 @@ namespace erbsland::network::impl {
 class HttpServerSessionEventEditor final : public network::HttpServerSessionEventEditor {
 public:
     /// Bind the stable editor to its owning session.
-    HttpServerSessionEventEditor(event::EventSourcePtr source, event::EventsPtr target, HttpServerSession &session);
+    HttpServerSessionEventEditor(
+        event::EventSourcePtr source, event::EventTargetPtr target, HttpServerSession &session);
 
 public: // implement network::HttpServerSessionEventEditor
     auto onRequestReceived(HttpServerRequestEventFn callback) -> HttpServerSessionEventEditor & override;

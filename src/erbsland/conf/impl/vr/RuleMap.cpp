@@ -14,11 +14,11 @@ auto RuleMap::size() const noexcept -> std::size_t {
     return _ruleList.size();
 }
 
-auto RuleMap::hasRule(const Name &name) const noexcept -> bool {
+auto RuleMap::hasDefinitionName(const Name &name) const noexcept -> bool {
     return _ruleMap.contains(name);
 }
 
-auto RuleMap::rule(const Name &name) const -> RulePtr {
+auto RuleMap::ruleByDefinitionName(const Name &name) const -> RulePtr {
     const auto it = _ruleMap.find(name);
     if (it == _ruleMap.end()) {
         return {};
@@ -28,7 +28,7 @@ auto RuleMap::rule(const Name &name) const -> RulePtr {
 
 void RuleMap::addRule(const RulePtr &rule) {
     _ruleList.push_back(rule);
-    _ruleMap.emplace(rule->ruleName(), rule);
+    _ruleMap.emplace(rule->definitionName(), rule);
 }
 
 auto RuleMap::begin() const noexcept -> List::const_iterator {

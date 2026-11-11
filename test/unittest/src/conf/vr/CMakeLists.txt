@@ -26,6 +26,8 @@ target_sources(erbsland-core-unittest PRIVATE
         VrInTest.cpp
         VrKeysAndReferencesTest.cpp
         VrListsTest.cpp
+        VrLiteralNamesTest.cpp
+        VrLiteralPathsTest.cpp
         VrManualConstructionTest.cpp
         VrMatrixTest.cpp
         VrMaximumTest.cpp
@@ -34,6 +36,7 @@ target_sources(erbsland-core-unittest PRIVATE
         VrNodeRulesDefinitionTest.cpp
         VrPublicApiTest.cpp
         VrReservedNamesTest.cpp
+        VrRulePathsTest.cpp
         VrStartsTest.cpp
         VrSubBranchValidationTest.cpp
         VrTemplatesTest.cpp

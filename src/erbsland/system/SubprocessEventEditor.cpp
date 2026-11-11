@@ -4,7 +4,7 @@
 
 namespace erbsland::system {
 
-SubprocessEventEditor::SubprocessEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+SubprocessEventEditor::SubprocessEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
     CommonEventEditor{std::move(source), std::move(target)} {
 }
 

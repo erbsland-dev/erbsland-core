@@ -30,12 +30,12 @@ namespace demo {
 class SkillCatalogReload final {
 public:
     void start() {
-        el::application().events()->invoke([this]() -> void { createSockets(); });
+        el::application().loop()->invoke([this]() -> void { createSockets(); });
     }
 
 private:
     void createSockets() {
-        const auto events = el::application().events();
+        const auto events = el::application().loop();
         _service = events->get<el::Network>().createUdpSocket();
         _client = events->get<el::Network>().createUdpSocket();
         _resumeTimer = events->createTimer([this]() -> void { finishReload(); });

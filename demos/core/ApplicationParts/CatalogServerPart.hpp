@@ -30,7 +30,7 @@ public: // implement CatalogServer
     [[nodiscard]] auto endpoint() const -> el::String override { return "local catalog endpoint"_el; }
 
 protected: // implement ApplicationPart
-    void initialize() override {
+    void onInitialize() override {
         _storage = partManager().part<CatalogStorage>();
         el::io::printLine("catalog server initialized; "_el, _storage->status());
     }

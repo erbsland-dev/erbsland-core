@@ -15,7 +15,7 @@ public:
     /// Create the source-owned editor.
     /// @param source The UDP socket that owns this editor.
     /// @param target The owner-loop callback target.
-    UdpSocketEventEditor(event::EventSourcePtr source, event::EventsPtr target);
+    UdpSocketEventEditor(event::EventSourcePtr source, event::EventTargetPtr target);
 
 public: // implement network::UdpSocketEventEditor
     auto onBound(NetworkEventFn callback) -> network::UdpSocketEventEditor & override;

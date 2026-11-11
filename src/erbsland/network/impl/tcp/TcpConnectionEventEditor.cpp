@@ -6,7 +6,7 @@
 
 namespace erbsland::network::impl {
 
-TcpConnectionEventEditor::TcpConnectionEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+TcpConnectionEventEditor::TcpConnectionEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
     network::TcpConnectionEventEditor{std::move(source), std::move(target)} {
 }
 

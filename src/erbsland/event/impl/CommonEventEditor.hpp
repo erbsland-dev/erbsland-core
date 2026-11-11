@@ -17,17 +17,17 @@ public:
 
 public: // implement EventEditor
     [[nodiscard]] auto source() const -> EventSourcePtr override;
-    [[nodiscard]] auto target() const noexcept -> EventsPtr override;
+    [[nodiscard]] auto target() const noexcept -> EventTargetPtr override;
 
 protected:
     /// Create common storage for a source-owned editor.
     /// @param source The source that owns the editor. Must not be null.
     /// @param target The source owner and callback target. Must not be null and must own `source`.
-    CommonEventEditor(EventSourcePtr source, EventsPtr target);
+    CommonEventEditor(EventSourcePtr source, EventTargetPtr target);
 
 private:
     EventSourceWeakPtr _source; ///< Non-owning source access that prevents an ownership cycle.
-    EventsPtr _target;          ///< Retained callback target.
+    EventTargetPtr _target;     ///< Retained callback target.
 };
 
 }

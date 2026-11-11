@@ -21,6 +21,16 @@ Validation Rule Model
 .. code-block:: text
 
     root rule = implicit rule for the complete document or section branch passed to validation
+    rule role = root, named value, wildcard, list entry, name constraint, or alternative branch
+    definition path = expanded rule-tree identity, retaining declaration escapes and alternative indexes
+    value path = symbolic validation target, with decoded names and control placeholders
+
+Internal validation-rule interfaces use ``definitionNamePath()`` and ``valueNamePath()`` consistently.
+The public ``vr::Rule::namePath()`` exposes the symbolic value path; it need not identify one concrete document value.
+Lookups state which identity they use: definition lookups follow the rule tree, while value lookups use configuration
+names.
+Roles are determined before document escape decoding; a decoded control-like name stays a named value.
+The programmatic builder never decodes document escapes.
 
 Primary Types
 =============
@@ -86,6 +96,8 @@ Syntax Formatting Types
 
     syntax::Document // immutable original source, tokens, statements, lines and diagnostics
     syntax::Parser // recovering source parser without semantic evaluation
+    syntax::BooleanForm // retained or normalized Boolean literal word pair
+    syntax::WordCase // retained, lower, title, or upper spelling
     syntax::ValueWrapping // placement policy for complete non-multiline values
     syntax::Formatter // source-preserving layout engine
     syntax::Format // base style and selector rules
@@ -200,3 +212,6 @@ Syntax Formatting Patterns
     o.firstToken()/endToken() -> ItemIndex // half-open statement boundaries in the document token list
     o.addPath(pattern) // add an alternative normalized component glob
     o.resolve(statement) -> FormatStyle // apply the per-property specificity cascade
+    o.abbreviations()/setAbbreviations(words) // whole identifier words kept uppercase in title case
+    o.booleanCase()/setBooleanCase(case) // Boolean literal capitalization
+    o.booleanForm()/setBooleanForm(form) // Boolean literal word pair

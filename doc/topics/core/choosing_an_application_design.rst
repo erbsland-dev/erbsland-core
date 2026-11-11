@@ -47,6 +47,10 @@ Comparing the Designs
       - Dependency-managed event loops
       - Larger applications composed from independently started services.
 
+:doc:`/topics/event/using_event_loops` develops the event-driven startup choices: where to queue the first work,
+which loop dispatches it, and how completion reaches shutdown.
+It includes templates for direct applications, derived applications, procedural workers, and registered parts.
+
 Understanding Main Dispatch
 ===========================
 
@@ -58,8 +62,8 @@ If neither exists, it starts registered application parts and enters the main ev
 
 This order makes the default implementation useful for four of the five designs.
 An overridden ``main()`` expresses a procedural application, but it also replaces that dispatch.
-Such an override must explicitly call ``Application::main()``, ``partManager()->start()``, or ``runEventLoop()`` if it
-wants any of those default behaviors.
+Such an override must explicitly call ``Application::main()``, ``partManager()->start()``, or ``runMainEventLoop()`` if
+it wants any of those default behaviors.
 
 Shared Application Startup and Error Handling
 =============================================

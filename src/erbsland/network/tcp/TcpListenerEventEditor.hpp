@@ -48,7 +48,7 @@ protected:
     /// Create an editor for a TCP listener.
     /// @param source The listener that owns the editor.
     /// @param target The callback target.
-    TcpListenerEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+    TcpListenerEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
         CommonEventEditor{std::move(source), std::move(target)} {}
 };
 

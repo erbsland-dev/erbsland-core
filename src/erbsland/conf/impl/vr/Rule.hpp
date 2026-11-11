@@ -7,6 +7,7 @@
 #include "KeyDefinition.hpp"
 #include "Rule_fwd.hpp"
 #include "RuleMap.hpp"
+#include "RuleRole.hpp"
 #include "RulesConstants.hpp"
 #include "VersionMask.hpp"
 
@@ -23,15 +24,18 @@
 namespace erbsland::conf::impl {
 
 /// Internal implementation of a validation rule.
-/// @tested{VrNodeRulesDefinitionTest}
+/// @tested{VrNodeRulesDefinitionTest VrRulePathsTest VrLiteralNamesTest}
 class Rule : public vr::Rule, public vr::builder::RuleDefinition {
 public:
+    /// Create an unfinished rule with an explicit role.
+    /// @param role The role determined from the declaration before escape decoding.
+    explicit Rule(RuleRole role) : _role{role} {}
+
     // defaults
-    Rule() = default;
     ~Rule() override = default;
 
 public: // public interface
-    [[nodiscard]] auto namePath() const -> NamePath override { return _targetNamePath; }
+    [[nodiscard]] auto namePath() const -> NamePath override { return _valueNamePath; }
     [[nodiscard]] auto type() const -> vr::RuleType override { return _type; }
     [[nodiscard]] auto title() const -> text::String override { return _title; }
     [[nodiscard]] auto description() const -> text::String override { return _description; }
@@ -61,29 +65,42 @@ public: // public interface
     [[nodiscard]] auto hasLocation() const noexcept -> bool override { return !_location.isUndefined(); }
     void setLocation(const Location &location) noexcept override { _location = location; }
 
-    // impl interface
-    /// Get the name path at which this rule was declared.
-    [[nodiscard]] auto ruleNamePath() const -> const NamePath & { return _ruleNamePath; }
-    /// Get the final name of the rule declaration, or an empty name for the root.
-    [[nodiscard]] auto ruleName() const -> const Name & {
-        return _ruleNamePath.empty() ? Name::emptyInstance() : _ruleNamePath.back();
+public: // impl interface
+    /// Get this node's purpose, independently of its value type and spelling.
+    [[nodiscard]] auto role() const noexcept -> RuleRole { return _role; }
+    /// Change the role before attaching the rule as an alternative branch.
+    void setRole(RuleRole role) noexcept { _role = role; }
+    /// Get the absolute path in the expanded rule tree, retaining escapes and alternative indexes.
+    /// Template paths identify the insertion point; location() retains the source declaration location.
+    [[nodiscard]] auto definitionNamePath() const -> const NamePath & { return _definitionNamePath; }
+    /// Get the final definition name or alternative index, or an empty name for the root.
+    [[nodiscard]] auto definitionName() const -> const Name & {
+        if (_definitionNamePath.empty()) {
+            return Name::emptyInstance();
+        }
+        return _definitionNamePath.back();
     }
-    /// Get the name path that this rule validates.
-    [[nodiscard]] auto targetNamePath() const -> const NamePath & { return _targetNamePath; }
-    /// Get the final name of the validation target, or an empty name for the root.
-    [[nodiscard]] auto targetName() const -> const Name & {
-        return _targetNamePath.empty() ? Name::emptyInstance() : _targetNamePath.back();
+    /// Get the absolute symbolic value path, with decoded names and without alternative indexes.
+    /// Entry, wildcard and name-constraint components are placeholders, not concrete document names.
+    /// Alternative branches share their container's path; only the root has an empty path.
+    [[nodiscard]] auto valueNamePath() const -> const NamePath & { return _valueNamePath; }
+    /// Get the final symbolic value name, or an empty name for the root.
+    [[nodiscard]] auto valueName() const -> const Name & {
+        if (_valueNamePath.empty()) {
+            return Name::emptyInstance();
+        }
+        return _valueNamePath.back();
     }
     /// Get the configured default value.
     [[nodiscard]] auto defaultValue() const -> const ValuePtr & { return _defaultValue; }
-    /// Get the internal child-rule map.
+    /// Get children in declaration order, indexed by definition name, never by value name.
     [[nodiscard]] auto childrenImpl() const -> const RuleMap & { return _children; }
     /// Get the parent rule, if one exists.
     [[nodiscard]] auto parent() const -> RulePtr { return _parent.lock(); }
-    /// Set the name path at which this rule was declared.
-    void setRuleNamePath(const NamePath &namePath) { _ruleNamePath = namePath; }
-    /// Set the name path that this rule validates.
-    void setTargetNamePath(const NamePath &namePath) { _targetNamePath = namePath; }
+    /// Set the expanded definition path before attaching this node to its parent.
+    void setDefinitionNamePath(const NamePath &namePath) { _definitionNamePath = namePath; }
+    /// Set the symbolic value path during construction; callers perform document escape decoding.
+    void setValueNamePath(const NamePath &namePath) { _valueNamePath = namePath; }
     /// Set the rule type.
     void setType(const vr::RuleType type) override { _type = type; }
     /// Set the requested implicit entry type.
@@ -147,14 +164,12 @@ public: // public interface
     [[nodiscard]] auto constraint(vr::ConstraintType type) const -> ConstraintPtr;
     /// Get the internal constraint list.
     [[nodiscard]] auto constraintsImpl() const -> const ConstraintList & { return _constraints; }
-    /// Test whether this rule has reserved-name constraints.
-    [[nodiscard]] auto hasNameConstraints() const -> bool {
-        return _children.hasRule(Name::vrName(Name::VR::ReservedName));
-    }
-    /// Get the reserved-name constraints.
-    [[nodiscard]] auto nameConstraints() const -> RulePtr {
-        return _children.rule(Name::vrName(Name::VR::ReservedName));
-    }
+    /// Get the child that constrains this value's name, or an empty pointer.
+    [[nodiscard]] auto nameConstraintRule() const -> RulePtr;
+    /// Get the shared list-entry child, or an empty pointer.
+    [[nodiscard]] auto listEntryRule() const -> RulePtr;
+    /// Get the fallback child for unnamed matches, or an empty pointer.
+    [[nodiscard]] auto anyValueRule() const -> RulePtr;
     /// Add a key definition to this rule.
     void addKeyDefinition(const KeyDefinitionPtr &keyDefinition);
     /// Test whether this rule has key definitions.
@@ -177,14 +192,39 @@ public: // public interface
     void setParent(const RulePtr &parent) { _parent = RuleWeakPtr{parent}; }
     /// Test whether this rule has child rules.
     [[nodiscard]] auto empty() const -> bool { return _children.empty(); }
-    /// Test whether a direct child with the given name exists.
-    [[nodiscard]] auto hasChild(const Name &name) const -> bool { return _children.hasRule(name); }
-    /// Get a direct child by name.
-    [[nodiscard]] auto child(const Name &name) const -> RulePtr;
-    /// Get a nested child by name path.
-    [[nodiscard]] auto child(const NamePath &namePath) const -> RulePtr;
-    /// Add a child rule.
+    /// Find a direct child by its exact definition name or alternative index.
+    /// @param name The definition component; no escape decoding is performed.
+    /// @return The child, or an empty pointer if it does not exist.
+    [[nodiscard]] auto childByDefinitionName(const Name &name) const -> RulePtr;
+    /// Follow an exact definition path relative to this rule, including alternative indexes.
+    /// @param path The relative definition path; no escape decoding is performed.
+    /// @return The descendant, or an empty pointer for an empty or unresolved path.
+    [[nodiscard]] auto descendantByDefinitionPath(const NamePath &path) const -> RulePtr;
+    /// Find a direct NamedValue child by its actual configuration name.
+    /// @param name The value name; control roles and alternative branches are excluded.
+    /// @return The named child, or an empty pointer; wildcard fallback is not performed.
+    [[nodiscard]] auto childByValueName(const Name &name) const -> RulePtr;
+    /// Follow a symbolic value path relative to this rule.
+    /// Only vr_entry beneath a list or matrix selects a control rule. Escapes are never decoded.
+    /// Alternatives can be returned, but traversal never selects one of their branches.
+    /// @param path The relative path of regular names; document indexes and text names are unsupported.
+    /// @return The descendant, or an empty pointer for an empty, unsupported or unresolved path.
+    [[nodiscard]] auto descendantByValuePath(const NamePath &path) const -> RulePtr;
+    /// Attach a child whose paths, role and parent have already been initialized.
+    /// @param child The non-null rule; its definition name must be unique among these children.
     void addChild(const RulePtr &child) { _children.addRule(child); }
+
+public: // construction helpers
+    /// Classify a definition component before decoding any document escape.
+    /// @param name An exact declaration name, or an index for an alternative branch.
+    /// @return The matching control role, Alternative for an index, or NamedValue otherwise.
+    [[nodiscard]] static auto roleForDefinitionName(const Name &name) -> RuleRole;
+
+private:
+    /// Find a direct child with the given role.
+    [[nodiscard]] auto childByRole(RuleRole role) const -> RulePtr;
+    /// Resolve one symbolic value-path component in the context of this rule.
+    [[nodiscard]] auto childForValuePathComponent(const Name &name) const -> RulePtr;
 
 public: // tests
 #ifdef ERBSLAND_CORE_CONF_INTERNAL_VIEWS
@@ -193,11 +233,12 @@ public: // tests
 #endif
 
 private:
-    Location _location;       ///< The source location of a rule
-    NamePath _ruleNamePath;   ///< The name path of the rule definition.
-    NamePath _targetNamePath; ///< The path that points to the entry in the validated document.
-    vr::RuleType _type;       ///< The type of the rule.
-    vr::RuleType _entryType;  ///< Requested scalar entry type for the current builder call.
+    RuleRole _role;               ///< The explicit purpose of this rule-tree node.
+    Location _location;           ///< The source location of the declaration, including template sources.
+    NamePath _definitionNamePath; ///< The expanded definition path, retaining escapes and indexes.
+    NamePath _valueNamePath;      ///< The symbolic value path, retaining control placeholders.
+    vr::RuleType _type;           ///< The type of the rule.
+    vr::RuleType _entryType;      ///< Requested scalar entry type for the current builder call.
     std::vector<std::shared_ptr<const vr::builder::Attribute>> _entryAttributes; ///< Owned entry configuration.
     bool _hasEntryAttributes{false};                 ///< Whether the current call requested entry configuration.
     text::String _title;                             ///< A title for this rule.

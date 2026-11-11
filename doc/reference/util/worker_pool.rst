@@ -102,7 +102,7 @@ To select the owner explicitly, obtain its ``Utilities`` frontend and create the
         _workers->events().onFinal([this]() -> void { finishWorkflow(); });
     });
 
-``Events::get()`` returns a reference, so the factory call uses a dot.
+``EventTarget::get()`` returns a reference, so the factory call uses a dot.
 As with ``System::createSubprocess()``, creation through the frontend must run on its owner loop.
 Each call creates an independent pool; the frontend does not retain it.
 Retain the returned pool while its work and completion handlers are needed.

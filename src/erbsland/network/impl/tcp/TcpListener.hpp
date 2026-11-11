@@ -26,7 +26,7 @@ class TcpListener final : public network::TcpListener {
 public:
     /// Create an inactive TCP listener source.
     TcpListener(
-        event::EventsPtr ownerEvents,
+        event::EventTargetPtr ownerLoop,
         event::EventLoopDriverPtr driver,
         TcpListenerDeviceCreateFn createDevice = TcpListenerDevice::create);
     ~TcpListener() override;

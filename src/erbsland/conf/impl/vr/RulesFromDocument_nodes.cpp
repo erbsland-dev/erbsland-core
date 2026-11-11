@@ -79,6 +79,16 @@ void RulesFromDocument::processTemplate(
         if (templateNode->type() != ValueType::SectionWithNames && templateNode->type() != ValueType::SectionList) {
             throwValidationError("Template definitions must be sections or section lists"_el);
         }
+        if (rule->role() == RuleRole::NameConstraint) {
+            if (templateNode->type() == ValueType::SectionList) {
+                throwValidationError("Name node-rules templates cannot be alternatives"_el);
+            }
+            const auto type = templateNode->value(Name::vrName(Name::VR::Type));
+            if (type == nullptr || type->type() != ValueType::Text ||
+                vr::RuleType::fromText(type->asText()) != vr::RuleType::Text) {
+                throwValidationError("Name node-rules templates must have a 'type' value of 'text'"_el);
+            }
+        }
         _pathForTemplate = node->namePath();
         if (templateNode->type() == ValueType::SectionList) {
             processAlternatives(templateNode, rule);
@@ -88,9 +98,7 @@ void RulesFromDocument::processTemplate(
         // Process all template nodes, like regular ones.
         ValueTreeWalker walker;
         walker.setRoot(templateNode);
-        auto filter = [](const conf::ValuePtr &processedNode) -> bool {
-            return processedNode->type().isMap() || processedNode->type() == ValueType::SectionList;
-        };
+        auto filter = [](const conf::ValuePtr &processedNode) -> bool { return isRuleNode(processedNode); };
         walker.setFilter(filter);
         auto visit = [this, templateNode](const conf::ValuePtr &processedNode) -> void {
             if (processedNode == templateNode) {
@@ -125,9 +133,10 @@ void RulesFromDocument::processAlternatives(const conf::ValuePtr &node, const Ru
 }
 
 void RulesFromDocument::processNameNode(const conf::ValuePtr &node) {
-    const auto rule = std::make_shared<Rule>();
+    const auto rule = std::make_shared<Rule>(RuleRole::NameConstraint);
     rule->setLocation(node->location());
-    rule->setRuleNamePath(createRuleNamePath(node->namePath()));
+    rule->setDefinitionNamePath(createDefinitionNamePath(node->namePath()));
+    rule->setValueNamePath(createValueNamePath(node->namePath()));
     _rules->addRule(rule); // add the rule early to ensure we have a valid parent node.
     rule->setType(vr::RuleType::Text);
     if (node->type() == ValueType::SectionList) {
@@ -310,17 +319,17 @@ void RulesFromDocument::processKey(const conf::ValuePtr &node) {
 }
 
 auto RulesFromDocument::getParentRuleForNode(const conf::ValuePtr &node) const -> RulePtr {
-    auto ruleNamePath = createRuleNamePath(node->namePath());
-    if (ruleNamePath.empty()) {
+    auto definitionNamePath = createDefinitionNamePath(node->namePath());
+    if (definitionNamePath.empty()) {
         return nullptr;
     }
-    if (ruleNamePath.size() == 1) {
+    if (definitionNamePath.size() == 1) {
         return _rules->root();
     }
-    return _rules->ruleForNamePath(ruleNamePath, ruleNamePath.size() - 1);
+    return _rules->ruleByDefinitionPath(definitionNamePath, definitionNamePath.size() - 1);
 }
 
-auto RulesFromDocument::createRuleNamePath(const NamePath &namePath) const -> NamePath {
+auto RulesFromDocument::createDefinitionNamePath(const NamePath &namePath) const -> NamePath {
     if (namePath.empty() || _pathForTemplate.empty()) {
         return namePath;
     }
@@ -339,20 +348,10 @@ auto RulesFromDocument::createRuleNamePath(const NamePath &namePath) const -> Na
     return namePath;
 }
 
-auto RulesFromDocument::createTargetNamePath(const NamePath &namePath) const -> NamePath {
+auto RulesFromDocument::createValueNamePath(const NamePath &namePath) const -> NamePath {
     NamePath result;
-    std::size_t startIndex = 0;
-    if (isTemplatePath(namePath)) {
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!_pathForTemplate.empty(), "Expected non-empty _pathForTemplate"_el);
-        result = _pathForTemplate;
-        startIndex = 2; // skip "vr_template.<template-name>"
-    }
-    appendRegularNames(result, namePath, startIndex);
+    appendRegularNames(result, createDefinitionNamePath(namePath), 0);
     return result;
-}
-
-auto RulesFromDocument::isTemplatePath(const NamePath &namePath) -> bool {
-    return !namePath.empty() && namePath.front() == Name::vrName(Name::VR::ReservedTemplate);
 }
 
 void RulesFromDocument::appendRegularNames(NamePath &result, const NamePath &namePath, const std::size_t startIndex) {
@@ -361,7 +360,18 @@ void RulesFromDocument::appendRegularNames(NamePath &result, const NamePath &nam
         if (name.type() != NameType::Regular) {
             continue;
         }
-        if (name.isEscapedReservedValidationRule()) {
+        if (name.asText().startsWith(vrc::cLiteralPrefix)) {
+            const auto text = name.asText();
+            const auto suffix = text.slice(
+                unit::ByteRange{
+                    unit::ByteIndex::fromSizeT(vrc::cLiteralPrefix.length().toSizeT()),
+                    text.length() - vrc::cLiteralPrefix.length()});
+            try {
+                result.append(Name::createRegular(suffix));
+            } catch (const ConfError &) {
+                throwValidationError("The 'vr_literal_' suffix must be a regular name"_el);
+            }
+        } else if (name.isEscapedReservedValidationRule()) {
             result.append(name.withReservedVRPrefixRemoved());
         } else {
             result.append(name);

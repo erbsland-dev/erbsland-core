@@ -60,6 +60,92 @@ Membership constraints built with ``vr::builder::In`` accept ``List<Integer>``, 
 ``List<ByteBlock>``.
 Parsed validation rules use the same containers without converting through standard vectors.
 
+Literal Names in Rules Documents
+================================
+
+A rule attribute and a child rule cannot share the same name in an ELCL section.
+Use ``vr_literal_<name>`` in a section path to declare a child with a literal configuration name:
+
+.. code-block:: elcl
+
+    [server]
+    type: "section"
+    title: "Server settings"
+
+    [server.vr_literal_type]
+    type: "text"
+
+    [server.vr_literal_title]
+    type: "text"
+    default: "Main server"
+
+These rules validate values named ``type`` and ``title`` inside ``server``.
+Exactly one ``vr_literal_`` prefix is removed; the remaining text must be a regular ELCL name and is not interpreted as
+another escape or a structural rule name.
+For example, ``vr_literal_vr_any`` targets a literal value named ``vr_any`` rather than arbitrary values.
+The existing escape ``vr_vr_type`` targets ``vr_type``.
+Both forms work in nested rules, templates, and alternatives, including required values and default insertion.
+Sibling declarations that resolve to the same target name are rejected.
+
+Dependency paths and key paths use actual configuration names, such as ``type`` or ``vr_type``, for both escape forms.
+Within a key path, ``vr_entry`` identifies list entries only when the preceding path resolves to a list rule.
+At other positions it can be an ordinary configuration name.
+The programmatic builder takes literal names directly: ``server.type`` needs no escape, and ``server.vr_literal_type``
+targets a value whose name is literally ``vr_literal_type``.
+
+Rule Paths and Metadata
+=======================
+
+``vr::Rule::namePath()`` returns the rule's symbolic value path.
+For a named scalar this is its configuration path, with document escapes already decoded.
+For example, the declaration ``server.vr_literal_type`` has the value path ``server.type``.
+
+A symbolic value path can describe many document values.
+The path ``items.vr_entry.type`` describes ``type`` in every entry of ``items``; ``vr_entry`` is not a concrete list
+index.
+Similarly, ``vr_any`` represents names selected from the document, and ``vr_name`` identifies constraints on a value's
+name.
+Name constraints retain their full symbolic path in both document-loaded and programmatically built rules.
+The root path is empty, and alternative branches share the value path of their alternatives container.
+
+Internally, each rule also has a definition path identifying its position in the expanded rule tree.
+Definition paths retain escape spellings and alternative indexes, such as ``items.vr_entry.vr_literal_type[0]``.
+When a template is inserted, these paths use the insertion point; source locations still identify the template
+declaration.
+Explicit rule roles distinguish named values, list entries, wildcard rules, name constraints, alternatives, and the
+root.
+A named value whose decoded name is ``vr_entry`` therefore remains distinct from a list-entry rule.
+
+Key paths use actual names and a list-entry placeholder, even when several components happen to be named ``vr_entry``.
+For a list named ``vr_entry``, ``vr_entry.vr_entry.type`` selects the ``type`` field in each entry.
+Rule finalization resolves the list and entry-relative paths once; repeated document validation reuses them.
+Index names and index references are literal metadata and never undergo declaration-escape decoding.
+
+Name-Constraint Templates
+=========================
+
+A ``vr_name`` section may use a template whose type is Text:
+
+.. code-block:: elcl
+
+    [vr_template.identifier]
+    type: "text"
+    starts: "u_"
+    minimum: 3
+
+    [users.vr_any]
+    type: "integer"
+
+    [users.vr_any.vr_name]
+    use_template: "identifier"
+    minimum: 5
+
+Template constraints and case sensitivity are inherited; local settings override them using the ordinary template rules.
+The constraints apply to the name, independently of the value's type.
+Without ``type`` or ``use_template``, a name rule still has implicit Text type.
+A name rule cannot specify both fields, use a non-text or alternative template, or contain subsections.
+Templates cannot reference other templates.
+
 Builder Branches
 ================
 

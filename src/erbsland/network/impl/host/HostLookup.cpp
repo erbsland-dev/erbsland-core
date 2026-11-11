@@ -7,7 +7,7 @@
 
 #include "../../../err/LogicFailure.hpp"
 #include "../../../err/ParameterFailure.hpp"
-#include "../../../event/Events.hpp"
+#include "../../../event/EventTarget.hpp"
 #include "../../../system/PlatformError.hpp"
 #include "../../../system/PlatformErrorContext.hpp"
 #include "../../../text/Literals.hpp"
@@ -20,8 +20,8 @@ namespace erbsland::network::impl {
 using namespace err;
 using namespace text::literals;
 
-HostLookup::HostLookup(event::EventsPtr ownerEvents, HostResolverPtr resolver) :
-    network::HostLookup{std::move(ownerEvents)}, _resolver{std::move(resolver)} {
+HostLookup::HostLookup(event::EventTargetPtr ownerLoop, HostResolverPtr resolver) :
+    network::HostLookup{std::move(ownerLoop)}, _resolver{std::move(resolver)} {
 }
 
 HostLookup::~HostLookup() {
@@ -38,7 +38,7 @@ auto HostLookup::state() const noexcept -> NetworkSourceState {
 }
 
 void HostLookup::start(Host host, HostLookupOptions options) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (!options.timeout().isPositive()) {
         throw ParameterFailure{"The host lookup timeout must be positive."_el, "options.timeout"_el};
     }
@@ -56,7 +56,7 @@ void HostLookup::start(Host host, HostLookupOptions options) {
         if (_operation != nullptr) {
             throw LogicFailure{"A host lookup operation is already active."_el};
         }
-        operation = std::make_shared<HostLookupOperation>(std::move(host), options, ownerEvents());
+        operation = std::make_shared<HostLookupOperation>(std::move(host), options, ownerLoop());
         _host = operation->host;
         _operation = operation;
         _state.store(NetworkSourceState::Starting);
@@ -110,7 +110,7 @@ void HostLookup::cancel() noexcept {
 }
 
 auto HostLookup::events() -> network::HostLookupEventEditor & {
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<impl::HostLookupEventEditor>(shared_from_this(), std::move(target));
     }

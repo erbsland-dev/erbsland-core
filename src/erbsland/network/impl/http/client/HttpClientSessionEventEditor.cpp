@@ -8,7 +8,7 @@
 namespace erbsland::network::impl {
 
 HttpClientSessionEventEditor::HttpClientSessionEventEditor(
-    event::EventSourcePtr source, event::EventsPtr target, HttpClientSession &session) :
+    event::EventSourcePtr source, event::EventTargetPtr target, HttpClientSession &session) :
     network::HttpClientSessionEventEditor{std::move(source), std::move(target)}, _session{session} {
 }
 

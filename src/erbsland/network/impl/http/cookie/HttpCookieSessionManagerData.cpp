@@ -5,7 +5,7 @@
 #include "../../../../core/impl/application_data/ApplicationRandomData.hpp"
 #include "../../../../core/impl/ApplicationDataAccess.hpp"
 #include "../../../../err/ParameterFailure.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../random/Random.hpp"
 #include "../../../../text/AnyString.hpp"
 #include "../../../../text/AsciiCategory.hpp"
@@ -33,7 +33,7 @@ HttpCookieSessionManagerData::HttpCookieSessionManagerData(HttpCookieSessionMana
 }
 
 auto HttpCookieSessionManagerData::select(const HttpServerSessionContext &context) -> HttpServerSessionSelection {
-    captureOwner(context.request()->ownerEvents());
+    captureOwner(context.request()->ownerLoop());
     const auto now = time::TimePoint::now();
     removeExpired(now);
     const auto identifier = requestIdentifier(context.request()->head().headers());
@@ -205,19 +205,19 @@ void HttpCookieSessionManagerData::removeExpired(const time::TimePoint now) {
     }
 }
 
-void HttpCookieSessionManagerData::captureOwner(const event::EventsPtr &owner) {
-    if (_ownerEvents == nullptr) {
-        _ownerEvents = owner;
+void HttpCookieSessionManagerData::captureOwner(const event::EventTargetPtr &owner) {
+    if (_ownerLoop == nullptr) {
+        _ownerLoop = owner;
         return;
     }
-    if (_ownerEvents != owner) {
+    if (_ownerLoop != owner) {
         throw err::ParameterFailure{
             "An HTTP cookie session manager can only be used by one owner event loop."_el, "context"_el};
     }
 }
 
 void HttpCookieSessionManagerData::scheduleCleanup() {
-    if (_cleanupScheduled || _ownerEvents == nullptr || _entries.empty()) {
+    if (_cleanupScheduled || _ownerLoop == nullptr || _entries.empty()) {
         return;
     }
     auto deadline = _creation.front()->created + _options.absoluteTimeout();
@@ -228,7 +228,7 @@ void HttpCookieSessionManagerData::scheduleCleanup() {
     const auto delay = deadline - time::TimePoint::now();
     const auto weakSelf = std::weak_ptr<HttpCookieSessionManagerData>{shared_from_this()};
     _cleanupScheduled = true;
-    _ownerEvents->invokeAfter(delay, [weakSelf]() -> void {
+    _ownerLoop->invokeAfter(delay, [weakSelf]() -> void {
         if (const auto self = weakSelf.lock()) {
             self->_cleanupScheduled = false;
             self->removeExpired(time::TimePoint::now());

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HttpClientConnectionManager.hpp"
 
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringEditor.hpp"
 #include "../../../source/Connection.hpp"
@@ -17,8 +17,8 @@ namespace erbsland::network::impl {
 using namespace text;
 using namespace text::literals;
 
-HttpClientConnectionManager::HttpClientConnectionManager(event::EventsPtr ownerEvents) :
-    _ownerEvents{std::move(ownerEvents)} {
+HttpClientConnectionManager::HttpClientConnectionManager(event::EventTargetPtr ownerLoop) :
+    _ownerLoop{std::move(ownerLoop)} {
 }
 
 HttpClientConnectionManager::~HttpClientConnectionManager() {
@@ -101,7 +101,7 @@ void HttpClientConnectionManager::returnConnection(
             identity,
             ++_sequence});
     const auto weak = weak_from_this();
-    _ownerEvents->invokeAfter(options.idleConnectionTimeout(), [weak, origin, identity]() -> void {
+    _ownerLoop->invokeAfter(options.idleConnectionTimeout(), [weak, origin, identity]() -> void {
         if (const auto self = weak.lock()) {
             self->evict(origin, identity);
         }
@@ -114,7 +114,7 @@ void HttpClientConnectionManager::returnConnection(
 void HttpClientConnectionManager::invalidate() noexcept {
     auto idle = std::move(_idle);
     _idle.clear();
-    _ownerEvents->invoke([idle = std::move(idle)]() -> void {
+    _ownerLoop->invoke([idle = std::move(idle)]() -> void {
         for (const auto &entry : idle) {
             entry.connection->close();
         }

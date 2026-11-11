@@ -47,7 +47,7 @@ protected:
     /// Create an editor for one connection.
     /// @param source The connection that owns the editor.
     /// @param target The callback target.
-    ConnectionEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+    ConnectionEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
         CommonEventEditor{std::move(source), std::move(target)} {}
 };
 

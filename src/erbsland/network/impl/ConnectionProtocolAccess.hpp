@@ -18,7 +18,7 @@ public:
 
 public: // access
     /// Verify that the caller runs on the connection owner loop.
-    void verifyOwner() { _connection.verifyCurrentOwnerEvents(); }
+    void verifyOwner() { _connection.verifyCurrentOwnerLoop(); }
     /// Claim the connection for one protocol engine.
     /// @param owner The engine retained while it owns the connection.
     /// @return Whether the connection was available and is now claimed.

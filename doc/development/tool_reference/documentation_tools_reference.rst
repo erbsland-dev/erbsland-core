@@ -111,11 +111,15 @@ Demo Creation
 ``create-demo`` requires ``<domain>/<DemoName>/<DemoPart>`` and optionally ``--yes``.
 Domains use lowercase letters and underscores; collection/part names start uppercase and continue with ASCII letters or
 digits.
+New snippet collections go into ``demos/<domain>/snippets/<DemoName>``.
+Existing legacy collections at ``demos/<domain>/<DemoName>`` remain extendable in place.
 Existing collections must use the supported multi-part schema.
+If both locations exist, or the same name exists under ``apps`` or ``templates``, creation fails without writing files.
+Category and domain CMake registration and the printed source path match the selected location.
 The command validates and displays its complete plan before interactive confirmation, then applies confined atomic file
 updates.
 A project-scoped interprocess lock serializes concurrent creation.
-Templates are compiled resources; related CMake entries, declarations, and registrations are sorted.
+Generator rendering templates are compiled resources; related CMake entries, declarations, and registrations are sorted.
 Missing matching library domains or headers produce naming warnings.
 
 Usage Guides

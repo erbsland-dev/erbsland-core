@@ -28,11 +28,11 @@ struct LookupData {
 /// Create and start a lookup in the event loop that shall own it.
 /// Its handlers run in that same loop, so other application state can stay confined to the chosen event thread.
 void resolveInWorkerLoop() {
-    const auto workerEvents = el::currentEvents();
+    const auto workerEvents = el::currentLoop();
     lookupData.lookup = workerEvents->get<el::Network>().createHostLookup();
     lookupData.lookup->events()
         .onResolved([workerEvents](const el::List<el::IpAddress> &) -> void {
-            const auto runsInWorker = el::currentEvents() == workerEvents;
+            const auto runsInWorker = el::currentLoop() == workerEvents;
             el::stdOut()->printLine("Handler runs in worker event loop: "_el, runsInWorker);
         })
         .onFinal([]() -> void { el::application().quit(); });
@@ -44,7 +44,7 @@ auto main(const int argc, char *argv[]) -> int {
     demo::DemoTerminal::enable(app);
     lookupData.eventThread = app.createEventThread();
     lookupData.eventThread->start();
-    lookupData.eventThread->events()->invoke(resolveInWorkerLoop);
+    lookupData.eventThread->loop()->invoke(resolveInWorkerLoop);
     return app.run();
 }
 

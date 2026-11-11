@@ -7,8 +7,8 @@
 #include "WorkerTask.hpp"
 
 #include "../../../event/EventLoop_fwd.hpp"
-#include "../../../event/Events_fwd.hpp"
 #include "../../../event/EventSource_fwd.hpp"
+#include "../../../event/EventTarget_fwd.hpp"
 #include "../../../event/impl/EventContinuation_fwd.hpp"
 #include "../../StopSource.hpp"
 #include "../../WorkerPoolOptions.hpp"
@@ -65,7 +65,7 @@ public: // events
     /// Reserve delivery capacity and attach one event owner.
     /// @param owner The current owner loop.
     /// @param source The weak pool facade used to guard dispatch lifetime.
-    void bind(const event::EventsPtr &owner, event::EventSourceWeakPtr source);
+    void bind(const event::EventTargetPtr &owner, event::EventSourceWeakPtr source);
     /// Schedule a reserved wake when delivery or lifecycle notifications are pending.
     void kick();
     /// Dispatch one outcome or lifecycle notification, rearming before invoking user code.

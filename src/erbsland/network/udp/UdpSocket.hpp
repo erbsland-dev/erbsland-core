@@ -79,8 +79,8 @@ public:
 
 protected:
     /// Create a socket owned by an event collection.
-    /// @param ownerEvents The owner-loop event collection.
-    explicit UdpSocket(event::EventsPtr ownerEvents) : EventSource{std::move(ownerEvents)} {}
+    /// @param ownerLoop The owner-loop event collection.
+    explicit UdpSocket(event::EventTargetPtr ownerLoop) : EventSource{std::move(ownerLoop)} {}
 };
 
 }

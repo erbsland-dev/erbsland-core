@@ -21,7 +21,7 @@ auto RulesBuilderBranch::parentPath() const -> NamePath {
 }
 
 auto RulesBuilderBranch::resolvePath(const NamePathLike &namePath) const -> NamePath {
-    auto path = impl::RulesBuilder::resolveRuleNamePath(namePath);
+    auto path = impl::RulesBuilder::resolveDefinitionNamePath(namePath);
     path.prepend(_parentPath);
     return path;
 }

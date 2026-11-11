@@ -115,6 +115,25 @@ Enabling their normalization changes only text that parses completely as one reg
 case-sensitive names or application text.
 Selectors match the original names; such changes can affect selector matching on a later pass.
 
+``abbreviations()`` supplies whole identifier words that remain uppercase during title casing.
+The defaults are HTTP, HTTPS, FTP, FTPS, SSH, and VR.
+Matching ignores ASCII case and uses spaces and underscores as word boundaries: ``http_server`` becomes ``HTTP Server``,
+while ``http2`` becomes ``Http2`` unless HTTP2 is also configured.
+The list also applies to opted-in quoted names and text identifiers.
+Lower, Upper, and Keep case settings retain their usual behavior.
+``setAbbreviations()`` accepts single regular identifier words, normalizes them to uppercase, and removes duplicates.
+An empty list disables abbreviation handling; a style patch replaces the inherited list in full.
+
+``booleanCase()`` selects Keep, Lower, Title, or Upper independently of ``booleanForm()``.
+The default is Title case with the original word pair retained: ``YES`` becomes ``Yes``, and ``off`` becomes ``Off``.
+``BooleanForm`` selects Keep, TrueFalse, YesNo, EnabledDisabled, or OnOff.
+With Keep case, literals already using the requested pair preserve their exact spelling; changing pairs produces
+lowercase spelling.
+For example, selecting YesNo with Keep case preserves ``YES`` and changes ``ON`` to ``yes``.
+Boolean formatting preserves truth values and applies in scalars, vectors, and matrices.
+Wrapping and alignment use the formatted spelling.
+Quoted text, comments, multiline payloads, and damaged statements are not rewritten as Boolean literals.
+
 Section indentation is the zero-based opening-bracket column.
 Finite prefixes are filled with dashes, reserving the required opening list star.
 Infinite indentation right-aligns the header.
@@ -163,6 +182,7 @@ Default formatting is idempotent.
 Interface
 =========
 
+.. doxygenenum:: erbsland::conf::syntax::BooleanForm
 .. doxygenstruct:: erbsland::conf::syntax::Diagnostic
     :members:
 .. doxygenclass:: erbsland::conf::syntax::Document

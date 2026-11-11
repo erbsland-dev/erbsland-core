@@ -61,13 +61,26 @@ Configuration Structure
 Optional child sections group the other settings:
 
 * ``Names``: ``Section Case``, ``Section Separator``, ``Value Case``, ``Value Separator``, ``Text Name Case``,
-  ``Text Name Separator``, ``Text Identifier Case``, and ``Text Identifier Separator``.
+  ``Text Name Separator``, ``Text Identifier Case``, ``Text Identifier Separator``, and ``Abbreviations``.
+* ``Boolean``: ``Case`` and ``Form``.
 * ``Section``: ``Indent``, ``Suffix``, ``Star``, ``Space After Open``, ``Space Before Close``, and ``Space Around Dot``.
 * ``Vector``: ``Style`` and ``Spaces After Star``; ``Matrix``: ``Style``.
 * ``Separator``: ``Character``, ``Position Mode``, ``Position``, ``Value Position Mode``, and ``Value Position``.
 * ``Indentation``: ``Style`` and ``Count``.
 
 Case settings accept ``keep``, ``lower``, ``title`` or ``upper``.
+``Names.Abbreviations`` accepts one text value or a text list of single identifier words.
+The defaults are HTTP, HTTPS, FTP, FTPS, SSH, and VR; configured lists replace the inherited list completely.
+Matching ignores case, and duplicates are removed.
+Use ``Abbreviations: ""`` to clear the list.
+Abbreviations affect title casing only, including explicitly enabled quoted-name and text-identifier formatting.
+
+``Boolean.Case`` defaults to ``title``.
+``Boolean.Form`` accepts ``keep`` (the default), ``true_false``, ``yes_no``, ``enabled_disabled``, or ``on_off``.
+Keep case retains exact spelling when the pair is unchanged and uses lowercase when changing pairs.
+For example, Yes/No with Keep case preserves ``YES`` but changes ``ON`` to ``yes``.
+These settings can be overridden independently by selector rules.
+
 Word separators accept ``space`` or ``underscore``.
 Vector styles accept ``keep``, ``compact`` or ``multiline``; matrix styles accept ``keep`` or ``align``.
 Value wrapping accepts ``keep``, ``same_line``, ``next_line``, ``next_line_if_fits`` (the default), or

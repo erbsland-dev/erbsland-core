@@ -18,6 +18,10 @@ void UnmanagedEventThread::quit() noexcept {
     EventThreadBase::quit();
 }
 
+auto UnmanagedEventThread::stopToken() const noexcept -> util::StopToken {
+    return EventThreadBase::stopToken();
+}
+
 void UnmanagedEventThread::join() {
     EventThreadBase::join();
 }
@@ -30,16 +34,16 @@ auto UnmanagedEventThread::isRunning() const noexcept -> bool {
     return EventThreadBase::isRunning();
 }
 
-auto UnmanagedEventThread::eventLoop() noexcept -> event::EventLoop & {
-    return EventThreadBase::eventLoop();
+auto UnmanagedEventThread::workerEventLoop() noexcept -> event::EventLoop & {
+    return EventThreadBase::workerEventLoop();
 }
 
-auto UnmanagedEventThread::events() noexcept -> event::EventsPtr {
-    return EventThreadBase::events();
+auto UnmanagedEventThread::loop() noexcept -> event::EventTargetPtr {
+    return EventThreadBase::loop();
 }
 
-void UnmanagedEventThread::runEventLoop() {
-    eventLoop().run();
+void UnmanagedEventThread::runWorkerEventLoop() {
+    workerEventLoop().run();
 }
 
 }

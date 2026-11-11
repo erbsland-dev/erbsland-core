@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/CurrentEvents.hpp>
+#include <erbsland/CurrentLoop.hpp>
 #include <erbsland/EventLoop.hpp>
 #include <erbsland/LogicFailure.hpp>
 #include <erbsland/NotFoundError.hpp>
@@ -36,7 +36,7 @@ public:
             pool->submit(
                 []() -> std::unique_ptr<int> { return std::make_unique<int>(5); },
                 [&, capture = std::make_unique<int>(7)](std::unique_ptr<int> value) -> void {
-                    REQUIRE_EQUAL(el::currentEvents(), loop);
+                    REQUIRE_EQUAL(el::currentLoop(), loop);
                     REQUIRE_EQUAL(*value + *capture, 12);
                     calls.push_back(1);
                 });

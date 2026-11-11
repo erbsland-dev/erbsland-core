@@ -14,7 +14,7 @@
 #include <erbsland/cterm/ColorPart.hpp>
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/Endianness.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/Host.hpp>
 #include <erbsland/IpAddress.hpp>
 #include <erbsland/IpEndpoint.hpp>
@@ -72,14 +72,14 @@ protected: // implement Application
         }
         _address = el::IpAddress::fromStringOrThrow(optionValues()->getText("address"_el));
         _port = el::Port::fromStringOrThrow(optionValues()->getText("port"_el));
-        events()->invoke([this]() -> void { startServer(); });
+        loop()->invoke([this]() -> void { startServer(); });
     }
 
 private:
     void startServer() {
         terminal()->printLine(fg::BrightWhite, BlockAttributes::Bold, "Time Server"_el);
         terminal()->printLine(fg::Cyan, "Starting "_el, el::IpEndpoint{_address, _port}.toString());
-        _socket = events()->get<el::Network>().createUdpSocket();
+        _socket = loop()->get<el::Network>().createUdpSocket();
         _socket->events()
             .onBound([this]() -> void { onBound(); })
             .onDatagram([this](const el::UdpDatagram &datagram) -> void { onDatagram(datagram); })

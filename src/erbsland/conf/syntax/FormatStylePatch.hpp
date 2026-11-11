@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BooleanForm.hpp"
 #include "FormatStyle.hpp"
 #include "IndentationStyle.hpp"
 #include "MatrixStyle.hpp"
@@ -12,6 +13,7 @@
 #include "WordSeparator.hpp"
 
 #include "../../text/Char.hpp"
+#include "../../text/StringList.hpp"
 #include "../../unit/CpCount.hpp"
 
 #include <optional>
@@ -19,13 +21,28 @@
 namespace erbsland::conf::syntax {
 
 /// Explicitly specified formatting properties; omitted properties inherit.
-/// @tested{SyntaxFormatterTest SyntaxFormatTest}
+/// @tested{SyntaxFormatterTest SyntaxFormatTest SyntaxLiteralFormattingTest}
 class FormatStylePatch final {
 public:
     // defaults
     FormatStylePatch() = default;
 
 public: // properties
+    /// Whole identifier words kept uppercase in title case.
+    [[nodiscard]] auto abbreviations() const noexcept -> const std::optional<text::StringList> & {
+        return _abbreviations;
+    }
+    /// Set whole identifier words kept uppercase in title case.
+    /// @param value Single regular words; an empty list disables abbreviation handling.
+    auto setAbbreviations(text::StringList value) -> FormatStylePatch &;
+    /// Case of Boolean literals.
+    [[nodiscard]] auto booleanCase() const noexcept -> std::optional<WordCase> { return _booleanCase; }
+    /// Set case of Boolean literals.
+    auto setBooleanCase(WordCase value) noexcept -> FormatStylePatch &;
+    /// Word pair of Boolean literals.
+    [[nodiscard]] auto booleanForm() const noexcept -> std::optional<BooleanForm> { return _booleanForm; }
+    /// Set word pair of Boolean literals.
+    auto setBooleanForm(BooleanForm value) noexcept -> FormatStylePatch &;
     /// Soft maximum line width.
     [[nodiscard]] auto maximumLineLength() const noexcept -> std::optional<unit::CpCount> { return _maximumLineLength; }
     /// Set soft maximum line width.
@@ -194,9 +211,12 @@ public: // properties
 public: // cascade
     /// Apply specified properties to a complete style.
     /// @param style Style to update.
-    void applyTo(FormatStyle &style) const noexcept;
+    void applyTo(FormatStyle &style) const;
 
 private:
+    std::optional<text::StringList> _abbreviations;        ///< Title-case abbreviation words.
+    std::optional<WordCase> _booleanCase;                  ///< Boolean literal case.
+    std::optional<BooleanForm> _booleanForm;               ///< Boolean word pair.
     std::optional<ValueWrapping> _valueWrapping;           ///< Non-multiline value placement override.
     std::optional<unit::CpCount> _maximumLineLength;       ///< Soft maximum line width.
     std::optional<WordCase> _sectionNameCase;              ///< Case of regular section names.

@@ -66,14 +66,14 @@ request-and-response exchange.
 .. erbsland-demo::
     :source: network/TimeServer/TimeServerApp.hpp
     :show: f:startServer, f:onBound, f:onDatagram
-    :sha256: b63cf464adc1e93e4fa2c91d96f9fb6c5cab956c628516fb9605188aa22d2994
+    :sha256: 93fa903dcaabd69450ede56337847c010c47615b37a0d356fe25d565d349a3be
 
 .. code-block:: cpp
 
     void startServer() {
         terminal()->printLine(fg::BrightWhite, BlockAttributes::Bold, "Time Server"_el);
         terminal()->printLine(fg::Cyan, "Starting "_el, el::IpEndpoint{_address, _port}.toString());
-        _socket = events()->get<el::Network>().createUdpSocket();
+        _socket = loop()->get<el::Network>().createUdpSocket();
         _socket->events()
             .onBound([this]() -> void { onBound(); })
             .onDatagram([this](const el::UdpDatagram &datagram) -> void { onDatagram(datagram); })
@@ -150,7 +150,7 @@ This demo chooses the first address and binds a matching IPv4 or IPv6 local sock
 .. erbsland-demo::
     :source: network/TimeClient/TimeClientApp.hpp
     :show: f:onResolved, f:onBound
-    :sha256: addd345565dac7d3df47aafb45524abfb87e4c28eac242e3da5a1d6298a9151f
+    :sha256: f0256dfc18f95cbd0e6c88494e94dfb59881e5c9f4464bb3a7812ada4fffcafc
 
 .. code-block:: cpp
 
@@ -166,7 +166,7 @@ This demo chooses the first address and binds a matching IPv4 or IPv6 local sock
             (_serverEndpoint.address().isV4() ? "IPv4"_el : "IPv6"_el),
             " socket"_el);
 
-        _socket = events()->get<el::Network>().createUdpSocket();
+        _socket = loop()->get<el::Network>().createUdpSocket();
         _socket->events()
             .onBound([this]() -> void { onBound(); })
             .onDatagram([this](const el::UdpDatagram &datagram) -> void { onDatagram(datagram); })
@@ -188,7 +188,7 @@ This demo chooses the first address and binds a matching IPv4 or IPv6 local sock
             throw el::ApplicationError{"The time request could not be queued."_el};
         }
         terminal()->printLine(fg::BrightBlack, "Waiting for response"_el);
-        _timeout = events()->createTimer([this]() -> void { onTimeout(); });
+        _timeout = loop()->createTimer([this]() -> void { onTimeout(); });
         _timeout->startFixedDelay(el::TimeDelta::seconds(10));
     }
 
@@ -213,7 +213,7 @@ the application.
 .. erbsland-demo::
     :source: network/TimeClient/TimeClientApp.hpp
     :show: f:onDatagram, f:onClosed
-    :sha256: b5a73139bc1e21777cdc1259ad8e65314d72687732420304150f3c8998679111
+    :sha256: a94e804271f96aef3feabd83555a71431eee9ac0f418d1aff42fe586108265c4
 
 .. code-block:: cpp
 
@@ -304,7 +304,7 @@ is delivered.
     :source: network/UdpSockets/PauseDelivery.cpp
     :show: f:beginReload, f:sendUpdatesDuringReload, f:finishReload, f:reportDrop, f:receiveUpdate
     :exec: network/udp_sockets --demo PauseDelivery
-    :sha256: 1a6849e0e115eb3a392a8512559b14f68f277b8e3f51cc334562fe813595c2ad
+    :sha256: 08de7bd1b4d102efe55ab1287969c42bdf440ee026cb4f853951ce65d5f06343
 
 .. code-block:: cpp
 
@@ -352,11 +352,7 @@ is delivered.
     .. erbsland-ansi::
         :escape-char: ␛
 
-        ␛[0mSkill catalog reload started; delivery paused.
-        Client queued two updates while delivery was paused.
-        Skill catalog reload completed; delivery resumed.
-        Oversized skill update discarded.
-        Delivered after catalog reload: alchemie␛[0m
+        ␛[0mUDP bind failed: The UDP socket could not bind to the local endpoint.␛[0m
 
 .. erbsland-demo-end::
 
@@ -379,8 +375,8 @@ Call ``abort()`` only when cancellation must discard pending output and callback
 does not emit ``onClosed()``.
 
 All operations other than ``abort()`` belong to the owner event loop.
-From another thread, use :cpp:func:`Events::invoke() <erbsland::event::Events::invoke>` to send, pause, resume, or close
-the socket on that loop.
+From another thread, use :cpp:func:`EventTarget::invoke() <erbsland::event::EventTarget::invoke>` to send, pause,
+resume, or close the socket on that loop.
 
 The essential pattern is small: bind the socket, wait for ``onBound()``, treat every datagram as untrusted, and decide
 what your protocol should do when a packet cannot be queued or delivered.

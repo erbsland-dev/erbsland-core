@@ -46,6 +46,14 @@ class ErbslandDemoDirective(Directive):
     def run(self):
         node = DemoStart(options=dict(self.options))
         node.source, node.line = self.state_machine.get_source_and_line(self.lineno)
+        parts = Path(self.options.get("source", "")).parts
+        if len(parts) > 1 and parts[1] == "templates":
+            if any(
+                key == "exec" or key.startswith("exec-") or key in {"files", "show-cmd-line"} for key in self.options
+            ):
+                logger.warning(
+                    "Template sources only support source excerpts; execution options are forbidden.", location=node
+                )
         return [node]
 
 
@@ -118,8 +126,10 @@ class DemoTransform(SphinxTransform):
                     entry += nodes.rubric("", f"{name}")
                     entry += nodes.literal_block(text, text, language="cpp")
                     sources[source_id] = entry
-                expand_icon = [nodes.raw("", "<i class=\"fa-solid fa-arrows-up-down\"></i>", format="html")]
-                header += nodes.reference("", "", children=expand_icon, refuri="#" + source_id, classes=["demo-source-link"])
+                expand_icon = [nodes.raw("", '<i class="fa-solid fa-arrows-up-down"></i>', format="html")]
+                header += nodes.reference(
+                    "", "", children=expand_icon, refuri="#" + source_id, classes=["demo-source-link"]
+                )
             except (OSError, UnicodeError, ValueError) as error:
                 logger.warning("Cannot expand demo source: %s", error, location=start)
             panel += header
@@ -171,10 +181,77 @@ class DemoTransform(SphinxTransform):
             self.document += appendix
 
 
+class InPracticeBegin(nodes.General, nodes.Element):
+    """Temporary marker removed before writing the document."""
+
+
+class InPracticeEnd(nodes.General, nodes.Element):
+    """Temporary marker removed before writing the document."""
+
+
+class ErbslandInPracticeBeginDirective(Directive):
+    """Begin a practical discussion with an optional label."""
+
+    has_content = False
+    optional_arguments = 1
+    final_argument_whitespace = True
+
+    def run(self):
+        node = InPracticeBegin(title=self.arguments[0] if self.arguments else "In Practice")
+        node.source, node.line = self.state_machine.get_source_and_line(self.lineno)
+        return [node]
+
+
+class ErbslandInPracticeEndDirective(Directive):
+    """End the enclosing practical discussion."""
+
+    has_content = False
+
+    def run(self):
+        node = InPracticeEnd()
+        node.source, node.line = self.state_machine.get_source_and_line(self.lineno)
+        return [node]
+
+
+class InPracticeTransform(SphinxTransform):
+    """Wrap paired markers and their contents in a builder-independent container."""
+
+    # Demo panels must be assembled before moving them into a discussion.
+    default_priority = 510
+
+    def apply(self, **kwargs):
+        for parent in list(self.document.findall(nodes.Element)):
+            pending = []
+            for child in list(parent.children):
+                if isinstance(child, InPracticeBegin):
+                    pending.append(child)
+                elif isinstance(child, InPracticeEnd):
+                    if not pending:
+                        logger.warning("Unexpected erbsland-in-practice-end directive.", location=child)
+                        child.replace_self([])
+                        continue
+                    start = pending.pop()
+                    first, last = parent.index(start), parent.index(child)
+                    panel = nodes.container(classes=["erbsland-in-practice"])
+                    panel.source, panel.line = start.source, start.line
+                    panel += nodes.paragraph("", start["title"], classes=["erbsland-in-practice-title"])
+                    panel.extend(parent.children[first + 1 : last])
+                    parent[first : last + 1] = [panel]
+            for start in pending:
+                logger.warning(
+                    "Missing erbsland-in-practice-end directive in the same section and parent container.",
+                    location=start,
+                )
+                start.replace_self([])
+
+
 def setup(app: Sphinx):
     app.add_directive("erbsland-demo", ErbslandDemoDirective)
     app.add_directive("erbsland-demo-end", ErbslandDemoEndDirective)
     app.add_directive("erbsland-demo-run", ErbslandDemoRunDirective)
+    app.add_directive("erbsland-in-practice-begin", ErbslandInPracticeBeginDirective)
+    app.add_directive("erbsland-in-practice-end", ErbslandInPracticeEndDirective)
     app.add_transform(DemoTransform)
+    app.add_transform(InPracticeTransform)
     app.add_js_file("demo-panels.js")
-    return {"version": "2", "parallel_read_safe": True, "parallel_write_safe": True}
+    return {"version": "3", "env_version": 1, "parallel_read_safe": True, "parallel_write_safe": True}

@@ -53,7 +53,7 @@ void DocumentValidator::handleMissingValues(const RulePtr &rule, const conf::Val
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null"_el);
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(parentValue != nullptr, "The parent value must not be null"_el);
     if (rule->type() == vr::RuleType::NotValidated || !rule->versionMask().matches(_version) ||
-        rule->ruleName().isReservedValidationRule() || rule->isOptional()) {
+        rule->role() != RuleRole::NamedValue || rule->isOptional()) {
         return; // ignore values that do not need to exit.
     }
     if (rule->hasDefault()) {
@@ -77,7 +77,7 @@ void DocumentValidator::handleMissingValues(const RulePtr &rule, const conf::Val
     // at this point, the missing value for the rule couldn't be resolved.
     throwValidationError(
         text::StringFormat{"In {}, expected {} with the name '{}'"_el}.build(
-            parentLocationText(parentValue), expectedValueTypeText(rule), rule->targetName().toPathText()),
+            parentLocationText(parentValue), expectedValueTypeText(rule), rule->valueName().toPathText()),
         parentValue->namePath(),
         parentValue->location());
 }
@@ -86,7 +86,7 @@ void DocumentValidator::copyDefaultValue(const RulePtr &rule, const conf::ValueP
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null"_el);
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(parentValue != nullptr, "The parent value must not be null"_el);
     const auto defaultValue = rule->defaultValue()->deepCopy();
-    defaultValue->setName(rule->targetName());
+    defaultValue->setName(rule->valueName());
     defaultValue->setParent(parentValue);
     ValueTreeWalker treeWalker;
     treeWalker.setRoot(defaultValue);
@@ -179,7 +179,7 @@ auto DocumentValidator::handleValueListOrMatrixPreCheck(const RulePtr &rule, con
                 value->type().toValueDescription(true)));
     }
     // If this is true, we are sure that the value can be converted into a value list.
-    const auto valueRule = rule->child(Name::vrName(Name::VR::ReservedEntry));
+    const auto valueRule = rule->listEntryRule();
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(valueRule != nullptr, "Missing 'vr_entry' rule for list rule"_el);
     return valueRule;
 }
@@ -238,24 +238,16 @@ auto DocumentValidator::nextRuleForValue(const RulePtr &parentRule, const ValueP
     if (name.isIndex()) {
         // An index as the name means that this is an entry of a list.
         // therefore, the vr_entry rule is used to validate the list entry.
-        auto entryRule = parentRule->child(Name::vrName(Name::VR::ReservedEntry));
+        auto entryRule = parentRule->listEntryRule();
         ERBSLAND_CORE_CONF_REQUIRE_SAFETY(entryRule != nullptr, "Missing entry rule for list rule"_el);
         return entryRule;
     }
-    RulePtr anyRule = {};
-    for (const auto &childRule : parentRule->childrenImpl()) {
-        if (!childRule->versionMask().matches(_version)) {
-            continue; // ignore all rules that do not match the current version
-        }
-        if (childRule->ruleName() == Name::vrName(Name::VR::ReservedAny)) {
-            anyRule = childRule; // store the "any" rule for later. It is evaluated if no other rule matches.
-            continue;
-        }
-        if (childRule->targetName() == name) {
-            return childRule;
-        }
+    const auto namedRule = parentRule->childByValueName(name);
+    if (namedRule != nullptr && namedRule->versionMask().matches(_version)) {
+        return namedRule;
     }
-    if (anyRule != nullptr) {
+    const auto anyRule = parentRule->anyValueRule();
+    if (anyRule != nullptr && anyRule->versionMask().matches(_version)) {
         return anyRule;
     }
     throwValidationError(

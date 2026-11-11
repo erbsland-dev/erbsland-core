@@ -12,7 +12,7 @@
 #include <erbsland/ByteCount.hpp>
 #include <erbsland/ClientAuthenticationToken.hpp>
 #include <erbsland/ConnectionCloseContext.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/ExitCode.hpp>
 #include <erbsland/Host.hpp>
 #include <erbsland/HostEndpoint.hpp>
@@ -33,7 +33,7 @@ namespace demo {
 /// @notest{Compiled and exercised by the token authentication demo.}
 class Client final {
 public:
-    Client(el::EventsPtr events, el::Host host, el::Port port, el::cryptology::ClientAuthenticationToken token) :
+    Client(el::EventTargetPtr events, el::Host host, el::Port port, el::cryptology::ClientAuthenticationToken token) :
         _events{std::move(events)}, _host{std::move(host)}, _port{port}, _token{std::move(token)} {}
 
     void start() {
@@ -105,7 +105,7 @@ private:
     enum class State { Challenge, Result, Finished };
 
 private:
-    el::EventsPtr _events;
+    el::EventTargetPtr _events;
     el::Host _host;
     el::Port _port;
     el::cryptology::ClientAuthenticationToken _token;

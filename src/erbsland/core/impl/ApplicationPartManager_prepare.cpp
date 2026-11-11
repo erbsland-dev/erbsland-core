@@ -78,7 +78,7 @@ void ApplicationPartManager::prepare() {
             _nameToNumber = std::move(nameToNumber);
         }
         validateAcyclicGraph();
-        const auto managerAccess = ApplicationPartManagerAccessWeakPtr{shared_from_this()};
+        const auto managerAccess = ApplicationPartManagerAccessWeakPtr{weakManager()};
         for (std::size_t index = 0; index < _registrations.size(); ++index) {
             auto instance = _registrations[index].factory();
             if (instance == nullptr) {
@@ -117,19 +117,19 @@ void ApplicationPartManager::registerCommandLineOptions(const options::OptionsPt
     }
 }
 
-void ApplicationPartManager::parseCommandLine(const options::OptionValuesPtr &values) {
+void ApplicationPartManager::handleCommandLineOptions(const options::OptionValuesPtr &values) {
     auto parts = std::vector<ApplicationPartPtr>{};
     {
         const auto lock = std::scoped_lock{_mutex};
         if (!_prepared) {
-            throw LogicFailure{"The application-part manager must be prepared before option parsing."_el};
+            throw LogicFailure{"The application-part manager must be prepared before option handling."_el};
         }
         for (const auto &record : _records) {
             parts.emplace_back(record.part);
         }
     }
     for (const auto &part : parts) {
-        static_cast<ApplicationPartCommandLine &>(*part).parseCommandLine(values);
+        static_cast<ApplicationPartCommandLine &>(*part).handleCommandLineOptions(values);
     }
 }
 

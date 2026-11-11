@@ -31,11 +31,11 @@ auto CreateDemoTool::identifier() const -> el::String {
 }
 
 auto CreateDemoTool::title() const -> el::String {
-    return "Create or extend a documentation demo."_el;
+    return "Create or extend a documentation snippet collection."_el;
 }
 
 auto CreateDemoTool::description() const -> el::String {
-    return "Plan and create a multi-part demo from domain/DemoName/DemoPart, confirming before writing files."_el;
+    return "Create snippets from domain/DemoName/DemoPart; extend legacy collections in place, confirming before writing files."_el;
 }
 
 auto CreateDemoTool::optionModule() const -> el::OptionModulePtr {

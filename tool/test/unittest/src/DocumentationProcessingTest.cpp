@@ -174,10 +174,10 @@ public:
 
     void testSelectorsFindQualifiedMethods() {
         const auto source =
-            "void TextPreviewApp::requestPreview() {\n    send();\n}\nauto demo::Widget::render() -> int {\n    return 42;\n}\n"_el;
+            "void ExampleApp::requestResult() {\n    send();\n}\nauto demo::Widget::render() -> int {\n    return 42;\n}\n"_el;
         REQUIRE_EQUAL(
-            impl::SourceSelectors{source}.select("f:TextPreviewApp::requestPreview"_el, ""_el).join("\n"_el),
-            "void TextPreviewApp::requestPreview() {\n    send();\n}"_el);
+            impl::SourceSelectors{source}.select("f:ExampleApp::requestResult"_el, ""_el).join("\n"_el),
+            "void ExampleApp::requestResult() {\n    send();\n}"_el);
         REQUIRE_EQUAL(
             impl::SourceSelectors{source}.select("f:demo::Widget::render"_el, ""_el).join("\n"_el),
             "auto demo::Widget::render() -> int {\n    return 42;\n}"_el);
@@ -271,6 +271,41 @@ public:
         REQUIRE(result.contains(":sha256:"_el));
         REQUIRE(result.contains(".. code-block:: cpp"_el));
         REQUIRE_EQUAL(synchronizer.process(_root / "page.rst"_el, result, false, issues), result);
+    }
+
+    void testTemplateSourceOnlySynchronizationAndExecutionRejection() {
+        const auto name = "event/templates/Startup/main.cpp"_el;
+        write(el::join("demos/"_el, name), "/// Startup template\nauto main() -> int { return 0; }\n"_el);
+        const auto files = tool::frame::ProjectFiles{_root};
+        auto synchronizer = impl::DemoSynchronizer{files};
+        auto issues = el::StringList{};
+        const auto document = _root / "page.rst"_el;
+        const auto input = el::join(".. erbsland-demo::\n    :source: "_el, name, "\n\n.. erbsland-demo-end::\n"_el);
+        const auto result = synchronizer.process(document, input, false, issues);
+        REQUIRE(issues.isEmpty());
+        REQUIRE(result.contains("auto main() -> int"_el));
+        REQUIRE_EQUAL(synchronizer.process(document, result, false, issues), result);
+        // Compute a matching fingerprint as if an older tool had cached an execution block.
+        for (
+            const auto key :
+            {"exec"_el, "exec-2"_el, "exec-exit-code"_el, "exec-2-exit-code"_el, "files"_el, "show-cmd-line"_el}) {
+            auto options = el::StringMap<el::String>{};
+            options.set("source"_el, name);
+            options.set(key, ""_el);
+            auto fingerprint = impl::DemoFingerprint{files};
+            fingerprint.addOptions(options);
+            fingerprint.addFile("source"_el, _root / "demos"_el / name);
+            const auto cached = el::join(
+                ".. erbsland-demo::\n    :source: "_el,
+                name,
+                "\n    :"_el,
+                key,
+                ":\n    :sha256: "_el,
+                fingerprint.finish(),
+                "\n\nCached output must not be reused.\n\n.. erbsland-demo-end::\n"_el);
+            REQUIRE_THROWS_AS(el::ApplicationError, synchronizer.process(document, cached, false, issues));
+            REQUIRE_THROWS_AS(el::ApplicationError, synchronizer.process(document, cached, true, issues));
+        }
     }
 
     void testLegacyMetadataMigrationDoesNotChangeCode() {

@@ -15,7 +15,7 @@
 
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParameterFailure.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../http/HttpFieldType.hpp"
 #include "../../../http/HttpRequestHead.hpp"
@@ -258,7 +258,7 @@ void HttpClientRequest::completeTransactionFinal() {
         _transactionFinalized = false;
         _state = NetworkSourceState::Starting;
         const auto self = std::static_pointer_cast<HttpClientRequest>(shared_from_this());
-        ownerEvents()->invoke([self]() -> void { self->start(); });
+        ownerLoop()->invoke([self]() -> void { self->start(); });
         return;
     }
     auto returned = false;

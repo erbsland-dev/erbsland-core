@@ -10,5 +10,6 @@ target_sources(erbsland-core-tool-lib PRIVATE
         ElclFormatTool.hpp
         FormatConfig.cpp
         FormatConfig.hpp
+        FormatConfig_literals.cpp
         FormatConfig_style.cpp
 )

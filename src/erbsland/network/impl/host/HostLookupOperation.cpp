@@ -9,10 +9,10 @@
 namespace erbsland::network::impl {
 
 HostLookupOperation::HostLookupOperation(
-    Host operationHost, HostLookupOptions operationOptions, const event::EventsPtr &ownerEvents) :
-    resultCompletion{event::impl::EventContinuation::create(ownerEvents)},
-    cancellationCompletion{event::impl::EventContinuation::create(ownerEvents)},
-    deadlineCompletion{event::impl::EventContinuation::create(ownerEvents)},
+    Host operationHost, HostLookupOptions operationOptions, const event::EventTargetPtr &ownerLoop) :
+    resultCompletion{event::impl::EventContinuation::create(ownerLoop)},
+    cancellationCompletion{event::impl::EventContinuation::create(ownerLoop)},
+    deadlineCompletion{event::impl::EventContinuation::create(ownerLoop)},
     host{std::move(operationHost)},
     options{operationOptions},
     deadline{time::TimePoint::inFuture(operationOptions.timeout())} {

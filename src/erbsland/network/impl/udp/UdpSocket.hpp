@@ -24,11 +24,11 @@ class UdpSocket final : public network::UdpSocket {
 
 public:
     /// Create an inactive UDP socket source.
-    /// @param ownerEvents The owner event loop.
+    /// @param ownerLoop The owner event loop.
     /// @param driver The owner loop's native driver.
     /// @param createDevice The platform device factory.
     UdpSocket(
-        event::EventsPtr ownerEvents,
+        event::EventTargetPtr ownerLoop,
         event::EventLoopDriverPtr driver,
         UdpSocketDeviceCreateFn createDevice = UdpSocketDevice::createUdpSocketDevice);
     ~UdpSocket() override;

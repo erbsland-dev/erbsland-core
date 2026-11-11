@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CatalogMonitorApplication.hpp"
 
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/StandardStreams.hpp>
 #include <erbsland/Version.hpp>
 
@@ -26,7 +26,7 @@ void CatalogMonitorApplication::initialize() {
     // Refine the estimate before opening the catalog and starting periodic work.
     reportStartupPending(el::Seconds{10});
     openCatalog();
-    _refreshTimer = events()->createTimer([this]() -> void { refreshCatalog(); });
+    _refreshTimer = loop()->createTimer([this]() -> void { refreshCatalog(); });
     _refreshTimer->startFixedDelay(el::Seconds{30});
 
     // Mark the service ready only after it can perform its advertised work.

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/CurrentEvents.hpp>
+#include <erbsland/CurrentLoop.hpp>
 #include <erbsland/EventBackend.hpp>
 #include <erbsland/EventLoop.hpp>
 #include <erbsland/EventTimer.hpp>
@@ -22,7 +22,7 @@ using namespace el::event;
 using namespace el::time;
 using namespace std::chrono_literals;
 
-TESTED_TARGETS(EventLoop Events EventCallback)
+TESTED_TARGETS(EventLoop EventTarget EventCallback)
 class EventLoopTest final : public el::UnitTest {
     class ThrowingBackend final : public EventBackend {
     public: // implement EventBackend
@@ -342,12 +342,12 @@ public:
             const auto loop = EventLoop::create(std::move(backend));
             REQUIRE_THROWS_AS(el::err::RuntimeError, runVariant(loop, variant));
             REQUIRE_FALSE(loop->isRunning());
-            REQUIRE_THROWS_AS(el::err::LogicFailure, currentEvents());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, currentLoop());
             backendPtr->setFailPolling(false);
             loop->invoke([loop]() -> void { loop->stop(); });
             runVariant(loop, variant);
             REQUIRE_FALSE(loop->isRunning());
-            REQUIRE_THROWS_AS(el::err::LogicFailure, currentEvents());
+            REQUIRE_THROWS_AS(el::err::LogicFailure, currentLoop());
         }
     }
 
@@ -359,7 +359,7 @@ public:
             try {
                 static_cast<void>(inner->runOnce(TimeDelta::zero()));
             } catch (const el::err::RuntimeError &) {
-                restored = currentEvents() == outer;
+                restored = currentLoop() == outer;
             }
         });
         REQUIRE_EQUAL(outer->runUntilIdle(), std::size_t{1});

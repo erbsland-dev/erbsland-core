@@ -61,7 +61,7 @@ public: // lifecycle
 
 protected:
     /// Create an abstract request owned by one event target.
-    explicit HttpClientRequest(event::EventsPtr ownerEvents) : EventSource{std::move(ownerEvents)} {}
+    explicit HttpClientRequest(event::EventTargetPtr ownerLoop) : EventSource{std::move(ownerLoop)} {}
 };
 
 }

@@ -8,6 +8,7 @@
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
+#include <erbsland/StringFormat.hpp>
 
 using namespace el::conf;
 
@@ -16,6 +17,76 @@ TESTED_TARGETS(Rules)
 TAGS(ValidationRules)
 class VrTemplatesTest final : public UNITTEST_SUBCLASS(VrBase) {
 public:
+    void testNameTemplatesAndOverrides() {
+        WITH_CONTEXT(requireRulesPass(R"(
+[vr_template.identifier]
+type: "text"
+starts: "u_"
+minimum: 3
+case_sensitive: Yes
+[users]
+type: "section_with_texts"
+[users.vr_any]
+type: "integer"
+[users.vr_any.vr_name]
+use_template: "identifier"
+minimum: 4
+[tags]
+type: "section_with_texts"
+[tags.vr_any]
+type: "text"
+[tags.vr_any.vr_name]
+use_template: "identifier"
+case_sensitive: No
+)"_el));
+        WITH_CONTEXT(requirePass("[users]\n\"u_name\": 1\n[tags]\n\"U_x\": \"arbitrary value\"\n"_el));
+        WITH_CONTEXT(requireFail("[users]\n\"u_x\": 1\n[tags]\n\"U_x\": \"value\"\n"_el));
+        WITH_CONTEXT(requireFail("[users]\n\"U_name\": 1\n[tags]\n\"U_x\": \"value\"\n"_el));
+    }
+
+    void testInvalidNameTemplates() {
+        for (const auto type : {"integer"_el, "section"_el, "value"_el}) {
+            WITH_CONTEXT(requireRulesFail(
+                el::text::StringFormat{
+                    "[vr_template.bad]\ntype: \"{}\"\n[app.vr_any]\ntype: \"text\"\n[app.vr_any.vr_name]\nuse_template: \"bad\"\n"_el}
+                    .build(type)));
+            WITH_CONTEXT(requireError("templates must have a 'type' value of 'text'"));
+        }
+        WITH_CONTEXT(requireRulesFail(R"(
+*[vr_template.bad]
+type: "text"
+[app.vr_any]
+type: "text"
+[app.vr_any.vr_name]
+use_template: "bad"
+)"_el));
+        WITH_CONTEXT(requireError("cannot be alternatives"));
+        WITH_CONTEXT(requireRulesFail(R"(
+[vr_template.good]
+type: "text"
+[app.vr_any]
+type: "text"
+[app.vr_any.vr_name]
+type: "text"
+use_template: "good"
+)"_el));
+        WITH_CONTEXT(requireError("cannot have both"));
+        WITH_CONTEXT(requireRulesFail(R"(
+[vr_template.bad]
+type: "text"
+[vr_template.bad.child]
+type: "text"
+[app.vr_any]
+type: "text"
+[app.vr_any.vr_name]
+use_template: "bad"
+)"_el));
+        WITH_CONTEXT(requireError("cannot have subsections"));
+        WITH_CONTEXT(
+            requireRulesFail("[app.vr_any]\ntype: \"text\"\n[app.vr_any.vr_name]\nuse_template: \"missing\"\n"_el));
+        WITH_CONTEXT(requireError("does not exist"));
+    }
+
     void testTemplatesInRoot() {
         // Templates in Root: Templates must be defined as subsections or section lists under "vr_template"
         // at the document root.

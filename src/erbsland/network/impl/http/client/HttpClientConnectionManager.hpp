@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../../event/Events_fwd.hpp"
+#include "../../../../event/EventTarget_fwd.hpp"
 #include "../../../../time/TimePoint.hpp"
 #include "../../../http_client/HttpClientSessionOptions.hpp"
 #include "../../../source/Connection_fwd.hpp"
@@ -39,7 +39,7 @@ private:
 
 public:
     /// Create a manager owned by one event collection.
-    explicit HttpClientConnectionManager(event::EventsPtr ownerEvents);
+    explicit HttpClientConnectionManager(event::EventTargetPtr ownerLoop);
     /// Close all retained idle connections.
     ~HttpClientConnectionManager();
 
@@ -65,7 +65,7 @@ private:
     void evictOldest() noexcept;
 
 private:
-    event::EventsPtr _ownerEvents;
+    event::EventTargetPtr _ownerLoop;
     std::vector<IdleConnection> _idle;
     std::uint64_t _identity{};
     std::uint64_t _sequence{};

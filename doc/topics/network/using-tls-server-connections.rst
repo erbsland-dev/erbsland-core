@@ -35,7 +35,7 @@ Store the session before starting acceptance, as the collection in this example 
 .. erbsland-demo::
     :source: network/MailReceiver/src/MailReceiverApp.hpp
     :show: c:Owns sessions through onFinal, f:acceptConnection
-    :sha256: 68ce4471a5285e816c51d794eb32e87058f21d491831e68473dcdf1ec319efa9
+    :sha256: d408c1583d1bff809dd99a79509c577fae2e5152991659bc9e4abd49a33f0c69
 
 .. code-block:: cpp
 
@@ -47,9 +47,9 @@ Store the session before starting acceptance, as the collection in this example 
             return;
         }
         const auto id = ++_nextSessionId;
-        auto session = std::make_shared<MailSession>(events(), _mailLog, [this, id](const bool delivered) -> void {
+        auto session = std::make_shared<MailSession>(loop(), _mailLog, [this, id](const bool delivered) -> void {
             // Defer destruction until the session's final callback has returned.
-            events()->invoke([this, id, delivered]() -> void { releaseSession(id, delivered); });
+            loop()->invoke([this, id, delivered]() -> void { releaseSession(id, delivered); });
         });
         _sessions.emplace(id, session);
         auto options = el::TlsServerAcceptOptions{_handshakeQuota};
@@ -61,7 +61,7 @@ Store the session before starting acceptance, as the collection in this example 
 
 Retaining the session keeps its connection and protocol state available throughout the asynchronous exchange.
 When a session owns the source invoking its callback, defer destruction until that callback has returned.
-The ``events()->invoke()`` call above schedules removal from the collection after finalization.
+The ``loop()->invoke()`` call above schedules removal from the collection after finalization.
 
 Install the TLS callbacks before passing the request to ``accept()`` so they can handle both handshake progress and
 early failures:
@@ -69,7 +69,7 @@ early failures:
 .. erbsland-demo::
     :source: network/MailReceiver/src/MailSession.hpp
     :show: c:TLS source owned until finalization, f:accept
-    :sha256: 44b21e126e827b4d308f7d594124fdb2ac40bb3f896602e8ccc217e20bca810a
+    :sha256: d51d98912503aece65bad1f511c58607649c22dbe8584543c4c63e15c859c156
 
 .. code-block:: cpp
 
@@ -124,14 +124,14 @@ It is not evidence of an authenticated client identity.
 .. erbsland-demo::
     :source: network/MailReceiver/src/MailSession.hpp
     :show: c:The receiver retains this session(+0,+1), c:Owns the queue used, f:installHandlers
-    :sha256: 0eecd7f3391fa943fe0f97812b36722ed334e0241ba90a15f1a15b11d14ed3bd
+    :sha256: d024d34a41543d365dad3e02c4777f321d6f63d318b8eea84810d9e70af52395
 
 .. code-block:: cpp
 
     /// The receiver retains this session until a deferred notification following onFinal.
     class MailSession : public std::enable_shared_from_this<MailSession> {
 
-    el::EventsPtr _events;                  ///< Owns the queue used to start application work after the checkpoint.
+    el::EventTargetPtr _events;             ///< Owns the queue used to start application work after the checkpoint.
 
     void installHandlers() {
         _connection->events()
@@ -173,7 +173,7 @@ Keep callbacks short: certificate verification and private-key operations alread
 waiting time counts toward the handshake deadline.
 Cancellation or timeout prevents a late background result from restarting the exchange.
 
-When your protocol sends first, schedule that work from ``onHandshakeCompleted`` with ``events()->invoke()``.
+When your protocol sends first, schedule that work from ``onHandshakeCompleted`` with ``loop()->invoke()``.
 This lets the handshake checkpoint return before the first application send.
 Retain the session in the queued callback and check that the connection is still active, because shutdown may occur
 before the queued work runs.
@@ -185,7 +185,7 @@ first application bytes:
     :show: f:beginConversation
     :exec: network/mail_receiver --once --timeout 8 --verbose
     :show-cmd-line:
-    :sha256: 6ab9091a02279af4fb90a8e956dfe601871b8c0145b213079355cb1865aebb9f
+    :sha256: 2c1bc85f191fbb8128d9efefff0031b670c0a1524a04c937e2a55cb3c4fdbef2
 
 .. code-block:: cpp
 
@@ -221,7 +221,7 @@ first application bytes:
         S: 250 Recipient accepted
         S: 354 End with a line containing a single dot
         ␛[97;49mReceived mail from sender@example.test for reader@example.test
-        Date: 6 Nov 2026 10:34:29 +0000
+        Date: 11 Nov 2026 16:27:47 +0000
         From: "Alex" <sender@example.test>
         To: "Sam" <reader@example.test>
 
@@ -265,14 +265,14 @@ establish new protected streams.
 .. erbsland-demo::
     :source: network/MailReceiver/src/MailReceiverApp.hpp
     :show: f:startListener
-    :sha256: c2e0b6f7f6a4c6588947bb8ee5be28c8b07ba2cd02670f850ce08b340a7168b7
+    :sha256: f50a1dea4d5d78bbfd5cb5db6986397fe067f4669a5cce279779f2b609318b59
 
 .. code-block:: cpp
 
     void startListener() {
         _connectionQuota = el::ConnectionQuota::create(el::ItemCount{16});
         _handshakeQuota = el::ConnectionQuota::create(el::ItemCount{4});
-        _listener = events()->get<el::Network>().createTcpListener();
+        _listener = loop()->get<el::Network>().createTcpListener();
         _listener->events()
             .onListening(
                 [this]() -> void { _mailLog->info("Listening on "_el, _listener->localEndpoint()->toString()); })
@@ -296,7 +296,7 @@ establish new protected streams.
             });
         _listener->start(_settings.endpoint, el::TcpListenerOptions{}.setConnectionQuota(_connectionQuota));
         if (_timeoutSeconds > 0) {
-            _timeout = events()->createTimer([this]() -> void { stopServer(); });
+            _timeout = loop()->createTimer([this]() -> void { stopServer(); });
             _timeout->startOnce(el::TimeDelta::seconds(_timeoutSeconds));
         }
     }
@@ -334,7 +334,7 @@ The following excerpt combines that pause with retaining and retrying the unacce
 .. erbsland-demo::
     :source: network/MailReceiver/src/MailSession.hpp
     :show: c:Replies waiting for send capacity, f:flushOutput
-    :sha256: 8846b3fe19eae6f0ce3d615fb4aa13f9f253811fbe9840933f1e572e4978b465
+    :sha256: 9adbc2a06f768e929ca63a5922476c8f26d3b9efdd86cb714dacd6e79e254759
 
 .. code-block:: cpp
 
@@ -398,7 +398,7 @@ selected profile, as the following excerpt demonstrates:
     :files: ../../../demos/network/MailReceiver/conf/mail_receiver_sni.elcl
     :exec: network/mail_receiver --config mail_receiver_sni.elcl --once --timeout 8 --verbose
     :show-cmd-line:
-    :sha256: 04792299f7bb531c89d16acad63eecccfebac5989586ce12605a6b83d19997c9
+    :sha256: 20dec53166cf4605ee0d179bf7572f3afad4d1c9ec67db354eb3c12f78df262a
 
 .. code-block:: cpp
 
@@ -433,7 +433,7 @@ selected profile, as the following excerpt demonstrates:
         S: 250 Recipient accepted
         S: 354 End with a line containing a single dot
         ␛[97;49mReceived mail from sender@example.test for reader@example.test
-        Date: 6 Nov 2026 10:34:30 +0000
+        Date: 11 Nov 2026 16:27:48 +0000
         From: "Alex" <sender@example.test>
         To: "Sam" <reader@example.test>
 
@@ -515,7 +515,7 @@ Stop accepting first, ask sessions to end, and quit only after their final callb
 .. erbsland-demo::
     :source: network/MailReceiver/src/MailReceiverApp.hpp
     :show: f:stopServer, f:finishIfStopped
-    :sha256: 3a3dba85a8b941e94ae947623c626fd935d9caf7026f0ae3811cd273d6e9592f
+    :sha256: 36db15e4fadf4f67e151cdcf42033c1f6bbb0ce83ee708edf23f89e63e713ffc
 
 .. code-block:: cpp
 
@@ -529,7 +529,7 @@ Stop accepting first, ask sessions to end, and quit only after their final callb
         for (const auto &[id, session] : _sessions) {
             session->stop();
         }
-        _shutdownDeadline = events()->createTimer([this]() -> void {
+        _shutdownDeadline = loop()->createTimer([this]() -> void {
             for (const auto &[id, session] : _sessions) {
                 session->abort();
             }

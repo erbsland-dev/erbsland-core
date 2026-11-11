@@ -25,7 +25,7 @@ using namespace text;
 using namespace text::literals;
 
 HttpServerRequest::HttpServerRequest(
-    event::EventsPtr ownerEvents,
+    event::EventTargetPtr ownerLoop,
     HttpRequestHead head,
     HttpRequestTarget target,
     HttpConnectionInfo connectionInfo,
@@ -35,7 +35,7 @@ HttpServerRequest::HttpServerRequest(
     HttpServerOptions options,
     const bool hasBody,
     const bool suppressBody) :
-    network::HttpServerRequest{std::move(ownerEvents)},
+    network::HttpServerRequest{std::move(ownerLoop)},
     _head{std::move(head)},
     _target{std::move(target)},
     _connectionInfo{std::move(connectionInfo)},
@@ -79,7 +79,7 @@ auto HttpServerRequest::session() const -> HttpServerSessionPtr {
 }
 
 void HttpServerRequest::streamBody() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final || _bodyPolicySelected || !_hasBody) {
         throw LogicFailure{"The request body policy cannot be changed in this state."_el};
     }
@@ -88,7 +88,7 @@ void HttpServerRequest::streamBody() {
 }
 
 void HttpServerRequest::aggregateBody(const unit::ByteCount maximumLength) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final || _bodyPolicySelected || !_hasBody) {
         throw LogicFailure{"The request body policy cannot be changed in this state."_el};
     }
@@ -97,7 +97,7 @@ void HttpServerRequest::aggregateBody(const unit::ByteCount maximumLength) {
 }
 
 void HttpServerRequest::rejectBody() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final || _bodyPolicySelected || !_hasBody) {
         return;
     }
@@ -106,21 +106,21 @@ void HttpServerRequest::rejectBody() {
 }
 
 void HttpServerRequest::pauseBody() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (!_final && _transaction != nullptr) {
         _transaction->pauseBody();
     }
 }
 
 void HttpServerRequest::resumeBody() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (!_final && _transaction != nullptr) {
         _transaction->resumeBody();
     }
 }
 
 void HttpServerRequest::sendResponse(HttpResponseHead response, ByteBlock body) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final) {
         return;
     }
@@ -155,7 +155,7 @@ void HttpServerRequest::sendResponse(HttpResponseHead response, ByteBlock body) 
 }
 
 void HttpServerRequest::sendText(String body, const HttpStatus status, HttpHeaders headers) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final) {
         return;
     }
@@ -167,7 +167,7 @@ void HttpServerRequest::sendText(String body, const HttpStatus status, HttpHeade
 }
 
 void HttpServerRequest::sendJson(String body, const HttpStatus status, HttpHeaders headers) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final) {
         return;
     }
@@ -179,7 +179,7 @@ void HttpServerRequest::sendJson(String body, const HttpStatus status, HttpHeade
 }
 
 void HttpServerRequest::sendJson(const data::json::JsonValue &body, const HttpStatus status, HttpHeaders headers) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final) {
         return;
     }
@@ -187,7 +187,7 @@ void HttpServerRequest::sendJson(const data::json::JsonValue &body, const HttpSt
 }
 
 void HttpServerRequest::sendError(const HttpStatus status, String message) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final) {
         return;
     }
@@ -198,7 +198,7 @@ void HttpServerRequest::sendError(const HttpStatus status, String message) {
 }
 
 void HttpServerRequest::sendRedirect(String location, const HttpStatus status, HttpHeaders headers) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final) {
         return;
     }
@@ -207,7 +207,7 @@ void HttpServerRequest::sendRedirect(String location, const HttpStatus status, H
 }
 
 void HttpServerRequest::startResponse(HttpResponseHead response) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final) {
         return;
     }
@@ -231,7 +231,7 @@ void HttpServerRequest::startResponse(HttpResponseHead response) {
 }
 
 auto HttpServerRequest::sendBody(const ByteBlock &data) -> NetworkSendStatus {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final) {
         return NetworkSendStatus::Closed;
     }
@@ -245,7 +245,7 @@ auto HttpServerRequest::sendBody(const ByteBlock &data) -> NetworkSendStatus {
 }
 
 void HttpServerRequest::finishBody(HttpHeaders trailers) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final) {
         return;
     }
@@ -265,7 +265,7 @@ auto HttpServerRequest::isFinal() const noexcept -> bool {
 }
 
 auto HttpServerRequest::events() -> network::HttpServerRequestEventEditor & {
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<HttpServerRequestEventEditor>(shared_from_this(), std::move(target), *this);
     }

@@ -9,6 +9,9 @@ namespace erbsland::conf::impl::vrc {
 
 using namespace text::literals;
 
+/// Prefix for a literal target name in a rules document.
+constexpr inline static auto cLiteralPrefix = "vr_literal_"_el;
+
 constexpr inline static auto cReservedEscape = "vr_vr_"_el;
 constexpr inline static auto cReservedPrefix = "vr_"_el;
 

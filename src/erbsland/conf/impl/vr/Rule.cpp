@@ -20,6 +20,75 @@ namespace erbsland::conf::impl {
 using namespace text;
 using namespace text::literals;
 
+auto Rule::roleForDefinitionName(const Name &name) -> RuleRole {
+    if (name.isIndex()) {
+        return RuleRole::Alternative;
+    }
+    if (name == Name::vrName(Name::VR::ReservedEntry)) {
+        return RuleRole::ListEntry;
+    }
+    if (name == Name::vrName(Name::VR::ReservedAny)) {
+        return RuleRole::AnyValue;
+    }
+    if (name == Name::vrName(Name::VR::ReservedName)) {
+        return RuleRole::NameConstraint;
+    }
+    return RuleRole::NamedValue;
+}
+
+auto Rule::childByRole(const RuleRole role) const -> RulePtr {
+    for (const auto &child : _children) {
+        if (child->role() == role) {
+            return child;
+        }
+    }
+    return {};
+}
+
+auto Rule::nameConstraintRule() const -> RulePtr {
+    return childByRole(RuleRole::NameConstraint);
+}
+
+auto Rule::listEntryRule() const -> RulePtr {
+    return childByRole(RuleRole::ListEntry);
+}
+
+auto Rule::anyValueRule() const -> RulePtr {
+    return childByRole(RuleRole::AnyValue);
+}
+
+auto Rule::childByValueName(const Name &name) const -> RulePtr {
+    for (const auto &child : _children) {
+        if (child->role() == RuleRole::NamedValue && child->valueName() == name) {
+            return child;
+        }
+    }
+    return {};
+}
+
+auto Rule::childForValuePathComponent(const Name &name) const -> RulePtr {
+    if (!name.isRegular() || _type == vr::RuleType::Alternatives) {
+        return {};
+    }
+    if ((_type == vr::RuleType::SectionList || _type == vr::RuleType::ValueList ||
+            _type == vr::RuleType::ValueMatrix) &&
+        name == Name::vrName(Name::VR::ReservedEntry)) {
+        return listEntryRule();
+    }
+    return childByValueName(name);
+}
+
+auto Rule::descendantByValuePath(const NamePath &path) const -> RulePtr {
+    if (path.empty()) {
+        return {};
+    }
+    auto result = childForValuePathComponent(path.front());
+    for (std::size_t index = 1; result != nullptr && index < path.size(); ++index) {
+        result = result->childForValuePathComponent(path.at(index));
+    }
+    return result;
+}
+
 void Rule::setEntryType(const vr::RuleType type) {
     if (_type != vr::RuleType::ValueList || !type.isScalar() || !_entryType.isUndefined()) {
         throwValidationError("EntryType requires a value list, a scalar entry type, and no previous EntryType."_el);
@@ -172,20 +241,20 @@ void Rule::addDependencyDefinition(const DependencyDefinitionPtr &dependencyDefi
     _dependencyDefinitions.emplace_back(dependencyDefinition);
 }
 
-auto Rule::child(const Name &name) const -> RulePtr {
-    return _children.rule(name);
+auto Rule::childByDefinitionName(const Name &name) const -> RulePtr {
+    return _children.ruleByDefinitionName(name);
 }
 
-auto Rule::child(const NamePath &namePath) const -> RulePtr {
+auto Rule::descendantByDefinitionPath(const NamePath &namePath) const -> RulePtr {
     if (namePath.empty()) {
         return {};
     }
-    auto result = child(namePath.front());
+    auto result = childByDefinitionName(namePath.front());
     if (result == nullptr) {
         return {};
     }
     for (std::size_t i = 1; i < namePath.size(); ++i) {
-        result = result->child(namePath.at(i));
+        result = result->childByDefinitionName(namePath.at(i));
         if (result == nullptr) {
             return {};
         }
@@ -196,8 +265,8 @@ auto Rule::child(const NamePath &namePath) const -> RulePtr {
 #ifdef ERBSLAND_CORE_CONF_INTERNAL_VIEWS
 auto internalView(const Rule &rule) -> InternalViewPtr {
     auto result = InternalView::create();
-    result->setValue("ruleNamePath", rule._ruleNamePath.toText());
-    result->setValue("targetNamePath", rule._targetNamePath.toText());
+    result->setValue("definitionNamePath", rule._definitionNamePath.toText());
+    result->setValue("valueNamePath", rule._valueNamePath.toText());
     result->setValue("type", rule._type.toText());
     result->setUnsafeText("title", rule._title);
     result->setUnsafeText("description", rule._description);
@@ -225,7 +294,7 @@ auto internalView(const Rule &rule) -> InternalViewPtr {
     result->setValue(
         "children",
         InternalView::createNamedList(rule._children.begin(), rule._children.end(), [](const RulePtr &child) -> String {
-            return StringFormat{"Rule \"{}\""_el}.build(child->ruleNamePath().toText());
+            return StringFormat{"Rule \"{}\""_el}.build(child->definitionNamePath().toText());
         }));
     return result;
 }

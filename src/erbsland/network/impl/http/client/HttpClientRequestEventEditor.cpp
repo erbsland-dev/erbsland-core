@@ -8,7 +8,7 @@
 namespace erbsland::network::impl {
 
 HttpClientRequestEventEditor::HttpClientRequestEventEditor(
-    event::EventSourcePtr source, event::EventsPtr target, HttpClientRequest &request) :
+    event::EventSourcePtr source, event::EventTargetPtr target, HttpClientRequest &request) :
     network::HttpClientRequestEventEditor{std::move(source), std::move(target)}, _request{request} {
 }
 

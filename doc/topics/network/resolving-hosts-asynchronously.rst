@@ -38,7 +38,7 @@ The final callback is the natural place to release the lookup or start the next 
 
 .. erbsland-demo::
     :source: network/HostLookupDomain/main.cpp
-    :sha256: 314651951ed4acce978fff49a7fbd3ff12f9b9e925d9d9ecd61265820326d1e6
+    :sha256: 059cd15dda4b6911faa5cd80f3f07cb2171fa1579669ebe67b158eeaf75972ed
 
 .. code-block:: cpp
 
@@ -48,7 +48,7 @@ The final callback is the natural place to release the lookup or start the next 
     /// Resolve a public host name without blocking the event loop.
     /// A host can resolve to several addresses, so successful code processes the complete result list.
     void resolveDocumentationHost() {
-        const auto events = el::application().events();
+        const auto events = el::application().loop();
         lookup = events->get<el::Network>().createHostLookup();
         lookup->events()
             .onResolved([](const el::List<el::IpAddress> &addresses) -> void {
@@ -68,7 +68,7 @@ The final callback is the natural place to release the lookup or start the next 
     auto main(const int argc, char *argv[]) -> int {
         auto app = el::Application{argc, argv};
         app.enableTerminal();
-        app.events()->invoke(resolveDocumentationHost);
+        app.loop()->invoke(resolveDocumentationHost);
         return app.run();
     }
 
@@ -129,14 +129,14 @@ If your event-driven application has a standard diagnostic boundary, throw
 
 .. erbsland-demo::
     :source: network/HostLookupFailure/main.cpp
-    :sha256: 57793b49146207fabaf645cf5a5d2068bf068ec60f4dd39917256e41d4d2268b
+    :sha256: 73cd986e2fdc253f6085d1a6051b11d8d06df53a1943e792beed8e905af8ea9d
 
 .. code-block:: cpp
 
     /// Resolver failures arrive through `onError()` as a structured context.
     /// Throwing `NetworkError` transfers that context to the application's standard diagnostic boundary.
     void resolveMissingHost() {
-        const auto events = el::application().events();
+        const auto events = el::application().loop();
         lookupData.lookup = events->get<el::Network>().createHostLookup();
         lookupData.lookup->events().onError(
             [](const el::NetworkErrorContext &context) -> void { throw el::NetworkError{context}; });
@@ -146,7 +146,7 @@ If your event-driven application has a standard diagnostic boundary, throw
     auto main(const int argc, char *argv[]) -> int {
         auto app = el::Application{argc, argv};
         app.enableTerminal();
-        app.events()->invoke(resolveMissingHost);
+        app.loop()->invoke(resolveMissingHost);
         return app.run();
     }
 
@@ -173,18 +173,18 @@ The following demo creates a managed event thread and verifies that the lookup h
 .. erbsland-demo::
     :source: network/HostLookupEventThread/main.cpp
     :exec: network/host_lookup_event_thread
-    :sha256: bd32da6845b589af3f3901ba4bb5be2f87571d5eca951406df5988d96a94f69d
+    :sha256: 22c7dd78ccef6de683ea4c3eb6f5a8a2de6f6d279defff49871a07847e2cca43
 
 .. code-block:: cpp
 
     /// Create and start a lookup in the event loop that shall own it.
     /// Its handlers run in that same loop, so other application state can stay confined to the chosen event thread.
     void resolveInWorkerLoop() {
-        const auto workerEvents = el::currentEvents();
+        const auto workerEvents = el::currentLoop();
         lookupData.lookup = workerEvents->get<el::Network>().createHostLookup();
         lookupData.lookup->events()
             .onResolved([workerEvents](const el::List<el::IpAddress> &) -> void {
-                const auto runsInWorker = el::currentEvents() == workerEvents;
+                const auto runsInWorker = el::currentLoop() == workerEvents;
                 el::stdOut()->printLine("Handler runs in worker event loop: "_el, runsInWorker);
             })
             .onFinal([]() -> void { el::application().quit(); });
@@ -196,7 +196,7 @@ The following demo creates a managed event thread and verifies that the lookup h
         app.enableTerminal();
         lookupData.eventThread = app.createEventThread();
         lookupData.eventThread->start();
-        lookupData.eventThread->events()->invoke(resolveInWorkerLoop);
+        lookupData.eventThread->loop()->invoke(resolveInWorkerLoop);
         return app.run();
     }
 
@@ -223,14 +223,14 @@ Cancelling an inactive lookup or repeating cancellation has no effect.
 .. erbsland-demo::
     :source: network/HostLookupCancel/main.cpp
     :exec: network/host_lookup_cancel
-    :sha256: 518bf37ecb077805e2536ae5a85780894bfe02247013400bd5f169aecdb67971
+    :sha256: aaa866bed98e65a4556b5b11cab92c84283cb0c637ca4249a169e37bb4a69c25
 
 .. code-block:: cpp
 
     /// Cancel a lookup when its result is no longer useful.
     /// Cancellation is safe to repeat and prevents a pending completion handler from running when it wins the race.
     void cancelUnneededLookup() {
-        const auto events = el::application().events();
+        const auto events = el::application().loop();
         lookup = events->get<el::Network>().createHostLookup();
         lookup->events()
             .onResolved([](const el::List<el::IpAddress> &) -> void {
@@ -248,7 +248,7 @@ Cancelling an inactive lookup or repeating cancellation has no effect.
     auto main(const int argc, char *argv[]) -> int {
         auto app = el::Application{argc, argv};
         app.enableTerminal();
-        app.events()->invoke(cancelUnneededLookup);
+        app.loop()->invoke(cancelUnneededLookup);
         return app.run();
     }
 
@@ -281,14 +281,14 @@ Every normally completed or cancelled operation reaches this handler.
 .. erbsland-demo::
     :source: network/HostLookupLifetime/main.cpp
     :exec: network/host_lookup_lifetime
-    :sha256: 8cbd4fcb85b2a3b6063591bd51c43d8021035573a42ff79813f993ec7b829854
+    :sha256: 15bbb4d92df67e043bba9f782358b770e7d52bb49c61642310ac28ea36ffcbbd
 
 .. code-block:: cpp
 
     /// Store the lookup in the object that needs its result and configure its source-owned editor directly.
     /// The lookup owns its handlers and can be released safely from its final handler.
     void resolveAndRelease() {
-        const auto events = el::application().events();
+        const auto events = el::application().loop();
         lookup = events->get<el::Network>().createHostLookup();
         lookup->events()
             .onResolved([](const el::List<el::IpAddress> &addresses) -> void {
@@ -305,7 +305,7 @@ Every normally completed or cancelled operation reaches this handler.
     auto main(const int argc, char *argv[]) -> int {
         auto app = el::Application{argc, argv};
         app.enableTerminal();
-        app.events()->invoke(resolveAndRelease);
+        app.loop()->invoke(resolveAndRelease);
         return app.run();
     }
 

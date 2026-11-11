@@ -3,7 +3,7 @@
 #include "TlsClientConnection.hpp"
 
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/Literals.hpp"
 
 namespace erbsland::network::impl {
@@ -32,7 +32,7 @@ void TlsClientConnection::ensureIdleTimer() {
     const auto delay = time::TimePoint::now().timeDeltaTo(_idleDeadline);
     const auto weakSelf =
         std::weak_ptr<TlsClientConnection>{std::static_pointer_cast<TlsClientConnection>(shared_from_this())};
-    ownerEvents()->invokeAfter(delay, [weakSelf, generation]() -> void {
+    ownerLoop()->invokeAfter(delay, [weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->handleIdleTimeout(generation);
         }
@@ -97,7 +97,7 @@ void TlsClientConnection::enterClosing(const ConnectionCloseOrigin origin) {
     const auto deadline = time::TimePoint::now() + _options.closeTimeout();
     const auto weakSelf =
         std::weak_ptr<TlsClientConnection>{std::static_pointer_cast<TlsClientConnection>(shared_from_this())};
-    ownerEvents()->invokeAfter(_options.closeTimeout(), [weakSelf, generation, deadline]() -> void {
+    ownerLoop()->invokeAfter(_options.closeTimeout(), [weakSelf, generation, deadline]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->handleCloseTimeout(generation, deadline);
         }

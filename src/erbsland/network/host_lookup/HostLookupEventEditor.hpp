@@ -42,7 +42,7 @@ protected:
     /// Create an editor for a host lookup.
     /// @param source The lookup that owns the editor.
     /// @param target The callback target.
-    HostLookupEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+    HostLookupEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
         CommonEventEditor{std::move(source), std::move(target)} {}
 };
 

@@ -18,7 +18,7 @@ namespace erbsland::conf::impl {
 
 using namespace text::literals;
 
-Rules::Rules() : _root{std::make_shared<Rule>()} {
+Rules::Rules() : _root{std::make_shared<Rule>(RuleRole::Root)} {
     _root->setType(vr::RuleType::Section);
 }
 
@@ -66,11 +66,11 @@ auto Rules::addRule(const RulePtr &rule) -> void {
     if (rule == nullptr) {
         throw err::ParameterFailure{"Cannot add a null rule"_el, "rule"_el};
     }
-    auto parentRule = _root;                 // the parent rule where the given one should be added.
-    const auto &path = rule->ruleNamePath(); // The original name path of the rule.
+    auto parentRule = _root;                       // the parent rule where the given one should be added.
+    const auto &path = rule->definitionNamePath(); // The original name path of the rule.
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!path.empty(), "The name-path of a rule must not be empty"_el);
     if (path.size() > 1) {
-        parentRule = ruleForNamePath(path, path.size() - 1);
+        parentRule = ruleByDefinitionPath(path, path.size() - 1);
         if (parentRule == nullptr) {
             throwValidationError(
                 text::StringFormat{"Adding a rule failed, because the parent rule for rule '{}' does not exist"_el}
@@ -86,11 +86,11 @@ auto Rules::addAlternativeRule(const RulePtr &rule) -> void {
     if (rule == nullptr) {
         throw err::ParameterFailure{"Cannot add a null rule"_el, "rule"_el};
     }
-    auto parentRule = _root;                 // the parent rule where the given one should be added.
-    const auto &path = rule->ruleNamePath(); // The original name path of the rule.
+    auto parentRule = _root;                       // the parent rule where the given one should be added.
+    const auto &path = rule->definitionNamePath(); // The original name path of the rule.
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!path.empty(), "The name-path of a rule must not be empty"_el);
     if (path.size() > 1) {
-        parentRule = ruleForNamePath(path, path.size() - 1);
+        parentRule = ruleByDefinitionPath(path, path.size() - 1);
         if (parentRule == nullptr) {
             throwValidationError(
                 text::StringFormat{"Adding a rule failed, because the parent rule for rule '{}' does not exist"_el}
@@ -98,11 +98,11 @@ auto Rules::addAlternativeRule(const RulePtr &rule) -> void {
         }
     }
     ERBSLAND_CORE_CONF_REQUIRE_DEBUG(parentRule != nullptr, "At this point, parentRule must not be null"_el);
-    auto alternativeRule = parentRule->child(path.back());
+    auto alternativeRule = parentRule->childByDefinitionName(path.back());
     if (alternativeRule == nullptr) {
-        alternativeRule = std::make_shared<Rule>();
-        alternativeRule->setRuleNamePath(path);
-        alternativeRule->setTargetNamePath(path);
+        alternativeRule = std::make_shared<Rule>(rule->role());
+        alternativeRule->setDefinitionNamePath(path);
+        alternativeRule->setValueNamePath(rule->valueNamePath());
         alternativeRule->setType(vr::RuleType::Alternatives);
         alternativeRule->setParent(parentRule);
         parentRule->addChild(alternativeRule);
@@ -116,9 +116,10 @@ auto Rules::addAlternativeRule(const RulePtr &rule) -> void {
     }
     // Make sure the rule, as part of the alternative, gets a valid index.
     const auto newIndex = alternativeRule->children().size();
-    auto newPath = rule->ruleNamePath();
+    auto newPath = rule->definitionNamePath();
     newPath.append(Name::createIndex(newIndex));
-    rule->setRuleNamePath(newPath);
+    rule->setDefinitionNamePath(newPath);
+    rule->setRole(RuleRole::Alternative);
     rule->setParent(alternativeRule);
     alternativeRule->addChild(rule);
 }
@@ -132,7 +133,7 @@ void Rules::validateDefinition() {
     validator.validate();
 }
 
-auto Rules::ruleForNamePath(const NamePath &path, std::size_t maxDepth) const -> RulePtr {
+auto Rules::ruleByDefinitionPath(const NamePath &path, std::size_t maxDepth) const -> RulePtr {
     if (path.empty()) {
         return {};
     }
@@ -143,7 +144,7 @@ auto Rules::ruleForNamePath(const NamePath &path, std::size_t maxDepth) const ->
     }
     auto result = _root;
     for (std::size_t i = 0; i < maxDepth; ++i) {
-        result = result->child(path.at(i));
+        result = result->childByDefinitionName(path.at(i));
         if (result == nullptr) {
             return {};
         }

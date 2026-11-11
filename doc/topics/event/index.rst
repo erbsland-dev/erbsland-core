@@ -12,19 +12,15 @@ Event System
     overview
     events_in_erbsland_core
     using_event_loops
-    processing_work_on_event_threads
-    using_event_loops_in_application_parts
     using_event_apis
-    handling_event_errors
     callback_lifetimes
     scheduling_work
     event_bindings
+    processing_work_on_event_threads
+    using_event_loops_in_application_parts
     event_workflows
     communicating_between_loops
+    handling_event_errors
     shutting_down_event_work
     controlling_event_load
-    running_event_loops_directly
-    creating_event_sources
-    defining_custom_events
-    writing_event_backends
-    integrating_event_loop_drivers
+    planned/index

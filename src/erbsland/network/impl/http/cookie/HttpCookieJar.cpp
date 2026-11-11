@@ -5,8 +5,8 @@
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/CurrentEvents.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/CurrentLoop.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/CharSet.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringCharReader.hpp"
@@ -28,7 +28,7 @@ using namespace err;
 using namespace text;
 using namespace text::literals;
 
-HttpCookieJar::HttpCookieJar(event::EventsPtr ownerEvents) : _ownerEvents{std::move(ownerEvents)} {
+HttpCookieJar::HttpCookieJar(event::EventTargetPtr ownerLoop) : _ownerLoop{std::move(ownerLoop)} {
 }
 
 auto HttpCookieJar::options() const noexcept -> HttpCookieJarOptions {
@@ -181,7 +181,7 @@ auto HttpCookieJar::requestCookieHeader(const Url &url) -> String {
 }
 
 void HttpCookieJar::verifyOwner() const {
-    if (event::currentEvents() != _ownerEvents) {
+    if (event::currentLoop() != _ownerLoop) {
         throw LogicFailure{"HTTP cookie jars are owned by their session event loop."_el};
     }
 }

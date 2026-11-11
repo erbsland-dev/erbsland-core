@@ -39,7 +39,8 @@ Do not append generic invitations to explore the source or reminders that demo b
 Add source links or run instructions only when they serve a specific teaching purpose, such as locating a supporting
 implementation discussed in the text or demonstrating behavior the reader needs to observe.
 
-Add a managed block, synchronize it, and inspect the rendered result:
+Add a managed block, synchronize it, and inspect the rendered result.
+On topic pages, place this block inside a practical discussion as described below:
 
 .. code-block:: rst
 
@@ -57,6 +58,82 @@ Do not edit that generated content: update the demo, the selectors, or the execu
 This demo has both a namespaced and a global ``main``; ``f:main`` would therefore be ambiguous.
 The example selects the setup function and seven following lines to include the application entry point.
 Review offsets when the surrounding code changes.
+
+Source-Only Templates
+=====================
+
+Sources below ``demos/<domain>/templates/`` are compile-only application starting points.
+Compile and link each template before extracting its source, but never execute it for documentation or validation.
+Use ``:source:``, optional ``:show:`` and ``:hide:``, and the generated ``:sha256:`` metadata only.
+For example:
+
+.. code-block:: rst
+
+    .. erbsland-demo::
+        :source: event/templates/ApplicationStartup/DirectInitialization/main.cpp
+        :show: f:main
+
+    .. erbsland-demo-end::
+
+Execution options (``exec``, numbered ``exec-N``, their exit-code options, ``files``, and ``show-cmd-line`` are
+forbidden on template-source blocks.
+The synchronizer rejects them before execution or cached-block reuse, even if a stored fingerprint matches.
+Sphinx reports the same misuse when validating saved documentation.
+Template executables live outside ``demo-apps`` so the normal demo runner cannot select them.
+
+Place the source excerpts in a labeled practical block and identify both the business code the reader must add and the
+lifecycle supplied by the framework.
+A template's missing business operation may leave its loop running indefinitely; do not add a capture command to make
+its documentation look like an executed example.
+Apps and snippets remain runnable examples, with source paths under ``apps`` and ``snippets`` in categorized domains.
+Legacy paths in other domains remain supported.
+
+Separate Practical Discussion
+=============================
+
+Use ``erbsland-in-practice-begin`` and ``erbsland-in-practice-end`` to set apart a practical walkthrough from the
+surrounding explanation of an API.
+Topic pages must follow :ref:`topic-page-practical-separation`: every ``erbsland-demo`` block belongs inside a practical
+block, together with the complete discussion of that example.
+The whole discussion, including its demo panels, appears in a lightly tinted blue box with a small blue label.
+
+Pages under ``doc/demo_apps`` are complete application walkthroughs and use ``erbsland-demo`` directly, without
+practical wrappers.
+Follow :doc:`demo_app_page` for their teaching structure.
+On a topic page, link from a focused practical block to the full application walkthrough when the surrounding
+architecture would distract from the concept being taught.
+
+Open the practical block before introducing the concrete example, and close it after interpreting its code, output, and
+design choices.
+Use the same boundary for a walkthrough written with ordinary code blocks or prose alone.
+Explain general API requirements in the regular topic text; repeat them beside the example when needed for safe use.
+A section without a concrete walkthrough or demo discussion does not need a practical block.
+
+.. code-block:: rst
+
+    .. erbsland-in-practice-begin:: How the File-Size Monitor Initializes
+
+    The monitor stores its timer so repeated callbacks remain active.
+
+    .. erbsland-demo::
+        :source: event/apps/FileSizeMonitor/main.cpp
+        :show: f:initialize, f:poll
+
+    .. erbsland-demo-end::
+
+    The stored timer survives after initialization returns.
+
+    .. erbsland-in-practice-end::
+
+The title after ``begin::`` is optional; omitting it uses "In Practice".
+Use the title to briefly summarize the practical discussion in a few words, allowing the reader to skip the block
+entirely while skimming the page.
+Keep the discussion at the same indentation as the surrounding text, with blank lines around each directive.
+Both markers must belong to the same section and parent container; close the discussion before starting a new section.
+Use ``rubric`` for a heading inside the box.
+Paragraphs, lists, code blocks, and complete demo blocks can appear between the markers.
+Missing or unmatched markers produce a build warning.
+Non-HTML output retains the label and discussion text.
 
 Choose Source Lines
 ===================

@@ -6,7 +6,7 @@
 
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/AnyString.hpp"
 #include "../../../../text/AsciiCategory.hpp"
 #include "../../../../text/Literals.hpp"
@@ -37,7 +37,7 @@ void Http1Transaction::recordBodyProgress() {
     const auto weakSelf = Http1TransactionWeakPtr{shared_from_this()};
     const auto generation = _timerGeneration;
     const auto deadline = _bodyDeadline;
-    _connection->ownerEvents()->invokeAfter(_options.bodyIdleTimeout(), [weakSelf, generation, deadline]() -> void {
+    _connection->ownerLoop()->invokeAfter(_options.bodyIdleTimeout(), [weakSelf, generation, deadline]() -> void {
         if (const auto self = weakSelf.lock()) {
             self->handleBodyTimeout(generation, deadline);
         }
@@ -47,12 +47,12 @@ void Http1Transaction::recordBodyProgress() {
 void Http1Transaction::startInitialTimers() {
     const auto weakSelf = Http1TransactionWeakPtr{shared_from_this()};
     const auto generation = _timerGeneration;
-    _connection->ownerEvents()->invokeAfter(_options.headerTimeout(), [weakSelf, generation]() -> void {
+    _connection->ownerLoop()->invokeAfter(_options.headerTimeout(), [weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock()) {
             self->handleHeaderTimeout(generation);
         }
     });
-    _connection->ownerEvents()->invokeAfter(_options.totalTimeout(), [weakSelf, generation]() -> void {
+    _connection->ownerLoop()->invokeAfter(_options.totalTimeout(), [weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock()) {
             self->handleTotalTimeout(generation);
         }
@@ -68,7 +68,7 @@ void Http1Transaction::startClosing() {
     _connection->close();
     const auto weakSelf = Http1TransactionWeakPtr{shared_from_this()};
     const auto generation = _timerGeneration;
-    _connection->ownerEvents()->invokeAfter(_options.closeTimeout(), [weakSelf, generation]() -> void {
+    _connection->ownerLoop()->invokeAfter(_options.closeTimeout(), [weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock()) {
             self->handleCloseTimeout(generation);
         }
@@ -95,7 +95,7 @@ void Http1Transaction::handleBodyTimeout(const std::uint64_t generation, const t
     const auto now = time::TimePoint::now();
     if (now < deadline) {
         const auto weakSelf = Http1TransactionWeakPtr{shared_from_this()};
-        _connection->ownerEvents()->invokeAfter(now.timeDeltaTo(deadline), [weakSelf, generation, deadline]() -> void {
+        _connection->ownerLoop()->invokeAfter(now.timeDeltaTo(deadline), [weakSelf, generation, deadline]() -> void {
             if (const auto self = weakSelf.lock()) {
                 self->handleBodyTimeout(generation, deadline);
             }

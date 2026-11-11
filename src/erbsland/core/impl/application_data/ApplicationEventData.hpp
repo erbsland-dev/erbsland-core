@@ -25,9 +25,9 @@ public:
 
 public:
     /// Access the event target of the main event loop.
-    [[nodiscard]] auto events() const noexcept -> const event::EventLoopPtr &;
+    [[nodiscard]] auto loop() const noexcept -> const event::EventLoopPtr &;
     /// Access the main event loop.
-    [[nodiscard]] auto eventLoop() noexcept -> event::EventLoop &;
+    [[nodiscard]] auto mainEventLoop() noexcept -> event::EventLoop &;
     /// Access the private application event registry.
     [[nodiscard]] auto eventRegistry() noexcept -> event::EventRegistry &;
     /// Create and retain a managed event thread.
@@ -35,7 +35,7 @@ public:
     /// @return The new, unstarted event thread.
     [[nodiscard]] auto createEventThread(const event::EventLoopOptions &options = {}) -> event::ManagedEventThreadPtr;
     /// Run the main event loop and capture its first callback failure.
-    void runLoop();
+    void runMainEventLoop();
     /// Test whether the main event loop has a pending quit request.
     [[nodiscard]] auto isQuitRequested() const noexcept -> bool;
     /// Finish event processing, join managed threads, and rethrow a captured loop error.

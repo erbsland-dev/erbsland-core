@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/CurrentEvents.hpp>
+#include <erbsland/CurrentLoop.hpp>
 #include <erbsland/EventLoop.hpp>
 #include <erbsland/LogicFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -25,14 +25,14 @@ public:
             REQUIRE_NOT_EQUAL(&utilities, &first->get<el::Utilities>());
             REQUIRE_EQUAL(utilities.backendId(), el::EventRegistry::utilitiesBackend());
             pool = utilities.createWorkerPool(el::WorkerPoolOptions{}.setWorkerCount(2));
-            REQUIRE_EQUAL(pool->ownerEvents(), second);
+            REQUIRE_EQUAL(pool->ownerLoop(), second);
             REQUIRE_EQUAL(pool->workerCount(), 2U);
             REQUIRE_EQUAL(pool->events().target(), second);
             pool->events().onFinal([&]() -> void { calls.push_back(2); });
             pool->submit(
                 []() -> int { return 42; },
                 [&](int result) -> void {
-                    REQUIRE_EQUAL(el::currentEvents(), second);
+                    REQUIRE_EQUAL(el::currentLoop(), second);
                     REQUIRE_EQUAL(result, 42);
                     calls.push_back(1);
                 });

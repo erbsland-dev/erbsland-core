@@ -9,8 +9,9 @@
 #include <erbsland/ApplicationPartIdentifier.hpp>
 #include <erbsland/ApplicationPartManager.hpp>
 #include <erbsland/ApplicationPartManagerEventEditor.hpp>
+#include <erbsland/CurrentLoop.hpp>
 #include <erbsland/EventLoopOptions.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/ExitCode.hpp>
 #include <erbsland/Literals.hpp>
 #include <erbsland/ManagedEventThread.hpp>
@@ -40,11 +41,16 @@ public:
 public:
     static void reset() noexcept {
         cRegisterCount = 0;
-        cParseCount = 0;
+        cHandleOptionsCount = 0;
         cInitializeCount = 0;
+        cRunningCount = 0;
         cCleanupCount = 0;
+        cRunningSawQueuedCallback = false;
+        cRunningHasLoopContext = false;
+        cRunningSawRunningState = false;
         cQuitOnRunning = false;
         cFailOnInitialize = false;
+        cFailOnRunning = false;
     }
 
 protected:
@@ -53,18 +59,27 @@ protected:
             ++cRegisterCount;
         }
     }
-    void parseCommandLine(const el::options::OptionValuesPtr &values) override {
+    void handleCommandLineOptions(const el::options::OptionValuesPtr &values) override {
         if (values != nullptr) {
-            ++cParseCount;
+            ++cHandleOptionsCount;
         }
     }
-    void initialize() override {
+    void onInitialize() override {
         ++cInitializeCount;
         if (cFailOnInitialize) {
             throw el::err::RuntimeError{"expected application-part failure"_el};
         }
+        loop()->invoke([this]() -> void { _initializationCallbackDispatched = true; });
     }
-    void running() override {
+    void onRunning() override {
+        ++cRunningCount;
+        cRunningSawQueuedCallback = _initializationCallbackDispatched;
+        cRunningHasLoopContext = el::event::currentLoop() == loop();
+        cRunningSawRunningState = state() == ApplicationPartState::Running &&
+            partManager().partState(partIdentifier()) == ApplicationPartState::Running;
+        if (cFailOnRunning) {
+            throw el::err::RuntimeError{"expected running callback failure"_el};
+        }
         if (cQuitOnRunning) {
             application().quit(el::unit::ExitCode{17});
             application().quit(el::unit::ExitCode{23});
@@ -74,18 +89,26 @@ protected:
 
 public:
     inline static std::atomic<int> cRegisterCount{0};
-    inline static std::atomic<int> cParseCount{0};
+    inline static std::atomic<int> cHandleOptionsCount{0};
     inline static std::atomic<int> cInitializeCount{0};
+    inline static std::atomic<int> cRunningCount{0};
     inline static std::atomic<int> cCleanupCount{0};
+    inline static std::atomic<bool> cRunningSawQueuedCallback{false};
+    inline static std::atomic<bool> cRunningHasLoopContext{false};
+    inline static std::atomic<bool> cRunningSawRunningState{false};
     inline static std::atomic<bool> cQuitOnRunning{false};
     inline static std::atomic<bool> cFailOnInitialize{false};
+    inline static std::atomic<bool> cFailOnRunning{false};
+
+private:
+    bool _initializationCallbackDispatched{false}; ///< Records dispatch between initialization and running.
 };
 
 class ApplicationPartOrderApplication final : public Application {
 protected:
     void handleCommandLineOptions(const el::options::OptionValuesPtr &values) override {
-        optionsHandledBeforePartParsing = values != nullptr && ApplicationIntegratedPart::cRegisterCount.load() == 1 &&
-            ApplicationIntegratedPart::cParseCount.load() == 0 &&
+        optionsHandledBeforePartHandling = values != nullptr && ApplicationIntegratedPart::cRegisterCount.load() == 1 &&
+            ApplicationIntegratedPart::cHandleOptionsCount.load() == 0 &&
             partManager()->state() == ApplicationPartManagerState::Ready;
     }
     void cleanup() noexcept override {
@@ -93,7 +116,7 @@ protected:
     }
 
 public:
-    bool optionsHandledBeforePartParsing{false}; ///< Whether the hook preceded prepared-part option handling.
+    bool optionsHandledBeforePartHandling{false}; ///< Whether the hook preceded prepared-part option handling.
     inline static std::atomic<bool> cPartWasCleanBeforeApplication{false};
 };
 
@@ -114,9 +137,13 @@ public:
 
         REQUIRE_EQUAL(app.run(), 17);
         REQUIRE_EQUAL(ApplicationIntegratedPart::cRegisterCount.load(), 1);
-        REQUIRE_EQUAL(ApplicationIntegratedPart::cParseCount.load(), 1);
+        REQUIRE_EQUAL(ApplicationIntegratedPart::cHandleOptionsCount.load(), 1);
         REQUIRE_EQUAL(ApplicationIntegratedPart::cInitializeCount.load(), 1);
+        REQUIRE_EQUAL(ApplicationIntegratedPart::cRunningCount.load(), 1);
         REQUIRE_EQUAL(ApplicationIntegratedPart::cCleanupCount.load(), 1);
+        REQUIRE(ApplicationIntegratedPart::cRunningSawQueuedCallback.load());
+        REQUIRE(ApplicationIntegratedPart::cRunningHasLoopContext.load());
+        REQUIRE(ApplicationIntegratedPart::cRunningSawRunningState.load());
         REQUIRE_EQUAL(app.partManager()->state(), ApplicationPartManagerState::Stopped);
     }
 
@@ -130,7 +157,7 @@ public:
 
         REQUIRE_EQUAL(app.run(), 17);
         REQUIRE(ApplicationPartOrderApplication::cPartWasCleanBeforeApplication.load());
-        REQUIRE(app.optionsHandledBeforePartParsing);
+        REQUIRE(app.optionsHandledBeforePartHandling);
     }
 
     void testCustomMainDoesNotAutomaticallyStartParts() {
@@ -142,12 +169,12 @@ public:
 
         REQUIRE_EQUAL(app.run(), 23);
         REQUIRE_EQUAL(ApplicationIntegratedPart::cRegisterCount.load(), 1);
-        REQUIRE_EQUAL(ApplicationIntegratedPart::cParseCount.load(), 1);
+        REQUIRE_EQUAL(ApplicationIntegratedPart::cHandleOptionsCount.load(), 1);
         REQUIRE_EQUAL(ApplicationIntegratedPart::cInitializeCount.load(), 0);
         REQUIRE_EQUAL(app.partManager()->state(), ApplicationPartManagerState::Stopped);
     }
 
-    void testHelpSkipsPartParsingAndStartup() {
+    void testHelpSkipsPartOptionHandlingAndStartup() {
         ApplicationIntegratedPart::reset();
         char arg0[] = "tool";
         char arg1[] = "--help";
@@ -160,7 +187,7 @@ public:
 
         REQUIRE_EQUAL(app.run(), 0);
         REQUIRE_EQUAL(ApplicationIntegratedPart::cRegisterCount.load(), 1);
-        REQUIRE_EQUAL(ApplicationIntegratedPart::cParseCount.load(), 0);
+        REQUIRE_EQUAL(ApplicationIntegratedPart::cHandleOptionsCount.load(), 0);
         REQUIRE_EQUAL(ApplicationIntegratedPart::cInitializeCount.load(), 0);
     }
 
@@ -198,7 +225,7 @@ public:
         app.registerPart<ApplicationIntegratedPart>();
         const auto worker = app.createEventThread(
             el::event::EventLoopOptions{}.setErrorPolicy(el::event::EventLoopErrorPolicy::FailApplication));
-        worker->events()->invoke([]() -> void { throw el::err::RuntimeError{"managed failure"_el}; });
+        worker->loop()->invoke([]() -> void { throw el::err::RuntimeError{"managed failure"_el}; });
         const auto subscription =
             app.partManager()->events().addStateChanged([worker](ApplicationPartManagerState state) -> void {
                 if (state == ApplicationPartManagerState::Running) {
@@ -209,7 +236,7 @@ public:
         const auto redirect = el::stream::redirectStandardStreams(output, output);
         REQUIRE_EQUAL(app.run(), el::unit::ExitCode::failure().toRawValue());
         REQUIRE(ApplicationPartOrderApplication::cPartWasCleanBeforeApplication.load());
-        REQUIRE(app.optionsHandledBeforePartParsing);
+        REQUIRE(app.optionsHandledBeforePartHandling);
         REQUIRE_EQUAL(app.partManager()->state(), ApplicationPartManagerState::Stopped);
         REQUIRE_FALSE(worker->isRunning());
     }
@@ -225,7 +252,27 @@ public:
 
         REQUIRE_EQUAL(app.run(), el::unit::ExitCode::failure().toRawValue());
         REQUIRE_EQUAL(ApplicationIntegratedPart::cInitializeCount.load(), 1);
+        REQUIRE_EQUAL(ApplicationIntegratedPart::cRunningCount.load(), 0);
         REQUIRE_EQUAL(ApplicationIntegratedPart::cCleanupCount.load(), 1);
+        REQUIRE_EQUAL(app.partManager()->state(), ApplicationPartManagerState::Failed);
+    }
+
+    void testRunningCallbackFailurePropagatesThroughApplicationRun() {
+        ApplicationIntegratedPart::reset();
+        ApplicationIntegratedPart::cFailOnRunning = true;
+        auto scope = ApplicationTestScope<Application>{};
+        auto &app = scope.app();
+        app.registerPart<ApplicationIntegratedPart>();
+        const auto output = el::stream::AnyStringBuilderStream::create();
+        const auto redirect = el::stream::redirectStandardStreams(output, output);
+
+        REQUIRE_EQUAL(app.run(), el::unit::ExitCode::failure().toRawValue());
+        REQUIRE_EQUAL(ApplicationIntegratedPart::cInitializeCount.load(), 1);
+        REQUIRE_EQUAL(ApplicationIntegratedPart::cRunningCount.load(), 1);
+        REQUIRE_EQUAL(ApplicationIntegratedPart::cCleanupCount.load(), 1);
+        REQUIRE(ApplicationIntegratedPart::cRunningSawQueuedCallback.load());
+        REQUIRE(ApplicationIntegratedPart::cRunningHasLoopContext.load());
+        REQUIRE(ApplicationIntegratedPart::cRunningSawRunningState.load());
         REQUIRE_EQUAL(app.partManager()->state(), ApplicationPartManagerState::Failed);
     }
 };

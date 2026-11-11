@@ -27,7 +27,7 @@ class HttpClientSession final : public network::HttpClientSession {
 
 public:
     /// Create an active client session owned by one event loop.
-    explicit HttpClientSession(event::EventsPtr ownerEvents);
+    explicit HttpClientSession(event::EventTargetPtr ownerLoop);
     ~HttpClientSession() override;
 
 public: // implement network::HttpClientSession

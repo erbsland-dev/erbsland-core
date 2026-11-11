@@ -17,7 +17,7 @@ public:
     /// @param target Owner event loop.
     /// @param state Synchronized handler storage.
     SubprocessEventEditor(
-        event::EventSourcePtr source, event::EventsPtr target, std::shared_ptr<SubprocessState> state);
+        event::EventSourcePtr source, event::EventTargetPtr target, std::shared_ptr<SubprocessState> state);
 
 public: // implement SubprocessEventEditor
     auto onStarted(EventFn callback) -> system::SubprocessEventEditor & override;

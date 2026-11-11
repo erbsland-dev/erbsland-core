@@ -18,7 +18,7 @@ TESTED_TARGETS(EventEditor EventSource CommonEventEditor)
 class EventSourceTest final : public el::UnitTest {
     class Editor final : public el::event::impl::CommonEventEditor {
     public:
-        Editor(EventSourcePtr source, EventsPtr target, std::function<void()> &callback) :
+        Editor(EventSourcePtr source, EventTargetPtr target, std::function<void()> &callback) :
             CommonEventEditor{std::move(source), std::move(target)}, _callback{callback} {}
 
     public:
@@ -33,11 +33,11 @@ class EventSourceTest final : public el::UnitTest {
 
     class Source final : public EventSource {
     public:
-        explicit Source(EventsPtr owner) : EventSource{std::move(owner)} {}
+        explicit Source(EventTargetPtr owner) : EventSource{std::move(owner)} {}
 
     public:
         [[nodiscard]] auto events() -> Editor & override {
-            auto target = currentOwnerEvents();
+            auto target = currentOwnerLoop();
             if (_editor == nullptr) {
                 _editor = std::make_unique<Editor>(shared_from_this(), std::move(target), _callback);
             }
@@ -57,7 +57,7 @@ class EventSourceTest final : public el::UnitTest {
 
     class DetachedEditor final : public el::event::impl::CommonEventEditor {
     public:
-        DetachedEditor(EventSourcePtr source, EventsPtr target) :
+        DetachedEditor(EventSourcePtr source, EventTargetPtr target) :
             CommonEventEditor{std::move(source), std::move(target)} {}
     };
 
@@ -130,7 +130,7 @@ public:
         const auto source = std::make_shared<Source>(ownerLoop);
 
         REQUIRE_THROWS_AS(el::err::ParameterFailure, DetachedEditor(EventSourcePtr{}, ownerLoop));
-        REQUIRE_THROWS_AS(el::err::ParameterFailure, DetachedEditor(source, EventsPtr{}));
+        REQUIRE_THROWS_AS(el::err::ParameterFailure, DetachedEditor(source, EventTargetPtr{}));
         REQUIRE_THROWS_AS(el::err::LogicFailure, DetachedEditor(source, otherLoop));
     }
 

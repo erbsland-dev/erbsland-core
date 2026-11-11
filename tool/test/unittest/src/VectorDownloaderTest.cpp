@@ -22,8 +22,8 @@ public:
             auto server = el::HttpServerPtr{};
             auto endpoint = std::promise<el::IpEndpoint>{};
             auto ready = endpoint.get_future();
-            thread->events()->invoke([&] {
-                server = thread->events()->get<el::Network>().createHttpServer();
+            thread->loop()->invoke([&] {
+                server = thread->loop()->get<el::Network>().createHttpServer();
                 server->events().onListening([&] { endpoint.set_value(*server->localEndpoint()); });
                 server->events().onRequest(
                     el::HttpMethod{el::HttpMethodType::Get},
@@ -68,7 +68,7 @@ public:
                         const auto partial =
                             el::StringEncoder{el::String{"partial"_el}}.encode(el::StringEncoding::Utf8);
                         REQUIRE(request->sendBody(partial).isAccepted());
-                        thread->events()->invokeAfter(el::TimeDelta::milliseconds(10), [&] { server->abort(); });
+                        thread->loop()->invokeAfter(el::TimeDelta::milliseconds(10), [&] { server->abort(); });
                     });
                 server->start(el::IpEndpoint{el::IpAddress::loopbackV4(), el::Port{}});
             });
@@ -90,10 +90,10 @@ public:
                 tool::test_data::impl::VectorDownloader{el::ByteCount{1024}, el::TimeDelta::milliseconds(100)};
             REQUIRE_THROWS(impatient.download(url("/idle"_el)));
             REQUIRE_THROWS(downloader.download(url("/interrupted"_el)));
-            thread->events()->invoke([&] { server->abort(); });
+            thread->loop()->invoke([&] { server->abort(); });
             thread->quit();
             thread->join();
-            REQUIRE_FALSE(thread->eventLoop().hasError());
+            REQUIRE_FALSE(thread->workerEventLoop().hasError());
         });
     }
 };

@@ -4,7 +4,7 @@
 
 #include "../../../../err/Exception.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/Literals.hpp"
 
 namespace erbsland::network::impl {
@@ -80,7 +80,7 @@ void TlsServerConnection::handleTransportConnected() {
     const auto weakSelf =
         std::weak_ptr<TlsServerConnection>{std::static_pointer_cast<TlsServerConnection>(shared_from_this())};
     try {
-        _handshakeTimer = event::impl::EventContinuation::create(ownerEvents());
+        _handshakeTimer = event::impl::EventContinuation::create(ownerLoop());
         _handshakeTimer->invokeAfter(_options.handshakeTimeout(), [weakSelf, generation, deadline]() -> void {
             if (const auto self = weakSelf.lock(); self != nullptr) {
                 self->handleHandshakeTimeout(generation, deadline);

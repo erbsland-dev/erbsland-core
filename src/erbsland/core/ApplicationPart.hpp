@@ -10,7 +10,7 @@
 
 #include "impl/ApplicationPartManager_fwd.hpp"
 
-#include "../event/Events_fwd.hpp"
+#include "../event/EventTarget_fwd.hpp"
 #include "../time/TimeDelta.hpp"
 #include "../util/List.hpp"
 
@@ -21,8 +21,9 @@
 namespace erbsland::core {
 
 /// Base class for an independently managed application component.
-/// Lifecycle hooks run on the part's dedicated event thread except `automaticStart()`, which runs on the manager
-/// control event source, and the command-line hooks, which run synchronously on their caller's thread.
+/// The `onInitialize()`, `onRunning()`, and `onStopping()` hooks run in the part's event loop.
+/// Cleanup runs on the same thread after the loop exits; policy queries run on the manager's control target.
+/// Command-line hooks run synchronously on their caller's thread.
 /// @seedoc{/reference/core/application_framework}
 /// @tested{ApplicationPartManagerTest ApplicationPartApplicationTest}
 class ApplicationPart : public ApplicationPartCommandLine {
@@ -49,11 +50,11 @@ public: // state and services
     [[nodiscard]] auto partManager() const -> ApplicationPartManagerAccess &;
     /// Access this part's event target.
     /// The part must have started.
-    [[nodiscard]] auto events() const -> event::EventsPtr;
+    [[nodiscard]] auto loop() const -> event::EventTargetPtr;
 
 public: // implement ApplicationPartCommandLine
     void registerCommandLineOptions(const options::OptionsPtr &options) override;
-    void parseCommandLine(const options::OptionValuesPtr &values) override;
+    void handleCommandLineOptions(const options::OptionValuesPtr &values) override;
 
 protected: // lifecycle customization
     /// Decide whether this part starts during initial automatic startup.
@@ -61,13 +62,14 @@ protected: // lifecycle customization
     /// Get the maximum graceful-shutdown time before the event loop is forced to quit.
     /// Expiry is reported to the manager as an ApplicationError.
     [[nodiscard]] virtual auto shutdownTimeout() const noexcept -> time::TimeDelta;
-    /// Initialize this part on its dedicated event thread.
-    virtual void initialize();
-    /// Notify this part that startup completed on its dedicated event thread.
-    virtual void running();
-    /// Begin shutdown on this part's dedicated event thread.
+    /// Initialize this part in its dedicated event loop while its state is `Starting`.
+    virtual void onInitialize();
+    /// Begin work in a separate event callback after initialization returns and the part enters `Running`.
+    /// The manager may start dependent parts before this callback completes.
+    virtual void onRunning();
+    /// Begin shutdown in this part's dedicated event loop.
     /// The default implementation calls `completeStopping()` immediately.
-    virtual void stopping();
+    virtual void onStopping();
     /// Clean up after the event loop has exited, on the dedicated part thread.
     virtual void cleanup() noexcept;
     /// Complete asynchronous stopping and request the part event loop to quit.
@@ -75,14 +77,14 @@ protected: // lifecycle customization
 
 private: // manager access
     /// Bind this part to its prepared manager and optional runtime event target.
-    void bind(ApplicationPartManagerAccessWeakPtr manager, event::EventsPtr events);
+    void bind(ApplicationPartManagerAccessWeakPtr manager, event::EventTargetPtr events);
     /// Publish a manager-owned lifecycle state.
     void setState(ApplicationPartState state) noexcept;
 
 private:
     std::atomic<ApplicationPartState> _state{ApplicationPartState::Uninitialized}; ///< Current lifecycle state.
     ApplicationPartManagerAccessWeakPtr _manager;                                  ///< Owning manager access.
-    event::EventsPtr _events;                                                      ///< Dedicated event target.
+    event::EventTargetPtr _events;                                                 ///< Dedicated event target.
     std::mutex _stoppingMutex;                                                     ///< Protects the stopping callback.
     std::function<void()> _completeStoppingFn;                                     ///< Internal loop-quit callback.
 };

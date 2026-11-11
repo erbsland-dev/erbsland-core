@@ -3,7 +3,7 @@
 #include "ApplicationEventData.hpp"
 
 #include "../../../event/EventLoopErrorAction.hpp"
-#include "../../../event/impl/CurrentEventsScope.hpp"
+#include "../../../event/impl/CurrentLoopScope.hpp"
 #include "../../../event/impl/ManagedEventThread.hpp"
 #include "../../../event/ManagedEventThread.hpp"
 
@@ -17,11 +17,11 @@ ApplicationEventData::ApplicationEventData() :
     _eventLoop{std::make_shared<event::impl::EventLoop>()}, _eventRegistry{event::EventRegistry::PrivateTag{}} {
 }
 
-auto ApplicationEventData::events() const noexcept -> const event::EventLoopPtr & {
+auto ApplicationEventData::loop() const noexcept -> const event::EventLoopPtr & {
     return _eventLoop;
 }
 
-auto ApplicationEventData::eventLoop() noexcept -> event::EventLoop & {
+auto ApplicationEventData::mainEventLoop() noexcept -> event::EventLoop & {
     return *_eventLoop;
 }
 
@@ -42,7 +42,7 @@ auto ApplicationEventData::createEventThread(const event::EventLoopOptions &opti
     return result;
 }
 
-void ApplicationEventData::runLoop() {
+void ApplicationEventData::runMainEventLoop() {
     _eventLoop->setErrorHandler([this](std::exception_ptr error) -> event::EventLoopErrorAction {
         const auto lock = std::scoped_lock{_mutex};
         if (_loopError == nullptr) {
@@ -50,7 +50,7 @@ void ApplicationEventData::runLoop() {
         }
         return event::EventLoopErrorAction::Stop;
     });
-    auto currentEventsScope = event::impl::CurrentEventsScope{_eventLoop};
+    auto currentLoopScope = event::impl::CurrentLoopScope{_eventLoop};
     _eventLoop->run();
 }
 

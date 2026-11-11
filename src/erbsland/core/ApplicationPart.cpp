@@ -19,7 +19,7 @@ auto ApplicationPart::partManager() const -> ApplicationPartManagerAccess & {
     return *manager;
 }
 
-auto ApplicationPart::events() const -> event::EventsPtr {
+auto ApplicationPart::loop() const -> event::EventTargetPtr {
     if (_events == nullptr) {
         throw err::LogicFailure{"The application part has no event target before startup."_el};
     }
@@ -34,13 +34,13 @@ auto ApplicationPart::shutdownTimeout() const noexcept -> time::TimeDelta {
     return time::TimeDelta::seconds(30);
 }
 
-void ApplicationPart::initialize() {
+void ApplicationPart::onInitialize() {
 }
 
-void ApplicationPart::running() {
+void ApplicationPart::onRunning() {
 }
 
-void ApplicationPart::stopping() {
+void ApplicationPart::onStopping() {
     completeStopping();
 }
 
@@ -61,10 +61,10 @@ void ApplicationPart::completeStopping() noexcept {
 void ApplicationPart::registerCommandLineOptions([[maybe_unused]] const options::OptionsPtr &options) {
 }
 
-void ApplicationPart::parseCommandLine([[maybe_unused]] const options::OptionValuesPtr &values) {
+void ApplicationPart::handleCommandLineOptions([[maybe_unused]] const options::OptionValuesPtr &values) {
 }
 
-void ApplicationPart::bind(ApplicationPartManagerAccessWeakPtr manager, event::EventsPtr events) {
+void ApplicationPart::bind(ApplicationPartManagerAccessWeakPtr manager, event::EventTargetPtr events) {
     _manager = std::move(manager);
     _events = std::move(events);
 }

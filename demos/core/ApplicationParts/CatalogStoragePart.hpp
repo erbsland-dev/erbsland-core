@@ -24,7 +24,7 @@ public: // implement CatalogStorage
     [[nodiscard]] auto status() const -> el::String override { return "catalog storage is ready"_el; }
 
 protected: // implement ApplicationPart
-    void initialize() override { el::io::printLine("catalog storage initialized"_el); }
+    void onInitialize() override { el::io::printLine("catalog storage initialized"_el); }
     void cleanup() noexcept override { el::io::printLine("catalog storage cleaned up"_el); }
 };
 

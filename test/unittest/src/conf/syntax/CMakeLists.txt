@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.28)
 target_sources(erbsland-core-unittest PRIVATE
         SyntaxFormatterTest.cpp
         SyntaxFormatTest.cpp
+        SyntaxLiteralFormattingTest.cpp
         SyntaxParserTest.cpp
         SyntaxRecoveryTest.cpp
         SyntaxTokenKindTest.cpp

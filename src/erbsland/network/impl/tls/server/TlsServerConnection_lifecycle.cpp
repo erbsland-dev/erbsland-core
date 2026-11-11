@@ -3,7 +3,7 @@
 #include "TlsServerConnection.hpp"
 
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/Literals.hpp"
 
 #include <exception>
@@ -34,7 +34,7 @@ void TlsServerConnection::ensureIdleTimer() {
     const auto delay = time::TimePoint::now().timeDeltaTo(_idleDeadline);
     const auto weakSelf =
         std::weak_ptr<TlsServerConnection>{std::static_pointer_cast<TlsServerConnection>(shared_from_this())};
-    ownerEvents()->invokeAfter(delay, [weakSelf, generation]() -> void {
+    ownerLoop()->invokeAfter(delay, [weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->handleIdleTimeout(generation);
         }
@@ -99,7 +99,7 @@ void TlsServerConnection::enterClosing(const ConnectionCloseOrigin origin) {
     const auto deadline = time::TimePoint::now() + _options.closeTimeout();
     const auto weakSelf =
         std::weak_ptr<TlsServerConnection>{std::static_pointer_cast<TlsServerConnection>(shared_from_this())};
-    ownerEvents()->invokeAfter(_options.closeTimeout(), [weakSelf, generation, deadline]() -> void {
+    ownerLoop()->invokeAfter(_options.closeTimeout(), [weakSelf, generation, deadline]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->handleCloseTimeout(generation, deadline);
         }

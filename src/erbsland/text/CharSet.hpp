@@ -100,14 +100,16 @@ public:
     explicit CharSet(const util::Set<Char> &characters);
     /// Create a character set from an Erbsland Core list of characters.
     explicit CharSet(const util::List<Char> &characters);
-
-    // defaults
+    /// Release any shared range storage.
     ~CharSet();
-    CharSet(const CharSet &) noexcept;
+    /// Copy another character set, sharing range storage when needed.
+    /// @param other The set to copy.
+    CharSet(const CharSet &other) noexcept;
+    /// Move is calling copy-construction to increment the reference count.
     CharSet(CharSet &&other) noexcept;
     /// Copy another character set into this set.
     auto operator=(const CharSet &) noexcept -> CharSet &;
-    /// Move another character set into this set.
+    /// Move another character set into this set, calling copy to increment the reference count.
     auto operator=(CharSet &&other) noexcept -> CharSet &;
 
 public: // operators

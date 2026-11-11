@@ -31,7 +31,7 @@ TESTED_TARGETS(HttpCookieSessionManager HttpCookieSessionManagerOptions HttpServ
 class HttpCookieSessionManagerTest final : public el::UnitTest {
     class MockRequest final : public HttpServerRequest {
     public:
-        MockRequest(EventsPtr owner, HttpHeaders headers) :
+        MockRequest(EventTargetPtr owner, HttpHeaders headers) :
             HttpServerRequest{std::move(owner)},
             _head{HttpMethodType::Get, "/"_el, HttpVersion::Http11, std::move(headers)} {}
 

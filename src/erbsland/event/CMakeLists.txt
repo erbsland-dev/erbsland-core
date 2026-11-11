@@ -8,8 +8,8 @@ add_subdirectory(impl)
 target_sources(erbsland-core PRIVATE
         BindEvent.hpp
         BindEvent.tpp
-        CurrentEvents.cpp
-        CurrentEvents.hpp
+        CurrentLoop.cpp
+        CurrentLoop.hpp
         Event.hpp
         EventBackend.hpp
         EventBackend_fwd.hpp
@@ -40,8 +40,6 @@ target_sources(erbsland-core PRIVATE
         EventRegistry.cpp
         EventRegistry.hpp
         EventRegistry_fwd.hpp
-        Events.hpp
-        Events_fwd.hpp
         EventScheduler.hpp
         EventScheduler_fwd.hpp
         EventSource.cpp
@@ -49,6 +47,8 @@ target_sources(erbsland-core PRIVATE
         EventSource_fwd.hpp
         EventSubscription.hpp
         EventSubscription_fwd.hpp
+        EventTarget.hpp
+        EventTarget_fwd.hpp
         EventThread.hpp
         EventThread_fwd.hpp
         EventTimer.hpp

@@ -6,7 +6,8 @@
 
 namespace erbsland::network::impl {
 
-TlsServerConnectionEventEditor::TlsServerConnectionEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+TlsServerConnectionEventEditor::TlsServerConnectionEventEditor(
+    event::EventSourcePtr source, event::EventTargetPtr target) :
     network::TlsServerConnectionEventEditor{std::move(source), std::move(target)} {
 }
 

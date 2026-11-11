@@ -7,7 +7,7 @@
 #include <erbsland/ApplicationPartTraits.hpp>
 #include <erbsland/ApplicationPartWithInterface.hpp>
 #include <erbsland/EventLoop.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/Literals.hpp>
 #include <erbsland/LogicFailure.hpp>
 #include <erbsland/Options.hpp>
@@ -20,9 +20,11 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <utility>
 #include <vector>
 
 using namespace el::core;
@@ -56,11 +58,11 @@ public:
     [[nodiscard]] auto workerThread() const noexcept -> std::thread::id override { return _workerThread; }
 
 protected:
-    void initialize() override { _workerThread = std::this_thread::get_id(); }
-    void running() override { cRunning = true; }
+    void onInitialize() override { _workerThread = std::this_thread::get_id(); }
+    void onRunning() override { cRunning = true; }
     void cleanup() noexcept override {
         cCleanupThread = std::this_thread::get_id();
-        cLoopWasStoppedDuringCleanup = !std::dynamic_pointer_cast<el::event::EventLoop>(events())->isRunning();
+        cLoopWasStoppedDuringCleanup = !std::dynamic_pointer_cast<el::event::EventLoop>(loop())->isRunning();
         cRunning = false;
     }
 
@@ -89,7 +91,7 @@ protected:
             partManager().partState(ManagerTestRootInterface::partIdentifier()) == ApplicationPartState::Running;
         return true;
     }
-    void initialize() override { _workerThread = std::this_thread::get_id(); }
+    void onInitialize() override { _workerThread = std::this_thread::get_id(); }
 
 public:
     inline static std::atomic<bool> cDependencyWasRunning{false};
@@ -137,6 +139,11 @@ public:
 
 class ManagerTestFailurePart final : public ApplicationPart {
 public:
+    ~ManagerTestFailurePart() override {
+        if (_destroyed != nullptr) {
+            _destroyed->set_value();
+        }
+    }
     [[nodiscard]] static auto partIdentifier() -> ApplicationPartIdentifierPtr {
         static const auto identifier = ApplicationPartIdentifier::create("dev.erbsland.test.failure"_el);
         return identifier;
@@ -147,8 +154,26 @@ public:
 
 public:
     void fail() {
-        events()->invoke([]() -> void { throw el::err::RuntimeError{"expected failure"_el}; });
+        loop()->invoke([]() -> void { throw el::err::RuntimeError{"expected failure"_el}; });
     }
+    void failBeforeRunning(std::shared_future<void> runningPublished, std::shared_ptr<std::promise<void>> destroyed) {
+        _runningPublished = std::move(runningPublished);
+        _destroyed = std::move(destroyed);
+    }
+
+protected: // implement ApplicationPart
+    void onInitialize() override {
+        if (_runningPublished.valid()) {
+            loop()->invoke([runningPublished = _runningPublished]() -> void {
+                runningPublished.wait();
+                throw el::err::RuntimeError{"expected failure before running callback"_el};
+            });
+        }
+    }
+
+private:
+    std::shared_future<void> _runningPublished;     ///< Releases the failure callback after running is queued.
+    std::shared_ptr<std::promise<void>> _destroyed; ///< Signals destruction after deferred manager teardown.
 };
 
 class ManagerTestTimeoutPart final : public ApplicationPart {
@@ -165,7 +190,7 @@ protected:
     [[nodiscard]] auto shutdownTimeout() const noexcept -> el::time::TimeDelta override {
         return el::time::TimeDelta::milliseconds(5);
     }
-    void stopping() override {}
+    void onStopping() override {}
 };
 
 class ManagerTestMissingPart final : public ApplicationPart {
@@ -258,7 +283,7 @@ public:
     }
 
 protected:
-    void running() override {
+    void onRunning() override {
         try {
             static_cast<void>(partManager().waitForRunning());
         } catch (const el::err::LogicFailure &) {
@@ -333,7 +358,7 @@ public:
 public:
     void releaseManagerFromPartThread(
         ApplicationPartManagerPtr manager, const std::shared_ptr<ManagerTestLifetimeState> &state) {
-        events()->invoke([manager = std::move(manager), state]() mutable -> void {
+        loop()->invoke([manager = std::move(manager), state]() mutable -> void {
             const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
             while (manager.use_count() != 1 && std::chrono::steady_clock::now() < deadline) {
                 std::this_thread::yield();
@@ -361,7 +386,7 @@ protected:
         cOptions = options;
         cCalls.emplace_back(1);
     }
-    void parseCommandLine(const el::options::OptionValuesPtr &values) override {
+    void handleCommandLineOptions(const el::options::OptionValuesPtr &values) override {
         cValues = values;
         cCalls.emplace_back(3);
     }
@@ -385,7 +410,7 @@ protected:
     void registerCommandLineOptions(const el::options::OptionsPtr &) override {
         ManagerTestOptionPartOne::cCalls.emplace_back(2);
     }
-    void parseCommandLine(const el::options::OptionValuesPtr &) override {
+    void handleCommandLineOptions(const el::options::OptionValuesPtr &) override {
         ManagerTestOptionPartOne::cCalls.emplace_back(4);
     }
 };
@@ -580,6 +605,34 @@ public:
         REQUIRE(manager->waitForStopped());
     }
 
+    void testFailureBeforeRunningCallbackReleasesPart() {
+        auto runningPublished = std::promise<void>{};
+        const auto destroyed = std::make_shared<std::promise<void>>();
+        auto destruction = destroyed->get_future();
+        auto weakPart = std::weak_ptr<ManagerTestFailurePart>{};
+        {
+            const auto manager = ApplicationPartManager::create();
+            manager->registerPart<ManagerTestFailurePart>();
+            manager->prepare();
+            const auto part = std::dynamic_pointer_cast<ManagerTestFailurePart>(
+                manager->part(ManagerTestFailurePart::partIdentifier()));
+            weakPart = part;
+            part->failBeforeRunning(runningPublished.get_future().share(), destroyed);
+            const auto subscription = manager->events().addPartStateChanged(
+                [&runningPublished](ApplicationPartIdentifierPtr, const ApplicationPartState state) -> void {
+                    if (state == ApplicationPartState::Running) {
+                        runningPublished.set_value();
+                    }
+                });
+            manager->start();
+            REQUIRE_FALSE(manager->waitForStopped());
+            REQUIRE_EQUAL(manager->state(), ApplicationPartManagerState::Failed);
+            REQUIRE_THROWS_AS(el::err::RuntimeError, std::rethrow_exception(manager->takeError()));
+        }
+        REQUIRE(destruction.wait_for(std::chrono::seconds{2}) == std::future_status::ready);
+        REQUIRE(weakPart.expired());
+    }
+
     void testWaitFromPartThreadIsRejected() {
         ManagerTestWaitPart::cWaitRejected = false;
         const auto manager = ApplicationPartManager::create();
@@ -587,9 +640,9 @@ public:
         manager->prepare();
         manager->start();
         REQUIRE(manager->waitForRunning());
-        REQUIRE(ManagerTestWaitPart::cWaitRejected.load());
         manager->stop();
         REQUIRE(manager->waitForStopped());
+        REQUIRE(ManagerTestWaitPart::cWaitRejected.load());
     }
 
     void testCommandLineForwardingUsesRegistrationOrder() {
@@ -604,7 +657,7 @@ public:
         manager->prepare();
 
         manager->registerCommandLineOptions(options);
-        manager->parseCommandLine(values);
+        manager->handleCommandLineOptions(values);
 
         REQUIRE_EQUAL(ManagerTestOptionPartOne::cCalls, std::vector<int>({1, 2, 3, 4}));
         REQUIRE_EQUAL(ManagerTestOptionPartOne::cOptions, options);
@@ -617,7 +670,7 @@ public:
         const auto controlThread = el::event::UnmanagedEventThread::create();
         controlThread->start();
         {
-            const auto manager = ApplicationPartManager::create(controlThread->events());
+            const auto manager = ApplicationPartManager::create(controlThread->loop());
             manager->registerPart<ManagerTestRootPart>();
             manager->prepare();
             manager->start();

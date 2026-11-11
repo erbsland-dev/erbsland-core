@@ -13,7 +13,8 @@ namespace erbsland::network::impl {
 class HttpClientResponseEventEditor final : public network::HttpClientResponseEventEditor {
 public:
     /// Bind the editor to its owning response.
-    HttpClientResponseEventEditor(event::EventSourcePtr source, event::EventsPtr target, HttpClientResponse &response);
+    HttpClientResponseEventEditor(
+        event::EventSourcePtr source, event::EventTargetPtr target, HttpClientResponse &response);
 
 public: // implement network::HttpClientResponseEventEditor
     auto onBodyData(NetworkDataFn callback) -> HttpClientResponseEventEditor & override;

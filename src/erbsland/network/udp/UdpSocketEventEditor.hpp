@@ -53,7 +53,7 @@ protected:
     /// Create an editor for a UDP socket.
     /// @param source The socket that owns the editor.
     /// @param target The callback target.
-    UdpSocketEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+    UdpSocketEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
         CommonEventEditor{std::move(source), std::move(target)} {}
 };
 

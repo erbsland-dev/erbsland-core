@@ -6,7 +6,7 @@
 
 namespace erbsland::network::impl {
 
-UdpSocketEventEditor::UdpSocketEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+UdpSocketEventEditor::UdpSocketEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
     network::UdpSocketEventEditor{std::move(source), std::move(target)} {
 }
 

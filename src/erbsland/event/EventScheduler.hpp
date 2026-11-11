@@ -11,7 +11,7 @@
 
 namespace erbsland::event {
 
-/// The public scheduler frontend for an events interface.
+/// The public scheduler frontend for an event target.
 /// @tested{EventTimerTest EventBackendTest}
 class EventScheduler {
 public:

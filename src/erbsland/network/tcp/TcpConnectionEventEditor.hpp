@@ -39,7 +39,7 @@ protected:
     /// Create an editor for a TCP connection.
     /// @param source The connection that owns the editor.
     /// @param target The callback target.
-    TcpConnectionEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+    TcpConnectionEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
         ConnectionEventEditor{std::move(source), std::move(target)} {}
 };
 

@@ -9,7 +9,7 @@
 #include "../../../err/LogicFailure.hpp"
 #include "../../../err/ParameterFailure.hpp"
 #include "../../../err/RuntimeError.hpp"
-#include "../../../event/Events.hpp"
+#include "../../../event/EventTarget.hpp"
 #include "../../../event/impl/EventContinuation.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../unit/ItemIndex.hpp"
@@ -25,18 +25,18 @@ using namespace err;
 using namespace text::literals;
 
 TcpConnection::TcpConnection(
-    event::EventsPtr ownerEvents,
+    event::EventTargetPtr ownerLoop,
     event::EventLoopDriverPtr driver,
     HostResolverPtr resolver,
     TcpConnectionDeviceCreateFn createDevice) :
-    network::TcpConnection{std::move(ownerEvents)},
+    network::TcpConnection{std::move(ownerLoop)},
     _driver{std::move(driver)},
     _resolver{std::move(resolver)},
     _createDevice{std::move(createDevice)} {
     if (_driver == nullptr || _resolver == nullptr || !_createDevice) {
         throw LogicFailure{"A TCP connection requires a driver, resolver, and device factory."_el};
     }
-    _abortContinuation = event::impl::EventContinuation::create(this->ownerEvents());
+    _abortContinuation = event::impl::EventContinuation::create(this->ownerLoop());
 }
 
 TcpConnection::~TcpConnection() {
@@ -66,7 +66,7 @@ auto TcpConnection::state() const noexcept -> ConnectionState {
 
 void TcpConnection::connect(HostEndpoint remoteEndpoint, TcpConnectOptions options) {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_started.load()) {
         throw LogicFailure{"A TCP connection can only be started once."_el};
     }
@@ -91,7 +91,7 @@ void TcpConnection::connect(HostEndpoint remoteEndpoint, TcpConnectOptions optio
     _deadline = time::TimePoint::now() + options.timeout();
     const auto generation = _generation.fetch_add(1U) + 1U;
     const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
-    ownerEvents()->invokeAfter(options.timeout(), [weakSelf, generation]() -> void {
+    ownerLoop()->invokeAfter(options.timeout(), [weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverTimeout(generation);
         }
@@ -101,7 +101,7 @@ void TcpConnection::connect(HostEndpoint remoteEndpoint, TcpConnectOptions optio
 
 void TcpConnection::accept(network::TcpConnectionRequestPtr request, TcpAcceptOptions options) {
     const auto lifecycleLock = std::scoped_lock{_lifecycleMutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_started.load()) {
         throw LogicFailure{"A TCP connection can only be started once."_el};
     }
@@ -149,7 +149,7 @@ void TcpConnection::accept(network::TcpConnectionRequestPtr request, TcpAcceptOp
 }
 
 auto TcpConnection::events() -> network::TcpConnectionEventEditor & {
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<TcpConnectionEventEditor>(shared_from_this(), std::move(target));
     }
@@ -188,7 +188,7 @@ auto TcpConnection::createCallbacks(const std::uint64_t generation) -> TcpConnec
 }
 
 void TcpConnection::startLookup(const std::uint64_t generation) {
-    auto lookup = std::make_shared<HostLookup>(ownerEvents(), _resolver);
+    auto lookup = std::make_shared<HostLookup>(ownerLoop(), _resolver);
     _lookup = lookup;
     const auto weakSelf = std::weak_ptr<TcpConnection>{std::static_pointer_cast<TcpConnection>(shared_from_this())};
     lookup->events()

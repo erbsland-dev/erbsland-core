@@ -6,7 +6,7 @@
 #include <erbsland/AnyStringBuilderStream.hpp>
 #include <erbsland/Application.hpp>
 #include <erbsland/ApplicationError.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/Literals.hpp>
 #include <erbsland/OptionError.hpp>
 #include <erbsland/OptionErrorContext.hpp>
@@ -97,7 +97,7 @@ public:
         auto scope = ApplicationTestScope<OptionsHandlingApplication>{};
         auto &app = scope.app();
         auto hookRanBeforeEvent = false;
-        app.events()->invoke([&]() -> void {
+        app.loop()->invoke([&]() -> void {
             hookRanBeforeEvent = app.handledCount == 1;
             app.quit(ExitCode{29});
         });

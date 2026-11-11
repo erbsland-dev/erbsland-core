@@ -4,276 +4,317 @@
 
 .. index::
     single: Events; Communication Between Loops
-    single: Events; Request and Reply
+    single: Events; Requests and Results
+    single: Events; Signals and Notifications
+    single: Bindings; Parameters and Replies
     single: Events; Obsolete Replies
 
-*********************************
-Communicating Between Event Loops
-*********************************
+************************************************
+Sending Requests and Results Between Event Loops
+************************************************
 
-A worker can calculate a result while your main loop continues responding to input.
-The useful boundary is ownership: each component updates its state on its own loop, and sends other components commands
-or results that own their data.
-This page develops a request and reply exchange, then handles input that replaces a request before its reply arrives.
+When two components run on different event loops, how can one ask the other to do work and receive its result? The
+familiar function-call model needs one change: the receiving loop decides when to run the requested code.
+The sender submits a message and continues; a result arrives through another message later.
 
-This example builds on worker creation in :doc:`processing_work_on_event_threads`, recipient lifetime in
-:doc:`callback_lifetimes`, and the return path introduced in :doc:`event_bindings`.
-Here the main loop stays running throughout the exchange; it is the receiver as well as the producer of requests.
+This page explains that exchange, from a notification with no data to a request carrying parameters and a bound reply.
+You will learn where each part executes, how values survive queued delivery, and why a reply is different from a
+synchronous return value.
+It builds on the state ownership described in :doc:`event_workflows`.
 
-State Belongs to a Loop
-=======================
+From Synchronous Calls to Queued Messages
+=========================================
 
-Choose one loop to own each component's mutable state.
-A preview controller, for example, can own the selected input, latest request identifier, and displayed result on main.
-A worker receives a copy of the input and produces a separate result.
-The worker never reads the controller's changing selection and never writes its displayed result directly.
+In a synchronous call, the caller enters the function on its current thread and resumes after that function returns.
+Arguments pass into the active call, and a return value passes back through the same call sequence.
+Calling an ordinary callback follows that same rule.
+Neither a method name nor the fact that its object belongs to a worker changes the executing thread.
 
-:cpp:func:`Events::invoke() <erbsland::event::Events::invoke>` queues a callback on the receiving loop.
-Calling an ordinary method does not move execution to another thread, even when the object owns an event target.
-To call a worker-owned component, capture its independent input and queue the method call through that component's
-:cpp:class:`Events <erbsland::event::Events>` target, retained as an ``EventsPtr``.
-Only the callback executing there accesses its mutable state.
+To execute code on another loop, submit work to that loop's
+:cpp:class:`EventTarget <erbsland::event::EventTarget>`.
+The target queues a callback, and the receiving loop calls it when it can dispatch the work.
+The submission does not wait for that callback's result.
+The sender can continue its current callback and then return to its own loop while the receiving loop works
+independently.
+If the loops run on different threads, their callbacks can run concurrently.
+
+.. list-table::
+    :header-rows: 1
+    :widths: 25 37 38
+
+    * - Boundary
+      - Ordinary function call
+      - Queued delivery
+    * - Execution
+      - The function runs on the calling thread.
+      - The handler runs when the receiving loop dispatches it.
+    * - Parameters
+      - They are available during the active call.
+      - They must survive until the handler runs.
+    * - Result
+      - A return value resumes the waiting caller.
+      - A separate reply delivers the result to a receiving handler.
+    * - Failure in the work
+      - An exception can propagate through the active call.
+      - The operation reports failure later, or the receiving loop handles it.
+
+Queueing is a scheduling boundary, not a promise about which thread runs its next instruction first.
+A worker may begin processing while the sender is still finishing its callback.
+Likewise, independent loops do not establish one global order for all messages.
+Express required dependencies through completion messages and operation state.
+
+Sending a Notification or Request
+=================================
+
+You can think of an event as a signal telling a component that it should react.
+Here, a signal means an application notification delivered through the event loop; it does not mean an operating-system
+signal.
+A notification reports something that happened, a request asks the receiver to perform work, and a reply reports an
+outcome.
+They use the same queued-delivery mechanism; their meaning comes from your application.
+
+:cpp:func:`invoke() <erbsland::event::EventTarget::invoke>` queues a callback whose work is already specified.
+The expression ``target->invoke(callback)`` executes on the sending thread; the callback's body executes on the
+receiving loop later.
+Capture the request's input in that callback so it remains available after the sender returns.
+A notification that needs no data can simply queue the receiving action.
+
+Queueing selects where the action runs; it does not create a thread or transfer an object's ownership automatically.
+The receiver still needs an owner that runs its loop, and any object used by the callback must remain alive.
+A directly called method that touches another loop's mutable state bypasses this boundary.
+Keeping that access inside the queued handler preserves the state ownership rule.
+
+Even when sender and receiver use the same loop, ``invoke()`` queues the callback rather than calling it inline.
+It therefore cannot give you the handler's result as its own return value.
+Submission can itself fail, and configured queue limits can affect admission; those policies are covered in
+:doc:`controlling_event_load`.
+The essential distinction is that submitting work does not wait for its completion.
+
+Passing Parameters with Bindings
+================================
+
+Sometimes the receiving action is known now, but its arguments will only be available later.
+:cpp:func:`bindEvent() <erbsland::event::bindEvent>` packages a receiving target and a handler into a callable.
+Creating the binding prepares this route without submitting work.
+Calling the binding supplies the arguments, stores them for delivery, and queues the handler on the captured target.
+When the receiving loop dispatches it, the handler gets those arguments as ordinary C++ parameters.
+
+A binding can therefore represent either a request or a result notification.
+Its producer calls it like a callback and does not need to manage the receiving loop directly.
+The handler returns ``void``: calling the binding provides no synchronous return value from that handler.
+You can call a binding repeatedly, with each call submitting a separate delivery.
+Delivery remains queued even if you call it from its own receiving loop.
+
+Without an explicit target, ``bindEvent()`` captures
+:cpp:func:`currentLoop() <erbsland::event::currentLoop>` when you create it.
+Create that binding inside a callback dispatched by the intended receiving loop.
+If you already have the target, pass its :cpp:type:`EventTargetPtr <erbsland::event::EventTargetPtr>` explicitly as the
+first argument, followed by the handler.
+That form also works when creating the binding outside the receiving loop.
+In both cases, later calls use the captured destination regardless of which thread makes them.
+
+For a request, bind its handler to the loop that performs the work.
+For a reply, bind its handler to the loop that owns the requesting operation's state.
+Preparing the reply inside the worker without an explicit target would capture the worker's loop instead.
+:doc:`event_bindings` develops the callable and member-function forms and their ownership choices.
+
+Sending a Result Back
+=====================
+
+A request that needs a result has two delivery paths.
+First, the requesting component supplies the work's input and a reply callback to the worker.
+Then the worker supplies its output to that reply callback.
+When the reply is bound to the requesting loop, calling it queues the output there for a later handler to accept.
+The original request call has already returned; the reply starts a new callback rather than resuming that call.
+
+Prepare the reply route before submitting the request.
+This lets the requesting component choose where the result belongs and which operation will receive it.
+The worker only needs to call the supplied callback with its output.
+The same arrangement can carry several progress updates followed by one final outcome, provided the receiver can
+distinguish progress from completion.
 
 .. mermaid::
 
     sequenceDiagram
-        participant Main as Main loop / preview state
-        participant Worker as Worker loop / calculation
-        Main->>Worker: invoke(command with input and bound reply)
-        Note over Main: Return to dispatch, other input can run
-        Worker->>Worker: Calculate from owned input
-        Worker->>Main: Call bound reply with result
-        Main->>Main: Check identifier and update preview
+        participant A as Requesting loop / operation state
+        participant B as Worker loop
+        A->>A: Record pending state and bind reply to A
+        A-->>B: Queue request with input and reply callback
+        Note over A: Return to dispatch and handle other events
+        Note over B: Dispatch the request when ready
+        B->>B: Perform work using received input
+        B-->>A: Call bound reply to queue result delivery
+        Note over B: Continue and return to dispatch
+        Note over A: Dispatch the reply when ready
+        A->>A: Check current state and accept result
 
-This arrangement needs no mutex around preview state because one thread performs all its reads and writes.
-Capturing a shared pointer does not provide the same guarantee: if two loops mutate its pointee, you still need
-synchronization or a different ownership design.
-Likewise, references and views into the sender's mutable buffer are not independent input values.
+Both loops must continue dispatching for this round trip to complete.
+Blocking the requesting loop until a reply runs on that same loop prevents it from receiving the reply.
+The requesting component instead records that work is pending and returns, as described in :doc:`event_workflows`.
+A procedural caller waiting for a separate worker to finish is a different arrangement, covered in
+:doc:`processing_work_on_event_threads`.
 
-A Running Main as the Reply Target
-==================================
+.. erbsland-in-practice-begin:: Sending a Search and Receiving Its Matches
 
-The text-preview application transforms text on one managed worker and receives the result on main.
-Uppercasing a short string makes the exchange easy to inspect; a real application could put an expensive parser or image
-conversion at the same worker boundary.
-The sample does not need another thread for the cost of this particular transformation.
-
-The application object is the controller and outlives the exchange and worker shutdown.
-Its retained members make ownership explicit:
+The :doc:`file-search application </demo_apps/event/file_search>` keeps its result state on main and scans on a running
+managed worker.
+These members retain the result state and worker and record whether replies are still wanted:
 
 .. erbsland-demo::
-    :source: event/TextPreview/TextPreviewApp.hpp
-    :sha256: 21d2083486ee62d3b4fc1e493b4f7fb990c8bda78b4a33c59dbf7205827176ed
+    :source: event/apps/FileSearch/src/FileSearchApp.hpp
+    :show: c:Main-loop result state, c:Retained until Application, c:Suppresses late
+    :sha256: d64f80a0b80b30a206ab0676f62fc36a1034ed26e2d8f09ed5b794af76195af3
 
 .. code-block:: cpp
 
-    /// Keep preview state on main while a worker returns independently owned text values.
-    class TextPreviewApp final : public el::Application {
-    public:
-        using Application::Application;
+    SearchResults _results;                                      ///< Main-loop result state.
 
-    protected: // implement Application
-        void initialize() override;
-        void registerCommandLineOptions(const el::OptionsPtr &options) override;
-        [[nodiscard]] auto main() -> el::ExitCode override;
-        void cleanup() noexcept override;
+    el::ManagedEventThreadPtr _worker;                           ///< Retained until Application joins it.
 
-    private:
-        void begin();
-        void requestPreview(el::String text);
-        void receivePreview(std::uint64_t requestId, el::String preview);
-
-    private:
-        el::ManagedEventThreadPtr _worker; ///< Retained on main until application shutdown joins it.
-        el::EventTimerPtr _deadline;       ///< Main-loop timer bounds the wait for replies.
-        el::String _scenario;              ///< Configured before dispatch begins; read only on main.
-        std::uint64_t _requestId{0};       ///< Latest request identity, owned by main.
-        int _received{0};                  ///< All replies, including obsolete ones, owned by main.
-        int _accepted{0};                  ///< Replies allowed to update the preview, owned by main.
-        el::String _preview;               ///< Display state, owned by main.
-    };
+    bool _exiting{false};                                        ///< Suppresses late rendering and result deliveries.
 
 .. erbsland-demo-end::
 
-The derived ``main()`` starts the worker, posts ``begin()`` to main, and enters
-:cpp:func:`runEventLoop() <erbsland::core::Application::runEventLoop>`.
-It checks completion after dispatch ends.
-The worker uses :cpp:enumerator:`FailApplication <erbsland::event::EventLoopErrorPolicy::FailApplication>` so an
-exception cannot silently remove a required reply; see the failure path below.
-The worker handle stays in ``_worker`` until application shutdown has joined it.
-
-For one request, ``begin()`` calls ``requestPreview()`` from a callback on main.
-That context matters: :cpp:func:`currentEvents() <erbsland::event::currentEvents>` identifies the loop currently
-executing on the calling thread.
-Here ``bindEvent`` captures that reply address before dispatch crosses to the worker:
+``submitSearch()`` runs on main.
+After compiling the current input into an immutable pattern, it creates a reply on main, retaining the current request's
+identity in ``generation``:
 
 .. erbsland-demo::
-    :source: event/TextPreview/TextPreviewApp.cpp
-    :show: f:TextPreviewApp::requestPreview
-    :exec: event/text_preview --scenario single
-    :show-cmd-line:
-    :sha256: 7ea6044f06cb1dc53ae44da1a595ef237a8f0d3cb8532394eb2815f446f591c4
+    :source: event/apps/FileSearch/src/FileSearchApp.cpp
+    :show: c:Bind on main(+1,+6)
+    :sha256: 868f84ddf2a0bc29f7a24c3acaf5dbd3738a80f1cbf91a7deb5299d88f48aa0c
 
 .. code-block:: cpp
 
-    void TextPreviewApp::requestPreview(el::String text) {
-        const auto requestId = ++_requestId;
-        // Bind the reply on main before sending work to another loop.
-        auto reply =
-            el::bindEvent([this, requestId](el::String preview) -> void { receivePreview(requestId, std::move(preview)); });
-        _worker->events()->invoke([reply = std::move(reply), text = std::move(text)]() -> void {
-            // Worker uses only captured input; main owns every application-state update.
-            reply(el::toUppercase(text));
+    const auto generation = _results.generation();
+    // Bind on main before crossing to the worker. The reply retains this request's identity.
+    auto reply = el::bindEvent([this, generation](SearchUpdate update) -> void {
+        if (!_exiting) {
+            _results.receive(generation, std::move(update));
+            _dirty = true;
+        }
+    });
+
+.. erbsland-demo-end::
+
+The reply accepts a ``SearchUpdate`` containing owned result data.
+Its handler checks whether the application is exiting, hands the update to the result state, and marks the display as
+changed.
+The capture of ``this`` borrows the application, whose lifetime covers main-loop dispatch and managed-worker shutdown.
+
+The following statement submits the request to the worker, transferring the input and the prepared reply together:
+
+.. erbsland-demo::
+    :source: event/apps/FileSearch/src/FileSearchApp.cpp
+    :show: f:FileSearchApp::submitSearch(-23,-1)
+    :sha256: 508ca286a0165464261d89d760935edf99817cabb86029406c53160f03f88b21
+
+.. code-block:: cpp
+
+    _worker->loop()->invoke(
+        [root = _root,
+            pattern = std::move(pattern),
+            generation,
+            token = _generation,
+            stopToken = _worker->stopToken(),
+            reply = std::move(reply)]() -> void {
+            const auto cancelled = [token, generation, stopToken]() -> bool {
+                return token->load() != generation || stopToken.isStopRequested();
+            };
+            SearchScanner{root, pattern}.scan(cancelled, reply);
         });
-    }
-
-.. erbsland-demo-run::
-
-    .. code-block:: console
-
-        $ event/text_preview --scenario single
-
-    .. erbsland-ansi::
-        :escape-char: ␛
-
-        ␛[0mAccepted preview: FIRST DRAFT␛[0m
 
 .. erbsland-demo-end::
 
-The worker callback owns the input and the bound reply.
-:cpp:func:`toUppercase() <erbsland::text::toUppercase>` derives a new string value without changing the captured input.
-Calling ``reply`` transfers the computed preview into a delivery for main.
-The binding's handler retains the request identifier, so ``receivePreview()`` can associate that value with its input.
-Only dispatch on main dereferences ``this`` to update controller state.
+The owned root path and immutable pattern are the search parameters.
+``generation`` identifies this request; ``token`` shares an atomic generation counter for cooperative cancellation,
+while ``stopToken`` reports worker shutdown.
+These tokens let the worker stop without reading main's mutable result state.
 
-Creating the binding inside the worker callback would capture the worker loop instead.
-Create it at the sending end, or pass the intended target explicitly when creating it outside a running loop.
-The function cannot infer which component should receive a result.
+The queued body calls ``scan()`` on the worker.
+When the scanner calls the supplied ``reply`` with a batch, the binding queues it on main; the scanner does not call
+``_results.receive()`` on the worker.
+``submitSearch()`` returns after submission, allowing main to keep handling input and delivered results.
+The complete walkthrough covers input handling and cancellation.
 
-Target Lifetime and Recipient Lifetime
-======================================
+.. erbsland-in-practice-end::
 
-The bound reply retains its event target.
-It does not retain the controller addressed by ``this``, keep its thread running, or promise continued dispatch.
-The application's lifetime supplies the recipient guarantee here: the stack-owned application survives ``run()``,
-including managed-thread shutdown, while worker callbacks can refer to it.
+Owning Data and Accepting Replies
+=================================
 
-For a shorter-lived controller owned by a shared pointer, a member binding can retain it strongly, or ``bindWeakEvent``
-can suppress delivery after it disappears.
-A weak reply also needs a completion policy: another component waiting for the result must be able to cancel its wait or
-observe a deadline.
-:doc:`event_bindings` demonstrates optional weak delivery separately from required operation completion.
+Keeping Values Alive Until Delivery
+-----------------------------------
 
-Replacing a Request Before Its Reply
-====================================
+The gap between submission and dispatch changes the lifetime requirements for parameters.
+With ``invoke()``, the queued callback must retain the values it will use through its captures.
+With a binding, each call stores its arguments: lvalues are copied, rvalues are moved, and the stored arguments are
+passed to the handler as rvalues.
+This lets a producer finish using a result while the receiving loop has yet to process it.
 
-Suppose the user edits the input while conversion is pending.
-A reply can be valid for its original request and still be wrong for the currently selected input.
-Assign an identifier on the controller's loop and return it unchanged with the result.
-The reply may update the preview only if its identifier is still current.
+Owning the argument storage does not necessarily mean owning everything it refers to.
+A copied pointer or view still refers to the original storage; an explicit reference wrapper still borrows its object.
+A shared pointer retains its pointee but does not synchronize access to it.
+Transfer independent values, share immutable data, or provide synchronization for genuinely shared mutable data.
+Keep each component's changing state on its owner loop.
 
-The replacement scenario submits both inputs in the same main-loop callback:
+The receiving object also needs to survive delivery.
+A strong member binding retains its recipient; a weak member binding can skip delivery if the recipient disappears.
+A lambda capturing ``this`` only borrows it.
+Retaining an event target keeps the target object alive, but does not keep its thread running or guarantee continued
+dispatch.
+See :doc:`event_bindings` and :doc:`callback_lifetimes` for those separate ownership choices.
+
+Accepting Only Results That Still Belong
+----------------------------------------
+
+The requesting loop can change its state while the worker computes.
+A result may be correct for the input that produced it and still be obsolete for the input currently selected.
+Give each replaceable request an identifier and retain that identity in its reply.
+On delivery, compare it with the current request before changing state.
+For an operation with a terminal outcome, also check whether it is still pending.
+
+.. erbsland-in-practice-begin:: Rejecting a Reply from an Older Search
+
+In FileSearch, editing the query advances the current generation immediately.
+The reply shown above still holds the generation of the request that produced it.
+The result handler begins with this check:
 
 .. erbsland-demo::
-    :source: event/TextPreview/TextPreviewApp.cpp
-    :show: c:Submit initial input(+0,+4)
-    :sha256: b2e17703bfbf701634d13356ef2a611f3de53558d59a8972c828cc61ea18c8d4
+    :source: event/apps/FileSearch/src/SearchResults.cpp
+    :show: f:SearchResults::receive(-1,-11)
+    :sha256: 1d46365543424c8bb4a48b16e17b747d1535cfcdaf11ca89253293c620482651
 
 .. code-block:: cpp
 
-    // Submit initial input, then optionally replace it before main can dispatch a reply.
-    requestPreview("First draft"_el);
-    if (_scenario == "replacement"_el) {
-        requestPreview("Revised draft"_el);
+    if (generation != _generation) {
+        return;
     }
 
 .. erbsland-demo-end::
 
-Even if the worker finishes the first input immediately, main cannot dispatch that reply until ``begin()`` returns.
-By then ``_requestId`` identifies the revised input.
-This creates an obsolete reply deterministically, without sleeps or assumptions about relative thread speed.
-The old result arrives after replacement, even though this single worker returns the two results in submission order.
+A match allows the handler to append paths and process the batch's completion status.
+A mismatch discards the entire update, including an obsolete final status.
+The worker's cancellation check reduces unnecessary scanning, while this receiving-side check prevents an already queued
+result from updating the new search.
 
-.. erbsland-demo::
-    :source: event/TextPreview/TextPreviewApp.cpp
-    :show: f:TextPreviewApp::receivePreview
-    :exec: event/text_preview --scenario replacement
-    :show-cmd-line:
-    :sha256: 111b503a2fa5d85e162d216306185d9f92466aa58be212c65782efdc174ac82d
+.. erbsland-in-practice-end::
 
-.. code-block:: cpp
+Cancellation and result acceptance serve different purposes.
+Asking a producer to stop cannot retract a result already sent, and a cancellation request queued on a busy worker
+cannot run until that worker returns to dispatch.
+:doc:`shutting_down_event_work` explains cooperative stopping and shutdown ordering.
 
-    void TextPreviewApp::receivePreview(const std::uint64_t requestId, el::String preview) {
-        if (el::currentEvents() != events()) {
-            throw el::LogicFailure{"Preview delivered to the wrong loop."_el};
-        }
-        ++_received;
-        if (requestId == _requestId) {
-            _preview = std::move(preview);
-            ++_accepted;
-            el::io::printLine("Accepted preview: "_el, _preview);
-        } else {
-            el::io::printLine("Ignored obsolete preview."_el);
-        }
-        if (_received == static_cast<int>(_requestId)) {
-            _deadline->stop();
-            quit();
-        }
-    }
+Completing Requests When Work Fails
+-----------------------------------
 
-.. erbsland-demo-run::
+A required result needs a failure path as well as a success path.
+Report an error through the reply or arrange for the operation's owner to end the pending state through its failure
+policy.
+If a recipient may disappear or a reply may never arrive, cancellation or a deadline must also be able to end the wait.
+Optional progress notifications can be skipped; required completion needs an owner that remains available.
 
-    .. code-block:: console
-
-        $ event/text_preview --scenario replacement
-
-    .. erbsland-ansi::
-        :escape-char: ␛
-
-        ␛[0mIgnored obsolete preview.
-        Accepted preview: REVISED DRAFT␛[0m
-
-.. erbsland-demo-end::
-
-``_preview`` changes only for the current identifier.
-``_received`` counts both replies because this bounded demo verifies the complete exchange before quitting.
-An obsolete reply is ignored for display but remains part of the demo's completion accounting.
-The post-loop checks require both expected replies, one accepted result, and the expected preview text.
-
-Waiting for every obsolete reply is a demonstration choice, not a requirement for an interactive controller.
-A real controller can retire old request state as soon as its protocol permits, and keep running for further input.
-For success, cancellation, and timeout races within one operation, also check whether that operation is still pending.
-A matching identity alone does not establish that a result is still needed.
-
-The identity check remains useful with multiple workers, where results can arrive in a different order from requests.
-Independent loops and competing producers do not establish a global execution order.
-If operations must run in a particular sequence, encode the dependency in messages or keep them on one owner loop.
-
-Completion, Failure, and Responsiveness
-=======================================
-
-The sample retains a one-second timer on main while replies are outstanding.
-A missing reply therefore ends the exchange with an error instead of leaving the application running indefinitely.
-When all replies arrive, it stops that timer and requests application shutdown.
-The ``missing`` scenario deliberately submits no work after arming the deadline, verifying that the wait fails.
-The ``failure`` scenario queues a throwing worker callback, verifying managed failure propagation.
-Both exit with failure; ``single`` and ``replacement`` verify their expected results and exit successfully.
-
-The main loop's error handler ends dispatch on a callback exception, and the code after ``runEventLoop()`` retrieves and
-rethrows the stored error for application diagnostics.
-On the worker, ``FailApplication`` reports the failure to the application and starts managed shutdown.
-Neither path assumes that continuing dispatch means a request succeeded.
-The exact policy and propagation contracts are in :ref:`event-loop-options`.
-
-Moving the conversion to a worker keeps main available for input and replies.
-The worker loop still executes one callback at a time: a long conversion delays its later commands, including queued
-cancellation requests.
-A deadline on main can detect missing progress, but cannot interrupt that conversion or make its eventual join finish.
-For cooperative cancellation and teardown ordering, continue with :doc:`shutting_down_event_work`.
-
-Main remains responsive because it returns to dispatch after submitting each request.
-Blocking there to wait for a reply would prevent the reply callback from running on that same loop.
-The procedural file hasher in :doc:`processing_work_on_event_threads` can wait because a separate, running receiver owns
-its entire completion path.
-If the worker needs dependencies, readiness reporting, or asynchronous resource closure, the same message flow can
-connect application parts; :doc:`using_event_loops_in_application_parts` explains that lifecycle.
+An exception in a worker callback cannot unwind the sender's call stack through the request boundary.
+The worker's error policy and the operation's completion policy must therefore agree on how failure ends the request.
+:doc:`handling_event_errors` explains those choices.
+The receiving loop must also remain responsive for a deadline or failure notification to run; neither can interrupt work
+that is blocking another thread.

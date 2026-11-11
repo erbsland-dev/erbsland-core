@@ -4,7 +4,7 @@
 
 #include "impl/worker_pool/WorkerPoolState.hpp"
 
-#include "../event/CurrentEvents.hpp"
+#include "../event/CurrentLoop.hpp"
 
 #include <utility>
 
@@ -55,20 +55,20 @@ void WorkerPool::enqueue(impl::WorkerTaskPtr task) {
 }
 
 void WorkerPool::prepareEvents() {
-    if (ownerEvents() == nullptr) {
-        bindEvents(event::currentEvents());
+    if (ownerLoop() == nullptr) {
+        bindEvents(event::currentLoop());
     }
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
 }
 
-void WorkerPool::bindEvents(const event::EventsPtr &owner) {
+void WorkerPool::bindEvents(const event::EventTargetPtr &owner) {
     _state->bind(owner, shared_from_this());
-    bindOwnerEvents(owner);
+    bindOwnerLoop(owner);
 }
 
 auto WorkerPool::events() -> WorkerPoolEventEditor & {
     prepareEvents();
-    const auto owner = ownerEvents();
+    const auto owner = ownerLoop();
     if (!_editor) {
         _editor.reset(new WorkerPoolEventEditor{shared_from_this(), owner, _state});
     }

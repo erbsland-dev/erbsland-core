@@ -96,7 +96,7 @@ public:
 
 protected:
     /// Create an abstract editor retaining its source and callback target.
-    HttpServerEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+    HttpServerEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
         CommonEventEditor{std::move(source), std::move(target)} {}
 };
 

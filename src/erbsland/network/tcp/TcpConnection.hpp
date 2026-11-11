@@ -48,8 +48,8 @@ public: // implement Connection
 
 protected:
     /// Create a connection owned by an event collection.
-    /// @param ownerEvents The owner-loop event collection.
-    explicit TcpConnection(event::EventsPtr ownerEvents) : Connection{std::move(ownerEvents)} {}
+    /// @param ownerLoop The owner-loop event collection.
+    explicit TcpConnection(event::EventTargetPtr ownerLoop) : Connection{std::move(ownerLoop)} {}
 };
 
 }

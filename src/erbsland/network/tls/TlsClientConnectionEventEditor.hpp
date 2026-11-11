@@ -50,7 +50,7 @@ protected:
     /// Create a TLS client event editor.
     /// @param source The source whose handlers are edited.
     /// @param target The event target on which callbacks run.
-    TlsClientConnectionEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+    TlsClientConnectionEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
         ConnectionEventEditor{std::move(source), std::move(target)} {}
 };
 

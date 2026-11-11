@@ -9,7 +9,7 @@
 #include "EventLoopDriver_fwd.hpp"
 #include "EventLoopErrorHandler.hpp"
 #include "EventLoopOptions.hpp"
-#include "Events.hpp"
+#include "EventTarget.hpp"
 
 #include "../time/TimeDelta.hpp"
 
@@ -21,7 +21,7 @@ namespace erbsland::event {
 /// Each event loop owns its queue and backend registry.
 /// @seeref{event-loop-options}
 /// @tested{ApplicationEventTest EventLoopTest EventThreadTest EventTimerTest EventBackendTest EventLoopOptionsTest}
-class EventLoop : public Events {
+class EventLoop : public EventTarget {
 public:
     // defaults
     ~EventLoop() override = default;

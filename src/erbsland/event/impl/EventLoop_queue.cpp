@@ -39,15 +39,13 @@ auto EventLoop::postInternal(Event event) -> bool {
         case EventQueueOverflowAction::Ignore:
             return false;
         case EventQueueOverflowAction::Quit:
-            _quitRequested = true;
-            _quitEventQueued = true;
+            requestQuitLocked();
             lock.unlock();
             _queueSpace.notify_all();
             _driver->wake();
             return false;
         case EventQueueOverflowAction::FailApplication:
-            _quitRequested = true;
-            _quitEventQueued = true;
+            requestQuitLocked();
             lock.unlock();
             _queueSpace.notify_all();
             _driver->wake();

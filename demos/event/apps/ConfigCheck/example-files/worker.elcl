@@ -1,0 +1,4 @@
+# An independent configuration for a background worker.
+----[ Worker ]--------------------------------------------------------------------------------------------------------
+Name                         : "Index builder"
+Parallel Jobs                : 4

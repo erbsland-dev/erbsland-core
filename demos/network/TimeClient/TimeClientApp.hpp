@@ -17,7 +17,7 @@
 #include <erbsland/cterm/ColorPart.hpp>
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/Endianness.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/EventTimer.hpp>
 #include <erbsland/Host.hpp>
 #include <erbsland/HostLookup.hpp>
@@ -106,7 +106,7 @@ protected: // implement Application
         _host = el::Host::fromStringOrThrow(optionValues()->getText("host"_el));
         _port = el::Port::fromStringOrThrow(optionValues()->getText("port"_el));
         _protocol = el::saturatingCast<uint8_t>(optionValues()->getInteger("protocol"_el));
-        events()->invoke([this]() -> void { startClient(); });
+        loop()->invoke([this]() -> void { startClient(); });
     }
 
 private:
@@ -115,7 +115,7 @@ private:
         terminal()->printLine(fg::BrightWhite, BlockAttributes::Bold, "Time Client"_el);
         terminal()->printLine(fg::Cyan, "Resolving "_el, _host.toString());
 
-        _lookup = events()->get<el::Network>().createHostLookup();
+        _lookup = loop()->get<el::Network>().createHostLookup();
         _lookup->events()
             .onResolved([this](const el::List<el::IpAddress> &addresses) -> void { onResolved(addresses); })
             .onError([this](const el::NetworkErrorContext &error) -> void { onError(error); });
@@ -134,7 +134,7 @@ private:
             (_serverEndpoint.address().isV4() ? "IPv4"_el : "IPv6"_el),
             " socket"_el);
 
-        _socket = events()->get<el::Network>().createUdpSocket();
+        _socket = loop()->get<el::Network>().createUdpSocket();
         _socket->events()
             .onBound([this]() -> void { onBound(); })
             .onDatagram([this](const el::UdpDatagram &datagram) -> void { onDatagram(datagram); })
@@ -156,7 +156,7 @@ private:
             throw el::ApplicationError{"The time request could not be queued."_el};
         }
         terminal()->printLine(fg::BrightBlack, "Waiting for response"_el);
-        _timeout = events()->createTimer([this]() -> void { onTimeout(); });
+        _timeout = loop()->createTimer([this]() -> void { onTimeout(); });
         _timeout->startFixedDelay(el::TimeDelta::seconds(10));
     }
 

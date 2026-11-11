@@ -95,6 +95,7 @@ target_sources(erbsland-core PRIVATE
         Rule_fwd.hpp
         RuleMap.cpp
         RuleMap.hpp
+        RuleRole.hpp
         Rules.cpp
         Rules.hpp
         Rules_fwd.hpp

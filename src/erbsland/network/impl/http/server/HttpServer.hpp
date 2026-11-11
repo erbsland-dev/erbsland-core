@@ -33,7 +33,7 @@ class HttpServer final : public network::HttpServer {
 
 public:
     /// Create an inactive server owned by one event loop.
-    explicit HttpServer(event::EventsPtr ownerEvents);
+    explicit HttpServer(event::EventTargetPtr ownerLoop);
     ~HttpServer() override;
 
 public: // implement network::HttpServer

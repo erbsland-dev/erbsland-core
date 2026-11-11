@@ -9,12 +9,12 @@
 namespace erbsland::network::impl {
 
 HttpServerSession::HttpServerSession(
-    event::EventsPtr ownerEvents,
+    event::EventTargetPtr ownerLoop,
     std::optional<text::String> identifier,
     HttpSessionDataPtr data,
     InvalidatedFn invalidatedFn,
     RenewedFn renewedFn) :
-    network::HttpServerSession{std::move(ownerEvents)},
+    network::HttpServerSession{std::move(ownerLoop)},
     _identifier{std::move(identifier)},
     _data{std::move(data)},
     _invalidatedFn{std::move(invalidatedFn)},
@@ -32,7 +32,7 @@ auto HttpServerSession::data() const noexcept -> const HttpSessionDataPtr & {
 }
 
 void HttpServerSession::setData(HttpSessionDataPtr data) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     _data = std::move(data);
 }
 
@@ -41,7 +41,7 @@ auto HttpServerSession::isValid() const noexcept -> bool {
 }
 
 void HttpServerSession::invalidate() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (!_valid) {
         return;
     }
@@ -62,7 +62,7 @@ void HttpServerSession::invalidate() {
 }
 
 auto HttpServerSession::renewIdentifier() -> bool {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (!_valid || !_renewedFn) {
         return false;
     }
@@ -79,7 +79,7 @@ auto HttpServerSession::takeRenewalResponseFields() -> HttpHeaders {
 }
 
 auto HttpServerSession::events() -> network::HttpServerSessionEventEditor & {
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<HttpServerSessionEventEditor>(shared_from_this(), std::move(target), *this);
     }

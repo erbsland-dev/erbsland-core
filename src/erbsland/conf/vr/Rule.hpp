@@ -20,8 +20,10 @@ public:
     virtual ~Rule() = default;
 
 public:
-    /// The target name-path of this rule.
-    /// This is the name path of the value in the validated document.
+    /// The symbolic value path of this rule, with document escapes decoded.
+    /// List-entry, wildcard and name-constraint components retain their VR placeholder names.
+    /// Alternative branches share their container's path; only the root path is empty.
+    /// This describes a validation target, not necessarily one concrete value in a document.
     [[nodiscard]] virtual auto namePath() const -> NamePath = 0;
     /// The type of the rule.
     [[nodiscard]] virtual auto type() const -> RuleType = 0;

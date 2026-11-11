@@ -77,7 +77,7 @@ Parts own service-specific state, event callbacks, and dependencies.
 This separation lets a service be reused with a detached manager while the application stays a small composition root.
 
 Each part can contribute options through ``registerCommandLineOptions()`` and receive successfully parsed values through
-``parseCommandLine()``.
+``handleCommandLineOptions()``.
 Help and parsing errors do not start the graph.
 
 Accessing Prepared Services

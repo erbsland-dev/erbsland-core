@@ -23,7 +23,7 @@ EventContinuation::~EventContinuation() {
     }
 }
 
-auto EventContinuation::create(const EventsPtr &events) -> EventContinuationPtr {
+auto EventContinuation::create(const EventTargetPtr &events) -> EventContinuationPtr {
     const auto loop = std::dynamic_pointer_cast<EventLoop>(events);
     if (loop == nullptr) {
         throw EventQueueFullError{"This event target does not support reserved continuations."_el};

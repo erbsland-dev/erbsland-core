@@ -14,7 +14,8 @@ namespace erbsland::network::impl {
 class HttpServerRequestEventEditor final : public network::HttpServerRequestEventEditor {
 public:
     /// Bind the stable editor to its owning request.
-    HttpServerRequestEventEditor(event::EventSourcePtr source, event::EventsPtr target, HttpServerRequest &request);
+    HttpServerRequestEventEditor(
+        event::EventSourcePtr source, event::EventTargetPtr target, HttpServerRequest &request);
 
 public: // implement network::HttpServerRequestEventEditor
     auto onResponseCommitted(HttpServerResponseFn callback) -> HttpServerRequestEventEditor & override;

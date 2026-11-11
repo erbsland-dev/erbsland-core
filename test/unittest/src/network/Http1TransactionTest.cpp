@@ -56,7 +56,7 @@ class Http1TransactionTest final : public el::UnitTest {
 
     class MockEditor final : public ConnectionEventEditor {
     public:
-        MockEditor(el::event::EventSourcePtr source, el::event::EventsPtr target, Callbacks &callbacks) :
+        MockEditor(el::event::EventSourcePtr source, el::event::EventTargetPtr target, Callbacks &callbacks) :
             ConnectionEventEditor{std::move(source), std::move(target)}, _callbacks{callbacks} {}
 
         auto onData(NetworkDataFn callback) -> MockEditor & override {
@@ -86,7 +86,7 @@ class Http1TransactionTest final : public el::UnitTest {
 
     class MockConnection final : public Connection {
     public:
-        explicit MockConnection(EventsPtr owner, const ConnectionFlavor flavor = ConnectionFlavor::Tcp) :
+        explicit MockConnection(EventTargetPtr owner, const ConnectionFlavor flavor = ConnectionFlavor::Tcp) :
             Connection{std::move(owner)}, _flavor{flavor} {}
 
         auto localEndpoint() const -> std::optional<IpEndpoint> override { return {}; }
@@ -128,7 +128,7 @@ class Http1TransactionTest final : public el::UnitTest {
             _state = ConnectionState::Failed;
         }
         auto events() -> MockEditor & override {
-            auto target = currentOwnerEvents();
+            auto target = currentOwnerLoop();
             if (!_editor) {
                 _editor = std::make_unique<MockEditor>(shared_from_this(), std::move(target), _callbacks);
             }

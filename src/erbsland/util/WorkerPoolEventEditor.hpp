@@ -42,7 +42,7 @@ private:
     /// @param source The pool facade.
     /// @param owner The owner event loop.
     /// @param state The synchronized worker state.
-    WorkerPoolEventEditor(event::EventSourcePtr source, event::EventsPtr owner, impl::WorkerPoolStatePtr state);
+    WorkerPoolEventEditor(event::EventSourcePtr source, event::EventTargetPtr owner, impl::WorkerPoolStatePtr state);
     /// Verify that handler editing runs on the owner loop.
     void verifyOwner() const;
 

@@ -4,7 +4,7 @@
 
 #include "../../event/EventCallback.hpp"
 #include "../../event/EventLoop_fwd.hpp"
-#include "../../event/Events_fwd.hpp"
+#include "../../event/EventTarget_fwd.hpp"
 
 #include <exception>
 #include <functional>
@@ -43,7 +43,7 @@ public:
     /// Wait until the worker exits.
     void join();
     /// Access the part event target.
-    [[nodiscard]] auto events() const noexcept -> event::EventsPtr;
+    [[nodiscard]] auto loop() const noexcept -> event::EventTargetPtr;
     /// Get the worker thread identifier, if started.
     [[nodiscard]] auto threadId() const noexcept -> std::thread::id;
 

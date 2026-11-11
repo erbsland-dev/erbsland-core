@@ -7,7 +7,7 @@ Core Semantics
 
 .. code-block:: text
 
-    owner loop = one loop that serializes a source's state and callbacks
+    owner loop = one loop that serializes a source's event work and dispatches its callbacks
 
 Primary Types
 =============
@@ -15,7 +15,7 @@ Primary Types
 .. code-block:: text
 
     Event // one typed event with optional data and posting time
-    Events // target for posting events, invoking callbacks, and accessing backends
+    EventTarget // target for posting events, invoking callbacks, and accessing backends
     EventLoop // serialized event dispatch and native wait loop
     EventTimer // thread-safe retained scheduled-callback handle
     EventThread // event loop running on a dedicated thread
@@ -62,7 +62,7 @@ Pattern Definitions
 
 .. code-block:: text
 
-    Ep = EventsPtr/EventLoopPtr // event target or concrete loop pointer
+    Ep = EventTargetPtr/EventLoopPtr // event target or concrete loop pointer
 
 Event Value Patterns
 ====================
@@ -83,7 +83,7 @@ Dispatch Patterns
     o.invoke(callback) // enqueue callback execution in the target loop
     o.invokeAfter(delay, callback) // enqueue a fire-and-forget delayed callback
     o.get❮Backend❯() -> T& // access one backend frontend interface
-    currentEvents() -> EventsPtr // access the loop currently running on this thread
+    currentLoop() -> EventTargetPtr // access the loop currently running on this thread
 
 Callback Binding Patterns
 =========================
@@ -99,12 +99,19 @@ Subscription Patterns
 
 .. code-block:: text
 
-    o.events() -> TEventEditor& // access a source-owned editor on the owner loop
+    o.events() -> TEventEditor& // owner-loop access unless the source documents thread-safe editing
     o.on❮Event❯(callback) -> T& // replace the one source-owned handler; do not combine with an add form
     o.add❮Event❯(callback) -> EventSubscription // add an observer; do not combine with an on form
     o.source() -> EventSourcePtr // retain the source that owns an editor
-    o.target() -> EventsPtr // retain the target that dispatches the callbacks
-    o.ownerEvents() -> EventsPtr // access the loop that owns an event source
+    o.target() -> EventTargetPtr // retain the target that dispatches the callbacks
+    o.ownerLoop() -> EventTargetPtr // access the loop that owns an event source
+
+Application Callback Patterns
+=============================
+
+.. code-block:: text
+
+    on❮Notification❯(arguments) // recommended name for an application method connected through on/add
 
 Event Loop Patterns
 ===================
@@ -137,8 +144,10 @@ Timer and Thread Patterns
     T::create([options]) -> UnmanagedEventThreadPtr // create a standalone event thread
     o.start() // start a one-shot event thread; never restart a joined thread
     o.quit() // idempotently request graceful termination without waiting
+    o.stopToken() -> util::StopToken // observe permanent thread-loop quit; resumable stop does not signal
     o.join() // wait without requesting termination; never call from the worker itself
-    o.eventLoop()/events() -> Ep // access a thread's loop or event target
+    o.loop() -> EventTargetPtr // access an application's, part's, or thread's event target
+    o.workerEventLoop() -> EventLoop& // access an event thread's full loop interface
 
 Backend Patterns
 ================

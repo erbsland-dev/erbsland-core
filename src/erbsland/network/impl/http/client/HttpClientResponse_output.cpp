@@ -14,7 +14,7 @@
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParseError.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../path/Path.hpp"
 #include "../../../../path/PathCollisionMode.hpp"
 #include "../../../../path/PathCommitOptions.hpp"
@@ -372,7 +372,7 @@ void HttpClientResponse::finishFinal() {
         } catch (const RuntimeError &) {}
     }
     if (const auto request = _request.lock()) {
-        ownerEvents()->invoke([request]() -> void { request->handleResponseFinal(); });
+        ownerLoop()->invoke([request]() -> void { request->handleResponseFinal(); });
     }
 }
 

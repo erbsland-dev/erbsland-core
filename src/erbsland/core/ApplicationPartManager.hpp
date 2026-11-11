@@ -7,7 +7,8 @@
 #include "ApplicationPartManagerEventEditor.hpp"
 #include "ApplicationPartTraits.hpp"
 
-#include "../event/Events_fwd.hpp"
+#include "../event/EventSource.hpp"
+#include "../event/EventTarget_fwd.hpp"
 #include "../options/Options_fwd.hpp"
 #include "../options/OptionValues_fwd.hpp"
 
@@ -20,8 +21,8 @@ namespace erbsland::core {
 
 /// A detached manager for dependency-aware application parts.
 /// @seedoc{/reference/core/application_framework}
-/// @tested{ApplicationPartManagerTest ApplicationPartApplicationTest}
-class ApplicationPartManager : public ApplicationPartManagerAccess {
+/// @tested{ApplicationPartManagerTest ApplicationPartApplicationTest ApplicationPartManagerEventTest}
+class ApplicationPartManager : public ApplicationPartManagerAccess, public event::EventSource {
     friend class Application;
 
 protected:
@@ -41,7 +42,7 @@ public: // factory methods
     /// If `controlEvents` is null, the manager creates and owns a dedicated control event thread.
     /// @param controlEvents Optional externally owned control event target.
     /// @return A new application-part manager.
-    [[nodiscard]] static auto create(event::EventsPtr controlEvents = {}) -> ApplicationPartManagerPtr;
+    [[nodiscard]] static auto create(event::EventTargetPtr controlEvents = {}) -> ApplicationPartManagerPtr;
 
 public: // registration and preparation
     /// Defer registration of an application-part class.
@@ -63,7 +64,7 @@ public: // registration and preparation
     virtual void registerCommandLineOptions(const options::OptionsPtr &options) = 0;
     /// Forward successfully parsed command-line values to prepared parts.
     /// @param values The parsed option values.
-    virtual void parseCommandLine(const options::OptionValuesPtr &values) = 0;
+    virtual void handleCommandLineOptions(const options::OptionValuesPtr &values) = 0;
 
 public: // lifecycle
     /// Begin initial automatic startup asynchronously.
@@ -77,9 +78,12 @@ public: // lifecycle
     /// Stop all parts asynchronously.
     virtual void stop() = 0;
 
-public: // events and errors
+public: // implement event::EventSource
     /// Access the stable manager-owned lifecycle event editor.
-    [[nodiscard]] virtual auto events() noexcept -> ApplicationPartManagerEventEditor & = 0;
+    /// May be called from any thread, including before the control loop starts dispatching.
+    [[nodiscard]] auto events() noexcept -> ApplicationPartManagerEventEditor & override = 0;
+
+public: // errors
     /// Set the part-error policy callback.
     virtual void setErrorHandler(ApplicationPartErrorHandler handler) = 0;
     /// Test whether an error is queued.

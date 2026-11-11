@@ -7,7 +7,7 @@
 #include <erbsland/core/impl/application_data/ApplicationRandomData.hpp>
 #include <erbsland/core/impl/ApplicationData.hpp>
 #include <erbsland/CpCount.hpp>
-#include <erbsland/Events.hpp>
+#include <erbsland/EventTarget.hpp>
 #include <erbsland/ExitCode.hpp>
 #include <erbsland/FastRandom.hpp>
 #include <erbsland/LoopStatus.hpp>
@@ -68,8 +68,8 @@ auto DemoApplication::main() -> el::ExitCode {
 }
 
 void DemoApplication::runDemoEventLoop() {
-    events()->invokeAfter(el::Seconds{10}, [this]() -> void { eventLoop().stop(); });
-    eventLoop().run();
+    loop()->invokeAfter(el::Seconds{10}, [this]() -> void { mainEventLoop().stop(); });
+    mainEventLoop().run();
 }
 
 auto DemoApplication::createAndInitializeTerminal(const el::block::Size size, const el::cterm::TerminalFlags flags)

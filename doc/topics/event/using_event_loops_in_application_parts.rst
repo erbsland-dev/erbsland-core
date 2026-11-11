@@ -4,279 +4,509 @@
 
 .. index::
     single: Event Loops; Application Parts
-    single: Application Parts; Event Sources
+    single: Application Parts; Initialization
+    single: Application Parts; Command-Line Configuration
     single: Application Parts; Asynchronous Shutdown
+    single: Application Parts; Event Errors
 
 **************************************
 Using Event Loops in Application Parts
 **************************************
 
-A service often needs to keep resources alive, respond to incoming work, and finish outstanding operations before it
-stops.
-An application part gives that service its own event loop and connects its lifetime to the rest of the application.
-You can keep its event sources and mutable state together on one thread.
+An application part gives your event-driven code a dedicated thread and an event loop whose lifetime the application
+manages.
+You set up callbacks, keep the state they use in the part, and let the framework dispatch work and coordinate shutdown.
+The important decisions are when to create event sources, which thread may access their state, and whether those sources
+need more callbacks before they can close.
 
-The framework runs the part's initialization, callbacks, stopping hook, and cleanup on its dedicated thread.
-Keeping mutable service state on that thread lets callbacks work with it in sequence, without a mutex between those
-callbacks.
-Other threads communicate with the service by posting work to its target; an ordinary C++ method call does not move to
-the part's thread automatically.
+This page explains those decisions from command-line configuration through initialization, normal execution, and
+shutdown, including what happens when a callback throws.
+It builds on :doc:`using_event_loops` and assumes that you already know how to define and register a part, as described
+in :doc:`/topics/core/applications_from_parts` and :doc:`/topics/core/application_parts`.
 
-This page explains that execution model, when event sources can be created, and how a part keeps dispatching until its
-asynchronous shutdown is complete.
-The file-server demo provides concrete examples of the same mechanics you would use in another long-lived service.
-It builds on :doc:`using_event_loops` and focuses on the event behavior of a part.
-:doc:`/topics/core/applications_from_parts` covers application composition, while
-:doc:`/topics/core/application_parts` explains service interfaces and dependencies.
+The Part's Event Loop and Lifecycle
+===================================
 
-Registration and Automatic Startup
-==================================
+Each started :cpp:class:`ApplicationPart <erbsland::core::ApplicationPart>` has its own event loop and thread.
+The framework retains the part, starts that thread, and runs the loop for you.
+You customize the part through its lifecycle hooks; you do not need to create a worker thread or run another loop inside
+those hooks.
 
-:cpp:func:`registerPart() <erbsland::core::Application::registerPart>` adds a part type before the application runs.
-During startup, the framework constructs the part and prepares its command-line options.
-After successful parsing, the default application main starts automatic parts and runs the main loop for coordination.
-Each started part gets a separate event-loop thread; its ``automaticStart()`` decision and dependencies determine
-whether it starts during this initial phase.
+Preparation happens before the part thread exists.
+The loop dispatches ``onInitialize()`` to prepare the part.
+After that hook returns, the manager publishes the part's ``Running`` state and queues ``onRunning()`` on the part's
+loop to begin its work.
+During shutdown, it can keep dispatching until the part finishes its asynchronous work.
+After the loop exits, cleanup still runs on that same thread.
+During a normal run, the part moves through ``Starting``, ``Running``, and ``Stopping``; after its thread finishes, the
+manager reports ``Stopped``, or ``Failed`` if a failure was recorded.
+The following diagram shows the normal lifecycle of a started part:
 
-The framework retains the part while its lifecycle is active and runs its loop.
-Inside the part, you implement lifecycle hooks rather than start another event thread or call ``runEventLoop()``.
-The file-server application registers one such part to publish a local directory over HTTP:
+.. mermaid::
+
+    sequenceDiagram
+        participant App as Application<br/>thread
+        participant Manager as Manager<br/>control loop
+        participant Part as Part<br/>loop
+        Note over App: Prepare parts and<br/>command-line<br/>configuration
+        App->>Manager: Start registered<br/>parts
+        Manager->>Part: Start loop and dispatch<br/>onInitialize()
+        activate Part
+        Part->>Manager: Initialization<br/>completed
+        Note over Manager: Publish Running
+        Manager->>Part: Queue onRunning()
+        Note over Part: Begin work and<br/>dispatch callbacks<br/>and source events
+        App->>Manager: Request application<br/>shutdown
+        Manager->>Part: Queue onStopping()
+        Note over Part: Finish any<br/>asynchronous<br/>shutdown work
+        Part->>Part: completeStopping()
+        Note over Part: Loop exits, then<br/>cleanup() releases<br/>resources
+        deactivate Part
+        Note over App: Join part threads<br/>before<br/>Application::cleanup()
+
+The loop context and the ability to dispatch another callback are separate things.
+An initialization or stopping hook can use the part's event APIs, but another queued callback on that loop must wait
+until the hook returns.
+
+.. list-table::
+    :header-rows: 1
+    :widths: 24 16 30 30
+
+    * - Phase
+      - Thread
+      - Available state and resources
+      - Callback dispatch
+    * - Construction and command-line hooks
+      - Application
+      - Startup configuration; no part event target yet
+      - Part loop has not started
+    * - ``onInitialize()``
+      - Part
+      - Parsed configuration and current loop; create event sources here
+      - Other callbacks wait until the hook returns
+    * - ``onRunning()``
+      - Part
+      - Initialization completed and ``Running`` published; begin work here
+      - Separate queued callback after initialization
+    * - Normal event processing
+      - Part
+      - Retained sources and runtime state
+      - One callback at a time
+    * - ``onStopping()`` and asynchronous closure
+      - Part
+      - Existing sources remain available for shutdown
+      - Continues after the hook returns, until stopping completes
+    * - ``cleanup()``
+      - Part
+      - Remaining resources to release
+      - Loop has exited; no further dispatch
+
+These contexts describe parts managed by the normal application lifecycle.
+The :cpp:func:`automaticStart() <erbsland::core::ApplicationPart::automaticStart>` decision runs on the manager's
+control target, not on the part thread.
+It selects whether a part starts; it is not an event-source setup hook.
+A part that has stopped or failed cannot be restarted in the same manager.
+
+Configuration Before Event Processing
+=====================================
+
+Command-line handling is a preparation phase, so you can validate settings before opening connections or starting other
+asynchronous work.
+For an application using the default lifecycle, startup proceeds in this order:
+
+#. :cpp:func:`Application::initialize() <erbsland::core::Application::initialize>` performs application-wide setup.
+#. The framework prepares the registered parts, constructing their instances.
+#. The application's :cpp:func:`registerCommandLineOptions() <erbsland::core::Application::registerCommandLineOptions>`
+   runs, followed by each part's
+   :cpp:func:`registerCommandLineOptions() <erbsland::core::ApplicationPart::registerCommandLineOptions>`.
+#. :cpp:func:`Application::parseCommandLine() <erbsland::core::Application::parseCommandLine>` parses the complete
+   command line.
+#. After successful parsing, the application's
+   :cpp:func:`handleCommandLineOptions() <erbsland::core::Application::handleCommandLineOptions>` runs, followed by each
+   part's :cpp:func:`handleCommandLineOptions() <erbsland::core::ApplicationPart::handleCommandLineOptions>`.
+#. The default application main starts automatic parts and runs the main loop that coordinates them.
+   Each started part enters :cpp:func:`ApplicationPart::onInitialize() <erbsland::core::ApplicationPart::onInitialize>` on
+   its own event thread.
+
+Override the part's option-registration hook to contribute its option definitions to the shared command line.
+Its ``handleCommandLineOptions()`` receives the already parsed values: this is where you validate their meaning for the
+part and copy the settings into members.
+The application and its parts use the same ``handleCommandLineOptions()`` hook for this phase.
+Override ``Application::parseCommandLine()`` only when replacing the parsing behavior itself.
+
+Construction, option registration, and option handling all run synchronously on the thread calling
+:cpp:func:`Application::run() <erbsland::core::Application::run>`, normally the main thread.
+They finish before automatic part threads start.
+**You do not need a mutex between a part's command-line handling and its initialization.** Thread startup makes the
+configuration stored in ``handleCommandLineOptions()`` available to ``onInitialize()``.
+Treat it as fixed startup configuration, or make later changes on its owning event loop.
+If another thread changes it after startup, that is a separate concurrent-access problem.
+
+The part's :cpp:func:`loop() <erbsland::core::ApplicationPart::loop>` is unavailable during construction and
+command-line handling.
+Store configuration there and defer loop-bound resource creation until initialization.
+Help, version output, and module overview skip part value handling and startup; a parsing or validation error also
+prevents normal startup.
+Part cleanup is not called for an instance that never started, so ordinary member ownership must also handle that case.
+
+The automatic-start step belongs to the default application main.
+A custom main function or command module must arrange startup explicitly; see
+:doc:`/topics/core/applications_from_parts` for that orchestration.
+
+.. erbsland-in-practice-begin:: Validating Settings Before the Part Starts
+
+The :doc:`file-server application </demo_apps/event/file_server>` contributes its directory, port, and timeout to the
+application's command line.
+Its two hooks define those options, then validate and store the parsed values:
 
 .. erbsland-demo::
-    :source: event/FileServer/main.cpp
-    :exec: event/file_server --port 0 --timeout 1 {directory:root}
-    :show-cmd-line:
-    :sha256: 66240f3be04ef115741e8afedc41dccd1f4ff9c79ce7db9ff1f900c40afeda9e
+    :source: event/apps/FileServer/ServerPart.cpp
+    :show: f:ServerPart::registerCommandLineOptions, f:ServerPart::handleCommandLineOptions
+    :sha256: 94d497c0e9ea253874be1fc1f265dd559449019a9afd00883c08e6666581b3f1
 
 .. code-block:: cpp
 
-    /// Register an application part and let the default main manage its event thread and shutdown.
-    auto main(const int argc, char *argv[]) -> int {
-        auto app = el::Application{argc, argv};
-        app.info().setApplicationName("File Server"_el);
-        app.enableServiceLifecycle();
-        app.registerPart<ServerPart>();
-        return app.run();
+    void ServerPart::registerCommandLineOptions(const el::OptionsPtr &options) {
+        options->addOption("root"_el).setRequired().setHelp("Directory to serve on the local machine."_el);
+        options->addOption({"--port"_el, "port"_el})
+            .setType(el::OptionType::Text)
+            .setDefaultValue("17680"_el)
+            .setValidateTextValue<el::Port>("Invalid port."_el)
+            .setHelp("Local HTTP port; zero selects an available port."_el);
+        options->addOption({"--timeout"_el, "timeout"_el})
+            .setType(el::OptionType::Integer)
+            .setDefaultValue(0)
+            .setHelp("Stop after this many seconds; zero runs until interrupted."_el);
     }
 
-.. erbsland-demo-run::
-
-    .. code-block:: console
-
-        $ event/file_server --port 0 --timeout 1 root
-
-    .. erbsland-ansi::
-        :escape-char: ␛
-
-        ␛[0mBrowse http://127.0.0.1:51380/␛[0m
-
-.. erbsland-demo-end::
-
-The call to ``enableServiceLifecycle()`` connects this application's shutdown to its platform service lifecycle.
-The captured run uses an available local port and quits after one second; its port number varies between runs.
-
-For an interactive run, start ``file_server --port 17680 doc/topics/event`` and visit ``http://127.0.0.1:17680/`` in
-your browser.
-The server binds to loopback, and its page links to files beneath the selected directory.
-
-Configuration and Event-Owned Resources
-=======================================
-
-In an application-managed part, command-line hooks run on the application thread before the part thread starts.
-Use them to validate input and store configuration values.
-The event target is not available before startup, so defer event-source creation to ``initialize()``.
-A constructor or command-line hook cannot provide that execution context.
-
-Once callbacks start, configuration and runtime resources belong to different phases of the same service.
-Configuration prepared before thread startup can be read by the part; mutable runtime state should be accessed only on
-its loop unless you add explicit synchronization.
-
-The file server's ``parseCommandLine()`` validates its root directory, port, and optional timeout.
-Those settings and the server pointer are members of ``ServerPart``:
-
-.. erbsland-demo::
-    :source: event/FileServer/ServerPart.hpp
-    :show: c:"Configured, physically resolved"(+0,+3)
-    :sha256: 352490a4bcaac9844d9743c213e6d56c3a02747766b4240033ec1236d7ddf446
-
-.. code-block:: cpp
-
-    el::Path _root;            ///< Configured, physically resolved content root.
-    el::Port _port;            ///< Configured loopback listening port.
-    el::TimeDelta _timeout;    ///< Optional demo run duration.
-    el::HttpServerPtr _server; ///< Event source owned by this part's loop.
+    void ServerPart::handleCommandLineOptions(const el::OptionValuesPtr &values) {
+        _root = el::Path::fromNativeOrThrow(values->getText("root"_el)).resolveOrThrow(el::PathResolveMode::Physical);
+        if (!_root.info().isDirectory()) {
+            throw el::ApplicationError{"The root must name a directory."_el};
+        }
+        _port = el::Port::fromStringOrThrow(values->getText("port"_el));
+        _timeout = el::Seconds{values->getInteger("timeout"_el)};
+        if (_timeout.isNegative()) {
+            throw el::ApplicationError{"The timeout must be non-negative."_el};
+        }
+    }
 
 .. erbsland-demo-end::
 
-The configuration becomes fixed before the event thread begins using it.
-The ``_server`` member will keep the event source alive after setup returns.
-A temporary local server pointer in the setup function would not provide that lifetime.
-
-Initialization and Asynchronous Readiness
-=========================================
-
-``initialize()`` runs on the part's thread with its event loop bound as the current loop.
-:cpp:func:`events() <erbsland::core::ApplicationPart::events>` returns the target for that loop.
-Use this context to create event sources, retain their owning pointers in members, connect handlers, and start their
-operations.
-Timers and invocations scheduled through this target also run on the part's loop.
-
-After ``initialize()`` and ``running()`` return, the framework reports the part as running and dispatches queued work.
-That lifecycle state does not mean that asynchronous operations started during initialization are already ready.
-Use each source's readiness notification before depending on its result; do not block initialization waiting for a
-callback that requires this loop to dispatch.
-
-This excerpt keeps the file server's lifecycle handlers visible and omits its request handler.
-The server is created through the part's target, and ``onListening()`` announces actual network readiness:
+The values are retained in the part's configuration members:
 
 .. erbsland-demo::
-    :source: event/FileServer/ServerPart.hpp
-    :show: f:initialize
-    :hide: c:"The network source belongs"(-4,+14)
-    :sha256: c3128aefefdb410566f1ac846fb09b0a0ef2c93e04de320649577700d6478c70
+    :source: event/apps/FileServer/ServerPart.hpp
+    :show: c:"Configured, physically resolved"(+0,+2)
+    :sha256: 9d2a46bee23e3a6102b79b549873c5ecc1e69e24b5168f809b3494e26a741f36
 
 .. code-block:: cpp
 
-    void initialize() override {
+    el::Path _root;                      ///< Configured, physically resolved content root.
+    el::Port _port;                      ///< Configured loopback listening port.
+    el::TimeDelta _timeout;              ///< Optional demo run duration.
+
+.. erbsland-demo-end::
+
+Both hooks run on the application thread before the part starts.
+An invalid directory or negative timeout ends startup before the HTTP source is created.
+On successful startup, ``onInitialize()`` reads these members on the part thread without a mutex.
+The hooks do not open a listener or schedule any event work.
+
+.. erbsland-in-practice-end::
+
+Setting Up Callbacks in Initialization
+======================================
+
+``Application::initialize()`` prepares the application before event dispatch, while ``ApplicationPart::onInitialize()``
+executes as a callback in the part's event loop.
+The application hook runs before command-line parsing and before normal main-loop dispatch.
+It is appropriate for application-wide configuration and can queue work for the application's loop, but it does not
+provide the part's event context.
+The part hook runs later, with parsed settings available and the part's loop already bound as the current loop.
+You can create its event sources directly there.
+
+In the part's ``onInitialize()``, obtain the required event API through ``loop()``, create the sources, and connect
+their handlers before starting their operations.
+Keep owning source pointers in members when the operations must outlive the hook.
+Likewise, retain subscription handles for observers that must stay registered.
+Returning from initialization destroys local variables; it must not destroy the only owner of an operation whose
+callbacks you still need.
+:doc:`using_event_apis` explains source creation and subscriptions in more detail.
+
+.. erbsland-in-practice-begin:: Connecting Handlers Before Starting a Source
+
+The file-server part creates and retains its HTTP source in ``onInitialize()``.
+This excerpt selects its readiness and error callbacks:
+
+.. erbsland-demo::
+    :source: event/apps/FileServer/ServerPart.hpp
+    :show: c:Event source owned, f:onInitialize
+    :hide: c:Handle directory-index requests-c:Report listener readiness(+0,-1), c:Complete part shutdown-c:Bind to loopback(+0,-1)
+    :sha256: 060eb0b319334cc4fc27b41e546c325e117f659ddb0c50178998f36ac3358588
+
+.. code-block:: cpp
+
+    el::HttpServerPtr _server;           ///< Event source owned by this part's loop.
+
+    void onInitialize() override {
         // The network source belongs to this part's event loop.
-        _server = events()->get<el::Network>().createHttpServer();
+        _server = loop()->get<el::Network>().createHttpServer();
         _server->addStaticContentHandler(el::HttpStaticFileHandler::create(_root, "/files"_el));
-        _server->events()
 
-            .onListening([this]() -> void {
-                el::io::printLine("Browse http://"_el, _server->localEndpoint()->toString(), "/"_el);
-                if (_timeout.isPositive()) {
-                    events()->invokeAfter(_timeout, []() -> void { el::application().quit(); });
-                }
-            })
-            .onError([](const el::NetworkErrorContext &error) -> void { throw el::NetworkError{error}; })
-            .onFinal([this]() -> void {
-                if (state() == el::ApplicationPartState::Stopping) {
-                    completeStopping();
-                }
-            });
+        // Report listener readiness after the endpoint has been bound.
+        _server->events().onListening([this]() -> void {
+            el::io::printLine("Browse http://"_el, _server->localEndpoint()->toString(), "/"_el);
+            if (_timeout.isPositive()) {
+                loop()->invokeAfter(_timeout, []() -> void { el::application().quit(); });
+            }
+        });
+        // Escalate source errors to the part manager.
+        _server->events().onError([](const el::NetworkErrorContext &error) -> void { throw el::NetworkError{error}; });
+
         // Bind to loopback so the demo exposes files only on the local machine.
         _server->start(el::IpEndpoint{el::IpAddress::fromStringOrThrow("127.0.0.1"_el), _port});
     }
 
 .. erbsland-demo-end::
 
-``start()`` begins the asynchronous listen operation and returns.
-The stored server owns its handlers; the final handler participates in the shutdown described below.
-HTTP routing and response construction are covered in :doc:`/topics/network/using-http-servers`.
+``loop()->get<el::Network>()`` binds the source to this part's loop, and ``_server`` keeps it alive after the hook
+returns.
+The handlers are connected before ``start()`` begins the asynchronous listen operation.
+They can read the configuration prepared by the command-line hooks because it is fixed before thread startup.
+The listening callback observes actual readiness; returning from ``onInitialize()`` alone does not establish it.
+The timeout is scheduled from that readiness callback, so it measures time spent listening.
 
-Once listening begins, this demo schedules its optional timeout through the part's target.
-That timeout callback also runs on the part thread and requests application-wide shutdown.
-``invokeAfter()`` retains the queued callback without a stored timer handle; a repeating timer created with
-``createTimer()`` would need an owning member, just as in :doc:`scheduling_work`.
+.. erbsland-in-practice-end::
 
-Callback Execution and State Ownership
-======================================
+Beginning Work in the Running Phase
+===================================
 
-Callbacks from sources created on the part's loop execute one at a time on the part thread.
-Lifecycle hooks that access runtime resources use that same thread.
-If all mutations stay there, no two callbacks can change the part's state concurrently, and those members need no
-application mutex.
-This is a rule for how your service uses its state, not automatic protection applied to every member of an
-``ApplicationPart``.
+After ``onInitialize()`` returns successfully, the manager publishes the part's
+:cpp:enum:`Running <erbsland::core::ApplicationPartState>` state and queues
+:cpp:func:`onRunning() <erbsland::core::ApplicationPart::onRunning>` as a separate callback on the part's loop.
+Override this hook to start the operations prepared during initialization.
+The framework supplies the deferred call, so you can begin work directly in ``onRunning()`` without wrapping it in
+another ``loop()->invoke(...)``.
+Both hooks run with the part's loop as the current loop; their default implementations do nothing.
 
-In the file server, the request, listening, error, and final handlers follow that rule.
-Each can access the configuration and server without competing with another callback on the same loop.
+Callbacks queued during ``onInitialize()`` can execute before ``onRunning()``.
+Keep the setup that every callback needs inside ``onInitialize()``, and begin operations in ``onRunning()`` when they
+must start after the manager has published ``Running``.
+Each hook must return promptly so the loop can dispatch other callbacks.
+Waiting inside either hook for a callback on the same loop prevents that callback from running.
 
-The handlers capture ``this``.
-That is safe here because the framework retains the part through shutdown, its loop finishes before cleanup, and cleanup
-releases the server that owns those handlers.
-The callbacks do not keep the part alive through a shared-pointer cycle.
-:doc:`callback_lifetimes` explains how this changes when a callback recipient has an independent lifetime.
+``Running`` means initialization completed and the part can begin normal work.
+The manager can start dependent parts without waiting for ``onRunning()`` to finish.
+Neither that state nor returning from the hook proves that an asynchronous service is ready: starting a connection is
+different from receiving its connected notification.
+Dependencies that need initialized state can use it once their own initialization begins.
+Consumers that need an asynchronous result require an explicit readiness notification from the service.
 
-Cross-Thread Service Calls
-==========================
+.. erbsland-in-practice-begin:: Starting Work in the Running Callback
 
-The main thread and other parts still run concurrently.
-An ordinary call to a method on ``ServerPart`` runs on the caller's thread; owning an event loop does not redirect C++
-method calls.
-A service interface that changes event-owned state should queue that operation through the part's target with
-:cpp:func:`invoke() <erbsland::event::Events::invoke>`, carrying values and ownership sufficient for deferred execution.
-Its caller must also coordinate with the service's startup and shutdown.
-:doc:`/topics/core/application_parts` covers the service-interface boundary, and
-:doc:`processing_work_on_event_threads` demonstrates value transfer between loops.
-
-Keep callbacks short enough for the service to remain responsive.
-In this demo, directory-index creation is synchronous, so it delays other callbacks on the part while it runs.
-For expensive processing, delegate work and deliver the completed result back to the owning loop.
-
-Asynchronous Shutdown
-=====================
-
-The part manager calls :cpp:func:`stopping() <erbsland::core::ApplicationPart::stopping>` on the part's thread when
-shutdown begins.
-The default implementation completes stopping immediately.
-Override it when owned resources need further event processing to finish, such as a connection draining pending output.
-Begin that close operation and return so the loop can dispatch its completion callback.
-
-Call :cpp:func:`completeStopping() <erbsland::core::ApplicationPart::completeStopping>` when no required asynchronous
-shutdown work remains.
-It requests termination of the part's loop; cleanup follows after dispatch ends.
-For multiple sources, track all outstanding close operations and complete stopping only when all have finished.
-If no asynchronous work remains, complete stopping directly from the hook.
-
-In the file-server demo, the timeout requests :cpp:func:`quit() <erbsland::core::Application::quit>`, and the
-application stops its parts before closing the remaining event system.
-The server may still have committed responses to deliver, so ``stopping()`` begins closing it:
+The registered-part template separates source setup from the operations that begin in the running phase:
 
 .. erbsland-demo::
-    :source: event/FileServer/ServerPart.hpp
-    :show: f:stopping
-    :sha256: 1eee5ee8bcee081fd561dd4670ac37765a54c602977a434047b6dc0bd73a3490
+    :source: event/templates/ApplicationStartup/RegisteredPart/WorkPart.hpp
+    :show: f:onInitialize, f:onRunning, f:completeWork, f:cleanup
+    :sha256: 71f7cefc1085dfa1e3faa30024161787cb6d754957027fa869cff399ed1d3e4e
 
 .. code-block:: cpp
 
-    void stopping() override {
-        // Allow committed responses to drain before ending this part's event loop.
-        if (_server == nullptr || _server->state() == el::NetworkSourceState::Closed ||
-            _server->state() == el::NetworkSourceState::Failed) {
-            completeStopping();
-        } else {
-            _server->close();
-        }
+    void onInitialize() override {
+        // TODO: Create and retain event sources on this part's loop and connect their handlers.
+        // Connect the final successful completion of your work to completeWork().
+    }
+
+    void onRunning() override {
+        // TODO: Start your business operations after this part enters Running.
+        // Report asynchronous service readiness separately if other parts require it.
+    }
+
+    void completeWork() { el::Application::instance().quit(); }
+
+    void cleanup() noexcept override {
+        // TODO: Release part-owned resources after its loop exits.
+        // Initialization may have failed partway.
     }
 
 .. erbsland-demo-end::
 
-On the asynchronous close path, returning from this hook does not complete the part's shutdown.
-The loop continues dispatching while the server closes.
-Once its final notification arrives, the ``onFinal()`` handler installed during initialization checks that the part is
-stopping and calls :cpp:func:`completeStopping() <erbsland::core::ApplicationPart::completeStopping>`.
-That is the signal that this part no longer needs event processing.
+Supply the retained sources and handler connections in ``onInitialize()``, then start your operations directly in
+``onRunning()``.
+Connect their required successful completion to ``completeWork()`` and release the retained resources in ``cleanup()``.
+The completion method requests application-wide shutdown; report service readiness separately when another part needs
+it.
 
-.. mermaid::
+.. erbsland-in-practice-end::
 
-    flowchart TD
-        Stop["stopping(): ask the server to close"]
-        Dispatch["Return to the loop;<br/>continue processing server events"]
-        Final["onFinal(): completeStopping()"]
-        Cleanup["Loop exits; cleanup() releases resources"]
-        Stop --> Dispatch --> Final --> Cleanup
+State Ownership During Callbacks
+================================
 
-If the server is already closed, failed, or absent, there is nothing left to drain, and ``stopping()`` completes
-immediately instead.
-The default implementation of ``stopping()`` also completes immediately; this override deliberately keeps the loop alive
-for the server's asynchronous close.
+Event callbacks dispatched by a part's loop execute one at a time on its thread.
+They share that thread with ``onInitialize()``, ``onRunning()``, ``onStopping()``, and ``cleanup()``.
+When your runtime state is accessed only there, a callback can read and change members without a mutex: no other
+callback on that loop runs concurrently with it.
+This makes the part a useful owner for both the event sources and the state those sources update.
 
-Blocking in ``stopping()`` until a final callback arrives would prevent that callback from running on the same thread.
-Calling ``completeStopping()`` before the server finishes would remove the event processing it still needs.
-The begin-close, return, complete-later sequence avoids both problems.
+Other parts and the application thread still run concurrently.
+Calling an ordinary C++ method on a part executes that method on the caller's thread.
+The method does not move to the part's thread merely because it belongs to an application part.
+An operation that touches event-owned state should post work through the part's target using
+:cpp:func:`invoke() <erbsland::event::EventTarget::invoke>`, or provide an explicit synchronization contract.
+Carry values and ownership sufficient for deferred execution, and coordinate calls with the service's startup and
+shutdown.
+See :doc:`communicating_between_loops` for request and reply patterns.
 
-Cleanup and Failure Paths
-=========================
+A callback capturing ``this`` borrows the part; it does not keep it alive.
+The manager retains a started part through its loop execution and cleanup, so handlers owned by that part's sources can
+use this pattern when those sources are released during cleanup.
+A callback registered on another loop may outlive that sequence and needs its own lifetime arrangement.
+:doc:`callback_lifetimes` explains those ownership choices.
 
-After the loop exits, :cpp:func:`cleanup() <erbsland::core::ApplicationPart::cleanup>` runs on the same part thread.
-It releases resources without starting new asynchronous work:
+Keep each callback and lifecycle hook bounded and responsive.
+While one is executing, this part cannot dispatch a timer, a reply, or its stopping hook.
+For expensive work, arrange processing elsewhere and deliver its result back to the owning loop, as described in
+:doc:`processing_work_on_event_threads`.
+Starting a second event loop inside a callback is not a substitute for returning to the framework's loop.
+
+.. erbsland-in-practice-begin:: Reading Part Statistics Through a Public Interface
+
+The file-server application reports how many directory-index requests it has received when shutdown begins.
+The application thread reads through ``ServerStatus``, while the HTTP callback updates the count on the part thread.
+The public interface promises a thread-safe snapshot:
 
 .. erbsland-demo::
-    :source: event/FileServer/ServerPart.hpp
+    :source: event/apps/FileServer/ServerStatus.hpp
+    :sha256: a884010214eeab5eb6dda5951d1677764e5136284d731f61895ce2d3479c934c
+
+.. code-block:: cpp
+
+    /// Public statistics interface for the file-server part.
+    /// Callers may read a snapshot from any thread without accessing the HTTP source.
+    class ServerStatus {
+    public:
+        // defaults
+        virtual ~ServerStatus() = default;
+
+    public: // registration
+        /// Get the stable identifier shared by the interface and its application part.
+        [[nodiscard]] static auto partIdentifier() -> el::ApplicationPartIdentifierPtr {
+            static const auto identifier = el::ApplicationPartIdentifier::create("dev.erbsland.demo.file-server"_el);
+            return identifier;
+        }
+
+    public: // statistics
+        /// Get the number of directory-index requests received so far, from any thread.
+        [[nodiscard]] virtual auto indexRequestCount() const -> std::size_t = 0;
+    };
+
+.. erbsland-demo-end::
+
+``ServerPart`` implements this interface through ``ApplicationPartWithInterface<ServerStatus>``.
+Its getter and the private helper called by the directory-index request callback lock the same mutex:
+
+.. erbsland-demo::
+    :source: event/apps/FileServer/ServerPart.cpp
+    :show: f:ServerPart::indexRequestCount, f:ServerPart::recordIndexRequest
+    :sha256: 9c8de1a4b12e0bc260fa5ca3e27bf87322bb931ee99079f748f4016c48600479
+
+.. code-block:: cpp
+
+    auto ServerPart::indexRequestCount() const -> std::size_t {
+        const auto lock = std::scoped_lock{_statisticsMutex};
+        return _indexRequestCount;
+    }
+
+    void ServerPart::recordIndexRequest() {
+        const auto lock = std::scoped_lock{_statisticsMutex};
+        ++_indexRequestCount;
+    }
+
+.. erbsland-demo-end::
+
+.. erbsland-demo::
+    :source: event/apps/FileServer/ServerPart.hpp
+    :show: c:Protects the count(+0,+1)
+    :sha256: 80aaed29736177cdaa3f9e9b4505c23baa1f3f0260599f56f79608c2f0cc8e92
+
+.. code-block:: cpp
+
+    mutable std::mutex _statisticsMutex; ///< Protects the count for readers on other threads.
+    std::size_t _indexRequestCount{0};   ///< Directory-index requests received on the part loop.
+
+.. erbsland-demo-end::
+
+The application retains a state subscription while ``run()`` is active.
+Its callback runs on the manager's control target, the application's main loop, and resolves the service by its public
+interface:
+
+.. erbsland-demo::
+    :source: event/apps/FileServer/main.cpp
+    :show: c:Read a statistics snapshot(+0,+8)
+    :sha256: d264900e74ea49d1d8896457033afd0f400e905f0e514592135cc593034b848d
+
+.. code-block:: cpp
+
+    // Read a statistics snapshot on the application thread while the part is stopping.
+    const auto stateSubscription = app.partManager()->events().addPartStateChanged(
+        [&app](el::ApplicationPartIdentifierPtr, const el::ApplicationPartState state) -> void {
+            if (state == el::ApplicationPartState::Stopping) {
+                const auto status = app.part<ServerStatus>();
+                el::io::printLine("Directory-index requests at shutdown: "_el, status->indexRequestCount());
+            }
+        });
+    return app.run();
+
+.. erbsland-demo-end::
+
+The getter runs directly on the application thread; the mutex protects its read against a simultaneous request callback.
+Only the counter is shared this way.
+The HTTP source and directory configuration remain owned by the part's loop.
+Neither lock is held while building a response or printing the snapshot.
+The returned value describes that instant: more requests may arrive before closure finishes, so it is not a final
+request total or a shutdown-completion signal.
+
+.. erbsland-in-practice-end::
+
+Shutdown and Cleanup
+====================
+
+You do not need to override :cpp:func:`onStopping() <erbsland::core::ApplicationPart::onStopping>` just because your
+part uses events.
+Its default implementation calls
+:cpp:func:`completeStopping() <erbsland::core::ApplicationPart::completeStopping>` immediately.
+That is sufficient when the part has no remaining operation that requires asynchronous closure or a final callback.
+You may still need ``cleanup()`` to release retained sources on their owning thread.
+
+Application-Wide Shutdown
+-------------------------
+
+A callback can call :cpp:func:`Application::quit() <erbsland::core::Application::quit>` to request that the whole
+application end.
+This requests shutdown rather than destroying the parts immediately.
+The manager stops dependents before the parts they depend on, leaving those dependencies available while their consumers
+finish.
+For each running part, the framework calls ``onStopping()`` on that part's own loop.
+The application's coordination loop remains available while the parts stop.
+
+Once a part completes stopping, its loop exits, ``cleanup()`` runs, and the framework joins its thread.
+The application finishes the part lifecycle and its managed event threads before calling
+:cpp:func:`Application::cleanup() <erbsland::core::Application::cleanup>` and returning from ``run()``.
+You do not need to join part threads yourself.
+Request application shutdown through ``Application::quit()`` so this coordination can take place.
+Platform stop requests use the same lifecycle when service integration is enabled; see
+:doc:`/topics/core/service_lifecycle`.
+
+.. erbsland-in-practice-begin:: Releasing a Part's Source During Application Shutdown
+
+After the file-server part's loop exits, the framework calls this cleanup hook on the same part thread:
+
+.. erbsland-demo::
+    :source: event/apps/FileServer/ServerPart.hpp
     :show: f:cleanup
-    :sha256: 6d6472fffdd87a72a41614fa3bd5f6d5fe14b50dd6efd55e844fdf7549b04992
+    :sha256: 1d4d240711652dba44b7f4dd9ea21f84c43ced2631df3ee4e2903b24c4fa461b
 
 .. code-block:: cpp
 
@@ -289,22 +519,137 @@ It releases resources without starting new asynchronous work:
 
 .. erbsland-demo-end::
 
-On a normal shutdown, the server has already finished closing.
-``abort()`` also provides a fallback when an error prevents that normal sequence from completing.
-Resetting ``_server`` releases the source and its captured handlers.
-The null check handles initialization that failed before a server was stored.
+On a graceful shutdown, the source has already closed.
+The same hook also handles runtime failure or partial initialization: it aborts any remaining source and releases the
+owning pointer without waiting for a callback.
+The framework completes this part's cleanup and joins its thread before calling the application's own ``cleanup()``.
 
-A final source callback is not a substitute for cleanup.
-Here, ``onError()`` throws a ``NetworkError`` so a server failure reaches the part manager; another callback or
-lifecycle hook can throw as well.
-The default manager policy stops the graph, and cleanup must remain safe after partial initialization or failed work.
-Keep it non-throwing and use resource-owning members for unconditional release.
+.. erbsland-in-practice-end::
 
-The manager also limits graceful shutdown; the default timeout is 30 seconds per part.
-After a timeout it requests loop termination and records a failure, but it cannot interrupt a callback that never
-returns.
-This makes prompt returns from callbacks and lifecycle hooks part of the shutdown design.
-:doc:`/topics/core/application_parts` covers dependencies, failure handling, and lifecycle configuration beyond this
-single-service example.
-:doc:`shutting_down_event_work` explains the general shutdown sequence, including queue draining, operation
-cancellation, and thread joins outside the part framework.
+Keeping the Loop Alive for Asynchronous Closure
+-----------------------------------------------
+
+Some resources need their loop to continue processing events while they close.
+A connection may still have accepted output to send, or an operation may need to acknowledge cancellation.
+In that case, override ``onStopping()`` to stop accepting new application work, begin the required closure, and return.
+The part remains in :cpp:enum:`Stopping <erbsland::core::ApplicationPartState>` while callbacks finish that work.
+Returning from this hook alone does not complete stopping when you override the default implementation.
+
+Call ``completeStopping()`` once no required asynchronous completion remains.
+For several operations, keep track of all outstanding completions rather than ending the loop after the first one.
+If everything is already finished when ``onStopping()`` runs, call it directly from the hook.
+Otherwise, the callback observing the last completion can make that call.
+
+``completeStopping()`` requests the loop to quit.
+Already accepted queued work can still drain, but the loop no longer admits new work or polls sources for future events.
+It is therefore the end of the asynchronous shutdown phase, not the way to begin closing a source.
+Do not wait for closure inside ``onStopping()``: a callback on the same loop cannot run until the hook returns.
+The general distinction between closing resources and quitting loops is covered in :doc:`shutting_down_event_work`.
+
+.. erbsland-in-practice-begin:: Returning to the Loop Until Closure Finishes
+
+The file-server part must allow accepted responses to drain before ending its loop.
+Its ``onStopping()`` begins that closure and returns:
+
+.. erbsland-demo::
+    :source: event/apps/FileServer/ServerPart.hpp
+    :show: f:onStopping
+    :sha256: 23cb7fb5cb804740335ace895085e9d42889e44cb2bcb28de04bb3692fbe076c
+
+.. code-block:: cpp
+
+    void onStopping() override {
+        // Allow committed responses to drain before ending this part's event loop.
+        if (_server == nullptr || _server->state() == el::NetworkSourceState::Closed ||
+            _server->state() == el::NetworkSourceState::Failed) {
+            completeStopping();
+        } else {
+            _server->close();
+        }
+    }
+
+.. erbsland-demo-end::
+
+While ``_server->close()`` finishes asynchronously, the part keeps dispatching events.
+The final handler installed in ``onInitialize()`` supplies the completion signal:
+
+.. erbsland-demo::
+    :source: event/apps/FileServer/ServerPart.hpp
+    :show: c:Complete part shutdown(+0,+5)
+    :sha256: 702e6f90cc779be69b5c96608c739b986458789fcad17ba0757342f5d4522532
+
+.. code-block:: cpp
+
+    // Complete part shutdown after the source has closed.
+    _server->events().onFinal([this]() -> void {
+        if (state() == el::ApplicationPartState::Stopping) {
+            completeStopping();
+        }
+    });
+
+.. erbsland-demo-end::
+
+The retained ``_server`` keeps the source alive until this callback runs and cleanup can release it.
+If the source is already absent, closed, or failed, ``onStopping()`` calls ``completeStopping()`` immediately.
+Otherwise, the final callback makes that call after closure finishes.
+This is asynchronous waiting: ``onStopping()`` does not block the thread or wait on a condition variable.
+
+.. erbsland-in-practice-end::
+
+Releasing Resources After Dispatch
+----------------------------------
+
+:cpp:func:`ApplicationPart::cleanup() <erbsland::core::ApplicationPart::cleanup>` runs after the part's loop has exited,
+on the part thread but outside active dispatch.
+Release event sources and subscriptions there, using synchronous abort or release operations when necessary.
+It is too late to start another asynchronous close and wait for its callback.
+The hook is ``noexcept`` and must not let an exception escape.
+
+Cleanup also runs when a handled runtime failure interrupts initialization or event processing.
+Make it safe for partially initialized state, such as a source pointer that was never assigned or an operation that
+never reached its final notification.
+Do not rely on ``onStopping()`` or a source's final callback having run first.
+Keeping owned resources in members allows both explicit cleanup on the part thread and ordinary destruction when an
+instance never starts.
+
+The framework bounds graceful stopping with
+:cpp:func:`shutdownTimeout() <erbsland::core::ApplicationPart::shutdownTimeout>`, which defaults to 30 seconds per part.
+Override it if your part needs a different graceful-shutdown allowance.
+Expiry records a failure and requests loop termination, but it cannot forcibly interrupt C++ code that never returns.
+A blocked callback can therefore still prevent shutdown from completing.
+
+Unhandled Event Exceptions
+==========================
+
+An event source may report an operation error through a dedicated error callback.
+That notification lets your code decide whether to recover, finish one request with an error, or fail the part.
+Handling it and returning normally lets the part continue processing events.
+Throwing from that handler instead turns the operation error into an exception escaping an event callback.
+
+When a :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` or a derived exception escapes a part callback, the
+framework records it with the part manager and stops dispatch on the failed part's loop.
+The failed callback is not retried, and its previous state changes are not undone.
+The part then runs ``cleanup()`` on its own thread.
+The same boundary handles these exceptions from ``onInitialize()``, ``onRunning()``, and ``onStopping()``.
+
+By default, the manager also shuts down the other parts in dependency order.
+The error reaches ``Application::run()``, which completes application cleanup, prints a diagnostic, and returns a
+failure exit code.
+An :cpp:class:`ApplicationError <erbsland::core::ApplicationError>` supplies its own exit code.
+You do not need to install a separate loop error handler to obtain this application-level failure behavior.
+For an error that should remain local to one operation, handle it before it escapes the callback and arrange that
+operation's completion yourself.
+
+The failed part does not get an opportunity to finish its usual asynchronous shutdown after dispatch stops.
+Its ``onStopping()`` hook or a source's final notification may never run.
+This is why indispensable resource release belongs in ``cleanup()`` rather than solely in a successful completion
+callback.
+Custom manager policies can allow unrelated parts to continue while the failed part and its dependents stop; see
+:doc:`/topics/core/application_parts` for that choice.
+
+This handling applies to ``RuntimeError`` and its derived types, not arbitrary C++ exceptions.
+A :cpp:class:`LogicFailure <erbsland::err::LogicFailure>` or another exception outside that hierarchy escaping the part
+thread terminates the process.
+It does not become a normal failure return from ``Application::run()``, and orderly cleanup is not guaranteed.
+An exception escaping ``cleanup() noexcept`` also terminates the process.
+See :doc:`handling_event_errors` for the wider distinction between operation errors and callback failures.

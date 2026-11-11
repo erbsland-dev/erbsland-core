@@ -18,7 +18,7 @@ Network Facade
 Availability
 ------------
 
-``Network`` is accessed through ``Events::get<Network>()``.
+``Network`` is accessed through ``EventTarget::get<Network>()``.
 The built-in backend resolves numeric addresses and host names asynchronously and provides native TCP and UDP sockets on
 macOS, Linux, and Windows.
 TCP uses kqueue, epoll, or IOCP through the event loop that owns each source.
@@ -66,7 +66,7 @@ Use a typed event editor on the owner loop to configure handlers before calling 
 The source owns one stable editor and all handlers configured through it.
 Calling an ``on...()`` method again replaces that handler; an empty callback clears it.
 Regular operations are owner-loop-only; cancellation and abort are thread-safe, and other cross-thread work uses
-``Events::invoke()``.
+``EventTarget::invoke()``.
 
 ``HostLookup`` is reusable: each ``start(host, options)`` call captures one host and one ``HostLookupOptions`` value.
 Its result or error handler observes the terminal state, then ``onFinal()`` runs after the source returns to

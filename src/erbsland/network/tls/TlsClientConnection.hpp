@@ -64,8 +64,8 @@ public: // implement Connection
 
 protected:
     /// Create a TLS client source owned by one event target.
-    /// @param ownerEvents The owner event target.
-    explicit TlsClientConnection(event::EventsPtr ownerEvents) : Connection{std::move(ownerEvents)} {}
+    /// @param ownerLoop The owner event target.
+    explicit TlsClientConnection(event::EventTargetPtr ownerLoop) : Connection{std::move(ownerLoop)} {}
 };
 
 }

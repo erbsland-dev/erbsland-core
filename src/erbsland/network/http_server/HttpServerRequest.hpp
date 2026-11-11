@@ -97,7 +97,7 @@ public: // response
 
 protected:
     /// Create an abstract retained request owned by one event target.
-    explicit HttpServerRequest(event::EventsPtr ownerEvents) : EventSource{std::move(ownerEvents)} {}
+    explicit HttpServerRequest(event::EventTargetPtr ownerLoop) : EventSource{std::move(ownerLoop)} {}
 };
 
 }

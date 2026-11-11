@@ -16,7 +16,7 @@
 
 #include "../../../../err/Exception.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/AnyString.hpp"
 #include "../../../../text/AsciiCategory.hpp"
 #include "../../../../text/EncodingMode.hpp"
@@ -90,7 +90,7 @@ void HttpServerConnection::startPlain() {
     if (server == nullptr) {
         return;
     }
-    auto connection = server->ownerEvents()->get<Network>().createTcpConnection();
+    auto connection = server->ownerLoop()->get<Network>().createTcpConnection();
     const auto weakSelf = std::weak_ptr<HttpServerConnection>{shared_from_this()};
     connection->events()
         .onConnected([weakSelf]() -> void {
@@ -117,7 +117,7 @@ void HttpServerConnection::startTls() {
     if (server == nullptr) {
         return;
     }
-    auto connection = server->ownerEvents()->get<Network>().createTlsServerConnection();
+    auto connection = server->ownerLoop()->get<Network>().createTlsServerConnection();
     const auto weakSelf = std::weak_ptr<HttpServerConnection>{shared_from_this()};
     connection->events()
         .onHandshakeCompleted([weakSelf]() -> void {
@@ -236,7 +236,7 @@ void HttpServerConnection::handleRequestHead(const Http1DecodeEvent &event) {
     try {
         auto target = HttpRequestTarget{event.request().target()};
         request = std::make_shared<HttpServerRequest>(
-            server->ownerEvents(),
+            server->ownerLoop(),
             event.request(),
             std::move(target),
             *_connectionInfo,
@@ -328,7 +328,7 @@ void HttpServerConnection::handleFinal() {
     const auto maximum = server->_options.maximumRequestsPerConnection().toSizeT();
     if (_reusable && !_closing && server->_state == NetworkSourceState::Active && _requestCount < maximum) {
         const auto weakSelf = std::weak_ptr<HttpServerConnection>{shared_from_this()};
-        server->ownerEvents()->invoke([weakSelf]() -> void {
+        server->ownerLoop()->invoke([weakSelf]() -> void {
             if (const auto self = weakSelf.lock()) {
                 self->startTransaction();
             }

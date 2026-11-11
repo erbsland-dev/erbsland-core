@@ -15,7 +15,7 @@ namespace erbsland::event::impl {
 using namespace text::literals;
 
 EventThreadBase::EventThreadBase(const EventLoopOptions &options, EventLoop::FailureHandler failureHandler) :
-    _eventLoop{std::make_shared<EventLoop>(options, std::move(failureHandler))} {
+    _eventLoop{std::make_shared<EventLoop>(options, std::move(failureHandler), _stopSource)} {
 }
 
 EventThreadBase::~EventThreadBase() noexcept {
@@ -27,13 +27,17 @@ void EventThreadBase::start() {
     if (_started) {
         throw err::LogicFailure{"The event thread was already started."_el};
     }
-    auto thread = std::thread{[this]() -> void { runEventLoop(); }};
+    auto thread = std::thread{[this]() -> void { runWorkerEventLoop(); }};
     _thread = std::move(thread);
     _started = true;
 }
 
 void EventThreadBase::quit() noexcept {
     _eventLoop->quit();
+}
+
+auto EventThreadBase::stopToken() const noexcept -> util::StopToken {
+    return _stopSource.stopToken();
 }
 
 void EventThreadBase::join() {
@@ -56,11 +60,11 @@ auto EventThreadBase::isRunning() const noexcept -> bool {
     return _eventLoop->isRunning();
 }
 
-auto EventThreadBase::eventLoop() noexcept -> event::EventLoop & {
+auto EventThreadBase::workerEventLoop() noexcept -> event::EventLoop & {
     return *_eventLoop;
 }
 
-auto EventThreadBase::events() noexcept -> event::EventsPtr {
+auto EventThreadBase::loop() noexcept -> event::EventTargetPtr {
     return _eventLoop;
 }
 

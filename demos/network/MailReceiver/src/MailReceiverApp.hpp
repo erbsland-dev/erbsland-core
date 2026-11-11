@@ -74,7 +74,7 @@ protected: // implement el::Application
                 throw el::ApplicationError{"Timeout must be between 1 and 86400 seconds."_el};
             }
         }
-        events()->invoke([this]() -> void { startListener(); });
+        loop()->invoke([this]() -> void { startListener(); });
     }
     void cleanup() noexcept override {
         if (_timeout) {
@@ -109,7 +109,7 @@ private:
     void startListener() {
         _connectionQuota = el::ConnectionQuota::create(el::ItemCount{16});
         _handshakeQuota = el::ConnectionQuota::create(el::ItemCount{4});
-        _listener = events()->get<el::Network>().createTcpListener();
+        _listener = loop()->get<el::Network>().createTcpListener();
         _listener->events()
             .onListening(
                 [this]() -> void { _mailLog->info("Listening on "_el, _listener->localEndpoint()->toString()); })
@@ -133,7 +133,7 @@ private:
             });
         _listener->start(_settings.endpoint, el::TcpListenerOptions{}.setConnectionQuota(_connectionQuota));
         if (_timeoutSeconds > 0) {
-            _timeout = events()->createTimer([this]() -> void { stopServer(); });
+            _timeout = loop()->createTimer([this]() -> void { stopServer(); });
             _timeout->startOnce(el::TimeDelta::seconds(_timeoutSeconds));
         }
     }
@@ -144,9 +144,9 @@ private:
             return;
         }
         const auto id = ++_nextSessionId;
-        auto session = std::make_shared<MailSession>(events(), _mailLog, [this, id](const bool delivered) -> void {
+        auto session = std::make_shared<MailSession>(loop(), _mailLog, [this, id](const bool delivered) -> void {
             // Defer destruction until the session's final callback has returned.
-            events()->invoke([this, id, delivered]() -> void { releaseSession(id, delivered); });
+            loop()->invoke([this, id, delivered]() -> void { releaseSession(id, delivered); });
         });
         _sessions.emplace(id, session);
         auto options = el::TlsServerAcceptOptions{_handshakeQuota};
@@ -171,7 +171,7 @@ private:
         for (const auto &[id, session] : _sessions) {
             session->stop();
         }
-        _shutdownDeadline = events()->createTimer([this]() -> void {
+        _shutdownDeadline = loop()->createTimer([this]() -> void {
             for (const auto &[id, session] : _sessions) {
                 session->abort();
             }

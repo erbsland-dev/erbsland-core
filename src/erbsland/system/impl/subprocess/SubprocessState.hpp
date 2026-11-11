@@ -122,7 +122,7 @@ public: // event delivery
     /// Queue at most one owner-loop delivery callback when work is available.
     /// @param owner The bound callback target.
     /// @param self Weak workflow ownership for callback cancellation.
-    void queueDispatch(const event::EventsPtr &owner, std::weak_ptr<SubprocessState> self);
+    void queueDispatch(const event::EventTargetPtr &owner, std::weak_ptr<SubprocessState> self);
     /// Deliver one bounded batch on the owner loop.
     void dispatch();
 

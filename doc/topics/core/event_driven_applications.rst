@@ -27,7 +27,7 @@ managed event processing in an orderly way.
     :source: core/EventApplication/main.cpp
     :exec: core/core_event_application
     :exec-2: core/core_event_application --help
-    :sha256: 6ab54a56e460b00b79c9c720729500bdd18c9400a4b9d39c79b761d0924b3643
+    :sha256: 59499f11b40ccd38666eed9774598ab36b22c71fc6eda71797e3f4210406fa50
 
 .. code-block:: cpp
 
@@ -43,13 +43,13 @@ managed event processing in an orderly way.
         void initialize() override {
             info().setApplicationName("Maintenance Queue"_el);
             info().setApplicationVersion(el::Version{1, 0, 0});
-            events()->invoke([this]() -> void { runMaintenance(); });
+            loop()->invoke([this]() -> void { runMaintenance(); });
         }
 
     private:
         void runMaintenance() {
             el::io::printLine("maintenance job started"_el);
-            events()->invoke([this]() -> void {
+            loop()->invoke([this]() -> void {
                 el::io::printLine("maintenance job completed"_el);
                 quit();
             });
@@ -109,7 +109,7 @@ For example, a directory packer can resolve its source and queue a callback that
     void handleCommandLineOptions(const el::OptionValuesPtr &values) override {
         const auto source = el::Path::fromNativeOrThrow(values->getText("source"_el))
                                 .resolveOrThrow(el::PathResolveMode::Physical);
-        events()->invoke([this, source]() -> void { startScanning(source); });
+        loop()->invoke([this, source]() -> void { startScanning(source); });
     }
 
 Here ``source`` is a required text option registered by the application, and ``startScanning()`` begins its workflow on
@@ -134,4 +134,4 @@ terminate the whole process with a diagnostic and exit code.
 
 Overriding ``main()`` disables the automatic event-loop entry.
 Preparation that depends on options belongs in ``handleCommandLineOptions()`` and keeps that entry intact.
-A custom main that also needs work after dispatch can call ``runEventLoop()`` explicitly.
+A custom main that also needs work after dispatch can call ``runMainEventLoop()`` explicitly.

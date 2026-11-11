@@ -63,12 +63,12 @@ The concrete class provides a static ``create()`` factory so graph preparation c
 registration has been validated.
 
 The factory returns the concrete shared pointer type.
-Construction should establish ordinary object invariants, while ``initialize()`` performs work that belongs on the
+Construction should establish ordinary object invariants, while ``onInitialize()`` performs work that belongs on the
 dedicated part thread.
 
 .. erbsland-demo::
     :source: core/ApplicationParts/CatalogStoragePart.hpp
-    :sha256: 79fd790d7e805d48aa361d2d51870dede9f8a43c1c2aa6fcb22c7c748c0bc674
+    :sha256: 4836fe771626c9e7ac24180788c03795462d9667d0e2c89feca6688aa0643c68
 
 .. code-block:: cpp
 
@@ -84,7 +84,7 @@ dedicated part thread.
         [[nodiscard]] auto status() const -> el::String override { return "catalog storage is ready"_el; }
 
     protected: // implement ApplicationPart
-        void initialize() override { el::io::printLine("catalog storage initialized"_el); }
+        void onInitialize() override { el::io::printLine("catalog storage initialized"_el); }
         void cleanup() noexcept override { el::io::printLine("catalog storage cleaned up"_el); }
     };
 
@@ -98,13 +98,13 @@ The default inherited implementation returns an empty list.
 Preparation rejects duplicate identifiers, missing or self dependencies, dependency cycles, invalid factories, and
 metadata failures before startup begins.
 
-A dependency reaches ``Running`` before the dependent part's ``initialize()`` starts.
+A dependency reaches ``Running`` before the dependent part's ``onInitialize()`` starts.
 Shutdown reverses that relationship: dependents stop before the services they use.
 The server part below can therefore resolve storage during initialization and release it during cleanup.
 
 .. erbsland-demo::
     :source: core/ApplicationParts/CatalogServerPart.hpp
-    :sha256: bc1afb14879b1270369d013cb3f5f7a703b1d212fd44faea8c920181586911ce
+    :sha256: 2420ad2250881a3d47303e6be228cec6d3e9fe6a1bb1cb28bc9b25ae3e962d5b
 
 .. code-block:: cpp
 
@@ -124,7 +124,7 @@ The server part below can therefore resolve storage during initialization and re
         [[nodiscard]] auto endpoint() const -> el::String override { return "local catalog endpoint"_el; }
 
     protected: // implement ApplicationPart
-        void initialize() override {
+        void onInitialize() override {
             _storage = partManager().part<CatalogStorage>();
             el::io::printLine("catalog server initialized; "_el, _storage->status());
         }
@@ -143,7 +143,10 @@ Following the Part Lifecycle
 ============================
 
 Each started part moves through ``Starting``, ``Running``, ``Stopping``, and either ``Stopped`` or ``Failed``.
-Its ``initialize()``, ``running()``, ``stopping()``, and ``cleanup()`` hooks execute on its dedicated thread.
+Its ``onInitialize()``, ``onRunning()``, and ``onStopping()`` hooks execute as callbacks in its dedicated event loop.
+After ``onInitialize()`` returns, the manager publishes ``Running`` and queues ``onRunning()`` as a separate callback.
+Begin normal work in ``onRunning()``; dependent parts can start without waiting for that callback to finish.
+The ``cleanup()`` hook runs on the same thread after the loop exits.
 The ``automaticStart()`` decision is the exception: the manager evaluates it on the control event source while initial
 startup is being planned.
 
@@ -165,7 +168,7 @@ Sharing Command-Line Configuration
 
 Part command-line hooks run synchronously on the application's calling thread, not on the part thread.
 ``registerCommandLineOptions()`` contributes definitions after graph preparation.
-``parseCommandLine()`` receives values only after the complete command line has parsed successfully.
+``handleCommandLineOptions()`` receives values only after the complete command line has parsed successfully.
 
 These hooks do not parse arguments themselves and they run before part startup.
 Use them to copy immutable startup settings into the part, then treat those settings as fixed once the event thread
@@ -176,8 +179,8 @@ Calling Services Across Threads
 
 A dependency is available before its dependent starts, but ordinary service calls are not automatically synchronized.
 A const method that returns immutable state may be safe directly.
-Operations that touch event-owned state should post a callback through the service's ``events()`` target or provide
-their own locking and completion model.
+Operations that touch event-owned state should post a callback through the service's ``loop()`` target or provide their
+own locking and completion model.
 
 Do not wait for a manager or part state from the manager control source or from any managed part thread.
 Such a wait would prevent the event that satisfies it from running and is rejected with ``LogicFailure``.
@@ -190,7 +193,7 @@ The default error action stops the complete graph.
 A custom error handler may return ``Continue`` to stop the failed branch and its active dependents while unrelated
 branches continue.
 
-``stopping()`` must return promptly.
+``onStopping()`` must return promptly.
 Its default implementation completes shutdown immediately.
 A part with asynchronous shutdown work can return after starting that work and call ``completeStopping()`` from its
 event loop when finished.

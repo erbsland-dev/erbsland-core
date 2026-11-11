@@ -25,12 +25,20 @@ using namespace text::literals;
 using time::TimeDelta;
 using time::TimePoint;
 
-EventLoop::EventLoop(const EventLoopOptions &options, FailureHandler failureHandler) :
-    EventLoop{EventLoopDriver::createDefault(), options, std::move(failureHandler)} {
+EventLoop::EventLoop(
+    const EventLoopOptions &options, FailureHandler failureHandler, std::optional<util::StopSource> threadStopSource) :
+    EventLoop{EventLoopDriver::createDefault(), options, std::move(failureHandler), std::move(threadStopSource)} {
 }
 
-EventLoop::EventLoop(EventLoopDriverPtr driver, const EventLoopOptions &options, FailureHandler failureHandler) :
-    _options{options}, _failureHandler{std::move(failureHandler)}, _driver{std::move(driver)} {
+EventLoop::EventLoop(
+    EventLoopDriverPtr driver,
+    const EventLoopOptions &options,
+    FailureHandler failureHandler,
+    std::optional<util::StopSource> threadStopSource) :
+    _options{options},
+    _failureHandler{std::move(failureHandler)},
+    _threadStopSource{std::move(threadStopSource)},
+    _driver{std::move(driver)} {
     if (!_failureHandler &&
         (_options.errorPolicy() == EventLoopErrorPolicy::FailApplication ||
             _options.queueOverflowAction() == EventQueueOverflowAction::FailApplication)) {
@@ -88,7 +96,7 @@ auto EventLoop::runUntilIdle() -> std::size_t {
     return result;
 }
 
-auto EventLoop::beginDispatch() -> CurrentEventsScope {
+auto EventLoop::beginDispatch() -> CurrentLoopScope {
     ensureBackendsAttached();
     auto events = shared_from_this();
     std::scoped_lock lock{_mutex};
@@ -98,7 +106,7 @@ auto EventLoop::beginDispatch() -> CurrentEventsScope {
     _running = true;
     _consumerThread = std::this_thread::get_id();
     _stopRequested = false;
-    return CurrentEventsScope{std::move(events)};
+    return CurrentLoopScope{std::move(events)};
 }
 
 void EventLoop::stop() noexcept {
@@ -131,13 +139,20 @@ void EventLoop::stopForFailure() noexcept {
 void EventLoop::quit() noexcept {
     {
         std::scoped_lock lock{_mutex};
-        if (!_quitRequested) {
-            _quitRequested = true;
-            _quitEventQueued = true;
-        }
+        requestQuitLocked();
     }
     _queueSpace.notify_all();
     _driver->wake();
+}
+
+void EventLoop::requestQuitLocked() noexcept {
+    if (!_quitRequested) {
+        _quitRequested = true;
+        _quitEventQueued = true;
+        if (_threadStopSource) {
+            _threadStopSource->requestStop();
+        }
+    }
 }
 
 auto EventLoop::isRunning() const noexcept -> bool {
@@ -335,7 +350,7 @@ void EventLoop::processEvent(const Event &event) {
     if (event.identifier() == id::QuitEvent) {
         {
             std::scoped_lock lock{_mutex};
-            _quitRequested = true;
+            requestQuitLocked();
             _quitEventQueued = false;
         }
         clearQueuedEvents();

@@ -5,7 +5,7 @@
 #include "../../../err/LogicFailure.hpp"
 #include "../../../err/ParameterFailure.hpp"
 #include "../../../err/RuntimeError.hpp"
-#include "../../../event/Events.hpp"
+#include "../../../event/EventTarget.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../source/NetworkError.hpp"
 
@@ -19,8 +19,8 @@ using namespace err;
 using namespace text::literals;
 
 UdpSocket::UdpSocket(
-    event::EventsPtr ownerEvents, event::EventLoopDriverPtr driver, UdpSocketDeviceCreateFn createDevice) :
-    network::UdpSocket{std::move(ownerEvents)}, _driver{std::move(driver)}, _createDevice{std::move(createDevice)} {
+    event::EventTargetPtr ownerLoop, event::EventLoopDriverPtr driver, UdpSocketDeviceCreateFn createDevice) :
+    network::UdpSocket{std::move(ownerLoop)}, _driver{std::move(driver)}, _createDevice{std::move(createDevice)} {
     if (_driver == nullptr) {
         throw ParameterFailure{"The UDP socket requires an event-loop driver."_el, "driver"_el};
     }
@@ -44,7 +44,7 @@ auto UdpSocket::state() const noexcept -> NetworkSourceState {
 }
 
 void UdpSocket::start(IpEndpoint localEndpoint, UdpSocketOptions options) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_started.load()) {
         throw LogicFailure{"A UDP socket can only be started once."_el};
     }
@@ -85,7 +85,7 @@ void UdpSocket::start(IpEndpoint localEndpoint, UdpSocketOptions options) {
 }
 
 auto UdpSocket::send(const UdpDatagram &datagram) -> NetworkSendStatus {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != NetworkSourceState::Active) {
         return NetworkSendStatus::Closed;
     }
@@ -106,7 +106,7 @@ auto UdpSocket::send(const UdpDatagram &datagram) -> NetworkSendStatus {
 }
 
 void UdpSocket::pauseReceiving() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != NetworkSourceState::Active || _receivePaused) {
         return;
     }
@@ -121,7 +121,7 @@ void UdpSocket::pauseReceiving() {
 }
 
 void UdpSocket::resumeReceiving() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != NetworkSourceState::Active || !_receivePaused) {
         return;
     }
@@ -136,7 +136,7 @@ void UdpSocket::resumeReceiving() {
 }
 
 void UdpSocket::close() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     const auto currentState = _state.load();
     if (currentState == NetworkSourceState::Closed || currentState == NetworkSourceState::Failed ||
         currentState == NetworkSourceState::Closing) {
@@ -180,7 +180,7 @@ void UdpSocket::abort() noexcept {
 }
 
 auto UdpSocket::events() -> network::UdpSocketEventEditor & {
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<impl::UdpSocketEventEditor>(shared_from_this(), std::move(target));
     }
@@ -220,7 +220,7 @@ auto UdpSocket::createCallbacks(const std::uint64_t generation) -> UdpSocketDevi
 
 void UdpSocket::postBound(const std::uint64_t generation) {
     const auto weakSelf = std::weak_ptr<UdpSocket>{std::static_pointer_cast<UdpSocket>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverBound(generation);
         }
@@ -229,7 +229,7 @@ void UdpSocket::postBound(const std::uint64_t generation) {
 
 void UdpSocket::postDatagram(const std::uint64_t generation, UdpDatagram datagram) {
     const auto weakSelf = std::weak_ptr<UdpSocket>{std::static_pointer_cast<UdpSocket>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation, datagram = std::move(datagram)]() mutable -> void {
+    ownerLoop()->invoke([weakSelf, generation, datagram = std::move(datagram)]() mutable -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverDatagram(generation, std::move(datagram));
         }
@@ -238,7 +238,7 @@ void UdpSocket::postDatagram(const std::uint64_t generation, UdpDatagram datagra
 
 void UdpSocket::postDatagramDropped(const std::uint64_t generation, UdpDatagramDropContext context) {
     const auto weakSelf = std::weak_ptr<UdpSocket>{std::static_pointer_cast<UdpSocket>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation, context = std::move(context)]() mutable -> void {
+    ownerLoop()->invoke([weakSelf, generation, context = std::move(context)]() mutable -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverDatagramDropped(generation, std::move(context));
         }
@@ -247,7 +247,7 @@ void UdpSocket::postDatagramDropped(const std::uint64_t generation, UdpDatagramD
 
 void UdpSocket::postSendCompleted(const std::uint64_t generation) {
     const auto weakSelf = std::weak_ptr<UdpSocket>{std::static_pointer_cast<UdpSocket>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverSendCompleted(generation);
         }
@@ -256,7 +256,7 @@ void UdpSocket::postSendCompleted(const std::uint64_t generation) {
 
 void UdpSocket::postWritable(const std::uint64_t generation) {
     const auto weakSelf = std::weak_ptr<UdpSocket>{std::static_pointer_cast<UdpSocket>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverNativeWritable(generation);
         }
@@ -265,7 +265,7 @@ void UdpSocket::postWritable(const std::uint64_t generation) {
 
 void UdpSocket::postClosed(const std::uint64_t generation) {
     const auto weakSelf = std::weak_ptr<UdpSocket>{std::static_pointer_cast<UdpSocket>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverClosed(generation);
         }
@@ -274,7 +274,7 @@ void UdpSocket::postClosed(const std::uint64_t generation) {
 
 void UdpSocket::postError(const std::uint64_t generation, NetworkErrorContext context) {
     const auto weakSelf = std::weak_ptr<UdpSocket>{std::static_pointer_cast<UdpSocket>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation, context = std::move(context)]() mutable -> void {
+    ownerLoop()->invoke([weakSelf, generation, context = std::move(context)]() mutable -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->deliverError(generation, std::move(context));
         }

@@ -2,10 +2,53 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "FormatStyle.hpp"
 
+#include "../ConfError.hpp"
+#include "../Name.hpp"
+
+#include "../../err/ParameterFailure.hpp"
+#include "../../text/StringTransformations.hpp"
+
+#include <algorithm>
+
 namespace erbsland::conf::syntax {
 
 using namespace unit;
 using namespace text;
+
+using namespace text::literals;
+
+FormatStyle::FormatStyle() : _abbreviations{"HTTP"_el, "HTTPS"_el, "FTP"_el, "FTPS"_el, "SSH"_el, "VR"_el} {
+}
+
+auto FormatStyle::setAbbreviations(StringList value) -> FormatStyle & {
+    auto normalized = StringList{};
+    for (const auto &word : value) {
+        try {
+            const auto name = Name::createRegular(word);
+            if (name.asText().contains("_"_el)) {
+                throw err::ParameterFailure{"Abbreviations must be single regular words."_el, "value"_el};
+            }
+        } catch (const ConfError &) {
+            throw err::ParameterFailure{"Abbreviations must be single regular words."_el, "value"_el};
+        }
+        const auto upper = toAsciiUppercase(word);
+        if (std::ranges::find(normalized, upper) == normalized.end()) {
+            normalized.append(upper);
+        }
+    }
+    _abbreviations = std::move(normalized);
+    return *this;
+}
+
+auto FormatStyle::setBooleanCase(WordCase value) noexcept -> FormatStyle & {
+    _booleanCase = value;
+    return *this;
+}
+
+auto FormatStyle::setBooleanForm(BooleanForm value) noexcept -> FormatStyle & {
+    _booleanForm = value;
+    return *this;
+}
 
 auto FormatStyle::setMaximumLineLength(CpCount value) noexcept -> FormatStyle & {
     _maximumLineLength = value;

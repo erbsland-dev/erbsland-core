@@ -261,7 +261,7 @@ The first ``--static-root`` has the highest priority.
 
 .. erbsland-demo::
     :source: network/HttpsServer/HttpsServerApp.cpp
-    :sha256: 8db8235a940d9f787fc6561d90e130dfc5ee60316d4473335baee30afc0c792f
+    :sha256: 149f491d794c8569021f320e5ad7bf6d7aafa47a4cc4df0866fd6afb94ca0aea
 
 .. code-block:: cpp
 
@@ -314,7 +314,7 @@ The first ``--static-root`` has the highest priority.
 
     /// Create the HTTPS server, attach lifecycle callbacks, and bind its configured endpoint.
     void HttpsServerApp::startServer() {
-        _server = events()->get<el::Network>().createHttpServer();
+        _server = loop()->get<el::Network>().createHttpServer();
         _server->enableTls();
         configureStaticContent();
         configureRoutes();
@@ -330,7 +330,7 @@ The first ``--static-root`` has the highest priority.
         el::stdOut()->printLine("HTTPS server listening on "_el, _server->localEndpoint()->toString());
         el::stdOut()->printLine("Routes: /health, /hello/{name}, /stream, /assets/..."_el);
         if (_runFor.isPositive()) {
-            events()->invokeAfter(_runFor, [this]() -> void { closeGracefully(); });
+            loop()->invokeAfter(_runFor, [this]() -> void { closeGracefully(); });
         }
     }
 
@@ -345,7 +345,7 @@ The first ``--static-root`` has the highest priority.
     }
 
     void HttpsServerApp::removeResponse(StreamedResponse *finished) {
-        events()->invoke([this, finished]() -> void {
+        loop()->invoke([this, finished]() -> void {
             std::erase_if(_responses, [finished](const auto &response) -> bool { return response.get() == finished; });
         });
     }

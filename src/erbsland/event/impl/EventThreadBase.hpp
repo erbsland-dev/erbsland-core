@@ -4,7 +4,9 @@
 
 #include "EventLoop.hpp"
 
-#include "../Events_fwd.hpp"
+#include "../EventTarget_fwd.hpp"
+
+#include "../../util/StopSource.hpp"
 
 #include <mutex>
 #include <thread>
@@ -34,6 +36,8 @@ public:
     void start();
     /// Request the event-loop thread to stop.
     void quit() noexcept;
+    /// Observe the owned loop's permanent quit request.
+    [[nodiscard]] auto stopToken() const noexcept -> util::StopToken;
     /// Wait for the event-loop thread to finish.
     void join();
     /// Test if the event-loop thread has been started.
@@ -41,9 +45,9 @@ public:
     /// Test if the event-loop thread is currently running.
     [[nodiscard]] auto isRunning() const noexcept -> bool;
     /// Get the thread's event loop.
-    [[nodiscard]] auto eventLoop() noexcept -> event::EventLoop &;
+    [[nodiscard]] auto workerEventLoop() noexcept -> event::EventLoop &;
     /// Get the event source associated with the event loop.
-    [[nodiscard]] auto events() noexcept -> event::EventsPtr;
+    [[nodiscard]] auto loop() noexcept -> event::EventTargetPtr;
 
 protected:
     /// Shut down the event loop and join the thread.
@@ -53,9 +57,10 @@ protected:
 
 private:
     /// Run the event loop on the worker thread.
-    virtual void runEventLoop() = 0;
+    virtual void runWorkerEventLoop() = 0;
 
 private:
+    util::StopSource _stopSource;   ///< Shared cancellation signalled by the owned loop's quit transition.
     event::EventLoopPtr _eventLoop; ///< The event loop running in the thread.
     mutable std::mutex _mutex;      ///< Protects thread state.
     std::thread _thread;            ///< The native worker thread.

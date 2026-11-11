@@ -34,7 +34,7 @@ class TcpConnection final : public network::TcpConnection {
 public:
     /// Create an inactive TCP connection source.
     TcpConnection(
-        event::EventsPtr ownerEvents,
+        event::EventTargetPtr ownerLoop,
         event::EventLoopDriverPtr driver,
         HostResolverPtr resolver,
         TcpConnectionDeviceCreateFn createDevice = TcpConnectionDevice::create);

@@ -133,7 +133,7 @@ private:
     void prepareEvents();
     /// Bind initial event delivery to the selected owner loop.
     /// @param owner The owner loop whose context has been verified by the caller.
-    void bindEvents(const event::EventsPtr &owner);
+    void bindEvents(const event::EventTargetPtr &owner);
     /// Admit a prepared operation to the scheduler.
     /// @param task The configured operation and result recipient.
     void enqueue(impl::WorkerTaskPtr task);

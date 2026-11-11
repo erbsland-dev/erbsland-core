@@ -62,6 +62,44 @@ public:
         }
     }
 
+    void testAbbreviationAndBooleanConfiguration() {
+        const auto configuration = external() / "format.elcl"_el;
+        writeFile(configuration, R"(
+[elcl_format.base.names]
+abbreviations: "cpu", "CPU"
+[elcl_format.base.boolean]
+case: "upper"
+form: "enabled_disabled"
+*[elcl_format.rules]
+[.selector]
+paths: "app.http_cpu"
+[.style.names]
+abbreviations: ""
+[.style.boolean]
+case: "keep"
+form: "yes_no"
+)"_el);
+        const auto format = tool::elcl_format::FormatConfig{configuration}.read();
+        REQUIRE_EQUAL(format.baseStyle().abbreviations().count(), el::ItemCount{1});
+        const auto document = el::conf::syntax::Parser{}.parseText("[app]\nhttp_cpu: ON\ncpu_http: OFF\n"_el);
+        const auto output = el::conf::syntax::Formatter{format}.format(document).text();
+        REQUIRE(output.contains("Http Cpu                     : yes"_el));
+        REQUIRE(output.contains("CPU Http                     : DISABLED"_el));
+        configuration.content().replaceTextOrThrow("[elcl_format.base.names]\nabbreviations: \"api\"\n"_el);
+        REQUIRE_EQUAL(
+            tool::elcl_format::FormatConfig{configuration}.read().baseStyle().abbreviations().first(), "API"_el);
+        for (
+            const auto source :
+            {"[elcl_format.base.names]\nabbreviations: \"two words\"\n"_el,
+                "[elcl_format.base.names]\nabbreviations: \"http\", \"\"\n"_el,
+                "[elcl_format.base.names]\nabbreviations: 42\n"_el,
+                "[elcl_format.base.boolean]\ncase: \"mixed\"\n"_el,
+                "[elcl_format.base.boolean]\nform: \"enabled_disable\"\n"_el}) {
+            configuration.content().replaceTextOrThrow(source);
+            REQUIRE_THROWS(tool::elcl_format::FormatConfig{configuration}.read());
+        }
+    }
+
     void testConfiguredValueWrappingPoliciesAndOverrides() {
         const auto configuration = external() / "format.elcl"_el;
         writeFile(

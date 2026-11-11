@@ -206,8 +206,8 @@ public:
             el::err::ParameterFailure,
             UnmanagedEventThread::create(bounded(EventQueueOverflowAction::FailApplication)));
         const auto worker = UnmanagedEventThread::create(bounded(EventQueueOverflowAction::Ignore));
-        worker->events()->invoke([]() -> void {});
-        worker->events()->invoke([]() -> void {});
-        REQUIRE_EQUAL(worker->eventLoop().queuedEventCount(), std::size_t{1});
+        worker->loop()->invoke([]() -> void {});
+        worker->loop()->invoke([]() -> void {});
+        REQUIRE_EQUAL(worker->workerEventLoop().queuedEventCount(), std::size_t{1});
     }
 };

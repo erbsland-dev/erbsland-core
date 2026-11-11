@@ -23,7 +23,8 @@ DemoCreation::DemoCreation(
     _files{files}, _renderer{std::move(renderer)} {
     parsePath(path);
     const auto domain = _files.projectRoot() / "demos"_el / _domain;
-    const auto demo = _files.checked(domain / _name, true);
+    const auto demo = collectionPath(domain);
+    _sourceDirectory = demo.toRelativeOrThrow(_files.projectRoot() / "demos"_el).toString();
     const auto source = el::join(_part, ".cpp"_el);
     if (_files.checked(demo / source, true).info().exists()) {
         throwError("Demo part already exists."_el, (demo / source).toString());
@@ -36,9 +37,30 @@ DemoCreation::DemoCreation(
         readExistingParts(demo, parts);
     }
     prepareFiles(demo, parts);
-    directory(domain / "CMakeLists.txt"_el, _name);
+    directory(demo.parent() / "CMakeLists.txt"_el, _name);
+    if (demo.parent() != domain) {
+        directory(domain / "CMakeLists.txt"_el, "snippets"_el);
+    }
     directory(_files.projectRoot() / "demos/CMakeLists.txt"_el, _domain);
     warnMissingHeader();
+}
+
+auto DemoCreation::collectionPath(const el::Path &domain) const -> el::Path {
+    const auto legacy = _files.checked(domain / _name, true);
+    const auto snippets = _files.checked(domain / "snippets"_el / _name, true);
+    for (const auto category : {"apps"_el, "templates"_el}) {
+        const auto conflict = _files.checked(domain / category / _name, true);
+        if (conflict.info().exists()) {
+            throwError("Demo name is already used in another category."_el, conflict.toString());
+        }
+    }
+    if (legacy.info().exists() && snippets.info().exists()) {
+        throwError("Ambiguous legacy and categorized snippet collections."_el, legacy.toString());
+    }
+    if (legacy.info().exists()) {
+        return legacy;
+    }
+    return snippets;
 }
 
 void DemoCreation::parsePath(const el::String &path) {
@@ -212,9 +234,7 @@ void DemoCreation::apply() const {
 auto DemoCreation::documentation() const -> el::String {
     return el::join(
         ".. erbsland-demo::\n    :source: "_el,
-        _domain,
-        "/"_el,
-        _name,
+        _sourceDirectory,
         "/"_el,
         _part,
         ".cpp\n    :exec: "_el,

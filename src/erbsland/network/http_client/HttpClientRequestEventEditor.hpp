@@ -46,7 +46,7 @@ public:
 
 protected:
     /// Create an abstract request editor retaining its source and callback target.
-    HttpClientRequestEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
+    HttpClientRequestEventEditor(event::EventSourcePtr source, event::EventTargetPtr target) :
         CommonEventEditor{std::move(source), std::move(target)} {}
 };
 

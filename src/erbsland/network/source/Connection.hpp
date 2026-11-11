@@ -56,8 +56,8 @@ public:
 
 protected:
     /// Create a connection owned by an event collection.
-    /// @param ownerEvents The owner-loop event collection.
-    explicit Connection(event::EventsPtr ownerEvents) : EventSource{std::move(ownerEvents)} {}
+    /// @param ownerLoop The owner-loop event collection.
+    explicit Connection(event::EventTargetPtr ownerLoop) : EventSource{std::move(ownerLoop)} {}
 
 private:
     std::shared_ptr<void> _exclusiveProtocolOwner; ///< Active internal protocol engine, if any.

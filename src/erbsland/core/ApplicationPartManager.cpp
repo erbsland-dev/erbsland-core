@@ -6,7 +6,7 @@
 
 namespace erbsland::core {
 
-auto ApplicationPartManager::create(event::EventsPtr controlEvents) -> ApplicationPartManagerPtr {
+auto ApplicationPartManager::create(event::EventTargetPtr controlEvents) -> ApplicationPartManagerPtr {
     return impl::ApplicationPartManager::create(std::move(controlEvents));
 }
 

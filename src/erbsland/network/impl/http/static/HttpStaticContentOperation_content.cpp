@@ -7,7 +7,7 @@
 
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../stream/ByteInputStream.hpp"
 #include "../../../../stream/StreamReadStatus.hpp"
 #include "../../../../text/CaseSensitivity.hpp"

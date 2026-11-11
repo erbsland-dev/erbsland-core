@@ -18,6 +18,10 @@ void ManagedEventThread::quit() noexcept {
     EventThreadBase::quit();
 }
 
+auto ManagedEventThread::stopToken() const noexcept -> util::StopToken {
+    return EventThreadBase::stopToken();
+}
+
 void ManagedEventThread::join() {
     EventThreadBase::join();
 }
@@ -30,16 +34,16 @@ auto ManagedEventThread::isRunning() const noexcept -> bool {
     return EventThreadBase::isRunning();
 }
 
-auto ManagedEventThread::eventLoop() noexcept -> event::EventLoop & {
-    return EventThreadBase::eventLoop();
+auto ManagedEventThread::workerEventLoop() noexcept -> event::EventLoop & {
+    return EventThreadBase::workerEventLoop();
 }
 
-auto ManagedEventThread::events() noexcept -> event::EventsPtr {
-    return EventThreadBase::events();
+auto ManagedEventThread::loop() noexcept -> event::EventTargetPtr {
+    return EventThreadBase::loop();
 }
 
-void ManagedEventThread::runEventLoop() {
-    eventLoop().run();
+void ManagedEventThread::runWorkerEventLoop() {
+    workerEventLoop().run();
 }
 
 }

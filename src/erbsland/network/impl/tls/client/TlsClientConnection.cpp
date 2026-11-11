@@ -10,7 +10,7 @@
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../time/Timestamp.hpp"
 
@@ -23,17 +23,17 @@ using namespace text;
 using namespace text::literals;
 
 TlsClientConnection::TlsClientConnection(
-    event::EventsPtr ownerEvents, network::TcpConnectionPtr tcpConnection, TlsClientProtocolStartFn startProtocol) :
-    network::TlsClientConnection{std::move(ownerEvents)},
+    event::EventTargetPtr ownerLoop, network::TcpConnectionPtr tcpConnection, TlsClientProtocolStartFn startProtocol) :
+    network::TlsClientConnection{std::move(ownerLoop)},
     _tcpConnection{std::move(tcpConnection)},
     _startProtocol{std::move(startProtocol)} {
-    if (_tcpConnection == nullptr || _tcpConnection->ownerEvents() != this->ownerEvents()) {
+    if (_tcpConnection == nullptr || _tcpConnection->ownerLoop() != this->ownerLoop()) {
         throw LogicFailure{"A TLS client connection requires a TCP connection from the same owner loop."_el};
     }
     if (!_startProtocol) {
         _startProtocol = [](TlsClientProtocol &protocol) -> void { protocol.start(); };
     }
-    _finalContinuation = event::impl::EventContinuation::create(this->ownerEvents());
+    _finalContinuation = event::impl::EventContinuation::create(this->ownerLoop());
 }
 
 TlsClientConnection::~TlsClientConnection() {
@@ -89,7 +89,7 @@ auto TlsClientConnection::state() const noexcept -> ConnectionState {
 
 void TlsClientConnection::connect(HostEndpoint endpoint, TlsClientConnectOptions options) {
     const auto lock = std::scoped_lock{_mutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_started.load()) {
         throw LogicFailure{"A TLS client connection can only be started once."_el};
     }
@@ -122,7 +122,7 @@ void TlsClientConnection::connect(HostEndpoint endpoint, TlsClientConnectOptions
 
 auto TlsClientConnection::send(const mem::ByteBlock &data) -> NetworkSendStatus {
     const auto lock = std::scoped_lock{_mutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != ConnectionState::Active || _protocol == nullptr) {
         return NetworkSendStatus::Closed;
     }
@@ -145,7 +145,7 @@ auto TlsClientConnection::send(const mem::ByteBlock &data) -> NetworkSendStatus 
 
 void TlsClientConnection::pauseReceiving() {
     const auto lock = std::scoped_lock{_mutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != ConnectionState::Active || _receivingPaused) {
         return;
     }
@@ -155,7 +155,7 @@ void TlsClientConnection::pauseReceiving() {
 
 void TlsClientConnection::resumeReceiving() {
     const auto lock = std::scoped_lock{_mutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() != ConnectionState::Active || !_receivingPaused) {
         return;
     }
@@ -168,7 +168,7 @@ void TlsClientConnection::resumeReceiving() {
 
 void TlsClientConnection::close() {
     const auto lock = std::scoped_lock{_mutex};
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_state.load() == ConnectionState::Inactive || _state.load() == ConnectionState::Connecting ||
         _state.load() == ConnectionState::Handshaking) {
         abort();
@@ -205,7 +205,7 @@ void TlsClientConnection::abort() noexcept {
 
 auto TlsClientConnection::events() -> network::TlsClientConnectionEventEditor & {
     const auto lock = std::scoped_lock{_mutex};
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<TlsClientConnectionEventEditor>(shared_from_this(), std::move(target));
     }

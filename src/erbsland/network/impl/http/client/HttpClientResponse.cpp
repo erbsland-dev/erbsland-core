@@ -15,7 +15,7 @@
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../../err/ParseError.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../path/Path.hpp"
 #include "../../../../path/PathCollisionMode.hpp"
 #include "../../../../path/PathInfo.hpp"
@@ -62,7 +62,7 @@ HttpClientResponse::HttpClientResponse(
     Url effectiveUrl,
     const ItemCount redirectCount,
     std::optional<ByteCount> expectedLength) :
-    network::HttpClientResponse{request->ownerEvents()},
+    network::HttpClientResponse{request->ownerLoop()},
     _request{std::move(request)},
     _head{std::move(head)},
     _effectiveUrl{std::move(effectiveUrl)},
@@ -91,7 +91,7 @@ auto HttpClientResponse::redirectCount() const noexcept -> ItemCount {
 }
 
 void HttpClientResponse::streamBody() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyAwaitingPolicy();
     _policySelected = true;
     if (_hasBody) {
@@ -100,7 +100,7 @@ void HttpClientResponse::streamBody() {
 }
 
 void HttpClientResponse::aggregateBody(const ByteCount maximumLength) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyAwaitingPolicy();
     if (maximumLength.isZero() || maximumLength.isInfinite()) {
         throw ParameterFailure{"An HTTP response aggregate limit must be positive and finite."_el, "maximumLength"_el};
@@ -123,13 +123,13 @@ void HttpClientResponse::aggregateJson(const ByteCount maximumLength) {
 }
 
 void HttpClientResponse::writeBodyTo(stream::ByteOutputStreamPtr output) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyAwaitingPolicy();
     if (output == nullptr || !output->isOpen()) {
         throw ParameterFailure{"An open byte output stream is required."_el, "output"_el};
     }
     auto work = util::impl::worker_services::blocking().reserve();
-    auto completion = event::impl::EventContinuation::create(ownerEvents());
+    auto completion = event::impl::EventContinuation::create(ownerLoop());
     _sinkWork = std::move(work);
     _sinkCompletion = std::move(completion);
     _policySelected = true;
@@ -140,13 +140,13 @@ void HttpClientResponse::writeBodyTo(stream::ByteOutputStreamPtr output) {
 }
 
 void HttpClientResponse::writeBodyTo(path::Path destination) {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyAwaitingPolicy();
     if (destination.isEmpty() || !destination.isValid() || destination.parent().isEmpty()) {
         throw ParameterFailure{"A valid destination with a parent directory is required."_el, "destination"_el};
     }
     auto work = util::impl::worker_services::blocking().reserve();
-    auto completion = event::impl::EventContinuation::create(ownerEvents());
+    auto completion = event::impl::EventContinuation::create(ownerLoop());
     _sinkWork = std::move(work);
     _sinkCompletion = std::move(completion);
     _policySelected = true;
@@ -161,7 +161,7 @@ void HttpClientResponse::writeBodyTo(path::Path destination) {
 }
 
 void HttpClientResponse::rejectBody() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     verifyAwaitingPolicy();
     _policySelected = true;
     if (_hasBody) {
@@ -170,7 +170,7 @@ void HttpClientResponse::rejectBody() {
 }
 
 void HttpClientResponse::pauseBody() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final || !_policySelected || _output != nullptr) {
         throw LogicFailure{"Only an active callback-streamed response body can be paused."_el};
     }
@@ -178,7 +178,7 @@ void HttpClientResponse::pauseBody() {
 }
 
 void HttpClientResponse::resumeBody() {
-    verifyCurrentOwnerEvents();
+    verifyCurrentOwnerLoop();
     if (_final || !_policySelected || _output != nullptr) {
         throw LogicFailure{"Only an explicitly paused callback-streamed response body can be resumed."_el};
     }
@@ -190,7 +190,7 @@ auto HttpClientResponse::isFinal() const noexcept -> bool {
 }
 
 auto HttpClientResponse::events() -> network::HttpClientResponseEventEditor & {
-    auto target = currentOwnerEvents();
+    auto target = currentOwnerLoop();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<HttpClientResponseEventEditor>(shared_from_this(), std::move(target), *this);
     }

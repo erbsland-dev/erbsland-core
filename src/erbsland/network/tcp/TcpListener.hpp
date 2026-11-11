@@ -47,8 +47,8 @@ public:
 
 protected:
     /// Create a listener owned by an event collection.
-    /// @param ownerEvents The owner-loop event collection.
-    explicit TcpListener(event::EventsPtr ownerEvents) : EventSource{std::move(ownerEvents)} {}
+    /// @param ownerLoop The owner-loop event collection.
+    explicit TcpListener(event::EventTargetPtr ownerLoop) : EventSource{std::move(ownerLoop)} {}
 };
 
 }

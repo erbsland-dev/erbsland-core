@@ -1,0 +1,21 @@
+# Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 3.28)
+
+add_subdirectory(ChecksumPacker)
+add_subdirectory(ChecksumPackerInvoke)
+add_subdirectory(ConfigCheck)
+add_subdirectory(FileActivityMonitor)
+add_subdirectory(FileHasher)
+add_subdirectory(FileSearch)
+add_subdirectory(FileServer)
+add_subdirectory(FileSizeMonitor)
+add_subdirectory(FileTimeMonitor)
+add_subdirectory(GitChangeSummary)
+add_subdirectory(LookupLostSource)
+add_subdirectory(LookupOptionalRecipient)
+add_subdirectory(LookupOwnedSource)
+add_subdirectory(LookupOwnershipCycle)
+add_subdirectory(LookupRequiredRecipient)
+add_subdirectory(PiCalculator)

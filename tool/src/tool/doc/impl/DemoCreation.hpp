@@ -50,6 +50,8 @@ private:
 private:
     /// Validate the requested path and derive its demo names.
     void parsePath(const el::String &path);
+    /// Select a categorized snippet collection or an unambiguous legacy collection.
+    auto collectionPath(const el::Path &domain) const -> el::Path;
     /// Merge an existing demo's sources, declarations, and registrations.
     void readExistingParts(const el::Path &demo, Parts &parts);
     /// Render all files for the combined parts into the update plan.
@@ -71,6 +73,7 @@ private:
     el::String _part;                     ///< New demo part name.
     el::String _function;                 ///< Lowercase-first function name.
     el::String _target;                   ///< Existing or generated CMake target.
+    el::String _sourceDirectory;          ///< Collection directory relative to demos.
     el::StringMap<el::String> _updates;   ///< Planned file contents keyed by absolute path.
     el::StringList _warnings;             ///< Domain/header diagnostics.
 };

@@ -16,7 +16,7 @@
 
 #include "../../../../err/Exception.hpp"
 #include "../../../../err/RuntimeError.hpp"
-#include "../../../../event/Events.hpp"
+#include "../../../../event/EventTarget.hpp"
 #include "../../../../text/AnyString.hpp"
 #include "../../../../text/AsciiCategory.hpp"
 #include "../../../../text/EncodingError.hpp"

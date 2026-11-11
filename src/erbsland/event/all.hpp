@@ -7,7 +7,7 @@
 
 // clang-format off
 #include "BindEvent.hpp"
-#include "CurrentEvents.hpp"
+#include "CurrentLoop.hpp"
 #include "Event.hpp"
 #include "EventBackend.hpp"
 #include "EventBackendId.hpp"
@@ -30,10 +30,10 @@
 #include "EventScheduler.hpp"
 #include "EventSource.hpp"
 #include "EventSubscription.hpp"
+#include "EventTarget.hpp"
 #include "EventThread.hpp"
 #include "EventTimer.hpp"
 #include "EventTimerMode.hpp"
-#include "Events.hpp"
 #include "ManagedEventThread.hpp"
 #include "UnmanagedEventThread.hpp"
 

@@ -5,7 +5,7 @@
 #include "../../../err/LogicFailure.hpp"
 #include "../../../err/ParameterFailure.hpp"
 #include "../../../err/RuntimeError.hpp"
-#include "../../../event/Events.hpp"
+#include "../../../event/EventTarget.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../source/NetworkError.hpp"
 
@@ -165,7 +165,7 @@ void UdpSocket::notifyWritableIfReady() {
     _blockedCharge = {};
     const auto generation = _generation.load();
     const auto weakSelf = std::weak_ptr<UdpSocket>{std::static_pointer_cast<UdpSocket>(shared_from_this())};
-    ownerEvents()->invoke([weakSelf, generation]() -> void {
+    ownerLoop()->invoke([weakSelf, generation]() -> void {
         if (const auto self = weakSelf.lock();
             self != nullptr && self->isCurrent(generation) && self->_state.load() == NetworkSourceState::Active) {
             const auto callback = self->_onWritable;

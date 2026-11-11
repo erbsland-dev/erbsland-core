@@ -53,6 +53,9 @@ private:
     /// @param node The node to process.
     void processRegularNode(const conf::ValuePtr &node);
 
+    /// Select rule nodes while excluding key/dependency entries handled by their containing definition.
+    [[nodiscard]] static auto isRuleNode(const conf::ValuePtr &node) -> bool;
+
     /// Process a node with rules (section with names).
     /// @param node The node to process.
     /// @param rule The prepared rule to fill-in.
@@ -121,22 +124,18 @@ private:
     /// @return The parent rule for the given node, or nullptr if none is found.
     [[nodiscard]] auto getParentRuleForNode(const conf::ValuePtr &node) const -> RulePtr;
 
-    /// Create the rule name path.
-    /// By default, this does not alter the name path at all.
-    /// If `_pathForTemplate` is set, an initial `vr_template.<template-name>` is replaced with this path.
-    [[nodiscard]] auto createRuleNamePath(const NamePath &namePath) const -> NamePath;
+    /// Expand a document declaration path into its rule-tree insertion path.
+    /// Template references replace vr_template and its template name; escapes and indexes are retained.
+    /// @param namePath The source declaration path.
+    /// @return The absolute definition path in the expanded rule tree.
+    [[nodiscard]] auto createDefinitionNamePath(const NamePath &namePath) const -> NamePath;
 
-    /// Convert the name path of a node to the name path for the rule.
-    /// 1. If `_pathForTemplate` is set, an initial `vr_template` is replaced with this path.
-    /// 2. This does remove any indexes from the path, as these just mark alternatives and would prevent the
-    /// path from matching the value in the document.
-    /// 3. Also, if an element contains the `vr_vr_` prefix, this is replaced with `vr_`.
-    /// @param namePath The original name path from the VR document.
-    /// @return The name path for the rule.
-    [[nodiscard]] auto createTargetNamePath(const NamePath &namePath) const -> NamePath;
-
-    /// Test if the given name-path is a template path.
-    [[nodiscard]] static auto isTemplatePath(const NamePath &namePath) -> bool;
+    /// Expand a declaration path and decode its names into a symbolic value path.
+    /// Alternative indexes are omitted; control placeholders remain. Escapes are decoded exactly once.
+    /// @param namePath The original path from the rules document, never a builder path.
+    /// @return The absolute symbolic value path at the template insertion point.
+    /// @throws ConfError (Validation) if an escaped suffix is not a regular name.
+    [[nodiscard]] auto createValueNamePath(const NamePath &namePath) const -> NamePath;
 
     /// Only append regular names to the result.
     static void appendRegularNames(NamePath &result, const NamePath &namePath, std::size_t startIndex);

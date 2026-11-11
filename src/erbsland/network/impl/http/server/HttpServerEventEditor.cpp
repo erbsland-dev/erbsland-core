@@ -9,7 +9,7 @@ namespace erbsland::network::impl {
 using namespace text;
 
 HttpServerEventEditor::HttpServerEventEditor(
-    event::EventSourcePtr source, event::EventsPtr target, HttpServer &server) :
+    event::EventSourcePtr source, event::EventTargetPtr target, HttpServer &server) :
     network::HttpServerEventEditor{std::move(source), std::move(target)}, _server{server} {
 }
 

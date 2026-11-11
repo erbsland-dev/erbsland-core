@@ -10,8 +10,8 @@ target_sources(erbsland-core PRIVATE
         CallbackEventData.hpp
         CommonEventEditor.cpp
         CommonEventEditor.hpp
-        CurrentEventsScope.cpp
-        CurrentEventsScope.hpp
+        CurrentLoopScope.cpp
+        CurrentLoopScope.hpp
         EventCallbackList.hpp
         EventCallbackRegistration.hpp
         EventContinuation.cpp

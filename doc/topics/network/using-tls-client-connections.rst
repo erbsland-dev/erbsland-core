@@ -32,14 +32,14 @@ the connection as a member, as in this excerpt:
     :show: c:Retained until the event loop finishes, f:connectToServer
     :exec: network/mail_sender --verbose
     :show-cmd-line:
-    :sha256: 09ee4bf6382b9f611f3f6c4757a999758557f915a3e5e0f45ee744e9fb452629
+    :sha256: 5c6abeb213d1c933105ad6c68aebb2f3a3b30ac3639ffdda77cd26fb4174b735
 
 .. code-block:: cpp
 
     el::TlsClientConnectionPtr _connection; ///< Retained until the event loop finishes.
 
     void connectToServer() {
-        _connection = events()->get<el::Network>().createTlsClientConnection();
+        _connection = loop()->get<el::Network>().createTlsClientConnection();
         installHandlers();
         auto options = el::TlsClientConnectOptions{};
         options.setConfigurationLabel(_settings.tlsProfile);
@@ -124,13 +124,13 @@ For services trusted by your operating system, you can use system trust, includi
 In either case, the destination must match the authenticated certificate identity.
 
 Load and register your profiles before starting the connection.
-In the following startup callback, ``replaceTlsConfigurations()`` registers the profiles before ``events()->invoke()``
+In the following startup callback, ``replaceTlsConfigurations()`` registers the profiles before ``loop()->invoke()``
 queues the connection attempt on the main loop:
 
 .. erbsland-demo::
     :source: network/MailSender/src/MailSenderApp.hpp
     :show: f:handleCommandLineOptions
-    :sha256: 5a62781b1cfe5e0ab9c2f4535968bc0536bcdb50a7704bcae1c04c00bd5f4ee2
+    :sha256: f36507f950e953361306c232ff5110c87e903daa5ca8514d27f9a6cc3239a98b
 
 .. code-block:: cpp
 
@@ -140,7 +140,7 @@ queues the connection attempt on the main loop:
         _settings = SenderSettings::load(configuration);
         _messageData = _settings.mail.wireData(); // Validate all mail input before opening a socket.
         cryptologyConfiguration().replaceTlsConfigurations(configuration.tlsProfiles());
-        events()->invoke([this]() -> void { connectToServer(); });
+        loop()->invoke([this]() -> void { connectToServer(); });
     }
 
 .. erbsland-demo-end::
@@ -167,7 +167,7 @@ Register these callbacks through ``events()``; logging them makes the stages vis
 .. erbsland-demo::
     :source: network/MailSender/src/MailSenderApp.hpp
     :show: f:installHandlers
-    :sha256: e8c6e825ba9e8767689e74bd663b15283115f23d3e7755138603619d85ee042f
+    :sha256: 2dd7a53d0dfda5477053297780ce87d5e590f3539d422670f1472021842507e8
 
 .. code-block:: cpp
 
@@ -220,7 +220,7 @@ The peer identity is not authenticated at that point.
 
 Checkpoint callbacks continue automatically when they return.
 Keep them short, and call ``abort()`` if your application decides not to continue.
-When your protocol sends first, queue that initial application work with ``events()->invoke()`` so the handshake
+When your protocol sends first, queue that initial application work with ``loop()->invoke()`` so the handshake
 checkpoint returns before you call ``send()``.
 Keep the exchange owner alive in the queued callback, as shown for the greeting in the
 :doc:`server topic <using-tls-server-connections>`.
@@ -242,7 +242,7 @@ Retain incomplete input between callbacks and let your application protocol deci
 .. erbsland-demo::
     :source: network/MailSender/src/MailSenderApp.hpp
     :show: c:Partial SMTP reply line, c:Multiline reply state, f:receiveReplies
-    :sha256: d6fa3d9a1f95c1edebd8216ce528d4cff72b734376eda906a4b588135b49f556
+    :sha256: 14d785de990091ef5f6caf591ab1616c9b8003f2a06b3dae7860ea88efb96459
 
 .. code-block:: cpp
 
@@ -282,7 +282,7 @@ retry when ``onWritable`` runs.
 .. erbsland-demo::
     :source: network/MailSender/src/MailSenderApp.hpp
     :show: c:Blocks waiting for TLS send capacity, f:flushOutput
-    :sha256: c797c743daeca1824826c901743fdf30e5259b5f0c250fd1f8056826018f510a
+    :sha256: 5d09b4af901ae51d4bd1d059e1cfa7734027ea63328024c53ca33d1f7e2012ff
 
 .. code-block:: cpp
 
@@ -336,7 +336,7 @@ Finish your application exchange before requesting TLS closure:
 .. erbsland-demo::
     :source: network/MailSender/src/MailSenderApp.hpp
     :show: f:closeConnection, f:finish
-    :sha256: f8071f32e21be31c8201c11372de0e984eef309d6cbfa0a95cfd04b46f6c4f5b
+    :sha256: f24db73fe17c649fecac369a3b37d171fcf2d716527f12a67072c0a50bc3ce0e
 
 .. code-block:: cpp
 

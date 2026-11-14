@@ -38,7 +38,8 @@ Secondary Types
 
 .. code-block:: text
 
-    PlatformError // native operating-system failure
+    PlatformError // recoverable native operating-system error
+    PlatformFailure // fatal native infrastructure failure, derived from LogicFailure
     PlatformErrorContext // portable structured native failure context
     PlatformErrorCategory // native subsystem or API failure category
     OperatingSystem, CpuArchitecture // comparable smart-enum host classifications

@@ -378,7 +378,7 @@ private:
             result.driver,
             [state](EventLoopDriverPtr, UdpSocketDeviceCallbacks callbacks) -> UdpSocketDevicePtr {
                 state->callbacks = std::move(callbacks);
-                return std::make_unique<FakeDevice>(state);
+                return std::make_shared<FakeDevice>(state);
             });
         result.socket = result.implementation;
         return result;

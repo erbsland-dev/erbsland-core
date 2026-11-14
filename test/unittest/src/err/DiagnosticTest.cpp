@@ -16,6 +16,7 @@
 #include <erbsland/StreamErrorContext.hpp>
 #include <erbsland/StringConverter.hpp>
 #include <erbsland/system/impl/PosixErrorContext.hpp>
+#include <erbsland/system/PlatformFailure.hpp>
 #include <erbsland/TextDocument.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -27,8 +28,8 @@
 using namespace el::text::literals;
 
 TESTED_TARGETS(
-    Diagnostic Exception PathError PathErrorContext StreamError StreamErrorContext PlatformError PosixErrorContext
-        PlatformErrorCategory)
+    Diagnostic Exception PathError PathErrorContext StreamError StreamErrorContext PlatformError PlatformFailure
+        PosixErrorContext PlatformErrorCategory)
 class DiagnosticTest final : public el::UnitTest {
 public:
     void testDefaultExceptionDiagnostic() {
@@ -42,6 +43,31 @@ public:
         REQUIRE(diagnostic->sourceName().isEmpty());
         REQUIRE(diagnostic->sourcePath().isEmpty());
         REQUIRE(diagnostic->location().line().isNoIndex());
+    }
+
+    void testPlatformFailureDiagnosticAndCause() {
+        auto applicationScope = ApplicationTestScope<>{};
+        const auto context = std::make_shared<const el::system::impl::PosixErrorContext>(EBADF, "Bad descriptor"_el);
+        const auto cause = std::make_exception_ptr(el::err::Exception{"Independent cause"_el});
+        const auto failure = el::system::PlatformFailure{"Native wake failed"_el, context, cause};
+        REQUIRE_EQUAL(failure.reason(), "Native wake failed"_el);
+        REQUIRE_EQUAL(failure.context(), context);
+        REQUIRE(failure.hasCause());
+        REQUIRE(failure.cause() == cause);
+        REQUIRE_EQUAL(failure.diagnostic()->toString(), "Native wake failed"_el);
+        const auto text = toStdString(el::err::DiagnosticHelper{failure}.toDocument().toString());
+        WITH_CONTEXT(requireContains(text, "Native wake failed"));
+        WITH_CONTEXT(requireContains(text, "errno"));
+        WITH_CONTEXT(requireContains(text, "Bad descriptor"));
+        WITH_CONTEXT(requireContains(text, "Independent cause"));
+    }
+
+    void testPlatformFailureWithoutContext() {
+        auto applicationScope = ApplicationTestScope<>{};
+        const auto failure = el::system::PlatformFailure{"Native wake failed"_el};
+        REQUIRE(failure.context() == nullptr);
+        REQUIRE_FALSE(failure.hasCause());
+        REQUIRE_EQUAL(failure.diagnostic()->toTextDocument().toString(), "Error: Native wake failed"_el);
     }
 
     void testParseErrorDiagnosticLocation() {

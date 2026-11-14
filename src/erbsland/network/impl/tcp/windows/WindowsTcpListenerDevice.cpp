@@ -334,7 +334,7 @@ void WindowsTcpListenerDevice::abort() noexcept {
 
 auto TcpListenerDevice::create(event::EventLoopDriverPtr driver, TcpListenerDeviceCallbacks callbacks)
     -> TcpListenerDevicePtr {
-    return std::make_unique<WindowsTcpListenerDevice>(std::move(driver), std::move(callbacks));
+    return std::make_shared<WindowsTcpListenerDevice>(std::move(driver), std::move(callbacks));
 }
 
 }

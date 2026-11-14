@@ -12,6 +12,7 @@
 namespace erbsland::network::impl {
 
 /// Platform-neutral interface for one bound native UDP socket.
+/// Callers retain shared ownership throughout each operation and explicitly close or abort before releasing the device.
 /// @tested{UdpSocketTest UdpSocketLiveTest}
 class UdpSocketDevice {
 public:

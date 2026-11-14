@@ -5,17 +5,30 @@
 #include "../../err/ParameterFailure.hpp"
 #include "../../system/impl/WindowsErrorContext.hpp"
 #include "../../system/PlatformError.hpp"
+#include "../../system/PlatformFailure.hpp"
 #include "../../text/Literals.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <limits>
+#include <memory>
+#include <utility>
 
 namespace erbsland::event::impl {
 
+using namespace err;
 using namespace text::literals;
 
 WindowsEventLoopDriver::WindowsEventLoopDriver() :
-    _completionPort{CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1)} {
+    WindowsEventLoopDriver{std::make_shared<WindowsEventLoopNativeCalls>()} {
+}
+
+WindowsEventLoopDriver::WindowsEventLoopDriver(std::shared_ptr<WindowsEventLoopNativeCalls> nativeCalls) :
+    _nativeCalls{std::move(nativeCalls)} {
+    if (_nativeCalls == nullptr) {
+        throw ParameterFailure{"The native call adapter must not be null."_el, "nativeCalls"_el};
+    }
+    _completionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
     if (_completionPort == nullptr) {
         throw system::PlatformError{
             "Failed to create the IOCP event-loop driver."_el, system::impl::WindowsErrorContext::fromLastError()};
@@ -44,22 +57,25 @@ void WindowsEventLoopDriver::wait(const time::TimeDelta maximumWait) {
     waitInternal(static_cast<DWORD>(std::min<int64_t>(roundedMilliseconds.count(), maximum)));
 }
 
-void WindowsEventLoopDriver::wake() noexcept {
-    // Waking is best-effort because the driver contract is noexcept and a failed port cannot be recovered here.
-    PostQueuedCompletionStatus(_completionPort, 0, cWakeKey, nullptr);
+void WindowsEventLoopDriver::wake() {
+    if (_nativeCalls->postWake(_completionPort, cWakeKey) == 0) {
+        const auto error = GetLastError();
+        throw system::PlatformFailure{
+            "Failed to post an IOCP wake completion."_el, system::impl::WindowsErrorContext::fromErrorCode(error)};
+    }
 }
 
 auto WindowsEventLoopDriver::registerHandle(HANDLE handle, NativeCompletionCallback callback) -> RegistrationPtr {
     if (handle == nullptr || handle == INVALID_HANDLE_VALUE) {
-        throw err::ParameterFailure{"The native handle must be valid."_el, "handle"_el};
+        throw ParameterFailure{"The native handle must be valid."_el, "handle"_el};
     }
     if (!callback) {
-        throw err::ParameterFailure{"The native completion callback must not be empty."_el, "callback"_el};
+        throw ParameterFailure{"The native completion callback must not be empty."_el, "callback"_el};
     }
     const auto lock = std::scoped_lock{_registrationMutex};
     for (const auto &entry : _registrations) {
         if (entry.second.handle == handle) {
-            throw err::ParameterFailure{"The native handle is already registered."_el, "handle"_el};
+            throw ParameterFailure{"The native handle is already registered."_el, "handle"_el};
         }
     }
     const auto generation = _nextGeneration++;

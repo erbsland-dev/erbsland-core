@@ -15,6 +15,7 @@
 namespace erbsland::network::impl {
 
 /// Platform-neutral interface for one connecting or established TCP socket.
+/// Callers retain shared ownership throughout each operation and explicitly close or abort before releasing the device.
 /// @tested{TcpConnectionTest TcpSocketLiveTest}
 class TcpConnectionDevice {
 public:

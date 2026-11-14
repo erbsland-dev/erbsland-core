@@ -9,6 +9,6 @@ namespace erbsland::network::impl {
 class UdpSocketDevice;
 
 /// An exclusively owned native UDP socket device.
-using UdpSocketDevicePtr = std::unique_ptr<UdpSocketDevice>;
+using UdpSocketDevicePtr = std::shared_ptr<UdpSocketDevice>;
 
 }

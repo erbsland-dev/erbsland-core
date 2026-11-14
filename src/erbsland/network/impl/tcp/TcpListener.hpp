@@ -66,6 +66,8 @@ private:
     void postErrorAndFinal(std::uint64_t generation, NetworkErrorContext context);
     /// Post the final notification once.
     void postFinal(std::uint64_t generation);
+    /// Retain the current native device under the data lock for an operation.
+    [[nodiscard]] auto getDevice() const -> TcpListenerDevicePtr;
     /// Clean up the native listener device.
     void cleanupDevice(bool abortDevice) noexcept;
     /// Validate requested listener startup options.

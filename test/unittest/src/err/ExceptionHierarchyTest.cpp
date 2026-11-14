@@ -9,13 +9,16 @@
 #include <erbsland/OutOfRangeFailure.hpp>
 #include <erbsland/ParameterFailure.hpp>
 #include <erbsland/RandomFailure.hpp>
+#include <erbsland/system/PlatformFailure.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <type_traits>
 
 using namespace el::text::literals;
 
-TESTED_TARGETS(Exception RuntimeError LogicFailure ParameterFailure OutOfRangeError OutOfRangeFailure NotFoundError)
+TESTED_TARGETS(
+    Exception RuntimeError LogicFailure ParameterFailure OutOfRangeError OutOfRangeFailure NotFoundError
+        PlatformFailure)
 class ExceptionHierarchyTest final : public el::UnitTest {
 public:
     void testRuntimeBranch() {
@@ -29,6 +32,7 @@ public:
         verifyFailure(el::err::LogicFailure{"Invalid state"_el});
         verifyFailure(el::err::ParameterFailure{"Invalid argument"_el, "argument"_el});
         verifyFailure(el::err::OutOfRangeFailure{"Unsupported capacity"_el});
+        verifyFailure(el::system::PlatformFailure{"Native wake mechanism failed"_el});
         verifyFailure(el::random::RandomFailure{"Entropy unavailable"_el});
     }
 

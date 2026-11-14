@@ -1431,6 +1431,7 @@ system/PlatformErrorCategory.hpp;PlatformErrorCategory.hpp
 system/PlatformErrorCategory.hpp;system/PlatformErrorCategory.hpp
 system/PlatformErrorContext.hpp;PlatformErrorContext.hpp
 system/PlatformErrorContext.hpp;system/PlatformErrorContext.hpp
+system/PlatformFailure.hpp;system/PlatformFailure.hpp
 system/ProcessId.hpp;ProcessId.hpp
 system/ProcessId.hpp;system/ProcessId.hpp
 system/ProcessInfo.hpp;ProcessInfo.hpp

@@ -261,9 +261,8 @@ void TcpListener::updateAccepting() {
         _pendingRequestCount < _options.maximumPendingRequests().toSizeT() &&
         !_options.connectionQuota()->available().isZero();
     try {
-        const auto lock = std::scoped_lock{_dataMutex};
-        if (_device != nullptr) {
-            _device->setAccepting(enabled);
+        if (const auto device = getDevice(); device != nullptr) {
+            device->setAccepting(enabled);
         }
     } catch (const NetworkError &error) {
         postError(_generation.load(), error.context());
@@ -342,6 +341,11 @@ void TcpListener::postFinal(const std::uint64_t generation) {
     if (callback) {
         callback();
     }
+}
+
+auto TcpListener::getDevice() const -> TcpListenerDevicePtr {
+    const auto lock = std::scoped_lock{_dataMutex};
+    return _device;
 }
 
 void TcpListener::cleanupDevice(const bool abortDevice) noexcept {

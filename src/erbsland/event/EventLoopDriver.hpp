@@ -11,7 +11,8 @@ namespace erbsland::event {
 /// The native wait and wake driver for an event loop.
 ///
 /// A driver is called only by its owning event loop, except for `wake()`, which is thread-safe. Native event sources
-/// use platform-specific implementation interfaces derived from this class.
+/// use platform-specific implementation interfaces derived from this class. Native registration release also
+/// supports cross-thread socket shutdown through those interfaces.
 /// @tested{EventLoopDriverTest EventLoopTest}
 class EventLoopDriver {
 public:
@@ -34,8 +35,8 @@ public: // interface
     /// @throws system::PlatformError If the native wait fails.
     virtual void wait(time::TimeDelta maximumWait) = 0;
     /// Wake the driver.
-    /// This method is thread-safe.
-    virtual void wake() noexcept = 0;
+    /// This method is thread-safe. Default drivers throw `system::PlatformFailure` if the native wake fails.
+    virtual void wake() = 0;
 };
 
 }

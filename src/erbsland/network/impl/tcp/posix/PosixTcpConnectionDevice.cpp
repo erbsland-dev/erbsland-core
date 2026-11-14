@@ -4,6 +4,8 @@
 
 #include "PosixTcpSocket.hpp"
 
+#include "../TcpAcceptedSocket.hpp"
+
 #include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../source/NetworkError.hpp"
@@ -25,6 +27,7 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <memory>
 #include <utility>
 
 namespace erbsland::network::impl {
@@ -33,10 +36,8 @@ using namespace unit;
 using namespace text::literals;
 
 PosixTcpConnectionDevice::PosixTcpConnectionDevice(
-    event::EventLoopDriverPtr driver, const ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks) :
-    _register{createRegisterFn(std::move(driver))},
-    _callbacks{std::move(callbacks)},
-    _receiveChunkLimit{receiveChunkLimit} {
+    PrivateTag, RegisterFn registerFn, const ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks) :
+    _register{std::move(registerFn)}, _callbacks{std::move(callbacks)}, _receiveChunkLimit{receiveChunkLimit} {
 }
 
 PosixTcpConnectionDevice::~PosixTcpConnectionDevice() {
@@ -44,17 +45,21 @@ PosixTcpConnectionDevice::~PosixTcpConnectionDevice() {
 }
 
 void PosixTcpConnectionDevice::connect(IpEndpoint remoteEndpoint) {
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        return;
+    }
     const auto family = remoteEndpoint.address().isV4() ? AF_INET : AF_INET6;
     const auto descriptor = ::socket(family, SOCK_STREAM, IPPROTO_TCP);
     if (descriptor < 0) {
         throw NetworkError{
             createContext(errno, "TCP socket creation failed"_el, "The native TCP socket could not be created."_el)};
     }
-    _descriptor.store(descriptor);
+    _descriptor = descriptor;
     try {
         configureDescriptor(descriptor);
     } catch (...) {
-        abort();
+        closeLocked();
         throw;
     }
     _remoteEndpoint = remoteEndpoint;
@@ -63,14 +68,14 @@ void PosixTcpConnectionDevice::connect(IpEndpoint remoteEndpoint) {
         _connected = true;
         _localEndpoint = queryLocalEndpoint();
         if (_callbacks.connected) {
-            _callbacks.connected(*_localEndpoint, remoteEndpoint);
+            notify(lock, _callbacks.connected, *_localEndpoint, remoteEndpoint);
         }
         return;
     }
     if (errno != EINPROGRESS) {
         const auto error = NetworkError{createContext(
             errno, "TCP connection failed"_el, "The native socket could not connect to the remote endpoint."_el)};
-        abort();
+        closeLocked();
         throw error;
     }
     _connecting = true;
@@ -78,6 +83,10 @@ void PosixTcpConnectionDevice::connect(IpEndpoint remoteEndpoint) {
 }
 
 void PosixTcpConnectionDevice::accept(TcpAcceptedSocketPtr socket) {
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        return;
+    }
     auto *posixSocket = dynamic_cast<PosixTcpSocket *>(socket.get());
     if (posixSocket == nullptr) {
         throw err::ParameterFailure{
@@ -85,11 +94,11 @@ void PosixTcpConnectionDevice::accept(TcpAcceptedSocketPtr socket) {
     }
     _localEndpoint = posixSocket->localEndpoint();
     _remoteEndpoint = posixSocket->remoteEndpoint();
-    _descriptor.store(posixSocket->takeDescriptor());
+    _descriptor = posixSocket->takeDescriptor();
     socket.reset();
     _connected = true;
     if (_callbacks.connected) {
-        _callbacks.connected(*_localEndpoint, *_remoteEndpoint);
+        notify(lock, _callbacks.connected, *_localEndpoint, *_remoteEndpoint);
     }
 }
 
@@ -98,6 +107,10 @@ auto PosixTcpConnectionDevice::canAccept(const TcpAcceptedSocket &socket) const 
 }
 
 auto PosixTcpConnectionDevice::send(mem::ByteBlock data) -> TcpConnectionDeviceSendStatus {
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        return TcpConnectionDeviceSendStatus::Complete;
+    }
     if (_sendPending) {
         throw err::LogicFailure{"The native TCP device already retains an output block."_el};
     }
@@ -113,19 +126,29 @@ auto PosixTcpConnectionDevice::send(mem::ByteBlock data) -> TcpConnectionDeviceS
 }
 
 void PosixTcpConnectionDevice::setReceiving(const ByteCount maximumBytes) {
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        return;
+    }
     _maximumReceiveSize = std::min(maximumBytes, _receiveChunkLimit);
     updateRegistration();
 }
 
 void PosixTcpConnectionDevice::close() noexcept {
-    _registration.reset();
-    abort();
+    const auto lock = std::scoped_lock{_operationMutex};
+    closeLocked();
 }
 
 void PosixTcpConnectionDevice::abort() noexcept {
-    const auto descriptor = _descriptor.exchange(-1);
+    close();
+}
+
+void PosixTcpConnectionDevice::closeLocked() noexcept {
+    _closed = true;
+    _registration.reset();
+    const auto descriptor = std::exchange(_descriptor, -1);
     if (descriptor >= 0) {
-        // A close failure cannot be retried because the descriptor may already have been reused.
+        // Never retry close: the descriptor number may already have been reused.
         ::close(descriptor);
     }
 }
@@ -168,25 +191,34 @@ void PosixTcpConnectionDevice::configureDescriptor(const int descriptor) {
 
 void PosixTcpConnectionDevice::updateRegistration() {
     _registration.reset();
-    const auto descriptor = _descriptor.load();
+    const auto descriptor = _descriptor;
     const auto read = _connected && !_maximumReceiveSize.isZero();
     const auto write = _connecting || _sendPending;
     if (descriptor < 0 || (!read && !write)) {
         return;
     }
-    _registration =
-        _register(descriptor, read, write, [this](const bool readable, const bool writable, const bool error) -> void {
-            handleReady(readable, writable, error);
+    _registration = _register(
+        descriptor,
+        read,
+        write,
+        [weak = weak_from_this()](const bool readable, const bool writable, const bool error) -> void {
+            if (const auto self = weak.lock()) {
+                self->handleReady(readable, writable, error);
+            }
         });
 }
 
 void PosixTcpConnectionDevice::handleReady(const bool readable, const bool writable, const bool error) {
-    const auto descriptor = _descriptor.load();
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        return;
+    }
+    const auto descriptor = _descriptor;
     if (descriptor < 0) {
         return;
     }
     if (_connecting && (writable || error)) {
-        finishConnect();
+        finishConnect(lock);
         return;
     }
     if (error) {
@@ -194,35 +226,38 @@ void PosixTcpConnectionDevice::handleReady(const bool readable, const bool writa
         auto size = static_cast<socklen_t>(sizeof(errorCode));
         if (::getsockopt(descriptor, SOL_SOCKET, SO_ERROR, &errorCode, &size) == 0 && errorCode != 0) {
             if (_callbacks.error) {
-                _callbacks.error(createContext(
-                    errorCode, "TCP socket failed"_el, "The native TCP socket reported an operational error."_el));
+                notify(
+                    lock,
+                    _callbacks.error,
+                    createContext(
+                        errorCode, "TCP socket failed"_el, "The native TCP socket reported an operational error."_el));
             }
             return;
         }
     }
     if (readable && !_maximumReceiveSize.isZero()) {
-        receiveOne();
+        receiveOne(lock);
     }
-    if (writable && _sendPending) {
+    if (!_closed && writable && _sendPending) {
         try {
             if (writePending()) {
                 _sendPending = false;
                 _sendData = {};
                 updateRegistration();
                 if (_callbacks.sendCompleted) {
-                    _callbacks.sendCompleted();
+                    notify(lock, _callbacks.sendCompleted);
                 }
             }
         } catch (const NetworkError &sendError) {
             if (_callbacks.error) {
-                _callbacks.error(sendError.context());
+                notify(lock, _callbacks.error, sendError.context());
             }
         }
     }
 }
 
-void PosixTcpConnectionDevice::finishConnect() {
-    const auto descriptor = _descriptor.load();
+void PosixTcpConnectionDevice::finishConnect(std::unique_lock<std::mutex> &lock) {
+    const auto descriptor = _descriptor;
     auto errorCode = int{};
     auto size = static_cast<socklen_t>(sizeof(errorCode));
     if (::getsockopt(descriptor, SOL_SOCKET, SO_ERROR, &errorCode, &size) < 0) {
@@ -232,8 +267,13 @@ void PosixTcpConnectionDevice::finishConnect() {
     if (errorCode != 0) {
         updateRegistration();
         if (_callbacks.error) {
-            _callbacks.error(createContext(
-                errorCode, "TCP connection failed"_el, "The remote endpoint rejected or failed the connection."_el));
+            notify(
+                lock,
+                _callbacks.error,
+                createContext(
+                    errorCode,
+                    "TCP connection failed"_el,
+                    "The remote endpoint rejected or failed the connection."_el));
         }
         return;
     }
@@ -242,18 +282,18 @@ void PosixTcpConnectionDevice::finishConnect() {
         _localEndpoint = queryLocalEndpoint();
     } catch (const NetworkError &endpointError) {
         if (_callbacks.error) {
-            _callbacks.error(endpointError.context());
+            notify(lock, _callbacks.error, endpointError.context());
         }
         return;
     }
     updateRegistration();
     if (_callbacks.connected) {
-        _callbacks.connected(*_localEndpoint, *_remoteEndpoint);
+        notify(lock, _callbacks.connected, *_localEndpoint, *_remoteEndpoint);
     }
 }
 
 auto PosixTcpConnectionDevice::writePending() -> bool {
-    const auto descriptor = _descriptor.load();
+    const auto descriptor = _descriptor;
     const auto bytes = mem::impl::UnsafeByteBlockAccess{_sendData}.dataView().dataSpan();
     while (_sendOffset < bytes.size()) {
 #ifdef MSG_NOSIGNAL
@@ -278,14 +318,14 @@ auto PosixTcpConnectionDevice::writePending() -> bool {
     return true;
 }
 
-void PosixTcpConnectionDevice::receiveOne() {
-    const auto descriptor = _descriptor.load();
+void PosixTcpConnectionDevice::receiveOne(std::unique_lock<std::mutex> &lock) {
+    const auto descriptor = _descriptor;
     auto buffer = mem::impl::UnsafeByteBlockBuffer{_maximumReceiveSize};
     auto bytes = buffer.data();
     const auto result = ::recv(descriptor, bytes.data(), bytes.size(), 0);
     if (result > 0) {
         if (_callbacks.data) {
-            _callbacks.data(buffer.take(ByteCount::fromSizeT(static_cast<std::size_t>(result))));
+            notify(lock, _callbacks.data, buffer.take(ByteCount::fromSizeT(static_cast<std::size_t>(result))));
         }
         return;
     }
@@ -293,7 +333,7 @@ void PosixTcpConnectionDevice::receiveOne() {
         _maximumReceiveSize = {};
         updateRegistration();
         if (_callbacks.remoteClosed) {
-            _callbacks.remoteClosed();
+            notify(lock, _callbacks.remoteClosed);
         }
         return;
     }
@@ -301,12 +341,15 @@ void PosixTcpConnectionDevice::receiveOne() {
         return;
     }
     if (_callbacks.error) {
-        _callbacks.error(createContext(errno, "TCP receive failed"_el, "Stream data could not be received."_el));
+        notify(
+            lock,
+            _callbacks.error,
+            createContext(errno, "TCP receive failed"_el, "Stream data could not be received."_el));
     }
 }
 
 auto PosixTcpConnectionDevice::queryLocalEndpoint() const -> IpEndpoint {
-    const auto descriptor = _descriptor.load();
+    const auto descriptor = _descriptor;
     auto address = SocketAddress{};
     auto size = static_cast<socklen_t>(address.size());
     if (::getsockname(descriptor, address.data(), &size) < 0) {
@@ -360,10 +403,23 @@ auto PosixTcpConnectionDevice::errorReason(const int errorCode) noexcept -> Netw
     }
 }
 
+auto PosixTcpConnectionDevice::create(
+    event::EventLoopDriverPtr driver, unit::ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
+    -> PosixTcpConnectionDevicePtr {
+    return create(createRegisterFn(std::move(driver)), receiveChunkLimit, std::move(callbacks));
+}
+
+auto PosixTcpConnectionDevice::create(
+    RegisterFn registerFn, unit::ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
+    -> PosixTcpConnectionDevicePtr {
+    return std::make_shared<PosixTcpConnectionDevice>(
+        PrivateTag{}, std::move(registerFn), receiveChunkLimit, std::move(callbacks));
+}
+
 auto TcpConnectionDevice::create(
-    event::EventLoopDriverPtr driver, const ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
+    event::EventLoopDriverPtr driver, const unit::ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
     -> TcpConnectionDevicePtr {
-    return std::make_unique<PosixTcpConnectionDevice>(std::move(driver), receiveChunkLimit, std::move(callbacks));
+    return PosixTcpConnectionDevice::create(std::move(driver), receiveChunkLimit, std::move(callbacks));
 }
 
 }

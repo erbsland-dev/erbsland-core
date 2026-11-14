@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.28)
 target_sources(erbsland-core-unittest PRIVATE
         BindEventTest.cpp
         BindWeakEventTest.cpp
+        EpollEventLoopTestCalls.hpp
         EventBackendTest.cpp
         EventFatalFailureTest.cpp
         EventLoopDriverTest.cpp
@@ -17,6 +18,10 @@ target_sources(erbsland-core-unittest PRIVATE
         EventSubscriptionTest.cpp
         EventThreadTest.cpp
         EventTimerTest.cpp
+        KqueueEventLoopTestCalls.hpp
+        NativeEventLoopFailureTest.cpp
+        NativeEventLoopTestTypes.hpp
+        WindowsEventLoopTestCalls.hpp
 )
 
 if(WIN32)

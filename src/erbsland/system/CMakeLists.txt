@@ -32,6 +32,8 @@ target_sources(erbsland-core PRIVATE
         PlatformErrorCategory.hpp
         PlatformErrorContext.hpp
         PlatformErrorContext_fwd.hpp
+        PlatformFailure.cpp
+        PlatformFailure.hpp
         ProcessId.cpp
         ProcessId.hpp
         ProcessId_fwd.hpp

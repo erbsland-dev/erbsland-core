@@ -6,8 +6,10 @@ cmake_minimum_required(VERSION 3.28)
 target_sources(erbsland-core PRIVATE
         PosixTcpConnectionDevice.cpp
         PosixTcpConnectionDevice.hpp
+        PosixTcpConnectionDevice_fwd.hpp
         PosixTcpListenerDevice.cpp
         PosixTcpListenerDevice.hpp
+        PosixTcpListenerDevice_fwd.hpp
         PosixTcpSocket.cpp
         PosixTcpSocket.hpp
 )

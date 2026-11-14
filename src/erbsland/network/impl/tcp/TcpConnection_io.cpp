@@ -226,14 +226,11 @@ void TcpConnection::flushOutput() {
     }
     while (!_sendQueue.empty()) {
         try {
-            auto status = TcpConnectionDeviceSendStatus::Pending;
-            {
-                const auto lock = std::scoped_lock{_dataMutex};
-                if (_device == nullptr) {
-                    return;
-                }
-                status = _device->send(_sendQueue.front());
+            const auto device = getDevice();
+            if (device == nullptr) {
+                return;
             }
+            const auto status = device->send(_sendQueue.front());
             if (status == TcpConnectionDeviceSendStatus::Pending) {
                 _sendPending = true;
                 return;
@@ -282,9 +279,8 @@ void TcpConnection::updateReceiving() {
         maximumBytes = _bufferLimits.receive() - _receiveQueueSize;
     }
     try {
-        const auto lock = std::scoped_lock{_dataMutex};
-        if (_device != nullptr) {
-            _device->setReceiving(maximumBytes);
+        if (const auto device = getDevice(); device != nullptr) {
+            device->setReceiving(maximumBytes);
         }
     } catch (const NetworkError &error) {
         postError(_generation.load(), error.context());
@@ -418,6 +414,11 @@ void TcpConnection::postFinal(const std::uint64_t generation) {
     if (callback) {
         callback();
     }
+}
+
+auto TcpConnection::getDevice() const -> TcpConnectionDevicePtr {
+    const auto lock = std::scoped_lock{_dataMutex};
+    return _device;
 }
 
 void TcpConnection::cleanupDevice(const bool abortDevice) noexcept {

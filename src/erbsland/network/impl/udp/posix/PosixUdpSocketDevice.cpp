@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PosixUdpSocketDevice.hpp"
 
+#include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../../event/impl/EventLoopDriverRegistration.hpp"
 #include "../../../source/NetworkError.hpp"
@@ -24,6 +25,7 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <memory>
 #include <utility>
 
 namespace erbsland::network::impl {
@@ -32,8 +34,8 @@ using namespace text;
 using namespace unit;
 using namespace text::literals;
 
-PosixUdpSocketDevice::PosixUdpSocketDevice(event::EventLoopDriverPtr driver, UdpSocketDeviceCallbacks callbacks) :
-    _register{createRegisterFn(std::move(driver))}, _callbacks{std::move(callbacks)} {
+PosixUdpSocketDevice::PosixUdpSocketDevice(PrivateTag, RegisterFn registerFn, UdpSocketDeviceCallbacks callbacks) :
+    _register{std::move(registerFn)}, _callbacks{std::move(callbacks)} {
 }
 
 PosixUdpSocketDevice::~PosixUdpSocketDevice() {
@@ -41,17 +43,21 @@ PosixUdpSocketDevice::~PosixUdpSocketDevice() {
 }
 
 auto PosixUdpSocketDevice::bind(IpEndpoint localEndpoint, const ByteCount maximumDatagramSize) -> IpEndpoint {
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        throw err::LogicFailure{"Cannot start a closed native socket."_el};
+    }
     const auto family = localEndpoint.address().isV4() ? AF_INET : AF_INET6;
     const auto descriptor = ::socket(family, SOCK_DGRAM, IPPROTO_UDP);
     if (descriptor < 0) {
         throw createError("UDP socket creation failed"_el, "The native UDP socket could not be created."_el);
     }
-    _descriptor.store(descriptor);
+    _descriptor = descriptor;
     if (::fcntl(descriptor, F_SETFL, ::fcntl(descriptor, F_GETFL, 0) | O_NONBLOCK) < 0 ||
         ::fcntl(descriptor, F_SETFD, ::fcntl(descriptor, F_GETFD, 0) | FD_CLOEXEC) < 0) {
         const auto error = createError(
             "UDP socket setup failed"_el, "The native UDP socket could not be configured as non-blocking."_el);
-        abort();
+        closeLocked();
         throw error;
     }
     if (family == AF_INET6) {
@@ -59,7 +65,7 @@ auto PosixUdpSocketDevice::bind(IpEndpoint localEndpoint, const ByteCount maximu
         if (::setsockopt(descriptor, IPPROTO_IPV6, IPV6_V6ONLY, &enabled, sizeof(enabled)) < 0) {
             const auto error =
                 createError("UDP socket setup failed"_el, "The IPv6-only socket mode could not be configured."_el);
-            abort();
+            closeLocked();
             throw error;
         }
     }
@@ -68,7 +74,7 @@ auto PosixUdpSocketDevice::bind(IpEndpoint localEndpoint, const ByteCount maximu
         const auto error = createError("UDP bind failed"_el, "The UDP socket could not bind to the local endpoint."_el);
         auto context = error.context();
         context.setLocalEndpoint(localEndpoint);
-        abort();
+        closeLocked();
         throw NetworkError{std::move(context)};
     }
     auto actualEndpoint = SocketAddress{};
@@ -76,13 +82,13 @@ auto PosixUdpSocketDevice::bind(IpEndpoint localEndpoint, const ByteCount maximu
     if (::getsockname(descriptor, actualEndpoint.data(), &nativeSize) < 0) {
         const auto error =
             createError("UDP endpoint query failed"_el, "The bound UDP endpoint could not be determined."_el);
-        abort();
+        closeLocked();
         throw error;
     }
     *actualEndpoint.sizePointer() = static_cast<int>(nativeSize);
     const auto convertedEndpoint = actualEndpoint.toEndpoint();
     if (!convertedEndpoint.has_value()) {
-        abort();
+        closeLocked();
         throw NetworkError{NetworkErrorContext{
             "UDP endpoint query failed"_el, "The platform returned an unsupported bound address family."_el}
                 .setReason(NetworkErrorReason::SocketOperationFailed)
@@ -94,7 +100,11 @@ auto PosixUdpSocketDevice::bind(IpEndpoint localEndpoint, const ByteCount maximu
 }
 
 auto PosixUdpSocketDevice::send(const UdpDatagram &datagram) -> UdpSocketDeviceSendStatus {
-    const auto descriptor = _descriptor.load();
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        return UdpSocketDeviceSendStatus::Complete;
+    }
+    const auto descriptor = _descriptor;
     if (descriptor < 0) {
         return UdpSocketDeviceSendStatus::WouldBlock;
     }
@@ -128,19 +138,29 @@ auto PosixUdpSocketDevice::send(const UdpDatagram &datagram) -> UdpSocketDeviceS
 }
 
 void PosixUdpSocketDevice::setReceiving(const bool enabled) {
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        return;
+    }
     _read = enabled;
     updateRegistration();
 }
 
 void PosixUdpSocketDevice::close() noexcept {
-    _registration.reset();
-    abort();
+    const auto lock = std::scoped_lock{_operationMutex};
+    closeLocked();
 }
 
 void PosixUdpSocketDevice::abort() noexcept {
-    const auto descriptor = _descriptor.exchange(-1);
+    close();
+}
+
+void PosixUdpSocketDevice::closeLocked() noexcept {
+    _closed = true;
+    _registration.reset();
+    const auto descriptor = std::exchange(_descriptor, -1);
     if (descriptor >= 0) {
-        // A close failure cannot be retried because the descriptor may already have been reused.
+        // Never retry close: the descriptor number may already have been reused.
         ::close(descriptor);
     }
 }
@@ -162,18 +182,27 @@ auto PosixUdpSocketDevice::createRegisterFn(event::EventLoopDriverPtr driver) ->
 
 void PosixUdpSocketDevice::updateRegistration() {
     _registration.reset();
-    const auto descriptor = _descriptor.load();
+    const auto descriptor = _descriptor;
     if (descriptor < 0 || (!_read && !_write)) {
         return;
     }
     _registration = _register(
-        descriptor, _read, _write, [this](const bool readable, const bool writable, const bool error) -> void {
-            handleReady(readable, writable, error);
+        descriptor,
+        _read,
+        _write,
+        [weak = weak_from_this()](const bool readable, const bool writable, const bool error) -> void {
+            if (const auto self = weak.lock()) {
+                self->handleReady(readable, writable, error);
+            }
         });
 }
 
 void PosixUdpSocketDevice::handleReady(const bool readable, const bool writable, const bool error) {
-    const auto descriptor = _descriptor.load();
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        return;
+    }
+    const auto descriptor = _descriptor;
     if (descriptor < 0) {
         return;
     }
@@ -182,26 +211,29 @@ void PosixUdpSocketDevice::handleReady(const bool readable, const bool writable,
         auto size = static_cast<socklen_t>(sizeof(errorCode));
         if (::getsockopt(descriptor, SOL_SOCKET, SO_ERROR, &errorCode, &size) == 0 && errorCode != 0) {
             if (_callbacks.error) {
-                _callbacks.error(createContext(
-                    errorCode, "UDP socket failed"_el, "The native UDP socket reported an operational error."_el));
+                notify(
+                    lock,
+                    _callbacks.error,
+                    createContext(
+                        errorCode, "UDP socket failed"_el, "The native UDP socket reported an operational error."_el));
             }
             return;
         }
     }
     if (readable && _read) {
-        receiveOne();
+        receiveOne(lock);
     }
-    if (writable && _write) {
+    if (!_closed && writable && _write) {
         _write = false;
         updateRegistration();
         if (_callbacks.writable) {
-            _callbacks.writable();
+            notify(lock, _callbacks.writable);
         }
     }
 }
 
-void PosixUdpSocketDevice::receiveOne() {
-    const auto descriptor = _descriptor.load();
+void PosixUdpSocketDevice::receiveOne(std::unique_lock<std::mutex> &lock) {
+    const auto descriptor = _descriptor;
     if (descriptor < 0) {
         return;
     }
@@ -220,8 +252,11 @@ void PosixUdpSocketDevice::receiveOne() {
             return;
         }
         if (_callbacks.error) {
-            _callbacks.error(createContext(
-                errno, "UDP receive failed"_el, "A datagram could not be received from the native socket."_el));
+            notify(
+                lock,
+                _callbacks.error,
+                createContext(
+                    errno, "UDP receive failed"_el, "A datagram could not be received from the native socket."_el));
         }
         return;
     }
@@ -229,7 +264,9 @@ void PosixUdpSocketDevice::receiveOne() {
     const auto remoteEndpoint = remoteAddress.toEndpoint();
     if (!remoteEndpoint.has_value()) {
         if (_callbacks.error) {
-            _callbacks.error(
+            notify(
+                lock,
+                _callbacks.error,
                 NetworkErrorContext{
                     "UDP receive failed"_el, "The platform returned an unsupported remote address family."_el}
                     .setReason(NetworkErrorReason::SocketOperationFailed));
@@ -241,14 +278,18 @@ void PosixUdpSocketDevice::receiveOne() {
             const auto actualSize = static_cast<std::size_t>(result) > bytes.size()
                 ? std::optional<ByteCount>{ByteCount::fromSizeT(static_cast<std::size_t>(result))}
                 : std::optional<ByteCount>{};
-            _callbacks.datagramDropped(
+            notify(
+                lock,
+                _callbacks.datagramDropped,
                 UdpDatagramDropContext{
                     UdpDatagramDropReason::TooLarge, _maximumDatagramSize, *remoteEndpoint, actualSize});
         }
         return;
     }
     if (_callbacks.datagram) {
-        _callbacks.datagram(
+        notify(
+            lock,
+            _callbacks.datagram,
             UdpDatagram{*remoteEndpoint, buffer.take(ByteCount::fromSizeT(static_cast<std::size_t>(result)))});
     }
 }
@@ -287,9 +328,19 @@ auto PosixUdpSocketDevice::errorReason(const int errorCode) noexcept -> NetworkE
     }
 }
 
+auto PosixUdpSocketDevice::create(event::EventLoopDriverPtr driver, UdpSocketDeviceCallbacks callbacks)
+    -> PosixUdpSocketDevicePtr {
+    return create(createRegisterFn(std::move(driver)), std::move(callbacks));
+}
+
+auto PosixUdpSocketDevice::create(RegisterFn registerFn, UdpSocketDeviceCallbacks callbacks)
+    -> PosixUdpSocketDevicePtr {
+    return std::make_shared<PosixUdpSocketDevice>(PrivateTag{}, std::move(registerFn), std::move(callbacks));
+}
+
 auto UdpSocketDevice::createUdpSocketDevice(event::EventLoopDriverPtr driver, UdpSocketDeviceCallbacks callbacks)
     -> UdpSocketDevicePtr {
-    return std::make_unique<PosixUdpSocketDevice>(std::move(driver), std::move(callbacks));
+    return PosixUdpSocketDevice::create(std::move(driver), std::move(callbacks));
 }
 
 }

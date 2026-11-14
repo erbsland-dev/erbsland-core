@@ -12,6 +12,7 @@
 namespace erbsland::network::impl {
 
 /// Platform-neutral interface for one native TCP listening socket.
+/// Callers retain shared ownership throughout each operation and explicitly close or abort before releasing the device.
 /// @tested{TcpListenerTest TcpSocketLiveTest}
 class TcpListenerDevice {
 public:

@@ -211,7 +211,7 @@ private:
             std::make_shared<FakeResolver>(),
             [device](EventLoopDriverPtr, unit::ByteCount, TcpConnectionDeviceCallbacks callbacks) {
                 device->callbacks = std::move(callbacks);
-                return std::make_unique<FakeDevice>(device);
+                return std::make_shared<FakeDevice>(device);
             });
         result.implementation = std::make_shared<el::network::impl::TlsServerConnection>(result.loop, tcp);
         result.connection = result.implementation;

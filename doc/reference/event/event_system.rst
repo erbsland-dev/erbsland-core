@@ -247,6 +247,22 @@ POSIX or Windows error context.
 Wait failures propagate from ``run()``, ``runOnce()``, and ``runUntilIdle()``; they are not callback failures governed
 by ``errorPolicy()``.
 
+Native wake operations retry interruptions and preserve already-pending wake notifications.
+An unexpected wake failure throws ``PlatformFailure`` at the failed native operation, retaining its error context.
+``wake()`` permits propagation.
+Calls through ``stop()``, ``quit()``, or backend wake notifications terminate at their ``noexcept`` boundaries.
+The fatal failure bypasses recoverable callback-error policies.
+Posting queues the event before waking the driver; a wake failure does not roll back the queued work.
+Failure to drain the Linux wake descriptor instead propagates as ``PlatformError`` from the wait operation.
+
+POSIX TCP and UDP devices serialize native operations with shutdown.
+Abort remains synchronous and thread-safe: it releases readiness registrations before closing the socket.
+Readiness callbacks retain shared ownership of the native device while running.
+Callbacks copied before shutdown hold only a weak reference and cannot access a destroyed device.
+Native registration release tolerates an already-absent registration.
+Unexpected removal errors throw ``PlatformFailure`` and terminate at the registration's ``noexcept`` cleanup boundary.
+Callbacks into owning sources run outside the native operation and driver registration locks.
+
 Interface
 =========
 

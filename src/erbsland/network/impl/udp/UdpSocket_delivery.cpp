@@ -27,8 +27,8 @@ void UdpSocket::deliverBound(const std::uint64_t generation) {
         return;
     }
     try {
-        if (_device != nullptr) {
-            _device->setReceiving(true);
+        if (const auto device = getDevice(); device != nullptr) {
+            device->setReceiving(true);
         }
     } catch (const NetworkError &error) {
         deliverError(generation, error.context());
@@ -118,14 +118,15 @@ void UdpSocket::deliverError(const std::uint64_t generation, NetworkErrorContext
 }
 
 void UdpSocket::flushOutput() {
+    const auto device = getDevice();
     const auto currentState = _state.load();
     if ((currentState != NetworkSourceState::Active && currentState != NetworkSourceState::Closing) || _sendPending ||
-        _nativeWriteBlocked || _device == nullptr) {
+        _nativeWriteBlocked || device == nullptr) {
         return;
     }
     while (!_sendQueue.empty()) {
         try {
-            const auto status = _device->send(_sendQueue.front());
+            const auto status = device->send(_sendQueue.front());
             if (status == UdpSocketDeviceSendStatus::Pending) {
                 _sendPending = true;
                 return;
@@ -182,11 +183,17 @@ void UdpSocket::finishClose() {
     postClosed(_generation.load());
 }
 
-void UdpSocket::cleanupDevice() noexcept {
+auto UdpSocket::getDevice() const -> UdpSocketDevicePtr {
     const auto lock = std::scoped_lock{_dataMutex};
-    if (_device != nullptr) {
-        _device->close();
-        _device.reset();
+    return _device;
+}
+
+void UdpSocket::cleanupDevice() noexcept {
+    // Keep concurrent abort waiting until the detached device has been closed.
+    const auto lock = std::scoped_lock{_dataMutex};
+    const auto device = std::move(_device);
+    if (device != nullptr) {
+        device->close();
     }
 }
 

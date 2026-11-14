@@ -50,15 +50,21 @@ if(WIN32)
     target_sources(erbsland-core PRIVATE
             WindowsEventLoopDriver.cpp
             WindowsEventLoopDriver.hpp
+            WindowsEventLoopNativeCalls.cpp
+            WindowsEventLoopNativeCalls.hpp
     )
 elseif(APPLE)
     target_sources(erbsland-core PRIVATE
             KqueueEventLoopDriver.cpp
             KqueueEventLoopDriver.hpp
+            KqueueEventLoopNativeCalls.cpp
+            KqueueEventLoopNativeCalls.hpp
     )
 elseif(UNIX)
     target_sources(erbsland-core PRIVATE
             EpollEventLoopDriver.cpp
             EpollEventLoopDriver.hpp
+            EpollEventLoopNativeCalls.cpp
+            EpollEventLoopNativeCalls.hpp
     )
 endif()

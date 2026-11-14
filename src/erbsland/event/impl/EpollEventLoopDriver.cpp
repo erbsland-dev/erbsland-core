@@ -5,24 +5,36 @@
 #include "../../err/ParameterFailure.hpp"
 #include "../../system/impl/PosixErrorContext.hpp"
 #include "../../system/PlatformError.hpp"
+#include "../../system/PlatformFailure.hpp"
 #include "../../text/Literals.hpp"
 
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <array>
 #include <cerrno>
 #include <chrono>
 #include <cstdint>
 #include <limits>
+#include <memory>
+#include <utility>
 
 namespace erbsland::event::impl {
 
 using namespace err;
 using namespace text::literals;
 
-EpollEventLoopDriver::EpollEventLoopDriver() : _epoll{::epoll_create1(EPOLL_CLOEXEC)} {
+EpollEventLoopDriver::EpollEventLoopDriver() : EpollEventLoopDriver{std::make_shared<EpollEventLoopNativeCalls>()} {
+}
+
+EpollEventLoopDriver::EpollEventLoopDriver(std::shared_ptr<EpollEventLoopNativeCalls> nativeCalls) :
+    _nativeCalls{std::move(nativeCalls)} {
+    if (_nativeCalls == nullptr) {
+        throw err::ParameterFailure{"The native call adapter must not be null."_el, "nativeCalls"_el};
+    }
+    _epoll = ::epoll_create1(EPOLL_CLOEXEC);
     if (_epoll < 0) {
         throw system::PlatformError{
             "Failed to create the epoll event-loop driver."_el, system::impl::PosixErrorContext::fromErrno()};
@@ -34,7 +46,7 @@ EpollEventLoopDriver::EpollEventLoopDriver() : _epoll{::epoll_create1(EPOLL_CLOE
         throw system::PlatformError{"Failed to create the epoll wake descriptor."_el, context};
     }
     auto event = epoll_event{.events = EPOLLIN, .data = {.u64 = cWakeGeneration}};
-    if (::epoll_ctl(_epoll, EPOLL_CTL_ADD, _wake, &event) < 0) {
+    if (_nativeCalls->control(_epoll, EPOLL_CTL_ADD, _wake, &event) < 0) {
         const auto context = system::impl::PosixErrorContext::fromErrno();
         ::close(_wake);
         ::close(_epoll);
@@ -69,10 +81,28 @@ void EpollEventLoopDriver::wait(const time::TimeDelta maximumWait) {
     waitInternal(static_cast<int>(std::min<int64_t>(roundedMilliseconds.count(), maximum)));
 }
 
-void EpollEventLoopDriver::wake() noexcept {
+void EpollEventLoopDriver::wake() {
     constexpr auto value = uint64_t{1U};
-    // anti-pattern: allow static_cast_void -- A failed wake is harmless because the queue remains signalled.
-    static_cast<void>(::write(_wake, &value, sizeof(value)));
+    while (true) {
+        const auto result = _nativeCalls->writeWake(_wake, value);
+        if (result == static_cast<ssize_t>(sizeof(value))) {
+            return;
+        }
+        const auto error = errno;
+        if (result < 0 && error == EINTR) {
+            continue;
+        }
+        if (result < 0 && error == EAGAIN) {
+            return; // A full eventfd counter already represents a pending wake.
+        }
+        auto errorCode = EIO;
+        if (result < 0) {
+            errorCode = error;
+        }
+        throw system::PlatformFailure{
+            "Failed to signal the epoll wake descriptor."_el,
+            system::impl::PosixErrorContext::fromErrorCode(errorCode)};
+    }
 }
 
 auto EpollEventLoopDriver::registerDescriptor(
@@ -86,6 +116,7 @@ auto EpollEventLoopDriver::registerDescriptor(
     if (!callback) {
         throw ParameterFailure{"The native event callback must not be empty."_el, "callback"_el};
     }
+    const auto lock = std::scoped_lock{_registrationMutex};
     for (const auto &entry : _registrations) {
         const auto &registration = entry.second;
         if (registration.descriptor == descriptor) {
@@ -101,23 +132,33 @@ auto EpollEventLoopDriver::registerDescriptor(
         flags |= EPOLLOUT;
     }
     auto event = epoll_event{.events = flags, .data = {.u64 = generation}};
-    if (::epoll_ctl(_epoll, EPOLL_CTL_ADD, descriptor, &event) < 0) {
+    if (_nativeCalls->control(_epoll, EPOLL_CTL_ADD, descriptor, &event) < 0) {
         throw system::PlatformError{
             "Failed to register a native descriptor with epoll."_el, system::impl::PosixErrorContext::fromErrno()};
     }
     _registrations.emplace(generation, Registration{descriptor, std::move(callback)});
     return std::make_unique<EventLoopDriverRegistration>(
-        [this, generation]() noexcept -> void { unregisterDescriptor(generation); });
+        [this, generation]() -> void { unregisterDescriptor(generation); });
 }
 
-void EpollEventLoopDriver::unregisterDescriptor(const uint64_t generation) noexcept {
+void EpollEventLoopDriver::unregisterDescriptor(const uint64_t generation) {
+    const auto lock = std::scoped_lock{_registrationMutex};
     const auto iterator = _registrations.find(generation);
     if (iterator == _registrations.end()) {
         return;
     }
-    // anti-pattern: allow static_cast_void -- The descriptor is being released and failed deregistration is
-    // unrecoverable.
-    static_cast<void>(::epoll_ctl(_epoll, EPOLL_CTL_DEL, iterator->second.descriptor, nullptr));
+    while (_nativeCalls->control(_epoll, EPOLL_CTL_DEL, iterator->second.descriptor, nullptr) < 0) {
+        const auto error = errno;
+        if (error == EINTR) {
+            continue;
+        }
+        if (error == ENOENT) {
+            break;
+        }
+        throw system::PlatformFailure{
+            "Failed to remove an epoll descriptor registration."_el,
+            system::impl::PosixErrorContext::fromErrorCode(error)};
+    }
     _registrations.erase(iterator);
 }
 
@@ -132,11 +173,15 @@ void EpollEventLoopDriver::waitInternal(const int timeoutMilliseconds) {
                     drainWake();
                     continue;
                 }
-                const auto iterator = _registrations.find(event.data.u64);
-                if (iterator == _registrations.end()) {
-                    continue;
+                auto callback = NativeEventCallback{};
+                {
+                    const auto lock = std::scoped_lock{_registrationMutex};
+                    const auto iterator = _registrations.find(event.data.u64);
+                    if (iterator == _registrations.end()) {
+                        continue;
+                    }
+                    callback = iterator->second.callback;
                 }
-                const auto callback = iterator->second.callback;
                 callback(
                     (event.events & EPOLLIN) != 0,
                     (event.events & EPOLLOUT) != 0,
@@ -151,9 +196,27 @@ void EpollEventLoopDriver::waitInternal(const int timeoutMilliseconds) {
     }
 }
 
-void EpollEventLoopDriver::drainWake() noexcept {
+void EpollEventLoopDriver::drainWake() {
     auto value = uint64_t{};
-    while (::read(_wake, &value, sizeof(value)) == sizeof(value)) {}
+    while (true) {
+        const auto result = _nativeCalls->readWake(_wake, value);
+        if (result == static_cast<ssize_t>(sizeof(value))) {
+            continue;
+        }
+        const auto error = errno;
+        if (result < 0 && error == EINTR) {
+            continue;
+        }
+        if (result < 0 && error == EAGAIN) {
+            return;
+        }
+        auto errorCode = EIO;
+        if (result < 0) {
+            errorCode = error;
+        }
+        throw system::PlatformError{
+            "Failed to drain the epoll wake descriptor."_el, system::impl::PosixErrorContext::fromErrorCode(errorCode)};
+    }
 }
 
 }

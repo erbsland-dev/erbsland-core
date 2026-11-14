@@ -243,7 +243,10 @@ operating-system facilities.
 Native failures use immutable ``PlatformErrorContext`` values.
 The internal platform backends capture native details immediately and expose a portable ``PlatformErrorCategory`` for
 domain diagnostics and actionable help.
-``PlatformError`` is the concrete exception used when the native failure itself is the reported error.
+``PlatformError`` derives from ``RuntimeError`` and reports recoverable native operation errors.
+``PlatformFailure`` derives from ``LogicFailure`` and reports fatal native infrastructure failures, such as an unusable
+event-loop wake mechanism.
+Both retain the native diagnostic context and an optional independent cause.
 
 ``UserLookup`` resolves owner and group identifiers into display names and resolves names back to platform identifiers.
 It caches successful lookups and is available through
@@ -391,6 +394,8 @@ Interface
 .. doxygenclass:: erbsland::system::PlatformErrorCategory
     :members:
 .. doxygenclass:: erbsland::system::PlatformErrorContext
+    :members:
+.. doxygenclass:: erbsland::system::PlatformFailure
     :members:
 .. doxygenclass:: erbsland::system::ProcessId
     :members:

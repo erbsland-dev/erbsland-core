@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        PosixSocketDevice.hpp
         SocketAddress.cpp
         SocketAddress.hpp
 )

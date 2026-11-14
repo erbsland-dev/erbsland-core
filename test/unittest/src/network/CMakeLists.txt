@@ -41,3 +41,9 @@ target_sources(erbsland-core-unittest PRIVATE
         UdpSocketTest.cpp
         UrlTest.cpp
 )
+
+if(UNIX)
+    target_sources(erbsland-core-unittest PRIVATE
+            PosixSocketLifecycleTest.cpp
+    )
+endif()

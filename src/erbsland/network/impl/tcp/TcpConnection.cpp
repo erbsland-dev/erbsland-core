@@ -134,10 +134,9 @@ void TcpConnection::accept(network::TcpConnectionRequestPtr request, TcpAcceptOp
     try {
         {
             const auto lock = std::scoped_lock{_dataMutex};
-            _device = std::move(device);
+            _device = device;
         }
-        const auto lock = std::scoped_lock{_dataMutex};
-        _device->accept(std::move(claim->socket));
+        device->accept(std::move(claim->socket));
     } catch (const NetworkError &error) {
         postError(generation, error.context());
     } catch (const RuntimeError &error) {
@@ -281,10 +280,9 @@ void TcpConnection::startNextEndpoint(const std::uint64_t generation) {
         auto device = _createDevice(_driver, _bufferLimits.receive(), createCallbacks(generation));
         {
             const auto lock = std::scoped_lock{_dataMutex};
-            _device = std::move(device);
+            _device = device;
         }
-        const auto lock = std::scoped_lock{_dataMutex};
-        _device->connect(endpoint);
+        device->connect(endpoint);
     } catch (const NetworkError &error) {
         _lastConnectError = error.context();
         startNextEndpoint(generation);

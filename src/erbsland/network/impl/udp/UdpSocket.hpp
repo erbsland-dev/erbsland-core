@@ -83,6 +83,8 @@ private:
     void notifyWritableIfReady();
     /// Finish a graceful socket close.
     void finishClose();
+    /// Retain the current native device under the data lock for an operation.
+    [[nodiscard]] auto getDevice() const -> UdpSocketDevicePtr;
     /// Release the native device.
     void cleanupDevice() noexcept;
     /// Validate a request to start the socket.

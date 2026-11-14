@@ -7,6 +7,6 @@
 namespace erbsland::network::impl {
 
 class TcpListenerDevice;
-using TcpListenerDevicePtr = std::unique_ptr<TcpListenerDevice>;
+using TcpListenerDevicePtr = std::shared_ptr<TcpListenerDevice>;
 
 }

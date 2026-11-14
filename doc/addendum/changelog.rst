@@ -3,10 +3,10 @@
 Changelog
 *********
 
-Version 0.90.0 — Beta 1
+Version 0.9x.0 — Beta X
 =======================
 
-The first beta release begins the stabilization phase toward ``1.0.0``.
+The beta releases begin the stabilization phase toward ``1.0.0``.
 See :doc:`roadmap` for the beta compatibility policy and review goals.
 
 Earlier Alpha Releases

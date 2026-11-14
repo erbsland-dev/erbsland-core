@@ -6,4 +6,5 @@ cmake_minimum_required(VERSION 3.28)
 target_sources(erbsland-core PRIVATE
         PosixUdpSocketDevice.cpp
         PosixUdpSocketDevice.hpp
+        PosixUdpSocketDevice_fwd.hpp
 )

@@ -90,17 +90,19 @@ auto UdpSocket::send(const UdpDatagram &datagram) -> NetworkSendStatus {
         return NetworkSendStatus::Closed;
     }
     validateDatagram(datagram);
-    const auto lock = std::scoped_lock{_dataMutex};
-    if (_state.load() != NetworkSourceState::Active) {
-        return NetworkSendStatus::Closed;
+    {
+        const auto lock = std::scoped_lock{_dataMutex};
+        if (_state.load() != NetworkSourceState::Active) {
+            return NetworkSendStatus::Closed;
+        }
+        const auto charge = queueCharge(datagram);
+        if (_sendQueueSize + charge > _options.sendQueueLimit()) {
+            _blockedCharge = std::max(_blockedCharge, charge);
+            return NetworkSendStatus::WouldBlock;
+        }
+        _sendQueue.emplace_back(datagram);
+        _sendQueueSize += charge;
     }
-    const auto charge = queueCharge(datagram);
-    if (_sendQueueSize + charge > _options.sendQueueLimit()) {
-        _blockedCharge = std::max(_blockedCharge, charge);
-        return NetworkSendStatus::WouldBlock;
-    }
-    _sendQueue.emplace_back(datagram);
-    _sendQueueSize += charge;
     flushOutput();
     return NetworkSendStatus::Accepted;
 }
@@ -112,8 +114,8 @@ void UdpSocket::pauseReceiving() {
     }
     _receivePaused = true;
     try {
-        if (_device != nullptr) {
-            _device->setReceiving(false);
+        if (const auto device = getDevice(); device != nullptr) {
+            device->setReceiving(false);
         }
     } catch (const NetworkError &error) {
         postError(_generation.load(), error.context());
@@ -127,8 +129,8 @@ void UdpSocket::resumeReceiving() {
     }
     _receivePaused = false;
     try {
-        if (_device != nullptr) {
-            _device->setReceiving(true);
+        if (const auto device = getDevice(); device != nullptr) {
+            device->setReceiving(true);
         }
     } catch (const NetworkError &error) {
         postError(_generation.load(), error.context());
@@ -154,8 +156,8 @@ void UdpSocket::close() {
     }
     _receivePaused = true;
     try {
-        if (_device != nullptr) {
-            _device->setReceiving(false);
+        if (const auto device = getDevice(); device != nullptr) {
+            device->setReceiving(false);
         }
     } catch (const NetworkError &error) {
         postError(_generation.load(), error.context());
@@ -173,9 +175,8 @@ void UdpSocket::abort() noexcept {
     if (previous == NetworkSourceState::Closed || previous == NetworkSourceState::Failed) {
         return;
     }
-    const auto lock = std::scoped_lock{_dataMutex};
-    if (_device != nullptr) {
-        _device->abort();
+    if (const auto device = getDevice(); device != nullptr) {
+        device->abort();
     }
 }
 

@@ -474,7 +474,7 @@ void WindowsTcpConnectionDevice::abort() noexcept {
 auto TcpConnectionDevice::create(
     event::EventLoopDriverPtr driver, const ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
     -> TcpConnectionDevicePtr {
-    return std::make_unique<WindowsTcpConnectionDevice>(std::move(driver), receiveChunkLimit, std::move(callbacks));
+    return std::make_shared<WindowsTcpConnectionDevice>(std::move(driver), receiveChunkLimit, std::move(callbacks));
 }
 
 }

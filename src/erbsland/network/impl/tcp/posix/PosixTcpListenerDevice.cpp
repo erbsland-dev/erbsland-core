@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PosixTcpListenerDevice.hpp"
 
-#include "PosixTcpConnectionDevice.hpp"
 #include "PosixTcpSocket.hpp"
 
+#include "../../../../err/LogicFailure.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../source/NetworkError.hpp"
 #include "../../platform/SocketAddress.hpp"
@@ -25,14 +25,16 @@
 #include <algorithm>
 #include <cerrno>
 #include <limits>
+#include <memory>
 #include <utility>
 
 namespace erbsland::network::impl {
 
 using namespace text::literals;
 
-PosixTcpListenerDevice::PosixTcpListenerDevice(event::EventLoopDriverPtr driver, TcpListenerDeviceCallbacks callbacks) :
-    _register{createRegisterFn(std::move(driver))}, _callbacks{std::move(callbacks)} {
+PosixTcpListenerDevice::PosixTcpListenerDevice(
+    PrivateTag, RegisterFn registerFn, TcpListenerDeviceCallbacks callbacks) :
+    _register{std::move(registerFn)}, _callbacks{std::move(callbacks)} {
 }
 
 PosixTcpListenerDevice::~PosixTcpListenerDevice() {
@@ -40,30 +42,34 @@ PosixTcpListenerDevice::~PosixTcpListenerDevice() {
 }
 
 auto PosixTcpListenerDevice::start(IpEndpoint localEndpoint, const unit::ItemCount backlog) -> IpEndpoint {
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        throw err::LogicFailure{"Cannot start a closed native socket."_el};
+    }
     const auto family = localEndpoint.address().isV4() ? AF_INET : AF_INET6;
     const auto descriptor = ::socket(family, SOCK_STREAM, IPPROTO_TCP);
     if (descriptor < 0) {
         throw NetworkError{createContext(
             errno, "TCP listener creation failed"_el, "The native listening socket could not be created."_el)};
     }
-    _descriptor.store(descriptor);
+    _descriptor = descriptor;
     try {
         configureDescriptor(descriptor);
     } catch (...) {
-        abort();
+        closeLocked();
         throw;
     }
     constexpr auto enabled = int{1};
     if (::setsockopt(descriptor, SOL_SOCKET, SO_REUSEADDR, &enabled, sizeof(enabled)) < 0) {
         const auto error = NetworkError{
             createContext(errno, "TCP listener setup failed"_el, "Address reuse could not be configured."_el)};
-        abort();
+        closeLocked();
         throw error;
     }
     if (family == AF_INET6 && ::setsockopt(descriptor, IPPROTO_IPV6, IPV6_V6ONLY, &enabled, sizeof(enabled)) < 0) {
         const auto error = NetworkError{
             createContext(errno, "TCP listener setup failed"_el, "IPv6-only mode could not be configured."_el)};
-        abort();
+        closeLocked();
         throw error;
     }
     const auto nativeEndpoint = SocketAddress::fromEndpoint(localEndpoint);
@@ -71,7 +77,7 @@ auto PosixTcpListenerDevice::start(IpEndpoint localEndpoint, const unit::ItemCou
         auto context = createContext(
             errno, "TCP listener bind failed"_el, "The listener could not bind to the local endpoint."_el);
         context.setLocalEndpoint(localEndpoint);
-        abort();
+        closeLocked();
         throw NetworkError{std::move(context)};
     }
     const auto maximumBacklog = static_cast<std::size_t>(std::numeric_limits<int>::max());
@@ -79,7 +85,7 @@ auto PosixTcpListenerDevice::start(IpEndpoint localEndpoint, const unit::ItemCou
     if (::listen(descriptor, nativeBacklog) < 0) {
         const auto error = NetworkError{
             createContext(errno, "TCP listen failed"_el, "The native socket could not enter listening mode."_el)};
-        abort();
+        closeLocked();
         throw error;
     }
     auto actualAddress = SocketAddress{};
@@ -87,13 +93,13 @@ auto PosixTcpListenerDevice::start(IpEndpoint localEndpoint, const unit::ItemCou
     if (::getsockname(descriptor, actualAddress.data(), &actualSize) < 0) {
         const auto error = NetworkError{createContext(
             errno, "TCP listener endpoint query failed"_el, "The bound endpoint could not be determined."_el)};
-        abort();
+        closeLocked();
         throw error;
     }
     *actualAddress.sizePointer() = static_cast<int>(actualSize);
     const auto actualEndpoint = actualAddress.toEndpoint();
     if (!actualEndpoint.has_value()) {
-        abort();
+        closeLocked();
         throw NetworkError{NetworkErrorContext{
             "TCP listener endpoint query failed"_el, "The platform returned an unsupported address family."_el}
                 .setReason(NetworkErrorReason::SocketOperationFailed)};
@@ -103,19 +109,29 @@ auto PosixTcpListenerDevice::start(IpEndpoint localEndpoint, const unit::ItemCou
 }
 
 void PosixTcpListenerDevice::setAccepting(const bool enabled) {
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        return;
+    }
     _accepting = enabled;
     updateRegistration();
 }
 
 void PosixTcpListenerDevice::close() noexcept {
-    _registration.reset();
-    abort();
+    const auto lock = std::scoped_lock{_operationMutex};
+    closeLocked();
 }
 
 void PosixTcpListenerDevice::abort() noexcept {
-    const auto descriptor = _descriptor.exchange(-1);
+    close();
+}
+
+void PosixTcpListenerDevice::closeLocked() noexcept {
+    _closed = true;
+    _registration.reset();
+    const auto descriptor = std::exchange(_descriptor, -1);
     if (descriptor >= 0) {
-        // A close failure cannot be retried because the descriptor may already have been reused.
+        // Never retry close: the descriptor number may already have been reused.
         ::close(descriptor);
     }
 }
@@ -158,36 +174,48 @@ void PosixTcpListenerDevice::configureDescriptor(const int descriptor) {
 
 void PosixTcpListenerDevice::updateRegistration() {
     _registration.reset();
-    const auto descriptor = _descriptor.load();
+    const auto descriptor = _descriptor;
     if (descriptor < 0 || !_accepting) {
         return;
     }
     _registration = _register(
-        descriptor, true, false, [this](const bool readable, [[maybe_unused]] const bool writable, const bool error) {
-            handleReady(readable, error);
+        descriptor,
+        true,
+        false,
+        [weak = weak_from_this()](const bool readable, [[maybe_unused]] const bool writable, const bool error) {
+            if (const auto self = weak.lock()) {
+                self->handleReady(readable, error);
+            }
         });
 }
 
 void PosixTcpListenerDevice::handleReady(const bool readable, const bool error) {
+    auto lock = std::unique_lock{_operationMutex};
+    if (_closed) {
+        return;
+    }
     if (error) {
         auto errorCode = int{};
         auto size = static_cast<socklen_t>(sizeof(errorCode));
-        if (::getsockopt(_descriptor.load(), SOL_SOCKET, SO_ERROR, &errorCode, &size) == 0 && errorCode != 0) {
+        if (::getsockopt(_descriptor, SOL_SOCKET, SO_ERROR, &errorCode, &size) == 0 && errorCode != 0) {
             if (_callbacks.error) {
-                _callbacks.error(createContext(
-                    errorCode, "TCP listener failed"_el, "The native listener reported an operational error."_el));
+                notify(
+                    lock,
+                    _callbacks.error,
+                    createContext(
+                        errorCode, "TCP listener failed"_el, "The native listener reported an operational error."_el));
             }
             return;
         }
     }
     if (readable && _accepting) {
-        acceptReady();
+        acceptReady(lock);
     }
 }
 
-void PosixTcpListenerDevice::acceptReady() {
-    const auto descriptor = _descriptor.load();
-    while (_accepting && descriptor >= 0) {
+void PosixTcpListenerDevice::acceptReady(std::unique_lock<std::mutex> &lock) {
+    const auto descriptor = _descriptor;
+    while (!_closed && _accepting && _descriptor >= 0) {
         auto remoteAddress = SocketAddress{};
         auto remoteSize = static_cast<socklen_t>(remoteAddress.size());
         const auto accepted = ::accept(descriptor, remoteAddress.data(), &remoteSize);
@@ -199,8 +227,11 @@ void PosixTcpListenerDevice::acceptReady() {
                 return;
             }
             if (_callbacks.error) {
-                _callbacks.error(createContext(
-                    errno, "TCP accept failed"_el, "An incoming TCP connection could not be accepted."_el));
+                notify(
+                    lock,
+                    _callbacks.error,
+                    createContext(
+                        errno, "TCP accept failed"_el, "An incoming TCP connection could not be accepted."_el));
             }
             return;
         }
@@ -219,7 +250,10 @@ void PosixTcpListenerDevice::acceptReady() {
             continue;
         }
         if (_callbacks.accepted) {
-            _callbacks.accepted(std::make_unique<PosixTcpSocket>(accepted, *_localEndpoint, *remoteEndpoint));
+            notify(
+                lock,
+                _callbacks.accepted,
+                std::make_unique<PosixTcpSocket>(accepted, *_localEndpoint, *remoteEndpoint));
         } else {
             // No callback can take ownership; a close failure cannot safely be retried.
             ::close(accepted);
@@ -250,9 +284,19 @@ auto PosixTcpListenerDevice::errorReason(const int errorCode) noexcept -> Networ
     }
 }
 
+auto PosixTcpListenerDevice::create(event::EventLoopDriverPtr driver, TcpListenerDeviceCallbacks callbacks)
+    -> PosixTcpListenerDevicePtr {
+    return create(createRegisterFn(std::move(driver)), std::move(callbacks));
+}
+
+auto PosixTcpListenerDevice::create(RegisterFn registerFn, TcpListenerDeviceCallbacks callbacks)
+    -> PosixTcpListenerDevicePtr {
+    return std::make_shared<PosixTcpListenerDevice>(PrivateTag{}, std::move(registerFn), std::move(callbacks));
+}
+
 auto TcpListenerDevice::create(event::EventLoopDriverPtr driver, TcpListenerDeviceCallbacks callbacks)
     -> TcpListenerDevicePtr {
-    return std::make_unique<PosixTcpListenerDevice>(std::move(driver), std::move(callbacks));
+    return PosixTcpListenerDevice::create(std::move(driver), std::move(callbacks));
 }
 
 }

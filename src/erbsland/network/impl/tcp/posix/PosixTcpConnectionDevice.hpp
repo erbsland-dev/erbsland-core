@@ -6,28 +6,44 @@
 #error "PosixTcpConnectionDevice.hpp is only available on macOS and Linux."
 #endif
 
+#include "PosixTcpConnectionDevice_fwd.hpp"
+
 #include "../TcpConnectionDevice.hpp"
 
 #include "../../../../event/impl/EventLoopDriverRegistration.hpp"
+#include "../../platform/PosixSocketDevice.hpp"
 
-#include <atomic>
 #include <cstddef>
 #include <functional>
+#include <memory>
+#include <mutex>
+#include <optional>
 
 namespace erbsland::network::impl {
 
 /// POSIX non-blocking TCP connection device.
-/// @tested{TcpSocketLiveTest}
-class PosixTcpConnectionDevice final : public TcpConnectionDevice {
-private:
+/// Create through create(); callers retain shared ownership throughout each operation.
+/// @tested{TcpSocketLiveTest PosixSocketLifecycleTest}
+class PosixTcpConnectionDevice final : public TcpConnectionDevice,
+                                       private PosixSocketDevice,
+                                       public std::enable_shared_from_this<PosixTcpConnectionDevice> {
+    struct PrivateTag {};
+
+public:
+    /// Owns a native readiness registration.
     using RegistrationPtr = std::unique_ptr<event::impl::EventLoopDriverRegistration>;
+    /// Reports native readiness.
     using NativeEventCallback = std::function<void(bool, bool, bool)>;
+    /// Creates a registration for descriptor readiness.
     using RegisterFn = std::function<RegistrationPtr(int, bool, bool, NativeEventCallback)>;
 
 public:
-    /// Create a POSIX TCP connection device.
+    /// Construct a device through its factory.
+    /// @param registerFn The registration operation, retained for the device lifetime.
+    /// @param receiveChunkLimit The maximum native receive chunk size.
+    /// @param callbacks The owning source callbacks.
     PosixTcpConnectionDevice(
-        event::EventLoopDriverPtr driver, unit::ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks);
+        PrivateTag, RegisterFn registerFn, unit::ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks);
     ~PosixTcpConnectionDevice() override;
 
 public: // implement TcpConnectionDevice
@@ -39,7 +55,27 @@ public: // implement TcpConnectionDevice
     void close() noexcept override;
     void abort() noexcept override;
 
+public: // factory
+    /// Create a device for the platform-native event-loop driver.
+    /// @param driver The platform-native event-loop driver.
+    /// @param receiveChunkLimit The maximum native receive chunk size.
+    /// @param callbacks The owning source callbacks.
+    /// @return The shared native socket device.
+    [[nodiscard]] static auto create(
+        event::EventLoopDriverPtr driver, unit::ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
+        -> PosixTcpConnectionDevicePtr;
+    /// Create a device with an injected registration operation.
+    /// @param registerFn The registration operation, retained for the device lifetime.
+    /// @param receiveChunkLimit The maximum native receive chunk size.
+    /// @param callbacks The owning source callbacks.
+    /// @return The shared native socket device.
+    [[nodiscard]] static auto create(
+        RegisterFn registerFn, unit::ByteCount receiveChunkLimit, TcpConnectionDeviceCallbacks callbacks)
+        -> PosixTcpConnectionDevicePtr;
+
 private:
+    /// Close and unregister while holding the operation lock.
+    void closeLocked() noexcept;
     /// Create a native readiness-registration function for an event-loop driver.
     [[nodiscard]] static auto createRegisterFn(event::EventLoopDriverPtr driver) -> RegisterFn;
     /// Configure a socket descriptor for non-blocking TCP operation.
@@ -49,11 +85,11 @@ private:
     /// Handle native socket readiness notifications.
     void handleReady(bool readable, bool writable, bool error);
     /// Complete a pending non-blocking connection.
-    void finishConnect();
+    void finishConnect(std::unique_lock<std::mutex> &lock);
     /// Write retained outgoing data until it would block.
     [[nodiscard]] auto writePending() -> bool;
     /// Receive one available native socket chunk.
-    void receiveOne();
+    void receiveOne(std::unique_lock<std::mutex> &lock);
     /// Query the connected socket's local endpoint.
     [[nodiscard]] auto queryLocalEndpoint() const -> IpEndpoint;
     /// Create context for a native socket error.
@@ -66,7 +102,7 @@ private:
     RegisterFn _register;                      ///< Native driver registration function.
     TcpConnectionDeviceCallbacks _callbacks;   ///< Core callbacks.
     RegistrationPtr _registration;             ///< Current readiness registration.
-    std::atomic<int> _descriptor{-1};          ///< Native socket descriptor.
+    int _descriptor{-1};                       ///< Native socket descriptor.
     unit::ByteCount _receiveChunkLimit;        ///< Largest native receive chunk.
     std::optional<IpEndpoint> _localEndpoint;  ///< Local endpoint after connection.
     std::optional<IpEndpoint> _remoteEndpoint; ///< Remote endpoint after connection.

@@ -107,6 +107,8 @@ private:
     void postErrorAndFinal(std::uint64_t generation, NetworkErrorContext context);
     /// Post the final lifecycle notification.
     void postFinal(std::uint64_t generation);
+    /// Retain the current native device under the data lock for an operation.
+    [[nodiscard]] auto getDevice() const -> TcpConnectionDevicePtr;
     /// Release the native device, optionally aborting it first.
     void cleanupDevice(bool abortDevice) noexcept;
     /// Validate that the requested buffer limits are usable.

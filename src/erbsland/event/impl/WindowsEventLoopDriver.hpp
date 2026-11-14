@@ -7,6 +7,7 @@
 #endif
 
 #include "EventLoopDriverRegistration.hpp"
+#include "WindowsEventLoopNativeCalls.hpp"
 
 #include "../EventLoopDriver.hpp"
 
@@ -20,12 +21,16 @@
 namespace erbsland::event::impl {
 
 /// The Windows IOCP event-loop driver.
-/// @tested{EventLoopDriverTest}
+/// @tested{EventLoopDriverTest WindowsEventLoopDriverTest}
 class WindowsEventLoopDriver final : public EventLoopDriver {
 public:
     /// Create a Windows event-loop driver.
     /// @throws system::PlatformError If native event-loop initialization fails.
     WindowsEventLoopDriver();
+    /// Create a driver using the given non-null native operations.
+    /// @param nativeCalls The native operations retained by this driver.
+    /// @throws system::PlatformError If native event-loop initialization fails.
+    explicit WindowsEventLoopDriver(std::shared_ptr<WindowsEventLoopNativeCalls> nativeCalls);
 
     /// Release the native completion port and its registrations.
     ~WindowsEventLoopDriver() override;
@@ -37,7 +42,7 @@ public:
 public: // implement EventLoopDriver
     void wait() override;
     void wait(time::TimeDelta maximumWait) override;
-    void wake() noexcept override;
+    void wake() override;
 
 public: // native source interface
     using NativeCompletionCallback = std::function<void(DWORD transferred, OVERLAPPED *overlapped, DWORD error)>;
@@ -62,6 +67,7 @@ private:
     };
 
 private:
+    std::shared_ptr<WindowsEventLoopNativeCalls> _nativeCalls;  ///< Retained native call adapter.
     HANDLE _completionPort{nullptr};                            ///< Native completion port.
     mutable std::mutex _registrationMutex;                      ///< Protects cross-thread unregistration.
     ULONG_PTR _nextGeneration{2U};                              ///< Next unique registration generation.

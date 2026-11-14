@@ -18,6 +18,7 @@
 #include "PlatformError.hpp"
 #include "PlatformErrorCategory.hpp"
 #include "PlatformErrorContext.hpp"
+#include "PlatformFailure.hpp"
 #include "ProcessId.hpp"
 #include "ProcessInfo.hpp"
 #include "Subprocess.hpp"

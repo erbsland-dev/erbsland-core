@@ -251,7 +251,7 @@ private:
             result.driver,
             [state](EventLoopDriverPtr, TcpListenerDeviceCallbacks callbacks) -> TcpListenerDevicePtr {
                 state->callbacks = std::move(callbacks);
-                return std::make_unique<FakeDevice>(state);
+                return std::make_shared<FakeDevice>(state);
             });
         result.listener = result.implementation;
         return result;

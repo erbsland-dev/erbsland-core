@@ -73,6 +73,9 @@ class TcpConnectionTest final : public el::UnitTest {
         unit::ByteCount maximumReceive;
         std::deque<TcpConnectionDeviceSendStatus> sendResults;
         std::vector<mem::ByteBlock> sends;
+        std::function<void()> onConnect;
+        bool destroyed{false};
+        bool aliveAfterConnectCallback{false};
         bool accepted{false};
         bool compatible{true};
         bool closed{false};
@@ -82,8 +85,16 @@ class TcpConnectionTest final : public el::UnitTest {
     class FakeDevice final : public TcpConnectionDevice {
     public:
         explicit FakeDevice(std::shared_ptr<FakeState> state) : _state{std::move(state)} {}
+        ~FakeDevice() override { _state->destroyed = true; }
 
-        void connect(IpEndpoint endpoint) override { _state->connectEndpoint = std::move(endpoint); }
+        void connect(IpEndpoint endpoint) override {
+            const auto state = _state;
+            state->connectEndpoint = std::move(endpoint);
+            if (state->onConnect) {
+                state->onConnect();
+                state->aliveAfterConnectCallback = !state->destroyed;
+            }
+        }
         void accept(TcpAcceptedSocketPtr socket) override {
             _state->accepted = true;
             _state->callbacks.connected(socket->localEndpoint(), socket->remoteEndpoint());
@@ -119,6 +130,18 @@ class TcpConnectionTest final : public el::UnitTest {
     };
 
 public:
+    void testNativeConnectRetainsDeviceDuringReentrantAbort() {
+        auto harness = Harness{};
+        harness = makeHarness({IpAddress::loopbackV4()}, [&]() -> void { harness.connection->abort(); });
+        run(harness,
+            [&]() -> void { harness.connection->connect(HostEndpoint{IpAddress::loopbackV4(), Port{9000U}}); });
+        REQUIRE_EQUAL(harness.devices->size(), 1U);
+        const auto &device = harness.devices->back();
+        REQUIRE(device->aborted);
+        REQUIRE(device->aliveAfterConnectCallback);
+        REQUIRE(device->destroyed);
+    }
+
     void testHostResolvedPrecedesDeviceAndAbortPreventsCreation() {
         auto harness = makeHarness({IpAddress::loopbackV4()});
         auto eventOrder = std::vector<int>{};
@@ -273,7 +296,8 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto makeHarness(std::initializer_list<IpAddress> addresses) -> Harness {
+    [[nodiscard]] static auto makeHarness(
+        std::initializer_list<IpAddress> addresses, std::function<void()> onConnect = {}) -> Harness {
         auto result = Harness{};
         result.driver = EventLoopDriver::createDefault();
         result.loop = EventLoop::create(result.driver);
@@ -286,14 +310,15 @@ private:
             result.loop,
             result.driver,
             result.resolver,
-            [devices, compatibility](
+            [devices, compatibility, onConnect = std::move(onConnect)](
                 EventLoopDriverPtr, const unit::ByteCount receiveLimit, TcpConnectionDeviceCallbacks callbacks) {
                 auto state = std::make_shared<FakeState>();
                 state->receiveLimit = receiveLimit;
                 state->compatible = *compatibility;
                 state->callbacks = std::move(callbacks);
+                state->onConnect = onConnect;
                 devices->emplace_back(state);
-                return std::make_unique<FakeDevice>(state);
+                return std::make_shared<FakeDevice>(state);
             });
         result.connection = result.implementation;
         return result;

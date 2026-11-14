@@ -39,7 +39,7 @@ void WindowsUdpSocketDevice::abort() noexcept {
 
 auto UdpSocketDevice::createUdpSocketDevice(event::EventLoopDriverPtr driver, UdpSocketDeviceCallbacks callbacks)
     -> UdpSocketDevicePtr {
-    return std::make_unique<WindowsUdpSocketDevice>(std::move(driver), std::move(callbacks));
+    return std::make_shared<WindowsUdpSocketDevice>(std::move(driver), std::move(callbacks));
 }
 
 }

@@ -5,6 +5,7 @@
 #include "../../err/ParameterFailure.hpp"
 #include "../../system/impl/PosixErrorContext.hpp"
 #include "../../system/PlatformError.hpp"
+#include "../../system/PlatformFailure.hpp"
 #include "../../text/Literals.hpp"
 
 #include <sys/event.h>
@@ -12,21 +13,32 @@
 
 #include <array>
 #include <cerrno>
+#include <chrono>
 #include <cstdint>
+#include <memory>
+#include <utility>
 
 namespace erbsland::event::impl {
 
 using namespace err;
 using namespace text::literals;
 
-KqueueEventLoopDriver::KqueueEventLoopDriver() : _queue{::kqueue()} {
+KqueueEventLoopDriver::KqueueEventLoopDriver() : KqueueEventLoopDriver{std::make_shared<KqueueEventLoopNativeCalls>()} {
+}
+
+KqueueEventLoopDriver::KqueueEventLoopDriver(std::shared_ptr<KqueueEventLoopNativeCalls> nativeCalls) :
+    _nativeCalls{std::move(nativeCalls)} {
+    if (_nativeCalls == nullptr) {
+        throw err::ParameterFailure{"The native call adapter must not be null."_el, "nativeCalls"_el};
+    }
+    _queue = ::kqueue();
     if (_queue < 0) {
         throw system::PlatformError{
             "Failed to create the kqueue event-loop driver."_el, system::impl::PosixErrorContext::fromErrno()};
     }
     struct kevent change{};
     EV_SET(&change, cWakeIdentifier, EVFILT_USER, EV_ADD | EV_CLEAR, 0, 0, nullptr);
-    if (::kevent(_queue, &change, 1, nullptr, 0, nullptr) < 0) {
+    if (_nativeCalls->change(_queue, &change, 1) < 0) {
         const auto context = system::impl::PosixErrorContext::fromErrno();
         ::close(_queue);
         _queue = -1;
@@ -53,11 +65,17 @@ void KqueueEventLoopDriver::wait(const time::TimeDelta maximumWait) {
     waitInternal(&timeout);
 }
 
-void KqueueEventLoopDriver::wake() noexcept {
+void KqueueEventLoopDriver::wake() {
     struct kevent change{};
     EV_SET(&change, cWakeIdentifier, EVFILT_USER, 0, NOTE_TRIGGER, 0, nullptr);
-    // Waking is best-effort because the driver contract is noexcept and a failed queue cannot be recovered here.
-    ::kevent(_queue, &change, 1, nullptr, 0, nullptr);
+    while (_nativeCalls->change(_queue, &change, 1) < 0) {
+        const auto error = errno;
+        if (error == EINTR) {
+            continue;
+        }
+        throw system::PlatformFailure{
+            "Failed to trigger the kqueue wake event."_el, system::impl::PosixErrorContext::fromErrorCode(error)};
+    }
 }
 
 auto KqueueEventLoopDriver::registerDescriptor(
@@ -71,6 +89,7 @@ auto KqueueEventLoopDriver::registerDescriptor(
     if (!callback) {
         throw ParameterFailure{"The native event callback must not be empty."_el, "callback"_el};
     }
+    const auto lock = std::scoped_lock{_registrationMutex};
     for (const auto &entry : _registrations) {
         if (entry.second.descriptor == descriptor) {
             throw ParameterFailure{"The native descriptor is already registered."_el, "descriptor"_el};
@@ -99,44 +118,43 @@ auto KqueueEventLoopDriver::registerDescriptor(
             0,
             reinterpret_cast<void *>(static_cast<uintptr_t>(generation)));
     }
-    if (::kevent(_queue, changes.data(), changeCount, nullptr, 0, nullptr) < 0) {
+    if (_nativeCalls->change(_queue, changes.data(), changeCount) < 0) {
         throw system::PlatformError{
             "Failed to register a native descriptor with kqueue."_el, system::impl::PosixErrorContext::fromErrno()};
     }
     _registrations.emplace(generation, Registration{descriptor, read, write, std::move(callback)});
     return std::make_unique<EventLoopDriverRegistration>(
-        [this, generation]() noexcept -> void { unregisterDescriptor(generation); });
+        [this, generation]() -> void { unregisterDescriptor(generation); });
 }
 
-void KqueueEventLoopDriver::unregisterDescriptor(const uint64_t generation) noexcept {
+void KqueueEventLoopDriver::removeFilter(const int descriptor, const short filter) {
+    struct kevent change{};
+    EV_SET(&change, static_cast<uintptr_t>(descriptor), filter, EV_DELETE, 0, 0, nullptr);
+    while (_nativeCalls->change(_queue, &change, 1) < 0) {
+        const auto error = errno;
+        if (error == EINTR) {
+            continue;
+        }
+        if (error == ENOENT) {
+            return;
+        }
+        throw system::PlatformFailure{
+            "Failed to remove a kqueue descriptor filter."_el, system::impl::PosixErrorContext::fromErrorCode(error)};
+    }
+}
+
+void KqueueEventLoopDriver::unregisterDescriptor(const uint64_t generation) {
+    const auto lock = std::scoped_lock{_registrationMutex};
     const auto iterator = _registrations.find(generation);
     if (iterator == _registrations.end()) {
         return;
     }
-    auto changes = std::array<struct kevent, 2>{};
-    auto changeCount = 0;
     if (iterator->second.read) {
-        EV_SET(
-            &changes[static_cast<std::size_t>(changeCount++)],
-            static_cast<uintptr_t>(iterator->second.descriptor),
-            EVFILT_READ,
-            EV_DELETE,
-            0,
-            0,
-            nullptr);
+        removeFilter(iterator->second.descriptor, EVFILT_READ);
     }
     if (iterator->second.write) {
-        EV_SET(
-            &changes[static_cast<std::size_t>(changeCount++)],
-            static_cast<uintptr_t>(iterator->second.descriptor),
-            EVFILT_WRITE,
-            EV_DELETE,
-            0,
-            0,
-            nullptr);
+        removeFilter(iterator->second.descriptor, EVFILT_WRITE);
     }
-    // Removal is best-effort: closing the descriptor removes its filters, and this noexcept cleanup cannot report.
-    ::kevent(_queue, changes.data(), changeCount, nullptr, 0, nullptr);
     _registrations.erase(iterator);
 }
 
@@ -151,11 +169,15 @@ void KqueueEventLoopDriver::waitInternal(const timespec *timeout) {
                     continue;
                 }
                 const auto generation = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(event.udata));
-                const auto iterator = _registrations.find(generation);
-                if (iterator == _registrations.end()) {
-                    continue;
+                auto callback = NativeEventCallback{};
+                {
+                    const auto lock = std::scoped_lock{_registrationMutex};
+                    const auto iterator = _registrations.find(generation);
+                    if (iterator == _registrations.end()) {
+                        continue;
+                    }
+                    callback = iterator->second.callback;
                 }
-                const auto callback = iterator->second.callback;
                 callback(event.filter == EVFILT_READ, event.filter == EVFILT_WRITE, (event.flags & EV_ERROR) != 0);
             }
             return;

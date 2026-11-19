@@ -587,4 +587,4 @@ it.
 For custom event backends, these guarantees apply to callback invocation and ``handleEvent()`` dispatch, not every
 polling or native-driver operation.
 Exceptions outside those boundaries remain the host's responsibility; see
-:doc:`planned/writing_event_backends` and :doc:`planned/running_event_loops_directly` when integrating a loop into another host.
+:doc:`planned/writing_event_backends` and :doc:`running_event_loops_directly` when integrating a loop into another host.

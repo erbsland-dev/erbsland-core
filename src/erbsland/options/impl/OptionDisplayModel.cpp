@@ -18,11 +18,8 @@
 #include "../../i18n/DisplayText.hpp"
 #include "../../i18n/impl/DisplayTextCore.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/StringTransformations.hpp"
 
 #include <algorithm>
-#include <compare>
-#include <iterator>
 #include <utility>
 
 namespace erbsland::options::impl {
@@ -34,13 +31,6 @@ void OptionDisplayModel::appendMetaPlaceholder(StringEditor &result, const Strin
     result.append(U'<');
     result.append(placeholder);
     result.append(U'>');
-}
-
-auto OptionDisplayModel::optionSetTitle(const OptionSetPtr &optionSet) -> String {
-    if (optionSet != nullptr && !optionSet->help().title().isEmpty()) {
-        return optionSet->help().title();
-    }
-    return i18n::displayText("options.options_heading"_el);
 }
 
 OptionDisplayModel::OptionDisplayModel(OptionsPtr options, const String &moduleName) : _options{std::move(options)} {
@@ -90,95 +80,46 @@ auto OptionDisplayModel::selectedHelp() const -> const OptionHelp * {
     return nullptr;
 }
 
-auto OptionDisplayModel::visibleOptionSets() const -> std::vector<OptionSetPtr> {
-    auto result = std::vector<OptionSetPtr>{};
+auto OptionDisplayModel::visibleOptionSets() const -> std::vector<VisibleOptionSet> {
+    auto result = std::vector<VisibleOptionSet>{};
     if (_options == nullptr) {
         return result;
     }
-    const auto addVisibleSet = [this, &result](const OptionSetPtr &optionSet) -> void {
+    const auto addVisibleSet = [this, &result](const OptionSetPtr &optionSet, OptionHelpSorting inherited) -> void {
         if (visibleOptionSet(optionSet)) {
-            result.emplace_back(optionSet);
+            auto sorting = optionSet->help().sorting();
+            if (sorting == OptionHelpSorting::Inherit) {
+                sorting = inherited;
+            }
+            result.push_back({optionSet, sorting});
         }
     };
-    addVisibleSet(_options->builtInOptionSet());
+    const auto rootPolicy = rootSorting();
+    addVisibleSet(_options->builtInOptionSet(), rootPolicy);
     for (const auto &optionSet : _options->optionSets()) {
-        addVisibleSet(optionSet);
+        addVisibleSet(optionSet, rootPolicy);
     }
     if (_module != nullptr) {
+        const auto modulePolicy = pageSorting();
         for (const auto &optionSet : _module->optionSets()) {
-            addVisibleSet(optionSet);
+            addVisibleSet(optionSet, modulePolicy);
         }
     }
     return result;
 }
 
-auto OptionDisplayModel::optionRows() const -> std::vector<OptionDisplayRow> {
+auto OptionDisplayModel::positionalRows() const -> std::vector<OptionDisplayRow> {
     auto rows = std::vector<OptionDisplayRow>{};
-    for (const auto &group : optionGroups()) {
-        for (const auto &row : group.rows) {
-            rows.emplace_back(row);
-        }
-    }
-    return rows;
-}
-
-auto OptionDisplayModel::optionGroups() const -> std::vector<OptionDisplayGroup> {
-    auto groups = std::vector<OptionDisplayGroup>{};
-    for (const auto &optionSet : visibleOptionSets()) {
-        const auto setVisibility = resolvedVisibility(optionSet->help());
-        auto rows = std::vector<OptionDisplayRow>{};
-        for (const auto &option : optionSet->options()) {
-            if (!enabledBuiltInOption(optionSet, option) || !visibleOption(option, setVisibility)) {
-                continue;
-            }
-            rows.emplace_back(
-                OptionDisplayRow{optionTitle(option), optionBrief(option, _options), choiceRows(option), option});
-        }
-        if (rows.empty()) {
-            continue;
-        }
-        const auto title = optionSetTitle(optionSet);
-        auto groupIterator = std::ranges::find_if(
-            groups, [&title](const OptionDisplayGroup &group) -> bool { return group.title == title; });
-        if (groupIterator == groups.end()) {
-            groups.emplace_back(OptionDisplayGroup{title, {}, {}});
-            groupIterator = std::prev(groups.end());
-        }
-        const auto &description = optionSet->help().description();
-        if (!description.isEmpty() &&
-            std::ranges::find(groupIterator->descriptions, description) == groupIterator->descriptions.end()) {
-            groupIterator->descriptions.append(description);
-        }
-        groupIterator->rows.insert(
-            groupIterator->rows.end(), std::make_move_iterator(rows.begin()), std::make_move_iterator(rows.end()));
-    }
-    for (auto &group : groups) {
-        std::ranges::stable_sort(
-            group.rows, [this](const OptionDisplayRow &left, const OptionDisplayRow &right) -> bool {
-                return optionSortKey(left.option.lock()).compare(optionSortKey(right.option.lock())) ==
-                    std::strong_ordering::less;
-            });
-    }
-    return groups;
-}
-
-auto OptionDisplayModel::moduleRows() const -> std::vector<OptionDisplayRow> {
-    auto rows = std::vector<OptionDisplayRow>{};
-    if (_options == nullptr) {
-        return rows;
-    }
-    for (const auto &module : _options->optionModules()) {
-        if (module == nullptr || !visibleModule(module->help())) {
-            continue;
-        }
-        rows.emplace_back(OptionDisplayRow{module->name(), module->help().title(), {}, {}});
+    for (const auto &option : usagePositionalOptions()) {
+        rows.push_back({optionTitle(option), optionBrief(option, _options), choiceRows(option), option});
     }
     return rows;
 }
 
 auto OptionDisplayModel::usageOptions() const -> std::vector<OptionPtr> {
     auto result = std::vector<OptionPtr>{};
-    for (const auto &optionSet : visibleOptionSets()) {
+    for (const auto &entry : visibleOptionSets()) {
+        const auto &optionSet = entry.set;
         const auto setVisibility = resolvedVisibility(optionSet->help());
         for (const auto &option : optionSet->options()) {
             if (enabledBuiltInOption(optionSet, option) && visibleOption(option, setVisibility, true)) {
@@ -186,9 +127,7 @@ auto OptionDisplayModel::usageOptions() const -> std::vector<OptionPtr> {
             }
         }
     }
-    std::ranges::stable_sort(result, [this](const OptionPtr &left, const OptionPtr &right) -> bool {
-        return optionSortKey(left).compare(optionSortKey(right)) == std::strong_ordering::less;
-    });
+    sortOptions(result, pageSorting());
     return result;
 }
 
@@ -197,7 +136,8 @@ auto OptionDisplayModel::usagePositionalOptions() const -> std::vector<OptionPtr
     if (_module == nullptr && _options != nullptr && !_options->optionModules().empty()) {
         return result;
     }
-    for (const auto &optionSet : visibleOptionSets()) {
+    for (const auto &entry : visibleOptionSets()) {
+        const auto &optionSet = entry.set;
         const auto setVisibility = resolvedVisibility(optionSet->help());
         for (const auto &option : optionSet->options()) {
             if (enabledBuiltInOption(optionSet, option) && option != nullptr && option->isPositionalArgument() &&
@@ -235,6 +175,21 @@ auto OptionDisplayModel::optionTitle(const OptionPtr &option) -> String {
         appendMetaPlaceholder(result, valueName);
     }
     return result;
+}
+
+auto OptionDisplayModel::displayAliases(const Option &option) -> StringList {
+    auto aliases = StringList{};
+    for (const auto &name : option.names()) {
+        if (Option::isShortName(name)) {
+            aliases.append(name);
+        }
+    }
+    for (const auto &name : option.names()) {
+        if (Option::isLongName(name)) {
+            aliases.append(name);
+        }
+    }
+    return aliases;
 }
 
 auto OptionDisplayModel::optionBrief(const OptionPtr &option, const OptionsPtr &options) -> String {
@@ -436,25 +391,6 @@ auto OptionDisplayModel::choiceRows(const OptionPtr &option) const -> std::vecto
         }
     }
     return rows;
-}
-
-auto OptionDisplayModel::optionSortKey(const OptionPtr &option) const -> String {
-    if (option == nullptr) {
-        return {};
-    }
-    auto result = String{};
-    for (const auto &name : option->names()) {
-        if (Option::isLongName(name)) {
-            result = name.slice({unit::CpIndex{2}, unit::CpCount::infinite()});
-            break;
-        }
-        if (result.isEmpty() && Option::isShortName(name)) {
-            result = name.slice(StringSide::Back, unit::CpIndex{1U});
-        } else if (result.isEmpty() && Option::isPositionalName(name)) {
-            result = name;
-        }
-    }
-    return text::toAsciiLowercase(result);
 }
 
 }

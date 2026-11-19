@@ -97,6 +97,28 @@ public:
         REQUIRE_EQUAL(value, Seconds{-2});
     }
 
+    void testNamedArithmetic() {
+        const auto value = Seconds{3};
+        REQUIRE_EQUAL(value.added(Seconds{2}), Seconds{5});
+        REQUIRE_EQUAL(value.subtracted(Seconds{2}), Seconds{1});
+        REQUIRE_EQUAL(value.incremented(), Seconds{4});
+        REQUIRE_EQUAL(value.decremented(), Seconds{2});
+
+        auto updated = value;
+        REQUIRE_EQUAL(updated.add(Seconds{2}).subtract(Seconds{4}), Seconds{1});
+        REQUIRE_EQUAL(updated.decrement().increment(), Seconds{1});
+        REQUIRE_EQUAL(updated, Seconds{1});
+
+        auto minimum = SmallSeconds::minimum();
+        auto maximum = SmallSeconds::maximum();
+        REQUIRE(minimum.decremented().isMinimum());
+        REQUIRE(maximum.incremented().isMaximum());
+        REQUIRE(minimum.decrement().subtract(SmallSeconds::one()).isMinimum());
+        REQUIRE(maximum.increment().add(SmallSeconds::one()).isMaximum());
+        REQUIRE(minimum.subtracted(SmallSeconds::one()).isMinimum());
+        REQUIRE(maximum.added(SmallSeconds::one()).isMaximum());
+    }
+
     void testFactorsNegationAndClamping() {
         REQUIRE_EQUAL(Seconds{6} * int64_t{-3}, Seconds{-18});
         REQUIRE_EQUAL(int64_t{4} * Seconds{-5}, Seconds{-20});

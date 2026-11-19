@@ -12,11 +12,13 @@ Event System
     overview
     events_in_erbsland_core
     using_event_loops
+    running_event_loops_directly
     using_event_apis
     callback_lifetimes
     scheduling_work
     event_bindings
     processing_work_on_event_threads
+    processing_work_with_a_worker_pool
     using_event_loops_in_application_parts
     event_workflows
     communicating_between_loops

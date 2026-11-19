@@ -10,13 +10,6 @@ Erbsland Core Documentation
 boilerplate.
 It provides a consistent API for Linux, macOS, and Windows and depends only on the C++ standard library.
 
-.. warning::
-
-    Erbsland Core **0.90.0 (Beta 1)** is the first beta release.
-    The public API can change without a compatibility period.
-    Minor version updates may introduce breaking API changes.
-    See :doc:`addendum/roadmap` for details.
-
 .. button-ref:: get-started/index
     :ref-type: doc
     :color: success

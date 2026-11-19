@@ -13,6 +13,7 @@ target_sources(erbsland-core PRIVATE
         OptionDisplayModel.cpp
         OptionDisplayModel.hpp
         OptionDisplayModel_fwd.hpp
+        OptionDisplayModel_sorting.cpp
         OptionDisplayRow.hpp
         OptionDisplayRow_fwd.hpp
         OptionDocumentBuilder.cpp

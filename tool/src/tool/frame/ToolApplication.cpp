@@ -62,6 +62,8 @@ auto ToolApplication::createRenderEnvironment(
 
 void ToolApplication::initialize() {
     _currentYear = el::time::DateTime::now().year().toRawValue();
+    // Enable interactive terminal output.
+    enableTerminal();
     // Setup basic information for the application.
     info().setApplicationName("erbsland-core-tool"_el);
     info().setAuthorName("Tobias Erbsland"_el);
@@ -111,37 +113,32 @@ void ToolApplication::registerCommandLineOptions(const el::OptionsPtr &options) 
 }
 
 auto ToolApplication::main() -> el::ExitCode {
-    auto tool = getToolOrThrow(optionValues()->moduleName());
-    if (!tool->requiresProject()) {
-        if (optionValues()->value(cProjectOption)) {
-            throw el::OptionError{
-                "Invalid Project Option"_el,
-                "--project does not apply to this command."_el,
-                optionValues()->value(cProjectOption)};
-        }
-        if (auto *task = dynamic_cast<PreCommitTask *>(tool.get())) {
-            task->_taskContext = PreCommitContext{logStream(), {}};
-        }
-        tool->setLog(this->logStream());
-        tool->configure({}, optionValues());
-        tool->initialize();
-        tool->execute();
-        return tool->exitCode();
-    }
-    enableTerminal();
-    // initialize logging
-    initializeLogging();
-    // initialize the paths.
-    initializeProjectFiles();
-    // Read the configuration and select the tool to run.
-    _configuration = readConfigurationOrThrow();
-    configureRendering(_configuration);
+    const auto values = optionValues();
+    const auto tool = getToolOrThrow(values->moduleName());
+    initializeCommandServices(tool->requiresProject());
+
+    const auto log = logStream();
     if (auto *task = dynamic_cast<PreCommitTask *>(tool.get())) {
-        task->_taskContext = PreCommitContext{logStream(), {}};
+        task->_taskContext = PreCommitContext{log, {}};
     }
-    prepareTool(*tool, optionValues(), logStream());
+    prepareTool(*tool, values, log, _configuration);
     tool->execute();
     return tool->exitCode();
+}
+
+void ToolApplication::initializeCommandServices(const bool requiresProject) {
+    if (!requiresProject) {
+        if (const auto projectOption = optionValues()->value(cProjectOption)) {
+            throw el::OptionError{
+                "Invalid Project Option"_el, "--project does not apply to this command."_el, projectOption};
+        }
+    }
+    initializeLogging();
+    if (requiresProject) {
+        initializeProjectFiles();
+        _configuration = readConfigurationOrThrow();
+        configureRendering(_configuration);
+    }
 }
 
 void ToolApplication::validateToolMeta(const ToolPtr &tool) {

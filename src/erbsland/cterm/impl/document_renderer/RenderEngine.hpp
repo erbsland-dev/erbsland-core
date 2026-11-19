@@ -23,6 +23,7 @@ namespace erbsland::cterm::impl::document_renderer {
 class RenderEngine final {
     /// Store a rendered term name and its layout properties.
     struct TermNameRenderData final {
+        int longAliasOffset{0};                   ///< Display offset of the first long alias within the rendered name.
         InlineContent text;                       ///< Rendered name content.
         bool allowsOptionFirstLineIndent{false};  ///< If the name allows an option indent.
         bool enablesOptionFirstLineIndent{false}; ///< If the name enables an option indent.
@@ -31,10 +32,8 @@ class RenderEngine final {
     /// Store rendered data for one term-list item.
     struct TermItemRenderData final {
         text::TextNodePtr node;                         ///< Source term-item node.
-        InlineContent name;                             ///< Rendered term name.
+        TermNameRenderData name;                        ///< Rendered name and alias alignment.
         int nameFirstLineIndent{0};                     ///< First-line indentation of the name.
-        bool allowsOptionFirstLineIndent{false};        ///< If the name allows an option indent.
-        bool enablesOptionFirstLineIndent{false};       ///< If the name enables an option indent.
         InlineContent description;                      ///< Rendered term description.
         ParagraphIndents indents;                       ///< Description paragraph indentation.
         std::vector<text::TextNodePtr> nestedTermLists; ///< Nested term-list nodes.
@@ -83,12 +82,12 @@ private:
         const TerminalDocumentStyleRule &listItemRule,
         ListItemLayout listItemLayout,
         const RenderContext &context);
-    /// Append a marker-free list item.
-    void appendListItemWithoutMarker(const text::TextNode &node, const RenderContext &context);
+    /// Render consecutive inline children as paragraphs, interleaved with child blocks.
+    void appendMixedChildren(const text::TextNode &node, const RenderContext &context);
     /// Append one child of a list item.
     void appendListItemChild(const text::TextNode &node, const RenderContext &context);
-    /// Append a consecutive inline run from a list item.
-    void appendListItemInlineRun(std::vector<text::TextNodePtr> &nodes, const RenderContext &context);
+    /// Append a consecutive inline run as one paragraph.
+    void appendInlineRun(std::vector<text::TextNodePtr> &nodes, const RenderContext &context);
     /// Append blocks for a term list.
     void appendTermList(const text::TextNode &node, const RenderContext &context);
     /// Collect render data for the items in a term list.
@@ -167,7 +166,7 @@ private:
 
 private:
     const TerminalDocumentStyle &_style;        ///< The style sheet to use.
-    int _width{80};                             ///< Effective document width.
+    int _width;                                 ///< Effective document width.
     InlineTextBuilder _inlineTextBuilder;       ///< Reusable inline text builder.
     BlockStringBuilder _blockBuilder;           ///< Reusable block text builder.
     BlockStringBuilder _decorationBuilder;      ///< Reusable decoration builder.

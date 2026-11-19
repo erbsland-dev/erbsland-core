@@ -65,7 +65,8 @@ if(CHECK STREQUAL "errors")
                 COMMAND "${EXECUTABLE}" --config "${configuration}"
                 RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE errors
         )
-        if(result EQUAL 0 OR NOT "${output}${errors}" MATCHES "${expected}")
+        string(REGEX REPLACE "[ \t\r\n]+" " " diagnostic "${errors}")
+        if(result EQUAL 0 OR NOT diagnostic MATCHES "${expected}")
             message(FATAL_ERROR "Expected ${kind}-root diagnostic.\n${output}\n${errors}")
         endif()
     endforeach()

@@ -52,6 +52,11 @@ operation.
 result to lie within the supplied length.
 The starting index may be outside those bounds.
 
+Indexes, counts, and offsets support ``increment()`` and ``decrement()`` in place, and ``incremented()`` and
+``decremented()`` to step a copy.
+Both forms saturate at the finite bounds.
+An absent index and an infinite count each retain their special state.
+
 ``distanceFromZero()`` and ``absoluteDistanceTo()`` return non-negative amounts, using infinity for absent indexes.
 ``offsetFromZero()`` and ``offsetTo()`` return signed offsets, saturating when necessary; their ``OrThrow`` variants
 reject absent indexes and unrepresentable differences.
@@ -90,6 +95,7 @@ The factory performs no checks or conversions.
 
 ``isNoRange()`` tests an absent beginning.
 ``isEmpty()`` tests zero length independently of validity.
+``isFinite()`` and ``isInfinite()`` describe the stored length independently of validity.
 ``isValid()`` requires a valid beginning and, for finite lengths, an exclusive endpoint at most ``Index::maximum()``.
 An empty range at the maximum is valid; a finite one-element range beginning there is invalid.
 Open-ended ranges remain valid and include the maximum index.
@@ -101,9 +107,16 @@ Empty, infinite, and invalid ranges return ``noIndex()``.
 Invalid ranges contain nothing, produce ``noRange()`` when clamped or translated, and return ``LoopResult::Error`` from
 ``forEach()``.
 Open-ended iteration visits representable indexes through the maximum without wrapping.
-Saturating movement preserves length and keeps a valid range valid by limiting its beginning to ``maximum() - length()``
-for finite ranges.
-Throwing movement variants reject invalid input or required saturation.
+Translate a range by a matching count or offset with ``+`` and ``-``, or in place with ``+=`` and ``-=``.
+Like the named movement methods, these operators preserve length and limit the beginning of a finite range to
+``Index::maximum() - length()``.
+``wouldAdvanceSaturate()``, ``wouldRetreatSaturate()``, and ``wouldMoveSaturate()`` report when exact translation would
+fail, including when the range is invalid or the translated exclusive end would exceed the largest index.
+The corresponding throwing methods reject the same inputs.
+
+``clampTo(bounds)`` clips a range in place to a sequence of the given length.
+``clampedTo(bounds)`` returns the clipped copy.
+A range starting beyond the bounds becomes empty at the end of the sequence.
 
 ``toAbsolute(origin)`` adds an origin; ``relativeTo(origin)`` subtracts it.
 Both preserve length exactly and return ``noRange()`` for invalid input, overflow, or subtraction below zero.
@@ -131,6 +144,9 @@ values.
 
 Unit values are not multiplied, divided or modulo-applied with other unit values.
 Indexes also keep their stricter domain model and can only be moved with matching lengths and offsets.
+For offsets, ``negate()`` changes the sign in place, while ``negated()`` and unary ``-`` return the sign-inverted copy.
+All three saturate the minimum offset to the maximum.
+
 Unchecked Operations and Iteration
 ----------------------------------
 
@@ -142,8 +158,9 @@ Keep runtime factories at boundaries where negative values, overflow, or numeric
 Indexes provide ``uncheckedAdvance()``, ``uncheckedRetreat()``, ``uncheckedMove()``, ``uncheckedIncrement()``, and
 ``uncheckedDecrement()``, plus the copy variants ending in ``Advanced``, ``Retreated``, ``Moved``, ``Incremented``, and
 ``Decremented``.
-Amounts provide ``uncheckedAdd()``, ``uncheckedSubtract()``, their copy variants ``uncheckedAdded()`` and
-``uncheckedSubtracted()``, and ``uncheckedIncrement()`` and ``uncheckedDecrement()``.
+Counts provide ``uncheckedAdd()``, ``uncheckedSubtract()``, ``uncheckedIncrement()``, and ``uncheckedDecrement()``.
+Their copy variants are ``uncheckedAdded()``, ``uncheckedSubtracted()``, ``uncheckedIncremented()``, and
+``uncheckedDecremented()``.
 These operations require finite operands and an exactly representable finite result.
 Use them inside loops whose enclosing buffer or range checks already establish those bounds.
 
@@ -169,10 +186,14 @@ Integer Amounts
 :cpp:class:`IntegerAmount <erbsland::unit::IntegerAmount>` stores a signed saturating count with a unit tag and a scale.
 Construction accepts signed counts; unsigned construction is deleted.
 Comparison, addition, and subtraction require the exact same amount type.
+``add()`` and ``subtract()`` modify the amount in place.
+``added()`` and ``subtracted()`` return the result as a copy.
 Signed scalar multiplication, division, and remainder preserve the amount type; division and remainder by zero
 terminate.
 Arithmetic saturates, including negation of the minimum value to the maximum.
-Increment and decrement change the count by one and saturate at the bounds.
+``increment()`` and ``decrement()`` step the count in place, and ``incremented()`` and ``decremented()`` return a
+stepped copy.
+Each step changes the stored count by one and saturates at the bounds.
 
 Compatible conversion requires a shared unit tag and a supported scale ratio.
 ``converted<T>()`` saturates on overflow and truncates division toward zero.

@@ -1154,6 +1154,8 @@ options/OptionFlag.hpp;OptionFlag.hpp
 options/OptionFlag.hpp;options/OptionFlag.hpp
 options/OptionHelp.hpp;OptionHelp.hpp
 options/OptionHelp.hpp;options/OptionHelp.hpp
+options/OptionHelpSorting.hpp;OptionHelpSorting.hpp
+options/OptionHelpSorting.hpp;options/OptionHelpSorting.hpp
 options/OptionHelpVisibility.hpp;OptionHelpVisibility.hpp
 options/OptionHelpVisibility.hpp;options/OptionHelpVisibility.hpp
 options/OptionInteger.hpp;OptionInteger.hpp

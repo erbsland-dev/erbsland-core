@@ -9,8 +9,6 @@ Planned
 .. toctree::
     :maxdepth: 1
 
-    processing_work_with_a_worker_pool
-    running_event_loops_directly
     creating_event_sources
     defining_custom_events
     writing_event_backends

@@ -2,24 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PlainTextRenderer.hpp"
 
-#include "impl/PlainTextRenderer.hpp"
+#include "TextDocument.hpp"
 
-#include <memory>
+#include "../cterm/impl/document_renderer/Renderer.hpp"
 
 namespace erbsland::text {
 
-PlainTextRenderer::PlainTextRenderer(const TextDocument &document) :
-    _impl{std::make_unique<impl::PlainTextRenderer>(document)} {
+PlainTextRenderer::PlainTextRenderer(const TextDocument &document) : _document{document} {
 }
 
-PlainTextRenderer::~PlainTextRenderer() = default;
-
 auto PlainTextRenderer::build() -> String {
-    return _impl->build();
+    auto builder = AnyStringBuilder{};
+    appendTo(builder);
+    return builder.toString();
 }
 
 auto PlainTextRenderer::appendTo(AnyStringBuilder &builder) -> AnyStringBuilder & {
-    return _impl->appendTo(builder);
+    cterm::impl::document_renderer::Renderer{cterm::TerminalDocumentStyle::defaultSystemOutput()}.appendPlainText(
+        builder, *_document.get().root());
+    return builder;
 }
 
 }

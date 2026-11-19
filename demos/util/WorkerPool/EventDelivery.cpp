@@ -4,9 +4,13 @@
 #include "WorkerPoolDemos.hpp"
 
 #include <erbsland/EventLoop.hpp>
+#include <erbsland/EventLoopErrorPolicy.hpp>
+#include <erbsland/EventLoopOptions.hpp>
 #include <erbsland/List.hpp>
 #include <erbsland/StringFormat.hpp>
 #include <erbsland/Utilities.hpp>
+
+#include <exception>
 
 namespace demo {
 
@@ -14,7 +18,7 @@ namespace demo {
 /// Keep the pool alive until its final event; quit closes admission while accepted
 /// computations and their completion callbacks finish normally.
 void eventDelivery() {
-    const auto loop = el::EventLoop::create();
+    const auto loop = el::EventLoop::create(el::EventLoopOptions{}.setErrorPolicy(el::EventLoopErrorPolicy::Quit));
     auto workers = el::WorkerPoolPtr{};
 
     loop->invoke([&]() -> void {
@@ -39,6 +43,9 @@ void eventDelivery() {
     });
 
     loop->run();
+    if (const auto error = loop->takeError()) {
+        std::rethrow_exception(error);
+    }
     workers->join();
 }
 

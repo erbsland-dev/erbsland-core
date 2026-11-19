@@ -70,6 +70,8 @@ public:
     /// @param visibility Controls where this option appears in generated help output.
     /// @return This editor for chaining.
     auto setHelpVisibility(OptionHelpVisibility visibility) -> OptionEditor &;
+    /// Set the weight used to order this option in help.
+    auto setHelpWeight(int weight) noexcept -> OptionEditor &;
     /// Set the custom value name shown in help output.
     /// @param valueName Bare value name without angle brackets. Empty restores the type-derived default.
     /// @return This editor for chaining.

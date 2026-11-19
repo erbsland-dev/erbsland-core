@@ -135,6 +135,7 @@ public:
         auto &application = scope.app();
         application.setInteractive(false);
         application.enableTerminal();
+        REQUIRE_EQUAL(application.requestedSize, el::block::Size(120, 25));
 
         el::stream::stdOut()->writeLine("plain output"_el);
 
@@ -175,10 +176,13 @@ public:
 
         auto errorDocument = el::text::TextDocument{};
         errorDocument.root()->setStyle("error"_el);
+        auto style = data.terminal().get()->systemOutputStyle();
+        style.edit(el::cterm::TerminalDocumentStyleSelector::paragraph()).setMargins(0, 0, 0, 4);
+        data.terminal().get()->setSystemOutputStyle(style);
         errorDocument.addParagraph()->addText("real error"_el);
         data.terminal().get()->renderSystemOutput(errorDocument);
 
-        REQUIRE_EQUAL(toStdString(error), std::string{"real error\n"});
+        REQUIRE_EQUAL(toStdString(error), std::string{"    real error\n"});
     }
 
     void testInteractiveSystemOutputRespectsOutputGuard() {

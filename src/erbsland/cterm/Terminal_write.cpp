@@ -85,16 +85,8 @@ auto Terminal::printParagraphImpl(const BlockString &paragraph, const ParagraphO
     }
     const auto lineCount = [&]() -> int {
         impl::LineBufferEmitLockGuard emitLock{_lineBuffer};
-        return impl::paragraph::Printer{
-            *this,
-            x1.toRawValue(),
-            width.toRawValue(),
-            options.alignment(),
-            layout,
-            paragraph,
-            options,
-            options.backgroundMode()}
-            .print();
+        return impl::paragraph::Printer{x1.toRawValue(), width.toRawValue(), layout, paragraph, options, style()}
+            .printTo(*this);
     }();
     _lineBuffer.handleEmit();
     if (options.paragraphSpacing() == ParagraphSpacing::DoubleLine) {

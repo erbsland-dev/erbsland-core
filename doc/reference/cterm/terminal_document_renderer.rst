@@ -20,9 +20,13 @@ The renderer keeps the current style by value, so a renderer can be reused for r
 
 The writer width selects the layout width once at the start of a render.
 Reported widths of 60 columns or more are used directly.
-Widths from 1 through 59, an unknown width, and zero select an 80-column layout.
+Widths from 1 through 59, an unknown width, and zero select a 120-column layout.
 A narrower destination may wrap these completed lines naturally.
-There is no separate narrow-output layout.
+Plain-text output uses the same layout at a fixed width of 120 display columns.
+Standalone documents use the default system-output style.
+Redirected application output uses the application's configured system-output style.
+The plain renderer writes the characters from each completed line, preserving indentation and gaps between sections.
+It trims trailing spaces and empty bottom rows and omits the final newline.
 
 Use ``TerminalDocumentStyle`` to customize the default text style, base block layout, and selector-specific rules.
 Rules use ``BlockStyle`` for terminal text style overlays and ``ParagraphIndents`` with ``block::Margins`` for layout.

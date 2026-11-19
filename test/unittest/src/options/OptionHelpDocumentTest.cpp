@@ -57,13 +57,13 @@ public:
         REQUIRE(!overview.contains("Fail without"_el));
         REQUIRE(!overview.contains("Only visible on"_el));
         const auto detail = manager.detailedHelpDocument({}, "check"_el).toString();
-        REQUIRE(detail.startsWith("Check generated output\n-c, --check\n"_el));
+        REQUIRE(detail.startsWith("\nCheck generated output\n-c, --check\n"_el));
         REQUIRE(detail.contains("Description:\nFail without"_el));
         REQUIRE(detail.contains("Example:\ntool --check"_el));
         REQUIRE(detail.contains("Compare the output before committing."_el));
         REQUIRE(!manager.detailedHelpDocument({}, "--brief-only"_el).toString().contains("Description:"_el));
         const auto untitled = manager.detailedHelpDocument({}, "--details-only"_el).toString();
-        REQUIRE(untitled.startsWith("Help for --details-only\n--details-only\n"_el));
+        REQUIRE(untitled.startsWith("\nHelp for --details-only\n--details-only\n"_el));
         REQUIRE(untitled.contains("Only visible on its detail page."_el));
         const auto help = OptionHelp{"A brief"_el};
         REQUIRE_EQUAL(help.title(), "A brief"_el);
@@ -108,7 +108,7 @@ public:
         REQUIRE(!overview.contains("Read the configured source"_el));
         const auto document = manager.detailedHelpDocument({}, "GENERATE_DATA"_el);
         const auto text = document.toString();
-        REQUIRE(text.startsWith("Generate reference data\ngenerate-data\nUsage:"_el));
+        REQUIRE(text.startsWith("\nGenerate reference data\ngenerate-data\n\nUsage:"_el));
         REQUIRE(text.contains("tool generate-data [options]"_el));
         REQUIRE(text.contains("Description:\nRead the configured source"_el));
         REQUIRE(text.contains(cCheckOption));
@@ -172,9 +172,9 @@ public:
         }
         auto manager = OptionManager{options};
         const auto list = manager.detailedHelpDocument({}, "AUTO_MODE"_el).toString();
-        REQUIRE(list.startsWith("Matching help for \"AUTO_MODE\"\n"_el));
-        REQUIRE(list.contains("Choices for --color:\nAuto_Mode"_el));
-        REQUIRE(list.contains("Choices for --format:\nAuto_Mode"_el));
+        REQUIRE(list.startsWith("\nMatching help for \"AUTO_MODE\"\n"_el));
+        REQUIRE(list.contains("Choices for --color:\n  Auto_Mode"_el));
+        REQUIRE(list.contains("Choices for --format:\n  Auto_Mode"_el));
         REQUIRE(!list.contains("Automatic selection."_el));
         const auto detail = manager.detailedHelpDocument({}, "--COLOR/auto_mode"_el).toString();
         REQUIRE(detail.contains("Automatic selection."_el));
@@ -194,9 +194,9 @@ public:
         options->addModule(module);
         auto manager = OptionManager{options};
         const auto text = manager.detailedHelpDocument({}, "run"_el).toString();
-        REQUIRE(text.contains("Options:\n    --run"_el));
-        REQUIRE(text.contains("Choices for --mode:\nrun"_el));
-        REQUIRE(text.contains("Modules:\nrun"_el));
+        REQUIRE(text.contains("Options:\n  --run"_el));
+        REQUIRE(text.contains("Choices for --mode:\n  run"_el));
+        REQUIRE(text.contains("Modules:\n  run"_el));
         REQUIRE(text.contains("Run as an option"_el));
         REQUIRE(text.contains("Run as a choice"_el));
         REQUIRE(text.contains("Run as a command"_el));
@@ -218,11 +218,11 @@ public:
         options->addModule(module);
         auto manager = OptionManager{options};
         const auto global = manager.detailedHelpDocument({}, "check"_el).toString();
-        REQUIRE(global.startsWith("Global check\n"_el));
+        REQUIRE(global.startsWith("\nGlobal check\n"_el));
         REQUIRE(global.contains("tool generate-data --help=--check"_el));
         REQUIRE(!global.contains("tool --help=--check"_el));
         const auto local = manager.detailedHelpDocument("generate-data"_el, "check"_el).toString();
-        REQUIRE(local.startsWith("Module check\n"_el));
+        REQUIRE(local.startsWith("\nModule check\n"_el));
         REQUIRE_EQUAL(local.count("tool --help=--check"_el), el::unit::ItemCount::one());
         REQUIRE(!local.contains("tool generate-data --help=--check"_el));
     }
@@ -237,14 +237,14 @@ public:
         }
         auto manager = OptionManager{options};
         const auto list = manager.detailedHelpDocument({}, "generate"_el).toString();
-        REQUIRE(list.startsWith("Matching help for \"generate\"\nModules:\n"_el));
+        REQUIRE(list.startsWith("\nMatching help for \"generate\"\n\nModules:\n"_el));
         REQUIRE_EQUAL(list.count("generate-table-0"_el), el::unit::ItemCount::one());
         REQUIRE(list.contains("Generate table 0"_el));
         REQUIRE(list.contains("generate-table-9"_el));
         REQUIRE(!list.contains("generate-table-10"_el));
         REQUIRE(list.contains("2 additional matches."_el));
         const auto fuzzy = manager.detailedHelpDocument({}, "generate-tabel-8"_el).toString();
-        REQUIRE(fuzzy.startsWith("Matching help for \"generate-tabel-8\"\nModules:\ngenerate-table-8"_el));
+        REQUIRE(fuzzy.startsWith("\nMatching help for \"generate-tabel-8\"\n\nModules:\n  generate-table-8"_el));
         REQUIRE(!fuzzy.contains("Description:"_el));
     }
 
@@ -327,10 +327,10 @@ public:
         options->addOption("--output-file"_el);
 
         REQUIRE(
-            manager.detailedHelpDocument({}, "--output-file"_el).toString().startsWith("Details: --output-file"_el));
+            manager.detailedHelpDocument({}, "--output-file"_el).toString().startsWith("\nDetails: --output-file"_el));
         REQUIRE(manager.detailedHelpDocument({}, "--output-fiel"_el)
                 .toString()
-                .startsWith("Search results: --output-fiel"_el));
+                .startsWith("\nSearch results: --output-fiel"_el));
         try {
             static_cast<void>(manager.detailedHelpDocument({}, "nonexistent-topic"_el));
             REQUIRE(false);
@@ -349,7 +349,7 @@ public:
             .setHelpDescription("Custom help details."_el);
         auto manager = OptionManager{options};
         const auto detail = manager.detailedHelpDocument({}, "--help"_el).toString();
-        REQUIRE(detail.startsWith("Custom help title"_el));
+        REQUIRE(detail.startsWith("\nCustom help title"_el));
         REQUIRE(detail.contains("Custom help details."_el));
         options->setParserFlag(OptionParserFlag::DisableHelp);
         options->addOption("--help"_el)

@@ -27,8 +27,10 @@ function(erbsland_set_required_compiler_options target)
             target_compile_options(${target} PRIVATE /Gy)
         endif()
     else()
+        # Path literals and regular expressions can contain trigraph sequences. These are ordinary text in C++20;
+        # suppress the legacy diagnostic in every configuration, including Release builds (e.g. used by setup.py).
         target_compile_options(${target} PRIVATE
-                $<$<CONFIG:Debug>:-Wno-trigraphs>
+                -Wno-trigraphs
         )
     endif()
 

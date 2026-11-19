@@ -57,6 +57,11 @@ auto OptionDocumentBuilder::helpDocument(const String &moduleName) const -> Text
         appendHeading(document.root(), i18n::displayText("options.modules_heading"_el));
         appendRowsAsTermList(document.root(), model.moduleRows(), false);
     }
+    const auto positionals = model.positionalRows();
+    if (!positionals.empty()) {
+        appendHeading(document.root(), i18n::displayText("options.positionals_heading"_el));
+        appendRowsAsTermList(document.root(), positionals, true);
+    }
     appendOptionGroups(document.root(), model.optionGroups());
 
     if (const auto help = model.selectedHelp(); help != nullptr) {
@@ -206,10 +211,7 @@ void OptionDocumentBuilder::appendPlaceholder(
 }
 
 void OptionDocumentBuilder::appendOptionName(const TextNodePtr &termName, const OptionPtr &option) const {
-    for (const auto &name : option->names()) {
-        if (!Option::isOptionName(name)) {
-            continue;
-        }
+    for (const auto &name : OptionDisplayModel::displayAliases(*option)) {
         auto optionName = termName->add(NodeType::OptionName);
         appendOptionAlias(optionName, name);
     }

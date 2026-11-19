@@ -18,6 +18,7 @@
 
 #include "impl/InputBackend.hpp"
 #include "impl/LineBuffer.hpp"
+#include "impl/TerminalDefaults.hpp"
 
 #include "../block/Size.hpp"
 
@@ -71,7 +72,7 @@ public:
     /// The size is automatically bounded to the minimum and maximum supported sizes.
     /// @param backend The backend to use for the terminal.
     /// @param size The fallback terminal size used when automatic detection is unavailable.
-    explicit Terminal(BackendPtr backend, block::Size size = {80, 25});
+    explicit Terminal(BackendPtr backend, block::Size size = impl::cDefaultTerminalSize);
 
 public: // implements CursorWriter
     using CursorWriter::setColor;

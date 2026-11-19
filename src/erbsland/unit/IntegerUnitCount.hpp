@@ -302,17 +302,29 @@ public: // math
 
     /// Increment this length by one, preserving infinity and saturating at the finite bounds.
     constexpr auto increment() noexcept -> IntegerUnitCount & {
-        if (_value < cRawMaximum) {
-            ++_value;
-        }
+        *this = incremented();
         return *this;
+    }
+    /// Return this length incremented by one.
+    /// @return The incremented length, with infinity preserved and finite results saturated at maximum().
+    [[nodiscard]] constexpr auto incremented() const noexcept -> IntegerUnitCount {
+        if (_value >= cRawMaximum) {
+            return *this;
+        }
+        return uncheckedIncremented();
     }
     /// Decrement this length by one, preserving infinity and saturating at the finite bounds.
     constexpr auto decrement() noexcept -> IntegerUnitCount & {
-        if (_value != 0U && !isInfinite()) {
-            --_value;
-        }
+        *this = decremented();
         return *this;
+    }
+    /// Return this length decremented by one.
+    /// @return The decremented length, with infinity preserved and finite results saturated at zero().
+    [[nodiscard]] constexpr auto decremented() const noexcept -> IntegerUnitCount {
+        if (isZero() || isInfinite()) {
+            return *this;
+        }
+        return uncheckedDecremented();
     }
 
 public: // unchecked fast-track methods
@@ -345,10 +357,20 @@ public: // unchecked fast-track methods
         ++_value;
         return *this;
     }
+    /// Return this length plus one without checks; this length and the result must be finite and representable.
+    /// @return The exact incremented length.
+    [[nodiscard]] constexpr auto uncheckedIncremented() const noexcept -> IntegerUnitCount {
+        return {_value + 1U, Unchecked{}};
+    }
     /// Decrement without checks; this length and the result must be finite and representable.
     constexpr auto uncheckedDecrement() noexcept -> IntegerUnitCount & {
         --_value;
         return *this;
+    }
+    /// Return this length minus one without checks; this length and the result must be finite and representable.
+    /// @return The exact decremented length.
+    [[nodiscard]] constexpr auto uncheckedDecremented() const noexcept -> IntegerUnitCount {
+        return {_value - 1U, Unchecked{}};
     }
 
 public: // conversion methods

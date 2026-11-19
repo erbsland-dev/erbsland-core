@@ -62,6 +62,10 @@ public: // accessors
     /// Set the help visibility for this set.
     /// @param visibility Controls whether options in this set are visible in generated help output.
     void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
+    /// Set the help sorting policy for this set's option rows.
+    void setHelpSorting(const OptionHelpSorting sorting) noexcept { _help.setSorting(sorting); }
+    /// Set the weight used to order this set's named help section.
+    void setHelpWeight(const int weight) noexcept { _help.setWeight(weight); }
     /// Get all options in this set.
     [[nodiscard]] auto options() const noexcept -> const std::vector<OptionPtr> & { return _options; }
     /// Get the set flags.

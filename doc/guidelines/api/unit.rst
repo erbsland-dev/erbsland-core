@@ -81,6 +81,14 @@ Common Value Patterns
     T::zero/one/minimum/maximum() -> T // create common value states
     o.toSizeT() -> std::size_t // convert non-negative values to a native size
 
+Index, Count, Offset, and Amount Step Patterns
+==============================================
+
+.. code-block:: text
+
+    o.increment/decrement() -> T& // step in place with saturation, also ++ and --
+    o.incremented/decremented() -> T // return a value stepped by one with saturation
+
 Index Patterns
 ==============
 
@@ -91,7 +99,6 @@ Index Patterns
     o.advanced/retreated(length) -> T // return an index moved by a non-negative length
     o.move(offset) -> T& // move in place by a signed offset
     o.moved(offset) -> T // return a value moved by a signed offset
-    o.increment/decrement() -> T& // move one position
     o.uncheckedAdvance/uncheckedRetreat(length) -> T& // exact movement with caller-proven bounds
     o.uncheckedMove(offset) -> T& // exact movement with caller-proven bounds
     o.uncheckedIncrement/uncheckedDecrement() -> T& // exact step with caller-proven bounds
@@ -112,7 +119,7 @@ Length and Offset Patterns
 
 .. code-block:: text
 
-    o.isInfinite()/isFinite() -> bool // test amount special states
+    o.isInfinite()/isFinite() -> bool // test count finiteness
     o.remainingFrom(index) -> L // amount from an index to this bound; zero for absent or out-of-bounds indexes
     o.add/subtract(value) -> T& // combine values in place with saturation
     o.added/subtracted(value) -> T // return a combined value
@@ -121,8 +128,10 @@ Length and Offset Patterns
     o.uncheckedAdd/uncheckedSubtract(length) -> T& // exact arithmetic with caller-proven finite bounds
     o.uncheckedAdded/uncheckedSubtracted(length) -> T // matching copy variants
     o.uncheckedIncrement/uncheckedDecrement() -> T& // exact step with caller-proven finite bounds
+    o.uncheckedIncremented/uncheckedDecremented() -> T // matching copy variants
     o.forEach(function) -> util::LoopResult // visit indexes below a finite length
     o.absoluteLength() -> L // convert an offset magnitude to a matching length
+    o.negate() -> void // reverse an offset direction in place
     o.negated() -> O // reverse an offset direction
     T::infinite()/minusOne() -> T // create family-specific special values
 
@@ -138,15 +147,20 @@ Range Patterns
     o.beginIndex()/length()/endIndex() -> T // inspect range components
     o.lastIndex() -> I // final absolute index; noIndex for an empty, infinite, or invalid range
     o.contains(index)/isWithin(length) -> bool // test membership or complete fit
-    o.isEmpty()/isInfinite()/isNoRange()/isValid() -> bool // test range states
+    o.isEmpty()/isInfinite()/isFinite()/isNoRange()/isValid() -> bool // test range states
     o.toAbsolute(origin)/relativeTo(origin) -> T // exact coordinate conversion or noRange
     o.intersection(range) -> T // common range, or empty at the later beginning
     o.remainingFrom(index) -> T // suffix clamped to this range; noRange for invalid input
     o.contains(range) -> bool // complete containment, including empty endpoints
     o.forEach(function) -> util::LoopResult // visit each represented index
-    o.advance/retreat(length) -> T& // move by a non-negative length
-    o.move(offset) -> T& // move a range in place
-    o.moved(offset) -> T // return a moved range
+    o.advance/retreat(length) -> T& // translate in place by a length, also += and -=
+    o.advanced/retreated(length) -> T // return a range translated by a length, also + and -
+    o.move(offset) -> T& // translate in place by an offset, also += and -=
+    o.moved(offset) -> T // return a range translated by an offset, also + and -
+    o.wouldAdvanceSaturate/wouldRetreatSaturate(length) -> bool // exact range translation failure
+    o.wouldMoveSaturate(offset) -> bool // exact range translation failure
+    o.clampTo(bounds) -> T& // clip the range to a sequence in place
+    o.clampedTo(bounds) -> T // return the clipped range
     T::empty/all/noRange/emptyAt(index) -> T // create common range states
 
 Ratio Amount Patterns

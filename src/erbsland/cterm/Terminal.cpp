@@ -9,6 +9,7 @@
 #include "impl/BlockPrintContextToTerminal.hpp"
 #include "impl/paragraph/Layout.hpp"
 #include "impl/paragraph/Printer.hpp"
+#include "impl/TerminalDefaults.hpp"
 
 #include "../err/RuntimeError.hpp"
 #include "../text/Literals.hpp"
@@ -26,10 +27,10 @@ auto Terminal::synchronizeOutput() const -> TerminalOutputGuard {
     return TerminalOutputGuard{_outputMutex};
 }
 
-Terminal::Terminal() : Terminal(block::Size{80, 25}, TerminalFlags{}) {
+Terminal::Terminal() : Terminal(TerminalFlags{}) {
 }
 
-Terminal::Terminal(const TerminalFlags flags) : Terminal(block::Size{80, 25}, flags) {
+Terminal::Terminal(const TerminalFlags flags) : Terminal(impl::cDefaultTerminalSize, flags) {
 }
 
 Terminal::Terminal(const block::Size size, const TerminalFlags flags) :

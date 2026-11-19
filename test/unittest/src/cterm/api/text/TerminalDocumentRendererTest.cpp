@@ -96,6 +96,22 @@ public:
                         "1.  one"});
     }
 
+    void testParagraphEmitsWideAndCombiningCharactersOnce() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto document = text::TextDocument{};
+        document.addText("A界e\u0301"_el);
+        auto writer = CursorWriterProbe{};
+        TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()}.renderTo(writer, document);
+
+        REQUIRE_EQUAL(writer._writtenStrings.size(), std::size_t{2});
+        REQUIRE(writer._writtenStrings.back().isEmpty());
+        const auto &line = writer._writtenStrings.front();
+        REQUIRE_EQUAL(line.length(), BlockCount{3});
+        REQUIRE_EQUAL(line.displayWidth(), 4);
+        REQUIRE_EQUAL(document.toString(), "A界e\u0301"_el);
+        REQUIRE_EQUAL(toPlainText(line), text::StringConverter{document.toString()}.toStdString());
+    }
+
     void testConsecutiveInlineListItemChildrenShareOneParagraph() {
         auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
@@ -205,7 +221,7 @@ public:
 
         REQUIRE_EQUAL(writer._writtenStrings.size(), std::size_t{2});
         REQUIRE(writer._writtenStrings[0].isEmpty());
-        REQUIRE_EQUAL(writer._writtenStrings[1].displayWidth(), 78);
+        REQUIRE_EQUAL(writer._writtenStrings[1].displayWidth(), 118);
         REQUIRE_EQUAL(render(writer._writtenStrings[1]).substr(0, 6), std::string{"   ---"});
         REQUIRE_EQUAL(writer._lineBreakCount, 2);
     }
@@ -311,7 +327,7 @@ public:
         const auto rendered = renderDocument(renderer, document);
         const auto expected = std::vector<std::string>{
             "",
-            "  Root error",
+            "  Error: Root error",
             "",
             "╭─ Caused By:",
             "│   Path could not be resolved",
@@ -565,7 +581,17 @@ public:
 
         const auto lines = rawLinesFromBuffer(buffer);
         REQUIRE(lines[0].starts_with("      --format <choice>  Format"));
-        REQUIRE(lines[1].starts_with("      json  Structured"));
+        REQUIRE(lines[1].starts_with("          json  Structured"));
+
+        // A short alias occupies the first four columns ahead of the long alias.
+        auto aliased = text::TextDocument{};
+        auto aliases = aliased.add(text::TextNodeType::TermList)->add(text::TextNodeType::TermItem);
+        auto aliasName = aliases->add(text::TextNodeType::TermName);
+        aliasName->add(text::TextNodeType::OptionName)->add(text::TextNodeType::OptionShort)->addText("-f"_el);
+        aliasName->add(text::TextNodeType::OptionName)->add(text::TextNodeType::OptionLong)->addText("--format"_el);
+        aliases->add(details->clone());
+        const auto plain = aliased.toString();
+        REQUIRE(plain.contains("  -f, --format\n          json  Structured data."_el));
     }
 
     void testAlignedTermListUsesQuarterWidthDescriptionColumn() {
@@ -605,23 +631,22 @@ public:
         REQUIRE_EQUAL(lines[1].find("Description"), std::size_t{20});
     }
 
-    void testUnknownWidthUsesNormalEightyColumnRendering() {
+    void testPlainTextAndUnknownWidthsUseTheDefaultLayout() {
         auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
-        auto list = document.add(text::TextNodeType::TermList);
-        auto item = list->add(text::TextNodeType::TermItem);
-        item->add(text::TextNodeType::TermName)->addText("name"_el);
-        item->add(text::TextNodeType::TermDescription)->addText("description"_el);
+        constexpr auto content =
+            "This paragraph is long enough to wrap at eighty columns and fits on a single line at the new default."_el;
+        document.addText(content);
+        REQUIRE_EQUAL(document.toString(), content);
 
-        auto renderer = TerminalDocumentRenderer{};
+        const auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
         auto writer = CursorWriterProbe{};
         writer._size = block::Size{0, 25};
         renderer.renderTo(writer, document);
 
-        REQUIRE_EQUAL(writer._writtenStrings.size(), std::size_t{1});
-        REQUIRE_EQUAL(render(writer._writtenStrings[0]), std::string{"name  description"});
-        REQUIRE_EQUAL(writer._lineBreakCount, 1);
-        REQUIRE(writer._lastParagraph.isEmpty());
+        REQUIRE_FALSE(writer._writtenStrings.empty());
+        REQUIRE_EQUAL(toPlainText(writer._writtenStrings.front()), text::StringConverter{content}.toStdString());
+        REQUIRE_NOT_EQUAL(renderDocument(renderer, document, 80), text::StringConverter{content}.toStdString());
     }
 
     void testSystemOutputStyleAddsOptionSemanticSuffixes() {
@@ -643,7 +668,7 @@ public:
         REQUIRE_EQUAL(renderDocument(renderer, document), std::string{"\nUsage:\n  Author:  Tobias Erbsland"});
     }
 
-    void testNarrowWriterReceivesEightyColumnLayoutWithStyles() {
+    void testNarrowWriterUsesDefaultLayoutWithStyles() {
         auto applicationScope = ApplicationTestScope<>{};
         auto document = text::TextDocument{};
         auto list = document.add(text::TextNodeType::TermList);

@@ -13,7 +13,7 @@ namespace erbsland::cterm {
 /// Render a `text::TextDocument` tree as styled terminal output.
 ///
 /// A reported writer width of at least 60 cells is used as-is. Widths from 1 through 59, unknown widths, and zero
-/// widths use an 80-column layout; a narrow destination may wrap the completed physical lines naturally. The complete
+/// widths use a 120-column layout. A narrow destination may wrap the completed physical lines naturally. The complete
 /// document layout is materialized before output begins, so allocation or layout failures do not partially write the
 /// document.
 /// @tested{TerminalDocumentRendererTest}

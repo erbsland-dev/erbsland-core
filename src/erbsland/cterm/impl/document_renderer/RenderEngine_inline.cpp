@@ -140,6 +140,9 @@ void RenderEngine::appendInlineNode(const TextNode &node, const BlockStyle style
 
 void RenderEngine::appendInlineChildren(const TextNode &node, const BlockStyle style, const bool preserveWhitespace) {
     for (const auto &child : node.children()) {
+        if (node.type() == TextNodeType::TermDescription && child->type() == TextNodeType::OptionDetails) {
+            _inlineTextBuilder.separateWords(style);
+        }
         appendInlineNode(*child, style, preserveWhitespace);
     }
 }

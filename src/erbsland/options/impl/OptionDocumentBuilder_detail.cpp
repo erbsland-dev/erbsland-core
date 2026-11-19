@@ -68,10 +68,8 @@ auto OptionDocumentBuilder::detailedHelpDocument(const String &moduleName, const
     appendDetailedHeader(document, target);
     appendHeading(document.root(), i18n::displayText("options.usage_label"_el));
     auto usageList = document.add(NodeType::TermList);
-    for (const auto &name : target.option->names()) {
-        if (Option::isOptionName(name)) {
-            appendDetailedUsage(usageList->add(NodeType::TermItem)->add(NodeType::TermName), target, name);
-        }
+    for (const auto &name : OptionDisplayModel::displayAliases(*target.option)) {
+        appendDetailedUsage(usageList->add(NodeType::TermItem)->add(NodeType::TermName), target, name);
     }
     appendDetailedDescription(document, target);
     const auto details = OptionDisplayModel::optionDetails(target.option);
@@ -259,10 +257,7 @@ void OptionDocumentBuilder::appendHelpResultSection(
 void OptionDocumentBuilder::appendDetailedTitle(
     const TextNodePtr &parent, const OptionPtr &option, const bool withPlaceholder) const {
     auto first = true;
-    for (const auto &name : option->names()) {
-        if (!Option::isOptionName(name)) {
-            continue;
-        }
+    for (const auto &name : OptionDisplayModel::displayAliases(*option)) {
         if (!first) {
             parent->addText(", "_el);
         }

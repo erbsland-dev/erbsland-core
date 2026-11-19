@@ -20,6 +20,7 @@
 #include <erbsland/OptionError.hpp>
 #include <erbsland/OptionErrorContext.hpp>
 #include <erbsland/OptionHelp.hpp>
+#include <erbsland/OptionHelpSorting.hpp>
 #include <erbsland/OptionHelpVisibility.hpp>
 #include <erbsland/OptionManager.hpp>
 #include <erbsland/OptionModule.hpp>
@@ -48,7 +49,8 @@ using namespace el::options;
 using namespace el::text::literals;
 namespace th = erbsland::unittest::th;
 
-TESTED_TARGETS(ApplicationInfo DisplayText OptionDocumentBuilder OptionManager OptionParserFlag TextDocument)
+TESTED_TARGETS(
+    ApplicationInfo DisplayText OptionDocumentBuilder OptionHelpSorting OptionManager OptionParserFlag TextDocument)
 class OptionDocumentTest final : public UNITTEST_SUBCLASS(BlockStringTestHelper) {
 private:
     static constexpr auto cCountOption = "--count"_el;
@@ -82,6 +84,7 @@ public:
         requireContains(text, "Choices: fast, safe.");
         requireContains(text, "Prefer speed.");
         requireContains(text, "Prefer safety.");
+        requireMissing(text, "Positionals:");
         requireMissing(text, "debug");
         requireMissing(text, "expert");
         requireMissing(text, "verbose-alias");
@@ -109,9 +112,9 @@ public:
         const auto text = toStdString(manager.versionDocument({}).toString());
 
         requireContains(text, "Demo Tool 1.2.3\n");
-        requireContains(text, "Author:     Tobias Erbsland\n");
+        requireContains(text, "  Author:   Tobias Erbsland\n");
         requireContains(text, "Copyright 2026");
-        requireContains(text, "License:    Apache-2.0\n");
+        requireContains(text, "  License:  Apache-2.0\n");
     }
 
     void testDisabledBuiltInOptionsAreHidden() {
@@ -617,6 +620,9 @@ public:
 
         auto instrumentsA = OptionSet::create();
         instrumentsA->setHelpTitle("Instrument Control"_el);
+        instrumentsA->addOption("zone"_el).setHelpTitle("First argument."_el);
+        instrumentsA->addOption("unused"_el).setFlag(OptionFlag::Disabled);
+        instrumentsA->addOption("secret"_el).setHelpVisibility(OptionHelpVisibility::Hidden);
         instrumentsA->addOption("--zeta"_el).setHelp("Last instrument option."_el);
         instrumentsA->addOption("--Alpha"_el).setHelp("First instrument option."_el);
         options->addSet(instrumentsA);
@@ -636,8 +642,162 @@ public:
 
         requireContains(text, "Options:\n");
         requireContains(text, "Instrument Control:\n");
+        requireContains(text, "[options] <zone> <sample>");
+        requireContains(text, "Positionals:\n  <zone>    First argument.\n  <sample>  Sample identifier.\n\nOptions:");
+        requireMissing(text.substr(text.find("Options:")), "<zone>");
+        requireMissing(text.substr(text.find("Options:")), "<sample>");
+        requireMissing(text, "<secret>");
+        requireMissing(text, "<unused>");
         requireBefore(text, "--alpha", "--beta");
         requireBefore(text, "--beta", "--zeta");
+    }
+
+    void testShortAliasesLeadInHelpRegardlessOfDeclarationOrder() {
+        constexpr auto cLongOnlyAlias = "--config"_el;
+        const auto longAlias = toStdString(cLongOnlyAlias);
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        options->addOption({"--dry-run"_el, "preview"_el, "-d"_el}).setHelpTitle("Preview."_el);
+        options->addOption({"--recursive"_el, "-r"_el}).setHelpTitle("Recurse."_el);
+        options->addOption(cLongOnlyAlias).setHelpTitle("Configure."_el);
+        options->addOption({"--output"_el, "-o"_el, "--out"_el, "-O"_el});
+
+        auto manager = OptionManager{options};
+        const auto document = manager.helpDocument({});
+        const auto text = toStdString(document.toString());
+        requireContains(text, "  -d, --dry-run");
+        requireContains(text, "  -r, --recursive");
+        requireContains(text, "      " + longAlias);
+        requireContains(text, "-o, -O, --output, --out");
+        requireMissing(text, "preview");
+
+        const auto writer = renderHelp(document, 100);
+        const auto &shortRow = requireRenderedContainingLine(writer, "-d, --dry-run");
+        const auto &longRow = requireRenderedContainingLine(writer, longAlias);
+        REQUIRE_EQUAL(render(shortRow).find("--dry-run"), render(longRow).find(longAlias));
+
+        const auto detail = toStdString(manager.detailedHelpDocument({}, "preview"_el).toString());
+        requireContains(detail, "\n-d, --dry-run\n");
+        requireBefore(detail, "tool -d", "tool --dry-run");
+    }
+
+    void testHelpSortingPolicies() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        options->setParserFlags(OptionParserFlag::DisableHelp | OptionParserFlag::DisableVersion);
+        REQUIRE(options->help().sorting() == OptionHelpSorting::ByLongName);
+        REQUIRE(OptionHelp{}.sorting() == OptionHelpSorting::Inherit);
+        REQUIRE_EQUAL(OptionHelp{}.weight(), 0);
+
+        options->addOption({"--zulu"_el, "-B"_el}).setHelpVisibility(OptionHelpVisibility::Usage).setHelpWeight(-1);
+        options->addOption({"--alpha"_el, "-z"_el}).setHelpVisibility(OptionHelpVisibility::Usage).setHelpWeight(2);
+        options->addOption({"-b"_el, "--beta"_el}).setHelpVisibility(OptionHelpVisibility::Usage).setHelpWeight(-1);
+        options->addOption("--aardvark"_el).setHelpVisibility(OptionHelpVisibility::Usage).setHelpWeight(2);
+        options->addOption({"lookup"_el, "-c"_el}).setHelpVisibility(OptionHelpVisibility::Usage);
+        options->addOption("zebra"_el).setHelpWeight(9);
+        options->addOption("apple"_el).setHelpWeight(-9);
+
+        const auto manager = OptionManager{options};
+        const auto requireOrder = [&](const OptionHelpSorting sorting,
+                                      const std::initializer_list<std::string_view> names) {
+            options->setHelpSorting(sorting);
+            const auto text = toStdString(manager.helpDocument({}).toString());
+            requireContains(text, " <zebra> <apple>\n");
+            requireBefore(text, "Positionals:", "Options:");
+            const auto usage = text.substr(0, text.find("Positionals:"));
+            const auto rows = text.substr(text.find("Options:"));
+            WITH_CONTEXT(requireInOrder(usage, names));
+            WITH_CONTEXT(requireInOrder(rows, names));
+            requireBefore(text.substr(text.find("Positionals:")), "<zebra>", "<apple>");
+        };
+        WITH_CONTEXT(requireOrder(OptionHelpSorting::None, {"--zulu", "--alpha", "--beta", "--aardvark", "-c"}));
+        WITH_CONTEXT(requireOrder(OptionHelpSorting::ByLongName, {"--aardvark", "--alpha", "--beta", "-c", "--zulu"}));
+        WITH_CONTEXT(requireOrder(OptionHelpSorting::Inherit, {"--aardvark", "--alpha", "--beta", "-c", "--zulu"}));
+        WITH_CONTEXT(requireOrder(OptionHelpSorting::ByShortName, {"--beta", "--zulu", "-c", "--alpha", "--aardvark"}));
+        WITH_CONTEXT(requireOrder(OptionHelpSorting::ByWeight, {"--beta", "--zulu", "-c", "--aardvark", "--alpha"}));
+    }
+
+    void testHelpSortingForModulesAndNamedSections() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        auto zulu = OptionModule::create("zulu"_el);
+        auto alpha = OptionModule::create("alpha"_el);
+        auto beta = OptionModule::create("beta"_el);
+        beta->setHelpWeight(-1);
+        options->addModule(zulu);
+        options->addModule(alpha);
+        options->addModule(beta);
+
+        auto first = OptionSet::create();
+        first->setHelpTitle("Zulu Section"_el);
+        first->setHelpSorting(OptionHelpSorting::None);
+        first->setHelpWeight(-1);
+        first->addOption("--zulu-first"_el).setHelpVisibility(OptionHelpVisibility::Overview);
+        first->addOption("--alpha-first"_el).setHelpVisibility(OptionHelpVisibility::Overview);
+        options->addSet(first);
+
+        auto second = OptionSet::create();
+        second->setHelpTitle("alpha Section"_el);
+        second->setHelpWeight(2);
+        second->addOption("--second"_el).setHelpVisibility(OptionHelpVisibility::Overview);
+        options->addSet(second);
+
+        auto shared = OptionSet::create();
+        shared->setHelpTitle("Zulu Section"_el);
+        shared->setHelpSorting(OptionHelpSorting::ByLongName);
+        shared->setHelpWeight(10);
+        shared->addOption("--aardvark-shared"_el).setHelpVisibility(OptionHelpVisibility::Overview);
+        options->addSet(shared);
+
+        const auto manager = OptionManager{options};
+        auto text = toStdString(manager.moduleOverviewDocument().toString());
+        WITH_CONTEXT(requireInOrder(text, {"alpha", "beta", "zulu"}));
+        text = toStdString(manager.helpDocument({}).toString());
+        requireBefore(text, "alpha Section:", "Zulu Section:");
+        WITH_CONTEXT(requireInOrder(text, {"--zulu-first", "--alpha-first", "--aardvark-shared"}));
+
+        options->setHelpSorting(OptionHelpSorting::None);
+        text = toStdString(manager.helpDocument({}).toString());
+        WITH_CONTEXT(requireInOrder(text, {"  zulu", "  alpha", "  beta", "Zulu Section:", "alpha Section:"}));
+
+        options->setHelpSorting(OptionHelpSorting::ByWeight);
+        text = toStdString(manager.helpDocument({}).toString());
+        WITH_CONTEXT(requireInOrder(text, {"  beta", "  alpha", "  zulu", "Zulu Section:", "alpha Section:"}));
+    }
+
+    void testModuleAndSetHelpSortingInheritance() {
+        auto applicationScope = ApplicationTestScope<>{};
+        auto options = Options::create();
+        options->addOption("--zulu-global"_el);
+        options->addOption("--alpha-global"_el);
+        auto module = OptionModule::create("run"_el);
+        auto unnamed = OptionSet::create();
+        unnamed->addOption("--zulu-local"_el);
+        unnamed->addOption("--alpha-local"_el);
+        module->addSet(unnamed);
+        auto named = OptionSet::create();
+        named->setHelpTitle("Module Settings"_el);
+        named->addOption("--zulu-setting"_el);
+        named->addOption("--alpha-setting"_el);
+        module->addSet(named);
+        options->addModule(module);
+
+        const auto manager = OptionManager{options};
+        auto text = toStdString(manager.helpDocument("run"_el).toString());
+        WITH_CONTEXT(requireInOrder(text, {"--alpha-global", "--alpha-local", "--zulu-global", "--zulu-local"}));
+        requireBefore(text, "--alpha-setting", "--zulu-setting");
+
+        module->setHelpSorting(OptionHelpSorting::None);
+        text = toStdString(manager.helpDocument("run"_el).toString());
+        WITH_CONTEXT(requireInOrder(text, {"--zulu-global", "--alpha-global", "--zulu-local", "--alpha-local"}));
+        requireBefore(text, "--zulu-setting", "--alpha-setting");
+
+        unnamed->setHelpSorting(OptionHelpSorting::ByLongName);
+        text = toStdString(manager.helpDocument("run"_el).toString());
+        WITH_CONTEXT(requireInOrder(text, {"--alpha-global", "--alpha-local", "--zulu-global", "--zulu-local"}));
+        requireBefore(text, "--zulu-setting", "--alpha-setting");
     }
 
     void testCustomValueNamesAreUsedInUsageAndOptionLists() {
@@ -998,6 +1158,17 @@ private:
         REQUIRE_LESS(firstIndex, secondIndex);
     }
 
+    void requireInOrder(const std::string &text, const std::initializer_list<std::string_view> names) {
+        auto offset = std::size_t{0};
+        for (const auto name : names) {
+            const auto found = text.find(name, offset);
+            runWithContext(
+                SOURCE_LOCATION(),
+                [&]() -> void { REQUIRE_NOT_EQUAL(found, std::string::npos); },
+                [&]() -> std::string { return "expected in order: " + std::string{name} + "\ntext:\n" + text; });
+            offset = found + name.size();
+        }
+    }
     void requireContainsNode(
         const el::text::TextDocument &document,
         const el::text::TextNodeType type,

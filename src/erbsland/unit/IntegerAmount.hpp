@@ -81,45 +81,29 @@ public: // operators
     ERBSLAND_CORE_CONSTEXPR_COMPARE_FROM_SPACESHIP(const IntegerAmount &other, other);
 
     /// Add another amount, saturating on overflow.
-    [[nodiscard]] auto operator+(IntegerAmount other) const noexcept -> IntegerAmount {
-        return IntegerAmount{_value.added(other._value)};
-    }
+    [[nodiscard]] auto operator+(IntegerAmount other) const noexcept -> IntegerAmount { return added(other); }
     /// Add another amount in place, saturating on overflow.
-    auto operator+=(IntegerAmount other) noexcept -> IntegerAmount & {
-        _value.add(other._value);
-        return *this;
-    }
-    /// Subtract another amount, saturating on underflow.
-    [[nodiscard]] auto operator-(IntegerAmount other) const noexcept -> IntegerAmount {
-        return IntegerAmount{_value.subtracted(other._value)};
-    }
-    /// Subtract another amount in place, saturating on underflow.
-    auto operator-=(IntegerAmount other) noexcept -> IntegerAmount & {
-        _value.subtract(other._value);
-        return *this;
-    }
+    auto operator+=(IntegerAmount other) noexcept -> IntegerAmount & { return add(other); }
+    /// Subtract another amount, saturating at the bounds.
+    [[nodiscard]] auto operator-(IntegerAmount other) const noexcept -> IntegerAmount { return subtracted(other); }
+    /// Subtract another amount in place, saturating at the bounds.
+    auto operator-=(IntegerAmount other) noexcept -> IntegerAmount & { return subtract(other); }
     /// Return the negated amount, saturating the minimum value to the maximum value.
     [[nodiscard]] auto operator-() const noexcept -> IntegerAmount { return negated(); }
     /// Increment this amount by one, saturating at maximum().
-    auto operator++() noexcept -> IntegerAmount & {
-        ++_value;
-        return *this;
-    }
+    auto operator++() noexcept -> IntegerAmount & { return increment(); }
     /// Increment this amount by one and return the previous value.
     auto operator++(int) noexcept -> IntegerAmount {
         auto result = *this;
-        ++*this;
+        increment();
         return result;
     }
     /// Decrement this amount by one, saturating at minimum().
-    auto operator--() noexcept -> IntegerAmount & {
-        --_value;
-        return *this;
-    }
+    auto operator--() noexcept -> IntegerAmount & { return decrement(); }
     /// Decrement this amount by one and return the previous value.
     auto operator--(int) noexcept -> IntegerAmount {
         auto result = *this;
-        --*this;
+        decrement();
         return result;
     }
     /// Multiply this amount by a signed integer factor.
@@ -272,6 +256,54 @@ public: // conversion
     }
 
 public: // manipulation
+    /// Add another amount in place, saturating at the bounds.
+    /// @param other The amount to add.
+    auto add(IntegerAmount other) noexcept -> IntegerAmount & {
+        _value.add(other._value);
+        return *this;
+    }
+    /// Return the sum of this amount and another amount, saturating at the bounds.
+    /// @param other The amount to add.
+    /// @return The saturated sum.
+    [[nodiscard]] auto added(IntegerAmount other) const noexcept -> IntegerAmount {
+        return IntegerAmount{_value.added(other._value)};
+    }
+    /// Subtract another amount in place, saturating at the bounds.
+    /// @param other The amount to subtract.
+    auto subtract(IntegerAmount other) noexcept -> IntegerAmount & {
+        _value.subtract(other._value);
+        return *this;
+    }
+    /// Return the difference between this amount and another amount, saturating at the bounds.
+    /// @param other The amount to subtract.
+    /// @return The saturated difference.
+    [[nodiscard]] auto subtracted(IntegerAmount other) const noexcept -> IntegerAmount {
+        return IntegerAmount{_value.subtracted(other._value)};
+    }
+    /// Increment this amount by one, saturating at maximum().
+    auto increment() noexcept -> IntegerAmount & {
+        ++_value;
+        return *this;
+    }
+    /// Return this amount incremented by one.
+    /// @return The incremented amount, saturated at maximum().
+    [[nodiscard]] auto incremented() const noexcept -> IntegerAmount {
+        auto result = *this;
+        result.increment();
+        return result;
+    }
+    /// Decrement this amount by one, saturating at minimum().
+    auto decrement() noexcept -> IntegerAmount & {
+        --_value;
+        return *this;
+    }
+    /// Return this amount decremented by one.
+    /// @return The decremented amount, saturated at minimum().
+    [[nodiscard]] auto decremented() const noexcept -> IntegerAmount {
+        auto result = *this;
+        result.decrement();
+        return result;
+    }
     /// Extract a larger whole unit and keep the signed remainder in this amount.
     template <typename tTarget>
         requires impl::CompatibleIntegerAmount<tTarget, Unit> &&

@@ -29,7 +29,7 @@
 
 namespace erbsland::conf::impl {
 
-/// Stream a locally repeatable, framed configuration tree directly into a hasher.
+/// Stream a framed configuration value tree directly into a hasher.
 /// @tested{ValueDigestTest}
 class ValueDigest final {
 private:

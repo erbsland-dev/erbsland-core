@@ -182,8 +182,8 @@ Use module help to explain how one command is configured.
           ␛[92;49m␛[22moption_module_callbacks␛[39;49m ␛[90;49m<␛[92;49mmodule␛[90;49m>␛[39;49m ␛[90;49m[␛[96;49moptions␛[90;49m]
 
         ␛[39;49m␛[1mModules:
-          ␛[92;49m␛[22mobserve␛[39;49m  Observe Area
-          ␛[92;49mexport␛[39;49m   Export Logbook
+          ␛[92;49m␛[22mexport␛[39;49m   Export Logbook
+          ␛[92;49mobserve␛[39;49m  Observe Area
 
         ␛[1mOptions:
           ␛[93;49m␛[22m-h␛[39;49m, ␛[96;49m--help␛[39;49m[=␛[90;49m<␛[92;49mkeyword␛[90;49m>␛[39;49m]  Display this help.

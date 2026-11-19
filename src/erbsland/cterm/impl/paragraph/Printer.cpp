@@ -2,135 +2,89 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Printer.hpp"
 
+#include "../../CursorWriter.hpp"
+
 #include <algorithm>
 
 namespace erbsland::cterm::impl::paragraph {
 
-auto Printer::print() -> int {
-    auto previousWrapColor = std::optional<Color>{};
+auto Printer::printTo(CursorWriter &writer) -> int {
+    _previousWrapColor.reset();
+    const WriteBlockFn writeBlock = [&writer](const Block &block) -> void { writer.writeResolved(block); };
     for (const auto &line : layout().lines()) {
-        const auto placement = linePlacement(line, _x1, _width);
-        if (placement.textX > 0) {
-            writeSpaces(placement.textX, _baseColor);
-        }
-        if (line.indentWidth > 0) {
-            auto indentColor = _baseColor;
-            if (previousWrapColor.has_value() && usesLeftFill()) {
-                indentColor = backgroundFillColor(*previousWrapColor);
-            }
-            writeSpaces(line.indentWidth, indentColor);
-        }
-        auto lastColor = writeResolved(line);
-        if (line.wrapsToNext) {
-            if (placement.endMarkWidth > 0) {
-                const auto gapWidth = placement.endMarkX - (placement.textX + placement.textWidth);
-                if (gapWidth > 0) {
-                    auto gapColor = _baseColor;
-                    if (usesRightFill() && lastColor.has_value()) {
-                        gapColor = backgroundFillColor(*lastColor);
-                    }
-                    writeSpaces(gapWidth, gapColor);
-                }
-                for (const auto &character : options().lineBreakEndMark()) {
-                    if (const auto markColor = writeResolvedBlock(character); markColor.has_value()) {
-                        lastColor = markColor;
-                    }
-                }
-            }
-            if (placement.endMarkWidth == 0 && usesRightFill() && lastColor.has_value()) {
-                const auto fillWidth = (_x1 + _width) - (placement.textX + placement.textWidth);
-                writeSpaces(fillWidth, backgroundFillColor(*lastColor));
-            }
-        } else if (usesRightFillForLine(line) && lastColor.has_value()) {
-            const auto fillWidth = (_x1 + _width) - (placement.textX + placement.textWidth);
-            writeSpaces(fillWidth, backgroundFillColor(*lastColor));
-        }
-        _writer.setBackground(Background::Default);
-        _writer.writeLineBreak();
-        if (line.wrapsToNext && usesLeftFill()) {
-            previousWrapColor = lastColor;
-        } else {
-            previousWrapColor.reset();
-        }
+        emitLine(line, writeBlock);
+        writer.setBackground(Background::Default);
+        writer.writeLineBreak();
     }
-    _writer.setColor(_baseColor);
+    writer.setColor(_baseStyle.color());
     return static_cast<int>(layout().size());
 }
 
-auto Printer::backgroundFillColor(const Color color) const noexcept -> Color {
-    return _baseColor.overlayWith(Color{Foreground::Inherited, color.bg()});
-}
+void Printer::emitLine(const LayoutLine &line, const WriteBlockFn &writeBlock) {
+    const auto baseColor = _baseStyle.color();
+    const auto placement = linePlacement(line, _x1, _width);
+    emitSpaces(placement.textX, baseColor, writeBlock);
+    emitSpaces(line.indentWidth, fillColor(_previousWrapColor), writeBlock);
 
-auto Printer::writeResolved(const LayoutLine &line) -> std::optional<Color> {
     auto lastColor = std::optional<Color>{};
+    const auto emitText = [&](const Block &block) -> void {
+        const auto resolved = block.withBase(_baseStyle);
+        writeBlock(resolved);
+        if (!resolved.isEmpty()) {
+            lastColor = resolved.color();
+        }
+    };
     for (const auto &fragment : line.fragments) {
-        if (const auto fragmentColor = writeResolved(fragment); fragmentColor.has_value()) {
-            lastColor = fragmentColor;
+        switch (fragment.type()) {
+        case LayoutFragment::Type::SourceRange:
+            std::ranges::for_each(sourceText().slice(BlockRange{fragment.startIndex(), fragment.length()}), emitText);
+            break;
+        case LayoutFragment::Type::Spaces:
+            for (auto i = 0; i < fragment.width(); ++i) {
+                emitText(Block{U' ', fragment.color()});
+            }
+            break;
+        case LayoutFragment::Type::LineBreakStartMark:
+            std::ranges::for_each(options().lineBreakStartMark(), emitText);
+            break;
+        case LayoutFragment::Type::WordBreakMark:
+            emitText(options().wordBreakMark());
+            break;
+        case LayoutFragment::Type::ParagraphEllipsis:
+            std::ranges::for_each(options().paragraphEllipsisMark(), emitText);
+            break;
         }
     }
-    return lastColor;
+
+    const auto textEnd = placement.textX + placement.textWidth;
+    if (placement.endMarkWidth > 0) {
+        auto gapColor = baseColor;
+        if (usesRightFill()) {
+            gapColor = fillColor(lastColor);
+        }
+        emitSpaces(placement.endMarkX - textEnd, gapColor, writeBlock);
+        std::ranges::for_each(options().lineBreakEndMark(), emitText);
+    } else if (usesRightFillForLine(line) && lastColor.has_value()) {
+        emitSpaces(_x1 + _width - textEnd, fillColor(lastColor), writeBlock);
+    }
+    _previousWrapColor.reset();
+    if (line.wrapsToNext && usesLeftFill()) {
+        _previousWrapColor = lastColor;
+    }
 }
 
-auto Printer::writeResolved(const LayoutFragment &fragment) -> std::optional<Color> {
-    switch (fragment.type()) {
-    case LayoutFragment::Type::SourceRange: {
-        auto lastColor = std::optional<Color>{};
-        const auto &text = sourceText();
-        for (
-            auto index = fragment.startIndex(); index < fragment.startIndex() + fragment.length();
-            index += BlockCount::one()) {
-            if (const auto characterColor = writeResolvedBlock(text[index]); characterColor.has_value()) {
-                lastColor = characterColor;
-            }
-        }
-        return lastColor;
+auto Printer::fillColor(const std::optional<Color> &textColor) const noexcept -> Color {
+    if (textColor.has_value()) {
+        return _baseStyle.color().overlayWith(Color{Foreground::Inherited, textColor->bg()});
     }
-    case LayoutFragment::Type::Spaces: {
-        if (fragment.width() <= 0) {
-            return std::nullopt;
-        }
-        const auto resolvedSpace = Block{U' ', fragment.color()}.withBase(_baseStyle);
-        _writer.writeRepeatedResolved(resolvedSpace, fragment.width());
-        return resolvedSpace.color();
-    }
-    case LayoutFragment::Type::LineBreakStartMark: {
-        auto lastColor = std::optional<Color>{};
-        for (const auto &character : options().lineBreakStartMark()) {
-            if (const auto characterColor = writeResolvedBlock(character); characterColor.has_value()) {
-                lastColor = characterColor;
-            }
-        }
-        return lastColor;
-    }
-    case LayoutFragment::Type::WordBreakMark:
-        return writeResolvedBlock(options().wordBreakMark());
-    case LayoutFragment::Type::ParagraphEllipsis: {
-        auto lastColor = std::optional<Color>{};
-        for (const auto &character : options().paragraphEllipsisMark()) {
-            if (const auto characterColor = writeResolvedBlock(character); characterColor.has_value()) {
-                lastColor = characterColor;
-            }
-        }
-        return lastColor;
-    }
-    }
-    return std::nullopt;
+    return _baseStyle.color();
 }
 
-auto Printer::writeResolvedBlock(const Block &character) -> std::optional<Color> {
-    const auto resolvedCharacter = character.withBase(_baseStyle);
-    _writer.writeResolved(resolvedCharacter);
-    if (resolvedCharacter.isEmpty()) {
-        return std::nullopt;
+void Printer::emitSpaces(const int count, const Color color, const WriteBlockFn &writeBlock) const {
+    const auto space = Block{U' ', color}.withBase(_baseStyle);
+    for (auto i = 0; i < count; ++i) {
+        writeBlock(space);
     }
-    return resolvedCharacter.color();
-}
-
-void Printer::writeSpaces(const int count, const Color color) {
-    if (count <= 0) {
-        return;
-    }
-    _writer.writeRepeatedResolved(Block{U' ', color}.withBase(_baseStyle), count);
 }
 
 }

@@ -85,6 +85,8 @@ public:
 
     void testResetControlPreservesFollowingInput() {
         auto emulator = TerminalEmulation{};
+        REQUIRE_EQUAL(emulator.regularBuffer().size(), block::Size(120, 25));
+        REQUIRE_EQUAL(emulator.alternateBuffer().size(), block::Size(120, 25));
         emulator.write(
             "before\x1b"
             "cafter"_el);

@@ -77,12 +77,30 @@ public: // operators
     }
     ERBSLAND_CORE_CONSTEXPR_COMPARE_FROM_SPACESHIP(const IntegerUnitRange &other, other);
 
+    /// Advance this range by a count and return the saturated result.
+    /// @param length The distance to advance.
+    /// @return The translated range, or noRange() for invalid input.
+    [[nodiscard]] constexpr auto operator+(const Count length) const noexcept -> IntegerUnitRange {
+        return advanced(length);
+    }
+    /// Advance this range by a count with saturation.
+    /// @param length The distance to advance.
+    constexpr auto operator+=(const Count length) noexcept -> IntegerUnitRange & { return advance(length); }
+    /// Retreat this range by a count and return the saturated result.
+    /// @param length The distance to retreat.
+    /// @return The translated range, or noRange() for invalid input.
+    [[nodiscard]] constexpr auto operator-(const Count length) const noexcept -> IntegerUnitRange {
+        return retreated(length);
+    }
+    /// Retreat this range by a count with saturation.
+    /// @param length The distance to retreat.
+    constexpr auto operator-=(const Count length) noexcept -> IntegerUnitRange & { return retreat(length); }
     /// Move this range by an offset and return the saturated result.
     [[nodiscard]] constexpr auto operator+(const Offset offset) const noexcept -> IntegerUnitRange {
         return moved(offset);
     }
     /// Move this range by an offset with saturation.
-    auto operator+=(const Offset offset) noexcept -> IntegerUnitRange & { return move(offset); }
+    constexpr auto operator+=(const Offset offset) noexcept -> IntegerUnitRange & { return move(offset); }
     /// Move this range by the negated offset and return the saturated result.
     [[nodiscard]] constexpr auto operator-(const Offset offset) const noexcept -> IntegerUnitRange {
         if (offset.isMinimum()) {
@@ -91,7 +109,7 @@ public: // operators
         return moved(offset.negated());
     }
     /// Move this range by the negated offset with saturation.
-    auto operator-=(const Offset offset) noexcept -> IntegerUnitRange & {
+    constexpr auto operator-=(const Offset offset) noexcept -> IntegerUnitRange & {
         *this = *this - offset;
         return *this;
     }
@@ -108,6 +126,8 @@ public: // tests
     [[nodiscard]] constexpr auto isEmpty() const noexcept -> bool { return _length.isZero(); }
     /// Test if this range has an infinite length.
     [[nodiscard]] constexpr auto isInfinite() const noexcept -> bool { return _length.isInfinite(); }
+    /// Test if this range has a finite length, independently of validity.
+    [[nodiscard]] constexpr auto isFinite() const noexcept -> bool { return _length.isFinite(); }
     /// Test if this range contains the given index.
     [[nodiscard]] constexpr auto contains(const Index index) const noexcept -> bool {
         return isValid() && index.isValid() && index >= _index &&
@@ -146,24 +166,26 @@ public: // tests
         }
         return _index.toRawValue() + _length.toRawValue() <= bounds.toRawValue();
     }
-    /// Return this range clamped to a sequence with the given bounds length.
-    /// Invalid ranges stay invalid. Ranges starting beyond the bounds become empty at the end of the bounds.
-    [[nodiscard]] constexpr auto clampedTo(const Count bounds) const noexcept -> IntegerUnitRange {
-        if (!isValid()) {
-            return noRange();
+    /// Test whether the whole range cannot advance exactly while preserving its length.
+    /// @param length The distance to advance.
+    /// @return True for an invalid range, an infinite step, or an advance beyond the representable bounds.
+    [[nodiscard]] constexpr auto wouldAdvanceSaturate(Count length) const noexcept -> bool {
+        return !isValid() || length.toRawValue() > maximumBegin() - _index.toRawValue();
+    }
+    /// Test whether the whole range cannot retreat exactly while preserving its length.
+    /// @param length The distance to retreat.
+    /// @return True for an invalid range, an infinite step, or a retreat before zero.
+    [[nodiscard]] constexpr auto wouldRetreatSaturate(Count length) const noexcept -> bool {
+        return !isValid() || length.toRawValue() > _index.toRawValue();
+    }
+    /// Test whether the whole range cannot move exactly while preserving its length.
+    /// @param offset The signed displacement.
+    /// @return True for an invalid range or a move outside the representable bounds.
+    [[nodiscard]] constexpr auto wouldMoveSaturate(Offset offset) const noexcept -> bool {
+        if (offset.isNegative()) {
+            return wouldRetreatSaturate(offset.absoluteLength());
         }
-        if (bounds.isInfinite()) {
-            return *this;
-        }
-        if (!_index.isWithin(bounds)) {
-            return emptyAt(Index::end(bounds));
-        }
-
-        const auto availableLength = bounds.remainingFrom(_index);
-        if (_length.isInfinite() || _length > availableLength) {
-            return IntegerUnitRange{_index, availableLength};
-        }
-        return *this;
+        return wouldAdvanceSaturate(offset.absoluteLength());
     }
 
 public: // accessors and modifiers
@@ -237,7 +259,7 @@ public: // math
     /// Return an exactly translated range.
     /// @throws err::OverflowError for invalid input or an unrepresentable translation.
     [[nodiscard]] constexpr auto advancedOrThrow(Count length) const -> IntegerUnitRange {
-        if (!isValid() || length.toRawValue() > maximumBegin() - _index.toRawValue()) {
+        if (wouldAdvanceSaturate(length)) {
             impl::throwOverflow("Range translation exceeds representable bounds");
         }
         return {_index.uncheckedAdvanced(length), _length};
@@ -266,7 +288,7 @@ public: // math
     /// Return an exactly translated range.
     /// @throws err::OverflowError for invalid input or an unrepresentable translation.
     [[nodiscard]] constexpr auto retreatedOrThrow(Count length) const -> IntegerUnitRange {
-        if (!isValid() || length.toRawValue() > _index.toRawValue()) {
+        if (wouldRetreatSaturate(length)) {
             impl::throwOverflow("Range translation exceeds representable bounds");
         }
         return {_index.uncheckedRetreated(length), _length};
@@ -296,6 +318,33 @@ public: // math
             return retreatedOrThrow(offset.absoluteLength());
         }
         return advancedOrThrow(offset.absoluteLength());
+    }
+    /// Clamp this range in place to a sequence with the given bounds length.
+    /// @param bounds The length of the sequence.
+    constexpr auto clampTo(Count bounds) noexcept -> IntegerUnitRange & {
+        *this = clampedTo(bounds);
+        return *this;
+    }
+    /// Return this range clamped to a sequence with the given bounds length.
+    /// Ranges starting beyond the bounds become empty at the end of the bounds.
+    /// @param bounds The length of the sequence.
+    /// @return The clamped range, or noRange() for an invalid range.
+    [[nodiscard]] constexpr auto clampedTo(Count bounds) const noexcept -> IntegerUnitRange {
+        if (!isValid()) {
+            return noRange();
+        }
+        if (bounds.isInfinite()) {
+            return *this;
+        }
+        if (!_index.isWithin(bounds)) {
+            return emptyAt(Index::end(bounds));
+        }
+
+        const auto availableLength = bounds.remainingFrom(_index);
+        if (_length.isInfinite() || _length > availableLength) {
+            return IntegerUnitRange{_index, availableLength};
+        }
+        return *this;
     }
     /// Resolve relative coordinates at origin exactly, or return noRange() on failure.
     [[nodiscard]] constexpr auto toAbsolute(Index origin) const noexcept -> IntegerUnitRange {

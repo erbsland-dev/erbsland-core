@@ -27,7 +27,7 @@ public: // implement DisplayTextData
 private:
     static const std::array<::erbsland::i18n::impl::DisplayTextDomainEntry, 14> cEntries0; ///< Domain entries.
     static const std::array<::erbsland::i18n::impl::DisplayTextDomainEntry, 1> cEntries1; ///< Domain entries.
-    static const std::array<::erbsland::i18n::impl::DisplayTextDomainEntry, 126> cEntries2; ///< Domain entries.
+    static const std::array<::erbsland::i18n::impl::DisplayTextDomainEntry, 127> cEntries2; ///< Domain entries.
     static const std::array<::erbsland::i18n::impl::DisplayTextDomain, 3> cDomains; ///< Sorted domains.
 };
 // clang-format on

@@ -29,7 +29,7 @@ constexpr std::array<::erbsland::i18n::impl::DisplayTextDomainEntry, 1> DisplayT
     {"last_error_dump_title"_el, "Recent Error Log Entries"_el},
 }};
 
-constexpr std::array<::erbsland::i18n::impl::DisplayTextDomainEntry, 126> DisplayTextCore::cEntries2{{
+constexpr std::array<::erbsland::i18n::impl::DisplayTextDomainEntry, 127> DisplayTextCore::cEntries2{{
     {"application_name_fallback"_el, "application"_el},
     {"argument_index_label"_el, "Argument"_el},
     {"author_label"_el, "Author"_el},
@@ -111,6 +111,7 @@ constexpr std::array<::erbsland::i18n::impl::DisplayTextDomainEntry, 126> Displa
     {"options_heading"_el, "Options"_el},
     {"options_placeholder"_el, "options"_el},
     {"positional_flag_definition_description"_el, "{} is positional, but positional arguments cannot be flags."_el},
+    {"positionals_heading"_el, "Positionals"_el},
     {"required_argument_is_missing_title"_el, "Required argument is missing"_el},
     {"required_option_is_missing_title"_el, "Required option is missing"_el},
     {"see_also_heading"_el, "See Also"_el},

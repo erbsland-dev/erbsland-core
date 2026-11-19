@@ -10,6 +10,8 @@ Worker Pools
 It supports standard futures without an event loop and optional typed completion callbacks on one owner loop.
 Pools are independent of Core's internal I/O and coroutine workers, so application work can wait for those services
 without consuming their execution capacity.
+For a walkthrough of the same batch using callbacks and futures, see
+:doc:`/topics/event/processing_work_with_a_worker_pool`.
 
 Procedural Work
 ===============
@@ -120,7 +122,7 @@ Every callback executes on the owner loop, never on a worker.
 .. erbsland-demo::
     :source: util/WorkerPool/EventDelivery.cpp
     :exec: util/worker_pool --demo EventDelivery
-    :sha256: 40e6689ade0fbe65022ff812680d9aaba5358be53217f4633b778cdd3ad02166
+    :sha256: 4d2b7b084f59f558f5e44320c6b368bf1828845b9154fad49ab67d55d241d1c9
 
 .. code-block:: cpp
 
@@ -128,7 +130,7 @@ Every callback executes on the owner loop, never on a worker.
     /// Keep the pool alive until its final event; quit closes admission while accepted
     /// computations and their completion callbacks finish normally.
     void eventDelivery() {
-        const auto loop = el::EventLoop::create();
+        const auto loop = el::EventLoop::create(el::EventLoopOptions{}.setErrorPolicy(el::EventLoopErrorPolicy::Quit));
         auto workers = el::WorkerPoolPtr{};
 
         loop->invoke([&]() -> void {
@@ -153,6 +155,9 @@ Every callback executes on the owner loop, never on a worker.
         });
 
         loop->run();
+        if (const auto error = loop->takeError()) {
+            std::rethrow_exception(error);
+        }
         workers->join();
     }
 

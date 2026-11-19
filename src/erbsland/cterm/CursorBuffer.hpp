@@ -5,6 +5,8 @@
 #include "CursorWriter.hpp"
 #include "RemappedBuffer.hpp"
 
+#include "impl/TerminalDefaults.hpp"
+
 #include <functional>
 #include <utility>
 
@@ -57,8 +59,8 @@ public:
         _fillChar(fillChar) {
         validateFillChar(_fillChar);
     }
-    /// Create a new cursor buffer with a default size of 80x25 and overflow mode `Shift`.
-    CursorBuffer() : CursorBuffer{block::Size{80, 25}, OverflowMode::Shift} {}
+    /// Create a new cursor buffer with a default size of 120x25 and overflow mode `Shift`.
+    CursorBuffer() : CursorBuffer{impl::cDefaultTerminalSize, OverflowMode::Shift} {}
 
     /// Copy content and cursor state without copying the source observer.
     /// @param other Source buffer.

@@ -457,7 +457,8 @@ public:
             const auto rendered = el::err::DiagnosticHelper{error}.toDocument().toString();
             REQUIRE(rendered.contains("ZIP archive could not be committed"_el));
             REQUIRE(rendered.contains("Validating the replacement"_el));
-            REQUIRE(rendered.contains(destination.toString()));
+            REQUIRE_EQUAL(error.context().destinationPath(), destination);
+            REQUIRE(rendered.contains("archive.zip"_el));
             REQUIRE(rendered.contains("destination must be absent or a regular file"_el));
         }
         REQUIRE(destination.info().isDirectory());

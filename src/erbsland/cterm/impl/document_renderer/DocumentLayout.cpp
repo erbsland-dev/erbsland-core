@@ -59,33 +59,29 @@ void DocumentLayout::appendParagraph(const RenderBlock &block) {
         content.append(*block.listPrefix());
     }
     content.append(block.content());
-    auto options = paragraphOptions(block);
-    auto layout =
+    const auto sourceText = BlockString{content.text()};
+    const auto options = paragraphOptions(block);
+    const auto layout =
         paragraph::Layout{
-            content.text(), contentWidth, options, paragraph::LayoutNewlineMode::HardLineBreak, &content.semantics()}
+            sourceText, contentWidth, options, paragraph::LayoutNewlineMode::HardLineBreak, &content.semantics()}
             .build();
     if (!layout.valid()) {
-        appendContentLine(block, content.text());
+        appendContentLine(block, sourceText);
         return;
     }
     if (layout.empty()) {
         appendContentLine(block, BlockString{});
         return;
     }
-    auto materializationWidth = contentWidth;
+    auto printer = paragraph::Printer{0, contentWidth, layout, sourceText, options, BlockStyle::reset()};
     for (const auto &line : layout.lines()) {
-        materializationWidth = std::max(materializationWidth, line.textWidth());
-    }
-    auto buffer = CursorBuffer{
-        block::Size{materializationWidth, 1},
-        CursorBuffer::OverflowMode::ExpandThenWrap,
-        block::Size{materializationWidth, CursorBuffer::cMaximumSize.height().toRawValue()}};
-    const auto lineCount =
-        paragraph::Printer{
-            buffer, 0, contentWidth, options.alignment(), layout, content.text(), options, options.backgroundMode()}
-            .print();
-    for (auto y = 0; y < lineCount; ++y) {
-        appendContentLine(block, trimmedLine(buffer, y));
+        auto builder = beginContentLine(block);
+        printer.emitLine(line, [&builder](const Block &character) -> void {
+            if (character.displayWidth() > 0) {
+                builder.append(character);
+            }
+        });
+        _lines.push_back(builder.takeString());
     }
 }
 
@@ -149,14 +145,19 @@ void DocumentLayout::appendGap(const int count, const BlockString &prefix) {
 }
 
 void DocumentLayout::appendContentLine(const RenderBlock &block, const BlockString &content) {
-    _builder.clear();
-    _builder.append(block.framePrefix());
-    const auto leftMargin = positive(block.indents().margins().horizontal().leading());
-    if (leftMargin > 0) {
-        _builder.append(BlockStringEditor{BlockCount::fromSizeT(static_cast<std::size_t>(leftMargin)), Block::space()});
+    auto builder = beginContentLine(block);
+    builder.append(content);
+    _lines.push_back(builder.takeString());
+}
+
+auto DocumentLayout::beginContentLine(const RenderBlock &block) -> BlockStringBuilder {
+    auto builder = BlockStringBuilder{};
+    builder.append(block.framePrefix());
+    const auto margin = block.indents().margins().horizontal().leading().toRawValue();
+    for (auto column = 0; column < margin; ++column) {
+        builder.append(Block::space());
     }
-    _builder.append(content);
-    _lines.push_back(_builder.toString());
+    return builder;
 }
 
 auto DocumentLayout::paragraphOptions(const RenderBlock &block) const -> ParagraphOptions {
@@ -178,23 +179,6 @@ auto DocumentLayout::availableContentWidth(const RenderBlock &block) const noexc
     const auto occupiedWidth =
         block.framePrefix().displayWidth() + block.frameRightMargin() + margins.extent().toRawValue();
     return std::max(_width - occupiedWidth, 1);
-}
-
-auto DocumentLayout::trimmedLine(const CursorBuffer &buffer, const int y) -> BlockString {
-    auto result = BlockStringEditor{};
-    auto lastContent = -1;
-    for (auto x = 0; x < buffer.size().width().toRawValue(); ++x) {
-        const auto &character = buffer.get(block::Position{x, y});
-        result.append(character);
-        if (character != buffer.fillChar()) {
-            lastContent = x;
-        }
-    }
-    if (lastContent + 1 < buffer.size().width().toRawValue()) {
-        result =
-            result.slice(BlockRange{BlockIndex{}, BlockCount::fromSizeT(static_cast<std::size_t>(lastContent + 1))});
-    }
-    return BlockString{result};
 }
 
 auto DocumentLayout::positive(const block::Coordinate value) noexcept -> int {

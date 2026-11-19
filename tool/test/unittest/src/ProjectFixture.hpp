@@ -57,7 +57,8 @@ protected: // fixtures
         const std::function<void(const el::conf::ValuePtr &)> &action = {},
         const std::function<void(TestToolApplication &)> &registration = {},
         const el::String &commandName = "probe"_el,
-        const el::StringList &extraOptions = {}) -> int {
+        const el::StringList &extraOptions = {},
+        const bool selectProject = true) -> int {
         const auto output = el::stream::AnyStringBuilderStream::create();
         const auto error = el::stream::AnyStringBuilderStream::create();
         const auto redirect = el::stream::redirectStandardStreams(output, error);
@@ -85,7 +86,11 @@ protected: // fixtures
         for (const auto &option : extraOptions) {
             storage.emplace_back(el::StringConverter{option}.toStdString());
         }
-        auto arguments = std::vector<char *>{executable, command.data(), projectOption, project.data()};
+        auto arguments = std::vector<char *>{executable, command.data()};
+        if (selectProject) {
+            arguments.push_back(projectOption);
+            arguments.push_back(project.data());
+        }
         for (auto &option : storage) {
             arguments.emplace_back(option.data());
         }

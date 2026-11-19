@@ -54,8 +54,9 @@ public: // basic properties.
 
 public: // local change detection
     /// Digest this value's name, type, contents, and descendants in configuration order.
-    /// The digest excludes ancestor paths, source locations, and validation metadata. It is a local change detector,
-    /// with no compatibility guarantee across platforms or library versions.
+    /// The digest excludes ancestor paths, source locations, and validation metadata. For the same stored value tree,
+    /// hash algorithm, and library version, supported 64-bit platforms and compilers produce the same digest.
+    /// The digest format may change between library versions.
     /// @param algorithm The fixed-output hash algorithm to use.
     /// @return The digest of the current parsed value tree.
     /// @seedoc{/reference/conf/configuration_language}

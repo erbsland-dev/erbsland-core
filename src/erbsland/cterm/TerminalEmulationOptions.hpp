@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "impl/TerminalDefaults.hpp"
+
 #include "../block/Coordinate.hpp"
 #include "../block/Size.hpp"
 
@@ -44,11 +46,11 @@ public: // accessors
     }
 
 private:
-    block::Size _size{80, 25};                  ///< Initial screen dimensions.
-    block::Coordinate _scrollbackLimit{10'000}; ///< Maximum retained scrollback rows.
-    block::Coordinate _tabWidth{8};             ///< Horizontal tab interval.
-    bool _autoWrap{true};                       ///< Initial right-edge wrapping state.
-    bool _lineFeedReturnsToColumnZero{true};    ///< LF also performs CR.
+    block::Size _size{impl::cDefaultTerminalSize}; ///< Initial screen dimensions.
+    block::Coordinate _scrollbackLimit{10'000};    ///< Maximum retained scrollback rows.
+    block::Coordinate _tabWidth{8};                ///< Horizontal tab interval.
+    bool _autoWrap{true};                          ///< Initial right-edge wrapping state.
+    bool _lineFeedReturnsToColumnZero{true};       ///< LF also performs CR.
 };
 
 }

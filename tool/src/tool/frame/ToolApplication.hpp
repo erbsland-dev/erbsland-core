@@ -120,7 +120,15 @@ private: // source and command registration
     /// Register and validate one task instance, sharing ownership with the command registry when applicable.
     void registerTask(PreCommitTaskPtr task);
     /// Run the common command preparation lifecycle with explicitly selected options and logging.
-    void prepareTool(Tool &tool, const el::OptionValuesPtr &values, const el::LogStreamPtr &log);
+    /// @param tool The command to prepare.
+    /// @param values Parsed command-line options.
+    /// @param log Stream for this invocation.
+    /// @param configuration The repository configuration, empty for standalone commands.
+    void prepareTool(
+        Tool &tool,
+        const el::OptionValuesPtr &values,
+        const el::LogStreamPtr &log,
+        const el::conf::DocumentPtr &configuration);
     /// Parse a registered command with no command-specific arguments, applying declared defaults.
     [[nodiscard]] auto defaultToolOptions(const Tool &tool) const -> el::OptionValuesPtr;
     /// Require registration to precede command-line processing.
@@ -182,6 +190,9 @@ private: // source and command registration
     /// Checks the identifier, title and description.
     /// @param tool Shared pointer to the tool module to validate.
     static void validateToolMeta(const ToolPtr &tool);
+    /// Validate project selection and start the services needed by the selected command.
+    /// @param requiresProject Whether to initialize repository services in addition to logging.
+    void initializeCommandServices(bool requiresProject);
     /// Initialize the logging system.
     void initializeLogging();
     /// Build the rendering schema with resolved defaults and header constraints.

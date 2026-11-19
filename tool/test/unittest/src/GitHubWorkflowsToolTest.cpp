@@ -3,6 +3,7 @@
 #include "MaintenanceProjectFixture.hpp"
 
 #include <erbsland/PathInfo.hpp>
+#include <erbsland/StringTransformations.hpp>
 
 SKIP_BY_DEFAULT()
 TAGS(FullRun)
@@ -83,7 +84,7 @@ public:
         prepareWorkflow();
         write(".fixture-tags"_el, "cccccccccccccccccccccccccccccccccccccccc\trefs/tags/v3.0.0\n"_el);
         REQUIRE_NOT_EQUAL(workflow(), 0);
-        REQUIRE(_errorText.contains("no stable tag"_el));
+        REQUIRE(el::text::toAsciiWhitespaceSimplified(_errorText).contains("no stable tag"_el));
         write(".fixture-tags"_el, "malformed\n"_el);
         REQUIRE_NOT_EQUAL(workflow(), 0);
         REQUIRE(_errorText.contains("Invalid Git Tag Response"_el));

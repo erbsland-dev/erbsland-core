@@ -14,6 +14,7 @@
 
 #include "../../text/String.hpp"
 #include "../../text/StringEditor.hpp"
+#include "../../text/StringList.hpp"
 
 #include <vector>
 
@@ -22,6 +23,14 @@ namespace erbsland::options::impl {
 /// Shared model for option help, version and error rendering.
 /// @tested{OptionDocumentTest}
 class OptionDisplayModel final {
+private:
+    /// A visible option set paired with its resolved help sorting.
+    /// @tested{OptionDocumentTest}
+    struct VisibleOptionSet {
+        OptionSetPtr set;          ///< The visible set.
+        OptionHelpSorting sorting; ///< The effective sorting of the set.
+    };
+
 public:
     /// Create a display model for the given options and module name.
     OptionDisplayModel(OptionsPtr options, const text::String &moduleName);
@@ -48,10 +57,8 @@ public:
     [[nodiscard]] auto titleText() const -> text::String;
     /// Get the selected help object.
     [[nodiscard]] auto selectedHelp() const -> const OptionHelp *;
-    /// Get the visible option sets for the selected scope.
-    [[nodiscard]] auto visibleOptionSets() const -> std::vector<OptionSetPtr>;
-    /// Get display rows for options in the selected scope.
-    [[nodiscard]] auto optionRows() const -> std::vector<OptionDisplayRow>;
+    /// Get positional argument rows in command-line order.
+    [[nodiscard]] auto positionalRows() const -> std::vector<OptionDisplayRow>;
     /// Get grouped display rows for options in the selected scope.
     [[nodiscard]] auto optionGroups() const -> std::vector<OptionDisplayGroup>;
     /// Get display rows for modules.
@@ -62,6 +69,8 @@ public:
     [[nodiscard]] auto usagePositionalOptions() const -> std::vector<OptionPtr>;
     /// Create the display title for one option.
     [[nodiscard]] static auto optionTitle(const OptionPtr &option) -> text::String;
+    /// Get the short aliases followed by the long aliases, in declaration order within each kind.
+    [[nodiscard]] static auto displayAliases(const Option &option) -> text::StringList;
     /// Get the brief overview text for one option.
     /// @param option Definition to display.
     /// @param options Owning root, used to identify actual built-in definitions.
@@ -96,8 +105,14 @@ private:
         -> text::String;
     /// Append a formatted meta placeholder to text being built.
     static void appendMetaPlaceholder(text::StringEditor &result, const text::String &placeholder);
-    /// Get the display title for an option set.
-    [[nodiscard]] static auto optionSetTitle(const OptionSetPtr &optionSet) -> text::String;
+    /// Get the effective sorting at the options root.
+    [[nodiscard]] auto rootSorting() const noexcept -> OptionHelpSorting;
+    /// Get the effective sorting for the selected root or module page.
+    [[nodiscard]] auto pageSorting() const noexcept -> OptionHelpSorting;
+    /// Get the visible option sets and their parent policies in definition order.
+    [[nodiscard]] auto visibleOptionSets() const -> std::vector<VisibleOptionSet>;
+    /// Sort a list of visible regular options using the selected policy.
+    static void sortOptions(std::vector<OptionPtr> &options, OptionHelpSorting sorting);
 
     /// Find a module by its command-line name.
     [[nodiscard]] auto findModule(const text::String &moduleName) const -> OptionModulePtr;
@@ -118,8 +133,6 @@ private:
     [[nodiscard]] auto visibleModule(const OptionHelp &help) const noexcept -> bool;
     /// Create display rows for an option's choices.
     [[nodiscard]] auto choiceRows(const OptionPtr &option) const -> std::vector<OptionDisplayRow>;
-    /// Create a sortable display key for an option.
-    [[nodiscard]] auto optionSortKey(const OptionPtr &option) const -> text::String;
 
 private:
     OptionsPtr _options;     ///< The options root to render.

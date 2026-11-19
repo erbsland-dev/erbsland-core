@@ -47,7 +47,7 @@ auto RegularStringLiteralRule::literalEnd(const SourceIndex &source, const el::c
 auto RegularStringLiteralRule::isParameterNameArgument(const SourceIndex &source, el::ItemIndex tokenIndex) const
     -> bool {
     const auto &tokens = source.tokens();
-    auto closing = el::List<el::String>{};
+    auto closing = el::StringList{};
     auto foundComma = false;
     while (!tokenIndex.isZero()) {
         --tokenIndex;

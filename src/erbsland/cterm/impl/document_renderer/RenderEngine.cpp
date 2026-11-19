@@ -74,7 +74,10 @@ void RenderEngine::appendNode(const TextNode &node, const RenderContext &context
         return;
     case TextNodeType::BulletListItem:
     case TextNodeType::NumberedListItem:
-        appendListItemWithoutMarker(node, context);
+        appendMixedChildren(node, context);
+        return;
+    case TextNodeType::LineBreak:
+        emitBlock(paragraph(BlockString{}, ruleFor(node), context));
         return;
     case TextNodeType::Paragraph:
     case TextNodeType::DefinitionTerm:
@@ -90,7 +93,6 @@ void RenderEngine::appendNode(const TextNode &node, const RenderContext &context
     case TextNodeType::CodeLineMarker:
     case TextNodeType::Unsupported:
     case TextNodeType::Error:
-    case TextNodeType::LineBreak:
     case TextNodeType::Text:
     case TextNodeType::Emphasis:
     case TextNodeType::Strong:
@@ -135,13 +137,7 @@ void RenderEngine::appendContainer(const TextNode &node, const RenderContext &co
         std::nullopt,
         rule.linePrefix().has_value() ? std::optional<BlockString>{*rule.linePrefix()} : std::nullopt);
     const auto childContext = context.withContainer(rule);
-    for (const auto &child : node.children()) {
-        if (child->type().renderClass() == TextNodeType::RenderClass::Inline ||
-            child->type().renderClass() == TextNodeType::RenderClass::Empty) {
-            continue;
-        }
-        appendNode(*child, childContext);
-    }
+    appendMixedChildren(node, childContext);
     closeScope();
     if (rule.suffix().has_value()) {
         emitBlock(paragraph(*rule.suffix(), TerminalDocumentStyleRule{}, context));

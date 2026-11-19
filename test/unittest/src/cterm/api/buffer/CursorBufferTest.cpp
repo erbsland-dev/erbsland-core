@@ -49,10 +49,10 @@ public:
         REQUIRE_EQUAL(calls, 11);
     }
 
-    void testDefaultConstructionCreatesAn80x25Buffer() {
+    void testDefaultConstructionCreatesA120x25Buffer() {
         const auto buffer = CursorBuffer{};
 
-        REQUIRE_EQUAL(buffer.size(), (block::Size{80, 25}));
+        REQUIRE_EQUAL(buffer.size(), (block::Size{120, 25}));
         REQUIRE_EQUAL(buffer.color(), Color::reset());
         REQUIRE_EQUAL(buffer.fillChar(), Block::space());
     }

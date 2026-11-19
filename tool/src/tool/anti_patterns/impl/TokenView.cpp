@@ -32,7 +32,7 @@ auto TokenView::matches(el::ItemIndex index, const std::initializer_list<el::Str
 }
 
 auto TokenView::closing(const el::ItemIndex opening) const -> el::ItemIndex {
-    auto stack = el::List<el::String>{};
+    auto stack = el::StringList{};
     for (auto index = opening; index.isWithin(count()); ++index) {
         const auto &token = at(index);
         if (token.kind() == el::cpp::CppToken::Kind::Directive) {

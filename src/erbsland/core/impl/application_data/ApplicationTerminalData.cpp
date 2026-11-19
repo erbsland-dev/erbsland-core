@@ -3,6 +3,7 @@
 #include "ApplicationTerminalData.hpp"
 
 #include "../../../cterm/BlockStyle.hpp"
+#include "../../../cterm/impl/document_renderer/Renderer.hpp"
 #include "../../../cterm/Terminal.hpp"
 #include "../../../cterm/TerminalDocumentRenderer.hpp"
 #include "../../../cterm/TerminalStream.hpp"
@@ -10,7 +11,6 @@
 #include "../../../stream/StandardStreams.hpp"
 #include "../../../stream/TextOutputStream.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../text/PlainTextRenderer.hpp"
 #include "../../../text/TextDocument.hpp"
 #include "../../../text/TextNode.hpp"
 
@@ -65,8 +65,9 @@ void ApplicationTerminalData::renderSystemOutput(const text::TextDocument &docum
         return;
     }
     const auto output = plainSystemOutputStream(document);
-    auto renderer = text::PlainTextRenderer{document};
-    output->writeLine(renderer.build());
+    auto builder = text::AnyStringBuilder{};
+    cterm::impl::document_renderer::Renderer{_systemOutputStyle}.appendPlainText(builder, *document.root());
+    output->writeLine(builder.toString());
     output->flush();
 }
 

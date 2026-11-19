@@ -175,6 +175,19 @@ public:
         REQUIRE(length.isOne());
     }
 
+    void testLengthSteps() {
+        static_assert(ByteCount{2}.incremented() == ByteCount{3});
+        static_assert(ByteCount{2}.decremented() == ByteCount{1});
+        static_assert(ByteCount::maximum().incremented().isMaximum());
+        static_assert(ByteCount::zero().decremented().isZero());
+        static_assert(ByteCount::infinite().incremented().isInfinite());
+        static_assert(ByteCount::infinite().decremented().isInfinite());
+
+        auto length = ByteCount::infinite();
+        REQUIRE(length.increment().decrement().isInfinite());
+        REQUIRE(length.isInfinite());
+    }
+
     void testLengthScalarOperators() {
         using el::math::SaturatingInteger;
 
@@ -227,6 +240,23 @@ public:
         REQUIRE(ByteOffset::minimum().subtracted(ByteOffset::one()).isMinimum());
         REQUIRE_THROWS(ByteOffset::maximum().addOrThrow(ByteOffset::one()));
         REQUIRE_THROWS(ByteOffset::minimum().subtractOrThrow(ByteOffset::one()));
+    }
+
+    void testOffsetStepsAndNegation() {
+        static_assert(ByteOffset{-2}.incremented() == ByteOffset{-1});
+        static_assert(ByteOffset{-2}.decremented() == ByteOffset{-3});
+        static_assert(ByteOffset::maximum().incremented().isMaximum());
+        static_assert(ByteOffset::minimum().decremented().isMinimum());
+
+        auto offset = ByteOffset{-2};
+        REQUIRE_EQUAL(offset.decrement().increment(), ByteOffset{-2});
+        offset.negate();
+        REQUIRE_EQUAL(offset, ByteOffset{2});
+        offset = ByteOffset::minimum();
+        REQUIRE(offset.decrement().isMinimum());
+        offset.negate();
+        REQUIRE(offset.isMaximum());
+        REQUIRE(offset.increment().isMaximum());
     }
 
     void testOffsetScalarOperators() {
@@ -364,6 +394,8 @@ public:
         static_assert(ByteIndex{uint64_t{1} << 63}.uncheckedMoved(ByteOffset::minimum()).isZero());
         static_assert(ByteCount{9}.uncheckedAdded(ByteCount{3}) == ByteCount{12});
         static_assert(ByteCount{9}.uncheckedSubtracted(ByteCount{3}) == ByteCount{6});
+        static_assert(ByteCount::maximum().decremented().uncheckedIncremented().isMaximum());
+        static_assert(ByteCount::one().uncheckedDecremented().isZero());
         auto index = ByteIndex::maximum().decremented();
         REQUIRE_EQUAL(index.uncheckedIncrement(), ByteIndex::maximum());
         REQUIRE_EQUAL(index.uncheckedDecrement(), ByteIndex::maximum().decremented());
@@ -569,6 +601,55 @@ public:
         REQUIRE_EQUAL(valid.moved(ByteOffset::minimum()).beginIndex(), ByteIndex{});
         REQUIRE_EQUAL((valid - ByteOffset::minimum()).endIndex(), ByteIndex{0x8000000000000007ULL});
         REQUIRE(ByteRange::all().contains(ByteIndex::maximum()));
+    }
+
+    void testRangeTranslationOperators() {
+        constexpr auto range = ByteRange{ByteIndex{4}, ByteCount{3}};
+        static_assert(range + ByteCount{2} == ByteRange{ByteIndex{6}, ByteCount{3}});
+        static_assert(range - ByteCount{2} == ByteRange{ByteIndex{2}, ByteCount{3}});
+        static_assert([range] {
+            auto translated = range;
+            translated += ByteCount{2};
+            translated -= ByteOffset{1};
+            translated += ByteOffset{2};
+            translated -= ByteCount{3};
+            return translated == range;
+        }());
+
+        REQUIRE_EQUAL((range + ByteCount::infinite()).endIndex(), ByteIndex::maximum());
+        REQUIRE_EQUAL((range - ByteCount::infinite()).beginIndex(), ByteIndex::zero());
+        REQUIRE((ByteRange::noRange() + ByteCount{2}).isNoRange());
+    }
+
+    void testRangeTranslationPredicates() {
+        constexpr auto range = ByteRange{ByteIndex::maximum().decremented(), ByteCount::one()};
+        static_assert(!range.beginIndex().wouldAdvanceSaturate(ByteCount::one()));
+        static_assert(range.wouldAdvanceSaturate(ByteCount::one()));
+        static_assert(range.wouldMoveSaturate(ByteOffset::one()));
+        static_assert(range.wouldRetreatSaturate(ByteCount::infinite()));
+        static_assert(!range.wouldMoveSaturate(ByteOffset::minimum()));
+        static_assert(ByteRange::all().wouldRetreatSaturate(ByteCount::one()));
+        static_assert(!ByteRange::all().wouldAdvanceSaturate(ByteCount::maximum()));
+        static_assert(ByteRange::noRange().wouldMoveSaturate(ByteOffset::zero()));
+
+        REQUIRE_THROWS(range.advancedOrThrow(ByteCount::one()));
+        REQUIRE_THROWS(range.retreatedOrThrow(ByteCount::infinite()));
+        REQUIRE_THROWS(range.movedOrThrow(ByteOffset::one()));
+        REQUIRE_EQUAL(range.movedOrThrow(ByteOffset::minimum()), range.moved(ByteOffset::minimum()));
+    }
+
+    void testRangeFinitenessAndClamping() {
+        static_assert(ByteRange::empty().isFinite());
+        static_assert(ByteRange::noRange().isFinite());
+        static_assert(!ByteRange::all().isFinite());
+        static_assert(!ByteRange::fromBegin(ByteIndex::noIndex()).isFinite());
+
+        auto range = ByteRange::fromBegin(ByteIndex{2});
+        REQUIRE_EQUAL(range.clampTo(ByteCount{4}), (ByteRange{ByteIndex{2}, ByteCount{2}}));
+        REQUIRE_EQUAL(range.clampTo(ByteCount::infinite()), (ByteRange{ByteIndex{2}, ByteCount{2}}));
+        REQUIRE_EQUAL(range.clampTo(ByteCount::one()), ByteRange::emptyAt(ByteIndex::one()));
+        range = ByteRange{ByteIndex::maximum(), ByteCount::one()};
+        REQUIRE(range.clampTo(ByteCount::infinite()).isNoRange());
     }
 
     void testRangeIntersectionAndContainment() {

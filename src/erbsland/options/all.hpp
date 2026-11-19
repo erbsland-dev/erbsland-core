@@ -17,6 +17,7 @@
 #include "OptionErrorReason.hpp"
 #include "OptionFlag.hpp"
 #include "OptionHelp.hpp"
+#include "OptionHelpSorting.hpp"
 #include "OptionHelpVisibility.hpp"
 #include "OptionInteger.hpp"
 #include "OptionManager.hpp"

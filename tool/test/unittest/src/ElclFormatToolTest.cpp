@@ -192,6 +192,22 @@ form: "yes_no"
         REQUIRE_EQUAL(run({"--project"_el, _root.toString(), file.toString()}), 1);
         REQUIRE_EQUAL(run({"--project"_el, ""_el, file.toString()}), 1);
     }
+    void testSharedLoggingPreservesOutputOnly() {
+        const auto directory = external();
+        const auto file = directory / "settings.elcl"_el;
+        const auto logFile = directory / "format.log"_el;
+        const auto source = "[app]\nvalue:1\n"_el;
+        writeFile(file, source);
+        const auto expected = el::conf::syntax::Formatter{}.format(el::conf::syntax::Parser{}.parseText(source)).text();
+        REQUIRE_EQUAL(
+            run({"--output-only"_el, "--verbose"_el, "--log-file"_el, logFile.toString(), file.toString()}), 0);
+        REQUIRE_EQUAL(_outputText, expected);
+        REQUIRE(_errorText.isEmpty());
+
+        REQUIRE_EQUAL(run({"--output-only"_el, "--log-file"_el, directory.toString(), file.toString()}), 1);
+        REQUIRE(_errorText.contains("Invalid Log File"_el));
+        REQUIRE_EQUAL(file.content().readTextOrThrow(), source);
+    }
     void testInvalidInputPreventsPartialWrites() {
         const auto directory = external();
         const auto file = directory / "settings.elcl"_el;

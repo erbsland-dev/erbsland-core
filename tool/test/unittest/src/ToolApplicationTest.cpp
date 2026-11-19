@@ -24,7 +24,33 @@ private:
         }
     };
 
+    class StandaloneProbe final : public NoConfigurationTool {
+    public: // implement Tool
+        auto requiresProject() const noexcept -> bool override { return false; }
+        void execute() override {
+            log()->trace("standalone trace entry"_el);
+            NoConfigurationTool::execute();
+        }
+    };
+
 public:
+    void testStandaloneLoggingUsesSharedOptions() {
+        const auto logFile = _root / "standalone.log"_el;
+        const auto action = [this](const el::conf::ValuePtr &section) -> void {
+            REQUIRE_FALSE(section);
+            REQUIRE_THROWS_AS(el::LogicFailure, tool::frame::app().files());
+        };
+        REQUIRE_EQUAL(
+            runTool<StandaloneProbe>(
+                action, {}, "probe"_el, el::StringList{"--log-file"_el, logFile.toString()}, false),
+            0);
+        REQUIRE_FALSE(_outputText.contains("standalone trace entry"_el));
+        REQUIRE(logFile.content().readTextOrThrow().contains("standalone trace entry"_el));
+
+        REQUIRE_EQUAL(runTool<StandaloneProbe>(action, {}, "probe"_el, el::StringList{"--verbose"_el}, false), 0);
+        REQUIRE(_outputText.contains("standalone trace entry"_el));
+    }
+
     void testCanonicalCommandDispatchKeepsConfigurationIdentity() {
         write("tool/conf/erbsland-core-tool.elcl"_el, "[rendering]\n[test_probe]\nmessage: \"configured\"\n"_el);
         for (const auto &command : el::StringList{"test-probe"_el, "test_probe"_el}) {

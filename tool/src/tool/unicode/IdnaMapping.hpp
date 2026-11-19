@@ -43,9 +43,9 @@ private:
     [[noreturn]] void throwError(const el::String &description, el::LineIndex line = {}) const;
 
 private:
-    el::List<UcdRecord> _records;       ///< Ordered mapping ranges with source fields.
-    el::List<el::String> _replacements; ///< Decoded replacements, indexed with the ranges.
-    el::String _source;                 ///< Mapping source path.
+    el::List<UcdRecord> _records; ///< Ordered mapping ranges with source fields.
+    el::StringList _replacements; ///< Decoded replacements, indexed with the ranges.
+    el::String _source;           ///< Mapping source path.
 };
 
 }

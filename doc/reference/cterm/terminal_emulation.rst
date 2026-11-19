@@ -44,7 +44,7 @@ Leaving with mode 47 or 1049 retains the alternate contents for inspection.
 Options and Supported Controls
 ==============================
 
-Defaults are 80 columns, 25 initial rows, a scrollback limit of 10,000 rows, automatic wrapping, eight-column tabs, and
+Defaults are 120 columns, 25 initial rows, a scrollback limit of 10,000 rows, automatic wrapping, eight-column tabs, and
 LF returning to column zero.
 Screen dimensions, scrollback limit, and tab width accept values from 1 through 10,000. The effective maximum height is
 at least the initial height, independently of setter order.

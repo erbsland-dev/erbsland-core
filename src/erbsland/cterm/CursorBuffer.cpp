@@ -294,16 +294,8 @@ auto CursorBuffer::printParagraphImpl(const BlockString &paragraph, const Paragr
         return lineCount;
     }
     const auto lineCount =
-        impl::paragraph::Printer{
-            *this,
-            x1.toRawValue(),
-            width.toRawValue(),
-            options.alignment(),
-            layout,
-            paragraph,
-            options,
-            options.backgroundMode()}
-            .print();
+        impl::paragraph::Printer{x1.toRawValue(), width.toRawValue(), layout, paragraph, options, style()}.printTo(
+            *this);
     if (options.paragraphSpacing() == ParagraphSpacing::DoubleLine) {
         writeLineBreak();
         return lineCount + 1;

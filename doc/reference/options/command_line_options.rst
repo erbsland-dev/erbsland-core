@@ -312,12 +312,41 @@ order.
 Only sets with visible option rows contribute headings or descriptions; empty, description-only and fully filtered sets
 are omitted, including their introductions when another set shares the same heading.
 Root ``Options`` descriptions continue to introduce root help.
+The localized ``Positionals:`` section precedes the named-option groups when the command has visible positional
+arguments.
+It lists arguments in the same definition order as the usage line.
+Help rows list short aliases before long aliases, preserving definition order within each kind.
+Each choice starts four columns to the right of its owner's long alias.
 
 Detail pages start with the brief title, or a localized identifying heading when no title is supplied, followed by a
 separate identity line showing the option aliases, module name, or choice value and owning option.
 Usage, nonempty descriptions, examples and epilogs follow.
 Option and choice details retain relevant generated value and default information.
 ``--help=<module>`` and ``<module> --help`` produce the same full module page, including its option sections.
+
+.. _options-help-sorting:
+
+Help Sorting
+~~~~~~~~~~~~
+
+``Options`` defaults to ``ByLongName``.
+Module and set policies default to ``Inherit`` and follow their owning container.
+At the root, ``Inherit`` resolves to ``ByLongName``.
+
+* ``None`` keeps entries in definition order.
+* ``ByLongName`` orders modules by name, named sections by title, and options by their first long name.
+  Short-only options use their first short name.
+* ``ByShortName`` puts options with short aliases first and sorts them by their first short alias, using the first long
+  alias to break ties. Other entries use name order.
+* ``ByWeight`` uses ascending weights, then the same name order as ``ByLongName``. Weights default to zero.
+
+Name comparisons ignore case.
+Entries with equal sort keys retain their relative definition order.
+The selected page policy orders named section headings and the named options shown explicitly in the usage line.
+For sets sharing a named heading, the first set with visible option rows supplies the section's policy and weight.
+The default Options section uses the page policy or the first explicit sorting override among its contributing sets.
+With a sort mode enabled, the default Options section precedes named sections.
+Positional arguments and choice values appear in definition order.
 
 Choice Help Aliases
 ~~~~~~~~~~~~~~~~~~~
@@ -416,6 +445,7 @@ Interface
 .. doxygentypedef:: erbsland::options::OptionFlags
 .. doxygenclass:: erbsland::options::OptionHelp
     :members:
+.. doxygenenum:: erbsland::options::OptionHelpSorting
 .. doxygenenum:: erbsland::options::OptionHelpVisibility
 .. doxygentypedef:: erbsland::options::OptionInteger
 .. doxygenclass:: erbsland::options::OptionManager

@@ -32,6 +32,12 @@ It explains direct and derived applications, validated configuration, workers in
 parts, with compile-only templates for each startup design.
 The lifecycle continues through completion, managed shutdown, and cleanup.
 
+Driving Event Loops Directly
+============================
+
+:doc:`running_event_loops_directly` shows how a procedural host dispatches ready work, waits for a delayed result in
+short turns, and decides when to stop or close its loop.
+
 Connecting to Event Sources
 ===========================
 
@@ -67,6 +73,14 @@ Processing Work on Event Threads
 through thread joining.
 It compares managed and unmanaged ownership, explains startup and shutdown, and makes success and failure completion
 paths explicit.
+
+Processing Work with a Worker Pool
+==================================
+
+:doc:`processing_work_with_a_worker_pool` follows a batch of independent calculations from submission to its ordered
+results.
+It shows how to deliver the batch to an owner loop, finish pool shutdown, and consume the same results from a future in
+procedural code.
 
 Using Event Loops in Application Parts
 ======================================
@@ -109,20 +123,6 @@ Event Loop Responsiveness and Overload Control
 :doc:`controlling_event_load` explains how callback duration and excess incoming work affect a loop differently.
 It develops bounded chunks, outstanding-request limits, queue capacity policies, and coalesced progress updates, then
 explains blocking admission and how to interpret queue counts.
-
-Processing Work with a Worker Pool
-==================================
-
-:doc:`planned/processing_work_with_a_worker_pool` introduces independent-job scheduling as an alternative to creating
-several dedicated event threads.
-It covers choosing a pool, submitting jobs, and receiving results through event callbacks or procedural futures.
-
-Driving Event Loops Directly
-============================
-
-:doc:`planned/running_event_loops_directly` covers dispatch controlled by a procedural host and standalone worker
-ownership.
-It forms an optional path for applications that need to drive execution themselves.
 
 Creating Event Sources and Notifications
 ========================================

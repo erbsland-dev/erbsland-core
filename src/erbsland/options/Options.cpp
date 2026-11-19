@@ -22,6 +22,7 @@ namespace erbsland::options {
 using namespace text::literals;
 
 Options::Options() : _builtInOptionSet{createBuiltInOptionSet()} {
+    _help.setSorting(OptionHelpSorting::ByLongName);
 }
 
 auto Options::create() -> OptionsPtr {

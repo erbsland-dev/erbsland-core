@@ -57,27 +57,27 @@ void RenderEngine::appendListItem(
             inlineRun.push_back(child);
             continue;
         }
-        appendListItemInlineRun(inlineRun, childContext);
+        appendInlineRun(inlineRun, childContext);
         appendListItemChild(*child, childContext);
     }
-    appendListItemInlineRun(inlineRun, childContext);
+    appendInlineRun(inlineRun, childContext);
     if (!currentListItemHasBlocks()) {
         emitBlock(paragraph(BlockString{}, listItemParagraphRule(), childContext));
     }
     closeScope();
 }
 
-void RenderEngine::appendListItemWithoutMarker(const TextNode &node, const RenderContext &context) {
+void RenderEngine::appendMixedChildren(const TextNode &node, const RenderContext &context) {
     auto inlineRun = std::vector<TextNodePtr>{};
     for (const auto &child : node.children()) {
-        if (child->type().renderClass() == TextNodeType::RenderClass::Inline) {
+        if (child->type().isInline() || (child->type() == TextNodeType::LineBreak && !inlineRun.empty())) {
             inlineRun.push_back(child);
             continue;
         }
-        appendListItemInlineRun(inlineRun, context);
+        appendInlineRun(inlineRun, context);
         appendNode(*child, context);
     }
-    appendListItemInlineRun(inlineRun, context);
+    appendInlineRun(inlineRun, context);
 }
 
 void RenderEngine::appendListItemChild(const TextNode &node, const RenderContext &context) {
@@ -95,7 +95,7 @@ void RenderEngine::appendListItemChild(const TextNode &node, const RenderContext
     appendNode(node, context);
 }
 
-void RenderEngine::appendListItemInlineRun(std::vector<TextNodePtr> &nodes, const RenderContext &context) {
+void RenderEngine::appendInlineRun(std::vector<TextNodePtr> &nodes, const RenderContext &context) {
     if (nodes.empty()) {
         return;
     }
@@ -117,11 +117,13 @@ void RenderEngine::appendTermList(const TextNode &node, const RenderContext &con
     const auto layout = termListLayout(items, node.type() == TextNodeType::FieldList);
     for (const auto &item : items) {
         appendNormalTermItem(item, layout);
-        if (item.node != nullptr) {
+        if (!item.nestedTermLists.empty()) {
             const auto nestedContext = childContext.withContainer(ruleFor(*item.node));
+            openScope(block::Margins{0, 0, 0, item.nameFirstLineIndent + item.name.longAliasOffset});
             for (const auto &nestedTermList : item.nestedTermLists) {
                 appendNode(*nestedTermList, nestedContext);
             }
+            closeScope();
         }
     }
     closeScope();
@@ -151,20 +153,18 @@ auto RenderEngine::collectTermItems(const TextNode &node, const RenderContext &c
         result.push_back(
             TermItemRenderData{
                 child,
-                std::move(name.text),
+                std::move(name),
                 0,
-                name.allowsOptionFirstLineIndent,
-                name.enablesOptionFirstLineIndent,
                 descriptionNode != nullptr ? renderInlineText(*descriptionNode, _style.baseTextStyle(), false)
                                            : InlineContent{},
                 context.resolvedIndents(ruleFor(*child)),
                 std::move(nestedTermLists)});
     }
     const auto useOptionFirstLineIndent = std::ranges::any_of(
-        result, [](const TermItemRenderData &item) noexcept -> bool { return item.enablesOptionFirstLineIndent; });
+        result, [](const TermItemRenderData &item) noexcept -> bool { return item.name.enablesOptionFirstLineIndent; });
     if (useOptionFirstLineIndent) {
         for (auto &item : result) {
-            if (item.allowsOptionFirstLineIndent) {
+            if (item.name.allowsOptionFirstLineIndent) {
                 item.nameFirstLineIndent = cLongOnlyOptionFirstLineIndent;
             }
         }
@@ -180,7 +180,7 @@ auto RenderEngine::termListLayout(const std::vector<TermItemRenderData> &items, 
     auto finalRightMargin = 0;
     for (const auto &item : items) {
         const auto horizontalMargins = item.indents.margins().horizontal();
-        maxNameWidth = std::max(maxNameWidth, item.nameFirstLineIndent + item.name.displayWidth());
+        maxNameWidth = std::max(maxNameWidth, item.nameFirstLineIndent + item.name.text.displayWidth());
         maxDescriptionWidth = std::max(maxDescriptionWidth, item.description.displayWidth());
         finalLeftMargin = std::max(finalLeftMargin, positive(horizontalMargins.leading()));
         finalRightMargin = std::max(finalRightMargin, positive(horizontalMargins.trailing()));
@@ -211,14 +211,14 @@ void RenderEngine::appendNormalTermItem(const TermItemRenderData &item, const Te
     if (item.description.displayWidth() == 0) {
         auto itemIndents = item.indents;
         itemIndents.setFirstLineIndent(itemIndents.firstLineIndent() + item.nameFirstLineIndent);
-        auto block = RenderBlock{BlockKind::Paragraph, item.name, std::move(itemIndents)};
+        auto block = RenderBlock{BlockKind::Paragraph, item.name.text, std::move(itemIndents)};
         emitBlock(std::move(block));
         return;
     }
     const auto localDescriptionColumn =
         std::max(layout.descriptionStartColumn - positive(item.indents.margins().horizontal().leading()), 0);
     if (layout.stacked) {
-        auto nameBlock = RenderBlock{BlockKind::Paragraph, item.name, item.indents};
+        auto nameBlock = RenderBlock{BlockKind::Paragraph, item.name.text, item.indents};
         emitBlock(std::move(nameBlock));
         auto contentIndents = item.indents;
         contentIndents.setLineIndent(contentIndents.lineIndent() + localDescriptionColumn);
@@ -231,7 +231,7 @@ void RenderEngine::appendNormalTermItem(const TermItemRenderData &item, const Te
     itemIndents.setFirstLineIndent(itemIndents.firstLineIndent() + item.nameFirstLineIndent);
     itemIndents.setWrappedLineIndent(localDescriptionColumn);
     auto content = InlineContent{};
-    content.append(item.name);
+    content.append(item.name.text);
     content.append(BlockStringEditor{BlockCount::one(), Block{Char{U'\t'}}});
     content.append(item.description);
     auto block = RenderBlock{BlockKind::Paragraph, std::move(content), std::move(itemIndents)};
@@ -256,6 +256,7 @@ auto RenderEngine::renderTermName(const TextNode &node, const RenderContext &con
     }
     const auto usesOptionNames = node.contains(TextNodeType::OptionName);
     const auto usesOptionMeta = node.contains(TextNodeType::OptionMeta);
+    auto longAliasOffset = std::optional<int>{};
     auto firstOptionName = true;
     for (const auto &child : node.children()) {
         if (usesOptionNames && child->type() == TextNodeType::OptionName) {
@@ -266,6 +267,9 @@ auto RenderEngine::renderTermName(const TextNode &node, const RenderContext &con
                 _blockBuilder.clear();
                 _blockBuilder.appendWithBaseStyle(BlockStringEditor{", "_el}, baseStyle);
                 content.append(_blockBuilder.toString());
+            }
+            if (!longAliasOffset.has_value() && child->contains(TextNodeType::OptionLong)) {
+                longAliasOffset = content.displayWidth();
             }
             content.append(renderInlineText(*child, baseStyle, false));
             firstOptionName = false;
@@ -281,6 +285,7 @@ auto RenderEngine::renderTermName(const TextNode &node, const RenderContext &con
         content.append(_blockBuilder.toString());
     }
     return TermNameRenderData{
+        longAliasOffset.value_or(0),
         std::move(content),
         (usesOptionNames || usesOptionMeta) && !startsWithShortOption,
         startsWithShortOption || (startsWithLongOnlyOption && usesOptionMeta)};

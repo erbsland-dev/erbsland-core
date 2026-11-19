@@ -65,9 +65,6 @@ target_sources(erbsland-core PRIVATE
         NamedFormatParser.cpp
         NamedFormatParser.hpp
         NamedFormatParser_number.cpp
-        PlainTextRenderer.cpp
-        PlainTextRenderer.hpp
-        PlainTextRenderer_fwd.hpp
         PlatformU16StringAccess.hpp
         PlatformU16StringAccess_fwd.hpp
         PlatformU8StringAccess.hpp

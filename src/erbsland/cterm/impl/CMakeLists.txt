@@ -67,6 +67,7 @@ target_sources(erbsland-core PRIVATE
         ReadSecret.hpp
         StandardInput.cpp
         StandardInput.hpp
+        TerminalDefaults.hpp
         TerminalDocumentStyleData.cpp
         TerminalDocumentStyleData.hpp
         TerminalStreamData.cpp

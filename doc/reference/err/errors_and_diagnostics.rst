@@ -166,8 +166,8 @@ Rendering Diagnostic Documents
 
 Use :cpp:class:`PlainTextRenderer <erbsland::text::PlainTextRenderer>` or
 :cpp:func:`TextDocument::toString() <erbsland::text::TextDocument::toString>` for logs and redirected output.
-Plain rendering prefixes the root title with ``Error:``, adds colons to section headings, and indents ordinary section
-content by two spaces, with another two spaces for each cause depth.
+The default system-output style prefixes the root title with ``Error:``, adds colons to section headings, and frames
+each nested cause with a visible border in both plain and styled output.
 Code snippets keep compact indentation and use ``│`` as their gutter.
 
 Use :cpp:class:`TerminalDocumentRenderer <erbsland::cterm::TerminalDocumentRenderer>` for styled terminal output.

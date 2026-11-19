@@ -32,9 +32,10 @@ Definition Types
     OptionEditor, OptionChoiceEditor // fluent option and choice definition editors
     OptionSetManager // shared definition-owning interface of roots, sets, and modules
     OptionChoice, OptionChoices // one accepted choice and its collection
-    OptionHelp // title, description, example, epilog, and visibility
+    OptionHelp // title, description, example, epilog, visibility, sorting, and weight
     OptionType, OptionFlag, OptionFlags // declared value kind and definition flags
     OptionHelpVisibility // inherited or explicit help visibility
+    OptionHelpSorting // inherited, definition-order, alphabetical, or weighted help ordering
     OptionParserFlag, OptionParserFlags // built-in parser behavior flags
 
 Result Types
@@ -106,6 +107,8 @@ Definition Property Patterns
     o.addChoice(text) -> OptionEditor& // add an accepted choice and select choice type
     o.addChoice(text/choice) -> OptionChoiceEditor // append to OptionChoices and edit the accepted choice
     o.setHelp❮Part❯(text) -> OptionChoiceEditor& // fluently update choice help metadata
+    o.setHelpSorting(sorting) // select how a container orders its help entries
+    o.setHelpWeight(weight) // set an entry's priority for weighted help sorting
     o.clearDefaultValue() -> OptionEditor& // remove a configured default
     o.isDisabled()/hasDefaultValue() -> bool // test common definition states
     o.matchingChoiceText(text) -> text::String // resolve a case-insensitive accepted choice

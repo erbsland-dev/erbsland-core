@@ -29,6 +29,7 @@ target_sources(erbsland-core PRIVATE
         OptionFlag.hpp
         OptionHelp.cpp
         OptionHelp.hpp
+        OptionHelpSorting.hpp
         OptionHelpVisibility.hpp
         OptionInteger.hpp
         OptionManager.cpp

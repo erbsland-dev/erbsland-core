@@ -43,13 +43,21 @@ auto ToolApplication::defaultToolOptions(const Tool &tool) const -> el::OptionVa
 void ToolApplication::preparePreCommitTask(PreCommitTask &task, PreCommitContext context) {
     task._taskContext = std::move(context);
     if (auto *tool = dynamic_cast<Tool *>(&task)) {
-        prepareTool(*tool, defaultToolOptions(*tool), task.taskContext().log);
+        prepareTool(*tool, defaultToolOptions(*tool), task.taskContext().log, _configuration);
     }
 }
 
-void ToolApplication::prepareTool(Tool &tool, const el::OptionValuesPtr &values, const el::LogStreamPtr &log) {
-    const auto section = validateSection(_configuration, tool.identifier(), tool.configurationRules());
-    const auto sources = validateSources(_configuration, tool.usedDataSources());
+void ToolApplication::prepareTool(
+    Tool &tool,
+    const el::OptionValuesPtr &values,
+    const el::LogStreamPtr &log,
+    const el::conf::DocumentPtr &configuration) {
+    auto section = el::conf::ValuePtr{};
+    auto sources = el::StringList{};
+    if (configuration != nullptr) {
+        section = validateSection(configuration, tool.identifier(), tool.configurationRules());
+        sources = validateSources(configuration, tool.usedDataSources());
+    }
     tool.setLog(log);
     tool.configure(section, values);
     initializeSources(sources, log);

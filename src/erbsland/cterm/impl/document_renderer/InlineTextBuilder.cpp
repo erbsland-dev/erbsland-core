@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "InlineTextBuilder.hpp"
 
-#include "../../../text/u8/U8StringConstIterator.hpp"
-
 namespace erbsland::cterm::impl::document_renderer {
 
 void InlineTextBuilder::reset() noexcept {
@@ -22,8 +20,8 @@ void InlineTextBuilder::appendText(const text::String &text, const BlockStyle st
         }
         return;
     }
-    for (const auto character : text) {
-        appendTrimmedCharacter(Block{character, style});
+    for (const auto &character : BlockString{text, style}) {
+        appendTrimmedCharacter(character);
     }
 }
 
@@ -39,6 +37,12 @@ void InlineTextBuilder::appendDecoration(
     }
     for (const auto &character : decoration) {
         appendTrimmedCharacter(character.withBase(style));
+    }
+}
+
+void InlineTextBuilder::separateWords(const BlockStyle style) {
+    if (!_atLineStart && _pendingWhitespace.empty()) {
+        _pendingWhitespace.emplace_back(text::Char{U' '}, style);
     }
 }
 

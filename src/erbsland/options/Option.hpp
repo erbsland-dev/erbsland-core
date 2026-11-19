@@ -125,6 +125,8 @@ public: // accessors
     /// Set the help visibility for this option.
     /// @param visibility Controls where this option appears in generated help output.
     void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
+    /// Set the weight used to order this option in help.
+    void setHelpWeight(const int weight) noexcept { _help.setWeight(weight); }
     /// Get the custom value name shown in help output.
     [[nodiscard]] auto valueName() const noexcept -> const text::String & { return _valueName; }
     /// Set the custom value name shown in help output.

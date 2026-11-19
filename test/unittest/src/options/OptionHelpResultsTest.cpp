@@ -48,9 +48,9 @@ public:
         auto manager = OptionManager{options};
         const auto document = manager.detailedHelpDocument("generate-data"_el, "c"_el);
         const auto text = document.toString();
-        REQUIRE(text.startsWith("Matching help for \"c\"\nOptions for generate-data:\n-c, --check"_el));
-        REQUIRE(text.contains("Options:\n    --config <file>"_el));
-        REQUIRE(text.contains("Options for generate-other:\n-c, --check"_el));
+        REQUIRE(text.startsWith("\nMatching help for \"c\"\n\nOptions for generate-data:\n  -c, --check"_el));
+        REQUIRE(text.contains("Options:\n      --config <file>"_el));
+        REQUIRE(text.contains("Options for generate-other:\n  -c, --check"_el));
         REQUIRE(text.find("Options for generate-data:"_el) < text.find("Options:"_el));
         REQUIRE(text.find("Options:"_el) < text.find("Options for generate-other:"_el));
         REQUIRE(!text.contains("tool"_el));
@@ -79,8 +79,8 @@ public:
         auto manager = OptionManager{options};
         const auto document = manager.detailedHelpDocument("paint"_el, "probe"_el);
         const auto text = document.toString();
-        REQUIRE(text.contains("Choices for paint -m:\nBlue!"_el));
-        REQUIRE(text.contains("Choices for --color:\nBlue!"_el));
+        REQUIRE(text.contains("Choices for paint -m:\n  Blue!"_el));
+        REQUIRE(text.contains("Choices for --color:\n  Blue!"_el));
         REQUIRE(text.contains("Local blue"_el));
         REQUIRE(text.contains("Use blue"_el));
         REQUIRE(text.endsWith("Red!"_el));
@@ -94,7 +94,7 @@ public:
         REQUIRE(qualified.contains("Choices for --color:"_el));
         REQUIRE(!qualified.contains("paint"_el));
         const auto owner = manager.detailedHelpDocument({}, "--colo"_el).toString();
-        REQUIRE(owner.contains("Options:\n-C, --color <choice>"_el));
+        REQUIRE(owner.contains("Options:\n  -C, --color <choice>"_el));
         REQUIRE(!owner.contains("Use blue"_el));
         REQUIRE(!owner.contains("Choices for"_el));
     }
@@ -148,11 +148,11 @@ public:
         };
         auto manager = OptionManager{options};
         const auto text = manager.detailedHelpDocument({}, "PROBE"_el).toString();
-        REQUIRE(text.startsWith("Found: PROBE\nCommands:\nprobe-module"_el));
-        REQUIRE(text.contains("Global flags:\n    --probe-global[=<path>]"_el));
-        REQUIRE(text.contains("Flags in probe-module:\n    --probe-option"_el));
-        REQUIRE(text.contains("Values of --color:\nprobe-value"_el));
-        REQUIRE(text.contains("Values in --mode of probe-module:\nprobe-value"_el));
+        REQUIRE(text.startsWith("\nFound: PROBE\n\nCommands:\n  probe-module"_el));
+        REQUIRE(text.contains("Global flags:\n      --probe-global[=<path>]"_el));
+        REQUIRE(text.contains("Flags in probe-module:\n  --probe-option"_el));
+        REQUIRE(text.contains("Values of --color:\n  probe-value"_el));
+        REQUIRE(text.contains("Values in --mode of probe-module:\n  probe-value"_el));
         REQUIRE(text.find("Commands:"_el) < text.find("Global flags:"_el));
         REQUIRE(text.find("Flags in probe-module:"_el) < text.find("Values of --color:"_el));
     }

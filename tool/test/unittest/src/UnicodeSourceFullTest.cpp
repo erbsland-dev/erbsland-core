@@ -32,7 +32,7 @@ public:
                 if (line.isEmpty() || line.startsWith("@"_el)) {
                     continue;
                 }
-                auto fields = el::List<el::String>{};
+                auto fields = el::StringList{};
                 auto split = el::StringSplitter{line, U';'};
                 for (auto index = el::ItemIndex{0U}; index.isWithin(el::ItemCount{5U}); index.uncheckedIncrement()) {
                     fields.append(fromCodes(split.next()));

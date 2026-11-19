@@ -4,6 +4,7 @@
 #include "ProjectFixture.hpp"
 
 #include <erbsland/ApplicationError.hpp>
+#include <erbsland/CharSet.hpp>
 #include <erbsland/PathInfo.hpp>
 #include <erbsland/StringJoins.hpp>
 #include <tool/doc/CreateDemoTool.hpp>
@@ -111,10 +112,12 @@ public:
             issues);
         REQUIRE(result.contains(".. note::"_el));
         REQUIRE_EQUAL(issues.count(), el::ItemCount{4});
-        REQUIRE(issues.getRef(el::ItemIndex{0}).contains("missing-default"_el));
-        REQUIRE(issues.getRef(el::ItemIndex{1}).contains("missing-zero-one"_el));
-        REQUIRE(issues.getRef(el::ItemIndex{2}).contains("missing-one"_el));
-        REQUIRE(issues.getRef(el::ItemIndex{3}).contains("missing-two"_el));
+        // A long temporary path can wrap through the executable name.
+        const auto layoutWhitespace = el::CharSet{U' ', U'\n'};
+        REQUIRE(issues.getRef(el::ItemIndex{0}).removedAll(layoutWhitespace).contains("missing-default"_el));
+        REQUIRE(issues.getRef(el::ItemIndex{1}).removedAll(layoutWhitespace).contains("missing-zero-one"_el));
+        REQUIRE(issues.getRef(el::ItemIndex{2}).removedAll(layoutWhitespace).contains("missing-one"_el));
+        REQUIRE(issues.getRef(el::ItemIndex{3}).removedAll(layoutWhitespace).contains("missing-two"_el));
     }
 
     void testPreprocessorPreservesConstraintsAndQualifiers() {

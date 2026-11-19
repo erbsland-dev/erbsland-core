@@ -18,6 +18,7 @@
 #include <erbsland/PathInfo.hpp>
 #include <erbsland/PathOperations.hpp>
 #include <erbsland/RuntimeError.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/TempByteOutputStream.hpp>
 #include <erbsland/TempTextOutputStream.hpp>
 #include <erbsland/TextDocument.hpp>
@@ -98,22 +99,24 @@ public:
                     }));
             REQUIRE(false);
         } catch (const el::path::PathError &error) {
-            const auto rendered = el::err::DiagnosticHelper{error}.toDocument().toString();
+            const auto document = el::err::DiagnosticHelper{error}.toDocument();
+            const auto rendered = document.toString();
             REQUIRE(rendered.contains("pre-commit check"_el));
             REQUIRE(rendered.contains("Platform Error"_el));
             WITH_CONTEXT(requireNotFoundCause(error));
-            REQUIRE(rendered.contains(missing.toString()));
+            WITH_CONTEXT(requirePathField(document, missing));
             REQUIRE(error.hasCause());
         }
         try {
             el::path::impl::FileCommit{missing, destination, {}, temporary->outputSettings()}.prepare();
             REQUIRE(false);
         } catch (const el::path::PathError &error) {
-            const auto rendered = el::err::DiagnosticHelper{error}.toDocument().toString();
+            const auto document = el::err::DiagnosticHelper{error}.toDocument();
+            const auto rendered = document.toString();
             REQUIRE(rendered.contains("Validating the replacement"_el));
             REQUIRE(rendered.contains("Platform Error"_el));
             WITH_CONTEXT(requireNotFoundCause(error));
-            REQUIRE(rendered.contains(missing.toString()));
+            WITH_CONTEXT(requirePathField(document, missing));
         }
         REQUIRE_EQUAL(destination.content().readTextOrThrow(), "old"_el);
         REQUIRE(temporary->removeOnClose());
@@ -266,11 +269,12 @@ public:
             engine.commit(&stream);
             REQUIRE(false);
         } catch (const el::path::PathError &error) {
-            const auto diagnostic = el::err::DiagnosticHelper{error}.toDocument().toString();
+            const auto document = el::err::DiagnosticHelper{error}.toDocument();
+            const auto diagnostic = document.toString();
             REQUIRE(diagnostic.contains("Flushing"_el));
             REQUIRE(diagnostic.contains("Deep flush cause"_el));
-            REQUIRE(diagnostic.contains(source.toString()));
-            REQUIRE(diagnostic.contains(destination.toString()));
+            WITH_CONTEXT(requirePathField(document, source));
+            WITH_CONTEXT(requirePathField(document, destination));
         }
         REQUIRE_EQUAL(destination.content().readTextOrThrow(), "old"_el);
         stream.failFlush = false;
@@ -309,11 +313,12 @@ public:
             context.setCause(std::current_exception());
             const auto error = el::network::NetworkError{context};
             REQUIRE(error.hasCause());
-            const auto rendered = el::err::DiagnosticHelper{error}.toDocument().toString();
+            const auto document = el::err::DiagnosticHelper{error}.toDocument();
+            const auto rendered = document.toString();
             REQUIRE(rendered.contains("HTTP output failed"_el));
             REQUIRE(rendered.contains("Moving the completed temporary"_el));
             REQUIRE(rendered.contains("source path does not exist"_el));
-            REQUIRE(rendered.contains(source.toString()));
+            WITH_CONTEXT(requirePathField(document, source));
         }
         REQUIRE_FALSE(destination.info().exists());
     }
@@ -379,6 +384,21 @@ public:
     }
 
 private:
+    /// Verify the complete path field before terminal line wrapping.
+    void requirePathField(const el::text::TextDocument &document, const el::path::Path &expected) {
+        REQUIRE(document.root()->anyOf([&expected](const el::text::TextNode &node) -> bool {
+            if (node.type() != el::text::TextNodeType::FieldContent) {
+                return false;
+            }
+            auto field = el::text::StringEditor{};
+            node.walk([&field](const el::text::TextNode &child) {
+                field.append(child.text());
+                return el::text::TextWalkStatus::Continue;
+            });
+            return field == expected.toString();
+        }));
+    }
+
     /// Verify that native error category and code survive every wrapping layer.
     void requireNotFoundCause(const el::path::PathError &error) {
         auto cause = error.cause();

@@ -96,7 +96,7 @@ public:
             }
         }
         REQUIRE_EQUAL(domainCount, 3U);
-        REQUIRE_EQUAL(entryCount, 141U);
+        REQUIRE_EQUAL(entryCount, 142U);
         REQUIRE_EQUAL(data.findText("unknown_error"_el).value(), "Unknown Error"_el);
         REQUIRE_EQUAL(
             data.findText("options.help_option_details"_el).value(),

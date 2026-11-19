@@ -67,6 +67,13 @@ auto OptionEditor::setHelpVisibility(const OptionHelpVisibility visibility) -> O
     return *this;
 }
 
+auto OptionEditor::setHelpWeight(const int weight) noexcept -> OptionEditor & {
+    if (_option != nullptr) {
+        _option->setHelpWeight(weight);
+    }
+    return *this;
+}
+
 auto OptionEditor::setValueName(String valueName) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setValueName(std::move(valueName));

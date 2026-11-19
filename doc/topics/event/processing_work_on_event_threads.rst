@@ -41,7 +41,7 @@ Before creating several workers for independent jobs, consider
 It schedules jobs across reusable worker threads and supports both event-based results and procedural futures.
 Dedicated event threads are useful when ownership of a particular loop matters; a pool is often a better fit for a batch
 of independent computations.
-See :doc:`planned/processing_work_with_a_worker_pool` for job scheduling.
+See :doc:`processing_work_with_a_worker_pool` for job scheduling.
 
 Managed and Unmanaged Threads
 =============================
@@ -273,6 +273,8 @@ For a managed worker whose operational failure should end the application, set
 A captured :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` then reaches the application, which requests managed
 shutdown and reports the failure.
 This also works when procedural main is waiting on a managed receiver rather than dispatching the main loop.
+
+.. _event-unmanaged-worker-template:
 
 For an unmanaged worker, use ``EventLoopErrorPolicy::Quit`` when a captured operational error should end dispatch.
 After joining, inspect ``workerEventLoop().takeError()`` and handle or rethrow the captured exception on the owner

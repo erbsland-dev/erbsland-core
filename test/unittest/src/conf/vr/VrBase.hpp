@@ -15,6 +15,7 @@
 #include <erbsland/DiagnosticHelper.hpp>
 #include <erbsland/StringConverter.hpp>
 #include <erbsland/StringEditor.hpp>
+#include <erbsland/StringTransformations.hpp>
 #include <erbsland/TextDocument.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -222,17 +223,18 @@ public:
 
     /// Require that the last diagnostic contains standard text.
     void requireError(const std::string_view partialMatch) {
-        REQUIRE(lastError.contains(el::text::String{partialMatch}, el::text::cCaseInsensitive.asciiComparisonFn()));
+        WITH_CONTEXT(requireError(el::text::String{partialMatch}));
     }
 
     /// Require that the last diagnostic contains UTF-8 text.
     void requireError(const std::u8string_view partialMatch) {
-        REQUIRE(lastError.contains(el::text::String{partialMatch}, el::text::cCaseInsensitive.asciiComparisonFn()));
+        WITH_CONTEXT(requireError(el::text::String{partialMatch}));
     }
 
     /// Require that the last diagnostic contains text.
     void requireError(const el::text::String &partialMatch) {
-        REQUIRE(lastError.contains(partialMatch, el::text::cCaseInsensitive.asciiComparisonFn()));
+        const auto message = el::text::toWhitespaceSimplified(lastError);
+        REQUIRE(message.contains(partialMatch, el::text::cCaseInsensitive.asciiComparisonFn()));
     }
 
     /// Create a minimal document that defines one validation constraint.

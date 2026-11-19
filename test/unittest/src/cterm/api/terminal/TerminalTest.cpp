@@ -18,7 +18,9 @@ public:
 
         const auto backend = std::make_shared<TerminalTestBackend>();
         const auto defaultSizedTerminal = Terminal{backend};
-        REQUIRE_EQUAL(defaultSizedTerminal.size(), block::Size(80, 25));
+        REQUIRE_EQUAL(defaultSizedTerminal.size(), block::Size(120, 25));
+        const auto explicitSizedTerminal = Terminal{backend, block::Size{80, 25}};
+        REQUIRE_EQUAL(explicitSizedTerminal.size(), block::Size(80, 25));
 
         const auto clampedSizedTerminal = Terminal{backend, block::Size{0, 5'000}};
         REQUIRE_EQUAL(clampedSizedTerminal.size(), block::Size(1, 2'048));

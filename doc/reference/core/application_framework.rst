@@ -76,7 +76,7 @@ See :doc:`/topics/event/handling_event_errors` for local recovery, final notific
 Terminal Output
 ===============
 
-``enableTerminal(flags)`` creates and initializes an application-owned terminal with an initial size of 80×25.
+``enableTerminal(flags)`` creates and initializes an application-owned terminal with an initial size of 120×25.
 ``enableTerminal(size, flags)`` supplies an explicit size.
 Native backends detect the available screen; ``TerminalFlag::VirtualTty`` preserves the supplied dimensions and emits
 ANSI through stdout even when redirected.

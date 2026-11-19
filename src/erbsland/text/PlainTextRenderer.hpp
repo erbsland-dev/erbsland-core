@@ -6,13 +6,11 @@
 #include "PlainTextRenderer_fwd.hpp"
 #include "TextDocument_fwd.hpp"
 
-#include "impl/PlainTextRenderer_fwd.hpp"
-
-#include <memory>
+#include <functional>
 
 namespace erbsland::text {
 
-/// Render a text document as plain UTF-8 text.
+/// Render a text document with the 120-column system-output layout as plain UTF-8 text.
 /// @tested{TextDocumentTest}
 class PlainTextRenderer final {
 public:
@@ -20,10 +18,8 @@ public:
     /// @param document The document to render.
     explicit PlainTextRenderer(const TextDocument &document);
 
-    /// Destroy the renderer implementation.
-    ~PlainTextRenderer();
-
     // defaults/deletions
+    ~PlainTextRenderer() = default;
     PlainTextRenderer(const PlainTextRenderer &) = delete;
     PlainTextRenderer(PlainTextRenderer &&) noexcept = default;
     auto operator=(const PlainTextRenderer &) -> PlainTextRenderer & = delete;
@@ -39,7 +35,7 @@ public:
     auto appendTo(AnyStringBuilder &builder) -> AnyStringBuilder &;
 
 private:
-    std::unique_ptr<impl::PlainTextRenderer> _impl; ///< The renderer implementation.
+    std::reference_wrapper<const TextDocument> _document; ///< The document to render.
 };
 
 }

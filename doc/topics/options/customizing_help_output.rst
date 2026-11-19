@@ -17,7 +17,21 @@ Customizing Help Output
 The option system builds help, version, and error output as neutral
 :cpp:class:`TextDocument <erbsland::text::TextDocument>` trees.
 This page explains how :cpp:class:`Application <erbsland::core::Application>` renders these documents, how to render
-them manually, and how to customize generated wording and terminal style.
+them manually, and how to customize help ordering, wording, and terminal style.
+
+Order Help Entries
+==================
+
+Help orders commands and options alphabetically by default.
+Use ``setHelpSorting()`` on ``Options`` to change the root policy.
+Modules and sets inherit their owner's policy unless you set an override.
+
+For example, if the order in which you define commands and options reflects the order in which users need them, call
+``options->setHelpSorting(el::OptionHelpSorting::None)``.
+To give a few entries priority within an otherwise alphabetical list, select ``ByWeight`` and give those entries
+negative weights with ``setHelpWeight()``.
+
+See :ref:`options-help-sorting` for the sorting modes and the rules for shared section headings.
 
 Detailed Option Help
 ====================

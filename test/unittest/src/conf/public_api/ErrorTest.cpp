@@ -178,17 +178,12 @@ public:
             el::text::StringConverter{el::err::DiagnosticHelper{error}.toDocument().toString()}.toStdString();
         requireContains(rendered, "Caused By");
         requireContains(rendered, "The source stream failed.");
-        requireDoesNotContain(rendered, "│");
+        requireContains(rendered, "│   The source stream failed.");
     }
 
 private:
     void requireContains(const std::string &text, const std::string_view needle) {
         const auto position = text.find(needle);
         REQUIRE_NOT_EQUAL(position, std::string::npos);
-    }
-
-    void requireDoesNotContain(const std::string &text, const std::string_view needle) {
-        const auto position = text.find(needle);
-        REQUIRE_EQUAL(position, std::string::npos);
     }
 };

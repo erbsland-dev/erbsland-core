@@ -280,6 +280,7 @@ auto TerminalDocumentStyle::createSystemOutputDefaultStyle() -> TerminalDocument
     style.edit(Selector::heading(2)).setTextStyle(fg::Default, Attributes::Bold).setMargins(1, 0, 0, 0);
     style.edit(Selector{TextNodeType::Heading, std::optional<int>{1}, {"diagnostic-title"_el, "error"_el}})
         .setTextStyle(fg::BrightRed, Attributes::Bold)
+        .setPrefix("Error: "_el)
         .setMargins(1, 2, 1, 2);
     style
         .edit(
@@ -289,6 +290,7 @@ auto TerminalDocumentStyle::createSystemOutputDefaultStyle() -> TerminalDocument
                 {"diagnostic-title"_el, "error"_el},
                 TextNodeType::Blockquote})
         .setTextStyle(fg::Default, Attributes::Bold)
+        .clearPrefix()
         .setMargins(0, 0, 0, 2);
     style.edit(Selector{TextNodeType::Blockquote, {"diagnostic-cause"_el}})
         .setMargins(0, 0, 0, 0)

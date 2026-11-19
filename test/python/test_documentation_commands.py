@@ -47,7 +47,7 @@ class DocumentationCommandsTest(unittest.TestCase):
                 if process.poll() is None:
                     process.kill()
                 process.communicate()
-        demo = self.root / "demos/example/Sample"
+        demo = self.root / "demos/example/snippets/Sample"
         for part in ("First", "Second", "Third"):
             self.assertTrue((demo / f"{part}.cpp").is_file())
             self.assertIn(f'"{part}"_el', (demo / "main.cpp").read_text())

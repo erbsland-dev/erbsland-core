@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "OptionHelpSorting.hpp"
 #include "OptionHelpVisibility.hpp"
 
 #include "../text/String.hpp"
@@ -10,9 +11,8 @@
 
 namespace erbsland::options {
 
-/// Help visibility and text for options, sets, modules, choices, and the root options object.
-/// This object stores display metadata only; parser behavior is controlled by option names, types, flags, and
-/// callbacks.
+/// Help text, visibility, and ordering metadata for option definitions and their containers.
+/// Option names, types, flags, and callbacks control parsing.
 /// @tested{OptionsFrameworkTest OptionHelpDocumentTest}
 class OptionHelp {
 public:
@@ -35,6 +35,14 @@ public: // accessors
     /// Set the visibility of this help text.
     /// @param visibility Controls where this item appears in generated help output.
     void setVisibility(const OptionHelpVisibility visibility) noexcept { _visibility = visibility; }
+    /// Get the sorting policy for entries in this container.
+    [[nodiscard]] auto sorting() const noexcept -> OptionHelpSorting { return _sorting; }
+    /// Set the sorting policy for entries in this container.
+    void setSorting(const OptionHelpSorting sorting) noexcept { _sorting = sorting; }
+    /// Get the weight of this entry for `OptionHelpSorting::ByWeight`.
+    [[nodiscard]] auto weight() const noexcept -> int { return _weight; }
+    /// Set the weight of this entry for `OptionHelpSorting::ByWeight`.
+    void setWeight(const int weight) noexcept { _weight = weight; }
     /// Get the title.
     [[nodiscard]] auto title() const noexcept -> const text::String & { return _title; }
     /// Set the title.
@@ -58,6 +66,8 @@ public: // accessors
 
 private:
     OptionHelpVisibility _visibility{OptionHelpVisibility::Inherit}; ///< How visible this item is in help.
+    OptionHelpSorting _sorting{OptionHelpSorting::Inherit};          ///< The sorting policy for this container.
+    int _weight = 0;                                                 ///< The weight of this entry in its container.
     text::String _title;                                             ///< An optional title.
     text::String _description;                                       ///< The main help text.
     text::String _epilog;                                            ///< Optional trailing text.

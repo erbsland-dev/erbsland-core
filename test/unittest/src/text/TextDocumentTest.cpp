@@ -277,14 +277,14 @@ public:
         document.addUnsupported("mystery"_el);
         document.addError("broken"_el);
 
-        const auto expected = std::string{"Overview\n"
+        const auto expected = std::string{"\nOverview\n"
                                           "Hello world\n"
                                           "x\n"
-                                          "- first\n"
-                                          "- second\n"
-                                          "  - nested\n"
-                                          "1. one\n"
-                                          "2. two\n"
+                                          "•   first\n"
+                                          "•   second\n"
+                                          "    •   nested\n"
+                                          "1.  one\n"
+                                          "2.  two\n"
                                           "return 0;\n"
                                           "mystery\n"
                                           "broken"};
@@ -321,13 +321,14 @@ public:
         secondDescription->add(TextNodeType::OptionDetails)->addText("Default: stdout."_el);
 
         auto nested = second->add(TextNodeType::TermList);
+        nested->setStyle("option-details"_el);
         auto nestedItem = nested->add(TextNodeType::TermItem);
         nestedItem->add(TextNodeType::TermName)->addText("json"_el);
         nestedItem->add(TextNodeType::TermDescription)->addText("Structured output."_el);
 
-        const auto expected = std::string{"-h, --help           Display help.\n"
-                                          "    --output <path>  Write the result. Default: stdout.\n"
-                                          "  json        Structured output."};
+        const auto expected = std::string{"  -h, --help           Display help.\n"
+                                          "      --output <path>  Write the result. Default: stdout.\n"
+                                          "          json  Structured output."};
 
         REQUIRE_EQUAL(StringConverter{document.toString()}.toStdString(), expected);
     }
@@ -341,7 +342,7 @@ public:
         const auto text = document.toString();
         REQUIRE_EQUAL(text.count(name), el::unit::ItemCount::one());
         REQUIRE(text.contains("A description that follows the long term."_el));
-        REQUIRE(text.startsWith(name));
+        REQUIRE(text.startsWith(el::text::StringEditor{"  "_el}.append(name)));
     }
 
     void testPlainCodeSnippetRendering() {
@@ -375,10 +376,10 @@ public:
         REQUIRE_EQUAL(marker->data()->toString(), "0:5"_el);
         REQUIRE_EQUAL(marker->style(), "error"_el);
 
-        const auto expected = std::string{"   8 │ alpha\n"
-                                          "   9 │ --bad\n"
-                                          "     │ \u2594\u2594\u2594\u2594\u2594\n"
-                                          "  10 │ omega"};
+        const auto expected = std::string{"\n     8 │ alpha\n"
+                                          "     9 │ --bad\n"
+                                          "       │ \u2594\u2594\u2594\u2594\u2594\n"
+                                          "    10 │ omega"};
 
         REQUIRE_EQUAL(StringConverter{document.toString()}.toStdString(), expected);
     }
@@ -390,14 +391,14 @@ public:
         lines.append("return 0;"_el);
         document.addCodeSnippet(el::text::CodeSnippet{std::move(lines), el::unit::LineIndex::noIndex(), {}});
 
-        REQUIRE_EQUAL(StringConverter{document.toString()}.toStdString(), std::string{"return 0;"});
+        REQUIRE_EQUAL(StringConverter{document.toString()}.toStdString(), std::string{"\n  return 0;"});
     }
 
     void testPlainCodeSnippetUsesFixedWidthAndSafeControls() {
 
         auto document = TextDocument{};
         auto lines = el::text::StringList{};
-        lines.append(el::text::StringEditor{std::string(100, 'x')});
+        lines.append(el::text::StringEditor{std::string(140, 'x')});
         lines.append("a\tb"_el);
         auto markers = el::text::CodeSnippetMarkerList{};
         markers.append(
@@ -409,10 +410,45 @@ public:
         const auto ellipsisPosition = rendered.find("\u2026");
         const auto sourcePosition = rendered.find("   2 │ a?b");
         const auto markerPosition = rendered.find("     │   ▔");
-        REQUIRE(rendered.starts_with("   1 │ "));
+        REQUIRE(rendered.starts_with("\n     1 │ "));
         REQUIRE_NOT_EQUAL(ellipsisPosition, std::string::npos);
         REQUIRE_NOT_EQUAL(sourcePosition, std::string::npos);
         REQUIRE_NOT_EQUAL(markerPosition, std::string::npos);
+    }
+
+    void testPlainDirectTextAndLongDocument() {
+        auto document = TextDocument{};
+        document.addText("東京 "_el);
+        document.root()->addStrong()->addText("cafe\u0301"_el);
+        document.addLineBreak();
+        document.addText("next"_el);
+        document.addLineBreak();
+        document.addLineBreak();
+        document.addText("last"_el);
+        auto expected = el::text::StringEditor{"東京 cafe\u0301\nnext\n\nlast"_el};
+        for (auto index = 0; index < 32; ++index) {
+            document.addParagraph()->addText("another line   "_el);
+            expected.append("\nanother line"_el);
+        }
+        document.addLineBreak();
+        auto builder = AnyStringBuilder{};
+        builder.append("prefix "_el);
+        auto renderer = PlainTextRenderer{document};
+        renderer.appendTo(builder);
+        REQUIRE_EQUAL(renderer.build(), expected);
+        REQUIRE_EQUAL(document.toString(), expected);
+        REQUIRE_EQUAL(builder.toString(), el::text::StringEditor{"prefix "_el}.append(expected));
+    }
+
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
+    void testParagraphExceedingBufferHeight() {
+        auto document = TextDocument{};
+        auto source = AnyStringBuilder{};
+        source.append("row\n"_el, el::unit::ItemCount{10'005});
+        source.append("last row"_el);
+        document.addCodeBlock()->addText(source.toString());
+        REQUIRE_EQUAL(document.toString(), source.toString());
     }
 
     void testEmptyRendering() {

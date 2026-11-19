@@ -19,6 +19,14 @@ Text Documents and Rendering
 Text Document
 =============
 
+Plain-Text Output
+-----------------
+
+``TextDocument::toString()`` and ``PlainTextRenderer`` use the default system-output style at 120 display columns.
+The resulting string preserves indentation and internal blank lines.
+Each line ends at its last visible character, and the string ends at the last nonempty line.
+Use ``PlainTextRenderer::appendTo()`` to append that text to an existing builder.
+
 Semantic Escaped Text
 ---------------------
 

@@ -81,6 +81,10 @@ public: // accessors
     /// Set the help visibility for this module.
     /// @param visibility Controls whether this module appears in root help.
     void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
+    /// Set the help sorting policy for this module's page.
+    void setHelpSorting(const OptionHelpSorting sorting) noexcept { _help.setSorting(sorting); }
+    /// Set the weight used to order this module in a module list.
+    void setHelpWeight(const int weight) noexcept { _help.setWeight(weight); }
     /// Get all option sets.
     [[nodiscard]] auto optionSets() const noexcept -> const std::vector<OptionSetPtr> & { return _optionSets; }
     /// Get the pre-parsing callback.

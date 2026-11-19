@@ -359,9 +359,15 @@ Regular expressions contribute their pattern and initial flags without being com
 digest unchanged.
 Floating-point representations are preserved, including signed zero and NaN payload bits.
 
-This API provides a local change detector.
-Digest bytes have no compatibility guarantee across platforms or library versions, and should be recomputed after such
-changes.
+For the same stored value tree, hash algorithm, and library version, the digest is identical across supported 64-bit
+platforms and compilers.
+The implementation hashes individual scalar fields and string or binary contents, excluding object padding.
+The supported x86-64 and ARM64 targets on Linux, macOS, and Windows share the representations used here: little-endian
+byte order, 64-bit ``std::size_t`` lengths and indices, and IEEE 754 binary64 floating-point values.
+Identical stored values include identical floating-point bits and regular-expression pattern encodings.
+
+The digest format is an implementation detail and may change between library versions.
+Recompute stored digests when upgrading the library.
 Use the signing APIs below for ELCL document signatures.
 
 Configuration Signing

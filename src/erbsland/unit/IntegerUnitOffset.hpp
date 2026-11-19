@@ -119,29 +119,19 @@ public: // operators
     /// Return this offset with the sign inverted, saturating minimum() to maximum().
     [[nodiscard]] constexpr auto operator-() const noexcept -> IntegerUnitOffset { return negated(); }
     /// Increment this offset by one with saturation.
-    constexpr auto operator++() noexcept -> IntegerUnitOffset & {
-        if (_value != cRawMaximum) {
-            ++_value;
-        }
-        return *this;
-    }
+    constexpr auto operator++() noexcept -> IntegerUnitOffset & { return increment(); }
     /// Increment this offset by one with saturation and return the previous value.
     constexpr auto operator++(int) noexcept -> IntegerUnitOffset {
         auto result = *this;
-        ++*this;
+        increment();
         return result;
     }
     /// Decrement this offset by one with saturation.
-    constexpr auto operator--() noexcept -> IntegerUnitOffset & {
-        if (_value != cRawMinimum) {
-            --_value;
-        }
-        return *this;
-    }
+    constexpr auto operator--() noexcept -> IntegerUnitOffset & { return decrement(); }
     /// Decrement this offset by one with saturation and return the previous value.
     constexpr auto operator--(int) noexcept -> IntegerUnitOffset {
         auto result = *this;
-        --*this;
+        decrement();
         return result;
     }
 
@@ -284,6 +274,34 @@ public: // math
         }
         return {_value % scalarValue, Unchecked{}};
     }
+    /// Increment this offset by one, saturating at maximum().
+    constexpr auto increment() noexcept -> IntegerUnitOffset & {
+        *this = incremented();
+        return *this;
+    }
+    /// Return this offset incremented by one.
+    /// @return The incremented offset, saturated at maximum().
+    [[nodiscard]] constexpr auto incremented() const noexcept -> IntegerUnitOffset {
+        if (isMaximum()) {
+            return *this;
+        }
+        return {_value + 1, Unchecked{}};
+    }
+    /// Decrement this offset by one, saturating at minimum().
+    constexpr auto decrement() noexcept -> IntegerUnitOffset & {
+        *this = decremented();
+        return *this;
+    }
+    /// Return this offset decremented by one.
+    /// @return The decremented offset, saturated at minimum().
+    [[nodiscard]] constexpr auto decremented() const noexcept -> IntegerUnitOffset {
+        if (isMinimum()) {
+            return *this;
+        }
+        return {_value - 1, Unchecked{}};
+    }
+    /// Invert the sign of this offset, saturating the minimum value to maximum().
+    constexpr void negate() noexcept { *this = negated(); }
     /// Create a new offset with the sign inverted, saturating the minimum value to maximum().
     [[nodiscard]] constexpr auto negated() const noexcept -> IntegerUnitOffset {
         if (isMinimum()) {

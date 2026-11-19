@@ -66,6 +66,8 @@ public: // accessors
     /// Set the help visibility for the options root.
     /// @param visibility Root help visibility metadata for custom renderers.
     void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
+    /// Set the help sorting policy for the options root.
+    void setHelpSorting(const OptionHelpSorting sorting) noexcept { _help.setSorting(sorting); }
     /// Get the unprocessed executable path from the command line.
     [[nodiscard]] auto executablePath() const noexcept -> const text::String & { return _executablePath; }
     /// Set the unprocessed executable path from the command line.

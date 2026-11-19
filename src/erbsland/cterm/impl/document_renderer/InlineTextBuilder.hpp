@@ -32,6 +32,8 @@ public:
     /// @param style The base style for decoration characters.
     /// @param preserveWhitespace Preserve whitespace as-is when `true`.
     void appendDecoration(BlockString decoration, BlockStyle style, bool preserveWhitespace);
+    /// Separate following inline content from preceding text by a space.
+    void separateWords(BlockStyle style);
     /// Append an explicit line break.
     /// @param style The style used for the line-break character.
     void appendLineBreak(BlockStyle style);

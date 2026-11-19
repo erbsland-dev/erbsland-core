@@ -20,6 +20,7 @@
 #include "impl/LibraryVersion.hpp"
 
 #include "../cryptology/configuration/CryptologyConfiguration.hpp"
+#include "../cterm/impl/TerminalDefaults.hpp"
 #include "../cterm/Terminal.hpp"
 #include "../err/DiagnosticHelper.hpp"
 #include "../err/LogicFailure.hpp"
@@ -182,7 +183,7 @@ auto Application::partManager() -> ApplicationPartManagerPtr {
 }
 
 void Application::enableTerminal(const cterm::TerminalFlags flags) {
-    enableTerminal(block::Size{80, 25}, flags);
+    enableTerminal(cterm::impl::cDefaultTerminalSize, flags);
 }
 
 void Application::enableTerminal(const block::Size size, const cterm::TerminalFlags flags) {

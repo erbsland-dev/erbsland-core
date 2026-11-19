@@ -21,8 +21,6 @@ application part with its own loop.
 
 If you are still deciding how to organize your program, :doc:`/topics/core/choosing_an_application_design` compares the
 available designs.
-You can also start here: the application concepts needed for event work are introduced below.
-For the underlying callback model, see :doc:`events_in_erbsland_core`.
 
 How Application Runs Your Program
 =================================

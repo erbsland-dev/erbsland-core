@@ -39,7 +39,7 @@ public:
 
         REQUIRE(diagnostic);
         REQUIRE_EQUAL(toStdString(diagnostic->toString()), std::string{"Broken value"});
-        REQUIRE_EQUAL(toStdString(diagnostic->toTextDocument().toString()), std::string{"Error: Broken value"});
+        REQUIRE_EQUAL(toStdString(diagnostic->toTextDocument().toString()), std::string{"\n  Error: Broken value"});
         REQUIRE(diagnostic->sourceName().isEmpty());
         REQUIRE(diagnostic->sourcePath().isEmpty());
         REQUIRE(diagnostic->location().line().isNoIndex());
@@ -67,7 +67,7 @@ public:
         const auto failure = el::system::PlatformFailure{"Native wake failed"_el};
         REQUIRE(failure.context() == nullptr);
         REQUIRE_FALSE(failure.hasCause());
-        REQUIRE_EQUAL(failure.diagnostic()->toTextDocument().toString(), "Error: Native wake failed"_el);
+        REQUIRE_EQUAL(failure.diagnostic()->toTextDocument().toString(), "\n  Error: Native wake failed"_el);
     }
 
     void testParseErrorDiagnosticLocation() {

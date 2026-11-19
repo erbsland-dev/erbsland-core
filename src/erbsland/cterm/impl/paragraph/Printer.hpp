@@ -4,63 +4,60 @@
 
 #include "RendererBase.hpp"
 
-#include "../../CursorWriter.hpp"
+#include "../../CursorWriter_fwd.hpp"
 
-#include <cstddef>
+#include <functional>
 #include <optional>
 
 namespace erbsland::cterm::impl::paragraph {
 
-/// Print a shared paragraph layout sequentially to a cursor writer.
+/// Emit the styled blocks of a paragraph in physical line order.
+/// @tested{ParagraphRenderTest TerminalDocumentRendererTest}
 class Printer final : public RendererBase {
 public:
-    /// Create a paragraph printer for a cursor writer.
+    /// Receives one block in output order.
+    using WriteBlockFn = std::function<void(const Block &)>;
+
+    /// Create a printer using the destination's base style to resolve inherited attributes and colors.
+    /// @param x1 The starting column.
+    /// @param width The width available for text.
+    /// @param layout The completed paragraph layout.
+    /// @param sourceText The text referenced by the layout.
+    /// @param options The options used to lay out the paragraph.
+    /// @param baseStyle The style inherited by paragraph content.
     Printer(
-        CursorWriter &writer,
-        const int x1,
-        const int width,
-        const geometry::Alignment alignment,
+        int x1,
+        int width,
         const LayoutResult &layout,
         const BlockString &sourceText,
         const ParagraphOptions &options,
-        const ParagraphBackgroundMode backgroundMode) noexcept :
-        RendererBase{alignment, layout, sourceText, options, backgroundMode},
-        _writer{writer},
+        BlockStyle baseStyle) noexcept :
+        RendererBase{options.alignment(), layout, sourceText, options, options.backgroundMode()},
         _x1{x1},
         _width{width},
-        _baseStyle{writer.style()},
-        _baseColor{writer.color()} {}
-
-    // defaults/deletions
-    ~Printer() = default;
-    Printer(const Printer &) = delete;
-    Printer(Printer &&) = delete;
-    auto operator=(const Printer &) -> Printer & = delete;
-    auto operator=(Printer &&) -> Printer & = delete;
+        _baseStyle{baseStyle} {}
 
 public:
-    /// Print the paragraph layout line by line.
+    /// Print all lines with explicit line breaks.
+    /// @param writer The destination cursor writer.
     /// @return The number of physical lines written.
-    [[nodiscard]] auto print() -> int;
+    [[nodiscard]] auto printTo(CursorWriter &writer) -> int;
+    /// Emit the resolved blocks of the next physical line, carrying its wrap color forward.
+    /// @param line The next line in layout order.
+    /// @param writeBlock Receives each styled block, excluding the final line break.
+    void emitLine(const LayoutLine &line, const WriteBlockFn &writeBlock);
 
 private:
-    /// Resolve the background fill color for an output color.
-    [[nodiscard]] auto backgroundFillColor(Color color) const noexcept -> Color;
-    /// Write one resolved layout line.
-    [[nodiscard]] auto writeResolved(const LayoutLine &line) -> std::optional<Color>;
-    /// Write one resolved layout fragment.
-    [[nodiscard]] auto writeResolved(const LayoutFragment &fragment) -> std::optional<Color>;
-    /// Write one resolved terminal block.
-    [[nodiscard]] auto writeResolvedBlock(const Block &character) -> std::optional<Color>;
-    /// Write filled spaces with a color.
-    void writeSpaces(int count, Color color);
+    /// Inherit the background of adjacent text when filling a wrap.
+    [[nodiscard]] auto fillColor(const std::optional<Color> &textColor) const noexcept -> Color;
+    /// Emit padding with the paragraph's base attributes.
+    void emitSpaces(int count, Color color, const WriteBlockFn &writeBlock) const;
 
 private:
-    CursorWriter &_writer;
     int _x1;
     int _width;
     BlockStyle _baseStyle;
-    Color _baseColor;
+    std::optional<Color> _previousWrapColor; ///< Last text color of the preceding wrapped line.
 };
 
 }

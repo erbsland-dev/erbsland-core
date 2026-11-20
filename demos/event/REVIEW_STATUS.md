@@ -13,3 +13,7 @@ The following demos were reviewed to follow the correct design and code style fo
 - PiCalculator, 2026-11-12, TER
 - FileSearch, 2026-11-13, TER
 - ConfigCheck, 2026-11-13, TER
+- CaptionPlayer, 2026-11-20, TER
+- PipeLogSummary, 2026-11-20, TER
+- InboxMonitor, 2026-11-20, TER
+- ManifestVerifier, 2026-11-20, TER

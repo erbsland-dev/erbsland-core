@@ -13,7 +13,7 @@ using namespace el::math;
 namespace fh = erbsland::unittest::fh;
 
 TESTED_TARGETS(SaturatingMath)
-class SaturatingMathTest final : public UNITTEST_SUBCLASS(SaturatingMathTestBase) {
+class SaturatingMathDataTest final : public UNITTEST_SUBCLASS(SaturatingMathTestBase) {
     enum class Operation {
         Add,
         Subtract,

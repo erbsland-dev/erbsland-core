@@ -199,9 +199,8 @@ auto PackageApplication::main() -> ExitCode {
         for (
             const auto &dependency : PackagePlatform::windowsDependencies(
                 cmake, target.file, temporary->path() / "dependencies.txt"_el, searchDirectories)) {
-            const auto found = copiedLibraries.find(dependency.name());
-            if (found != copiedLibraries.end()) {
-                if (found->second != dependency) {
+            if (const auto found = copiedLibraries.get(dependency.name())) {
+                if (*found != dependency) {
                     throw core::ApplicationError{"Conflicting DLL names."_el};
                 }
                 if (targetSettings.signing) {
@@ -210,7 +209,7 @@ auto PackageApplication::main() -> ExitCode {
                 continue;
             }
             files.copyFile(dependency, Path{dependency.name()});
-            copiedLibraries.emplace(dependency.name(), dependency);
+            copiedLibraries.set(dependency.name(), dependency);
             if (targetSettings.signing) {
                 PackagePlatform::signWindows(packageRoot / dependency.name(), targetSettings);
             }

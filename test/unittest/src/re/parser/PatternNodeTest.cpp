@@ -23,7 +23,7 @@ using namespace impl::node_data;
 
 TESTED_TARGETS(PatternNode)
 TAGS(Parsing)
-class patternNodeTest final : public UNITTEST_SUBCLASS(re_test::TestHelper) {
+class PatternNodeTest final : public UNITTEST_SUBCLASS(re_test::TestHelper) {
 public:
     PatternNodePtr node;
 

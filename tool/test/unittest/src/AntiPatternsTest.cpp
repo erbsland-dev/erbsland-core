@@ -118,6 +118,49 @@ public:
         REQUIRE_FALSE(nested.namespaceScope(el::ByteIndex{40}));
     }
 
+    void testTypePlacementInUnitTestSources() {
+        using Case = std::tuple<el::String, el::String, el::String>;
+        const auto cases = std::array{
+            Case{
+                "test/unittest/src/ExampleTest.cpp"_el,
+                "TESTED_TARGETS(ExampleTest)\nclass ExampleTest final : public el::UnitTest {};"_el,
+                {}},
+            Case{
+                "tool/test/unittest/src/ExampleTest.cpp"_el,
+                "struct Fixture {};\nclass ExampleTest final : public UNITTEST_SUBCLASS(helpers::Fixture) {};"_el,
+                {}},
+            Case{
+                "checks/ExampleTest.cpp"_el,
+                "namespace sample { struct ExampleTest : ::erbsland::unittest::UnitTest, Extra {}; }"_el,
+                {}},
+            Case{"checks/WrongTest.cpp"_el, "class ExampleTest : public el::UnitTest {};"_el, "class ExampleTest"_el},
+            Case{"checks/ExampleTest.cpp"_el, "class ExampleTest : app::UnitTest {};"_el, "class ExampleTest"_el},
+            Case{
+                "checks/ExampleTest.cpp"_el,
+                "struct ExampleTest : UnitTest {};\nclass OtherTest : public el::UnitTest {};"_el,
+                "class OtherTest"_el},
+            Case{
+                "checks/ExampleTest.cpp"_el,
+                "struct ExampleTest : el::UnitTest {};\nstruct Owner::State {};"_el,
+                "struct Owner::State"_el},
+        };
+        const auto registry = tool::anti_patterns::RuleRegistry{};
+        const auto *rule = registry.find("type_in_wrong_unit"_el);
+        REQUIRE(rule != nullptr);
+        for (const auto &[path, text, expected] : cases) {
+            _failureDiagnostic = text;
+            const auto source = tool::anti_patterns::SourceIndex{el::Path{path}, text};
+            auto candidates = el::List<el::ByteRange>{};
+            rule->scan(source, candidates);
+            if (expected.isEmpty()) {
+                REQUIRE(candidates.isEmpty());
+            } else {
+                REQUIRE_EQUAL(candidates.count(), el::ItemCount{1});
+                REQUIRE(source.slice(candidates.first()).startsWith(expected));
+            }
+        }
+    }
+
     void testRuleExclusions() {
         using Case = std::tuple<el::String, el::String, el::String>;
         const auto cases = std::array<Case, 20>{

@@ -64,7 +64,6 @@ Reason                       : """
 ---*[ Anti Patterns . Exception ]*------------------------------------------------------------------------------------
 Path                         : "test/unittest/**"
 Rules                        :
-    * "type_in_wrong_unit"
     * "implementation_in_wrong_unit"
     * "static_cast_void"
     * "oversized_nested_type"
@@ -72,21 +71,12 @@ Rules                        :
 Reason                       : """
     Unit tests exercise low-level code and also illegal and invalid code to test the
     code base for failures. For this reason, unit tests use these constructs intentionally.
-    Unit tests keep test-local types with the tests that exercise them.
     """
 
 ---*[ Anti Patterns . Exception ]*------------------------------------------------------------------------------------
 Path                         : "test/unittest/src/**"
 Rules                        : "regular_string_literal"
 Reason                       : "The test framework requires std::string."
-
----*[ Anti Patterns . Exception ]*------------------------------------------------------------------------------------
-Path                         : "tool/test/unittest/src/**"
-Rules                        : "type_in_wrong_unit"
-Reason                       : """
-    Test-suite definitions live in .cpp files consumed by the test metadata generator; the general type rule
-    flags those definitions.
-    """
 
 ---*[ Anti Patterns . Exception ]*------------------------------------------------------------------------------------
 Path                         : "tool/test/unittest/src/ProjectFixture.hpp"
@@ -96,31 +86,23 @@ Reason                       :
 
 ---*[ Anti Patterns . Exception ]*------------------------------------------------------------------------------------
 Path                         : "test/fuzzing/**"
-Rules                        :
-    * "type_in_wrong_unit"
-    * "static_cast_void"
+Rules                        : "static_cast_void"
 Reason                       : """
-    Fuzz targets keep input-local types beside the fuzzing entry point.
     Fuzz entry points consume arbitrary inputs to exercise parser and verifier safety; a rejected input is not
     itself a fuzz failure.
     """
 
 ---*[ Anti Patterns . Exception ]*------------------------------------------------------------------------------------
 Path                         : "test/profiling/**"
-Rules                        :
-    * "type_in_wrong_unit"
-    * "oversized_file"
-Reason                       : """
-    Profiling tests keep test-local types with the tests that exercise them.
-    Profiling workloads keep each scenario, measurement loop, and result output together for review.
-    """
+Rules                        : "oversized_file"
+Reason                       :
+    "Profiling workloads keep each scenario, measurement loop, and result output together for review."
 
 ---*[ Anti Patterns . Exception ]*------------------------------------------------------------------------------------
 Path                         : "**/*Windows*"
 Rules                        :
     * "implementation_in_wrong_unit"
     * "regular_string_literal"
-    * "type_in_wrong_unit"
     * "namespace_in_wrong_unit"
     * "multiple_namespaces"
 Reason                       : """
@@ -136,7 +118,6 @@ Rules                        :
     * "implementation_in_wrong_unit"
     * "regular_string_literal"
     * "namespace_in_wrong_unit"
-    * "type_in_wrong_unit"
     * "multiple_namespaces"
 Reason                       : """
     Platform-neutral factories must select their POSIX implementations in the native integration units.

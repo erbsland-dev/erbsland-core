@@ -5,4 +5,5 @@ cmake_minimum_required(VERSION 3.28)
 
 target_sources(punycode-fuzz PRIVATE
         PunycodeFuzz.cpp
+        PunycodeFuzz.hpp
 )

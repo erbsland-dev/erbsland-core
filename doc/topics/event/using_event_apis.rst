@@ -444,3 +444,4 @@ delivery.
 
 Continue with :doc:`event_bindings` for target selection, argument ownership, and weak recipient bindings.
 :doc:`handling_event_errors` explains callback exceptions and the owner loop's failure policy.
+To design an editor for your own component, continue with :doc:`creating_event_sources`.

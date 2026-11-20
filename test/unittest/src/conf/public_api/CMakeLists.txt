@@ -7,9 +7,9 @@ add_subdirectory(document_api)
 add_subdirectory(value_types)
 
 target_sources(erbsland-core-unittest PRIVATE
+        ConfErrorTest.cpp
         DocumentBuilderTest.cpp
         ErrorCategoryTest.cpp
-        ErrorTest.cpp
         LocationTest.cpp
         SourceIdentifierTest.cpp
         TestFormatTest.cpp

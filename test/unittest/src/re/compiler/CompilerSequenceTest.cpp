@@ -4,7 +4,7 @@
 #include "CompilerBase.hpp"
 
 TESTED_TARGETS(Compiler)
-TAGS(Compilation) class CodeGeneratorSequenceTest final : public UNITTEST_SUBCLASS(CompilerBase) {
+TAGS(Compilation) class CompilerSequenceTest final : public UNITTEST_SUBCLASS(CompilerBase) {
 public:
     void testLongCharSequence() {
         WITH_CONTEXT(compileAndDisassemble("ElRE"_el));

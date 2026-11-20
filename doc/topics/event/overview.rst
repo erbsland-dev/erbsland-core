@@ -53,6 +53,13 @@ Callback Lifetimes and Ownership
 Complete lookup programs show how source ownership, lambda captures, and weak recipients prevent these mistakes.
 The page also explains subscription handles and why editor references cannot replace owning source pointers.
 
+Creating Event Sources and Notifications
+========================================
+
+:doc:`creating_event_sources` follows an inbox arrival from a directory scan into a consumer's handler.
+It shows where to bind the source, who owns its editor, and how to deliver a batch when a handler can replace itself or
+stop the watch.
+
 Scheduling Work and Timers
 ==========================
 
@@ -124,28 +131,23 @@ Event Loop Responsiveness and Overload Control
 It develops bounded chunks, outstanding-request limits, queue capacity policies, and coalesced progress updates, then
 explains blocking admission and how to interpret queue counts.
 
-Creating Event Sources and Notifications
-========================================
-
-:doc:`planned/creating_event_sources` explains how to publish a component's notifications through an event interface and
-connect its lifetime to an owning loop.
-
 Defining and Posting Typed Events
 =================================
 
-:doc:`planned/defining_custom_events` develops typed event data, event identifiers, and routing to recipients.
+:doc:`defining_custom_events` follows a cue boundary from its producer into the queue and out to a typed callback.
+It explains when a subsystem benefits from a custom event protocol.
 
 Writing an Event Backend
 ========================
 
-:doc:`planned/writing_event_backends` connects custom sources of work to a loop through backend dispatch, scheduling, and
-shutdown.
+:doc:`writing_event_backends` shows how a subsystem can report its next deadline, queue due changes, and finish after the
+last change reaches its consumer.
 
 Integrating Native Events with Loop Drivers
 ===========================================
 
-:doc:`planned/integrating_event_loop_drivers` covers native readiness and custom waiting behavior while preserving loop
-ownership and orderly shutdown.
+:doc:`integrating_event_loop_drivers` follows a POSIX log pipeline through native waiting, backend polling, and ordinary dispatch.
+It explains how an idle pipe, a scheduler deadline, and a wake from another thread share a single wait.
 
 Demo Application Walkthroughs
 =============================

@@ -1,0 +1,4 @@
+INFO Worker started
+WARN Response delayed
+ERROR Upstream timeout
+INFO Retrying request

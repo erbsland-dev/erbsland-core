@@ -21,10 +21,18 @@ Start with the monitors for a small main-loop application, then choose a walkthr
       - Derived application with procedural setup around main-loop dispatch
     * - :doc:`file_activity_monitor`
       - Fixed-rate file polling, a restartable inactivity timeout, and an overall deadline
+    * - :doc:`inbox_monitor`
+      - Publishing newly discovered files through a source-owned notification editor
     * - :doc:`file_hasher`
       - Procedural main, event workers, a result receiver, and joining
+    * - :doc:`caption_player`
+      - Merging subtitle timelines, queueing typed cue boundaries, and dispatching the last visible change
+    * - :doc:`pipe_log_summary`
+      - Integrating POSIX pipe readiness, loop wakes, and periodic reports
     * - :doc:`config_check`
       - Independent file checks, stored-error reporting, and an optional custom error limit
+    * - :doc:`manifest_verifier`
+      - Cooperative cancellation, a terminal reply, and draining a checksum report
     * - :doc:`git_change_summary`
       - Procedural preparation, lazy subprocess binding, and output processing on an event thread
     * - :doc:`file_server`
@@ -54,8 +62,12 @@ Start with the monitors for a small main-loop application, then choose a walkthr
     file_size_monitor
     file_time_monitor
     file_activity_monitor
+    inbox_monitor
     file_hasher
+    caption_player
+    pipe_log_summary
     config_check
+    manifest_verifier
     git_change_summary
     file_server
     file_search

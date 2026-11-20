@@ -30,9 +30,13 @@ The prohibition against hiding helpers in implementation files is also related t
 Exceptions
 ==========
 
-Demos and unit tests may keep example-local or test-local types beside the code that uses them.
+Demos may keep example-local types beside the code that uses them.
+An Erbsland Unit Test suite may be defined in a ``cpp`` file whose stem matches the suite name.
+Test-local fixtures and helper types may share that file with the matching suite.
 
 Mechanical Detection
 ====================
 
-The scanner reports namespace-scope class and struct definitions in ``cpp`` files.
+The scanner recognizes suite names ending in ``Test`` that derive from ``UnitTest`` or use ``UNITTEST_SUBCLASS``.
+It reports namespace-scope class and struct definitions in ``cpp`` files, allowing a matching suite and its local types.
+Additional suites with different names and out-of-line nested-type definitions are still reported.

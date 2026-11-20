@@ -81,110 +81,60 @@ of each continuation when the computation is split across callbacks.
 The second arrangement also lets the loop dispatch other work between those steps.
 :doc:`controlling_event_load` develops that scheduling pattern.
 
-.. erbsland-in-practice-begin:: Cancelling a Survey Between Steps
+.. erbsland-in-practice-begin:: Stopping a shipment check at the first mismatch
 
-This snippet surveys one habitat per callback and retains its progress in a stack-owned operation.
-A stop request queued after the first step runs before the next continuation.
-The continuation observes the token, records cancellation once, and returns without scheduling more work:
+The :doc:`manifest verifier </demo_apps/event/manifest_verifier>` checks the SHA-256 of each file in a shipment against
+its manifest.
+A full audit checks every entry.
+An importer using ``--fail-fast`` wants to abandon the batch when a checksum differs, while still recording the file
+that failed and how much work remains.
 
 .. erbsland-demo::
-    :source: event/snippets/EventShutdown/CancellableSurvey.hpp
-    :show: c:Loop that dispatches-c:Terminal outcomes
-    :sha256: 17c57c5213db11aa9d4395e46cccc60b28b907576e61b61bafc33b9cf3c12647
+    :source: event/apps/ManifestVerifier/src/VerificationSession.cpp
+    :show: f:VerificationSession::record, f:VerificationSession::check
+    :sha256: d8f1a3b274e1ff75e2f16edaf3d515fa98236fd9b5845734366ee38b56276d51
 
 .. code-block:: cpp
 
-    el::EventLoopPtr _loop;       ///< Loop that dispatches every survey step.
-    el::StopToken _stopToken;     ///< Operation cancellation, independent of loop termination.
-    std::size_t _processed = 0;   ///< Habitats already surveyed.
-    bool _cancelled = false;      ///< Whether cancellation ended the survey.
-    std::size_t _completions = 0; ///< Terminal outcomes recorded on the owner loop.
-
-.. erbsland-demo-end::
-
-.. erbsland-demo::
-    :source: event/snippets/EventShutdown/CancellableSurvey.cpp
-    :show: f:CancellableSurvey::advance, f:CancellableSurvey::finish
-    :sha256: f3fd89213dd51833f59f7f8a5728b3ba0902dc06690ab03f97e7d784f2744b82
-
-.. code-block:: cpp
-
-    void CancellableSurvey::advance() {
-        if (_completions != 0) {
-            return;
-        }
-        if (_stopToken.isStopRequested()) {
-            finish(true);
-            return;
-        }
-        constexpr auto habitats = std::array{"青龙林"_el, "凤凰谷"_el, "麒麟山"_el};
-        // One bounded unit of work before returning to dispatch.
-        el::io::printLine("Surveyed habitat: "_el, habitats[_processed]);
-        ++_processed;
-        if (_processed == habitats.size()) {
-            finish(false);
-            return;
-        }
-        _loop->invoke([this]() -> void { advance(); });
-    }
-
-    void CancellableSurvey::finish(const bool cancelled) {
-        _cancelled = cancelled;
-        ++_completions;
-        if (cancelled) {
-            el::io::printLine("Survey cancelled after "_el, _processed, " habitat."_el);
+    void VerificationSession::record(const el::ItemIndex index, const bool matches) {
+        ++_checked;
+        const auto &name = _entries.getRefOrThrow(index).name();
+        if (matches) {
+            el::io::printLine("OK        "_el, name);
         } else {
-            el::io::printLine("Survey complete."_el);
+            ++_mismatches;
+            el::io::printLine("MISMATCH  "_el, name);
+            if (_failFast) {
+                _cancellation.requestStop();
+            }
         }
+        schedule(index.incremented());
+    }
+
+    void VerificationSession::check(const el::ItemIndex index, const el::StopToken &stop) {
+        if (stop.isStopRequested() || !index.isWithin(_entries.count())) {
+            _owner->invoke([this]() -> void { finish({}); });
+            return;
+        }
+        const auto &entry = _entries.getRefOrThrow(index);
+        const auto matches = entry.matchesFile(_directory);
+        _owner->invoke([this, index, matches]() -> void { record(index, matches); });
     }
 
 .. erbsland-demo-end::
 
-The runner retains both the operation and the stop source until the loop has dispatched all immediately available work:
+Consider a shipment containing a catalog, a price list, and a stock list.
+The worker hashes the catalog and returns its result to the owner.
+Only after recording it does the owner authorize the next check.
+If the price list has changed, the owner records the mismatch before signalling the stop source.
+The next command observes the token and sends a terminal reply without opening the stock file.
+Without the flag, that same command verifies the stock file.
 
-.. erbsland-demo::
-    :source: event/snippets/EventShutdown/CooperativeCancellation.cpp
-    :show: a:loop-c:All borrowed state(+0,+1)
-    :exec: event/event_shutdown --demo CooperativeCancellation
-    :sha256: 8fcb7354396a5036712d649cecd3abf459175751f719f24d975a2651295d8d96
-
-.. code-block:: cpp
-
-    const auto loop = el::EventLoop::create(el::EventLoopOptions{}.setErrorPolicy(el::EventLoopErrorPolicy::Quit));
-    auto cancellation = el::StopSource{};
-    auto survey = CancellableSurvey{loop, cancellation.stopToken()};
-    auto unrelatedRan = false;
-
-    loop->invoke([&survey]() -> void { survey.advance(); });
-    loop->invoke([&cancellation]() -> void {
-        cancellation.requestStop();
-        cancellation.requestStop(); // Repeating the request does not complete the operation twice.
-        el::io::printLine("Cancellation requested; completion is still pending."_el);
-    });
-    loop->invoke([&unrelatedRan]() -> void {
-        unrelatedRan = true;
-        el::io::printLine("Unrelated callback still runs."_el);
-    });
-    // All borrowed state outlives the callbacks, including the survey's continuation.
-    const auto dispatched = loop->runUntilIdle();
-
-.. erbsland-demo-run::
-
-    .. erbsland-ansi::
-        :escape-char: ␛
-
-        ␛[0mSurveyed habitat: 青龙林
-        Cancellation requested; completion is still pending.
-        Unrelated callback still runs.
-        Survey cancelled after 1 habitat.␛[0m
-
-.. erbsland-demo-end::
-
-The result check verifies one surveyed habitat and one cancelled completion.
-An unrelated callback still runs: cancelling the survey does not terminate the loop.
-Requesting cancellation twice does not create two completions.
-The example uses an open, unlimited queue so its continuation can be submitted; it does not demonstrate cancellation of
-an indefinitely blocked callback.
+One file is the cancellation unit here.
+The owner makes its decision between files, when no hash is in progress.
+The 64 KiB reads bound the hash buffer size.
+A different utility that accepts stop requests while hashing a large file would need to check the token inside that read
+loop as well.
 
 .. erbsland-in-practice-end::
 
@@ -287,42 +237,53 @@ Later calls to :cpp:func:`invoke() <erbsland::event::EventTarget::invoke>` or
 These frontend methods return no acceptance result, so returning normally never proves that a callback will execute.
 A draining callback must not depend on submitting a further continuation to the same loop.
 
-.. erbsland-in-practice-begin:: Seeing the Admission Boundary
+.. erbsland-in-practice-begin:: Keeping the final verification report
 
-This snippet queues two observations, requests quit, then attempts a third submission before starting dispatch:
+The manifest owner must receive the worker's terminal reply before closing admission.
+That reply records any I/O error and queues one final report while the loop is still open:
 
 .. erbsland-demo::
-    :source: event/snippets/EventShutdown/DrainAcceptedWork.cpp
-    :show: a:loop-c:Run the accepted callbacks(+0,+1)
-    :exec: event/event_shutdown --demo DrainAcceptedWork
-    :sha256: 4834670c1352d574463499a605147ff5b36e52e5da28ce43e7cef02ac10c375c
+    :source: event/apps/ManifestVerifier/src/VerificationSession.cpp
+    :show: f:VerificationSession::finish, f:VerificationSession::printSummary
+    :files: ../../../demos/event/apps/ManifestVerifier/example-files/shipment.sha256 ../../../demos/event/apps/ManifestVerifier/example-files/catalog.txt ../../../demos/event/apps/ManifestVerifier/example-files/prices.txt ../../../demos/event/apps/ManifestVerifier/example-files/stock.txt
+    :exec: event/manifest-verifier --fail-fast shipment.sha256
+    :exec-exit-code: 1
+    :show-cmd-line:
+    :sha256: 3b122ca51e60524bff79d405fb9b80dfc99148568f50435b0881b9486eccd632
 
 .. code-block:: cpp
 
-    const auto loop = el::EventLoop::create(el::EventLoopOptions{}.setErrorPolicy(el::EventLoopErrorPolicy::Quit));
-    auto observations = el::StringList{};
-    loop->invoke([&observations]() -> void { observations.append("Molntäcke"_el); });
-    loop->invoke([&observations]() -> void { observations.append("Havsis"_el); });
-    loop->quit();
-    loop->invoke([&observations]() -> void { observations.append("Snödjup"_el); });
-    // Run the accepted callbacks.
-    loop->run();
+    void VerificationSession::finish(std::exception_ptr error) {
+        _error = std::move(error);
+        _owner->invoke([this]() -> void { printSummary(); });
+        _owner->quit();
+    }
+
+    void VerificationSession::printSummary() const {
+        el::io::printLine(
+            "Checked: "_el, _checked, ", mismatches: "_el, _mismatches, ", unchecked: "_el, _entries.count() - _checked);
+    }
 
 .. erbsland-demo-run::
+
+    .. code-block:: console
+
+        $ event/manifest-verifier --fail-fast shipment.sha256
 
     .. erbsland-ansi::
         :escape-char: ␛
 
-        ␛[0mRecorded: Molntäcke
-        Recorded: Havsis␛[0m
+        ␛[0mOK        catalog.txt
+        MISMATCH  prices.txt
+        Checked: 2, mismatches: 1, unchecked: 1␛[0m
 
 .. erbsland-demo-end::
 
-Only the first two observations appear.
-The loop and captured collection remain on the runner's stack until ``run()`` returns, and the demo checks the exact
-result afterward.
-Calling :cpp:func:`quit() <erbsland::event::EventLoop::quit>` before ``run()`` makes the admission boundary visible
-without concurrent producers.
+The summary runs during drain and needs no follow-up callback.
+If the owner called ``quit()`` in the mismatch handler, the terminal reply could arrive after admission closed.
+Queuing the report after ``quit()`` would also lose it.
+The caller joins the worker after owner dispatch returns.
+The stack-owned session outlives both the report and the worker, including the path that delivers a file error.
 
 .. erbsland-in-practice-end::
 

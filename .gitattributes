@@ -10,3 +10,6 @@ test/unittest/data/resource/** -text
 
 # Render profiler validation hashes require platform-independent source bytes.
 test/profiling/render/data/** text eol=lf
+
+# The manifest verifier checks the fixture bytes on each platform.
+demos/event/apps/ManifestVerifier/example-files/*.txt text eol=lf

@@ -25,4 +25,7 @@ Event System
     handling_event_errors
     shutting_down_event_work
     controlling_event_load
-    planned/index
+    defining_custom_events
+    writing_event_backends
+    creating_event_sources
+    integrating_event_loop_drivers

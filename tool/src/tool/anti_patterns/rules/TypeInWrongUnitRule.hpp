@@ -21,6 +21,12 @@ public: // implement Rule
     [[nodiscard]] auto severity() const -> Severity override;
     /// Inspect one source index for this rule.
     void scan(const SourceIndex &source, el::List<el::ByteRange> &candidates) const override;
+
+private:
+    /// Recognize a suite declaration supported by the Erbsland Unit Test metadata generator.
+    /// @param header The masked text preceding the type's opening brace.
+    /// @return Whether the declaration is a unit-test suite.
+    [[nodiscard]] static auto isTestSuite(const el::String &header) -> bool;
 };
 
 }

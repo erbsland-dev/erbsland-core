@@ -48,7 +48,7 @@ target_sources(erbsland-core-unittest PRIVATE
         ModernSignatureTest.cpp
         NistPrimeNumberTest.cpp
         P256KeyAgreementTest.cpp
-        PasswordHashTest.cpp
+        PasswordHasherTest.cpp
         PasswordPrimitiveTest.cpp
         ProtectedByteBlockTest.cpp
         RsaSignatureFullTest.cpp

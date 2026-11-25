@@ -63,24 +63,6 @@ breathe_projects = {"erbsland-core": _project_dir / "_build/breathe/doxygen/erbs
 breathe_default_project = "erbsland-core"
 # erbsland_doxygen caches XML generation. Breathe's automatic source processing
 # reruns Doxygen on every build and invalidates unchanged reference pages.
-breathe_doxygen_config_options = {
-    "STRIP_FROM_PATH": _processed_src_dir,
-    "STRIP_FROM_INC_PATH": _processed_src_dir,
-    "JAVADOC_AUTOBRIEF": "yes",
-    # Reference pages explicitly select the public API they render. Missing
-    # comments on every parsed implementation detail are therefore not an
-    # actionable diagnostic; malformed documentation remains reported.
-    "WARN_IF_UNDOCUMENTED": "no",
-    "ALIASES": '"tested{1}=@verbatim embed:rst^^:el-tested:`\\1`^^@endverbatim", '
-    '"notest{1}=@verbatim embed:rst^^:el-notest:`\\1`^^@endverbatim", '
-    '"needtest{1}=@verbatim embed:rst^^:el-needtest:`\\1`^^@endverbatim", '
-    '"usesunidb{1}=@verbatim embed:rst^^:el-unicode-db:`\\1`^^@endverbatim", '
-    '"wip=@par Work in Progress:^^", '
-    '"seedoc{1}=@verbatim embed:rst^^See: :doc:`\\1`^^@endverbatim", '
-    '"seeref{1}=@verbatim embed:rst^^See: :ref:`\\1`^^@endverbatim"',
-    "ENABLE_PREPROCESSING": "yes",
-    "MACRO_EXPANSION": "no",
-    "RECURSIVE": "yes",
-    # Reference directives render declarations and comments, not source listings.
-    "XML_PROGRAMLISTING": "no",
-}
+from erbsland_doxygen import default_config_options
+
+breathe_doxygen_config_options = default_config_options(_processed_src_dir)

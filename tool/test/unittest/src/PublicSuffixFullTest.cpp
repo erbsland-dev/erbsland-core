@@ -21,7 +21,7 @@ public:
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
     void testOfficialIdnaConformance() {
-        _root = tool::frame::ProjectRoot{el::Path::currentDirectory()}.discover();
+        _root = tool::frame::ProjectRoot{el::Path::currentDirectory(), TestToolApplication::coreProject()}.discover();
         runWithSources(el::StringList{tool::unicode::UnicodeSource::sourceIdentifier()}, [&] {
             const auto &source = tool::frame::app().source<tool::unicode::UnicodeSource>();
             const auto dataset = tool::unicode::UcdDataset{
@@ -53,7 +53,7 @@ public:
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
     void testCompleteEncodingAndDeterminism() {
-        _root = tool::frame::ProjectRoot{el::Path::currentDirectory()}.discover();
+        _root = tool::frame::ProjectRoot{el::Path::currentDirectory(), TestToolApplication::coreProject()}.discover();
         runWithSources(
             el::StringList{
                 tool::unicode::UnicodeSource::sourceIdentifier(), tool::psl::PublicSuffixSource::sourceIdentifier()},
@@ -79,7 +79,7 @@ public:
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
     void testCurrentOutputFreshness() {
-        _root = tool::frame::ProjectRoot{el::Path::currentDirectory()}.discover();
+        _root = tool::frame::ProjectRoot{el::Path::currentDirectory(), TestToolApplication::coreProject()}.discover();
         runWithSources(
             el::StringList{
                 tool::unicode::UnicodeSource::sourceIdentifier(), tool::psl::PublicSuffixSource::sourceIdentifier()},
@@ -102,7 +102,7 @@ public:
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
     void testRuleSyntaxAndLabelPreparation() {
-        _root = tool::frame::ProjectRoot{el::Path::currentDirectory()}.discover();
+        _root = tool::frame::ProjectRoot{el::Path::currentDirectory(), TestToolApplication::coreProject()}.discover();
         runWithSources(el::StringList{tool::unicode::UnicodeSource::sourceIdentifier()}, [&] {
             const auto &source = tool::frame::app().source<tool::unicode::UnicodeSource>();
             const auto processor = tool::idna::LabelProcessor{source.idnaData(), source.normalizer(), source.mapping()};

@@ -44,8 +44,8 @@ runtime's fixed buffers before rendering.
 Encoded decomposition, combining-class, and composition streams are limited to 29,000, 2,100, and 4,700 bytes; combined
 storage is limited to 36,000 bytes.
 
-The source classes prepare and validate values; render templates under ``tool/resources/unicode`` own the generated C++
-layout.
+The source classes prepare and validate values; render templates under ``tool/lib/core/resources/unicode`` own the
+generated C++ layout.
 ``UnicodeDataTool`` renders all three files before updating any destination.
 
 Verification

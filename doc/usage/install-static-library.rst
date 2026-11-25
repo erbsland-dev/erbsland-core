@@ -72,3 +72,6 @@ Point CMake to a custom installation prefix when configuring the consumer:
 Both setup helpers select the available Core target automatically.
 Use ``erbsland_core_setup_static_library(TARGET example_library)`` for a static-library target, whether Core is
 integrated from source or consumed as an installed package.
+
+If your application also uses an extension distributed as a shared library, see
+:ref:`usage-installed-shared-extension` for package discovery and runtime deployment.

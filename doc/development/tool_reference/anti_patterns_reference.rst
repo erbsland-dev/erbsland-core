@@ -18,7 +18,8 @@ Configuration
 
 The ``Anti Patterns`` section in ``tool/conf/tools/anti_patterns.elcl`` defines ``Source Directories``,
 ``File Suffixes``, optional rule sections, and zero or more ``Exception`` entries.
-Shipped roots include library sources, demos, build helpers, tests, ``tool/src``, and ``tool/test/unittest/src``.
+Shipped roots include library sources, demos, build helpers, tests, ``tool/app/src``, ``tool/lib/*/src``, and
+``tool/test/unittest/src``.
 ``Source Directories`` is a list of project-relative directory globs.
 Each pattern matches complete directory paths; the matching directories are scanned recursively.
 Plain directory paths remain valid, ``*`` matches within one path component, and ``**`` matches recursively.

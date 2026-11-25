@@ -67,7 +67,7 @@ whitespace.
 Converted JSON and archive records use Core ZIP, JSON, hashing, and Base-N APIs.
 Negative signature and certificate payloads are preserved without production cryptology validation.
 
-Templates under ``tool/resources/cryptology_vectors`` own response field ordering, group iteration, conditional
+Templates under ``tool/lib/core/resources/cryptology_vectors`` own response field ordering, group iteration, conditional
 sections, manifest layout, and provenance.
 Native code supplies structured render values directly.
 The generated ``README.rst`` records configured URLs, revisions, checksums, attribution, and selection notes.

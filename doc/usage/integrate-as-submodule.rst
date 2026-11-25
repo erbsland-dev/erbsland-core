@@ -25,7 +25,7 @@ Place all Erbsland Core libraries below one directory:
     <project>
         ├── erbsland
         │   ├── core                    # Git submodule
-        │   ├── <extension>             # Future Erbsland Core extension
+        │   ├── <extension>             # Optional extension submodule
         │   └── CMakeLists.txt          # Erbsland Core aggregation
         ├── <application-or-library>
         │   ├── src
@@ -65,10 +65,9 @@ The aggregation file owns the individual Erbsland Core subdirectories:
     :caption: <project>/erbsland/CMakeLists.txt
 
     add_subdirectory(core EXCLUDE_FROM_ALL)
-    # add_subdirectory(<extension> EXCLUDE_FROM_ALL)
 
 This structure keeps the top-level project stable when extensions are added or removed.
-Add Core before extensions because an extension may use Core's types and CMake target.
+When your application needs an extension, :doc:`extensions` shows how to add its submodule here and link its target.
 
 Configure an Application Target
 ===============================

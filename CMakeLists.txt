@@ -27,6 +27,8 @@ option(ERBSLAND_CORE_ENABLE_FUZZING "Enable Clang libFuzzer targets" OFF)
 # Repository development tools.
 option(ERBSLAND_CORE_ENABLE_TOOLS "Enable erbsland-core-tool development tools" ${PROJECT_IS_TOP_LEVEL})
 
+option(ERBSLAND_CORE_ENABLE_TOOL_LIBRARIES "Build reusable repository maintenance libraries" OFF)
+
 # Public API examples.
 option(ERBSLAND_CORE_ENABLE_DEMOS "Enable demos" ${PROJECT_IS_TOP_LEVEL})
 
@@ -105,6 +107,6 @@ if(ERBSLAND_CORE_ENABLE_TESTS
 endif()
 
 # The unit-test framework is available after adding the test infrastructure.
-if(ERBSLAND_CORE_ENABLE_TOOLS)
+if(ERBSLAND_CORE_ENABLE_TOOLS OR ERBSLAND_CORE_ENABLE_TOOL_LIBRARIES)
     add_subdirectory(tool)
 endif()

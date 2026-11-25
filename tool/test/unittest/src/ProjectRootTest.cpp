@@ -11,30 +11,30 @@ public:
     void testAncestorDiscovery() {
         const auto nested = _root / "a/b/c/d"_el;
         nested.operations().createDirectoryOrThrow(el::PathCreateDirectoryOptions{}.setCreateParents(true));
-        REQUIRE_EQUAL(tool::frame::ProjectRoot{nested}.discover(), _root);
+        REQUIRE_EQUAL((tool::frame::ProjectRoot{nested, TestToolApplication::coreProject()}.discover()), _root);
     }
 
     void testCharacterBoundary() {
         write(
             "CMakeLists.txt"_el,
             el::join(el::String::fromCharacter(U'\n', el::CpCount{1002}), "project(erbsland-core)\n"_el));
-        REQUIRE_EQUAL(tool::frame::ProjectRoot{_root}.validate(), _root);
+        REQUIRE_EQUAL((tool::frame::ProjectRoot{_root, TestToolApplication::coreProject()}.validate()), _root);
         write(
             "CMakeLists.txt"_el,
             el::join(el::String::fromCharacter(U'\n', el::CpCount{1024}), "project(erbsland-core)\n"_el));
-        REQUIRE_THROWS(tool::frame::ProjectRoot{_root}.validate());
+        REQUIRE_THROWS((tool::frame::ProjectRoot{_root, TestToolApplication::coreProject()}.validate()));
     }
 
     void testMarkerWhitespaceAndCase() {
         write("CMakeLists.txt"_el, "  PrOjEcT ( erbsland-core LANGUAGES CXX)\n"_el);
-        REQUIRE_EQUAL(tool::frame::ProjectRoot{_root}.validate(), _root);
+        REQUIRE_EQUAL((tool::frame::ProjectRoot{_root, TestToolApplication::coreProject()}.validate()), _root);
         write("CMakeLists.txt"_el, "project(erbsland-core)\n"_el);
-        REQUIRE_EQUAL(tool::frame::ProjectRoot{_root}.validate(), _root);
+        REQUIRE_EQUAL((tool::frame::ProjectRoot{_root, TestToolApplication::coreProject()}.validate()), _root);
     }
 
     void testInvalidMarkers() {
         write("CMakeLists.txt"_el, "# project(erbsland-core)\nproject(erbsland-core-tool)\n"_el);
-        REQUIRE_THROWS(tool::frame::ProjectRoot{_root}.validate());
-        REQUIRE_THROWS(tool::frame::ProjectRoot{_root}.discover());
+        REQUIRE_THROWS((tool::frame::ProjectRoot{_root, TestToolApplication::coreProject()}.validate()));
+        REQUIRE_THROWS((tool::frame::ProjectRoot{_root, TestToolApplication::coreProject()}.discover()));
     }
 };

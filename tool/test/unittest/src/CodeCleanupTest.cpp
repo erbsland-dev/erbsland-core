@@ -94,6 +94,17 @@ public:
             index.resolve(file, "erbsland/a/impl/Private.hpp"_el, global, tree), "erbsland/a/impl/Private.hpp"_el);
     }
 
+    void testSharedIncludePrefixPreservesOtherDomains() {
+        auto policy = makePolicy();
+        policy.sharedIncludePrefix = true;
+        auto index = makeIndex(policy);
+        index.add(policy.library / "a/String.hpp"_el);
+        auto global = true;
+        const auto file = policy.library / "a/Example.cpp"_el;
+        REQUIRE_EQUAL(index.resolve(file, "erbsland/String.hpp"_el, global, policy.trees[0]), "erbsland/String.hpp"_el);
+        REQUIRE(global);
+    }
+
     void testAmbiguityAndMissingHeaders() {
         auto policy = makePolicy();
         auto index = makeIndex(policy);

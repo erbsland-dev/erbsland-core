@@ -14,7 +14,18 @@
 /// @notest{Unit-test fixture; exercised by ToolApplicationTest.}
 class TestToolApplication final : public tool::frame::ToolApplication {
 public:
-    using ToolApplication::ToolApplication;
+    /// Create the Core maintenance application with a captured terminal.
+    /// @param argc Native argument count.
+    /// @param argv Native arguments.
+    TestToolApplication(int argc, char *argv[]) : ToolApplication{argc, argv, coreProject()} {}
+
+public: // fixtures
+    /// Get the identity of the project used by Core's maintenance fixtures.
+    [[nodiscard]] static auto coreProject() -> tool::frame::ToolProject {
+        using namespace el::text::literals;
+        return {
+            "Erbsland Core"_el, "erbsland-core"_el, "erbsland-core-tool"_el, "tool/conf/erbsland-core-tool.elcl"_el};
+    }
 
 protected: // implement Application
     auto createAndInitializeTerminal(

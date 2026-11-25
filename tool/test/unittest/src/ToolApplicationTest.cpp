@@ -97,7 +97,7 @@ public:
     }
 
     void testDuplicateRegistration() {
-        auto application = tool::frame::ToolApplication{};
+        auto application = tool::frame::ToolApplication{TestToolApplication::coreProject()};
         application.registerTool<tool::idna::IdnaTool>();
         try {
             application.registerTool<tool::idna::IdnaTool>();

@@ -15,8 +15,8 @@ For everyday command invocation, see :doc:`Use the maintenance tool <../tool_usa
 Startup Sequence
 ================
 
-``ToolApplication`` (``tool/src/tool/frame/ToolApplication.cpp``) uses Core's application lifecycle for parsing options
-and displaying help, version information, and the command overview.
+``ToolApplication`` (``tool/lib/frame/src/tool/frame/ToolApplication.cpp``) uses Core's application lifecycle for
+parsing options and displaying help, version information, and the command overview.
 Those displays do not require project discovery or configuration.
 
 For command execution, the application:
@@ -45,12 +45,12 @@ Log files are opened before project validation and are not mediated by ``Project
 Project Discovery
 =================
 
-``ProjectRoot`` (``tool/src/tool/frame/ProjectRoot.cpp``) searches from the working directory upward unless
+``ProjectRoot`` (``tool/lib/frame/src/tool/frame/ProjectRoot.cpp``) searches from the working directory upward unless
 ``--project`` selects a directory explicitly.
 An explicit directory is validated directly; it does not start an upward search.
 
-A candidate root must contain a ``CMakeLists.txt`` with an uncommented ``project(erbsland-core ...)`` command in its
-first 1,024 characters.
+The first 1,024 characters of the root ``CMakeLists.txt`` must declare the CMake project supplied by the executable, for
+example ``project(erbsland-core ...)`` for Core or ``project(erbsland-core-ldap ...)`` for LDAP.
 Matching ignores case and permits whitespace around the command and project name.
 The name must end with whitespace or ``)``, so a longer name beginning with ``erbsland-core`` does not match.
 Discovery stops at the filesystem root or an access failure.
@@ -64,7 +64,8 @@ Once a root is selected, project data access goes through ``ProjectFiles``.
 Project File Access
 ===================
 
-``ProjectFiles`` (``tool/src/tool/frame/ProjectFiles.hpp``) interprets relative paths from the validated project root.
+``ProjectFiles`` (``tool/lib/frame/src/tool/frame/ProjectFiles.hpp``) interprets relative paths from the validated
+project root.
 It normalizes paths lexically, verifies containment before querying path components, and rejects symlinks and reparse
 points before visiting children.
 General text and binary reads enforce the link policy at the native file-open boundary, avoiding a redundant metadata
@@ -193,7 +194,8 @@ See :doc:`rendering_reference` for rendering settings and placeholder syntax.
 Configuration Loading and Includes
 ==================================
 
-The default file is ``tool/conf/erbsland-core-tool.elcl`` inside the selected root.
+The executable supplies a config path relative to the selected root.
+Core uses ``tool/conf/erbsland-core-tool.elcl``.
 An explicit relative ``--config`` path is instead resolved from the working directory.
 The main configuration file is checked by ``ProjectFiles`` before parsing.
 
@@ -205,8 +207,8 @@ Include Access Checks
 ---------------------
 
 Included sources take a different route from ordinary project input files.
-``ProjectAccessCheck`` (``tool/src/tool/frame/ProjectAccessCheck.cpp``) checks each source's absolute path before Core
-opens it.
+``ProjectAccessCheck`` (``tool/lib/frame/src/tool/frame/ProjectAccessCheck.cpp``) checks each source's absolute path
+before Core opens it.
 Core resolves included symlinks to their physical targets, and only targets inside the project are accepted.
 Directory resolution and wildcard scanning happen before this access check.
 Thus an include symlink with an internal target can be accepted even though an ordinary ``ProjectFiles`` input path
@@ -255,15 +257,16 @@ canonical hyphen spelling and whose help title is nonempty.
 Template Rendering
 ==================
 
-The maintenance library embeds ``.cpp`` and ``.tpl`` templates from ``tool/resources`` and its subdirectories.
+The maintenance library embeds ``.cpp`` and ``.tpl`` templates from ``tool/lib/<part>/resources`` and its
+subdirectories.
 ``createRenderEnvironment()`` loads those templates by resource path under the ``erbsland-core-tool`` identifier.
 The display-text compiler embeds shared ``.hpp`` and ``.cpp`` templates from ``cmake/tools/display-text-compiler/data``
 under a separate identifier and adds its own loader.
 See :doc:`display_text_generator_reference` for that generator's contract and :doc:`../tool_dev/write_command` for
 adding a generator.
 
-The renderer installs ``current_year``, ``copyright_line``, and ``license_line`` globals; local context values take
-precedence.
+The renderer supplies ``tool_name``, ``current_year``, ``copyright_line``, and ``license_line`` globals.
+Local context values take precedence.
 Templates supply comment prefixes; output comparison recognizes copyright years only on the first physical line.
 See :doc:`rendering_reference` for header configuration.
 

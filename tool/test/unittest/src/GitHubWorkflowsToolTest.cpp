@@ -10,6 +10,14 @@ TAGS(FullRun)
 TESTED_TARGETS(tool::github_workflows::GitHubWorkflowsTool)
 class GitHubWorkflowsToolTest final : public UNITTEST_SUBCLASS(MaintenanceProjectFixture) {
 public:
+    void testEmptyWorkflowDirectory() {
+        prepareWorkflow();
+        (_root / ".github/workflows/ci.yml"_el).operations().removeOrThrow();
+        REQUIRE_EQUAL(workflow(), 0);
+        REQUIRE(_outputText.contains("0 workflow files"_el));
+        REQUIRE_FALSE((_root / ".fixture-calls"_el).info().exists());
+    }
+
     void testReadOnlyAuditAndOneLookupPerRepository() {
         prepareWorkflow();
         write(

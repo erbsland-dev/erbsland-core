@@ -118,7 +118,7 @@ public: // tests
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
     void testRegistrationIdentityAndEarlyAccess() {
-        auto application = tool::frame::ToolApplication{};
+        auto application = tool::frame::ToolApplication{TestToolApplication::coreProject()};
         auto source = FirstDataSource{};
         REQUIRE_THROWS(source.logging());
         REQUIRE_THROWS(application.source<FirstDataSource>());
@@ -130,7 +130,7 @@ public: // tests
         REQUIRE_THROWS(application.registerSource<ReservedSource>());
         application.registerTool<DataSourceProbeTool>();
         REQUIRE_THROWS(application.registerSource<ToolCollisionSource>());
-        auto reverseOrder = tool::frame::ToolApplication{};
+        auto reverseOrder = tool::frame::ToolApplication{TestToolApplication::coreProject()};
         reverseOrder.registerSource<ToolCollisionSource>();
         REQUIRE_THROWS(reverseOrder.registerTool<DataSourceProbeTool>());
     }

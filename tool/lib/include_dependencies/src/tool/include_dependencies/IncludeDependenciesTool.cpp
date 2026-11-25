@@ -1,0 +1,454 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#include "IncludeDependenciesTool.hpp"
+
+#include <erbsland/ApplicationError.hpp>
+#include <erbsland/conf/ConfError.hpp>
+#include <erbsland/conf/vr/RulesBuilder.hpp>
+#include <erbsland/conf/vr/RulesBuilderBranch.hpp>
+#include <erbsland/OptionChoices.hpp>
+#include <erbsland/OptionError.hpp>
+#include <erbsland/PathError.hpp>
+#include <erbsland/PathInfo.hpp>
+#include <erbsland/StandardStreams.hpp>
+#include <erbsland/StringEditor.hpp>
+#include <erbsland/StringFormat.hpp>
+#include <erbsland/StringJoins.hpp>
+#include <tool/frame/ToolApplication.hpp>
+
+namespace tool::include_dependencies {
+
+using namespace el::text::literals;
+
+auto IncludeDependenciesTool::identifier() const -> el::String {
+    return "include_dependencies"_el;
+}
+
+auto IncludeDependenciesTool::title() const -> el::String {
+    return "Inspect library include dependencies."_el;
+}
+
+auto IncludeDependenciesTool::description() const -> el::String {
+    return "Query, export, and validate the explicit library include graph. The default mode is summary."_el;
+}
+
+auto IncludeDependenciesTool::optionModule() const -> el::OptionModulePtr {
+    auto module = Tool::optionModule();
+    auto modes = el::OptionChoices::create();
+    modes->addChoice("summary"_el)
+        .setHelpTitle("Graph totals"_el)
+        .setHelpDescription("Count source roles, edges and cycles."_el);
+    modes->addChoice("tree"_el)
+        .setHelpTitle("Dependency tree"_el)
+        .setHelpDescription("Show a tree from one source argument."_el);
+    modes->addChoice("path"_el)
+        .setHelpTitle("Shortest path"_el)
+        .setHelpDescription("Find a chain between two source arguments."_el);
+    modes->addChoice("cycles"_el)
+        .setHelpTitle("Include cycles"_el)
+        .setHelpDescription("List cyclic strongly connected components."_el);
+    modes->addChoice("export"_el)
+        .setHelpTitle("Graph export"_el)
+        .setHelpDescription("Write the complete graph as JSON or DOT."_el);
+    modes->addChoice("check"_el)
+        .setHelpTitle("Required dependencies"_el)
+        .setHelpDescription("Check all rules or one named rule argument."_el);
+    module->addOption({cModeOption})
+        .setChoices(modes)
+        .setDefaultValue(el::String{"summary"_el})
+        .setHelpTitle("Select a query"_el)
+        .setHelpDescription("Defaults to summary; subsequent arguments depend on this mode."_el);
+    module->addOption({cArgumentsOption})
+        .setType(el::OptionType::Text)
+        .setMaximum(el::ArgumentCount{2})
+        .setHelpTitle("Source paths or rule name"_el)
+        .setHelpDescription("Tree takes one path; path takes two; check accepts one rule name."_el);
+    module->addOption({"--reverse"_el, cReverseOption})
+        .setHelpTitle("Show dependents"_el)
+        .setHelpDescription("Reverse the edges in tree mode."_el);
+    module->addOption({"--max-depth"_el, cMaxDepthOption})
+        .setType(el::OptionType::Integer)
+        .setValueName("depth"_el)
+        .setHelpTitle("Limit tree depth"_el)
+        .setHelpDescription("Use a nonnegative depth in tree mode; zero shows only the root and truncation marker."_el);
+    auto formats = el::OptionChoices::create();
+    formats->addChoice("json"_el).setHelpTitle("JSON"_el).setHelpDescription(
+        "Schema version 1 with counts and cycle data."_el);
+    formats->addChoice("dot"_el)
+        .setHelpTitle("Graphviz DOT"_el)
+        .setHelpDescription("A directed graph with include-line edge labels."_el);
+    module->addOption({"--format"_el, cFormatOption})
+        .setChoices(formats)
+        .setValueName("format"_el)
+        .setHelpTitle("Choose export format"_el)
+        .setHelpDescription("Export mode only; defaults to JSON."_el);
+    module->addOption({"--output"_el, cOutputOption})
+        .setType(el::OptionType::Text)
+        .setValueName(cRuleNameValue)
+        .setHelpTitle("Write an ignored report"_el)
+        .setHelpDescription("Export to a filename under temporary_data/include_dependencies; otherwise use stdout."_el);
+    module->addOption({"--all"_el, cAllOption})
+        .setHelpTitle("List every violation"_el)
+        .setHelpDescription("In check mode, include all missing public headers alongside insertion suggestions."_el);
+    return module;
+}
+
+auto IncludeDependenciesTool::configurationRules() const -> el::conf::vr::RulesPtr {
+    using namespace el::conf::vr;
+    using namespace el::conf::vr::builder;
+    auto rules = RulesBuilder{};
+    rules.configureRoot(
+        Title{"Include dependencies"_el},
+        Description{"Publication scope and required transitive include relationships."_el});
+    rules.addRule(
+        cPublicHeaderMapValue,
+        RuleType::Text,
+        Default{"tool/data/public_headers/header_map.txt"_el},
+        Title{"Public header map"_el},
+        Description{"Project-relative canonical-first mapping generated by update-public-headers."_el});
+    rules.addRule(
+        cGitExecutableValue,
+        RuleType::Text,
+        Default{"git"_el},
+        Minimum{1},
+        Title{"Git executable"_el},
+        Description{
+            "Executable basename or absolute path used to verify exported reports are ignored and untracked."_el});
+    rules.addRule(
+        cSafeBinaryDirectoriesValue,
+        RuleType::ValueList,
+        EntryType{RuleType::Text},
+        Minimum{1},
+        Title{"Safe binary directories"_el},
+        Description{"Absolute trusted roots for resolved external executables; project executables are rejected."_el});
+    rules.addRule(
+        cRequiredDependenciesValue,
+        RuleType::SectionList,
+        Minimum{1},
+        Title{"Required dependencies"_el},
+        Description{"Named requirements applied to all published regular headers."_el});
+    rules.addRule(
+        "required_dependencies.vr_entry"_el,
+        RuleType::Section,
+        Title{"Dependency rule"_el},
+        Description{"A unique name, source-relative target, and optional exemptions."_el});
+    auto entry = rules.createBranch("required_dependencies.vr_entry"_el);
+    entry.addRule(
+        cRuleNameValue,
+        RuleType::Text,
+        Matches{R"([A-Za-z0-9_\-]+)"_el},
+        Title{"Rule name"_el},
+        Description{"Unique case-sensitive selector accepted by check."_el});
+    entry.addRule(
+        cRuleTargetValue,
+        RuleType::Text,
+        Minimum{1},
+        Title{"Required target"_el},
+        Description{"Source-relative file every non-exempt public header must reach."_el});
+    entry.addRule(
+        cExcludedHeadersValue,
+        RuleType::ValueList,
+        EntryType{RuleType::Text},
+        IsOptional{},
+        Title{"Excluded headers"_el},
+        Description{"Source-relative files exempt from this dependency requirement."_el});
+    return rules.takeRules();
+}
+
+void IncludeDependenciesTool::configureOptions(const el::OptionValuesPtr &values) {
+    _values = values;
+    _mode = values->getText(cModeOption);
+    _arguments = values->getTextList(cArgumentsOption);
+    auto minimum = el::ItemCount{};
+    auto maximum = el::ItemCount{};
+    if (_mode == "tree"_el) {
+        minimum = maximum = el::ItemCount{1};
+    }
+    if (_mode == "path"_el) {
+        minimum = maximum = el::ItemCount{2};
+    }
+    if (_mode == "check"_el) {
+        maximum = el::ItemCount{1};
+    }
+    if (_arguments.count() < minimum || _arguments.count() > maximum) {
+        throw el::OptionError{
+            "Invalid Query Arguments"_el,
+            "Tree requires one path, path requires two, check accepts one rule name; other modes take no arguments."_el,
+            values->value(cModeOption)};
+    }
+    for (const auto &name : el::StringList{cReverseOption, cMaxDepthOption, cFormatOption, cOutputOption, cAllOption}) {
+        auto expected = "tree"_el;
+        if (name == cFormatOption || name == cOutputOption) {
+            expected = "export"_el;
+        }
+        if (name == cAllOption) {
+            expected = "check"_el;
+        }
+        if (values->value(name) && _mode != expected) {
+            throw el::OptionError{
+                "Option Does Not Apply"_el, el::join("This option requires mode "_el, expected), values->value(name)};
+        }
+    }
+    _reverse = values->getFlag(cReverseOption);
+    _all = values->getFlag(cAllOption);
+    _format = values->getText(cFormatOption, "json"_el);
+    if (const auto depth = values->value(cMaxDepthOption)) {
+        if (depth->getInteger() < 0) {
+            throw el::OptionError{"Invalid Tree Depth"_el, "The depth must not be negative."_el, depth};
+        }
+        _depth = el::ItemCount::fromInteger(depth->getInteger());
+    }
+}
+
+void IncludeDependenciesTool::validateRelative(const el::conf::ValuePtr &value) {
+    const auto text = value->asTextOrThrow();
+    try {
+        const auto path = el::Path{text};
+        if (!text.isEmpty() && path.isRelative() && !path.elements().contains(".."_el) &&
+            !path.elements().contains("."_el) && !text.contains("\\"_el) && path.toPosix() == text) {
+            return;
+        }
+    } catch (const el::PathError &) {
+        throw el::conf::ConfError{
+            value, "Invalid Source Path"_el, "The source path cannot be interpreted."_el, std::current_exception()};
+    }
+    throw el::conf::ConfError{
+        value, "Invalid Source Path"_el, "Use a source-relative POSIX path without dot components."_el};
+}
+
+void IncludeDependenciesTool::configure(const el::conf::ValuePtr &configuration, const el::OptionValuesPtr &values) {
+    configureOptions(values);
+    const auto &files = frame::app().files();
+    const auto mappingValue = configuration->valueOrThrow(cPublicHeaderMapValue);
+    const auto mappingPath = files.checked(mappingValue, el::PathType::RegularFile);
+    try {
+        _mapping.read(files.readText(mappingPath), mappingPath.toString());
+    } catch (const el::ApplicationError &) {
+        throw el::conf::ConfError{
+            mappingValue,
+            "Invalid Public Header Map"_el,
+            "The configured mapping could not be read or validated."_el,
+            std::current_exception()};
+    }
+    auto names = el::StringHashSet{};
+    for (const auto &entry : *configuration->getSectionListOrThrow(cRequiredDependenciesValue)) {
+        DependencyRule rule;
+        rule.configuration = entry;
+        rule.name = entry->getTextOrThrow(cRuleNameValue);
+        if (!names.tryInsert(rule.name)) {
+            throw el::conf::ConfError{
+                entry->valueOrThrow(cRuleNameValue),
+                "Duplicate Rule Name"_el,
+                "Dependency rule names must be unique."_el};
+        }
+        validateRelative(entry->valueOrThrow(cRuleTargetValue));
+        rule.target = entry->getTextOrThrow(cRuleTargetValue);
+        if (const auto excluded = entry->value(cExcludedHeadersValue)) {
+            for (const auto &value : excluded->toValueList()) {
+                validateRelative(value);
+            }
+        }
+        _rules.append(std::move(rule));
+    }
+    if (_mode == "check"_el && !_arguments.isEmpty() && !names.contains(_arguments.first())) {
+        throw el::OptionError{
+            "Unknown Dependency Rule"_el,
+            el::join("No configured rule named "_el, _arguments.first()),
+            values->value(cArgumentsOption)};
+    }
+    const auto directories =
+        frame::ExternalCommand::directories(configuration->valueOrThrow(cSafeBinaryDirectoriesValue));
+    auto git = frame::ExternalCommand{};
+    git.configure(
+        configuration->valueOrThrow(cGitExecutableValue),
+        directories,
+        files.projectRoot(),
+        values->value(cOutputOption) != nullptr);
+    _sourceRoot = files.checked(files.projectRoot() / "src/erbsland"_el);
+    if (!_sourceRoot.info().isDirectory()) {
+        throw el::ApplicationError{"Missing Source Directory"_el, "Expected a directory at src/erbsland."_el}
+            .withSourcePath(_sourceRoot.toString());
+    }
+    configureOutput(values, git);
+}
+
+void IncludeDependenciesTool::configureOutput(const el::OptionValuesPtr &values, const frame::ExternalCommand &git) {
+    const auto option = values->value(cOutputOption);
+    if (!option) {
+        return;
+    }
+    auto name = option->getText();
+    auto path = el::Path{};
+    try {
+        path = el::Path{name};
+    } catch (const el::PathError &) {
+        throw el::OptionError{
+            "Invalid Report Filename"_el, "The filename cannot be interpreted."_el, option, std::current_exception()};
+    }
+    const auto suffix = el::join("."_el, _format);
+    if (name.trimmed().isEmpty() || !path.isRelative() || path.name() != name || name == "."_el || name == ".."_el ||
+        name.contains("/"_el) || name.contains("\\"_el) || name.containsOneOf(el::CharSet{U'\n', U'\r'})) {
+        throw el::OptionError{
+            "Invalid Report Filename"_el, "Use a local filename without directory components."_el, option};
+    }
+    if (!path.suffix().isEmpty() && path.suffix().compare(suffix, el::Char::compareAsciiFolded) != 0) {
+        throw el::OptionError{"Invalid Report Suffix"_el, el::join("The filename must end in "_el, suffix), option};
+    }
+    if (path.suffix().isEmpty()) {
+        name = el::join(name, suffix);
+    }
+    const auto &files = frame::app().files();
+    try {
+        _output = files.checked(el::Path{"temporary_data/include_dependencies"_el} / name, true);
+        if (_output.info().exists() && !_output.info().isRegularFile()) {
+            throw el::ApplicationError{
+                "Invalid Report Destination"_el, "An existing report must be a regular file."_el};
+        }
+    } catch (const el::ApplicationError &) {
+        throw el::OptionError{
+            "Unsafe Report Destination"_el,
+            "The report path must be confined and free of links."_el,
+            option,
+            std::current_exception()};
+    }
+    const auto relative = _output.toRelativeOrThrow(files.projectRoot()).toPosix();
+    const auto tracked =
+        git.run(el::StringList{"ls-files"_el, "--error-unmatch"_el, "--"_el, relative}, files.projectRoot());
+    if (tracked.status.exitCode() != 1) {
+        throw el::OptionError{
+            "Report Tracking Check Failed"_el,
+            el::join("The report is tracked or Git could not verify its tracking state. "_el, tracked.error),
+            option};
+    }
+    const auto ignored =
+        git.run(el::StringList{"check-ignore"_el, "--quiet"_el, "--"_el, relative}, files.projectRoot());
+    if (!ignored.status.isSuccess()) {
+        throw el::OptionError{
+            "Report Is Not Ignored"_el,
+            el::join("Git must confirm the report is ignored before it can be written. "_el, ignored.error),
+            option};
+    }
+}
+
+void IncludeDependenciesTool::resolveRules(const IncludeGraph &graph) {
+    auto resolved = el::List<DependencyRule>{};
+    for (auto rule : _rules) {
+        const auto resolve = [&](const el::conf::ValuePtr &value) -> el::String {
+            try {
+                const auto path = value->asTextOrThrow();
+                const auto resolved = graph.resolve(path);
+                if (resolved != path) {
+                    throw el::ApplicationError{"Incomplete Source Path"_el, "Use the full source-relative path."_el};
+                }
+                return resolved;
+            } catch (const el::ApplicationError &) {
+                throw el::conf::ConfError{
+                    value,
+                    "Unknown Dependency Source"_el,
+                    "The configured path must identify an inventoried source."_el,
+                    std::current_exception()};
+            }
+        };
+        rule.target = resolve(rule.configuration->valueOrThrow(cRuleTargetValue));
+        if (const auto excluded = rule.configuration->value(cExcludedHeadersValue)) {
+            for (const auto &value : excluded->toValueList()) {
+                rule.excluded.insert(resolve(value));
+            }
+        }
+        resolved.append(std::move(rule));
+    }
+    _rules = std::move(resolved);
+}
+
+auto IncludeDependenciesTool::resolveArgument(const IncludeGraph &graph, const el::ItemIndex index) const
+    -> el::String {
+    try {
+        return graph.resolve(_arguments.get(index));
+    } catch (const el::ApplicationError &) {
+        throw el::OptionError{
+            "Invalid Source Argument"_el,
+            "Use a full source path or an unambiguous suffix."_el,
+            _values->value(cArgumentsOption),
+            std::current_exception()};
+    }
+}
+
+auto IncludeDependenciesTool::check(const IncludeGraph &graph) const -> el::String {
+    auto output = el::StringEditor{};
+    auto failed = false;
+    for (const auto &rule : _rules) {
+        if (!_arguments.isEmpty() && rule.name != _arguments.first()) {
+            continue;
+        }
+        const auto analysis = graph.analyze(rule.target, rule.excluded);
+        if (analysis.missing.isEmpty()) {
+            output.append(el::StringFormat{"{}: all public headers reach {}.\n"_el}.build(rule.name, rule.target));
+            continue;
+        }
+        failed = true;
+        output.append(
+            el::StringFormat{"{}: {} public headers do not reach {}.\nLeaf insertion points:\n"_el}.build(
+                rule.name, analysis.missing.count(), rule.target));
+        for (const auto &path : analysis.insertions) {
+            const auto target = (_sourceRoot / rule.target).toRelativeOrThrow((_sourceRoot / path).parent()).toPosix();
+            output.append(el::StringFormat{"  {}: #include \"{}\"\n"_el}.build(path, target));
+        }
+        if (_all) {
+            output.append("All affected public headers:\n"_el).append(analysis.missing.join("\n"_el)).append("\n"_el);
+        }
+    }
+    if (failed) {
+        throw el::ApplicationError{"Required Include Dependencies Missing"_el, output};
+    }
+    return output;
+}
+
+void IncludeDependenciesTool::execute() {
+    const auto &files = frame::app().files();
+    const auto graph = IncludeGraph{files, _sourceRoot, _mapping};
+    resolveRules(graph);
+    auto output = el::String{};
+    if (_mode == "summary"_el) {
+        output = graph.summaryText();
+    } else if (_mode == "tree"_el) {
+        output = graph.tree(resolveArgument(graph, el::ItemIndex{}), _reverse, _depth);
+    } else if (_mode == "path"_el) {
+        const auto chain =
+            graph.shortestPath(resolveArgument(graph, el::ItemIndex{}), resolveArgument(graph, el::ItemIndex{1}));
+        if (chain.isEmpty()) {
+            throw el::ApplicationError{
+                "No Include Path"_el, "The selected target is not reachable from the source."_el};
+        }
+        output = el::join(chain.join("\n"_el), "\n"_el);
+    } else if (_mode == "cycles"_el) {
+        auto text = el::StringEditor{};
+        const auto cycles = graph.cycles();
+        text.append(el::StringFormat{"Include cycles: {}\n"_el}.build(cycles.count()));
+        for (const auto &cycle : cycles) {
+            text.append(cycle.join("\n"_el)).append("\n\n"_el);
+        }
+        output = text;
+    } else if (_mode == "check"_el) {
+        output = check(graph);
+    } else {
+        if (_format == "json"_el) {
+            output = graph.toJson();
+        } else {
+            output = graph.toDot();
+        }
+        if (!_output.isEmpty()) {
+            files.createDirectories(_output.parent());
+            files.updateText(_output, output);
+            log()->info("Wrote ignored include dependency report: "_el, _output.toRelativeOrThrow(files.projectRoot()));
+            return;
+        }
+        if (el::stream::stdOut()->write(output).isFailure() || el::stream::stdOut()->flush().isFailure()) {
+            throw el::ApplicationError{
+                "Report Output Failed"_el, "Standard output could not accept the complete export."_el};
+        }
+        return;
+    }
+    log()->info(output);
+}
+
+}

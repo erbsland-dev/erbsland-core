@@ -11,7 +11,7 @@ public:
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
     void testRangeAndPageSerialization() {
-        _root = tool::frame::ProjectRoot{el::Path::currentDirectory()}.discover();
+        _root = tool::frame::ProjectRoot{el::Path::currentDirectory(), TestToolApplication::coreProject()}.discover();
         runWithSources(el::StringList{tool::unicode::UnicodeSource::sourceIdentifier()}, [&] {
             const auto &data = tool::frame::app().source<tool::unicode::UnicodeSource>().idnaData();
             const auto ranges = data.ranges();
@@ -53,7 +53,7 @@ public:
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
     void testCurrentOutputFreshness() {
-        _root = tool::frame::ProjectRoot{el::Path::currentDirectory()}.discover();
+        _root = tool::frame::ProjectRoot{el::Path::currentDirectory(), TestToolApplication::coreProject()}.discover();
         runWithSources(el::StringList{tool::unicode::UnicodeSource::sourceIdentifier()}, [&] {
             const auto &data = tool::frame::app().source<tool::unicode::UnicodeSource>().idnaData();
             const auto output = tool::idna::IdnaTool::render(data);

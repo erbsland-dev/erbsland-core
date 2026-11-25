@@ -42,11 +42,10 @@ Include Roots                :
 Directories                  : "test/adapter/src"
 
 ----[ Code Cleanup . Sources . Tool ]---------------------------------------------------------------------------------
-Directories                  : "tool/src"
+Directories                  : "tool/app/src", "tool/lib/*/src"
 
 ----[ Code Cleanup . Sources . Tool Tests ]---------------------------------------------------------------------------
 Directories                  : "tool/test/unittest/src"
-Include Roots                : "tool/src"
 
 ----[ Code Cleanup . Sources . Profiling Framework Tests ]------------------------------------------------------------
 Directories                  : "test/profiling/framework/test/src"
@@ -89,12 +88,52 @@ Directory                    : "test/unittest/src"
 Target                       : "erbsland-core-unittest"
 
 ----[ Code Cleanup . Cmake . Trees . Tool Executable ]----------------------------------------------------------------
-Directory                    : "tool/src"
+Directory                    : "tool/app/src"
 Target                       : "erbsland-core-tool"
 
-----[ Code Cleanup . Cmake . Trees . Tool Library ]-------------------------------------------------------------------
-Directory                    : "tool/src/tool"
-Target                       : "erbsland-core-tool-lib"
+----[ Code Cleanup . Cmake . Trees . Tool Anti Patterns ]-------------------------------------------------------------
+Directory                    : "tool/lib/anti_patterns/src"
+Target                       : "erbsland-core-tool-anti_patterns"
+
+----[ Code Cleanup . Cmake . Trees . Tool Cleanup ]-------------------------------------------------------------------
+Directory                    : "tool/lib/cleanup/src"
+Target                       : "erbsland-core-tool-cleanup"
+
+----[ Code Cleanup . Cmake . Trees . Tool Core ]----------------------------------------------------------------------
+Directory                    : "tool/lib/core/src"
+Target                       : "erbsland-core-tool-core"
+
+----[ Code Cleanup . Cmake . Trees . Tool Doc ]-----------------------------------------------------------------------
+Directory                    : "tool/lib/doc/src"
+Target                       : "erbsland-core-tool-doc"
+
+----[ Code Cleanup . Cmake . Trees . Tool Elcl Format ]---------------------------------------------------------------
+Directory                    : "tool/lib/elcl_format/src"
+Target                       : "erbsland-core-tool-elcl_format"
+
+----[ Code Cleanup . Cmake . Trees . Tool Frame ]---------------------------------------------------------------------
+Directory                    : "tool/lib/frame/src"
+Target                       : "erbsland-core-tool-frame"
+
+----[ Code Cleanup . Cmake . Trees . Tool Github Workflows ]----------------------------------------------------------
+Directory                    : "tool/lib/github_workflows/src"
+Target                       : "erbsland-core-tool-github_workflows"
+
+----[ Code Cleanup . Cmake . Trees . Tool Headers ]-------------------------------------------------------------------
+Directory                    : "tool/lib/headers/src"
+Target                       : "erbsland-core-tool-headers"
+
+----[ Code Cleanup . Cmake . Trees . Tool Include Dependencies ]------------------------------------------------------
+Directory                    : "tool/lib/include_dependencies/src"
+Target                       : "erbsland-core-tool-include_dependencies"
+
+----[ Code Cleanup . Cmake . Trees . Tool Pre Commit ]----------------------------------------------------------------
+Directory                    : "tool/lib/pre_commit/src"
+Target                       : "erbsland-core-tool-pre_commit"
+
+----[ Code Cleanup . Cmake . Trees . Tool Security Hashes ]-----------------------------------------------------------
+Directory                    : "tool/lib/security_hashes/src"
+Target                       : "erbsland-core-tool-security_hashes"
 
 ----[ Code Cleanup . Cmake . Trees . Tool Tests ]---------------------------------------------------------------------
 Directory                    : "tool/test/unittest/src"

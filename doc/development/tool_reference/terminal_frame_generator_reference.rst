@@ -41,7 +41,7 @@ The common box-frame command emits source-order characters and attributes, exact
 special character indexes.
 The frame-border command selects a 5 by 5 by 5 by 5 joint table, with named round-corner characters from the same
 source.
-Render templates under ``tool/resources/cterm`` own both C++ layouts.
+Render templates under ``tool/lib/core/resources/cterm`` own both C++ layouts.
 
 Verification
 ============

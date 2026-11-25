@@ -14,6 +14,7 @@ PROJECT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("repository_setup", PROJECT / "setup.py")
 bootstrap = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bootstrap)
+import erbsland_setup as shared
 
 
 class SetupTest(unittest.TestCase):
@@ -35,8 +36,8 @@ class SetupTest(unittest.TestCase):
                 python.parent.mkdir(parents=True)
                 python.touch()
 
-        with patch.object(bootstrap, "run", side_effect=complete) as run, patch.object(
-            bootstrap, "install_binary"
+        with patch.object(shared, "run", side_effect=complete) as run, patch.object(
+            shared, "install_binary"
         ) as install:
             bootstrap.setup(self.root)
         commands = [call.args[0] for call in run.call_args_list]
@@ -49,11 +50,13 @@ class SetupTest(unittest.TestCase):
         self.assertIn("-DCMAKE_BUILD_TYPE=Release", commands[4])
         self.assertIn("-DERBSLAND_CORE_ENABLE_TESTS=OFF", commands[4])
         self.assertEqual(commands[5][-3:], ["--target", "erbsland-core-tool", "--parallel"])
-        install.assert_called_once_with(self.root, self.root / "cmake-build-erbsland-core-tool-release")
+        install.assert_called_once_with(
+            self.root, self.root / "cmake-build-erbsland-core-tool-release", "erbsland-core-tool"
+        )
 
     def test_failure_stops_before_install(self):
-        with patch.object(bootstrap, "run", side_effect=bootstrap.SetupError("failure")) as run, patch.object(
-            bootstrap, "install_binary"
+        with patch.object(shared, "run", side_effect=bootstrap.SetupError("failure")) as run, patch.object(
+            shared, "install_binary"
         ) as install:
             with self.assertRaises(bootstrap.SetupError):
                 bootstrap.setup(self.root)
@@ -62,7 +65,7 @@ class SetupTest(unittest.TestCase):
 
     def test_incomplete_environment_and_invalid_root(self):
         (self.root / ".venv").mkdir()
-        with patch.object(bootstrap, "run") as run:
+        with patch.object(shared, "run") as run:
             with self.assertRaises(bootstrap.SetupError):
                 bootstrap.setup(self.root)
             run.assert_not_called()
@@ -71,16 +74,16 @@ class SetupTest(unittest.TestCase):
             bootstrap.setup(self.root)
 
     def test_command_failure_has_diagnostic(self):
-        with patch.object(bootstrap.subprocess, "run", side_effect=subprocess.CalledProcessError(9, ["cmake"])):
+        with patch.object(shared.subprocess, "run", side_effect=subprocess.CalledProcessError(9, ["cmake"])):
             with self.assertRaisesRegex(bootstrap.SetupError, "status 9"):
-                bootstrap.run(["cmake"], self.root, "Build")
+                shared.run(["cmake"], self.root, "Build")
 
     def test_install_and_update(self):
-        bootstrap.install_binary(self.root, self.build)
+        shared.install_binary(self.root, self.build, "erbsland-core-tool")
         destination = self.root / "tool/bin" / self.name
         self.assertEqual(destination.read_bytes(), b"binary")
         self.source.write_bytes(b"updated")
-        bootstrap.install_binary(self.root, self.build)
+        shared.install_binary(self.root, self.build, "erbsland-core-tool")
         self.assertEqual(destination.read_bytes(), b"updated")
         self.assertFalse(destination.with_name(f".{self.name}.new").exists())
         if os.name != "nt":
@@ -91,20 +94,20 @@ class SetupTest(unittest.TestCase):
         shortcut = self.root / "erbsland-core-tool"
         shortcut.write_text("user data")
         with self.assertRaises(bootstrap.SetupError):
-            bootstrap.install_binary(self.root, self.build)
+            shared.install_binary(self.root, self.build, "erbsland-core-tool")
         self.assertEqual(shortcut.read_text(), "user data")
         self.assertFalse((self.root / "tool/bin" / self.name).exists())
         shortcut.unlink()
         shortcut.symlink_to("elsewhere")
         with self.assertRaises(bootstrap.SetupError):
-            bootstrap.install_binary(self.root, self.build)
+            shared.install_binary(self.root, self.build, "erbsland-core-tool")
         self.assertEqual(os.readlink(shortcut), "elsewhere")
 
     def test_copy_failure_preserves_installed_binary(self):
-        bootstrap.install_binary(self.root, self.build)
-        with patch.object(bootstrap.shutil, "copy2", side_effect=OSError("failed copy")):
+        shared.install_binary(self.root, self.build, "erbsland-core-tool")
+        with patch.object(shared.shutil, "copy2", side_effect=OSError("failed copy")):
             with self.assertRaises(OSError):
-                bootstrap.install_binary(self.root, self.build)
+                shared.install_binary(self.root, self.build, "erbsland-core-tool")
         destination = self.root / "tool/bin" / self.name
         self.assertEqual(destination.read_bytes(), b"binary")
         self.assertFalse(destination.with_name(f".{self.name}.new").exists())

@@ -144,7 +144,8 @@ protected: // fixtures
     }
 
     [[nodiscard]] auto files() const -> tool::frame::ProjectFiles {
-        return tool::frame::ProjectFiles{tool::frame::ProjectRoot{_root}.validate()};
+        return tool::frame::ProjectFiles{
+            tool::frame::ProjectRoot{_root, TestToolApplication::coreProject()}.validate()};
     }
 
     void write(const el::String &relative, const el::String &text) {

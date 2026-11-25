@@ -10,15 +10,15 @@ This guide takes a command from its class definition through configuration, exec
 Start with :doc:`build_and_test` and the :doc:`framework` overview.
 Try an existing command using :doc:`../tool_usage/usage` before adding your own.
 
-Use ``tool/src/tool/idna/IdnaTool.hpp`` and ``tool/src/tool/idna/IdnaTool.cpp`` as a complete example alongside these
-steps.
+Use ``tool/lib/core/src/tool/idna/IdnaTool.hpp`` and ``tool/lib/core/src/tool/idna/IdnaTool.cpp`` as a complete example
+alongside these steps.
 
 .. _development-tool-framework-1-define-the-command:
 
 1. Define the Command
 =====================
 
-Derive your command class from ``tool::frame::Tool`` (``tool/src/tool/frame/Tool.hpp``).
+Derive your command class from ``tool::frame::Tool`` (``tool/lib/frame/src/tool/frame/Tool.hpp``).
 Four methods are required:
 
 .. list-table::
@@ -142,8 +142,8 @@ See ``UcdReader::throwError()`` for an example.
 4. Render and Save Generated Files
 ==================================
 
-For a generator used only by the maintenance tool, keep templates in ``tool/resources``.
-The build compiles ``.cpp`` templates from this directory into ``erbsland-core-tool-lib``, including templates in
+For a generator used only by the maintenance tool, keep templates in ``tool/lib/<part>/resources``.
+The build compiles ``.cpp`` templates from this directory into ``erbsland-core-tool-<part>``, including templates in
 subdirectories.
 When another executable shares the generator, keep one template source beside that generator and embed it into both
 targets, as the display-text compiler does with its ``data`` directory.
@@ -168,11 +168,11 @@ Your command must add the check option and turn a difference into a failure if t
 5. Connect the Command to the Application
 =========================================
 
-Add the command's sources to ``erbsland-core-tool-lib`` through a ``CMakeLists.txt`` in its source directory, following
-the existing IDNA target sources (``tool/src/tool/idna/CMakeLists.txt``).
-Add the directory in ``tool/src/tool/CMakeLists.txt``.
+Add the command's sources to ``erbsland-core-tool-<part>`` through a ``CMakeLists.txt`` in its source directory,
+following the existing IDNA target sources (``tool/lib/core/src/tool/idna/CMakeLists.txt``).
+Add the directory in ``tool/lib/core/src/tool/CMakeLists.txt``.
 
-Include the command header in ``tool/src/main.cpp`` and register the class before ``app.run()``.
+Include the command header in ``tool/app/src/main.cpp`` and register the class before ``app.run()``.
 The existing registration is ``app.registerTool<tool::idna::IdnaTool>()``; use your own command class in the same way.
 Registration rejects duplicate identifiers, collisions with sources or reserved sections, and invalid metadata.
 

@@ -69,7 +69,7 @@ public:
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
     void testPinnedSnapshotMatchesFixture() {
-        _root = tool::frame::ProjectRoot{el::Path::currentDirectory()}.discover();
+        _root = tool::frame::ProjectRoot{el::Path::currentDirectory(), TestToolApplication::coreProject()}.discover();
         runWithSources(el::StringList{tool::unicode::UnicodeSource::sourceIdentifier()}, [&] {
             const auto &source = tool::frame::app().source<tool::unicode::UnicodeSource>();
             REQUIRE_EQUAL(

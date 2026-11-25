@@ -11,7 +11,8 @@ Source Directories           :
     * "test/constant-time/*/src"
     * "test/adapter/src"
     * "test/fuzzing/*/src"
-    * "tool/src"
+    * "tool/app/src"
+    * "tool/lib/*/src"
     * "tool/test/unittest/src"
 File Suffixes                : ".cpp", ".hpp", ".tpp"
 

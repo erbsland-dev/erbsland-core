@@ -14,6 +14,7 @@ Usage
     :hidden:
 
     integrate-as-submodule
+    extensions
     build-configuration
     install-static-library
 
@@ -30,6 +31,12 @@ Source integration through a pinned Git submodule is our recommended way for any
 
         Place Core below ``erbsland/core``, aggregate Erbsland Core libraries in one CMake directory, and configure
         executables with Core's application setup helper.
+
+    .. grid-item-card:: :fas:`puzzle-piece;sd-text-success` Use an Extension
+        :link: extensions
+        :link-type: doc
+
+        Add an extension beside Core or link an installed extension package to your application.
 
     .. grid-item-card:: :fas:`sliders;sd-text-success` Configure the Build
         :link: build-configuration

@@ -17,7 +17,7 @@ From the project root, run a full scan or select project-relative files and dire
 .. code-block:: console
 
     ./erbsland-core-tool anti-patterns
-    ./erbsland-core-tool anti-patterns src/erbsland/text tool/src/tool/anti_patterns
+    ./erbsland-core-tool anti-patterns src/erbsland/text tool/lib/anti_patterns/src/tool/anti_patterns
     ./erbsland-core-tool anti-patterns --jobs 4 --limit 50
     ./erbsland-core-tool anti-patterns --show-suppressed
 

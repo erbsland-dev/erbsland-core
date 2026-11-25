@@ -49,6 +49,9 @@ Directory globs must match existing directories; walks skip symlinks and reparse
     * - ``Format.Cache File``
       - Disposable cache; ``.cache/code_cleanup/fingerprints.txt``.
 
+Set ``Shared Include Prefix`` for an extension that shares its public prefix with Core.
+Cleanup preserves external angle includes that are absent from the extension's header map and source tree.
+
 Generated CMake headers use the framework's shared ``Rendering`` copyright and license settings.
 The default copyright spelling is ``Copyright (c)``.
 Cleanup preserves existing copyright notices in C++ sources; their generators own those headers.
@@ -56,7 +59,8 @@ The shipped C++ scope covers library sources, unit tests, demos, constant-time a
 helpers, fuzzers, interoperability and heap tests, macOS tests, CMake fixtures, and maintenance tool sources, tests, and
 test helpers.
 Selections use actual source directories so sibling data and generator templates are preserved.
-CMake cleanup covers ``src``, ``test/unittest/src``, ``tool/src``, and ``tool/test/unittest/src``.
+CMake cleanup covers ``src``, ``test/unittest/src``, ``tool/app/src``, ``tool/lib/*/src``, and
+``tool/test/unittest/src``.
 
 ``Directories`` accepts plain paths, ``*`` within a path component, and recursive ``**`` patterns.
 Each pattern matches complete directory paths and must select at least one directory.

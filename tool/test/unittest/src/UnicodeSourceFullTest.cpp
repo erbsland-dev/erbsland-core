@@ -14,7 +14,7 @@ public:
     SKIP_BY_DEFAULT()
     TAGS(FullRun)
     void testOfficialNfcConformance() {
-        _root = tool::frame::ProjectRoot{el::Path::currentDirectory()}.discover();
+        _root = tool::frame::ProjectRoot{el::Path::currentDirectory(), TestToolApplication::coreProject()}.discover();
         runWithSources(el::StringList{tool::unicode::UnicodeSource::sourceIdentifier()}, [&] {
             const auto &source = tool::frame::app().source<tool::unicode::UnicodeSource>();
             const auto dataset = tool::unicode::UcdDataset{

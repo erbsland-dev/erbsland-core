@@ -33,10 +33,35 @@ def remove_include_graphs(xml_dir: Path) -> None:
             path.write_bytes(compact)
 
 
+def default_config_options(source_dir: Path) -> dict:
+    """Return the shared Erbsland API documentation conventions."""
+    return {
+        "STRIP_FROM_PATH": source_dir,
+        "STRIP_FROM_INC_PATH": source_dir,
+        "JAVADOC_AUTOBRIEF": "yes",
+        # Reference pages explicitly select the public API they render. Missing
+        # comments on every parsed implementation detail are therefore not an
+        # actionable diagnostic; malformed documentation remains reported.
+        "WARN_IF_UNDOCUMENTED": "no",
+        "ALIASES": '"tested{1}=@verbatim embed:rst^^:el-tested:`\\1`^^@endverbatim", '
+        '"notest{1}=@verbatim embed:rst^^:el-notest:`\\1`^^@endverbatim", '
+        '"needtest{1}=@verbatim embed:rst^^:el-needtest:`\\1`^^@endverbatim", '
+        '"usesunidb{1}=@verbatim embed:rst^^:el-unicode-db:`\\1`^^@endverbatim", '
+        '"wip=@par Work in Progress:^^", '
+        '"seedoc{1}=@verbatim embed:rst^^See: :doc:`\\1`^^@endverbatim", '
+        '"seeref{1}=@verbatim embed:rst^^See: :ref:`\\1`^^@endverbatim"',
+        "ENABLE_PREPROCESSING": "yes",
+        "MACRO_EXPANSION": "no",
+        "RECURSIVE": "yes",
+        # Reference directives render declarations and comments, not source listings.
+        "XML_PROGRAMLISTING": "no",
+    }
+
+
 def doxygen_configuration(app: Sphinx, source_dir: Path, output_dir: Path) -> str:
     """Render the same XML-only input and aliases previously supplied by Breathe."""
     lines = [
-        'PROJECT_NAME = "erbsland-core"',
+        f'PROJECT_NAME = "{app.config.breathe_default_project}"',
         f'OUTPUT_DIRECTORY = "{output_dir}"',
         f'INPUT = "{source_dir / "erbsland"}"',
         "GENERATE_HTML = NO",
@@ -59,18 +84,18 @@ def doxygen_configuration(app: Sphinx, source_dir: Path, output_dir: Path) -> st
     return "\n".join(lines) + "\n"
 
 
-def preprocess_sources() -> Path:
+def preprocess_sources(project: Path, tool_name: str) -> Path:
     """Invoke the selected C++ preprocessor and return its generated input directory."""
-    project = Path(__file__).resolve().parents[2]
+    variable = tool_name.upper().replace("-", "_")
     executable = Path(
         os.environ.get(
-            "ERBSLAND_CORE_TOOL",
-            project / "tool" / "bin" / ("erbsland-core-tool.exe" if os.name == "nt" else "erbsland-core-tool"),
+            variable,
+            project / "tool" / "bin" / (f"{tool_name}.exe" if os.name == "nt" else tool_name),
         )
     )
     if not executable.is_file():
         raise ExtensionError(
-            "The maintenance tool is missing. Run setup.py or set ERBSLAND_CORE_TOOL to a built executable."
+            f"The maintenance tool is missing. Run setup.py or set {variable} to a built executable."
         )
     try:
         subprocess.run([str(executable), "doc-preprocess-sources", "--project", str(project)], cwd=project, check=True)
@@ -81,8 +106,9 @@ def preprocess_sources() -> Path:
 
 def prepare_doxygen(app: Sphinx) -> None:
     """Refresh XML only when preprocessed sources or Doxygen settings changed."""
-    source_dir = preprocess_sources()
-    output_dir = Path(app.config.breathe_projects["erbsland-core"]).parent
+    project_name = app.config.breathe_default_project
+    source_dir = preprocess_sources(Path(app.confdir).parent, app.config.erbsland_doc_tool)
+    output_dir = Path(app.config.breathe_projects[project_name]).parent
     configuration = doxygen_configuration(app, source_dir, output_dir)
     digest = hashlib.sha256(configuration.encode("utf-8"))
     digest.update((source_dir / ".preprocess-sources-run").read_bytes())
@@ -97,7 +123,7 @@ def prepare_doxygen(app: Sphinx) -> None:
     # A failed/interrupted run must never leave a valid cache stamp behind.
     stamp.unlink(missing_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)
-    config_path = output_dir.parent / "erbsland-core.cfg"
+    config_path = output_dir.parent / f"{project_name}.cfg"
     config_path.write_text(configuration, encoding="utf-8")
     logger.info("Generating Doxygen XML (source or configuration changed)...")
     try:
@@ -112,5 +138,6 @@ def prepare_doxygen(app: Sphinx) -> None:
 
 def setup(app: Sphinx) -> dict[str, bool | str]:
     """Prepare cached XML before Sphinx checks Breathe's file dependencies."""
+    app.add_config_value("erbsland_doc_tool", "erbsland-core-tool", "env")
     app.connect("builder-inited", prepare_doxygen)
     return {"version": "1", "parallel_read_safe": True, "parallel_write_safe": True}

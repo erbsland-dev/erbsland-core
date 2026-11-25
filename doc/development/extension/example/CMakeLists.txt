@@ -1,0 +1,46 @@
+# Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 3.28)
+project(erbsland-core-sample LANGUAGES CXX)
+
+option(ERBSLAND_SAMPLE_ENABLE_TESTS "Build the sample tests" ${PROJECT_IS_TOP_LEVEL})
+option(ERBSLAND_SAMPLE_ENABLE_TOOLS "Build the sample maintenance tool" ${PROJECT_IS_TOP_LEVEL})
+
+if(PROJECT_IS_TOP_LEVEL)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../erbsland-core/CMakeLists.txt")
+        set(core_directory "${CMAKE_CURRENT_SOURCE_DIR}/../erbsland-core")
+    elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/erbsland-core/CMakeLists.txt")
+        set(core_directory "${CMAKE_CURRENT_SOURCE_DIR}/test/erbsland-core")
+    else()
+        message(FATAL_ERROR "Core is missing at ../erbsland-core and test/erbsland-core. Run setup.py.")
+    endif()
+    if(ERBSLAND_SAMPLE_ENABLE_TOOLS)
+        set(ERBSLAND_CORE_ENABLE_TOOL_LIBRARIES ON)
+    endif()
+    add_subdirectory("${core_directory}" erbsland-core EXCLUDE_FROM_ALL)
+endif()
+
+if(NOT TARGET erbsland::core)
+    message(FATAL_ERROR "Add erbsland/core before erbsland/sample in the parent project.")
+endif()
+
+add_library(erbsland-core-sample STATIC)
+add_library(erbsland::sample ALIAS erbsland-core-sample)
+erbsland_core_setup_static_library(TARGET erbsland-core-sample)
+target_include_directories(erbsland-core-sample INTERFACE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
+add_subdirectory(src/erbsland/sample)
+
+if(ERBSLAND_SAMPLE_ENABLE_TESTS)
+    enable_testing()
+    if(NOT TARGET erbsland-unittest)
+        add_subdirectory(test/erbsland-unittest EXCLUDE_FROM_ALL)
+    endif()
+    add_subdirectory(test/unittest)
+endif()
+if(ERBSLAND_SAMPLE_ENABLE_TOOLS)
+    if(NOT TARGET erbsland-core-tool-frame)
+        message(FATAL_ERROR "Enable ERBSLAND_CORE_ENABLE_TOOL_LIBRARIES before adding Core to build the sample tool.")
+    endif()
+    add_subdirectory(tool)
+endif()

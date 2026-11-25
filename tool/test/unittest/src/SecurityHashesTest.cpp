@@ -35,7 +35,7 @@ public: // tests
         const auto inputs = tool::security_hashes::Inventory{settings, service}.collect();
         REQUIRE_EQUAL(inputs.count(), el::ItemCount{2});
         REQUIRE_EQUAL(inputs.getRef(el::ItemIndex{}).relative, "inputs/a.cpp"_el);
-        const auto manifest = tool::security_hashes::Manifest{service};
+        const auto manifest = tool::security_hashes::Manifest{service, "erbsland-core-tool"_el};
         const auto serial = manifest.generate(inputs, 1);
         REQUIRE_EQUAL(serial, manifest.generate(inputs, 4));
         REQUIRE_EQUAL(serial, manifest.generate(inputs, 64));
@@ -67,7 +67,7 @@ public: // tests
         const auto service = files();
         const auto settings = readSettings(service);
         const auto inputs = tool::security_hashes::Inventory{settings, service}.collect();
-        const auto manifest = tool::security_hashes::Manifest{service};
+        const auto manifest = tool::security_hashes::Manifest{service, "erbsland-core-tool"_el};
         const auto serial = manifest.generate(inputs, 1);
         for (auto run = 0; run < 5; ++run) {
             REQUIRE_EQUAL(manifest.generate(inputs, 8), serial);
@@ -105,7 +105,7 @@ public: // tests
         REQUIRE_EQUAL(inputs.count(), el::ItemCount{5});
         REQUIRE(inputs.getRef(el::ItemIndex{}).directoryRecord);
         REQUIRE(inputs.getRef(el::ItemIndex{}).fileRecord);
-        const auto manifest = tool::security_hashes::Manifest{service};
+        const auto manifest = tool::security_hashes::Manifest{service, "erbsland-core-tool"_el};
         const auto before = manifest.generate(inputs, 2);
         write("inputs/data/fixture.cpp"_el, "changed data"_el);
         write("inputs/new-data.txt"_el, "new data"_el);
@@ -129,7 +129,7 @@ public: // tests
         const auto service = files();
         const auto settings = readSettings(service);
         const auto inputs = tool::security_hashes::Inventory{settings, service}.collect();
-        const auto manifest = tool::security_hashes::Manifest{service};
+        const auto manifest = tool::security_hashes::Manifest{service, "erbsland-core-tool"_el};
         write("inputs/a.cpp"_el, "first\nsecond\nthird\n"_el);
         const auto expected = manifest.generate(inputs, 2);
         for (
@@ -153,7 +153,7 @@ public: // tests
         const auto service = files();
         const auto settings = readSettings(service);
         const auto inputs = tool::security_hashes::Inventory{settings, service}.collect();
-        const auto manifest = tool::security_hashes::Manifest{service};
+        const auto manifest = tool::security_hashes::Manifest{service, "erbsland-core-tool"_el};
         const auto text = manifest.generate(inputs, 2);
         REQUIRE_THROWS_AS(el::ApplicationError, manifest.publish(settings.output, text, true));
         REQUIRE_FALSE(settings.output.info().exists());

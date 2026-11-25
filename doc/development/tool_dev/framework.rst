@@ -15,8 +15,8 @@ Where the Code Lives
 ====================
 
 The application derives from :cpp:class:`Application <erbsland::core::Application>`.
-Its shared framework lives in ``tool::frame``, under ``tool/src/tool/frame``.
-Each command has its own namespace and matching source directory under ``tool/src/tool``.
+Its shared framework lives in ``tool::frame``, under ``tool/lib/frame/src/tool/frame``.
+Each command has its own namespace and matching source directory under ``tool/lib/<part>/src/tool``.
 
 The build separates the entry point from reusable implementation:
 
@@ -26,12 +26,12 @@ The build separates the entry point from reusable implementation:
 
     * - Target
       - Contents
-    * - ``erbsland-core-tool-lib``
-      - Framework, data sources, commands, and compiled template resources
+    * - ``erbsland-core-tool-<part>``
+      - One static library per reusable part, including its compiled templates
     * - ``erbsland-core-tool``
-      - ``main.cpp``, linked to the implementation library
+      - ``main.cpp``, linked to the selected parts and Core-specific generators
     * - ``erbsland-core-tool-unittest``
-      - Tests linked to the same implementation library
+      - Tests linked to the same parts as the executable
 
 Code Style when Writing Tools
 =============================

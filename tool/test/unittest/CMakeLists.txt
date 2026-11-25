@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 add_executable(erbsland-core-tool-unittest)
-target_link_libraries(erbsland-core-tool-unittest PRIVATE erbsland-core-tool-lib)
+target_link_libraries(erbsland-core-tool-unittest PRIVATE ${core_tool_parts})
 add_subdirectory(src)
 erbsland_core_configure_unittest(erbsland-core-tool-unittest)
 add_test(NAME erbsland-core-tool-unittest COMMAND $<TARGET_FILE:erbsland-core-tool-unittest> --no-color)

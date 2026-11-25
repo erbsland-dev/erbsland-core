@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import tempfile
@@ -31,11 +32,14 @@ class DoxygenCacheTest(unittest.TestCase):
         self.marker = self.sources / ".preprocess-sources-run"
         self.marker.write_text("initial sources")
         self.app = SimpleNamespace(
+            confdir=self.root / "doc",
             config=SimpleNamespace(
+                breathe_default_project="erbsland-core",
+                erbsland_doc_tool="erbsland-core-tool",
                 breathe_projects={"erbsland-core": self.index.parent},
                 breathe_doxygen_config_options={"RECURSIVE": "yes"},
                 breathe_doxygen_aliases={},
-            )
+            ),
         )
         self.preprocess = self.enterContext(
             patch.object(erbsland_doxygen, "preprocess_sources", return_value=self.sources)
@@ -120,17 +124,29 @@ class PreprocessorInvocationTest(unittest.TestCase):
         with patch.dict("os.environ", {"ERBSLAND_CORE_TOOL": str(executable)}), patch.object(
             Path, "is_file", return_value=True
         ), patch.object(erbsland_doxygen.subprocess, "run") as run:
-            result = erbsland_doxygen.preprocess_sources()
+            result = erbsland_doxygen.preprocess_sources(DOC_DIR.parent, "erbsland-core-tool")
         project = DOC_DIR.parent
         self.assertEqual(result, project / "_doxygen_input")
         run.assert_called_once_with(
             [str(executable), "doc-preprocess-sources", "--project", str(project)], cwd=project, check=True
         )
 
+    def test_extension_preprocesses_its_own_project(self) -> None:
+        root = Path("/extension checkout")
+        executable = Path("/build/ldap")
+        with patch.dict(
+            os.environ, {"ERBSLAND_LDAP_TOOL": str(executable), "ERBSLAND_CORE_TOOL": "/build/core"}
+        ), patch.object(Path, "is_file", return_value=True), patch.object(erbsland_doxygen.subprocess, "run") as run:
+            result = erbsland_doxygen.preprocess_sources(root, "erbsland-ldap-tool")
+        self.assertEqual(result, root / "_doxygen_input")
+        run.assert_called_once_with(
+            [str(executable), "doc-preprocess-sources", "--project", str(root)], cwd=root, check=True
+        )
+
     def test_missing_or_failed_tool_reports_extension_error(self) -> None:
         with patch.object(Path, "is_file", return_value=False), self.assertRaises(ExtensionError):
-            erbsland_doxygen.preprocess_sources()
+            erbsland_doxygen.preprocess_sources(DOC_DIR.parent, "erbsland-core-tool")
         with patch.object(Path, "is_file", return_value=True), patch.object(
             erbsland_doxygen.subprocess, "run", side_effect=subprocess.CalledProcessError(1, ["tool"])
         ), self.assertRaises(ExtensionError):
-            erbsland_doxygen.preprocess_sources()
+            erbsland_doxygen.preprocess_sources(DOC_DIR.parent, "erbsland-core-tool")

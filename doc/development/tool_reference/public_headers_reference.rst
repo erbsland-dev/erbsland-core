@@ -37,6 +37,9 @@ Without an override, the default uses ``system::info::logicalCpuCount()``, Core'
     * - ``Mapping File``
       - ``tool/data/public_headers/header_map.txt``
 
+Domain-scoped extensions can set ``Generate Namespace Headers`` to ``No`` to generate only their wrappers, umbrellas,
+and mapping.
+
 Base directories and the mapping file are relative to the selected project.
 Namespace-header paths are relative to the source base.
 Source and include trees must not overlap; the mapping file must live outside both trees.
@@ -247,5 +250,5 @@ The tokenizer does not expand macros or select conditional preprocessing branche
 
 ``HeaderDeclarations`` consumes significant tokens directly, tracking namespace scopes without retaining a token list.
 Its reusable ``StringEditor`` buffer assembles qualified namespace names.
-Output templates under ``tool/resources/headers`` own include statements, namespace declarations, guards and exports;
-the planner supplies structured lists and maps.
+Output templates under ``tool/lib/headers/resources/headers`` own include statements, namespace declarations, guards and
+exports; the planner supplies structured lists and maps.

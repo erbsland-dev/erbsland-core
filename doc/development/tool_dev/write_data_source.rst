@@ -9,8 +9,8 @@ Write a New Data Source
 This guide adds a reusable input source to the maintenance application and connects it to a command.
 Start with :doc:`build_and_test` and read :doc:`data_sources` for the source lifecycle.
 
-Use ``tool/src/tool/psl/PublicSuffixSource.hpp`` and its implementation as a small example.
-``tool/src/tool/unicode/UnicodeSource.hpp`` shows a source that prepares several related data structures.
+Use ``tool/lib/core/src/tool/psl/PublicSuffixSource.hpp`` and its implementation as a small example.
+``tool/lib/core/src/tool/unicode/UnicodeSource.hpp`` shows a source that prepares several related data structures.
 
 1. Define the Source
 ====================
@@ -78,11 +78,12 @@ The Unicode source also prepares normalization and mapping data because both gen
 5. Build and Register the Source
 ================================
 
-Add the new header and implementation to ``erbsland-core-tool-lib`` through the dataset directory's ``CMakeLists.txt``.
-For a new directory, add it with ``add_subdirectory()`` in ``tool/src/tool/CMakeLists.txt``.
-The existing ``tool/src/tool/psl/CMakeLists.txt`` shows how to include a source alongside its command.
+Add the new header and implementation to ``erbsland-core-tool-<part>`` through the dataset directory's
+``CMakeLists.txt``.
+For a new directory, add it with ``add_subdirectory()`` in ``tool/lib/core/src/tool/CMakeLists.txt``.
+The existing ``tool/lib/core/src/tool/psl/CMakeLists.txt`` shows how to include a source alongside its command.
 
-Include your source header in ``tool/src/main.cpp`` and register it with ``app.registerSource<YourSource>()`` before
+Include your source header in ``tool/app/src/main.cpp`` and register it with ``app.registerSource<YourSource>()`` before
 ``app.run()``.
 Registration constructs an instance owned by the application and records its static identifier.
 Commands and sources may be registered in either order.

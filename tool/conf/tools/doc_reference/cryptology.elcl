@@ -59,5 +59,4 @@ Header Globs                 :
 Page                         : "cryptology/x509_certificates.rst"
 Title                        : "X.509 Certificates"
 Header Globs                 :
-    * "cryptology/asn1/*.hpp"
     * "cryptology/x509/*.hpp"

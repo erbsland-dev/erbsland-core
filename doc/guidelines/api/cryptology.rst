@@ -77,7 +77,6 @@ Secondary Types
     TlsTrafficSecret // move-only protected traffic-secret generation without plaintext access
     TlsRecordPlaintext // authenticated sensitive record content and inner content type
     TlsRecordContentType, TlsRecordErrorCategory // stable record semantics and failure classification
-    Asn1Node, Asn1ObjectIdentifier // read-only raw certificate structure and stable identifiers
     SigningKeyProfile // ECDSA P-256/P-384 and RSA 2048/3072/4096 generation choices
     X509CertificateProfile // CA, TLS server, TLS client, and dual-use extension choices
     PemDerFormat // shared automatic, PEM, or DER file format choice
@@ -247,7 +246,7 @@ X.509 Certificate Patterns
     o.subjectAlternativeNames() -> List<X509GeneralName> // preserve encoded GeneralName alternatives
     o.publicKey() -> PublicKey // access exact SubjectPublicKeyInfo and supported signature verification
     o.tbsCertificateDer()/signatureData() -> mem::ByteBlock // access exact certificate-signature validation inputs
-    o.asn1() -> Asn1Node // inspect a read-only node owned by the parsed certificate document
+    o.asn1() -> data::asn1::Asn1Node // inspect a read-only node owned by the parsed certificate document
     T(anchors[, intermediates]) // create an explicit-anchor TLS peer-certificate policy
     T::systemTrust([allowNetworkRetrieval[, bundlePath]]) // select native trust or a distribution Linux bundle
     o.isSystemTrust()/allowsNetworkRetrieval() -> bool // inspect trust source and native retrieval policy

@@ -19,8 +19,11 @@ namespace erbsland::cryptology::unsafe {}
 namespace erbsland::cterm {}
 namespace erbsland::cterm::theme {}
 namespace erbsland::data {}
+namespace erbsland::data::asn1 {}
+namespace erbsland::data::ber {}
 namespace erbsland::data::bson {}
 namespace erbsland::data::cbor {}
+namespace erbsland::data::der {}
 namespace erbsland::data::json {}
 namespace erbsland::data::xml {}
 namespace erbsland::debug {}

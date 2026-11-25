@@ -7,8 +7,8 @@
 #include <erbsland/ByteBlockEditor.hpp>
 #include <erbsland/ByteCount.hpp>
 #include <erbsland/ByteIndex.hpp>
-#include <erbsland/cryptology/impl/DerEncoder.hpp>
 #include <erbsland/cryptology/impl/PemCodec.hpp>
+#include <erbsland/der/DerEncoder.hpp>
 #include <erbsland/Literals.hpp>
 #include <erbsland/ParseError.hpp>
 #include <erbsland/PublicKey.hpp>
@@ -32,6 +32,19 @@ TESTED_TARGETS(
             X509GeneralName X509Extension X509BasicConstraints X509KeyUsage PublicKey)
 class X509CertificateTest final : public el::UnitTest {
 public:
+    void testCertificateTree() {
+        const auto certificate = X509Certificate::fromPemOrThrow(certificatePem());
+        const auto root = certificate.asn1();
+        REQUIRE_FALSE(root.isEmpty());
+        REQUIRE(root.tagClass() == el::data::asn1::Asn1TagClass::Universal);
+        REQUIRE(root.universalType() == el::data::asn1::Asn1UniversalType::Sequence);
+        REQUIRE(root.isConstructed());
+        REQUIRE_EQUAL(root.childCount(), el::unit::ItemCount{3U});
+        REQUIRE_EQUAL(root.encodedData(), certificate.toDer());
+        REQUIRE(root.child(el::unit::ItemIndex{99U}).isEmpty());
+        REQUIRE(root.child(el::unit::ItemIndex{1U}).child(el::unit::ItemIndex{0U}).toObjectIdentifier().has_value());
+    }
+
     void testEmptyCertificate() {
         const auto certificate = X509Certificate{};
         REQUIRE(certificate.isEmpty());
@@ -176,22 +189,22 @@ public:
         auto timeBytes = validity.child(el::unit::ItemIndex{0U}).contentData().toUInt8Vector();
         timeBytes.insert(timeBytes.begin(), {0x18U, 15U, '2', '0'});
         const auto encode = [&](const std::vector<uint8_t> &time) -> el::mem::ByteBlock {
-            auto encoder = el::cryptology::impl::DerEncoder{};
+            auto encoder = el::data::der::DerEncoder{};
             const auto outerScope = encoder.beginSequence();
             const auto tbsScope = encoder.beginSequence();
             for (auto index = std::size_t{}; index < tbs.childCount().toSizeT(); ++index) {
                 if (index == 4U) {
                     const auto validityScope = encoder.beginSequence();
-                    encoder.appendEncoded(el::mem::ByteBlock::fromVector(time).span());
-                    encoder.appendEncoded(validity.child(el::unit::ItemIndex{1U}).encodedData().span());
+                    encoder.appendEncoded(el::mem::ByteBlock::fromVector(time));
+                    encoder.appendEncoded(validity.child(el::unit::ItemIndex{1U}));
                     encoder.end(validityScope);
                 } else {
-                    encoder.appendEncoded(tbs.child(el::unit::ItemIndex::fromSizeT(index)).encodedData().span());
+                    encoder.appendEncoded(tbs.child(el::unit::ItemIndex::fromSizeT(index)));
                 }
             }
             encoder.end(tbsScope);
-            encoder.appendEncoded(root.child(el::unit::ItemIndex{1U}).encodedData().span());
-            encoder.appendEncoded(root.child(el::unit::ItemIndex{2U}).encodedData().span());
+            encoder.appendEncoded(root.child(el::unit::ItemIndex{1U}));
+            encoder.appendEncoded(root.child(el::unit::ItemIndex{2U}));
             encoder.end(outerScope);
             return encoder.encoded();
         };
@@ -284,6 +297,26 @@ public:
             REQUIRE(unexpected.isEmpty());
         } catch (const el::err::ParseError &error) {
             REQUIRE(error.codePointIndex().isZero());
+        }
+    }
+
+    void testEmbeddedExtensionPositionInSlicedCertificate() {
+        const auto certificate = X509Certificate::fromPemOrThrow(certificatePem());
+        const auto extension = certificate.extensions().first();
+        const auto position = extension.asn1().encodedByteIndex();
+        REQUIRE_FALSE(position.isZero());
+        auto storage = el::mem::ByteBlockEditor{el::ByteCount{3U}};
+        storage.append(certificate.toDer());
+        // The reserved identifier fails DER validation. The context tag fails the extension schema.
+        for (const auto identifier : {el::Byte{0x00U}, el::Byte{0x80U}}) {
+            storage.set(position + el::ByteCount{3U}, identifier);
+            const auto slice = storage.slice(el::ByteIndex{3U}, certificate.toDer().length());
+            try {
+                static_cast<void>(X509Certificate::fromDerOrThrow(slice));
+                REQUIRE(false);
+            } catch (const el::err::ParseError &error) {
+                REQUIRE_EQUAL(error.byteIndex(), position);
+            }
         }
     }
 

@@ -3,20 +3,22 @@
 #include "SigningKeyEncoding.hpp"
 
 #include "CryptologyOids.hpp"
-#include "DerEncoder.hpp"
 
-#include "../asn1/Asn1ObjectIdentifier.hpp"
 #include "../keys/PublicKey.hpp"
 
+#include "../../data/asn1/Asn1ObjectIdentifier.hpp"
+#include "../../data/der/DerEncoder.hpp"
 #include "../../err/LogicFailure.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::cryptology::impl::signing_key_encoding {
 
+using data::asn1::Asn1ObjectIdentifier;
+
 using namespace mem;
 using namespace text::literals;
 
-void appendEd25519PublicKey(DerEncoder &encoder, const ConstByteSpan point) {
+void appendEd25519PublicKey(data::der::DerEncoder &encoder, const ConstByteSpan point) {
     const auto root = encoder.beginSequence();
     const auto algorithm = encoder.beginSequence();
     encoder.appendObjectIdentifier(Asn1ObjectIdentifier::fromStringOrThrow(cryptology_oids::ed25519));
@@ -25,7 +27,7 @@ void appendEd25519PublicKey(DerEncoder &encoder, const ConstByteSpan point) {
     encoder.end(root);
 }
 
-void appendEcPublicKey(DerEncoder &encoder, const ConstByteSpan point, const NistPrimeCurve::Name curve) {
+void appendEcPublicKey(data::der::DerEncoder &encoder, const ConstByteSpan point, const NistPrimeCurve::Name curve) {
     const auto root = encoder.beginSequence();
     const auto algorithm = encoder.beginSequence();
     encoder.appendObjectIdentifier(Asn1ObjectIdentifier::fromStringOrThrow(cryptology_oids::ecPublicKey));
@@ -38,7 +40,7 @@ void appendEcPublicKey(DerEncoder &encoder, const ConstByteSpan point, const Nis
 }
 
 void appendPrivateKey(
-    DerEncoder &encoder,
+    data::der::DerEncoder &encoder,
     const SigningKeyAlgorithm algorithm,
     const ConstByteSpan privateData,
     const PublicKey &publicKey) {
@@ -77,7 +79,7 @@ void appendPrivateKey(
         break;
     }
     case SigningKeyAlgorithm::Rsa:
-        encoder.appendEncoded(publicKey.algorithm().toDer().span());
+        encoder.appendEncoded(publicKey.algorithm().toDer());
         encoder.appendOctetString(privateData);
         break;
     case SigningKeyAlgorithm::Unknown:

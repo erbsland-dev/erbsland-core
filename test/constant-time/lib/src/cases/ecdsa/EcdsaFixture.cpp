@@ -32,7 +32,7 @@ EcdsaFixture::EcdsaFixture(
     require(curve.compare(_nist, curve.order()) < 0 && !curve.isZero(_nist));
     if (operation <= EcdsaOperation::Sign) {
         const auto point = ci::ecdsa_signer::publicKey(_secret.span(), name);
-        auto encoder = ci::DerEncoder{};
+        auto encoder = el::data::der::DerEncoder{};
         ci::signing_key_encoding::appendEcPublicKey(encoder, point.span(), name);
         const auto publicKey = el::PublicKey::fromDerOrThrow(encoder.encoded());
         if (operation == EcdsaOperation::Sign) {

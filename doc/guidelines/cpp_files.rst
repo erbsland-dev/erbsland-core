@@ -79,8 +79,7 @@ Consumers use canonical public wrappers from the generated header mapping.
 Prefer focused headers such as ``<erbsland/TlsClientConnection.hpp>``.
 Source subdirectories used only for organization do not become required public include components.
 Each configured directory has its own umbrella containing only that directory's selected public headers.
-Include subgroups explicitly, using either ``<erbsland/cryptology/asn1/all.hpp>`` or
-``<erbsland/all_cryptology_asn1.hpp>``.
+Include subgroups explicitly, using either ``<erbsland/data/asn1/all.hpp>`` or ``<erbsland/all_data_asn1.hpp>``.
 Parent umbrellas never collect child headers or umbrellas automatically.
 There is no universal ``<erbsland/all.hpp>``.
 Maintain the directory policy and regenerate wrappers with ``erbsland-core-tool update-public-headers``; see

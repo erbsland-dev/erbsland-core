@@ -8,7 +8,7 @@ Core Semantics
 .. code-block:: text
 
     data = namespace for serialization formats, with no immediate value types
-    format namespace = bson, cbor, json, or xml below data
+    format namespace = asn1, ber, bson, cbor, der, json, or xml below data
     parse options = bounded input size, nesting, item count, and string length
     format options = output policy and a stable API extension point
     text value = accepts String, StringEditor, and Core string literals without explicit conversion
@@ -19,6 +19,9 @@ Primary Types
 
 .. code-block:: text
 
+    asn1::Asn1Node, asn1::Asn1Tag // immutable wire value and identifier
+    der::DerParser, der::DerEncoder // decode and encode DER
+    ber::BerParser, ber::BerEncoder // decode, frame and encode LDAP-profile BER
     json::JsonValue, json::JsonType // copy-on-write JSON value tree and semantic type
     json::JsonArray, json::JsonObject // ordered JSON containers
     bson::BsonValue, bson::BsonType // copy-on-write BSON document tree and semantic type
@@ -63,3 +66,15 @@ XML Patterns
     o.addElement(name, text) -> XmlNodePtr // append an element with optional text
     o.textContent() -> optional<String> // no value if an unresolved entity prevents complete text
     o.textContentOrThrow() -> String // complete text or a diagnostic
+
+ASN.1 Codec Patterns
+====================
+
+.. code-block:: text
+
+    T::parse(bytes, limits) -> optional<Asn1Node> // exactly one complete document
+    T::parseOrThrow(bytes, limits) -> Asn1Node // positioned ParseError on malformed input
+    T::frameLength(bytes, limits) -> optional<ByteCount> // first complete frame in a receive buffer
+    o.toInteger(expectedTag) -> optional<int64_t> // typed access to universal or implicitly tagged primitives
+    o.beginSequence() -> Scope // open and close nested values in reverse opening order
+    o.encoded() -> ByteBlock // shared output after closing every scope

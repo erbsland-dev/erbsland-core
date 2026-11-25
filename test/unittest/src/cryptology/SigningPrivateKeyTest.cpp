@@ -7,11 +7,11 @@
 
 #include <erbsland/Application.hpp>
 #include <erbsland/cryptology/impl/algorithm/rsa_signature/RsaSigner.hpp>
-#include <erbsland/cryptology/impl/DerEncoder.hpp>
-#include <erbsland/cryptology/impl/DerParser.hpp>
 #include <erbsland/cryptology/impl/EncryptedPrivateKeyCodec.hpp>
 #include <erbsland/cryptology/impl/PrivateKeyParser.hpp>
 #include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/der/DerEncoder.hpp>
+#include <erbsland/der/DerParser.hpp>
 #include <erbsland/ParseError.hpp>
 #include <erbsland/ProtectedDataMode.hpp>
 #include <erbsland/SigningPrivateKey.hpp>
@@ -46,9 +46,13 @@ public:
     void testEd25519Rfc8032Vector() {
         const auto applicationScope = ApplicationTestScope<>{};
         el::core::application().cryptologyConfiguration().setProtectedDataMode(ProtectedDataMode::InternalOnly);
-        const auto key = SigningPrivateKey::fromDerOrThrow(bytesFromHex(
+        const auto fixture = bytesFromHex(
             "302e020100300506032b657004220420"
-            "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60"));
+            "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60");
+        const auto key = SigningPrivateKey::fromDerOrThrow(fixture);
+        const auto encoded = key.toDer();
+        REQUIRE(encoded.isSensitive());
+        REQUIRE_EQUAL(encoded, fixture);
         REQUIRE(key.algorithm() == SigningKeyAlgorithm::Ed25519);
         REQUIRE(key.supports(TlsSignatureScheme::Ed25519));
         REQUIRE_FALSE(key.supports(TlsSignatureScheme::EcdsaSecp256r1Sha256));
@@ -156,17 +160,17 @@ public:
 
         const auto message = bytesFromHex("5253412d50535320736572766572207369676e696e67");
         const auto der = el::cryptology::impl::PrivateKeyParser::decodePem(pem);
-        const auto privateKeyInfo = el::cryptology::impl::DerParser{der}.parseDocument();
+        const auto privateKeyInfo = el::data::der::DerParser::parseOrThrow(der);
         const auto privateKey = privateKeyInfo.child(el::ItemIndex{2U}).contentData();
 
         // RFC 8017 appendix A.1.2: altering qInv must fail the mandatory CRT consistency validation.
         auto corruptedPrivateKey = el::ByteBlockEditor{privateKey};
         const auto lastPrivateKeyByte = corruptedPrivateKey.lastIndex();
         corruptedPrivateKey.set(lastPrivateKeyByte, corruptedPrivateKey.getOrThrow(lastPrivateKeyByte) ^ el::Byte{1U});
-        auto corruptedEncoder = el::cryptology::impl::DerEncoder{};
+        auto corruptedEncoder = el::data::der::DerEncoder{};
         const auto corruptedRoot = corruptedEncoder.beginSequence();
-        corruptedEncoder.appendEncoded(privateKeyInfo.child(el::ItemIndex{0U}).encodedData().span());
-        corruptedEncoder.appendEncoded(privateKeyInfo.child(el::ItemIndex{1U}).encodedData().span());
+        corruptedEncoder.appendEncoded(privateKeyInfo.child(el::ItemIndex{0U}));
+        corruptedEncoder.appendEncoded(privateKeyInfo.child(el::ItemIndex{1U}));
         corruptedEncoder.appendOctetString(corruptedPrivateKey.span());
         corruptedEncoder.end(corruptedRoot);
         REQUIRE_THROWS_AS(el::err::ParseError, SigningPrivateKey::fromDerOrThrow(corruptedEncoder.encoded()));
@@ -175,10 +179,10 @@ public:
         const auto pssAlgorithm = bytesFromHex(
             "304106092a864886f70d01010a3034a00f300d06096086480165030402010500"
             "a11c301a06092a864886f70d010108300d06096086480165030402010500a203020120");
-        auto pssEncoder = el::cryptology::impl::DerEncoder{};
+        auto pssEncoder = el::data::der::DerEncoder{};
         const auto pssRoot = pssEncoder.beginSequence();
-        pssEncoder.appendEncoded(privateKeyInfo.child(el::ItemIndex{0U}).encodedData().span());
-        pssEncoder.appendEncoded(pssAlgorithm.span());
+        pssEncoder.appendEncoded(privateKeyInfo.child(el::ItemIndex{0U}));
+        pssEncoder.appendEncoded(pssAlgorithm);
         pssEncoder.appendOctetString(privateKey.span());
         pssEncoder.end(pssRoot);
         const auto pssKey = SigningPrivateKey::fromDerOrThrow(pssEncoder.encoded());

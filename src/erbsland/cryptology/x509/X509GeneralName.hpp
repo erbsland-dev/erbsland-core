@@ -4,10 +4,10 @@
 
 #include "X509Name.hpp"
 
-#include "../asn1/Asn1Node.hpp"
-#include "../asn1/Asn1ObjectIdentifier.hpp"
 #include "../impl/X509Parser_fwd.hpp"
 
+#include "../../data/asn1/Asn1Node.hpp"
+#include "../../data/asn1/Asn1ObjectIdentifier.hpp"
 #include "../../network/IpAddress.hpp"
 #include "../../text/String.hpp"
 
@@ -47,9 +47,11 @@ public: // accessors
     /// Get a directory-name value.
     [[nodiscard]] auto directoryName() const noexcept -> const X509Name & { return _directoryName; }
     /// Get a registered-ID value.
-    [[nodiscard]] auto registeredId() const noexcept -> const Asn1ObjectIdentifier & { return _registeredId; }
+    [[nodiscard]] auto registeredId() const noexcept -> const data::asn1::Asn1ObjectIdentifier & {
+        return _registeredId;
+    }
     /// Get the exact context-specific ASN.1 node.
-    [[nodiscard]] auto asn1() const noexcept -> const Asn1Node & { return _node; }
+    [[nodiscard]] auto asn1() const noexcept -> const data::asn1::Asn1Node & { return _node; }
 
 private:
     /// Create a parsed general-name alternative.
@@ -58,8 +60,8 @@ private:
         text::String text,
         std::optional<network::IpAddress> ipAddress,
         X509Name directoryName,
-        Asn1ObjectIdentifier registeredId,
-        Asn1Node node) noexcept :
+        data::asn1::Asn1ObjectIdentifier registeredId,
+        data::asn1::Asn1Node node) noexcept :
         _kind{kind},
         _text{std::move(text)},
         _ipAddress{std::move(ipAddress)},
@@ -68,12 +70,12 @@ private:
         _node{std::move(node)} {}
 
 private:
-    Kind _kind{Kind::Unsupported};                ///< The represented alternative.
-    text::String _text;                           ///< Text value.
-    std::optional<network::IpAddress> _ipAddress; ///< IP address value.
-    X509Name _directoryName;                      ///< Directory name value.
-    Asn1ObjectIdentifier _registeredId;           ///< Registered ID value.
-    Asn1Node _node;                               ///< Exact ASN.1 node.
+    Kind _kind{Kind::Unsupported};                  ///< The represented alternative.
+    text::String _text;                             ///< Text value.
+    std::optional<network::IpAddress> _ipAddress;   ///< IP address value.
+    X509Name _directoryName;                        ///< Directory name value.
+    data::asn1::Asn1ObjectIdentifier _registeredId; ///< Registered ID value.
+    data::asn1::Asn1Node _node;                     ///< Exact ASN.1 node.
 };
 
 }

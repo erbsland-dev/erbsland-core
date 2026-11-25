@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "DerEncoder.hpp"
 #include "X509ArtifactWriter_fwd.hpp"
 
-#include "../asn1/Asn1ObjectIdentifier.hpp"
 #include "../x509/X509CertificateBuilder.hpp"
 
+#include "../../data/asn1/Asn1ObjectIdentifier.hpp"
+#include "../../data/der/DerEncoder.hpp"
 #include "../../mem/ByteBlock_fwd.hpp"
 
 namespace erbsland::cryptology::impl {
@@ -44,10 +44,10 @@ private:
     /// Validate the profile's required identity values.
     void validateIdentity() const;
     /// Append the canonical subject Name.
-    void appendSubjectName(DerEncoder &encoder) const;
+    void appendSubjectName(data::der::DerEncoder &encoder) const;
     /// Append extensions shared by certificate and request output.
     void appendExtensions(
-        DerEncoder &encoder,
+        data::der::DerEncoder &encoder,
         const PublicKey &subjectKey,
         const mem::ByteBlock &authorityKeyIdentifier,
         bool request) const;
@@ -57,6 +57,10 @@ private:
     [[nodiscard]] static auto keyIdentifier(const PublicKey &key) -> mem::ByteBlock;
     /// Generate a fresh positive nonzero serial number.
     [[nodiscard]] static auto serialNumber() -> mem::ByteBlock;
+    /// Begin the Extension sequence with its OID and optional critical flag.
+    [[nodiscard]] static auto beginExtension(
+        data::der::DerEncoder &encoder, const data::asn1::Asn1ObjectIdentifier &oid, bool critical)
+        -> data::der::DerEncoder::Scope;
     /// Append one X.509 extension directly to the final extension sequence.
     /// @tparam AppendValue Callable that appends the DER value wrapped by extnValue.
     /// @param encoder Destination DER encoder.
@@ -65,12 +69,9 @@ private:
     /// @param appendValue Callable receiving the destination encoder.
     template <typename AppendValue>
     static void appendExtension(
-        DerEncoder &encoder, const text::String &oidValue, bool critical, AppendValue appendValue) {
-        const auto extension = encoder.beginSequence();
-        encoder.appendObjectIdentifier(Asn1ObjectIdentifier::fromStringOrThrow(oidValue));
-        if (critical) {
-            encoder.appendBoolean(true);
-        }
+        data::der::DerEncoder &encoder, const text::String &oidValue, bool critical, AppendValue appendValue) {
+        const auto extension =
+            beginExtension(encoder, data::asn1::Asn1ObjectIdentifier::fromStringOrThrow(oidValue), critical);
         const auto value = encoder.beginOctetString();
         appendValue(encoder);
         encoder.end(value);

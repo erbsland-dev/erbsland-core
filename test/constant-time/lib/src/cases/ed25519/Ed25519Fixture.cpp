@@ -6,8 +6,8 @@
 #include <erbsland/ByteBuffer.hpp>
 #include <erbsland/ByteCount.hpp>
 #include <erbsland/cryptology/impl/algorithm/ed25519_signature/Ed25519Signer.hpp>
-#include <erbsland/cryptology/impl/DerEncoder.hpp>
 #include <erbsland/cryptology/impl/SigningKeyEncoding.hpp>
+#include <erbsland/der/DerEncoder.hpp>
 #include <erbsland/LogicFailure.hpp>
 #include <erbsland/PublicKey.hpp>
 #include <erbsland/Random.hpp>
@@ -34,7 +34,7 @@ Ed25519Fixture::Ed25519Fixture(el::Random &random, const bool population, Ed2551
             _edField));
     if (operation <= Ed25519Operation::Sign) {
         const auto point = ci::ed25519_signer::publicKey(_secret.span());
-        auto encoder = ci::DerEncoder{};
+        auto encoder = el::data::der::DerEncoder{};
         ci::signing_key_encoding::appendEd25519PublicKey(encoder, point.span());
         const auto publicKey = el::PublicKey::fromDerOrThrow(encoder.encoded());
         require(publicKey.keyData().span().size() == 32);

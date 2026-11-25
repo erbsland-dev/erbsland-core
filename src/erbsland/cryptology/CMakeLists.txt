@@ -3,7 +3,6 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-add_subdirectory(asn1)
 add_subdirectory(authentication)
 add_subdirectory(configuration)
 add_subdirectory(impl)

@@ -33,8 +33,10 @@ private:
 public:
     void testAbbreviationWordsAndCases() {
         auto format = simple();
-        const auto source = "[http_server]\nhttps_ftp_ftps_ssh_vr: 1\nhttp2_httpd: 2\n"_el;
-        const auto expected = "[ HTTP Server ]\nHTTPS FTP FTPS SSH VR: 1\nHttp2 Httpd: 2\n"_el;
+        const auto source =
+            "[http_server.tls]\nhttps_ftp_ftps_ssh_vr: 1\nhttp2_httpd: 2\npublic_url: 3\ntls_profile: 4\n"_el;
+        const auto expected =
+            "[ HTTP Server . TLS ]\nHTTPS FTP FTPS SSH VR: 1\nHttp2 Httpd: 2\nPublic URL: 3\nTLS Profile: 4\n"_el;
         REQUIRE_EQUAL(render(source, format), expected);
         REQUIRE_EQUAL(render(expected, format), expected);
         auto style = format.baseStyle();

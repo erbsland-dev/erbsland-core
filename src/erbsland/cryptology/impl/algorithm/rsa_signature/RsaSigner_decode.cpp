@@ -4,16 +4,19 @@
 
 #include "RsaDecoding.hpp"
 
+#include "../../../../data/der/DerEncoder.hpp"
+#include "../../../../data/der/DerParser.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../unit/ItemIndex.hpp"
-#include "../../DerEncoder.hpp"
-#include "../../DerParser.hpp"
+#include "../../CryptologyAsn1Limits.hpp"
 #include "../../SecureEraseGuard.hpp"
 
 #include <algorithm>
 #include <bit>
 
 namespace erbsland::cryptology::impl::rsa_signer {
+
+using data::asn1::Asn1UniversalType;
 
 using namespace mem;
 using namespace text::literals;
@@ -26,9 +29,8 @@ auto decodePrivateKey(const ConstByteSpan privateKey) -> PrivateKeyData {
     const auto encodedEraseGuard = SecureEraseGuard{encoded};
 
     // RFC 8017 appendix A.1.2: RSAPrivateKey contains version plus exactly eight two-prime integer components.
-    const auto root = DerParser{encoded}.parseDocument();
-    rsa_signature::requireNode(
-        root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "RSAPrivateKey"_el);
+    const auto root = data::der::DerParser::parseOrThrow(encoded, cCryptologyAsn1Limits);
+    rsa_signature::requireNode(root, Asn1UniversalType::Sequence, true, "RSAPrivateKey"_el);
     if (root.childCount() != ItemCount{9U} ||
         rsa_signature::decodeSmallInteger(root.child(ItemIndex{0U}), "version"_el) != 0U) {
         decoder::fail("Only RFC 8017 two-prime RSAPrivateKey version 0 is supported."_el);
@@ -130,7 +132,8 @@ auto decodePrivateKey(const ConstByteSpan privateKey) -> PrivateKeyData {
     return result;
 }
 
-void appendPublicKey(DerEncoder &encoder, const ConstByteSpan privateKey, const ConstByteSpan algorithmIdentifier) {
+void appendPublicKey(
+    data::der::DerEncoder &encoder, const ConstByteSpan privateKey, const ByteBlock &algorithmIdentifier) {
     auto key = decodePrivateKey(privateKey);
     const auto keyEraseGuard = SecureEraseGuard{key};
 

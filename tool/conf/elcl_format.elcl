@@ -6,7 +6,7 @@ Maximum Line Length          : 118
 Value Wrapping               : "next_line_if_fits"
 
 ------[ . Names ]----
-Abbreviations                : "HTTP", "HTTPS", "FTP", "FTPS", "SSH", "VR"
+Abbreviations                : "HTTP", "HTTPS", "FTP", "FTPS", "SSH", "TLS", "URL", "VR"
 Section Case                 : "title"
 Section Separator            : "space"
 Value Case                   : "title"

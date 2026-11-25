@@ -13,14 +13,14 @@
 #include "X509Name.hpp"
 #include "X509Version.hpp"
 
-#include "../asn1/Asn1Node.hpp"
-#include "../asn1/Asn1ObjectIdentifier.hpp"
 #include "../impl/X509CertificateBackendAccess_fwd.hpp"
 #include "../impl/X509CertificateData.hpp"
 #include "../impl/X509Parser_fwd.hpp"
 #include "../keys/PublicKey.hpp"
 #include "../PemDerFormat.hpp"
 
+#include "../../data/asn1/Asn1Node.hpp"
+#include "../../data/asn1/Asn1ObjectIdentifier.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../path/Path_fwd.hpp"
 #include "../../text/String.hpp"
@@ -107,11 +107,11 @@ public: // extensions and diagnostics
     /// Get decoded Key Usage, if present and readable.
     [[nodiscard]] auto keyUsage() const -> std::optional<X509KeyUsages>;
     /// Get decoded Extended Key Usage object identifiers.
-    [[nodiscard]] auto extendedKeyUsage() const -> util::List<Asn1ObjectIdentifier>;
+    [[nodiscard]] auto extendedKeyUsage() const -> util::List<data::asn1::Asn1ObjectIdentifier>;
     /// Get retained compatible-mode profile issues.
     [[nodiscard]] auto profileIssues() const -> util::List<X509CertificateProfileIssue>;
     /// Get the complete read-only ASN.1 root node.
-    [[nodiscard]] auto asn1() const -> Asn1Node;
+    [[nodiscard]] auto asn1() const -> data::asn1::Asn1Node;
 
 public: // conversion
     /// Encode this certificate using strict RFC 7468 textual form, or return an empty string when empty.

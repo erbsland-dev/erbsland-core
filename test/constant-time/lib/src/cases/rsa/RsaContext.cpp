@@ -3,8 +3,8 @@
 #include "RsaContext.hpp"
 
 #include <erbsland/Application.hpp>
-#include <erbsland/cryptology/impl/DerParser.hpp>
 #include <erbsland/cryptology/impl/PrivateKeyParser.hpp>
+#include <erbsland/der/DerParser.hpp>
 #include <erbsland/ItemIndex.hpp>
 #include <erbsland/Resources.hpp>
 #include <erbsland/SigningPrivateKey.hpp>
@@ -19,7 +19,7 @@ RsaContext::RsaContext() {
     const auto pem = el::application().resources().getTextOrThrow("constant-time-fixtures"_el, "rsa-2048-pkcs8.pem"_el);
     const auto key = el::SigningPrivateKey::fromPemOrThrow(pem);
     const auto der = ci::PrivateKeyParser::decodePem(pem);
-    const auto node = ci::DerParser{der}.parseDocument();
+    const auto node = el::data::der::DerParser::parseOrThrow(der);
     _privateKey = node.child(el::ItemIndex{2}).contentData();
     _publicKey = key.publicKey();
     _components = ci::rsa_signer::decodePrivateKey(_privateKey.span());

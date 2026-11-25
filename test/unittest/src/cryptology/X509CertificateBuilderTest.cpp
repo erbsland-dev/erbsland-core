@@ -7,8 +7,8 @@
 #include "../ParallelTestWork.hpp"
 
 #include <erbsland/Application.hpp>
-#include <erbsland/cryptology/impl/DerParser.hpp>
 #include <erbsland/CryptologyConfiguration.hpp>
+#include <erbsland/der/DerParser.hpp>
 #include <erbsland/IpAddress.hpp>
 #include <erbsland/ParameterFailure.hpp>
 #include <erbsland/Path.hpp>
@@ -71,7 +71,7 @@ public:
         const auto request = serverBuilder.createSigningRequest(serverKey);
         REQUIRE_FALSE(request.isEmpty());
         REQUIRE(request.toPem().startsWith("-----BEGIN CERTIFICATE REQUEST-----"_el));
-        REQUIRE_FALSE(el::cryptology::impl::DerParser{request.toDer()}.parseDocument().isEmpty());
+        REQUIRE_FALSE(el::data::der::DerParser::parseOrThrow(request.toDer()).isEmpty());
     }
 
     void testAllCertificateProfilesAndHierarchy() {

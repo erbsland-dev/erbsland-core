@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "EcdsaSigner.hpp"
 
+#include "../../../../data/der/DerEncoder.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../../mem/Byte.hpp"
 #include "../../../../mem/ByteBlockEditor.hpp"
@@ -11,7 +12,6 @@
 #include "../../../HashAlgorithm.hpp"
 #include "../../../Hasher.hpp"
 #include "../../../Hmac.hpp"
-#include "../../DerEncoder.hpp"
 #include "../../SecureEraseGuard.hpp"
 
 namespace erbsland::cryptology::impl::ecdsa_signer {
@@ -76,7 +76,7 @@ auto sign(const ConstByteSpan privateScalar, const ConstByteSpan message, const 
     }
 
     // RFC 3279 section 2.2.3: ECDSA-Sig-Value is a canonical DER SEQUENCE of positive r and s INTEGER values.
-    auto encoder = DerEncoder{};
+    auto encoder = data::der::DerEncoder{};
     const auto root = encoder.beginSequence();
     encoder.appendPositiveInteger(curve.numberToBigEndian(r).span());
     encoder.appendPositiveInteger(curve.numberToBigEndian(s).span());

@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../asn1/Asn1Node.hpp"
 #include "../impl/X509Parser_fwd.hpp"
 #include "../PemDerFormat.hpp"
 #include "../tls/TlsSignatureScheme_fwd.hpp"
 #include "../x509/X509AlgorithmIdentifier.hpp"
 
+#include "../../data/asn1/Asn1Node.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteSpan.hpp"
 #include "../../path/Path_fwd.hpp"
@@ -47,7 +47,7 @@ public: // accessors
     /// Get the number of unused low bits in the final key-data octet.
     [[nodiscard]] auto unusedBitCount() const noexcept -> uint8_t { return _unusedBitCount; }
     /// Get the exact SubjectPublicKeyInfo ASN.1 node.
-    [[nodiscard]] auto asn1() const noexcept -> const Asn1Node & { return _node; }
+    [[nodiscard]] auto asn1() const noexcept -> const data::asn1::Asn1Node & { return _node; }
 
 public: // verification
     /// Verify a supported X.509 signature over an exact message.
@@ -117,7 +117,7 @@ private:
         X509AlgorithmIdentifier algorithm,
         mem::ByteBlock keyData,
         uint8_t unusedBitCount,
-        Asn1Node node,
+        data::asn1::Asn1Node node,
         mem::ByteBlock der) noexcept :
         _algorithm{std::move(algorithm)},
         _keyData{std::move(keyData)},
@@ -129,7 +129,7 @@ private:
     X509AlgorithmIdentifier _algorithm; ///< SubjectPublicKeyInfo algorithm.
     mem::ByteBlock _keyData;            ///< BIT STRING contents without the unused-bit count.
     uint8_t _unusedBitCount{};          ///< Final-octet unused bits.
-    Asn1Node _node;                     ///< Exact SubjectPublicKeyInfo node.
+    data::asn1::Asn1Node _node;         ///< Exact SubjectPublicKeyInfo node.
     mem::ByteBlock _der;                ///< Exact SubjectPublicKeyInfo DER.
 };
 

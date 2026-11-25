@@ -28,18 +28,20 @@ public:
 
 private:
     /// Parse and validate the Ed25519 algorithm-specific key.
-    [[nodiscard]] auto parseEd25519(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
+    [[nodiscard]] auto parseEd25519(const data::asn1::Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
         -> SigningPrivateKey;
     /// Parse and validate a supported named-curve ECDSA key.
-    [[nodiscard]] auto parseEcdsa(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
+    [[nodiscard]] auto parseEcdsa(const data::asn1::Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
         -> SigningPrivateKey;
     /// Parse and validate one two-prime RSA key with RSAE or supported PSS parameters.
-    [[nodiscard]] auto parseRsa(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const -> SigningPrivateKey;
+    [[nodiscard]] auto parseRsa(const data::asn1::Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
+        -> SigningPrivateKey;
     /// Require one exact ASN.1 node shape.
     static void requireNode(
-        const Asn1Node &node, Asn1TagClass tagClass, uint32_t tagNumber, bool constructed, const text::String &name);
+        const data::asn1::Asn1Node &node, data::asn1::Asn1Tag tag, bool constructed, const text::String &name);
     /// Decode one small nonnegative canonical INTEGER.
-    [[nodiscard]] static auto decodeSmallInteger(const Asn1Node &node, const text::String &name) -> uint32_t;
+    [[nodiscard]] static auto decodeSmallInteger(const data::asn1::Asn1Node &node, const text::String &name)
+        -> uint32_t;
     /// Throw one stable private-key parse error.
     [[noreturn]] static void throwParseError(const text::String &reason);
 

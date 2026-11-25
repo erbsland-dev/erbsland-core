@@ -4,8 +4,8 @@
 
 #include "Number.hpp"
 
+#include "../../../../data/asn1/Asn1Node_fwd.hpp"
 #include "../../../../text/String_fwd.hpp"
-#include "../../../asn1/Asn1Node_fwd.hpp"
 
 #include <cstddef>
 
@@ -24,7 +24,8 @@ namespace erbsland::cryptology::impl::rsa_signer::decoder {
 /// @return The decoded integer at the requested width.
 /// @throws err::ParseError If the node is not a valid positive DER integer.
 /// @tested{SigningPrivateKeyTest}
-[[nodiscard]] auto parseInteger(const Asn1Node &node, const text::String &name, std::size_t count, bool sensitive)
+[[nodiscard]] auto parseInteger(
+    const data::asn1::Asn1Node &node, const text::String &name, std::size_t count, bool sensitive)
     -> rsa_signature::Number;
 
 }

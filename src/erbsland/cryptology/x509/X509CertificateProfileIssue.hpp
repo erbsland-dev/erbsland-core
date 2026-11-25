@@ -4,8 +4,7 @@
 
 #include "X509CertificateProfileIssueCategory.hpp"
 
-#include "../asn1/Asn1ObjectIdentifier.hpp"
-
+#include "../../data/asn1/Asn1ObjectIdentifier.hpp"
 #include "../../text/String.hpp"
 
 namespace erbsland::cryptology {
@@ -24,7 +23,7 @@ public:
     X509CertificateProfileIssue(
         X509CertificateProfileIssueCategory category,
         text::String field,
-        Asn1ObjectIdentifier oid,
+        data::asn1::Asn1ObjectIdentifier oid,
         text::String diagnostic) noexcept :
         _category{category}, _field{std::move(field)}, _oid{std::move(oid)}, _diagnostic{std::move(diagnostic)} {}
 
@@ -34,14 +33,14 @@ public: // accessors
     /// Get the affected field name.
     [[nodiscard]] auto field() const noexcept -> const text::String & { return _field; }
     /// Get the affected object identifier, if any.
-    [[nodiscard]] auto oid() const noexcept -> const Asn1ObjectIdentifier & { return _oid; }
+    [[nodiscard]] auto oid() const noexcept -> const data::asn1::Asn1ObjectIdentifier & { return _oid; }
     /// Get the diagnostic text.
     [[nodiscard]] auto diagnostic() const noexcept -> const text::String & { return _diagnostic; }
 
 private:
     X509CertificateProfileIssueCategory _category{X509CertificateProfileIssueCategory::SerialNumber}; ///< Category.
     text::String _field;                                                                              ///< Field name.
-    Asn1ObjectIdentifier _oid;                                                                        ///< Optional OID.
+    data::asn1::Asn1ObjectIdentifier _oid;                                                            ///< Optional OID.
     text::String _diagnostic;                                                                         ///< Diagnostic.
 };
 

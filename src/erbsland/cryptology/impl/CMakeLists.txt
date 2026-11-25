@@ -14,19 +14,13 @@ add_subdirectory(system_trust)
 add_subdirectory(tls)
 
 target_sources(erbsland-core PRIVATE
-        Asn1ObjectIdentifierCodec.cpp
-        Asn1ObjectIdentifierCodec.hpp
+        CryptologyAsn1Limits.hpp
         AuthenticationChallengeTestAccess_fwd.hpp
         AuthenticationCodec.cpp
         AuthenticationCodec.hpp
         CryptologyConfigurationSnapshot.cpp
         CryptologyConfigurationSnapshot.hpp
         CryptologyOids.hpp
-        DerEncoder.cpp
-        DerEncoder.hpp
-        DerParser.cpp
-        DerParser.hpp
-        DerParser_fwd.hpp
         EcPrivateScalarPolicy.cpp
         EcPrivateScalarPolicy.hpp
         EncryptedPrivateKeyCodec.cpp
@@ -84,6 +78,7 @@ target_sources(erbsland-core PRIVATE
 
 if (APPLE)
     target_sources(erbsland-core PRIVATE
+        CryptologyAsn1Limits.hpp
             MacosKeychainInteraction.cpp
             MacosKeychainInteraction.hpp
             MacosOwnedReference.hpp
@@ -94,6 +89,7 @@ if (APPLE)
     )
 elseif (WIN32)
     target_sources(erbsland-core PRIVATE
+        CryptologyAsn1Limits.hpp
             WindowsIdentityResources.hpp
             WindowsSystemIdentityBackend.cpp
             WindowsSystemIdentityBackend.hpp

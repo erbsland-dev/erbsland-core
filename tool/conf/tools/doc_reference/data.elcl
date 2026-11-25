@@ -23,3 +23,21 @@ Page                         : "data/xml.rst"
 Title                        : "XML Documents"
 Header Globs                 :
     * "data/xml/*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "data/asn1.rst"
+Title                        : "ASN.1 Values"
+Header Globs                 :
+    * "data/asn1/*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "data/der.rst"
+Title                        : "Distinguished Encoding Rules"
+Header Globs                 :
+    * "data/der/*.hpp"
+
+---*[ Doc Update Reference . Reference Groups ]*----------------------------------------------------------------------
+Page                         : "data/ber.rst"
+Title                        : "BER for LDAP"
+Header Globs                 :
+    * "data/ber/*.hpp"

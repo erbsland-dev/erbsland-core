@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PrivateKeyParser.hpp"
 
+#include "CryptologyAsn1Limits.hpp"
 #include "CryptologyOids.hpp"
-#include "DerEncoder.hpp"
-#include "DerParser.hpp"
 #include "EcPrivateScalarPolicy.hpp"
 #include "PemCodec.hpp"
 #include "SecureEraseGuard.hpp"
@@ -14,8 +13,9 @@
 #include "algorithm/ed25519_signature/Ed25519Signer.hpp"
 #include "algorithm/rsa_signature/RsaSigner.hpp"
 
-#include "../asn1/Asn1UniversalType.hpp"
-
+#include "../../data/asn1/Asn1UniversalType.hpp"
+#include "../../data/der/DerEncoder.hpp"
+#include "../../data/der/DerParser.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../mem/ByteBlockEditor.hpp"
 #include "../../text/Literals.hpp"
@@ -24,6 +24,10 @@
 
 namespace erbsland::cryptology::impl {
 
+using data::asn1::Asn1Node;
+using data::asn1::Asn1Tag;
+using data::asn1::Asn1TagClass;
+using data::asn1::Asn1UniversalType;
 using namespace mem;
 using namespace text;
 using namespace text::literals;
@@ -32,9 +36,8 @@ using namespace unit;
 auto PrivateKeyParser::parse() const -> SigningPrivateKey {
     // RFC 5208 section 6: PrivateKeyInfo is exactly version, privateKeyAlgorithm, and privateKey. Attributes are
     // intentionally rejected in the initial server-identity profile so no unreviewed metadata survives import.
-    const auto root = DerParser{_der}.parseDocument();
-    requireNode(
-        root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "PrivateKeyInfo"_el);
+    const auto root = data::der::DerParser::parseOrThrow(_der, cCryptologyAsn1Limits);
+    requireNode(root, Asn1UniversalType::Sequence, true, "PrivateKeyInfo"_el);
     if (root.childCount() != ItemCount{3U}) {
         throwParseError("PKCS#8 PrivateKeyInfo must contain exactly version, algorithm, and private key."_el);
     }
@@ -42,12 +45,7 @@ auto PrivateKeyParser::parse() const -> SigningPrivateKey {
         throwParseError("PKCS#8 PrivateKeyInfo version must be zero."_el);
     }
     const auto algorithm = root.child(ItemIndex{1U});
-    requireNode(
-        algorithm,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::Sequence),
-        true,
-        "privateKeyAlgorithm"_el);
+    requireNode(algorithm, Asn1UniversalType::Sequence, true, "privateKeyAlgorithm"_el);
     if (algorithm.childCount() < ItemCount{1U} || algorithm.childCount() > ItemCount{2U}) {
         throwParseError("PKCS#8 privateKeyAlgorithm must contain an OID and optional parameters."_el);
     }
@@ -56,12 +54,7 @@ auto PrivateKeyParser::parse() const -> SigningPrivateKey {
         throwParseError("PKCS#8 privateKeyAlgorithm contains no object identifier."_el);
     }
     const auto privateKeyNode = root.child(ItemIndex{2U});
-    requireNode(
-        privateKeyNode,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::OctetString),
-        false,
-        "privateKey"_el);
+    requireNode(privateKeyNode, Asn1UniversalType::OctetString, false, "privateKey"_el);
     auto privateKey = privateKeyNode.contentData();
     privateKey.markAsSensitive();
     const auto privateKeyEraseGuard = SecureEraseGuard{privateKey};
@@ -89,13 +82,8 @@ auto PrivateKeyParser::parseEd25519(const Asn1Node &algorithm, const ByteBlock &
     if (algorithm.childCount() != ItemCount{1U}) {
         throwParseError("Ed25519 PKCS#8 algorithm parameters must be absent."_el);
     }
-    const auto inner = DerParser{privateKey}.parseDocument();
-    requireNode(
-        inner,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::OctetString),
-        false,
-        "CurvePrivateKey"_el);
+    const auto inner = data::der::DerParser::parseOrThrow(privateKey, cCryptologyAsn1Limits);
+    requireNode(inner, Asn1UniversalType::OctetString, false, "CurvePrivateKey"_el);
     auto seed = inner.contentData();
     seed.markAsSensitive();
     const auto seedEraseGuard = SecureEraseGuard{seed};
@@ -105,7 +93,7 @@ auto PrivateKeyParser::parseEd25519(const Asn1Node &algorithm, const ByteBlock &
 
     // RFC 8410 section 4: SubjectPublicKeyInfo is SEQUENCE { id-Ed25519, BIT STRING ENC(A) }.
     const auto encodedPublicKey = ed25519_signer::publicKey(seed.span());
-    auto encoder = DerEncoder{};
+    auto encoder = data::der::DerEncoder{};
     signing_key_encoding::appendEd25519PublicKey(encoder, encodedPublicKey.span());
     return SigningPrivateKey{SigningKeyAlgorithm::Ed25519, seed.span(), PublicKey::fromDerOrThrow(encoder.encoded())};
 }
@@ -130,20 +118,14 @@ auto PrivateKeyParser::parseEcdsa(const Asn1Node &algorithm, const ByteBlock &pr
     const auto curve = NistPrimeCurve{curveName};
 
     // RFC 5915 section 3: ECPrivateKey contains version 1, a fixed-width private scalar, and an optional public key.
-    const auto root = DerParser{privateKey}.parseDocument();
-    requireNode(
-        root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "ECPrivateKey"_el);
+    const auto root = data::der::DerParser::parseOrThrow(privateKey, cCryptologyAsn1Limits);
+    requireNode(root, Asn1UniversalType::Sequence, true, "ECPrivateKey"_el);
     if (root.childCount() < ItemCount{2U} || root.childCount() > ItemCount{3U} ||
         decodeSmallInteger(root.child(ItemIndex{0U}), "ECPrivateKey version"_el) != 1U) {
         throwParseError("ECPrivateKey must contain version 1, privateKey, and optional publicKey."_el);
     }
     const auto scalarNode = root.child(ItemIndex{1U});
-    requireNode(
-        scalarNode,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::OctetString),
-        false,
-        "EC private scalar"_el);
+    requireNode(scalarNode, Asn1UniversalType::OctetString, false, "EC private scalar"_el);
     auto scalar = scalarNode.contentData();
     scalar.markAsSensitive();
     const auto scalarEraseGuard = SecureEraseGuard{scalar};
@@ -154,26 +136,18 @@ auto PrivateKeyParser::parseEcdsa(const Asn1Node &algorithm, const ByteBlock &pr
 
     if (root.childCount() == ItemCount{3U}) {
         const auto publicKeyField = root.child(ItemIndex{2U});
-        if (publicKeyField.tagClass() != Asn1TagClass::Context || publicKeyField.tagNumber() != 1U ||
-            !publicKeyField.isConstructed() || publicKeyField.childCount() != ItemCount{1U}) {
+        if (!publicKeyField.matches({Asn1TagClass::Context, 1U}, true) ||
+            publicKeyField.childCount() != ItemCount{1U}) {
             throwParseError("ECPrivateKey contains unsupported parameters or malformed publicKey."_el);
         }
-        const auto bitString = publicKeyField.child(ItemIndex{0U});
-        requireNode(
-            bitString,
-            Asn1TagClass::Universal,
-            static_cast<uint32_t>(Asn1UniversalType::BitString),
-            false,
-            "EC public key"_el);
-        const auto content = bitString.contentData();
-        if (content.length() != curve.byteLength() * 2U + ByteCount{2U} || content.span().front().toUInt8() != 0U ||
-            !publicPoint.isEqualConstTime(content.span().subspan(1U))) {
+        const auto point = publicKeyField.child(ItemIndex::zero()).toBitString();
+        if (!point || point->unusedBits != 0U || !publicPoint.isEqualConstTime(point->bytes.span())) {
             throwParseError("ECPrivateKey embedded public key does not match its private scalar."_el);
         }
     }
 
     // RFC 5480 sections 2.1.1 and 2.2: rebuild canonical named-curve SubjectPublicKeyInfo.
-    auto encoder = DerEncoder{};
+    auto encoder = data::der::DerEncoder{};
     signing_key_encoding::appendEcPublicKey(encoder, publicPoint.span(), curveName);
     return SigningPrivateKey{keyAlgorithm, scalar.span(), PublicKey::fromDerOrThrow(encoder.encoded())};
 }
@@ -181,34 +155,24 @@ auto PrivateKeyParser::parseEcdsa(const Asn1Node &algorithm, const ByteBlock &pr
 auto PrivateKeyParser::parseRsa(const Asn1Node &algorithm, const ByteBlock &privateKey) const -> SigningPrivateKey {
     // RFC 5208 section 6 and RFC 8017 appendix A.1.2: the privateKey OCTET STRING contains one version-0
     // two-prime RSAPrivateKey. The exact algorithm encoding retains RSAE or RSASSA-PSS restrictions.
-    auto encoder = DerEncoder{};
-    rsa_signer::appendPublicKey(encoder, privateKey.span(), algorithm.encodedData().span());
+    auto encoder = data::der::DerEncoder{};
+    rsa_signer::appendPublicKey(encoder, privateKey.span(), algorithm.encodedData());
     return SigningPrivateKey{SigningKeyAlgorithm::Rsa, privateKey.span(), PublicKey::fromDerOrThrow(encoder.encoded())};
 }
 
 void PrivateKeyParser::requireNode(
-    const Asn1Node &node,
-    const Asn1TagClass tagClass,
-    const uint32_t tagNumber,
-    const bool constructed,
-    [[maybe_unused]] const String &name) {
-    if (node.isEmpty() || node.tagClass() != tagClass || node.tagNumber() != tagNumber ||
-        node.isConstructed() != constructed) {
+    const Asn1Node &node, const Asn1Tag tag, const bool constructed, [[maybe_unused]] const String &name) {
+    if (!node.matches(tag, constructed)) {
         throwParseError("PKCS#8 contains an ASN.1 value with an unexpected type or form."_el);
     }
 }
 
 auto PrivateKeyParser::decodeSmallInteger(const Asn1Node &node, [[maybe_unused]] const String &name) -> uint32_t {
-    requireNode(node, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Integer), false, name);
-    const auto content = node.contentData();
-    if (content.isEmpty() || content.length() > ByteCount{4U} || (content.span().front().toUInt8() & 0x80U) != 0U) {
+    const auto value = node.toUnsignedInteger();
+    if (!value || *value > UINT32_MAX) {
         throwParseError("PKCS#8 contains an invalid small nonnegative INTEGER."_el);
     }
-    auto result = uint32_t{};
-    for (const auto byte : content.span()) {
-        result = (result << 8U) | byte.toUInt32();
-    }
-    return result;
+    return static_cast<uint32_t>(*value);
 }
 
 void PrivateKeyParser::throwParseError(const String &reason) {

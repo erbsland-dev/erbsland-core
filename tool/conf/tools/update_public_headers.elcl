@@ -57,8 +57,6 @@ Flatten                      : Yes
 ------[ . Cryptology ]----
 Flatten                      : Yes
 
-------[ . Cryptology . Asn1 ]----
-
 ------[ . Cryptology . Authentication ]----
 
 ------[ . Cryptology . Configuration ]----
@@ -85,6 +83,16 @@ Target Directory             : "unsafe"
 ------[ . Data ]----
 Flatten                      : Yes
 
+------[ . Data . Asn1 ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "asn1"
+
+------[ . Data . Ber ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "ber"
+
 ------[ . Data . Bson ]----
 Nested Namespace             : Yes
 Flatten                      : No
@@ -94,6 +102,11 @@ Target Directory             : "bson"
 Nested Namespace             : Yes
 Flatten                      : No
 Target Directory             : "cbor"
+
+------[ . Data . Der ]----
+Nested Namespace             : Yes
+Flatten                      : No
+Target Directory             : "der"
 
 ------[ . Data . Json ]----
 Nested Namespace             : Yes

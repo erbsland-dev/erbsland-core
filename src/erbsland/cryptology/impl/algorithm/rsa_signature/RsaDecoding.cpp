@@ -9,6 +9,8 @@
 
 namespace erbsland::cryptology::impl::rsa_signer::decoder {
 
+using data::asn1::Asn1Node;
+
 using namespace mem;
 using namespace text;
 using rsa_signature::Number;

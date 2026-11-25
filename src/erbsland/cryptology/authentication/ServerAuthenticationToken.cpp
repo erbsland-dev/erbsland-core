@@ -7,11 +7,11 @@
 
 #include "../impl/algorithm/ed25519_signature/Ed25519Signature.hpp"
 #include "../impl/AuthenticationCodec.hpp"
-#include "../impl/DerEncoder.hpp"
 #include "../impl/SigningKeyEncoding.hpp"
 
 #include "../../core/impl/application_data/ApplicationRandomData.hpp"
 #include "../../core/impl/ApplicationDataAccess.hpp"
+#include "../../data/der/DerEncoder.hpp"
 #include "../../err/LogicFailure.hpp"
 #include "../../err/ParameterFailure.hpp"
 #include "../../err/ParseError.hpp"
@@ -67,7 +67,7 @@ auto ServerAuthenticationToken::fromString(const String &token) noexcept -> Serv
 auto ServerAuthenticationToken::fromStringOrThrow(const String &token) -> ServerAuthenticationToken {
     auto identifier = String{};
     const auto publicBytes = impl::authentication_codec::decodeToken(token, 's', identifier);
-    auto encoder = impl::DerEncoder{};
+    auto encoder = data::der::DerEncoder{};
     impl::signing_key_encoding::appendEd25519PublicKey(encoder, publicBytes.span());
     auto key = PublicKey::fromDerOrThrow(encoder.encoded());
     const auto point = impl::ed25519_signature::decodePoint(publicBytes.span());

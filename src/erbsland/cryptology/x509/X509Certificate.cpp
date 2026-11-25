@@ -19,6 +19,9 @@
 
 namespace erbsland::cryptology {
 
+using data::asn1::Asn1Node;
+using data::asn1::Asn1ObjectIdentifier;
+
 using namespace err;
 using namespace mem;
 using namespace text;

@@ -4,8 +4,8 @@
 
 #include "RsaSignature.hpp"
 
+#include "../../../../data/der/DerEncoder.hpp"
 #include "../../../../mem/ByteSpan.hpp"
-#include "../../DerEncoder.hpp"
 
 namespace erbsland::cryptology::impl::rsa_signer {
 
@@ -37,7 +37,8 @@ struct PrivateKeyData final {
 /// @param privateKey PKCS#1 private-key data.
 /// @param algorithmIdentifier Exact validated PKCS#8 AlgorithmIdentifier.
 /// @tested{SigningPrivateKeyTest}
-void appendPublicKey(DerEncoder &encoder, mem::ConstByteSpan privateKey, mem::ConstByteSpan algorithmIdentifier);
+void appendPublicKey(
+    data::der::DerEncoder &encoder, mem::ConstByteSpan privateKey, const mem::ByteBlock &algorithmIdentifier);
 /// Produce an RSA-PSS signature using application secure randomness for salt and message blinding.
 [[nodiscard]] auto sign(
     mem::ConstByteSpan privateKey, TlsSignatureScheme scheme, mem::ConstByteSpan message, const PublicKey &publicKey)

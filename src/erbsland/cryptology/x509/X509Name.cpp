@@ -8,6 +8,8 @@
 
 namespace erbsland::cryptology {
 
+using data::asn1::Asn1ObjectIdentifier;
+
 using namespace text;
 using namespace text::literals;
 

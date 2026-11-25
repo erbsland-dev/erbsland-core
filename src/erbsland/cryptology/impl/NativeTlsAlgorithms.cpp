@@ -1,7 +1,6 @@
 #include "NativeTlsAlgorithms.hpp"
 
 #include "CryptologyOids.hpp"
-#include "DerEncoder.hpp"
 
 #include "algorithm/ecdsa_signature/EcdsaSignature.hpp"
 #include "algorithm/rsa_signature/RsaSignature.hpp"
@@ -10,6 +9,7 @@
 #include "../Hasher.hpp"
 #include "../x509/X509Certificate.hpp"
 
+#include "../../data/der/DerEncoder.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../text/Literals.hpp"
 
@@ -97,7 +97,7 @@ auto ecdsaDer(const ConstByteSpan signature) -> ByteBlock {
         throw CryptologyError{"A native provider returned an invalid ECDSA signature width."_el};
     }
     // RFC 3279 section 2.2.3: native r || s becomes a canonical sequence of positive DER integers.
-    auto encoder = DerEncoder{};
+    auto encoder = data::der::DerEncoder{};
     const auto sequence = encoder.beginSequence();
     encoder.appendPositiveInteger(signature.first(signature.size() / 2U));
     encoder.appendPositiveInteger(signature.subspan(signature.size() / 2U));

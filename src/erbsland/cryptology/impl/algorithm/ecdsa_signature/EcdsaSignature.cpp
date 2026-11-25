@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "EcdsaSignature.hpp"
 
+#include "../../../../data/der/DerParser.hpp"
 #include "../../../../err/ParseError.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../unit/ByteCount.hpp"
@@ -9,12 +10,15 @@
 #include "../../../../unit/ItemCount.hpp"
 #include "../../../../unit/ItemIndex.hpp"
 #include "../../../Hasher.hpp"
-#include "../../DerParser.hpp"
+#include "../../CryptologyAsn1Limits.hpp"
 
 #include <algorithm>
 
 namespace erbsland::cryptology::impl::ecdsa_signature {
 
+using data::asn1::Asn1Node;
+using data::asn1::Asn1Tag;
+using data::asn1::Asn1UniversalType;
 using namespace mem;
 using namespace text::literals;
 using namespace unit;
@@ -134,9 +138,8 @@ auto decodeSignature(const ConstByteSpan signature, const NistPrimeCurve &curve)
     }
 
     // RFC 3279 section 2.2.3: ECDSA-Sig-Value is exactly SEQUENCE { r INTEGER, s INTEGER } in canonical DER.
-    const auto root = DerParser{ByteBlock::fromSpan(signature)}.parseDocument();
-    requireNode(
-        root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "ECDSA-Sig-Value"_el);
+    const auto root = data::der::DerParser::parseOrThrow(ByteBlock::fromSpan(signature), cCryptologyAsn1Limits);
+    requireNode(root, Asn1UniversalType::Sequence, true, "ECDSA-Sig-Value"_el);
     if (root.childCount() != ItemCount{2U}) {
         throwParseError("ECDSA-Sig-Value must contain exactly r and s."_el);
     }
@@ -149,20 +152,14 @@ auto decodeSignature(const ConstByteSpan signature, const NistPrimeCurve &curve)
 }
 
 auto decodeInteger(const Asn1Node &node, const NistPrimeCurve &curve) -> std::optional<NistPrimeCurve::Number> {
-    requireNode(
-        node,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::Integer),
-        false,
-        "ECDSA signature INTEGER"_el);
-    auto contents = node.contentData();
-    if (contents.isEmpty() || (contents.span().front().toUInt8() & 0x80U) != 0U) {
+    const auto contents = node.toUnsignedMagnitude();
+    if (!contents) {
         throwParseError("An ECDSA signature INTEGER must be nonnegative."_el);
     }
-    if (contents.span().front().toUInt8() == 0U && contents.length() > ByteCount::one()) {
-        contents = contents.slice(ByteIndex{1U}, contents.length() - ByteCount::one());
+    if (contents->isEmpty()) {
+        return std::nullopt;
     }
-    const auto value = curve.numberFromBigEndian(contents.span());
+    const auto value = curve.numberFromBigEndian(contents->span());
     if (!value.has_value()) {
         return std::nullopt;
     }
@@ -173,13 +170,8 @@ auto decodeInteger(const Asn1Node &node, const NistPrimeCurve &curve) -> std::op
 }
 
 void requireNode(
-    const Asn1Node &node,
-    const Asn1TagClass tagClass,
-    const uint32_t tagNumber,
-    const bool constructed,
-    [[maybe_unused]] const text::String &name) {
-    if (node.isEmpty() || node.tagClass() != tagClass || node.tagNumber() != tagNumber ||
-        node.isConstructed() != constructed) {
+    const Asn1Node &node, const Asn1Tag tag, const bool constructed, [[maybe_unused]] const text::String &name) {
+    if (!node.matches(tag, constructed)) {
         throwParseError("An ECDSA ASN.1 value has an unexpected type or form."_el);
     }
 }

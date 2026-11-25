@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "X509Parser.hpp"
 
-#include "Asn1ObjectIdentifierCodec.hpp"
-#include "DerParser.hpp"
+#include "CryptologyAsn1Limits.hpp"
 
+#include "../../data/der/DerParser.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteReader.hpp"
@@ -23,6 +23,9 @@
 
 namespace erbsland::cryptology::impl {
 
+using data::asn1::Asn1Node;
+using data::asn1::Asn1TagClass;
+using data::asn1::Asn1UniversalType;
 using namespace text;
 using namespace text::literals;
 using namespace unit;
@@ -32,24 +35,25 @@ X509Parser::X509Parser(Asn1Node root, const X509CertificateProfileMode mode) : _
 }
 
 auto X509Parser::parse(const ByteBlock &der, const X509CertificateProfileMode mode) -> X509Certificate {
-    return X509Parser{DerParser{der}.parseDocument(), mode}.parseCertificate();
+    return X509Parser{data::der::DerParser::parseOrThrow(der, cCryptologyAsn1Limits), mode}.parseCertificate();
 }
 
 auto X509Parser::parsePublicKey(const ByteBlock &der) -> PublicKey {
-    auto parser = X509Parser{DerParser{der}.parseDocument(), X509CertificateProfileMode::Strict};
+    auto parser =
+        X509Parser{data::der::DerParser::parseOrThrow(der, cCryptologyAsn1Limits), X509CertificateProfileMode::Strict};
     return parser.parseSubjectPublicKeyInfo(parser._root);
 }
 
 auto X509Parser::parseAlgorithmIdentifier(const ByteBlock &der) -> X509AlgorithmIdentifier {
-    auto parser = X509Parser{DerParser{der}.parseDocument(), X509CertificateProfileMode::Strict};
+    auto parser =
+        X509Parser{data::der::DerParser::parseOrThrow(der, cCryptologyAsn1Limits), X509CertificateProfileMode::Strict};
     return parser.parseAlgorithmIdentifierNode(parser._root);
 }
 
 auto X509Parser::parseCertificate() -> X509Certificate {
     // RFC 5280 section 4.1: Certificate ::= SEQUENCE { tbsCertificate, signatureAlgorithm, signatureValue }.
     const auto root = _root;
-    requireNode(
-        root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "Certificate"_el);
+    requireNode(root, Asn1UniversalType::Sequence, true, "Certificate"_el);
     if (root.childCount() != ItemCount{3U}) {
         throwParseError(
             "Certificate must contain exactly TBSCertificate, AlgorithmIdentifier, and signature."_el, root);
@@ -58,15 +62,12 @@ auto X509Parser::parseCertificate() -> X509Certificate {
     parseTbsCertificate(root.child(ItemIndex{0U}));
     _values.signatureAlgorithm = parseAlgorithmIdentifierNode(root.child(ItemIndex{1U}));
     const auto signatureNode = root.child(ItemIndex{2U});
-    requireNode(
-        signatureNode,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::BitString),
-        false,
-        "signatureValue"_el);
-    const auto signatureContent = signatureNode.contentData();
-    _values.signatureUnusedBitCount = signatureContent.span().front().toUInt8();
-    _values.signature = signatureContent.slice(ByteIndex{1U}, signatureContent.length() - ByteCount{1U});
+    const auto signature = signatureNode.toBitString();
+    if (!signature) {
+        throwParseError("Expected a signature BIT STRING."_el, signatureNode);
+    }
+    _values.signatureUnusedBitCount = signature->unusedBits;
+    _values.signature = signature->bytes;
     if (_values.signatureUnusedBitCount != 0U) {
         throwParseError("An X.509 signature BIT STRING must contain complete octets."_el, signatureNode);
     }
@@ -82,13 +83,11 @@ auto X509Parser::parseCertificate() -> X509Certificate {
 
 void X509Parser::parseTbsCertificate(const Asn1Node &node) {
     // RFC 5280 sections 4.1.2.1-4.1.2.9 define the ordered TBSCertificate fields parsed below.
-    requireNode(
-        node, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "TBSCertificate"_el);
+    requireNode(node, Asn1UniversalType::Sequence, true, "TBSCertificate"_el);
     _values.tbsNode = node;
-    const auto children = node.children();
-    auto index = std::size_t{};
-    if (!children.isEmpty() && isNode(children.toRawValue()[0U], Asn1TagClass::Context, 0U, true)) {
-        const auto explicitVersion = children.toRawValue()[index++];
+    auto index = ItemIndex::zero();
+    if (node.child(index).matches({Asn1TagClass::Context, 0U}, true)) {
+        const auto explicitVersion = node.child(index++);
         if (explicitVersion.childCount() != ItemCount{1U}) {
             throwParseError("X.509 version field must contain one INTEGER."_el, explicitVersion);
         }
@@ -115,39 +114,24 @@ void X509Parser::parseTbsCertificate(const Asn1Node &node) {
     } else {
         _values.version = X509Version::V1;
     }
-    if (children.count().toSizeT() < index + 6U) {
+    if (node.childCount() < index.distanceFromZero() + ItemCount{6U}) {
         throwParseError("TBSCertificate is missing required fields."_el, node);
     }
-    const auto serialNode = children.toRawValue()[index++];
-    requireNode(
-        serialNode,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::Integer),
-        false,
-        "serialNumber"_el);
+    const auto serialNode = node.child(index++);
+    requireNode(serialNode, Asn1UniversalType::Integer, false, "serialNumber"_el);
     _values.serialNumber = serialNode.contentData();
-    const auto serial = _values.serialNumber.span();
-    const auto negative = (serial.front().toUInt8() & 0x80U) != 0U;
-    auto magnitudeLength = serial.size();
-    if (!serial.empty() && serial.front().toUInt8() == 0U) {
-        --magnitudeLength;
-    }
-    auto zero = true;
-    for (const auto byte : serial) {
-        zero = zero && byte.toUInt8() == 0U;
-    }
-    if (negative || zero || magnitudeLength > 20U) {
+    const auto magnitude = serialNode.toUnsignedMagnitude();
+    if (!magnitude || magnitude->isEmpty() || magnitude->length() > ByteCount{20U}) {
         addIssue(
             X509CertificateProfileIssueCategory::SerialNumber,
             "serialNumber"_el,
             {},
             "Certificate serial number must be positive and at most 20 octets."_el);
     }
-    _values.tbsSignatureAlgorithm = parseAlgorithmIdentifierNode(children.toRawValue()[index++]);
-    _values.issuer = parseName(children.toRawValue()[index++]);
-    const auto validity = children.toRawValue()[index++];
-    requireNode(
-        validity, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "validity"_el);
+    _values.tbsSignatureAlgorithm = parseAlgorithmIdentifierNode(node.child(index++));
+    _values.issuer = parseName(node.child(index++));
+    const auto validity = node.child(index++);
+    requireNode(validity, Asn1UniversalType::Sequence, true, "validity"_el);
     if (validity.childCount() != ItemCount{2U}) {
         throwParseError("X.509 Validity must contain exactly two times."_el, validity);
     }
@@ -160,32 +144,32 @@ void X509Parser::parseTbsCertificate(const Asn1Node &node) {
             {},
             "Certificate not-after time precedes its not-before time."_el);
     }
-    _values.subject = parseName(children.toRawValue()[index++]);
-    _values.publicKey = parseSubjectPublicKeyInfo(children.toRawValue()[index++]);
+    _values.subject = parseName(node.child(index++));
+    _values.publicKey = parseSubjectPublicKeyInfo(node.child(index++));
     auto hasIssuerUniqueId = false;
     auto hasSubjectUniqueId = false;
     auto hasExtensions = false;
     auto previousOptionalTag = uint32_t{};
-    while (index < children.count().toSizeT()) {
-        const auto optional = children.toRawValue()[index++];
+    while (index.isWithin(node.childCount())) {
+        const auto optional = node.child(index++);
         if (optional.tagClass() != Asn1TagClass::Context || optional.tagNumber() <= previousOptionalTag ||
             optional.tagNumber() > 3U) {
             throwParseError("TBSCertificate optional fields are missing, unknown, or out of order."_el, optional);
         }
         previousOptionalTag = optional.tagNumber();
-        if (isNode(optional, Asn1TagClass::Context, 1U, false)) {
+        if (optional.matches({Asn1TagClass::Context, 1U}, false)) {
             if (hasIssuerUniqueId) {
                 throwParseError("TBSCertificate contains a duplicate issuerUniqueID."_el, optional);
             }
             hasIssuerUniqueId = true;
             validateImplicitBitString(optional, "issuerUniqueID"_el);
-        } else if (isNode(optional, Asn1TagClass::Context, 2U, false)) {
+        } else if (optional.matches({Asn1TagClass::Context, 2U}, false)) {
             if (hasSubjectUniqueId) {
                 throwParseError("TBSCertificate contains a duplicate subjectUniqueID."_el, optional);
             }
             hasSubjectUniqueId = true;
             validateImplicitBitString(optional, "subjectUniqueID"_el);
-        } else if (isNode(optional, Asn1TagClass::Context, 3U, true)) {
+        } else if (optional.matches({Asn1TagClass::Context, 3U}, true)) {
             if (hasExtensions) {
                 throwParseError("TBSCertificate contains duplicate extensions containers."_el, optional);
             }
@@ -200,12 +184,7 @@ void X509Parser::parseTbsCertificate(const Asn1Node &node) {
 
 auto X509Parser::parseAlgorithmIdentifierNode(const Asn1Node &node) -> X509AlgorithmIdentifier {
     // RFC 5280 sections 4.1.1.2 and 4.1.2.3 require matching AlgorithmIdentifier values.
-    requireNode(
-        node,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::Sequence),
-        true,
-        "AlgorithmIdentifier"_el);
+    requireNode(node, Asn1UniversalType::Sequence, true, "AlgorithmIdentifier"_el);
     if (node.childCount() < ItemCount{1U} || node.childCount() > ItemCount{2U}) {
         throwParseError("AlgorithmIdentifier must contain an OID and optional parameters."_el, node);
     }
@@ -219,26 +198,19 @@ auto X509Parser::parseAlgorithmIdentifierNode(const Asn1Node &node) -> X509Algor
 
 auto X509Parser::parseName(const Asn1Node &node) -> X509Name {
     // RFC 5280 section 4.1.2.4 and X.501 section 9.2: Name is an RDNSequence of attribute sets.
-    requireNode(node, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "Name"_el);
+    requireNode(node, Asn1UniversalType::Sequence, true, "Name"_el);
     auto rdns = util::List<X509RelativeDistinguishedName>{};
     for (const auto &rdnNode : node.children()) {
-        requireNode(
-            rdnNode,
-            Asn1TagClass::Universal,
-            static_cast<uint32_t>(Asn1UniversalType::Set),
-            true,
-            "RelativeDistinguishedName"_el);
+        requireNode(rdnNode, Asn1UniversalType::Set, true, "RelativeDistinguishedName"_el);
+        if (!data::der::DerParser::isSetOfOrdered(rdnNode)) {
+            throwParseError("RelativeDistinguishedName violates DER SET OF ordering."_el, rdnNode);
+        }
         if (rdnNode.childCount() == ItemCount{}) {
             throwParseError("RelativeDistinguishedName must not be empty."_el, rdnNode);
         }
         auto attributes = util::List<X509NameAttribute>{};
         for (const auto &attributeNode : rdnNode.children()) {
-            requireNode(
-                attributeNode,
-                Asn1TagClass::Universal,
-                static_cast<uint32_t>(Asn1UniversalType::Sequence),
-                true,
-                "AttributeTypeAndValue"_el);
+            requireNode(attributeNode, Asn1UniversalType::Sequence, true, "AttributeTypeAndValue"_el);
             if (attributeNode.childCount() != ItemCount{2U}) {
                 throwParseError("AttributeTypeAndValue must contain exactly an OID and a value."_el, attributeNode);
             }
@@ -267,7 +239,7 @@ auto X509Parser::parseTime(const Asn1Node &node) -> time::Timestamp {
     const auto type = node.universalType();
     const auto contentData = node.contentData();
     const auto content = contentData.span();
-    const auto contentByteIndex = nodeContentByteIndex(node);
+    const auto contentByteIndex = node.contentByteIndex();
     uint32_t year{};
     auto position = std::size_t{};
     if (type == Asn1UniversalType::UtcTime) {
@@ -310,30 +282,17 @@ auto X509Parser::parseTime(const Asn1Node &node) -> time::Timestamp {
 
 auto X509Parser::parseSubjectPublicKeyInfo(const Asn1Node &node) -> PublicKey {
     // RFC 5280 section 4.1.2.7: SubjectPublicKeyInfo contains an AlgorithmIdentifier and BIT STRING.
-    requireNode(
-        node,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::Sequence),
-        true,
-        "SubjectPublicKeyInfo"_el);
+    requireNode(node, Asn1UniversalType::Sequence, true, "SubjectPublicKeyInfo"_el);
     if (node.childCount() != ItemCount{2U}) {
         throwParseError("SubjectPublicKeyInfo must contain algorithm and subjectPublicKey."_el, node);
     }
     auto algorithm = parseAlgorithmIdentifierNode(node.child(ItemIndex{0U}));
     const auto keyNode = node.child(ItemIndex{1U});
-    requireNode(
-        keyNode,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::BitString),
-        false,
-        "subjectPublicKey"_el);
-    const auto content = keyNode.contentData();
-    return PublicKey{
-        std::move(algorithm),
-        content.slice(ByteIndex{1U}, content.length() - ByteCount{1U}),
-        content.span().front().toUInt8(),
-        node,
-        node.encodedData()};
+    const auto key = keyNode.toBitString();
+    if (!key) {
+        throwParseError("Expected a subjectPublicKey BIT STRING."_el, keyNode);
+    }
+    return PublicKey{std::move(algorithm), key->bytes, key->unusedBits, node, node.encodedData()};
 }
 
 void X509Parser::parseExtensions(const Asn1Node &explicitNode) {
@@ -342,19 +301,13 @@ void X509Parser::parseExtensions(const Asn1Node &explicitNode) {
         throwParseError("Extensions explicit field must contain one SEQUENCE."_el, explicitNode);
     }
     const auto sequence = explicitNode.child(ItemIndex{0U});
-    requireNode(
-        sequence, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "Extensions"_el);
+    requireNode(sequence, Asn1UniversalType::Sequence, true, "Extensions"_el);
     if (sequence.childCount() == ItemCount{}) {
         throwParseError("Extensions must contain at least one extension."_el, sequence);
     }
     auto seen = StringSet{};
     for (const auto &extensionNode : sequence.children()) {
-        requireNode(
-            extensionNode,
-            Asn1TagClass::Universal,
-            static_cast<uint32_t>(Asn1UniversalType::Sequence),
-            true,
-            "Extension"_el);
+        requireNode(extensionNode, Asn1UniversalType::Sequence, true, "Extension"_el);
         if (extensionNode.childCount() < ItemCount{2U} || extensionNode.childCount() > ItemCount{3U}) {
             throwParseError("Extension must contain OID, optional critical flag, and extnValue."_el, extensionNode);
         }
@@ -379,18 +332,16 @@ void X509Parser::parseExtensions(const Asn1Node &explicitNode) {
             throwParseError("Extension has an invalid field order."_el, extensionNode);
         }
         valueNode = extensionNode.child(childIndex);
-        requireNode(
-            valueNode,
-            Asn1TagClass::Universal,
-            static_cast<uint32_t>(Asn1UniversalType::OctetString),
-            false,
-            "extnValue"_el);
+        requireNode(valueNode, Asn1UniversalType::OctetString, false, "extnValue"_el);
         const auto value = valueNode.contentData();
         auto innerNode = Asn1Node{};
         auto innerReadable = true;
         try {
-            innerNode = DerParser{value}.parseDocument();
+            innerNode = data::der::DerParser::parseContentOrThrow(valueNode, cCryptologyAsn1Limits);
         } catch (const err::ParseError &) {
+            if (_mode == X509CertificateProfileMode::Strict) {
+                throw;
+            }
             innerReadable = false;
             addIssue(
                 X509CertificateProfileIssueCategory::ExtensionValue,

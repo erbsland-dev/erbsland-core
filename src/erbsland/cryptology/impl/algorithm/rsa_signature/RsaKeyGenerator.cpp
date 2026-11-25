@@ -6,11 +6,11 @@
 
 #include "../../../../core/impl/application_data/ApplicationRandomData.hpp"
 #include "../../../../core/impl/ApplicationDataAccess.hpp"
+#include "../../../../data/der/DerEncoder.hpp"
 #include "../../../../err/ParameterFailure.hpp"
 #include "../../../../mem/ByteBlock.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../CryptologyError.hpp"
-#include "../../DerEncoder.hpp"
 #include "../../SecureEraseGuard.hpp"
 
 namespace erbsland::cryptology::impl::rsa_key_generator {
@@ -65,7 +65,7 @@ auto generate(const std::size_t modulusBits) -> ByteBlock {
     auto qInv = qModuloP.poweredModuloSecret(pMinusTwo, p);
     const auto qInvEraseGuard = SecureEraseGuard{qInv};
 
-    auto encoder = DerEncoder{};
+    auto encoder = data::der::DerEncoder{};
     encoder.markAsSensitive();
     const auto root = encoder.beginSequence();
     encoder.appendPositiveInteger(uint64_t{});

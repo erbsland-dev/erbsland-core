@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "X509ArtifactWriter.hpp"
 
+#include "CryptologyAsn1Limits.hpp"
 #include "CryptologyOids.hpp"
-#include "DerEncoder.hpp"
-#include "DerParser.hpp"
 
 #include "algorithm/rsa_signature/RsaSignature.hpp"
 
-#include "../asn1/Asn1ObjectIdentifier.hpp"
 #include "../CryptologyError.hpp"
 #include "../HashAlgorithm.hpp"
 #include "../Hasher.hpp"
@@ -18,6 +16,9 @@
 
 #include "../../core/impl/application_data/ApplicationRandomData.hpp"
 #include "../../core/impl/ApplicationDataAccess.hpp"
+#include "../../data/asn1/Asn1ObjectIdentifier.hpp"
+#include "../../data/der/DerEncoder.hpp"
+#include "../../data/der/DerParser.hpp"
 #include "../../err/LogicFailure.hpp"
 #include "../../err/ParameterFailure.hpp"
 #include "../../mem/Byte.hpp"
@@ -39,6 +40,8 @@
 
 namespace erbsland::cryptology::impl {
 
+using data::asn1::Asn1ObjectIdentifier;
+
 using namespace err;
 using namespace mem;
 using namespace text;
@@ -50,7 +53,7 @@ auto X509ArtifactWriter::createSelfSignedCertificate(const SigningPrivateKey &ke
         throw LogicFailure{"Only a certificate-authority profile can create a self-signed certificate."_el};
     }
     validateIdentity();
-    auto nameEncoder = DerEncoder{};
+    auto nameEncoder = data::der::DerEncoder{};
     appendSubjectName(nameEncoder);
     const auto name = nameEncoder.encoded();
     return createCertificateImpl(key, name, keyIdentifier(key.publicKey()), key, nullptr);
@@ -98,15 +101,15 @@ auto X509ArtifactWriter::createSigningRequest(const SigningPrivateKey &subjectKe
     if (subjectKey.isEmpty()) {
         throw LogicFailure{"A subject private key is required for a certificate signing request."_el};
     }
-    auto infoEncoder = DerEncoder{};
+    auto infoEncoder = data::der::DerEncoder{};
     const auto info = infoEncoder.beginSequence();
     infoEncoder.appendPositiveInteger(uint64_t{});
     appendSubjectName(infoEncoder);
-    infoEncoder.appendEncoded(subjectKey.publicKey().toDer().span());
+    infoEncoder.appendEncoded(subjectKey.publicKey().asn1());
     const auto attributes = infoEncoder.beginExplicit(0U);
     const auto attribute = infoEncoder.beginSequence();
     infoEncoder.appendObjectIdentifier(Asn1ObjectIdentifier::fromStringOrThrow(cryptology_oids::extensionRequest));
-    const auto attributeValues = infoEncoder.beginSet();
+    const auto attributeValues = infoEncoder.beginSetOf();
     appendExtensions(infoEncoder, subjectKey.publicKey(), {}, true);
     infoEncoder.end(attributeValues);
     infoEncoder.end(attribute);
@@ -120,14 +123,14 @@ auto X509ArtifactWriter::createSigningRequest(const SigningPrivateKey &subjectKe
     if (!subjectKey.publicKey().verifySignature(algorithm, requestInfo.span(), signature.span())) {
         throw CryptologyError{"Generated certificate request failed its signature self-check."_el};
     }
-    auto requestEncoder = DerEncoder{};
+    auto requestEncoder = data::der::DerEncoder{};
     const auto request = requestEncoder.beginSequence();
-    requestEncoder.appendEncoded(requestInfo.span());
-    requestEncoder.appendEncoded(algorithm.toDer().span());
+    requestEncoder.appendEncoded(requestInfo);
+    requestEncoder.appendEncoded(algorithm.toDer());
     requestEncoder.appendBitString(signature.span());
     requestEncoder.end(request);
     auto result = requestEncoder.encoded();
-    [[maybe_unused]] const auto validatedStructure = DerParser{result}.parseDocument();
+    [[maybe_unused]] const auto validatedStructure = data::der::DerParser::parseOrThrow(result, cCryptologyAsn1Limits);
     return X509CertificateSigningRequest{std::move(result)};
 }
 
@@ -174,30 +177,30 @@ auto X509ArtifactWriter::createCertificateImpl(
     const auto scheme = signatureScheme(issuerKey);
     const auto algorithm = scheme.signatureAlgorithmIdentifier();
     // RFC 5280 sections 4.1 and 4.1.2: build TBSCertificate in schema order and sign its exact DER encoding.
-    auto tbsEncoder = DerEncoder{};
+    auto tbsEncoder = data::der::DerEncoder{};
     const auto tbsScope = tbsEncoder.beginSequence();
     const auto version = tbsEncoder.beginExplicit(0U);
     tbsEncoder.appendPositiveInteger(uint64_t{2U});
     tbsEncoder.end(version);
     tbsEncoder.appendPositiveInteger(serialNumber().span());
-    tbsEncoder.appendEncoded(algorithm.toDer().span());
-    tbsEncoder.appendEncoded(issuerName.span());
+    tbsEncoder.appendEncoded(algorithm.toDer());
+    tbsEncoder.appendEncoded(issuerName);
     const auto validity = tbsEncoder.beginSequence();
     tbsEncoder.appendTime(validFrom);
     tbsEncoder.appendTime(validTo);
     tbsEncoder.end(validity);
     appendSubjectName(tbsEncoder);
-    tbsEncoder.appendEncoded(subjectKey.publicKey().toDer().span());
+    tbsEncoder.appendEncoded(subjectKey.publicKey().asn1());
     const auto extensionValues = tbsEncoder.beginExplicit(3U);
     appendExtensions(tbsEncoder, subjectKey.publicKey(), authorityKeyIdentifier, false);
     tbsEncoder.end(extensionValues);
     tbsEncoder.end(tbsScope);
     const auto tbs = tbsEncoder.encoded();
     const auto signature = issuerKey.signTlsCertificateVerify(scheme, tbs.span());
-    auto certificateEncoder = DerEncoder{};
+    auto certificateEncoder = data::der::DerEncoder{};
     const auto certificateScope = certificateEncoder.beginSequence();
-    certificateEncoder.appendEncoded(tbs.span());
-    certificateEncoder.appendEncoded(algorithm.toDer().span());
+    certificateEncoder.appendEncoded(tbs);
+    certificateEncoder.appendEncoded(algorithm.toDer());
     certificateEncoder.appendBitString(signature.span());
     certificateEncoder.end(certificateScope);
     const auto certificate = X509Certificate::fromDerOrThrow(certificateEncoder.encoded());
@@ -223,13 +226,13 @@ void X509ArtifactWriter::validateIdentity() const {
     }
 }
 
-void X509ArtifactWriter::appendSubjectName(DerEncoder &encoder) const {
+void X509ArtifactWriter::appendSubjectName(data::der::DerEncoder &encoder) const {
     const auto name = encoder.beginSequence();
     const auto appendAttribute = [&](const String &id, const String &value, const bool printable) -> void {
         if (value.isEmpty()) {
             return;
         }
-        const auto rdn = encoder.beginSet();
+        const auto rdn = encoder.beginSetOf();
         const auto attribute = encoder.beginSequence();
         encoder.appendObjectIdentifier(Asn1ObjectIdentifier::fromStringOrThrow(id));
         if (printable) {
@@ -252,16 +255,16 @@ void X509ArtifactWriter::appendSubjectName(DerEncoder &encoder) const {
                     (id == cryptology_oids::organizationName && _builder._organization.has_value()) ||
                     (id == cryptology_oids::organizationalUnitName && _builder._organizationalUnit.has_value());
                 if (!replaced) {
-                    auto attributeEncoder = DerEncoder{};
+                    auto attributeEncoder = data::der::DerEncoder{};
                     const auto attributeScope = attributeEncoder.beginSequence();
                     attributeEncoder.appendObjectIdentifier(Asn1ObjectIdentifier::fromStringOrThrow(id));
-                    attributeEncoder.appendEncoded(attribute.asn1().encodedData().span());
+                    attributeEncoder.appendEncoded(attribute.asn1());
                     attributeEncoder.end(attributeScope);
                     attributes.append(attributeEncoder.encoded());
                 }
             }
             if (!attributes.isEmpty()) {
-                encoder.appendSet(std::move(attributes));
+                encoder.appendSetOf(std::move(attributes));
             }
         }
     }
@@ -284,14 +287,25 @@ void X509ArtifactWriter::appendSubjectName(DerEncoder &encoder) const {
     encoder.end(name);
 }
 
+auto X509ArtifactWriter::beginExtension(
+    data::der::DerEncoder &encoder, const Asn1ObjectIdentifier &oid, const bool critical)
+    -> data::der::DerEncoder::Scope {
+    const auto extension = encoder.beginSequence();
+    encoder.appendObjectIdentifier(oid);
+    if (critical) {
+        encoder.appendBoolean(true);
+    }
+    return extension;
+}
+
 void X509ArtifactWriter::appendExtensions(
-    DerEncoder &encoder,
+    data::der::DerEncoder &encoder,
     const PublicKey &subjectKey,
     const ByteBlock &authorityKeyIdentifier,
     const bool request) const {
     const auto root = encoder.beginSequence();
     const auto isCa = _builder._profile == X509CertificateProfile::CertificateAuthority;
-    appendExtension(encoder, cryptology_oids::basicConstraints, isCa, [&](DerEncoder &valueEncoder) -> void {
+    appendExtension(encoder, cryptology_oids::basicConstraints, isCa, [&](data::der::DerEncoder &valueEncoder) -> void {
         const auto constraints = valueEncoder.beginSequence();
         if (isCa) {
             valueEncoder.appendBoolean(true);
@@ -315,60 +329,63 @@ void X509ArtifactWriter::appendExtensions(
         unusedBits = 7U;
     }
     const auto usageContent = ByteArray<1U>{Byte{usageByte}};
-    appendExtension(encoder, cryptology_oids::keyUsage, true, [&](DerEncoder &valueEncoder) -> void {
+    appendExtension(encoder, cryptology_oids::keyUsage, true, [&](data::der::DerEncoder &valueEncoder) -> void {
         valueEncoder.appendBitString(usageContent.span(), unusedBits);
     });
 
     if (!isCa) {
-        appendExtension(encoder, cryptology_oids::extendedKeyUsage, false, [&](DerEncoder &valueEncoder) -> void {
-            const auto purposes = valueEncoder.beginSequence();
-            if (_builder._profile == X509CertificateProfile::TlsServer ||
-                _builder._profile == X509CertificateProfile::TlsServerAndClient) {
-                valueEncoder.appendObjectIdentifier(
-                    Asn1ObjectIdentifier::fromStringOrThrow(cryptology_oids::serverAuth));
-            }
-            if (_builder._profile == X509CertificateProfile::TlsClient ||
-                _builder._profile == X509CertificateProfile::TlsServerAndClient) {
-                valueEncoder.appendObjectIdentifier(
-                    Asn1ObjectIdentifier::fromStringOrThrow(cryptology_oids::clientAuth));
-            }
-            valueEncoder.end(purposes);
-        });
+        appendExtension(
+            encoder, cryptology_oids::extendedKeyUsage, false, [&](data::der::DerEncoder &valueEncoder) -> void {
+                const auto purposes = valueEncoder.beginSequence();
+                if (_builder._profile == X509CertificateProfile::TlsServer ||
+                    _builder._profile == X509CertificateProfile::TlsServerAndClient) {
+                    valueEncoder.appendObjectIdentifier(
+                        Asn1ObjectIdentifier::fromStringOrThrow(cryptology_oids::serverAuth));
+                }
+                if (_builder._profile == X509CertificateProfile::TlsClient ||
+                    _builder._profile == X509CertificateProfile::TlsServerAndClient) {
+                    valueEncoder.appendObjectIdentifier(
+                        Asn1ObjectIdentifier::fromStringOrThrow(cryptology_oids::clientAuth));
+                }
+                valueEncoder.end(purposes);
+            });
     }
     if (!_builder._dnsNames.isEmpty() || !_builder._ipAddresses.isEmpty()) {
-        appendExtension(encoder, cryptology_oids::subjectAlternativeName, false, [&](DerEncoder &valueEncoder) -> void {
-            static const auto cAsciiCharacters = CharSet::fromRange(Char{U'\0'}, Char{U'\x7f'});
-            const auto names = valueEncoder.beginSequence();
-            for (const auto &name : _builder._dnsNames) {
-                if (!name.containsOnly(cAsciiCharacters)) {
-                    throw ParameterFailure{"DNS subject alternative names must be ASCII."_el, "dnsName"_el};
+        appendExtension(
+            encoder, cryptology_oids::subjectAlternativeName, false, [&](data::der::DerEncoder &valueEncoder) -> void {
+                static const auto cAsciiCharacters = CharSet::fromRange(Char{U'\0'}, Char{U'\x7f'});
+                const auto names = valueEncoder.beginSequence();
+                for (const auto &name : _builder._dnsNames) {
+                    if (!name.containsOnly(cAsciiCharacters)) {
+                        throw ParameterFailure{"DNS subject alternative names must be ASCII."_el, "dnsName"_el};
+                    }
+                    const auto bytes = toConstByteSpan(text::impl::UnsafeU8StringAccess{name}.dataSpan());
+                    valueEncoder.appendImplicitPrimitive(2U, bytes);
                 }
-                const auto bytes = toConstByteSpan(text::impl::UnsafeU8StringAccess{name}.dataSpan());
-                valueEncoder.appendImplicitPrimitive(2U, bytes);
-            }
-            for (const auto &address : _builder._ipAddresses) {
-                const auto length = address.isV4() ? std::size_t{4U} : std::size_t{16U};
-                valueEncoder.appendImplicitPrimitive(7U, address.bytes().span().first(length));
-            }
-            valueEncoder.end(names);
-        });
+                for (const auto &address : _builder._ipAddresses) {
+                    const auto length = address.isV4() ? std::size_t{4U} : std::size_t{16U};
+                    valueEncoder.appendImplicitPrimitive(7U, address.bytes().span().first(length));
+                }
+                valueEncoder.end(names);
+            });
     }
     for (const auto &preserved : _builder._preservedExtensions) {
-        appendExtension(
-            encoder, preserved.oid().toString(), preserved.isCritical(), [&](DerEncoder &valueEncoder) -> void {
-                valueEncoder.appendEncoded(preserved.value().span());
-            });
+        const auto extension = beginExtension(encoder, preserved.oid(), preserved.isCritical());
+        encoder.appendOctetString(preserved.value().span());
+        encoder.end(extension);
     }
     if (!request) {
         const auto subjectIdentifier = keyIdentifier(subjectKey);
-        appendExtension(encoder, cryptology_oids::subjectKeyIdentifier, false, [&](DerEncoder &valueEncoder) -> void {
-            valueEncoder.appendOctetString(subjectIdentifier.span());
-        });
-        appendExtension(encoder, cryptology_oids::authorityKeyIdentifier, false, [&](DerEncoder &valueEncoder) -> void {
-            const auto identifier = valueEncoder.beginSequence();
-            valueEncoder.appendImplicitPrimitive(0U, authorityKeyIdentifier.span());
-            valueEncoder.end(identifier);
-        });
+        appendExtension(
+            encoder, cryptology_oids::subjectKeyIdentifier, false, [&](data::der::DerEncoder &valueEncoder) -> void {
+                valueEncoder.appendOctetString(subjectIdentifier.span());
+            });
+        appendExtension(
+            encoder, cryptology_oids::authorityKeyIdentifier, false, [&](data::der::DerEncoder &valueEncoder) -> void {
+                const auto identifier = valueEncoder.beginSequence();
+                valueEncoder.appendImplicitPrimitive(0U, authorityKeyIdentifier.span());
+                valueEncoder.end(identifier);
+            });
     }
     encoder.end(root);
 }

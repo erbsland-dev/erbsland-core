@@ -29,20 +29,19 @@ namespace erbsland::cryptology::impl::rsa_signature {
 /// Decode and validate the signature AlgorithmIdentifier.
 [[nodiscard]] auto decodeSignatureParameters(const X509AlgorithmIdentifier &algorithm) -> SignatureParameters;
 /// Decode RSASSA-PSS-params with RFC defaults and the supported SHA-2 policy.
-[[nodiscard]] auto decodePssParameters(const Asn1Node &parameters) -> SignatureParameters;
+[[nodiscard]] auto decodePssParameters(const data::asn1::Asn1Node &parameters) -> SignatureParameters;
 /// Decode and validate an RSA SubjectPublicKeyInfo.
 [[nodiscard]] auto decodePublicKey(const PublicKey &publicKey) -> PublicKeyData;
 /// Decode an AlgorithmIdentifier embedded in RSASSA-PSS parameters.
-[[nodiscard]] auto decodeHashAlgorithmIdentifier(const Asn1Node &node) -> HashAlgorithm;
+[[nodiscard]] auto decodeHashAlgorithmIdentifier(const data::asn1::Asn1Node &node) -> HashAlgorithm;
 /// Decode one bounded nonnegative DER INTEGER into a native size.
-[[nodiscard]] auto decodeSmallInteger(const Asn1Node &node, const text::String &name) -> std::size_t;
+[[nodiscard]] auto decodeSmallInteger(const data::asn1::Asn1Node &node, const text::String &name) -> std::size_t;
 /// Return positive INTEGER magnitude octets without the optional sign octet.
-[[nodiscard]] auto decodePositiveInteger(const Asn1Node &node, const text::String &name) -> mem::ByteBlock;
+[[nodiscard]] auto decodePositiveInteger(const data::asn1::Asn1Node &node, const text::String &name) -> mem::ByteBlock;
 /// Require one exact ASN.1 node shape.
-void requireNode(
-    const Asn1Node &node, Asn1TagClass tagClass, uint32_t tagNumber, bool constructed, const text::String &name);
+void requireNode(const data::asn1::Asn1Node &node, data::asn1::Asn1Tag tag, bool constructed, const text::String &name);
 /// Require exact DER NULL parameters.
-void requireNullParameters(const Asn1Node &parameters, const text::String &name);
+void requireNullParameters(const data::asn1::Asn1Node &parameters, const text::String &name);
 /// Throw a parse failure with a stable RSA context.
 [[noreturn]] void throwParseError(const text::String &reason);
 /// Apply RSAVP1: `m = s^e mod n`.

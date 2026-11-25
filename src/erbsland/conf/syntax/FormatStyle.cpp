@@ -17,7 +17,8 @@ using namespace text;
 
 using namespace text::literals;
 
-FormatStyle::FormatStyle() : _abbreviations{"HTTP"_el, "HTTPS"_el, "FTP"_el, "FTPS"_el, "SSH"_el, "VR"_el} {
+FormatStyle::FormatStyle() :
+    _abbreviations{"HTTP"_el, "HTTPS"_el, "FTP"_el, "FTPS"_el, "SSH"_el, "TLS"_el, "URL"_el, "VR"_el} {
 }
 
 auto FormatStyle::setAbbreviations(StringList value) -> FormatStyle & {

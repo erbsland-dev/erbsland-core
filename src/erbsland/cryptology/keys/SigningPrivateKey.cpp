@@ -9,7 +9,6 @@
 #include "../impl/algorithm/rsa_signature/RsaSignature.hpp"
 #include "../impl/algorithm/rsa_signature/RsaSigner.hpp"
 #include "../impl/CryptologyOids.hpp"
-#include "../impl/DerEncoder.hpp"
 #include "../impl/EncryptedPrivateKeyCodec.hpp"
 #include "../impl/PemCodec.hpp"
 #include "../impl/PemDerFileTools.hpp"
@@ -18,6 +17,7 @@
 #include "../impl/SigningKeyEncoding.hpp"
 #include "../impl/SigningKeyGenerator.hpp"
 
+#include "../../data/der/DerEncoder.hpp"
 #include "../../err/LogicFailure.hpp"
 #include "../../err/ParameterFailure.hpp"
 #include "../../err/RuntimeError.hpp"
@@ -94,7 +94,7 @@ auto SigningPrivateKey::fromEd25519Seed(const ConstByteSpan seed) -> SigningPriv
         throw ParameterFailure{"An Ed25519 seed must contain 32 bytes."_el, "seed"_el};
     }
     const auto point = impl::ed25519_signer::publicKey(seed);
-    auto encoder = impl::DerEncoder{};
+    auto encoder = data::der::DerEncoder{};
     impl::signing_key_encoding::appendEd25519PublicKey(encoder, point.span());
     auto publicKey = PublicKey::fromDerOrThrow(encoder.encoded());
     return SigningPrivateKey{SigningKeyAlgorithm::Ed25519, seed, std::move(publicKey)};
@@ -202,7 +202,7 @@ auto SigningPrivateKey::toDer() const -> ByteBlock {
     if (isEmpty()) {
         throw LogicFailure{"A private key is required for encoding."_el};
     }
-    auto encoder = impl::DerEncoder{};
+    auto encoder = data::der::DerEncoder{};
     _privateData.withUnprotectedData([&](const ConstByteSpan privateData) -> void {
         impl::signing_key_encoding::appendPrivateKey(encoder, _algorithm, privateData, _publicKey);
     });

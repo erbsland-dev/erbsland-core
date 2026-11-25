@@ -4,8 +4,12 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core-unittest PRIVATE
+        Asn1NodeTest.cpp
+        Asn1TestHelper.hpp
+        BerCodecTest.cpp
         BsonValueTest.cpp
         CborValueTest.cpp
+        DerEncoderTest.cpp
         JsonParserTest.cpp
         JsonValueTest.cpp
         XmlDocumentTest.cpp

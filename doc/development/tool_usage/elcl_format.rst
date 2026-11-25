@@ -70,7 +70,7 @@ Optional child sections group the other settings:
 
 Case settings accept ``keep``, ``lower``, ``title`` or ``upper``.
 ``Names.Abbreviations`` accepts one text value or a text list of single identifier words.
-The defaults are HTTP, HTTPS, FTP, FTPS, SSH, and VR; configured lists replace the inherited list completely.
+The defaults are HTTP, HTTPS, FTP, FTPS, SSH, TLS, URL, and VR; configured lists replace the inherited list completely.
 Matching ignores case, and duplicates are removed.
 Use ``Abbreviations: ""`` to clear the list.
 Abbreviations affect title casing only, including explicitly enabled quoted-name and text-identifier formatting.

@@ -379,10 +379,10 @@ errors in both modes.
 Raw ASN.1 Views and Backends
 ============================
 
-:cpp:class:`Asn1Node <erbsland::cryptology::Asn1Node>` is a read-only view into a successfully parsed certificate.
+:cpp:class:`Asn1Node <erbsland::data::asn1::Asn1Node>` is a read-only view into a successfully parsed certificate.
 Each node independently retains its shared immutable DER storage and exposes its exact encoding, content octets,
 children, tag, and selected primitive conversions.
-There is deliberately no public factory for parsing arbitrary ASN.1 with this view API.
+See :doc:`/reference/data/asn1` for typed node access and :doc:`/reference/data/der` for standalone DER parsing.
 
 Certificate shared data uses a virtual backend contract.
 Portable certificates store parsed values directly; future Windows and macOS integrations can retain a native
@@ -396,12 +396,6 @@ remains a caller precondition failure.
 Interface
 =========
 
-.. doxygenclass:: erbsland::cryptology::Asn1Node
-    :members:
-.. doxygenclass:: erbsland::cryptology::Asn1ObjectIdentifier
-    :members:
-.. doxygenenum:: erbsland::cryptology::Asn1TagClass
-.. doxygenenum:: erbsland::cryptology::Asn1UniversalType
 .. doxygenclass:: erbsland::cryptology::X509AlgorithmIdentifier
     :members:
 .. doxygenclass:: erbsland::cryptology::X509BasicConstraints

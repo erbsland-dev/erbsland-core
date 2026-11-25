@@ -4,7 +4,7 @@
 
 #include "CryptologyTestHelper.hpp"
 
-#include <erbsland/Asn1ObjectIdentifier.hpp>
+#include <erbsland/asn1/Asn1ObjectIdentifier.hpp>
 #include <erbsland/Byte.hpp>
 #include <erbsland/ByteBlock.hpp>
 #include <erbsland/ByteBlockEditor.hpp>
@@ -13,8 +13,8 @@
 #include <erbsland/cryptology/impl/algorithm/ecdsa_signature/EcdsaSigner.hpp>
 #include <erbsland/cryptology/impl/algorithm/NistPrimeCurve.hpp>
 #include <erbsland/cryptology/impl/CryptologyOids.hpp>
-#include <erbsland/cryptology/impl/DerEncoder.hpp>
-#include <erbsland/cryptology/impl/DerParser.hpp>
+#include <erbsland/der/DerEncoder.hpp>
+#include <erbsland/der/DerParser.hpp>
 #include <erbsland/ItemIndex.hpp>
 #include <erbsland/SigningKeyProfile.hpp>
 #include <erbsland/SigningPrivateKey.hpp>
@@ -68,17 +68,18 @@ protected: // fixtures
         const CurveName name, const el::ByteBlock &scalar, const bool includePublicKey = false) -> el::ByteBlock {
         using namespace el::cryptology;
         using namespace el::cryptology::impl;
-        auto encoder = DerEncoder{};
+        auto encoder = el::data::der::DerEncoder{};
         encoder.markAsSensitive();
         const auto root = encoder.beginSequence();
         encoder.appendPositiveInteger(uint64_t{});
         const auto algorithm = encoder.beginSequence();
-        encoder.appendObjectIdentifier(Asn1ObjectIdentifier::fromStringOrThrow(cryptology_oids::ecPublicKey));
+        encoder.appendObjectIdentifier(
+            el::data::asn1::Asn1ObjectIdentifier::fromStringOrThrow(cryptology_oids::ecPublicKey));
         auto curveOid = cryptology_oids::secp256r1;
         if (name == CurveName::P384) {
             curveOid = cryptology_oids::secp384r1;
         }
-        encoder.appendObjectIdentifier(Asn1ObjectIdentifier::fromStringOrThrow(curveOid));
+        encoder.appendObjectIdentifier(el::data::asn1::Asn1ObjectIdentifier::fromStringOrThrow(curveOid));
         encoder.end(algorithm);
         const auto wrapped = encoder.beginOctetString();
         const auto ecKey = encoder.beginSequence();
@@ -98,8 +99,8 @@ protected: // fixtures
     /// @param key Accepted ECDSA key.
     /// @return Serialized scalar bytes.
     [[nodiscard]] static auto exportedScalar(const el::cryptology::SigningPrivateKey &key) -> el::ByteBlock {
-        const auto root = el::cryptology::impl::DerParser{key.toDer()}.parseDocument();
-        const auto ecKey = el::cryptology::impl::DerParser{root.child(el::ItemIndex{2U}).contentData()}.parseDocument();
+        const auto root = el::data::der::DerParser::parseOrThrow(key.toDer());
+        const auto ecKey = el::data::der::DerParser::parseOrThrow(root.child(el::ItemIndex{2U}).contentData());
         return ecKey.child(el::ItemIndex{1U}).contentData();
     }
 };

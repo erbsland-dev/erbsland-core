@@ -2,12 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "X509Parser.hpp"
 
-#include "Asn1ObjectIdentifierCodec.hpp"
-#include "DerParser.hpp"
-
 #include "../../err/ParseError.hpp"
 #include "../../mem/ByteBlock.hpp"
-#include "../../mem/ByteReader.hpp"
 #include "../../network/IpVersion.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/String.hpp"
@@ -23,6 +19,11 @@
 
 namespace erbsland::cryptology::impl {
 
+using data::asn1::Asn1Node;
+using data::asn1::Asn1ObjectIdentifier;
+using data::asn1::Asn1Tag;
+using data::asn1::Asn1TagClass;
+using data::asn1::Asn1UniversalType;
 using namespace text;
 using namespace text::literals;
 using namespace unit;
@@ -50,6 +51,9 @@ void X509Parser::parseKnownExtension(const X509Extension &extension) {
             parseExtendedKeyUsage(extension);
         }
     } catch (const err::ParseError &) {
+        if (_mode == X509CertificateProfileMode::Strict) {
+            throw;
+        }
         addIssue(
             X509CertificateProfileIssueCategory::ExtensionValue,
             "extensions"_el,
@@ -61,8 +65,7 @@ void X509Parser::parseKnownExtension(const X509Extension &extension) {
 void X509Parser::parseSubjectAlternativeNames(const X509Extension &extension) {
     // RFC 5280 section 4.2.1.6: subjectAltName is a nonempty GeneralNames sequence.
     const auto root = extension.asn1();
-    requireNode(
-        root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "subjectAltName"_el);
+    requireNode(root, Asn1UniversalType::Sequence, true, "subjectAltName"_el);
     if (root.childCount() == ItemCount{}) {
         throwParseError("subjectAltName must not be empty."_el, root);
     }
@@ -133,14 +136,20 @@ auto X509Parser::parseGeneralName(const Asn1Node &node) -> X509GeneralName {
         if (node.isConstructed()) {
             throwParseError("registeredID GeneralName must use primitive encoding."_el, node);
         }
-        return X509GeneralName{X509GeneralName::Kind::RegisteredId, {}, {}, {}, decodeImplicitOid(node), node};
+        return X509GeneralName{
+            X509GeneralName::Kind::RegisteredId,
+            {},
+            {},
+            {},
+            node.toObjectIdentifierOrThrow({Asn1TagClass::Context, 8U}),
+            node};
     }
     if (!node.isConstructed()) {
         throwParseError("Structured GeneralName alternative must use constructed encoding."_el, node);
     }
     if (tag == 0U) {
         if (node.childCount() != ItemCount{2U} || !node.child(ItemIndex{0U}).toObjectIdentifier().has_value() ||
-            !isNode(node.child(ItemIndex{1U}), Asn1TagClass::Context, 0U, true)) {
+            !node.child(ItemIndex{1U}).matches({Asn1TagClass::Context, 0U}, true)) {
             throwParseError("otherName GeneralName is malformed."_el, node);
         }
     }
@@ -150,24 +159,14 @@ auto X509Parser::parseGeneralName(const Asn1Node &node) -> X509GeneralName {
 void X509Parser::parseSubjectKeyIdentifier(const X509Extension &extension) {
     // RFC 5280 section 4.2.1.2: SubjectKeyIdentifier is an OCTET STRING.
     const auto root = extension.asn1();
-    requireNode(
-        root,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::OctetString),
-        false,
-        "subjectKeyIdentifier"_el);
+    requireNode(root, Asn1UniversalType::OctetString, false, "subjectKeyIdentifier"_el);
     _values.subjectKeyIdentifier = root.contentData();
 }
 
 void X509Parser::parseAuthorityKeyIdentifier(const X509Extension &extension) {
     // RFC 5280 section 4.2.1.1: ordered implicit keyIdentifier, authorityCertIssuer, and serial fields.
     const auto root = extension.asn1();
-    requireNode(
-        root,
-        Asn1TagClass::Universal,
-        static_cast<uint32_t>(Asn1UniversalType::Sequence),
-        true,
-        "authorityKeyIdentifier"_el);
+    requireNode(root, Asn1UniversalType::Sequence, true, "authorityKeyIdentifier"_el);
     auto previousTag = std::optional<uint32_t>{};
     auto hasIssuer = false;
     auto hasSerialNumber = false;
@@ -177,9 +176,9 @@ void X509Parser::parseAuthorityKeyIdentifier(const X509Extension &extension) {
             throwParseError("Authority Key Identifier fields are unknown, duplicated, or out of order."_el, child);
         }
         previousTag = child.tagNumber();
-        if (isNode(child, Asn1TagClass::Context, 0U, false)) {
+        if (child.matches({Asn1TagClass::Context, 0U}, false)) {
             _values.authorityKeyIdentifier = child.contentData();
-        } else if (isNode(child, Asn1TagClass::Context, 1U, true)) {
+        } else if (child.matches({Asn1TagClass::Context, 1U}, true)) {
             if (child.childCount() == ItemCount{}) {
                 throwParseError("Authority Key Identifier issuer GeneralNames must not be empty."_el, child);
             }
@@ -188,7 +187,7 @@ void X509Parser::parseAuthorityKeyIdentifier(const X509Extension &extension) {
                 [[maybe_unused]] const auto validatedIssuerName = parseGeneralName(name);
             }
             hasIssuer = true;
-        } else if (isNode(child, Asn1TagClass::Context, 2U, false)) {
+        } else if (child.matches({Asn1TagClass::Context, 2U}, false)) {
             validateImplicitSerialNumber(child, "authorityCertSerialNumber"_el);
             hasSerialNumber = true;
         } else {
@@ -203,8 +202,7 @@ void X509Parser::parseAuthorityKeyIdentifier(const X509Extension &extension) {
 void X509Parser::parseBasicConstraints(const X509Extension &extension) {
     // RFC 5280 section 4.2.1.9: cA defaults to FALSE and pathLenConstraint requires cA TRUE.
     const auto root = extension.asn1();
-    requireNode(
-        root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "basicConstraints"_el);
+    requireNode(root, Asn1UniversalType::Sequence, true, "basicConstraints"_el);
     auto index = ItemIndex::zero();
     auto certificateAuthority = false;
     auto pathLength = std::optional<uint32_t>{};
@@ -229,12 +227,12 @@ void X509Parser::parseBasicConstraints(const X509Extension &extension) {
 void X509Parser::parseKeyUsage(const X509Extension &extension) {
     // RFC 5280 section 4.2.1.3 and X.690 section 11.2: KeyUsage is a canonical named BIT STRING.
     const auto root = extension.asn1();
-    requireNode(
-        root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::BitString), false, "keyUsage"_el);
-    const auto contentData = root.contentData();
-    const auto content = contentData.span();
-    const auto unusedBitCount = static_cast<std::size_t>(content.front().toUInt8());
-    const auto bitCount = (content.size() - 1U) * 8U - unusedBitCount;
+    const auto bits = root.toBitString();
+    if (!bits) {
+        throwParseError("Expected a Key Usage BIT STRING."_el, root);
+    }
+    const auto content = bits->bytes.span();
+    const auto bitCount = content.size() * 8U - bits->unusedBits;
     if (bitCount == 0U || bitCount > 9U || content.back().toUInt8() == 0U) {
         throwParseError("Key Usage has no bits or contains bits outside its named range."_el, root);
     }
@@ -244,16 +242,12 @@ void X509Parser::parseKeyUsage(const X509Extension &extension) {
         ++canonicalUnusedBitCount;
         lastByte >>= 1U;
     }
-    if (canonicalUnusedBitCount != unusedBitCount) {
+    if (canonicalUnusedBitCount != bits->unusedBits) {
         throwParseError("Key Usage does not use canonical named-bit-list encoding."_el, root);
     }
     auto usages = X509KeyUsages{};
-    for (auto bit = std::size_t{}; bit < 9U; ++bit) {
-        const auto byteIndex = 1U + bit / 8U;
-        if (byteIndex >= content.size()) {
-            break;
-        }
-        if ((content[byteIndex].toUInt8() & (0x80U >> (bit % 8U))) != 0U) {
+    for (auto bit = std::size_t{}; bit < bitCount; ++bit) {
+        if ((content[bit / 8U].toUInt8() & (0x80U >> (bit % 8U))) != 0U) {
             usages |= static_cast<X509KeyUsage>(1U << bit);
         }
     }
@@ -263,8 +257,7 @@ void X509Parser::parseKeyUsage(const X509Extension &extension) {
 void X509Parser::parseExtendedKeyUsage(const X509Extension &extension) {
     // RFC 5280 section 4.2.1.12: ExtendedKeyUsage is a nonempty sequence of unique purpose OIDs.
     const auto root = extension.asn1();
-    requireNode(
-        root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "extendedKeyUsage"_el);
+    requireNode(root, Asn1UniversalType::Sequence, true, "extendedKeyUsage"_el);
     if (root.childCount() == ItemCount{}) {
         throwParseError("Extended Key Usage must not be empty."_el, root);
     }
@@ -331,119 +324,36 @@ void X509Parser::addIssue(
         X509CertificateProfileIssue{category, std::move(field), std::move(oid), std::move(diagnostic)});
 }
 
-auto X509Parser::decodeImplicitOid(const Asn1Node &node) -> Asn1ObjectIdentifier {
-    // X.690 section 8.19 is independent of the surrounding implicit tag; decode the content directly.
-    return Asn1ObjectIdentifier::fromStringOrThrow(
-        Asn1ObjectIdentifierCodec{node.contentData(), nodeContentByteIndex(node)}.decode());
-}
-
 void X509Parser::validateImplicitBitString(const Asn1Node &node, const String &name) const {
-    const auto contentData = node.contentData();
-    const auto content = contentData.span();
-    if (content.empty() || content.front().toUInt8() > 7U) {
+    if (!node.toBitString(node.tag())) {
         throwParseError(fieldDiagnostic(name, " contains an invalid BIT STRING."_el), node);
-    }
-    const auto unused = content.front().toUInt8();
-    if ((content.size() == 1U && unused != 0U) ||
-        (unused != 0U && (content.back().toUInt8() & ((1U << unused) - 1U)) != 0U)) {
-        throwParseError(fieldDiagnostic(name, " contains malformed unused bits."_el), node);
     }
 }
 
 void X509Parser::validateImplicitSerialNumber(const Asn1Node &node, const String &name) const {
-    const auto contentData = node.contentData();
-    const auto content = contentData.span();
-    if (content.empty() || (content.front().toUInt8() & 0x80U) != 0U) {
-        throwParseError(fieldDiagnostic(name, " must contain a nonnegative INTEGER."_el), node);
-    }
-    if (content.size() > 1U && content.front().toUInt8() == 0U && (content[1U].toUInt8() & 0x80U) == 0U) {
-        throwParseError(fieldDiagnostic(name, " contains a nonminimal INTEGER."_el), node);
-    }
-    auto magnitudeLength = content.size();
-    if (content.front().toUInt8() == 0U) {
-        --magnitudeLength;
-    }
-    auto zero = true;
-    for (const auto byte : content) {
-        zero = zero && byte.toUInt8() == 0U;
-    }
-    if (zero || magnitudeLength > 20U) {
+    const auto magnitude = node.toUnsignedMagnitude(node.tag());
+    if (!magnitude || magnitude->isEmpty() || magnitude->length() > ByteCount{20U}) {
         throwParseError(fieldDiagnostic(name, " must be positive and at most 20 octets."_el), node);
     }
 }
 
 auto X509Parser::unsignedInteger(const Asn1Node &node, const uint64_t maximum) const -> uint64_t {
-    requireNode(node, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Integer), false, "INTEGER"_el);
-    auto content = node.contentData();
-    if ((content.span().front().toUInt8() & 0x80U) != 0U) {
-        throwParseError("Expected a nonnegative INTEGER."_el, node);
+    const auto value = node.toUnsignedInteger();
+    if (!value || *value > maximum) {
+        throwParseError("Expected a nonnegative INTEGER in the supported range."_el, node);
     }
-    if (content.length() > ByteCount::one() && content.span().front().toUInt8() == 0U) {
-        content = content.slice(ByteIndex{1U}, content.length() - ByteCount::one());
-    }
-    const auto format = [&]() -> ByteIntegerFormat {
-        switch (content.length().toSizeT()) {
-        case 1U:
-            return ByteIntegerFormat::UnsignedFixed8Bit;
-        case 2U:
-            return ByteIntegerFormat::UnsignedFixed16Bit;
-        case 3U:
-            return ByteIntegerFormat::UnsignedFixed24Bit;
-        case 4U:
-            return ByteIntegerFormat::UnsignedFixed32Bit;
-        case 5U:
-            return ByteIntegerFormat::UnsignedFixed40Bit;
-        case 6U:
-            return ByteIntegerFormat::UnsignedFixed48Bit;
-        case 7U:
-            return ByteIntegerFormat::UnsignedFixed56Bit;
-        case 8U:
-            return ByteIntegerFormat::UnsignedFixed64Bit;
-        default:
-            throwParseError("INTEGER exceeds its supported range."_el, node);
-        }
-    }();
-    auto reader = ByteReader{std::move(content)};
-    reader.setEndianness(Endianness::Big);
-    const auto value = reader.readIntegerOrThrow<uint64_t>(format);
-    if (value > maximum) {
-        throwParseError("INTEGER exceeds its supported range."_el, node);
-    }
-    return value;
-}
-
-auto X509Parser::isNode(
-    const Asn1Node &node, const Asn1TagClass tagClass, const uint32_t tagNumber, const bool constructed) noexcept
-    -> bool {
-    return !node.isEmpty() && node.tagClass() == tagClass && node.tagNumber() == tagNumber &&
-        node.isConstructed() == constructed;
+    return *value;
 }
 
 void X509Parser::requireNode(
-    const Asn1Node &node,
-    const Asn1TagClass tagClass,
-    const uint32_t tagNumber,
-    const bool constructed,
-    const String &name) const {
-    if (!isNode(node, tagClass, tagNumber, constructed)) {
+    const Asn1Node &node, const Asn1Tag tag, const bool constructed, const String &name) const {
+    if (!node.matches(tag, constructed)) {
         auto message = StringEditor{};
         message.append("Unexpected ASN.1 node for "_el);
         message.append(name);
         message.append(U'.');
         throwParseError(message, node);
     }
-}
-
-auto X509Parser::asciiText(const Asn1Node &node) const -> String {
-    auto result = StringEditor{};
-    const auto content = node.contentData();
-    for (const auto byte : content.span()) {
-        if (byte.toUInt8() > 0x7FU) {
-            throwParseError("Expected ASCII content."_el, node);
-        }
-        result.append(Char{byte.toUInt32()});
-    }
-    return result;
 }
 
 auto X509Parser::fieldDiagnostic(const String &name, const String &detail) -> String {
@@ -472,22 +382,8 @@ auto X509Parser::decimalQuad(const ConstByteSpan bytes, const std::size_t index,
     return decimalPair(bytes, index, contentByteIndex) * 100U + decimalPair(bytes, index + 2U, contentByteIndex);
 }
 
-auto X509Parser::nodeByteIndex(const Asn1Node &node) const noexcept -> ByteIndex {
-    if (node.isEmpty()) {
-        return ByteIndex::zero();
-    }
-    return ByteIndex::end(_root.encodedStorageByteIndex().absoluteDistanceTo(node.encodedStorageByteIndex()));
-}
-
-auto X509Parser::nodeContentByteIndex(const Asn1Node &node) const noexcept -> ByteIndex {
-    if (node.isEmpty()) {
-        return ByteIndex::zero();
-    }
-    return nodeByteIndex(node) + node._headerLength;
-}
-
 void X509Parser::throwParseError(String reason, const Asn1Node &node) const {
-    throw err::ParseError{std::move(reason), nodeByteIndex(node)};
+    throw err::ParseError{std::move(reason), node.encodedByteIndex()};
 }
 
 }

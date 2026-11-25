@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../asn1/Asn1Node.hpp"
-#include "../asn1/Asn1ObjectIdentifier.hpp"
 #include "../impl/X509Parser_fwd.hpp"
 
+#include "../../data/asn1/Asn1Node.hpp"
+#include "../../data/asn1/Asn1ObjectIdentifier.hpp"
 #include "../../mem/ByteBlock.hpp"
 
 namespace erbsland::cryptology {
@@ -32,9 +32,9 @@ public: // tests
 
 public: // accessors
     /// Get the algorithm object identifier.
-    [[nodiscard]] auto oid() const noexcept -> const Asn1ObjectIdentifier & { return _oid; }
+    [[nodiscard]] auto oid() const noexcept -> const data::asn1::Asn1ObjectIdentifier & { return _oid; }
     /// Get the optional parameters node.
-    [[nodiscard]] auto parameters() const noexcept -> const Asn1Node & { return _parameters; }
+    [[nodiscard]] auto parameters() const noexcept -> const data::asn1::Asn1Node & { return _parameters; }
     /// Get the complete exact DER encoding.
     [[nodiscard]] auto toDer() const noexcept -> const mem::ByteBlock & { return _der; }
 
@@ -51,13 +51,14 @@ public: // factories
 
 private:
     /// Create an algorithm identifier from parsed DER components.
-    X509AlgorithmIdentifier(Asn1ObjectIdentifier oid, Asn1Node parameters, mem::ByteBlock der) noexcept :
+    X509AlgorithmIdentifier(
+        data::asn1::Asn1ObjectIdentifier oid, data::asn1::Asn1Node parameters, mem::ByteBlock der) noexcept :
         _oid{std::move(oid)}, _parameters{std::move(parameters)}, _der{std::move(der)} {}
 
 private:
-    Asn1ObjectIdentifier _oid; ///< Algorithm OID.
-    Asn1Node _parameters;      ///< Optional parameters.
-    mem::ByteBlock _der;       ///< Complete exact DER.
+    data::asn1::Asn1ObjectIdentifier _oid; ///< Algorithm OID.
+    data::asn1::Asn1Node _parameters;      ///< Optional parameters.
+    mem::ByteBlock _der;                   ///< Complete exact DER.
 };
 
 }

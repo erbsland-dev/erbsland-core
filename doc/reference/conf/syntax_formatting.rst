@@ -116,7 +116,7 @@ case-sensitive names or application text.
 Selectors match the original names; such changes can affect selector matching on a later pass.
 
 ``abbreviations()`` supplies whole identifier words that remain uppercase during title casing.
-The defaults are HTTP, HTTPS, FTP, FTPS, SSH, and VR.
+The defaults are HTTP, HTTPS, FTP, FTPS, SSH, TLS, URL, and VR.
 Matching ignores ASCII case and uses spaces and underscores as word boundaries: ``http_server`` becomes ``HTTP Server``,
 while ``http2`` becomes ``Http2`` unless HTTP2 is also configured.
 The list also applies to opted-in quoted names and text identifiers.

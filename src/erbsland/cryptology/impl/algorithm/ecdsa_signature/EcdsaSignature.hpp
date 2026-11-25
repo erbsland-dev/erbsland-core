@@ -43,11 +43,10 @@ namespace erbsland::cryptology::impl::ecdsa_signature {
 [[nodiscard]] auto decodeSignature(mem::ConstByteSpan signature, const NistPrimeCurve &curve)
     -> std::optional<SignatureValues>;
 /// Decode one canonical positive DER INTEGER into a bounded number.
-[[nodiscard]] auto decodeInteger(const Asn1Node &node, const NistPrimeCurve &curve)
+[[nodiscard]] auto decodeInteger(const data::asn1::Asn1Node &node, const NistPrimeCurve &curve)
     -> std::optional<NistPrimeCurve::Number>;
 /// Require one exact ASN.1 node shape.
-void requireNode(
-    const Asn1Node &node, Asn1TagClass tagClass, uint32_t tagNumber, bool constructed, const text::String &name);
+void requireNode(const data::asn1::Asn1Node &node, data::asn1::Asn1Tag tag, bool constructed, const text::String &name);
 /// Throw a parse failure with a stable ECDSA context.
 [[noreturn]] void throwParseError(const text::String &reason);
 

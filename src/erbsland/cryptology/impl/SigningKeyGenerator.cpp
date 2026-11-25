@@ -3,7 +3,6 @@
 #include "SigningKeyGenerator.hpp"
 
 #include "CryptologyOids.hpp"
-#include "DerEncoder.hpp"
 #include "EcPrivateScalarPolicy.hpp"
 #include "SecureEraseGuard.hpp"
 #include "SigningKeyEncoding.hpp"
@@ -19,6 +18,7 @@
 
 #include "../../core/impl/application_data/ApplicationRandomData.hpp"
 #include "../../core/impl/ApplicationDataAccess.hpp"
+#include "../../data/der/DerEncoder.hpp"
 #include "../../random/Random.hpp"
 #include "../../random/RandomFailure.hpp"
 #include "../../text/Literals.hpp"
@@ -26,6 +26,8 @@
 #include "../../unit/ByteCount.hpp"
 
 namespace erbsland::cryptology::impl {
+
+using data::asn1::Asn1ObjectIdentifier;
 
 using namespace text::literals;
 
@@ -50,7 +52,7 @@ auto SigningKeyGenerator::generateEd25519() const -> SigningPrivateKey {
     seed.markAsSensitive();
     const auto seedEraseGuard = SecureEraseGuard{seed};
     const auto point = ed25519_signer::publicKey(seed.span());
-    auto encoder = DerEncoder{};
+    auto encoder = data::der::DerEncoder{};
     signing_key_encoding::appendEd25519PublicKey(encoder, point.span());
     auto publicKey = PublicKey::fromDerOrThrow(encoder.encoded());
     return SigningPrivateKey{SigningKeyAlgorithm::Ed25519, seed.span(), std::move(publicKey)};
@@ -62,14 +64,14 @@ auto SigningKeyGenerator::generateRsa() const -> SigningPrivateKey {
                                                              : std::size_t{4096U};
     auto privateKey = rsa_key_generator::generate(bits);
     const auto privateKeyEraseGuard = SecureEraseGuard{privateKey};
-    auto encoder = DerEncoder{};
+    auto encoder = data::der::DerEncoder{};
     const auto algorithmScope = encoder.beginSequence();
     encoder.appendObjectIdentifier(Asn1ObjectIdentifier::fromStringOrThrow(cryptology_oids::rsaEncryption));
     encoder.appendNull();
     encoder.end(algorithmScope);
     const auto algorithm = encoder.encoded();
-    auto publicKeyEncoder = DerEncoder{};
-    rsa_signer::appendPublicKey(publicKeyEncoder, privateKey.span(), algorithm.span());
+    auto publicKeyEncoder = data::der::DerEncoder{};
+    rsa_signer::appendPublicKey(publicKeyEncoder, privateKey.span(), algorithm);
     const auto publicKey = PublicKey::fromDerOrThrow(publicKeyEncoder.encoded());
     return SigningPrivateKey{SigningKeyAlgorithm::Rsa, privateKey.span(), publicKey};
 }
@@ -90,7 +92,7 @@ auto SigningKeyGenerator::generateEc() const -> SigningPrivateKey {
             continue;
         }
         const auto point = ecdsa_signer::publicKey(scalar.span(), curveName);
-        auto encoder = DerEncoder{};
+        auto encoder = data::der::DerEncoder{};
         signing_key_encoding::appendEcPublicKey(encoder, point.span(), curveName);
         const auto publicKey = PublicKey::fromDerOrThrow(encoder.encoded());
         return SigningPrivateKey{algorithm, scalar.span(), publicKey};

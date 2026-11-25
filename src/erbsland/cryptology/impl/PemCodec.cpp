@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PemCodec.hpp"
 
-#include "DerParser.hpp"
+#include "CryptologyAsn1Limits.hpp"
 
 #include "../../err/ParseError.hpp"
 #include "../../mem/ByteBlock.hpp"
@@ -85,7 +85,7 @@ auto PemCodec::decode() const -> util::List<ByteBlock> {
         }
         auto format = base_n::BaseNFormat::base64();
         format.setWhitespace({});
-        auto der = base_n::BaseNDecoder{base64, format}.toDataOrThrow(DerParser::cMaximumLength);
+        auto der = base_n::BaseNDecoder{base64, format}.toDataOrThrow(cCryptologyAsn1Limits.maximumLength);
         const auto derLength = der.length().toSizeTOrThrow();
         if (derLength > cMaximumBundleDerLength - totalDerLength) {
             throw ParseError{"PEM bundle exceeds the fixed decoded-DER limit."_el};
